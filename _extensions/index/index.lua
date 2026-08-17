@@ -482,6 +482,23 @@ local function literal_inlines(text)
   end
 end
 
+-- Two targets are the same target when their LEVEL LISTS are equal — never
+-- when their rendered text is. A single level containing the level join reads
+-- exactly like a two-level target, so comparing the joined string folds two
+-- genuinely different cross-references into one and silently loses the
+-- author's second one (IP2).
+local function same_levels(a, b)
+  if #a ~= #b then
+    return false
+  end
+  for i = 1, #a do
+    if a[i] ~= b[i] then
+      return false
+    end
+  end
+  return true
+end
+
 local function new_entry(key)
   return { key = key, children = {}, sorted = {}, locators = {}, xrefs = {} }
 end
@@ -510,7 +527,7 @@ local function build_entry_tree(marks)
       local already = false
       for _, existing in ipairs(node.xrefs) do
         if existing.kind.attr == xref.kind.attr
-           and target_text(existing.levels) == target_text(xref.levels) then
+           and same_levels(existing.levels, xref.levels) then
           already = true
         end
       end

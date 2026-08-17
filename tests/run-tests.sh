@@ -1213,6 +1213,29 @@ print(f'ok   M03-AC4: the resolving cross-reference links to the sub-entry it '
 PY
 
 # ---------------------------------------------------------------------------
+# M03-AC4 — repeated and look-alike cross-reference targets. Manifest 1h, same
+# oracle rule and row format as manifest 1e.
+#
+# `zeta` carries the SAME target twice and must show one cross-reference.
+# `eta` carries two targets whose LEVEL LISTS differ but whose rendered text
+# is identical (`A`/`B` against the single level `A: B`); both must survive,
+# and only the two-level one names an entry, so only it links. Folding those
+# two together loses an author's cross-reference silently, which is the IP2
+# failure this fixture exists to catch — a dedupe keyed on rendered text
+# passes every other check in this suite.
+# ---------------------------------------------------------------------------
+read -r -d '' HTML_INDEX_MANIFEST <<'MANIFEST' || true
+0	A	0
+1	B	1
+0	eta	0	see-link A: B	see-plain A: B
+0	zeta	0	see-link A: B
+MANIFEST
+
+quarto render examples/html-index.qmd --to html > "$WORK/html-index.log" 2>&1 \
+  || { tail -20 "$WORK/html-index.log" >&2; fail "M03-AC4: html-index.qmd failed to render to HTML"; }
+check_html_index_manifest examples/html-index.html "$HTML_INDEX_MANIFEST" "M03-AC4"
+
+# ---------------------------------------------------------------------------
 # M03-AC2 — locator numbering where the renderer moves content. Manifest 1g,
 # same oracle rule and row format as manifest 1e: `widget` is marked in a
 # heading, a table cell and a footnote, and `gadget` carries an id of the

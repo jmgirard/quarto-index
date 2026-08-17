@@ -140,6 +140,16 @@ criteria audit applied).
 - [x] T7: README HTML section (divergence list, stale sentences replaced)
       with suite grep pins; fill DESIGN.md Architecture (two back-ends,
       shared format-neutral layer).
+- [x] T8: F3 — dedupe cross-references on parsed level lists, not the joined
+      string; fixture with two level-list-distinct targets on one key.
+- [ ] T9: F1/F2 — id assignment moves to the document pass: a mark inside a
+      heading takes the heading's own id, and minted anchor/entry ids skip
+      every id the document already uses.
+- [ ] T10: F5/F6/F7/F10 — collation fold-tie oracle; assert the 3-level fold
+      warning is absent outside LaTeX; TOC claim exercised; AC3's second
+      fixture invariant named and asserted.
+- [ ] T11: F8/F9/F12 — README/DESIGN corrections; AC3 no-leak wording
+      narrowed via the amendment gate (F4); follow-up candidate rows.
 
 ## Work log
 
@@ -171,6 +181,8 @@ criteria audit applied).
 - 2026-08-17: all tasks done; tests/run-tests.sh --self-test clean. AC1 evidence rehearsed: demo.qmd --to latex on the branch is byte-identical to the same render at the merge-base (procedure documented in the suite). Status -> review.
 
 - 2026-08-17: review pass 1 RETURNED (defect return 1): AC4 fails — two level-list-distinct cross-reference targets on one key render as one, the second silently dropped, because the dedupe compares the rendered `: `-joined string rather than the level lists Scope requires. Two further load-bearing defects confirmed by reproduction: a mark in a heading under `toc: true` emits its anchor id twice (locator resolves to the TOC copy), and a minted anchor can collide with an id the author already used. Full suite passed throughout — no fixture exercises any of the three shapes.
+
+- 2026-08-17: T8 (review F3, the AC4 failure) — cross-reference dedupe now compares parsed level lists element-wise, not the `: `-joined string, so two targets that print alike but name different things both survive. New HTML-only fixture examples/html-index.qmd holds the repeat case and the look-alike case; verified discriminating by restoring the string comparison, which drops eta's second cross-reference and fails the manifest.
 
 ## Decisions
 

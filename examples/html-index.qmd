@@ -1,0 +1,23 @@
+---
+title: "quarto-index HTML index probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Cross-references that repeat, and ones that only look alike
+
+Properties of the generated HTML index that the LaTeX back-end has no
+equivalent of, so they cannot be probed through a `.tex` render.
+
+The entry those targets can name: [ab]{.index entry="A!B"}.
+
+One target repeated on one key is one cross-reference, not two — the reader
+wants the target, not a count of how the marks were spread:
+[zeta]{.index see="A!B"} and again [zeta]{.index see="A!B"}.
+
+Two targets on one key that print identically but name different things — a
+two-level target, and a single level that merely contains the level join —
+are two cross-references. Only the two-level one names an entry that exists,
+so only it is a link:
+[eta]{.index see="A!B"} and [eta]{.index see="A: B"}.

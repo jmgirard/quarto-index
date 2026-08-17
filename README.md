@@ -165,6 +165,37 @@ The same two rules apply inside `see=` and `see-also=`.
 styling, which use those characters in raw `makeindex` syntax, are not part
 of this syntax and will arrive later as separate span attributes.
 
+### Placing the index
+
+By default the index goes at the end of the document. To put it somewhere
+else, write an empty div where you want it:
+
+```markdown
+::: {.qi-index-here}
+:::
+```
+
+Both back-ends honour the same marker: the HTML index section and the LaTeX
+`\printindex` each land where you wrote it. A format with no index back-end
+drops the marker and leaves nothing in its place.
+
+Four rules, each of which warns rather than breaking your build:
+
+- **Top level only.** A marker inside a callout, a list or another div places
+  nothing: a printed index inside a LaTeX group or environment is a render
+  risk. It is dropped, and the index keeps its default place at the end.
+- **The first marker wins.** A second one is reported by its position and
+  dropped.
+- **The marker is empty.** Write anything inside it and your content stays
+  where the marker was, with a warning. Nothing you wrote is deleted.
+- **A marker in a document with no index marks** places nothing, and says so.
+
+A document carrying a marker loads `imakeidx` with its `noautomatic` option.
+Printing an index in the middle of a document otherwise closes the file the
+entries are collected in, and every term marked after the marker vanishes from
+the index with no error. The option changes nothing else: building the index
+is Quarto's PDF loop's job either way.
+
 ## What it emits
 
 ### LaTeX and PDF
@@ -172,10 +203,10 @@ of this syntax and will arrive later as separate span attributes.
 For LaTeX-derived formats the extension writes `\index{…}` at the mark's
 position. When a document has at least one mark, it also adds
 `\usepackage{imakeidx}` and `\makeindex[intoc]` to the preamble and one
-`\printindex` after the document body, so the index is built and listed in
-the table of contents with no configuration. In a document with a
-bibliography the index currently prints before the references. A document
-with no marks gets none of this.
+`\printindex` after the document body — or at your placement marker, if the
+document has one — so the index is built and listed in the table of contents
+with no configuration. In a document with a bibliography the index currently
+prints before the references. A document with no marks gets none of this.
 
 A cross-reference is written into the same `\index{…}` command, through
 `makeindex`'s encapsulation channel — `\index{cats|see{Felines}}`. A document
@@ -184,11 +215,13 @@ that puts both attributes on one mark also gets one small
 `\seename` and `\alsoname`, so a document loading `babel` keeps its
 translations. A document with no such mark gets nothing extra.
 
-Placement is automatic; there is no option to put the index elsewhere yet.
+Placement is automatic unless you write a marker; see [Placing the
+index](#placing-the-index).
 
 ### HTML
 
-For HTML the extension appends an index of its own to the end of the body: an
+For HTML the extension adds an index of its own at the end of the body, or at
+your placement marker if the document has one: an
 unnumbered level-one **Index** heading, in a section carrying the id
 `qi-index`, listed in the table of contents, followed by a nested bullet list
 of the entries. It is built out of Pandoc's own document nodes rather than out
@@ -285,8 +318,10 @@ default PDF pipeline does it for you.
 probe set. `examples/escaping.qmd` and `examples/xref-escaping.qmd` are the
 character probes. `examples/placement.qmd` marks one term in a heading, a table
 cell and a footnote, where the renderer moves the mark away from where it was
-written. `examples/control.qmd` is a negative control: mark-like text inside
-code, which must never be indexed.
+written. `examples/marker.qmd` puts the index between two sections with a
+placement marker; `examples/marker-misuse.qmd` and
+`examples/marker-nomarks.qmd` are its misuse cases. `examples/control.qmd` is
+a negative control: mark-like text inside code, which must never be indexed.
 
 ```bash
 quarto render examples/demo.qmd --to pdf

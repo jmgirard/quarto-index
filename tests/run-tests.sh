@@ -47,8 +47,9 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 pass() { printf 'ok   %s\n' "$*"; }
 
 # ---------------------------------------------------------------------------
-# Supported forms (NORMATIVE). The README documents exactly these span forms
-# and no others. Each row is <label><TAB><exemplar>: the exemplar is the exact
+# Supported forms (NORMATIVE). The README documents exactly these authoring
+# forms — the mark spans, and the div that places the index — and no others.
+# Each row is <label><TAB><exemplar>: the exemplar is the exact
 # syntax, and the check below fails unless it appears verbatim in README.md.
 # A form the extension grows must therefore be documented in the same change,
 # and a documented form cannot drift from the one this suite exercises.
@@ -60,6 +61,7 @@ SUPPORTED_FORMS=(
   $'invisible-entry span\t[]{.index entry="Entry"}'
   $'see cross-reference\t[term]{.index see="Other"}'
   $'see-also cross-reference\t[term]{.index see-also="Other"}'
+  $'placement marker\t::: {.qi-index-here}'
 )
 
 # ---------------------------------------------------------------------------
@@ -75,6 +77,7 @@ README_STALE=(
   $'pass-through scope\tformats with no index back-end — HTML and beamer'
   $'cross-reference pass-through\tIn formats with no index back-end, a cross-reference mark is simply a mark'
   $'one back-end\tLaTeX/PDF is the back-end that ships today'
+  $'automatic placement\tPlacement is automatic; there is no option to put the index elsewhere yet'
 )
 
 # Each must be PRESENT: one beamer-scoped pass-through sentence, and one row

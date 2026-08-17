@@ -89,7 +89,7 @@ candidate rows.
       bounded PDF index slice; byte-diff loop over all existing LaTeX
       fixtures; warning-split check extension; gfm + beamer marker-fixture
       renders with structural residue checks; merge-base check-count pin.
-- [ ] T5: Docs: README marker section (+ `SUPPORTED_FORMS` and
+- [x] T5: Docs: README marker section (+ `SUPPORTED_FORMS` and
       `README_STALE` rows), DESIGN.md architecture lines updated ("one
       `\printindex` appended" / "index section appended" become
       marker-aware).
@@ -106,6 +106,7 @@ candidate rows.
 - 2026-08-17: T2+T3 — one `place_index` both back-ends call (HTML section and `\printindex` at the marker site, append when no marker, marker removed either way), so the two cannot drift; the LaTeX per-branch `marks_emitted` counter became one format-neutral `marks_seen`, which the marker's no-marks warning needs.
 - 2026-08-17: T4 — suite: document-order primitive (`position`, `position_of_id`, `empty_divs`) in `tests/htmlindex.py`; M04 checks for marker placement (HTML position, `.tex` ordering, bounded PDF slice), misuse (nested/duplicate/non-empty/no-marks, each warned once in HTML+LaTeX+gfm, discrimination-tested), structural residue incl. a byte-identical twin-render pin, gfm + beamer residue; `tests/byte-diff.sh` for the merge-base LaTeX loop; the run now prints its own check count (68 with --self-test).
 - 2026-08-17: T4 found a defect the plan did not know: a mid-document `\printindex` closes imakeidx's `.idx` stream, so every mark written after the marker went to the log and vanished from the index (verified on `marker.qmd`: `gamma`'s `\indexentry` in `marker.log`, absent from `marker.idx`). Fixed by loading imakeidx with `noautomatic` in marker documents only; `gamma` in the PDF index slice is the regression pin.
+- 2026-08-17: T5 — README gains a "Placing the index" section (marker syntax, the four rules, why a marker document loads imakeidx with `noautomatic`), the LaTeX/HTML emission paragraphs and the examples list are marker-aware, the stale automatic-placement sentence is gone and pinned in `README_STALE`, the marker exemplar is a `SUPPORTED_FORMS` row, and DESIGN.md's Pandoc-pass and back-end lines record marker resolution and shared placement.
 
 ## Decisions
 

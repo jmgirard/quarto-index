@@ -108,18 +108,29 @@ diagnosed in every output format, not only where a back-end exists. The pass
 then branches per format and records what that back-end will need.
 
 The **Pandoc pass** runs once the whole document has been seen, and is where a
-back-end emits anything document-wide.
+back-end emits anything document-wide. It opens format-neutrally: the
+placement marker — an empty top-level div, class `qi-index-here` — is resolved
+before any back-end is chosen, so a misused one (nested, duplicate, non-empty,
+or in a document with no marks) is diagnosed in every format and no marker
+survives into any output. One shared function then puts a back-end's index at
+the surviving marker, or at the end of the document when there is none, so the
+two back-ends cannot drift apart on where an index goes.
 
 Two back-ends ship:
 
 - **LaTeX** (`FORMAT` containing `latex`, which covers PDF): an `\index{…}`
   command at each mark, `imakeidx` and `\makeindex[intoc]` injected into the
-  preamble, one `\printindex` appended. Levels are made literal per character
+  preamble, one `\printindex` at the marker or, with no marker, after the
+  body. A document with a marker loads `imakeidx` with `noautomatic`: printing
+  an index mid-document otherwise closes the file the entries are collected
+  in, and every mark below the marker is silently lost. Levels are made
+  literal per character
   by whichever mechanism that character needs, clamped to makeindex's
   three-level ceiling, and a term marked two incompatible ways is reported
   document-wide.
 - **HTML** (`FORMAT` containing `html`): a link target for each
-  locator-contributing mark, and an index section appended, built out of
+  locator-contributing mark, and an index section at the marker or appended,
+  built out of
   Pandoc AST nodes so that Pandoc's writer owns escaping (IP2). No level
   ceiling, entries sorted by the filter itself, locators and resolvable
   cross-reference targets as links.

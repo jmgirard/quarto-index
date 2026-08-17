@@ -9,31 +9,24 @@ syntax is the product; output formats are back-ends** (a future format request
 is in-scope work, not someone else's problem).
 
 Audience: the general Quarto community from day one — documentation, tests,
-and edge-case coverage are commitments, not extras. The capability roster is
-**completeness-driven**: the target is a full indexing suite — cross-references
-(see/see also), page-range & styling control, multiple named indexes, sort
-keys, an HTML back-end, and multi-file book support — not a minimal personal
-tool.
+and edge-case coverage are commitments, not extras (GP1). The capability
+roster is **completeness-driven**: the target is a full indexing suite —
+cross-references (see/see also), page-range & styling control, multiple named
+indexes, sort keys, an HTML back-end, and multi-file book support — not a
+minimal personal tool.
 
 Distribution ambition (declared at init 2026-08-16): **tagged public
 releases**, with changelog discipline from the start; at first release, submit
-to the Quarto extension listing and aim for discoverability — README and
-examples are a discovery surface, held to that bar. Release timing stays
-user-declared. Toolchain profile: generic (see `cairn/PROFILE.md`).
+to the Quarto extension listing and aim for discoverability. Release timing
+stays user-declared. Toolchain profile: generic (see `cairn/PROFILE.md`).
 
 ## Contract boundary
 
-- The extension's job **ends at correct emitted output for each supported
-  format** (e.g., correct `\index{}` marks and preamble LaTeX). Whether the
-  user's toolchain then builds the index (makeindex runs, engine config) is a
-  documentation surface — known failure modes documented, never detected or
-  managed; imakeidx's automatic makeindex run covers the common path.
-- Index-mark values (`entry=` and successors) are **structured, format-neutral
-  data** the extension parses and realizes per format — never raw back-end
-  code passed through.
+- The extension's job ends at correct emitted output for each supported
+  format (GP2); mark values are structured, format-neutral data (IP1).
 - Quarto version support is part of the contract: a stated minimum version in
   `_extension.yml` and README, eventually CI-tested against the floor and
-  latest.
+  latest (candidate: CI matrix).
 
 ## Function Families
 
@@ -45,48 +38,62 @@ _None yet — populated as the codebase takes shape._
   init, 2026-08-16): the universal ≥2-independent-oracle-types bar is waived;
   numeric results, if any arise, are checked ad hoc. Revisit if scoring or
   statistical work enters the project.
-- **Pure Pandoc-Lua, self-contained**: the extension ships as Lua files with
-  zero runtime dependencies beyond Quarto itself; LaTeX-side needs stay
-  limited to imakeidx (bundled in TeX distributions). `quarto add` is the
-  entire install story.
-- **API stability**: the span syntax is fluid until the first tagged release;
-  from then on, documented syntax forms change only via a deprecation cycle.
-- **Unicode posture**: non-ASCII terms must always appear correctly in the
-  index (an escaping/encoding commitment); collation beyond what the user's
-  index processor provides is best-effort, aided by sort keys.
+- **Collation is best-effort**: non-ASCII terms appearing correctly is an IP2
+  commitment, but sort *order* beyond what the user's index processor
+  provides is best-effort, aided by the sort-key feature once it lands.
 
 ## Design Principles
 
 <!-- IP<n> = Inviolable (hard constraint) block first, then GP<n> = Guiding
-     (tradeable with justification); numbers never reused. Principles are
-     elicited from the user (`/design-interview`), never invented. -->
+     (tradeable with justification); numbers never reused or renumbered —
+     retiring one takes a D-entry. Elicited /design-interview 2026-08-16. -->
 
-_None formalized yet — Phase 2 of the design interview (2026-08-16) works from
-the banked ledger below; this interim section is replaced at write-out._
+### Inviolable
 
-### Banked principle candidates (design-interview 2026-08-16, interim ledger)
+- **IP1 — Format-neutral marking.** The index-mark syntax and all attribute
+  values carry format-neutral meaning; back-ends realize them per format. A
+  mark value is never raw back-end code (no raw LaTeX or HTML pass-through;
+  D-001). A feature's *semantics* must be format-neutral even when only one
+  back-end realizes it yet; unrealized formats degrade gracefully (IP2).
+- **IP2 — Never break the document.** A document using this extension never
+  fails to render, and never silently corrupts output, because of a marked
+  term: any characters in a visible term appear correctly in the index
+  (non-ASCII included), and formats without an index back-end pass the
+  visible text through untouched, with no artifacts. An escaping bug, a
+  crash on exotic input, or garbage in a back-end-less format is the
+  highest-severity bug class and earns a regression test forever.
+- **IP3 — Post-release syntax stability.** From the first tagged release
+  onward, documented syntax forms change only via a deprecation cycle.
+  Before that release the syntax is fluid: pre-release installs are
+  at-your-own-risk (stated in the README), with breaks recorded in the
+  changelog. The release line is the promise.
 
-1. Community-grade quality — docs, tests, and edge-case coverage are
-   commitments, not extras (from: audience = general community from day one).
-2. The syntax carries format-neutral meaning — LaTeX is the first back-end,
-   not the definition (from: boundary = full indexing suite).
-3. Marked text never silently corrupts or breaks a build (from: confirmed
-   warts — LaTeX escaping edge cases incl. `@ ! |` active inside `\index{}`,
-   version drift, toolchain variance).
-4. Entry values are structured data the extension interprets, never raw
-   back-end code (from: entry= design round; amends M01's raw pass-through).
-5. Syntax fluid pre-release; documented forms deprecation-cycled from first
-   tagged release (from: API-stability round).
-6. A stated Quarto version floor, eventually CI-tested, is part of the
-   contract (from: version-floor round).
-7. The extension's job ends at correct emitted output per format; toolchain
-   behavior beyond that is a documentation surface (from: toolchain round).
-8. Pure Pandoc-Lua, self-contained; `quarto add` is the whole install story
-   (from: dependency round).
-9. Non-ASCII terms appear correctly as a commitment; collation is best-effort
-   with sort keys (from: Unicode round).
-10. README and examples are discovery surface, held to listing quality (from:
-    distribution round).
+### Guiding
+
+- **GP1 — Community-grade, discoverable quality.** Docs, tests, and
+  edge-case coverage are commitments user-facing work carries by default;
+  README and examples are discovery surface held to extension-listing
+  quality.
+- **GP2 — The contract ends at correct emitted output.** Per format, the job
+  is correct output (e.g., valid `\index{}` LaTeX); whether the user's
+  toolchain then builds the index is a documentation surface — known failure
+  modes documented, never detected or managed.
+- **GP3 — Pure Pandoc-Lua, self-contained.** Zero runtime dependencies
+  beyond Quarto; `quarto add` is the entire install story. LaTeX-side needs
+  stay within packages bundled in mainstream TeX distributions.
+- **GP4 — Zero-config defaults.** The common case works with no
+  configuration; options are added compatibly for the uncommon case, never
+  required for the common one.
+- **GP5 — Minimal API surface.** Prefer one composable mechanism over
+  parallel syntaxes; a new syntax form must express something the existing
+  mechanism cannot.
+- **GP6 — End-to-end verification.** Acceptance evidence for
+  output-producing features runs to the final compiled artifact (a PDF with
+  a real index), not only intermediate output.
+
+Package choices (e.g., imakeidx) are current idiom, not commitments:
+principles bind "the LaTeX back-end," and swapping its implementation is an
+ordinary plan-gate choice.
 
 ## Architecture
 

@@ -1,14 +1,14 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-17 (M04 merged and archived; 3 candidate rows added, 3 lessons captured)_
+_Last hygiene check: 2026-08-17 (M05 merged and archived; 3 candidate rows added, 5 lessons captured)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
-| M05 | Multi-chapter book support | review | M04 | normal | milestones/M05-book-support.md |
+| M05 | Multi-chapter book support | done | M04 | normal | milestones/archive/M05-book-support.md |
 | M03 | HTML index back-end | done | M02 | normal | milestones/archive/M03-html-backend.md |
 | M02 | Cross-references (see / see also) | done | M01 | normal | milestones/archive/M02-cross-references.md |
 | M01 | LaTeX index extension skeleton | done | — | normal | milestones/archive/M01-latex-index-skeleton.md |

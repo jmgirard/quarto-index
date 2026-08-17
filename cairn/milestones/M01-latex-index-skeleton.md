@@ -57,22 +57,22 @@ control tokens, visible terms, PDF terms). The script header states the
 by-hand derivation rule (never copied from filter output); review re-derives
 the escaping-probe, sub-entry and `!!`-run rows independently of it.
 
-- [ ] AC1: The script renders `examples/demo.qmd` to LaTeX via the installed
+- [x] AC1: The script renders `examples/demo.qmd` to LaTeX via the installed
       extension with exit 0 and the `.tex` matches the expected-entries
       manifest exactly: each row's `\index{<entry>}` text matches its expected
       count, the total `\index` count equals the manifest total (extra or
       missing commands fail), and the manifest is non-empty.
-- [ ] AC2: The demo `.tex` contains `\usepackage{imakeidx}` (with or without
+- [x] AC2: The demo `.tex` contains `\usepackage{imakeidx}` (with or without
       options) followed later by `\makeindex`, both before `\begin{document}`,
       and exactly one `\printindex`, after all body content and before
       `\end{document}`.
-- [ ] AC3: `examples/control.qmd` — no marks, but mark-like text in a fenced
+- [x] AC3: `examples/control.qmd` — no marks, but mark-like text in a fenced
       code block and inline code — renders to LaTeX with exit 0 and a
       non-empty `.tex` with no `\index{`, `imakeidx`, `\makeindex`, or
       `\printindex`. Mark-like text survives as content: every control-manifest
       token — for each mark, an escape-free token containing that mark's own
       `entry=` value or visible text — matches its exact count.
-- [ ] AC4: The supported-forms list is normative — visible-term, custom-entry
+- [x] AC4: The supported-forms list is normative — visible-term, custom-entry
       (single-level `entry=`), sub-entry (`!`-separated levels, literal `!` via
       `!!`), and invisible-entry spans — and the probe set puts visible terms
       and `entry=` levels *each independently* through every character of the
@@ -95,12 +95,12 @@ the escaping-probe, sub-entry and `!!`-run rows independently of it.
       space — each as its own term and its own level, a literal `!` written
       `!!` — and compiles, has every entry accepted by makeindex with none
       rejected, and typesets every escape-domain character in its index.
-- [ ] AC5 (tracking hygiene): `cairn/PROFILE.md`'s `verify` slot names
+- [x] AC5 (tracking hygiene): `cairn/PROFILE.md`'s `verify` slot names
       `tests/run-tests.sh`; the script fails loudly (`set -euo pipefail`) and
       passes a self-test: against a deliberately broken fixture (one
       manifest-expected `\index` command removed, one altered, one spurious
       `\index` added) it exits non-zero and names the mismatching row(s).
-- [ ] AC6: With TinyTeX installed (user-approved at the plan gate; requires
+- [x] AC6: With TinyTeX installed (user-approved at the plan gate; requires
       network), `quarto render examples/demo.qmd --to pdf` exits 0 and
       `pdftotext -layout` output, whitespace-normalized, has an index heading,
       and the text following it lists every PDF-manifest term (the
@@ -109,7 +109,7 @@ the escaping-probe, sub-entry and `!!`-run rows independently of it.
       order. The script fails loudly if `tinytex`, `makeindex`, or `pdftotext`
       is missing, so this can never pass unrun; explicit `entry=` entries are
       verified by AC1 instead.
-- [ ] AC7: `examples/demo.qmd` renders to HTML with exit 0, and to beamer
+- [x] AC7: `examples/demo.qmd` renders to HTML with exit 0, and to beamer
       (sharing AC6's toolchain precondition) with exit 0 whose kept `.tex` is
       free of `\index`, `imakeidx`, `\makeindex`, `\printindex` while
       retaining visible text — the regression test for the IP2 failure review
@@ -340,6 +340,79 @@ engine; `escape_level` verified UTF-8-safe by construction.
 
 - 2026-08-16: corrects the 2026-08-16 gate-fixes line above and commit 1c3b3bb's message: both claimed `pdflatex` had been added to the tool guard. It had not — the edit's anchor did not match and the failure went unnoticed because the suite stayed green (the direct `pdflatex` call fails loudly on its own). The guard now really does check `pdflatex`. Also from review pass 4: `examples/dot.png` was one byte of text rather than a PNG, which would have broken any PDF render of the content probe; the image-survival assertions counted matching lines rather than occurrences; the empty-level warning claimed "emitted as written" even inside a folded tail, where it is dropped, contradicting the README; and the ROADMAP row for R19 was half false — Pandoc strips a whitespace-only term before the filter sees it, so only the LaTeX-branch half of that finding stands.
 - 2026-08-16: `examples/_probe.qmd`, a review subagent's scratch file, was swept into commit 1c3b3bb by a `git add -A` — the tracking rule against sweeping unrelated files into a commit. Removed in the next commit; recorded rather than rewritten (IP4).
+
+### Review pass 4 — evidence and findings
+
+Reviewed 2026-08-16 on `m01-latex-index-skeleton`, PR #1, after the descope
+round. Evidence is a fresh `tests/run-tests.sh --self-test` (exit 0, 13
+checks) from deleted artifacts, plus the reader checks noted per criterion.
+Three fresh lenses; no return.
+
+- AC1 ✓ demo rendered to LaTeX via `examples/_extensions` (asserted before the
+  render), exit 0; 23 manifest rows, 25 `\index` commands, totals equal, no
+  unexpected entry. Review re-derived the escaping-probe, sub-entry and
+  `!!`-run rows independently, including this round's changed row
+  `One!Two!Three, Four, Five` (fold with the empty level dropped); all matched.
+  The [O] lens independently re-derived all 23 rows and also matched.
+- AC2 ✓ `\usepackage{imakeidx}` precedes `\makeindex[intoc]`, both before
+  `\begin{document}`; exactly one `\printindex`, no `\index{` or `\section{`
+  after it. Its bibliography limitation is documented and ROADMAP'd.
+- AC3 ✓ control rendered exit 0, non-empty, none of the four tokens; all 7
+  control-manifest tokens matched their exact counts.
+- AC4 ✓ probe set pinned to the filter's escape table (16 characters) AND
+  required in both contexts of the demo; both the fold and empty-level
+  warnings asserted, naming the deep entry — proved discriminating by
+  reverting the fix, which fails the suite with the right message.
+  `examples/escaping.qmd` covers all 94 printable ASCII characters except
+  space in both contexts, compiles through Quarto's own PDF engine, has all
+  188 entries accepted with none rejected, and typesets every escape-domain
+  character. README documents exactly the four span forms, the ceiling and
+  the backslash layer.
+- AC5 ✓ PROFILE `verify` slot names the script; `set -euo pipefail`; the
+  planted-defect self-test now invokes the script itself via
+  `--fixture-check` and the script exits 1, naming all three rows.
+- AC6 ✓ PDF render exit 0; `pdftotext -layout` has an `Index` heading and the
+  text after it lists all 10 PDF-manifest terms, specials literal and in
+  order. Guard re-verified by stubbing TinyTeX absent: exits 1, never skips.
+- AC7 ✓ HTML exit 0; 22 visible-term rows totalling 24 marks, matching
+  `]{.index` minus `[]{.index`; per-row counts checked inside rendered
+  `.index` spans; no LaTeX tokens; no `entry=` leakage, the no-leak list
+  pinned by sweeping the source. beamer renders clean with no index tokens
+  and visible text kept. Content preservation probed: marking an image with
+  empty alt text indexes nothing and deletes nothing — discriminating, since
+  reverting the fix fails with "marking an image removed it from the HTML".
+
+**Consistency gate:** `cairn_validate.py` exit 0. Profile `generic` names no
+toolchain checks — clean no-op. No principle changed, so no impact report.
+
+**Findings, all fix-now, all applied before this gate:**
+- Q1 [O] `pdflatex` was invoked unguarded while the previous commit's message
+  and work log both claimed the guard had been added — a false record. The
+  guard now checks it and the claim is corrected by a superseding line.
+- Q2 [O] `examples/_probe.qmd`, a review subagent's scratch file, had been
+  swept into a commit by `git add -A`. Removed; recorded, not rewritten.
+- Q3 [O] `examples/dot.png` was one byte of text, not a PNG — any PDF render
+  of the content probe would have broken on it. Replaced with a real 1x1 PNG.
+- Q4 [O] The empty-level warning claimed "emitted as written" even inside a
+  folded tail, where it is dropped, contradicting the README. Reworded.
+- Q5 [O] The image-survival assertions counted matching lines, not
+  occurrences. Fixed.
+- Q6 [S] Two ROADMAP rows still listed the script-exit-code item as open
+  after this milestone completed it; the R14 row did not say why it is no
+  longer benign. Both trimmed.
+- Q7 [S] P1's content-preservation fix had no regression test, which IP2
+  requires for this class. `examples/content.qmd` added.
+- Q8 [O] The ROADMAP row for R19 was half false — Pandoc strips a
+  whitespace-only term before the filter sees it. Row corrected to its
+  surviving half (the warning fires only on the LaTeX branch).
+
+**Logged, not actioned (ROADMAP rows exist):** AC4's positional requirement
+is a reader check, not asserted by code; the `Index` heading anchor would be
+ambiguous under `toc: true`; makeindex acceptance evidence comes from the
+side build rather than the shipping one; AC1/AC7 manifests have no
+independent count; R12's leading/medial empty level is still silent loss,
+carved out in Scope and ROADMAP'd; bare unquoted `entry=` values escape both
+sweeps.
 
 ## Decisions
 

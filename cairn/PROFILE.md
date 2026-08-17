@@ -17,9 +17,19 @@ test command; the other slots stand as-is until a richer profile is authored.
 
 ## verify
 The command(s) `/milestone-implement` and `/hotfix` run to check a task before
-ticking it off. Generic default: **the repo's own test command** — declare it
-here (e.g. `make test`, `npm test`, `pytest`). If the repo has none, state
-"no automated verify" and rely on the acceptance-criteria evidence.
+ticking it off:
+
+    tests/run-tests.sh
+
+Add `--self-test` to also run the planted-defect self-test (one manifest
+entry removed, one altered, one spurious added), which the pre-review check
+uses:
+
+    tests/run-tests.sh --self-test
+
+The script fails loudly (`set -euo pipefail`) and refuses to skip its
+end-to-end PDF check: a missing TinyTeX, `makeindex`, or `pdftotext` is an
+error, never a silent pass.
 
 ## consistency-gate
 Toolchain checks `/milestone-review` runs *in addition to* the universal

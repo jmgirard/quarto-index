@@ -1,0 +1,61 @@
+---
+title: "quarto-index demo"
+# Smart typography is off so the escaping probes below reach the filter as
+# the ASCII characters they are written as. With Quarto's default `smart`,
+# a typed `"` becomes a curly quote in the document text, and the index
+# entry derived from a visible term correctly follows the rendered text —
+# which would leave makeindex's quote character unexercised here.
+from: markdown-smart
+filters:
+  - index
+---
+
+# Supported forms
+
+The four supported span forms, each exercised at least once.
+
+**Visible term.** The word [pandoc]{.index} is indexed by its own text.
+Marking [pandoc]{.index} again, and a third time [pandoc]{.index}, adds
+further locators to the same entry.
+
+**Custom entry.** This [phrase]{.index entry="Custom Entry"} stays visible
+but indexes under a different term.
+
+**Sub-entries.** A [nested term]{.index entry="Top!Middle!Leaf"} indexes
+three levels deep.
+
+**Invisible entry.** This sentence carries a mark with no visible
+text.[]{.index entry="Ghost!Sub"}
+
+# Level syntax probes
+
+A literal exclamation mark is written `!!`.
+
+Leading: [lead]{.index entry="!!Bang leads"}.
+Medial: [mid]{.index entry="Wow!!Really"}.
+Trailing: [trail]{.index entry="Trail bang!!"}.
+Odd run: [odd]{.index entry="A!!!B"}.
+Backslash level: [bslash]{.index entry="\\"}.
+Old spelling: [old]{.index entry="Alpha\!Beta"}.
+Empty level: [empty]{.index entry="A!!B!"}.
+Too deep: [deep]{.index entry="One!Two!Three!Four!Five!"}.
+
+# Escaping probes
+
+Every character of the escape domain across visible terms. These
+are kept short so each fits one line of the two-column printed index:
+[pct % amp & hash #]{.index}, [us \_ brace \{ \}]{.index},
+[bs \\ tilde \~ caret \^]{.index}, [dollar \$ at @ bar \|]{.index}, and
+[bang ! quote "]{.index}.
+
+The same characters in an `entry=` level:
+[entry specials]{.index entry="Specials % & # _ { } \\ ~ ^ $ @ | !! \" < >"}.
+
+Leading and trailing specials in visible terms:
+[\{Braced\}]{.index} and [\~tilde dollar\$]{.index}.
+
+Angle brackets, which Pandoc's own LaTeX writer escapes:
+[less \< more \>]{.index}.
+
+Non-ASCII, which IP2 requires to appear correctly in the index:
+[café naïve]{.index} and [Grüße]{.index entry="Grüße!Straße"}.

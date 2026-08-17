@@ -1,3 +1,12 @@
 cairn/references/sources/
 cairn/.merge-approved
 cairn/.merge-approved.pending
+
+# Render artifacts
+examples/*.tex
+examples/*.pdf
+examples/*.html
+examples/*_files/
+examples/.quarto/
+/.quarto/
+tests/.work/

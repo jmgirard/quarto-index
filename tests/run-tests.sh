@@ -569,6 +569,40 @@ print(f'ok   {label}: the generated index matches all {len(expected)} '
 PY
 }
 
+# Every generated id in a rendered file is document-unique, and every link
+# inside the generated index resolves to an id in that same file. Applied to
+# each HTML fixture, including the two that carry the shapes demo.qmd's
+# invariants deliberately exclude.
+check_html_index_links() {
+  local htmlfile="$1" label="$2"
+  HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+  HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - "$htmlfile" "$label" <<'PY'
+import os, sys
+from collections import Counter
+sys.path.insert(0, 'tests')
+import htmlindex as H
+html_path, label = sys.argv[1:3]
+doc = H.parse(html_path)
+ids = H.all_ids(doc)
+dupes = sorted({i for i, n in Counter(ids).items() if n > 1})
+if dupes:
+    print(f'FAIL: {label}: duplicate id(s) in {html_path}: {dupes}',
+          file=sys.stderr)
+    sys.exit(1)
+section = H.find_id(doc, os.environ['HTML_SECTION_ID'])
+links = H.find_all(section, 'a')
+dangling = sorted({a.attrs.get('href', '') for a in links
+                   if a.attrs.get('href', '').startswith('#')
+                   and a.attrs['href'][1:] not in set(ids)})
+if dangling:
+    print(f'FAIL: {label}: link(s) in the generated index of {html_path} '
+          f'resolve to no id in the same file: {dangling}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: every id unique and all {len(links)} index links resolve '
+      f'in {html_path}')
+PY
+}
+
 # ---------------------------------------------------------------------------
 # Tool guard (AC6): fail loudly rather than skipping the end-to-end check.
 # ---------------------------------------------------------------------------
@@ -1022,10 +1056,13 @@ def marks(src):
 
     The attribute block ends at the first `}` outside a quoted value — an
     `entry=` value may itself contain braces, so a non-quote-aware scan cuts
-    the block short and misreads the mark.
+    the block short and misreads the mark. The class need not come first
+    either: `[t]{#id .index}` is the same mark as `[t]{.index}`, and a scanner
+    that only recognized the second would leave the first out of the count it
+    is the whole point of deriving from source.
     """
     found = []
-    for m in re.finditer(r'\[((?:\\.|[^\]\\])*)\]\{\.index', src):
+    for m in re.finditer(r'\[((?:\\.|[^\]\\])*)\]\{', src):
         i, quoted = m.end(), False
         while i < len(src):
             c = src[i]
@@ -1037,7 +1074,9 @@ def marks(src):
             elif not quoted and c == '}':
                 break
             i += 1
-        found.append((re.sub(r'\\(.)', r'\1', m.group(1)), src[m.end():i]))
+        block = src[m.end():i]
+        if re.search(r'\.index(?![-\w])', block):
+            found.append((re.sub(r'\\(.)', r'\1', m.group(1)), block))
     return found
 
 
@@ -1052,7 +1091,7 @@ if textless:
           f'mark, but {len(textless)} mark(s) have neither visible text nor '
           f'entry=', file=sys.stderr)
     sys.exit(1)
-authored = [a for _text, a in all_marks if re.search(r'\{?#[-\w]', a)]
+authored = [a for _text, a in all_marks if re.search(r'#[-\w]', a)]
 if authored:
     # A mark carrying an id of the author's own keeps it and mints nothing.
     print(f'FAIL: M03-AC3: the anchor count assumes demo.qmd holds no mark '
@@ -1258,6 +1297,7 @@ MANIFEST
 quarto render examples/html-index.qmd --to html > "$WORK/html-index.log" 2>&1 \
   || { tail -20 "$WORK/html-index.log" >&2; fail "M03-AC4: html-index.qmd failed to render to HTML"; }
 check_html_index_manifest examples/html-index.html "$HTML_INDEX_MANIFEST" "M03-AC4"
+check_html_index_links examples/html-index.html "M03-AC3"
 
 # M03-AC3 — a minted id must never be an id the document already uses. Two
 # elements answering to one name is not a cosmetic problem: the browser
@@ -1316,6 +1356,7 @@ MANIFEST
 quarto render examples/placement.qmd --to html > "$WORK/placement-html.log" 2>&1 \
   || { tail -20 "$WORK/placement-html.log" >&2; fail "M03-AC2: placement.qmd failed to render to HTML"; }
 check_html_index_manifest examples/placement.html "$PLACEMENT_HTML_INDEX" "M03-AC2"
+check_html_index_links examples/placement.html "M03-AC3"
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
 python3 - examples/placement.html <<'PY'
@@ -1490,14 +1531,24 @@ qmd = open(qmd_path, encoding='utf-8').read()
 # attribute values that must not leak are legitimately printed inside the
 # index section. So the section is removed from the tree first, and everything
 # below reads what is left.
-# decode=False: this manifest's rows are stated in the markup layer (`&amp;`,
-# `&lt;`), which is the meaning they have carried since M01.
-doc = H.parse(html_path, decode=False)
-section = H.find_id(doc, os.environ['HTML_SECTION_ID'])
-if section is None:
-    print('FAIL: AC7: no generated index section in demo.html', file=sys.stderr)
-    sys.exit(1)
-H.strip_subtree(doc, section)
+# The document is read TWICE, because the two halves are stated in different
+# layers and comparing across layers is how a leak hides.
+#   markup layer (decode=False): the visible-terms manifest's rows are written
+#     as `&amp;`/`&lt;`, the meaning they have carried since M01.
+#   text layer (decode=True): the no-leak values are the literal strings the
+#     author wrote. Swept against markup, a leaked value containing `&`, `<`,
+#     `>` or `"` would be rendered escaped and never match itself — the
+#     escaping-hostile values are exactly the ones IP2 cares most about, so
+#     that comparison would report "no leak" for the worst leak there is.
+markup = H.parse(html_path, decode=False)
+doc = H.parse(html_path, decode=True)
+for tree in (markup, doc):
+    section = H.find_id(tree, os.environ['HTML_SECTION_ID'])
+    if section is None:
+        print('FAIL: AC7: no generated index section in demo.html',
+              file=sys.stderr)
+        sys.exit(1)
+    H.strip_subtree(tree, section)
 
 rows, total = [], 0
 for line in open(vis_path, encoding='utf-8'):
@@ -1529,7 +1580,8 @@ from collections import Counter
 # Found structurally rather than by matching the serialized tag: the HTML
 # writer orders attributes as it likes, and the marks now carry an anchor id
 # alongside their class.
-spans = Counter(t for t in (H.text(n) for n in H.find_all(doc, 'span', 'index'))
+spans = Counter(t for t in (H.text(n)
+                            for n in H.find_all(markup, 'span', 'index'))
                 if t != '')
 bad = []
 for count, text in rows:
@@ -1567,7 +1619,9 @@ if unaccounted:
     sys.exit(1)
 
 # A space at every element boundary, so a value that only exists by running
-# two elements together is not reported as text a reader can see.
+# two elements together is not reported as text a reader can see. Read from
+# the DECODED tree, so a value is compared with the text a reader would
+# actually see if it leaked.
 body = H.text(doc, sep=' ')
 def parsed(v):
     out, i = [], 0

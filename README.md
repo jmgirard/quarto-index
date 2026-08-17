@@ -189,17 +189,28 @@ Placement is automatic; there is no option to put the index elsewhere yet.
 ### HTML
 
 For HTML the extension appends an index of its own to the end of the body: an
-unnumbered level-one **Index** heading carrying the id `qi-index`, which is
-listed in the table of contents, followed by a nested bullet list of the
-entries. It is built out of Pandoc's own document nodes rather than out of HTML
-text, so Pandoc's writer does the escaping. No stylesheet is added; the class
-names below are hooks for styling it yourself.
+unnumbered level-one **Index** heading, in a section carrying the id
+`qi-index`, listed in the table of contents, followed by a nested bullet list
+of the entries. It is built out of Pandoc's own document nodes rather than out
+of HTML text, so Pandoc's writer does the escaping. No stylesheet is added; the
+class names below are hooks for styling it yourself.
 
-Each mark that contributes a locator gets an anchor on its own span —
-`qi-mark-1`, `qi-mark-2`, and so on, numbered in the order the marks are
-written. A mark that already carries an id of your own keeps it, and the index
-links to that id instead of minting one. Each entry carries an id too,
-`qi-entry-1` onward, so that a cross-reference can link to it.
+Each mark that contributes a locator needs somewhere for its locator to link
+to, and the extension prefers an id that already exists over one of its own:
+
+- a mark carrying an id of your own keeps it, and the index links to that id;
+- a mark inside a section heading links to the heading's own id, so the
+  locator lands at the start of that section. Nothing is added inside the
+  heading, because Quarto copies a heading's contents into the sidebar table
+  of contents, and an id in there would end up in the page twice;
+- every other mark gets an anchor on its own span — `qi-mark-1`, `qi-mark-2`
+  and so on, numbered in the order the marks are written.
+
+Each entry carries an id too, `qi-entry-1` onward, so that a cross-reference
+can link to it. Both kinds of generated id skip any name your document already
+uses, so writing `qi-mark-1` yourself is safe: the numbering steps over it and
+your element keeps the name. That leaves gaps in the sequence, which is
+harmless — the numbers are link targets, not a count of anything.
 
 An entry's locators are numbered links to those anchors: `1`, `2`, `3` for the
 first, second and third time the term is marked, restarting at `1` for each
@@ -218,7 +229,11 @@ A document with no marks gets no index section and no anchors.
 ### Other formats
 
 In beamer, and in any other format with no index back-end, marks pass through:
-the visible text is preserved and no index artifacts appear. Beamer slides
+the visible text is preserved exactly as written, no index is generated, and
+no LaTeX or index markup is emitted. The mark itself is still a span, so in a
+format that can carry span attributes — GitHub-flavoured markdown does,
+through inline HTML — its class and attribute values travel with it, just as
+any other span's would. Beamer slides
 have no index environment of their own, so a `\printindex` there would abort
 the render — and a marked term must never break a document, so beamer is
 deliberately not an index target rather than a broken one.
@@ -276,6 +291,7 @@ quarto render examples/demo.qmd --to html
 tests/run-tests.sh --self-test
 ```
 
-The suite renders the examples to LaTeX, HTML, PDF, beamer and GitHub-flavoured
-markdown, and checks the output against hand-derived manifests. It needs TinyTeX, `makeindex` and
-`pdftotext`, and fails loudly rather than skipping if any is missing.
+The suite renders the examples to LaTeX, HTML, PDF, beamer and
+GitHub-flavoured markdown, and checks the output against hand-derived
+manifests. It needs TinyTeX, `makeindex` and `pdftotext`, and fails loudly
+rather than skipping if any is missing.

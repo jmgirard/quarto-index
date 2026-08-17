@@ -49,107 +49,100 @@ criteria audit applied).
 
 ## Acceptance criteria
 
-- [ ] AC1: `tests/run-tests.sh --self-test` passes. Existing M01/M02 checks
-      keep their meaning, with two owned exceptions: the AC7/M02-AC4 no-leak
-      block is retargeted (AC3), and the xref-conflict HTML comment's
-      "no back-end" rationale is updated (the clash report stays LaTeX-only
-      as a makeindex property). As one-shot review evidence — never a
-      checked-in snapshot — `examples/demo.qmd` rendered `--to latex` on the
-      branch is diffed against the same render at the merge-base on the same
-      machine: the emitted `.tex` is byte-identical.
+- [ ] AC1: `tests/run-tests.sh --self-test` passes, every M01/M02 check
+      keeping its meaning but for two owned exceptions: the no-leak block is
+      retargeted (AC3) and the xref-conflict clash rationale is reworded (the
+      clash stays LaTeX-only, being a makeindex property). As one-shot review
+      evidence, never a checked-in snapshot: `examples/demo.qmd --to latex` on
+      the branch is byte-identical to the same render at the merge-base, one
+      machine.
 - [ ] AC2: `examples/demo.qmd --to html` yields exactly one generated index
-      section (pinned section id). Its entries match a hand-derived manifest
-      row-for-row — entry text, nesting depth, order under the normative
-      collation rule, per-entry locator count — and the manifest is
-      exhaustive: a rendered entry absent from it fails. The Latin-1 rows
-      (café naïve; Grüße → Straße) pin IP2's non-ASCII clause. The same
-      manifest discipline covers a new placement fixture whose repeated
-      entry's marks sit in a heading, a table cell, and a footnote, pinning
-      locator numbering where Pandoc relocates content. The visible-terms
-      manifest rows are unchanged; extraction is retargeted
+      section (pinned id), whose entries match a hand-derived manifest
+      row-for-row — text, depth, order under the normative collation rule,
+      per-entry locator count — exhaustively: a rendered entry absent from the
+      manifest fails. Latin-1 rows (café naïve; Grüße → Straße) pin IP2's
+      non-ASCII clause. The same discipline covers a placement fixture whose
+      repeated entry is marked in a heading, a table cell and a footnote,
+      pinning locator numbering where the renderer relocates content. The
+      visible-terms manifest rows are unchanged; its extraction is retargeted
       (attribute-order-proof, scoped outside the generated section).
-- [ ] AC3: In demo.html, every locator-contributing mark emits exactly one
-      anchor matching the pinned id scheme, document-unique; every href
-      inside the generated index section resolves to an id in the same file;
-      the anchor count is pinned to a source-derived mark count whose
-      fixture invariant (demo.qmd holds no textless mark) the check reports
-      by name. The reworked no-leak check passes: every `entry=`/`see=`/
-      `see-also=` value is absent from the rendered body with the generated
-      index section excised, with the source-pinned completeness check
-      retained.
+- [ ] AC3: In demo.html every locator-contributing mark emits exactly one
+      anchor — an id the author wrote, its enclosing heading's id, or a minted
+      id in the pinned scheme — document-unique; every href inside the index
+      section resolves to an id in the same file; the anchor count is pinned
+      to a source-derived mark count, and every fixture invariant that count
+      rests on is asserted and named in the check's failure message, so a
+      violated invariant reports itself rather than surfacing as a bare count
+      mismatch. Those same three properties hold for `examples/placement.qmd`
+      (a mark in a heading under `toc: true`) and `examples/html-index.qmd`
+      (marks carrying ids inside the minted namespace) — the shapes demo.qmd's
+      invariants exclude. The reworked no-leak check passes: every
+      `entry=`/`see=`/`see-also=` value is absent from the rendered
+      document's text, index section excised, compared in a single layer so a
+      value containing `&`, `<`, `>` or `"` is matched against its escaped
+      rendering and an escaping leak cannot pass unseen; the source-pinned
+      completeness check is retained. Scope: rendered HTML text only — Pandoc
+      carries attribute values on the span itself, and whether that markup
+      residue is acceptable in pass-through formats is tracked separately.
 - [ ] AC4: Cross-reference entries in generated HTML indexes render with M02
       target semantics, labelled see/see also, hyperlinked exactly when the
-      target key exists (parsed-level-list match), plain text otherwise;
-      linked, unlinked, and the colliding-string negative (a `: `-containing
-      single level vs a real two-level target) are all fixture-present in
-      `examples/xref-conflict.qmd`'s HTML render, manifest-checked; no
-      cross-reference mark contributes a locator (fenced by AC2's exhaustive
-      locator counts).
+      target key exists (parsed-level-list match) and plain otherwise; the
+      linked, unlinked and colliding-string cases are fixture-present and
+      manifest-checked, as are a repeated target (one cross-reference) and two
+      level-list-distinct targets on one key that print alike (both kept). No
+      cross-reference mark contributes a locator, fenced by AC2's exhaustive
+      locator counts.
 - [ ] AC5: `examples/escaping.qmd --to html`: for every printable ASCII
-      character except space (the fixture's by-construction domain, pinned
-      by the existing coverage check), the set of entry texts extracted from
-      the generated index by an HTML-parsing check contains that character
-      as an exact element.
-- [ ] AC6: Negatives: `examples/control.qmd --to html` contains no generated
-      index section and no anchor-scheme id; `examples/demo.qmd --to gfm`
-      renders clean with no index section and no anchor artifacts (the
-      newly format-neutral warnings run there); the existing beamer checks
+      character except space (the fixture's by-construction domain, pinned by
+      the existing coverage check), the set of entry texts extracted from the
+      generated index by an HTML-parsing check contains that character as an
+      exact element.
+- [ ] AC6: Negatives: `examples/control.qmd --to html` has no generated
+      section and no anchor-scheme id; `examples/demo.qmd --to gfm` renders
+      clean with no index section or anchor artifacts, the newly
+      format-neutral warnings still reaching its author while the makeindex
+      level-ceiling warning reaches neither gfm nor HTML; the beamer checks
       pass.
-- [ ] AC7: README documents the HTML back-end. Grep-pinned in the suite,
-      SUPPORTED_FORMS-style: the three stale pass-through sentences are gone
-      ("formats with no index back-end — HTML and beamer", "In formats with
-      no index back-end, a cross-reference mark is simply a mark",
-      "LaTeX/PDF is the back-end that ships today"); a beamer-scoped
-      pass-through sentence is present; and each row of an enumerated
-      divergence list appears — no level ceiling in HTML, clash warning
-      LaTeX-only, the collation rule, locators as numbered links, targets
-      hyperlinked when resolvable, cross-references carry no locator in
-      either back-end.
+- [ ] AC7: README documents the HTML back-end, grep-pinned in the suite
+      SUPPORTED_FORMS-style: the three stale pass-through sentences are gone,
+      a beamer-scoped pass-through sentence is present, and every row of the
+      enumerated back-end divergence list appears.
 
 ## Coverage
 
 - AC1 → T1, T5
-- AC2 → T2, T4, T5
-- AC3 → T1, T5
-- AC4 → T3, T6
+- AC2 → T2, T4, T5, T9
+- AC3 → T1, T5, T9, T10, T11
+- AC4 → T3, T6, T8
 - AC5 → T5
-- AC6 → T5
-- AC7 → T7
+- AC6 → T5, T10
+- AC7 → T7, T11
 
 ## Tasks
 
-- [x] T1: Refactor the Span pass ([index.lua](../../_extensions/index/index.lua)):
-      move format-neutral warnings (empty-level, reworded) before the
-      back-end branch, keep clamp+fold LaTeX-only, add an HTML branch that
-      records marks and emits pinned-scheme anchors for locator-contributing
-      marks; `html` match only.
-- [x] T2: HTML Pandoc pass: build the index section from AST nodes — pinned
-      section id, unnumbered TOC heading, normative collation, unlimited
-      nesting, numbered locator links.
-- [x] T3: HTML cross-references: labels, parsed-level-list target matching,
-      links, no locator; update xref-conflict.qmd's stale comment rationale.
-- [x] T4: New placement fixture (heading / table cell / footnote) with
-      hand-derived manifest.
-- [x] T5: Suite rework: retarget visible-terms extraction; scope no-leak
-      outside the index section; add exhaustive HTML index manifests, href
-      resolution, anchor counts with named invariant; escaping-probe HTML
-      check (exact-element); gfm + control negatives; document the
-      review-time merge-base `.tex` diff procedure.
-- [x] T6: Extend xref-conflict.qmd with linked-target and colliding-string
-      cases; hand-derive its HTML index manifest.
-- [x] T7: README HTML section (divergence list, stale sentences replaced)
-      with suite grep pins; fill DESIGN.md Architecture (two back-ends,
-      shared format-neutral layer).
-- [x] T8: F3 — dedupe cross-references on parsed level lists, not the joined
-      string; fixture with two level-list-distinct targets on one key.
-- [x] T9: F1/F2 — id assignment moves to the document pass: a mark inside a
-      heading takes the heading's own id, and minted anchor/entry ids skip
-      every id the document already uses.
-- [x] T10: F5/F6/F7/F10 — collation fold-tie oracle; assert the 3-level fold
-      warning is absent outside LaTeX; TOC claim exercised; AC3's second
-      fixture invariant named and asserted.
-- [ ] T11: F8/F9/F12 — README/DESIGN corrections; AC3 no-leak wording
-      narrowed via the amendment gate (F4); follow-up candidate rows.
+- [x] T1: Span pass — format-neutral warnings before the back-end branch,
+      clamp+fold LaTeX-only, HTML branch recording marks; `html` match only.
+- [x] T2: HTML Pandoc pass — index section from AST nodes: pinned section id,
+      unnumbered TOC heading, collation, unlimited nesting, locator links.
+- [x] T3: HTML cross-references — labels, parsed-level-list target matching,
+      links, no locator; xref-conflict rationale reworded.
+- [x] T4: Placement fixture (heading / table cell / footnote) + manifest.
+- [x] T5: Suite rework — retargeted visible-terms extraction, no-leak scoped
+      outside the index, HTML manifests, href resolution, anchor counts,
+      escaping-probe HTML check, gfm + control negatives, merge-base procedure.
+- [x] T6: xref-conflict gains linked-target and colliding-string cases +
+      manifest.
+- [x] T7: README HTML section with suite grep pins; DESIGN Architecture.
+- [x] T8: Review F3 — dedupe cross-references on level lists, not the joined
+      string; html-index fixture.
+- [x] T9: Review F1/F2 — id assignment moves to the document pass; a mark in a
+      heading takes the heading's id; minted ids skip every id already used.
+- [x] T10: Review F5/F6/F7/F10 — collation fold-tie oracle, fold warning
+      asserted absent outside LaTeX, TOC claim exercised, AC3's invariants
+      named and asserted.
+- [x] T11: Review F8/F9/F12 — README/DESIGN corrections; AC3 narrowed via the
+      amendment gate (F4), including the single-layer no-leak comparison; the
+      remaining findings recorded as candidate rows.
 
 ## Work log
 
@@ -187,6 +180,10 @@ criteria audit applied).
 - 2026-08-17: T9 (review F1/F2) — id assignment moved out of the per-mark pass into the document pass, which collects every id the author wrote before minting any. A mark inside a heading now borrows the heading's own id instead of minting one inside it, since Quarto copies heading contents into the sidebar TOC and a link would resolve to the copy. placement.qmd gains toc:true (the repro, and it exercises the TOC claim); html-index.qmd gains marks carrying qi-mark-1 and qi-entry-1. Both fences verified discriminating by reverting each fix in turn.
 
 - 2026-08-17: T10 (review F5/F6/F7/F10) — html-index.qmd gains a fold-tie pair written in the wrong order, so the collation tie-break has an oracle (reversing it now fails); the fold warning is asserted absent from the HTML and gfm logs, so the makeindex ceiling cannot follow the format-neutral warnings out of the LaTeX branch (moving clamp_levels now fails); placement.qmd's TOC exercises the documented TOC claim; AC3's anchor arithmetic now names and asserts all three fixture invariants it rests on, not one.
+
+- 2026-08-17: amendment return: AC3 — "every `entry=`/`see=`/`see-also=` value is absent from the rendered document's text, index section excised, compared in a single layer so a value containing `&`, `<`, `>` or `\"` is matched against its escaped rendering and an escaping leak cannot pass unseen"
+- 2026-08-17: T11 (review F8/F9/F12/F4) — README corrected (the section id sits on the wrapping section, not the h1; the heading-id and id-skipping behaviour documented; the pass-through claim narrowed to what is true, since a mark's span attributes do travel into gfm) and rewrapped; DESIGN Architecture updated for document-pass id assignment. AC3 amended through the gate: a fresh [O] reader returned accept-with-changes and found the no-leak sweep compared raw values against markup-layer text, so an escaping-hostile leak could never match itself — verified, fixed by comparing in one decoded layer, and verified caught. The source mark scanner now also sees `[t]{#id .index}`. Five findings recorded as candidate rows.
+- 2026-08-17: plan-owned body exceeded the 150-line cap after the amendment; Acceptance criteria compressed, then Tasks, with every promise unchanged in force. Coverage remapped onto T8-T11.
 
 ## Decisions
 

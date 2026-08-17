@@ -118,11 +118,19 @@ Two back-ends ship:
   by whichever mechanism that character needs, clamped to makeindex's
   three-level ceiling, and a term marked two incompatible ways is reported
   document-wide.
-- **HTML** (`FORMAT` containing `html`): an anchor on each
-  locator-contributing mark span, and an index section appended, built out of
+- **HTML** (`FORMAT` containing `html`): a link target for each
+  locator-contributing mark, and an index section appended, built out of
   Pandoc AST nodes so that Pandoc's writer owns escaping (IP2). No level
   ceiling, entries sorted by the filter itself, locators and resolvable
   cross-reference targets as links.
+
+  Ids are assigned in the **Pandoc** pass, not at the mark: an id must not
+  collide with one the author wrote, and that is only knowable once the whole
+  document has been seen. A mark reuses an id where one already exists — its
+  own, or its enclosing heading's — and is otherwise tagged by the Span pass
+  and given a minted id later. Nothing is minted inside a heading, because
+  Quarto copies a heading's inlines into the table of contents and the id
+  would then appear twice.
 
 Every other format — beamer, revealjs, epub, gfm — takes neither branch and
 passes marks through untouched (IP2).

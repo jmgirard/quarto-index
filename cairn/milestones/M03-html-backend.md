@@ -130,7 +130,7 @@ criteria audit applied).
       links, no locator; update xref-conflict.qmd's stale comment rationale.
 - [x] T4: New placement fixture (heading / table cell / footnote) with
       hand-derived manifest.
-- [ ] T5: Suite rework: retarget visible-terms extraction; scope no-leak
+- [x] T5: Suite rework: retarget visible-terms extraction; scope no-leak
       outside the index section; add exhaustive HTML index manifests, href
       resolution, anchor counts with named invariant; escaping-probe HTML
       check (exact-element); gfm + control negatives; document the
@@ -162,6 +162,9 @@ criteria audit applied).
 - 2026-08-16: T3+T6 — xref-conflict.qmd gains a resolving two-level target (sigma), a colliding single-level target that prints identically and must stay plain (rho), and the entry they name; hand-derived HTML manifest (8 rows) plus a check that the resolving link points at the sub-entry itself. The suite's LaTeX-only clash rationale is rewritten: the clash is a makeindex property, not the absence of a back-end.
 
 - 2026-08-16: T4 — new examples/placement.qmd marks one term in a heading, a table cell and a footnote, plus a mark carrying an author id. Hand-derived manifest plus checks that locators are numbered in source order, that the footnote anchor really is relocated behind a later-written mark (so the pin is not vacuous), and that the author id is kept and linked.
+
+- 2026-08-16: T5 — escaping-probe HTML check (94 characters as exact elements of the extracted entry set), control + gfm negatives, and the review-time merge-base `.tex` diff procedure documented at the AC1 render site. .gitignore gains the gfm and epub artifacts.
+- 2026-08-16: discrimination probes (LESSONS M01): forcing the HTML branch on for every format puts `# Index` and 107 `qi-` artifacts into the gfm output, so the AC6 negative fires rather than passing vacuously. Quarto's FORMAT is `commonmark` for gfm, `revealjs` for revealjs and `epub` for epub — none carries `html`, which is what makes the Scope pass-through claim hold.
 
 ## Decisions
 

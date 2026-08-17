@@ -6,6 +6,8 @@ cairn/.merge-approved.pending
 examples/*.tex
 examples/*.pdf
 examples/*.html
+examples/*.md
+examples/*.epub
 examples/*_files/
 examples/.quarto/
 /.quarto/

@@ -648,6 +648,24 @@ print(f'ok   AC4: probe set pinned to the filter escape table ({len(keys)} '
       f'chars), each probed in both contexts')
 PY
 
+# ---------------------------------------------------------------------------
+# REVIEW-TIME EVIDENCE, NOT A CHECK: the LaTeX back-end is untouched.
+# A checked-in golden `.tex` would be a snapshot, which the oracle rule above
+# forbids. Instead the reviewer compares the branch's render against the same
+# render at the merge-base, on one machine, and reads the diff — expected to be
+# empty. From a clean tree on the milestone branch:
+#
+#   BASE=$(git merge-base HEAD "$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|origin/||')")
+#   quarto render examples/demo.qmd --to latex && cp examples/demo.tex /tmp/branch-demo.tex
+#   git checkout "$BASE" -- _extensions/index/index.lua
+#   quarto render examples/demo.qmd --to latex && cp examples/demo.tex /tmp/base-demo.tex
+#   git checkout HEAD -- _extensions/index/index.lua
+#   diff /tmp/base-demo.tex /tmp/branch-demo.tex
+#
+# The last line restores the branch's filter; check `git status` is clean
+# before trusting anything rendered afterwards.
+# ---------------------------------------------------------------------------
+
 # The HTML back-end's three identifiers are a public surface — a reader's URL
 # and an author's CSS hold on to them — so the suite's copies are pinned to
 # the filter's own constants, exactly as the dual-target command name is.
@@ -1197,6 +1215,85 @@ print('ok   M03-AC2: locators are numbered in source order across a heading, a '
       'table cell and a relocated footnote, and an author-supplied id is kept '
       'and linked')
 PY
+
+# ---------------------------------------------------------------------------
+# M03-AC5 — every printable ASCII character reaches a generated HTML index as
+# an entry of its own. The domain is the fixture's by construction and is
+# pinned by the coverage check above; this asserts the characters arrive.
+# Exact elements of the extracted set, not substrings: `<` is a substring of
+# every entry once the markup is included, so a containment test would pass on
+# an index that printed nothing at all.
+# ---------------------------------------------------------------------------
+quarto render examples/escaping.qmd --to html > "$WORK/esc-html.log" 2>&1 \
+  || { tail -20 "$WORK/esc-html.log" >&2; fail "M03-AC5: escaping.qmd failed to render to HTML"; }
+
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/escaping.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+section = H.find_id(doc, os.environ['HTML_SECTION_ID'])
+if section is None:
+    print('FAIL: M03-AC5: escaping.html has no generated index section',
+          file=sys.stderr)
+    sys.exit(1)
+terms = {r['term'] for r in H.index_entries(section)}
+domain = [chr(c) for c in range(0x21, 0x7F)]
+missing = [c for c in domain if c not in terms]
+if missing:
+    print(f'FAIL: M03-AC5: character(s) absent from the generated index as an '
+          f'entry of their own: {missing}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M03-AC5: all {len(domain)} printable ASCII characters (space '
+      f'excluded) are entries of the generated HTML index, {len(terms)} '
+      f'entries in all')
+PY
+
+# ---------------------------------------------------------------------------
+# M03-AC6 — negatives. A document with no marks gets no section and no
+# anchors, and a format with no index back-end gets neither, while the
+# format-neutral warnings still reach its author.
+# ---------------------------------------------------------------------------
+quarto render examples/control.qmd --to html > "$WORK/control-html.log" 2>&1 \
+  || { tail -20 "$WORK/control-html.log" >&2; fail "M03-AC6: control.qmd failed to render to HTML"; }
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - examples/control.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+section_id = os.environ['HTML_SECTION_ID']
+prefixes = (os.environ['HTML_ANCHOR_PREFIX'], os.environ['HTML_ENTRY_PREFIX'])
+stray = [i for i in H.all_ids(doc)
+         if i == section_id or i.startswith(prefixes)]
+if stray:
+    print(f'FAIL: M03-AC6: a document with no marks carries generated id(s): '
+          f'{stray}', file=sys.stderr)
+    sys.exit(1)
+print('ok   M03-AC6: a document with no marks gets no index section and no '
+      'anchors')
+PY
+
+quarto render examples/demo.qmd --to gfm > "$WORK/demo-gfm.log" 2>&1 \
+  || { tail -20 "$WORK/demo-gfm.log" >&2; fail "M03-AC6: demo.qmd failed to render to gfm"; }
+[ -s examples/demo.md ] || fail "M03-AC6: examples/demo.md is empty"
+for tok in 'qi-index' 'qi-mark-' 'qi-entry-' '\index' '\printindex'; do
+  if grep -qF -- "$tok" examples/demo.md; then
+    fail "M03-AC6: gfm output must not contain $tok (gfm has no index back-end)"
+  fi
+done
+if grep -qE '^# Index$' examples/demo.md; then
+  fail "M03-AC6: gfm output must not contain a generated index section"
+fi
+grep -qF 'café' examples/demo.md || fail "M03-AC6: gfm output lost visible term text"
+# The warnings that are genuinely about what the author wrote are emitted in
+# every format now, not only where a back-end exists. demo.qmd holds two
+# empty levels: the trailing one in `A!!B!` and the trailing one in the
+# over-deep probe.
+check_warning_count "$WORK/demo-gfm.log" 'empty index level in ' 2 "M03-AC6"
+check_warning_count "$WORK/demo-gfm.log" "$WARN_BOTH" 1 "M03-AC6"
+pass "M03-AC6: gfm renders clean with no index artifacts, and the format-neutral warnings still reach its author"
 
 printf '%s\n' "$VISIBLE_TERMS" > "$WORK/visible.txt"
 printf '%s\n' "$ENTRY_VALUES_NO_LEAK" > "$WORK/noleak.txt"

@@ -30,7 +30,7 @@ document tree carries no id at all — written inside raw HTML, which only a
 reading of the raw text itself can see:
 
 ```{=html}
-<p id="qi-mark-3"></p>
+<p Id="qi-mark-3"></p>
 ```
 
 The marks that follow must be given neither id — two elements answering to
@@ -38,6 +38,11 @@ one name send one of the two locators to the wrong place: [iota]{.index} and
 [kappa]{.index}.
 
 The same for an entry id: [lambda]{#qi-entry-1 .index}.
+
+A span forging this extension's own plumbing attribute must not steal a real
+mark's anchor: [decoy]{data-qi-pending="1"} is not a mark at all, and
+[nu]{.index see="A!B" data-qi-pending="2"} is a cross-reference, which never
+carries an anchor of its own.
 
 # Entries whose sort keys are equal
 

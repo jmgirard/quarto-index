@@ -46,3 +46,4 @@ _Last hygiene check: 2026-08-16 (M02 merged and archived; 2 review follow-up row
 - An author can claim `qi-index` and collide with the generated section; minted anchor and entry ids skip taken names but the section id does not — added 2026-08-17 — M03 review F11
 - A self-referential cross-reference (`[cats]{.index see="cats"}`) resolves and links an entry to itself — added 2026-08-17 — M03 review F13
 - The planted-defect self-test mutates only the `.tex` fixture; no HTML index check has a planted-defect proof — added 2026-08-17 — M03 review F14
+- Headings consumed by Quarto constructs (callout titles, tabsets) bypass the after-heading anchor relocation; no TOC copy today, so no defect — the invariant is unpinned against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8

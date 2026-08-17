@@ -305,7 +305,18 @@ local function record_key(key, encap)
 end
 
 local function Span(span)
+  local forged = span.attributes[HTML_PENDING_ATTR] ~= nil
+  if forged then
+    -- The pending tag is this filter's own plumbing (see HTML_PENDING_ATTR).
+    -- One written by the author — on any span, a cross-reference mark
+    -- included — would hijack a real mark's anchor in assign_anchors, so it
+    -- is discarded wherever it is found.
+    span.attributes[HTML_PENDING_ATTR] = nil
+  end
   if not span.classes:includes(INDEX_CLASS) then
+    if forged then
+      return span
+    end
     return nil
   end
 
@@ -664,9 +675,11 @@ local function taken_identifiers(doc)
   -- text that merely looks like one costs a skipped number, nothing more.
   local function note_raw(raw)
     if raw.format:match("^html") then
-      for _, pattern in ipairs({ '%sid%s*=%s*"([^"]*)"',
-                                 "%sid%s*=%s*'([^']*)'",
-                                 "%sid%s*=%s*([^%s\"'<>=`]+)" }) do
+      -- HTML attribute names are case-insensitive, so `ID=` claims a name
+      -- exactly as `id=` does.
+      for _, pattern in ipairs({ '%s[iI][dD]%s*=%s*"([^"]*)"',
+                                 "%s[iI][dD]%s*=%s*'([^']*)'",
+                                 "%s[iI][dD]%s*=%s*([^%s\"'<>=`]+)" }) do
         for id in raw.text:gmatch(pattern) do
           taken[id] = true
         end
@@ -697,14 +710,28 @@ local function relocate_heading_anchors(doc)
         local anchors = pandoc.Inlines({})
         if block.t == "Header" then
           block = block:walk({
+            traverse = "topdown",
+            Note = function(note)
+              -- A footnote's text renders in the footnotes section, not in
+              -- the heading, so a mark inside one anchors where its text is
+              -- and must not be relocated. Stop the descent.
+              return note, false
+            end,
             Span = function(span)
+              -- A cross-reference mark contributes no locator, but an id it
+              -- carries duplicates into the table of contents exactly as a
+              -- locator anchor would, so its id moves out too.
               local pending = span.attributes[HTML_PENDING_ATTR]
-              if pending == nil then
+              local marked_id = span.classes:includes(INDEX_CLASS)
+                and span.identifier ~= ""
+              if pending == nil and not marked_id then
                 return nil
               end
               local anchor = pandoc.Span({})
               anchor.identifier = span.identifier
-              anchor.attributes[HTML_PENDING_ATTR] = pending
+              if pending ~= nil then
+                anchor.attributes[HTML_PENDING_ATTR] = pending
+              end
               anchors:insert(anchor)
               span.identifier = ""
               span.attributes[HTML_PENDING_ATTR] = nil

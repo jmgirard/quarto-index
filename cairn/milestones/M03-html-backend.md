@@ -197,6 +197,7 @@ criteria audit applied).
 - 2026-08-17: resume; the open approach question went to the user, who chose the recorded alternative — every heading mark's anchor is an empty span emitted just after the heading, replacing heading-id borrowing (Decisions below). Minor amendment: T12 added; AC2/AC3/AC7 coverage extended to it.
 - 2026-08-17: T12 — relocate_heading_anchors moves each heading mark's anchor duty (the author's id, or the pending tag) onto an empty span emitted after the heading; author-id resolution moved from the Span pass into assign_anchors, so heading and body marks take one path; taken_identifiers now also reads ids out of raw HTML. placement.qmd gains the two-marks-in-one-heading and author-id-in-heading shapes, html-index.qmd a raw `qi-mark-3` (a native-span first attempt was silently visible to the Attr walk — the fixture uses a `{=html}` block, which is not). All three shapes verified to fail under the reverted filter for their own named reasons and pass under the fix. README and DESIGN reworded from borrowing to the after-heading anchor. Suite green with --self-test; AC1 merge-base byte-identity re-confirmed.
 - 2026-08-17: all pass-2 findings fixed (T12); cairn_validate clean but for a pre-existing sizing advisory (12 tasks, a split tripwire — the last four are review-return fixes on a milestone about to close). AC3's anchor enumeration still names the heading-id form, now unoccupied by design; left unamended — the disjunction is true as written, and further AC3 wording churn goes to the user. Status -> review (pass 3).
+- 2026-08-17: review pass 3 gate triage (user): F1-F6 fixed at the gate with regression fixtures (case-insensitive raw-id scan; forged pending attribute stripped; xref author ids relocate out of headings; Note contents exempt from relocation; README id-safety claim narrowed; quote-aware heading invariant), F7 left as recorded, F8 a candidate row. All fixes verified discriminating; suite green; AC1 byte-identity re-confirmed. No status change — no finding fails a criterion inside its fixtured domain (return floor).
 
 ## Decisions
 
@@ -316,3 +317,41 @@ whole evidence base. Fresh evidence, this pass:
   pass.
 - AC7: all 3 stale pass-through sentences gone, all 7 HTML claims present in
   README.md.
+
+**Findings and disposition** (8 reported across three fresh-context lenses:
+[O] diff-bug F1–F8; [S] blame-history none; [S] prior-review none — those
+two verified the LaTeX path untouched and every pass-1/pass-2 fix still in
+place, with no PR-thread surface to walk):
+
+- F1 raw-HTML ids in any capitalization but `id` escape the collector; a
+  minted anchor collides. Reproduced. → fixed at the gate: case-insensitive
+  patterns; the fixture's raw id is mixed-case.
+- F2 an author-written `data-qi-pending` hijacks a real mark's anchor and
+  silently misdirects its locator. Reproduced. → fixed at the gate: the Span
+  pass strips the attribute from every span; forged copies fixtured on a
+  non-mark span and a cross-reference mark; a rendered-output sweep pins the
+  attribute's absence.
+- F3 a cross-reference mark's author id inside a heading duplicates into the
+  TOC. Reproduced. → fixed at the gate: relocation also moves a mark's id
+  when no anchor is pending; fixtured (contraption).
+- F4 a mark inside an inline footnote written in a heading had its anchor
+  relocated away from where its text renders. Reproduced. → fixed at the
+  gate: the relocation walk stops at Note boundaries; fixtured
+  (gizmo/thingamajig); the note's mark numbers ahead of the heading's
+  relocated anchor, and the README states the numbering rule.
+- F5 the README id-safety claim was unqualified (render-time injected ids
+  and the fixed `qi-index` sit outside it). → fixed at the gate: claim
+  narrowed to ids written in the document, both exceptions named.
+- F6 the demo heading-mark invariant guard was not quote-aware. → fixed at
+  the gate: it reuses the quote-aware mark scanner on ATX heading lines.
+- F7 AC3 still enumerates the heading-id anchor form the redesign made
+  unreachable. → left as recorded in the work log; the criterion is true as
+  written and further AC3 wording change rests with the user.
+- F8 headings consumed by Quarto constructs (callout titles, tabsets) bypass
+  relocation; no defect today, invariant unpinned. → follow-up candidate
+  row (ROADMAP).
+
+Every gate fix verified discriminating against the pre-fix filter (each new
+check fails there for its own named reason); full suite re-run green with
+`--self-test`; AC1 merge-base byte-identity re-confirmed with the gate fixes
+in place.

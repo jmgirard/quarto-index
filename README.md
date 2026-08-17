@@ -206,13 +206,19 @@ A heading is the one place an anchor cannot sit, because Quarto copies a
 heading's contents into the sidebar table of contents, and an id in there
 would end up in the page twice. So a heading mark's anchor — your own id or a
 minted one — is placed on an invisible element just after the heading, and
-the locator lands at the start of that section.
+the locator lands at the start of that section. Such a mark is numbered where
+its anchor lands; a mark inside a footnote written in that same heading keeps
+its anchor with the footnote's text and numbers ahead of it.
 
 Each entry carries an id too, `qi-entry-1` onward, so that a cross-reference
-can link to it. Both kinds of generated id skip any name your document already
-uses, so writing `qi-mark-1` yourself is safe: the numbering steps over it and
-your element keeps the name. That leaves gaps in the sequence, which is
-harmless — the numbers are link targets, not a count of anything.
+can link to it. Both kinds of generated id skip any name written in the
+document itself — on its elements, or inside raw HTML in its source — so
+writing `qi-mark-1` yourself is safe: the numbering steps over it and your
+element keeps the name. That leaves gaps in the sequence, which is harmless —
+the numbers are link targets, not a count of anything. Two names sit outside
+that promise: an id injected around the document at render time
+(`include-in-header` and its relatives are never seen by the filter), and the
+section id `qi-index` itself, which is fixed rather than minted.
 
 An entry's locators are numbered links to those anchors: `1`, `2`, `3` for the
 first, second and third time the term is marked, restarting at `1` for each

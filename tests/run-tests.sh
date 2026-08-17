@@ -1098,9 +1098,14 @@ if authored:
           f'with an author-supplied id, but {len(authored)} mark(s) carry one',
           file=sys.stderr)
     sys.exit(1)
-if re.search(r'^#{1,6} .*\]\{[^}]*\.index', qmd, re.MULTILINE):
+heading_marks = [line for line in qmd.splitlines()
+                 if re.match(r'#{1,6} ', line) and marks(line)]
+if heading_marks:
     # A heading mark's anchor is emitted on an empty span AFTER the heading,
     # not on the mark span itself — the per-anchor check below assumes none.
+    # Detected with the same quote-aware scanner as the count, so a mark a
+    # brace-bearing entry= would hide from a regex cannot hide here; setext
+    # headings are outside this fixture's idiom.
     print('FAIL: M03-AC3: the span-anchored check assumes demo.qmd holds no '
           'mark inside a heading, but at least one heading contains a mark',
           file=sys.stderr)
@@ -1292,6 +1297,7 @@ read -r -d '' HTML_INDEX_MANIFEST <<'MANIFEST' || true
 0	iota	1
 0	kappa	1
 0	lambda	1
+0	nu	0	see-link A: B
 0	theta	1
 0	zeta	0	see-link A: B
 MANIFEST
@@ -1358,13 +1364,19 @@ PY
 # same oracle rule and row format as manifest 1e: `widget` is marked in a
 # heading, a table cell and a footnote; `gadget` carries an id of the
 # author's own; `sprocket` and `flange` share one heading; `doohickey`
-# carries an author id INSIDE a heading.
+# carries an author id INSIDE a heading; `contraption` is a cross-reference
+# mark with an author id in a heading (no locator, id still relocates);
+# `gizmo` and `thingamajig` share a heading line, but `thingamajig` sits in
+# an inline footnote whose text renders at the foot of the page.
 # ---------------------------------------------------------------------------
 read -r -d '' PLACEMENT_HTML_INDEX <<'MANIFEST' || true
+0	contraption	0	see-link widget
 0	doohickey	1
 0	flange	1
 0	gadget	1
+0	gizmo	1
 0	sprocket	1
+0	thingamajig	1
 0	widget	3
 MANIFEST
 
@@ -1399,8 +1411,8 @@ if records['widget']['locators'] != want:
 # heading's contents into the sidebar table of contents, so an id in there
 # appears twice and the locator resolves to the sidebar copy. Every heading
 # mark's anchor — minted or the author's own — sits after its heading.
-mark_anchors = {f'{prefix}1', f'{prefix}4', f'{prefix}5',
-                'my-gadget', 'my-doohickey'}
+mark_anchors = {f'{prefix}1', f'{prefix}4', f'{prefix}5', f'{prefix}7',
+                'my-gadget', 'my-doohickey', 'my-contraption'}
 inside = set()
 for h in [n for n in H.walk(doc)
           if n.tag in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6')]:
@@ -1446,6 +1458,21 @@ for term, want_loc in (('sprocket', [f'#{prefix}4']),
               file=sys.stderr)
         sys.exit(1)
 
+# A mark in an inline footnote written in a heading anchors with the note's
+# rendered text at the foot of the page, NOT after the heading — while the
+# heading's own mark anchors after the heading as usual. The note's mark
+# numbers first: it keeps its place inside the heading's own content, ahead
+# of the anchors relocated to just after the heading.
+if records['thingamajig']['locators'] != [f'#{prefix}6']:
+    print(f"FAIL: M03-AC3: thingamajig's locator is "
+          f"{records['thingamajig']['locators']}, expected ['#{prefix}6']",
+          file=sys.stderr)
+    sys.exit(1)
+if records['gizmo']['locators'] != [f'#{prefix}7']:
+    print(f"FAIL: M03-AC3: gizmo's locator is {records['gizmo']['locators']},"
+          f" expected ['#{prefix}7']", file=sys.stderr)
+    sys.exit(1)
+
 # The relocation this fixture exists to probe must actually have happened, or
 # the checks above prove nothing: the footnote's anchor sits inside the
 # footnotes section the renderer moved to the end of the page, AFTER the mark
@@ -1454,6 +1481,12 @@ footnotes = H.find_id(doc, 'footnotes')
 if footnotes is None or H.find_id(footnotes, f'{prefix}3') is None:
     print(f'FAIL: M03-AC2: {prefix}3 is not inside the rendered footnotes '
           f'section, so this fixture is not probing relocated content',
+          file=sys.stderr)
+    sys.exit(1)
+if H.find_id(footnotes, f'{prefix}6') is None:
+    print(f"FAIL: M03-AC3: {prefix}6 (the inline-note mark written in a "
+          f"heading) is not inside the rendered footnotes section — its "
+          f"anchor was relocated away from where its text renders",
           file=sys.stderr)
     sys.exit(1)
 order = H.all_ids(doc)
@@ -1471,10 +1504,10 @@ for term, own in (('gadget', '#my-gadget'), ('doohickey', '#my-doohickey')):
               f"author wrote is never taken over", file=sys.stderr)
         sys.exit(1)
 minted = [i for i in order if i.startswith(prefix)]
-if len(minted) != 5:
-    print(f'FAIL: M03-AC2: {len(minted)} anchors minted, expected 5 (three '
-          f'widget marks and the two marks sharing a heading; the two marks '
-          f'carrying author ids need none)', file=sys.stderr)
+if len(minted) != 7:
+    print(f'FAIL: M03-AC2: {len(minted)} anchors minted, expected 7 (three '
+          f'widget marks, the two sharing a heading, gizmo and thingamajig; '
+          f'the marks carrying author ids need none)', file=sys.stderr)
     sys.exit(1)
 print('ok   M03-AC2: locators are numbered in source order across a heading, '
       'a table cell and a relocated footnote; heading anchors sit after '
@@ -1514,6 +1547,16 @@ print(f'ok   M03-AC5: all {len(domain)} printable ASCII characters (space '
       f'excluded) are entries of the generated HTML index, {len(terms)} '
       f'entries in all')
 PY
+
+# M03-AC3 — the pending tag is filter plumbing and must never survive into
+# rendered output; nor may an author's FORGED copy steal a real mark's anchor
+# (examples/html-index.qmd carries a forged copy on a non-mark span and on a
+# cross-reference mark — the anchor numbering above already pins that neither
+# consumed a minted id).
+if grep -l 'data-qi-pending' examples/*.html >/dev/null 2>&1; then
+  fail "M03-AC3: data-qi-pending survived into rendered HTML: $(grep -l 'data-qi-pending' examples/*.html | tr '\n' ' ')"
+fi
+pass "M03-AC3: the pending attribute reaches no rendered HTML, forged author copies included"
 
 # ---------------------------------------------------------------------------
 # M03-AC6 — negatives. A document with no marks gets no section and no

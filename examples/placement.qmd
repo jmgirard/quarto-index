@@ -44,3 +44,13 @@ would send two index entries to a single place.
 
 The author's id must survive — relocated out of the heading — because an id
 that stays inside is copied into the sidebar with the rest of the heading.
+
+## About a [contraption]{#my-contraption .index see="widget"}
+
+A cross-reference mark carries no locator, but an id it carries in a heading
+would be copied into the sidebar all the same, so it relocates too.
+
+## A [gizmo]{.index} heading with a note^[the note marks a [thingamajig]{.index} of its own]
+
+The heading's own mark anchors after the heading; the note's mark renders
+with the note at the foot of the page, and its anchor must stay there.

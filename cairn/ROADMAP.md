@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M01 | LaTeX index extension skeleton | in-progress | — | normal | milestones/M01-latex-index-skeleton.md |
+| M01 | LaTeX index extension skeleton | review | — | normal | milestones/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -37,4 +37,5 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 - Acceptance suite: assert the script's own exit code, brace-aware scanner, BSD-sed portability, `]{.index` substring undercount, `include_text` guard — added 2026-08-16 — M01 review N10/N12/N13/N14
 - Demo manifests have no independent count, so coverage can shrink silently — added 2026-08-16 — M01 review P10
 - The demo's own makeindex acceptance is never asserted — added 2026-08-16 — M01 review P11
+- `\printindex` precedes a bibliography rather than following it, since Quarto appends reference blocks after filters run — added 2026-08-16 — M01 review P2; README states the current behavior
 - Choose and add a LICENSE file (user decision; needed before public listing) — added 2026-08-16 — M01 README omits a license claim for want of one

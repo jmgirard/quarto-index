@@ -55,13 +55,16 @@ literal exclamation mark:
 ```
 
 Levels are scanned left to right, longest match first, so `A!!!B` is the
-entry `A!` with sub-entry `B`. A trailing empty level is left as written and
-warned about rather than silently repaired.
+entry `A!` with sub-entry `B`. A trailing empty level in an entry of three
+levels or fewer is left as written and warned about rather than silently
+repaired; see the ceiling below for what happens in a deeper one.
 
 **Three levels is the ceiling.** The LaTeX index back-end stores at most
 three. A deeper entry is not dropped: everything past the third level is
 folded into it, joined with `, `, and you get a warning naming the entry. So
-`entry="One!Two!Three!Four"` indexes as `One` → `Two` → `Three, Four`.
+`entry="One!Two!Three!Four"` indexes as `One` → `Two` → `Three, Four`. An
+empty level inside a folded tail is dropped, since it would otherwise leave a
+dangling separator in the printed index.
 
 `!` and `!!` are the extension's own syntax, not LaTeX. They mean the same
 thing whatever format you render to.
@@ -71,10 +74,12 @@ thing whatever format you render to.
 Everything in a visible term or an `entry=` level is literal text. You never
 escape for LaTeX yourself — the extension does it, including for characters
 that would otherwise break the build or act as index operators. Every
-printable ASCII character works in both places, including an unbalanced brace:
-`examples/escaping.qmd` puts each one in an index entry on its own and the
-test suite compiles it, checks the index tool accepted every entry, and
-confirms each character actually typesets.
+printable ASCII character works in both places, including an unbalanced brace.
+`examples/escaping.qmd` puts each one in an index entry on its own; the test
+suite compiles it with the same engine your PDF build uses and checks that the
+index tool accepted every entry. It additionally confirms that the sixteen
+characters needing special handling — `% & # _ { } \ ~ ^ $ @ | ! " < >` —
+actually typeset in the resulting index.
 
 Two characters need care in `entry="…"`, because Quarto's markdown parser
 consumes one level of backslash escaping in a quoted attribute before the
@@ -99,9 +104,10 @@ of this syntax and will arrive later as separate span attributes.
 For LaTeX-derived formats the extension writes `\index{…}` at the mark's
 position. When a document has at least one mark, it also adds
 `\usepackage{imakeidx}` and `\makeindex[intoc]` to the preamble and one
-`\printindex` at the end of the document, so the index is built and listed
-in the table of contents with no configuration. A document with no marks
-gets none of this.
+`\printindex` after the document body, so the index is built and listed in
+the table of contents with no configuration. In a document with a
+bibliography the index currently prints before the references. A document
+with no marks gets none of this.
 
 Placement is automatic; there is no option to put the index elsewhere yet.
 
@@ -130,6 +136,6 @@ quarto render examples/demo.qmd --to pdf
 tests/run-tests.sh --self-test
 ```
 
-The suite renders the examples to LaTeX, HTML and PDF and checks the output
-against hand-derived manifests. It needs TinyTeX, `makeindex` and
+The suite renders the examples to LaTeX, HTML, PDF and beamer and checks the
+output against hand-derived manifests. It needs TinyTeX, `makeindex` and
 `pdftotext`, and fails loudly rather than skipping if any is missing.

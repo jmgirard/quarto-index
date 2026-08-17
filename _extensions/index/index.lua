@@ -110,7 +110,11 @@ local function clamp_levels(levels, context)
   end
   local tail = {}
   for i = MAX_LEVELS, #levels do
-    tail[#tail + 1] = levels[i]
+    -- An empty level here would leave a dangling separator in the printed
+    -- index; it is warned about above and dropped from the join.
+    if levels[i] ~= "" then
+      tail[#tail + 1] = levels[i]
+    end
   end
   warn(("index entry in %s is %d levels deep; the back-end stores %d, so "
         .. "levels %d and deeper were folded into the third")
@@ -163,11 +167,18 @@ local function Span(span)
   elseif visible ~= "" then
     -- A visible term is one literal level; `!` in it is not a separator.
     levels = { visible }
-  else
+  elseif #span.content == 0 then
     warn("index mark with no visible term and no entry=; nothing to index")
-    -- Nothing to index and nothing to show: drop the mark rather than leave
+    -- Genuinely empty and nothing to index: drop the mark rather than leave
     -- an empty group behind in the output.
     return {}
+  else
+    -- The span HAS content, it just yields no text to derive an entry from
+    -- (an image with empty alt text, say). Index nothing, but never remove
+    -- the content — deleting what the author wrote would be IP2 corruption.
+    warn("index mark whose content has no text and no entry=; nothing to "
+         .. "index, content left untouched")
+    return nil
   end
 
   if not is_latex_derived() then

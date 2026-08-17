@@ -26,8 +26,19 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+# Internal: check one .tex against the demo manifest and exit with its status.
+# The AC5 self-test invokes the script this way, so the criterion's "it exits
+# non-zero" is asserted of the script itself, not merely of a helper function.
+# This mode must not wipe the work directory — the fixture it is given lives
+# there, written by the parent invocation.
+if [ "${1:-}" = "--fixture-check" ]; then
+  FIXTURE_MODE=1
+else
+  FIXTURE_MODE=0
+fi
+
 WORK="tests/.work"
-rm -rf "$WORK"
+[ "$FIXTURE_MODE" = "1" ] || rm -rf "$WORK"
 mkdir -p "$WORK"
 
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
@@ -71,7 +82,7 @@ read -r -d '' DEMO_ENTRIES <<'MANIFEST' || true
 1	\textbackslash{}
 1	Alpha!Beta
 1	A"!B!
-1	One!Two!Three, Four, Five, 
+1	One!Two!Three, Four, Five
 1	pct \% amp \& hash \#
 1	us \_ brace \textbraceleft{} \textbraceright{}
 1	bs \textbackslash{} tilde \textasciitilde{} caret \textasciicircum{}
@@ -298,6 +309,11 @@ require_pdf_tools() {
 # ---------------------------------------------------------------------------
 # AC1 + AC4 — demo renders to LaTeX via the installed extension; entries match.
 # ---------------------------------------------------------------------------
+if [ "$FIXTURE_MODE" = "1" ]; then
+  check_entry_manifest "$2" "$DEMO_ENTRIES" "fixture"
+  exit $?
+fi
+
 printf '== supported forms (normative) ==\n'
 printf '   %s\n' "${SUPPORTED_FORMS[@]}"
 printf '   probe characters: %s\n\n' "$PROBE_CHARS"
@@ -361,7 +377,7 @@ grep -q 'levels deep' "$WORK/demo-latex.log" \
   || fail "AC4: the >3-level probe produced no depth warning; folding without a warning is silent loss (IP2)"
 # The probe is deep AND ends in an empty level — the interaction that once let
 # folding absorb the empty level and swallow its warning.
-grep -q 'empty index level' "$WORK/demo-latex.log" \
+grep -q 'empty index level in entry="One!Two!Three!Four!Five!"' "$WORK/demo-latex.log" \
   || fail "AC4: the trailing empty level produced no warning; folding must not swallow it (IP2)"
 pass "AC4: both the fold and empty-level warnings emitted for the deep probe"
 
@@ -503,8 +519,17 @@ if unaccounted:
         print(f'  <<{v}>>', file=sys.stderr)
     sys.exit(1)
 
-body = re.sub(r'<[^>]*>', ' ', html)
-leaked = [v for v in no_leak if v in body]
+body = re.sub(r'<[^>"]*(?:"[^"]*"[^>"]*)*>', ' ', html)
+def parsed(v):
+    out, i = [], 0
+    while i < len(v):
+        if v[i] == '!' and v[i:i+2] == '!!':
+            out.append('!'); i += 2
+        else:
+            out.append(v[i]); i += 1
+    return ''.join(out)
+leaked = sorted({v for v in no_leak
+                 if v in body or parsed(v) in body})
 if leaked:
     print('FAIL: AC7: entry= value(s) leaked into rendered text:', file=sys.stderr)
     for v in leaked:
@@ -567,20 +592,20 @@ print(f'ok   AC4: escaping probe covers all {len(domain)} printable ASCII '
 PY
 
 mkdir -p "$WORK/esc" && cp examples/escaping.tex "$WORK/esc/"
+quarto render examples/escaping.qmd --to pdf > "$WORK/esc-pdf.log" 2>&1 \
+  || { tail -20 "$WORK/esc-pdf.log" >&2; fail "AC4: escaping probe failed to compile through Quarto's own PDF engine — a character in the range breaks the build"; }
 ( cd "$WORK/esc" && pdflatex -interaction=nonstopmode escaping.tex ) \
   > "$WORK/esc-tex1.log" 2>&1 \
-  || { grep -E '^! ' "$WORK/esc-tex1.log" | head -5 >&2; fail "AC4: escaping probe failed to compile — a character in the range breaks the build"; }
+  || { grep -E '^! ' "$WORK/esc-tex1.log" | head -5 >&2; fail "AC4: escaping probe failed to compile"; }
 ( cd "$WORK/esc" && makeindex escaping.idx ) > "$WORK/esc-mkidx.log" 2>&1 \
   || fail "AC4: makeindex failed on the escaping probe"
 ESC_MARKS=$(( (0x7F - 0x21) * 2 ))
 grep -qE "\($ESC_MARKS entries accepted, 0 rejected\)" "$WORK/esc/escaping.ilg" \
   || { grep -E 'accepted|rejected' "$WORK/esc/escaping.ilg" >&2; fail "AC4: makeindex did not accept all $ESC_MARKS escaping-probe entries"; }
-# Second pass so the .ind is typeset: compiling proves the argument READS,
-# only typesetting proves the character PRINTS.
-( cd "$WORK/esc" && pdflatex -interaction=nonstopmode escaping.tex ) \
-  > "$WORK/esc-tex2.log" 2>&1 \
-  || { grep -E '^! ' "$WORK/esc-tex2.log" | head -5 >&2; fail "AC4: escaping probe failed to typeset its index"; }
-pdftotext -layout "$WORK/esc/escaping.pdf" "$WORK/esc/escaping.txt"
+# The typeset evidence comes from Quarto's own PDF, built with the engine that
+# actually ships: compiling proves the argument READS, typesetting proves the
+# character PRINTS, and both must hold under the shipping engine.
+pdftotext -layout examples/escaping.pdf "$WORK/esc/escaping.txt"
 PROBE_CHARS="$PROBE_CHARS" python3 - "$WORK/esc/escaping.txt" <<'PY'
 import os, re, sys
 txt = open(sys.argv[1], encoding='utf-8').read()
@@ -642,15 +667,15 @@ src = src.replace('\\printindex', '\\index{Spurious}\n\\printindex', 1)
 open(sys.argv[2], 'w', encoding='utf-8').write(src)
 PY
   set +e
-  OUT=$(check_entry_manifest "$BROKEN" "$DEMO_ENTRIES" "self-test" 2>&1)
+  OUT=$( "$0" --fixture-check "$BROKEN" 2>&1 )
   RC=$?
   set -e
-  [ "$RC" -ne 0 ] || fail "AC5: self-test did not fail on a broken fixture"
+  [ "$RC" -ne 0 ] || fail "AC5: the script exited 0 on a broken fixture"
   for expect in 'Ghost!Sub' 'Custom Entry' 'Spurious'; do
     printf '%s' "$OUT" | grep -qF -- "$expect" \
       || { printf '%s\n' "$OUT" >&2; fail "AC5: self-test output does not name <<$expect>>"; }
   done
-  pass "AC5: self-test fails on removed, altered, and spurious entries and names each"
+  pass "AC5: the script itself exits $RC on removed, altered and spurious entries, naming each"
 fi
 
 printf '\nAll checks passed.\n'

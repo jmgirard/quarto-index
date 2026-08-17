@@ -1,6 +1,6 @@
 # M01: LaTeX index extension skeleton
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -24,11 +24,11 @@ users consume.
   no shortcode or other parallel syntax (GP5).
 - Entry semantics (IP1, D-001): entry values are structured, format-neutral
   data — never raw LaTeX. `entry="..."` parses into `!`-separated levels,
-  longest-match, `!!` a literal `!`; a trailing empty level is emitted as
-  written and warned about, never repaired (leading/medial empties are a
-  known makeindex failure → ROADMAP). Each level is literal text — of a
-  visible term or an `entry=` value alike — that the extension emits
-  correctly itself (mechanism: the Decisions entries).
+  longest-match, `!!` a literal `!`; a trailing empty level is warned about
+  and emitted as written, except inside a folded tail where it is dropped
+  (leading/medial empties are a known makeindex failure → ROADMAP). Each level
+  is literal text — of a visible term or an `entry=` value alike — that the
+  extension emits as correct LaTeX itself (mechanism: the Decisions entries).
 - `latex`/`pdf` output only (beamer excluded — it has no `theindex`
   environment): emit `\index{}` at the mark's position; makeindex stores
   three levels, so deeper entries fold into the third, joined with `, `,
@@ -330,6 +330,10 @@ engine; `escape_level` verified UTF-8-safe by construction.
 
 - 2026-08-16: review pass 3 returned M01 to in-progress (defect return #3 — thrash threshold reached). AC5 fails literally: the self-test asserts the helper returns non-zero while the script exits 0. Two IP2 defects reproduced: a mark whose content stringifies to empty deletes that content (an image with empty alt text disappears from the document), and the >3-level fold still leaves a dangling separator in the typeset index, which the manifest now pins rather than repairs. `\printindex` also precedes the bibliography, contradicting the README, and the escaping evidence is gathered under pdflatex while Quarto ships lualatex here.
 - 2026-08-16: supersedes the 2026-08-16 line claiming the audit restored "emits correct LaTeX" to Scope: it did not — the final Scope reads "emits correctly itself", and the "No raw LaTeX pass-through" sentence was dropped (its substance survives as "never raw LaTeX" earlier in the bullet).
+
+- 2026-08-16: descope round (thrash disposition: narrow to what is verified, promise only what is tested). Shipping defects fixed rather than deferred: P1 a mark whose content yields no text no longer deletes that content — only a genuinely empty span is dropped, and an image with empty alt text now survives (verified); P4 an empty level inside a folded tail is dropped rather than left as a dangling separator, so the printed index reads `A!B!C, D`. P7 AC5 now asserts the script's own exit code via an internal `--fixture-check` mode; the script exits 1. P3 the regression grep now names the deep entry — proved by reverting the fix in a scratch copy and watching the suite fail with the right message. P6 the escaping probe compiles through Quarto's own PDF engine, so the evidence is gathered under the engine that ships. P8/P9 the no-leak check tests parsed as well as source forms and strips tags without breaking on raw `<`/`>` in attributes.
+- 2026-08-16: promises matched to evidence rather than narrowed by dropping criteria — all seven still pass as written. README no longer claims every printable character is typeset-checked (16 are; the rest are compile- and acceptance-checked), and now states plainly that the index prints before the references in a document with a bibliography. That ordering, the unfenced-coverage items and pass-2's remaining follow-ups are ROADMAP rows, not M01 work.
+- 2026-08-16: no acceptance-criterion wording changed this round, so no criteria audit was owed; the Scope entry-semantics bullet was amended (folded-tail empty level) and is shown verbatim at the gate.
 
 ## Decisions
 

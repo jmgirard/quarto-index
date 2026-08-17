@@ -71,14 +71,14 @@ read -r -d '' DEMO_ENTRIES <<'MANIFEST' || true
 1	\textbackslash{}
 1	Alpha!Beta
 1	A"!B!
-1	One!Two!Three, Four, Five
+1	One!Two!Three, Four, Five, 
 1	pct \% amp \& hash \#
-1	us \_ brace \{ \}
+1	us \_ brace \textbraceleft{} \textbraceright{}
 1	bs \textbackslash{} tilde \textasciitilde{} caret \textasciicircum{}
 1	dollar \$ at "@ bar \textbar{}
 1	bang "! quote \textquotedbl{}
-1	Specials \% \& \# \_ \{ \} \textbackslash{} \textasciitilde{} \textasciicircum{} \$ "@ \textbar{} "! \textquotedbl{}
-1	\{Braced\}
+1	Specials \% \& \# \_ \textbraceleft{} \textbraceright{} \textbackslash{} \textasciitilde{} \textasciicircum{} \$ "@ \textbar{} "! \textquotedbl{} \textless{} \textgreater{}
+1	\textbraceleft{}Braced\textbraceright{}
 1	\textasciitilde{}tilde dollar\$
 1	less \textless{} more \textgreater{}
 1	café naïve
@@ -160,9 +160,9 @@ Trail bang!!
 A!!!B
 Alpha!Beta
 A!!B!
-One!Two!Three!Four!Five
+One!Two!Three!Four!Five!
 Grüße!Straße
-Specials % & # _ { } \ ~ ^ $ @ | !! "
+Specials % & # _ { } \ ~ ^ $ @ | !! " < >
 MANIFEST
 
 # ---------------------------------------------------------------------------
@@ -323,7 +323,28 @@ if keys != probes:
     print(f'  in filter, not probed: {sorted(keys - probes)}', file=sys.stderr)
     print(f'  probed, not in filter: {sorted(probes - keys)}', file=sys.stderr)
     sys.exit(1)
-print(f'ok   AC4: probe set pinned to the filter escape table ({len(keys)} chars)')
+
+# The pin above compares the probe set to the filter. That alone does not stop
+# a character sitting in both and being probed nowhere, so also require each
+# one to appear in BOTH contexts of the demo, which is what AC4 promises.
+qmd = open('examples/demo.qmd', encoding='utf-8').read()
+unescape = lambda t: re.sub(r'\\(.)', r'\1', t)
+visible = ''.join(unescape(m) for m in re.findall(r'\[((?:\\.|[^\]\\])*)\]\{\.index', qmd))
+entries = ''.join(unescape(m)
+                  for m in re.findall(r'entry="((?:\\.|[^"\\])*)"', qmd))
+missing = []
+for c in sorted(probes):
+    if c not in visible:
+        missing.append(f'  {c!r} never appears in a visible term')
+    if c not in entries:
+        missing.append(f'  {c!r} never appears in an entry= level')
+if missing:
+    print('FAIL: AC4: escape-domain characters unprobed in examples/demo.qmd:',
+          file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   AC4: probe set pinned to the filter escape table ({len(keys)} '
+      f'chars), each probed in both contexts')
 PY
 
 quarto render examples/demo.qmd --to latex > "$WORK/demo-latex.log" 2>&1 \
@@ -338,7 +359,11 @@ cp examples/demo.tex "$WORK/demo-latex.tex"
 # the warning, or a refactor that drops it leaves the suite green.
 grep -q 'levels deep' "$WORK/demo-latex.log" \
   || fail "AC4: the >3-level probe produced no depth warning; folding without a warning is silent loss (IP2)"
-pass "AC4: depth-fold warning emitted for the >3-level probe"
+# The probe is deep AND ends in an empty level — the interaction that once let
+# folding absorb the empty level and swallow its warning.
+grep -q 'empty index level' "$WORK/demo-latex.log" \
+  || fail "AC4: the trailing empty level produced no warning; folding must not swallow it (IP2)"
+pass "AC4: both the fold and empty-level warnings emitted for the deep probe"
 
 # ---------------------------------------------------------------------------
 # AC2 — preamble injection and \printindex placement.
@@ -442,8 +467,11 @@ if total != expected:
 from collections import Counter
 # The invisible-entry form has no visible text by construction, so its empty
 # span is not a term; the completeness pin already accounts for it separately.
-spans = Counter(t for t in re.findall(r'<span class="index"[^>]*>(.*?)</span>',
-                                      html, re.DOTALL) if t != '')
+# Attribute values are matched as quoted strings, not as "anything but >":
+# Pandoc escapes & and " in an attribute but leaves < and > raw, so an entry
+# value containing them would otherwise truncate the tag match.
+SPAN_RE = r'<span class="index"(?:\s+[-\w]+="[^"]*")*\s*>(.*?)</span>'
+spans = Counter(t for t in re.findall(SPAN_RE, html, re.DOTALL) if t != '')
 bad = []
 for count, text in rows:
     got = spans.get(text, 0)
@@ -506,6 +534,69 @@ for tok in '\index' 'imakeidx' '\makeindex' '\printindex'; do
 done
 grep -qF 'café' examples/demo.tex || fail "AC7: beamer .tex lost visible term text"
 pass "AC7: beamer renders clean, no index tokens, visible text kept"
+
+# The escaping probe covers a range defined by construction, not by recall:
+# every printable ASCII character except the space, as its own visible term
+# and its own entry= level. It fences the three ways an escaping bug reaches a
+# reader — the build breaks, makeindex rejects the entry, or it fails to
+# typeset — so all three are checked here.
+quarto render examples/escaping.qmd --to latex > "$WORK/esc-latex.log" 2>&1 \
+  || { tail -20 "$WORK/esc-latex.log" >&2; fail "AC4: escaping.qmd failed to render to LaTeX"; }
+
+PROBE_CHARS="$PROBE_CHARS" python3 - examples/escaping.qmd <<'PY'
+import os, re, string, sys
+qmd = open(sys.argv[1], encoding='utf-8').read()
+unescape = lambda t: re.sub(r'\\(.)', r'\1', t)
+visible = {unescape(m) for m in re.findall(r'\[((?:\\.|[^\]\\])*)\]\{\.index', qmd)}
+entries = {unescape(m) for m in re.findall(r'entry="((?:\\.|[^"\\])*)"', qmd)}
+domain = [chr(c) for c in range(0x21, 0x7F)]
+missing = []
+for c in domain:
+    if c not in visible:
+        missing.append(f'  {c!r} is not its own visible term')
+    # a lone `!` is a level separator, so a literal one is written `!!`
+    if (('!!' if c == '!' else c)) not in entries:
+        missing.append(f'  {c!r} is not its own entry= level')
+if missing:
+    print('FAIL: AC4: escaping.qmd does not cover printable ASCII:',
+          file=sys.stderr)
+    print('\n'.join(missing[:20]), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   AC4: escaping probe covers all {len(domain)} printable ASCII '
+      f'characters (space excluded) in both contexts')
+PY
+
+mkdir -p "$WORK/esc" && cp examples/escaping.tex "$WORK/esc/"
+( cd "$WORK/esc" && pdflatex -interaction=nonstopmode escaping.tex ) \
+  > "$WORK/esc-tex1.log" 2>&1 \
+  || { grep -E '^! ' "$WORK/esc-tex1.log" | head -5 >&2; fail "AC4: escaping probe failed to compile — a character in the range breaks the build"; }
+( cd "$WORK/esc" && makeindex escaping.idx ) > "$WORK/esc-mkidx.log" 2>&1 \
+  || fail "AC4: makeindex failed on the escaping probe"
+ESC_MARKS=$(( (0x7F - 0x21) * 2 ))
+grep -qE "\($ESC_MARKS entries accepted, 0 rejected\)" "$WORK/esc/escaping.ilg" \
+  || { grep -E 'accepted|rejected' "$WORK/esc/escaping.ilg" >&2; fail "AC4: makeindex did not accept all $ESC_MARKS escaping-probe entries"; }
+# Second pass so the .ind is typeset: compiling proves the argument READS,
+# only typesetting proves the character PRINTS.
+( cd "$WORK/esc" && pdflatex -interaction=nonstopmode escaping.tex ) \
+  > "$WORK/esc-tex2.log" 2>&1 \
+  || { grep -E '^! ' "$WORK/esc-tex2.log" | head -5 >&2; fail "AC4: escaping probe failed to typeset its index"; }
+pdftotext -layout "$WORK/esc/escaping.pdf" "$WORK/esc/escaping.txt"
+PROBE_CHARS="$PROBE_CHARS" python3 - "$WORK/esc/escaping.txt" <<'PY'
+import os, re, sys
+txt = open(sys.argv[1], encoding='utf-8').read()
+m = re.search(r'^\s*Index\s*$', txt, re.MULTILINE)
+if not m:
+    print('FAIL: AC4: escaping probe produced no index section', file=sys.stderr)
+    sys.exit(1)
+region = txt[m.end():]
+missing = [c for c in os.environ['PROBE_CHARS'].split(' ') if c not in region]
+if missing:
+    print(f'FAIL: AC4: escape-domain characters absent from the typeset '
+          f'index: {missing}', file=sys.stderr)
+    sys.exit(1)
+print('ok   AC4: escaping probe compiles, all entries accepted, and every '
+      'escape-domain character typesets in its index')
+PY
 
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
   || { tail -40 "$WORK/demo-pdf.log" >&2; fail "AC6: demo.qmd failed to render to PDF"; }

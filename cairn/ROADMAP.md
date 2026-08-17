@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M01 | LaTeX index extension skeleton | in-progress | — | normal | milestones/M01-latex-index-skeleton.md |
+| M01 | LaTeX index extension skeleton | review | — | normal | milestones/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -31,4 +31,6 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 - `marks_emitted` is module-level state, latent if Lua state is ever reused across documents — added 2026-08-16 — M01 review R16
 - `\index` inside a moving argument (section heading) is unprobed — added 2026-08-16 — M01 review R17
 - A whitespace-only term emits `\index{ }` with no warning, unlike the empty case — added 2026-08-16 — M01 review R19
+- Escaping probe covers characters singly; combinations remain an untested axis — added 2026-08-16 — M01 review; see the milestone Decisions entry
+- `[` and `]` are escaped by Pandoc's LaTeX writer but are not in the filter's escape table — added 2026-08-16 — M01 review N11; verified harmless in practice
 - Choose and add a LICENSE file (user decision; needed before public listing) — added 2026-08-16 — M01 README omits a license claim for want of one

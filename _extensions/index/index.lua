@@ -8,24 +8,28 @@
 --
 -- In `entry=`, a single `!` separates sub-entry levels and `!!` is a literal
 -- `!`, scanned left-to-right longest-match. Each level is literal text: the
--- LaTeX back-end escapes LaTeX specials and quotes makeindex-active
--- characters itself. A visible term is always a single literal level, so an
--- `!` inside it is literal too.
+-- LaTeX back-end makes every character literal itself, by whichever mechanism
+-- that character needs (see LATEX_LITERAL). A visible term is always a single
+-- literal level, so an `!` inside it is literal too.
 
 local INDEX_CLASS = "index"
 
 -- Characters that are literal text on the way in and need help on the way
--- out. LaTeX specials are escaped. Of the makeindex-active characters,
--- `!` and `@` are made literal with makeindex's quote character, while
--- `|` and `"` need LaTeX commands instead — see the note on those two
--- entries below.
+-- out. Most LaTeX specials are escaped with a backslash. Three groups cannot
+-- be: `!` and `@` are makeindex operators, made literal with its quote
+-- character; `|` and `"` are mangled by hyperref and by LaTeX's own quote
+-- rendering; and `{`/`}` survive `\@sanitize` as group characters. Those last
+-- four are emitted as LaTeX commands instead — see the notes below.
 local LATEX_LITERAL = {
   ["%"] = "\\%",
   ["&"] = "\\&",
   ["#"] = "\\#",
   ["_"] = "\\_",
-  ["{"] = "\\{",
-  ["}"] = "\\}",
+  -- NOT `\{`/`\}`: LaTeX reads an \index argument under `\@sanitize`, which
+  -- gives `\` catcode 12, so a backslash there escapes nothing and the brace
+  -- stays a group character — an unbalanced one aborts the render outright.
+  ["{"] = "\\textbraceleft{}",
+  ["}"] = "\\textbraceright{}",
   ["$"] = "\\$",
   ["<"] = "\\textless{}",
   [">"] = "\\textgreater{}",
@@ -109,7 +113,7 @@ local function clamp_levels(levels, context)
     tail[#tail + 1] = levels[i]
   end
   warn(("index entry in %s is %d levels deep; the back-end stores %d, so "
-        .. "levels %d and deeper were folded into the last one")
+        .. "levels %d and deeper were folded into the third")
        :format(context, #levels, MAX_LEVELS, MAX_LEVELS))
   local clamped = {}
   for i = 1, MAX_LEVELS - 1 do
@@ -122,11 +126,16 @@ end
 -- Build the `\index{...}` argument from literal levels, joining with the
 -- unquoted `!` that makeindex reads as a level separator.
 local function index_argument(levels, context)
-  local parts = {}
-  for _, level in ipairs(clamp_levels(levels, context)) do
+  -- Warn on the levels as the author wrote them, before any folding: folding
+  -- absorbs a trailing empty level into the level above it, which would
+  -- otherwise swallow the warning that Scope promises for it.
+  for _, level in ipairs(levels) do
     if level == "" then
       warn(("empty index level in %s; emitted as written"):format(context))
     end
+  end
+  local parts = {}
+  for _, level in ipairs(clamp_levels(levels, context)) do
     parts[#parts + 1] = escape_level(level)
   end
   return table.concat(parts, "!")

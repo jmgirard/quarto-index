@@ -70,8 +70,11 @@ thing whatever format you render to.
 
 Everything in a visible term or an `entry=` level is literal text. You never
 escape for LaTeX yourself — the extension does it, including for characters
-that would otherwise break the build or act as index operators. All of
-`% & # _ { } \ ~ ^ $ @ | ! "` work in both places.
+that would otherwise break the build or act as index operators. Every
+printable ASCII character works in both places, including an unbalanced brace:
+`examples/escaping.qmd` puts each one in an index entry on its own and the
+test suite compiles it, checks the index tool accepted every entry, and
+confirms each character actually typesets.
 
 Two characters need care in `entry="…"`, because Quarto's markdown parser
 consumes one level of backslash escaping in a quoted attribute before the

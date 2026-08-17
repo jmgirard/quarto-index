@@ -38,7 +38,7 @@ Odd run: [odd]{.index entry="A!!!B"}.
 Backslash level: [bslash]{.index entry="\\"}.
 Old spelling: [old]{.index entry="Alpha\!Beta"}.
 Empty level: [empty]{.index entry="A!!B!"}.
-Too deep: [deep]{.index entry="One!Two!Three!Four!Five"}.
+Too deep: [deep]{.index entry="One!Two!Three!Four!Five!"}.
 
 # Escaping probes
 
@@ -49,7 +49,7 @@ are kept short so each fits one line of the two-column printed index:
 [bang ! quote "]{.index}.
 
 The same characters in an `entry=` level:
-[entry specials]{.index entry="Specials % & # _ { } \\ ~ ^ $ @ | !! \""}.
+[entry specials]{.index entry="Specials % & # _ { } \\ ~ ^ $ @ | !! \" < >"}.
 
 Leading and trailing specials in visible terms:
 [\{Braced\}]{.index} and [\~tilde dollar\$]{.index}.

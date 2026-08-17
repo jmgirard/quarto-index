@@ -1,0 +1,209 @@
+---
+title: "quarto-index escaping probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Escaping probe
+
+Every printable ASCII character except the space, each as its own visible
+term and its own `entry=` level. A character needing a mechanism the filter
+does not apply breaks this build, or is rejected by makeindex, or fails to
+typeset — the three ways an escaping bug reaches a reader. Generated to
+cover the range by construction rather than by recall; a literal `!` is
+written `!!`, since a lone `!` is a level separator.
+
+Visible terms:
+
+[\!]{.index}
+[\"]{.index}
+[\#]{.index}
+[\$]{.index}
+[\%]{.index}
+[\&]{.index}
+[\']{.index}
+[\(]{.index}
+[\)]{.index}
+[\*]{.index}
+[\+]{.index}
+[\,]{.index}
+[\-]{.index}
+[\.]{.index}
+[\/]{.index}
+[0]{.index}
+[1]{.index}
+[2]{.index}
+[3]{.index}
+[4]{.index}
+[5]{.index}
+[6]{.index}
+[7]{.index}
+[8]{.index}
+[9]{.index}
+[\:]{.index}
+[\;]{.index}
+[\<]{.index}
+[\=]{.index}
+[\>]{.index}
+[\?]{.index}
+[\@]{.index}
+[A]{.index}
+[B]{.index}
+[C]{.index}
+[D]{.index}
+[E]{.index}
+[F]{.index}
+[G]{.index}
+[H]{.index}
+[I]{.index}
+[J]{.index}
+[K]{.index}
+[L]{.index}
+[M]{.index}
+[N]{.index}
+[O]{.index}
+[P]{.index}
+[Q]{.index}
+[R]{.index}
+[S]{.index}
+[T]{.index}
+[U]{.index}
+[V]{.index}
+[W]{.index}
+[X]{.index}
+[Y]{.index}
+[Z]{.index}
+[\[]{.index}
+[\\]{.index}
+[\]]{.index}
+[\^]{.index}
+[\_]{.index}
+[\`]{.index}
+[a]{.index}
+[b]{.index}
+[c]{.index}
+[d]{.index}
+[e]{.index}
+[f]{.index}
+[g]{.index}
+[h]{.index}
+[i]{.index}
+[j]{.index}
+[k]{.index}
+[l]{.index}
+[m]{.index}
+[n]{.index}
+[o]{.index}
+[p]{.index}
+[q]{.index}
+[r]{.index}
+[s]{.index}
+[t]{.index}
+[u]{.index}
+[v]{.index}
+[w]{.index}
+[x]{.index}
+[y]{.index}
+[z]{.index}
+[\{]{.index}
+[\|]{.index}
+[\}]{.index}
+[\~]{.index}
+
+Entry levels:
+
+[e0]{.index entry="!!"}
+[e1]{.index entry="\""}
+[e2]{.index entry="#"}
+[e3]{.index entry="$"}
+[e4]{.index entry="%"}
+[e5]{.index entry="&"}
+[e6]{.index entry="'"}
+[e7]{.index entry="("}
+[e8]{.index entry=")"}
+[e9]{.index entry="*"}
+[e10]{.index entry="+"}
+[e11]{.index entry=","}
+[e12]{.index entry="-"}
+[e13]{.index entry="."}
+[e14]{.index entry="/"}
+[e15]{.index entry="0"}
+[e16]{.index entry="1"}
+[e17]{.index entry="2"}
+[e18]{.index entry="3"}
+[e19]{.index entry="4"}
+[e20]{.index entry="5"}
+[e21]{.index entry="6"}
+[e22]{.index entry="7"}
+[e23]{.index entry="8"}
+[e24]{.index entry="9"}
+[e25]{.index entry=":"}
+[e26]{.index entry=";"}
+[e27]{.index entry="<"}
+[e28]{.index entry="="}
+[e29]{.index entry=">"}
+[e30]{.index entry="?"}
+[e31]{.index entry="@"}
+[e32]{.index entry="A"}
+[e33]{.index entry="B"}
+[e34]{.index entry="C"}
+[e35]{.index entry="D"}
+[e36]{.index entry="E"}
+[e37]{.index entry="F"}
+[e38]{.index entry="G"}
+[e39]{.index entry="H"}
+[e40]{.index entry="I"}
+[e41]{.index entry="J"}
+[e42]{.index entry="K"}
+[e43]{.index entry="L"}
+[e44]{.index entry="M"}
+[e45]{.index entry="N"}
+[e46]{.index entry="O"}
+[e47]{.index entry="P"}
+[e48]{.index entry="Q"}
+[e49]{.index entry="R"}
+[e50]{.index entry="S"}
+[e51]{.index entry="T"}
+[e52]{.index entry="U"}
+[e53]{.index entry="V"}
+[e54]{.index entry="W"}
+[e55]{.index entry="X"}
+[e56]{.index entry="Y"}
+[e57]{.index entry="Z"}
+[e58]{.index entry="["}
+[e59]{.index entry="\\"}
+[e60]{.index entry="]"}
+[e61]{.index entry="^"}
+[e62]{.index entry="_"}
+[e63]{.index entry="`"}
+[e64]{.index entry="a"}
+[e65]{.index entry="b"}
+[e66]{.index entry="c"}
+[e67]{.index entry="d"}
+[e68]{.index entry="e"}
+[e69]{.index entry="f"}
+[e70]{.index entry="g"}
+[e71]{.index entry="h"}
+[e72]{.index entry="i"}
+[e73]{.index entry="j"}
+[e74]{.index entry="k"}
+[e75]{.index entry="l"}
+[e76]{.index entry="m"}
+[e77]{.index entry="n"}
+[e78]{.index entry="o"}
+[e79]{.index entry="p"}
+[e80]{.index entry="q"}
+[e81]{.index entry="r"}
+[e82]{.index entry="s"}
+[e83]{.index entry="t"}
+[e84]{.index entry="u"}
+[e85]{.index entry="v"}
+[e86]{.index entry="w"}
+[e87]{.index entry="x"}
+[e88]{.index entry="y"}
+[e89]{.index entry="z"}
+[e90]{.index entry="{"}
+[e91]{.index entry="|"}
+[e92]{.index entry="}"}
+[e93]{.index entry="~"}

@@ -1,6 +1,6 @@
 # M01: LaTeX index extension skeleton
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -20,18 +20,15 @@ users consume.
 **In:**
 - Extension scaffold `_extensions/index/` (`_extension.yml`, Lua filter),
   consumed by the examples the way a user would (via `_extensions/`).
-- Span syntax only: `[term]{.index}` indexes the visible term;
-  `[term]{.index entry="..."}` customizes the entry; `[]{.index entry="..."}`
-  makes an invisible entry.
-- Entry semantics (IP1, D-001): all entry values are structured,
-  format-neutral data. `entry="..."` is parsed by the extension as
-  `!`-separated sub-entry levels, left-to-right longest-match: `!!` yields
-  a literal `!`, a single `!` starts a level; a trailing empty level is
-  emitted as written and warned about, never repaired (leading and medial
-  empty levels are a known makeindex failure → ROADMAP). Each level is
-  literal text; the extension emits correct LaTeX itself — specials
-  escaped, `@ | ! "` made literal (mechanism: the Decisions entry) — for
-  derived and explicit entries alike. No raw LaTeX pass-through.
+- Span syntax only — the four forms AC4 fences and the README documents;
+  no shortcode or other parallel syntax (GP5).
+- Entry semantics (IP1, D-001): entry values are structured, format-neutral
+  data — never raw LaTeX. `entry="..."` parses into `!`-separated levels,
+  longest-match, `!!` a literal `!`; a trailing empty level is emitted as
+  written and warned about, never repaired (leading/medial empties are a
+  known makeindex failure → ROADMAP). Each level is literal text — of a
+  visible term or an `entry=` value alike — that the extension emits
+  correctly itself (mechanism: the Decisions entries).
 - `latex`/`pdf` output only (beamer excluded — it has no `theindex`
   environment): emit `\index{}` at the mark's position; makeindex stores
   three levels, so deeper entries fold into the third, joined with `, `,
@@ -42,8 +39,8 @@ users consume.
   verified here — HTML and beamer — keep the visible text, gain none of
   `\index`, `imakeidx`, `\makeindex`, `\printindex`, and never fail to
   render (IP2); one shared format gate covers all such formats.
-- Demo + control example documents, test script, README, TinyTeX install
-  for local PDF verification.
+- Demo, control and escaping-probe example documents, test script, README,
+  TinyTeX install for local PDF verification.
 
 **Out:** (each a ROADMAP candidate row): HTML index generation (span text
 stays visible in HTML; index behavior there undefined for now); sort keys
@@ -74,26 +71,30 @@ the escaping-probe, sub-entry and `!!`-run rows independently of it.
       non-empty `.tex` with no `\index{`, `imakeidx`, `\makeindex`, or
       `\printindex`. Mark-like text survives as content: every control-manifest
       token — for each mark, an escape-free token containing that mark's own
-      `entry=` value or visible text — matches its exact count, any mismatch
-      failing.
+      `entry=` value or visible text — matches its exact count.
 - [ ] AC4: The supported-forms list is normative — visible-term, custom-entry
       (single-level `entry=`), sub-entry (`!`-separated levels, literal `!` via
       `!!`), and invisible-entry spans — and the probe set puts visible terms
       and `entry=` levels *each independently* through every character of the
-      escape domain (Pandoc's LaTeX-writer escapes plus makeindex's actives
-      `! @ | "`), which the script pins to the filter's own escape table so no
-      handled character can go unprobed; across leading, medial and trailing
-      positions (union coverage, not the cross-product), plus `!!`
-      leading/medial/trailing, one odd-length `!` run, one trailing empty
-      level, a level whose literal text is one backslash (typed `\\`), one
-      entry deeper than three levels whose render log must carry its fold
-      warning, one Latin-1 accented term as a visible term and one inside an
-      `entry=` level (the range pdflatex's default fonts cover; other scripts
-      await an engine decision → ROADMAP), and one pinning that `\!` yields
-      two levels. Each form has ≥1 counted instance in `examples/demo.qmd`
-      under AC1's manifest; the README documents exactly those four span forms
-      and no others, plus how a literal backslash and `"` are written inside
-      `entry=`, and the three-level ceiling with its folding.
+      escape domain (Pandoc's LaTeX-writer escapes plus makeindex's actives `!
+      @ | "`), which the script pins to the filter's own escape table and
+      requires in both contexts of the demo; across leading, medial and
+      trailing positions (union coverage, not the cross-product), plus `!!`
+      leading/medial/trailing, one odd-length `!` run, a level whose literal
+      text is one backslash (typed `\\`), one entry deeper than three levels
+      ending in an empty level, whose render log must carry both the fold and
+      empty-level warnings, one Latin-1 accented term as a visible term and one
+      inside an `entry=` level (the range pdflatex's default fonts cover; other
+      scripts await an engine decision → ROADMAP), and one pinning that `\!`
+      yields two levels. Each form has ≥1 counted instance in
+      `examples/demo.qmd` under AC1's manifest; the README documents exactly
+      those four span forms and no others, plus how a literal backslash and `"`
+      are written inside `entry=`, and the three-level ceiling with its
+      folding. Separately (sharing AC6's toolchain precondition),
+      `examples/escaping.qmd` covers every printable ASCII character except the
+      space — each as its own term and its own level, a literal `!` written
+      `!!` — and compiles, has every entry accepted by makeindex with none
+      rejected, and typesets every escape-domain character in its index.
 - [ ] AC5 (tracking hygiene): `cairn/PROFILE.md`'s `verify` slot names
       `tests/run-tests.sh`; the script fails loudly (`set -euo pipefail`) and
       passes a self-test: against a deliberately broken fixture (one
@@ -106,26 +107,25 @@ the escaping-probe, sub-entry and `!!`-run rows independently of it.
       derived-from-visible-text, single-level, non-`entry=` terms), including
       the escaping probes with their special characters literally and in
       order. The script fails loudly if `tinytex`, `makeindex`, or `pdftotext`
-      is missing, so this can never pass unrun. Explicit `entry=` entries are
+      is missing, so this can never pass unrun; explicit `entry=` entries are
       verified by AC1 instead.
 - [ ] AC7: `examples/demo.qmd` renders to HTML with exit 0, and to beamer
-      with exit 0 whose kept `.tex` is free of `\index`, `imakeidx`,
-      `\makeindex`, `\printindex` while retaining visible text — the
-      regression test for the IP2 failure review found, where any mark aborted
-      a beamer render. In HTML each visible term appears as rendered text —
-      markdown backslash-escapes consumed, then `&`, `<`, `>` as HTML
-      entities — per the visible-terms manifest, every row's count checked
-      against the rendered `.index` spans, pinned complete: the manifest's
-      count total must equal `]{.index` minus `[]{.index` occurrences. The
-      `.html` carries none of those four tokens, and with tags stripped its
-      body text contains no value from the script's `entry=` no-leak
-      manifest, which the script pins by sweeping every `entry=` value in the
-      `.qmd`: each must be listed there or be a substring of a visible term.
-      Surviving span attributes are permitted.
+      (sharing AC6's toolchain precondition) with exit 0 whose kept `.tex` is
+      free of `\index`, `imakeidx`, `\makeindex`, `\printindex` while
+      retaining visible text — the regression test for the IP2 failure review
+      found, where any mark aborted a beamer render. In HTML each visible term
+      appears as rendered text — markdown backslash-escapes consumed, then
+      `&`, `<`, `>` as HTML entities — per the visible-terms manifest, every
+      row's count checked against the rendered `.index` spans, pinned
+      complete: the manifest's count total must equal `]{.index` minus
+      `[]{.index` occurrences. The `.html` carries none of those four tokens,
+      and with tags stripped its body text contains no value from the script's
+      `entry=` no-leak manifest, which the script pins by sweeping every
+      `entry=` value in the `.qmd`: each must be listed there or be a
+      substring of a visible term. Surviving span attributes are permitted.
 ## Coverage
 
-- AC1 → T2, T4, T5 · AC2 → T3, T5 · AC3 → T2, T3, T4, T5
-- AC4 → T4, T5, T6 · AC5 → T5 · AC6 → T3, T5 · AC7 → T2, T4, T5
+- AC1 → T2,T4,T5 · AC2 → T3,T5 · AC3 → T2,T3,T4,T5 · AC4 → T4,T5,T6 · AC5 → T5 · AC6 → T3,T5 · AC7 → T2,T4,T5
 
 ## Tasks
 
@@ -258,7 +258,26 @@ lines; no coverage changed. [O] warning wording says "the last one" where
 
 - 2026-08-16: review pass 2 returned M01 to in-progress (defect return #2). AC4 fails inside its own promise — no `entry=` probe covers `<` or `>`, so the two contexts are not each independently swept. Two IP2 defects also block: an unbalanced `{` or `}` in a term or entry aborts the PDF render (`\index` reads under `\@sanitize`, so `\{` is not an escape), and the depth fold repairs a trailing empty level while swallowing its warning, contradicting Scope and README. Prior blockers R1-R3 re-verified fixed. One further return trips the thrash threshold.
 
+- 2026-08-16: return-2 fixes. N1: `{`/`}` emit as `\textbraceleft{}`/`\textbraceright{}` — reproduced the abort first (`[open \{ only]{.index}` → "Paragraph ended before \@wrindex was complete"), then confirmed the fix compiles. N3: the empty-level warning moved ahead of clamping, and the demo's deep probe now ends in an empty level, so the interaction that broke is the one probed; both warnings are asserted. N2/N4: `<`/`>` added to the demo's `entry=` probe, and the probe check now requires every escape-domain character in BOTH contexts of the demo rather than only matching the filter table. N5/N6: the filter's file header and the README character list corrected.
+- 2026-08-16: `examples/escaping.qmd` replaces the hand-listed probe with a procedurally-defined one: every printable ASCII character except the space, each as its own term and its own level, compiled for real. The suite checks all three ways an escaping bug reaches a reader — the build breaks, makeindex rejects the entry, or it fails to typeset — with a second pdflatex pass so the generated index is actually set. 188 entries accepted, 0 rejected, every escape-domain character present in the typeset index. This ends the recurring class where a character was missing from a recall-fixed list.
+- 2026-08-16: amendment audited full-mode by a fresh [O] reader (9 findings, all applied). It caught that the new probe file was itself unpinned (its expected count was derived from the file, so deleting probes shrank the expectation), that the empty-level warning was asserted by nothing while its failing case was probed nowhere, that compiling proves a character *reads* but not that it *prints*, and that the Scope compression had dropped "for derived and explicit entries alike" and weakened "emits correct LaTeX" to "makes safe". All four are fixed; the domain is now procedural, which was the auditor's recommended option over widening the list a third time.
+- 2026-08-16: cap remedy — Coverage folded to one line, AC3/AC4/AC6 tightened and AC4/AC7 reflowed; plan-owned body 149.
+- 2026-08-16: return-2 fixes complete; `tests/run-tests.sh --self-test` exits 0 from clean artifacts with 12 checks; status → review.
+
 ## Decisions
+
+- 2026-08-16: braces join `|` and `"` as characters that cannot be
+  backslash-escaped inside `\index{}`. LaTeX reads that argument under
+  `\@sanitize`, which gives `\` catcode 12, so `\{` escapes nothing and the
+  brace stays a group character: `[open \{ only]{.index}` aborted the render
+  with "Paragraph ended before `\@wrindex` was complete". They are emitted as
+  `\textbraceleft{}`/`\textbraceright{}`. The general lesson, and why
+  `examples/escaping.qmd` now exists: per-character review of an escape table
+  cannot establish that a character survives, because the failure depends on
+  how LaTeX *reads* the argument, not on the character alone. Only compiling
+  each character settles whether it survives; only typesetting the resulting
+  index settles whether it prints. `examples/escaping.qmd` does both, one
+  character at a time, over printable ASCII — combinations remain untested.
 
 - 2026-08-16: LaTeX escaping strategy — makeindex quoting is used only for
   `!` and `@`; `|` and `"` are emitted as `\textbar{}` and `\textquotedbl{}`.

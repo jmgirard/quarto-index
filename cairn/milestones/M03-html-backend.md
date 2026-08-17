@@ -1,6 +1,6 @@
 # M03: HTML index back-end
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M02
 - **Driving RR:** —
@@ -186,6 +186,8 @@ criteria audit applied).
 - 2026-08-17: plan-owned body exceeded the 150-line cap after the amendment; Acceptance criteria compressed, then Tasks, with every promise unchanged in force. Coverage remapped onto T8-T11.
 
 - 2026-08-17: fix pass complete (T8-T11); all review findings triaged fix-now are done, the rest are candidate rows. Suite green with --self-test, cairn_validate clean, AC1 merge-base byte-identity re-confirmed. Status -> review (pass 2).
+
+- 2026-08-17: review pass 2 RETURNED (defect return 2): AC3 fails by three new mechanisms of the SAME shape the pass-1 fix addressed — a heading mark carrying an author id keeps its id inside the heading and duplicates into the TOC (reproduced); an id written in raw HTML is invisible to the id collector, so a minted id collides with it (reproduced); and two marks in one heading share a single borrowed anchor (reproduced). Thrash trigger (b): the remedy is the alternative recorded at the implement gate — emit the anchor just after the heading rather than borrowing the heading's id.
 
 ## Decisions
 

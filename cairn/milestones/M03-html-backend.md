@@ -78,10 +78,10 @@ criteria audit applied).
       (marks carrying ids inside the minted namespace) — the shapes demo.qmd's
       invariants exclude. The reworked no-leak check passes: every
       `entry=`/`see=`/`see-also=` value is absent from the rendered
-      document's text, index section excised, compared in a single layer so a
-      value containing `&`, `<`, `>` or `"` is matched against its escaped
-      rendering and an escaping leak cannot pass unseen; the source-pinned
-      completeness check is retained. Scope: rendered HTML text only — Pandoc
+      document's text, index section excised, compared in a single layer — the
+      value against the decoded text a reader would see — so a value
+      containing `&`, `<`, `>` or `"` cannot slip past by being escaped in the
+      render; the source-pinned completeness check is retained. Scope: rendered HTML text only — Pandoc
       carries attribute values on the span itself, and whether that markup
       residue is acceptable in pass-through formats is tracked separately.
 - [ ] AC4: Cross-reference entries in generated HTML indexes render with M02
@@ -188,6 +188,9 @@ criteria audit applied).
 - 2026-08-17: fix pass complete (T8-T11); all review findings triaged fix-now are done, the rest are candidate rows. Suite green with --self-test, cairn_validate clean, AC1 merge-base byte-identity re-confirmed. Status -> review (pass 2).
 
 - 2026-08-17: review pass 2 RETURNED (defect return 2): AC3 fails by three new mechanisms of the SAME shape the pass-1 fix addressed — a heading mark carrying an author id keeps its id inside the heading and duplicates into the TOC (reproduced); an id written in raw HTML is invisible to the id collector, so a minted id collides with it (reproduced); and two marks in one heading share a single borrowed anchor (reproduced). Thrash trigger (b): the remedy is the alternative recorded at the implement gate — emit the anchor just after the heading rather than borrowing the heading's id.
+
+- 2026-08-17: amendment return: AC3 — "compared in a single layer — the value against the decoded text a reader would see — so a value containing `&`, `<`, `>` or `\"` cannot slip past by being escaped in the render"; a second amendment naming AC3 stops per the rules, so the disposition went to the user, who chose to correct the wording. The requirement was already right and already implemented; only its explanation was backwards (review pass 2, blame lens).
+- 2026-08-17: PAUSED mid-fix at the user's decision. The pass-2 findings are all recorded above; none is fixed yet. The approach question is OPEN and is the first thing to settle on resume: the session recommended switching to the alternative recorded at the implement gate (emit each mark's anchor in a hidden element just after the heading, rather than borrowing the heading's id), because that makes the author-id, missing-heading-id and two-marks-in-one-heading cases stop being special; the alternatives offered were patching the three cases individually or narrowing the milestone so marks in headings carry no locator. Defect returns so far: 2 — a third hits the descope-or-park threshold.
 
 ## Decisions
 

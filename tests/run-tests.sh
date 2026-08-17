@@ -128,6 +128,80 @@ MANIFEST
 # renamed.
 XREF_BOTH_COMMAND='quartoindexseeboth'
 
+# The HTML back-end's pinned identifiers. Named once here and pinned to the
+# filter's own constants below, so the suite cannot go on checking names the
+# filter has renamed.
+HTML_SECTION_ID='qi-index'
+HTML_ANCHOR_PREFIX='qi-mark-'
+HTML_ENTRY_PREFIX='qi-entry-'
+
+# ---------------------------------------------------------------------------
+# Manifest 1e — the generated index in examples/demo.html (M03-AC2).
+# EXHAUSTIVE: a rendered entry absent from this list fails, as does a listed
+# entry the render does not produce.
+# Format: <depth><TAB><entry text><TAB><locator count>[<TAB><cross-reference>]…
+# where a cross-reference is `see-plain`/`see-link`/`also-plain`/`also-link`,
+# a space, and the target as a reader sees it.
+# Same oracle rule as manifest 1, with the HTML back-end's own layers derived
+# by hand on top of the level parse:
+#   4. No level ceiling: the three-level clamp is a makeindex property, so
+#      `One!Two!Three!Four!Five!` nests six deep here, trailing empty level
+#      included.
+#   5. Order: fold ASCII uppercase to lowercase, compare by codepoint, break a
+#      fold tie by codepoint — applied to siblings at every depth.
+#   6. Locators: one per locator-contributing mark on that entry, in document
+#      order. A cross-reference mark contributes none.
+#   7. Cross-reference targets join with `: ` and are hyperlinked exactly when
+#      the target's LEVEL LIST is an entry in this index. No target in
+#      demo.qmd names an entry, so every row here is `plain`; the linked and
+#      colliding-string cases live in xref-conflict.qmd (M03-AC4).
+# ---------------------------------------------------------------------------
+read -r -d '' DEMO_HTML_INDEX <<'MANIFEST' || true
+0	!Bang leads	1
+0	\	1
+0	A!	0
+1	B	1
+0	A!B	0
+1		1
+0	Alpha	0
+1	Beta	1
+0	bang	0	see-plain Wow!Hey
+0	bang ! quote "	1
+0	both	0	see-plain Aye	also-plain Bee
+0	bs \ tilde ~ caret ^	1
+0	café naïve	1
+0	Canids	0
+1	Foxes	0	see-plain Vulpes
+0	cats	0	see-plain Felines
+0	Custom Entry	1
+0	dogs	0	also-plain Pets
+0	dollar $ at @ bar |	1
+0	Ghost	0
+1	Sub	1
+0	Ghosts	0	also-plain Spirits
+0	Grüße	0
+1	Straße	1
+0	less < more >	1
+0	One	0
+1	Two	0
+2	Three	0
+3	Four	0
+4	Five	0
+5		1
+0	owls	0	see-plain Birds: Owls
+0	pandoc	3
+0	pct % amp & hash #	1
+0	Specials % & # _ { } \ ~ ^ $ @ | ! " < >	1
+0	Top	0
+1	Middle	0
+2	Leaf	1
+0	Trail bang!	1
+0	us _ brace { }	1
+0	Wow!Really	1
+0	{Braced}	1
+0	~tilde dollar$	1
+MANIFEST
+
 # ---------------------------------------------------------------------------
 # Manifest 1c — cross-reference text expected in the compiled PDF's index
 # region (M02-AC2). Each row is the source entry as makeindex prints it —
@@ -427,6 +501,46 @@ print(f'ok   {label}: {rows} tokens')
 PY
 }
 
+# Compare a rendered file's generated index section against an EXHAUSTIVE row
+# manifest (format: see manifest 1e). Rows are compared in order, so a
+# collation failure is reported as one rather than swallowed by set equality.
+check_html_index_manifest() {
+  local htmlfile="$1" manifest="$2" label="$3"
+  printf '%s\n' "$manifest" > "$WORK/html-index.txt"
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$htmlfile" \
+    "$WORK/html-index.txt" "$label" <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+html_path, manifest_path, label = sys.argv[1:4]
+section_id = os.environ['HTML_SECTION_ID']
+
+doc = H.parse(html_path)
+found = H.count_id(doc, section_id)
+if found != 1:
+    print(f'FAIL: {label}: expected exactly one generated index section '
+          f'(id={section_id!r}) in {html_path}, found {found}', file=sys.stderr)
+    sys.exit(1)
+actual = [H.row(r) for r in H.index_entries(H.find_id(doc, section_id))]
+expected = H.read_manifest(manifest_path)
+if not expected:
+    print(f'FAIL: {label}: manifest is empty', file=sys.stderr)
+    sys.exit(1)
+if actual != expected:
+    print(f'FAIL: {label}: the generated index does not match the manifest',
+          file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such row rendered>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  row {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: the generated index matches all {len(expected)} '
+      f'manifest rows, in order')
+PY
+}
+
 # ---------------------------------------------------------------------------
 # Tool guard (AC6): fail loudly rather than skipping the end-to-end check.
 # ---------------------------------------------------------------------------
@@ -532,6 +646,29 @@ if missing:
     sys.exit(1)
 print(f'ok   AC4: probe set pinned to the filter escape table ({len(keys)} '
       f'chars), each probed in both contexts')
+PY
+
+# The HTML back-end's three identifiers are a public surface — a reader's URL
+# and an author's CSS hold on to them — so the suite's copies are pinned to
+# the filter's own constants, exactly as the dual-target command name is.
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - _extensions/index/index.lua <<'PY'
+import os, re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+bad = []
+for name in ('HTML_SECTION_ID', 'HTML_ANCHOR_PREFIX', 'HTML_ENTRY_PREFIX'):
+    m = re.search(rf'{name}\s*=\s*"([^"]*)"', src)
+    if not m:
+        bad.append(f'  {name} is not defined in the filter')
+    elif m.group(1) != os.environ[name]:
+        bad.append(f'  {name}: suite says {os.environ[name]!r}, filter '
+                   f'defines {m.group(1)!r}')
+if bad:
+    print('FAIL: M03-AC3: the suite and the filter disagree on the HTML '
+          'identifiers:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print('ok   M03-AC3: all 3 HTML identifiers pinned to the filter constants')
 PY
 
 quarto render examples/demo.qmd --to latex > "$WORK/demo-latex.log" 2>&1 \
@@ -777,6 +914,116 @@ for tok in '\index' 'imakeidx' '\makeindex' '\printindex'; do
   fi
 done
 
+# ---------------------------------------------------------------------------
+# M03-AC2 / M03-AC3 — the generated HTML index, its anchors and its links.
+# ---------------------------------------------------------------------------
+check_html_index_manifest examples/demo.html "$DEMO_HTML_INDEX" "M03-AC2"
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - examples/demo.html \
+  examples/demo.qmd <<'PY'
+import os, re, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+html_path, qmd_path = sys.argv[1:3]
+section_id = os.environ['HTML_SECTION_ID']
+anchor_prefix = os.environ['HTML_ANCHOR_PREFIX']
+entry_prefix = os.environ['HTML_ENTRY_PREFIX']
+
+# --- how many anchors the SOURCE demands ------------------------------------
+# Derived from the .qmd, never counted off the render: an anchor count read
+# back from the artifact would agree with itself however many marks were lost.
+qmd = open(qmd_path, encoding='utf-8').read()
+
+
+def marks(src):
+    """Every index mark as (visible text, attribute block).
+
+    The attribute block ends at the first `}` outside a quoted value — an
+    `entry=` value may itself contain braces, so a non-quote-aware scan cuts
+    the block short and misreads the mark.
+    """
+    found = []
+    for m in re.finditer(r'\[((?:\\.|[^\]\\])*)\]\{\.index', src):
+        i, quoted = m.end(), False
+        while i < len(src):
+            c = src[i]
+            if quoted and c == '\\':
+                i += 2
+                continue
+            if c == '"':
+                quoted = not quoted
+            elif not quoted and c == '}':
+                break
+            i += 1
+        found.append((re.sub(r'\\(.)', r'\1', m.group(1)), src[m.end():i]))
+    return found
+
+
+all_marks = marks(qmd)
+textless = [a for text, a in all_marks if text == '' and 'entry=' not in a]
+if textless:
+    # The arithmetic below assumes every mark in this fixture yields an entry.
+    # A mark with neither visible text nor entry= is dropped and emits no
+    # anchor; naming the invariant here stops that being misread as a bug in
+    # the filter.
+    print(f'FAIL: M03-AC3: the anchor count assumes demo.qmd holds no textless '
+          f'mark, but {len(textless)} mark(s) have neither visible text nor '
+          f'entry=', file=sys.stderr)
+    sys.exit(1)
+locator_marks = [m for m in all_marks
+                 if 'see=' not in m[1] and 'see-also=' not in m[1]]
+want = len(locator_marks)
+
+# --- the anchors the render produced ----------------------------------------
+doc = H.parse(html_path)
+ids = H.all_ids(doc)
+duplicates = sorted({i for i in ids if ids.count(i) > 1})
+generated = [i for i in ids
+             if i == section_id or i.startswith(anchor_prefix)
+             or i.startswith(entry_prefix)]
+clashing = [i for i in duplicates if i in generated]
+if clashing:
+    print(f'FAIL: M03-AC3: generated id(s) are not document-unique: '
+          f'{clashing}', file=sys.stderr)
+    sys.exit(1)
+
+anchors = sorted(i for i in ids if i.startswith(anchor_prefix))
+expected = [f'{anchor_prefix}{n}' for n in range(1, want + 1)]
+if sorted(expected) != anchors:
+    print(f'FAIL: M03-AC3: expected anchors {anchor_prefix}1..{want} (one per '
+          f'locator-contributing mark in demo.qmd), got {len(anchors)} anchor '
+          f'id(s)', file=sys.stderr)
+    missing = sorted(set(expected) - set(anchors))
+    extra = sorted(set(anchors) - set(expected))
+    if missing:
+        print(f'  missing: {missing}', file=sys.stderr)
+    if extra:
+        print(f'  unexpected: {extra}', file=sys.stderr)
+    sys.exit(1)
+for anchor in anchors:
+    node = H.find_id(doc, anchor)
+    if node.tag != 'span' or 'index' not in H.classes(node):
+        print(f'FAIL: M03-AC3: {anchor} sits on <{node.tag}>, not on the '
+              f'mark span it is supposed to anchor', file=sys.stderr)
+        sys.exit(1)
+
+# --- every link inside the index resolves -----------------------------------
+section = H.find_id(doc, section_id)
+targets = set(ids)
+dangling = sorted({a.attrs.get('href', '') for a in H.find_all(section, 'a')
+                   if a.attrs.get('href', '').startswith('#')
+                   and a.attrs['href'][1:] not in targets})
+if dangling:
+    print(f'FAIL: M03-AC3: link(s) in the generated index resolve to no id in '
+          f'the same file: {dangling}', file=sys.stderr)
+    sys.exit(1)
+links = [a for a in H.find_all(section, 'a')]
+print(f'ok   M03-AC3: {want} anchors, one per locator-contributing mark '
+      f'(demo.qmd holds no textless mark), all generated ids unique, all '
+      f'{len(links)} links in the index resolve')
+PY
+
 # IP2 regression: a mark whose content yields no text must index nothing and
 # delete nothing. An image with empty alt text stringifies to "", which once
 # caused the whole span — image included — to be dropped from every format.
@@ -834,11 +1081,27 @@ pass "M02-AC5: the clash report names both differing-encap keys once each, ignor
 
 printf '%s\n' "$VISIBLE_TERMS" > "$WORK/visible.txt"
 printf '%s\n' "$ENTRY_VALUES_NO_LEAK" > "$WORK/noleak.txt"
-python3 - examples/demo.html examples/demo.qmd "$WORK/visible.txt" "$WORK/noleak.txt" <<'PY'
-import re, sys
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/demo.html examples/demo.qmd \
+  "$WORK/visible.txt" "$WORK/noleak.txt" <<'PY'
+import os, re, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
 html_path, qmd_path, vis_path, leak_path = sys.argv[1:5]
-html = open(html_path, encoding='utf-8').read()
 qmd = open(qmd_path, encoding='utf-8').read()
+
+# Both halves of this check are about the document a reader reads OUTSIDE the
+# generated index: the visible terms are the marks in the body, and the
+# attribute values that must not leak are legitimately printed inside the
+# index section. So the section is removed from the tree first, and everything
+# below reads what is left.
+# decode=False: this manifest's rows are stated in the markup layer (`&amp;`,
+# `&lt;`), which is the meaning they have carried since M01.
+doc = H.parse(html_path, decode=False)
+section = H.find_id(doc, os.environ['HTML_SECTION_ID'])
+if section is None:
+    print('FAIL: AC7: no generated index section in demo.html', file=sys.stderr)
+    sys.exit(1)
+H.strip_subtree(doc, section)
 
 rows, total = [], 0
 for line in open(vis_path, encoding='utf-8'):
@@ -867,11 +1130,11 @@ if total != expected:
 from collections import Counter
 # The invisible-entry form has no visible text by construction, so its empty
 # span is not a term; the completeness pin already accounts for it separately.
-# Attribute values are matched as quoted strings, not as "anything but >":
-# Pandoc escapes & and " in an attribute but leaves < and > raw, so an entry
-# value containing them would otherwise truncate the tag match.
-SPAN_RE = r'<span class="index"(?:\s+[-\w]+="[^"]*")*\s*>(.*?)</span>'
-spans = Counter(t for t in re.findall(SPAN_RE, html, re.DOTALL) if t != '')
+# Found structurally rather than by matching the serialized tag: the HTML
+# writer orders attributes as it likes, and the marks now carry an anchor id
+# alongside their class.
+spans = Counter(t for t in (H.text(n) for n in H.find_all(doc, 'span', 'index'))
+                if t != '')
 bad = []
 for count, text in rows:
     got = spans.get(text, 0)
@@ -907,7 +1170,9 @@ if unaccounted:
         print(f'  <<{v}>>', file=sys.stderr)
     sys.exit(1)
 
-body = re.sub(r'<[^>"]*(?:"[^"]*"[^>"]*)*>', ' ', html)
+# A space at every element boundary, so a value that only exists by running
+# two elements together is not reported as text a reader can see.
+body = H.text(doc, sep=' ')
 def parsed(v):
     out, i = [], 0
     while i < len(v):

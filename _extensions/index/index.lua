@@ -22,9 +22,12 @@ local INDEX_CLASS = "index"
 
 -- The two cross-reference attributes, in the order their targets are emitted
 -- when a mark carries both.
+-- `command` is the LaTeX back-end's encap command; `label` is the words a
+-- reader sees, which the LaTeX back-end gets from `\seename`/`\alsoname`
+-- instead so a document loading babel keeps its translations.
 local XREF_KINDS = {
-  { attr = "see", command = "see" },
-  { attr = "see-also", command = "seealso" },
+  { attr = "see", command = "see", label = "see" },
+  { attr = "see-also", command = "seealso", label = "see also" },
 }
 
 -- A mark carrying both attributes cannot emit two `\index` commands: they
@@ -92,6 +95,21 @@ end
 local function is_latex_derived()
   return FORMAT:match("latex") ~= nil
 end
+
+-- HTML is the second back-end. The match is on `html` alone, so revealjs,
+-- epub and every other format keep passing through: none of them carries
+-- `html` in FORMAT, and each would need an index shape of its own anyway.
+local function is_html()
+  return FORMAT:match("html") ~= nil
+end
+
+-- The HTML back-end's pinned identifiers. They are the only names a reader's
+-- URL or an author's CSS can hold on to, so they are namespaced to the
+-- extension rather than named after the word "index", which an author's own
+-- heading would collide with.
+local HTML_SECTION_ID = "qi-index"
+local HTML_ANCHOR_PREFIX = "qi-mark-"
+local HTML_ENTRY_PREFIX = "qi-entry-"
 
 -- Split an `entry=` value into sub-entry levels: `!` separates, `!!` is a
 -- literal `!`, longest-match left to right.
@@ -177,18 +195,22 @@ local function target_argument(levels)
   return table.concat(parts, TARGET_JOIN)
 end
 
+-- An empty level is a property of what the author wrote, not of any one
+-- back-end, so this warns wherever the document is rendered — and before any
+-- back-end folds levels together, since folding absorbs a trailing empty level
+-- into the level above it and would otherwise swallow the warning.
+local function warn_empty_levels(levels, context)
+  for _, level in ipairs(levels) do
+    if level == "" then
+      warn(("empty index level in %s; the level is kept as written, and a "
+             .. "back-end that cannot store it may drop it"):format(context))
+    end
+  end
+end
+
 -- Build the `\index{...}` argument from literal levels, joining with the
 -- unquoted `!` that makeindex reads as a level separator.
 local function index_argument(levels, context)
-  -- Warn on the levels as the author wrote them, before any folding: folding
-  -- absorbs a trailing empty level into the level above it, which would
-  -- otherwise swallow the warning that Scope promises for it.
-  for _, level in ipairs(levels) do
-    if level == "" then
-      warn(("empty index level in %s; emitted as written unless it falls "
-             .. "inside a folded tail, where it is dropped"):format(context))
-    end
-  end
   local parts = {}
   for _, level in ipairs(clamp_levels(levels, context)) do
     parts[#parts + 1] = escape_level(level)
@@ -243,6 +265,12 @@ end
 -- Set by the Span pass, read by the Pandoc pass: the preamble and
 -- `\printindex` are injected only when the document actually has marks.
 local marks_emitted = 0
+-- The HTML back-end's equivalent: one record per mark, in document order,
+-- each carrying the mark's parsed levels, its cross-reference targets, and
+-- (for a locator-contributing mark) the id of the anchor that links back to
+-- it. The Pandoc pass builds the whole index section out of these.
+local html_marks = {}
+local html_anchors_minted = 0
 -- Likewise: the both-targets command is defined only in a document that uses
 -- it, so a document without one gets nothing extra in its preamble.
 local xref_both_emitted = false
@@ -332,14 +360,37 @@ local function Span(span)
     return nil
   end
 
+  -- Derived once, and before the back-end branch: the levels are the author's
+  -- text whatever format this is, and the both-attributes case would otherwise
+  -- warn twice about the same entry.
+  warn_empty_levels(levels, context)
+
+  if is_html() then
+    local record = { levels = levels, xrefs = xrefs }
+    if #xrefs == 0 then
+      -- Only a locator-contributing mark needs somewhere to link back to; a
+      -- cross-reference mark takes the place of the locator and so has no
+      -- anchor of its own.
+      if span.identifier ~= nil and span.identifier ~= "" then
+        -- An id the author wrote is left alone and used as the link target:
+        -- taking it over would break whatever already points at it.
+        record.anchor = span.identifier
+      else
+        html_anchors_minted = html_anchors_minted + 1
+        record.anchor = HTML_ANCHOR_PREFIX .. html_anchors_minted
+        span.identifier = record.anchor
+      end
+    end
+    html_marks[#html_marks + 1] = record
+    return span
+  end
+
   if not is_latex_derived() then
     -- Formats with no index back-end pass the visible text through
     -- untouched, with no artifacts.
     return nil
   end
 
-  -- Derived once: index_argument warns about the levels it is given, and the
-  -- both-attributes case would otherwise warn twice about the same entry.
   local source = index_argument(levels, context)
 
   local result = pandoc.List(span.content)
@@ -380,11 +431,224 @@ local function Span(span)
   return result
 end
 
+-- ---------------------------------------------------------------------------
+-- The HTML back-end.
+--
+-- Nothing below writes HTML: the section is built out of Pandoc AST nodes and
+-- handed to Pandoc's own writer, which owns escaping (IP2). There is no level
+-- ceiling here — the three-level clamp is a makeindex property, not an index
+-- property — and no CSS is injected; the class names are hooks an author can
+-- style, not a stylesheet this extension imposes (GP4).
+-- ---------------------------------------------------------------------------
+
+-- The normative collation rule: fold ASCII uppercase to lowercase, order by
+-- codepoint, break a fold tie by codepoint. Lua compares strings byte by
+-- byte and UTF-8 byte order IS codepoint order, so `<` is the rule as
+-- stated. Only ASCII case folds: ordering beyond that is best-effort until
+-- sort keys land (DESIGN, Conventions).
+local function fold_case(s)
+  return (s:gsub("[A-Z]", string.lower))
+end
+
+local function collate(a, b)
+  local fa, fb = fold_case(a), fold_case(b)
+  if fa ~= fb then
+    return fa < fb
+  end
+  return a < b
+end
+
+-- A cross-reference target as a reader sees it: the same `: ` join the LaTeX
+-- back-end prints, so the two back-ends cannot drift apart on target text.
+local function target_text(levels)
+  return table.concat(levels, TARGET_JOIN)
+end
+
+-- Literal text as inlines. Words and spaces are separate nodes because that is
+-- what Pandoc's own reader produces; every character stays literal, and the
+-- writer escapes whatever HTML needs escaped.
+local function literal_inlines(text)
+  local inlines = pandoc.List()
+  local pos = 1
+  while true do
+    local space = text:find(" ", pos, true)
+    if not space then
+      inlines:insert(pandoc.Str(text:sub(pos)))
+      return inlines
+    end
+    inlines:insert(pandoc.Str(text:sub(pos, space - 1)))
+    inlines:insert(pandoc.Space())
+    pos = space + 1
+  end
+end
+
+local function new_entry(key)
+  return { key = key, children = {}, sorted = {}, locators = {}, xrefs = {} }
+end
+
+-- Walk the recorded marks into a tree of entries, one level per node.
+local function build_entry_tree(marks)
+  local root = new_entry(nil)
+  for _, mark in ipairs(marks) do
+    local node = root
+    for _, level in ipairs(mark.levels) do
+      local child = node.children[level]
+      if not child then
+        child = new_entry(level)
+        node.children[level] = child
+      end
+      node = child
+    end
+    if mark.anchor then
+      node.locators[#node.locators + 1] = mark.anchor
+    end
+    for _, xref in ipairs(mark.xrefs) do
+      -- Two marks carrying the same target on the same key are one
+      -- cross-reference, not two — printing it twice would report how the
+      -- author spread the marks rather than anything a reader wants. This is
+      -- also what the LaTeX index tool does with a repeated cross-reference.
+      local already = false
+      for _, existing in ipairs(node.xrefs) do
+        if existing.kind.attr == xref.kind.attr
+           and target_text(existing.levels) == target_text(xref.levels) then
+          already = true
+        end
+      end
+      if not already then
+        node.xrefs[#node.xrefs + 1] = xref
+      end
+    end
+  end
+  return root
+end
+
+-- Sort every node's children and give each entry its id, depth-first in the
+-- order it will be rendered. Ids are assigned before anything is rendered
+-- because a cross-reference may point at an entry that sorts after it.
+local function number_entries(node, counter)
+  local keys = {}
+  for key in pairs(node.children) do
+    keys[#keys + 1] = key
+  end
+  table.sort(keys, collate)
+  node.sorted = keys
+  for _, key in ipairs(keys) do
+    local child = node.children[key]
+    counter = counter + 1
+    child.id = HTML_ENTRY_PREFIX .. counter
+    counter = number_entries(child, counter)
+  end
+  return counter
+end
+
+-- Find the entry a cross-reference target names, matching on the parsed level
+-- list rather than on the rendered string: a single level that happens to
+-- contain the level join reads identically to a two-level target and must not
+-- resolve to it.
+local function lookup_entry(root, levels)
+  local node = root
+  for _, level in ipairs(levels) do
+    node = node.children[level]
+    if not node then
+      return nil
+    end
+  end
+  return node
+end
+
+local function target_span(root, xref)
+  local inlines = literal_inlines(target_text(xref.levels))
+  local entry = lookup_entry(root, xref.levels)
+  if entry then
+    inlines = pandoc.List({ pandoc.Link(inlines, "#" .. entry.id) })
+  end
+  return pandoc.Span(inlines, pandoc.Attr("", { "qi-target" }))
+end
+
+-- One entry's line: the term, then its numbered locator links, then its
+-- cross-references. The separators follow print convention — locators and the
+-- first cross-reference are set off from the term with a comma, and two
+-- cross-references are separated with a semicolon, exactly as the LaTeX
+-- back-end's dual-target command prints them.
+local function entry_inlines(root, node)
+  local inlines = pandoc.List()
+  inlines:insert(pandoc.Span(literal_inlines(node.key),
+                             pandoc.Attr(node.id, { "qi-term" })))
+
+  local tail = pandoc.List()
+  if #node.locators > 0 then
+    local locators = pandoc.List()
+    for i, anchor in ipairs(node.locators) do
+      if i > 1 then
+        locators:insert(pandoc.Str(","))
+        locators:insert(pandoc.Space())
+      end
+      locators:insert(pandoc.Link({ pandoc.Str(tostring(i)) }, "#" .. anchor))
+    end
+    tail:insert({ xref = false,
+                  span = pandoc.Span(locators,
+                                     pandoc.Attr("", { "qi-locators" })) })
+  end
+  for _, xref in ipairs(node.xrefs) do
+    local body = pandoc.List()
+    body:insert(pandoc.Emph(literal_inlines(xref.kind.label)))
+    body:insert(pandoc.Space())
+    body:insert(target_span(root, xref))
+    tail:insert({ xref = true,
+                  span = pandoc.Span(body, pandoc.Attr("",
+                    { "qi-xref", "qi-" .. xref.kind.attr })) })
+  end
+
+  local previous_was_xref = false
+  for _, item in ipairs(tail) do
+    inlines:insert(pandoc.Str(previous_was_xref and ";" or ","))
+    inlines:insert(pandoc.Space())
+    inlines:insert(item.span)
+    previous_was_xref = item.xref
+  end
+  return inlines
+end
+
+local function entry_list(root, node)
+  local items = pandoc.List()
+  for _, key in ipairs(node.sorted) do
+    local child = node.children[key]
+    local blocks = pandoc.List({ pandoc.Plain(entry_inlines(root, child)) })
+    if #child.sorted > 0 then
+      blocks:insert(entry_list(root, child))
+    end
+    items:insert(blocks)
+  end
+  return pandoc.BulletList(items)
+end
+
+-- The section is appended with no configuration (GP4) and marked unnumbered,
+-- which is how a printed index is set and which still lists it in the table
+-- of contents.
+local function append_html_index(doc)
+  local root = build_entry_tree(html_marks)
+  number_entries(root, 0)
+  doc.blocks:insert(pandoc.Header(1, literal_inlines("Index"),
+                                  pandoc.Attr(HTML_SECTION_ID,
+                                              { "unnumbered" })))
+  doc.blocks:insert(entry_list(root, root))
+  return doc
+end
+
 -- `intoc` lists the index in the table of contents, as printed books normally
 -- do. imakeidx only runs makeindex itself under `-shell-escape`, which Quarto
 -- does not enable; what actually builds the index is Quarto's own PDF loop
 -- reacting to the emitted `.idx` file (GP2: we emit correct output and stop).
 local function Pandoc(doc)
+  if is_html() then
+    -- A document with no marks gets no section, exactly as one with no marks
+    -- gets no LaTeX preamble.
+    if #html_marks == 0 then
+      return nil
+    end
+    return append_html_index(doc)
+  end
+
   if marks_emitted == 0 or not is_latex_derived() then
     return nil
   end

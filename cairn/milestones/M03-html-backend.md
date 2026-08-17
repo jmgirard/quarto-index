@@ -118,12 +118,12 @@ criteria audit applied).
 
 ## Tasks
 
-- [ ] T1: Refactor the Span pass ([index.lua](../../_extensions/index/index.lua)):
+- [x] T1: Refactor the Span pass ([index.lua](../../_extensions/index/index.lua)):
       move format-neutral warnings (empty-level, reworded) before the
       back-end branch, keep clamp+fold LaTeX-only, add an HTML branch that
       records marks and emits pinned-scheme anchors for locator-contributing
       marks; `html` match only.
-- [ ] T2: HTML Pandoc pass: build the index section from AST nodes — pinned
+- [x] T2: HTML Pandoc pass: build the index section from AST nodes — pinned
       section id, unnumbered TOC heading, normative collation, unlimited
       nesting, numbered locator links.
 - [ ] T3: HTML cross-references: labels, parsed-level-list target matching,
@@ -155,7 +155,14 @@ criteria audit applied).
 - 2026-08-16: plan chose no injected CSS over a styled index because nested lists render acceptably under defaults (GP4); falsified by the extension-listing quality bar demanding styling (GP1).
 
 - 2026-08-16: /milestone-implement started; branch m03-html-backend cut from main.
+- 2026-08-16: minor amendment (task reorder): T5's suite rework lands alongside each task that requires it rather than as one later task — anchors alone break the M01 visible-terms extraction, so no earlier task can leave the suite green on its own.
+- 2026-08-16: implement gate settled three open choices: the `qi-` identifier namespace, author-id preservation, per-entry locator numbering (Decisions below).
+- 2026-08-16: T1+T2 — format-neutral empty-level warning moved before the back-end branch and reworded to name no back-end; HTML branch records marks and mints anchors; Pandoc pass builds the index section from AST nodes (collation, unlimited nesting, numbered locator links). New `tests/htmlindex.py` reads rendered HTML structurally; visible-terms extraction retargeted (attribute-order-proof, index section excised); demo HTML index manifest (43 rows) and the anchor/link checks added. Suite green with --self-test.
 
 ## Decisions
+
+- 2026-08-16: implement gate chose `qi-index` (section), `qi-mark-<n>` (locator anchors) and `qi-entry-<n>` (index entries) as the HTML identifiers over an `index`-based name because an author's own "Index" heading claims that id, and over a spelled-out `quarto-index-` prefix because these appear in a reader's URL; falsified by a collision with another extension's `qi-` namespace.
+- 2026-08-16: implement gate chose to keep an author-supplied id on a mark and link the index to it, rather than overwrite it with a minted anchor, because overwriting would break whatever already points at that id; consequently minted anchors number the marks that needed one, not every mark. Falsified by an author id that is not document-unique.
+- 2026-08-16: implement chose to render two marks carrying the same target on one key as ONE cross-reference over repeating it, because that is what the LaTeX index tool does with a repeated cross-reference and a repeat would report how the author spread the marks rather than anything a reader wants; falsified by a use for counting cross-reference marks.
 
 ## Review

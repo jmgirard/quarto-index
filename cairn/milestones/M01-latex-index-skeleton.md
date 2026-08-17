@@ -1,6 +1,6 @@
 # M01: LaTeX index extension skeleton
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -101,7 +101,7 @@ independently of the script.
       order. The script fails loudly if `tinytex`, `makeindex`, or `pdftotext`
       is missing, so this can never pass unrun. Explicit `entry=` entries are
       verified by AC1 instead.
-- [x] AC7: `examples/demo.qmd` renders to HTML with exit 0. Each visible term
+- [ ] AC7: `examples/demo.qmd` renders to HTML with exit 0. Each visible term
       appears as rendered text — markdown backslash-escapes consumed, then
       `&`, `<`, `>` as HTML entities — per the visible-terms manifest
       (term × count, as in AC1), pinned complete: the manifest's count total
@@ -183,6 +183,9 @@ independently of the script.
 - 2026-08-16: all tasks complete; `tests/run-tests.sh --self-test` exits 0 with AC1-AC7 all green; status → review.
 - 2026-08-16: minor amendment — Scope and T2 described `|`/`"` as makeindex-quoted, which the bug fix made false; wording corrected to "made literal" with the mechanism cross-referenced to the Decisions entry. The promise is unchanged.
 
+- 2026-08-16: catch-up — commit e416c6a carried T2/T4 implementation (index.lua +159, control.qmd) under an amendment-titled message while those tasks were still unticked; the "T2/T4 done" lines landed two commits later in db6204e. Tracking-travels-with-code was not honoured there. Recorded, not rewritten (IP4).
+- 2026-08-16: review returned M01 to in-progress (defect return #1). AC7 fails inside its own named procedure: tests/run-tests.sh:394 checks visible-term presence only, discarding the per-row counts AC7 requires. Two IP2 violations also block: `--to beamer` renders fail fatally when a document has any mark (no theindex environment; reproduced exit 1), and entries deeper than three levels are silently discarded by makeindex while the build stays green (reproduced). AC1-AC6 verified clean; evidence retained above.
+
 ## Decisions
 
 - 2026-08-16: LaTeX escaping strategy — makeindex quoting is used only for
@@ -228,10 +231,11 @@ artifact, plus the reader checks noted per criterion.
   with special characters literal and in order (`dollar $ at @ bar |`,
   `bang ! quote "`). Guard re-verified by stubbing `quarto list tools` to
   report TinyTeX absent: exits 1 naming the missing tool, never skips.
-- AC7 — HTML render exit 0; 18 visible-term rows totalling 20 marks, equal
-  to `]{.index` occurrences (21) minus `[]{.index` (1); none of `\index`,
-  `imakeidx`, `\makeindex`, `\printindex`; no `entry=` value in
-  tag-stripped body text.
+- AC7 — NOT VERIFIED (corrected after independent review). HTML render exit
+  0; completeness pin holds (18 rows totalling 20 marks = 21 `]{.index`
+  minus 1 `[]{.index`); no LaTeX tokens; no `entry=` leakage. But the
+  per-row counts AC7 requires are not checked at all —
+  `tests/run-tests.sh:394` tests presence only. Criterion unticked; see R3.
 
 ### Consistency gate
 
@@ -240,4 +244,70 @@ artifact, plus the reader checks noted per criterion.
 - No `DESIGN.md` principle changed, so `cairn_impact.py` was not run.
 
 ### Independent review
+
+Three fresh-context lenses (user-facing tier, executable surface). Findings
+below are every candidate reported, with disposition. Defect return #1.
+
+**Return-forcing (verified by this session, not taken on report):**
+- R1 [O] `--to beamer` fails fatally with one mark: beamer has no `theindex`
+  environment and `\printindex` lands inside the last frame. Reproduced —
+  exit 1, "Environment theindex undefined"; identical file without the mark
+  exits 0. Direct IP2 violation (a marked term must never break a render).
+  `is_latex_derived()` opts beamer in at `index.lua:54`; no AC renders it.
+- R2 [O] Entries deeper than three levels are silently discarded: makeindex
+  caps at 3, rejects `A!B!C!D` ("0 entries accepted, 1 rejected") and still
+  exits 0, so the build is clean and the entry vanishes. Reproduced. IP2
+  "silently corrupts output". `Top!Middle!Leaf` sits exactly at the cap, so
+  the suite cannot catch it. No filter warning, no README ceiling.
+- R3 [O] AC7's per-row counts are never checked: `run-tests.sh:394` is a
+  presence test (`t not in html`); each row's count is parsed, summed for the
+  completeness pin, then discarded. AC7 requires "term x count, as in AC1".
+  Criterion fails inside its own named procedure — the floor return.
+
+**Fix-now (queued with the return, no separate status change):**
+- R4 [S] `index.lua:17-20` still says `! @ | "` are makeindex-quoted; the AC6
+  fix made that false for `|` and `"`. Verified.
+- R5 [S] `run-tests.sh:13` oracle rule says "makeindex quoting of each literal
+  level" — same superseded terminology. Verified.
+- R6 [O] `index.lua:146-147` claims imakeidx builds the index in the same
+  LaTeX run; it only does so under `-shell-escape`, which Quarto does not
+  enable. README gets this right, so the source comment contradicts the docs.
+- R7 [O] `<` and `>` are absent from `LATEX_LITERAL`; Pandoc's own writer
+  escapes both. Latent under T1 fontenc, but README:66-69 claims flatly that
+  no character needs user escaping.
+- R8 [O] `quarto.doc.use_latex_package` at `index.lua:154-155` is unguarded
+  while `warn()` guards `quarto.log`; plain pandoc errors on a nil global.
+- R9 [O] No non-ASCII probe anywhere, though IP2 names non-ASCII explicitly
+  and says the class earns a regression test forever. Code verified
+  byte-safe; the missing probe is the gap.
+
+**Follow-up candidates (ROADMAP rows, not M01):**
+- R10 [O] `PROBE_CHARS`/`SUPPORTED_FORMS` are printed, never asserted against
+  the demo — probe coverage can drift green.
+- R11 [O] AC5's self-test asserts the helper returns non-zero, not that the
+  script exits non-zero.
+- R12 [O] Leading/medial empty levels ("Illegal null field") destroy the whole
+  entry; the demo probes only the benign trailing case.
+- R13 [O] `\printindex` may precede a bibliography, since later Quarto stages
+  append blocks; AC2 verifies only the no-bibliography case.
+- R14 [O] `index_args`'s brace scanner ignores `\{`/`\}`; benign today.
+- R15 [O] The `>=1.4.0` floor is an untested contract claim (DESIGN calls the
+  minimum version part of the contract).
+- R16 [O] `marks_emitted` is module-level, latent under reused Lua state.
+- R17 [O] `\index` in a moving argument (section heading) is unprobed.
+- R18 [O] `examples/_extensions` is a symlink; a Windows checkout without
+  symlink support breaks example resolution.
+- R19 [O] Whitespace-only term emits `\index{ }` with no warning; empty-level
+  warning fires only on the LaTeX branch.
+
+**Rejected:**
+- [O] README's four-form table listing `entry=` with and without `!` as
+  separate rows — intentional, matches the normative list AC4 fences.
+- [O] The vacuous `Specials ...` no-leak row and AC6's "in order" phrasing —
+  real but pre-existing wording, no defect in the diff.
+- [S] Work log citing IP4 — IP4 is the cairn rulebook's history-immutability
+  principle, correctly cited; not a repo DESIGN principle.
+- [S] `e416c6a` carried T2/T4 implementation under an amendment-titled commit
+  with those tasks still unticked. Real process slip; history is append-only,
+  so it is corrected by the catch-up work-log line below, not a rewrite.
 

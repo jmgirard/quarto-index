@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M01 | LaTeX index extension skeleton | review | — | normal | milestones/M01-latex-index-skeleton.md |
+| M01 | LaTeX index extension skeleton | in-progress | — | normal | milestones/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

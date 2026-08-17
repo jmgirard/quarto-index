@@ -1,6 +1,6 @@
 # M03: HTML index back-end
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M02
 - **Driving RR:** —
@@ -184,6 +184,8 @@ criteria audit applied).
 - 2026-08-17: amendment return: AC3 — "every `entry=`/`see=`/`see-also=` value is absent from the rendered document's text, index section excised, compared in a single layer so a value containing `&`, `<`, `>` or `\"` is matched against its escaped rendering and an escaping leak cannot pass unseen"
 - 2026-08-17: T11 (review F8/F9/F12/F4) — README corrected (the section id sits on the wrapping section, not the h1; the heading-id and id-skipping behaviour documented; the pass-through claim narrowed to what is true, since a mark's span attributes do travel into gfm) and rewrapped; DESIGN Architecture updated for document-pass id assignment. AC3 amended through the gate: a fresh [O] reader returned accept-with-changes and found the no-leak sweep compared raw values against markup-layer text, so an escaping-hostile leak could never match itself — verified, fixed by comparing in one decoded layer, and verified caught. The source mark scanner now also sees `[t]{#id .index}`. Five findings recorded as candidate rows.
 - 2026-08-17: plan-owned body exceeded the 150-line cap after the amendment; Acceptance criteria compressed, then Tasks, with every promise unchanged in force. Coverage remapped onto T8-T11.
+
+- 2026-08-17: fix pass complete (T8-T11); all review findings triaged fix-now are done, the rest are candidate rows. Suite green with --self-test, cairn_validate clean, AC1 merge-base byte-identity re-confirmed. Status -> review (pass 2).
 
 ## Decisions
 

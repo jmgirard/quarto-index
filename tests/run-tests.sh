@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #
-# quarto-index acceptance tests (M01).
+# quarto-index acceptance tests. Checks labelled AC<n> are M01's criteria;
+# those labelled M02-AC<n> are M02's, which are numbered in their own
+# milestone and would otherwise collide.
 #
 # ORACLE RULE — READ BEFORE EDITING A MANIFEST.
 # Every manifest row below is derived BY HAND from the `.qmd` source and the
@@ -45,14 +47,19 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 pass() { printf 'ok   %s\n' "$*"; }
 
 # ---------------------------------------------------------------------------
-# Supported forms (NORMATIVE for M01). The README documents exactly these four
-# span forms and no others.
+# Supported forms (NORMATIVE). The README documents exactly these span forms
+# and no others. Each row is <label><TAB><exemplar>: the exemplar is the exact
+# syntax, and the check below fails unless it appears verbatim in README.md.
+# A form the extension grows must therefore be documented in the same change,
+# and a documented form cannot drift from the one this suite exercises.
 # ---------------------------------------------------------------------------
 SUPPORTED_FORMS=(
-  'visible-term span:      [term]{.index}'
-  'custom-entry span:      [term]{.index entry="Entry"}'
-  'sub-entry span:         [term]{.index entry="Top!Sub"}   (literal ! is !!)'
-  'invisible-entry span:   []{.index entry="Entry"}'
+  $'visible-term span\t[term]{.index}'
+  $'custom-entry span\t[term]{.index entry="Entry"}'
+  $'sub-entry span\t[term]{.index entry="Top!Sub"}'
+  $'invisible-entry span\t[]{.index entry="Entry"}'
+  $'see cross-reference\t[term]{.index see="Other"}'
+  $'see-also cross-reference\t[term]{.index see-also="Other"}'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -440,12 +447,31 @@ if [ "$FIXTURE_MODE" = "1" ]; then
 fi
 
 printf '== supported forms (normative) ==\n'
-printf '   %s\n' "${SUPPORTED_FORMS[@]}"
+printf '%s\n' "${SUPPORTED_FORMS[@]}" | awk -F'\t' '{ printf "   %-26s %s\n", $1, $2 }'
 printf '   probe characters: %s\n\n' "$PROBE_CHARS"
 
 [ -e examples/_extensions/index/_extension.yml ] \
   || fail "examples/_extensions/index is missing; examples must consume the installed extension"
 pass "AC1: demo resolves the extension via examples/_extensions"
+
+# M02-AC6 — the docs and the normative list cannot drift apart. A count would
+# pass on a README that documented some other syntax; this compares the bytes.
+printf '%s\n' "${SUPPORTED_FORMS[@]}" > "$WORK/forms.txt"
+python3 - "$WORK/forms.txt" README.md <<'PY'
+import sys
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = open(sys.argv[2], encoding='utf-8').read()
+missing = [(label, ex) for label, ex in rows if ex not in readme]
+if missing:
+    print('FAIL: M02-AC6: syntax exemplar(s) absent from README.md:',
+          file=sys.stderr)
+    for label, ex in missing:
+        print(f'  {label}: <<{ex}>>', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M02-AC6: all {len(rows)} normative syntax exemplars appear '
+      f'verbatim in README.md')
+PY
 
 # The probe set is pinned to the filter's own escape table, so a character the
 # filter handles can never go unprobed (and vice versa).

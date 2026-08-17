@@ -1042,15 +1042,28 @@ def marks(src):
 
 
 all_marks = marks(qmd)
+# THREE fixture invariants hold this arithmetic up, and a violation of any of
+# them must name itself rather than surface as a mysterious count mismatch.
 textless = [a for text, a in all_marks if text == '' and 'entry=' not in a]
 if textless:
-    # The arithmetic below assumes every mark in this fixture yields an entry.
     # A mark with neither visible text nor entry= is dropped and emits no
-    # anchor; naming the invariant here stops that being misread as a bug in
-    # the filter.
+    # anchor at all.
     print(f'FAIL: M03-AC3: the anchor count assumes demo.qmd holds no textless '
           f'mark, but {len(textless)} mark(s) have neither visible text nor '
           f'entry=', file=sys.stderr)
+    sys.exit(1)
+authored = [a for _text, a in all_marks if re.search(r'\{?#[-\w]', a)]
+if authored:
+    # A mark carrying an id of the author's own keeps it and mints nothing.
+    print(f'FAIL: M03-AC3: the anchor count assumes demo.qmd holds no mark '
+          f'with an author-supplied id, but {len(authored)} mark(s) carry one',
+          file=sys.stderr)
+    sys.exit(1)
+if re.search(r'^#{1,6} .*\]\{\.index', qmd, re.MULTILINE):
+    # A mark inside a heading borrows the heading's id and mints nothing.
+    print('FAIL: M03-AC3: the anchor count assumes demo.qmd holds no mark '
+          'inside a heading, but at least one heading contains a mark',
+          file=sys.stderr)
     sys.exit(1)
 locator_marks = [m for m in all_marks
                  if 'see=' not in m[1] and 'see-also=' not in m[1]]
@@ -1101,8 +1114,9 @@ if dangling:
     sys.exit(1)
 links = [a for a in H.find_all(section, 'a')]
 print(f'ok   M03-AC3: {want} anchors, one per locator-contributing mark '
-      f'(demo.qmd holds no textless mark), all generated ids unique, all '
-      f'{len(links)} links in the index resolve')
+      f'(demo.qmd holds no textless mark, no author-supplied id and no mark '
+      f'in a heading), all generated ids unique, all {len(links)} links in '
+      f'the index resolve')
 PY
 
 # IP2 regression: a mark whose content yields no text must index nothing and
@@ -1231,6 +1245,8 @@ PY
 read -r -d '' HTML_INDEX_MANIFEST <<'MANIFEST' || true
 0	A	0
 1	B	1
+0	Bee	1
+0	bee	1
 0	eta	0	see-link A: B	see-plain A: B
 0	iota	1
 0	kappa	1
@@ -1278,8 +1294,8 @@ if records['lambda']['id'] == f'{entry_prefix}1':
           f'author already used', file=sys.stderr)
     sys.exit(1)
 minted = [i for i in ids if i.startswith(anchor_prefix)]
-if f'{anchor_prefix}1' not in minted or len(minted) != 4:
-    print(f'FAIL: M03-AC3: expected the author id plus 3 minted anchors, got '
+if f'{anchor_prefix}1' not in minted or len(minted) != 6:
+    print(f'FAIL: M03-AC3: expected the author id plus 5 minted anchors, got '
           f'{sorted(minted)}', file=sys.stderr)
     sys.exit(1)
 print('ok   M03-AC3: minted anchor and entry ids skip the ids the author '
@@ -1448,7 +1464,16 @@ grep -qF 'café' examples/demo.md || fail "M03-AC6: gfm output lost visible term
 # over-deep probe.
 check_warning_count "$WORK/demo-gfm.log" 'empty index level in ' 2 "M03-AC6"
 check_warning_count "$WORK/demo-gfm.log" "$WARN_BOTH" 1 "M03-AC6"
-pass "M03-AC6: gfm renders clean with no index artifacts, and the format-neutral warnings still reach its author"
+
+# The converse, which is what keeps the split honest: the three-level fold is
+# makeindex's ceiling, not the extension's, so its warning must NOT follow the
+# format-neutral ones out of the LaTeX branch. Asserted as an exact zero in
+# both other formats, since demo.qmd holds the over-deep probe that produces
+# it in LaTeX (asserted present, above).
+for log in demo-html demo-gfm; do
+  check_warning_count "$WORK/$log.log" 'levels deep' 0 "M03-AC6"
+done
+pass "M03-AC6: gfm renders clean with no index artifacts, the format-neutral warnings still reach its author, and the makeindex level-ceiling warning reaches neither HTML nor gfm"
 
 printf '%s\n' "$VISIBLE_TERMS" > "$WORK/visible.txt"
 printf '%s\n' "$ENTRY_VALUES_NO_LEAK" > "$WORK/noleak.txt"

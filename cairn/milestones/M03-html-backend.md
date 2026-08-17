@@ -145,7 +145,7 @@ criteria audit applied).
 - [x] T9: F1/F2 — id assignment moves to the document pass: a mark inside a
       heading takes the heading's own id, and minted anchor/entry ids skip
       every id the document already uses.
-- [ ] T10: F5/F6/F7/F10 — collation fold-tie oracle; assert the 3-level fold
+- [x] T10: F5/F6/F7/F10 — collation fold-tie oracle; assert the 3-level fold
       warning is absent outside LaTeX; TOC claim exercised; AC3's second
       fixture invariant named and asserted.
 - [ ] T11: F8/F9/F12 — README/DESIGN corrections; AC3 no-leak wording
@@ -185,6 +185,8 @@ criteria audit applied).
 - 2026-08-17: T8 (review F3, the AC4 failure) — cross-reference dedupe now compares parsed level lists element-wise, not the `: `-joined string, so two targets that print alike but name different things both survive. New HTML-only fixture examples/html-index.qmd holds the repeat case and the look-alike case; verified discriminating by restoring the string comparison, which drops eta's second cross-reference and fails the manifest.
 
 - 2026-08-17: T9 (review F1/F2) — id assignment moved out of the per-mark pass into the document pass, which collects every id the author wrote before minting any. A mark inside a heading now borrows the heading's own id instead of minting one inside it, since Quarto copies heading contents into the sidebar TOC and a link would resolve to the copy. placement.qmd gains toc:true (the repro, and it exercises the TOC claim); html-index.qmd gains marks carrying qi-mark-1 and qi-entry-1. Both fences verified discriminating by reverting each fix in turn.
+
+- 2026-08-17: T10 (review F5/F6/F7/F10) — html-index.qmd gains a fold-tie pair written in the wrong order, so the collation tie-break has an oracle (reversing it now fails); the fold warning is asserted absent from the HTML and gfm logs, so the makeindex ceiling cannot follow the format-neutral warnings out of the LaTeX branch (moving clamp_levels now fails); placement.qmd's TOC exercises the documented TOC claim; AC3's anchor arithmetic now names and asserts all three fixture invariants it rests on, not one.
 
 ## Decisions
 

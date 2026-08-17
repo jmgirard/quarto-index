@@ -30,3 +30,10 @@ not be given that same id — two elements answering to one name send one of
 the two locators to the wrong place: [iota]{.index} and [kappa]{.index}.
 
 The same for an entry id: [lambda]{#qi-entry-1 .index}.
+
+# Entries whose sort keys are equal
+
+Two terms differing only in ASCII case fold to the same sort key, so the tie
+falls to character code and the capital comes first. They are written here in
+the opposite order to the one they must appear in, so the index cannot be
+right by having left them alone: [bee]{.index} and [Bee]{.index}.

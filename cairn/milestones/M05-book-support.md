@@ -5,7 +5,7 @@
 - **Depends on:** M04
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP3, GP4
-- **Branch/PR:** m05-book-support
+- **Branch/PR:** m05-book-support / https://github.com/jmgirard/quarto-index/pull/5
 
 ## Goal
 
@@ -37,36 +37,36 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
 
 ## Acceptance criteria
 
-- [ ] AC1: Rendering the book fixture with `quarto render --to html`
+- [x] AC1: Rendering the book fixture with `quarto render --to html`
       produces exactly one index across the site: the marker chapter's entry
       list matches a hand-derived full-index manifest representing every
       chapter's marks; a recursive structural sweep over every `*.html` file
       under the book output directory finds no index section or entry list
       on any other page; and no sidecar-store file exists anywhere under the
       output directory (recursive sweep by store filename pattern).
-- [ ] AC2: Every locator link in the book fixture's index resolves relative
+- [x] AC2: Every locator link in the book fixture's index resolves relative
       to its containing page — target file and anchor id exist, verified
       structurally over every `*.html` file (recursively) in the book
       output. The fixture's marks vary anchor form (plain, inside a heading,
       author-written id, invisible `entry=`-only) and location (three or
       more chapters, one chapter in a subdirectory, one mark in the marker
       chapter itself).
-- [ ] AC3: A term marked in more than one chapter appears in the book index
+- [x] AC3: A term marked in more than one chapter appears in the book index
       as one entry whose locators point at the contributing chapters in book
       chapter order, document order within a chapter (hand-derived manifest
       row carrying locator hrefs).
-- [ ] AC4: A cross-reference whose target entry is contributed only by
+- [x] AC4: A cross-reference whose target entry is contributed only by
       another chapter's marks links to that entry's id on the index page
       (hand-derived manifest row), with no spurious warning for the
       cross-file target; a cross-reference to a target no chapter
       contributes renders as unlinked text without breaking the render,
       exactly as a single document does.
-- [ ] AC5: Rendering the book fixture with `quarto render --to pdf`
+- [x] AC5: Rendering the book fixture with `quarto render --to pdf`
       succeeds, and the PDF's bounded index slice contains each fixture term
       followed by a page-number pattern, per a hand-derived term manifest —
       pinning that the LaTeX book path aggregates entries from every
       chapter (page numbers never copied from output).
-- [ ] AC6: The no-marker book fixture (marks, no marker chapter) renders to
+- [x] AC6: The no-marker book fixture (marks, no marker chapter) renders to
       HTML successfully: no index section on any page (recursive structural
       sweep), every chapter's visible marked terms present per a
       hand-derived visible-terms manifest, and the render log carries the
@@ -133,3 +133,53 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
 ## Decisions
 
 ## Review
+
+Evidence gathered 2026-08-17 on branch m05-book-support (PR #5) by running
+`tests/run-tests.sh --self-test` from a wiped fixture state (both book output
+directories and both `.quarto/` store directories removed first, so no record
+from an earlier render could stand in for one this run produced): 81 ok lines,
+exit 0. Per-criterion evidence below.
+
+- AC1: `M05-AC1/AC3` — the marker chapter's index matched all 10 hand-derived
+  manifest rows in order. `M05-AC1/AC2` — the index section id appears on
+  exactly one of the 4 recursively discovered pages (`last.html`) and index
+  entry markup on no other page; 4 store files written under
+  `examples/book/.quarto/` (the positive control: a filter that wrote no store
+  at all fails here) and 0 anywhere under `_book/`. `M05-AC1` — the store name
+  the sweep looks for is string-compared against the filter's own constants.
+- AC2: `M05-AC1/AC2` — all 9 locator links resolved to an existing id on an
+  existing page, resolved relative to the page carrying the index. The axis
+  coverage is read off the render rather than recalled: locators reach 3
+  distinct chapter pages, one in a subdirectory (`sub/two.html`), one within
+  the index's own page (`#qi-mark-1`), one via an id of the author's own
+  (`one.html#gamma-anchor`), one via a heading mark whose anchor is verified to
+  sit outside the heading, and the invisible mark's entry text is verified
+  absent from the chapter body.
+- AC3: `M05-AC1/AC3` — the `Shared Term` row carries
+  `index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html#qi-mark-1`: one entry,
+  three locators, in book chapter order. The manifest is exhaustive and
+  compared in order, so a locator in the wrong order fails as a row mismatch.
+- AC4: `M05-AC4` — `Delta`'s cross-reference links to `#qi-entry-1`, read
+  structurally as the id of the `Alpha` entry that only `index.qmd`
+  contributes; `Epsilon`'s target, which no chapter contributes, is
+  `see-plain` (unlinked) in the exhaustive manifest and the render completed.
+  `M05-AC4` — the whole book render emitted no warning line at all.
+- AC5: `M05-AC5` — the book rendered to PDF and its bounded index slice (text
+  after the `Index` heading) carries all 8 derived terms, each followed by the
+  hand-derived number of pages, plus both cross-reference strings verbatim.
+  Page numbers are never derived: the manifest states page COUNTS (one per
+  locator-contributing mark), and the check expands makeindex's ranges before
+  counting.
+- AC6: `M05-AC6` — the no-marker book rendered, no index section or entry
+  markup on either page, both marked terms still visible where written, and
+  the missing-marker report occurs exactly once in the full render, its pinned
+  text including the `qi-index-here` class an author needs. The self-test's
+  warning-discrimination probe confirms that check fails on a log with the
+  report removed and on one with it duplicated, and passes as rendered.
+
+Consistency gate: `cairn_validate` all checks passed, exit 0 (coverage
+complete and binding criteria among them). Profile `generic` names no
+toolchain consistency checks, so that half is a clean no-op. No DESIGN.md
+principle text changed (the diff touches only the Architecture section), so
+`cairn_impact` does not apply.
+

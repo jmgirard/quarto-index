@@ -132,7 +132,8 @@ quoted values only.
       warnings (a)/(b) with their defined outputs.
 - [x] T3: LaTeX realization per the emission decisions recorded in the
       Decisions section, including encap-context escaping (second table or
-      recorded equivalent).
+      recorded equivalent), and the document-level report of a term marked
+      both plainly and with a cross-reference.
 - [ ] T4: Extend `examples/demo.qmd`, `examples/content.qmd`, and
       `tests/run-tests.sh`: cross-reference manifest rows + completeness
       pin, PDF expected list, no-leak pin extension, misuse checks,
@@ -159,6 +160,7 @@ quoted values only.
 - 2026-08-16: T2 done — `see=`/`see-also=` parsed into levels in the format-neutral layer (so misuse is diagnosed in every format), source resolution unchanged, and two new named warnings for the misuse cases plus two for an unusable target; verify slot clean, existing behavior unchanged.
 - 2026-08-16: T3 done — cross-references emitted through makeindex's encap channel; the both-attributes case forced a design change (one command via a back-end-defined `\quartoindexseeboth`) after it proved to fail Quarto's render, superseding a mis-derived T1 note. T3's task wording updated to cite the Decisions section rather than T1 alone. Verify slot clean.
 - 2026-08-16: substantive amendment (gated) — AC1, AC2, AC5 amended for the one-command dual-target form, plus Scope's "emit both" clause and Coverage's AC5 row (now T2, T3, T4); a narrowing, since the old two-command promise was jointly unsatisfiable with IP2. Amended wording audited in full mode by a fresh-context [O] reader (9 findings, all repaired), then re-audited once by a second fresh [O] reader (11 findings, all disposed: pin arithmetic moved to summed row counts, row classification named, case (a) relocated to `examples/content.qmd`, the discrimination axis given a concrete artifact, tautological "emitted order" replaced, makeindex's own delimiter named, and the "each warning check" over-reach restricted to this criterion's two warnings).
+- 2026-08-16: discovered sub-task added to T3 at a mini gate — the same makeindex conflict is reachable across two marks on one term, so the document pass now warns once per affected key (LaTeX only); README note and a ROADMAP candidate row for prevention. Scope unchanged: no new acceptance criterion, covered by suite checks.
 
 ## Decisions
 
@@ -220,5 +222,20 @@ quoted values only.
   the same code path as a single-target mark, so the two forms cannot drift
   apart in how they escape a character. Verified: 0 makeindex warnings, and
   the compiled index printing `theta, see A % b; see also B!c`.
+
+- 2026-08-16 (gated addition after T3): two separate marks on one term — one
+  plain, one a cross-reference — hit the same makeindex conflict as the
+  both-attributes case. Verified: a document marking `kappa` plainly and again
+  with `see=` failed the render on "Conflicting entries: multiple encaps for
+  the same page under same key". It bites only when the two land on one
+  printed page, and page numbers do not exist when the filter runs, so this
+  cannot be prevented at this layer. The back-end reports it instead: the
+  document pass warns once per affected key, naming the key, which beats an
+  index-tool error naming neither the term nor this extension. The check is
+  LaTeX-only, unlike the misuse warnings, because the failure is a property of
+  the LaTeX index tool rather than of the mark syntax — warning in a format
+  with no index back-end would be noise about a problem that format cannot
+  have. Prevention (locator suppression, or deferring emission until page
+  numbers are known) is a ROADMAP candidate, not this milestone's scope.
 
 ## Review

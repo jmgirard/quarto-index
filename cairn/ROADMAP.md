@@ -38,4 +38,5 @@ _Last hygiene check: 2026-08-16 (M02 planned from the cross-references candidate
 - Demo manifests have no independent count, so coverage can shrink silently — added 2026-08-16 — M01 review P10
 - The demo's own makeindex acceptance is never asserted — added 2026-08-16 — M01 review P11
 - `\printindex` precedes a bibliography rather than following it, since Quarto appends reference blocks after filters run — added 2026-08-16 — M01 review P2; README states the current behavior
+- A term marked both plainly and with a cross-reference fails the PDF render when both marks land on one page; M02 warns but cannot prevent it, since page numbers do not exist at filter time — added 2026-08-16 — M02 Decisions; needs locator suppression or deferred emission
 - Choose and add a LICENSE file (user decision; needed before public listing) — added 2026-08-16 — M01 README omits a license claim for want of one

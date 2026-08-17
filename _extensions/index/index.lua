@@ -244,6 +244,24 @@ local marks_emitted = 0
 -- it, so a document without one gets nothing extra in its preamble.
 local xref_both_emitted = false
 
+-- Index key -> which kinds of mark the document put on it. Two marks on one
+-- term, one plain and one a cross-reference, are the same makeindex conflict
+-- the both-attributes case hits, except spread across the document: if the two
+-- land on one printed page the index tool rejects the pair and Quarto fails
+-- the render. Page numbers do not exist yet here, so this cannot be prevented
+-- at this layer — only reported, which beats an index-tool error naming
+-- neither the term nor this extension.
+local key_marks = {}
+
+local function record_key(key, kind)
+  local seen = key_marks[key]
+  if not seen then
+    seen = {}
+    key_marks[key] = seen
+  end
+  seen[kind] = true
+end
+
 local function Span(span)
   if not span.classes:includes(INDEX_CLASS) then
     return nil
@@ -316,6 +334,8 @@ local function Span(span)
   local source = index_argument(levels, context)
 
   local result = pandoc.List(span.content)
+  record_key(source, #xrefs == 0 and "plain" or "xref")
+
   if #xrefs == 0 then
     result:insert(pandoc.RawInline("latex", "\\index{" .. source .. "}"))
     marks_emitted = marks_emitted + 1
@@ -355,6 +375,22 @@ end
 local function Pandoc(doc)
   if marks_emitted == 0 or not is_latex_derived() then
     return nil
+  end
+
+  -- Reported here rather than at the mark, because it takes the whole document
+  -- to know that a term has been marked both ways. Keys are walked in sorted
+  -- order so the report does not depend on Lua's table iteration order.
+  local conflicting = {}
+  for key, seen in pairs(key_marks) do
+    if seen.plain and seen.xref then
+      conflicting[#conflicting + 1] = key
+    end
+  end
+  table.sort(conflicting)
+  for _, key in ipairs(conflicting) do
+    warn(("index key %s carries both a plain mark and a cross-reference mark; "
+          .. "if two such marks land on one page the index tool rejects the "
+          .. "pair and the render fails"):format(key))
   end
   if not (quarto and quarto.doc and quarto.doc.use_latex_package) then
     -- Running under plain pandoc rather than Quarto: emit the marks, but do

@@ -523,6 +523,28 @@ index.html	Nomark One
 one.html	Nomark Two
 MANIFEST
 
+# The book's own reports, named once each (M05 hardening). The store reports
+# are what an author gets instead of a failed render when the filter cannot
+# read or write a record, so a check that stopped firing would leave an IP2
+# guarantee unproven.
+WARN_STORE_UNREADABLE='could not be read and were ignored'
+WARN_STORE_UNWRITABLE='could not record index marks for'
+WARN_MARKER_NOT_LAST='chapter(s) come after it'
+WARN_MARKER_SECOND='comes first in book order and carries one too'
+
+# ---------------------------------------------------------------------------
+# Manifest 8 — the ordering fixture's index (M05 hardening), in the same href
+# format as manifest 5. Derived by hand from examples/book-order: the marker
+# is in index.qmd, `Early` is marked there and `Late` in "later chapter.qmd",
+# collation puts Early before Late, and after two renders the later chapter's
+# stored record contributes its locator. The space in the filename is written
+# raw, exactly as Quarto writes its own links to that page.
+# ---------------------------------------------------------------------------
+read -r -d '' BOOK_ORDER_INDEX <<'MANIFEST' || true
+0	Early	#qi-mark-1
+0	Late	later chapter.html#qi-mark-1
+MANIFEST
+
 # The missing-marker report, named once (M05-AC6). The class name is part of
 # the string because the criterion asks the warning to name how to add a
 # marker chapter, not merely that one is missing.
@@ -3033,7 +3055,11 @@ LOCATOR = r'\d+(?:[-–—]\d+)?'
 
 
 def pages_after(term):
-    m = re.search(re.escape(term) + r'((?:,\s' + LOCATOR + r')*)', region)
+    # Anchored on both sides: without a boundary, a row asserting a term has
+    # NO page numbers passes on a region where that term never reached the
+    # index and only appears inside a longer one.
+    m = re.search(r'(?<![\w])' + re.escape(term) + r'(?![\w])'
+                  + r'((?:,\s' + LOCATOR + r')*)', region)
     if m is None:
         return None
     total = 0
@@ -3069,6 +3095,134 @@ print(f'ok   M05-AC5: the book PDF prints one index carrying all {len(rows)} '
       f'derived terms with their derived locator counts, and all '
       f'{len(xrefs)} cross-references')
 PY
+
+# ---------------------------------------------------------------------------
+# M05 hardening — the dimensions one clean-slate render cannot reach: a second
+# render over a store that already has records, a stale record for a chapter
+# the book no longer lists, a marker that is not in the last chapter, a second
+# marker chapter, and a store this filter cannot write at all. None of these
+# is named by a criterion; all of them are behaviour this milestone shipped,
+# and a green suite is evidence about what it covers (LESSONS 2026-08-16).
+# ---------------------------------------------------------------------------
+
+# A second full render must produce the same index, not a doubled one: the
+# marker chapter reads a store that already holds its own previous record.
+( cd "$BOOK_DIR" && quarto render --to html ) > "$WORK/book-html2.log" 2>&1 \
+  || { tail -30 "$WORK/book-html2.log" >&2; fail "M05 hardening: the second book render failed"; }
+check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
+  "M05 hardening (second render)" hrefs
+
+# A record for a chapter the book does not list must not reach the index. The
+# planted record is well-formed and names a chapter absent from _quarto.yml,
+# so only the chapter-list filter can keep it out.
+GHOST="$BOOK_DIR/.quarto/$STORE_DIR/ghost.qmd$STORE_SUFFIX"
+cat > "$GHOST" <<'JSON'
+{"version":1,"file":"ghost.qmd","href":"ghost.html","marker":false,
+ "marks":[{"levels":["Ghost Chapter Term"],"xrefs":[],"anchor":"qi-mark-1"}]}
+JSON
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-ghost.log" 2>&1 \
+  || { tail -30 "$WORK/book-ghost.log" >&2; fail "M05 hardening: the marker chapter failed to re-render"; }
+check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
+  "M05 hardening (stale chapter ignored)" hrefs
+rm -f "$GHOST"
+
+# A record this filter cannot read must cost that chapter's entries and say
+# so, never take the render down (IP2).
+CORRUPT="$BOOK_DIR/.quarto/$STORE_DIR/one.qmd$STORE_SUFFIX"
+cp "$CORRUPT" "$WORK/one-record.json"
+printf '{"version":1,"file":"one.qmd","href":"one.html","marker":false,"marks":[{"levels":"not a list"}]}\n' > "$CORRUPT"
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-corrupt.log" 2>&1 \
+  || { tail -30 "$WORK/book-corrupt.log" >&2; fail "M05 hardening: a wrongly shaped store record took the render down; IP2 forbids it"; }
+check_warning_count "$WORK/book-corrupt.log" "$WARN_STORE_UNREADABLE" 1 \
+  "M05 hardening"
+cp "$WORK/one-record.json" "$CORRUPT"
+pass "M05 hardening: a wrongly shaped store record is reported and skipped, and the render survives"
+
+# ---------------------------------------------------------------------------
+# The ordering fixture: marker in the first chapter, a second marker in the
+# last, and a chapter filename with a space in it.
+# ---------------------------------------------------------------------------
+ORDER_DIR="examples/book-order"
+ORDER_OUT="$ORDER_DIR/_book"
+rm -rf "$ORDER_OUT" "$ORDER_DIR/.quarto"
+# Rendered twice on purpose: on the first pass the later chapter has not run
+# when the marker chapter builds the index, which is the very hazard the
+# marker-not-last warning is about.
+( cd "$ORDER_DIR" && quarto render --to html && quarto render --to html ) \
+  > "$WORK/book-order.log" 2>&1 \
+  || { tail -30 "$WORK/book-order.log" >&2; fail "M05 hardening: the ordering fixture failed to render"; }
+
+check_warning_count "$WORK/book-order.log" "$WARN_MARKER_NOT_LAST" 2 \
+  "M05 hardening"
+check_warning_count "$WORK/book-order.log" "$WARN_MARKER_SECOND" 2 \
+  "M05 hardening"
+pass "M05 hardening: a marker that is not last, and a second marker chapter, are each reported once per render"
+
+printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$ORDER_OUT" \
+  "$WORK/order-index.txt" <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+out, manifest = sys.argv[1], sys.argv[2]
+section_id = os.environ['HTML_SECTION_ID']
+INDEX_PAGE = 'index.html'
+
+pages = H.html_files(out)
+docs = {page: H.parse(os.path.join(out, page)) for page in pages}
+carrying = [p for p in pages if H.count_id(docs[p], section_id) > 0]
+if carrying != [INDEX_PAGE]:
+    print(f'FAIL: M05 hardening: two marker chapters produced index sections '
+          f'on {carrying}, expected only [{INDEX_PAGE!r}]', file=sys.stderr)
+    sys.exit(1)
+actual = [H.row(r, hrefs=True)
+          for r in H.index_entries(H.find_id(docs[INDEX_PAGE], section_id))]
+expected = H.read_manifest(manifest)
+if actual != expected:
+    print('FAIL: M05 hardening: the ordering fixture index does not match the '
+          'manifest', file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such row rendered>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  row {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+# The space-named chapter is the point of this fixture: its locator must
+# resolve like any other, and it is written the way Quarto writes its own
+# links to that page rather than percent-escaped.
+ids = {page: set(H.all_ids(doc)) for page, doc in docs.items()}
+spaced = [href for r in H.index_entries(H.find_id(docs[INDEX_PAGE], section_id))
+          for href in r['locators'] if ' ' in href]
+if not spaced:
+    print('FAIL: M05 hardening: no locator reaches the space-named chapter, '
+          'so the fixture no longer exercises it', file=sys.stderr)
+    sys.exit(1)
+for href in spaced:
+    target, fragment = H.resolve_href(INDEX_PAGE, href)
+    if target not in ids or fragment not in ids[target]:
+        print(f'FAIL: M05 hardening: the locator {href!r} into the '
+              f'space-named chapter resolves to nothing', file=sys.stderr)
+        sys.exit(1)
+print(f'ok   M05 hardening: one index across {len(pages)} pages with two '
+      f'marker chapters, {len(expected)} rows including a later chapter '
+      f'carried by its stored record, and the space-named chapter\'s locator '
+      f'resolves')
+PY
+
+# A store the filter cannot write at all: an ordinary file where its directory
+# belongs. The render must survive and say what was lost (IP2).
+rm -rf "$ORDER_DIR/.quarto/$STORE_DIR"
+mkdir -p "$ORDER_DIR/.quarto"
+printf 'not a directory\n' > "$ORDER_DIR/.quarto/$STORE_DIR"
+( cd "$ORDER_DIR" && quarto render --to html ) > "$WORK/book-nostore.log" 2>&1 \
+  || { tail -30 "$WORK/book-nostore.log" >&2; fail "M05 hardening: a store that cannot be written took the render down; IP2 forbids it"; }
+check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" 2 \
+  "M05 hardening"
+rm -f "$ORDER_DIR/.quarto/$STORE_DIR"
+pass "M05 hardening: a store that cannot be written is reported per chapter and the book still renders"
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
@@ -3154,6 +3308,13 @@ PY
   # leave AC6 passing on a silent render.
   warn_discrimination "$WORK/book-nomarker.log" "$WARN_BOOK_NOMARKER" 1 \
     "M05-AC6"
+  # The two store reports stand in for a failed render: if either check
+  # stopped firing, a book that silently lost a chapter's entries would look
+  # exactly like one that kept them.
+  warn_discrimination "$WORK/book-corrupt.log" "$WARN_STORE_UNREADABLE" 1 \
+    "M05 hardening"
+  warn_discrimination "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" 2 \
+    "M05 hardening"
   warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
 fi

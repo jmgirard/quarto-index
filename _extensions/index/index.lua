@@ -963,6 +963,11 @@ end
 
 local STORE_DIR = "quarto-index"
 local STORE_SUFFIX = ".qi.json"
+-- A record's shape is this filter's own business, and the store outlives the
+-- version that wrote it: nothing prunes it, and a project keeps rendering
+-- across extension upgrades. A record whose version is not this one is
+-- ignored rather than read as if its fields still meant what they did.
+local STORE_VERSION = 1
 
 -- Paths from Quarto are the host's; hrefs are always `/`-separated.
 local function as_href(path)
@@ -1000,7 +1005,11 @@ local function book_context(doc)
     -- A part heading with no file of its own is not a chapter; every entry
     -- that names a file is, in the order the book renders them.
     if type(item) == "table" and item.file ~= nil then
-      local file = pandoc.utils.stringify(item.file)
+      -- Normalized exactly as the input and output paths below are: this list
+      -- is matched against the current chapter's own path, and a host that
+      -- spells one of them with backslashes must not turn every subdirectory
+      -- chapter into a chapter this book does not contain.
+      local file = as_href(pandoc.utils.stringify(item.file))
       chapters[#chapters + 1] = file
       positions[file] = #chapters
     end
@@ -1047,25 +1056,70 @@ local function store_write(ctx, marker)
     marks[#marks + 1] =
       { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor }
   end
+  -- Every step here can fail on an ordinary machine — a stale file where the
+  -- directory belongs, a read-only project tree, a full disk — and none of
+  -- them may take the render down with it: a marked-up document always
+  -- renders (IP2). The whole write is one guarded unit, reported once.
   local path = store_path(ctx, ctx.file)
-  pandoc.system.make_directory(pandoc.path.directory(path), true)
-  local fh, err = io.open(path, "w")
-  if not fh then
-    -- Never fatal: a book that cannot write its store still renders, it just
-    -- cannot build an index (IP2).
-    warn(("could not write the index store for %s (%s); this chapter's marks "
-          .. "will be missing from the book index"):format(ctx.file,
-                                                           tostring(err)))
-    return
+  local ok, err = pcall(function()
+    pandoc.system.make_directory(pandoc.path.directory(path), true)
+    local fh, open_err = io.open(path, "w")
+    if not fh then
+      error(tostring(open_err), 0)
+    end
+    local written, write_err = fh:write(pandoc.json.encode(
+      { version = STORE_VERSION, file = ctx.file, href = ctx.href,
+        marker = marker, marks = marks }))
+    fh:close()
+    if not written then
+      error(tostring(write_err), 0)
+    end
+  end)
+  if not ok then
+    warn(("could not record index marks for %s (%s); this chapter's marks "
+          .. "will be missing from the book's index until it is rendered "
+          .. "again"):format(ctx.file, tostring(err)))
   end
-  fh:write(pandoc.json.encode(
-    { file = ctx.file, href = ctx.href, marker = marker, marks = marks }))
-  fh:close()
 end
 
 -- Every chapter record the store holds, in book order. Reading by the current
 -- chapter list is what makes a stale record harmless: a chapter dropped from
 -- the book is never read, however long its file lingers in the store.
+-- Is this decoded record shaped the way the aggregation below will read it?
+-- Checked here rather than trusted, because a record that parses as JSON and
+-- is shaped wrong reaches the entry builder and takes the render down with
+-- it, which IP2 forbids — and version skew across an extension upgrade is
+-- exactly how a wrongly shaped record appears in a store nothing prunes.
+local function valid_record(data, file)
+  if type(data) ~= "table" or data.version ~= STORE_VERSION then
+    return false
+  end
+  -- A record naming a different chapter than the file it was read from is not
+  -- this chapter's record, whatever wrote it.
+  if data.file ~= file or type(data.href) ~= "string"
+     or type(data.marks) ~= "table" then
+    return false
+  end
+  for _, mark in ipairs(data.marks) do
+    if type(mark) ~= "table" or type(mark.levels) ~= "table"
+       or #mark.levels == 0 then
+      return false
+    end
+    for _, level in ipairs(mark.levels) do
+      if type(level) ~= "string" then
+        return false
+      end
+    end
+    if mark.anchor ~= nil and type(mark.anchor) ~= "string" then
+      return false
+    end
+    if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
+      return false
+    end
+  end
+  return true
+end
+
 local function store_read(ctx)
   local records = {}
   for _, file in ipairs(ctx.chapters) do
@@ -1074,10 +1128,14 @@ local function store_read(ctx)
       local text = fh:read("a")
       fh:close()
       local ok, data = pcall(pandoc.json.decode, text, false)
-      -- A record naming a different chapter than the file it was read from is
-      -- not this chapter's record, whatever wrote it.
-      if ok and type(data) == "table" and data.file == file then
+      if ok and valid_record(data, file) then
         records[#records + 1] = data
+      else
+        -- Never silent: the cost of an unreadable record is a chapter missing
+        -- from the index, and the fix is to render that chapter again.
+        warn(("the recorded index marks for %s could not be read and were "
+              .. "ignored; render that chapter again, or render the whole "
+              .. "book, to put its terms back in the index"):format(file))
       end
     end
   end
@@ -1104,6 +1162,10 @@ local function book_marks(ctx, records)
         anchor = mark.anchor,
         -- A mark in the chapter holding the index links within its own page,
         -- exactly as a single document's does.
+        -- Written exactly as Quarto writes its own links to that page,
+        -- raw rather than percent-escaped: Quarto normalizes a link target
+        -- either way, so an escape here is undone before it reaches output
+        -- (its own sidebar link to a space-named chapter is `./a b.html`).
         href = record.file ~= ctx.file and relative_href(ctx, record.href)
           or nil,
       }
@@ -1139,21 +1201,38 @@ end
 local function html_book(doc, ctx, marker, taken)
   store_write(ctx, marker)
   local records = store_read(ctx)
+  -- Whether THIS chapter carries the marker is known here, and is never read
+  -- back from the store: a chapter whose own record failed to write would
+  -- otherwise conclude that some other chapter holds the marker, build no
+  -- index, and report a chapter that does not exist.
   local placing = marker_chapter(ctx, records)
+  if marker and (placing == nil or placing > ctx.position) then
+    placing = ctx.position
+  end
 
   if marker and placing == ctx.position then
+    if not any_marks(records) then
+      -- The book path's counterpart to the single-document no-marks warning,
+      -- which cannot be asked of one chapter. Without it a marker in a book
+      -- that marks nothing renders an empty index section.
+      warn("index placement marker in a book whose chapters have no index "
+           .. "marks; there is no index to place")
+      return place_index(doc, nil)
+    end
     local later = {}
     for position = ctx.position + 1, #ctx.chapters do
       later[#later + 1] = ctx.chapters[position]
     end
     if #later > 0 then
       -- Chapters render in book order, so a chapter after this one has not
-      -- run yet in this render and its marks reach the index only from a
-      -- record an earlier render left behind.
+      -- run yet in this render: what the index shows for it is whatever an
+      -- earlier render recorded, which may name terms that chapter no longer
+      -- marks and link to anchors its page no longer has.
       warn(("the index placement marker is in %s, and %d chapter(s) come "
-            .. "after it (%s); the book's index is built where the marker is, "
-            .. "so marks in later chapters reach it only from an earlier "
-            .. "render — put the marker chapter last in the book")
+            .. "after it (%s); the index is built where the marker is, so "
+            .. "those chapters are represented by what an earlier render "
+            .. "recorded — entries and links for them can be out of date or "
+            .. "dead. Put the marker chapter last in the book")
            :format(ctx.file, #later, table.concat(later, ", ")))
     end
     return place_index(doc, html_index_blocks(book_marks(ctx, records), taken))
@@ -1191,6 +1270,15 @@ local function Pandoc(doc)
   -- there is an index to place, and the book path reports what it finds
   -- across the whole store instead.
   local book = is_html() and book_context(doc) or nil
+  if is_html() and book == nil and doc.meta.book ~= nil then
+    -- Falling back to a per-chapter index is not a safe default in a book: it
+    -- is the shipped-before-M05 defect, one index per chapter and none of them
+    -- the book's. Whatever Quarto did not tell us, the author hears about it
+    -- rather than finding a stray index on a page later.
+    warn("this looks like a book, but the chapter list and output paths this "
+         .. "extension needs were not available, so this page was indexed on "
+         .. "its own instead of contributing to the book's index")
+  end
   if marker and marks_seen == 0 and not book then
     warn("index placement marker in a document with no index marks; there is "
          .. "no index to place")
@@ -1199,8 +1287,12 @@ local function Pandoc(doc)
   if is_html() then
     -- Anchors are assigned before either path decides what to place: they are
     -- what a locator links back to, and in a book they are read by whichever
-    -- chapter builds the index rather than by this one.
-    local taken = taken_identifiers(doc)
+    -- chapter builds the index rather than by this one. A page with no marks
+    -- that places no index needs none of it, and is not walked for ids.
+    local taken = {}
+    if marks_seen > 0 or book then
+      taken = taken_identifiers(doc)
+    end
     if marks_seen > 0 then
       doc = relocate_heading_anchors(doc)
       doc = assign_anchors(doc, taken)

@@ -1,0 +1,6 @@
+# First chapter, holding the marker
+
+The marker is written here rather than in the last chapter: [Early]{.index}.
+
+::: {.qi-index-here}
+:::

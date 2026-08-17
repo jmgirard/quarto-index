@@ -324,9 +324,13 @@ the placement marker in the chapter that should hold it:
 
 **Put that chapter last.** Quarto renders a book's chapters in order, and each
 chapter is a separate render that cannot see the others, so the index is built
-from the chapters that ran before the one holding the marker. A marker in an
-earlier chapter still works, and the extension tells you which chapters came
-after it and are therefore missing.
+from the chapters that ran before the one holding the marker. Put the marker
+anywhere else and the chapters after it are represented by whatever the
+*previous* render recorded: on a first render they are missing, and after an
+edit their entries can name terms the chapter no longer marks and link to
+anchors its page no longer has. The extension names those chapters every time
+it builds the index, so this is loud rather than silent — but the fix is to
+move the marker, not to render twice.
 
 In the HTML book, each entry's locators link to the chapters that mark the
 term, in book order — across files, and across subdirectories, from wherever
@@ -346,10 +350,17 @@ Two things worth knowing:
   per render, naming the marker to add. The extension will not choose a
   chapter for you.
 
-Each chapter records its marks in `.quarto/quarto-index/` inside your project
-— Quarto's own scratch directory, which is already excluded from git by the
-project `.gitignore` Quarto creates, and which is never copied into `_book/`.
-There is nothing to configure and nothing new to ignore.
+Each chapter records its marks in `.quarto/quarto-index/` inside your project —
+Quarto's own scratch directory, alongside the caches Quarto keeps there, and
+never copied into `_book/`. There is nothing to configure. A project created
+with `quarto create project` already ignores `/.quarto/` in git; a book whose
+`_quarto.yml` you wrote by hand may not, and that one line is worth adding.
+
+If a chapter's record cannot be written or read back — a read-only project
+tree, a stale file where the directory belongs, a record left by an older
+version of this extension — the book still renders, and the extension names
+the chapter whose terms are missing from the index. Rendering that chapter
+again is the fix.
 
 ## Examples
 

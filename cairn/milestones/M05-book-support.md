@@ -101,8 +101,9 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
 - [x] T4: Aggregation at the marker chapter: read store in book chapter
       order, build the entry tree with the existing builder, cross-file
       locator hrefs, cross-reference resolution deferred to aggregation.
-- [x] T5: Missing-marker warning via the last-in-order chapter's run (warn
-      once per full render; no warning on partial renders).
+- [x] T5: Missing-marker warning via the last-in-order chapter's run (once
+      per full render; it also fires when that chapter alone is re-rendered,
+      since a partial render is not detectable — amended at review).
 - [x] T6: Suite: multi-file structural resolution in `tests/htmlindex.py`
       (row format extended to carry locator hrefs), book HTML checks
       (AC1–AC4, AC6), PDF book check with bounded slice, store-footprint
@@ -129,6 +130,11 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
 - 2026-08-17: the book PDF check counts PAGES rather than printed locator tokens — makeindex collapses three consecutive pages into a range (`Shared Term, 3-5`), which a token count read as one locator and failed on.
 - 2026-08-17: T7 done — README `## Books` section (marker chapter, marker-chapter-last, cross-chapter locators and cross-references, PDF needs nothing, full-render contract, store location) and DESIGN.md architecture updated for the book path.
 - 2026-08-17: all tasks done; suite green at 73 checks (65 at the merge base, +8 book checks) and green with --self-test; cairn_validate clean. Status -> review.
+- 2026-08-17: review fan-out — [S] blame-history and [S] prior-review lenses returned no findings; [O] diff-bug returned 13, all triaged at the gate, all actioned at the user's selection ("fix everything now").
+- 2026-08-17: fixed at the gate — F1 store write guarded whole (an ordinary file where the store directory goes aborted the render; IP2), F2 this chapter's marker flag no longer re-derived from disk (a failed write produced no index and a warning naming chapter `nil`), F3 marker-not-last warning and README now state the entries are one render behind and their links can be dead, F4 store records carry a version and are shape-validated before use, F5 `book.render` paths normalized like input/output paths, F6 a book page whose context cannot be built now warns instead of silently reverting to a per-chapter index, F7 a marker in a book with no marks warns and places nothing instead of emitting an empty index section, F10 the PDF term check anchored on word boundaries, F12 README's gitignore claim narrowed to what Quarto actually scaffolds, F13 the id walk skipped on pages that need no anchors.
+- 2026-08-17: F11 (URL escaping) closed as not fixable at this layer — verified the filter emitted `later%20chapter.html` and output carried `later chapter.html`, matching Quarto's own `./later chapter.html`; the escape was removed rather than left as code whose purpose never takes effect, and the limitation became a candidate row.
+- 2026-08-17: F9 answered with the examples/book-order fixture (marker in the first chapter, a second marker chapter, a space in a chapter filename) plus second-render, stale-chapter, unreadable-record and unwritable-store checks; the two store reports joined the warning-discrimination self-test. Suite 73 -> 79 checks, 89 with --self-test.
+- 2026-08-17: F8 — T5's "no warning on partial renders" did not hold and is not achievable (a partial render is not detectable); task text amended at the user's selection to describe what ships.
 
 ## Decisions
 
@@ -176,6 +182,40 @@ exit 0. Per-criterion evidence below.
   text including the `qi-index-here` class an author needs. The self-test's
   warning-discrimination probe confirms that check fails on a log with the
   report removed and on one with it duplicated, and passes as rendered.
+
+Independent review (three fresh-context lenses, none having seen the
+implementation): the [S] blame-history and [S] prior-review lenses each
+returned no findings — the first confirming M04's `noautomatic` machinery and
+M03's anchor-outside-heading rule untouched and both test-harness signature
+changes defaulting to prior behavior, the second finding no archived `## Review`
+finding or candidate row reintroduced (the GitHub inline-comment probe returned
+empty, so per the probe gate the PR threads were not walked). The [O] diff-bug
+lens returned 13 findings; all 13 were triaged at the approval gate and every
+one was actioned at the user's selection.
+
+Findings and disposition — F1 unguarded store-directory creation aborting the
+render (fixed; reproduced first: an ordinary file where the store directory
+goes killed the render at chapter 1), F2 the marker flag re-derived from disk
+so a failed write produced no index and a warning naming chapter `nil`
+(fixed), F3 marker-not-last entries stale with dead links, understated by the
+warning and contradicted by the README (fixed in both), F4 records trusted on
+shape with no version (fixed: version + shape validation), F5 `book.render`
+paths not normalized like input and output paths (fixed), F6 every
+book-detection failure silently restoring the per-chapter index (fixed: warns),
+F7 a marker in a book with no marks emitting an empty index section (fixed;
+reproduced first), F8 T5's "no warning on partial renders" unachievable (task
+text amended at the user's selection), F9 the staleness and ordering dimension
+unpinned by the suite (fixed: the `examples/book-order` fixture and six
+hardening checks), F10 the PDF term search unanchored (fixed), F11 locator
+hrefs unescaped (closed as not fixable at this layer and recorded as a
+candidate row — verified directly that a filter-emitted `later%20chapter.html`
+reaches output as `later chapter.html`, matching Quarto's own
+`./later chapter.html`), F12 the README overstating what Quarto's scaffolding
+ignores (fixed), F13 minor notes (id walk skipped on pages needing no anchors;
+store pruning and the unlisted-page fallback recorded as candidate rows).
+
+Post-fix verification: `tests/run-tests.sh --self-test` exit 0, 89 checks (79
+without the self-test), from a wiped fixture state; `cairn_validate` exit 0.
 
 Consistency gate: `cairn_validate` all checks passed, exit 0 (coverage
 complete and binding criteria among them). Profile `generic` names no

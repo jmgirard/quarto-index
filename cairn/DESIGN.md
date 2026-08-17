@@ -161,10 +161,18 @@ contribute a stale record; a chapter *rendered* stale can, which makes a full
 render the contract for a current index. The chapter list, each chapter's
 position, and the paths that make a cross-chapter link come from Quarto's own
 metadata (`book.render`, `quarto.doc`, `quarto.project`), never from guesswork
-about layout. Two cases are reported rather than guessed at: a book whose
-chapters mark terms but whose author wrote no marker anywhere (reported by the
-last chapter, the only one that can know), and a second marker chapter (the
-first in book order builds the index).
+about layout. Whether *this* chapter carries the marker is
+known locally and never read back from the store, so a chapter whose own record
+failed to write still knows what it is. Nothing about the store may break a
+render (IP2): the write is one guarded unit, a record is validated against a
+version and a shape before it is read, and every failure costs that chapter's
+entries and says so. Five cases are reported rather than guessed at: a book
+whose chapters mark terms but whose author wrote no marker anywhere (reported
+by the last chapter, the only one that can know), a marker in a book that marks
+nothing, a second marker chapter (the first in book order builds the index), a
+marker with chapters after it (whose entries are one render behind), and a page
+Quarto presents as a book chapter without the metadata this needs — which falls
+back to indexing that page alone, the pre-M05 defect, and so is never silent.
 
 Shared between them: the level parse, the cross-reference target parse and its
 `: ` join, and every warning about the mark itself.

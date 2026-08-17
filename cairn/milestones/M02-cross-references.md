@@ -103,7 +103,7 @@ quoted values only.
 
 ## Tasks
 
-- [ ] T1: Spike: empirically probe cross-reference emission under Quarto's
+- [x] T1: Spike: empirically probe cross-reference emission under Quarto's
       PDF pipeline — hyperref's first-`|` rewrite, `\see`/`\seealso`
       availability under imakeidx, multi-level target join, any characters
       unrealizable in encap context — and record the chosen emission form,
@@ -135,7 +135,48 @@ quoted values only.
 - 2026-08-16: plan gate chose the verbatim README content pin over dropping the docs check because a content pin is strictly stronger than a count at no more machinery (audit finding 11); falsified by README format churn making the pin brittle.
 - 2026-08-16: plan chose the full printable-ASCII see-target probe (with a T1 exclusion hatch) over the 16-character set because the repo's lesson says only compiling settles survival; falsified by probe runtime becoming prohibitive.
 - 2026-08-16: implement started; branch m02-cross-references cut from main at 68c06ba.
+- 2026-08-16: question gate — cross-reference character probe goes in a new sibling fixture (keeps M01's probe count intact); see-also label fallback policy chosen (T1 then found imakeidx already provides it); new suite checks labelled `M02-AC<N>` to avoid colliding with M01's labels.
+- 2026-08-16: T1 done — four spike renders through Quarto's PDF engine settled the emission form, the `: ` multi-level join, and that no character is unrealizable in encap context; four Decisions entries recorded.
 
 ## Decisions
+
+- 2026-08-16 (T1 spike): Cross-reference emission form. A cross-reference is
+  emitted as `\index{<source levels>|see{<target>}}` (and `|seealso{…}`) —
+  makeindex's encap channel. hyperref rewrites it to
+  `|hyperxindexformat{\see{…}}` before makeindex runs, which is harmless:
+  `\see`/`\seealso` take the page as their second argument and discard it, so
+  the cross-reference replaces the locator with no extra work. `\see`,
+  `\seealso`, `\seename` and `\alsoname` are `\providecommand`'d by imakeidx,
+  which the extension already loads, so no label definition is injected and a
+  document loading babel first keeps babel's translated wording. The gate's
+  fallback policy therefore costs no code.
+
+- 2026-08-16 (T1 spike): Multi-level see-targets join with `: `. A raw `!`
+  inside the encap argument is rejected by makeindex ("Extra `!' at position
+  36 of first argument") and Quarto turns that rejection into a failed render
+  — harder than the M01 depth case, which only lost an entry while the build
+  stayed clean. Quoted `"!` is accepted but typesets as a literal `!`, leaking
+  the extension's own level syntax into printed prose. `, ` is ambiguous when
+  a level itself contains a comma ("see Smith, John, early work"); `: ` is not
+  ("see Smith, John: early work"). Both were typeset in the spike PDF before
+  choosing.
+
+- 2026-08-16 (T1 spike): No character is unrealizable in encap context, so
+  AC3's exclusion hatch stays unused and the back-end needs no second escape
+  table. The existing `LATEX_LITERAL` table applied to see-target levels put
+  every printable ASCII character (space excluded) through Quarto's own PDF
+  engine — each as its own single-level see-target, and each again as the
+  medial level of a three-level see-also target — for 190 entries accepted and
+  0 rejected, with all sixteen special-handling characters typesetting
+  correctly under both attributes. The `.ind` file is re-read as ordinary
+  LaTeX, so the `\text…` commands and makeindex's `"` quoting work in a
+  see-target exactly as they do in a source level.
+
+- 2026-08-16 (T1 spike): A term carrying both a plain mark and a
+  cross-reference mark is legal but noisy. makeindex warns "Conflicting
+  entries: multiple encaps for the same page under same key", still builds,
+  and prints the entry with both its locator and its cross-reference. Not an
+  error and not a case the extension generates on its own, so it is documented
+  in the README rather than warned about.
 
 ## Review

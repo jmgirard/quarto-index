@@ -828,6 +828,22 @@ local function marker_content(block)
     warn("index placement marker is not empty; the marker should be an empty "
          .. "div, and its content is kept where the marker was written")
   end
+  -- The marker is a position, not an element: it is removed, so anything
+  -- written ON it goes with it. An id would be the worse loss — a link to it
+  -- would silently resolve nowhere — so neither is dropped in silence.
+  local extra = {}
+  for _, class in ipairs(block.classes) do
+    if class ~= MARKER_CLASS then
+      extra[#extra + 1] = class
+    end
+  end
+  if block.identifier ~= "" or #extra > 0 then
+    warn(("index placement marker carries an id or extra class (%s); a marker "
+          .. "is a position rather than an element, so it is removed and these "
+          .. "are not carried onto the index"):format(
+         block.identifier ~= "" and ("#" .. block.identifier)
+           or ("." .. table.concat(extra, " ."))))
+  end
   return block.content
 end
 
@@ -886,11 +902,17 @@ local function place_index(doc, blocks)
   local out = pandoc.Blocks({})
   local placed = false
   for _, block in ipairs(doc.blocks) do
-    if is_marker(block) and not placed then
-      placed = true
+    if is_marker(block) then
+      -- Every marker is stripped here, not only the first: a marker that
+      -- survived into output would be exactly the residue IP2 forbids, and a
+      -- fail-open branch would emit one verbatim the day resolve_markers
+      -- stops guaranteeing there is at most one.
       out:extend(marker_content(block))
-      if blocks then
-        out:extend(blocks)
+      if not placed then
+        placed = true
+        if blocks then
+          out:extend(blocks)
+        end
       end
     else
       out:insert(block)
@@ -963,6 +985,24 @@ local function Pandoc(doc)
   end
 
   if marker then
+    -- Quarto emits the package load as
+    -- `\@ifpackageloaded{imakeidx}{}{\usepackage[noautomatic]{imakeidx}}`, so a
+    -- document whose template or header-includes loads imakeidx FIRST takes
+    -- the empty branch and never gets the option — and then every mark below
+    -- the marker is dropped from the index, which is the silent corruption the
+    -- option exists to prevent. Nothing emitted here can reach a load that
+    -- already happened, so the unfixable case is made loud instead: a
+    -- begin-document check that says what will be missing and why. It warns
+    -- rather than erroring, because a marked-up document must still render
+    -- (IP2). `\PassOptionsToPackage` is deliberately NOT emitted alongside it:
+    -- it registers the option on the already-loaded package, which would make
+    -- this check report success on exactly the document it exists to catch.
+    quarto.doc.include_text("in-header",
+      "\\makeatletter\\AtBeginDocument{\\@ifpackagewith{imakeidx}{noautomatic}"
+      .. "{}{\\PackageWarning{quarto-index}{This document loads imakeidx "
+      .. "itself without the noautomatic option, so terms marked after the "
+      .. "index placement marker will be missing from the index}}}"
+      .. "\\makeatother")
     -- `\printindex` closes the `.idx` file it has just read, so every `\index`
     -- written after it goes to the log instead — silently, and only the marks
     -- BELOW the marker are lost, which is exactly the corruption IP2 forbids.

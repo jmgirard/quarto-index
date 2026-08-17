@@ -39,9 +39,20 @@ else
   FIXTURE_MODE=0
 fi
 
+# Self-test hook for the wrapper itself: with this flag the run's first check
+# is one that fails ONLY by exit status. The suite must then exit non-zero and
+# must never print its "All checks passed" line.
+PLANT_WRAPPER_DEFECT=0
+[ "${1:-}" = "--plant-wrapper-defect" ] && PLANT_WRAPPER_DEFECT=1
+
 WORK="tests/.work"
-[ "$FIXTURE_MODE" = "1" ] || rm -rf "$WORK"
+# Neither self-test invocation may wipe the work directory or the run log: the
+# fixture check reads a file the parent wrote there, and the wrapper probe is
+# spawned from INSIDE a parent run whose log is still being written.
+[ "$FIXTURE_MODE" = "1" ] || [ "$PLANT_WRAPPER_DEFECT" = "1" ] || rm -rf "$WORK"
 mkdir -p "$WORK"
+RUN_LOG="$WORK/run.log"
+[ "$PLANT_WRAPPER_DEFECT" = "1" ] && RUN_LOG="$WORK/run-plant.log"
 
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 pass() { printf 'ok   %s\n' "$*"; }
@@ -650,6 +661,16 @@ fi
 # branch that leaves the suite passing with FEWER checks than before has
 # quietly dropped evidence, which a green run alone cannot show.
 run_all_checks() {
+  # `errexit` FIRST, and not inherited: the wrapper below turns it off in the
+  # parent so PIPESTATUS can be read, and this function runs in the pipeline's
+  # subshell, which inherits that setting. Without this line every check that
+  # signals failure only by exit status — which is most of them — would print
+  # its FAIL and let the run continue to "All checks passed". The self-test
+  # plants exactly that shape and requires the run to die.
+  set -e
+  if [ "$PLANT_WRAPPER_DEFECT" = "1" ]; then
+    python3 -c 'import sys; print("FAIL: planted wrapper defect", file=sys.stderr); sys.exit(1)'
+  fi
 printf '== supported forms (normative) ==\n'
 printf '%s\n' "${SUPPORTED_FORMS[@]}" | awk -F'\t' '{ printf "   %-26s %s\n", $1, $2 }'
 printf '   probe characters: %s\n\n' "$PROBE_CHARS"
@@ -1748,6 +1769,34 @@ done
 pass "M04-AC4: content written inside a misused marker survives in every format"
 
 check_html_index_manifest examples/marker-misuse.html "$MISUSE_HTML_INDEX" "M04-AC4"
+
+# The content lives inside the marker that PLACES the index, so this pins the
+# splice in place_index — not merely the one in resolve_markers, which the
+# removed duplicate would exercise. It must land immediately before the index
+# it was written in front of.
+HTML_SECTION_ID="$HTML_SECTION_ID" MARKER_KEPT_CONTENT="$MARKER_KEPT_CONTENT" \
+python3 - examples/marker-misuse.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+kept = os.environ['MARKER_KEPT_CONTENT']
+holders = [n for n in H.walk(doc) if H.text(n).strip() == kept]
+if not holders:
+    print('FAIL: M04-AC4: the content written inside the placing marker is not '
+          'in the rendered page', file=sys.stderr)
+    sys.exit(1)
+# The innermost element holding exactly that text is the paragraph it became.
+at = max(H.position(doc, n) for n in holders)
+index_at = H.position_of_id(doc, os.environ['HTML_SECTION_ID'])
+if index_at < 0 or not at < index_at:
+    print(f'FAIL: M04-AC4: the marker content sits at {at}, not before the '
+          f'index section it was written in front of ({index_at})',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M04-AC4: content written inside the PLACING marker survives, '
+      'immediately before the index it places')
+PY
 check_no_html_residue examples/marker-misuse.html "M04-AC4"
 
 # Two misused markers, and the index still lands at the first one: after the
@@ -1872,6 +1921,29 @@ print('ok   M04-AC4: a marker with no marks to place emits no index section '
       'and no \\printindex')
 PY
 check_no_html_residue examples/marker-nomarks.html "M04-AC4"
+
+# ---------------------------------------------------------------------------
+# M04-AC4 — the one marker case the filter cannot repair: a document that has
+# already loaded imakeidx keeps its own options, so Quarto's conditional load
+# never applies `noautomatic` and the index file is closed at the marker. The
+# terms below the marker are lost, so the loss is made loud — a begin-document
+# warning naming what will be missing.
+# ---------------------------------------------------------------------------
+quarto render examples/marker-preloaded.qmd --to latex \
+  > "$WORK/preloaded-latex.log" 2>&1 \
+  || { tail -20 "$WORK/preloaded-latex.log" >&2; fail "M04-AC4: marker-preloaded.qmd failed to render to LaTeX"; }
+grep -qF 'ifpackagewith{imakeidx}{noautomatic}' examples/marker-preloaded.tex \
+  || fail "M04-AC4: the marker document carries no begin-document check for a preloaded imakeidx"
+if grep -qF 'ifpackagewith{imakeidx}' examples/demo.tex; then
+  fail "M04-AC4: a document with no marker carries the preloaded-imakeidx check"
+fi
+# `\PassOptionsToPackage` must NOT be emitted beside the check: it registers the
+# option on the already-loaded package, which makes the check report success on
+# exactly the document it exists to catch.
+if grep -qF 'PassOptionsToPackage{noautomatic}{imakeidx}' examples/marker-preloaded.tex; then
+  fail "M04-AC4: PassOptionsToPackage is emitted alongside the check and would silence it"
+fi
+pass "M04-AC4: a marker document carries the preloaded-imakeidx check, a marker-free one does not, and nothing silences it"
 
 # ---------------------------------------------------------------------------
 # M04-AC5 — gfm has no index back-end, so the marker fixture must come out of
@@ -2222,6 +2294,36 @@ if missing:
 print(f'ok   M04-AC2: the PDF index is printed at the marker and lists all '
       f'{len(terms)} derived terms, the ones marked after it included')
 PY
+
+# The begin-document check is only worth emitting if it FIRES on the document
+# it names and stays silent on the one it does not. Both halves are compiled
+# here with the engine that ships, since the warning exists only in a LaTeX
+# run's log.
+mkdir -p "$WORK/preloaded" && cp examples/marker-preloaded.tex "$WORK/preloaded/"
+( cd "$WORK/preloaded" && pdflatex -interaction=nonstopmode marker-preloaded.tex ) \
+  > "$WORK/preloaded-tex.log" 2>&1 \
+  || { grep -E '^! ' "$WORK/preloaded-tex.log" | head -5 >&2; fail "M04-AC4: the preloaded-imakeidx fixture failed to compile (IP2: it must still render)"; }
+grep -qF 'Package quarto-index Warning' "$WORK/preloaded/marker-preloaded.log" \
+  || fail "M04-AC4: a document that preloads imakeidx compiled without the warning naming the terms it will lose"
+# The loss the warning is about, shown rather than asserted from memory: the
+# term marked after the marker never reaches the index file.
+grep -qF 'indexentry{zeta|' "$WORK/preloaded/marker-preloaded.idx" \
+  || fail "M04-AC4: the preloaded fixture indexed nothing before the marker; it is not probing what it claims"
+if grep -qF 'indexentry{omega|' "$WORK/preloaded/marker-preloaded.idx"; then
+  fail "M04-AC4: the preloaded fixture kept the term marked after the marker, so the warning it emits is now false"
+fi
+# The control: the ordinary marker fixture loads imakeidx with the option and
+# must compile silent, or the check above proves only that it always fires.
+mkdir -p "$WORK/markertex" && quarto render examples/marker.qmd --to latex > "$WORK/marker-latex2.log" 2>&1 \
+  || { cat "$WORK/marker-latex2.log" >&2; fail "M04-AC4: marker.qmd failed to re-render to LaTeX"; }
+cp examples/marker.tex "$WORK/markertex/"
+( cd "$WORK/markertex" && pdflatex -interaction=nonstopmode marker.tex ) \
+  > "$WORK/markertex-tex.log" 2>&1 \
+  || { grep -E '^! ' "$WORK/markertex-tex.log" | head -5 >&2; fail "M04-AC4: the marker fixture failed to compile"; }
+if grep -qF 'Package quarto-index Warning' "$WORK/markertex/marker.log"; then
+  fail "M04-AC4: the ordinary marker fixture warns about a preloaded imakeidx, which it does not have"
+fi
+pass "M04-AC4: the preloaded-imakeidx document compiles, warns, and demonstrably loses the term below its marker, while the ordinary marker document compiles silent"
 
 # The escaping probe covers a range defined by construction, not by recall:
 # every printable ASCII character except the space, as its own visible term
@@ -2595,6 +2697,24 @@ PY
   # Same discipline for the marker's warnings: a report of a misused marker
   # that quietly stopped firing would leave every misuse check passing on a
   # log that says nothing.
+  # The suite's own exit status is an assertion like any other: a check that
+  # fails only by exit status must kill the run. Run against THIS script, not
+  # a mock of it, so the wrapper being proved is the wrapper that ships.
+  set +e
+  WRAPPER_OUT=$( "$0" --plant-wrapper-defect 2>&1 )
+  WRAPPER_RC=$?
+  set -e
+  [ "$WRAPPER_RC" -ne 0 ] \
+    || fail "AC3: the suite exited 0 with a check that failed by exit status; every manifest oracle here would be advisory"
+  if printf '%s' "$WRAPPER_OUT" | grep -q 'All checks passed'; then
+    fail "AC3: the suite printed its passing line after a check failed"
+  fi
+  if ! printf '%s' "$WRAPPER_OUT" | grep -q 'FAIL: planted wrapper defect'; then
+    printf '%s\n' "$WRAPPER_OUT" >&2
+    fail "AC3: the planted wrapper defect did not report itself; this proof is not testing what it claims"
+  fi
+  pass "AC3: a check that fails only by exit status kills the run ($WRAPPER_RC) and no passing line is printed"
+
   warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
 fi
@@ -2605,9 +2725,9 @@ fi
 # read, so the pipeline's status is taken from PIPESTATUS instead.
 set +e
 # `"$@"` so the body still sees the script's own flags (--self-test).
-run_all_checks "$@" 2>&1 | tee "$WORK/run.log"
+run_all_checks "$@" 2>&1 | tee "$RUN_LOG"
 CHECK_STATUS=${PIPESTATUS[0]}
 set -e
 [ "$CHECK_STATUS" -eq 0 ] || exit "$CHECK_STATUS"
-CHECK_COUNT=$( { grep -cE '^ok ' "$WORK/run.log" || true; } | tr -d ' ')
+CHECK_COUNT=$( { grep -cE '^ok ' "$RUN_LOG" || true; } | tr -d ' ')
 printf '\nAll checks passed (%s checks).\n' "$CHECK_COUNT"

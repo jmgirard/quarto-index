@@ -111,6 +111,36 @@ candidate rows.
 - 2026-08-17: review corrects the 2026-08-17 completion line above: its "62 at the merge base" was this branch's own count without --self-test, not a merge-base figure. Measured at review from a separate clone at `main`: the merge base prints 44 `ok` lines with --self-test, against this branch's 68.
 - 2026-08-17: review verified three of the [O] findings by hand before triage: F1 reproduced (a planted failure inside the wrapper still printed "All checks passed", exit 0); F2 confirmed in the emitted preamble (`\@ifpackageloaded{imakeidx}{}{...}` skips the option for a document that already loads imakeidx); F3 confirmed by render (an id written on the marker div is dropped, no warning). The verification run itself carried zero FAIL lines, so the AC evidence above stands as recorded.
 
+- Findings and disposition ([O] diff-bug, 13 ranked; the other two lenses
+  reported none). Fixed on the branch at the gate: **F1** the check-count
+  wrapper left `errexit` off in its subshell, so a check failing only by exit
+  status printed FAIL and the run still ended "All checks passed" (reproduced;
+  fixed by setting `errexit` first inside the wrapper, and pinned by a
+  planted-defect probe that runs the shipped script and requires a non-zero
+  exit with no passing line); **F2** Quarto's conditional package load means a
+  document that preloads imakeidx never gets `noautomatic`, silently losing
+  every mark below the marker — nothing emitted can reach an earlier load, so
+  the case is now loud: a begin-document check warns naming what will be
+  missing, with fixture `marker-preloaded.qmd` compiling to prove it fires,
+  loses `omega`, and stays silent on a healthy document (`\PassOptionsToPackage`
+  was tried and rejected: it registers the option on the loaded package and
+  silenced the check); **F3** an id or extra class written on the marker div
+  was dropped silently, now warned; **F4** the non-empty-marker case was
+  covered only on the removed duplicate, so the content moved onto the placing
+  marker and its position before the index is asserted; **F5** `place_index`
+  failed open on a second marker, now strips every marker unconditionally;
+  **F11** the unreachable no-fixtures guard in `byte-diff.sh`. Follow-up
+  candidate rows: **F6** a nested marker leaves its container empty, **F7** the
+  marker class on a non-div is ignored without a warning, **F9** no structural
+  residue check on LaTeX misuse output, **F10** three renders write
+  `examples/marker.tex` in one run, **F12** `resolve_markers` rebuilds every
+  Blocks list in every format, **F13** the check-count baseline is not
+  mechanized. Rejected: **F8** the duplicate ordinal counts only top-level
+  markers — cosmetic, since the block position in the same message is exact.
+- Post-fix verification: `tests/run-tests.sh --self-test` green at 72 checks
+  (was 68 before the fixes, 44 at the merge base).
+- 2026-08-17: gate-directed fixes for review findings F1-F5 and F11 landed on the branch (see the Review section); suite green at 72 checks.
+
 ## Decisions
 
 - 2026-08-17: A marker div carrying content keeps that content, printed where

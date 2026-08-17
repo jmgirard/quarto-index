@@ -1,0 +1,27 @@
+---
+title: "quarto-index marker in a document that loads imakeidx itself"
+from: markdown-smart
+header-includes: |
+  \usepackage{imakeidx}
+filters:
+  - index
+---
+
+# A document that loads the index package itself
+
+Quarto emits the extension's package load conditionally, so a document that
+has already loaded `imakeidx` keeps its own options — and without
+`noautomatic` the index file is closed at the marker, dropping every term
+marked below it. Nothing the filter emits can reach a load that already
+happened, so the case is made loud rather than fixed: the document renders,
+and LaTeX warns at begin-document that entries will be missing.
+
+One term is marked before the marker: [zeta]{.index}.
+
+::: {.qi-index-here}
+:::
+
+# After the marker
+
+One term is marked after it, [omega]{.index}, which is the term this document
+exists to show going missing.

@@ -33,7 +33,7 @@ trap restore EXIT
 rm -rf "$WORK"
 mkdir -p "$WORK/base" "$WORK/branch"
 
-FIXTURES=$(git ls-tree --name-only "$BASE" examples/ | grep '\.qmd$')
+FIXTURES=$( { git ls-tree --name-only "$BASE" examples/ | grep '\.qmd$'; } || true)
 [ -n "$FIXTURES" ] || { printf 'FAIL: the merge base carries no fixtures to render.\n' >&2; exit 1; }
 
 render_all() {

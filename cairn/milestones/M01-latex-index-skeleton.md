@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, IP3, GP1, GP4, GP5, GP6
-- **Branch/PR:** `m01-latex-index-skeleton`
+- **Branch/PR:** `m01-latex-index-skeleton` · https://github.com/jmgirard/quarto-index/pull/1
 
 ## Goal
 
@@ -59,23 +59,23 @@ quoting — never copied from filter output; the script header states this
 rule, and review re-derives the escaping-probe, sub-entry and `!!`-run rows
 independently of the script.
 
-- [ ] AC1: The script renders `examples/demo.qmd` to LaTeX via the installed
+- [x] AC1: The script renders `examples/demo.qmd` to LaTeX via the installed
       extension with exit 0 and the `.tex` matches the expected-entries
       manifest exactly: each row's `\index{<entry>}` text matches its expected
       count, the total `\index` count equals the manifest total (extra or
       missing commands fail), and the manifest is non-empty.
-- [ ] AC2: The demo `.tex` contains `\usepackage{imakeidx}` (with or without
+- [x] AC2: The demo `.tex` contains `\usepackage{imakeidx}` (with or without
       options) followed later by `\makeindex`, both before `\begin{document}`,
       and exactly one `\printindex`, after all body content and before
       `\end{document}`.
-- [ ] AC3: `examples/control.qmd` — no marks, but mark-like text in a fenced
+- [x] AC3: `examples/control.qmd` — no marks, but mark-like text in a fenced
       code block and inline code — renders to LaTeX with exit 0 and a
       non-empty `.tex` with no `\index{`, `imakeidx`, `\makeindex`, or
       `\printindex`. Mark-like text survives as content: every control-manifest
       token — for each mark, an escape-free token containing that mark's own
       `entry=` value or visible text — matches its exact count, any mismatch
       failing; this manifest is the whole positive check.
-- [ ] AC4: The supported-forms list is normative — visible-term, custom-entry
+- [x] AC4: The supported-forms list is normative — visible-term, custom-entry
       (single-level `entry=`), sub-entry (`!`-separated levels, literal `!` via
       `!!`), and invisible-entry spans — and the probe set puts visible terms
       and `entry=` levels *each independently* through every character of
@@ -87,12 +87,12 @@ independently of the script.
       `examples/demo.qmd` under AC1's manifest; the README documents exactly
       those four span forms and no others, plus how a literal backslash and
       `"` are written inside `entry=` (reviewer-verified against the list).
-- [ ] AC5 (tracking hygiene): `cairn/PROFILE.md`'s `verify` slot names
+- [x] AC5 (tracking hygiene): `cairn/PROFILE.md`'s `verify` slot names
       `tests/run-tests.sh`; the script fails loudly (`set -euo pipefail`) and
       passes a self-test: against a deliberately broken fixture (one
       manifest-expected `\index` command removed, one altered, one spurious
       `\index` added) it exits non-zero and names the mismatching row(s).
-- [ ] AC6: With TinyTeX installed (user-approved at the plan gate; requires
+- [x] AC6: With TinyTeX installed (user-approved at the plan gate; requires
       network), `quarto render examples/demo.qmd --to pdf` exits 0 and
       `pdftotext -layout` output, whitespace-normalized, has an index heading,
       and the text following it lists every PDF-manifest term (the
@@ -101,7 +101,7 @@ independently of the script.
       order. The script fails loudly if `tinytex`, `makeindex`, or `pdftotext`
       is missing, so this can never pass unrun. Explicit `entry=` entries are
       verified by AC1 instead.
-- [ ] AC7: `examples/demo.qmd` renders to HTML with exit 0. Each visible term
+- [x] AC7: `examples/demo.qmd` renders to HTML with exit 0. Each visible term
       appears as rendered text — markdown backslash-escapes consumed, then
       `&`, `<`, `>` as HTML entities — per the visible-terms manifest
       (term × count, as in AC1), pinned complete: the manifest's count total
@@ -195,3 +195,49 @@ independently of the script.
   Both are IP2 escaping bugs, so both keep a probe in `examples/demo.qmd`.
 
 ## Review
+
+Reviewed 2026-08-16 on `m01-latex-index-skeleton`, PR #1. Evidence is a fresh
+`tests/run-tests.sh --self-test` run (exit 0) after deleting every render
+artifact, plus the reader checks noted per criterion.
+
+- AC1 — demo rendered to LaTeX via `examples/_extensions` (presence asserted
+  before the render), exit 0; `.tex` matched the expected-entries manifest
+  exactly: 19 rows, 21 `\index` commands, totals equal, no unexpected entry.
+  Per this section's preamble, review re-derived the escaping-probe,
+  sub-entry and `!!`-run rows independently of the script from the `.qmd` and
+  the documented layer semantics; all matched, incl. `A!!!B` -> `A"!!B`,
+  `A!!B!` -> `A"!B!`, and the 13-character `entry=` specials probe.
+- AC2 — `\usepackage{imakeidx}` precedes `\makeindex[intoc]`, both before
+  `\begin{document}`; exactly one `\printindex`, with no `\index{` or
+  `\section{` after it and before `\end{document}`.
+- AC3 — control rendered exit 0, non-empty `.tex`, none of `\index{`,
+  `imakeidx`, `\makeindex`, `\printindex`; all 7 control-manifest tokens
+  matched their exact counts.
+- AC4 — forms list and probe characters declared in `tests/run-tests.sh` and
+  printed by every run. Reader check against `examples/demo.qmd`: visible
+  terms cover all 13 characters across five short probes, `entry=` levels
+  cover all 13 in one probe; leading/medial/trailing all occupied; `!!`
+  leading/medial/trailing; odd `!` run; empty level; one-backslash level;
+  `\!` pin. README documents exactly the four span forms and no others,
+  plus `\\`, `\"` and `!!` inside `entry=`.
+- AC5 — PROFILE `verify` slot names `tests/run-tests.sh`; script sets
+  `set -euo pipefail`; planted-defect self-test (one removed, one altered,
+  one spurious) exits non-zero and names all three rows.
+- AC6 — TinyTeX installed; PDF render exit 0; `pdftotext -layout` output has
+  an `Index` heading and the text after it lists all 8 PDF-manifest terms
+  with special characters literal and in order (`dollar $ at @ bar |`,
+  `bang ! quote "`). Guard re-verified by stubbing `quarto list tools` to
+  report TinyTeX absent: exits 1 naming the missing tool, never skips.
+- AC7 — HTML render exit 0; 18 visible-term rows totalling 20 marks, equal
+  to `]{.index` occurrences (21) minus `[]{.index` (1); none of `\index`,
+  `imakeidx`, `\makeindex`, `\printindex`; no `entry=` value in
+  tag-stripped body text.
+
+### Consistency gate
+
+- `cairn_validate.py`: exit 0, all checks pass.
+- Toolchain `consistency-gate` slot (profile `generic`): none — clean no-op.
+- No `DESIGN.md` principle changed, so `cairn_impact.py` was not run.
+
+### Independent review
+

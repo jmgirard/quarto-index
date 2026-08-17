@@ -147,6 +147,25 @@ Two back-ends ship:
 Every other format — beamer, revealjs, epub, gfm — takes neither branch and
 passes marks through untouched (IP2).
 
+**Book projects** split the HTML back-end in two, and leave the LaTeX one
+alone. A PDF book is rendered as one merged document, so its marks are already
+in one process; an HTML book renders each chapter separately, so no chapter can
+see another's. Each chapter therefore writes what it found — levels,
+cross-reference targets, anchor ids, its own output page — to a sidecar store
+under the project's `.quarto/` scratch directory, keyed by chapter source path,
+and the chapter carrying the placement marker reads the whole store back in
+book order and builds the one index the book gets. Every chapter still assigns
+its anchors, because they are what the index links to. The store is read
+through the current chapter list, so a chapter dropped from the book cannot
+contribute a stale record; a chapter *rendered* stale can, which makes a full
+render the contract for a current index. The chapter list, each chapter's
+position, and the paths that make a cross-chapter link come from Quarto's own
+metadata (`book.render`, `quarto.doc`, `quarto.project`), never from guesswork
+about layout. Two cases are reported rather than guessed at: a book whose
+chapters mark terms but whose author wrote no marker anywhere (reported by the
+last chapter, the only one that can know), and a second marker chapter (the
+first in book order builds the index).
+
 Shared between them: the level parse, the cross-reference target parse and its
 `: ` join, and every warning about the mark itself.
 

@@ -1,6 +1,6 @@
 # M05: Multi-chapter book support
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M04
 - **Driving RR:** —
@@ -107,7 +107,7 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
       (row format extended to carry locator hrefs), book HTML checks
       (AC1–AC4, AC6), PDF book check with bounded slice, store-footprint
       sweep; wire into `tests/run-tests.sh`.
-- [ ] T7: Docs: README book section (setup, marker-chapter-last
+- [x] T7: Docs: README book section (setup, marker-chapter-last
       recommendation, full-render staleness contract, store gitignore
       guidance); DESIGN.md architecture updated for the book path.
 
@@ -127,6 +127,8 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
 - 2026-08-17: a second marker chapter is refused (first in book order wins, warned) rather than emitting two indexes; not AC-pinned, additive.
 - 2026-08-17: T6 done — book checks wired into tests/run-tests.sh (store-name pin, exhaustive href manifest, recursive one-index sweep, store-footprint sweep with a positive control, cross-file link resolution, fixture-axis coverage read off the render, cross-reference id check, no-marker book, book PDF); the missing-marker report joined the warning-discrimination self-test. Suite 65 -> 73 checks, green; --self-test green.
 - 2026-08-17: the book PDF check counts PAGES rather than printed locator tokens — makeindex collapses three consecutive pages into a range (`Shared Term, 3-5`), which a token count read as one locator and failed on.
+- 2026-08-17: T7 done — README `## Books` section (marker chapter, marker-chapter-last, cross-chapter locators and cross-references, PDF needs nothing, full-render contract, store location) and DESIGN.md architecture updated for the book path.
+- 2026-08-17: all tasks done; suite green at 73 checks (65 at the merge base, +8 book checks) and green with --self-test; cairn_validate clean. Status -> review.
 
 ## Decisions
 

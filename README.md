@@ -312,8 +312,51 @@ The extension's job ends at correct emitted output. Whether your toolchain
 then runs `makeindex` to build the index is up to your build setup; Quarto's
 default PDF pipeline does it for you.
 
+## Books
+
+A Quarto book gets one index for the whole book, not one per chapter. Write
+the placement marker in the chapter that should hold it:
+
+```markdown
+::: {.qi-index-here}
+:::
+```
+
+**Put that chapter last.** Quarto renders a book's chapters in order, and each
+chapter is a separate render that cannot see the others, so the index is built
+from the chapters that ran before the one holding the marker. A marker in an
+earlier chapter still works, and the extension tells you which chapters came
+after it and are therefore missing.
+
+In the HTML book, each entry's locators link to the chapters that mark the
+term, in book order — across files, and across subdirectories, from wherever
+the index chapter sits. A cross-reference links to its target entry whenever
+some chapter in the book contributes it, so `see=` works across chapters
+exactly as it does inside one document. The PDF book needs none of this: it is
+rendered as one merged document, so `makeindex` has always had every chapter's
+marks at once, and the printed index gathers page numbers from all of them.
+
+Two things worth knowing:
+
+- **Render the whole book when you publish.** Rendering a single chapter
+  updates that chapter's marks only; the index is rebuilt from what the last
+  full render recorded for the others. `quarto render` with no file argument
+  is what makes the index current.
+- **A book with marks but no marker chapter gets no index**, and says so once
+  per render, naming the marker to add. The extension will not choose a
+  chapter for you.
+
+Each chapter records its marks in `.quarto/quarto-index/` inside your project
+— Quarto's own scratch directory, which is already excluded from git by the
+project `.gitignore` Quarto creates, and which is never copied into `_book/`.
+There is nothing to configure and nothing new to ignore.
+
 ## Examples
 
+`examples/book/` is a four-chapter book fixture — a shared term marked in
+three chapters, a chapter in a subdirectory, a cross-chapter cross-reference,
+and the marker in the last chapter — and `examples/book-nomarker/` is the same
+idea with no marker at all.
 `examples/demo.qmd` exercises every supported form and the full escaping
 probe set. `examples/escaping.qmd` and `examples/xref-escaping.qmd` are the
 character probes. `examples/placement.qmd` marks one term in a heading, a table

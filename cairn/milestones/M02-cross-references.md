@@ -1,6 +1,6 @@
 # M02: Cross-references (see / see also)
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M01
 - **Driving RR:** —
@@ -164,6 +164,7 @@ quoted values only.
 - 2026-08-16: T4 done — seven cross-reference marks in `examples/demo.qmd` (six single-target, one dual) and two source-less marks in `examples/content.qmd`; suite gains the cross-reference manifest, the completeness pin with its arithmetic, a pin tying the manifest to the filter's dual-target command name, exact-count warning checks for both misuse cases, the babel-label pin, the no-leak source pin extended to both new attributes, the PDF cross-reference text list, and self-test discrimination on the missing/duplicated axes. Every hand-derived row matched the render first time.
 - 2026-08-16: T5 done — `examples/xref-escaping.qmd` puts all 94 printable ASCII characters through cross-reference targets under both attributes, across all three level positions, plus the special set as single-target, dual-target and both; 238 entries derived by construction, 238 accepted by makeindex, 0 rejected, and all 48 exact typeset strings found. Also pins that the single and dual forms render a target identically, and covers the two unusable-target warnings.
 - 2026-08-16: T6 done — README gains a cross-reference section (syntax, target level semantics, see-replaces-locator, the both-attributes behavior, the two-marks-on-one-term hazard, per-format behavior) and the forms table grows to six; the normative forms list is now label/exemplar pairs pinned verbatim to README.md, and the pin was proved discriminating by drifting one exemplar and watching it fail.
+- 2026-08-16: all tasks done, `tests/run-tests.sh --self-test` clean (23 checks + 3 self-test checks); status review.
 
 ## Decisions
 

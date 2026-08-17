@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-16 (M02 planned from the cross-references candidate
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M02 | Cross-references (see / see also) | in-progress | M01 | normal | milestones/M02-cross-references.md |
+| M02 | Cross-references (see / see also) | review | M01 | normal | milestones/M02-cross-references.md |
 | M01 | LaTeX index extension skeleton | done | — | normal | milestones/archive/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->

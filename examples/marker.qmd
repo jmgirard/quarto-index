@@ -1,0 +1,23 @@
+---
+title: "quarto-index placement marker probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Before the marker
+
+Placement is the whole point of this fixture: the index must appear where the
+marker is written, between this section's content and the next section, and
+nowhere else. Two terms are marked here, [alpha]{.index} and
+[beta]{.index entry="Beta!Nested"}.
+
+::: {.qi-index-here}
+:::
+
+# After the marker
+
+Content that follows the marker, so the index has something to sit in front
+of as well as behind. One more term is marked here, [gamma]{.index}, and one
+term is marked a second time, [alpha]{.index}, so an entry with two locators
+crosses the marker's position.

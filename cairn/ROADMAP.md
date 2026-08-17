@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-17 (M03 merged and archived; pass-3 candidate row F
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M04 | Index placement marker | planned | — | normal | milestones/M04-placement-marker.md |
+| M04 | Index placement marker | review | — | normal | milestones/M04-placement-marker.md |
 | M05 | Multi-chapter book support | planned | M04 | normal | milestones/M05-book-support.md |
 | M03 | HTML index back-end | done | M02 | normal | milestones/archive/M03-html-backend.md |
 | M02 | Cross-references (see / see also) | done | M01 | normal | milestones/archive/M02-cross-references.md |
@@ -29,7 +29,7 @@ _Last hygiene check: 2026-08-17 (M03 merged and archived; pass-3 candidate row F
 - Harden the acceptance suite: brace-aware \index scanner (no longer benign now that unbalanced braces are probed) — added 2026-08-16 — M01 review R14; the script-exit-code item was done in M01, and \printindex ordering has its own row
 - Quarto version floor is an untested contract claim; CI matrix would fence it — added 2026-08-16 — M01 review R15; folds into the existing CI-matrix candidate
 - Windows checkouts without symlink support break examples/_extensions — added 2026-08-16 — M01 review R18
-- `marks_emitted` is module-level state, latent if Lua state is ever reused across documents; the HTML back-end adds one more such accumulator (`html_marks`) — added 2026-08-16, widened by M03 review P1, corrected M03 (the second accumulator was refactored away by the F1/F2 fix) — M01 review R16
+- `marks_seen` is module-level state, latent if Lua state is ever reused across documents; the HTML back-end adds one more such accumulator (`html_marks`) — added 2026-08-16, widened by M03 review P1, corrected M03 (the second accumulator was refactored away by the F1/F2 fix), corrected M04 (`marks_emitted` became the format-neutral `marks_seen`) — M01 review R16
 - `\index` inside a moving argument (section heading) is unprobed — added 2026-08-16 — M01 review R17
 - Letter-group headings in the HTML index (A/B/C breaks) — added 2026-08-16 — deferred at the M03 gate pending sort-key collation
 - see-also entries keep their locators (print convention) in both back-ends — added 2026-08-16 — M03 gate chose LaTeX-aligned no-locator semantics; pairs with the plain+cross-reference clash row

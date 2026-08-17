@@ -39,16 +39,28 @@ else
   FIXTURE_MODE=0
 fi
 
+# Self-test hook for the wrapper itself: with this flag the run's first check
+# is one that fails ONLY by exit status. The suite must then exit non-zero and
+# must never print its "All checks passed" line.
+PLANT_WRAPPER_DEFECT=0
+[ "${1:-}" = "--plant-wrapper-defect" ] && PLANT_WRAPPER_DEFECT=1
+
 WORK="tests/.work"
-[ "$FIXTURE_MODE" = "1" ] || rm -rf "$WORK"
+# Neither self-test invocation may wipe the work directory or the run log: the
+# fixture check reads a file the parent wrote there, and the wrapper probe is
+# spawned from INSIDE a parent run whose log is still being written.
+[ "$FIXTURE_MODE" = "1" ] || [ "$PLANT_WRAPPER_DEFECT" = "1" ] || rm -rf "$WORK"
 mkdir -p "$WORK"
+RUN_LOG="$WORK/run.log"
+[ "$PLANT_WRAPPER_DEFECT" = "1" ] && RUN_LOG="$WORK/run-plant.log"
 
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 pass() { printf 'ok   %s\n' "$*"; }
 
 # ---------------------------------------------------------------------------
-# Supported forms (NORMATIVE). The README documents exactly these span forms
-# and no others. Each row is <label><TAB><exemplar>: the exemplar is the exact
+# Supported forms (NORMATIVE). The README documents exactly these authoring
+# forms — the mark spans, and the div that places the index — and no others.
+# Each row is <label><TAB><exemplar>: the exemplar is the exact
 # syntax, and the check below fails unless it appears verbatim in README.md.
 # A form the extension grows must therefore be documented in the same change,
 # and a documented form cannot drift from the one this suite exercises.
@@ -60,6 +72,7 @@ SUPPORTED_FORMS=(
   $'invisible-entry span\t[]{.index entry="Entry"}'
   $'see cross-reference\t[term]{.index see="Other"}'
   $'see-also cross-reference\t[term]{.index see-also="Other"}'
+  $'placement marker\t::: {.qi-index-here}'
 )
 
 # ---------------------------------------------------------------------------
@@ -75,6 +88,7 @@ README_STALE=(
   $'pass-through scope\tformats with no index back-end — HTML and beamer'
   $'cross-reference pass-through\tIn formats with no index back-end, a cross-reference mark is simply a mark'
   $'one back-end\tLaTeX/PDF is the back-end that ships today'
+  $'automatic placement\tPlacement is automatic; there is no option to put the index elsewhere yet'
 )
 
 # Each must be PRESENT: one beamer-scoped pass-through sentence, and one row
@@ -642,6 +656,21 @@ if [ "$FIXTURE_MODE" = "1" ]; then
   exit $?
 fi
 
+# Every check the suite runs, wrapped so the run can count them. The count is
+# printed at the end and compared against the merge base at review time: a
+# branch that leaves the suite passing with FEWER checks than before has
+# quietly dropped evidence, which a green run alone cannot show.
+run_all_checks() {
+  # `errexit` FIRST, and not inherited: the wrapper below turns it off in the
+  # parent so PIPESTATUS can be read, and this function runs in the pipeline's
+  # subshell, which inherits that setting. Without this line every check that
+  # signals failure only by exit status — which is most of them — would print
+  # its FAIL and let the run continue to "All checks passed". The self-test
+  # plants exactly that shape and requires the run to die.
+  set -e
+  if [ "$PLANT_WRAPPER_DEFECT" = "1" ]; then
+    python3 -c 'import sys; print("FAIL: planted wrapper defect", file=sys.stderr); sys.exit(1)'
+  fi
 printf '== supported forms (normative) ==\n'
 printf '%s\n' "${SUPPORTED_FORMS[@]}" | awk -F'\t' '{ printf "   %-26s %s\n", $1, $2 }'
 printf '   probe characters: %s\n\n' "$PROBE_CHARS"
@@ -748,19 +777,9 @@ PY
 # ---------------------------------------------------------------------------
 # REVIEW-TIME EVIDENCE, NOT A CHECK: the LaTeX back-end is untouched.
 # A checked-in golden `.tex` would be a snapshot, which the oracle rule above
-# forbids. Instead the reviewer compares the branch's render against the same
-# render at the merge-base, on one machine, and reads the diff — expected to be
-# empty. From a clean tree on the milestone branch:
-#
-#   BASE=$(git merge-base HEAD "$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|origin/||')")
-#   quarto render examples/demo.qmd --to latex && cp examples/demo.tex /tmp/branch-demo.tex
-#   git checkout "$BASE" -- _extensions/index/index.lua
-#   quarto render examples/demo.qmd --to latex && cp examples/demo.tex /tmp/base-demo.tex
-#   git checkout HEAD -- _extensions/index/index.lua
-#   diff /tmp/base-demo.tex /tmp/branch-demo.tex
-#
-# The last line restores the branch's filter; check `git status` is clean
-# before trusting anything rendered afterwards.
+# forbids. `tests/byte-diff.sh` renders every fixture the merge base carries,
+# once with each filter, and compares the two `.tex` files byte for byte — the
+# expected diff is empty. Run it from a clean tree on the milestone branch.
 # ---------------------------------------------------------------------------
 
 # The HTML back-end's three identifiers are a public surface — a reader's URL
@@ -1516,6 +1535,460 @@ print('ok   M03-AC2: locators are numbered in source order across a heading, '
 PY
 
 # ---------------------------------------------------------------------------
+# M04 — the placement marker: an empty top-level div carrying the class
+# `qi-index-here`, which puts the index where the author wrote it.
+#
+# The class is a public surface exactly as the three HTML identifiers are — an
+# author types it — so the suite's copy is pinned to the filter's own constant,
+# and pinned to be a DIFFERENT string from the generated section's id, which is
+# the collision this token was chosen to avoid.
+# ---------------------------------------------------------------------------
+MARKER_CLASS='qi-index-here'
+
+MARKER_CLASS="$MARKER_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
+  _extensions/index/index.lua <<'PY'
+import os, re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+m = re.search(r'MARKER_CLASS\s*=\s*"([^"]*)"', src)
+if not m:
+    print('FAIL: M04-AC1: MARKER_CLASS is not defined in the filter',
+          file=sys.stderr)
+    sys.exit(1)
+if m.group(1) != os.environ['MARKER_CLASS']:
+    print(f"FAIL: M04-AC1: suite says {os.environ['MARKER_CLASS']!r}, filter "
+          f"defines {m.group(1)!r}", file=sys.stderr)
+    sys.exit(1)
+if m.group(1) == os.environ['HTML_SECTION_ID']:
+    print(f'FAIL: M04-AC1: the marker class and the generated section id are '
+          f'the same string ({m.group(1)!r}); one string with two meanings is '
+          f'exactly the collision the marker token avoids', file=sys.stderr)
+    sys.exit(1)
+print('ok   M04-AC1: the marker class is pinned to the filter constant and '
+      'differs from the generated section id')
+PY
+
+# ---------------------------------------------------------------------------
+# Manifest 1i — the generated index in examples/marker.html (M04-AC1), same
+# oracle rule and row format as manifest 1e. marker.qmd marks `alpha` once on
+# each side of the marker, `beta` under entry="Beta!Nested", and `gamma` after
+# the marker. Case folds before ordering, so alpha, Beta, gamma; `Beta` itself
+# is never marked, so it carries no locator and its sub-entry carries one.
+# ---------------------------------------------------------------------------
+read -r -d '' MARKER_HTML_INDEX <<'MANIFEST' || true
+0	alpha	2
+0	Beta	0
+1	Nested	1
+0	gamma	1
+MANIFEST
+
+# Manifest 1j — the \index{} commands examples/marker.tex must carry (M04-AC2).
+read -r -d '' MARKER_ENTRIES <<'MANIFEST' || true
+2	alpha
+1	Beta!Nested
+1	gamma
+MANIFEST
+
+# Manifest 1k — the generated index in examples/marker-misuse.html (M04-AC4):
+# one term marked on each side of the surviving first marker.
+read -r -d '' MISUSE_HTML_INDEX <<'MANIFEST' || true
+0	delta	1
+0	epsilon	1
+MANIFEST
+
+# Terms the compiled PDF's index must carry (M04-AC2). `gamma` is the one that
+# matters most: it is marked AFTER the marker, and a mid-document \printindex
+# closes the .idx file it has just read, so an unfixed back-end loses every
+# such mark to the log — silently, and only for the marks below the marker.
+read -r -d '' MARKER_PDF_TERMS <<'MANIFEST' || true
+alpha
+Beta
+Nested
+gamma
+MANIFEST
+
+# A removed marker must leave nothing behind, asserted structurally rather than
+# by grepping for the token: an element that kept the class is residue, and so
+# is an empty div that kept none. Quarto's own title block carries one empty
+# div in every render, marker or not, so that one is named and allowed.
+QUARTO_EMPTY_DIV='quarto-title-meta'
+check_no_html_residue() {
+  local htmlfile="$1" label="$2"
+  MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
+  python3 - "$htmlfile" "$label" <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+path, label = sys.argv[1:3]
+doc = H.parse(path)
+marker, allowed = os.environ['MARKER_CLASS'], os.environ['QUARTO_EMPTY_DIV']
+kept = [n.tag for n in H.walk(doc) if marker in H.classes(n)]
+if kept:
+    print(f'FAIL: {label}: {len(kept)} element(s) in {path} still carry the '
+          f'marker class', file=sys.stderr)
+    sys.exit(1)
+stray = [n.attrs.get('class', '') for n in H.empty_divs(doc)
+         if allowed not in H.classes(n)]
+if stray:
+    print(f'FAIL: {label}: empty div(s) left where a marker was removed from '
+          f'{path}: {stray}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: no marker element and no empty div in {path}')
+PY
+}
+
+# ---------------------------------------------------------------------------
+# M04-AC1 — the index section lands where the marker was written.
+# ---------------------------------------------------------------------------
+quarto render examples/marker.qmd --to html > "$WORK/marker-html.log" 2>&1 \
+  || { tail -20 "$WORK/marker-html.log" >&2; fail "M04-AC1: marker.qmd failed to render to HTML"; }
+check_html_index_manifest examples/marker.html "$MARKER_HTML_INDEX" "M04-AC1"
+check_html_index_links examples/marker.html "M04-AC1"
+check_no_html_residue examples/marker.html "M04-AC1"
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+python3 - examples/marker.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+section_id = os.environ['HTML_SECTION_ID']
+prefix = os.environ['HTML_ANCHOR_PREFIX']
+
+
+def at(identifier):
+    """Where this element sits in document order; absent is a failure, not a
+    position, so a missing id can never satisfy an ordering comparison."""
+    p = H.position_of_id(doc, identifier)
+    if p < 0:
+        print(f'FAIL: M04-AC1: no element with id {identifier!r} in the '
+              f'rendered page', file=sys.stderr)
+        sys.exit(1)
+    return p
+
+
+# The marks that bracket the marker in the source — the last one written
+# before it, the first one after it — pin the index to a position between the
+# two sections' CONTENT. Section ids alone would pass on an index that landed
+# inside the first section rather than after it.
+before_mark, index_at, after_mark = (at(prefix + '2'), at(section_id),
+                                     at(prefix + '3'))
+if not before_mark < index_at < after_mark:
+    print(f'FAIL: M04-AC1: the index section sits at document position '
+          f'{index_at}, not between the mark before the marker ({before_mark}) '
+          f'and the mark after it ({after_mark})', file=sys.stderr)
+    sys.exit(1)
+if not at('before-the-marker') < index_at < at('after-the-marker'):
+    print('FAIL: M04-AC1: the index section does not sit between the two body '
+          'sections', file=sys.stderr)
+    sys.exit(1)
+for body in ('before-the-marker', 'after-the-marker'):
+    if H.find_id(H.find_id(doc, body), section_id) is not None:
+        print(f'FAIL: M04-AC1: the index section is nested inside the '
+              f'{body!r} section rather than sitting between the two',
+              file=sys.stderr)
+        sys.exit(1)
+# "and nowhere else on the page": every rendered entry belongs to the one
+# generated section, so no second copy of the index sits anywhere.
+outside = len(H.find_all(doc, cls='qi-term')) - len(
+    H.find_all(H.find_id(doc, section_id), cls='qi-term'))
+if outside:
+    print(f'FAIL: M04-AC1: {outside} index entry term(s) render outside the '
+          f'generated index section', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M04-AC1: the index section sits between the two sections\' '
+      f'content in document order (position {index_at}), nested in neither, '
+      f'and no entry renders anywhere else')
+PY
+
+# ---------------------------------------------------------------------------
+# M04-AC2 — one \printindex, at the marker, in the emitted .tex.
+# ---------------------------------------------------------------------------
+quarto render examples/marker.qmd --to latex > "$WORK/marker-latex.log" 2>&1 \
+  || { cat "$WORK/marker-latex.log" >&2; fail "M04-AC2: marker.qmd failed to render to LaTeX"; }
+[ -s examples/marker.tex ] || fail "M04-AC2: examples/marker.tex is empty"
+check_entry_manifest examples/marker.tex "$MARKER_ENTRIES" "M04-AC2"
+
+python3 - examples/marker.tex examples/demo.tex <<'PY'
+import sys
+src = open(sys.argv[1], encoding='utf-8').read()
+demo = open(sys.argv[2], encoding='utf-8').read()
+errs = []
+n = src.count('\\printindex')
+if n != 1:
+    errs.append(f'expected exactly one \\printindex, found {n}')
+else:
+    first = src.find('\\section{Before the marker}')
+    second = src.find('\\section{After the marker}')
+    p = src.find('\\printindex')
+    if first < 0 or second < 0:
+        errs.append('the two section commands are not both in the .tex')
+    elif not first < p < second:
+        errs.append('\\printindex does not sit between the two sections')
+# A mid-document \printindex closes the .idx file it reads, dropping every
+# later \index to the log. `noautomatic` is what keeps the file open, and it
+# is emitted only where a marker made it necessary — a document without one
+# must keep exactly the preamble it has always had.
+if '\\usepackage[noautomatic]{imakeidx}' not in src:
+    errs.append('the marker document does not load imakeidx with noautomatic')
+if 'noautomatic' in demo:
+    errs.append('a document with no marker loads imakeidx with noautomatic')
+if errs:
+    print('FAIL: M04-AC2: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M04-AC2: exactly one \\printindex, between the two sections, with '
+      'the index file kept open only where a marker required it')
+PY
+
+# ---------------------------------------------------------------------------
+# M04-AC4 — misuse. Every warning is emitted before the back-end branch, so
+# each fires once in EVERY format; the fixture holds one nested marker, one
+# second top-level marker, and content inside that second marker.
+# ---------------------------------------------------------------------------
+WARN_MARKER_NESTED='index placement marker below the top level'
+WARN_MARKER_DUP='index placement marker 2 (top-level block 8) is ignored'
+WARN_MARKER_CONTENT='index placement marker is not empty'
+WARN_MARKER_NOMARKS='index placement marker in a document with no index marks'
+MARKER_KEPT_CONTENT='Content written inside a marker, which no misuse may delete.'
+
+for fmt in html latex gfm; do
+  quarto render examples/marker-misuse.qmd --to $fmt \
+    > "$WORK/misuse-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/misuse-$fmt.log" >&2; fail "M04-AC4: marker-misuse.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/misuse-$fmt.log" "$WARN_MARKER_NESTED" 1 "M04-AC4"
+  check_warning_count "$WORK/misuse-$fmt.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
+  check_warning_count "$WORK/misuse-$fmt.log" "$WARN_MARKER_CONTENT" 1 "M04-AC4"
+done
+pass "M04-AC4: the nested, duplicate and non-empty marker each warn exactly once in HTML, LaTeX and gfm"
+
+# Nothing an author wrote inside a marker may be deleted with it (IP2), in any
+# format — including the one with no index back-end at all.
+for f in examples/marker-misuse.html examples/marker-misuse.tex examples/marker-misuse.md; do
+  grep -qF -- "$MARKER_KEPT_CONTENT" "$f" \
+    || fail "M04-AC4: content written inside a marker was deleted from $f"
+done
+pass "M04-AC4: content written inside a misused marker survives in every format"
+
+check_html_index_manifest examples/marker-misuse.html "$MISUSE_HTML_INDEX" "M04-AC4"
+
+# The content lives inside the marker that PLACES the index, so this pins the
+# splice in place_index — not merely the one in resolve_markers, which the
+# removed duplicate would exercise. It must land immediately before the index
+# it was written in front of.
+HTML_SECTION_ID="$HTML_SECTION_ID" MARKER_KEPT_CONTENT="$MARKER_KEPT_CONTENT" \
+python3 - examples/marker-misuse.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+kept = os.environ['MARKER_KEPT_CONTENT']
+holders = [n for n in H.walk(doc) if H.text(n).strip() == kept]
+if not holders:
+    print('FAIL: M04-AC4: the content written inside the placing marker is not '
+          'in the rendered page', file=sys.stderr)
+    sys.exit(1)
+# The innermost element holding exactly that text is the paragraph it became.
+at = max(H.position(doc, n) for n in holders)
+index_at = H.position_of_id(doc, os.environ['HTML_SECTION_ID'])
+if index_at < 0 or not at < index_at:
+    print(f'FAIL: M04-AC4: the marker content sits at {at}, not before the '
+          f'index section it was written in front of ({index_at})',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M04-AC4: content written inside the PLACING marker survives, '
+      'immediately before the index it places')
+PY
+check_no_html_residue examples/marker-misuse.html "M04-AC4"
+
+# Two misused markers, and the index still lands at the first one: after the
+# mark written before it, before the mark written after it.
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+python3 - examples/marker-misuse.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+prefix = os.environ['HTML_ANCHOR_PREFIX']
+first = H.position_of_id(doc, prefix + '1')
+index_at = H.position_of_id(doc, os.environ['HTML_SECTION_ID'])
+second = H.position_of_id(doc, prefix + '2')
+if min(first, index_at, second) < 0 or not first < index_at < second:
+    print(f'FAIL: M04-AC4: with two misused markers the index sits at '
+          f'{index_at}, not at the first marker (between {first} and '
+          f'{second})', file=sys.stderr)
+    sys.exit(1)
+print('ok   M04-AC4: the index is placed at the first marker, and the nested '
+      'and duplicate markers place nothing')
+PY
+
+python3 - examples/marker-misuse.tex <<'PY'
+import sys
+src = open(sys.argv[1], encoding='utf-8').read()
+n = src.count('\\printindex')
+if n != 1:
+    print(f'FAIL: M04-AC4: expected exactly one \\printindex in a document '
+          f'with three markers, found {n}', file=sys.stderr)
+    sys.exit(1)
+first = src.find('\\index{delta}')
+second = src.find('\\index{epsilon}')
+p = src.find('\\printindex')
+if not first < p < second:
+    print('FAIL: M04-AC4: \\printindex is not at the first marker (it must '
+          'follow the delta mark and precede the epsilon mark)',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M04-AC4: one \\printindex, at the first marker, in a document '
+      'carrying three')
+PY
+
+# ---------------------------------------------------------------------------
+# M04-AC4 — a marker in a document with no index marks. The residue claim is
+# made at its strongest here: the same document with the marker deleted by
+# hand renders byte-for-byte identically, in every format. An empty div, an
+# empty group, a stray blank line — anything the marker left behind is a diff.
+# ---------------------------------------------------------------------------
+python3 - examples/marker-nomarks.qmd examples/marker-nomarks-twin.qmd \
+  "$MARKER_CLASS" <<'PY'
+import sys
+fixture, twin, cls = (open(sys.argv[1], encoding='utf-8').read(),
+                      open(sys.argv[2], encoding='utf-8').read(), sys.argv[3])
+out, skip = [], False
+for line in fixture.splitlines(True):
+    stripped = line.strip()
+    if stripped == '::: {.%s}' % cls:
+        skip = True
+        continue
+    if skip and stripped == ':::':
+        skip = False
+        continue
+    out.append(line)
+if ''.join(out) != twin:
+    print('FAIL: M04-AC4: the twin fixture is not the marker fixture with its '
+          'marker block deleted; the two have drifted apart and the byte '
+          'comparison below would compare two different documents',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M04-AC4: the twin fixture is the marker fixture with the marker '
+      'block deleted, and nothing else')
+PY
+
+for fmt in html latex gfm; do
+  for f in marker-nomarks marker-nomarks-twin; do
+    quarto render examples/$f.qmd --to $fmt > "$WORK/$f-$fmt.log" 2>&1 \
+      || { tail -20 "$WORK/$f-$fmt.log" >&2; fail "M04-AC4: $f.qmd failed to render to $fmt"; }
+  done
+  check_warning_count "$WORK/marker-nomarks-$fmt.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
+  check_warning_count "$WORK/marker-nomarks-twin-$fmt.log" "$WARN_MARKER_NOMARKS" 0 "M04-AC4"
+done
+pass "M04-AC4: a marker with no marks to place warns once in each format, and the same document without the marker warns not at all"
+
+python3 - examples/marker-nomarks examples/marker-nomarks-twin <<'PY'
+import sys
+fixture, twin = sys.argv[1:3]
+bad = []
+for ext in ('.html', '.tex', '.md'):
+    got = open(fixture + ext, encoding='utf-8').read()
+    # The twin's own basename appears in a rendered page; it is the one
+    # difference that is not residue, so it is normalized away. The longer
+    # name is replaced first — the shorter is a prefix of it.
+    want = open(twin + ext, encoding='utf-8').read().replace(
+        twin.rsplit('/', 1)[-1], fixture.rsplit('/', 1)[-1])
+    if got != want:
+        bad.append(ext)
+if bad:
+    print(f'FAIL: M04-AC4: the marker left something behind in {bad}: the '
+          f'render differs from the same document with the marker deleted',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M04-AC4: with no index to place, all three renders are '
+      'byte-identical to the same document without the marker')
+PY
+
+for tok in '\printindex' 'imakeidx'; do
+  if grep -qF -- "$tok" examples/marker-nomarks.tex; then
+    fail "M04-AC4: a document whose only index-related content is a marker must not contain $tok"
+  fi
+done
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/marker-nomarks.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+if H.find_id(doc, os.environ['HTML_SECTION_ID']) is not None:
+    print('FAIL: M04-AC4: a document with a marker but no marks has a '
+          'generated index section', file=sys.stderr)
+    sys.exit(1)
+print('ok   M04-AC4: a marker with no marks to place emits no index section '
+      'and no \\printindex')
+PY
+check_no_html_residue examples/marker-nomarks.html "M04-AC4"
+
+# ---------------------------------------------------------------------------
+# M04-AC4 — the one marker case the filter cannot repair: a document that has
+# already loaded imakeidx keeps its own options, so Quarto's conditional load
+# never applies `noautomatic` and the index file is closed at the marker. The
+# terms below the marker are lost, so the loss is made loud — a begin-document
+# warning naming what will be missing.
+# ---------------------------------------------------------------------------
+quarto render examples/marker-preloaded.qmd --to latex \
+  > "$WORK/preloaded-latex.log" 2>&1 \
+  || { tail -20 "$WORK/preloaded-latex.log" >&2; fail "M04-AC4: marker-preloaded.qmd failed to render to LaTeX"; }
+grep -qF 'ifpackagewith{imakeidx}{noautomatic}' examples/marker-preloaded.tex \
+  || fail "M04-AC4: the marker document carries no begin-document check for a preloaded imakeidx"
+if grep -qF 'ifpackagewith{imakeidx}' examples/demo.tex; then
+  fail "M04-AC4: a document with no marker carries the preloaded-imakeidx check"
+fi
+# `\PassOptionsToPackage` must NOT be emitted beside the check: it registers the
+# option on the already-loaded package, which makes the check report success on
+# exactly the document it exists to catch.
+if grep -qF 'PassOptionsToPackage{noautomatic}{imakeidx}' examples/marker-preloaded.tex; then
+  fail "M04-AC4: PassOptionsToPackage is emitted alongside the check and would silence it"
+fi
+pass "M04-AC4: a marker document carries the preloaded-imakeidx check, a marker-free one does not, and nothing silences it"
+
+# ---------------------------------------------------------------------------
+# M04-AC5 — gfm has no index back-end, so the marker fixture must come out of
+# it with no marker element, no empty div and no token. Read structurally
+# first: gfm carries spans as inline HTML, so the parser sees any element the
+# marker might have left, and the token grep is the belt to that braces.
+# ---------------------------------------------------------------------------
+quarto render examples/marker.qmd --to gfm > "$WORK/marker-gfm.log" 2>&1 \
+  || { tail -20 "$WORK/marker-gfm.log" >&2; fail "M04-AC5: marker.qmd failed to render to gfm"; }
+[ -s examples/marker.md ] || fail "M04-AC5: examples/marker.md is empty"
+
+MARKER_CLASS="$MARKER_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
+  examples/marker.md <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+path = sys.argv[1]
+doc = H.parse(path)
+marker = os.environ['MARKER_CLASS']
+kept = [n.tag for n in H.walk(doc) if marker in H.classes(n)]
+if kept:
+    print(f'FAIL: M04-AC5: {path} still carries {len(kept)} marker element(s)',
+          file=sys.stderr)
+    sys.exit(1)
+if H.empty_divs(doc) or H.find_all(doc, 'div'):
+    print(f'FAIL: M04-AC5: {path} carries a div; gfm output of this fixture '
+          f'has no div of its own, so any div is marker residue',
+          file=sys.stderr)
+    sys.exit(1)
+if H.find_id(doc, os.environ['HTML_SECTION_ID']) is not None:
+    print('FAIL: M04-AC5: gfm output carries a generated index section',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M04-AC5: {path} carries no marker element, no div and no index '
+      f'section')
+PY
+for tok in 'qi-index-here' 'qi-index' 'printindex'; do
+  if grep -qF -- "$tok" examples/marker.md; then
+    fail "M04-AC5: gfm output must not contain $tok"
+  fi
+done
+grep -qF 'gamma' examples/marker.md || fail "M04-AC5: gfm output lost visible term text"
+pass "M04-AC5: the marker leaves no token in gfm output, and the visible text is kept"
+
+# ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as
 # an entry of its own. The domain is the fixture's by construction and is
 # pinned by the coverage check above; this asserts the characters arrive.
@@ -1761,6 +2234,96 @@ for tok in '\index' 'imakeidx' '\makeindex' '\printindex'; do
 done
 grep -qF 'café' examples/demo.tex || fail "AC7: beamer .tex lost visible term text"
 pass "AC7: beamer renders clean, no index tokens, visible text kept"
+
+# M04-AC5 — the marker fixture goes through the same beamer compile. beamer
+# has no index back-end, so the marker must leave no residue there either and
+# the render must stay clean (IP2).
+quarto render examples/marker.qmd --to beamer -M keep-tex:true \
+  > "$WORK/marker-beamer.log" 2>&1 \
+  || { tail -20 "$WORK/marker-beamer.log" >&2; fail "M04-AC5: the marker fixture failed to render to beamer (IP2: a marker must never break a render)"; }
+[ -s examples/marker.tex ] || fail "M04-AC5: the beamer render kept no .tex to inspect"
+for tok in '\index' 'imakeidx' '\makeindex' '\printindex' 'qi-index-here'; do
+  if grep -qF -- "$tok" examples/marker.tex; then
+    fail "M04-AC5: the beamer .tex must not contain $tok"
+  fi
+done
+grep -qF 'gamma' examples/marker.tex || fail "M04-AC5: the beamer .tex lost visible term text"
+pass "M04-AC5: the marker fixture compiles clean in beamer, no index tokens, no marker residue, visible text kept"
+
+# ---------------------------------------------------------------------------
+# M04-AC2 — end to end: the compiled PDF's index sits at the marker, and it
+# carries the marks written on BOTH sides of it. The slice is bounded by the
+# heading of the section that follows the index, never by end-of-file: an
+# index printed mid-document has body text after it, and a slice running to
+# the end would find the fixture's terms in that body text whatever the index
+# contained.
+# ---------------------------------------------------------------------------
+quarto render examples/marker.qmd --to pdf > "$WORK/marker-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/marker-pdf.log" >&2; fail "M04-AC2: marker.qmd failed to render to PDF"; }
+[ -s examples/marker.pdf ] || fail "M04-AC2: examples/marker.pdf is empty"
+pdftotext -layout examples/marker.pdf "$WORK/marker.txt"
+
+printf '%s\n' "$MARKER_PDF_TERMS" > "$WORK/markerterms.txt"
+python3 - "$WORK/marker.txt" "$WORK/markerterms.txt" <<'PY'
+import re, sys
+text = open(sys.argv[1], encoding='utf-8').read()
+terms = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
+
+m = re.search(r'^\s*Index\s*$', text, re.MULTILINE)
+if not m:
+    print('FAIL: M04-AC2: no "Index" heading in pdftotext output',
+          file=sys.stderr)
+    sys.exit(1)
+after = text.find('After the marker', m.end())
+if after < 0:
+    print('FAIL: M04-AC2: the second section\'s heading does not follow the '
+          'index in the compiled PDF, so the index was not printed at the '
+          'marker', file=sys.stderr)
+    sys.exit(1)
+# Two-column index setting collapses to single spaces, as the other PDF
+# checks do.
+region = ' '.join(text[m.end():after].split())
+missing = [t for t in terms if ' '.join(t.split()) not in region]
+if missing:
+    print('FAIL: M04-AC2: term(s) missing from the PDF index printed at the '
+          'marker:', file=sys.stderr)
+    for t in missing:
+        print(f'  <<{t}>>', file=sys.stderr)
+    print(f'--- index slice ---\n{region[:800]}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M04-AC2: the PDF index is printed at the marker and lists all '
+      f'{len(terms)} derived terms, the ones marked after it included')
+PY
+
+# The begin-document check is only worth emitting if it FIRES on the document
+# it names and stays silent on the one it does not. Both halves are compiled
+# here with the engine that ships, since the warning exists only in a LaTeX
+# run's log.
+mkdir -p "$WORK/preloaded" && cp examples/marker-preloaded.tex "$WORK/preloaded/"
+( cd "$WORK/preloaded" && pdflatex -interaction=nonstopmode marker-preloaded.tex ) \
+  > "$WORK/preloaded-tex.log" 2>&1 \
+  || { grep -E '^! ' "$WORK/preloaded-tex.log" | head -5 >&2; fail "M04-AC4: the preloaded-imakeidx fixture failed to compile (IP2: it must still render)"; }
+grep -qF 'Package quarto-index Warning' "$WORK/preloaded/marker-preloaded.log" \
+  || fail "M04-AC4: a document that preloads imakeidx compiled without the warning naming the terms it will lose"
+# The loss the warning is about, shown rather than asserted from memory: the
+# term marked after the marker never reaches the index file.
+grep -qF 'indexentry{zeta|' "$WORK/preloaded/marker-preloaded.idx" \
+  || fail "M04-AC4: the preloaded fixture indexed nothing before the marker; it is not probing what it claims"
+if grep -qF 'indexentry{omega|' "$WORK/preloaded/marker-preloaded.idx"; then
+  fail "M04-AC4: the preloaded fixture kept the term marked after the marker, so the warning it emits is now false"
+fi
+# The control: the ordinary marker fixture loads imakeidx with the option and
+# must compile silent, or the check above proves only that it always fires.
+mkdir -p "$WORK/markertex" && quarto render examples/marker.qmd --to latex > "$WORK/marker-latex2.log" 2>&1 \
+  || { cat "$WORK/marker-latex2.log" >&2; fail "M04-AC4: marker.qmd failed to re-render to LaTeX"; }
+cp examples/marker.tex "$WORK/markertex/"
+( cd "$WORK/markertex" && pdflatex -interaction=nonstopmode marker.tex ) \
+  > "$WORK/markertex-tex.log" 2>&1 \
+  || { grep -E '^! ' "$WORK/markertex-tex.log" | head -5 >&2; fail "M04-AC4: the marker fixture failed to compile"; }
+if grep -qF 'Package quarto-index Warning' "$WORK/markertex/marker.log"; then
+  fail "M04-AC4: the ordinary marker fixture warns about a preloaded imakeidx, which it does not have"
+fi
+pass "M04-AC4: the preloaded-imakeidx document compiles, warns, and demonstrably loses the term below its marker, while the ordinary marker document compiles silent"
 
 # The escaping probe covers a range defined by construction, not by recall:
 # every printable ASCII character except the space, as its own visible term
@@ -2131,6 +2694,40 @@ PY
   # Not named by a criterion, but the same discipline: a clash report nothing
   # proves discriminating is a report that can quietly stop firing.
   warn_discrimination "$WORK/conflict-latex.log" "$WARN_CLASH" 2 "M02-AC5"
+  # Same discipline for the marker's warnings: a report of a misused marker
+  # that quietly stopped firing would leave every misuse check passing on a
+  # log that says nothing.
+  # The suite's own exit status is an assertion like any other: a check that
+  # fails only by exit status must kill the run. Run against THIS script, not
+  # a mock of it, so the wrapper being proved is the wrapper that ships.
+  set +e
+  WRAPPER_OUT=$( "$0" --plant-wrapper-defect 2>&1 )
+  WRAPPER_RC=$?
+  set -e
+  [ "$WRAPPER_RC" -ne 0 ] \
+    || fail "AC3: the suite exited 0 with a check that failed by exit status; every manifest oracle here would be advisory"
+  if printf '%s' "$WRAPPER_OUT" | grep -q 'All checks passed'; then
+    fail "AC3: the suite printed its passing line after a check failed"
+  fi
+  if ! printf '%s' "$WRAPPER_OUT" | grep -q 'FAIL: planted wrapper defect'; then
+    printf '%s\n' "$WRAPPER_OUT" >&2
+    fail "AC3: the planted wrapper defect did not report itself; this proof is not testing what it claims"
+  fi
+  pass "AC3: a check that fails only by exit status kills the run ($WRAPPER_RC) and no passing line is printed"
+
+  warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
+  warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
 fi
 
-printf '\nAll checks passed.\n'
+}
+
+# `pipefail` would abort on the function's own exit status before the count is
+# read, so the pipeline's status is taken from PIPESTATUS instead.
+set +e
+# `"$@"` so the body still sees the script's own flags (--self-test).
+run_all_checks "$@" 2>&1 | tee "$RUN_LOG"
+CHECK_STATUS=${PIPESTATUS[0]}
+set -e
+[ "$CHECK_STATUS" -eq 0 ] || exit "$CHECK_STATUS"
+CHECK_COUNT=$( { grep -cE '^ok ' "$RUN_LOG" || true; } | tr -d ' ')
+printf '\nAll checks passed (%s checks).\n' "$CHECK_COUNT"

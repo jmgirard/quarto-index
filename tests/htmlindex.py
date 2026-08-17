@@ -98,6 +98,44 @@ def walk(node):
             yield from walk(child)
 
 
+def document_order(root):
+    """Every element in document order.
+
+    An element's place in this list is its position on the rendered page, so
+    two nodes' positions answer "which of these comes first" — the question a
+    placement check asks and a manifest of contents cannot.
+    """
+    return list(walk(root))
+
+
+def position(root, node):
+    """`node`'s place in document order, or -1 if it is not in the tree."""
+    for i, other in enumerate(walk(root)):
+        if other is node:
+            return i
+    return -1
+
+
+def position_of_id(root, identifier):
+    """The place in document order of the element carrying this id, or -1.
+
+    Read from the same walk the ids come from, so a missing id and a first
+    element are never confused: -1 is absent, 0 is first.
+    """
+    for i, node in enumerate(walk(root)):
+        if node.attrs.get('id') == identifier:
+            return i
+    return -1
+
+
+def empty_divs(root):
+    """Every `div` holding neither text nor an element — the shape a removed
+    block leaves behind when it is not removed cleanly."""
+    return [n for n in walk(root)
+            if n.tag == 'div' and not text(n).strip()
+            and not any(isinstance(c, Node) for c in n.children)]
+
+
 def own_nodes(node):
     """Descendants in document order, NOT descending into nested lists.
 

@@ -1,0 +1,16 @@
+---
+title: "quarto-index placement marker without marks"
+from: markdown-smart
+filters:
+  - index
+---
+
+# A marker with nothing to place
+
+This document carries a placement marker but no index marks at all. There is
+no index to place, which is reported, and the marker itself must leave no
+element behind in any format.
+
+
+Prose after the marker, so its removal is visible as an absence rather than
+as the end of the document.

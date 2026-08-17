@@ -7,6 +7,8 @@ _Last hygiene check: 2026-08-17 (M03 merged and archived; pass-3 candidate row F
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M04 | Index placement marker | planned | — | normal | milestones/M04-placement-marker.md |
+| M05 | Multi-chapter book support | planned | M04 | normal | milestones/M05-book-support.md |
 | M03 | HTML index back-end | done | M02 | normal | milestones/archive/M03-html-backend.md |
 | M02 | Cross-references (see / see also) | done | M01 | normal | milestones/archive/M02-cross-references.md |
 | M01 | LaTeX index extension skeleton | done | — | normal | milestones/archive/M01-latex-index-skeleton.md |
@@ -15,9 +17,8 @@ _Last hygiene check: 2026-08-17 (M03 merged and archived; pass-3 candidate row F
 
 ## Candidates
 <!-- unnumbered ideas; one line each: idea — added YYYY-MM-DD — links -->
-- Multi-chapter book support (cross-file index aggregation) — added 2026-08-16 — builds on M01
 - First tagged release (window user-declared, never agent-proposed) — added 2026-08-16
-- Explicit index-placement option / shortcode syntax (if demanded) — added 2026-08-16 — see M01 work log for the auto-placement rationale; GP5 governs
+- Chapter-based locator labels in the book HTML index (e.g. 2.1 instead of 1, 2, 3) — added 2026-08-17 — M05 gate kept numeric locators; promote on reader evidence that numeric locators fail in long books
 - Page-range & styling control (open/close marks, principal-mention locators) — added 2026-08-16 — suite target
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Sort-key syntax (format-neutral) — added 2026-08-16 — suite target; prerequisite for non-ASCII collation (DESIGN Conventions)

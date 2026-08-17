@@ -1,6 +1,6 @@
 # M03: HTML index back-end
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M02
 - **Driving RR:** —
@@ -167,6 +167,8 @@ criteria audit applied).
 - 2026-08-16: discrimination probes (LESSONS M01): forcing the HTML branch on for every format puts `# Index` and 107 `qi-` artifacts into the gfm output, so the AC6 negative fires rather than passing vacuously. Quarto's FORMAT is `commonmark` for gfm, `revealjs` for revealjs and `epub` for epub — none carries `html`, which is what makes the Scope pass-through claim hold.
 
 - 2026-08-17: T7 — README gains an HTML back-end section (section/anchor/entry ids, numbered locators, the four class hooks), a beamer-scoped pass-through section, and a six-row back-end divergence list; the three stale one-back-end sentences are gone. Suite pins them by normalized bytes, so a rewrap does not fail and a rewrapped stale sentence cannot hide. DESIGN.md Architecture filled: two passes, two back-ends, the shared format-neutral layer.
+
+- 2026-08-17: all tasks done; tests/run-tests.sh --self-test clean. AC1 evidence rehearsed: demo.qmd --to latex on the branch is byte-identical to the same render at the merge-base (procedure documented in the suite). Status -> review.
 
 ## Decisions
 

@@ -21,3 +21,12 @@ two-level target, and a single level that merely contains the level join —
 are two cross-references. Only the two-level one names an entry that exists,
 so only it is a link:
 [eta]{.index see="A!B"} and [eta]{.index see="A: B"}.
+
+# Ids the author has already used
+
+An id the extension would otherwise mint for itself, written by the author on
+a mark of their own: [theta]{#qi-mark-1 .index}. The marks that follow must
+not be given that same id — two elements answering to one name send one of
+the two locators to the wrong place: [iota]{.index} and [kappa]{.index}.
+
+The same for an entry id: [lambda]{#qi-entry-1 .index}.

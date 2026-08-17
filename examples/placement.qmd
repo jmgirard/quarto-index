@@ -1,5 +1,10 @@
 ---
 title: "quarto-index placement probe"
+# A table of contents on purpose: Quarto copies a heading's contents into the
+# sidebar, so a mark in a heading is the case where an id minted inside the
+# heading would appear twice in the page. It also puts the generated index
+# section into a TOC, which the extension claims and this fixture checks.
+toc: true
 from: markdown-smart
 filters:
   - index

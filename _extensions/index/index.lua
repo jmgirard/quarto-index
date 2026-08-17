@@ -111,6 +111,13 @@ local HTML_SECTION_ID = "qi-index"
 local HTML_ANCHOR_PREFIX = "qi-mark-"
 local HTML_ENTRY_PREFIX = "qi-entry-"
 
+-- A mark that needs an anchor cannot be given one while it is being visited:
+-- the id must not collide with an id anywhere else in the document, and the
+-- document has not been seen yet. The Span pass tags such a mark with this
+-- attribute, and the Pandoc pass — which has the whole document — assigns the
+-- id and removes the tag. It never survives into output.
+local HTML_PENDING_ATTR = "data-qi-pending"
+
 -- Split an `entry=` value into sub-entry levels: `!` separates, `!!` is a
 -- literal `!`, longest-match left to right.
 local function parse_levels(value)
@@ -270,7 +277,6 @@ local marks_emitted = 0
 -- (for a locator-contributing mark) the id of the anchor that links back to
 -- it. The Pandoc pass builds the whole index section out of these.
 local html_marks = {}
-local html_anchors_minted = 0
 -- Likewise: the both-targets command is defined only in a document that uses
 -- it, so a document without one gets nothing extra in its preamble.
 local xref_both_emitted = false
@@ -367,6 +373,7 @@ local function Span(span)
 
   if is_html() then
     local record = { levels = levels, xrefs = xrefs }
+    html_marks[#html_marks + 1] = record
     if #xrefs == 0 then
       -- Only a locator-contributing mark needs somewhere to link back to; a
       -- cross-reference mark takes the place of the locator and so has no
@@ -376,12 +383,9 @@ local function Span(span)
         -- taking it over would break whatever already points at it.
         record.anchor = span.identifier
       else
-        html_anchors_minted = html_anchors_minted + 1
-        record.anchor = HTML_ANCHOR_PREFIX .. html_anchors_minted
-        span.identifier = record.anchor
+        span.attributes[HTML_PENDING_ATTR] = tostring(#html_marks)
       end
     end
-    html_marks[#html_marks + 1] = record
     return span
   end
 
@@ -429,6 +433,37 @@ local function Span(span)
     xref_both_emitted = true
   end
   return result
+end
+
+-- Quarto copies a heading's inlines into the table of contents, an anchor span
+-- among them, so an id minted inside a heading appears TWICE in the page and a
+-- link to it resolves to the sidebar copy rather than to the text. A heading
+-- already carries an id of its own, which is both unique and the better
+-- destination — a locator into a section lands at the section. This runs after
+-- the Span pass has visited the heading's own inlines, so the marks inside it
+-- are already tagged.
+local function Header(header)
+  if not is_html() or header.identifier == "" then
+    -- With no id to borrow, the mark keeps its pending tag and is given a
+    -- minted id like any other; the duplicate above is then possible again,
+    -- but Quarto gives every heading an id, so this is the unreachable case.
+    return nil
+  end
+  header.content = header.content:walk({
+    Span = function(span)
+      local pending = span.attributes[HTML_PENDING_ATTR]
+      if pending == nil then
+        return nil
+      end
+      local record = html_marks[tonumber(pending)]
+      if record then
+        record.anchor = header.identifier
+      end
+      span.attributes[HTML_PENDING_ATTR] = nil
+      return span
+    end,
+  })
+  return header
 end
 
 -- ---------------------------------------------------------------------------
@@ -541,8 +576,11 @@ end
 
 -- Sort every node's children and give each entry its id, depth-first in the
 -- order it will be rendered. Ids are assigned before anything is rendered
--- because a cross-reference may point at an entry that sorts after it.
-local function number_entries(node, counter)
+-- because a cross-reference may point at an entry that sorts after it, and
+-- they skip every id `taken` already holds — an id this extension mints and
+-- an id the author wrote must never be the same string, or one of the two
+-- links silently goes to the wrong place.
+local function number_entries(node, counter, taken)
   local keys = {}
   for key in pairs(node.children) do
     keys[#keys + 1] = key
@@ -551,9 +589,12 @@ local function number_entries(node, counter)
   node.sorted = keys
   for _, key in ipairs(keys) do
     local child = node.children[key]
-    counter = counter + 1
+    repeat
+      counter = counter + 1
+    until not taken[HTML_ENTRY_PREFIX .. counter]
     child.id = HTML_ENTRY_PREFIX .. counter
-    counter = number_entries(child, counter)
+    taken[child.id] = true
+    counter = number_entries(child, counter, taken)
   end
   return counter
 end
@@ -639,12 +680,57 @@ local function entry_list(root, node)
   return pandoc.BulletList(items)
 end
 
+-- Every id already in the document. Collected before any id is minted, so a
+-- minted one can be checked against the author's rather than assumed unique.
+-- Quarto adds further ids of its own after the filter runs, but it derives
+-- them from these, so what an author actually wrote is what matters here.
+local function taken_identifiers(doc)
+  local taken = {}
+  local function note(element)
+    local attr = element.attr
+    if attr ~= nil and attr.identifier ~= nil and attr.identifier ~= "" then
+      taken[attr.identifier] = true
+    end
+    return nil
+  end
+  doc:walk({ Block = note, Inline = note })
+  return taken
+end
+
+-- Give every still-pending mark an id that nothing else in the document uses,
+-- numbered in the order the marks are written. Skipping a taken number leaves
+-- a gap in the sequence, which is the right trade: the numbers are link
+-- targets, not a count of anything.
+local function assign_anchors(doc, taken)
+  local number = 0
+  return doc:walk({
+    Span = function(span)
+      local pending = span.attributes[HTML_PENDING_ATTR]
+      if pending == nil then
+        return nil
+      end
+      repeat
+        number = number + 1
+      until not taken[HTML_ANCHOR_PREFIX .. number]
+      local id = HTML_ANCHOR_PREFIX .. number
+      taken[id] = true
+      span.identifier = id
+      span.attributes[HTML_PENDING_ATTR] = nil
+      local record = html_marks[tonumber(pending)]
+      if record then
+        record.anchor = id
+      end
+      return span
+    end,
+  })
+end
+
 -- The section is appended with no configuration (GP4) and marked unnumbered,
 -- which is how a printed index is set and which still lists it in the table
 -- of contents.
-local function append_html_index(doc)
+local function append_html_index(doc, taken)
   local root = build_entry_tree(html_marks)
-  number_entries(root, 0)
+  number_entries(root, 0, taken)
   doc.blocks:insert(pandoc.Header(1, literal_inlines("Index"),
                                   pandoc.Attr(HTML_SECTION_ID,
                                               { "unnumbered" })))
@@ -663,7 +749,8 @@ local function Pandoc(doc)
     if #html_marks == 0 then
       return nil
     end
-    return append_html_index(doc)
+    local taken = taken_identifiers(doc)
+    return append_html_index(assign_anchors(doc, taken), taken)
   end
 
   if marks_emitted == 0 or not is_latex_derived() then
@@ -713,7 +800,9 @@ local function Pandoc(doc)
   return doc
 end
 
+-- Span and Header share one pass so that a heading's marks are visited before
+-- the heading itself, which is what lets Header see them already tagged.
 return {
-  { Span = Span },
+  { Span = Span, Header = Header },
   { Pandoc = Pandoc },
 }

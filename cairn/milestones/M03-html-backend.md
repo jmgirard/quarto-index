@@ -142,7 +142,7 @@ criteria audit applied).
       shared format-neutral layer).
 - [x] T8: F3 — dedupe cross-references on parsed level lists, not the joined
       string; fixture with two level-list-distinct targets on one key.
-- [ ] T9: F1/F2 — id assignment moves to the document pass: a mark inside a
+- [x] T9: F1/F2 — id assignment moves to the document pass: a mark inside a
       heading takes the heading's own id, and minted anchor/entry ids skip
       every id the document already uses.
 - [ ] T10: F5/F6/F7/F10 — collation fold-tie oracle; assert the 3-level fold
@@ -183,6 +183,8 @@ criteria audit applied).
 - 2026-08-17: review pass 1 RETURNED (defect return 1): AC4 fails — two level-list-distinct cross-reference targets on one key render as one, the second silently dropped, because the dedupe compares the rendered `: `-joined string rather than the level lists Scope requires. Two further load-bearing defects confirmed by reproduction: a mark in a heading under `toc: true` emits its anchor id twice (locator resolves to the TOC copy), and a minted anchor can collide with an id the author already used. Full suite passed throughout — no fixture exercises any of the three shapes.
 
 - 2026-08-17: T8 (review F3, the AC4 failure) — cross-reference dedupe now compares parsed level lists element-wise, not the `: `-joined string, so two targets that print alike but name different things both survive. New HTML-only fixture examples/html-index.qmd holds the repeat case and the look-alike case; verified discriminating by restoring the string comparison, which drops eta's second cross-reference and fails the manifest.
+
+- 2026-08-17: T9 (review F1/F2) — id assignment moved out of the per-mark pass into the document pass, which collects every id the author wrote before minting any. A mark inside a heading now borrows the heading's own id instead of minting one inside it, since Quarto copies heading contents into the sidebar TOC and a link would resolve to the copy. placement.qmd gains toc:true (the repro, and it exercises the TOC claim); html-index.qmd gains marks carrying qi-mark-1 and qi-entry-1. Both fences verified discriminating by reverting each fix in turn.
 
 ## Decisions
 

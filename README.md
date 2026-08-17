@@ -312,8 +312,62 @@ The extension's job ends at correct emitted output. Whether your toolchain
 then runs `makeindex` to build the index is up to your build setup; Quarto's
 default PDF pipeline does it for you.
 
+## Books
+
+A Quarto book gets one index for the whole book, not one per chapter. Write
+the placement marker in the chapter that should hold it:
+
+```markdown
+::: {.qi-index-here}
+:::
+```
+
+**Put that chapter last.** Quarto renders a book's chapters in order, and each
+chapter is a separate render that cannot see the others, so the index is built
+from the chapters that ran before the one holding the marker. Put the marker
+anywhere else and the chapters after it are represented by whatever the
+*previous* render recorded: on a first render they are missing, and after an
+edit their entries can name terms the chapter no longer marks and link to
+anchors its page no longer has. The extension names those chapters every time
+it builds the index, so this is loud rather than silent — but the fix is to
+move the marker, not to render twice.
+
+In the HTML book, each entry's locators link to the chapters that mark the
+term, in book order — across files, and across subdirectories, from wherever
+the index chapter sits. A cross-reference links to its target entry whenever
+some chapter in the book contributes it, so `see=` works across chapters
+exactly as it does inside one document. The PDF book needs none of this: it is
+rendered as one merged document, so `makeindex` has always had every chapter's
+marks at once, and the printed index gathers page numbers from all of them.
+
+Two things worth knowing:
+
+- **Render the whole book when you publish.** Rendering a single chapter
+  updates that chapter's marks only; the index is rebuilt from what the last
+  full render recorded for the others. `quarto render` with no file argument
+  is what makes the index current.
+- **A book with marks but no marker chapter gets no index**, and says so once
+  per render, naming the marker to add. The extension will not choose a
+  chapter for you.
+
+Each chapter records its marks in `.quarto/quarto-index/` inside your project —
+Quarto's own scratch directory, alongside the caches Quarto keeps there, and
+never copied into `_book/`. There is nothing to configure. A project created
+with `quarto create project` already ignores `/.quarto/` in git; a book whose
+`_quarto.yml` you wrote by hand may not, and that one line is worth adding.
+
+If a chapter's record cannot be written or read back — a read-only project
+tree, a stale file where the directory belongs, a record left by an older
+version of this extension — the book still renders, and the extension names
+the chapter whose terms are missing from the index. Rendering that chapter
+again is the fix.
+
 ## Examples
 
+`examples/book/` is a four-chapter book fixture — a shared term marked in
+three chapters, a chapter in a subdirectory, a cross-chapter cross-reference,
+and the marker in the last chapter — and `examples/book-nomarker/` is the same
+idea with no marker at all.
 `examples/demo.qmd` exercises every supported form and the full escaping
 probe set. `examples/escaping.qmd` and `examples/xref-escaping.qmd` are the
 character probes. `examples/placement.qmd` marks one term in a heading, a table

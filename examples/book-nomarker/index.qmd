@@ -1,0 +1,4 @@
+# Opening without a marker
+
+This book marks terms but never says where the index goes: [Nomark One]{.index}
+is marked here.

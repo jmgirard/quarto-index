@@ -38,6 +38,13 @@ local XREF_KINDS = {
   { attr = "see-also", command = "seealso", label = "see also" },
 }
 
+-- The same kinds by attribute name. A book's store holds an attribute name
+-- rather than the kind table itself, and reads it back through this.
+local XREF_KIND_BY_ATTR = {}
+for _, kind in ipairs(XREF_KINDS) do
+  XREF_KIND_BY_ATTR[kind.attr] = kind
+end
+
 -- A mark carrying both attributes cannot emit two `\index` commands: they
 -- share a key and a page, so makeindex reports "Conflicting entries: multiple
 -- encaps for the same page under same key" and Quarto turns that warning into
@@ -528,6 +535,14 @@ local function new_entry(key)
   return { key = key, children = {}, sorted = {}, locators = {}, xrefs = {} }
 end
 
+-- Where a locator link points. In a single document that is the mark's anchor
+-- on this same page; in a book it is the mark's anchor on the page of the
+-- chapter that carries it, written relative to the page holding the index.
+-- One function for both, so a locator cannot mean two different things.
+local function mark_target(mark)
+  return (mark.href or "") .. "#" .. mark.anchor
+end
+
 -- Walk the recorded marks into a tree of entries, one level per node.
 local function build_entry_tree(marks)
   local root = new_entry(nil)
@@ -542,7 +557,7 @@ local function build_entry_tree(marks)
       node = child
     end
     if mark.anchor then
-      node.locators[#node.locators + 1] = mark.anchor
+      node.locators[#node.locators + 1] = mark_target(mark)
     end
     for _, xref in ipairs(mark.xrefs) do
       -- Two marks carrying the same target on the same key are one
@@ -626,12 +641,12 @@ local function entry_inlines(root, node)
   local tail = pandoc.List()
   if #node.locators > 0 then
     local locators = pandoc.List()
-    for i, anchor in ipairs(node.locators) do
+    for i, target in ipairs(node.locators) do
       if i > 1 then
         locators:insert(pandoc.Str(","))
         locators:insert(pandoc.Space())
       end
-      locators:insert(pandoc.Link({ pandoc.Str(tostring(i)) }, "#" .. anchor))
+      locators:insert(pandoc.Link({ pandoc.Str(tostring(i)) }, target))
     end
     tail:insert({ xref = false,
                   span = pandoc.Span(locators,
@@ -796,9 +811,11 @@ end
 -- The section needs no configuration (GP4) and is marked unnumbered, which is
 -- how a printed index is set and which still lists it in the table of
 -- contents. WHERE it goes is not decided here — place_index owns that, for
--- both back-ends at once.
-local function html_index_blocks(taken)
-  local root = build_entry_tree(html_marks)
+-- both back-ends at once. `marks` is this document's own marks in a single
+-- document, and every chapter's marks in a book: one builder either way, so
+-- the two cannot drift apart on what an index looks like.
+local function html_index_blocks(marks, taken)
+  local root = build_entry_tree(marks)
   number_entries(root, 0, taken)
   return pandoc.Blocks({
     pandoc.Header(1, literal_inlines("Index"),
@@ -925,6 +942,320 @@ local function place_index(doc, blocks)
   return doc
 end
 
+-- ---------------------------------------------------------------------------
+-- Book projects (HTML only).
+--
+-- A book renders each chapter in its own Pandoc process, so no chapter can see
+-- another's marks: left alone, every chapter appends an index of its own and
+-- none of them is the book's index. Each chapter therefore writes what it
+-- found to a sidecar store, and the chapter carrying the placement marker
+-- reads the whole store back and builds one index for the book.
+--
+-- The LaTeX back-end needs none of this: a PDF book is rendered as one merged
+-- document, so its marks are already all in one process, and nothing here runs
+-- for it.
+--
+-- The store lives in Quarto's own per-project scratch directory, which is
+-- already outside the output directory and already ignored by a Quarto
+-- project's `.gitignore` — a book gains no new file an author has to know
+-- about (GP4).
+-- ---------------------------------------------------------------------------
+
+local STORE_DIR = "quarto-index"
+local STORE_SUFFIX = ".qi.json"
+-- A record's shape is this filter's own business, and the store outlives the
+-- version that wrote it: nothing prunes it, and a project keeps rendering
+-- across extension upgrades. A record whose version is not this one is
+-- ignored rather than read as if its fields still meant what they did.
+local STORE_VERSION = 1
+
+-- Paths from Quarto are the host's; hrefs are always `/`-separated.
+local function as_href(path)
+  return (path:gsub("\\", "/"))
+end
+
+local function strip_prefix(path, prefix)
+  path, prefix = as_href(path), as_href(prefix)
+  if path:sub(1, #prefix + 1) == prefix .. "/" then
+    return path:sub(#prefix + 2)
+  end
+  return nil
+end
+
+-- What this chapter needs to know about the book it belongs to, or nil when
+-- this is not a book chapter (or Quarto has not told us enough to be sure).
+-- Everything is derived from Quarto's own metadata rather than guessed: the
+-- chapter order from `book.render`, this chapter's source and output paths
+-- from `quarto.doc`, and how deep this page sits from `quarto.project.offset`.
+local function book_context(doc)
+  if not (quarto and quarto.project and quarto.doc) then
+    return nil
+  end
+  local root, out = quarto.project.directory, quarto.project.output_directory
+  local input, output = quarto.doc.input_file, quarto.doc.output_file
+  if not (root and out and input and output and doc.meta.book) then
+    return nil
+  end
+  local render = doc.meta.book.render
+  if render == nil then
+    return nil
+  end
+  local chapters, positions = {}, {}
+  for _, item in ipairs(render) do
+    -- A part heading with no file of its own is not a chapter; every entry
+    -- that names a file is, in the order the book renders them.
+    if type(item) == "table" and item.file ~= nil then
+      -- Normalized exactly as the input and output paths below are: this list
+      -- is matched against the current chapter's own path, and a host that
+      -- spells one of them with backslashes must not turn every subdirectory
+      -- chapter into a chapter this book does not contain.
+      local file = as_href(pandoc.utils.stringify(item.file))
+      chapters[#chapters + 1] = file
+      positions[file] = #chapters
+    end
+  end
+  local file = strip_prefix(input, root)
+  local href = strip_prefix(output, out)
+  if #chapters == 0 or file == nil or href == nil or positions[file] == nil then
+    return nil
+  end
+  return {
+    chapters = chapters,
+    positions = positions,
+    file = file,
+    href = href,
+    position = positions[file],
+    -- The path from this page back to the site root, which is what turns
+    -- another chapter's site-relative href into a link this page can use.
+    offset = as_href(quarto.project.offset or "."),
+    dir = pandoc.path.join({ root, ".quarto", STORE_DIR }),
+  }
+end
+
+-- Another chapter's page, as a link from the page holding the index.
+local function relative_href(ctx, href)
+  if ctx.offset == "" or ctx.offset == "." then
+    return href
+  end
+  return ctx.offset .. "/" .. href
+end
+
+local function store_path(ctx, file)
+  return pandoc.path.join({ ctx.dir, file .. STORE_SUFFIX })
+end
+
+-- One chapter's record: what it marked, where those marks are anchored on its
+-- own page, and whether it carries the placement marker.
+local function store_write(ctx, marker)
+  local marks = {}
+  for _, mark in ipairs(html_marks) do
+    local xrefs = {}
+    for _, xref in ipairs(mark.xrefs) do
+      xrefs[#xrefs + 1] = { attr = xref.kind.attr, levels = xref.levels }
+    end
+    marks[#marks + 1] =
+      { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor }
+  end
+  -- Every step here can fail on an ordinary machine — a stale file where the
+  -- directory belongs, a read-only project tree, a full disk — and none of
+  -- them may take the render down with it: a marked-up document always
+  -- renders (IP2). The whole write is one guarded unit, reported once.
+  local path = store_path(ctx, ctx.file)
+  local ok, err = pcall(function()
+    pandoc.system.make_directory(pandoc.path.directory(path), true)
+    local fh, open_err = io.open(path, "w")
+    if not fh then
+      error(tostring(open_err), 0)
+    end
+    local written, write_err = fh:write(pandoc.json.encode(
+      { version = STORE_VERSION, file = ctx.file, href = ctx.href,
+        marker = marker, marks = marks }))
+    fh:close()
+    if not written then
+      error(tostring(write_err), 0)
+    end
+  end)
+  if not ok then
+    warn(("could not record index marks for %s (%s); this chapter's marks "
+          .. "will be missing from the book's index until it is rendered "
+          .. "again"):format(ctx.file, tostring(err)))
+  end
+end
+
+-- Every chapter record the store holds, in book order. Reading by the current
+-- chapter list is what makes a stale record harmless: a chapter dropped from
+-- the book is never read, however long its file lingers in the store.
+-- Is this decoded record shaped the way the aggregation below will read it?
+-- Checked here rather than trusted, because a record that parses as JSON and
+-- is shaped wrong reaches the entry builder and takes the render down with
+-- it, which IP2 forbids — and version skew across an extension upgrade is
+-- exactly how a wrongly shaped record appears in a store nothing prunes.
+local function valid_record(data, file)
+  if type(data) ~= "table" or data.version ~= STORE_VERSION then
+    return false
+  end
+  -- A record naming a different chapter than the file it was read from is not
+  -- this chapter's record, whatever wrote it.
+  if data.file ~= file or type(data.href) ~= "string"
+     or type(data.marks) ~= "table" then
+    return false
+  end
+  for _, mark in ipairs(data.marks) do
+    if type(mark) ~= "table" or type(mark.levels) ~= "table"
+       or #mark.levels == 0 then
+      return false
+    end
+    for _, level in ipairs(mark.levels) do
+      if type(level) ~= "string" then
+        return false
+      end
+    end
+    if mark.anchor ~= nil and type(mark.anchor) ~= "string" then
+      return false
+    end
+    if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
+      return false
+    end
+  end
+  return true
+end
+
+local function store_read(ctx)
+  local records = {}
+  for _, file in ipairs(ctx.chapters) do
+    local fh = io.open(store_path(ctx, file), "r")
+    if fh then
+      local text = fh:read("a")
+      fh:close()
+      local ok, data = pcall(pandoc.json.decode, text, false)
+      if ok and valid_record(data, file) then
+        records[#records + 1] = data
+      else
+        -- Never silent: the cost of an unreadable record is a chapter missing
+        -- from the index, and the fix is to render that chapter again.
+        warn(("the recorded index marks for %s could not be read and were "
+              .. "ignored; render that chapter again, or render the whole "
+              .. "book, to put its terms back in the index"):format(file))
+      end
+    end
+  end
+  return records
+end
+
+-- Every chapter's marks as the entry builder wants them: the kind tables
+-- restored from their attribute names, and each locator pointed at the page
+-- of the chapter that carries it.
+local function book_marks(ctx, records)
+  local marks = {}
+  for _, record in ipairs(records) do
+    for _, mark in ipairs(record.marks or {}) do
+      local xrefs = {}
+      for _, xref in ipairs(mark.xrefs or {}) do
+        local kind = XREF_KIND_BY_ATTR[xref.attr]
+        if kind then
+          xrefs[#xrefs + 1] = { kind = kind, levels = xref.levels }
+        end
+      end
+      marks[#marks + 1] = {
+        levels = mark.levels,
+        xrefs = xrefs,
+        anchor = mark.anchor,
+        -- A mark in the chapter holding the index links within its own page,
+        -- exactly as a single document's does.
+        -- Written exactly as Quarto writes its own links to that page,
+        -- raw rather than percent-escaped: Quarto normalizes a link target
+        -- either way, so an escape here is undone before it reaches output
+        -- (its own sidebar link to a space-named chapter is `./a b.html`).
+        href = record.file ~= ctx.file and relative_href(ctx, record.href)
+          or nil,
+      }
+    end
+  end
+  return marks
+end
+
+-- The first chapter in book order that carries a marker, by position, or nil.
+local function marker_chapter(ctx, records)
+  local first = nil
+  for _, record in ipairs(records) do
+    local position = ctx.positions[record.file]
+    if record.marker and position and (first == nil or position < first) then
+      first = position
+    end
+  end
+  return first
+end
+
+local function any_marks(records)
+  for _, record in ipairs(records) do
+    if #(record.marks or {}) > 0 then
+      return true
+    end
+  end
+  return false
+end
+
+-- One chapter of a book. Anchors are assigned here whatever this chapter is,
+-- because they are what the book's index links back to; the index itself is
+-- built by one chapter only.
+local function html_book(doc, ctx, marker, taken)
+  store_write(ctx, marker)
+  local records = store_read(ctx)
+  -- Whether THIS chapter carries the marker is known here, and is never read
+  -- back from the store: a chapter whose own record failed to write would
+  -- otherwise conclude that some other chapter holds the marker, build no
+  -- index, and report a chapter that does not exist.
+  local placing = marker_chapter(ctx, records)
+  if marker and (placing == nil or placing > ctx.position) then
+    placing = ctx.position
+  end
+
+  if marker and placing == ctx.position then
+    if not any_marks(records) then
+      -- The book path's counterpart to the single-document no-marks warning,
+      -- which cannot be asked of one chapter. Without it a marker in a book
+      -- that marks nothing renders an empty index section.
+      warn("index placement marker in a book whose chapters have no index "
+           .. "marks; there is no index to place")
+      return place_index(doc, nil)
+    end
+    local later = {}
+    for position = ctx.position + 1, #ctx.chapters do
+      later[#later + 1] = ctx.chapters[position]
+    end
+    if #later > 0 then
+      -- Chapters render in book order, so a chapter after this one has not
+      -- run yet in this render: what the index shows for it is whatever an
+      -- earlier render recorded, which may name terms that chapter no longer
+      -- marks and link to anchors its page no longer has.
+      warn(("the index placement marker is in %s, and %d chapter(s) come "
+            .. "after it (%s); the index is built where the marker is, so "
+            .. "those chapters are represented by what an earlier render "
+            .. "recorded — entries and links for them can be out of date or "
+            .. "dead. Put the marker chapter last in the book")
+           :format(ctx.file, #later, table.concat(later, ", ")))
+    end
+    return place_index(doc, html_index_blocks(book_marks(ctx, records), taken))
+  end
+
+  if marker then
+    warn(("index placement marker in %s is ignored; %s comes first in book "
+          .. "order and carries one too, and a book has a single index")
+         :format(ctx.file, ctx.chapters[placing]))
+  elseif ctx.position == #ctx.chapters and placing == nil
+         and any_marks(records) then
+    -- Reported by the last chapter in book order, which is the only chapter
+    -- that can know no other one asked for the index: every earlier chapter
+    -- has written its record by the time this one runs. One full render
+    -- therefore reports this exactly once.
+    warn("this book has index marks but no chapter carries an index "
+         .. "placement marker, so no index was built; write an empty div "
+         .. "with class qi-index-here in the chapter that should hold the "
+         .. "index, usually the last one")
+  end
+  return place_index(doc, nil)
+end
+
 -- `intoc` lists the index in the table of contents, as printed books normally
 -- do. imakeidx only runs makeindex itself under `-shell-escape`, which Quarto
 -- does not enable; what actually builds the index is Quarto's own PDF loop
@@ -934,21 +1265,47 @@ local function Pandoc(doc)
   -- misuse is diagnosed in every format and its residue removed in every
   -- format, whether or not that format has an index to place.
   local marker = resolve_markers(doc)
-  if marker and marks_seen == 0 then
+  -- A book chapter is not the whole document: the marks the marker places are
+  -- mostly in other chapters, so "no marks here" says nothing about whether
+  -- there is an index to place, and the book path reports what it finds
+  -- across the whole store instead.
+  local book = is_html() and book_context(doc) or nil
+  if is_html() and book == nil and doc.meta.book ~= nil then
+    -- Falling back to a per-chapter index is not a safe default in a book: it
+    -- is the shipped-before-M05 defect, one index per chapter and none of them
+    -- the book's. Whatever Quarto did not tell us, the author hears about it
+    -- rather than finding a stray index on a page later.
+    warn("this looks like a book, but the chapter list and output paths this "
+         .. "extension needs were not available, so this page was indexed on "
+         .. "its own instead of contributing to the book's index")
+  end
+  if marker and marks_seen == 0 and not book then
     warn("index placement marker in a document with no index marks; there is "
          .. "no index to place")
   end
 
   if is_html() then
+    -- Anchors are assigned before either path decides what to place: they are
+    -- what a locator links back to, and in a book they are read by whichever
+    -- chapter builds the index rather than by this one. A page with no marks
+    -- that places no index needs none of it, and is not walked for ids.
+    local taken = {}
+    if marks_seen > 0 or book then
+      taken = taken_identifiers(doc)
+    end
+    if marks_seen > 0 then
+      doc = relocate_heading_anchors(doc)
+      doc = assign_anchors(doc, taken)
+    end
+    if book then
+      return html_book(doc, book, marker, taken)
+    end
     -- A document with no marks gets no section, exactly as one with no marks
     -- gets no LaTeX preamble.
     if marks_seen == 0 then
       return place_index(doc, nil)
     end
-    local taken = taken_identifiers(doc)
-    doc = relocate_heading_anchors(doc)
-    doc = assign_anchors(doc, taken)
-    return place_index(doc, html_index_blocks(taken))
+    return place_index(doc, html_index_blocks(html_marks, taken))
   end
 
   if marks_seen == 0 or not is_latex_derived() then

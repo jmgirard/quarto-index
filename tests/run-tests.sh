@@ -443,6 +443,114 @@ Bee
 MANIFEST
 
 # ---------------------------------------------------------------------------
+# Manifest 5 — the aggregated index in examples/book/_book/last.html (M05-AC1,
+# AC2, AC3, AC4). EXHAUSTIVE, and stated in HREFS rather than locator counts:
+# a book index that links three times to the wrong chapter has the right
+# counts and is still wrong.
+# Format: <depth><TAB><entry text><TAB><space-separated hrefs>[<TAB><xref>]…
+# Same oracle rule as manifest 1e, with the book layers derived by hand on top
+# of it, from _quarto.yml and the four chapter sources:
+#   8. Chapter order is the `book.chapters` order — index.qmd, one.qmd,
+#      sub/two.qmd, last.qmd — and marks within a chapter are in document
+#      order, so an entry marked in several chapters lists its locators in
+#      that combined order.
+#   9. A locator href is the contributing chapter's output page relative to
+#      the page holding the index (last.html, at the site root), then `#` and
+#      the mark's anchor: a minted `qi-mark-<n>` numbered per chapter in
+#      document order, skipping marks that carry an id of the author's own,
+#      which keep it. A mark in the marker chapter itself has no page part.
+#  10. A cross-reference is linked exactly when some chapter contributes its
+#      target entry: `Alpha` is contributed by index.qmd, `No Such Entry` by
+#      no chapter at all.
+# ---------------------------------------------------------------------------
+read -r -d '' BOOK_HTML_INDEX <<'MANIFEST' || true
+0	Alpha	index.html#qi-mark-2
+0	Beta	one.html#qi-mark-1
+0	Delta		see-link Alpha
+0	Epsilon		see-plain No Such Entry
+0	Gamma	one.html#gamma-anchor
+0	Invisible Entry	index.html#qi-mark-3
+0	Kappa	
+1	Sub Level	one.html#qi-mark-3
+0	Shared Term	index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html#qi-mark-1
+0	Zeta	#qi-mark-1
+MANIFEST
+
+# The cross-references whose target another chapter contributes (M05-AC4).
+# Each row is <source entry><TAB><target entry>: the check reads the target
+# entry's minted id from the rendered page and requires the source's link to
+# point at exactly that id, which no substring match can establish.
+read -r -d '' BOOK_XREF_LINKS <<'MANIFEST' || true
+Delta	Alpha
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 6 — terms that must appear in the compiled book PDF's index
+# (M05-AC5), each with the number of PAGES its locators must cover (makeindex
+# prints three or more consecutive pages as a range, so printed tokens are not
+# the same thing as pages).
+# The page NUMBERS are never derived here: what a chapter's content lands on
+# is the LaTeX layout's business, and copying them from the output is the
+# snapshot the oracle rule forbids. The COUNT is derived by hand from the
+# sources — one locator per locator-contributing mark on that entry — and is
+# what pins the criterion's real claim, that the book PDF aggregates marks
+# from every chapter rather than from the one it happens to be printed in.
+# ---------------------------------------------------------------------------
+read -r -d '' BOOK_PDF_TERMS <<'MANIFEST' || true
+1	Alpha
+1	Beta
+1	Gamma
+1	Invisible Entry
+0	Kappa
+1	Sub Level
+3	Shared Term
+1	Zeta
+MANIFEST
+
+# The book PDF's cross-references, as exact typeset strings (M05-AC5).
+read -r -d '' BOOK_PDF_XREFS <<'MANIFEST' || true
+Delta, see Alpha
+Epsilon, see No Such Entry
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 7 — the no-marker book (M05-AC6). Each row is <page><TAB><visible
+# term>: the term a reader must still see on that page in a book that gets no
+# index at all, derived from the two chapter sources.
+# ---------------------------------------------------------------------------
+read -r -d '' BOOK_NOMARKER_TERMS <<'MANIFEST' || true
+index.html	Nomark One
+one.html	Nomark Two
+MANIFEST
+
+# The book's own reports, named once each (M05 hardening). The store reports
+# are what an author gets instead of a failed render when the filter cannot
+# read or write a record, so a check that stopped firing would leave an IP2
+# guarantee unproven.
+WARN_STORE_UNREADABLE='could not be read and were ignored'
+WARN_STORE_UNWRITABLE='could not record index marks for'
+WARN_MARKER_NOT_LAST='chapter(s) come after it'
+WARN_MARKER_SECOND='comes first in book order and carries one too'
+
+# ---------------------------------------------------------------------------
+# Manifest 8 — the ordering fixture's index (M05 hardening), in the same href
+# format as manifest 5. Derived by hand from examples/book-order: the marker
+# is in index.qmd, `Early` is marked there and `Late` in "later chapter.qmd",
+# collation puts Early before Late, and after two renders the later chapter's
+# stored record contributes its locator. The space in the filename is written
+# raw, exactly as Quarto writes its own links to that page.
+# ---------------------------------------------------------------------------
+read -r -d '' BOOK_ORDER_INDEX <<'MANIFEST' || true
+0	Early	#qi-mark-1
+0	Late	later chapter.html#qi-mark-1
+MANIFEST
+
+# The missing-marker report, named once (M05-AC6). The class name is part of
+# the string because the criterion asks the warning to name how to add a
+# marker chapter, not merely that one is missing.
+WARN_BOOK_NOMARKER='no chapter carries an index placement marker, so no index was built; write an empty div with class qi-index-here'
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -547,15 +655,16 @@ PY
 # manifest (format: see manifest 1e). Rows are compared in order, so a
 # collation failure is reported as one rather than swallowed by set equality.
 check_html_index_manifest() {
-  local htmlfile="$1" manifest="$2" label="$3"
+  local htmlfile="$1" manifest="$2" label="$3" hrefs="${4:-count}"
   printf '%s\n' "$manifest" > "$WORK/html-index.txt"
-  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$htmlfile" \
-    "$WORK/html-index.txt" "$label" <<'PY'
+  HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ROW_HREFS="$hrefs" python3 - \
+    "$htmlfile" "$WORK/html-index.txt" "$label" <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
 html_path, manifest_path, label = sys.argv[1:4]
 section_id = os.environ['HTML_SECTION_ID']
+hrefs = os.environ.get('HTML_ROW_HREFS') == 'hrefs'
 
 doc = H.parse(html_path)
 found = H.count_id(doc, section_id)
@@ -563,7 +672,8 @@ if found != 1:
     print(f'FAIL: {label}: expected exactly one generated index section '
           f'(id={section_id!r}) in {html_path}, found {found}', file=sys.stderr)
     sys.exit(1)
-actual = [H.row(r) for r in H.index_entries(H.find_id(doc, section_id))]
+actual = [H.row(r, hrefs=hrefs)
+          for r in H.index_entries(H.find_id(doc, section_id))]
 expected = H.read_manifest(manifest_path)
 if not expected:
     print(f'FAIL: {label}: manifest is empty', file=sys.stderr)
@@ -2637,6 +2747,484 @@ print(f'ok   M02-AC2: all {len(rows)} cross-references typeset in the PDF '
 PY
 
 # ---------------------------------------------------------------------------
+# M05 — book projects. A book renders each chapter in its own Pandoc process,
+# so the questions here are ones no single-document check can ask: whether the
+# index is built ONCE for the whole site, and whether a link written on the
+# page holding the index reaches an anchor on another chapter's page.
+# ---------------------------------------------------------------------------
+BOOK_DIR="examples/book"
+BOOK_OUT="$BOOK_DIR/_book"
+STORE_SUFFIX='.qi.json'
+STORE_DIR='quarto-index'
+
+# The store's own name is a pinned surface like the HTML back-end's ids: the
+# footprint sweep below asks "no file named like this under the output
+# directory", which proves nothing if the filter names its files something
+# else entirely.
+STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 - _extensions/index/index.lua <<'PY'
+import os, re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+missing = [f'{name} = {value!r}'
+           for name, value in (('STORE_SUFFIX', os.environ['STORE_SUFFIX']),
+                               ('STORE_DIR', os.environ['STORE_DIR']))
+           if not re.search(r'^local %s = "%s"$' % (name, re.escape(value)),
+                            src, re.MULTILINE)]
+if missing:
+    print('FAIL: M05-AC1: the suite and the filter disagree on the store\'s '
+          'name; the suite expects:', file=sys.stderr)
+    for m in missing:
+        print(f'  {m}', file=sys.stderr)
+    sys.exit(1)
+print('ok   M05-AC1: the store name the footprint sweep looks for is the one '
+      'the filter writes')
+PY
+
+# A full render from nothing: the store starts empty, so an index built here
+# was built from THIS render's chapters and not from a record left behind.
+rm -rf "$BOOK_OUT" "$BOOK_DIR/.quarto"
+( cd "$BOOK_DIR" && quarto render --to html ) > "$WORK/book-html.log" 2>&1 \
+  || { tail -30 "$WORK/book-html.log" >&2; fail "M05-AC1: the book fixture failed to render to HTML"; }
+
+check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
+  "M05-AC1/AC3" hrefs
+
+# The manifest above is the positive half: it says the marker chapter's index
+# is the whole book's. This is the negative half, and the questions only a
+# recursive walk of the rendered site can answer.
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+STORE_SUFFIX="$STORE_SUFFIX" python3 - "$BOOK_OUT" "$BOOK_DIR" <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+out, project = sys.argv[1], sys.argv[2]
+section_id = os.environ['HTML_SECTION_ID']
+anchor_prefix = os.environ['HTML_ANCHOR_PREFIX']
+suffix = os.environ['STORE_SUFFIX']
+INDEX_PAGE = 'last.html'
+
+pages = H.html_files(out)
+for expected in (INDEX_PAGE, 'index.html', 'one.html', 'sub/two.html'):
+    if expected not in pages:
+        print(f'FAIL: M05-AC1: {expected} is not among the rendered pages '
+              f'{pages}', file=sys.stderr)
+        sys.exit(1)
+docs = {page: H.parse(os.path.join(out, page)) for page in pages}
+
+# --- exactly one index across the site ------------------------------------
+carrying = [p for p in pages if H.count_id(docs[p], section_id) > 0]
+if carrying != [INDEX_PAGE]:
+    print(f'FAIL: M05-AC1: the index section (id={section_id!r}) appears on '
+          f'{carrying}, expected only [{INDEX_PAGE!r}]', file=sys.stderr)
+    sys.exit(1)
+if H.count_id(docs[INDEX_PAGE], section_id) != 1:
+    print(f'FAIL: M05-AC1: {INDEX_PAGE} carries more than one index section',
+          file=sys.stderr)
+    sys.exit(1)
+# An entry list is the index's other half: a page could carry the entries
+# without the section id and the check above would not see it.
+stray = [p for p in pages
+         if p != INDEX_PAGE and H.find_all(docs[p], cls='qi-term')]
+if stray:
+    print(f'FAIL: M05-AC1: index entry markup on page(s) that hold no index: '
+          f'{stray}', file=sys.stderr)
+    sys.exit(1)
+
+# --- the store is real, and none of it is in the output -------------------
+def store_files(root):
+    return sorted(os.path.join(base, name)
+                  for base, _dirs, files in os.walk(root)
+                  for name in files if name.endswith(suffix))
+
+written = store_files(project + '/.quarto')
+if not written:
+    print(f'FAIL: M05-AC1: no store file was written under {project}/.quarto; '
+          f'the footprint sweep below would pass on a filter that never '
+          f'wrote a store at all', file=sys.stderr)
+    sys.exit(1)
+leaked = store_files(out)
+if leaked:
+    print(f'FAIL: M05-AC1: store file(s) under the output directory: '
+          f'{leaked}', file=sys.stderr)
+    sys.exit(1)
+
+# --- every locator link reaches a real anchor on a real page (AC2) --------
+ids = {page: set(H.all_ids(doc)) for page, doc in docs.items()}
+section = H.find_id(docs[INDEX_PAGE], section_id)
+records = H.index_entries(section)
+locators = [href for r in records for href in r['locators']]
+broken = []
+for link in H.find_all(section, 'a'):
+    href = link.attrs.get('href', '')
+    resolved = H.resolve_href(INDEX_PAGE, href)
+    if resolved is None:
+        broken.append(f'  {href!r} leaves the site')
+        continue
+    target, fragment = resolved
+    if not fragment:
+        broken.append(f'  {href!r} names no anchor')
+    elif target not in ids:
+        broken.append(f'  {href!r} points at {target!r}, which is not a '
+                      f'rendered page')
+    elif fragment not in ids[target]:
+        broken.append(f'  {href!r} points at no id in {target!r}')
+if broken:
+    print('FAIL: M05-AC2: link(s) in the book index do not resolve:',
+          file=sys.stderr)
+    print('\n'.join(broken), file=sys.stderr)
+    sys.exit(1)
+
+# --- the axes AC2 asks the fixture to vary, read off the render -----------
+# Derived from what was rendered rather than recalled from the sources: a
+# fixture edit that quietly drops one of these shapes fails here instead of
+# leaving the criterion's claim untested.
+targets = [H.resolve_href(INDEX_PAGE, href) for href in locators]
+pages_linked = {t for t, _f in targets}
+gaps = []
+if len(pages_linked) < 3:
+    gaps.append(f'locators reach only {sorted(pages_linked)}, fewer than three '
+                f'chapters')
+if not any('/' in t for t, _f in targets):
+    gaps.append('no locator reaches a chapter in a subdirectory')
+if not any(t == INDEX_PAGE for t, _f in targets):
+    gaps.append('no locator points within the page holding the index')
+if not any(not f.startswith(anchor_prefix) for _t, f in targets):
+    gaps.append("no locator uses an id of the author's own")
+# The heading case: a mark written inside a heading must anchor OUTSIDE it,
+# or Quarto's table-of-contents copy duplicates the id (the M03 rule) — asked
+# here of a link that crosses a file boundary.
+def ids_in_headings(doc):
+    inside = set()
+    for node in H.walk(doc):
+        if node.tag in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6'):
+            inside |= {n.attrs['id'] for n in H.walk(node) if n.attrs.get('id')}
+    return inside
+heading_marked = [p for p in pages
+                  if any(node.tag in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6')
+                         and 'Beta' in H.text(node)
+                         for node in H.walk(docs[p]))]
+if not heading_marked:
+    gaps.append('no chapter marks a term inside a heading')
+else:
+    for target, fragment in targets:
+        if target in heading_marked and fragment in ids_in_headings(docs[target]):
+            gaps.append(f'locator #{fragment} on {target} sits inside a '
+                        f'heading, where Quarto duplicates it into the '
+                        f'table of contents')
+# The invisible form contributes an entry with no visible text of its own.
+if 'Invisible Entry' in H.text(docs['index.html'], ' '):
+    gaps.append("the invisible mark's entry text appears in the chapter body, "
+                "so the invisible form is not what the fixture exercises")
+if gaps:
+    print('FAIL: M05-AC2: the fixture does not vary every axis the criterion '
+          'names:', file=sys.stderr)
+    for gap in gaps:
+        print(f'  {gap}', file=sys.stderr)
+    sys.exit(1)
+
+print(f'ok   M05-AC1/AC2: one index across {len(pages)} rendered pages, no '
+      f'store file in the output ({len(written)} written outside it), all '
+      f'{len(locators)} locators resolve to a real anchor, and they vary '
+      f'chapter, subdirectory, same-page, author-id and heading form')
+PY
+
+# M05-AC4 — a cross-reference whose target entry only another chapter
+# contributes links to that entry's id. Read structurally: the target entry's
+# id is minted at render time, so a manifest cannot state it, but which entry
+# the link must reach is derived by hand.
+printf '%s\n' "$BOOK_XREF_LINKS" > "$WORK/book-xrefs.txt"
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$BOOK_OUT/last.html" \
+  "$WORK/book-xrefs.txt" <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+records = H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))
+by_term = {r['term']: r for r in records}
+rows = [l.rstrip('\n').split('\t') for l in open(sys.argv[2], encoding='utf-8')
+        if l.strip()]
+bad = []
+for source, target in rows:
+    if source not in by_term or target not in by_term:
+        bad.append(f'  {source!r} -> {target!r}: entry missing from the index')
+        continue
+    want = '#' + by_term[target]['id']
+    got = [href for _kind, _text, _linked, href in by_term[source]['xrefs']]
+    if want not in got:
+        bad.append(f'  {source!r} links to {got}, expected {want!r} (the id '
+                   f'of the {target!r} entry)')
+if bad:
+    print('FAIL: M05-AC4: cross-file cross-reference(s) do not link to their '
+          'target entry:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M05-AC4: all {len(rows)} cross-file cross-reference(s) link to '
+      f'the id of the entry another chapter contributes')
+PY
+
+# The unresolvable target is in the exhaustive manifest above as `see-plain`,
+# which is the criterion's "renders as unlinked text"; this is the other half
+# of AC4 — a well-formed book renders with nothing to report at all, so a
+# cross-file target never draws the warning a missing one would.
+if grep -q '^(W)' "$WORK/book-html.log"; then
+  grep '^(W)' "$WORK/book-html.log" >&2
+  fail "M05-AC4: the book fixture rendered with warning(s); a resolvable cross-file target must draw none"
+fi
+pass "M05-AC4: the book renders warning-free, unresolvable target included"
+
+# ---------------------------------------------------------------------------
+# M05-AC6 — a book with marks and no marker chapter.
+# ---------------------------------------------------------------------------
+NOMARKER_DIR="examples/book-nomarker"
+rm -rf "$NOMARKER_DIR/_book" "$NOMARKER_DIR/.quarto"
+( cd "$NOMARKER_DIR" && quarto render --to html ) \
+  > "$WORK/book-nomarker.log" 2>&1 \
+  || { tail -30 "$WORK/book-nomarker.log" >&2; fail "M05-AC6: the no-marker book failed to render to HTML"; }
+
+printf '%s\n' "$BOOK_NOMARKER_TERMS" > "$WORK/nomarker-terms.txt"
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$NOMARKER_DIR/_book" \
+  "$WORK/nomarker-terms.txt" <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+out, manifest = sys.argv[1], sys.argv[2]
+section_id = os.environ['HTML_SECTION_ID']
+pages = H.html_files(out)
+docs = {page: H.parse(os.path.join(out, page)) for page in pages}
+carrying = [p for p in pages if H.count_id(docs[p], section_id) > 0
+            or H.find_all(docs[p], cls='qi-term')]
+if carrying:
+    print(f'FAIL: M05-AC6: a book with no marker chapter built an index on '
+          f'{carrying}', file=sys.stderr)
+    sys.exit(1)
+rows = [l.rstrip('\n').split('\t') for l in open(manifest, encoding='utf-8')
+        if l.strip()]
+missing = []
+for page, term in rows:
+    if page not in docs:
+        missing.append(f'  {page} was not rendered')
+    elif term not in H.text(docs[page], ' '):
+        missing.append(f'  {term!r} is not visible on {page}')
+if missing:
+    print('FAIL: M05-AC6: marked term(s) lost from a book that gets no index:',
+          file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M05-AC6: no index on any of the {len(pages)} pages, and all '
+      f'{len(rows)} marked terms still visible where they were written')
+PY
+
+check_warning_count "$WORK/book-nomarker.log" "$WARN_BOOK_NOMARKER" 1 "M05-AC6"
+pass "M05-AC6: the missing-marker report fires exactly once in a full render, naming the marker div"
+
+# ---------------------------------------------------------------------------
+# M05-AC5 — the book PDF. One merged document, so the LaTeX back-end needs
+# none of the store machinery; this pins that it still aggregates every
+# chapter's marks into one printed index (GP6).
+# ---------------------------------------------------------------------------
+( cd "$BOOK_DIR" && quarto render --to pdf ) > "$WORK/book-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/book-pdf.log" >&2; fail "M05-AC5: the book fixture failed to render to PDF"; }
+BOOK_PDF=$(find "$BOOK_OUT" -maxdepth 1 -name '*.pdf' | head -1)
+[ -s "$BOOK_PDF" ] || fail "M05-AC5: the book render produced no PDF"
+pdftotext -layout "$BOOK_PDF" "$WORK/book.txt"
+
+printf '%s\n' "$BOOK_PDF_TERMS" > "$WORK/book-pdf-terms.txt"
+printf '%s\n' "$BOOK_PDF_XREFS" > "$WORK/book-pdf-xrefs.txt"
+python3 - "$WORK/book.txt" "$WORK/book-pdf-terms.txt" \
+  "$WORK/book-pdf-xrefs.txt" <<'PY'
+import re, sys
+text = open(sys.argv[1], encoding='utf-8').read()
+rows = [l.rstrip('\n').split('\t') for l in open(sys.argv[2], encoding='utf-8')
+        if l.strip()]
+xrefs = [l.rstrip('\n') for l in open(sys.argv[3], encoding='utf-8')
+         if l.strip()]
+
+m = re.search(r'^\s*Index\s*$', text, re.MULTILINE)
+if not m:
+    print('FAIL: M05-AC5: no "Index" heading in the book PDF', file=sys.stderr)
+    sys.exit(1)
+# The printed index is set in two columns, so layout spacing collapses the
+# same way the single-document checks collapse it.
+region = ' '.join(text[m.end():].split())
+
+# One printed locator: a page number, or a range of them. makeindex collapses
+# three or more consecutive pages into a range (`3--5`, typeset as an en
+# dash), so a locator list is counted in PAGES rather than in printed tokens —
+# whether a term's pages happen to be consecutive is pagination, and this
+# check must not depend on it.
+LOCATOR = r'\d+(?:[-–—]\d+)?'
+
+
+def pages_after(term):
+    # Anchored on both sides: without a boundary, a row asserting a term has
+    # NO page numbers passes on a region where that term never reached the
+    # index and only appears inside a longer one.
+    m = re.search(r'(?<![\w])' + re.escape(term) + r'(?![\w])'
+                  + r'((?:,\s' + LOCATOR + r')*)', region)
+    if m is None:
+        return None
+    total = 0
+    for token in re.findall(LOCATOR, m.group(1)):
+        ends = re.split(r'[-–—]', token)
+        total += 1 if len(ends) == 1 else int(ends[1]) - int(ends[0]) + 1
+    return total
+
+
+bad = []
+for count, term in rows:
+    # The page numbers themselves are the layout's business and are never
+    # derived here; how MANY pages follow the term is derived from the
+    # sources — one per locator-contributing mark, each in its own chapter,
+    # and a book class starts every chapter on a new page — and that count is
+    # what shows the printed index aggregated across chapters.
+    got = pages_after(term)
+    if got is None:
+        bad.append(f'  {term!r} is not in the printed index at all')
+    elif got != int(count):
+        bad.append(f'  {term!r} is followed by {got} page(s) in the printed '
+                   f'index, expected {count}')
+for xref in xrefs:
+    if ' '.join(xref.split()) not in region:
+        bad.append(f'  cross-reference <<{xref}>> is not in the printed index')
+if bad:
+    print('FAIL: M05-AC5: the book PDF index does not match the manifest:',
+          file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    print(f'--- index region ---\n{region[:1200]}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M05-AC5: the book PDF prints one index carrying all {len(rows)} '
+      f'derived terms with their derived locator counts, and all '
+      f'{len(xrefs)} cross-references')
+PY
+
+# ---------------------------------------------------------------------------
+# M05 hardening — the dimensions one clean-slate render cannot reach: a second
+# render over a store that already has records, a stale record for a chapter
+# the book no longer lists, a marker that is not in the last chapter, a second
+# marker chapter, and a store this filter cannot write at all. None of these
+# is named by a criterion; all of them are behaviour this milestone shipped,
+# and a green suite is evidence about what it covers (LESSONS 2026-08-16).
+# ---------------------------------------------------------------------------
+
+# A second full render must produce the same index, not a doubled one: the
+# marker chapter reads a store that already holds its own previous record.
+( cd "$BOOK_DIR" && quarto render --to html ) > "$WORK/book-html2.log" 2>&1 \
+  || { tail -30 "$WORK/book-html2.log" >&2; fail "M05 hardening: the second book render failed"; }
+check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
+  "M05 hardening (second render)" hrefs
+
+# A record for a chapter the book does not list must not reach the index. The
+# planted record is well-formed and names a chapter absent from _quarto.yml,
+# so only the chapter-list filter can keep it out.
+GHOST="$BOOK_DIR/.quarto/$STORE_DIR/ghost.qmd$STORE_SUFFIX"
+cat > "$GHOST" <<'JSON'
+{"version":1,"file":"ghost.qmd","href":"ghost.html","marker":false,
+ "marks":[{"levels":["Ghost Chapter Term"],"xrefs":[],"anchor":"qi-mark-1"}]}
+JSON
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-ghost.log" 2>&1 \
+  || { tail -30 "$WORK/book-ghost.log" >&2; fail "M05 hardening: the marker chapter failed to re-render"; }
+check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
+  "M05 hardening (stale chapter ignored)" hrefs
+rm -f "$GHOST"
+
+# A record this filter cannot read must cost that chapter's entries and say
+# so, never take the render down (IP2).
+CORRUPT="$BOOK_DIR/.quarto/$STORE_DIR/one.qmd$STORE_SUFFIX"
+cp "$CORRUPT" "$WORK/one-record.json"
+printf '{"version":1,"file":"one.qmd","href":"one.html","marker":false,"marks":[{"levels":"not a list"}]}\n' > "$CORRUPT"
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-corrupt.log" 2>&1 \
+  || { tail -30 "$WORK/book-corrupt.log" >&2; fail "M05 hardening: a wrongly shaped store record took the render down; IP2 forbids it"; }
+check_warning_count "$WORK/book-corrupt.log" "$WARN_STORE_UNREADABLE" 1 \
+  "M05 hardening"
+cp "$WORK/one-record.json" "$CORRUPT"
+pass "M05 hardening: a wrongly shaped store record is reported and skipped, and the render survives"
+
+# ---------------------------------------------------------------------------
+# The ordering fixture: marker in the first chapter, a second marker in the
+# last, and a chapter filename with a space in it.
+# ---------------------------------------------------------------------------
+ORDER_DIR="examples/book-order"
+ORDER_OUT="$ORDER_DIR/_book"
+rm -rf "$ORDER_OUT" "$ORDER_DIR/.quarto"
+# Rendered twice on purpose: on the first pass the later chapter has not run
+# when the marker chapter builds the index, which is the very hazard the
+# marker-not-last warning is about.
+( cd "$ORDER_DIR" && quarto render --to html && quarto render --to html ) \
+  > "$WORK/book-order.log" 2>&1 \
+  || { tail -30 "$WORK/book-order.log" >&2; fail "M05 hardening: the ordering fixture failed to render"; }
+
+check_warning_count "$WORK/book-order.log" "$WARN_MARKER_NOT_LAST" 2 \
+  "M05 hardening"
+check_warning_count "$WORK/book-order.log" "$WARN_MARKER_SECOND" 2 \
+  "M05 hardening"
+pass "M05 hardening: a marker that is not last, and a second marker chapter, are each reported once per render"
+
+printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$ORDER_OUT" \
+  "$WORK/order-index.txt" <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+out, manifest = sys.argv[1], sys.argv[2]
+section_id = os.environ['HTML_SECTION_ID']
+INDEX_PAGE = 'index.html'
+
+pages = H.html_files(out)
+docs = {page: H.parse(os.path.join(out, page)) for page in pages}
+carrying = [p for p in pages if H.count_id(docs[p], section_id) > 0]
+if carrying != [INDEX_PAGE]:
+    print(f'FAIL: M05 hardening: two marker chapters produced index sections '
+          f'on {carrying}, expected only [{INDEX_PAGE!r}]', file=sys.stderr)
+    sys.exit(1)
+actual = [H.row(r, hrefs=True)
+          for r in H.index_entries(H.find_id(docs[INDEX_PAGE], section_id))]
+expected = H.read_manifest(manifest)
+if actual != expected:
+    print('FAIL: M05 hardening: the ordering fixture index does not match the '
+          'manifest', file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such row rendered>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  row {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+# The space-named chapter is the point of this fixture: its locator must
+# resolve like any other, and it is written the way Quarto writes its own
+# links to that page rather than percent-escaped.
+ids = {page: set(H.all_ids(doc)) for page, doc in docs.items()}
+spaced = [href for r in H.index_entries(H.find_id(docs[INDEX_PAGE], section_id))
+          for href in r['locators'] if ' ' in href]
+if not spaced:
+    print('FAIL: M05 hardening: no locator reaches the space-named chapter, '
+          'so the fixture no longer exercises it', file=sys.stderr)
+    sys.exit(1)
+for href in spaced:
+    target, fragment = H.resolve_href(INDEX_PAGE, href)
+    if target not in ids or fragment not in ids[target]:
+        print(f'FAIL: M05 hardening: the locator {href!r} into the '
+              f'space-named chapter resolves to nothing', file=sys.stderr)
+        sys.exit(1)
+print(f'ok   M05 hardening: one index across {len(pages)} pages with two '
+      f'marker chapters, {len(expected)} rows including a later chapter '
+      f'carried by its stored record, and the space-named chapter\'s locator '
+      f'resolves')
+PY
+
+# A store the filter cannot write at all: an ordinary file where its directory
+# belongs. The render must survive and say what was lost (IP2).
+rm -rf "$ORDER_DIR/.quarto/$STORE_DIR"
+mkdir -p "$ORDER_DIR/.quarto"
+printf 'not a directory\n' > "$ORDER_DIR/.quarto/$STORE_DIR"
+( cd "$ORDER_DIR" && quarto render --to html ) > "$WORK/book-nostore.log" 2>&1 \
+  || { tail -30 "$WORK/book-nostore.log" >&2; fail "M05 hardening: a store that cannot be written took the render down; IP2 forbids it"; }
+check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" 2 \
+  "M05 hardening"
+rm -f "$ORDER_DIR/.quarto/$STORE_DIR"
+pass "M05 hardening: a store that cannot be written is reported per chapter and the book still renders"
+
+# ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--self-test" ]; then
@@ -2715,6 +3303,18 @@ PY
   fi
   pass "AC3: a check that fails only by exit status kills the run ($WRAPPER_RC) and no passing line is printed"
 
+  # The book's missing-marker report is the only evidence an author gets that
+  # a book built no index, so a check for it that quietly stopped firing would
+  # leave AC6 passing on a silent render.
+  warn_discrimination "$WORK/book-nomarker.log" "$WARN_BOOK_NOMARKER" 1 \
+    "M05-AC6"
+  # The two store reports stand in for a failed render: if either check
+  # stopped firing, a book that silently lost a chapter's entries would look
+  # exactly like one that kept them.
+  warn_discrimination "$WORK/book-corrupt.log" "$WARN_STORE_UNREADABLE" 1 \
+    "M05 hardening"
+  warn_discrimination "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" 2 \
+    "M05 hardening"
   warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
 fi

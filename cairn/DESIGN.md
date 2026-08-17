@@ -147,6 +147,33 @@ Two back-ends ship:
 Every other format — beamer, revealjs, epub, gfm — takes neither branch and
 passes marks through untouched (IP2).
 
+**Book projects** split the HTML back-end in two, and leave the LaTeX one
+alone. A PDF book is rendered as one merged document, so its marks are already
+in one process; an HTML book renders each chapter separately, so no chapter can
+see another's. Each chapter therefore writes what it found — levels,
+cross-reference targets, anchor ids, its own output page — to a sidecar store
+under the project's `.quarto/` scratch directory, keyed by chapter source path,
+and the chapter carrying the placement marker reads the whole store back in
+book order and builds the one index the book gets. Every chapter still assigns
+its anchors, because they are what the index links to. The store is read
+through the current chapter list, so a chapter dropped from the book cannot
+contribute a stale record; a chapter *rendered* stale can, which makes a full
+render the contract for a current index. The chapter list, each chapter's
+position, and the paths that make a cross-chapter link come from Quarto's own
+metadata (`book.render`, `quarto.doc`, `quarto.project`), never from guesswork
+about layout. Whether *this* chapter carries the marker is
+known locally and never read back from the store, so a chapter whose own record
+failed to write still knows what it is. Nothing about the store may break a
+render (IP2): the write is one guarded unit, a record is validated against a
+version and a shape before it is read, and every failure costs that chapter's
+entries and says so. Five cases are reported rather than guessed at: a book
+whose chapters mark terms but whose author wrote no marker anywhere (reported
+by the last chapter, the only one that can know), a marker in a book that marks
+nothing, a second marker chapter (the first in book order builds the index), a
+marker with chapters after it (whose entries are one render behind), and a page
+Quarto presents as a book chapter without the metadata this needs — which falls
+back to indexing that page alone, the pre-M05 defect, and so is never silent.
+
 Shared between them: the level parse, the cross-reference target parse and its
 `: ` join, and every warning about the mark itself.
 

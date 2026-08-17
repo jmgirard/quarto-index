@@ -1,0 +1,7 @@
+# A later chapter whose filename has a space
+
+This chapter marks a term, [Late]{.index}, and carries a marker of its own —
+which must be refused, because the first chapter in book order already has one.
+
+::: {.qi-index-here}
+:::

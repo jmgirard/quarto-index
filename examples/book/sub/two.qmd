@@ -1,0 +1,12 @@
+# Third chapter
+
+This chapter lives in a subdirectory, so its page sits one level below the
+marker chapter's and every link between them has to account for that.
+
+A cross-reference whose target entry no mark in this chapter contributes:
+[Delta]{.index see="Alpha"}.
+
+A cross-reference to a target no chapter contributes at all, which must
+render as unlinked text: [Epsilon]{.index see="No Such Entry"}.
+
+The shared term picks up its third locator here: [Shared Term]{.index}.

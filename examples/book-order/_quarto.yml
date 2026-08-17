@@ -1,0 +1,22 @@
+# The book-hardening fixture (M05 review). Everything here is a shape the
+# four-chapter fixture deliberately does not have:
+#   - the marker is in the FIRST chapter, not the last, so a later chapter is
+#     represented only by what an earlier render recorded;
+#   - a SECOND chapter carries a marker too, which must be refused rather than
+#     produce a second index;
+#   - a chapter filename contains a space, so its locator href has to be
+#     escaped before it goes into a link.
+project:
+  type: book
+
+book:
+  title: "Index Book Ordering Fixture"
+  chapters:
+    - index.qmd
+    - "later chapter.qmd"
+
+format:
+  html: default
+
+filters:
+  - index

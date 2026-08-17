@@ -1,0 +1,10 @@
+# Opening
+
+The first chapter contributes the first locator for a term three chapters
+share: [Shared Term]{.index} appears here.
+
+A plain mark whose entry another chapter's cross-reference points at:
+[Alpha]{.index}.
+
+An invisible mark contributes an entry a reader never sees in the text, only
+in the index. []{.index entry="Invisible Entry"}

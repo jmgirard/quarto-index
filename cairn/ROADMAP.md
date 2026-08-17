@@ -8,7 +8,7 @@ _Last hygiene check: 2026-08-17 (M04 merged and archived; 3 candidate rows added
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
-| M05 | Multi-chapter book support | planned | M04 | normal | milestones/M05-book-support.md |
+| M05 | Multi-chapter book support | review | M04 | normal | milestones/M05-book-support.md |
 | M03 | HTML index back-end | done | M02 | normal | milestones/archive/M03-html-backend.md |
 | M02 | Cross-references (see / see also) | done | M01 | normal | milestones/archive/M02-cross-references.md |
 | M01 | LaTeX index extension skeleton | done | — | normal | milestones/archive/M01-latex-index-skeleton.md |
@@ -51,3 +51,6 @@ _Last hygiene check: 2026-08-17 (M04 merged and archived; 3 candidate rows added
 - Acceptance suite: the run fails on a clean checkout (a check reads examples/control.tex before anything renders it), no structural residue check on LaTeX misuse output, three renders write examples/marker.tex in one run, the check-count baseline is not mechanized — added 2026-08-17 — M04 review F9/F10/F13 + a clean-clone failure hit at review
 - `resolve_markers` rebuilds every Blocks list in every format whether or not a marker exists; the LaTeX byte-diff proves that output-neutral, HTML has no equivalent byte check — added 2026-08-17 — M04 review F12
 - Headings consumed by Quarto constructs (callout titles, tabsets) bypass the after-heading anchor relocation; no TOC copy today, so no defect — the invariant is unpinned against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8
+- Locator hrefs into chapter pages cannot be percent-escaped at the filter layer: Quarto normalizes a link target either way (verified — the filter emitted `later%20chapter.html`, output carried `later chapter.html`, matching Quarto's own `./later chapter.html`), so a chapter filename containing `#` or `?` yields a broken locator — added 2026-08-17 — M05 review F11
+- The per-chapter store is never pruned: a renamed or removed chapter leaves its record forever, harmless today because reads are filtered by the current chapter list and validated against a store version — added 2026-08-17 — M05 review F4/F13
+- A book page rendered but absent from `book.render` (via `project: render:`) gets its own per-chapter index rather than contributing to the book's — added 2026-08-17 — M05 review F13

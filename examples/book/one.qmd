@@ -1,0 +1,14 @@
+# Second chapter
+
+## A heading marking [Beta]{.index}
+
+A mark inside a heading has its anchor relocated to just after the heading,
+so nothing lands in the copy Quarto puts in the table of contents.
+
+The shared term picks up its second locator here: [Shared Term]{.index}.
+
+A mark carrying an id of the author's own keeps it as the link target:
+[Gamma]{.index #gamma-anchor}.
+
+A two-level entry, so the level structure is exercised across the store:
+[Kappa]{.index entry="Kappa!Sub Level"}.

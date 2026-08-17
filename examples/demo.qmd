@@ -1,0 +1,9 @@
+---
+title: "quarto-index demo"
+filters:
+  - index
+---
+
+# Demo
+
+A bare paragraph with a marked term: [pandoc]{.index}.

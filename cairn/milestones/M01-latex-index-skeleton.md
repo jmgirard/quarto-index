@@ -117,7 +117,7 @@ user-declared); explicit index-placement option and shortcode syntax.
 
 ## Tasks
 
-- [ ] T1: Scaffold `_extensions/index/` (`_extension.yml`, Lua filter
+- [x] T1: Scaffold `_extensions/index/` (`_extension.yml`, Lua filter
       registration); `examples/` consumes it via `_extensions/` as an
       installed user would; a bare render passes.
 - [ ] T2: Implement span recognition (`.index` class) and entry semantics:
@@ -167,6 +167,8 @@ user-declared); explicit index-placement option and shortcode syntax.
 - 2026-08-16: question gate chose `!!` doubling over filter-level `\!` for a literal `!` because source and filter then agree with no backslash counting; falsified by a level-syntax need doubling cannot express. Supersedes the escape named in the 2026-08-16 amendment-gate line above (that line stands as history, IP4).
 - 2026-08-16: question gate chose index-in-TOC (`\makeindex[intoc]`) and warn-and-continue on a mark with nothing to index.
 - 2026-08-16: cap remedy at the amendment gate: Scope Out-list compressed to a cross-reference of the existing ROADMAP candidate rows (promise unchanged, nothing moved between In and Out); plan-owned body 155 → 149.
+- 2026-08-16: T1 done — `_extensions/index/` (`_extension.yml` + `index.lua` stub) scaffolded; `quarto render examples/demo.qmd --to latex` exits 0. Quarto resolves filters only from the input file's own directory absent a project file, so `examples/_extensions` is a symlink to the repo-root `_extensions/`, letting examples consume the extension exactly as an installed user does.
+- 2026-08-16: minor amendment — `tests/run-tests.sh` is grown from T2 onward rather than authored whole at T5, so each task has a real verify gate; T5 still owns the manifest, tool guard, self-test, and PROFILE slot.
 - 2026-08-16: substantive amendment (`!!` escape): Scope entry-semantics bullet, AC1 manifest-derivation clause, AC4, T2, T6 amended; amended AC-wording audited in full mode by a fresh [O] reader that did not author it — 10 findings, 8 applied as clear fixes, finding 5 resolved by probe (`"` is expressible), findings 9-history and 10 disposed per append-only and documented-claim-owes-a-test.
 
 ## Decisions

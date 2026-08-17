@@ -1,6 +1,6 @@
 # M03: HTML index back-end
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M02
 - **Driving RR:** —
@@ -170,6 +170,8 @@ criteria audit applied).
 
 - 2026-08-17: all tasks done; tests/run-tests.sh --self-test clean. AC1 evidence rehearsed: demo.qmd --to latex on the branch is byte-identical to the same render at the merge-base (procedure documented in the suite). Status -> review.
 
+- 2026-08-17: review pass 1 RETURNED (defect return 1): AC4 fails — two level-list-distinct cross-reference targets on one key render as one, the second silently dropped, because the dedupe compares the rendered `: `-joined string rather than the level lists Scope requires. Two further load-bearing defects confirmed by reproduction: a mark in a heading under `toc: true` emits its anchor id twice (locator resolves to the TOC copy), and a minted anchor can collide with an id the author already used. Full suite passed throughout — no fixture exercises any of the three shapes.
+
 ## Decisions
 
 - 2026-08-16: implement gate chose `qi-index` (section), `qi-mark-<n>` (locator anchors) and `qi-entry-<n>` (index entries) as the HTML identifiers over an `index`-based name because an author's own "Index" heading claims that id, and over a spelled-out `quarto-index-` prefix because these appear in a reader's URL; falsified by a collision with another extension's `qi-` namespace.
@@ -177,3 +179,76 @@ criteria audit applied).
 - 2026-08-16: implement chose to render two marks carrying the same target on one key as ONE cross-reference over repeating it, because that is what the LaTeX index tool does with a repeated cross-reference and a repeat would report how the author spread the marks rather than anything a reader wants; falsified by a use for counting cross-reference marks.
 
 ## Review
+
+### 2026-08-17 — first review pass: RETURNED to in-progress
+
+Consistency gate: `cairn_validate` exit 0 (16 PASS, 7 advisory OK). Profile
+`generic` names no toolchain checks. No IP/GP changed, so no impact report.
+No CI configured in the repo; the local suite is the whole evidence base.
+Draft PR #3 opened.
+
+**Criterion evidence (no box ticked — the milestone returns, so every
+criterion is re-verified against the fixed code next pass):**
+
+- AC1: `tests/run-tests.sh --self-test` exits 0, all checks pass. Merge-base
+  comparison run twice (implement close and review): `examples/demo.qmd --to
+  latex` on the branch is byte-identical to the same render at the merge-base.
+  The [S] blame lens independently confirmed the LaTeX emission path is
+  byte-for-byte unchanged. **Passes.**
+- AC2: 43-row demo manifest, 2-row placement manifest, both matched in order;
+  independently re-derived row-for-row by the [O] lens with no disagreement,
+  Latin-1 rows included. **Passes as written.**
+- AC3: 25 anchors, one per locator-contributing mark, all links resolve.
+  **Passes as written, but the property is narrower than the criterion
+  claims** — see F1, F2, F4, F10 below; the uniqueness check holds only
+  because no fixture sets `toc:` or carries an author id in the minted scheme.
+- AC4: **FAILS.** Two level-list-distinct targets on one key
+  (`see="A!B"` and `see="A: B"`) render as ONE cross-reference — the second is
+  silently dropped and the survivor links. The dedupe compares the `: `-joined
+  string, which Scope forbids ("matched on parsed level lists, never rendered
+  strings"). Reproduced directly (F3).
+- AC5: all 94 printable ASCII characters present as exact elements of the
+  extracted entry set. **Passes.**
+- AC6: control and gfm negatives pass; beamer checks pass; verified
+  discriminating at implement time. **Passes.**
+- AC7: 3 stale sentences absent, 7 claims present. **Passes mechanically**, but
+  three of the claims are inaccurate or overstated — F8, F9.
+
+**Findings and disposition** (16 reported across three fresh-context lenses;
+[O] diff-bug F1–F14, [S] prior-review P1–P2, [S] blame-history none):
+
+- F1 duplicate `qi-mark-N` when a mark sits in a heading under `toc: true` —
+  the locator resolves to the TOC copy. Reproduced. → fix now.
+- F2 minted anchors can collide with an id the author already used; two
+  entries then link to the same anchor. Reproduced. → fix now.
+- F3 cross-reference dedupe keyed on the rendered string; silent loss of a
+  distinct target (IP2). Reproduced. → fix now; this is the AC4 failure.
+- F5 the collation tie-break is grep-pinned in the README but no oracle
+  exercises it (`return false` leaves the suite green). → fix now.
+- F6 nothing asserts the 3-level fold warning stays LaTeX-only. → fix now.
+- F7 "enters the TOC" is claimed but no fixture has a TOC. → fix now (F1
+  needs the fixture anyway).
+- F8 README says the id sits on the `<h1>`; with section-divs it sits on the
+  wrapping `<section>`. DESIGN says every mark span gets an anchor, which the
+  author-id case contradicts. → fix now.
+- F9 README "no index artifacts appear" is overstated: the mark's class and
+  `data-see` survive into gfm. → fix now.
+- F10 AC3's arithmetic names one fixture invariant but relies on two. → fix
+  now.
+- F4 the no-leak sweep reads text only, so it cannot fail for AC3's wording
+  (values legitimately persist as span attributes — pre-existing since M01).
+  → follow-up, and AC3's wording is narrowed by the same amendment.
+- F11 an author writing `{#qi-index}` collides with the section id. →
+  follow-up (candidate row).
+- F13 a self-referential cross-reference links an entry to itself. →
+  follow-up (candidate row).
+- F14 no planted-defect proof for the new HTML checks. → follow-up.
+- F12 one over-long README line. → fix now (trivial).
+- P1 M03 adds two more module-level accumulators, widening deferred M01
+  review R16. → follow-up; widen the existing candidate row.
+- P2 the bare-attribute no-leak gap (M01 N9) is carried through a block M03
+  reworked. → rejected as pre-existing and already tracked by a candidate row.
+
+**Why the suite did not catch F1–F3:** every fixture avoids the triggering
+shape. The green suite was evidence about its fixtures, not about the
+back-end (LESSONS, M01).

@@ -128,7 +128,7 @@ criteria audit applied).
       nesting, numbered locator links.
 - [x] T3: HTML cross-references: labels, parsed-level-list target matching,
       links, no locator; update xref-conflict.qmd's stale comment rationale.
-- [ ] T4: New placement fixture (heading / table cell / footnote) with
+- [x] T4: New placement fixture (heading / table cell / footnote) with
       hand-derived manifest.
 - [ ] T5: Suite rework: retarget visible-terms extraction; scope no-leak
       outside the index section; add exhaustive HTML index manifests, href
@@ -160,6 +160,8 @@ criteria audit applied).
 - 2026-08-16: T1+T2 — format-neutral empty-level warning moved before the back-end branch and reworded to name no back-end; HTML branch records marks and mints anchors; Pandoc pass builds the index section from AST nodes (collation, unlimited nesting, numbered locator links). New `tests/htmlindex.py` reads rendered HTML structurally; visible-terms extraction retargeted (attribute-order-proof, index section excised); demo HTML index manifest (43 rows) and the anchor/link checks added. Suite green with --self-test.
 
 - 2026-08-16: T3+T6 — xref-conflict.qmd gains a resolving two-level target (sigma), a colliding single-level target that prints identically and must stay plain (rho), and the entry they name; hand-derived HTML manifest (8 rows) plus a check that the resolving link points at the sub-entry itself. The suite's LaTeX-only clash rationale is rewritten: the clash is a makeindex property, not the absence of a back-end.
+
+- 2026-08-16: T4 — new examples/placement.qmd marks one term in a heading, a table cell and a footnote, plus a mark carrying an author id. Hand-derived manifest plus checks that locators are numbered in source order, that the footnote anchor really is relocated behind a later-written mark (so the pin is not vacuous), and that the author id is kept and linked.
 
 ## Decisions
 

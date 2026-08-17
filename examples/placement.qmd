@@ -1,0 +1,30 @@
+---
+title: "quarto-index placement probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Marks the renderer moves
+
+A locator must point at its mark wherever the rendered page ends up putting
+it, and the locators of one entry must be numbered in the order the marks are
+written — not in the order they happen to land on the page. The same term is
+marked three times below: in a section heading, inside a table cell, and
+inside a footnote, whose text a reader finds at the foot of the page rather
+than where the reference sits.
+
+## A [widget]{.index} in a heading
+
+Body text under that heading.
+
+| Part | Note |
+|---|---|
+| A [widget]{.index} in a table cell | the second column |
+
+A footnote carries the third one.[^one]
+
+[^one]: A [widget]{.index} in a footnote.
+
+A mark that already carries an id of the author's own keeps it, and the index
+links to that id instead of minting one: [gadget]{#my-gadget .index}.

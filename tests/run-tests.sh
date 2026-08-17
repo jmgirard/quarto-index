@@ -1131,6 +1131,73 @@ print(f'ok   M03-AC4: the resolving cross-reference links to the sub-entry it '
       f'names ({href}), and the colliding single-level target does not link')
 PY
 
+# ---------------------------------------------------------------------------
+# M03-AC2 — locator numbering where the renderer moves content. Manifest 1g,
+# same oracle rule and row format as manifest 1e: `widget` is marked in a
+# heading, a table cell and a footnote, and `gadget` carries an id of the
+# author's own.
+# ---------------------------------------------------------------------------
+read -r -d '' PLACEMENT_HTML_INDEX <<'MANIFEST' || true
+0	gadget	1
+0	widget	3
+MANIFEST
+
+quarto render examples/placement.qmd --to html > "$WORK/placement-html.log" 2>&1 \
+  || { tail -20 "$WORK/placement-html.log" >&2; fail "M03-AC2: placement.qmd failed to render to HTML"; }
+check_html_index_manifest examples/placement.html "$PLACEMENT_HTML_INDEX" "M03-AC2"
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+python3 - examples/placement.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+prefix = os.environ['HTML_ANCHOR_PREFIX']
+records = {r['term']: r for r in
+           H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))}
+
+# Numbered in the order the marks are WRITTEN. The footnote's mark is written
+# third and rendered last, so a numbering taken from rendered position would
+# put it out of step with the table cell's.
+want = [f'#{prefix}{n}' for n in (1, 2, 3)]
+if records['widget']['locators'] != want:
+    print(f"FAIL: M03-AC2: widget's locators are "
+          f"{records['widget']['locators']}, expected {want} (heading, table "
+          f"cell, footnote — the order the marks are written)", file=sys.stderr)
+    sys.exit(1)
+
+# The relocation this fixture exists to probe must actually have happened, or
+# the check above proves nothing: the footnote's anchor sits inside the
+# footnotes section the renderer moved to the end of the page, AFTER the mark
+# that is written below it in the source.
+footnotes = H.find_id(doc, 'footnotes')
+if footnotes is None or H.find_id(footnotes, f'{prefix}3') is None:
+    print(f'FAIL: M03-AC2: {prefix}3 is not inside the rendered footnotes '
+          f'section, so this fixture is not probing relocated content',
+          file=sys.stderr)
+    sys.exit(1)
+order = H.all_ids(doc)
+if order.index('my-gadget') > order.index(f'{prefix}3'):
+    print(f'FAIL: M03-AC2: the footnote mark still renders before the mark '
+          f'written after it, so nothing was relocated', file=sys.stderr)
+    sys.exit(1)
+
+# The author's own id is the link target, and no anchor was minted for it.
+if records['gadget']['locators'] != ['#my-gadget']:
+    print(f"FAIL: M03-AC2: gadget's locator is "
+          f"{records['gadget']['locators']}, expected ['#my-gadget'] — an id "
+          f"the author wrote is never taken over", file=sys.stderr)
+    sys.exit(1)
+minted = [i for i in H.all_ids(doc) if i.startswith(prefix)]
+if len(minted) != 3:
+    print(f'FAIL: M03-AC2: {len(minted)} anchors minted, expected 3 (the '
+          f'mark carrying an author id needs none)', file=sys.stderr)
+    sys.exit(1)
+print('ok   M03-AC2: locators are numbered in source order across a heading, a '
+      'table cell and a relocated footnote, and an author-supplied id is kept '
+      'and linked')
+PY
+
 printf '%s\n' "$VISIBLE_TERMS" > "$WORK/visible.txt"
 printf '%s\n' "$ENTRY_VALUES_NO_LEAK" > "$WORK/noleak.txt"
 HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/demo.html examples/demo.qmd \

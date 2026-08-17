@@ -962,7 +962,19 @@ local function Pandoc(doc)
     return place_index(doc, nil)
   end
 
-  quarto.doc.use_latex_package("imakeidx")
+  if marker then
+    -- `\printindex` closes the `.idx` file it has just read, so every `\index`
+    -- written after it goes to the log instead — silently, and only the marks
+    -- BELOW the marker are lost, which is exactly the corruption IP2 forbids.
+    -- imakeidx skips that close under `noautomatic`, which costs a document
+    -- nothing here: the automatic run needs `-shell-escape`, which Quarto does
+    -- not enable, so the index was always built by Quarto's own PDF loop
+    -- (GP2). The option is emitted only where a marker made it necessary, so a
+    -- document without one keeps the preamble it has always had.
+    quarto.doc.use_latex_package("imakeidx", "noautomatic")
+  else
+    quarto.doc.use_latex_package("imakeidx")
+  end
   quarto.doc.include_text("in-header", "\\makeindex[intoc]")
   if xref_both_emitted then
     -- `\providecommand` so a document defining its own version keeps it.

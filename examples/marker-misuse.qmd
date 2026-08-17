@@ -27,7 +27,11 @@ Text around a nested marker, which must survive it.
 :::
 
 A second top-level marker is reported by its position and removed; the index
-stays at the first. One more term is marked here: [epsilon]{.index}.
+stays at the first. One more term is marked here: [epsilon]{.index}. This one
+also carries content, which is a misuse of its own — the marker is documented
+as empty — and which must survive where the marker was written rather than be
+deleted with it.
 
 ::: {.qi-index-here}
+Content written inside a marker, which no misuse may delete.
 :::

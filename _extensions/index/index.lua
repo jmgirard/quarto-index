@@ -20,12 +20,26 @@
 
 local INDEX_CLASS = "index"
 
--- The two cross-reference attributes, in the order their commands are emitted
+-- The two cross-reference attributes, in the order their targets are emitted
 -- when a mark carries both.
 local XREF_KINDS = {
   { attr = "see", command = "see" },
   { attr = "see-also", command = "seealso" },
 }
+
+-- A mark carrying both attributes cannot emit two `\index` commands: they
+-- share a key and a page, so makeindex reports "Conflicting entries: multiple
+-- encaps for the same page under same key" and Quarto turns that warning into
+-- a failed render — a marked term breaking the document, which IP2 forbids.
+-- One command carrying both targets is emitted instead, through a command the
+-- back-end defines itself. Its third argument is the page number makeindex
+-- hands every encap, discarded here exactly as `\see` discards it. The labels
+-- go through `\seename`/`\alsoname` rather than literal words, so a document
+-- loading babel keeps babel's translations, as it does for a lone `\see`.
+local XREF_BOTH_COMMAND = "quartoindexseeboth"
+local XREF_BOTH_DEFINITION =
+  "\\providecommand*\\" .. XREF_BOTH_COMMAND ..
+  "[3]{\\emph{\\seename} #1; \\emph{\\alsoname} #2}"
 
 -- Characters that are literal text on the way in and need help on the way
 -- out. Most LaTeX specials are escaped with a backslash. Three groups cannot
@@ -140,6 +154,29 @@ local function clamp_levels(levels, context)
   return clamped
 end
 
+-- Cross-reference targets are typeset prose, not an index key, so their levels
+-- are joined for a reader rather than with makeindex's `!`. The `!` is not
+-- available anyway: makeindex rejects an unquoted one inside the encap
+-- argument ("Extra `!'") and Quarto turns that rejection into a failed render,
+-- while a quoted `"!` survives but prints this extension's own level syntax in
+-- the middle of a sentence. `, ` was rejected as the join because it is
+-- ambiguous when a level itself contains a comma: "see Smith, John, early
+-- work" against "see Smith, John: early work".
+local TARGET_JOIN = ": "
+
+-- Render cross-reference target levels as an encap argument. The `.ind` file
+-- makeindex writes is read back as ordinary LaTeX, so the same per-character
+-- mechanisms a source level needs are the ones that work here; the spike put
+-- every printable ASCII character through this path and makeindex rejected
+-- none of them.
+local function target_argument(levels)
+  local parts = {}
+  for _, level in ipairs(levels) do
+    parts[#parts + 1] = escape_level(level)
+  end
+  return table.concat(parts, TARGET_JOIN)
+end
+
 -- Build the `\index{...}` argument from literal levels, joining with the
 -- unquoted `!` that makeindex reads as a level separator.
 local function index_argument(levels, context)
@@ -172,7 +209,9 @@ end
 -- in the printed index. It is warned about, never dropped silently (IP2).
 local function target_levels(value, attr, context)
   local kept = {}
-  for _, level in ipairs(parse_levels(value)) do
+  -- An entirely empty value has no levels to complain about individually; it
+  -- falls straight through to the one warning that names the real problem.
+  for _, level in ipairs(value == "" and {} or parse_levels(value)) do
     if level == "" then
       warn(("empty level in %s= on %s; dropped from the cross-reference target")
            :format(attr, context))
@@ -201,6 +240,9 @@ end
 -- Set by the Span pass, read by the Pandoc pass: the preamble and
 -- `\printindex` are injected only when the document actually has marks.
 local marks_emitted = 0
+-- Likewise: the both-targets command is defined only in a document that uses
+-- it, so a document without one gets nothing extra in its preamble.
+local xref_both_emitted = false
 
 local function Span(span)
   if not span.classes:includes(INDEX_CLASS) then
@@ -269,11 +311,40 @@ local function Span(span)
     return nil
   end
 
-  local raw = pandoc.RawInline("latex", "\\index{" .. index_argument(levels, context) .. "}")
-  marks_emitted = marks_emitted + 1
+  -- Derived once: index_argument warns about the levels it is given, and the
+  -- both-attributes case would otherwise warn twice about the same entry.
+  local source = index_argument(levels, context)
 
   local result = pandoc.List(span.content)
-  result:insert(raw)
+  if #xrefs == 0 then
+    result:insert(pandoc.RawInline("latex", "\\index{" .. source .. "}"))
+    marks_emitted = marks_emitted + 1
+  elseif #xrefs == 1 then
+    -- `|` opens makeindex's encap channel, and `\see`/`\seealso` discard the
+    -- page number handed to them, which is what makes a cross-reference
+    -- replace the locator. hyperref rewrites the encap into
+    -- `|hyperxindexformat{\see{...}}` before makeindex runs; that is
+    -- transparent here. imakeidx, which this back-end already loads, defines
+    -- `\see`, `\seealso`, `\seename` and `\alsoname` with `\providecommand`,
+    -- so nothing needs injecting for the single-target forms.
+    result:insert(pandoc.RawInline("latex",
+      "\\index{" .. source .. "|" .. xrefs[1].kind.command
+      .. "{" .. target_argument(xrefs[1].levels) .. "}}"))
+    marks_emitted = marks_emitted + 1
+  else
+    -- Both targets in one command; see XREF_BOTH_COMMAND. Each target is
+    -- rendered by the same target_argument as a single-target mark, so the
+    -- two forms cannot drift apart in how they escape a character.
+    local args = {}
+    for _, xref in ipairs(xrefs) do
+      args[#args + 1] = "{" .. target_argument(xref.levels) .. "}"
+    end
+    result:insert(pandoc.RawInline("latex",
+      "\\index{" .. source .. "|" .. XREF_BOTH_COMMAND
+      .. table.concat(args) .. "}"))
+    marks_emitted = marks_emitted + 1
+    xref_both_emitted = true
+  end
   return result
 end
 
@@ -295,6 +366,11 @@ local function Pandoc(doc)
 
   quarto.doc.use_latex_package("imakeidx")
   quarto.doc.include_text("in-header", "\\makeindex[intoc]")
+  if xref_both_emitted then
+    -- After imakeidx, so `\seename`/`\alsoname` exist; `\providecommand` means
+    -- a document that defines its own version of this keeps it.
+    quarto.doc.include_text("in-header", XREF_BOTH_DEFINITION)
+  end
 
   doc.blocks:insert(pandoc.RawBlock("latex", "\\printindex"))
   return doc

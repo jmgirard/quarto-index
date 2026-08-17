@@ -112,8 +112,9 @@ quoted values only.
       `_extensions/index/index.lua`, format-neutral layer: structured
       levels, source resolution (`entry=` else visible term), misuse
       warnings (a)/(b) with their defined outputs.
-- [ ] T3: LaTeX realization per T1's decision, including encap-context
-      escaping (second table or recorded equivalent).
+- [x] T3: LaTeX realization per the emission decisions recorded in the
+      Decisions section, including encap-context escaping (second table or
+      recorded equivalent).
 - [ ] T4: Extend `examples/demo.qmd`, `examples/content.qmd`, and
       `tests/run-tests.sh`: cross-reference manifest rows + completeness
       pin, PDF expected list, no-leak pin extension, misuse checks,
@@ -138,6 +139,7 @@ quoted values only.
 - 2026-08-16: question gate — cross-reference character probe goes in a new sibling fixture (keeps M01's probe count intact); see-also label fallback policy chosen (T1 then found imakeidx already provides it); new suite checks labelled `M02-AC<N>` to avoid colliding with M01's labels.
 - 2026-08-16: T1 done — four spike renders through Quarto's PDF engine settled the emission form, the `: ` multi-level join, and that no character is unrealizable in encap context; four Decisions entries recorded.
 - 2026-08-16: T2 done — `see=`/`see-also=` parsed into levels in the format-neutral layer (so misuse is diagnosed in every format), source resolution unchanged, and two new named warnings for the misuse cases plus two for an unusable target; verify slot clean, existing behavior unchanged.
+- 2026-08-16: T3 done — cross-references emitted through makeindex's encap channel; the both-attributes case forced a design change (one command via a back-end-defined `\quartoindexseeboth`) after it proved to fail Quarto's render, superseding a mis-derived T1 note. T3's task wording updated to cite the Decisions section rather than T1 alone. Verify slot clean.
 
 ## Decisions
 
@@ -179,5 +181,25 @@ quoted values only.
   and prints the entry with both its locator and its cross-reference. Not an
   error and not a case the extension generates on its own, so it is documented
   in the README rather than warned about.
+
+- 2026-08-16 (T3; supersedes the T1 entry immediately above): that entry
+  called makeindex's conflicting-encaps warning harmless. It is not, and the
+  claim was mis-derived — spike 1 failed on a rejected entry in the same run,
+  and the warning was read off that failure instead of being tested on its
+  own. Tested on its own: a mark carrying both `see=` and `see-also=` emits
+  two `\index` commands under one key on one page, makeindex warns
+  "Conflicting entries: multiple encaps for the same page under same key",
+  and Quarto turns that warning into a failed render — deleting only that
+  mark makes the same render succeed with 0 warnings. Emitting both would
+  therefore break the document, which IP2 forbids, so a mark carrying both
+  now emits one `\index` whose encap is
+  `\quartoindexseeboth{<see>}{<see-also>}`. The back-end `\providecommand`s
+  that command in its own preamble, and only in a document that uses one; it
+  discards its third argument (the page) exactly as `\see` does, and takes
+  its labels from `\seename`/`\alsoname` rather than literal words, so a
+  document loading babel keeps babel's wording. Each target is rendered by
+  the same code path as a single-target mark, so the two forms cannot drift
+  apart in how they escape a character. Verified: 0 makeindex warnings, and
+  the compiled index printing `theta, see A % b; see also B!c`.
 
 ## Review

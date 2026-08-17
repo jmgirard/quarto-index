@@ -20,7 +20,7 @@ Surface tier: **user-facing** — new documented syntax the community consumes.
 are structured level data (`!` separates, `!!` literal), never raw back-end
 code (D-001/IP1). Source entry = `entry=` if present, else the visible term; a
 cross-reference replaces the locator (indexing convention). Both attributes on
-one mark: warn, emit both. LaTeX realization settled by an empirical spike
+one mark: warn, emit both targets in one command. LaTeX realization settled by an empirical spike
 (hyperref rewrites `\index` arguments at the first `|` — the encap channel).
 Misuse warnings, escaping probes, docs.
 
@@ -36,19 +36,29 @@ quoted values only.
 
 - [ ] AC1: `tests/run-tests.sh` renders `examples/demo.qmd` to LaTeX and
       every `\index{}` argument matches the hand-derived entry manifest,
-      extended with one row per cross-reference (a mark carrying both
-      attributes contributes two) — each row's exact argument hand-derived
-      from the emission form T1 records in the milestone's Decisions section,
-      including rows probing `!`-level parsing and `!!` literals inside
-      see-targets. A completeness pin counts `see=`/`see-also=` occurrences
-      in `examples/demo.qmd` and fails unless the cross-reference manifest
-      row count matches. Manifest rows are never copied from filter output.
+      extended with one row per cross-reference mark (a mark carrying both
+      attributes contributes one row, whose single command carries both
+      targets) — each row's exact argument hand-derived from the emission
+      forms the milestone's Decisions section records, including rows
+      probing `!`-level parsing and `!!` literals inside see-targets. A
+      completeness pin counts occurrences of `see="` and of `see-also="` in
+      `examples/demo.qmd` and fails unless that total equals the summed
+      counts of the single-target cross-reference rows plus twice the summed
+      counts of the dual-target rows, rows classified by whether the row's
+      argument carries the dual-target command the Decisions section names;
+      `examples/demo.qmd` carries no mark whose cross-reference target is
+      unusable and none with no source entry, so every occurrence belongs to
+      a row. Manifest rows are never copied from filter output.
 - [ ] AC2: `examples/demo.qmd` compiles to PDF through Quarto's own engine;
       the `pdftotext` extraction of the index section shows, for each
-      cross-reference manifest row of AC1, the source entry followed by its
-      cross-reference text, per a hand-derived expected list whose
-      multi-level join form and see-also label derive from T1's recorded
-      decision (GP6).
+      cross-reference manifest row of AC1, the source entry followed by that
+      row's full cross-reference text — for a dual row, both targets with
+      their labels in the order the Decisions section's emission form fixes
+      (see-target first, see-also second) — per a hand-derived expected list
+      whose multi-level join form, label source and dual-target separators
+      derive from the decisions recorded in that section, and whose
+      source-entry-to-cross-reference delimiter is makeindex's default, with
+      whitespace normalized as the existing PDF check normalizes it (GP6).
 - [ ] AC3: A cross-reference escaping probe fixture (extending
       `examples/escaping.qmd` or a sibling) places every printable ASCII
       character (space excluded) as its own see-target level — except any
@@ -73,15 +83,23 @@ quoted values only.
       text (in `examples/content.qmd`) indexes nothing and deletes nothing,
       in HTML and LaTeX.
 - [ ] AC5: Each defined misuse case — (a) a cross-reference mark with no
-      source entry (no `entry=`, no visible text), (b) a mark carrying both
-      `see=` and `see-also=`, exercised in `examples/demo.qmd` so AC1's
-      manifest and AC2's PDF list cover its output — emits its own named
-      warning, distinct from each other and from every existing warning,
-      identified in the render log by distinctive message text, with the
-      render still exiting successfully; the defined output for each case is
-      asserted (case a: nothing emitted; case b: both cross-references
-      emitted); and the `--self-test` proves each warning check discriminates
-      (the check fails on a run or fixture lacking its warning).
+      source entry (no `entry=`, no visible text), exercised in
+      `examples/content.qmd`, and (b) a mark carrying both `see=` and
+      `see-also=`, exercised in `examples/demo.qmd` so AC1's manifest and
+      AC2's PDF list cover its output — emits its own named warning,
+      distinct from each other and from every existing warning, identified
+      in the render log by distinctive message text, with the render still
+      exiting successfully; the defined output for each case is asserted
+      (case a: no `\index` command emitted and no content deleted, in HTML
+      and LaTeX, the shape AC4 covers; case b: exactly one `\index` command
+      carrying both targets, and the compiled PDF's `pdftotext` index region
+      shows the source entry followed by both cross-reference texts in the
+      order the Decisions section's emission form fixes); and the
+      `--self-test` proves each of the two warning checks this criterion
+      names discriminates on both axes — over a captured render log, the
+      check fails on a fixture with its warning line removed and on one with
+      that line duplicated, so each check asserts an exact occurrence count
+      rather than mere presence.
 - [ ] AC6: The README documents the cross-reference forms — the syntax, the
       format-neutral semantics of the target value (structured `!` levels,
       `!!` literal), the see-replaces-locator semantics, and current
@@ -97,7 +115,7 @@ quoted values only.
 - AC2 → T3, T4
 - AC3 → T3, T5
 - AC4 → T2, T4
-- AC5 → T2, T4
+- AC5 → T2, T3, T4
 - AC6 → T6
 - AC7 → T4, T5, T6
 
@@ -140,6 +158,7 @@ quoted values only.
 - 2026-08-16: T1 done — four spike renders through Quarto's PDF engine settled the emission form, the `: ` multi-level join, and that no character is unrealizable in encap context; four Decisions entries recorded.
 - 2026-08-16: T2 done — `see=`/`see-also=` parsed into levels in the format-neutral layer (so misuse is diagnosed in every format), source resolution unchanged, and two new named warnings for the misuse cases plus two for an unusable target; verify slot clean, existing behavior unchanged.
 - 2026-08-16: T3 done — cross-references emitted through makeindex's encap channel; the both-attributes case forced a design change (one command via a back-end-defined `\quartoindexseeboth`) after it proved to fail Quarto's render, superseding a mis-derived T1 note. T3's task wording updated to cite the Decisions section rather than T1 alone. Verify slot clean.
+- 2026-08-16: substantive amendment (gated) — AC1, AC2, AC5 amended for the one-command dual-target form, plus Scope's "emit both" clause and Coverage's AC5 row (now T2, T3, T4); a narrowing, since the old two-command promise was jointly unsatisfiable with IP2. Amended wording audited in full mode by a fresh-context [O] reader (9 findings, all repaired), then re-audited once by a second fresh [O] reader (11 findings, all disposed: pin arithmetic moved to summed row counts, row classification named, case (a) relocated to `examples/content.qmd`, the discrimination axis given a concrete artifact, tautological "emitted order" replaced, makeindex's own delimiter named, and the "each warning check" over-reach restricted to this criterion's two warnings).
 
 ## Decisions
 

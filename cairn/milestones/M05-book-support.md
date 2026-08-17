@@ -1,11 +1,11 @@
 # M05: Multi-chapter book support
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M04
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP3, GP4
-- **Branch/PR:** —
+- **Branch/PR:** m05-book-support
 
 ## Goal
 
@@ -119,6 +119,7 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
 - 2026-08-17: plan gate chose documented full-render staleness contract over detection machinery because partial renders are preview workflow and detection adds freeze/preview edge cases for little value; falsified by users publishing stale indexes from partial renders in practice.
 - 2026-08-17: plan gate kept numeric sequence locators over chapter-based labels for consistency with the shipped single-doc index; falsified by reader evidence that numeric locators fail in long books (candidate row records the alternative).
 - 2026-08-17: plan chose last-in-order-chapter warning (store registration) over grepping chapter sources for the marker because source-text scanning is fragile (comments, includes); falsified by the store mechanism producing spurious or missing warnings across freeze/partial renders.
+- 2026-08-17: implement started on branch m05-book-support.
 
 ## Decisions
 

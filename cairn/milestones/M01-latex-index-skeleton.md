@@ -25,32 +25,28 @@ users consume.
   makes an invisible entry.
 - Entry semantics (IP1, D-001): all entry values are structured,
   format-neutral data. `entry="..."` is parsed by the extension as
-  `!`-separated sub-entry levels (a literal `!` inside a level is written
-  `\!`); each level is literal text. The extension emits correct LaTeX
-  itself — LaTeX specials escaped, makeindex-active characters (`@ | ! "`)
-  quoted — for derived (visible-term) and explicit entries alike. No raw
-  LaTeX pass-through.
+  `!`-separated sub-entry levels, scanned left-to-right longest-match:
+  each `!!` yields a literal `!`, each remaining single `!` starts a new
+  level; an empty level (leading, medial, trailing) is emitted as written
+  and warned about, never repaired. Each level is literal text. The
+  extension emits correct LaTeX itself — LaTeX specials escaped,
+  makeindex-active characters (`@ | ! "`) quoted — for derived
+  (visible-term) and explicit entries alike. No raw LaTeX pass-through.
 - LaTeX-derived formats only: emit `\index{}` at the mark's position;
   when ≥1 mark exists, inject `\usepackage{imakeidx}` + `\makeindex` into
   the preamble and append one `\printindex` at document end (auto
   placement; no marks → no injection).
 - HTML pass-through check (verification only): marks degrade gracefully in
-  HTML — visible text preserved, no LaTeX artifacts (IP2); HTML *index
-  generation* stays out.
+  HTML — visible text preserved, no LaTeX artifacts (IP2).
 - Demo + control example documents, test script, README, TinyTeX install
   for local PDF verification.
 
-**Out:**
-- HTML index generation (span text stays visible in HTML; index behavior
-  there is undefined for now) → ROADMAP candidate.
-- Sort keys and locator styling: `@ | "` are ordinary literal characters in
-  entry values; future sort/styling features arrive as separate span
-  attributes → ROADMAP candidates (sort-key syntax; page-range & styling).
-- Multi-chapter book (cross-file) support → ROADMAP candidate.
-- Release prep / first tagged release → ROADMAP candidate (window
-  user-declared, D-050 discipline).
-- Explicit index-placement option, shortcode syntax → future candidates if
-  demanded; not in M01.
+**Out:** (each a ROADMAP candidate row): HTML index generation (span text
+stays visible in HTML; index behavior there undefined for now); sort keys
+and locator styling (`@ | "` stay ordinary literal characters, future
+sort/styling arriving as separate span attributes); multi-chapter book
+(cross-file) support; release prep / first tagged release (window
+user-declared); explicit index-placement option and shortcode syntax.
 
 ## Acceptance criteria
 
@@ -60,9 +56,11 @@ users consume.
       `\index{<entry>}` text × count) matches its count in the `.tex`, the
       total `\index` count equals the manifest total (extra or missing
       commands fail), and the manifest is non-empty. Manifest rows are
-      derived by hand from the `.qmd` source and the documented escaping
-      semantics — never copied from filter output — and the script header
-      states this rule.
+      derived by hand from the `.qmd` source and the documented semantics at
+      each layer — Pandoc attribute-value unescaping, then the extension's
+      `!`/`!!` level parse, then LaTeX escaping and makeindex quoting —
+      never copied from filter output, and the script header states this
+      rule.
 - [ ] AC2: The demo `.tex` contains `\usepackage{imakeidx}` (with or without
       options) followed later by `\makeindex`, both before
       `\begin{document}`, and exactly one `\printindex`, after all body
@@ -74,14 +72,19 @@ users consume.
 - [ ] AC4: The supported-forms list declared in `tests/run-tests.sh` is
       normative for M01 — visible-term span, custom-entry span (single-level
       `entry=`), sub-entry span (`entry=` with `!`-separated levels; literal
-      `!` via `\!`), invisible-entry span, and an escaping probe set:
-      visible terms and `entry=` levels together containing every character
-      of `% & # _ { } \ ~ ^ $ @ | ! "`, with special characters in leading,
-      medial, and trailing positions across the probes — each form with ≥1
-      counted instance in `examples/demo.qmd` checked under AC1's manifest;
-      the README syntax section documents exactly these forms, presenting
-      `!`/`\!` as the extension's own format-neutral level syntax
-      (reviewer-verified against the list).
+      `!` via `!!`), invisible-entry span, and an escaping probe set:
+      visible terms and `entry=` levels *each independently* containing
+      every character of `% & # _ { } \ ~ ^ $ @ | ! "`, with special
+      characters in leading, medial, and trailing positions across the
+      probes (union coverage; the character × position cross-product is not
+      required). The `entry=` probes also cover `!!` leading, medial, and
+      trailing; one odd-length `!` run; a level whose literal text is one
+      backslash (typed `\\`); and one pinning that `\!` yields two levels,
+      not a literal `!`. Each form has ≥1 counted instance in
+      `examples/demo.qmd` checked under AC1's manifest; the README syntax
+      section documents exactly the four span forms above and no others, and
+      how a literal backslash and `"` are written inside `entry=` given
+      Pandoc's attribute parsing (reviewer-verified against the list).
 - [ ] AC5 (tracking hygiene): `cairn/PROFILE.md`'s `verify` slot names
       `tests/run-tests.sh`; the script fails loudly (`set -euo pipefail`)
       and passes a self-test: run against a deliberately broken fixture (one
@@ -119,10 +122,12 @@ users consume.
       installed user would; a bare render passes.
 - [ ] T2: Implement span recognition (`.index` class) and entry semantics:
       visible term → escaped entry beside the term; `entry=` parsed into
-      `!`-levels (`\!` escape), each level LaTeX-escaped and
-      makeindex-quoted; empty span + `entry=` → invisible entry; `@ | "`
-      literal; `\index` emission only for LaTeX-derived output formats,
-      visible text passed through untouched elsewhere.
+      `!`-levels (`!!` → literal `!`, longest-match left-to-right), each
+      level LaTeX-escaped and makeindex-quoted; empty span + `entry=` →
+      invisible entry; a mark with nothing to index, and an empty level,
+      warn and continue (never fail the render, IP2); `@ | "` literal;
+      `\index` emission only for LaTeX-derived output formats, visible text
+      passed through untouched elsewhere.
 - [ ] T3: Conditional injection: with ≥1 mark, `\usepackage{imakeidx}` +
       `\makeindex` via header-includes and one `\printindex` appended at
       document end; with none, no injection at all.
@@ -136,9 +141,11 @@ users consume.
       the tool-presence guard, and the broken-fixture self-test naming
       mismatching rows; fill the PROFILE `verify` slot.
 - [ ] T6: README: install (`quarto add`), the normative syntax forms incl.
-      `!`/`\!` level syntax as extension-own semantics, escaping and
-      literal-`@ | "` behavior, auto-placement, and the pre-release
-      at-your-own-risk sentence (IP3).
+      `!`/`!!` level syntax as extension-own semantics, how a literal
+      backslash and `"` are written inside `entry=` (Pandoc eats one
+      backslash level; `\!` is not an escape), escaping and literal-`@ | "`
+      behavior, auto-placement, and the pre-release at-your-own-risk
+      sentence (IP3).
 
 ## Work log
 
@@ -156,6 +163,11 @@ users consume.
 - 2026-08-16: amendment gate chose hand-authored manifest (oracle, rule in script header) over accepting snapshot circularity; falsified by hand-derivation proving too error-prone to maintain.
 - 2026-08-16: amendment gate chose fail-loudly tool guard (tinytex/makeindex/pdftotext) over conditional skip with logged deferral; falsified by a supported dev environment where TinyTeX genuinely cannot install.
 - 2026-08-16: /milestone-implement started; status → in-progress; branch `m01-latex-index-skeleton` cut from pushed `main`.
+- 2026-08-16: probe established Pandoc consumes one backslash level in quoted span-attribute values (`\!`→`!`, `\\`→`\`, `\"`→`"`); all 13 probe characters are expressible inside `entry=`.
+- 2026-08-16: question gate chose `!!` doubling over filter-level `\!` for a literal `!` because source and filter then agree with no backslash counting; falsified by a level-syntax need doubling cannot express. Supersedes the escape named in the 2026-08-16 amendment-gate line above (that line stands as history, IP4).
+- 2026-08-16: question gate chose index-in-TOC (`\makeindex[intoc]`) and warn-and-continue on a mark with nothing to index.
+- 2026-08-16: cap remedy at the amendment gate: Scope Out-list compressed to a cross-reference of the existing ROADMAP candidate rows (promise unchanged, nothing moved between In and Out); plan-owned body 155 → 149.
+- 2026-08-16: substantive amendment (`!!` escape): Scope entry-semantics bullet, AC1 manifest-derivation clause, AC4, T2, T6 amended; amended AC-wording audited in full mode by a fresh [O] reader that did not author it — 10 findings, 8 applied as clear fixes, finding 5 resolved by probe (`"` is expressible), findings 9-history and 10 disposed per append-only and documented-claim-owes-a-test.
 
 ## Decisions
 

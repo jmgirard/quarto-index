@@ -448,6 +448,22 @@ for tok in '\index' 'imakeidx' '\makeindex' '\printindex'; do
   fi
 done
 
+# IP2 regression: a mark whose content yields no text must index nothing and
+# delete nothing. An image with empty alt text stringifies to "", which once
+# caused the whole span — image included — to be dropped from every format.
+for fmt in html latex; do
+  quarto render examples/content.qmd --to $fmt > "$WORK/content-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/content-$fmt.log" >&2; fail "AC7: content.qmd failed to render to $fmt"; }
+done
+[ "$(grep -c 'dot' examples/content.html)" -ge 2 ] \
+  || fail "AC7: marking an image removed it from the HTML output (IP2)"
+[ "$(grep -c 'dot' examples/content.tex)" -ge 2 ] \
+  || fail "AC7: marking an image removed it from the LaTeX output (IP2)"
+CONTENT_IDX=$(grep -o '\\index{[^}]*}' examples/content.tex | wc -l | tr -d ' ')
+[ "$CONTENT_IDX" = "1" ] \
+  || fail "AC7: expected exactly one \\index from content.qmd (the entry= mark), got $CONTENT_IDX"
+pass "AC7: marked content with no derivable text is indexed not at all and deleted not at all"
+
 printf '%s\n' "$VISIBLE_TERMS" > "$WORK/visible.txt"
 printf '%s\n' "$ENTRY_VALUES_NO_LEAK" > "$WORK/noleak.txt"
 python3 - examples/demo.html examples/demo.qmd "$WORK/visible.txt" "$WORK/noleak.txt" <<'PY'

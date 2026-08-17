@@ -1,0 +1,21 @@
+---
+title: "quarto-index content-preservation probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Content preservation
+
+A mark whose content yields no text has nothing to index, but the content
+itself must survive: deleting what the author wrote would be exactly the
+silent corruption IP2 forbids.
+
+An image with empty alt text, wrapped in a mark:
+[![](dot.png)]{.index}
+
+The same image with an explicit entry, which does index:
+[![](dot.png)]{.index entry="Figure!Dot"}
+
+A genuinely empty mark, which is dropped because there is nothing to show
+and nothing to index:[]{.index}

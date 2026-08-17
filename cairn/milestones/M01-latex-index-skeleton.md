@@ -39,7 +39,7 @@ users consume.
   verified here — HTML and beamer — keep the visible text, gain none of
   `\index`, `imakeidx`, `\makeindex`, `\printindex`, and never fail to
   render (IP2); one shared format gate covers all such formats.
-- Demo, control and escaping-probe example documents, test script, README,
+- Demo, control, escaping and content-probe examples, test script, README,
   TinyTeX install for local PDF verification.
 
 **Out:** (each a ROADMAP candidate row): HTML index generation (span text
@@ -334,6 +334,9 @@ engine; `escape_level` verified UTF-8-safe by construction.
 - 2026-08-16: descope round (thrash disposition: narrow to what is verified, promise only what is tested). Shipping defects fixed rather than deferred: P1 a mark whose content yields no text no longer deletes that content — only a genuinely empty span is dropped, and an image with empty alt text now survives (verified); P4 an empty level inside a folded tail is dropped rather than left as a dangling separator, so the printed index reads `A!B!C, D`. P7 AC5 now asserts the script's own exit code via an internal `--fixture-check` mode; the script exits 1. P3 the regression grep now names the deep entry — proved by reverting the fix in a scratch copy and watching the suite fail with the right message. P6 the escaping probe compiles through Quarto's own PDF engine, so the evidence is gathered under the engine that ships. P8/P9 the no-leak check tests parsed as well as source forms and strips tags without breaking on raw `<`/`>` in attributes.
 - 2026-08-16: promises matched to evidence rather than narrowed by dropping criteria — all seven still pass as written. README no longer claims every printable character is typeset-checked (16 are; the rest are compile- and acceptance-checked), and now states plainly that the index prints before the references in a document with a bibliography. That ordering, the unfenced-coverage items and pass-2's remaining follow-ups are ROADMAP rows, not M01 work.
 - 2026-08-16: no acceptance-criterion wording changed this round, so no criteria audit was owed; the Scope entry-semantics bullet was amended (folded-tail empty level) and is shown verbatim at the gate.
+
+- 2026-08-16: gate fixes (review pass 4, no return). P1's content-preservation fix had no regression test, which IP2 requires for this class: `examples/content.qmd` now probes a mark wrapping an image with empty alt text, asserting the image survives in HTML and LaTeX and that only the `entry=` mark emits an `\index`. Proved discriminating by reverting the fix — the suite then fails with "marking an image removed it from the HTML output". `pdflatex` added to the tool guard, since the escaping block invokes it directly. Two ROADMAP rows trimmed: the script-exit-code item was completed in M01, and the R14 brace-scanner row now says why it is no longer benign.
+- 2026-08-16: annotating the 2026-08-16 supersession line about Scope wording — the descope commit changed that clause again, from "emits correctly itself" to "emits as correct LaTeX itself", restoring the phrasing an earlier audit asked for. The supersession line names a text that no longer stands; this line records the final wording. Also, for precision: the descope round did narrow one Scope promise — a trailing empty level inside a folded tail is now dropped rather than emitted as written — which is a promise change, not only a re-match to evidence.
 
 ## Decisions
 

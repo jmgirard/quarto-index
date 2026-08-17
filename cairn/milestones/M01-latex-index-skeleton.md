@@ -1,6 +1,6 @@
 # M01: LaTeX index extension skeleton
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -192,6 +192,71 @@ the escaping-probe, sub-entry and `!!`-run rows independently of it.
 - 2026-08-16: all seven criteria unticked. The prior review's evidence predates the filter, example and manifest changes above, so it is stale; re-review gathers fresh evidence for every criterion.
 
 - 2026-08-16: review-return fixes complete; `tests/run-tests.sh --self-test` exits 0 from clean artifacts with three new checks (probe-set pin, fold warning, beamer token check); status → review.
+
+### Independent review — pass 2
+
+Three fresh lenses again. Defect return #2. Prior blockers R1-R3 all
+re-verified as genuinely fixed by two independent lenses; the suite is green,
+which is the problem — the green was under-scoped.
+
+**Return-forcing (each reproduced by this session):**
+- N1 [O] An unbalanced `{` or `}` in any term or `entry=` aborts the PDF
+  render. `\index` reads its argument under `\@sanitize`, which sets `\` to
+  catcode 12, so `\{`/`\}` are NOT escapes there — they are real group
+  characters. Reproduced: `[open \{ only]{.index}` emits
+  `\index{open \{ only}` and the render exits 1, "Paragraph ended before
+  \@wrindex was complete". The demo probes braces only in balanced pairs, so
+  they cancel and AC6 passed by accident. Same class as the `|` bug; wants
+  `\textbraceleft{}`/`\textbraceright{}` plus an unbalanced probe in both
+  contexts. IP2 fatal-render violation.
+- N2 AC4 fails inside its own promise: it requires visible terms and `entry=`
+  levels *each independently* to cover every character of the escape domain,
+  but no `entry=` probe contains `<` or `>` — the R7 widening added them to
+  the filter table, `PROBE_CHARS` and a visible term only. Found independently
+  by this session's re-derivation and by [O].
+- N3 [O] The depth fold silently repairs a trailing empty level and swallows
+  its warning, contradicting Scope and README ("emitted as written and warned
+  about, never repaired"). Reproduced: `entry="A!B!C!D!"` yields
+  `\index{A!B!C, D, }` with only the depth warning and a dangling `, ` in the
+  printed index. `clamp_levels` runs before the per-level empty check.
+
+**Fix-now (queued with the return):**
+- N4 [O] The probe pin does not deliver what AC4 and the script comment claim:
+  it compares `PROBE_CHARS` to the filter table and never to
+  `examples/demo.qmd`, so a character can be in both and probed nowhere — N2
+  is the live instance. The pin must check per-context coverage in the demo.
+- N5 [O] R4 only half fixed: `index.lua`'s file header still says the back-end
+  "quotes makeindex-active characters", false for `|` and `"` since the AC6 fix.
+- N6 [O] R7 only half fixed: README still lists a 14-character set; the escape
+  domain is 16.
+- N7 [S] Three first-pass dispositions were recorded but never executed — R16,
+  R17 and R19 have no ROADMAP row, no fix and no work-log line.
+- N8 [S] AC7's beamer clause silently inherits AC6's TeX-toolchain
+  precondition; unlike AC6, AC7's wording does not disclose it.
+
+**Follow-up candidates:**
+- N9 [O] The `entry=` no-leak sweep only matches quoted values; Pandoc accepts
+  bare `entry=Foo!Bar`, which the sweep would miss.
+- N10 [O] `index_args`' brace scanner ignores `\{`/`\}` — R14's "benign today"
+  no longer holds once N1's unbalanced probe lands; the harness needs fixing
+  first.
+- N11 [O] AC4's "escape domain" nominally includes `[`/`]` (Pandoc escapes
+  them) but neither the filter table nor `PROBE_CHARS` has them; verified
+  harmless in practice.
+- N12 [O] The ANSI-stripping `sed` in the tool guard is a GNU extension; on
+  BSD sed it fails safe (loud), never falsely green.
+- N13 [O] AC7's completeness pin counts the `]{.index` substring, so
+  `[x]{#id .index}` would not be counted.
+- N14 [O] The plain-pandoc guard checks `use_latex_package` but not
+  `include_text`.
+
+**Logged, no action:** [S] the cap-remedy compression dropped three
+disambiguating prose clauses (AC3 "whole positive check", AC7 "occurrences,
+not matching lines", AC4 "reviewer-verified") without per-clause work-log
+lines; no coverage changed. [O] warning wording says "the last one" where
+"the third" is clearer; `entry=""` mislabels a warning context.
+
+- 2026-08-16: review pass 2 returned M01 to in-progress (defect return #2). AC4 fails inside its own promise — no `entry=` probe covers `<` or `>`, so the two contexts are not each independently swept. Two IP2 defects also block: an unbalanced `{` or `}` in a term or entry aborts the PDF render (`\index` reads under `\@sanitize`, so `\{` is not an escape), and the depth fold repairs a trailing empty level while swallowing its warning, contradicting Scope and README. Prior blockers R1-R3 re-verified fixed. One further return trips the thrash threshold.
 
 ## Decisions
 

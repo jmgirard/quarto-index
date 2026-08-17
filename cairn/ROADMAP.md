@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M01 | LaTeX index extension skeleton | review | — | normal | milestones/M01-latex-index-skeleton.md |
+| M01 | LaTeX index extension skeleton | in-progress | — | normal | milestones/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -28,4 +28,7 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 - Harden the acceptance suite: assert the script's own exit code in the self-test, brace-aware \index scanner, bibliography-vs-\printindex ordering — added 2026-08-16 — M01 review R11/R13/R14
 - Quarto version floor is an untested contract claim; CI matrix would fence it — added 2026-08-16 — M01 review R15; folds into the existing CI-matrix candidate
 - Windows checkouts without symlink support break examples/_extensions — added 2026-08-16 — M01 review R18
+- `marks_emitted` is module-level state, latent if Lua state is ever reused across documents — added 2026-08-16 — M01 review R16
+- `\index` inside a moving argument (section heading) is unprobed — added 2026-08-16 — M01 review R17
+- A whitespace-only term emits `\index{ }` with no warning, unlike the empty case — added 2026-08-16 — M01 review R19
 - Choose and add a LICENSE file (user decision; needed before public listing) — added 2026-08-16 — M01 README omits a license claim for want of one

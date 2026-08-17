@@ -220,8 +220,11 @@ local function target_levels(value, attr, context)
     end
   end
   if #kept == 0 then
-    warn(("%s= on %s has no usable target text; the mark is indexed without "
-          .. "a cross-reference"):format(attr, context))
+    -- Says only what is true in every branch and every format: the mark may
+    -- go on to be indexed plainly, or not to be indexed at all if it has no
+    -- source entry either, or to reach a format with no index back-end.
+    warn(("%s= on %s has no usable target text; no cross-reference will be "
+          .. "emitted for this mark"):format(attr, context))
     return nil
   end
   return kept
@@ -244,22 +247,26 @@ local marks_emitted = 0
 -- it, so a document without one gets nothing extra in its preamble.
 local xref_both_emitted = false
 
--- Index key -> which kinds of mark the document put on it. Two marks on one
--- term, one plain and one a cross-reference, are the same makeindex conflict
--- the both-attributes case hits, except spread across the document: if the two
--- land on one printed page the index tool rejects the pair and Quarto fails
--- the render. Page numbers do not exist yet here, so this cannot be prevented
+-- Index key -> the set of distinct encap strings the document emitted for it
+-- (the empty string for a plain locator mark). Two marks on one key whose
+-- encaps DIFFER are the same makeindex conflict the both-attributes case hits,
+-- except spread across the document: if the two land on one printed page the
+-- index tool rejects the pair and Quarto fails the render. That is true of a
+-- plain mark against a cross-reference AND of a `see=` against a `see-also=`,
+-- so the set is keyed on the encap itself rather than on a kind — two marks
+-- with the SAME encap are what makeindex quietly folds together, and must not
+-- be reported. Page numbers do not exist yet here, so this cannot be prevented
 -- at this layer — only reported, which beats an index-tool error naming
 -- neither the term nor this extension.
 local key_marks = {}
 
-local function record_key(key, kind)
+local function record_key(key, encap)
   local seen = key_marks[key]
   if not seen then
     seen = {}
     key_marks[key] = seen
   end
-  seen[kind] = true
+  seen[encap] = true
 end
 
 local function Span(span)
@@ -285,10 +292,12 @@ local function Span(span)
     end
   end
   if declared > 1 then
-    -- Probably an author error, but IP2 forbids dropping either one, so both
-    -- are emitted and the author is told.
-    warn("index mark carries both see= and see-also=; both cross-references "
-         .. "emitted")
+    -- Probably an author error, but IP2 forbids dropping either one, so every
+    -- usable target is kept and the author is told. The message deliberately
+    -- does not claim both were emitted: one of the two may have had no usable
+    -- target, which its own warning above already reported.
+    warn("index mark carries both see= and see-also=; this is probably a "
+         .. "mistake, and every usable target is kept")
   end
 
   local levels
@@ -334,9 +343,9 @@ local function Span(span)
   local source = index_argument(levels, context)
 
   local result = pandoc.List(span.content)
-  record_key(source, #xrefs == 0 and "plain" or "xref")
 
   if #xrefs == 0 then
+    record_key(source, "")
     result:insert(pandoc.RawInline("latex", "\\index{" .. source .. "}"))
     marks_emitted = marks_emitted + 1
   elseif #xrefs == 1 then
@@ -347,9 +356,11 @@ local function Span(span)
     -- transparent here. imakeidx, which this back-end already loads, defines
     -- `\see`, `\seealso`, `\seename` and `\alsoname` with `\providecommand`,
     -- so nothing needs injecting for the single-target forms.
+    local encap = xrefs[1].kind.command
+      .. "{" .. target_argument(xrefs[1].levels) .. "}"
+    record_key(source, encap)
     result:insert(pandoc.RawInline("latex",
-      "\\index{" .. source .. "|" .. xrefs[1].kind.command
-      .. "{" .. target_argument(xrefs[1].levels) .. "}}"))
+      "\\index{" .. source .. "|" .. encap .. "}"))
     marks_emitted = marks_emitted + 1
   else
     -- Both targets in one command; see XREF_BOTH_COMMAND. Each target is
@@ -359,9 +370,10 @@ local function Span(span)
     for _, xref in ipairs(xrefs) do
       args[#args + 1] = "{" .. target_argument(xref.levels) .. "}"
     end
+    local encap = XREF_BOTH_COMMAND .. table.concat(args)
+    record_key(source, encap)
     result:insert(pandoc.RawInline("latex",
-      "\\index{" .. source .. "|" .. XREF_BOTH_COMMAND
-      .. table.concat(args) .. "}"))
+      "\\index{" .. source .. "|" .. encap .. "}"))
     marks_emitted = marks_emitted + 1
     xref_both_emitted = true
   end
@@ -381,18 +393,24 @@ local function Pandoc(doc)
   -- to know that a term has been marked both ways. Keys are walked in sorted
   -- order so the report does not depend on Lua's table iteration order.
   local conflicting = {}
-  for key, seen in pairs(key_marks) do
-    if seen.plain and seen.xref then
+  for key, encaps in pairs(key_marks) do
+    local distinct = 0
+    for _ in pairs(encaps) do
+      distinct = distinct + 1
+    end
+    if distinct > 1 then
       conflicting[#conflicting + 1] = key
     end
   end
   table.sort(conflicting)
   for _, key in ipairs(conflicting) do
-    warn(("index key %s carries both a plain mark and a cross-reference mark; "
-          .. "if two such marks land on one page the index tool rejects the "
-          .. "pair and the render fails"):format(key))
+    warn(("index key %s is marked in more than one way (a plain locator and a "
+          .. "cross-reference, or two different cross-references); if two such "
+          .. "marks land on one page the index tool rejects the pair and the "
+          .. "render fails"):format(key))
   end
-  if not (quarto and quarto.doc and quarto.doc.use_latex_package) then
+  if not (quarto and quarto.doc and quarto.doc.use_latex_package
+          and quarto.doc.include_text) then
     -- Running under plain pandoc rather than Quarto: emit the marks, but do
     -- not pretend we can inject a preamble.
     warn("preamble injection needs Quarto; \\index commands emitted without "
@@ -403,8 +421,10 @@ local function Pandoc(doc)
   quarto.doc.use_latex_package("imakeidx")
   quarto.doc.include_text("in-header", "\\makeindex[intoc]")
   if xref_both_emitted then
-    -- After imakeidx, so `\seename`/`\alsoname` exist; `\providecommand` means
-    -- a document that defines its own version of this keeps it.
+    -- `\providecommand` so a document defining its own version keeps it.
+    -- `\seename`/`\alsoname` are resolved where the command is used, in the
+    -- generated index, not where it is defined — so nothing here depends on
+    -- this landing after imakeidx.
     quarto.doc.include_text("in-header", XREF_BOTH_DEFINITION)
   end
 

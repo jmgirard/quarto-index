@@ -255,24 +255,58 @@ cross-reference text is short enough to be compared exactly.
 
 ## Both attributes on one mark
 
-The dual-target form, which emits one command carrying both targets.
+The dual-target form, which emits one command carrying both targets. The two
+targets are deliberately DIFFERENT characters: with the same character in both
+slots, a filter that dropped one target, or emitted three groups instead of
+two, would still satisfy a check comparing the rendered set.
 
-[Xb00]{.index see="%" see-also="%"}
-[Xb01]{.index see="&" see-also="&"}
-[Xb02]{.index see="#" see-also="#"}
-[Xb03]{.index see="_" see-also="_"}
-[Xb04]{.index see="{" see-also="{"}
-[Xb05]{.index see="}" see-also="}"}
-[Xb06]{.index see="\\" see-also="\\"}
-[Xb07]{.index see="~" see-also="~"}
-[Xb08]{.index see="^" see-also="^"}
-[Xb09]{.index see="$" see-also="$"}
-[Xb10]{.index see="@" see-also="@"}
-[Xb11]{.index see="|" see-also="|"}
-[Xb12]{.index see="!!" see-also="!!"}
-[Xb13]{.index see="\"" see-also="\""}
-[Xb14]{.index see="<" see-also="<"}
-[Xb15]{.index see=">" see-also=">"}
+[Xb00]{.index see="%" see-also="&"}
+[Xb01]{.index see="&" see-also="#"}
+[Xb02]{.index see="#" see-also="_"}
+[Xb03]{.index see="_" see-also="{"}
+[Xb04]{.index see="{" see-also="}"}
+[Xb05]{.index see="}" see-also="\\"}
+[Xb06]{.index see="\\" see-also="~"}
+[Xb07]{.index see="~" see-also="^"}
+[Xb08]{.index see="^" see-also="$"}
+[Xb09]{.index see="$" see-also="@"}
+[Xb10]{.index see="@" see-also="|"}
+[Xb11]{.index see="|" see-also="!!"}
+[Xb12]{.index see="!!" see-also="\""}
+[Xb13]{.index see="\"" see-also="<"}
+[Xb14]{.index see="<" see-also=">"}
+[Xb15]{.index see=">" see-also="%"}
+
+## Special characters in the SOURCE entry of a cross-reference
+
+The encap channel changes how makeindex parses the whole argument, so the key
+a cross-reference hangs off is its own probe, not a cousin of the target probe
+above.
+
+[Xk00]{.index entry="A%B" see="Tgt"}
+[Xk01]{.index entry="A&B" see="Tgt"}
+[Xk02]{.index entry="A#B" see="Tgt"}
+[Xk03]{.index entry="A_B" see="Tgt"}
+[Xk04]{.index entry="A{B" see="Tgt"}
+[Xk05]{.index entry="A}B" see="Tgt"}
+[Xk06]{.index entry="A\\B" see="Tgt"}
+[Xk07]{.index entry="A~B" see="Tgt"}
+[Xk08]{.index entry="A^B" see="Tgt"}
+[Xk09]{.index entry="A$B" see="Tgt"}
+[Xk10]{.index entry="A@B" see="Tgt"}
+[Xk11]{.index entry="A|B" see="Tgt"}
+[Xk12]{.index entry="A!!B" see="Tgt"}
+[Xk13]{.index entry="A\"B" see="Tgt"}
+[Xk14]{.index entry="A<B" see="Tgt"}
+[Xk15]{.index entry="A>B" see="Tgt"}
+
+## Non-ASCII targets
+
+IP2 requires a marked term to appear correctly in the index; the filter escapes
+byte by byte, so multi-byte text takes its own probe rather than an argument.
+
+[Xu00]{.index see="Grüße!Straße"}
+[Xu01]{.index see-also="café naïve"}
 
 ## Targets that cannot be used
 

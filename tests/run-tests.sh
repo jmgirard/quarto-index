@@ -151,57 +151,77 @@ MANIFEST
 # these characters is literal text the author wrote, so each must print AS
 # ITSELF: the expected string is the character, not a rendering of it. Probe
 # keys follow the fixture's order, which is PROBE_CHARS' order. Xs = see,
-# Xt = see-also, Xb = both on one mark.
+# Xt = see-also, Xb = both on one mark (whose two targets are deliberately
+# DIFFERENT characters, character i and character i+1 wrapping), Xk = a
+# special character in the SOURCE entry, Xu = non-ASCII targets.
 # ---------------------------------------------------------------------------
 read -r -d '' XREF_PROBE_TEXT <<'MANIFEST' || true
 Xs00, see %
 Xt00, see also %
-Xb00, see %; see also %
+Xb00, see %; see also &
 Xs01, see &
 Xt01, see also &
-Xb01, see &; see also &
+Xb01, see &; see also #
 Xs02, see #
 Xt02, see also #
-Xb02, see #; see also #
+Xb02, see #; see also _
 Xs03, see _
 Xt03, see also _
-Xb03, see _; see also _
+Xb03, see _; see also {
 Xs04, see {
 Xt04, see also {
-Xb04, see {; see also {
+Xb04, see {; see also }
 Xs05, see }
 Xt05, see also }
-Xb05, see }; see also }
+Xb05, see }; see also \
 Xs06, see \
 Xt06, see also \
-Xb06, see \; see also \
+Xb06, see \; see also ~
 Xs07, see ~
 Xt07, see also ~
-Xb07, see ~; see also ~
+Xb07, see ~; see also ^
 Xs08, see ^
 Xt08, see also ^
-Xb08, see ^; see also ^
+Xb08, see ^; see also $
 Xs09, see $
 Xt09, see also $
-Xb09, see $; see also $
+Xb09, see $; see also @
 Xs10, see @
 Xt10, see also @
-Xb10, see @; see also @
+Xb10, see @; see also |
 Xs11, see |
 Xt11, see also |
-Xb11, see |; see also |
+Xb11, see |; see also !
 Xs12, see !
 Xt12, see also !
-Xb12, see !; see also !
+Xb12, see !; see also "
 Xs13, see "
 Xt13, see also "
-Xb13, see "; see also "
+Xb13, see "; see also <
 Xs14, see <
 Xt14, see also <
-Xb14, see <; see also <
+Xb14, see <; see also >
 Xs15, see >
 Xt15, see also >
-Xb15, see >; see also >
+Xb15, see >; see also %
+A%B, see Tgt
+A&B, see Tgt
+A#B, see Tgt
+A_B, see Tgt
+A{B, see Tgt
+A}B, see Tgt
+A\B, see Tgt
+A~B, see Tgt
+A^B, see Tgt
+A$B, see Tgt
+A@B, see Tgt
+A|B, see Tgt
+A!B, see Tgt
+A"B, see Tgt
+A<B, see Tgt
+A>B, see Tgt
+Xu00, see Grüße: Straße
+Xu01, see also café naïve
 MANIFEST
 
 # Every \index{} argument demo.qmd must produce, plain and cross-reference
@@ -594,7 +614,11 @@ PY
 # on a run that warned about the wrong mark, or warned twice for one.
 check_warning_count() {
   local logfile="$1" pattern="$2" want="$3" label="$4" got
-  got=$(grep -cF -- "$pattern" "$logfile" || true)
+  # Occurrences, not matching lines: two warnings emitted onto one line would
+  # count as one under `grep -c` and the check would pass.
+  # `|| true` inside the pipeline, not after it: grep exits 1 on no match, and
+  # under `pipefail` that would abort the script instead of reporting 0.
+  got=$( { grep -oF -- "$pattern" "$logfile" || true; } | wc -l | tr -d ' ')
   [ "$got" = "$want" ] \
     || fail "$label: expected $want occurrence(s) of <<$pattern>> in $logfile, got $got"
 }
@@ -701,6 +725,33 @@ if errs:
 print('ok   AC2: imakeidx + \\makeindex in preamble, exactly one \\printindex after the body')
 PY
 
+# M02: the dual-target command is defined exactly when a document uses one.
+# The positive is otherwise only indirectly covered (an undefined command
+# would abort the PDF compile); the negative is covered nowhere else, and a
+# filter that injected it unconditionally would leave every document carrying
+# preamble it does not need.
+python3 - examples/demo.tex examples/control.tex <<'PY'
+import sys
+defn = '\\providecommand*\\quartoindexseeboth'
+demo = open(sys.argv[1], encoding='utf-8').read()
+control = open(sys.argv[2], encoding='utf-8').read()
+n = demo.count(defn)
+if n != 1:
+    print(f'FAIL: M02-AC5: expected exactly one {defn!r} in demo.tex, found {n}',
+          file=sys.stderr)
+    sys.exit(1)
+if demo.index(defn) > demo.index('\\begin{document}'):
+    print(f'FAIL: M02-AC5: {defn!r} appears after \\begin{{document}}',
+          file=sys.stderr)
+    sys.exit(1)
+if defn in control:
+    print(f'FAIL: M02-AC5: {defn!r} injected into a document with no '
+          f'both-attributes mark', file=sys.stderr)
+    sys.exit(1)
+print('ok   M02-AC5: the dual-target command is defined once in the preamble '
+      'of the document that uses it, and not at all in one that does not')
+PY
+
 # ---------------------------------------------------------------------------
 # AC3 — negative control.
 # ---------------------------------------------------------------------------
@@ -736,8 +787,11 @@ done
 # content.qmd holds three marked images: the plain one, the entry= one, and
 # the cross-reference one added for M02-AC5 case (a). An exact count, not a
 # floor — a floor would pass while one of them was being dropped.
+# Counted as `dot.png`, not `dot`: the bare substring collides with ordinary
+# prose and with Quarto's own boilerplate (`dotted`), so an exact count of it
+# would be pinned to the template rather than to the images.
 for f in examples/content.html examples/content.tex; do
-  CONTENT_DOTS=$(grep -o 'dot' "$f" | wc -l | tr -d ' ')
+  CONTENT_DOTS=$(grep -o 'dot\.png' "$f" | wc -l | tr -d ' ')
   [ "$CONTENT_DOTS" = "3" ] \
     || fail "AC7/M02-AC5: expected 3 image references in $f, got $CONTENT_DOTS; marking an image must never remove it (IP2)"
 done
@@ -755,6 +809,28 @@ for fmt in html latex; do
   check_warning_count "$WORK/content-$fmt.log" "$WARN_NO_SOURCE" 2 "M02-AC5"
 done
 pass "M02-AC5: case (a) warned exactly twice in each format, emitted no entry, deleted nothing"
+
+# ---------------------------------------------------------------------------
+# The document-level clash report. Two marks on one key with DIFFERENT encaps
+# are rejected by makeindex when they land on one page, and Quarto fails the
+# render; two marks with the same encap are folded together and are fine. The
+# fixture holds one of each shape, so the report is fenced in both directions.
+# ---------------------------------------------------------------------------
+for fmt in latex html; do
+  quarto render examples/xref-conflict.qmd --to $fmt > "$WORK/conflict-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/conflict-$fmt.log" >&2; fail "M02-AC5: xref-conflict.qmd failed to render to $fmt"; }
+done
+WARN_CLASH='is marked in more than one way'
+# kappa (plain against a cross-reference) and lambda (see against see-also),
+# once each; mu (two identical see= marks) and nu (two plain marks) must NOT
+# be reported, which the exact count of 2 is what fences.
+check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH" 2 "M02-AC5"
+check_warning_count "$WORK/conflict-latex.log" 'index key kappa ' 1 "M02-AC5"
+check_warning_count "$WORK/conflict-latex.log" 'index key lambda ' 1 "M02-AC5"
+# Deliberately LaTeX-only: the clash is a property of the LaTeX index tool, so
+# a format with no index back-end must stay silent about it.
+check_warning_count "$WORK/conflict-html.log" "$WARN_CLASH" 0 "M02-AC5"
+pass "M02-AC5: the clash report names both differing-encap keys once each, ignores the two agreeing keys, and is silent in HTML"
 
 printf '%s\n' "$VISIBLE_TERMS" > "$WORK/visible.txt"
 printf '%s\n' "$ENTRY_VALUES_NO_LEAK" > "$WORK/noleak.txt"
@@ -1041,7 +1117,8 @@ for arg in index_arguments(tex):
 
 drift = []
 for i, c in enumerate(specials):
-    s, t, b = (encaps.get('Xs%02d' % i), encaps.get('Xt%02d' % i),
+    nxt = (i + 1) % len(specials)
+    s, t, b = (encaps.get('Xs%02d' % i), encaps.get('Xt%02d' % nxt),
                encaps.get('Xb%02d' % i))
     if not (s and t and b):
         drift.append(f'  {c!r}: could not read all three probe forms')
@@ -1050,9 +1127,21 @@ for i, c in enumerate(specials):
             and b.startswith(both + '{')):
         drift.append(f'  {c!r}: unexpected encap command among {s!r} {t!r} {b!r}')
         continue
-    rendered = set(brace_groups(s)) | set(brace_groups(t)) | set(brace_groups(b))
-    if len(rendered) != 1:
-        drift.append(f'  {c!r}: forms disagree: {sorted(rendered)}')
+    # The dual form's two targets are DIFFERENT characters in the fixture, and
+    # each group is compared to its own single-target rendering positionally.
+    # Comparing a set of all four groups would pass on a dual form that dropped
+    # a target or emitted a third, which is the whole failure this pin exists
+    # to catch — so the group count is asserted first.
+    bg = brace_groups(b)
+    if len(bg) != 2:
+        drift.append(f'  {c!r}: dual form has {len(bg)} target group(s), not 2')
+        continue
+    see_group, also_group = brace_groups(s)[0], brace_groups(t)[0]
+    if bg[0] != see_group:
+        drift.append(f'  {c!r}: dual see-target {bg[0]!r} != single {see_group!r}')
+    if bg[1] != also_group:
+        drift.append(f'  {specials[nxt]!r}: dual see-also target {bg[1]!r} != '
+                     f'single {also_group!r}')
 if drift:
     print('FAIL: M02-AC3: single-target and dual-target forms do not render a '
           'target identically:', file=sys.stderr)
@@ -1083,10 +1172,11 @@ quarto render examples/xref-escaping.qmd --to pdf > "$WORK/xref-pdf.log" 2>&1 \
 ( cd "$WORK/xref" && makeindex xref-escaping.idx ) > "$WORK/xref-mkidx.log" 2>&1 \
   || fail "M02-AC3: makeindex failed on the cross-reference probe"
 # 94 characters x 2 attributes in multi-level targets, plus the 16-character
-# special set as single-level see, single-level see-also and dual-target
-# marks, plus the empty-level probe (one cross-reference) and the unusable
-# probe (one plain entry).
-XREF_MARKS=$(( (0x7F - 0x21) * 2 + 16 * 3 + 2 ))
+# special set four times over — single-level see, single-level see-also,
+# dual-target, and once inside the SOURCE entry of a cross-reference — plus
+# two non-ASCII targets, the empty-level probe (one cross-reference) and the
+# unusable probe (one plain entry).
+XREF_MARKS=$(( (0x7F - 0x21) * 2 + 16 * 4 + 2 + 2 ))
 grep -qE "\($XREF_MARKS entries accepted, 0 rejected\)" "$WORK/xref/xref-escaping.ilg" \
   || { grep -E 'accepted|rejected' "$WORK/xref/xref-escaping.ilg" >&2; fail "M02-AC3: makeindex did not accept all $XREF_MARKS cross-reference probe entries"; }
 
@@ -1226,6 +1316,9 @@ PY
 
   warn_discrimination "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
   warn_discrimination "$WORK/content-latex.log" "$WARN_NO_SOURCE" 2 "M02-AC5"
+  # Not named by a criterion, but the same discipline: a clash report nothing
+  # proves discriminating is a report that can quietly stop firing.
+  warn_discrimination "$WORK/conflict-latex.log" "$WARN_CLASH" 2 "M02-AC5"
 fi
 
 printf '\nAll checks passed.\n'

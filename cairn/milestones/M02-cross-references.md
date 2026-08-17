@@ -165,6 +165,7 @@ quoted values only.
 - 2026-08-16: T5 done — `examples/xref-escaping.qmd` puts all 94 printable ASCII characters through cross-reference targets under both attributes, across all three level positions, plus the special set as single-target, dual-target and both; 238 entries derived by construction, 238 accepted by makeindex, 0 rejected, and all 48 exact typeset strings found. Also pins that the single and dual forms render a target identically, and covers the two unusable-target warnings.
 - 2026-08-16: T6 done — README gains a cross-reference section (syntax, target level semantics, see-replaces-locator, the both-attributes behavior, the two-marks-on-one-term hazard, per-format behavior) and the forms table grows to six; the normative forms list is now label/exemplar pairs pinned verbatim to README.md, and the pin was proved discriminating by drifting one exemplar and watching it fail.
 - 2026-08-16: all tasks done, `tests/run-tests.sh --self-test` clean (23 checks + 3 self-test checks); status review.
+- 2026-08-16: review found 19 findings across three lenses; 15 fixed on the branch (including a README claim that was simply false and a clash case the new detector missed), 2 to ROADMAP rows, 1 no action, plus a no-regression report. Re-verified: 28 checks, exit 0.
 
 ## Decisions
 
@@ -326,4 +327,60 @@ from the implementing session's recollection.
 - Toolchain checks: the active profile is `generic`, whose `consistency-gate`
   slot names none, so this half is a clean no-op. The profile's `verify`
   command was run in full under AC7.
+
+### Independent review
+
+Three fresh-context reviewers, none of which had seen the implementation.
+Findings and dispositions; every finding reported is listed.
+
+- [S] blame-history: no regressions. Every M01 fix it traced — the beamer
+  guard, the depth-fold warning, the escape table, the content-preservation
+  branches — intact or strengthened; it read the tightened image count and the
+  extended manifests as strengthenings. Noted that `describe()` treats
+  `entry=""` as absent where M01's inline expression did not, a latent-bug
+  fix. No action.
+- [S] prior-review record: no GitHub review-thread evidence exists (probe
+  returned empty), so the archive was the surface. One finding — the new
+  `include_text` call site inherits the unguarded gap M01 review N14 raised.
+  FIXED: the guard now requires `quarto.doc.include_text` too, closing N14 for
+  both call sites. Its second finding (bare unquoted values in the new pins)
+  was already disclosed in Scope and on the ROADMAP; the row is widened to
+  name the two new attributes and the false-pass direction.
+- [O] diff-bug: 17 findings. Two were re-verified against the toolchain
+  before acting. FIXED (14): the README claimed `see-also=` yields a page
+  number and prescribed a build-breaking workaround (both false — `\seealso`
+  discards the page exactly as `\see` does); the clash detector missed the
+  see-vs-see-also case, which fails identically (verified: two differing
+  encaps on one key and page fail the render); that detector had no test at
+  all; the dual/single render pin was vacuous on target count; the
+  both-attributes warning could claim an emission that did not happen; the
+  `\providecommand`'s absence from documents that do not need it was
+  untested; no cross-reference source key carried a special character; two
+  warning messages stated outcomes untrue in some formats; non-ASCII targets
+  were unprobed while the README promised more; `check_warning_count` counted
+  lines rather than occurrences; the image count was pinned to a substring
+  that collides with boilerplate; an injection-order comment gave a wrong
+  reason; and `demo.qmd` still said "four supported span forms". FOLLOW-UP
+  (2): the `: ` join is less ambiguous than `, ` rather than unambiguous, now
+  stated in the README; the PDF cross-reference checks assert presence rather
+  than counts (ROADMAP row). NO ACTION (1): the `.ilg` count is hand
+  arithmetic, which the reviewer confirms is the right property — it is
+  derived from the fixture's construction, not read back from the run, so it
+  fails loudly rather than drifting.
+
+No finding demonstrated an acceptance criterion failing inside the domain of
+a procedure that criterion names, so none met the return floor. The two
+severe ones were nonetheless defects in what users receive and were fixed on
+the branch before the merge gate.
+
+### Post-fix re-verification
+
+`tests/run-tests.sh --self-test` exits 0 with 28 checks, up from 26. The
+cross-reference probe now carries 256 entries derived by construction, all
+256 accepted by makeindex and 0 rejected, and all 66 exact typeset strings
+found — including the 16 special characters inside a cross-reference source
+key and the two non-ASCII targets. The clash report is fenced in both
+directions by a new fixture: it names each of the two differing-encap keys
+once, stays silent on the two keys whose marks agree, stays silent in HTML,
+and is proved discriminating on the missing and duplicated axes.
 

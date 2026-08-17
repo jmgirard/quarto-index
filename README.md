@@ -87,31 +87,42 @@ points somewhere else as well. Both work on any of the mark forms above:
 The entry the cross-reference hangs off is `entry=` when the mark has one, and
 the visible text otherwise, exactly as for an ordinary mark.
 
-**A cross-reference replaces the locator.** A marked term with `see=` gets no
-page number for that mark — which is what a printed index does, since "see
-Felines" means the entries are over there. If you want the page number as
-well, that is what `see-also=` is for; mark the term plainly somewhere else in
-the document.
+**A cross-reference replaces the locator.** A marked term carrying `see=` or
+`see-also=` gets no page number for that mark. For `see=` that is what a
+printed index does anyway, since "see Felines" means the entries are over
+there.
+
+For `see-also=` it is a current limitation, not the intent: a printed index
+normally writes `cats, 12, 47, see also Felines`, and this extension cannot
+produce that yet. Marking the term plainly elsewhere does **not** work around
+it — a plain mark and a cross-reference on the same term can fail the build
+outright, as the next paragraph explains. Until that is fixed, a `see-also=`
+entry carries its cross-reference and no page numbers.
 
 **The target uses the same level syntax as `entry=`.** A single `!` separates
 levels and `!!` is a literal `!`, so `see="Birds!Owls"` points at the sub-entry
 `Owls` under `Birds` and prints as `Birds: Owls`. Levels join with `: ` rather
 than with `!`, because the target is a phrase a reader reads, not an index key.
-The value is ordinary literal text in every other respect: you never write
-LaTeX in it, and every printable character works, including the ones that would
-otherwise break the build.
+Levels join with a colon, so a level that itself contains a colon reads the
+same as a level boundary — `see="Note: on birds"` prints exactly like a
+two-level target. The value is ordinary literal text in every other respect:
+you never write LaTeX in it, and every printable ASCII character works, along
+with accented Latin-1 text, including the ones that would otherwise break the
+build.
 
 **Both attributes on one mark** is almost always a mistake — "see" says the
 entries are elsewhere, "see also" says there are entries here too. Nothing is
 dropped: you get one entry carrying both targets, `see Aye; see also Bee`, and
 a warning.
 
-**One term marked both ways can fail the build.** If you mark `cats` plainly in
-one place and with a cross-reference in another, and the two land on the same
-printed page, `makeindex` rejects the pair and the PDF build fails. Page
-numbers do not exist when the extension runs, so it cannot prevent this — it
-warns instead, naming the term. Give the cross-reference its own entry, or move
-the marks apart.
+**One term marked two different ways can fail the build.** If `cats` gets a
+plain mark in one place and a cross-reference in another — or a `see=` in one
+place and a `see-also=` in another — and the two land on the same printed page,
+`makeindex` rejects the pair and the PDF build fails. Marking a term twice
+*the same* way is fine; the index tool folds those together. Page numbers do
+not exist when the extension runs, so it cannot prevent the clash — it warns
+instead, naming the key. Give the cross-reference its own entry, or move the
+marks apart.
 
 In formats with no index back-end, a cross-reference mark is simply a mark: the
 visible text passes through and no target text appears anywhere in the output.

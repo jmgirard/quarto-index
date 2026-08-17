@@ -1074,10 +1074,62 @@ WARN_CLASH='is marked in more than one way'
 check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH" 2 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index key kappa ' 1 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index key lambda ' 1 "M02-AC5"
-# Deliberately LaTeX-only: the clash is a property of the LaTeX index tool, so
-# a format with no index back-end must stay silent about it.
+# Deliberately LaTeX-only, and it stays that way now that HTML has a back-end
+# of its own: the clash is a property of makeindex, which rejects two marks
+# sharing a key and a page but carrying different encapsulations. The HTML
+# back-end has no such limit — it prints the locator and the cross-reference
+# on the same entry — so warning about it there would report a problem the
+# reader's format does not have.
 check_warning_count "$WORK/conflict-html.log" "$WARN_CLASH" 0 "M02-AC5"
 pass "M02-AC5: the clash report names both differing-encap keys once each, ignores the two agreeing keys, and is silent in HTML"
+
+# ---------------------------------------------------------------------------
+# M03-AC4 — cross-references in a generated HTML index.
+# Manifest 1f, same oracle rule and same row format as manifest 1e. The
+# fixture holds all three shapes the criterion names: a target that resolves
+# (sigma), one that does not (kappa, lambda, mu, rho), and the colliding
+# string — rho's SINGLE level `Note: on birds` prints exactly like sigma's
+# TWO levels `Note`/`on birds`, and only sigma may link. `kappa` carries a
+# locator AND a cross-reference, which makeindex rejects but HTML does not.
+# ---------------------------------------------------------------------------
+read -r -d '' XREF_HTML_INDEX <<'MANIFEST' || true
+0	kappa	1	see-plain Elsewhere
+0	lambda	0	see-plain Here	also-plain There
+0	mu	0	see-plain Same
+0	Note	0
+1	on birds	1
+0	nu	2
+0	rho	0	see-plain Note: on birds
+0	sigma	0	see-link Note: on birds
+MANIFEST
+
+check_html_index_manifest examples/xref-conflict.html "$XREF_HTML_INDEX" "M03-AC4"
+
+# The token above says sigma's target is A link; this says it is the RIGHT
+# link. A cross-reference pointing at some other entry would satisfy the
+# manifest and mislead every reader who followed it.
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/xref-conflict.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+records = H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))
+by_term = {r['term']: r for r in records}
+target_id = by_term['on birds']['id']
+href = by_term['sigma']['xrefs'][0][3]
+if href != '#' + target_id:
+    print(f'FAIL: M03-AC4: sigma links to {href!r}, but the entry it names '
+          f'("Note: on birds") is {"#" + target_id!r}', file=sys.stderr)
+    sys.exit(1)
+# And the entry it points at is the sub-entry, not its parent: a target's
+# deepest level is the entry a reader is being sent to.
+if by_term['Note']['id'] == target_id:
+    print('FAIL: M03-AC4: the two-level target resolved to its parent entry',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M03-AC4: the resolving cross-reference links to the sub-entry it '
+      f'names ({href}), and the colliding single-level target does not link')
+PY
 
 printf '%s\n' "$VISIBLE_TERMS" > "$WORK/visible.txt"
 printf '%s\n' "$ENTRY_VALUES_NO_LEAK" > "$WORK/noleak.txt"

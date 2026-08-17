@@ -126,7 +126,7 @@ criteria audit applied).
 - [x] T2: HTML Pandoc pass: build the index section from AST nodes — pinned
       section id, unnumbered TOC heading, normative collation, unlimited
       nesting, numbered locator links.
-- [ ] T3: HTML cross-references: labels, parsed-level-list target matching,
+- [x] T3: HTML cross-references: labels, parsed-level-list target matching,
       links, no locator; update xref-conflict.qmd's stale comment rationale.
 - [ ] T4: New placement fixture (heading / table cell / footnote) with
       hand-derived manifest.
@@ -135,7 +135,7 @@ criteria audit applied).
       resolution, anchor counts with named invariant; escaping-probe HTML
       check (exact-element); gfm + control negatives; document the
       review-time merge-base `.tex` diff procedure.
-- [ ] T6: Extend xref-conflict.qmd with linked-target and colliding-string
+- [x] T6: Extend xref-conflict.qmd with linked-target and colliding-string
       cases; hand-derive its HTML index manifest.
 - [ ] T7: README HTML section (divergence list, stale sentences replaced)
       with suite grep pins; fill DESIGN.md Architecture (two back-ends,
@@ -158,6 +158,8 @@ criteria audit applied).
 - 2026-08-16: minor amendment (task reorder): T5's suite rework lands alongside each task that requires it rather than as one later task — anchors alone break the M01 visible-terms extraction, so no earlier task can leave the suite green on its own.
 - 2026-08-16: implement gate settled three open choices: the `qi-` identifier namespace, author-id preservation, per-entry locator numbering (Decisions below).
 - 2026-08-16: T1+T2 — format-neutral empty-level warning moved before the back-end branch and reworded to name no back-end; HTML branch records marks and mints anchors; Pandoc pass builds the index section from AST nodes (collation, unlimited nesting, numbered locator links). New `tests/htmlindex.py` reads rendered HTML structurally; visible-terms extraction retargeted (attribute-order-proof, index section excised); demo HTML index manifest (43 rows) and the anchor/link checks added. Suite green with --self-test.
+
+- 2026-08-16: T3+T6 — xref-conflict.qmd gains a resolving two-level target (sigma), a colliding single-level target that prints identically and must stay plain (rho), and the entry they name; hand-derived HTML manifest (8 rows) plus a check that the resolving link points at the sub-entry itself. The suite's LaTeX-only clash rationale is rewritten: the clash is a makeindex property, not the absence of a back-end.
 
 ## Decisions
 

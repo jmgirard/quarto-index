@@ -5,14 +5,27 @@
 --   [term]{.index}                  index the visible term
 --   [term]{.index entry="..."}      index a custom entry, term stays visible
 --   []{.index entry="..."}          invisible entry
+--   [term]{.index see="..."}        cross-reference: "see <target>"
+--   [term]{.index see-also="..."}   cross-reference: "see also <target>"
 --
 -- In `entry=`, a single `!` separates sub-entry levels and `!!` is a literal
 -- `!`, scanned left-to-right longest-match. Each level is literal text: the
 -- LaTeX back-end makes every character literal itself, by whichever mechanism
 -- that character needs (see LATEX_LITERAL). A visible term is always a single
 -- literal level, so an `!` inside it is literal too.
+--
+-- A cross-reference target uses those same level semantics. Its source entry
+-- is `entry=` when present, else the visible term, and the cross-reference
+-- takes the place of the locator, as printed indexes do.
 
 local INDEX_CLASS = "index"
+
+-- The two cross-reference attributes, in the order their commands are emitted
+-- when a mark carries both.
+local XREF_KINDS = {
+  { attr = "see", command = "see" },
+  { attr = "see-also", command = "seealso" },
+}
 
 -- Characters that are literal text on the way in and need help on the way
 -- out. Most LaTeX specials are escaped with a backslash. Three groups cannot
@@ -150,6 +163,41 @@ local function span_text(span)
   return pandoc.utils.stringify(span.content)
 end
 
+-- Parse one cross-reference target into levels. This is the format-neutral
+-- layer, so it runs whatever the output format is and a misused mark is
+-- diagnosed everywhere, not only where a back-end happens to exist.
+--
+-- An empty level is dropped rather than kept: a target is typeset prose, not
+-- an index key, so an empty one would leave a dangling separator mid-sentence
+-- in the printed index. It is warned about, never dropped silently (IP2).
+local function target_levels(value, attr, context)
+  local kept = {}
+  for _, level in ipairs(parse_levels(value)) do
+    if level == "" then
+      warn(("empty level in %s= on %s; dropped from the cross-reference target")
+           :format(attr, context))
+    else
+      kept[#kept + 1] = level
+    end
+  end
+  if #kept == 0 then
+    warn(("%s= on %s has no usable target text; the mark is indexed without "
+          .. "a cross-reference"):format(attr, context))
+    return nil
+  end
+  return kept
+end
+
+-- Describe a mark for a warning message, by whichever of its parts names it.
+local function describe(entry, visible)
+  if entry ~= nil and entry ~= "" then
+    return 'entry="' .. entry .. '"'
+  elseif visible ~= "" then
+    return 'term "' .. visible .. '"'
+  end
+  return "a mark with no source entry"
+end
+
 -- Set by the Span pass, read by the Pandoc pass: the preamble and
 -- `\printindex` are injected only when the document actually has marks.
 local marks_emitted = 0
@@ -161,6 +209,27 @@ local function Span(span)
 
   local entry = span.attributes["entry"]
   local visible = span_text(span)
+  local context = describe(entry, visible)
+
+  -- Cross-references are parsed and validated before the format branch below,
+  -- so their misuse warnings fire in every format.
+  local xrefs, declared = {}, 0
+  for _, kind in ipairs(XREF_KINDS) do
+    local value = span.attributes[kind.attr]
+    if value ~= nil then
+      declared = declared + 1
+      local levels = target_levels(value, kind.attr, context)
+      if levels then
+        xrefs[#xrefs + 1] = { kind = kind, levels = levels }
+      end
+    end
+  end
+  if declared > 1 then
+    -- Probably an author error, but IP2 forbids dropping either one, so both
+    -- are emitted and the author is told.
+    warn("index mark carries both see= and see-also=; both cross-references "
+         .. "emitted")
+  end
 
   local levels
   if entry ~= nil and entry ~= "" then
@@ -168,6 +237,18 @@ local function Span(span)
   elseif visible ~= "" then
     -- A visible term is one literal level; `!` in it is not a separator.
     levels = { visible }
+  elseif declared > 0 then
+    -- A cross-reference needs something to hang off. This is its own warning
+    -- rather than either of the two below, because the fix is different: give
+    -- the mark an entry= or some visible text.
+    warn("cross-reference mark has no source entry (no entry= and no visible "
+         .. "text); nothing to index")
+    -- Same content policy as the two cases below: an empty mark is dropped,
+    -- a mark with content keeps every bit of it.
+    if #span.content == 0 then
+      return {}
+    end
+    return nil
   elseif #span.content == 0 then
     warn("index mark with no visible term and no entry=; nothing to index")
     -- Genuinely empty and nothing to index: drop the mark rather than leave
@@ -188,8 +269,6 @@ local function Span(span)
     return nil
   end
 
-  local context = entry and ('entry="' .. entry .. '"')
-    or ('term "' .. visible .. '"')
   local raw = pandoc.RawInline("latex", "\\index{" .. index_argument(levels, context) .. "}")
   marks_emitted = marks_emitted + 1
 

@@ -108,7 +108,7 @@ quoted values only.
       availability under imakeidx, multi-level target join, any characters
       unrealizable in encap context — and record the chosen emission form,
       join form, and label source as a milestone Decisions entry.
-- [ ] T2: Parse and validate `see=`/`see-also=` in
+- [x] T2: Parse and validate `see=`/`see-also=` in
       `_extensions/index/index.lua`, format-neutral layer: structured
       levels, source resolution (`entry=` else visible term), misuse
       warnings (a)/(b) with their defined outputs.
@@ -137,6 +137,7 @@ quoted values only.
 - 2026-08-16: implement started; branch m02-cross-references cut from main at 68c06ba.
 - 2026-08-16: question gate — cross-reference character probe goes in a new sibling fixture (keeps M01's probe count intact); see-also label fallback policy chosen (T1 then found imakeidx already provides it); new suite checks labelled `M02-AC<N>` to avoid colliding with M01's labels.
 - 2026-08-16: T1 done — four spike renders through Quarto's PDF engine settled the emission form, the `: ` multi-level join, and that no character is unrealizable in encap context; four Decisions entries recorded.
+- 2026-08-16: T2 done — `see=`/`see-also=` parsed into levels in the format-neutral layer (so misuse is diagnosed in every format), source resolution unchanged, and two new named warnings for the misuse cases plus two for an unusable target; verify slot clean, existing behavior unchanged.
 
 ## Decisions
 

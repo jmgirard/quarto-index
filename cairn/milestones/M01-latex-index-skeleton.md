@@ -1,6 +1,6 @@
 # M01: LaTeX index extension skeleton
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -263,6 +263,73 @@ lines; no coverage changed. [O] warning wording says "the last one" where
 - 2026-08-16: amendment audited full-mode by a fresh [O] reader (9 findings, all applied). It caught that the new probe file was itself unpinned (its expected count was derived from the file, so deleting probes shrank the expectation), that the empty-level warning was asserted by nothing while its failing case was probed nowhere, that compiling proves a character *reads* but not that it *prints*, and that the Scope compression had dropped "for derived and explicit entries alike" and weakened "emits correct LaTeX" to "makes safe". All four are fixed; the domain is now procedural, which was the auditor's recommended option over widening the list a third time.
 - 2026-08-16: cap remedy — Coverage folded to one line, AC3/AC4/AC6 tightened and AC4/AC7 reflowed; plan-owned body 149.
 - 2026-08-16: return-2 fixes complete; `tests/run-tests.sh --self-test` exits 0 from clean artifacts with 12 checks; status → review.
+
+### Independent review — pass 3
+
+Defect return #3; the thrash threshold is reached. Prior blockers R1-R3 and
+N1-N2/N4-N7 all re-verified fixed by two lenses; the suite's 12 checks are
+green. What follows is what the green does not cover.
+
+**Return-forcing (each reproduced by this session):**
+- P1 [O] A mark whose content stringifies to empty DELETES that content in
+  every format. `[![](pic.png)]{.index}` renders as "Before after" — the
+  image is gone, because the nothing-to-index guard tests
+  `stringify(content) == ""`, true for an image with empty alt text. IP2
+  silent corruption; nothing in the suite probes non-text span content.
+- P2 [O] `\printindex` is inserted before the bibliography, not at document
+  end. Reproduced: `\printindex` at line 215, `\begin{CSLReferences}` at 218.
+  README claims "one `\printindex` at the end of the document". AC2 passes
+  only because the demo has no bibliography — the criterion is satisfied by a
+  document that dodges the failing case. Filed as follow-up R13 in pass 1;
+  that disposition was wrong, it is a shipped user-visible defect.
+- P4 [O] N3 is only half fixed. The warning was restored but the dangling
+  separator was not: the typeset demo index reads `Three, Four, Five, ,` and
+  `run-tests.sh` now pins that string as expected, so the artifact is pinned
+  rather than repaired. README's "left as written ... rather than silently
+  repaired" is false for a >3-level entry, whose empty level is merged away.
+- P6 [O] The escaping evidence is gathered under the wrong engine. Quarto
+  renders PDF with lualatex here; the escaping probe compiles with pdflatex
+  directly, and `escaping.qmd` never goes through Quarto's PDF path. The
+  milestone's central IP2 claim rests on an engine no criterion exercises.
+  `require_pdf_tools` also does not guard `pdflatex`, which that block invokes.
+- P7 [O] AC5 is self-certifying: it requires the script to exit non-zero on a
+  broken fixture, but the self-test wraps the call in `set +e` and asserts
+  only that the helper function returned non-zero. The script exits 0.
+
+**Fix-now (queued with the return):**
+- P3 [O] The N3 regression grep does not fence what its comment claims: it
+  matches any empty-level warning, and the 2-level probe `A!!B!` warns under
+  either ordering. Verified by reverting the fix in a scratch copy — both
+  greps still pass. It must assert the warning names the deep entry.
+- P5 [O] README overclaims: "confirms each character actually typesets" is
+  true of the 16 escape-domain characters, not all 94; and "every printable
+  ASCII character" excludes the space, which is excluded by construction.
+- P8 [O] The no-leak manifest tests source-form values (`Wow!!Really`), not
+  the parsed values a leak would emit (`Wow!Really`), so 6 of 12 rows could
+  not catch the leak they exist for; the `Specials` row is vacuous besides.
+- P9 [O] The tag-stripping regex assumes no raw `>` inside a tag; Pandoc
+  leaves `<`/`>` raw in attribute values, so it mis-parses.
+- P12 [O] `examples/demo.qmd:45` still lists 14 characters; the domain is 16.
+- B1 [S] The work-log line claiming the audit restored "emits correct LaTeX"
+  is inaccurate — the final Scope reads "emits correctly itself". Superseded
+  by the correcting line below rather than edited (IP4).
+- B2 [S] Pass 2's follow-ups N9, N10, N12, N13, N14 have no ROADMAP row — the
+  exact gap N7 raised, recurring in the round that fixed N7.
+- B3 [S] The ROADMAP row for R14 is now stale: the brace scanner is no longer
+  "benign today".
+
+**Follow-up:** P10 [O] AC1/AC7 manifest coverage can shrink silently — unlike
+the ASCII probe, the demo manifests have no independent count, so deleting a
+mark and its rows leaves the suite green; several AC4 probes are unfenced this
+way. P11 [O] The demo's own makeindex acceptance is never asserted, so a
+rejected entry would vanish with the build green.
+
+**Closed:** [O] confirms the `entry=""` warning-context mislabel is
+unreachable; `\index` in headings and table cells verified harmless under this
+engine; `escape_level` verified UTF-8-safe by construction.
+
+- 2026-08-16: review pass 3 returned M01 to in-progress (defect return #3 — thrash threshold reached). AC5 fails literally: the self-test asserts the helper returns non-zero while the script exits 0. Two IP2 defects reproduced: a mark whose content stringifies to empty deletes that content (an image with empty alt text disappears from the document), and the >3-level fold still leaves a dangling separator in the typeset index, which the manifest now pins rather than repairs. `\printindex` also precedes the bibliography, contradicting the README, and the escaping evidence is gathered under pdflatex while Quarto ships lualatex here.
+- 2026-08-16: supersedes the 2026-08-16 line claiming the audit restored "emits correct LaTeX" to Scope: it did not — the final Scope reads "emits correctly itself", and the "No raw LaTeX pass-through" sentence was dropped (its substance survives as "never raw LaTeX" earlier in the bullet).
 
 ## Decisions
 

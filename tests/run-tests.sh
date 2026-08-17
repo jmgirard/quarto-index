@@ -10,7 +10,10 @@
 #      backslash-unescaping in visible text.
 #   2. The extension's level parse: a single `!` separates sub-entry levels,
 #      `!!` is a literal `!`, scanned left-to-right longest-match.
-#   3. LaTeX escaping and makeindex quoting of each literal level.
+#   3. Escaping of each literal level: LaTeX specials escaped, `!` and `@`
+#      makeindex-quoted, `|` and `"` emitted as LaTeX commands (see the
+#      milestone's Decisions entry), and levels past the third folded into
+#      the third, joined with `, `.
 # Manifest rows are NEVER copied from filter output. A row that disagrees with
 # the rendered result means either the derivation or the filter is wrong, and
 # both are inspected before either is changed. Copying output into a manifest
@@ -45,8 +48,12 @@ SUPPORTED_FORMS=(
 # in a visible term and in an `entry=` level in examples/demo.qmd, across
 # leading, medial and trailing positions (union coverage, not the
 # cross-product), plus `!!` leading/medial/trailing, one odd-length `!` run,
-# one empty level, a one-backslash level, and one `\!` pin.
-PROBE_CHARS='% & # _ { } \ ~ ^ $ @ | ! "'
+# one empty level, a one-backslash level, one `\!` pin, one entry deeper than
+# three levels, and one Latin-1 accented term in each context. The character
+# set is the escape domain: Pandoc's LaTeX-writer escapes plus makeindex's
+# active characters. It is asserted below to equal the filter's own table, so
+# a character the filter handles can never go unprobed.
+PROBE_CHARS='% & # _ { } \ ~ ^ $ @ | ! " < >'
 
 # ---------------------------------------------------------------------------
 # Manifest 1 — expected \index{} entries in examples/demo.tex (AC1).
@@ -64,6 +71,7 @@ read -r -d '' DEMO_ENTRIES <<'MANIFEST' || true
 1	\textbackslash{}
 1	Alpha!Beta
 1	A"!B!
+1	One!Two!Three, Four, Five
 1	pct \% amp \& hash \#
 1	us \_ brace \{ \}
 1	bs \textbackslash{} tilde \textasciitilde{} caret \textasciicircum{}
@@ -72,6 +80,9 @@ read -r -d '' DEMO_ENTRIES <<'MANIFEST' || true
 1	Specials \% \& \# \_ \{ \} \textbackslash{} \textasciitilde{} \textasciicircum{} \$ "@ \textbar{} "! \textquotedbl{}
 1	\{Braced\}
 1	\textasciitilde{}tilde dollar\$
+1	less \textless{} more \textgreater{}
+1	café naïve
+1	Grüße!Straße
 MANIFEST
 
 # ---------------------------------------------------------------------------
@@ -105,6 +116,7 @@ read -r -d '' VISIBLE_TERMS <<'MANIFEST' || true
 1	bslash
 1	old
 1	empty
+1	deep
 1	entry specials
 1	pct % amp &amp; hash #
 1	us _ brace { }
@@ -113,6 +125,9 @@ read -r -d '' VISIBLE_TERMS <<'MANIFEST' || true
 1	bang ! quote "
 1	{Braced}
 1	~tilde dollar$
+1	less &lt; more &gt;
+1	café naïve
+1	Grüße
 MANIFEST
 
 # ---------------------------------------------------------------------------
@@ -128,6 +143,8 @@ dollar $ at @ bar |
 bang ! quote "
 {Braced}
 ~tilde dollar$
+less < more >
+café naïve
 MANIFEST
 
 # `entry=` values that must NOT leak into rendered HTML text (AC7). A value
@@ -143,6 +160,8 @@ Trail bang!!
 A!!!B
 Alpha!Beta
 A!!B!
+One!Two!Three!Four!Five
+Grüße!Straße
 Specials % & # _ { } \ ~ ^ $ @ | !! "
 MANIFEST
 
@@ -287,6 +306,26 @@ printf '   probe characters: %s\n\n' "$PROBE_CHARS"
   || fail "examples/_extensions/index is missing; examples must consume the installed extension"
 pass "AC1: demo resolves the extension via examples/_extensions"
 
+# The probe set is pinned to the filter's own escape table, so a character the
+# filter handles can never go unprobed (and vice versa).
+PROBE_CHARS="$PROBE_CHARS" python3 - _extensions/index/index.lua <<'PY'
+import os, re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+table = src.split('local LATEX_LITERAL = {', 1)[1].split('\n}', 1)[0]
+keys = set()
+for m in re.finditer(r'^\s*\[(".*?"|\'"\')\]\s*=', table, re.MULTILINE):
+    raw = m.group(1)
+    keys.add('"' if raw == "'\"'" else raw[1:-1].replace('\\\\', '\\'))
+probes = set(os.environ['PROBE_CHARS'].split(' '))
+if keys != probes:
+    print('FAIL: AC4: probe characters do not match the filter escape table',
+          file=sys.stderr)
+    print(f'  in filter, not probed: {sorted(keys - probes)}', file=sys.stderr)
+    print(f'  probed, not in filter: {sorted(probes - keys)}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   AC4: probe set pinned to the filter escape table ({len(keys)} chars)')
+PY
+
 quarto render examples/demo.qmd --to latex > "$WORK/demo-latex.log" 2>&1 \
   || { cat "$WORK/demo-latex.log" >&2; fail "AC1: demo.qmd failed to render to LaTeX"; }
 [ -s examples/demo.tex ] || fail "AC1: examples/demo.tex is empty"
@@ -294,6 +333,12 @@ check_entry_manifest examples/demo.tex "$DEMO_ENTRIES" "AC1/AC4"
 # Keep a copy: the later PDF render consumes examples/demo.tex, and the AC5
 # self-test plants its defects in this snapshot.
 cp examples/demo.tex "$WORK/demo-latex.tex"
+
+# Folding deeper levels is defensible under IP2 only because it warns; assert
+# the warning, or a refactor that drops it leaves the suite green.
+grep -q 'levels deep' "$WORK/demo-latex.log" \
+  || fail "AC4: the >3-level probe produced no depth warning; folding without a warning is silent loss (IP2)"
+pass "AC4: depth-fold warning emitted for the >3-level probe"
 
 # ---------------------------------------------------------------------------
 # AC2 — preamble injection and \printindex placement.
@@ -391,16 +436,47 @@ if total != expected:
           file=sys.stderr)
     sys.exit(1)
 
-missing = [t for _, t in rows if t not in html]
-if missing:
-    print('FAIL: AC7: visible term(s) absent from demo.html:', file=sys.stderr)
-    for t in missing:
-        print(f'  <<{t}>>', file=sys.stderr)
+# AC7 requires term x count, as in AC1 — not mere presence. Count the rendered
+# text of each `.index` span, so a dropped duplicate is caught and a term that
+# also occurs in generator metadata cannot satisfy the check.
+from collections import Counter
+# The invisible-entry form has no visible text by construction, so its empty
+# span is not a term; the completeness pin already accounts for it separately.
+spans = Counter(t for t in re.findall(r'<span class="index"[^>]*>(.*?)</span>',
+                                      html, re.DOTALL) if t != '')
+bad = []
+for count, text in rows:
+    got = spans.get(text, 0)
+    if got != count:
+        bad.append(f'  expected {count}x  got {got}x  <<{text}>>')
+for text, got in sorted(spans.items()):
+    if not any(text == t for _, t in rows):
+        bad.append(f'  unexpected visible term ({got}x): <<{text}>>')
+if bad:
+    print('FAIL: AC7: visible-term count mismatch in demo.html:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+
+no_leak = [v.rstrip('\n') for v in open(leak_path, encoding='utf-8') if v.strip()]
+
+# Pin the no-leak list to the source rather than trusting the hand list: every
+# entry= value in the .qmd must either be listed, or be a substring of some
+# visible term (in which case it is required to be present, not absent).
+terms = [t for _, t in rows]
+declared = []
+for raw in re.findall(r'entry="((?:\\.|[^"\\])*)"', qmd):
+    declared.append(re.sub(r'\\(.)', r'\1', raw))
+unaccounted = [v for v in set(declared)
+               if v not in no_leak and not any(v in t for t in terms)]
+if unaccounted:
+    print('FAIL: AC7: entry= value(s) neither in the no-leak manifest nor a '
+          'substring of a visible term:', file=sys.stderr)
+    for v in sorted(unaccounted):
+        print(f'  <<{v}>>', file=sys.stderr)
     sys.exit(1)
 
 body = re.sub(r'<[^>]*>', ' ', html)
-leaked = [v.rstrip('\n') for v in open(leak_path, encoding='utf-8')
-          if v.strip() and v.rstrip('\n') in body]
+leaked = [v for v in no_leak if v in body]
 if leaked:
     print('FAIL: AC7: entry= value(s) leaked into rendered text:', file=sys.stderr)
     for v in leaked:
@@ -413,6 +489,24 @@ PY
 # AC6 — end-to-end to a compiled PDF with a real index.
 # ---------------------------------------------------------------------------
 require_pdf_tools
+
+# Regression test for the IP2 failure review found: beamer has no `theindex`
+# environment, so emitting \printindex there aborted the render. Exit 0 alone
+# would not fence it — an \index-only regression exits 0 because \index is a
+# no-op without \makeindex — so the kept .tex is checked for every token too.
+# This is a full LaTeX compile, hence its place after the tool guard.
+quarto render examples/demo.qmd --to beamer -M keep-tex:true \
+  > "$WORK/demo-beamer.log" 2>&1 \
+  || { tail -20 "$WORK/demo-beamer.log" >&2; fail "AC7: beamer render failed (IP2: a marked term must never break a render)"; }
+[ -s examples/demo.tex ] || fail "AC7: beamer render kept no .tex to inspect"
+for tok in '\index' 'imakeidx' '\makeindex' '\printindex'; do
+  if grep -qF -- "$tok" examples/demo.tex; then
+    fail "AC7: beamer .tex must not contain $tok (beamer has no index back-end)"
+  fi
+done
+grep -qF 'café' examples/demo.tex || fail "AC7: beamer .tex lost visible term text"
+pass "AC7: beamer renders clean, no index tokens, visible text kept"
+
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
   || { tail -40 "$WORK/demo-pdf.log" >&2; fail "AC6: demo.qmd failed to render to PDF"; }
 [ -s examples/demo.pdf ] || fail "AC6: examples/demo.pdf is empty"

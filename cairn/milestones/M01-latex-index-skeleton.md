@@ -1,6 +1,6 @@
 # M01: LaTeX index extension skeleton
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -25,19 +25,23 @@ users consume.
   makes an invisible entry.
 - Entry semantics (IP1, D-001): all entry values are structured,
   format-neutral data. `entry="..."` is parsed by the extension as
-  `!`-separated sub-entry levels, scanned left-to-right longest-match:
-  each `!!` yields a literal `!`, each remaining single `!` starts a new
-  level; an empty level (leading, medial, trailing) is emitted as written
-  and warned about, never repaired. Each level is literal text. The
-  extension emits correct LaTeX itself — specials escaped, `@ | ! "` made
-  literal (mechanism: the Decisions entry) — for derived and explicit
-  entries alike. No raw LaTeX pass-through.
-- LaTeX-derived formats only: emit `\index{}` at the mark's position;
-  when ≥1 mark exists, inject `\usepackage{imakeidx}` + `\makeindex` into
-  the preamble and append one `\printindex` at document end (auto
-  placement; no marks → no injection).
-- HTML pass-through check (verification only): marks degrade gracefully in
-  HTML — visible text preserved, no LaTeX artifacts (IP2).
+  `!`-separated sub-entry levels, left-to-right longest-match: `!!` yields
+  a literal `!`, a single `!` starts a level; a trailing empty level is
+  emitted as written and warned about, never repaired (leading and medial
+  empty levels are a known makeindex failure → ROADMAP). Each level is
+  literal text; the extension emits correct LaTeX itself — specials
+  escaped, `@ | ! "` made literal (mechanism: the Decisions entry) — for
+  derived and explicit entries alike. No raw LaTeX pass-through.
+- `latex`/`pdf` output only (beamer excluded — it has no `theindex`
+  environment): emit `\index{}` at the mark's position; makeindex stores
+  three levels, so deeper entries fold into the third, joined with `, `,
+  and warned about — never silently dropped. When ≥1 mark exists, inject
+  `\usepackage{imakeidx}` + `\makeindex` into the preamble and append one
+  `\printindex` at document end (auto placement; no marks → no injection).
+- Pass-through check (verification only): the two back-end-less formats
+  verified here — HTML and beamer — keep the visible text, gain none of
+  `\index`, `imakeidx`, `\makeindex`, `\printindex`, and never fail to
+  render (IP2); one shared format gate covers all such formats.
 - Demo + control example documents, test script, README, TinyTeX install
   for local PDF verification.
 
@@ -52,47 +56,50 @@ user-declared); explicit index-placement option and shortcode syntax.
 
 `tests/run-tests.sh` is normative for M01: it declares the supported-forms
 list, the escaping probe set, and four hand-derived manifests (demo entries,
-control tokens, visible terms, PDF terms). Manifest rows are derived by hand
-from the `.qmd` and the documented semantics at each layer — Pandoc attribute
-unescaping, then the `!`/`!!` level parse, then LaTeX escaping and makeindex
-quoting — never copied from filter output; the script header states this
-rule, and review re-derives the escaping-probe, sub-entry and `!!`-run rows
-independently of the script.
+control tokens, visible terms, PDF terms). The script header states the
+by-hand derivation rule (never copied from filter output); review re-derives
+the escaping-probe, sub-entry and `!!`-run rows independently of it.
 
-- [x] AC1: The script renders `examples/demo.qmd` to LaTeX via the installed
+- [ ] AC1: The script renders `examples/demo.qmd` to LaTeX via the installed
       extension with exit 0 and the `.tex` matches the expected-entries
       manifest exactly: each row's `\index{<entry>}` text matches its expected
       count, the total `\index` count equals the manifest total (extra or
       missing commands fail), and the manifest is non-empty.
-- [x] AC2: The demo `.tex` contains `\usepackage{imakeidx}` (with or without
+- [ ] AC2: The demo `.tex` contains `\usepackage{imakeidx}` (with or without
       options) followed later by `\makeindex`, both before `\begin{document}`,
       and exactly one `\printindex`, after all body content and before
       `\end{document}`.
-- [x] AC3: `examples/control.qmd` — no marks, but mark-like text in a fenced
+- [ ] AC3: `examples/control.qmd` — no marks, but mark-like text in a fenced
       code block and inline code — renders to LaTeX with exit 0 and a
       non-empty `.tex` with no `\index{`, `imakeidx`, `\makeindex`, or
       `\printindex`. Mark-like text survives as content: every control-manifest
       token — for each mark, an escape-free token containing that mark's own
       `entry=` value or visible text — matches its exact count, any mismatch
-      failing; this manifest is the whole positive check.
-- [x] AC4: The supported-forms list is normative — visible-term, custom-entry
+      failing.
+- [ ] AC4: The supported-forms list is normative — visible-term, custom-entry
       (single-level `entry=`), sub-entry (`!`-separated levels, literal `!` via
       `!!`), and invisible-entry spans — and the probe set puts visible terms
-      and `entry=` levels *each independently* through every character of
-      `% & # _ { } \ ~ ^ $ @ | ! "`, across leading, medial and trailing
+      and `entry=` levels *each independently* through every character of the
+      escape domain (Pandoc's LaTeX-writer escapes plus makeindex's actives
+      `! @ | "`), which the script pins to the filter's own escape table so no
+      handled character can go unprobed; across leading, medial and trailing
       positions (union coverage, not the cross-product), plus `!!`
-      leading/medial/trailing, one odd-length `!` run, one empty level, a
-      level whose literal text is one backslash (typed `\\`), and one pinning
-      that `\!` yields two levels. Each form has ≥1 counted instance in
-      `examples/demo.qmd` under AC1's manifest; the README documents exactly
-      those four span forms and no others, plus how a literal backslash and
-      `"` are written inside `entry=` (reviewer-verified against the list).
-- [x] AC5 (tracking hygiene): `cairn/PROFILE.md`'s `verify` slot names
+      leading/medial/trailing, one odd-length `!` run, one trailing empty
+      level, a level whose literal text is one backslash (typed `\\`), one
+      entry deeper than three levels whose render log must carry its fold
+      warning, one Latin-1 accented term as a visible term and one inside an
+      `entry=` level (the range pdflatex's default fonts cover; other scripts
+      await an engine decision → ROADMAP), and one pinning that `\!` yields
+      two levels. Each form has ≥1 counted instance in `examples/demo.qmd`
+      under AC1's manifest; the README documents exactly those four span forms
+      and no others, plus how a literal backslash and `"` are written inside
+      `entry=`, and the three-level ceiling with its folding.
+- [ ] AC5 (tracking hygiene): `cairn/PROFILE.md`'s `verify` slot names
       `tests/run-tests.sh`; the script fails loudly (`set -euo pipefail`) and
       passes a self-test: against a deliberately broken fixture (one
       manifest-expected `\index` command removed, one altered, one spurious
       `\index` added) it exits non-zero and names the mismatching row(s).
-- [x] AC6: With TinyTeX installed (user-approved at the plan gate; requires
+- [ ] AC6: With TinyTeX installed (user-approved at the plan gate; requires
       network), `quarto render examples/demo.qmd --to pdf` exits 0 and
       `pdftotext -layout` output, whitespace-normalized, has an index heading,
       and the text following it lists every PDF-manifest term (the
@@ -101,17 +108,20 @@ independently of the script.
       order. The script fails loudly if `tinytex`, `makeindex`, or `pdftotext`
       is missing, so this can never pass unrun. Explicit `entry=` entries are
       verified by AC1 instead.
-- [ ] AC7: `examples/demo.qmd` renders to HTML with exit 0. Each visible term
-      appears as rendered text — markdown backslash-escapes consumed, then
-      `&`, `<`, `>` as HTML entities — per the visible-terms manifest
-      (term × count, as in AC1), pinned complete: the manifest's count total
-      must equal `]{.index` occurrences minus `[]{.index` occurrences
-      (occurrences, not matching lines) in the `.qmd`, or the run fails. The
-      `.html` has none of `\index`, `imakeidx`, `\makeindex`, `\printindex`,
-      and with tags stripped the body text contains no `entry=` value from the
-      `.qmd` that is not also a substring of some visible term. Surviving span
-      attributes are permitted; only rendered text is constrained.
-
+- [ ] AC7: `examples/demo.qmd` renders to HTML with exit 0, and to beamer
+      with exit 0 whose kept `.tex` is free of `\index`, `imakeidx`,
+      `\makeindex`, `\printindex` while retaining visible text — the
+      regression test for the IP2 failure review found, where any mark aborted
+      a beamer render. In HTML each visible term appears as rendered text —
+      markdown backslash-escapes consumed, then `&`, `<`, `>` as HTML
+      entities — per the visible-terms manifest, every row's count checked
+      against the rendered `.index` spans, pinned complete: the manifest's
+      count total must equal `]{.index` minus `[]{.index` occurrences. The
+      `.html` carries none of those four tokens, and with tags stripped its
+      body text contains no value from the script's `entry=` no-leak
+      manifest, which the script pins by sweeping every `entry=` value in the
+      `.qmd`: each must be listed there or be a substring of a visible term.
+      Surviving span attributes are permitted.
 ## Coverage
 
 - AC1 → T2, T4, T5 · AC2 → T3, T5 · AC3 → T2, T3, T4, T5
@@ -119,33 +129,23 @@ independently of the script.
 
 ## Tasks
 
-- [x] T1: Scaffold `_extensions/index/` (`_extension.yml`, Lua filter
-      registration); `examples/` consumes it via `_extensions/` as an
-      installed user would; a bare render passes.
-- [x] T2: Implement span recognition (`.index` class) and the entry semantics
-      stated in Scope: derived and `entry=` levels LaTeX-escaped with
-      makeindex-active characters made literal, invisible entries, and
-      warn-and-continue on an empty level or a mark with nothing to index
-      (never fail the render, IP2); `\index` emission only for
-      LaTeX-derived formats, visible text passed through elsewhere.
-- [x] T3: Conditional injection: with ≥1 mark, `\usepackage{imakeidx}` +
-      `\makeindex` via header-includes and one `\printindex` appended at
-      document end; with none, no injection at all.
-- [x] T4: Author `examples/demo.qmd` (every supported form incl. sub-entry
-      span, the escaping probe set with full character and position
-      coverage, and one term marked multiple times) and
-      `examples/control.qmd` (mark-like text in fenced and inline code).
-- [x] T5: Install TinyTeX (`quarto install tinytex`); write
-      `tests/run-tests.sh` with the hand-authored expected-entries manifest
-      (rule stated in header) implementing AC1–AC4, AC6, and AC7 checks,
-      the tool-presence guard, and the broken-fixture self-test naming
-      mismatching rows; fill the PROFILE `verify` slot.
-- [x] T6: README: install (`quarto add`), the normative syntax forms incl.
-      `!`/`!!` level syntax as extension-own semantics, how a literal
-      backslash and `"` are written inside `entry=` (Pandoc eats one
-      backslash level; `\!` is not an escape), escaping and literal-`@ | "`
-      behavior, auto-placement, and the pre-release at-your-own-risk
-      sentence (IP3).
+- [x] T1: Scaffold `_extensions/index/` (`_extension.yml`, filter
+      registration); examples consume it via `_extensions/`.
+- [x] T2: Span recognition (`.index`) and the entry semantics stated in
+      Scope: level parse, per-character escaping, depth fold, invisible
+      entries, warn-and-continue, emission only for `latex`/`pdf`.
+- [x] T3: Conditional injection — `\usepackage{imakeidx}` + `\makeindex` in
+      the preamble and one `\printindex` at document end when a document has
+      marks; nothing at all when it has none.
+- [x] T4: Author `examples/demo.qmd` (every form, the full probe set, a term
+      marked three times) and `examples/control.qmd` (mark-like text in
+      fenced and inline code).
+- [x] T5: Install TinyTeX; write `tests/run-tests.sh` — hand-derived
+      manifests, probe-set pin, tool guard, planted-defect self-test —
+      implementing AC1-AC7; fill the PROFILE `verify` slot.
+- [x] T6: README: install, the normative syntax forms, `!`/`!!`, the Pandoc
+      backslash layer, the three-level ceiling, auto-placement, and the
+      pre-release notice (IP3).
 
 ## Work log
 
@@ -185,6 +185,13 @@ independently of the script.
 
 - 2026-08-16: catch-up — commit e416c6a carried T2/T4 implementation (index.lua +159, control.qmd) under an amendment-titled message while those tasks were still unticked; the "T2/T4 done" lines landed two commits later in db6204e. Tracking-travels-with-code was not honoured there. Recorded, not rewritten (IP4).
 - 2026-08-16: review returned M01 to in-progress (defect return #1). AC7 fails inside its own named procedure: tests/run-tests.sh:394 checks visible-term presence only, discarding the per-row counts AC7 requires. Two IP2 violations also block: `--to beamer` renders fail fatally when a document has any mark (no theindex environment; reproduced exit 1), and entries deeper than three levels are silently discarded by makeindex while the build stays green (reproduced). AC1-AC6 verified clean; evidence retained above.
+
+- 2026-08-16: review-return fixes. R1 (IP2): beamer dropped from the LaTeX back-end — `is_latex_derived()` now matches `latex` only, so beamer passes through; verified exit 0 with zero index tokens in its kept `.tex`, where before any mark aborted the render. R2 (IP2): levels past the third are folded into the third, joined with `, `, with a warning naming the entry, instead of being silently rejected by makeindex. R3: AC7 now counts each visible term inside the rendered `.index` spans; proved non-vacuous by a discriminating test that perturbs two manifest rows while holding the total constant — presence-only checking passes that, count-checking fails both rows. Also R7 (`<`/`>` added to the escape table), R8 (`quarto.doc` guarded), R9 (Latin-1 probes in both contexts), R4/R5/R6 (superseded comments corrected).
+- 2026-08-16: substantive amendment after the return, audited full-mode by a fresh [O] reader (11 findings, 9 clear fixes applied). The fold clause moved out of the format-neutral entry-semantics bullet into the back-end bullet: `clamp_levels` runs only on the LaTeX branch, so stating it as mark semantics was empirically false for HTML and leaked a back-end limit into IP1. The `, ` join is now documented, since AC1's manifest row was otherwise underivable by hand. AC4's character list was re-anchored from a recall-fixed enumeration to the escape domain, pinned in the script against the filter's own table (closing R10). AC4 now requires the fold warning to appear — the warning is the whole IP2 justification for folding and nothing asserted it. AC7's beamer clause checks the kept `.tex`, not just exit 0: an `\index`-only regression exits 0 because `\index` is a no-op without `\makeindex`. AC7's no-leak list is now pinned by sweeping the `.qmd`. Non-ASCII narrowed to Latin-1 with the pdflatex font limit stated.
+- 2026-08-16: cap remedy — acceptance-criteria preamble compressed and the Tasks section rewritten to one short entry per task (the work log carries what each did); plan-owned body back under 150.
+- 2026-08-16: all seven criteria unticked. The prior review's evidence predates the filter, example and manifest changes above, so it is stale; re-review gathers fresh evidence for every criterion.
+
+- 2026-08-16: review-return fixes complete; `tests/run-tests.sh --self-test` exits 0 from clean artifacts with three new checks (probe-set pin, fold warning, beamer token check); status → review.
 
 ## Decisions
 

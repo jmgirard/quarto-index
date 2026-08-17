@@ -38,6 +38,7 @@ Odd run: [odd]{.index entry="A!!!B"}.
 Backslash level: [bslash]{.index entry="\\"}.
 Old spelling: [old]{.index entry="Alpha\!Beta"}.
 Empty level: [empty]{.index entry="A!!B!"}.
+Too deep: [deep]{.index entry="One!Two!Three!Four!Five"}.
 
 # Escaping probes
 
@@ -52,3 +53,9 @@ The same characters in an `entry=` level:
 
 Leading and trailing specials in visible terms:
 [\{Braced\}]{.index} and [\~tilde dollar\$]{.index}.
+
+Angle brackets, which Pandoc's own LaTeX writer escapes:
+[less \< more \>]{.index}.
+
+Non-ASCII, which IP2 requires to appear correctly in the index:
+[café naïve]{.index} and [Grüße]{.index entry="Grüße!Straße"}.

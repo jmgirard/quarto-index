@@ -55,8 +55,13 @@ literal exclamation mark:
 ```
 
 Levels are scanned left to right, longest match first, so `A!!!B` is the
-entry `A!` with sub-entry `B`. An empty level is left as written and warned
-about rather than silently repaired.
+entry `A!` with sub-entry `B`. A trailing empty level is left as written and
+warned about rather than silently repaired.
+
+**Three levels is the ceiling.** The LaTeX index back-end stores at most
+three. A deeper entry is not dropped: everything past the third level is
+folded into it, joined with `, `, and you get a warning naming the entry. So
+`entry="One!Two!Three!Four"` indexes as `One` → `Two` → `Three, Four`.
 
 `!` and `!!` are the extension's own syntax, not LaTeX. They mean the same
 thing whatever format you render to.
@@ -97,8 +102,10 @@ gets none of this.
 
 Placement is automatic; there is no option to put the index elsewhere yet.
 
-In formats with no index back-end — HTML today — marks pass through: the
-visible text is preserved and no LaTeX leaks into the output.
+In formats with no index back-end — HTML and beamer today — marks pass
+through: the visible text is preserved and no LaTeX leaks into the output.
+Beamer slides have no index environment, so they are deliberately not a
+LaTeX index target; a marked term never breaks a slide deck.
 
 The extension's job ends at correct emitted output. Whether your toolchain
 then runs `makeindex` to build the index is up to your build setup; Quarto's

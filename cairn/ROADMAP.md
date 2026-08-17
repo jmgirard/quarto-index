@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M01 | LaTeX index extension skeleton | in-progress | — | normal | milestones/M01-latex-index-skeleton.md |
+| M01 | LaTeX index extension skeleton | review | — | normal | milestones/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -23,4 +23,9 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 - Sort-key syntax (format-neutral) — added 2026-08-16 — suite target; prerequisite for non-ASCII collation (DESIGN Conventions)
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN)
 - Submit to Quarto extension listing at first release — added 2026-08-16 — window user-declared
+- Leading/medial empty index levels are rejected by makeindex ("Illegal null field"), destroying the whole entry — added 2026-08-16 — M01 review R12; only the trailing case is probed
+- Non-Latin-1 scripts in index terms (Greek, CJK, combining marks, RTL) need an engine/font decision — added 2026-08-16 — M01 review R7/R9; pdflatex default fonts do not cover them
+- Harden the acceptance suite: assert the script's own exit code in the self-test, brace-aware \index scanner, bibliography-vs-\printindex ordering — added 2026-08-16 — M01 review R11/R13/R14
+- Quarto version floor is an untested contract claim; CI matrix would fence it — added 2026-08-16 — M01 review R15; folds into the existing CI-matrix candidate
+- Windows checkouts without symlink support break examples/_extensions — added 2026-08-16 — M01 review R18
 - Choose and add a LICENSE file (user decision; needed before public listing) — added 2026-08-16 — M01 README omits a license claim for want of one

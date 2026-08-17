@@ -15,9 +15,10 @@
 local INDEX_CLASS = "index"
 
 -- Characters that are literal text on the way in and need help on the way
--- out. LaTeX specials are escaped; makeindex-active characters (`! @ | "`)
--- are quoted with makeindex's quote character so they index literally
--- instead of acting as level, sort-key, encapsulation, or quote operators.
+-- out. LaTeX specials are escaped. Of the makeindex-active characters,
+-- `!` and `@` are made literal with makeindex's quote character, while
+-- `|` and `"` need LaTeX commands instead — see the note on those two
+-- entries below.
 local LATEX_LITERAL = {
   ["%"] = "\\%",
   ["&"] = "\\&",
@@ -26,6 +27,8 @@ local LATEX_LITERAL = {
   ["{"] = "\\{",
   ["}"] = "\\}",
   ["$"] = "\\$",
+  ["<"] = "\\textless{}",
+  [">"] = "\\textgreater{}",
   ["\\"] = "\\textbackslash{}",
   ["~"] = "\\textasciitilde{}",
   ["^"] = "\\textasciicircum{}",
@@ -50,8 +53,13 @@ local function warn(msg)
   end
 end
 
+-- `latex` (which also covers `pdf` output) is the only back-end that ships.
+-- beamer is deliberately excluded: it has no `theindex` environment, so a
+-- `\printindex` there aborts the render — and IP2 says a marked term must
+-- never break a document. beamer therefore passes through like any format
+-- with no index back-end, until a beamer back-end is actually written.
 local function is_latex_derived()
-  return FORMAT:match("latex") ~= nil or FORMAT:match("beamer") ~= nil
+  return FORMAT:match("latex") ~= nil
 end
 
 -- Split an `entry=` value into sub-entry levels: `!` separates, `!!` is a
@@ -85,11 +93,37 @@ local function escape_level(level)
   end))
 end
 
+-- makeindex stores at most three levels: it rejects a deeper entry outright
+-- ("Extra `!'"), drops it from the index, and still exits 0 — the build looks
+-- clean and the entry is simply gone. Rather than lose it (IP2 forbids silent
+-- corruption), fold everything past the third level into the third.
+local MAX_LEVELS = 3
+local OVERFLOW_JOIN = ", "
+
+local function clamp_levels(levels, context)
+  if #levels <= MAX_LEVELS then
+    return levels
+  end
+  local tail = {}
+  for i = MAX_LEVELS, #levels do
+    tail[#tail + 1] = levels[i]
+  end
+  warn(("index entry in %s is %d levels deep; the back-end stores %d, so "
+        .. "levels %d and deeper were folded into the last one")
+       :format(context, #levels, MAX_LEVELS, MAX_LEVELS))
+  local clamped = {}
+  for i = 1, MAX_LEVELS - 1 do
+    clamped[i] = levels[i]
+  end
+  clamped[MAX_LEVELS] = table.concat(tail, OVERFLOW_JOIN)
+  return clamped
+end
+
 -- Build the `\index{...}` argument from literal levels, joining with the
 -- unquoted `!` that makeindex reads as a level separator.
 local function index_argument(levels, context)
   local parts = {}
-  for _, level in ipairs(levels) do
+  for _, level in ipairs(clamp_levels(levels, context)) do
     if level == "" then
       warn(("empty index level in %s; emitted as written"):format(context))
     end
@@ -143,11 +177,19 @@ local function Span(span)
   return result
 end
 
--- imakeidx builds the index in the same LaTeX run, so no separate makeindex
--- invocation is needed for the common case. `intoc` lists the index in the
--- table of contents, as printed books normally do.
+-- `intoc` lists the index in the table of contents, as printed books normally
+-- do. imakeidx only runs makeindex itself under `-shell-escape`, which Quarto
+-- does not enable; what actually builds the index is Quarto's own PDF loop
+-- reacting to the emitted `.idx` file (GP2: we emit correct output and stop).
 local function Pandoc(doc)
   if marks_emitted == 0 or not is_latex_derived() then
+    return nil
+  end
+  if not (quarto and quarto.doc and quarto.doc.use_latex_package) then
+    -- Running under plain pandoc rather than Quarto: emit the marks, but do
+    -- not pretend we can inject a preamble.
+    warn("preamble injection needs Quarto; \\index commands emitted without "
+         .. "imakeidx setup")
     return nil
   end
 

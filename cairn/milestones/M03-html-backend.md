@@ -5,7 +5,7 @@
 - **Depends on:** M02
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP1, GP4, GP6
-- **Branch/PR:** m03-html-backend
+- **Branch/PR:** m03-html-backend · https://github.com/jmgirard/quarto-index/pull/3
 
 ## Goal
 

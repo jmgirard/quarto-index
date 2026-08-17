@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M01 | LaTeX index extension skeleton | in-progress | — | normal | milestones/M01-latex-index-skeleton.md |
+| M01 | LaTeX index extension skeleton | review | — | normal | milestones/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -23,3 +23,4 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 - Sort-key syntax (format-neutral) — added 2026-08-16 — suite target; prerequisite for non-ASCII collation (DESIGN Conventions)
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN)
 - Submit to Quarto extension listing at first release — added 2026-08-16 — window user-declared
+- Choose and add a LICENSE file (user decision; needed before public listing) — added 2026-08-16 — M01 README omits a license claim for want of one

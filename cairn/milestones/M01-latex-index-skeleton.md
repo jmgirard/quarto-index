@@ -1,6 +1,6 @@
 # M01: LaTeX index extension skeleton
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -29,9 +29,9 @@ users consume.
   each `!!` yields a literal `!`, each remaining single `!` starts a new
   level; an empty level (leading, medial, trailing) is emitted as written
   and warned about, never repaired. Each level is literal text. The
-  extension emits correct LaTeX itself — LaTeX specials escaped,
-  makeindex-active characters (`@ | ! "`) quoted — for derived
-  (visible-term) and explicit entries alike. No raw LaTeX pass-through.
+  extension emits correct LaTeX itself — specials escaped, `@ | ! "` made
+  literal (mechanism: the Decisions entry) — for derived and explicit
+  entries alike. No raw LaTeX pass-through.
 - LaTeX-derived formats only: emit `\index{}` at the mark's position;
   when ≥1 mark exists, inject `\usepackage{imakeidx}` + `\makeindex` into
   the preamble and append one `\printindex` at document end (auto
@@ -122,25 +122,25 @@ independently of the script.
 - [x] T1: Scaffold `_extensions/index/` (`_extension.yml`, Lua filter
       registration); `examples/` consumes it via `_extensions/` as an
       installed user would; a bare render passes.
-- [ ] T2: Implement span recognition (`.index` class) and the entry semantics
-      stated in Scope: derived and `entry=` levels LaTeX-escaped and
-      makeindex-quoted, invisible entries, warn-and-continue on an empty
-      level or a mark with nothing to index (never fail the render, IP2),
-      and `\index` emission only for LaTeX-derived formats — visible text
-      passed through untouched elsewhere.
-- [ ] T3: Conditional injection: with ≥1 mark, `\usepackage{imakeidx}` +
+- [x] T2: Implement span recognition (`.index` class) and the entry semantics
+      stated in Scope: derived and `entry=` levels LaTeX-escaped with
+      makeindex-active characters made literal, invisible entries, and
+      warn-and-continue on an empty level or a mark with nothing to index
+      (never fail the render, IP2); `\index` emission only for
+      LaTeX-derived formats, visible text passed through elsewhere.
+- [x] T3: Conditional injection: with ≥1 mark, `\usepackage{imakeidx}` +
       `\makeindex` via header-includes and one `\printindex` appended at
       document end; with none, no injection at all.
-- [ ] T4: Author `examples/demo.qmd` (every supported form incl. sub-entry
+- [x] T4: Author `examples/demo.qmd` (every supported form incl. sub-entry
       span, the escaping probe set with full character and position
       coverage, and one term marked multiple times) and
       `examples/control.qmd` (mark-like text in fenced and inline code).
-- [ ] T5: Install TinyTeX (`quarto install tinytex`); write
+- [x] T5: Install TinyTeX (`quarto install tinytex`); write
       `tests/run-tests.sh` with the hand-authored expected-entries manifest
       (rule stated in header) implementing AC1–AC4, AC6, and AC7 checks,
       the tool-presence guard, and the broken-fixture self-test naming
       mismatching rows; fill the PROFILE `verify` slot.
-- [ ] T6: README: install (`quarto add`), the normative syntax forms incl.
+- [x] T6: README: install (`quarto add`), the normative syntax forms incl.
       `!`/`!!` level syntax as extension-own semantics, how a literal
       backslash and `"` are written inside `entry=` (Pandoc eats one
       backslash level; `\!` is not an escape), escaping and literal-`@ | "`
@@ -174,7 +174,24 @@ independently of the script.
 - 2026-08-16: gate chose one-pass compression of the whole criteria section (enumerations delegated to the normative `tests/run-tests.sh`) over trimming other sections or a cap exception; and chose to permit surviving `.index` HTML span attributes, AC7 constraining rendered text only.
 - 2026-08-16: second fresh [O] audit of the recompressed criteria set returned 11 findings; all 9 clear fixes applied — restored AC1's "via the installed extension" anchor, fixed AC7's entry-leak clause (the one-backslash entry value is a substring of body text, so the naive rule was unsatisfiable) and its ambiguous row-count pin (now count-total, occurrences not lines), scoped AC6 to text after the index heading (whole-output matching passed even with an empty index), added AC5's spurious-`\index` planted defect, anchored AC3's token choice to each mark's own payload, and disambiguated AC4's "independently". Finding 11 taken as option (i): empty-level probe added to AC4 and `examples/demo.qmd`.
 - 2026-08-16: cap remedy — Coverage compressed to two lines and T2's restated semantics trimmed (Scope and AC4 own them); plan-owned body 149.
+- 2026-08-16: T2 done — `.index` span recognition, `!`/`!!` level parse, per-character LaTeX escaping and makeindex quoting, invisible entries, warn-and-continue on an empty mark (element dropped so no empty group is left) and on an empty level; emission gated to LaTeX-derived formats.
+- 2026-08-16: T3 done — `quarto.doc.use_latex_package("imakeidx")` + `\makeindex[intoc]` via in-header include, one `\printindex` appended; verified ordered `\usepackage` → `\makeindex` → `\begin{document}` and `\printindex` before `\end{document}`; no injection when a document has no marks.
+- 2026-08-16: T4 done — `examples/demo.qmd` (21 marks: all four forms, `!!` leading/medial/trailing, odd `!` run, empty level, one-backslash level, `\!` pin, full 13-character probe across visible terms and `entry=` levels) and `examples/control.qmd` (mark-like text in fenced and inline code). `from: markdown-smart` is set on both: with Quarto's default smart typography a typed `"` becomes a curly quote, leaving makeindex's quote character unexercised.
+- 2026-08-16: AC6 caught a real IP2 escaping bug — hyperref rewrites an index argument at its first `|` before makeindex runs and ignores makeindex quoting, so a literal `|` in a term corrupted the entry; a quoted `""` also typeset as a curly quote. `|` and `"` now emit as `\textbar{}`/`\textquotedbl{}`. See the Decisions entry. Visible probe terms were split into five short ones so none wraps across the two-column index (AC4 requires the visible-term context to cover all 13 characters, not one term to carry them).
+- 2026-08-16: T5 done — `tests/run-tests.sh` (oracle rule in header, four hand-derived manifests, tool guard, planted-defect self-test) passes AC1-AC7 with exit 0; PROFILE `verify` slot filled. The self-test first exposed a gap in the checker itself: unexpected entries were only listed when the total count mismatched, so three planted defects that cancel in the total went unnamed; extras now always fail.
+- 2026-08-16: T6 done — README documents exactly the four span forms, `!`/`!!`, the Pandoc backslash layer (`\\`, `\"`, and `\!` being no escape), auto-placement, and the pre-release at-your-own-risk notice. A License section was written and removed: no LICENSE file exists, so the claim had no basis; added as a ROADMAP candidate (user decision).
+- 2026-08-16: all tasks complete; `tests/run-tests.sh --self-test` exits 0 with AC1-AC7 all green; status → review.
+- 2026-08-16: minor amendment — Scope and T2 described `|`/`"` as makeindex-quoted, which the bug fix made false; wording corrected to "made literal" with the mechanism cross-referenced to the Decisions entry. The promise is unchanged.
 
 ## Decisions
+
+- 2026-08-16: LaTeX escaping strategy — makeindex quoting is used only for
+  `!` and `@`; `|` and `"` are emitted as `\textbar{}` and `\textquotedbl{}`.
+  hyperref rewrites an index argument at its first `|` before makeindex runs
+  and does not honour makeindex's `"` quoting, so `"|` silently corrupted the
+  entry (observed in demo.idx: `{Alpha ... "@ "|hyperxindexformat{\ "! ""
+  Omega}}`); and a makeindex-quoted `""` reaches LaTeX as a bare `"`, which
+  typesets as a curly closing quote, not the straight quote the term holds.
+  Both are IP2 escaping bugs, so both keep a probe in `examples/demo.qmd`.
 
 ## Review

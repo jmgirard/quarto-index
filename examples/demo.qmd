@@ -41,8 +41,11 @@ Empty level: [empty]{.index entry="A!!B!"}.
 
 # Escaping probes
 
-Every character of `% & # _ { } \ ~ ^ $ @ | ! "` in a visible term:
-[Alpha % & # \_ \{ \} \\ \~ \^ \$ @ \| ! " Omega]{.index}.
+Every character of `% & # _ { } \ ~ ^ $ @ | ! "` across visible terms. These
+are kept short so each fits one line of the two-column printed index:
+[pct % amp & hash #]{.index}, [us \_ brace \{ \}]{.index},
+[bs \\ tilde \~ caret \^]{.index}, [dollar \$ at @ bar \|]{.index}, and
+[bang ! quote "]{.index}.
 
 The same characters in an `entry=` level:
 [entry specials]{.index entry="Specials % & # _ { } \\ ~ ^ $ @ | !! \""}.

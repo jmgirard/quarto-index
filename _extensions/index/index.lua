@@ -29,10 +29,17 @@ local LATEX_LITERAL = {
   ["\\"] = "\\textbackslash{}",
   ["~"] = "\\textasciitilde{}",
   ["^"] = "\\textasciicircum{}",
+  -- `!` and `@` are only special to makeindex, so its quote character is
+  -- enough. `|` and `"` are NOT: hyperref rewrites an index argument at the
+  -- first `|` before makeindex ever runs, and knows nothing about makeindex
+  -- quoting, so `"|` corrupts the entry; and a makeindex-quoted `""` reaches
+  -- LaTeX as a bare `"`, which typesets as a curly closing quote. Both are
+  -- emitted as LaTeX commands instead, which contain no character either
+  -- tool treats as active.
   ["!"] = '"!',
   ["@"] = '"@',
-  ["|"] = '"|',
-  ['"'] = '""',
+  ["|"] = "\\textbar{}",
+  ['"'] = "\\textquotedbl{}",
 }
 
 local function warn(msg)

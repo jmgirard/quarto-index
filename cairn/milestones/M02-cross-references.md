@@ -5,7 +5,7 @@
 - **Depends on:** M01
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP1, GP5, GP6
-- **Branch/PR:** m02-cross-references
+- **Branch/PR:** m02-cross-references / https://github.com/jmgirard/quarto-index/pull/2
 
 ## Goal
 
@@ -34,7 +34,7 @@ quoted values only.
 
 ## Acceptance criteria
 
-- [ ] AC1: `tests/run-tests.sh` renders `examples/demo.qmd` to LaTeX and
+- [x] AC1: `tests/run-tests.sh` renders `examples/demo.qmd` to LaTeX and
       every `\index{}` argument matches the hand-derived entry manifest,
       extended with one row per cross-reference mark (a mark carrying both
       attributes contributes one row, whose single command carries both
@@ -49,7 +49,7 @@ quoted values only.
       `examples/demo.qmd` carries no mark whose cross-reference target is
       unusable and none with no source entry, so every occurrence belongs to
       a row. Manifest rows are never copied from filter output.
-- [ ] AC2: `examples/demo.qmd` compiles to PDF through Quarto's own engine;
+- [x] AC2: `examples/demo.qmd` compiles to PDF through Quarto's own engine;
       the `pdftotext` extraction of the index section shows, for each
       cross-reference manifest row of AC1, the source entry followed by that
       row's full cross-reference text — for a dual row, both targets with
@@ -59,7 +59,7 @@ quoted values only.
       derive from the decisions recorded in that section, and whose
       source-entry-to-cross-reference delimiter is makeindex's default, with
       whitespace normalized as the existing PDF check normalizes it (GP6).
-- [ ] AC3: A cross-reference escaping probe fixture (extending
+- [x] AC3: A cross-reference escaping probe fixture (extending
       `examples/escaping.qmd` or a sibling) places every printable ASCII
       character (space excluded) as its own see-target level — except any
       character T1 records in the milestone's Decisions section as
@@ -75,14 +75,14 @@ quoted values only.
       can never go unprobed — additionally typesets: its probe's
       cross-reference text in the `pdftotext` index region equals a
       hand-derived exact expected string.
-- [ ] AC4: Rendering `examples/demo.qmd` to HTML and to beamer succeeds; the
+- [x] AC4: Rendering `examples/demo.qmd` to HTML and to beamer succeeds; the
       visible text of every cross-reference mark is preserved; no
       `see=`/`see-also=` value leaks into rendered text, per the suite's
       no-leak mechanism with its source pin extended to the two new
       attributes; and a cross-reference mark on content with no derivable
       text (in `examples/content.qmd`) indexes nothing and deletes nothing,
       in HTML and LaTeX.
-- [ ] AC5: Each defined misuse case — (a) a cross-reference mark with no
+- [x] AC5: Each defined misuse case — (a) a cross-reference mark with no
       source entry (no `entry=`, no visible text), exercised in
       `examples/content.qmd`, and (b) a mark carrying both `see=` and
       `see-also=`, exercised in `examples/demo.qmd` so AC1's manifest and
@@ -100,13 +100,13 @@ quoted values only.
       check fails on a fixture with its warning line removed and on one with
       that line duplicated, so each check asserts an exact occurrence count
       rather than mere presence.
-- [ ] AC6: The README documents the cross-reference forms — the syntax, the
+- [x] AC6: The README documents the cross-reference forms — the syntax, the
       format-neutral semantics of the target value (structured `!` levels,
       `!!` literal), the see-replaces-locator semantics, and current
       per-format behavior. The suite's normative supported-forms list is
       restructured as label/exemplar pairs, includes the new forms, and
       fails if any syntax exemplar does not appear verbatim in the README.
-- [ ] AC7: `tests/run-tests.sh --self-test` (the profile's verify command)
+- [x] AC7: `tests/run-tests.sh --self-test` (the profile's verify command)
       exits clean.
 
 ## Coverage
@@ -243,3 +243,87 @@ quoted values only.
   numbers are known) is a ROADMAP candidate, not this milestone's scope.
 
 ## Review
+
+Fresh evidence, 2026-08-16, on branch m02-cross-references at the pre-gate
+checkpoint. Every line below is from a command run in this session, never
+from the implementing session's recollection.
+
+- AC1: verified. Fresh `tests/run-tests.sh`: 30 manifest rows against 32
+  `\index` commands in `examples/demo.tex`, all matching, with no unexpected
+  entry. The seven cross-reference rows were hand-derived from the emission
+  forms the Decisions section records and matched the render without
+  adjustment. The completeness pin reports 6 single-target and 1 dual-target
+  rows accounting for all 8 `see=`/`see-also=` occurrences in the source, and
+  it fails if the manifest's dual-target command name and the filter's own
+  constant disagree.
+
+- AC2: verified. `examples/demo.qmd` compiled to PDF through Quarto's own
+  engine, and all 7 hand-derived cross-reference strings were found in the
+  `pdftotext` index region under the same whitespace normalization the
+  existing PDF check uses. Read directly out of the compiled index:
+  `cats, see Felines`; `dogs, see also Pets`; `owls, see Birds: Owls`;
+  `bang, see Wow!Hey`; `Canids` with sub-item `Foxes, see Vulpes`;
+  `Ghosts, see also Spirits`; and the dual row `both, see Aye; see also Bee`,
+  see-target first and see-also second.
+
+- AC3: verified. `examples/xref-escaping.qmd` compiled through Quarto's own
+  PDF engine and, separately, through pdflatex plus makeindex: 238 entries
+  accepted, 0 rejected, against 238 derived by construction from the
+  fixture's own shape rather than read back from the run. The coverage check
+  confirms all 94 printable ASCII characters (space excluded) appear as their
+  own target level under both `see=` and `see-also=`, with leading, medial
+  and trailing level positions all exercised. All 48 hand-derived exact
+  strings for the special-handling set were found in the probe's typeset
+  index, and the single-target and dual-target forms were shown to render
+  each target byte-identically, so the character evidence covers both. No
+  character proved unrealizable in encap context, so the criterion's
+  exclusion hatch is unused and its graceful-degradation clause is vacuous.
+
+- AC4: verified. `examples/demo.qmd` rendered to HTML and to beamer without
+  error; the beamer `.tex` carries no index token and keeps its visible term
+  text. 28 distinct visible terms across 30 marks matched by exact rendered
+  span text, the six new cross-reference terms among them. No `entry=`,
+  `see=` or `see-also=` value reaches rendered text, and the source pin that
+  fences the no-leak list against the `.qmd` now covers all three attributes,
+  so a new attribute value cannot escape the sweep by going unlisted.
+  `examples/content.qmd` renders in HTML and LaTeX with exactly one `\index`
+  command and all three marked images intact, the cross-reference mark on
+  textless content among them.
+
+- AC5: verified. Case (a) warned exactly twice in each of the HTML and LaTeX
+  renders of `examples/content.qmd` — once per source-less mark — adding no
+  `\index` command and deleting no content. Case (b) warned exactly once in
+  the demo LaTeX render and produced exactly one command carrying both
+  targets, which AC1's manifest fences as a single row and AC2 read out of
+  the compiled PDF as `both, see Aye; see also Bee`. All 10 of the filter's
+  warning literals are mutually distinct and none is a prefix of another, so
+  each is separable by its message text. Under `--self-test`, each of the two
+  checks failed on a captured render log with its warning line removed, failed
+  again on one with that line duplicated, and passed on the log as rendered —
+  the passing control shown to pass for the claim's reason.
+
+- AC6: verified. README.md documents the cross-reference forms: the two
+  attributes with worked examples, the target's `!`/`!!` level semantics and
+  why levels join with `: ` rather than `!`, see-replaces-locator, the
+  both-attributes behavior, the two-marks-on-one-term build hazard, and
+  per-format behavior including what the LaTeX back-end adds to the preamble.
+  The forms table grew from four rows to six. The suite's normative list is
+  now label/exemplar pairs and all 6 exemplars were found verbatim in
+  README.md. The pin was proved discriminating, not merely green: drifting
+  one exemplar in the README to `seealso=` made the check fail naming that
+  exemplar, and the README was restored.
+
+- AC7: verified. `tests/run-tests.sh --self-test`, the profile's verify
+  command, exits 0 on a wiped work directory: 23 acceptance checks and 3
+  self-test checks, all passing.
+
+### Consistency gate
+
+- `cairn_validate`: exit 0, all checks passed — 16 PASS and 7 advisory OK,
+  including coverage completeness, weight caps and the binding-criteria check.
+- No `DESIGN.md` principle changed in this milestone, so the impact report
+  does not apply.
+- Toolchain checks: the active profile is `generic`, whose `consistency-gate`
+  slot names none, so this half is a clean no-op. The profile's `verify`
+  command was run in full under AC7.
+

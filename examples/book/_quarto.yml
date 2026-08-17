@@ -17,8 +17,7 @@ book:
 
 format:
   html: default
-  pdf:
-    documentclass: scrbook
+  pdf: default
 
 filters:
   - index

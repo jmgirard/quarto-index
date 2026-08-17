@@ -11,6 +11,7 @@ manifest row in run-tests.sh is derived by hand from the `.qmd` source (see
 the ORACLE RULE there). Nothing here may be used to write a manifest.
 """
 
+import os
 from html.parser import HTMLParser
 
 # Elements that never have an end tag, so the builder must not push them.
@@ -285,14 +286,64 @@ def index_entries(section):
     return records
 
 
-def row(record):
+def row(record, hrefs=False):
     """The manifest form of one entry record. The format is defined here so
-    the hand-written rows and the extraction cannot drift apart."""
+    the hand-written rows and the extraction cannot drift apart.
+
+    Two formats, one per question. A single document's index links only
+    within its own page, so its manifest states how MANY locators an entry
+    has; a book's index links across pages, so `hrefs` states WHERE each
+    locator points, space-separated in order. A count cannot answer the book
+    question — three locators on one entry is exactly what a book gets right
+    by accident when every one of them points at the wrong chapter.
+    """
     fields = [str(record['depth']), record['term'],
-              str(len(record['locators']))]
+              ' '.join(record['locators']) if hrefs
+              else str(len(record['locators']))]
     for kind, target, linked, _href in record['xrefs']:
         fields.append(f'{XREF_TOKEN[(kind, linked)]} {target}')
     return '\t'.join(fields)
+
+
+# ---------------------------------------------------------------------------
+# A rendered book: many pages, and links that cross between them
+# ---------------------------------------------------------------------------
+
+
+def html_files(directory):
+    """Every `.html` file under `directory`, recursively, as `/`-separated
+    paths relative to it, sorted.
+
+    A book's pages sit at whatever depth its chapters do, so a check that
+    asks "is there an index section anywhere else in the site" has to walk
+    the tree rather than one directory — a subdirectory chapter is exactly
+    where a missed page would hide.
+    """
+    found = []
+    for base, _dirs, files in os.walk(directory):
+        for name in files:
+            if name.endswith('.html'):
+                path = os.path.relpath(os.path.join(base, name), directory)
+                found.append(path.replace(os.sep, '/'))
+    return sorted(found)
+
+
+def resolve_href(page, href):
+    """Where `href`, written on the page at relative path `page`, points.
+
+    Returns `(target page, fragment)` with the target normalized against the
+    same root `page` is relative to, or `None` for a link that leaves the
+    site (a URL with a scheme). A fragment-only href resolves to `page`
+    itself, which is how a locator inside the chapter holding the index is
+    written.
+    """
+    if '://' in href or href.startswith('mailto:'):
+        return None
+    path, _, fragment = href.partition('#')
+    if not path:
+        return page, fragment
+    target = os.path.normpath(os.path.join(os.path.dirname(page), path))
+    return target.replace(os.sep, '/'), fragment
 
 
 def read_manifest(path):

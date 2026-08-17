@@ -103,7 +103,7 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
       locator hrefs, cross-reference resolution deferred to aggregation.
 - [x] T5: Missing-marker warning via the last-in-order chapter's run (warn
       once per full render; no warning on partial renders).
-- [ ] T6: Suite: multi-file structural resolution in `tests/htmlindex.py`
+- [x] T6: Suite: multi-file structural resolution in `tests/htmlindex.py`
       (row format extended to carry locator hrefs), book HTML checks
       (AC1–AC4, AC6), PDF book check with bounded slice, store-footprint
       sweep; wire into `tests/run-tests.sh`.
@@ -125,6 +125,8 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
 - 2026-08-17: implement gate added a warning naming the chapters that follow the marker chapter over documenting marker-chapter-last alone, because a misplaced marker otherwise yields a quietly short index; not AC-pinned, additive.
 - 2026-08-17: T1-T5 done — book fixtures (examples/book, examples/book-nomarker), book detection from `book.render` + `quarto.doc`/`quarto.project`, per-chapter JSON store under `.quarto/quarto-index/`, aggregation at the marker chapter, missing-marker warning from the last chapter. Verified by render: exactly one index section across the four-chapter book (on the marker chapter's page), locators `index.html#qi-mark-2` / `one.html#gamma-anchor` / `sub/two.html#qi-mark-1` / same-page `#qi-mark-1`, cross-file `see` resolved to the target entry id, PDF book unchanged and passing, single-document suite green at 65 checks.
 - 2026-08-17: a second marker chapter is refused (first in book order wins, warned) rather than emitting two indexes; not AC-pinned, additive.
+- 2026-08-17: T6 done — book checks wired into tests/run-tests.sh (store-name pin, exhaustive href manifest, recursive one-index sweep, store-footprint sweep with a positive control, cross-file link resolution, fixture-axis coverage read off the render, cross-reference id check, no-marker book, book PDF); the missing-marker report joined the warning-discrimination self-test. Suite 65 -> 73 checks, green; --self-test green.
+- 2026-08-17: the book PDF check counts PAGES rather than printed locator tokens — makeindex collapses three consecutive pages into a range (`Shared Term, 3-5`), which a token count read as one locator and failed on.
 
 ## Decisions
 

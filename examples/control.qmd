@@ -1,0 +1,25 @@
+---
+title: "quarto-index control"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Negative control
+
+This document loads the extension but contains no index marks. Mark-like
+text appears only inside code, where it must survive untouched and produce
+no index at all.
+
+A fenced code block:
+
+```markdown
+[term]{.index}
+[term]{.index entry="Custom Entry"}
+[]{.index entry="Ghost!Sub"}
+```
+
+And inline code: `[term]{.index}` and `[x]{.index entry="Top!Leaf"}`.
+
+Ordinary prose mentioning the word index, a stray brace } and a stray
+percent sign %, none of which is a mark.

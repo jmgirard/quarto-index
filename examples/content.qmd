@@ -19,3 +19,14 @@ The same image with an explicit entry, which does index:
 
 A genuinely empty mark, which is dropped because there is nothing to show
 and nothing to index:[]{.index}
+
+# Cross-references with no source entry
+
+A cross-reference needs an entry to hang off. Neither mark below has one, so
+neither is indexed — and neither loses its content.
+
+The image again, this time carrying a cross-reference:
+[![](dot.png)]{.index see="Nowhere"}
+
+An empty mark carrying a cross-reference, which is dropped like any other
+empty mark:[]{.index see-also="Nowhere"}

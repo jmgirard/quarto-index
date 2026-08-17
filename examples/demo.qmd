@@ -27,6 +27,28 @@ three levels deep.
 **Invisible entry.** This sentence carries a mark with no visible
 text.[]{.index entry="Ghost!Sub"}
 
+# Cross-references
+
+A cross-reference sends the reader to another entry instead of listing a
+page. Keys here are deliberately distinct from the plain marks above: a term
+marked both ways can fail the index build, and the extension says so.
+
+**See.** [cats]{.index see="Felines"} points elsewhere.
+
+**See also.** [dogs]{.index see-also="Pets"} points elsewhere as well as here.
+
+**Multi-level target.** [owls]{.index see="Birds!Owls"} points at a sub-entry.
+
+**Literal bang in a target.** [bang]{.index see="Wow!!Hey"}.
+
+**Cross-reference from a sub-entry.**
+[foxes]{.index entry="Canids!Foxes" see="Vulpes"}.
+
+**Invisible cross-reference.**[]{.index entry="Ghosts" see-also="Spirits"}
+
+**Both attributes on one mark**, which warns and emits one entry carrying
+both targets: [both]{.index see="Aye" see-also="Bee"}.
+
 # Level syntax probes
 
 A literal exclamation mark is written `!!`.

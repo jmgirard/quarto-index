@@ -97,6 +97,54 @@ read -r -d '' DEMO_ENTRIES <<'MANIFEST' || true
 MANIFEST
 
 # ---------------------------------------------------------------------------
+# Manifest 1b — expected cross-reference \index{} arguments (M02-AC1).
+# Same oracle rule as manifest 1, with two further layers derived by hand:
+#   4. The target parse: same `!`/`!!` level semantics as `entry=`, with an
+#      empty level dropped rather than kept.
+#   5. The emission form recorded in M02's Decisions section: a single-target
+#      mark emits `<source>|see{<target>}` or `|seealso{...}`, a mark carrying
+#      both emits one command, `|quartoindexseeboth{<see>}{<see-also>}`, and
+#      target levels join with `: `.
+# ---------------------------------------------------------------------------
+read -r -d '' XREF_ENTRIES <<'MANIFEST' || true
+1	cats|see{Felines}
+1	dogs|seealso{Pets}
+1	owls|see{Birds: Owls}
+1	bang|see{Wow"!Hey}
+1	Canids!Foxes|see{Vulpes}
+1	Ghosts|seealso{Spirits}
+1	both|quartoindexseeboth{Aye}{Bee}
+MANIFEST
+
+# The dual-target command, named once. The check below pins it to the filter's
+# own constant, so the manifest cannot go on describing a form the filter has
+# renamed.
+XREF_BOTH_COMMAND='quartoindexseeboth'
+
+# ---------------------------------------------------------------------------
+# Manifest 1c — cross-reference text expected in the compiled PDF's index
+# region (M02-AC2). Each row is the source entry as makeindex prints it —
+# for a multi-level source, its deepest level, which is the sub-item the
+# cross-reference hangs off — then makeindex's own `, ` delimiter, then the
+# typeset cross-reference text.
+# ---------------------------------------------------------------------------
+read -r -d '' XREF_PDF_TEXT <<'MANIFEST' || true
+cats, see Felines
+dogs, see also Pets
+owls, see Birds: Owls
+bang, see Wow!Hey
+Foxes, see Vulpes
+Ghosts, see also Spirits
+both, see Aye; see also Bee
+MANIFEST
+
+# Every \index{} argument demo.qmd must produce, plain and cross-reference
+# alike. The planted-defect self-test checks a fixture against this same list,
+# so a cross-reference row is fenced exactly as a plain one is.
+ALL_DEMO_ENTRIES="$DEMO_ENTRIES
+$XREF_ENTRIES"
+
+# ---------------------------------------------------------------------------
 # Manifest 2 — control tokens expected in examples/control.tex (AC3).
 # For each mark, an escape-free token containing that mark's own `entry=`
 # value or visible text, plus the bracketed visible-text tokens.
@@ -128,6 +176,12 @@ read -r -d '' VISIBLE_TERMS <<'MANIFEST' || true
 1	old
 1	empty
 1	deep
+1	cats
+1	dogs
+1	owls
+1	bang
+1	foxes
+1	both
 1	entry specials
 1	pct % amp &amp; hash #
 1	us _ brace { }
@@ -174,6 +228,16 @@ A!!B!
 One!Two!Three!Four!Five!
 Grüße!Straße
 Specials % & # _ { } \ ~ ^ $ @ | !! " < >
+Canids!Foxes
+Ghosts
+Felines
+Pets
+Birds!Owls
+Wow!!Hey
+Vulpes
+Spirits
+Aye
+Bee
 MANIFEST
 
 # ---------------------------------------------------------------------------
@@ -312,7 +376,7 @@ require_pdf_tools() {
 # AC1 + AC4 — demo renders to LaTeX via the installed extension; entries match.
 # ---------------------------------------------------------------------------
 if [ "$FIXTURE_MODE" = "1" ]; then
-  check_entry_manifest "$2" "$DEMO_ENTRIES" "fixture"
+  check_entry_manifest "$2" "$ALL_DEMO_ENTRIES" "fixture"
   exit $?
 fi
 
@@ -368,7 +432,7 @@ PY
 quarto render examples/demo.qmd --to latex > "$WORK/demo-latex.log" 2>&1 \
   || { cat "$WORK/demo-latex.log" >&2; fail "AC1: demo.qmd failed to render to LaTeX"; }
 [ -s examples/demo.tex ] || fail "AC1: examples/demo.tex is empty"
-check_entry_manifest examples/demo.tex "$DEMO_ENTRIES" "AC1/AC4"
+check_entry_manifest examples/demo.tex "$ALL_DEMO_ENTRIES" "AC1/AC4"
 # Keep a copy: the later PDF render consumes examples/demo.tex, and the AC5
 # self-test plants its defects in this snapshot.
 cp examples/demo.tex "$WORK/demo-latex.tex"
@@ -382,6 +446,133 @@ grep -q 'levels deep' "$WORK/demo-latex.log" \
 grep -q 'empty index level in entry="One!Two!Three!Four!Five!"' "$WORK/demo-latex.log" \
   || fail "AC4: the trailing empty level produced no warning; folding must not swallow it (IP2)"
 pass "AC4: both the fold and empty-level warnings emitted for the deep probe"
+
+# ---------------------------------------------------------------------------
+# M02-AC1 — the cross-reference manifest is complete, and the form it
+# describes is the form the filter emits.
+# ---------------------------------------------------------------------------
+printf '%s\n' "$XREF_ENTRIES" > "$WORK/xref-manifest.txt"
+XREF_BOTH_COMMAND="$XREF_BOTH_COMMAND" python3 - examples/demo.qmd \
+  "$WORK/xref-manifest.txt" _extensions/index/index.lua <<'PY'
+import os, re, sys
+qmd_path, manifest_path, lua_path = sys.argv[1:4]
+both = os.environ['XREF_BOTH_COMMAND']
+
+# The manifest names the dual-target command; the filter defines it. If they
+# ever disagree, every dual row silently reclassifies as single-target and the
+# arithmetic below stops meaning anything.
+lua = open(lua_path, encoding='utf-8').read()
+m = re.search(r'XREF_BOTH_COMMAND\s*=\s*"([^"]+)"', lua)
+if not m:
+    print('FAIL: M02-AC1: no XREF_BOTH_COMMAND in the filter', file=sys.stderr)
+    sys.exit(1)
+if m.group(1) != both:
+    print(f'FAIL: M02-AC1: manifest names {both!r}, filter defines '
+          f'{m.group(1)!r}', file=sys.stderr)
+    sys.exit(1)
+
+single = dual = 0
+for line in open(manifest_path, encoding='utf-8'):
+    line = line.rstrip('\n')
+    if not line.strip():
+        continue
+    count, text = line.split('\t', 1)
+    if '|' + both in text:
+        dual += int(count)
+    else:
+        single += int(count)
+
+qmd = open(qmd_path, encoding='utf-8').read()
+# Occurrences, not matching lines, and quoted values only — the same limits the
+# entry= pins carry, recorded as known holes in the milestone file.
+found = qmd.count('see="') + qmd.count('see-also="')
+expected = single + 2 * dual
+if found != expected:
+    print(f'FAIL: M02-AC1: examples/demo.qmd has {found} cross-reference '
+          f'attribute occurrence(s), but the manifest accounts for {expected} '
+          f'({single} single-target + 2 x {dual} dual-target)', file=sys.stderr)
+    sys.exit(1)
+# The arithmetic above is exact only because demo.qmd holds no mark whose
+# target is unusable and none with no source entry — those emit an attribute
+# occurrence but no row. Both shapes live in other fixtures on purpose; this
+# check reports the invariant by name so a violation is not misread as a
+# manifest error.
+print(f'ok   M02-AC1: {single} single-target and {dual} dual-target rows '
+      f'account for all {found} cross-reference attributes in demo.qmd')
+PY
+
+# ---------------------------------------------------------------------------
+# M02-AC5 — misuse case (b): one warning, one command, render still clean.
+# ---------------------------------------------------------------------------
+
+# Assert a warning appears an EXACT number of times. Presence alone would pass
+# on a run that warned about the wrong mark, or warned twice for one.
+check_warning_count() {
+  local logfile="$1" pattern="$2" want="$3" label="$4" got
+  got=$(grep -cF -- "$pattern" "$logfile" || true)
+  [ "$got" = "$want" ] \
+    || fail "$label: expected $want occurrence(s) of <<$pattern>> in $logfile, got $got"
+}
+
+WARN_BOTH='index mark carries both see= and see-also='
+WARN_NO_SOURCE='cross-reference mark has no source entry'
+
+check_warning_count "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
+pass "M02-AC5: case (b) warned exactly once in the demo render"
+
+# Every warning the filter can emit must be distinct, or "identified by
+# distinctive message text" is not a property the suite can rely on. The
+# domain is the filter's own warn() literals, so a warning added later is
+# covered without editing this check.
+python3 - _extensions/index/index.lua <<'PY'
+import re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+# Each warn(...) call's leading string literal, which is the part a grep sees.
+lits = re.findall(r'warn\(\s*\(?"((?:[^"\\]|\\.)*)"', src)
+if len(lits) < 6:
+    print(f'FAIL: M02-AC5: found only {len(lits)} warn() literals; the '
+          f'distinctness check is not reading the filter', file=sys.stderr)
+    sys.exit(1)
+dupes = {l for l in lits if lits.count(l) > 1}
+if dupes:
+    print('FAIL: M02-AC5: warning messages are not distinct:', file=sys.stderr)
+    for d in sorted(dupes):
+        print(f'  <<{d}>>', file=sys.stderr)
+    sys.exit(1)
+# Neither may be a prefix of another, or a grep for the shorter also matches
+# the longer and the two stop being separable.
+for a in lits:
+    for b in lits:
+        if a is not b and b.startswith(a):
+            print(f'FAIL: M02-AC5: warning <<{a}>> is a prefix of <<{b}>>',
+                  file=sys.stderr)
+            sys.exit(1)
+print(f'ok   M02-AC5: all {len(lits)} filter warnings are mutually distinct')
+PY
+
+# The dual-target command must take its labels from LaTeX's own, or a document
+# loading babel silently loses its translations — the property the milestone's
+# Decisions entry banks on.
+python3 - _extensions/index/index.lua <<'PY'
+import re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+m = re.search(r'XREF_BOTH_DEFINITION\s*=\s*(.*?)\n\n', src, re.DOTALL)
+if not m:
+    print('FAIL: M02-AC5: no XREF_BOTH_DEFINITION in the filter', file=sys.stderr)
+    sys.exit(1)
+defn = m.group(1)
+for needed in ('seename', 'alsoname'):
+    if needed not in defn:
+        print(f'FAIL: M02-AC5: the dual-target definition does not use '
+              f'\\{needed}', file=sys.stderr)
+        sys.exit(1)
+if re.search(r'see\s+also|\bsee\b(?!name)', defn.replace('seename', '')):
+    print('FAIL: M02-AC5: the dual-target definition hard-codes label text '
+          'instead of using \\seename/\\alsoname', file=sys.stderr)
+    sys.exit(1)
+print('ok   M02-AC5: the dual-target command takes its labels from '
+      '\\seename/\\alsoname')
+PY
 
 # ---------------------------------------------------------------------------
 # AC2 — preamble injection and \printindex placement.
@@ -457,14 +648,28 @@ for fmt in html latex; do
   quarto render examples/content.qmd --to $fmt > "$WORK/content-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/content-$fmt.log" >&2; fail "AC7: content.qmd failed to render to $fmt"; }
 done
-[ "$(grep -o 'dot' examples/content.html | wc -l)" -ge 2 ] \
-  || fail "AC7: marking an image removed it from the HTML output (IP2)"
-[ "$(grep -o 'dot' examples/content.tex | wc -l)" -ge 2 ] \
-  || fail "AC7: marking an image removed it from the LaTeX output (IP2)"
+# content.qmd holds three marked images: the plain one, the entry= one, and
+# the cross-reference one added for M02-AC5 case (a). An exact count, not a
+# floor — a floor would pass while one of them was being dropped.
+for f in examples/content.html examples/content.tex; do
+  CONTENT_DOTS=$(grep -o 'dot' "$f" | wc -l | tr -d ' ')
+  [ "$CONTENT_DOTS" = "3" ] \
+    || fail "AC7/M02-AC5: expected 3 image references in $f, got $CONTENT_DOTS; marking an image must never remove it (IP2)"
+done
 CONTENT_IDX=$(grep -o '\\index{[^}]*}' examples/content.tex | wc -l | tr -d ' ')
 [ "$CONTENT_IDX" = "1" ] \
   || fail "AC7: expected exactly one \\index from content.qmd (the entry= mark), got $CONTENT_IDX"
 pass "AC7: marked content with no derivable text is indexed not at all and deleted not at all"
+
+# M02-AC5 case (a): a cross-reference mark with no source entry. Two shapes —
+# content that yields no text, and a genuinely empty mark — both warn, neither
+# adds an \index (the count above is unchanged by them), and neither deletes
+# content. Asserted in HTML and in LaTeX, since the warning is emitted in the
+# format-neutral layer.
+for fmt in html latex; do
+  check_warning_count "$WORK/content-$fmt.log" "$WARN_NO_SOURCE" 2 "M02-AC5"
+done
+pass "M02-AC5: case (a) warned exactly twice in each format, emitted no entry, deleted nothing"
 
 printf '%s\n' "$VISIBLE_TERMS" > "$WORK/visible.txt"
 printf '%s\n' "$ENTRY_VALUES_NO_LEAK" > "$WORK/noleak.txt"
@@ -522,17 +727,21 @@ if bad:
 no_leak = [v.rstrip('\n') for v in open(leak_path, encoding='utf-8') if v.strip()]
 
 # Pin the no-leak list to the source rather than trusting the hand list: every
-# entry= value in the .qmd must either be listed, or be a substring of some
-# visible term (in which case it is required to be present, not absent).
+# entry=, see= and see-also= value in the .qmd must either be listed, or be a
+# substring of some visible term (in which case it is required to be present,
+# not absent).
 terms = [t for _, t in rows]
 declared = []
-for raw in re.findall(r'entry="((?:\\.|[^"\\])*)"', qmd):
+# `see-also` is listed before `see` so the alternation cannot match the tail of
+# the longer name. All three attributes carry values that must never reach the
+# reader, so all three are pinned, not just entry=.
+for raw in re.findall(r'(?:entry|see-also|see)="((?:\\.|[^"\\])*)"', qmd):
     declared.append(re.sub(r'\\(.)', r'\1', raw))
 unaccounted = [v for v in set(declared)
                if v not in no_leak and not any(v in t for t in terms)]
 if unaccounted:
-    print('FAIL: AC7: entry= value(s) neither in the no-leak manifest nor a '
-          'substring of a visible term:', file=sys.stderr)
+    print('FAIL: AC7/M02-AC4: mark attribute value(s) neither in the no-leak '
+          'manifest nor a substring of a visible term:', file=sys.stderr)
     for v in sorted(unaccounted):
         print(f'  <<{v}>>', file=sys.stderr)
     sys.exit(1)
@@ -549,11 +758,13 @@ def parsed(v):
 leaked = sorted({v for v in no_leak
                  if v in body or parsed(v) in body})
 if leaked:
-    print('FAIL: AC7: entry= value(s) leaked into rendered text:', file=sys.stderr)
+    print('FAIL: AC7/M02-AC4: mark attribute value(s) leaked into rendered '
+          'text:', file=sys.stderr)
     for v in leaked:
         print(f'  <<{v}>>', file=sys.stderr)
     sys.exit(1)
-print(f'ok   AC7: {len(rows)} visible terms present ({total} marks), no entry= leakage')
+print(f'ok   AC7/M02-AC4: {len(rows)} visible terms present ({total} marks), '
+      f'no entry=/see=/see-also= leakage')
 PY
 
 # ---------------------------------------------------------------------------
@@ -668,6 +879,36 @@ print(f'ok   AC6: PDF index heading found, {len(terms)} derived terms listed')
 PY
 
 # ---------------------------------------------------------------------------
+# M02-AC2 — every cross-reference reaches the compiled index as typeset text.
+# The .tex check proves the argument was built; only this proves a reader can
+# see it (GP6).
+# ---------------------------------------------------------------------------
+printf '%s\n' "$XREF_PDF_TEXT" > "$WORK/xrefpdf.txt"
+python3 - "$WORK/demo.txt" "$WORK/xrefpdf.txt" <<'PY'
+import re, sys
+text = open(sys.argv[1], encoding='utf-8').read()
+rows = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
+m = re.search(r'^\s*Index\s*$', text, re.MULTILINE)
+if not m:
+    print('FAIL: M02-AC2: no "Index" heading in pdftotext output',
+          file=sys.stderr)
+    sys.exit(1)
+# Same whitespace normalization the AC6 check uses: the printed index is set in
+# two columns, so runs of layout spacing collapse to one space.
+region = ' '.join(text[m.end():].split())
+missing = [r for r in rows if ' '.join(r.split()) not in region]
+if missing:
+    print('FAIL: M02-AC2: cross-reference(s) missing from the PDF index '
+          'section:', file=sys.stderr)
+    for r in missing:
+        print(f'  <<{r}>>', file=sys.stderr)
+    print(f'--- index region ---\n{region[:1500]}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M02-AC2: all {len(rows)} cross-references typeset in the PDF '
+      f'index, source entry and text together')
+PY
+
+# ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--self-test" ]; then
@@ -694,6 +935,34 @@ PY
       || { printf '%s\n' "$OUT" >&2; fail "AC5: self-test output does not name <<$expect>>"; }
   done
   pass "AC5: the script itself exits $RC on removed, altered and spurious entries, naming each"
+
+  # M02-AC5: the warning checks must discriminate on both axes. A check that
+  # only greps for presence passes on a log that warned twice for one mark, so
+  # absence alone is not enough evidence that the check is doing anything.
+  warn_discrimination() {
+    local logfile="$1" pattern="$2" want="$3" label="$4"
+    local removed="$WORK/warn-removed.log" dup="$WORK/warn-dup.log"
+
+    grep -vF -- "$pattern" "$logfile" > "$removed" || true
+    if ( check_warning_count "$removed" "$pattern" "$want" "$label" ) \
+         >/dev/null 2>&1; then
+      fail "$label: the warning check passed on a log with <<$pattern>> removed"
+    fi
+
+    awk -v p="$pattern" '{ print; if (index($0, p)) print }' "$logfile" > "$dup"
+    if ( check_warning_count "$dup" "$pattern" "$want" "$label" ) \
+         >/dev/null 2>&1; then
+      fail "$label: the warning check passed on a log with <<$pattern>> duplicated"
+    fi
+
+    # The unmutated log must still pass, or the two failures above would prove
+    # only that the check always fails.
+    check_warning_count "$logfile" "$pattern" "$want" "$label"
+    pass "M02-AC5: the check for <<$pattern>> fails when it is missing and when it is duplicated, and passes as rendered"
+  }
+
+  warn_discrimination "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
+  warn_discrimination "$WORK/content-latex.log" "$WARN_NO_SOURCE" 2 "M02-AC5"
 fi
 
 printf '\nAll checks passed.\n'

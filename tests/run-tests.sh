@@ -1098,10 +1098,11 @@ if authored:
           f'with an author-supplied id, but {len(authored)} mark(s) carry one',
           file=sys.stderr)
     sys.exit(1)
-if re.search(r'^#{1,6} .*\]\{\.index', qmd, re.MULTILINE):
-    # A mark inside a heading borrows the heading's id and mints nothing.
-    print('FAIL: M03-AC3: the anchor count assumes demo.qmd holds no mark '
-          'inside a heading, but at least one heading contains a mark',
+if re.search(r'^#{1,6} .*\]\{[^}]*\.index', qmd, re.MULTILINE):
+    # A heading mark's anchor is emitted on an empty span AFTER the heading,
+    # not on the mark span itself — the per-anchor check below assumes none.
+    print('FAIL: M03-AC3: the span-anchored check assumes demo.qmd holds no '
+          'mark inside a heading, but at least one heading contains a mark',
           file=sys.stderr)
     sys.exit(1)
 locator_marks = [m for m in all_marks
@@ -1277,10 +1278,11 @@ PY
 # failure this fixture exists to catch — a dedupe keyed on rendered text
 # passes every other check in this suite.
 # ---------------------------------------------------------------------------
-# The fixture also writes two ids the extension would otherwise mint for
-# itself (`qi-mark-1` on theta, `qi-entry-1` on lambda), so the derivation
-# below skips those numbers: ab takes qi-mark-2, iota qi-mark-3, kappa
-# qi-mark-4, and the entries are numbered from qi-entry-2.
+# The fixture also writes three ids the extension would otherwise mint for
+# itself — `qi-mark-1` on theta, `qi-mark-3` in raw HTML where no mark is,
+# `qi-entry-1` on lambda — so the derivation below skips those numbers: ab
+# takes qi-mark-2, iota qi-mark-4, kappa qi-mark-5, bee qi-mark-6, Bee
+# qi-mark-7, and the entries are numbered from qi-entry-2.
 read -r -d '' HTML_INDEX_MANIFEST <<'MANIFEST' || true
 0	A	0
 1	B	1
@@ -1328,28 +1330,41 @@ for term, want in (('theta', f'#{anchor_prefix}1'),
               f"expected ['{want}'] — an id the author wrote is never taken "
               f"over", file=sys.stderr)
         sys.exit(1)
-# ...and nothing minted reuses them.
+# ...and nothing minted reuses them — the id written in raw HTML included,
+# which only an HTML reading of the document can see.
 if records['lambda']['id'] == f'{entry_prefix}1':
     print(f'FAIL: M03-AC3: an entry was numbered {entry_prefix}1, which the '
           f'author already used', file=sys.stderr)
     sys.exit(1)
-minted = [i for i in ids if i.startswith(anchor_prefix)]
-if f'{anchor_prefix}1' not in minted or len(minted) != 6:
-    print(f'FAIL: M03-AC3: expected the author id plus 5 minted anchors, got '
-          f'{sorted(minted)}', file=sys.stderr)
+if records['iota']['locators'] != [f'#{anchor_prefix}4']:
+    print(f"FAIL: M03-AC3: iota's locator is {records['iota']['locators']}, "
+          f"expected ['#{anchor_prefix}4'] — minting must skip "
+          f"{anchor_prefix}3, which the author wrote in raw HTML",
+          file=sys.stderr)
+    sys.exit(1)
+namespace = [i for i in ids if i.startswith(anchor_prefix)]
+if (not {f'{anchor_prefix}1', f'{anchor_prefix}3'} <= set(namespace)
+        or len(namespace) != 7):
+    print(f'FAIL: M03-AC3: expected the two author-written ids plus 5 minted '
+          f'anchors, got {sorted(namespace)}', file=sys.stderr)
     sys.exit(1)
 print('ok   M03-AC3: minted anchor and entry ids skip the ids the author '
-      'already used, and every id in the document is unique')
+      'already used — the one written in raw HTML included — and every id '
+      'in the document is unique')
 PY
 
 # ---------------------------------------------------------------------------
 # M03-AC2 — locator numbering where the renderer moves content. Manifest 1g,
 # same oracle rule and row format as manifest 1e: `widget` is marked in a
-# heading, a table cell and a footnote, and `gadget` carries an id of the
-# author's own.
+# heading, a table cell and a footnote; `gadget` carries an id of the
+# author's own; `sprocket` and `flange` share one heading; `doohickey`
+# carries an author id INSIDE a heading.
 # ---------------------------------------------------------------------------
 read -r -d '' PLACEMENT_HTML_INDEX <<'MANIFEST' || true
+0	doohickey	1
+0	flange	1
 0	gadget	1
+0	sprocket	1
 0	widget	3
 MANIFEST
 
@@ -1361,6 +1376,7 @@ check_html_index_links examples/placement.html "M03-AC3"
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
 python3 - examples/placement.html <<'PY'
 import os, sys
+from collections import Counter
 sys.path.insert(0, 'tests')
 import htmlindex as H
 doc = H.parse(sys.argv[1])
@@ -1370,62 +1386,100 @@ records = {r['term']: r for r in
 
 # Numbered in the order the marks are WRITTEN. The footnote's mark is written
 # third and rendered last, so a numbering taken from rendered position would
-# put it out of step with the table cell's. The first mark sits in a heading
-# and takes that heading's own id: Quarto copies a heading's contents into the
-# sidebar table of contents, so an id minted there would appear twice and the
-# locator would resolve to the sidebar copy instead of the text.
-want = ['#a-widget-in-a-heading', f'#{prefix}1', f'#{prefix}2']
+# put it out of step with the table cell's. The heading mark's anchor is an
+# empty span emitted just AFTER the heading, minted like any other.
+want = [f'#{prefix}1', f'#{prefix}2', f'#{prefix}3']
 if records['widget']['locators'] != want:
     print(f"FAIL: M03-AC2: widget's locators are "
           f"{records['widget']['locators']}, expected {want} (heading, table "
           f"cell, footnote — the order the marks are written)", file=sys.stderr)
     sys.exit(1)
 
-# This fixture has a table of contents precisely so the duplicate above is
-# reachable; assert it is not there. A document-wide uniqueness check on
+# No anchor id may remain inside a rendered heading: Quarto copies a
+# heading's contents into the sidebar table of contents, so an id in there
+# appears twice and the locator resolves to the sidebar copy. Every heading
+# mark's anchor — minted or the author's own — sits after its heading.
+mark_anchors = {f'{prefix}1', f'{prefix}4', f'{prefix}5',
+                'my-gadget', 'my-doohickey'}
+inside = set()
+for h in [n for n in H.walk(doc)
+          if n.tag in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6')]:
+    inside.update(n.attrs['id'] for n in H.walk(h) if n.attrs.get('id'))
+misplaced = sorted(mark_anchors & inside)
+if misplaced:
+    print(f'FAIL: M03-AC3: anchor id(s) inside a rendered heading, where the '
+          f'sidebar TOC duplicates them: {misplaced}', file=sys.stderr)
+    sys.exit(1)
+toc = H.find_id(doc, 'TOC')
+if toc is None:
+    print('FAIL: M03-AC2: no rendered table of contents; this fixture exists '
+          'to probe TOC duplication and proves nothing without one',
+          file=sys.stderr)
+    sys.exit(1)
+leaked = sorted(mark_anchors & set(H.all_ids(toc)))
+if leaked:
+    print(f'FAIL: M03-AC3: anchor id(s) duplicated into the table of '
+          f'contents: {leaked}', file=sys.stderr)
+    sys.exit(1)
+
+# The uniqueness sweep behind the two checks above: with a TOC present, ANY
+# duplicated id is visible here. A document-wide uniqueness check on
 # demo.html cannot see this, because demo.qmd has no TOC and no heading mark.
-from collections import Counter
 dupes = sorted({i for i, n in Counter(H.all_ids(doc)).items() if n > 1})
 if dupes:
-    print(f'FAIL: M03-AC2: duplicate id(s) in a document with a TOC and a '
-          f'mark in a heading: {dupes}', file=sys.stderr)
+    print(f'FAIL: M03-AC2: duplicate id(s) in a document with a TOC and '
+          f'marks in headings: {dupes}', file=sys.stderr)
     sys.exit(1)
 if not any(a.attrs.get('href') == '#qi-index' for a in H.find_all(doc, 'a')):
     print('FAIL: M03-AC2: the generated index section is not linked from the '
           'table of contents', file=sys.stderr)
     sys.exit(1)
 
+# Two marks in one heading get one anchor EACH: a shared anchor sends two
+# index entries to a single place.
+for term, want_loc in (('sprocket', [f'#{prefix}4']),
+                       ('flange', [f'#{prefix}5'])):
+    if records[term]['locators'] != want_loc:
+        print(f"FAIL: M03-AC3: {term}'s locator is "
+              f"{records[term]['locators']}, expected {want_loc} — each of "
+              f"two marks in one heading needs an anchor of its own",
+              file=sys.stderr)
+        sys.exit(1)
+
 # The relocation this fixture exists to probe must actually have happened, or
-# the check above proves nothing: the footnote's anchor sits inside the
+# the checks above prove nothing: the footnote's anchor sits inside the
 # footnotes section the renderer moved to the end of the page, AFTER the mark
 # that is written below it in the source.
 footnotes = H.find_id(doc, 'footnotes')
-if footnotes is None or H.find_id(footnotes, f'{prefix}2') is None:
-    print(f'FAIL: M03-AC2: {prefix}2 is not inside the rendered footnotes '
+if footnotes is None or H.find_id(footnotes, f'{prefix}3') is None:
+    print(f'FAIL: M03-AC2: {prefix}3 is not inside the rendered footnotes '
           f'section, so this fixture is not probing relocated content',
           file=sys.stderr)
     sys.exit(1)
 order = H.all_ids(doc)
-if order.index('my-gadget') > order.index(f'{prefix}2'):
+if order.index('my-gadget') > order.index(f'{prefix}3'):
     print(f'FAIL: M03-AC2: the footnote mark still renders before the mark '
           f'written after it, so nothing was relocated', file=sys.stderr)
     sys.exit(1)
 
-# The author's own id is the link target, and no anchor was minted for it.
-if records['gadget']['locators'] != ['#my-gadget']:
-    print(f"FAIL: M03-AC2: gadget's locator is "
-          f"{records['gadget']['locators']}, expected ['#my-gadget'] — an id "
-          f"the author wrote is never taken over", file=sys.stderr)
+# An author's own id is the link target and no anchor is minted for it — in
+# body text (gadget) and relocated out of a heading (doohickey) alike.
+for term, own in (('gadget', '#my-gadget'), ('doohickey', '#my-doohickey')):
+    if records[term]['locators'] != [own]:
+        print(f"FAIL: M03-AC2: {term}'s locator is "
+              f"{records[term]['locators']}, expected ['{own}'] — an id the "
+              f"author wrote is never taken over", file=sys.stderr)
+        sys.exit(1)
+minted = [i for i in order if i.startswith(prefix)]
+if len(minted) != 5:
+    print(f'FAIL: M03-AC2: {len(minted)} anchors minted, expected 5 (three '
+          f'widget marks and the two marks sharing a heading; the two marks '
+          f'carrying author ids need none)', file=sys.stderr)
     sys.exit(1)
-minted = [i for i in H.all_ids(doc) if i.startswith(prefix)]
-if len(minted) != 2:
-    print(f'FAIL: M03-AC2: {len(minted)} anchors minted, expected 2 (the mark '
-          f'in the heading borrows its id and the mark carrying an author id '
-          f'needs none)', file=sys.stderr)
-    sys.exit(1)
-print('ok   M03-AC2: locators are numbered in source order across a heading, a '
-      'table cell and a relocated footnote, and an author-supplied id is kept '
-      'and linked')
+print('ok   M03-AC2: locators are numbered in source order across a heading, '
+      'a table cell and a relocated footnote; heading anchors sit after '
+      'their headings, out of the TOC; author-supplied ids are kept and '
+      'linked')
 PY
 
 # ---------------------------------------------------------------------------

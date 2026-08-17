@@ -125,12 +125,13 @@ Two back-ends ship:
   cross-reference targets as links.
 
   Ids are assigned in the **Pandoc** pass, not at the mark: an id must not
-  collide with one the author wrote, and that is only knowable once the whole
-  document has been seen. A mark reuses an id where one already exists — its
-  own, or its enclosing heading's — and is otherwise tagged by the Span pass
-  and given a minted id later. Nothing is minted inside a heading, because
+  collide with one the author wrote — ids written in raw HTML included — and
+  that is only knowable once the whole document has been seen. A mark keeps
+  an id of the author's own and is otherwise tagged by the Span pass and
+  given a minted id later. No anchor id stays inside a heading, because
   Quarto copies a heading's inlines into the table of contents and the id
-  would then appear twice.
+  would then appear twice; a heading mark's anchor — author id or minted —
+  sits on an empty span emitted just after the heading.
 
 Every other format — beamer, revealjs, epub, gfm — takes neither branch and
 passes marks through untouched (IP2).

@@ -196,15 +196,17 @@ of HTML text, so Pandoc's writer does the escaping. No stylesheet is added; the
 class names below are hooks for styling it yourself.
 
 Each mark that contributes a locator needs somewhere for its locator to link
-to, and the extension prefers an id that already exists over one of its own:
+to:
 
 - a mark carrying an id of your own keeps it, and the index links to that id;
-- a mark inside a section heading links to the heading's own id, so the
-  locator lands at the start of that section. Nothing is added inside the
-  heading, because Quarto copies a heading's contents into the sidebar table
-  of contents, and an id in there would end up in the page twice;
 - every other mark gets an anchor on its own span — `qi-mark-1`, `qi-mark-2`
   and so on, numbered in the order the marks are written.
+
+A heading is the one place an anchor cannot sit, because Quarto copies a
+heading's contents into the sidebar table of contents, and an id in there
+would end up in the page twice. So a heading mark's anchor — your own id or a
+minted one — is placed on an invisible element just after the heading, and
+the locator lands at the start of that section.
 
 Each entry carries an id too, `qi-entry-1` onward, so that a cross-reference
 can link to it. Both kinds of generated id skip any name your document already

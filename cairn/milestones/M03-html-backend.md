@@ -111,12 +111,12 @@ criteria audit applied).
 ## Coverage
 
 - AC1 → T1, T5
-- AC2 → T2, T4, T5, T9
-- AC3 → T1, T5, T9, T10, T11
+- AC2 → T2, T4, T5, T9, T12
+- AC3 → T1, T5, T9, T10, T11, T12
 - AC4 → T3, T6, T8
 - AC5 → T5
 - AC6 → T5, T10
-- AC7 → T7, T11
+- AC7 → T7, T11, T12
 
 ## Tasks
 
@@ -143,6 +143,9 @@ criteria audit applied).
 - [x] T11: Review F8/F9/F12 — README/DESIGN corrections; AC3 narrowed via the
       amendment gate (F4), including the single-layer no-leak comparison; the
       remaining findings recorded as candidate rows.
+- [x] T12: pass-2 return — anchors relocate to an empty span after the
+      heading (author-id, multi-mark and no-id headings uniform); the id
+      collector reads raw-HTML ids; regression fixtures for all three shapes.
 
 ## Work log
 
@@ -191,12 +194,15 @@ criteria audit applied).
 
 - 2026-08-17: amendment return: AC3 — "compared in a single layer — the value against the decoded text a reader would see — so a value containing `&`, `<`, `>` or `\"` cannot slip past by being escaped in the render"; a second amendment naming AC3 stops per the rules, so the disposition went to the user, who chose to correct the wording. The requirement was already right and already implemented; only its explanation was backwards (review pass 2, blame lens).
 - 2026-08-17: PAUSED mid-fix at the user's decision. The pass-2 findings are all recorded above; none is fixed yet. The approach question is OPEN and is the first thing to settle on resume: the session recommended switching to the alternative recorded at the implement gate (emit each mark's anchor in a hidden element just after the heading, rather than borrowing the heading's id), because that makes the author-id, missing-heading-id and two-marks-in-one-heading cases stop being special; the alternatives offered were patching the three cases individually or narrowing the milestone so marks in headings carry no locator. Defect returns so far: 2 — a third hits the descope-or-park threshold.
+- 2026-08-17: resume; the open approach question went to the user, who chose the recorded alternative — every heading mark's anchor is an empty span emitted just after the heading, replacing heading-id borrowing (Decisions below). Minor amendment: T12 added; AC2/AC3/AC7 coverage extended to it.
+- 2026-08-17: T12 — relocate_heading_anchors moves each heading mark's anchor duty (the author's id, or the pending tag) onto an empty span emitted after the heading; author-id resolution moved from the Span pass into assign_anchors, so heading and body marks take one path; taken_identifiers now also reads ids out of raw HTML. placement.qmd gains the two-marks-in-one-heading and author-id-in-heading shapes, html-index.qmd a raw `qi-mark-3` (a native-span first attempt was silently visible to the Attr walk — the fixture uses a `{=html}` block, which is not). All three shapes verified to fail under the reverted filter for their own named reasons and pass under the fix. README and DESIGN reworded from borrowing to the after-heading anchor. Suite green with --self-test; AC1 merge-base byte-identity re-confirmed.
 
 ## Decisions
 
 - 2026-08-16: implement gate chose `qi-index` (section), `qi-mark-<n>` (locator anchors) and `qi-entry-<n>` (index entries) as the HTML identifiers over an `index`-based name because an author's own "Index" heading claims that id, and over a spelled-out `quarto-index-` prefix because these appear in a reader's URL; falsified by a collision with another extension's `qi-` namespace.
 - 2026-08-16: implement gate chose to keep an author-supplied id on a mark and link the index to it, rather than overwrite it with a minted anchor, because overwriting would break whatever already points at that id; consequently minted anchors number the marks that needed one, not every mark. Falsified by an author id that is not document-unique.
 - 2026-08-16: implement chose to render two marks carrying the same target on one key as ONE cross-reference over repeating it, because that is what the LaTeX index tool does with a repeated cross-reference and a repeat would report how the author spread the marks rather than anything a reader wants; falsified by a use for counting cross-reference marks.
+- 2026-08-17: pass-2 gate replaced heading-id borrowing with per-mark anchor elements emitted immediately after the heading, because borrowing made the author-id, missing-id and multi-mark heading shapes each a special case and two of them failed review; an author id on a heading mark now relocates onto its emitted anchor, narrowing the author-id decision above to marks outside headings. Falsified by a reader-visible artifact of the emitted anchor block, or by a consumer that needs the id to sit on the mark span itself.
 
 ## Review
 

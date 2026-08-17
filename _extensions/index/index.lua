@@ -111,11 +111,12 @@ local HTML_SECTION_ID = "qi-index"
 local HTML_ANCHOR_PREFIX = "qi-mark-"
 local HTML_ENTRY_PREFIX = "qi-entry-"
 
--- A mark that needs an anchor cannot be given one while it is being visited:
--- the id must not collide with an id anywhere else in the document, and the
--- document has not been seen yet. The Span pass tags such a mark with this
--- attribute, and the Pandoc pass — which has the whole document — assigns the
--- id and removes the tag. It never survives into output.
+-- A mark's anchor cannot be settled while the mark is being visited: whether
+-- the mark's own id serves, where the anchor may sit, and what a minted id
+-- must not collide with all depend on parts of the document not yet seen.
+-- The Span pass tags every locator-contributing mark with this attribute,
+-- and the Pandoc pass — which has the whole document — resolves the anchor
+-- and removes the tag. It never survives into output.
 local HTML_PENDING_ATTR = "data-qi-pending"
 
 -- Split an `entry=` value into sub-entry levels: `!` separates, `!!` is a
@@ -377,14 +378,10 @@ local function Span(span)
     if #xrefs == 0 then
       -- Only a locator-contributing mark needs somewhere to link back to; a
       -- cross-reference mark takes the place of the locator and so has no
-      -- anchor of its own.
-      if span.identifier ~= nil and span.identifier ~= "" then
-        -- An id the author wrote is left alone and used as the link target:
-        -- taking it over would break whatever already points at it.
-        record.anchor = span.identifier
-      else
-        span.attributes[HTML_PENDING_ATTR] = tostring(#html_marks)
-      end
+      -- anchor of its own. WHICH id anchors it — the author's own, or a
+      -- minted one — is settled in the Pandoc pass, which can see every id
+      -- in the document and every heading a mark sits in.
+      span.attributes[HTML_PENDING_ATTR] = tostring(#html_marks)
     end
     return span
   end
@@ -433,37 +430,6 @@ local function Span(span)
     xref_both_emitted = true
   end
   return result
-end
-
--- Quarto copies a heading's inlines into the table of contents, an anchor span
--- among them, so an id minted inside a heading appears TWICE in the page and a
--- link to it resolves to the sidebar copy rather than to the text. A heading
--- already carries an id of its own, which is both unique and the better
--- destination — a locator into a section lands at the section. This runs after
--- the Span pass has visited the heading's own inlines, so the marks inside it
--- are already tagged.
-local function Header(header)
-  if not is_html() or header.identifier == "" then
-    -- With no id to borrow, the mark keeps its pending tag and is given a
-    -- minted id like any other; the duplicate above is then possible again,
-    -- but Quarto gives every heading an id, so this is the unreachable case.
-    return nil
-  end
-  header.content = header.content:walk({
-    Span = function(span)
-      local pending = span.attributes[HTML_PENDING_ATTR]
-      if pending == nil then
-        return nil
-      end
-      local record = html_marks[tonumber(pending)]
-      if record then
-        record.anchor = header.identifier
-      end
-      span.attributes[HTML_PENDING_ATTR] = nil
-      return span
-    end,
-  })
-  return header
 end
 
 -- ---------------------------------------------------------------------------
@@ -693,14 +659,75 @@ local function taken_identifiers(doc)
     end
     return nil
   end
-  doc:walk({ Block = note, Inline = note })
+  -- An id can also be written in raw HTML, where it is no Attr at all. Read
+  -- the three spellings an id attribute has in HTML; over-collecting from
+  -- text that merely looks like one costs a skipped number, nothing more.
+  local function note_raw(raw)
+    if raw.format:match("^html") then
+      for _, pattern in ipairs({ '%sid%s*=%s*"([^"]*)"',
+                                 "%sid%s*=%s*'([^']*)'",
+                                 "%sid%s*=%s*([^%s\"'<>=`]+)" }) do
+        for id in raw.text:gmatch(pattern) do
+          taken[id] = true
+        end
+      end
+    end
+    return nil
+  end
+  doc:walk({ Block = note, Inline = note,
+             RawBlock = note_raw, RawInline = note_raw })
   return taken
 end
 
--- Give every still-pending mark an id that nothing else in the document uses,
--- numbered in the order the marks are written. Skipping a taken number leaves
--- a gap in the sequence, which is the right trade: the numbers are link
--- targets, not a count of anything.
+-- Quarto copies a heading's inlines into the table of contents, so an anchor
+-- id that stayed inside a heading would appear TWICE in the page, and a link
+-- to it would resolve to the sidebar copy rather than to the text. So no
+-- anchor stays inside: every heading mark's anchor duty — the author's own
+-- id if the mark carried one, its pending tag if not — moves onto an empty
+-- span emitted immediately after the heading, which sits in the same section
+-- and renders as nothing. One relocation for every mark, rather than
+-- borrowing the heading's own id: borrowing made a mark with an author id,
+-- two marks in one heading, and a heading without an id each a special case,
+-- and the first two failed.
+local function relocate_heading_anchors(doc)
+  return doc:walk({
+    Blocks = function(blocks)
+      local out = pandoc.Blocks({})
+      for _, block in ipairs(blocks) do
+        local anchors = pandoc.Inlines({})
+        if block.t == "Header" then
+          block = block:walk({
+            Span = function(span)
+              local pending = span.attributes[HTML_PENDING_ATTR]
+              if pending == nil then
+                return nil
+              end
+              local anchor = pandoc.Span({})
+              anchor.identifier = span.identifier
+              anchor.attributes[HTML_PENDING_ATTR] = pending
+              anchors:insert(anchor)
+              span.identifier = ""
+              span.attributes[HTML_PENDING_ATTR] = nil
+              return span
+            end,
+          })
+        end
+        out:insert(block)
+        if #anchors > 0 then
+          out:insert(pandoc.Plain(anchors))
+        end
+      end
+      return out
+    end,
+  })
+end
+
+-- Resolve every still-pending mark. A mark carrying an id of the author's
+-- own keeps it as the link target — taking it over would break whatever
+-- already points at it — and every other mark is given an id that nothing
+-- else in the document uses, numbered in the order the marks are written.
+-- Skipping a taken number leaves a gap in the sequence, which is the right
+-- trade: the numbers are link targets, not a count of anything.
 local function assign_anchors(doc, taken)
   local number = 0
   return doc:walk({
@@ -709,16 +736,17 @@ local function assign_anchors(doc, taken)
       if pending == nil then
         return nil
       end
-      repeat
-        number = number + 1
-      until not taken[HTML_ANCHOR_PREFIX .. number]
-      local id = HTML_ANCHOR_PREFIX .. number
-      taken[id] = true
-      span.identifier = id
       span.attributes[HTML_PENDING_ATTR] = nil
+      if span.identifier == "" then
+        repeat
+          number = number + 1
+        until not taken[HTML_ANCHOR_PREFIX .. number]
+        span.identifier = HTML_ANCHOR_PREFIX .. number
+        taken[span.identifier] = true
+      end
       local record = html_marks[tonumber(pending)]
       if record then
-        record.anchor = id
+        record.anchor = span.identifier
       end
       return span
     end,
@@ -750,6 +778,7 @@ local function Pandoc(doc)
       return nil
     end
     local taken = taken_identifiers(doc)
+    doc = relocate_heading_anchors(doc)
     return append_html_index(assign_anchors(doc, taken), taken)
   end
 
@@ -800,9 +829,10 @@ local function Pandoc(doc)
   return doc
 end
 
--- Span and Header share one pass so that a heading's marks are visited before
--- the heading itself, which is what lets Header see them already tagged.
+-- The Span pass records the marks; every anchor decision that needs the
+-- whole document — which ids are taken, which marks sit inside headings —
+-- waits for the Pandoc pass.
 return {
-  { Span = Span, Header = Header },
+  { Span = Span },
   { Pandoc = Pandoc },
 }

@@ -84,24 +84,24 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
 
 ## Tasks
 
-- [ ] T1: Book fixtures: `examples/book/` (≥3 chapters incl. one in a
+- [x] T1: Book fixtures: `examples/book/` (≥3 chapters incl. one in a
       subdirectory; plain / heading / author-id / invisible marks; a term
       shared across chapters; a cross-file cross-reference; an unresolvable
       cross-reference; marker chapter last) and a no-marker variant;
       hand-derived manifests for index page, locator hrefs, PDF terms,
       visible terms.
-- [ ] T2: Book detection (`doc.meta.book` + `quarto.project.directory`) and
+- [x] T2: Book detection (`doc.meta.book` + `quarto.project.directory`) and
       per-chapter sidecar store: serialization of mark records (levels,
       xrefs, anchor ids, chapter output href, chapter position), store dir
       under the project directory, records filtered to the current chapter
       list at read time (stale chapters ignored).
-- [ ] T3: Chapter-side behavior: suppress per-chapter index emission,
+- [x] T3: Chapter-side behavior: suppress per-chapter index emission,
       anchors still assigned per M03 rules, marker chapter registers itself
       in the store.
-- [ ] T4: Aggregation at the marker chapter: read store in book chapter
+- [x] T4: Aggregation at the marker chapter: read store in book chapter
       order, build the entry tree with the existing builder, cross-file
       locator hrefs, cross-reference resolution deferred to aggregation.
-- [ ] T5: Missing-marker warning via the last-in-order chapter's run (warn
+- [x] T5: Missing-marker warning via the last-in-order chapter's run (warn
       once per full render; no warning on partial renders).
 - [ ] T6: Suite: multi-file structural resolution in `tests/htmlindex.py`
       (row format extended to carry locator hrefs), book HTML checks
@@ -120,6 +120,11 @@ future back-end work. Letter groups, sort keys → existing candidate rows.
 - 2026-08-17: plan gate kept numeric sequence locators over chapter-based labels for consistency with the shipped single-doc index; falsified by reader evidence that numeric locators fail in long books (candidate row records the alternative).
 - 2026-08-17: plan chose last-in-order-chapter warning (store registration) over grepping chapter sources for the marker because source-text scanning is fragile (comments, includes); falsified by the store mechanism producing spurious or missing warnings across freeze/partial renders.
 - 2026-08-17: implement started on branch m05-book-support.
+- 2026-08-17: implement gate — store lives in Quarto's own `.quarto/` scratch directory (already gitignored, invisible to authors) over a visible cache dir needing author setup; falsified by Quarto reclaiming or wiping `.quarto/` between chapter renders.
+- 2026-08-17: implement gate kept AC6's warn-and-place-nothing for a marker-less HTML book over appending the index to the last chapter (which is what the PDF book does), because picking the location for the author is the choice the marker exists to make; falsified by authors reporting the warning as an obstacle rather than a fix.
+- 2026-08-17: implement gate added a warning naming the chapters that follow the marker chapter over documenting marker-chapter-last alone, because a misplaced marker otherwise yields a quietly short index; not AC-pinned, additive.
+- 2026-08-17: T1-T5 done — book fixtures (examples/book, examples/book-nomarker), book detection from `book.render` + `quarto.doc`/`quarto.project`, per-chapter JSON store under `.quarto/quarto-index/`, aggregation at the marker chapter, missing-marker warning from the last chapter. Verified by render: exactly one index section across the four-chapter book (on the marker chapter's page), locators `index.html#qi-mark-2` / `one.html#gamma-anchor` / `sub/two.html#qi-mark-1` / same-page `#qi-mark-1`, cross-file `see` resolved to the target entry id, PDF book unchanged and passing, single-document suite green at 65 checks.
+- 2026-08-17: a second marker chapter is refused (first in book order wins, warned) rather than emitting two indexes; not AC-pinned, additive.
 
 ## Decisions
 

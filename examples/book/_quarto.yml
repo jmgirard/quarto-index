@@ -1,0 +1,24 @@
+# The book fixture (M05). Four chapters, the last one carrying the placement
+# marker, so the aggregated index is built where the author asked for it.
+#
+# The shapes here are load-bearing for the acceptance manifests: a term marked
+# in three chapters, a chapter in a subdirectory, a cross-reference whose
+# target another chapter contributes, and a mark in the marker chapter itself.
+project:
+  type: book
+
+book:
+  title: "Index Book Fixture"
+  chapters:
+    - index.qmd
+    - one.qmd
+    - sub/two.qmd
+    - last.qmd
+
+format:
+  html: default
+  pdf:
+    documentclass: scrbook
+
+filters:
+  - index

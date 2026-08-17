@@ -1,0 +1,4 @@
+# Second chapter without a marker
+
+The last chapter in book order is the one that reports the missing marker, so
+this chapter marks a term too: [Nomark Two]{.index}.

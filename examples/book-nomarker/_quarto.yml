@@ -1,0 +1,17 @@
+# The no-marker book fixture (M05-AC6). Marks in every chapter, no placement
+# marker anywhere: the book must render, carry no index section on any page,
+# and warn exactly once that a marker chapter is missing.
+project:
+  type: book
+
+book:
+  title: "Index Book Fixture Without A Marker"
+  chapters:
+    - index.qmd
+    - one.qmd
+
+format:
+  html: default
+
+filters:
+  - index

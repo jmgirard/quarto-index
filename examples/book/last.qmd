@@ -1,0 +1,7 @@
+# Back matter
+
+The marker chapter carries a mark of its own, so the index has to link within
+its own page as well as across the book: [Zeta]{.index}.
+
+::: {.qi-index-here}
+:::

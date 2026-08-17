@@ -10,5 +10,9 @@ examples/*.md
 examples/*.epub
 examples/*_files/
 examples/.quarto/
+# The book fixtures render into their own project output directory, and their
+# per-chapter store lives in Quarto's own scratch directory.
+examples/book*/_book/
+examples/book*/.quarto/
 /.quarto/
 tests/.work/

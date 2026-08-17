@@ -109,6 +109,7 @@ candidate rows.
 - 2026-08-17: T5 — README gains a "Placing the index" section (marker syntax, the four rules, why a marker document loads imakeidx with `noautomatic`), the LaTeX/HTML emission paragraphs and the examples list are marker-aware, the stale automatic-placement sentence is gone and pinned in `README_STALE`, the marker exemplar is a `SUPPORTED_FORMS` row, and DESIGN.md's Pandoc-pass and back-end lines record marker resolution and shared placement.
 - 2026-08-17: all tasks done; suite green at 68 checks (--self-test) against 62 at the merge base, and `tests/byte-diff.sh` reports all 8 merge-base fixtures byte-identical. Status -> review.
 - 2026-08-17: review corrects the 2026-08-17 completion line above: its "62 at the merge base" was this branch's own count without --self-test, not a merge-base figure. Measured at review from a separate clone at `main`: the merge base prints 44 `ok` lines with --self-test, against this branch's 68.
+- 2026-08-17: review verified three of the [O] findings by hand before triage: F1 reproduced (a planted failure inside the wrapper still printed "All checks passed", exit 0); F2 confirmed in the emitted preamble (`\@ifpackageloaded{imakeidx}{}{...}` skips the option for a document that already loads imakeidx); F3 confirmed by render (an id written on the marker div is dropped, no warning). The verification run itself carried zero FAIL lines, so the AC evidence above stands as recorded.
 
 ## Decisions
 
@@ -158,6 +159,11 @@ Evidence from a fresh `tests/run-tests.sh --self-test` run and
   no index section and none of the tokens `qi-index-here` / `qi-index` /
   `printindex`, with visible term text kept; the marker fixture added to the
   beamer render compiles clean with no index token and no marker residue.
+- Independent review, three fresh-context lenses. [S] blame-history: no
+  findings (every rename/restructure traced to recorded intent). [S]
+  prior-review record: no findings; notes M03's F11 collision class is
+  addressed rather than reintroduced. [O] diff-bug: 13 findings, verified and
+  triaged below.
 - AC6 (met): the marker exemplar `::: {.qi-index-here}` is a
   `SUPPORTED_FORMS` row and appears verbatim in README.md (7 exemplars
   checked); "Placement is automatic; there is no option to put the index

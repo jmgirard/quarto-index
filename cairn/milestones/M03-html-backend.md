@@ -49,14 +49,14 @@ criteria audit applied).
 
 ## Acceptance criteria
 
-- [ ] AC1: `tests/run-tests.sh --self-test` passes, every M01/M02 check
+- [x] AC1: `tests/run-tests.sh --self-test` passes, every M01/M02 check
       keeping its meaning but for two owned exceptions: the no-leak block is
       retargeted (AC3) and the xref-conflict clash rationale is reworded (the
       clash stays LaTeX-only, being a makeindex property). As one-shot review
       evidence, never a checked-in snapshot: `examples/demo.qmd --to latex` on
       the branch is byte-identical to the same render at the merge-base, one
       machine.
-- [ ] AC2: `examples/demo.qmd --to html` yields exactly one generated index
+- [x] AC2: `examples/demo.qmd --to html` yields exactly one generated index
       section (pinned id), whose entries match a hand-derived manifest
       row-for-row — text, depth, order under the normative collation rule,
       per-entry locator count — exhaustively: a rendered entry absent from the
@@ -66,7 +66,7 @@ criteria audit applied).
       pinning locator numbering where the renderer relocates content. The
       visible-terms manifest rows are unchanged; its extraction is retargeted
       (attribute-order-proof, scoped outside the generated section).
-- [ ] AC3: In demo.html every locator-contributing mark emits exactly one
+- [x] AC3: In demo.html every locator-contributing mark emits exactly one
       anchor — an id the author wrote, its enclosing heading's id, or a minted
       id in the pinned scheme — document-unique; every href inside the index
       section resolves to an id in the same file; the anchor count is pinned
@@ -84,7 +84,7 @@ criteria audit applied).
       render; the source-pinned completeness check is retained. Scope: rendered HTML text only — Pandoc
       carries attribute values on the span itself, and whether that markup
       residue is acceptable in pass-through formats is tracked separately.
-- [ ] AC4: Cross-reference entries in generated HTML indexes render with M02
+- [x] AC4: Cross-reference entries in generated HTML indexes render with M02
       target semantics, labelled see/see also, hyperlinked exactly when the
       target key exists (parsed-level-list match) and plain otherwise; the
       linked, unlinked and colliding-string cases are fixture-present and
@@ -92,18 +92,18 @@ criteria audit applied).
       level-list-distinct targets on one key that print alike (both kept). No
       cross-reference mark contributes a locator, fenced by AC2's exhaustive
       locator counts.
-- [ ] AC5: `examples/escaping.qmd --to html`: for every printable ASCII
+- [x] AC5: `examples/escaping.qmd --to html`: for every printable ASCII
       character except space (the fixture's by-construction domain, pinned by
       the existing coverage check), the set of entry texts extracted from the
       generated index by an HTML-parsing check contains that character as an
       exact element.
-- [ ] AC6: Negatives: `examples/control.qmd --to html` has no generated
+- [x] AC6: Negatives: `examples/control.qmd --to html` has no generated
       section and no anchor-scheme id; `examples/demo.qmd --to gfm` renders
       clean with no index section or anchor artifacts, the newly
       format-neutral warnings still reaching its author while the makeindex
       level-ceiling warning reaches neither gfm nor HTML; the beamer checks
       pass.
-- [ ] AC7: README documents the HTML back-end, grep-pinned in the suite
+- [x] AC7: README documents the HTML back-end, grep-pinned in the suite
       SUPPORTED_FORMS-style: the three stale pass-through sentences are gone,
       a beamer-scoped pass-through sentence is present, and every row of the
       enumerated back-end divergence list appears.
@@ -279,3 +279,40 @@ criterion is re-verified against the fixed code next pass):**
 **Why the suite did not catch F1–F3:** every fixture avoids the triggering
 shape. The green suite was evidence about its fixtures, not about the
 back-end (LESSONS, M01).
+
+### 2026-08-17 — third review pass
+
+Consistency gate: `cairn_validate` exit 0 (one advisory — the pre-existing
+sizing tripwire, 12 tasks). Profile `generic` names no toolchain checks. No
+IP/GP changed, so no impact report. No CI configured; the local suite is the
+whole evidence base. Fresh evidence, this pass:
+
+- AC1: `tests/run-tests.sh --self-test` exit 0, every check and every
+  planted-defect self-test passing. `examples/demo.qmd --to latex`
+  re-rendered this pass on the branch filter and the merge-base filter:
+  byte-identical.
+- AC2: 43-row demo manifest and 5-row placement manifest matched in order;
+  placement locators numbered in source order across heading, table cell and
+  relocated footnote; heading anchors sit after their headings, out of the
+  TOC; author-supplied ids kept and linked.
+- AC3: demo — 25 anchors, one per locator-contributing mark, all named
+  fixture invariants asserted, every generated id unique, all 25 links
+  resolve. placement — every id unique, 7 links resolve. html-index — every
+  id unique, 9 links resolve; minted ids skip every author id, the one
+  written in raw HTML included. The three identifiers pinned to the filter
+  constants; the reworked no-leak check passes (28 visible terms, no
+  attribute-value leakage, compared in the decoded layer); source-pinned
+  completeness retained.
+- AC4: xref-conflict 8-row and html-index 10-row manifests matched in order;
+  the resolving cross-reference links to the sub-entry it names; the
+  colliding-string target stays plain; a repeated target renders once; two
+  level-list-distinct look-alike targets both survive, only the resolving
+  one linked.
+- AC5: all 94 printable ASCII characters are exact elements of the extracted
+  entry set.
+- AC6: control.qmd renders with no generated section and no anchor-scheme
+  id; gfm renders clean with the format-neutral warnings reaching its author
+  and the level-ceiling warning reaching neither gfm nor HTML; beamer checks
+  pass.
+- AC7: all 3 stale pass-through sentences gone, all 7 HTML claims present in
+  README.md.

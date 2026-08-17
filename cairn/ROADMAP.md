@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-17 (M03 merged and archived; pass-3 candidate row F
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M04 | Index placement marker | planned | — | normal | milestones/M04-placement-marker.md |
+| M04 | Index placement marker | in-progress | — | normal | milestones/M04-placement-marker.md |
 | M05 | Multi-chapter book support | planned | M04 | normal | milestones/M05-book-support.md |
 | M03 | HTML index back-end | done | M02 | normal | milestones/archive/M03-html-backend.md |
 | M02 | Cross-references (see / see also) | done | M01 | normal | milestones/archive/M02-cross-references.md |

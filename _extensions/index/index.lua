@@ -20,6 +20,14 @@
 
 local INDEX_CLASS = "index"
 
+-- The placement marker: an empty div the author writes where the index should
+-- appear. It is deliberately NOT the generated section's id `qi-index` — one
+-- string carrying two meanings is a collision waiting to be reported as a bug.
+-- Recognized at the top level of the document only: a `\printindex` inside a
+-- group or environment is an IP2-class render risk, so a marker written below
+-- the top level places nothing.
+local MARKER_CLASS = "qi-index-here"
+
 -- The two cross-reference attributes, in the order their targets are emitted
 -- when a mark carries both.
 -- `command` is the LaTeX back-end's encap command; `label` is the words a
@@ -270,9 +278,12 @@ local function describe(entry, visible)
   return "a mark with no source entry"
 end
 
--- Set by the Span pass, read by the Pandoc pass: the preamble and
--- `\printindex` are injected only when the document actually has marks.
-local marks_emitted = 0
+-- Set by the Span pass, read by the Pandoc pass: the preamble and the index
+-- itself are emitted only when the document actually has marks. Counted before
+-- the back-end branch, so "this document has marks" means the same thing in
+-- every format — the marker's no-marks warning is format-neutral and cannot be
+-- asked of a per-back-end accumulator.
+local marks_seen = 0
 -- The HTML back-end's equivalent: one record per mark, in document order,
 -- each carrying the mark's parsed levels, its cross-reference targets, and
 -- (for a locator-contributing mark) the id of the anchor that links back to
@@ -382,6 +393,11 @@ local function Span(span)
   -- text whatever format this is, and the both-attributes case would otherwise
   -- warn twice about the same entry.
   warn_empty_levels(levels, context)
+  -- Every path from here indexes the mark in whichever back-end is running:
+  -- one `\index` command in LaTeX, one record in HTML, nothing at all where
+  -- there is no back-end. The count is what the marker's no-marks warning and
+  -- both back-ends read.
+  marks_seen = marks_seen + 1
 
   if is_html() then
     local record = { levels = levels, xrefs = xrefs }
@@ -410,7 +426,6 @@ local function Span(span)
   if #xrefs == 0 then
     record_key(source, "")
     result:insert(pandoc.RawInline("latex", "\\index{" .. source .. "}"))
-    marks_emitted = marks_emitted + 1
   elseif #xrefs == 1 then
     -- `|` opens makeindex's encap channel, and `\see`/`\seealso` discard the
     -- page number handed to them, which is what makes a cross-reference
@@ -424,7 +439,6 @@ local function Span(span)
     record_key(source, encap)
     result:insert(pandoc.RawInline("latex",
       "\\index{" .. source .. "|" .. encap .. "}"))
-    marks_emitted = marks_emitted + 1
   else
     -- Both targets in one command; see XREF_BOTH_COMMAND. Each target is
     -- rendered by the same target_argument as a single-target mark, so the
@@ -437,7 +451,6 @@ local function Span(span)
     record_key(source, encap)
     result:insert(pandoc.RawInline("latex",
       "\\index{" .. source .. "|" .. encap .. "}"))
-    marks_emitted = marks_emitted + 1
     xref_both_emitted = true
   end
   return result
@@ -780,16 +793,113 @@ local function assign_anchors(doc, taken)
   })
 end
 
--- The section is appended with no configuration (GP4) and marked unnumbered,
--- which is how a printed index is set and which still lists it in the table
--- of contents.
-local function append_html_index(doc, taken)
+-- The section needs no configuration (GP4) and is marked unnumbered, which is
+-- how a printed index is set and which still lists it in the table of
+-- contents. WHERE it goes is not decided here — place_index owns that, for
+-- both back-ends at once.
+local function html_index_blocks(taken)
   local root = build_entry_tree(html_marks)
   number_entries(root, 0, taken)
-  doc.blocks:insert(pandoc.Header(1, literal_inlines("Index"),
-                                  pandoc.Attr(HTML_SECTION_ID,
-                                              { "unnumbered" })))
-  doc.blocks:insert(entry_list(root, root))
+  return pandoc.Blocks({
+    pandoc.Header(1, literal_inlines("Index"),
+                  pandoc.Attr(HTML_SECTION_ID, { "unnumbered" })),
+    entry_list(root, root),
+  })
+end
+
+-- ---------------------------------------------------------------------------
+-- The placement marker.
+--
+-- Everything below is format-neutral and runs before any back-end branch: a
+-- misused marker is diagnosed wherever the document is rendered, and a marker
+-- leaves no residue in any format — the ones with no index back-end included
+-- (IP2).
+-- ---------------------------------------------------------------------------
+
+local function is_marker(block)
+  return block.t == "Div" and block.classes:includes(MARKER_CLASS)
+end
+
+-- A marker's own content is never dropped. The marker is documented as empty,
+-- but deleting what an author wrote inside one would be IP2 corruption, so the
+-- content is spliced in where the marker stood and the author is told.
+local function marker_content(block)
+  if #block.content > 0 then
+    warn("index placement marker is not empty; the marker should be an empty "
+         .. "div, and its content is kept where the marker was written")
+  end
+  return block.content
+end
+
+-- Strip every marker below the top level of one top-level block. A
+-- `\printindex` inside a group or environment is an IP2-class render risk, so
+-- a nested marker places nothing; the index keeps its automatic position.
+local function strip_nested_markers(block)
+  return block:walk({
+    Blocks = function(blocks)
+      local out = pandoc.Blocks({})
+      for _, inner in ipairs(blocks) do
+        if is_marker(inner) then
+          warn("index placement marker below the top level of the document "
+               .. "places nothing; write it as a top-level block")
+          out:extend(marker_content(inner))
+        else
+          out:insert(inner)
+        end
+      end
+      return out
+    end,
+  })
+end
+
+-- Warn about and remove every marker that cannot be a placement site — each
+-- nested one, and each top-level one after the first — and report whether a
+-- site remains. Positions are the author's: the index the marker has among the
+-- document's top-level blocks, counted before anything is removed.
+local function resolve_markers(doc)
+  local out = pandoc.Blocks({})
+  local seen = 0
+  for position, block in ipairs(doc.blocks) do
+    block = strip_nested_markers(block)
+    if is_marker(block) then
+      seen = seen + 1
+      if seen == 1 then
+        out:insert(block)
+      else
+        warn(("index placement marker %d (top-level block %d) is ignored; the "
+              .. "index is placed at the first marker"):format(seen, position))
+        out:extend(marker_content(block))
+      end
+    else
+      out:insert(block)
+    end
+  end
+  doc.blocks = out
+  return seen > 0
+end
+
+-- Put the index where the author asked for it, or at the end of the document
+-- when no marker survived resolution. Both back-ends call this, so the two
+-- cannot drift apart on where an index goes. `blocks` is nil when the back-end
+-- has nothing to emit, which still removes the marker.
+local function place_index(doc, blocks)
+  local out = pandoc.Blocks({})
+  local placed = false
+  for _, block in ipairs(doc.blocks) do
+    if is_marker(block) and not placed then
+      placed = true
+      out:extend(marker_content(block))
+      if blocks then
+        out:extend(blocks)
+      end
+    else
+      out:insert(block)
+    end
+  end
+  if blocks and not placed then
+    out:extend(blocks)
+  end
+  doc.blocks = out
   return doc
 end
 
@@ -798,19 +908,29 @@ end
 -- does not enable; what actually builds the index is Quarto's own PDF loop
 -- reacting to the emitted `.idx` file (GP2: we emit correct output and stop).
 local function Pandoc(doc)
+  -- Before any back-end branch: the marker is the author's syntax, so its
+  -- misuse is diagnosed in every format and its residue removed in every
+  -- format, whether or not that format has an index to place.
+  local marker = resolve_markers(doc)
+  if marker and marks_seen == 0 then
+    warn("index placement marker in a document with no index marks; there is "
+         .. "no index to place")
+  end
+
   if is_html() then
     -- A document with no marks gets no section, exactly as one with no marks
     -- gets no LaTeX preamble.
-    if #html_marks == 0 then
-      return nil
+    if marks_seen == 0 then
+      return place_index(doc, nil)
     end
     local taken = taken_identifiers(doc)
     doc = relocate_heading_anchors(doc)
-    return append_html_index(assign_anchors(doc, taken), taken)
+    doc = assign_anchors(doc, taken)
+    return place_index(doc, html_index_blocks(taken))
   end
 
-  if marks_emitted == 0 or not is_latex_derived() then
-    return nil
+  if marks_seen == 0 or not is_latex_derived() then
+    return place_index(doc, nil)
   end
 
   -- Reported here rather than at the mark, because it takes the whole document
@@ -839,7 +959,7 @@ local function Pandoc(doc)
     -- not pretend we can inject a preamble.
     warn("preamble injection needs Quarto; \\index commands emitted without "
          .. "imakeidx setup")
-    return nil
+    return place_index(doc, nil)
   end
 
   quarto.doc.use_latex_package("imakeidx")
@@ -852,8 +972,8 @@ local function Pandoc(doc)
     quarto.doc.include_text("in-header", XREF_BOTH_DEFINITION)
   end
 
-  doc.blocks:insert(pandoc.RawBlock("latex", "\\printindex"))
-  return doc
+  return place_index(doc,
+    pandoc.Blocks({ pandoc.RawBlock("latex", "\\printindex") }))
 end
 
 -- The Span pass records the marks; every anchor decision that needs the

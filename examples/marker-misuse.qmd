@@ -1,0 +1,33 @@
+---
+title: "quarto-index placement marker misuse probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# The marker that counts
+
+The first top-level marker is the placement site. Every other marker in this
+document is a misuse, and each must be reported and removed without leaving
+an element behind. One term is marked here: [delta]{.index}.
+
+::: {.qi-index-here}
+:::
+
+# The misused ones
+
+A marker below the top level places nothing — a `\printindex` inside a group
+or environment is a render risk — so this one is only reported and removed:
+
+::: {.callout-note}
+Text around a nested marker, which must survive it.
+
+::: {.qi-index-here}
+:::
+:::
+
+A second top-level marker is reported by its position and removed; the index
+stays at the first. One more term is marked here: [epsilon]{.index}.
+
+::: {.qi-index-here}
+:::

@@ -1,11 +1,11 @@
 # M04: Index placement marker
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP4, GP5
-- **Branch/PR:** —
+- **Branch/PR:** m04-placement-marker
 
 ## Goal
 
@@ -75,14 +75,14 @@ candidate rows.
 
 ## Tasks
 
-- [ ] T1: Marker recognition (top-level `doc.blocks` walk; class
+- [x] T1: Marker recognition (top-level `doc.blocks` walk; class
       `qi-index-here`), format-neutral misuse warnings (duplicate by
       position, nested, no-marks); fixture `examples/marker.qmd` (marker
       between two sections; duplicate + nested + no-marks variants) with
       hand-derived manifests.
-- [ ] T2: HTML back-end: emit section at the marker site, suppress append
+- [x] T2: HTML back-end: emit section at the marker site, suppress append
       when a marker placed (index.lua `append_html_index`, Pandoc pass).
-- [ ] T3: LaTeX back-end: `\printindex` at the marker site, suppress
+- [x] T3: LaTeX back-end: `\printindex` at the marker site, suppress
       append; shared marker resolution with T2 so the two back-ends cannot
       drift.
 - [ ] T4: Suite: document-order position primitive in `tests/htmlindex.py`;
@@ -101,7 +101,23 @@ candidate rows.
 - 2026-08-17: plan gate chose one marker honored by all back-ends over a book-HTML-only marker because one syntax must not carry per-format meaning (IP1) and it absorbs the placement candidate row; falsified by a back-end where site-placement is impossible to realize.
 - 2026-08-17: plan chose top-level-only marker recognition (nested warns, places nothing) over recognize-anywhere because `\printindex` inside a group/environment is an IP2-class render risk; falsified by evidence that nested placement is safe in both back-ends or by author demand.
 - 2026-08-17: plan chose marker token `qi-index-here` over reusing `qi-index` because the generated section already owns that id and one string with two meanings is the F11 collision class; falsified by nothing cheaper than a rename before first release (IP3).
+- 2026-08-17: implementation gate settled three open choices (non-empty marker content, nested-marker fallback, duplicate-marker precedence); see Decisions.
+- 2026-08-17: T1 — marker recognition (`qi-index-here`), format-neutral misuse warnings (nested, duplicate-by-position, no-marks, non-empty), fixtures `marker.qmd`, `marker-misuse.qmd`, `marker-nomarks.qmd`.
+- 2026-08-17: T2+T3 — one `place_index` both back-ends call (HTML section and `\printindex` at the marker site, append when no marker, marker removed either way), so the two cannot drift; the LaTeX per-branch `marks_emitted` counter became one format-neutral `marks_seen`, which the marker's no-marks warning needs.
 
 ## Decisions
+
+- 2026-08-17: A marker div carrying content keeps that content, printed where
+  the marker was written, and warns — deleting what an author wrote inside a
+  marker is the silent corruption IP2 forbids. Chosen at the implementation
+  gate over dropping the content or refusing to read a non-empty div as a
+  marker.
+- 2026-08-17: A marker below the top level warns, places nothing, and leaves
+  the index in its automatic end-of-document position rather than suppressing
+  it — a misplaced marker must not cost an author their index (GP4).
+- 2026-08-17: With more than one top-level marker the index goes at the first;
+  every later one warns naming its ordinal and its top-level block position,
+  and is removed. Chosen over last-wins, which is harder to predict in a
+  document read top to bottom.
 
 ## Review

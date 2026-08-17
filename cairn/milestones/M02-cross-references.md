@@ -138,7 +138,7 @@ quoted values only.
       `tests/run-tests.sh`: cross-reference manifest rows + completeness
       pin, PDF expected list, no-leak pin extension, misuse checks,
       self-test discrimination coverage.
-- [ ] T5: Author the cross-reference escaping probe fixture and its suite
+- [x] T5: Author the cross-reference escaping probe fixture and its suite
       checks: compile, `.ilg` acceptance, exact-text typeset assertions,
       union-table pin, graceful-degradation assertions for any T1-excluded
       character.
@@ -162,6 +162,7 @@ quoted values only.
 - 2026-08-16: substantive amendment (gated) — AC1, AC2, AC5 amended for the one-command dual-target form, plus Scope's "emit both" clause and Coverage's AC5 row (now T2, T3, T4); a narrowing, since the old two-command promise was jointly unsatisfiable with IP2. Amended wording audited in full mode by a fresh-context [O] reader (9 findings, all repaired), then re-audited once by a second fresh [O] reader (11 findings, all disposed: pin arithmetic moved to summed row counts, row classification named, case (a) relocated to `examples/content.qmd`, the discrimination axis given a concrete artifact, tautological "emitted order" replaced, makeindex's own delimiter named, and the "each warning check" over-reach restricted to this criterion's two warnings).
 - 2026-08-16: discovered sub-task added to T3 at a mini gate — the same makeindex conflict is reachable across two marks on one term, so the document pass now warns once per affected key (LaTeX only); README note and a ROADMAP candidate row for prevention. Scope unchanged: no new acceptance criterion, covered by suite checks.
 - 2026-08-16: T4 done — seven cross-reference marks in `examples/demo.qmd` (six single-target, one dual) and two source-less marks in `examples/content.qmd`; suite gains the cross-reference manifest, the completeness pin with its arithmetic, a pin tying the manifest to the filter's dual-target command name, exact-count warning checks for both misuse cases, the babel-label pin, the no-leak source pin extended to both new attributes, the PDF cross-reference text list, and self-test discrimination on the missing/duplicated axes. Every hand-derived row matched the render first time.
+- 2026-08-16: T5 done — `examples/xref-escaping.qmd` puts all 94 printable ASCII characters through cross-reference targets under both attributes, across all three level positions, plus the special set as single-target, dual-target and both; 238 entries derived by construction, 238 accepted by makeindex, 0 rejected, and all 48 exact typeset strings found. Also pins that the single and dual forms render a target identically, and covers the two unusable-target warnings.
 
 ## Decisions
 

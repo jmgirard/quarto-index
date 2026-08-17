@@ -138,6 +138,65 @@ Ghosts, see also Spirits
 both, see Aye; see also Bee
 MANIFEST
 
+# ---------------------------------------------------------------------------
+# Manifest 1d — exact typeset cross-reference text for each character of the
+# special-handling set in examples/xref-escaping.qmd (M02-AC3). Every one of
+# these characters is literal text the author wrote, so each must print AS
+# ITSELF: the expected string is the character, not a rendering of it. Probe
+# keys follow the fixture's order, which is PROBE_CHARS' order. Xs = see,
+# Xt = see-also, Xb = both on one mark.
+# ---------------------------------------------------------------------------
+read -r -d '' XREF_PROBE_TEXT <<'MANIFEST' || true
+Xs00, see %
+Xt00, see also %
+Xb00, see %; see also %
+Xs01, see &
+Xt01, see also &
+Xb01, see &; see also &
+Xs02, see #
+Xt02, see also #
+Xb02, see #; see also #
+Xs03, see _
+Xt03, see also _
+Xb03, see _; see also _
+Xs04, see {
+Xt04, see also {
+Xb04, see {; see also {
+Xs05, see }
+Xt05, see also }
+Xb05, see }; see also }
+Xs06, see \
+Xt06, see also \
+Xb06, see \; see also \
+Xs07, see ~
+Xt07, see also ~
+Xb07, see ~; see also ~
+Xs08, see ^
+Xt08, see also ^
+Xb08, see ^; see also ^
+Xs09, see $
+Xt09, see also $
+Xb09, see $; see also $
+Xs10, see @
+Xt10, see also @
+Xb10, see @; see also @
+Xs11, see |
+Xt11, see also |
+Xb11, see |; see also |
+Xs12, see !
+Xt12, see also !
+Xb12, see !; see also !
+Xs13, see "
+Xt13, see also "
+Xb13, see "; see also "
+Xs14, see <
+Xt14, see also <
+Xb14, see <; see also <
+Xs15, see >
+Xt15, see also >
+Xb15, see >; see also >
+MANIFEST
+
 # Every \index{} argument demo.qmd must produce, plain and cross-reference
 # alike. The planted-defect self-test checks a fixture against this same list,
 # so a cross-reference row is fenced exactly as a plain one is.
@@ -850,6 +909,184 @@ if missing:
     sys.exit(1)
 print('ok   AC4: escaping probe compiles, all entries accepted, and every '
       'escape-domain character typesets in its index')
+PY
+
+# ---------------------------------------------------------------------------
+# M02-AC3 — the same three-way test for cross-reference targets, which travel
+# through makeindex's encap channel rather than the entry key. That channel is
+# stricter: an unquoted `!` there is rejected outright and Quarto turns the
+# rejection into a failed render, so a mistake here breaks a reader's build.
+# ---------------------------------------------------------------------------
+quarto render examples/xref-escaping.qmd --to latex > "$WORK/xref-latex.log" 2>&1 \
+  || { tail -20 "$WORK/xref-latex.log" >&2; fail "M02-AC3: xref-escaping.qmd failed to render to LaTeX"; }
+
+XREF_BOTH_COMMAND="$XREF_BOTH_COMMAND" PROBE_CHARS="$PROBE_CHARS" python3 - \
+  examples/xref-escaping.qmd examples/xref-escaping.tex <<'PY'
+import os, re, sys
+qmd = open(sys.argv[1], encoding='utf-8').read()
+tex = open(sys.argv[2], encoding='utf-8').read()
+both = os.environ['XREF_BOTH_COMMAND']
+specials = os.environ['PROBE_CHARS'].split(' ')
+
+# --- coverage by construction, not by recall -------------------------------
+unescape = lambda t: re.sub(r'\\(.)', r'\1', t)
+def levels(value):
+    out, cur, i = [], [], 0
+    while i < len(value):
+        if value[i] == '!':
+            if value[i:i+2] == '!!':
+                cur.append('!'); i += 2
+            else:
+                out.append(''.join(cur)); cur = []; i += 1
+        else:
+            cur.append(value[i]); i += 1
+    out.append(''.join(cur))
+    return out
+
+seen = {'see': {}, 'see-also': {}}
+for attr, raw in re.findall(r'(see-also|see)="((?:\\.|[^"\\])*)"', qmd):
+    lv = levels(unescape(raw))
+    for pos, level in enumerate(lv):
+        # position recorded only for genuinely multi-level targets
+        seen[attr].setdefault(level, set()).add(pos if len(lv) > 1 else None)
+
+domain = [chr(c) for c in range(0x21, 0x7F)]
+missing = []
+for c in domain:
+    for attr in ('see', 'see-also'):
+        if c not in seen[attr]:
+            missing.append(f'  {c!r} is not its own level under {attr}=')
+if missing:
+    print('FAIL: M02-AC3: xref-escaping.qmd does not cover printable ASCII:',
+          file=sys.stderr)
+    print('\n'.join(missing[:20]), file=sys.stderr)
+    sys.exit(1)
+
+# Union coverage of the position axis: every one of leading, medial and
+# trailing is exercised somewhere, under each attribute.
+for attr in ('see', 'see-also'):
+    positions = {p for poss in seen[attr].values() for p in poss if p is not None}
+    if not {0, 1, 2} <= positions:
+        print(f'FAIL: M02-AC3: {attr}= targets never use level position(s) '
+              f'{sorted({0,1,2} - positions)}', file=sys.stderr)
+        sys.exit(1)
+
+# --- the dual and single forms must render a target identically ------------
+# Otherwise the character evidence gathered on one form says nothing about the
+# other, and the two could drift apart silently.
+def index_arguments(src):
+    """Every \\index{...} argument, brace-balanced — the commands sit adjacent
+    in the .tex, so a regex would run straight past the closing brace."""
+    args, i = [], 0
+    while True:
+        j = src.find('\\index{', i)
+        if j < 0:
+            return args
+        k, depth = j + 7, 1
+        while k < len(src) and depth:
+            if src[k] == '{':
+                depth += 1
+            elif src[k] == '}':
+                depth -= 1
+            k += 1
+        args.append(src[j + 7:k - 1])
+        i = k
+
+def brace_groups(text):
+    """Split `cmd{a}{b}` into ['a', 'b'], respecting nesting."""
+    groups, i = [], text.find('{')
+    while i >= 0 and i < len(text):
+        depth, k = 1, i + 1
+        while k < len(text) and depth:
+            if text[k] == '{':
+                depth += 1
+            elif text[k] == '}':
+                depth -= 1
+            k += 1
+        groups.append(text[i + 1:k - 1])
+        i = k if k < len(text) and text[k] == '{' else -1
+    return groups
+
+encaps = {}
+for arg in index_arguments(tex):
+    if '|' in arg:
+        source, encap = arg.split('|', 1)
+        encaps[source] = encap
+
+drift = []
+for i, c in enumerate(specials):
+    s, t, b = (encaps.get('Xs%02d' % i), encaps.get('Xt%02d' % i),
+               encaps.get('Xb%02d' % i))
+    if not (s and t and b):
+        drift.append(f'  {c!r}: could not read all three probe forms')
+        continue
+    if not (s.startswith('see{') and t.startswith('seealso{')
+            and b.startswith(both + '{')):
+        drift.append(f'  {c!r}: unexpected encap command among {s!r} {t!r} {b!r}')
+        continue
+    rendered = set(brace_groups(s)) | set(brace_groups(t)) | set(brace_groups(b))
+    if len(rendered) != 1:
+        drift.append(f'  {c!r}: forms disagree: {sorted(rendered)}')
+if drift:
+    print('FAIL: M02-AC3: single-target and dual-target forms do not render a '
+          'target identically:', file=sys.stderr)
+    print('\n'.join(drift), file=sys.stderr)
+    sys.exit(1)
+
+print(f'ok   M02-AC3: probe covers all {len(domain)} printable ASCII '
+      f'characters under both attributes, all three level positions, and the '
+      f'single and dual forms render each target identically')
+PY
+
+# The two unusable-target shapes live here rather than in demo.qmd, whose
+# completeness pin assumes every cross-reference attribute yields a row.
+check_warning_count "$WORK/xref-latex.log" \
+  'empty level in see= on term "Xe00"' 1 "M02-AC3"
+check_warning_count "$WORK/xref-latex.log" \
+  'see= on term "Xe01" has no usable target text' 1 "M02-AC3"
+pass "M02-AC3: an empty target level and an unusable target each warn once"
+
+# Compile, and require makeindex to accept every probe entry. Counted by
+# construction from the fixture's own shape, never read back from the run.
+mkdir -p "$WORK/xref" && cp examples/xref-escaping.tex "$WORK/xref/"
+quarto render examples/xref-escaping.qmd --to pdf > "$WORK/xref-pdf.log" 2>&1 \
+  || { tail -20 "$WORK/xref-pdf.log" >&2; fail "M02-AC3: the cross-reference probe failed to compile through Quarto's own PDF engine"; }
+( cd "$WORK/xref" && pdflatex -interaction=nonstopmode xref-escaping.tex ) \
+  > "$WORK/xref-tex1.log" 2>&1 \
+  || { grep -E '^! ' "$WORK/xref-tex1.log" | head -5 >&2; fail "M02-AC3: the cross-reference probe failed to compile"; }
+( cd "$WORK/xref" && makeindex xref-escaping.idx ) > "$WORK/xref-mkidx.log" 2>&1 \
+  || fail "M02-AC3: makeindex failed on the cross-reference probe"
+# 94 characters x 2 attributes in multi-level targets, plus the 16-character
+# special set as single-level see, single-level see-also and dual-target
+# marks, plus the empty-level probe (one cross-reference) and the unusable
+# probe (one plain entry).
+XREF_MARKS=$(( (0x7F - 0x21) * 2 + 16 * 3 + 2 ))
+grep -qE "\($XREF_MARKS entries accepted, 0 rejected\)" "$WORK/xref/xref-escaping.ilg" \
+  || { grep -E 'accepted|rejected' "$WORK/xref/xref-escaping.ilg" >&2; fail "M02-AC3: makeindex did not accept all $XREF_MARKS cross-reference probe entries"; }
+
+# Typeset evidence from Quarto's own PDF: compiling proves the encap argument
+# READS, typesetting proves the character PRINTS in a cross-reference.
+pdftotext -layout examples/xref-escaping.pdf "$WORK/xref/xref-escaping.txt"
+printf '%s\n' "$XREF_PROBE_TEXT" > "$WORK/xrefprobe.txt"
+python3 - "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" <<'PY'
+import re, sys
+txt = open(sys.argv[1], encoding='utf-8').read()
+rows = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
+m = re.search(r'^\s*Index\s*$', txt, re.MULTILINE)
+if not m:
+    print('FAIL: M02-AC3: the cross-reference probe produced no index section',
+          file=sys.stderr)
+    sys.exit(1)
+region = ' '.join(txt[m.end():].split())
+missing = [r for r in rows if ' '.join(r.split()) not in region]
+if missing:
+    print('FAIL: M02-AC3: special-handling character(s) did not typeset in '
+          'their cross-reference:', file=sys.stderr)
+    for r in missing:
+        print(f'  <<{r}>>', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M02-AC3: all {len(rows)} exact cross-reference strings typeset in '
+      f'the probe index')
 PY
 
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \

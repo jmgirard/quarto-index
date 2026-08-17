@@ -1,0 +1,317 @@
+---
+title: "quarto-index cross-reference escaping probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Cross-reference escaping probe
+
+Every printable ASCII character except the space, each as its own level of a
+cross-reference target, under `see=` and under `see-also=`. Generated to cover
+the range by construction rather than by recall.
+
+A cross-reference target is harder than an ordinary index level: it travels
+through makeindex's encap channel, where an unquoted `!` is rejected outright
+and Quarto turns that rejection into a failed render. A character needing a
+mechanism the filter does not apply breaks this build, or is rejected by
+makeindex, or fails to typeset.
+
+Levels are written as an author must type them: a literal `!` is `!!`, a
+literal `\` is `\\` and a literal `"` is `\"`, because Quarto's parser
+consumes one backslash level in a quoted attribute value.
+
+## Multi-level targets
+
+Each character sits at a different level position under each attribute, so
+leading, medial and trailing positions are all exercised across the set.
+
+[x00]{.index see="!!!L2!L3"}
+[a00]{.index see-also="L1!!!!L3"}
+[x01]{.index see="L1!\"!L3"}
+[a01]{.index see-also="L1!L2!\""}
+[x02]{.index see="L1!L2!#"}
+[a02]{.index see-also="#!L2!L3"}
+[x03]{.index see="$!L2!L3"}
+[a03]{.index see-also="L1!$!L3"}
+[x04]{.index see="L1!%!L3"}
+[a04]{.index see-also="L1!L2!%"}
+[x05]{.index see="L1!L2!&"}
+[a05]{.index see-also="&!L2!L3"}
+[x06]{.index see="'!L2!L3"}
+[a06]{.index see-also="L1!'!L3"}
+[x07]{.index see="L1!(!L3"}
+[a07]{.index see-also="L1!L2!("}
+[x08]{.index see="L1!L2!)"}
+[a08]{.index see-also=")!L2!L3"}
+[x09]{.index see="*!L2!L3"}
+[a09]{.index see-also="L1!*!L3"}
+[x10]{.index see="L1!+!L3"}
+[a10]{.index see-also="L1!L2!+"}
+[x11]{.index see="L1!L2!,"}
+[a11]{.index see-also=",!L2!L3"}
+[x12]{.index see="-!L2!L3"}
+[a12]{.index see-also="L1!-!L3"}
+[x13]{.index see="L1!.!L3"}
+[a13]{.index see-also="L1!L2!."}
+[x14]{.index see="L1!L2!/"}
+[a14]{.index see-also="/!L2!L3"}
+[x15]{.index see="0!L2!L3"}
+[a15]{.index see-also="L1!0!L3"}
+[x16]{.index see="L1!1!L3"}
+[a16]{.index see-also="L1!L2!1"}
+[x17]{.index see="L1!L2!2"}
+[a17]{.index see-also="2!L2!L3"}
+[x18]{.index see="3!L2!L3"}
+[a18]{.index see-also="L1!3!L3"}
+[x19]{.index see="L1!4!L3"}
+[a19]{.index see-also="L1!L2!4"}
+[x20]{.index see="L1!L2!5"}
+[a20]{.index see-also="5!L2!L3"}
+[x21]{.index see="6!L2!L3"}
+[a21]{.index see-also="L1!6!L3"}
+[x22]{.index see="L1!7!L3"}
+[a22]{.index see-also="L1!L2!7"}
+[x23]{.index see="L1!L2!8"}
+[a23]{.index see-also="8!L2!L3"}
+[x24]{.index see="9!L2!L3"}
+[a24]{.index see-also="L1!9!L3"}
+[x25]{.index see="L1!:!L3"}
+[a25]{.index see-also="L1!L2!:"}
+[x26]{.index see="L1!L2!;"}
+[a26]{.index see-also=";!L2!L3"}
+[x27]{.index see="<!L2!L3"}
+[a27]{.index see-also="L1!<!L3"}
+[x28]{.index see="L1!=!L3"}
+[a28]{.index see-also="L1!L2!="}
+[x29]{.index see="L1!L2!>"}
+[a29]{.index see-also=">!L2!L3"}
+[x30]{.index see="?!L2!L3"}
+[a30]{.index see-also="L1!?!L3"}
+[x31]{.index see="L1!@!L3"}
+[a31]{.index see-also="L1!L2!@"}
+[x32]{.index see="L1!L2!A"}
+[a32]{.index see-also="A!L2!L3"}
+[x33]{.index see="B!L2!L3"}
+[a33]{.index see-also="L1!B!L3"}
+[x34]{.index see="L1!C!L3"}
+[a34]{.index see-also="L1!L2!C"}
+[x35]{.index see="L1!L2!D"}
+[a35]{.index see-also="D!L2!L3"}
+[x36]{.index see="E!L2!L3"}
+[a36]{.index see-also="L1!E!L3"}
+[x37]{.index see="L1!F!L3"}
+[a37]{.index see-also="L1!L2!F"}
+[x38]{.index see="L1!L2!G"}
+[a38]{.index see-also="G!L2!L3"}
+[x39]{.index see="H!L2!L3"}
+[a39]{.index see-also="L1!H!L3"}
+[x40]{.index see="L1!I!L3"}
+[a40]{.index see-also="L1!L2!I"}
+[x41]{.index see="L1!L2!J"}
+[a41]{.index see-also="J!L2!L3"}
+[x42]{.index see="K!L2!L3"}
+[a42]{.index see-also="L1!K!L3"}
+[x43]{.index see="L1!L!L3"}
+[a43]{.index see-also="L1!L2!L"}
+[x44]{.index see="L1!L2!M"}
+[a44]{.index see-also="M!L2!L3"}
+[x45]{.index see="N!L2!L3"}
+[a45]{.index see-also="L1!N!L3"}
+[x46]{.index see="L1!O!L3"}
+[a46]{.index see-also="L1!L2!O"}
+[x47]{.index see="L1!L2!P"}
+[a47]{.index see-also="P!L2!L3"}
+[x48]{.index see="Q!L2!L3"}
+[a48]{.index see-also="L1!Q!L3"}
+[x49]{.index see="L1!R!L3"}
+[a49]{.index see-also="L1!L2!R"}
+[x50]{.index see="L1!L2!S"}
+[a50]{.index see-also="S!L2!L3"}
+[x51]{.index see="T!L2!L3"}
+[a51]{.index see-also="L1!T!L3"}
+[x52]{.index see="L1!U!L3"}
+[a52]{.index see-also="L1!L2!U"}
+[x53]{.index see="L1!L2!V"}
+[a53]{.index see-also="V!L2!L3"}
+[x54]{.index see="W!L2!L3"}
+[a54]{.index see-also="L1!W!L3"}
+[x55]{.index see="L1!X!L3"}
+[a55]{.index see-also="L1!L2!X"}
+[x56]{.index see="L1!L2!Y"}
+[a56]{.index see-also="Y!L2!L3"}
+[x57]{.index see="Z!L2!L3"}
+[a57]{.index see-also="L1!Z!L3"}
+[x58]{.index see="L1![!L3"}
+[a58]{.index see-also="L1!L2!["}
+[x59]{.index see="L1!L2!\\"}
+[a59]{.index see-also="\\!L2!L3"}
+[x60]{.index see="]!L2!L3"}
+[a60]{.index see-also="L1!]!L3"}
+[x61]{.index see="L1!^!L3"}
+[a61]{.index see-also="L1!L2!^"}
+[x62]{.index see="L1!L2!_"}
+[a62]{.index see-also="_!L2!L3"}
+[x63]{.index see="`!L2!L3"}
+[a63]{.index see-also="L1!`!L3"}
+[x64]{.index see="L1!a!L3"}
+[a64]{.index see-also="L1!L2!a"}
+[x65]{.index see="L1!L2!b"}
+[a65]{.index see-also="b!L2!L3"}
+[x66]{.index see="c!L2!L3"}
+[a66]{.index see-also="L1!c!L3"}
+[x67]{.index see="L1!d!L3"}
+[a67]{.index see-also="L1!L2!d"}
+[x68]{.index see="L1!L2!e"}
+[a68]{.index see-also="e!L2!L3"}
+[x69]{.index see="f!L2!L3"}
+[a69]{.index see-also="L1!f!L3"}
+[x70]{.index see="L1!g!L3"}
+[a70]{.index see-also="L1!L2!g"}
+[x71]{.index see="L1!L2!h"}
+[a71]{.index see-also="h!L2!L3"}
+[x72]{.index see="i!L2!L3"}
+[a72]{.index see-also="L1!i!L3"}
+[x73]{.index see="L1!j!L3"}
+[a73]{.index see-also="L1!L2!j"}
+[x74]{.index see="L1!L2!k"}
+[a74]{.index see-also="k!L2!L3"}
+[x75]{.index see="l!L2!L3"}
+[a75]{.index see-also="L1!l!L3"}
+[x76]{.index see="L1!m!L3"}
+[a76]{.index see-also="L1!L2!m"}
+[x77]{.index see="L1!L2!n"}
+[a77]{.index see-also="n!L2!L3"}
+[x78]{.index see="o!L2!L3"}
+[a78]{.index see-also="L1!o!L3"}
+[x79]{.index see="L1!p!L3"}
+[a79]{.index see-also="L1!L2!p"}
+[x80]{.index see="L1!L2!q"}
+[a80]{.index see-also="q!L2!L3"}
+[x81]{.index see="r!L2!L3"}
+[a81]{.index see-also="L1!r!L3"}
+[x82]{.index see="L1!s!L3"}
+[a82]{.index see-also="L1!L2!s"}
+[x83]{.index see="L1!L2!t"}
+[a83]{.index see-also="t!L2!L3"}
+[x84]{.index see="u!L2!L3"}
+[a84]{.index see-also="L1!u!L3"}
+[x85]{.index see="L1!v!L3"}
+[a85]{.index see-also="L1!L2!v"}
+[x86]{.index see="L1!L2!w"}
+[a86]{.index see-also="w!L2!L3"}
+[x87]{.index see="x!L2!L3"}
+[a87]{.index see-also="L1!x!L3"}
+[x88]{.index see="L1!y!L3"}
+[a88]{.index see-also="L1!L2!y"}
+[x89]{.index see="L1!L2!z"}
+[a89]{.index see-also="z!L2!L3"}
+[x90]{.index see="{!L2!L3"}
+[a90]{.index see-also="L1!{!L3"}
+[x91]{.index see="L1!|!L3"}
+[a91]{.index see-also="L1!L2!|"}
+[x92]{.index see="L1!L2!}"}
+[a92]{.index see-also="}!L2!L3"}
+[x93]{.index see="~!L2!L3"}
+[a93]{.index see-also="L1!~!L3"}
+
+## Single-level targets
+
+The special-handling set again, each alone in its target, so the typeset
+cross-reference text is short enough to be compared exactly.
+
+[Xs00]{.index see="%"}
+[Xt00]{.index see-also="%"}
+[Xs01]{.index see="&"}
+[Xt01]{.index see-also="&"}
+[Xs02]{.index see="#"}
+[Xt02]{.index see-also="#"}
+[Xs03]{.index see="_"}
+[Xt03]{.index see-also="_"}
+[Xs04]{.index see="{"}
+[Xt04]{.index see-also="{"}
+[Xs05]{.index see="}"}
+[Xt05]{.index see-also="}"}
+[Xs06]{.index see="\\"}
+[Xt06]{.index see-also="\\"}
+[Xs07]{.index see="~"}
+[Xt07]{.index see-also="~"}
+[Xs08]{.index see="^"}
+[Xt08]{.index see-also="^"}
+[Xs09]{.index see="$"}
+[Xt09]{.index see-also="$"}
+[Xs10]{.index see="@"}
+[Xt10]{.index see-also="@"}
+[Xs11]{.index see="|"}
+[Xt11]{.index see-also="|"}
+[Xs12]{.index see="!!"}
+[Xt12]{.index see-also="!!"}
+[Xs13]{.index see="\""}
+[Xt13]{.index see-also="\""}
+[Xs14]{.index see="<"}
+[Xt14]{.index see-also="<"}
+[Xs15]{.index see=">"}
+[Xt15]{.index see-also=">"}
+
+## Both attributes on one mark
+
+The dual-target form, which emits one command carrying both targets. The two
+targets are deliberately DIFFERENT characters: with the same character in both
+slots, a filter that dropped one target, or emitted three groups instead of
+two, would still satisfy a check comparing the rendered set.
+
+[Xb00]{.index see="%" see-also="&"}
+[Xb01]{.index see="&" see-also="#"}
+[Xb02]{.index see="#" see-also="_"}
+[Xb03]{.index see="_" see-also="{"}
+[Xb04]{.index see="{" see-also="}"}
+[Xb05]{.index see="}" see-also="\\"}
+[Xb06]{.index see="\\" see-also="~"}
+[Xb07]{.index see="~" see-also="^"}
+[Xb08]{.index see="^" see-also="$"}
+[Xb09]{.index see="$" see-also="@"}
+[Xb10]{.index see="@" see-also="|"}
+[Xb11]{.index see="|" see-also="!!"}
+[Xb12]{.index see="!!" see-also="\""}
+[Xb13]{.index see="\"" see-also="<"}
+[Xb14]{.index see="<" see-also=">"}
+[Xb15]{.index see=">" see-also="%"}
+
+## Special characters in the SOURCE entry of a cross-reference
+
+The encap channel changes how makeindex parses the whole argument, so the key
+a cross-reference hangs off is its own probe, not a cousin of the target probe
+above.
+
+[Xk00]{.index entry="A%B" see="Tgt"}
+[Xk01]{.index entry="A&B" see="Tgt"}
+[Xk02]{.index entry="A#B" see="Tgt"}
+[Xk03]{.index entry="A_B" see="Tgt"}
+[Xk04]{.index entry="A{B" see="Tgt"}
+[Xk05]{.index entry="A}B" see="Tgt"}
+[Xk06]{.index entry="A\\B" see="Tgt"}
+[Xk07]{.index entry="A~B" see="Tgt"}
+[Xk08]{.index entry="A^B" see="Tgt"}
+[Xk09]{.index entry="A$B" see="Tgt"}
+[Xk10]{.index entry="A@B" see="Tgt"}
+[Xk11]{.index entry="A|B" see="Tgt"}
+[Xk12]{.index entry="A!!B" see="Tgt"}
+[Xk13]{.index entry="A\"B" see="Tgt"}
+[Xk14]{.index entry="A<B" see="Tgt"}
+[Xk15]{.index entry="A>B" see="Tgt"}
+
+## Non-ASCII targets
+
+IP2 requires a marked term to appear correctly in the index; the filter escapes
+byte by byte, so multi-byte text takes its own probe rather than an argument.
+
+[Xu00]{.index see="Grüße!Straße"}
+[Xu01]{.index see-also="café naïve"}
+
+## Targets that cannot be used
+
+A target with an empty level drops that level and warns; a target with nothing
+usable in it leaves the mark indexed without a cross-reference, and warns.
+
+[Xe00]{.index see="A!"}
+[Xe01]{.index see=""}

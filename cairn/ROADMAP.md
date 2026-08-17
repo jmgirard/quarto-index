@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-16 (M02 planned from the cross-references candidate
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M02 | Cross-references (see / see also) | planned | M01 | normal | milestones/M02-cross-references.md |
+| M02 | Cross-references (see / see also) | review | M01 | normal | milestones/M02-cross-references.md |
 | M01 | LaTeX index extension skeleton | done | — | normal | milestones/archive/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
@@ -33,9 +33,11 @@ _Last hygiene check: 2026-08-16 (M02 planned from the cross-references candidate
 - The empty-level warning fires only on the LaTeX branch, though Scope states it as format-neutral entry semantics — added 2026-08-16 — M01 review R19 (its whitespace-only-term half proved false: Pandoc strips the space before the filter sees it)
 - Escaping probe covers characters singly; combinations remain an untested axis — added 2026-08-16 — M01 review; see the milestone Decisions entry
 - `[` and `]` are escaped by Pandoc's LaTeX writer but are not in the filter's escape table — added 2026-08-16 — M01 review N11; verified harmless in practice
-- Bare (unquoted) `entry=` values escape both the no-leak sweep and the probe-coverage pin — added 2026-08-16 — M01 review N9
+- Bare (unquoted) `entry=`, `see=` and `see-also=` values escape both the no-leak sweep and the probe-coverage pin; for no-leak this is a false pass, not a false failure — added 2026-08-16 — M01 review N9, widened by M02 review
 - Acceptance suite: BSD-sed portability, `]{.index` substring undercount, `include_text` guard — added 2026-08-16 — M01 review N12/N13/N14
 - Demo manifests have no independent count, so coverage can shrink silently — added 2026-08-16 — M01 review P10
 - The demo's own makeindex acceptance is never asserted — added 2026-08-16 — M01 review P11
 - `\printindex` precedes a bibliography rather than following it, since Quarto appends reference blocks after filters run — added 2026-08-16 — M01 review P2; README states the current behavior
+- A term marked both plainly and with a cross-reference fails the PDF render when both marks land on one page; M02 warns but cannot prevent it, since page numbers do not exist at filter time — added 2026-08-16 — M02 Decisions; needs locator suppression or deferred emission
+- The PDF cross-reference checks assert substring presence, not counts, so a cross-reference printed twice would pass — added 2026-08-16 — M02 review; mirrors the existing AC6 approach
 - Choose and add a LICENSE file (user decision; needed before public listing) — added 2026-08-16 — M01 README omits a license claim for want of one

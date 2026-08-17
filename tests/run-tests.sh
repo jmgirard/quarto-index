@@ -62,6 +62,34 @@ SUPPORTED_FORMS=(
   $'see-also cross-reference\t[term]{.index see-also="Other"}'
 )
 
+# ---------------------------------------------------------------------------
+# README claims about the HTML back-end (NORMATIVE, M03-AC7). Same discipline
+# as SUPPORTED_FORMS: the bytes are compared, not a count, so the docs and the
+# behavior this suite exercises cannot drift apart.
+#
+# README_STALE names sentences that described a world with one back-end. Each
+# must be GONE, or the README is telling a reader that HTML passes marks
+# through untouched.
+# ---------------------------------------------------------------------------
+README_STALE=(
+  $'pass-through scope\tformats with no index back-end — HTML and beamer'
+  $'cross-reference pass-through\tIn formats with no index back-end, a cross-reference mark is simply a mark'
+  $'one back-end\tLaTeX/PDF is the back-end that ships today'
+)
+
+# Each must be PRESENT: one beamer-scoped pass-through sentence, and one row
+# per way the two back-ends diverge. A divergence a reader is not told about is
+# a bug report waiting to be filed.
+README_HTML_CLAIMS=(
+  $'beamer pass-through\tIn beamer, and in any other format with no index back-end, marks pass through'
+  $'no level ceiling\tNo level ceiling in HTML'
+  $'clash warning scope\tThe clash warning is LaTeX-only'
+  $'collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code'
+  $'numbered locator links\tLocators are numbered links in HTML'
+  $'targets hyperlinked\tCross-reference targets are hyperlinked in HTML'
+  $'no locator from a cross-reference\tA cross-reference carries no locator in either back-end'
+)
+
 # Escaping probe set (NORMATIVE): every character below appears independently
 # in a visible term and in an `entry=` level in examples/demo.qmd, across
 # leading, medial and trailing positions (union coverage, not the
@@ -605,6 +633,41 @@ if missing:
     sys.exit(1)
 print(f'ok   M02-AC6: all {len(rows)} normative syntax exemplars appear '
       f'verbatim in README.md')
+PY
+
+# M03-AC7 — the README describes the back-end that now exists, and no longer
+# describes the one-back-end world. Whitespace is normalized on both sides, so
+# a claim that is merely rewrapped still counts as present (and a stale
+# sentence cannot hide behind a line break).
+printf '%s\n' "${README_STALE[@]}" > "$WORK/readme-stale.txt"
+printf '%s\n' "${README_HTML_CLAIMS[@]}" > "$WORK/readme-html.txt"
+python3 - "$WORK/readme-stale.txt" "$WORK/readme-html.txt" README.md <<'PY'
+import sys
+
+def rows(path):
+    return [l.rstrip('\n').split('\t', 1)
+            for l in open(path, encoding='utf-8') if l.strip()]
+
+def flat(s):
+    return ' '.join(s.split())
+
+stale, claims = rows(sys.argv[1]), rows(sys.argv[2])
+readme = flat(open(sys.argv[3], encoding='utf-8').read())
+
+bad = []
+for label, text in stale:
+    if flat(text) in readme:
+        bad.append(f'  still present ({label}): <<{text}>>')
+for label, text in claims:
+    if flat(text) not in readme:
+        bad.append(f'  missing ({label}): <<{text}>>')
+if bad:
+    print('FAIL: M03-AC7: README.md does not describe the HTML back-end as '
+          'this suite exercises it:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M03-AC7: all {len(stale)} stale pass-through sentences are gone '
+      f'and all {len(claims)} HTML claims appear in README.md')
 PY
 
 # The probe set is pinned to the filter's own escape table, so a character the

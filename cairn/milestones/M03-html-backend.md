@@ -137,7 +137,7 @@ criteria audit applied).
       review-time merge-base `.tex` diff procedure.
 - [x] T6: Extend xref-conflict.qmd with linked-target and colliding-string
       cases; hand-derive its HTML index manifest.
-- [ ] T7: README HTML section (divergence list, stale sentences replaced)
+- [x] T7: README HTML section (divergence list, stale sentences replaced)
       with suite grep pins; fill DESIGN.md Architecture (two back-ends,
       shared format-neutral layer).
 
@@ -165,6 +165,8 @@ criteria audit applied).
 
 - 2026-08-16: T5 — escaping-probe HTML check (94 characters as exact elements of the extracted entry set), control + gfm negatives, and the review-time merge-base `.tex` diff procedure documented at the AC1 render site. .gitignore gains the gfm and epub artifacts.
 - 2026-08-16: discrimination probes (LESSONS M01): forcing the HTML branch on for every format puts `# Index` and 107 `qi-` artifacts into the gfm output, so the AC6 negative fires rather than passing vacuously. Quarto's FORMAT is `commonmark` for gfm, `revealjs` for revealjs and `epub` for epub — none carries `html`, which is what makes the Scope pass-through claim hold.
+
+- 2026-08-17: T7 — README gains an HTML back-end section (section/anchor/entry ids, numbered locators, the four class hooks), a beamer-scoped pass-through section, and a six-row back-end divergence list; the three stale one-back-end sentences are gone. Suite pins them by normalized bytes, so a rewrap does not fail and a rewrapped stale sentence cannot hide. DESIGN.md Architecture filled: two passes, two back-ends, the shared format-neutral layer.
 
 ## Decisions
 

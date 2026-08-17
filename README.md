@@ -2,7 +2,7 @@
 
 A Quarto extension for book-quality subject indexing. Mark index entries with
 a format-neutral span syntax; the extension emits the right thing per output
-format. LaTeX/PDF is the back-end that ships today.
+format. Two back-ends ship: LaTeX/PDF and HTML.
 
 > **Pre-release: install at your own risk.** Until the first tagged release
 > the marking syntax is fluid and may change without a deprecation cycle.
@@ -124,8 +124,11 @@ not exist when the extension runs, so it cannot prevent the clash — it warns
 instead, naming the key. Give the cross-reference its own entry, or move the
 marks apart.
 
-In formats with no index back-end, a cross-reference mark is simply a mark: the
-visible text passes through and no target text appears anywhere in the output.
+In an HTML index the target is a link when it names an entry that exists in the
+same index, and plain text when it does not. Whether it does is decided on the
+levels, not on the text a reader sees: `see="Note!on birds"` points at the
+sub-entry `on birds` under `Note`, while `see="Note: on birds"` is one level
+that merely prints the same way, and does not link.
 
 ### Special characters
 
@@ -164,6 +167,8 @@ of this syntax and will arrive later as separate span attributes.
 
 ## What it emits
 
+### LaTeX and PDF
+
 For LaTeX-derived formats the extension writes `\index{…}` at the mark's
 position. When a document has at least one mark, it also adds
 `\usepackage{imakeidx}` and `\makeindex[intoc]` to the preamble and one
@@ -181,10 +186,71 @@ translations. A document with no such mark gets nothing extra.
 
 Placement is automatic; there is no option to put the index elsewhere yet.
 
-In formats with no index back-end — HTML and beamer today — marks pass
-through: the visible text is preserved and no LaTeX leaks into the output.
-Beamer slides have no index environment, so they are deliberately not a
-LaTeX index target; a marked term never breaks a slide deck.
+### HTML
+
+For HTML the extension appends an index of its own to the end of the body: an
+unnumbered level-one **Index** heading carrying the id `qi-index`, which is
+listed in the table of contents, followed by a nested bullet list of the
+entries. It is built out of Pandoc's own document nodes rather than out of HTML
+text, so Pandoc's writer does the escaping. No stylesheet is added; the class
+names below are hooks for styling it yourself.
+
+Each mark that contributes a locator gets an anchor on its own span —
+`qi-mark-1`, `qi-mark-2`, and so on, numbered in the order the marks are
+written. A mark that already carries an id of your own keeps it, and the index
+links to that id instead of minting one. Each entry carries an id too,
+`qi-entry-1` onward, so that a cross-reference can link to it.
+
+An entry's locators are numbered links to those anchors: `1`, `2`, `3` for the
+first, second and third time the term is marked, restarting at `1` for each
+entry. So `pandoc, 1, 2, 3` in an HTML index means what three page numbers mean
+in a printed one. The pieces carry these classes:
+
+| Class | On |
+|---|---|
+| `qi-term` | the entry's own text |
+| `qi-locators` | the run of numbered links |
+| `qi-xref`, with `qi-see` or `qi-see-also` | one cross-reference |
+| `qi-target` | the target text inside a cross-reference |
+
+A document with no marks gets no index section and no anchors.
+
+### Other formats
+
+In beamer, and in any other format with no index back-end, marks pass through:
+the visible text is preserved and no index artifacts appear. Beamer slides
+have no index environment of their own, so a `\printindex` there would abort
+the render — and a marked term must never break a document, so beamer is
+deliberately not an index target rather than a broken one.
+
+Warnings about the mark itself — an empty sub-entry level, a cross-reference
+with no usable target, a mark with nothing to index — are about what you wrote
+rather than about any one back-end, so you get them whatever you render to.
+
+### Where the two back-ends differ
+
+The marking syntax means the same thing in both. What the two indexes can do
+differs, because the tools underneath them do:
+
+1. **No level ceiling in HTML.** Sub-entries nest as deep as you write them.
+   The three-level ceiling described above is `makeindex`'s limit, not the
+   extension's.
+2. **The clash warning is LaTeX-only.** One term marked two different ways can
+   fail a PDF build, so the extension warns about it. An HTML index prints the
+   locator and the cross-reference together on one entry, with nothing to
+   clash, so the warning would name a problem that format does not have.
+3. **Sorting is the extension's own in HTML.** Entries sort by folding ASCII
+   uppercase to lowercase, then by character code, with a tie broken by
+   character code. In LaTeX the order is `makeindex`'s. Neither collates
+   accented or non-Latin text the way a language would; sort keys are the
+   planned fix.
+4. **Locators are numbered links in HTML**, in the order the marks are
+   written, where LaTeX gives page numbers.
+5. **Cross-reference targets are hyperlinked in HTML** when the target names an
+   entry in the same index, and are plain text otherwise. A printed index
+   cannot link at all.
+6. **A cross-reference carries no locator in either back-end.** The `see also`
+   limitation described above is the same in both.
 
 The extension's job ends at correct emitted output. Whether your toolchain
 then runs `makeindex` to build the index is up to your build setup; Quarto's
@@ -194,11 +260,14 @@ default PDF pipeline does it for you.
 
 `examples/demo.qmd` exercises every supported form and the full escaping
 probe set. `examples/escaping.qmd` and `examples/xref-escaping.qmd` are the
-character probes. `examples/control.qmd` is a negative control: mark-like text
-inside code, which must never be indexed.
+character probes. `examples/placement.qmd` marks one term in a heading, a table
+cell and a footnote, where the renderer moves the mark away from where it was
+written. `examples/control.qmd` is a negative control: mark-like text inside
+code, which must never be indexed.
 
 ```bash
 quarto render examples/demo.qmd --to pdf
+quarto render examples/demo.qmd --to html
 ```
 
 ## Tests
@@ -207,6 +276,6 @@ quarto render examples/demo.qmd --to pdf
 tests/run-tests.sh --self-test
 ```
 
-The suite renders the examples to LaTeX, HTML, PDF and beamer and checks the
-output against hand-derived manifests. It needs TinyTeX, `makeindex` and
+The suite renders the examples to LaTeX, HTML, PDF, beamer and GitHub-flavoured
+markdown, and checks the output against hand-derived manifests. It needs TinyTeX, `makeindex` and
 `pdftotext`, and fails loudly rather than skipping if any is missing.

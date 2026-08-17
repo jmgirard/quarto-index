@@ -7,6 +7,7 @@ _Last hygiene check: 2026-08-16 (M02 merged and archived; 2 review follow-up row
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M03 | HTML index back-end | planned | M02 | normal | milestones/M03-html-backend.md |
 | M02 | Cross-references (see / see also) | done | M01 | normal | milestones/archive/M02-cross-references.md |
 | M01 | LaTeX index extension skeleton | done | — | normal | milestones/archive/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
@@ -14,7 +15,6 @@ _Last hygiene check: 2026-08-16 (M02 merged and archived; 2 review follow-up row
 
 ## Candidates
 <!-- unnumbered ideas; one line each: idea — added YYYY-MM-DD — links -->
-- HTML index generation (single-doc index page from marks; HTML behavior undefined in M01) — added 2026-08-16 — builds on M01 syntax
 - Multi-chapter book support (cross-file index aggregation) — added 2026-08-16 — builds on M01
 - First tagged release (window user-declared, never agent-proposed) — added 2026-08-16
 - Explicit index-placement option / shortcode syntax (if demanded) — added 2026-08-16 — see M01 work log for the auto-placement rationale; GP5 governs
@@ -30,7 +30,8 @@ _Last hygiene check: 2026-08-16 (M02 merged and archived; 2 review follow-up row
 - Windows checkouts without symlink support break examples/_extensions — added 2026-08-16 — M01 review R18
 - `marks_emitted` is module-level state, latent if Lua state is ever reused across documents — added 2026-08-16 — M01 review R16
 - `\index` inside a moving argument (section heading) is unprobed — added 2026-08-16 — M01 review R17
-- The empty-level warning fires only on the LaTeX branch, though Scope states it as format-neutral entry semantics — added 2026-08-16 — M01 review R19 (its whitespace-only-term half proved false: Pandoc strips the space before the filter sees it)
+- Letter-group headings in the HTML index (A/B/C breaks) — added 2026-08-16 — deferred at the M03 gate pending sort-key collation
+- see-also entries keep their locators (print convention) in both back-ends — added 2026-08-16 — M03 gate chose LaTeX-aligned no-locator semantics; pairs with the plain+cross-reference clash row
 - Escaping probe covers characters singly; combinations remain an untested axis — added 2026-08-16 — M01 review; see the milestone Decisions entry
 - `[` and `]` are escaped by Pandoc's LaTeX writer but are not in the filter's escape table — added 2026-08-16 — M01 review N11; verified harmless in practice
 - Bare (unquoted) `entry=`, `see=` and `see-also=` values escape both the no-leak sweep and the probe-coverage pin; for no-leak this is a false pass, not a false failure — added 2026-08-16 — M01 review N9, widened by M02 review

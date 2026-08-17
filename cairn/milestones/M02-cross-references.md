@@ -1,11 +1,11 @@
 # M02: Cross-references (see / see also)
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M01
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP1, GP5, GP6
-- **Branch/PR:** —
+- **Branch/PR:** m02-cross-references
 
 ## Goal
 
@@ -134,6 +134,7 @@ quoted values only.
 - 2026-08-16: plan gate chose warn-and-emit-both for a mark carrying both attributes over silent-allow or drop-one because IP2 forbids silent loss and the combination is a probable author error; falsified by legitimate dual-use patterns emerging.
 - 2026-08-16: plan gate chose the verbatim README content pin over dropping the docs check because a content pin is strictly stronger than a count at no more machinery (audit finding 11); falsified by README format churn making the pin brittle.
 - 2026-08-16: plan chose the full printable-ASCII see-target probe (with a T1 exclusion hatch) over the 16-character set because the repo's lesson says only compiling settles survival; falsified by probe runtime becoming prohibitive.
+- 2026-08-16: implement started; branch m02-cross-references cut from main at 68c06ba.
 
 ## Decisions
 

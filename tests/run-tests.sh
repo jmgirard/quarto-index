@@ -302,6 +302,8 @@ require_pdf_tools() {
 
   command -v makeindex >/dev/null 2>&1 \
     || fail "makeindex not found on PATH. AC6 must never pass unrun."
+  command -v pdflatex >/dev/null 2>&1 \
+    || fail "pdflatex not found on PATH (the escaping probe invokes it directly). AC6 must never pass unrun."
   command -v pdftotext >/dev/null 2>&1 \
     || fail "pdftotext not found on PATH. AC6 must never pass unrun."
 }
@@ -455,9 +457,9 @@ for fmt in html latex; do
   quarto render examples/content.qmd --to $fmt > "$WORK/content-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/content-$fmt.log" >&2; fail "AC7: content.qmd failed to render to $fmt"; }
 done
-[ "$(grep -c 'dot' examples/content.html)" -ge 2 ] \
+[ "$(grep -o 'dot' examples/content.html | wc -l)" -ge 2 ] \
   || fail "AC7: marking an image removed it from the HTML output (IP2)"
-[ "$(grep -c 'dot' examples/content.tex)" -ge 2 ] \
+[ "$(grep -o 'dot' examples/content.tex | wc -l)" -ge 2 ] \
   || fail "AC7: marking an image removed it from the LaTeX output (IP2)"
 CONTENT_IDX=$(grep -o '\\index{[^}]*}' examples/content.tex | wc -l | tr -d ' ')
 [ "$CONTENT_IDX" = "1" ] \

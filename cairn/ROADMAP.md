@@ -30,7 +30,7 @@ _Last hygiene check: 2026-08-16 (initial scaffold)_
 - Windows checkouts without symlink support break examples/_extensions — added 2026-08-16 — M01 review R18
 - `marks_emitted` is module-level state, latent if Lua state is ever reused across documents — added 2026-08-16 — M01 review R16
 - `\index` inside a moving argument (section heading) is unprobed — added 2026-08-16 — M01 review R17
-- A whitespace-only term emits `\index{ }` with no warning, unlike the empty case — added 2026-08-16 — M01 review R19
+- The empty-level warning fires only on the LaTeX branch, though Scope states it as format-neutral entry semantics — added 2026-08-16 — M01 review R19 (its whitespace-only-term half proved false: Pandoc strips the space before the filter sees it)
 - Escaping probe covers characters singly; combinations remain an untested axis — added 2026-08-16 — M01 review; see the milestone Decisions entry
 - `[` and `]` are escaped by Pandoc's LaTeX writer but are not in the filter's escape table — added 2026-08-16 — M01 review N11; verified harmless in practice
 - Bare (unquoted) `entry=` values escape both the no-leak sweep and the probe-coverage pin — added 2026-08-16 — M01 review N9

@@ -135,7 +135,8 @@ local function index_argument(levels, context)
   -- otherwise swallow the warning that Scope promises for it.
   for _, level in ipairs(levels) do
     if level == "" then
-      warn(("empty index level in %s; emitted as written"):format(context))
+      warn(("empty index level in %s; emitted as written unless it falls "
+             .. "inside a folded tail, where it is dropped"):format(context))
     end
   end
   local parts = {}

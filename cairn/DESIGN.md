@@ -50,19 +50,19 @@ _None yet — populated as the codebase takes shape._
 
 ### Inviolable
 
-- **IP1 — Format-neutral marking.** The index-mark syntax and all attribute
+- IP1: **Format-neutral marking.** The index-mark syntax and all attribute
   values carry format-neutral meaning; back-ends realize them per format. A
   mark value is never raw back-end code (no raw LaTeX or HTML pass-through;
   D-001). A feature's *semantics* must be format-neutral even when only one
   back-end realizes it yet; unrealized formats degrade gracefully (IP2).
-- **IP2 — Never break the document.** A document using this extension never
+- IP2: **Never break the document.** A document using this extension never
   fails to render, and never silently corrupts output, because of a marked
   term: any characters in a visible term appear correctly in the index
   (non-ASCII included), and formats without an index back-end pass the
   visible text through untouched, with no artifacts. An escaping bug, a
   crash on exotic input, or garbage in a back-end-less format is the
   highest-severity bug class and earns a regression test forever.
-- **IP3 — Post-release syntax stability.** From the first tagged release
+- IP3: **Post-release syntax stability.** From the first tagged release
   onward, documented syntax forms change only via a deprecation cycle.
   Before that release the syntax is fluid: pre-release installs are
   at-your-own-risk (stated in the README), with breaks recorded in the
@@ -70,24 +70,24 @@ _None yet — populated as the codebase takes shape._
 
 ### Guiding
 
-- **GP1 — Community-grade, discoverable quality.** Docs, tests, and
+- GP1: **Community-grade, discoverable quality.** Docs, tests, and
   edge-case coverage are commitments user-facing work carries by default;
   README and examples are discovery surface held to extension-listing
   quality.
-- **GP2 — The contract ends at correct emitted output.** Per format, the job
+- GP2: **The contract ends at correct emitted output.** Per format, the job
   is correct output (e.g., valid `\index{}` LaTeX); whether the user's
   toolchain then builds the index is a documentation surface — known failure
   modes documented, never detected or managed.
-- **GP3 — Pure Pandoc-Lua, self-contained.** Zero runtime dependencies
+- GP3: **Pure Pandoc-Lua, self-contained.** Zero runtime dependencies
   beyond Quarto; `quarto add` is the entire install story. LaTeX-side needs
   stay within packages bundled in mainstream TeX distributions.
-- **GP4 — Zero-config defaults.** The common case works with no
+- GP4: **Zero-config defaults.** The common case works with no
   configuration; options are added compatibly for the uncommon case, never
   required for the common one.
-- **GP5 — Minimal API surface.** Prefer one composable mechanism over
+- GP5: **Minimal API surface.** Prefer one composable mechanism over
   parallel syntaxes; a new syntax form must express something the existing
   mechanism cannot.
-- **GP6 — End-to-end verification.** Acceptance evidence for
+- GP6: **End-to-end verification.** Acceptance evidence for
   output-producing features runs to the final compiled artifact (a PDF with
   a real index), not only intermediate output.
 

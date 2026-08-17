@@ -24,3 +24,18 @@ reported: [mu]{.index see="Same"} and [mu]{.index see="Same"}.
 
 A term marked plainly twice, which is the ordinary case and must not be
 reported either: [nu]{.index} and [nu]{.index}.
+
+# Cross-reference targets that do and do not resolve
+
+An HTML index links a cross-reference to its target when that target is an
+entry in the same index. Whether it is one is decided on the parsed level
+list, never on the string a reader sees — and the two can look identical,
+since levels are joined with `: ` and a level may contain a colon itself.
+
+A real two-level entry to point at: [pi]{.index entry="Note!on birds"}.
+
+A single-level target that prints exactly like that two-level entry, and must
+therefore stay plain text: [rho]{.index see="Note: on birds"}.
+
+The genuine two-level target, which must be a link:
+[sigma]{.index see="Note!on birds"}.

@@ -97,7 +97,51 @@ ordinary plan-gate choice.
 
 ## Architecture
 
-_None yet — describes the system as it **is**, once it exists._
+One Pandoc-Lua filter, `_extensions/index/index.lua`, run as two passes over
+each document.
+
+The **Span pass** handles one mark at a time. Everything that depends only on
+what the author wrote happens *before* any back-end is chosen: the `entry=`
+value is parsed into levels, cross-reference targets are parsed and validated,
+and the warnings for a malformed mark are emitted — so a misused mark is
+diagnosed in every output format, not only where a back-end exists. The pass
+then branches per format and records what that back-end will need.
+
+The **Pandoc pass** runs once the whole document has been seen, and is where a
+back-end emits anything document-wide.
+
+Two back-ends ship:
+
+- **LaTeX** (`FORMAT` containing `latex`, which covers PDF): an `\index{…}`
+  command at each mark, `imakeidx` and `\makeindex[intoc]` injected into the
+  preamble, one `\printindex` appended. Levels are made literal per character
+  by whichever mechanism that character needs, clamped to makeindex's
+  three-level ceiling, and a term marked two incompatible ways is reported
+  document-wide.
+- **HTML** (`FORMAT` containing `html`): a link target for each
+  locator-contributing mark, and an index section appended, built out of
+  Pandoc AST nodes so that Pandoc's writer owns escaping (IP2). No level
+  ceiling, entries sorted by the filter itself, locators and resolvable
+  cross-reference targets as links.
+
+  Ids are assigned in the **Pandoc** pass, not at the mark: an id must not
+  collide with one the author wrote — ids written in raw HTML included — and
+  that is only knowable once the whole document has been seen. A mark keeps
+  an id of the author's own and is otherwise tagged by the Span pass and
+  given a minted id later. No anchor id stays inside a heading, because
+  Quarto copies a heading's inlines into the table of contents and the id
+  would then appear twice; a heading mark's anchor — author id or minted —
+  sits on an empty span emitted just after the heading.
+
+Every other format — beamer, revealjs, epub, gfm — takes neither branch and
+passes marks through untouched (IP2).
+
+Shared between them: the level parse, the cross-reference target parse and its
+`: ` join, and every warning about the mark itself.
+
+`examples/` holds the fixtures; `tests/run-tests.sh` is the acceptance suite,
+which renders them and checks each render against hand-derived manifests
+(`tests/htmlindex.py` reads rendered HTML structurally for that).
 
 ## Known issues
 

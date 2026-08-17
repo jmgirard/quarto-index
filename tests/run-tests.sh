@@ -62,6 +62,34 @@ SUPPORTED_FORMS=(
   $'see-also cross-reference\t[term]{.index see-also="Other"}'
 )
 
+# ---------------------------------------------------------------------------
+# README claims about the HTML back-end (NORMATIVE, M03-AC7). Same discipline
+# as SUPPORTED_FORMS: the bytes are compared, not a count, so the docs and the
+# behavior this suite exercises cannot drift apart.
+#
+# README_STALE names sentences that described a world with one back-end. Each
+# must be GONE, or the README is telling a reader that HTML passes marks
+# through untouched.
+# ---------------------------------------------------------------------------
+README_STALE=(
+  $'pass-through scope\tformats with no index back-end — HTML and beamer'
+  $'cross-reference pass-through\tIn formats with no index back-end, a cross-reference mark is simply a mark'
+  $'one back-end\tLaTeX/PDF is the back-end that ships today'
+)
+
+# Each must be PRESENT: one beamer-scoped pass-through sentence, and one row
+# per way the two back-ends diverge. A divergence a reader is not told about is
+# a bug report waiting to be filed.
+README_HTML_CLAIMS=(
+  $'beamer pass-through\tIn beamer, and in any other format with no index back-end, marks pass through'
+  $'no level ceiling\tNo level ceiling in HTML'
+  $'clash warning scope\tThe clash warning is LaTeX-only'
+  $'collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code'
+  $'numbered locator links\tLocators are numbered links in HTML'
+  $'targets hyperlinked\tCross-reference targets are hyperlinked in HTML'
+  $'no locator from a cross-reference\tA cross-reference carries no locator in either back-end'
+)
+
 # Escaping probe set (NORMATIVE): every character below appears independently
 # in a visible term and in an `entry=` level in examples/demo.qmd, across
 # leading, medial and trailing positions (union coverage, not the
@@ -127,6 +155,80 @@ MANIFEST
 # own constant, so the manifest cannot go on describing a form the filter has
 # renamed.
 XREF_BOTH_COMMAND='quartoindexseeboth'
+
+# The HTML back-end's pinned identifiers. Named once here and pinned to the
+# filter's own constants below, so the suite cannot go on checking names the
+# filter has renamed.
+HTML_SECTION_ID='qi-index'
+HTML_ANCHOR_PREFIX='qi-mark-'
+HTML_ENTRY_PREFIX='qi-entry-'
+
+# ---------------------------------------------------------------------------
+# Manifest 1e — the generated index in examples/demo.html (M03-AC2).
+# EXHAUSTIVE: a rendered entry absent from this list fails, as does a listed
+# entry the render does not produce.
+# Format: <depth><TAB><entry text><TAB><locator count>[<TAB><cross-reference>]…
+# where a cross-reference is `see-plain`/`see-link`/`also-plain`/`also-link`,
+# a space, and the target as a reader sees it.
+# Same oracle rule as manifest 1, with the HTML back-end's own layers derived
+# by hand on top of the level parse:
+#   4. No level ceiling: the three-level clamp is a makeindex property, so
+#      `One!Two!Three!Four!Five!` nests six deep here, trailing empty level
+#      included.
+#   5. Order: fold ASCII uppercase to lowercase, compare by codepoint, break a
+#      fold tie by codepoint — applied to siblings at every depth.
+#   6. Locators: one per locator-contributing mark on that entry, in document
+#      order. A cross-reference mark contributes none.
+#   7. Cross-reference targets join with `: ` and are hyperlinked exactly when
+#      the target's LEVEL LIST is an entry in this index. No target in
+#      demo.qmd names an entry, so every row here is `plain`; the linked and
+#      colliding-string cases live in xref-conflict.qmd (M03-AC4).
+# ---------------------------------------------------------------------------
+read -r -d '' DEMO_HTML_INDEX <<'MANIFEST' || true
+0	!Bang leads	1
+0	\	1
+0	A!	0
+1	B	1
+0	A!B	0
+1		1
+0	Alpha	0
+1	Beta	1
+0	bang	0	see-plain Wow!Hey
+0	bang ! quote "	1
+0	both	0	see-plain Aye	also-plain Bee
+0	bs \ tilde ~ caret ^	1
+0	café naïve	1
+0	Canids	0
+1	Foxes	0	see-plain Vulpes
+0	cats	0	see-plain Felines
+0	Custom Entry	1
+0	dogs	0	also-plain Pets
+0	dollar $ at @ bar |	1
+0	Ghost	0
+1	Sub	1
+0	Ghosts	0	also-plain Spirits
+0	Grüße	0
+1	Straße	1
+0	less < more >	1
+0	One	0
+1	Two	0
+2	Three	0
+3	Four	0
+4	Five	0
+5		1
+0	owls	0	see-plain Birds: Owls
+0	pandoc	3
+0	pct % amp & hash #	1
+0	Specials % & # _ { } \ ~ ^ $ @ | ! " < >	1
+0	Top	0
+1	Middle	0
+2	Leaf	1
+0	Trail bang!	1
+0	us _ brace { }	1
+0	Wow!Really	1
+0	{Braced}	1
+0	~tilde dollar$	1
+MANIFEST
 
 # ---------------------------------------------------------------------------
 # Manifest 1c — cross-reference text expected in the compiled PDF's index
@@ -427,6 +529,80 @@ print(f'ok   {label}: {rows} tokens')
 PY
 }
 
+# Compare a rendered file's generated index section against an EXHAUSTIVE row
+# manifest (format: see manifest 1e). Rows are compared in order, so a
+# collation failure is reported as one rather than swallowed by set equality.
+check_html_index_manifest() {
+  local htmlfile="$1" manifest="$2" label="$3"
+  printf '%s\n' "$manifest" > "$WORK/html-index.txt"
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$htmlfile" \
+    "$WORK/html-index.txt" "$label" <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+html_path, manifest_path, label = sys.argv[1:4]
+section_id = os.environ['HTML_SECTION_ID']
+
+doc = H.parse(html_path)
+found = H.count_id(doc, section_id)
+if found != 1:
+    print(f'FAIL: {label}: expected exactly one generated index section '
+          f'(id={section_id!r}) in {html_path}, found {found}', file=sys.stderr)
+    sys.exit(1)
+actual = [H.row(r) for r in H.index_entries(H.find_id(doc, section_id))]
+expected = H.read_manifest(manifest_path)
+if not expected:
+    print(f'FAIL: {label}: manifest is empty', file=sys.stderr)
+    sys.exit(1)
+if actual != expected:
+    print(f'FAIL: {label}: the generated index does not match the manifest',
+          file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such row rendered>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  row {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: the generated index matches all {len(expected)} '
+      f'manifest rows, in order')
+PY
+}
+
+# Every generated id in a rendered file is document-unique, and every link
+# inside the generated index resolves to an id in that same file. Applied to
+# each HTML fixture, including the two that carry the shapes demo.qmd's
+# invariants deliberately exclude.
+check_html_index_links() {
+  local htmlfile="$1" label="$2"
+  HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+  HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - "$htmlfile" "$label" <<'PY'
+import os, sys
+from collections import Counter
+sys.path.insert(0, 'tests')
+import htmlindex as H
+html_path, label = sys.argv[1:3]
+doc = H.parse(html_path)
+ids = H.all_ids(doc)
+dupes = sorted({i for i, n in Counter(ids).items() if n > 1})
+if dupes:
+    print(f'FAIL: {label}: duplicate id(s) in {html_path}: {dupes}',
+          file=sys.stderr)
+    sys.exit(1)
+section = H.find_id(doc, os.environ['HTML_SECTION_ID'])
+links = H.find_all(section, 'a')
+dangling = sorted({a.attrs.get('href', '') for a in links
+                   if a.attrs.get('href', '').startswith('#')
+                   and a.attrs['href'][1:] not in set(ids)})
+if dangling:
+    print(f'FAIL: {label}: link(s) in the generated index of {html_path} '
+          f'resolve to no id in the same file: {dangling}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: every id unique and all {len(links)} index links resolve '
+      f'in {html_path}')
+PY
+}
+
 # ---------------------------------------------------------------------------
 # Tool guard (AC6): fail loudly rather than skipping the end-to-end check.
 # ---------------------------------------------------------------------------
@@ -493,6 +669,41 @@ print(f'ok   M02-AC6: all {len(rows)} normative syntax exemplars appear '
       f'verbatim in README.md')
 PY
 
+# M03-AC7 — the README describes the back-end that now exists, and no longer
+# describes the one-back-end world. Whitespace is normalized on both sides, so
+# a claim that is merely rewrapped still counts as present (and a stale
+# sentence cannot hide behind a line break).
+printf '%s\n' "${README_STALE[@]}" > "$WORK/readme-stale.txt"
+printf '%s\n' "${README_HTML_CLAIMS[@]}" > "$WORK/readme-html.txt"
+python3 - "$WORK/readme-stale.txt" "$WORK/readme-html.txt" README.md <<'PY'
+import sys
+
+def rows(path):
+    return [l.rstrip('\n').split('\t', 1)
+            for l in open(path, encoding='utf-8') if l.strip()]
+
+def flat(s):
+    return ' '.join(s.split())
+
+stale, claims = rows(sys.argv[1]), rows(sys.argv[2])
+readme = flat(open(sys.argv[3], encoding='utf-8').read())
+
+bad = []
+for label, text in stale:
+    if flat(text) in readme:
+        bad.append(f'  still present ({label}): <<{text}>>')
+for label, text in claims:
+    if flat(text) not in readme:
+        bad.append(f'  missing ({label}): <<{text}>>')
+if bad:
+    print('FAIL: M03-AC7: README.md does not describe the HTML back-end as '
+          'this suite exercises it:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M03-AC7: all {len(stale)} stale pass-through sentences are gone '
+      f'and all {len(claims)} HTML claims appear in README.md')
+PY
+
 # The probe set is pinned to the filter's own escape table, so a character the
 # filter handles can never go unprobed (and vice versa).
 PROBE_CHARS="$PROBE_CHARS" python3 - _extensions/index/index.lua <<'PY'
@@ -532,6 +743,47 @@ if missing:
     sys.exit(1)
 print(f'ok   AC4: probe set pinned to the filter escape table ({len(keys)} '
       f'chars), each probed in both contexts')
+PY
+
+# ---------------------------------------------------------------------------
+# REVIEW-TIME EVIDENCE, NOT A CHECK: the LaTeX back-end is untouched.
+# A checked-in golden `.tex` would be a snapshot, which the oracle rule above
+# forbids. Instead the reviewer compares the branch's render against the same
+# render at the merge-base, on one machine, and reads the diff — expected to be
+# empty. From a clean tree on the milestone branch:
+#
+#   BASE=$(git merge-base HEAD "$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|origin/||')")
+#   quarto render examples/demo.qmd --to latex && cp examples/demo.tex /tmp/branch-demo.tex
+#   git checkout "$BASE" -- _extensions/index/index.lua
+#   quarto render examples/demo.qmd --to latex && cp examples/demo.tex /tmp/base-demo.tex
+#   git checkout HEAD -- _extensions/index/index.lua
+#   diff /tmp/base-demo.tex /tmp/branch-demo.tex
+#
+# The last line restores the branch's filter; check `git status` is clean
+# before trusting anything rendered afterwards.
+# ---------------------------------------------------------------------------
+
+# The HTML back-end's three identifiers are a public surface — a reader's URL
+# and an author's CSS hold on to them — so the suite's copies are pinned to
+# the filter's own constants, exactly as the dual-target command name is.
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - _extensions/index/index.lua <<'PY'
+import os, re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+bad = []
+for name in ('HTML_SECTION_ID', 'HTML_ANCHOR_PREFIX', 'HTML_ENTRY_PREFIX'):
+    m = re.search(rf'{name}\s*=\s*"([^"]*)"', src)
+    if not m:
+        bad.append(f'  {name} is not defined in the filter')
+    elif m.group(1) != os.environ[name]:
+        bad.append(f'  {name}: suite says {os.environ[name]!r}, filter '
+                   f'defines {m.group(1)!r}')
+if bad:
+    print('FAIL: M03-AC3: the suite and the filter disagree on the HTML '
+          'identifiers:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print('ok   M03-AC3: all 3 HTML identifiers pinned to the filter constants')
 PY
 
 quarto render examples/demo.qmd --to latex > "$WORK/demo-latex.log" 2>&1 \
@@ -777,6 +1029,141 @@ for tok in '\index' 'imakeidx' '\makeindex' '\printindex'; do
   fi
 done
 
+# ---------------------------------------------------------------------------
+# M03-AC2 / M03-AC3 — the generated HTML index, its anchors and its links.
+# ---------------------------------------------------------------------------
+check_html_index_manifest examples/demo.html "$DEMO_HTML_INDEX" "M03-AC2"
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - examples/demo.html \
+  examples/demo.qmd <<'PY'
+import os, re, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+html_path, qmd_path = sys.argv[1:3]
+section_id = os.environ['HTML_SECTION_ID']
+anchor_prefix = os.environ['HTML_ANCHOR_PREFIX']
+entry_prefix = os.environ['HTML_ENTRY_PREFIX']
+
+# --- how many anchors the SOURCE demands ------------------------------------
+# Derived from the .qmd, never counted off the render: an anchor count read
+# back from the artifact would agree with itself however many marks were lost.
+qmd = open(qmd_path, encoding='utf-8').read()
+
+
+def marks(src):
+    """Every index mark as (visible text, attribute block).
+
+    The attribute block ends at the first `}` outside a quoted value — an
+    `entry=` value may itself contain braces, so a non-quote-aware scan cuts
+    the block short and misreads the mark. The class need not come first
+    either: `[t]{#id .index}` is the same mark as `[t]{.index}`, and a scanner
+    that only recognized the second would leave the first out of the count it
+    is the whole point of deriving from source.
+    """
+    found = []
+    for m in re.finditer(r'\[((?:\\.|[^\]\\])*)\]\{', src):
+        i, quoted = m.end(), False
+        while i < len(src):
+            c = src[i]
+            if quoted and c == '\\':
+                i += 2
+                continue
+            if c == '"':
+                quoted = not quoted
+            elif not quoted and c == '}':
+                break
+            i += 1
+        block = src[m.end():i]
+        if re.search(r'\.index(?![-\w])', block):
+            found.append((re.sub(r'\\(.)', r'\1', m.group(1)), block))
+    return found
+
+
+all_marks = marks(qmd)
+# THREE fixture invariants hold this arithmetic up, and a violation of any of
+# them must name itself rather than surface as a mysterious count mismatch.
+textless = [a for text, a in all_marks if text == '' and 'entry=' not in a]
+if textless:
+    # A mark with neither visible text nor entry= is dropped and emits no
+    # anchor at all.
+    print(f'FAIL: M03-AC3: the anchor count assumes demo.qmd holds no textless '
+          f'mark, but {len(textless)} mark(s) have neither visible text nor '
+          f'entry=', file=sys.stderr)
+    sys.exit(1)
+authored = [a for _text, a in all_marks if re.search(r'#[-\w]', a)]
+if authored:
+    # A mark carrying an id of the author's own keeps it and mints nothing.
+    print(f'FAIL: M03-AC3: the anchor count assumes demo.qmd holds no mark '
+          f'with an author-supplied id, but {len(authored)} mark(s) carry one',
+          file=sys.stderr)
+    sys.exit(1)
+heading_marks = [line for line in qmd.splitlines()
+                 if re.match(r'#{1,6} ', line) and marks(line)]
+if heading_marks:
+    # A heading mark's anchor is emitted on an empty span AFTER the heading,
+    # not on the mark span itself — the per-anchor check below assumes none.
+    # Detected with the same quote-aware scanner as the count, so a mark a
+    # brace-bearing entry= would hide from a regex cannot hide here; setext
+    # headings are outside this fixture's idiom.
+    print('FAIL: M03-AC3: the span-anchored check assumes demo.qmd holds no '
+          'mark inside a heading, but at least one heading contains a mark',
+          file=sys.stderr)
+    sys.exit(1)
+locator_marks = [m for m in all_marks
+                 if 'see=' not in m[1] and 'see-also=' not in m[1]]
+want = len(locator_marks)
+
+# --- the anchors the render produced ----------------------------------------
+doc = H.parse(html_path)
+ids = H.all_ids(doc)
+duplicates = sorted({i for i in ids if ids.count(i) > 1})
+generated = [i for i in ids
+             if i == section_id or i.startswith(anchor_prefix)
+             or i.startswith(entry_prefix)]
+clashing = [i for i in duplicates if i in generated]
+if clashing:
+    print(f'FAIL: M03-AC3: generated id(s) are not document-unique: '
+          f'{clashing}', file=sys.stderr)
+    sys.exit(1)
+
+anchors = sorted(i for i in ids if i.startswith(anchor_prefix))
+expected = [f'{anchor_prefix}{n}' for n in range(1, want + 1)]
+if sorted(expected) != anchors:
+    print(f'FAIL: M03-AC3: expected anchors {anchor_prefix}1..{want} (one per '
+          f'locator-contributing mark in demo.qmd), got {len(anchors)} anchor '
+          f'id(s)', file=sys.stderr)
+    missing = sorted(set(expected) - set(anchors))
+    extra = sorted(set(anchors) - set(expected))
+    if missing:
+        print(f'  missing: {missing}', file=sys.stderr)
+    if extra:
+        print(f'  unexpected: {extra}', file=sys.stderr)
+    sys.exit(1)
+for anchor in anchors:
+    node = H.find_id(doc, anchor)
+    if node.tag != 'span' or 'index' not in H.classes(node):
+        print(f'FAIL: M03-AC3: {anchor} sits on <{node.tag}>, not on the '
+              f'mark span it is supposed to anchor', file=sys.stderr)
+        sys.exit(1)
+
+# --- every link inside the index resolves -----------------------------------
+section = H.find_id(doc, section_id)
+targets = set(ids)
+dangling = sorted({a.attrs.get('href', '') for a in H.find_all(section, 'a')
+                   if a.attrs.get('href', '').startswith('#')
+                   and a.attrs['href'][1:] not in targets})
+if dangling:
+    print(f'FAIL: M03-AC3: link(s) in the generated index resolve to no id in '
+          f'the same file: {dangling}', file=sys.stderr)
+    sys.exit(1)
+links = [a for a in H.find_all(section, 'a')]
+print(f'ok   M03-AC3: {want} anchors, one per locator-contributing mark '
+      f'(demo.qmd holds no textless mark, no author-supplied id and no mark '
+      f'in a heading), all generated ids unique, all {len(links)} links in '
+      f'the index resolve')
+PY
+
 # IP2 regression: a mark whose content yields no text must index nothing and
 # delete nothing. An image with empty alt text stringifies to "", which once
 # caused the whole span — image included — to be dropped from every format.
@@ -827,18 +1214,438 @@ WARN_CLASH='is marked in more than one way'
 check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH" 2 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index key kappa ' 1 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index key lambda ' 1 "M02-AC5"
-# Deliberately LaTeX-only: the clash is a property of the LaTeX index tool, so
-# a format with no index back-end must stay silent about it.
+# Deliberately LaTeX-only, and it stays that way now that HTML has a back-end
+# of its own: the clash is a property of makeindex, which rejects two marks
+# sharing a key and a page but carrying different encapsulations. The HTML
+# back-end has no such limit — it prints the locator and the cross-reference
+# on the same entry — so warning about it there would report a problem the
+# reader's format does not have.
 check_warning_count "$WORK/conflict-html.log" "$WARN_CLASH" 0 "M02-AC5"
 pass "M02-AC5: the clash report names both differing-encap keys once each, ignores the two agreeing keys, and is silent in HTML"
 
+# ---------------------------------------------------------------------------
+# M03-AC4 — cross-references in a generated HTML index.
+# Manifest 1f, same oracle rule and same row format as manifest 1e. The
+# fixture holds all three shapes the criterion names: a target that resolves
+# (sigma), one that does not (kappa, lambda, mu, rho), and the colliding
+# string — rho's SINGLE level `Note: on birds` prints exactly like sigma's
+# TWO levels `Note`/`on birds`, and only sigma may link. `kappa` carries a
+# locator AND a cross-reference, which makeindex rejects but HTML does not.
+# ---------------------------------------------------------------------------
+read -r -d '' XREF_HTML_INDEX <<'MANIFEST' || true
+0	kappa	1	see-plain Elsewhere
+0	lambda	0	see-plain Here	also-plain There
+0	mu	0	see-plain Same
+0	Note	0
+1	on birds	1
+0	nu	2
+0	rho	0	see-plain Note: on birds
+0	sigma	0	see-link Note: on birds
+MANIFEST
+
+check_html_index_manifest examples/xref-conflict.html "$XREF_HTML_INDEX" "M03-AC4"
+
+# The token above says sigma's target is A link; this says it is the RIGHT
+# link. A cross-reference pointing at some other entry would satisfy the
+# manifest and mislead every reader who followed it.
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/xref-conflict.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+records = H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))
+by_term = {r['term']: r for r in records}
+target_id = by_term['on birds']['id']
+href = by_term['sigma']['xrefs'][0][3]
+if href != '#' + target_id:
+    print(f'FAIL: M03-AC4: sigma links to {href!r}, but the entry it names '
+          f'("Note: on birds") is {"#" + target_id!r}', file=sys.stderr)
+    sys.exit(1)
+# And the entry it points at is the sub-entry, not its parent: a target's
+# deepest level is the entry a reader is being sent to.
+if by_term['Note']['id'] == target_id:
+    print('FAIL: M03-AC4: the two-level target resolved to its parent entry',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M03-AC4: the resolving cross-reference links to the sub-entry it '
+      f'names ({href}), and the colliding single-level target does not link')
+PY
+
+# ---------------------------------------------------------------------------
+# M03-AC4 — repeated and look-alike cross-reference targets. Manifest 1h, same
+# oracle rule and row format as manifest 1e.
+#
+# `zeta` carries the SAME target twice and must show one cross-reference.
+# `eta` carries two targets whose LEVEL LISTS differ but whose rendered text
+# is identical (`A`/`B` against the single level `A: B`); both must survive,
+# and only the two-level one names an entry, so only it links. Folding those
+# two together loses an author's cross-reference silently, which is the IP2
+# failure this fixture exists to catch — a dedupe keyed on rendered text
+# passes every other check in this suite.
+# ---------------------------------------------------------------------------
+# The fixture also writes three ids the extension would otherwise mint for
+# itself — `qi-mark-1` on theta, `qi-mark-3` in raw HTML where no mark is,
+# `qi-entry-1` on lambda — so the derivation below skips those numbers: ab
+# takes qi-mark-2, iota qi-mark-4, kappa qi-mark-5, bee qi-mark-6, Bee
+# qi-mark-7, and the entries are numbered from qi-entry-2.
+read -r -d '' HTML_INDEX_MANIFEST <<'MANIFEST' || true
+0	A	0
+1	B	1
+0	Bee	1
+0	bee	1
+0	eta	0	see-link A: B	see-plain A: B
+0	iota	1
+0	kappa	1
+0	lambda	1
+0	nu	0	see-link A: B
+0	theta	1
+0	zeta	0	see-link A: B
+MANIFEST
+
+quarto render examples/html-index.qmd --to html > "$WORK/html-index.log" 2>&1 \
+  || { tail -20 "$WORK/html-index.log" >&2; fail "M03-AC4: html-index.qmd failed to render to HTML"; }
+check_html_index_manifest examples/html-index.html "$HTML_INDEX_MANIFEST" "M03-AC4"
+check_html_index_links examples/html-index.html "M03-AC3"
+
+# M03-AC3 — a minted id must never be an id the document already uses. Two
+# elements answering to one name is not a cosmetic problem: the browser
+# resolves a link to the first, so one of the two locators silently lands
+# somewhere the reader did not ask for.
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - examples/html-index.html <<'PY'
+import os, sys
+from collections import Counter
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+anchor_prefix = os.environ['HTML_ANCHOR_PREFIX']
+entry_prefix = os.environ['HTML_ENTRY_PREFIX']
+ids = H.all_ids(doc)
+dupes = sorted({i for i, n in Counter(ids).items() if n > 1})
+if dupes:
+    print(f'FAIL: M03-AC3: duplicate id(s) in a document whose author used the '
+          f'minted scheme: {dupes}', file=sys.stderr)
+    sys.exit(1)
+records = {r['term']: r for r in
+           H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))}
+# The author's own ids are kept and linked, not taken over...
+for term, want in (('theta', f'#{anchor_prefix}1'),
+                   ('lambda', f'#{entry_prefix}1')):
+    if records[term]['locators'] != [want]:
+        print(f"FAIL: M03-AC3: {term}'s locator is {records[term]['locators']}, "
+              f"expected ['{want}'] — an id the author wrote is never taken "
+              f"over", file=sys.stderr)
+        sys.exit(1)
+# ...and nothing minted reuses them — the id written in raw HTML included,
+# which only an HTML reading of the document can see.
+if records['lambda']['id'] == f'{entry_prefix}1':
+    print(f'FAIL: M03-AC3: an entry was numbered {entry_prefix}1, which the '
+          f'author already used', file=sys.stderr)
+    sys.exit(1)
+if records['iota']['locators'] != [f'#{anchor_prefix}4']:
+    print(f"FAIL: M03-AC3: iota's locator is {records['iota']['locators']}, "
+          f"expected ['#{anchor_prefix}4'] — minting must skip "
+          f"{anchor_prefix}3, which the author wrote in raw HTML",
+          file=sys.stderr)
+    sys.exit(1)
+namespace = [i for i in ids if i.startswith(anchor_prefix)]
+if (not {f'{anchor_prefix}1', f'{anchor_prefix}3'} <= set(namespace)
+        or len(namespace) != 7):
+    print(f'FAIL: M03-AC3: expected the two author-written ids plus 5 minted '
+          f'anchors, got {sorted(namespace)}', file=sys.stderr)
+    sys.exit(1)
+print('ok   M03-AC3: minted anchor and entry ids skip the ids the author '
+      'already used — the one written in raw HTML included — and every id '
+      'in the document is unique')
+PY
+
+# ---------------------------------------------------------------------------
+# M03-AC2 — locator numbering where the renderer moves content. Manifest 1g,
+# same oracle rule and row format as manifest 1e: `widget` is marked in a
+# heading, a table cell and a footnote; `gadget` carries an id of the
+# author's own; `sprocket` and `flange` share one heading; `doohickey`
+# carries an author id INSIDE a heading; `contraption` is a cross-reference
+# mark with an author id in a heading (no locator, id still relocates);
+# `gizmo` and `thingamajig` share a heading line, but `thingamajig` sits in
+# an inline footnote whose text renders at the foot of the page.
+# ---------------------------------------------------------------------------
+read -r -d '' PLACEMENT_HTML_INDEX <<'MANIFEST' || true
+0	contraption	0	see-link widget
+0	doohickey	1
+0	flange	1
+0	gadget	1
+0	gizmo	1
+0	sprocket	1
+0	thingamajig	1
+0	widget	3
+MANIFEST
+
+quarto render examples/placement.qmd --to html > "$WORK/placement-html.log" 2>&1 \
+  || { tail -20 "$WORK/placement-html.log" >&2; fail "M03-AC2: placement.qmd failed to render to HTML"; }
+check_html_index_manifest examples/placement.html "$PLACEMENT_HTML_INDEX" "M03-AC2"
+check_html_index_links examples/placement.html "M03-AC3"
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+python3 - examples/placement.html <<'PY'
+import os, sys
+from collections import Counter
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+prefix = os.environ['HTML_ANCHOR_PREFIX']
+records = {r['term']: r for r in
+           H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))}
+
+# Numbered in the order the marks are WRITTEN. The footnote's mark is written
+# third and rendered last, so a numbering taken from rendered position would
+# put it out of step with the table cell's. The heading mark's anchor is an
+# empty span emitted just AFTER the heading, minted like any other.
+want = [f'#{prefix}1', f'#{prefix}2', f'#{prefix}3']
+if records['widget']['locators'] != want:
+    print(f"FAIL: M03-AC2: widget's locators are "
+          f"{records['widget']['locators']}, expected {want} (heading, table "
+          f"cell, footnote — the order the marks are written)", file=sys.stderr)
+    sys.exit(1)
+
+# No anchor id may remain inside a rendered heading: Quarto copies a
+# heading's contents into the sidebar table of contents, so an id in there
+# appears twice and the locator resolves to the sidebar copy. Every heading
+# mark's anchor — minted or the author's own — sits after its heading.
+mark_anchors = {f'{prefix}1', f'{prefix}4', f'{prefix}5', f'{prefix}7',
+                'my-gadget', 'my-doohickey', 'my-contraption'}
+inside = set()
+for h in [n for n in H.walk(doc)
+          if n.tag in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6')]:
+    inside.update(n.attrs['id'] for n in H.walk(h) if n.attrs.get('id'))
+misplaced = sorted(mark_anchors & inside)
+if misplaced:
+    print(f'FAIL: M03-AC3: anchor id(s) inside a rendered heading, where the '
+          f'sidebar TOC duplicates them: {misplaced}', file=sys.stderr)
+    sys.exit(1)
+toc = H.find_id(doc, 'TOC')
+if toc is None:
+    print('FAIL: M03-AC2: no rendered table of contents; this fixture exists '
+          'to probe TOC duplication and proves nothing without one',
+          file=sys.stderr)
+    sys.exit(1)
+leaked = sorted(mark_anchors & set(H.all_ids(toc)))
+if leaked:
+    print(f'FAIL: M03-AC3: anchor id(s) duplicated into the table of '
+          f'contents: {leaked}', file=sys.stderr)
+    sys.exit(1)
+
+# The uniqueness sweep behind the two checks above: with a TOC present, ANY
+# duplicated id is visible here. A document-wide uniqueness check on
+# demo.html cannot see this, because demo.qmd has no TOC and no heading mark.
+dupes = sorted({i for i, n in Counter(H.all_ids(doc)).items() if n > 1})
+if dupes:
+    print(f'FAIL: M03-AC2: duplicate id(s) in a document with a TOC and '
+          f'marks in headings: {dupes}', file=sys.stderr)
+    sys.exit(1)
+if not any(a.attrs.get('href') == '#qi-index' for a in H.find_all(doc, 'a')):
+    print('FAIL: M03-AC2: the generated index section is not linked from the '
+          'table of contents', file=sys.stderr)
+    sys.exit(1)
+
+# Two marks in one heading get one anchor EACH: a shared anchor sends two
+# index entries to a single place.
+for term, want_loc in (('sprocket', [f'#{prefix}4']),
+                       ('flange', [f'#{prefix}5'])):
+    if records[term]['locators'] != want_loc:
+        print(f"FAIL: M03-AC3: {term}'s locator is "
+              f"{records[term]['locators']}, expected {want_loc} — each of "
+              f"two marks in one heading needs an anchor of its own",
+              file=sys.stderr)
+        sys.exit(1)
+
+# A mark in an inline footnote written in a heading anchors with the note's
+# rendered text at the foot of the page, NOT after the heading — while the
+# heading's own mark anchors after the heading as usual. The note's mark
+# numbers first: it keeps its place inside the heading's own content, ahead
+# of the anchors relocated to just after the heading.
+if records['thingamajig']['locators'] != [f'#{prefix}6']:
+    print(f"FAIL: M03-AC3: thingamajig's locator is "
+          f"{records['thingamajig']['locators']}, expected ['#{prefix}6']",
+          file=sys.stderr)
+    sys.exit(1)
+if records['gizmo']['locators'] != [f'#{prefix}7']:
+    print(f"FAIL: M03-AC3: gizmo's locator is {records['gizmo']['locators']},"
+          f" expected ['#{prefix}7']", file=sys.stderr)
+    sys.exit(1)
+
+# The relocation this fixture exists to probe must actually have happened, or
+# the checks above prove nothing: the footnote's anchor sits inside the
+# footnotes section the renderer moved to the end of the page, AFTER the mark
+# that is written below it in the source.
+footnotes = H.find_id(doc, 'footnotes')
+if footnotes is None or H.find_id(footnotes, f'{prefix}3') is None:
+    print(f'FAIL: M03-AC2: {prefix}3 is not inside the rendered footnotes '
+          f'section, so this fixture is not probing relocated content',
+          file=sys.stderr)
+    sys.exit(1)
+if H.find_id(footnotes, f'{prefix}6') is None:
+    print(f"FAIL: M03-AC3: {prefix}6 (the inline-note mark written in a "
+          f"heading) is not inside the rendered footnotes section — its "
+          f"anchor was relocated away from where its text renders",
+          file=sys.stderr)
+    sys.exit(1)
+order = H.all_ids(doc)
+if order.index('my-gadget') > order.index(f'{prefix}3'):
+    print(f'FAIL: M03-AC2: the footnote mark still renders before the mark '
+          f'written after it, so nothing was relocated', file=sys.stderr)
+    sys.exit(1)
+
+# An author's own id is the link target and no anchor is minted for it — in
+# body text (gadget) and relocated out of a heading (doohickey) alike.
+for term, own in (('gadget', '#my-gadget'), ('doohickey', '#my-doohickey')):
+    if records[term]['locators'] != [own]:
+        print(f"FAIL: M03-AC2: {term}'s locator is "
+              f"{records[term]['locators']}, expected ['{own}'] — an id the "
+              f"author wrote is never taken over", file=sys.stderr)
+        sys.exit(1)
+minted = [i for i in order if i.startswith(prefix)]
+if len(minted) != 7:
+    print(f'FAIL: M03-AC2: {len(minted)} anchors minted, expected 7 (three '
+          f'widget marks, the two sharing a heading, gizmo and thingamajig; '
+          f'the marks carrying author ids need none)', file=sys.stderr)
+    sys.exit(1)
+print('ok   M03-AC2: locators are numbered in source order across a heading, '
+      'a table cell and a relocated footnote; heading anchors sit after '
+      'their headings, out of the TOC; author-supplied ids are kept and '
+      'linked')
+PY
+
+# ---------------------------------------------------------------------------
+# M03-AC5 — every printable ASCII character reaches a generated HTML index as
+# an entry of its own. The domain is the fixture's by construction and is
+# pinned by the coverage check above; this asserts the characters arrive.
+# Exact elements of the extracted set, not substrings: `<` is a substring of
+# every entry once the markup is included, so a containment test would pass on
+# an index that printed nothing at all.
+# ---------------------------------------------------------------------------
+quarto render examples/escaping.qmd --to html > "$WORK/esc-html.log" 2>&1 \
+  || { tail -20 "$WORK/esc-html.log" >&2; fail "M03-AC5: escaping.qmd failed to render to HTML"; }
+
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/escaping.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+section = H.find_id(doc, os.environ['HTML_SECTION_ID'])
+if section is None:
+    print('FAIL: M03-AC5: escaping.html has no generated index section',
+          file=sys.stderr)
+    sys.exit(1)
+terms = {r['term'] for r in H.index_entries(section)}
+domain = [chr(c) for c in range(0x21, 0x7F)]
+missing = [c for c in domain if c not in terms]
+if missing:
+    print(f'FAIL: M03-AC5: character(s) absent from the generated index as an '
+          f'entry of their own: {missing}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M03-AC5: all {len(domain)} printable ASCII characters (space '
+      f'excluded) are entries of the generated HTML index, {len(terms)} '
+      f'entries in all')
+PY
+
+# M03-AC3 — the pending tag is filter plumbing and must never survive into
+# rendered output; nor may an author's FORGED copy steal a real mark's anchor
+# (examples/html-index.qmd carries a forged copy on a non-mark span and on a
+# cross-reference mark — the anchor numbering above already pins that neither
+# consumed a minted id).
+if grep -l 'data-qi-pending' examples/*.html >/dev/null 2>&1; then
+  fail "M03-AC3: data-qi-pending survived into rendered HTML: $(grep -l 'data-qi-pending' examples/*.html | tr '\n' ' ')"
+fi
+pass "M03-AC3: the pending attribute reaches no rendered HTML, forged author copies included"
+
+# ---------------------------------------------------------------------------
+# M03-AC6 — negatives. A document with no marks gets no section and no
+# anchors, and a format with no index back-end gets neither, while the
+# format-neutral warnings still reach its author.
+# ---------------------------------------------------------------------------
+quarto render examples/control.qmd --to html > "$WORK/control-html.log" 2>&1 \
+  || { tail -20 "$WORK/control-html.log" >&2; fail "M03-AC6: control.qmd failed to render to HTML"; }
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - examples/control.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+section_id = os.environ['HTML_SECTION_ID']
+prefixes = (os.environ['HTML_ANCHOR_PREFIX'], os.environ['HTML_ENTRY_PREFIX'])
+stray = [i for i in H.all_ids(doc)
+         if i == section_id or i.startswith(prefixes)]
+if stray:
+    print(f'FAIL: M03-AC6: a document with no marks carries generated id(s): '
+          f'{stray}', file=sys.stderr)
+    sys.exit(1)
+print('ok   M03-AC6: a document with no marks gets no index section and no '
+      'anchors')
+PY
+
+quarto render examples/demo.qmd --to gfm > "$WORK/demo-gfm.log" 2>&1 \
+  || { tail -20 "$WORK/demo-gfm.log" >&2; fail "M03-AC6: demo.qmd failed to render to gfm"; }
+[ -s examples/demo.md ] || fail "M03-AC6: examples/demo.md is empty"
+for tok in 'qi-index' 'qi-mark-' 'qi-entry-' '\index' '\printindex'; do
+  if grep -qF -- "$tok" examples/demo.md; then
+    fail "M03-AC6: gfm output must not contain $tok (gfm has no index back-end)"
+  fi
+done
+if grep -qE '^# Index$' examples/demo.md; then
+  fail "M03-AC6: gfm output must not contain a generated index section"
+fi
+grep -qF 'café' examples/demo.md || fail "M03-AC6: gfm output lost visible term text"
+# The warnings that are genuinely about what the author wrote are emitted in
+# every format now, not only where a back-end exists. demo.qmd holds two
+# empty levels: the trailing one in `A!!B!` and the trailing one in the
+# over-deep probe.
+check_warning_count "$WORK/demo-gfm.log" 'empty index level in ' 2 "M03-AC6"
+check_warning_count "$WORK/demo-gfm.log" "$WARN_BOTH" 1 "M03-AC6"
+
+# The converse, which is what keeps the split honest: the three-level fold is
+# makeindex's ceiling, not the extension's, so its warning must NOT follow the
+# format-neutral ones out of the LaTeX branch. Asserted as an exact zero in
+# both other formats, since demo.qmd holds the over-deep probe that produces
+# it in LaTeX (asserted present, above).
+for log in demo-html demo-gfm; do
+  check_warning_count "$WORK/$log.log" 'levels deep' 0 "M03-AC6"
+done
+pass "M03-AC6: gfm renders clean with no index artifacts, the format-neutral warnings still reach its author, and the makeindex level-ceiling warning reaches neither HTML nor gfm"
+
 printf '%s\n' "$VISIBLE_TERMS" > "$WORK/visible.txt"
 printf '%s\n' "$ENTRY_VALUES_NO_LEAK" > "$WORK/noleak.txt"
-python3 - examples/demo.html examples/demo.qmd "$WORK/visible.txt" "$WORK/noleak.txt" <<'PY'
-import re, sys
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/demo.html examples/demo.qmd \
+  "$WORK/visible.txt" "$WORK/noleak.txt" <<'PY'
+import os, re, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
 html_path, qmd_path, vis_path, leak_path = sys.argv[1:5]
-html = open(html_path, encoding='utf-8').read()
 qmd = open(qmd_path, encoding='utf-8').read()
+
+# Both halves of this check are about the document a reader reads OUTSIDE the
+# generated index: the visible terms are the marks in the body, and the
+# attribute values that must not leak are legitimately printed inside the
+# index section. So the section is removed from the tree first, and everything
+# below reads what is left.
+# The document is read TWICE, because the two halves are stated in different
+# layers and comparing across layers is how a leak hides.
+#   markup layer (decode=False): the visible-terms manifest's rows are written
+#     as `&amp;`/`&lt;`, the meaning they have carried since M01.
+#   text layer (decode=True): the no-leak values are the literal strings the
+#     author wrote. Swept against markup, a leaked value containing `&`, `<`,
+#     `>` or `"` would be rendered escaped and never match itself — the
+#     escaping-hostile values are exactly the ones IP2 cares most about, so
+#     that comparison would report "no leak" for the worst leak there is.
+markup = H.parse(html_path, decode=False)
+doc = H.parse(html_path, decode=True)
+for tree in (markup, doc):
+    section = H.find_id(tree, os.environ['HTML_SECTION_ID'])
+    if section is None:
+        print('FAIL: AC7: no generated index section in demo.html',
+              file=sys.stderr)
+        sys.exit(1)
+    H.strip_subtree(tree, section)
 
 rows, total = [], 0
 for line in open(vis_path, encoding='utf-8'):
@@ -867,11 +1674,12 @@ if total != expected:
 from collections import Counter
 # The invisible-entry form has no visible text by construction, so its empty
 # span is not a term; the completeness pin already accounts for it separately.
-# Attribute values are matched as quoted strings, not as "anything but >":
-# Pandoc escapes & and " in an attribute but leaves < and > raw, so an entry
-# value containing them would otherwise truncate the tag match.
-SPAN_RE = r'<span class="index"(?:\s+[-\w]+="[^"]*")*\s*>(.*?)</span>'
-spans = Counter(t for t in re.findall(SPAN_RE, html, re.DOTALL) if t != '')
+# Found structurally rather than by matching the serialized tag: the HTML
+# writer orders attributes as it likes, and the marks now carry an anchor id
+# alongside their class.
+spans = Counter(t for t in (H.text(n)
+                            for n in H.find_all(markup, 'span', 'index'))
+                if t != '')
 bad = []
 for count, text in rows:
     got = spans.get(text, 0)
@@ -907,7 +1715,11 @@ if unaccounted:
         print(f'  <<{v}>>', file=sys.stderr)
     sys.exit(1)
 
-body = re.sub(r'<[^>"]*(?:"[^"]*"[^>"]*)*>', ' ', html)
+# A space at every element boundary, so a value that only exists by running
+# two elements together is not reported as text a reader can see. Read from
+# the DECODED tree, so a value is compared with the text a reader would
+# actually see if it leaked.
+body = H.text(doc, sep=' ')
 def parsed(v):
     out, i = [], 0
     while i < len(v):

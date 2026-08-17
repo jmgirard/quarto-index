@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-16 (M02 merged and archived; 2 review follow-up row
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M03 | HTML index back-end | planned | M02 | normal | milestones/M03-html-backend.md |
+| M03 | HTML index back-end | review | M02 | normal | milestones/M03-html-backend.md |
 | M02 | Cross-references (see / see also) | done | M01 | normal | milestones/archive/M02-cross-references.md |
 | M01 | LaTeX index extension skeleton | done | — | normal | milestones/archive/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
@@ -28,7 +28,7 @@ _Last hygiene check: 2026-08-16 (M02 merged and archived; 2 review follow-up row
 - Harden the acceptance suite: brace-aware \index scanner (no longer benign now that unbalanced braces are probed) — added 2026-08-16 — M01 review R14; the script-exit-code item was done in M01, and \printindex ordering has its own row
 - Quarto version floor is an untested contract claim; CI matrix would fence it — added 2026-08-16 — M01 review R15; folds into the existing CI-matrix candidate
 - Windows checkouts without symlink support break examples/_extensions — added 2026-08-16 — M01 review R18
-- `marks_emitted` is module-level state, latent if Lua state is ever reused across documents — added 2026-08-16 — M01 review R16
+- `marks_emitted` is module-level state, latent if Lua state is ever reused across documents; the HTML back-end adds one more such accumulator (`html_marks`) — added 2026-08-16, widened by M03 review P1, corrected M03 (the second accumulator was refactored away by the F1/F2 fix) — M01 review R16
 - `\index` inside a moving argument (section heading) is unprobed — added 2026-08-16 — M01 review R17
 - Letter-group headings in the HTML index (A/B/C breaks) — added 2026-08-16 — deferred at the M03 gate pending sort-key collation
 - see-also entries keep their locators (print convention) in both back-ends — added 2026-08-16 — M03 gate chose LaTeX-aligned no-locator semantics; pairs with the plain+cross-reference clash row
@@ -42,3 +42,8 @@ _Last hygiene check: 2026-08-16 (M02 merged and archived; 2 review follow-up row
 - A term marked both plainly and with a cross-reference fails the PDF render when both marks land on one page; M02 warns but cannot prevent it, since page numbers do not exist at filter time — added 2026-08-16 — M02 Decisions; needs locator suppression or deferred emission
 - The PDF cross-reference checks assert substring presence, not counts, so a cross-reference printed twice would pass — added 2026-08-16 — M02 review; mirrors the existing AC6 approach
 - Choose and add a LICENSE file (user decision; needed before public listing) — added 2026-08-16 — M01 README omits a license claim for want of one
+- A mark's attribute values ride into pass-through formats on the span itself (`data-see` etc. in gfm); whether that markup residue is acceptable is unsettled — added 2026-08-17 — M03 review F4/F9; AC3's scope note defers it
+- An author can claim `qi-index` and collide with the generated section; minted anchor and entry ids skip taken names but the section id does not — added 2026-08-17 — M03 review F11
+- A self-referential cross-reference (`[cats]{.index see="cats"}`) resolves and links an entry to itself — added 2026-08-17 — M03 review F13
+- The planted-defect self-test mutates only the `.tex` fixture; no HTML index check has a planted-defect proof — added 2026-08-17 — M03 review F14
+- Headings consumed by Quarto constructs (callout titles, tabsets) bypass the after-heading anchor relocation; no TOC copy today, so no defect — the invariant is unpinned against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8

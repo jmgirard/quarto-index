@@ -1,0 +1,56 @@
+---
+title: "quarto-index placement probe"
+# A table of contents on purpose: Quarto copies a heading's contents into the
+# sidebar, so an anchor id that stays inside a heading appears twice in the
+# page and a locator resolves to the sidebar copy. The heading marks below
+# probe that, and the TOC also lists the generated index section, which the
+# extension claims and this fixture checks.
+toc: true
+from: markdown-smart
+filters:
+  - index
+---
+
+# Marks the renderer moves
+
+A locator must point at its mark wherever the rendered page ends up putting
+it, and the locators of one entry must be numbered in the order the marks are
+written — not in the order they happen to land on the page. The same term is
+marked three times below: in a section heading, inside a table cell, and
+inside a footnote, whose text a reader finds at the foot of the page rather
+than where the reference sits.
+
+## A [widget]{.index} in a heading
+
+Body text under that heading.
+
+| Part | Note |
+|---|---|
+| A [widget]{.index} in a table cell | the second column |
+
+A footnote carries the third one.[^one]
+
+[^one]: A [widget]{.index} in a footnote.
+
+A mark that already carries an id of the author's own keeps it, and the index
+links to that id instead of minting one: [gadget]{#my-gadget .index}.
+
+## Both a [sprocket]{.index} and a [flange]{.index} in one heading
+
+Two marks in one heading need two anchors: one anchor shared between them
+would send two index entries to a single place.
+
+## A [doohickey]{#my-doohickey .index} with the author's id, in a heading
+
+The author's id must survive — relocated out of the heading — because an id
+that stays inside is copied into the sidebar with the rest of the heading.
+
+## About a [contraption]{#my-contraption .index see="widget"}
+
+A cross-reference mark carries no locator, but an id it carries in a heading
+would be copied into the sidebar all the same, so it relocates too.
+
+## A [gizmo]{.index} heading with a note^[the note marks a [thingamajig]{.index} of its own]
+
+The heading's own mark anchors after the heading; the note's mark renders
+with the note at the foot of the page, and its anchor must stay there.

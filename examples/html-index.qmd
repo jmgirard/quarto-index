@@ -1,0 +1,52 @@
+---
+title: "quarto-index HTML index probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Cross-references that repeat, and ones that only look alike
+
+Properties of the generated HTML index that the LaTeX back-end has no
+equivalent of, so they cannot be probed through a `.tex` render.
+
+The entry those targets can name: [ab]{.index entry="A!B"}.
+
+One target repeated on one key is one cross-reference, not two — the reader
+wants the target, not a count of how the marks were spread:
+[zeta]{.index see="A!B"} and again [zeta]{.index see="A!B"}.
+
+Two targets on one key that print identically but name different things — a
+two-level target, and a single level that merely contains the level join —
+are two cross-references. Only the two-level one names an entry that exists,
+so only it is a link:
+[eta]{.index see="A!B"} and [eta]{.index see="A: B"}.
+
+# Ids the author has already used
+
+An id the extension would otherwise mint for itself, written by the author on
+a mark of their own: [theta]{#qi-mark-1 .index}. An id can also sit where the
+document tree carries no id at all — written inside raw HTML, which only a
+reading of the raw text itself can see:
+
+```{=html}
+<p Id="qi-mark-3"></p>
+```
+
+The marks that follow must be given neither id — two elements answering to
+one name send one of the two locators to the wrong place: [iota]{.index} and
+[kappa]{.index}.
+
+The same for an entry id: [lambda]{#qi-entry-1 .index}.
+
+A span forging this extension's own plumbing attribute must not steal a real
+mark's anchor: [decoy]{data-qi-pending="1"} is not a mark at all, and
+[nu]{.index see="A!B" data-qi-pending="2"} is a cross-reference, which never
+carries an anchor of its own.
+
+# Entries whose sort keys are equal
+
+Two terms differing only in ASCII case fold to the same sort key, so the tie
+falls to character code and the capital comes first. They are written here in
+the opposite order to the one they must appear in, so the index cannot be
+right by having left them alone: [bee]{.index} and [Bee]{.index}.

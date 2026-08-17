@@ -1,6 +1,6 @@
 # M03: HTML index back-end
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M02
 - **Driving RR:** —
@@ -196,6 +196,7 @@ criteria audit applied).
 - 2026-08-17: PAUSED mid-fix at the user's decision. The pass-2 findings are all recorded above; none is fixed yet. The approach question is OPEN and is the first thing to settle on resume: the session recommended switching to the alternative recorded at the implement gate (emit each mark's anchor in a hidden element just after the heading, rather than borrowing the heading's id), because that makes the author-id, missing-heading-id and two-marks-in-one-heading cases stop being special; the alternatives offered were patching the three cases individually or narrowing the milestone so marks in headings carry no locator. Defect returns so far: 2 — a third hits the descope-or-park threshold.
 - 2026-08-17: resume; the open approach question went to the user, who chose the recorded alternative — every heading mark's anchor is an empty span emitted just after the heading, replacing heading-id borrowing (Decisions below). Minor amendment: T12 added; AC2/AC3/AC7 coverage extended to it.
 - 2026-08-17: T12 — relocate_heading_anchors moves each heading mark's anchor duty (the author's id, or the pending tag) onto an empty span emitted after the heading; author-id resolution moved from the Span pass into assign_anchors, so heading and body marks take one path; taken_identifiers now also reads ids out of raw HTML. placement.qmd gains the two-marks-in-one-heading and author-id-in-heading shapes, html-index.qmd a raw `qi-mark-3` (a native-span first attempt was silently visible to the Attr walk — the fixture uses a `{=html}` block, which is not). All three shapes verified to fail under the reverted filter for their own named reasons and pass under the fix. README and DESIGN reworded from borrowing to the after-heading anchor. Suite green with --self-test; AC1 merge-base byte-identity re-confirmed.
+- 2026-08-17: all pass-2 findings fixed (T12); cairn_validate clean but for a pre-existing sizing advisory (12 tasks, a split tripwire — the last four are review-return fixes on a milestone about to close). AC3's anchor enumeration still names the heading-id form, now unoccupied by design; left unamended — the disjunction is true as written, and further AC3 wording churn goes to the user. Status -> review (pass 3).
 
 ## Decisions
 

@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-16 (M02 merged and archived; 2 review follow-up row
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M03 | HTML index back-end | planned | M02 | normal | milestones/M03-html-backend.md |
+| M03 | HTML index back-end | in-progress | M02 | normal | milestones/M03-html-backend.md |
 | M02 | Cross-references (see / see also) | done | M01 | normal | milestones/archive/M02-cross-references.md |
 | M01 | LaTeX index extension skeleton | done | — | normal | milestones/archive/M01-latex-index-skeleton.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent

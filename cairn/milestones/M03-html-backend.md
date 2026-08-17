@@ -1,11 +1,11 @@
 # M03: HTML index back-end
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M02
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP1, GP4, GP6
-- **Branch/PR:** —
+- **Branch/PR:** m03-html-backend
 
 ## Goal
 
@@ -153,6 +153,8 @@ criteria audit applied).
 - 2026-08-16: plan chose an AST-built index over raw HTML strings because Pandoc's writer owns escaping (IP2); falsified by an index shape AST nodes cannot express.
 - 2026-08-16: plan chose a review-time merge-base diff over a checked-in golden `.tex` because the suite's oracle rule forbids snapshots; falsified by LaTeX regressions repeatedly slipping in between reviews.
 - 2026-08-16: plan chose no injected CSS over a styled index because nested lists render acceptably under defaults (GP4); falsified by the extension-listing quality bar demanding styling (GP1).
+
+- 2026-08-16: /milestone-implement started; branch m03-html-backend cut from main.
 
 ## Decisions
 

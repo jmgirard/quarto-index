@@ -144,8 +144,12 @@ Two back-ends ship:
   would then appear twice; a heading mark's anchor — author id or minted —
   sits on an empty span emitted just after the heading.
 
-Every other format — beamer, revealjs, epub, gfm — takes neither branch and
-passes marks through untouched (IP2).
+Every other format — beamer, revealjs, epub, gfm — takes neither branch: no
+index, no anchors, no back-end tokens, and the visible text exactly as
+written. What such a format does carry is the mark's own attributes, which
+Pandoc passes through on the span as `data-entry`, `data-see`,
+`data-see-also` and `data-sort`; whether that residue should exist is open
+(ROADMAP). Corrected M06 — this paragraph previously said "untouched".
 
 **Book projects** split the HTML back-end in two, and leave the LaTeX one
 alone. A PDF book is rendered as one merged document, so its marks are already

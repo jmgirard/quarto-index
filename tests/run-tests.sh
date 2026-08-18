@@ -3379,7 +3379,9 @@ python3 - examples/sortkey.qmd examples/sortkey-twin.qmd <<'TWINPY'
 import re, sys
 source = open(sys.argv[1], encoding='utf-8').read()
 twin = open(sys.argv[2], encoding='utf-8').read()
-if re.sub(r' sort="[^"]*"', '', source) != twin:
+# Escape-aware: a sort key can BE a double quote, written `\"`, and a naive
+# ` sort="[^"]*"` stops at it and leaves a stray `"}` behind.
+if re.sub(r' sort="(?:[^"\\]|\\.)*"', '', source) != twin:
     print('FAIL: M06-AC1/AC2: examples/sortkey-twin.qmd is not '
           'examples/sortkey.qmd with its sort= attributes removed',
           file=sys.stderr)
@@ -3617,6 +3619,125 @@ print(f'ok   M06-AC5: the book\'s sort key(s) are declared in {declaring} and '
       f'the marker is in {marker_chapters}, so the aggregated order above '
       f'crossed a chapter boundary')
 BOOKSORTPY
+
+# ---------------------------------------------------------------------------
+# M06-AC3 — every printable ASCII character as a sort key, in three formats.
+#
+# A sort key travels the same channel an entry key does, so the same characters
+# need the same mechanisms — plus one that matters only here: `@` is what the
+# LaTeX back-end writes BETWEEN a sort key and the text it files, so an `@` the
+# author wrote must still reach the index tool quoted. The domain is derived by
+# construction from the same range the entry-key probe uses, so a character the
+# filter handles can never go unprobed.
+# ---------------------------------------------------------------------------
+python3 - examples/sort-escaping.qmd <<'SORTESCPY'
+import re, sys
+qmd = open(sys.argv[1], encoding='utf-8').read()
+unescape = lambda t: re.sub(r'\\(.)', r'\1', t)
+keys = {unescape(m) for m in re.findall(r'sort="((?:\\.|[^"\\])*)"', qmd)}
+domain = [chr(c) for c in range(0x21, 0x7F)]
+missing = [f'  {c!r} is not its own sort= value' for c in domain
+           if ('!!' if c == '!' else c) not in keys]
+if missing:
+    print('FAIL: M06-AC3: sort-escaping.qmd does not cover printable ASCII:',
+          file=sys.stderr)
+    print('\n'.join(missing[:20]), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC3: sort-key probe covers all {len(domain)} printable ASCII '
+      f'characters (space excluded) as sort keys')
+SORTESCPY
+
+# Leg 1 — LaTeX: the index tool must ACCEPT every entry. This is where a
+# missing quote on an author's `@` or `!` shows up, because makeindex would
+# read it as its own operator and reject or mis-file the entry.
+mkdir -p "$WORK/sortesc"
+# The .tex first: `--to pdf` does not leave one behind, and the makeindex leg
+# below needs the argument text the filter actually emitted.
+quarto render examples/sort-escaping.qmd --to latex > "$WORK/sortesc-latex.log" 2>&1 \
+  || { tail -20 "$WORK/sortesc-latex.log" >&2; fail "M06-AC3: sort-escaping.qmd failed to render to LaTeX"; }
+cp examples/sort-escaping.tex "$WORK/sortesc/"
+quarto render examples/sort-escaping.qmd --to pdf > "$WORK/sortesc-pdf.log" 2>&1 \
+  || { tail -20 "$WORK/sortesc-pdf.log" >&2; fail "M06-AC3: the sort-key escaping probe failed to compile through Quarto's own PDF engine"; }
+( cd "$WORK/sortesc" && pdflatex -interaction=nonstopmode sort-escaping.tex ) \
+  > "$WORK/sortesc-tex.log" 2>&1 \
+  || { grep -E '^! ' "$WORK/sortesc-tex.log" | head -5 >&2; fail "M06-AC3: the sort-key escaping probe failed to compile"; }
+( cd "$WORK/sortesc" && makeindex sort-escaping.idx ) > "$WORK/sortesc-mkidx.log" 2>&1 \
+  || fail "M06-AC3: makeindex failed on the sort-key escaping probe"
+SORTESC_MARKS=$(( 0x7F - 0x21 ))
+grep -qE "\($SORTESC_MARKS entries accepted, 0 rejected\)" \
+  "$WORK/sortesc/sort-escaping.ilg" \
+  || { grep -E 'accepted|rejected' "$WORK/sortesc/sort-escaping.ilg" >&2; fail "M06-AC3: makeindex did not accept all $SORTESC_MARKS sort-key entries"; }
+pass "M06-AC3: every printable ASCII character survives as a sort key through the index tool, all $SORTESC_MARKS entries accepted"
+
+# Leg 2 — HTML: the same characters reach the generated section as entries.
+quarto render examples/sort-escaping.qmd --to html > "$WORK/sortesc-html.log" 2>&1 \
+  || { tail -20 "$WORK/sortesc-html.log" >&2; fail "M06-AC3: sort-escaping.qmd failed to render to HTML"; }
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/sort-escaping.html \
+  examples/sort-escaping.qmd <<'SORTESCHTMLPY'
+import os, re, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+qmd = open(sys.argv[2], encoding='utf-8').read()
+want = re.findall(r'\[(term-[0-9a-f]{2})\]\{\.index', qmd)
+rows = H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))
+got = {r['term'] for r in rows}
+missing = [t for t in want if t not in got]
+if missing:
+    print(f'FAIL: M06-AC3: {len(missing)} probe entr(ies) absent from the '
+          f'HTML index: {missing[:10]}', file=sys.stderr)
+    sys.exit(1)
+if len(rows) != len(want):
+    print(f'FAIL: M06-AC3: the HTML index has {len(rows)} entries for '
+          f'{len(want)} marks', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC3: all {len(want)} sort-keyed entries reach the HTML index, '
+      f'and it carries no others')
+SORTESCHTMLPY
+
+# Leg 3 — gfm, the format with no index back-end at all (IP2). The twin is the
+# probe with its sort= attributes deleted, so the two renders must come out
+# IDENTICAL once the data-sort attribute Pandoc passes through is removed. A
+# sort key that reached visible text — inside the mark's span or beside it —
+# breaks that equality, and so does any other change a sort key makes to a
+# format that builds no index.
+for f in sort-escaping sort-escaping-twin; do
+  quarto render "examples/$f.qmd" --to gfm > "$WORK/$f-gfm.log" 2>&1 \
+    || { tail -20 "$WORK/$f-gfm.log" >&2; fail "M06-AC3: $f.qmd failed to render to gfm"; }
+done
+python3 - examples/sort-escaping.qmd examples/sort-escaping-twin.qmd \
+  examples/sort-escaping.md examples/sort-escaping-twin.md <<'SORTESCGFMPY'
+import re, sys
+source, twin_src, rendered, twin_rendered = sys.argv[1:5]
+# Two layers, two grammars, and they are NOT the same. In a Pandoc markdown
+# attribute a backslash escapes the next character, so `\"` is a literal quote
+# inside the value. In an HTML attribute it escapes nothing — the value ends at
+# the first `"`, and a quote in the value is written `&quot;`. Parsing the
+# rendered HTML with the markdown rule makes `data-sort="\"` (the mark whose
+# sort key IS a backslash) swallow everything up to the next quote, two spans
+# later.
+SORT_ATTR = r' sort="(?:[^"\\]|\\.)*"'
+DATA_SORT_ATTR = r' data-sort="[^"]*"'
+src = open(source, encoding='utf-8').read()
+if re.sub(SORT_ATTR, '', src) != open(twin_src, encoding='utf-8').read():
+    print('FAIL: M06-AC3: the gfm twin fixture is not the probe with its '
+          'sort= attributes removed', file=sys.stderr)
+    sys.exit(1)
+marks = len(re.findall(SORT_ATTR, src))
+out = open(rendered, encoding='utf-8').read()
+residue = re.findall(DATA_SORT_ATTR, out)
+if len(residue) != marks:
+    print(f'FAIL: M06-AC3: {marks} marks carry a sort key but gfm output '
+          f'carries {len(residue)} data-sort attributes', file=sys.stderr)
+    sys.exit(1)
+stripped = re.sub(DATA_SORT_ATTR, '', out)
+if stripped != open(twin_rendered, encoding='utf-8').read():
+    print('FAIL: M06-AC3: a sort key changed gfm output beyond the attribute '
+          'that carries it', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC3: in gfm all {marks} sort keys change nothing but the one '
+      f'attribute carrying each, so none reaches visible text')
+SORTESCGFMPY
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.

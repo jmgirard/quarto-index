@@ -8,7 +8,7 @@ _Last hygiene check: 2026-08-18 (M08 done and archived; the qi-index collision r
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
-| M09 | Sort keys under the LaTeX level clamp | in-progress | — | normal | milestones/M09-sortkey-clamp.md |
+| M09 | Sort keys under the LaTeX level clamp | review | — | normal | milestones/M09-sortkey-clamp.md |
 | M07 | Letter-group headings (HTML index) | done | — | normal | milestones/archive/M07-letter-groups.md |
 | M06 | Sort keys | done | — | normal | milestones/archive/M06-sort-keys.md |
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |

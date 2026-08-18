@@ -1,6 +1,6 @@
 # M09: Sort keys under the LaTeX level clamp
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -85,7 +85,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 - [x] T6: Document the report in the README as the PDF-only fifth sort-key
       report, pin its sentences in the suite's documented-claims list, and add
       it to the planted-defect self-test's discrimination proofs.
-- [ ] T5: Revert the fix and record the failing check and its message in the
+- [x] T5: Revert the fix and record the failing check and its message in the
       work log. Process evidence, deliberately mapped to no criterion — a
       criterion binding the harness rather than the emitted output is the
       instrument-bound shape the plan audit rejected.
@@ -103,6 +103,8 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 - 2026-08-18: T3 — the HTML manifest is derived for these rows, ordering spelled out through each level's sort key (Ada before Zed puts `gamma, delta` ahead of `gamma`; Vee before Wye puts `xi, omicron` ahead of `xi`), which is the opposite of what the printed text would give in both groups. Rendered index matched the hand-derived 14 rows first time; the report fires 0 times in HTML. Suite 145 checks green.
 - 2026-08-18: T4 — the twin's PDF is built and its printed index read with tests/pdfindex.py: six rows, `alpha!beta!gamma, delta` and `mu!nu!xi, omicron, pi` each printed once, matching the hand-derived outline, with a no-term-twice check named separately as the criterion. Suite 147 checks green.
 - 2026-08-18: minor amendment — T6 added at the implementation question gate, where the user chose to document the new report rather than ship it undocumented. README gains the PDF-only fifth report, three claim rows pin its sentences, and the self-test proves the AC1 check fails both when the report goes missing and when it fires twice. `--self-test` clean at 162 checks.
+- 2026-08-18: T5 — with `_extensions/index/index.lua` reverted to its pre-fix state (the T1 commit) and everything else on the branch left in place, the suite exits 1 at `FAIL: M09-AC1: expected 2 occurrence(s) of <<file under more than one sort key>> in tests/.work/sortkey-clamp-latex.log, got 0`; the filter was restored and the suite re-run clean afterwards.
+- 2026-08-18: all tasks done; `tests/run-tests.sh --self-test` clean at 162 checks. Status → review.
 
 ## Decisions
 

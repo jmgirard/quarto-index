@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** m08-misuse-defects
+- **Branch/PR:** m08-misuse-defects · https://github.com/jmgirard/quarto-index/pull/8
 
 ## Goal
 
@@ -44,7 +44,7 @@ author reads or markup an HTML reader receives.
 
 ## Acceptance criteria
 
-- [ ] AC1: In an HTML render of `examples/id-collision.qmd`, whose own elements
+- [x] AC1: In an HTML render of `examples/id-collision.qmd`, whose own elements
       claim the ids `qi-index` (a Pandoc attribute on a Div, never a heading —
       Quarto migrates a heading's id to its wrapper `<section>`), `qi-index-1`,
       `qi-index-2` and `qi-index-3` (a `{=html}` raw block, spelled
@@ -54,7 +54,7 @@ author reads or markup an HTML reader receives.
       elements; each of the five claimed ids appears exactly once, on the
       element that claimed it; and the index section, located by the heading
       whose text is `Index`, carries an id distinct from all five.
-- [ ] AC2: In a LaTeX, an HTML and a gfm render of `examples/self-xref.qmd`,
+- [x] AC2: In a LaTeX, an HTML and a gfm render of `examples/self-xref.qmd`,
       carrying four marks — a single-level `see=` naming its own entry, a
       `see-also=` naming its own two-level `entry=` path, a self-target on a
       mark whose entry comes from its visible text rather than `entry=`, and a
@@ -67,7 +67,7 @@ author reads or markup an HTML reader receives.
       fourth carries its cross-reference and no locator, and a scan of every
       locator and cross-reference link inside the index section finds none whose
       href is the id of the entry that contains it.
-- [ ] AC3: In a LaTeX, an HTML and a gfm render of `examples/marker-sites.qmd`,
+- [x] AC3: In a LaTeX, an HTML and a gfm render of `examples/marker-sites.qmd`,
       which writes the marker class on a Header, on an inline span and on a
       fenced code block and holds one real top-level marker, each of the three
       sites is reported exactly once per render by a warning naming that site
@@ -76,7 +76,7 @@ author reads or markup an HTML reader receives.
       and their content unchanged; in the gfm render their visible content
       survives and no index, anchor or back-end token appears — gfm drops a
       header's attributes itself, so class survival is claimed only of HTML.
-- [ ] AC4: In the same three renders of `examples/marker-sites.qmd`, which also
+- [x] AC4: In the same three renders of `examples/marker-sites.qmd`, which also
       holds two containers of different kinds (a Div and a blockquote) whose
       only content is a nested placement marker, exactly two warnings per render
       say that removing a marker left its container empty, one per container; no
@@ -151,3 +151,49 @@ author reads or markup an HTML reader receives.
 ## Decisions
 
 ## Review
+
+Fresh evidence, `tests/run-tests.sh --self-test` on m08-misuse-defects at
+ef1f98c+1908d03, 2026-08-18: exit 0, **153 checks** (139 in the plain run,
+against 133 on main before the branch).
+
+- **AC1** verified. The id-collision render reports no `qi-`-prefixed id carried
+  by two elements, each of the five claimed ids appears exactly once on the
+  element that claimed it, and the section — located by its `Index` heading, not
+  by id — minted `qi-index-5` past all five. A second check confirms all 3 links
+  inside the minted section still resolve to exactly one element each.
+- **AC2** verified. Four self-referential-target reports per render in HTML,
+  LaTeX and gfm, and the both-attributes report still fires. The `.tex` carries
+  `\index{Cats}`, `\index{Birds!Owls}` and `\index{ferrets}` plain,
+  `\index{Dogs|seealso{Pets}}` with only the surviving target, and the control
+  `\index{Lynxes|see{Cats}}` untouched. In HTML the three dropped-target entries
+  carry locators again, `Dogs` carries only its see-also and no locator, and no
+  entry links to itself.
+- **AC3** verified. Each of the three misplaced sites reports exactly once per
+  render in all three formats; the `<h2>`, `<span>` and `<pre>` all reach HTML
+  carrying the class with their content intact; in gfm the visible content
+  survives with no `\index{`, `\printindex`, `qi-mark-` or `qi-entry-` token and
+  no index section; and the index lands at the one real marker in both back-ends.
+- **AC4** verified. Exactly two emptied-container reports per render in all three
+  formats, one per container, alongside the two unchanged nested-marker reports
+  M04 pinned; both containers — a div and a block quote — are still in the page
+  and both are empty; no index is placed at either position.
+- **AC5** verified. `tests/run-tests.sh --self-test` exit 0.
+
+Consistency gate: `cairn_validate` all checks passed. No `DESIGN.md` principle
+changed, so `cairn_impact --changed` does not apply. The `generic` profile names
+no toolchain checks in its `consistency-gate` slot — a clean no-op.
+
+Discrimination evidence (T8): each of the four fixes reverted alone and caught
+by a check naming the defect; messages recorded in the work log.
+
+Review fan-out — three lenses, fresh context.
+
+- **[S] prior-PR-comments: no findings.** It confirmed the diff closes M03 F11
+  and F13 and M04 F6/F7 as those rows describe, that the M04-pinned
+  nested-marker message keeps its wording and its count with the new report
+  additive beside it, and that the control mark in `self-xref.qmd` guards
+  against the over-dropping failure class M03 pass 1 hit. The
+  `gh api .../pulls/comments` probe returned empty, so the per-PR thread walk
+  was skipped. It noted the four candidate rows are still on the ROADMAP, which
+  is correct: rows graduate at completion, not at review.
+

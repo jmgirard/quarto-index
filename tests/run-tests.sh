@@ -92,6 +92,7 @@ README_STALE=(
   $'one back-end\tLaTeX/PDF is the back-end that ships today'
   $'automatic placement\tPlacement is automatic; there is no option to put the index elsewhere yet'
   $'sort keys unimplemented\tSort keys and locator styling, which use those characters in raw `makeindex` syntax, are not part of this syntax and will arrive later as separate span attributes'
+  $'ungrouped collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code, applied to an entry\'s sort key where it has one'
 )
 
 # Each must be PRESENT: one beamer-scoped pass-through sentence, and one row
@@ -101,7 +102,7 @@ README_HTML_CLAIMS=(
   $'beamer pass-through\tIn beamer, and in any other format with no index back-end, marks pass through'
   $'no level ceiling\tNo level ceiling in HTML'
   $'clash warning scope\tThe clash warning is LaTeX-only'
-  $'collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code, applied to an entry\'s sort key where it has one'
+  $'collation rule\tTop-level entries are ranked into letter groups first; inside a group, and at every level below the top, the order folds ASCII uppercase to lowercase and then compares character codes, breaking a tie by character code, over an entry\'s sort key where it has one'
   $'numbered locator links\tLocators are numbered links in HTML'
   $'targets hyperlinked\tCross-reference targets are hyperlinked in HTML'
   $'no locator from a cross-reference\tA cross-reference carries no locator in either back-end'
@@ -130,6 +131,22 @@ README_SORT_CLAIMS=(
   $'keys past the ceiling\tA sort key written for a level past the third goes with that level in this'
   $'two skipped levels\tTwo skipped levels cannot sit side by side'
   $'key belongs to the level\tit belongs to the entry level you wrote it for, and places that'
+)
+
+# ---------------------------------------------------------------------------
+# README claims about letter groups (NORMATIVE, M07-AC6). Same discipline as
+# README_HTML_CLAIMS: one row per behavior the extension documents, compared
+# as bytes, so the docs and what this suite exercises cannot drift apart.
+# ---------------------------------------------------------------------------
+README_LETTER_CLAIMS=(
+  $'label derivation\tA group label comes from the string the entry files under'
+  $'sort-key precedence\tits sort key where it has one, and its printed text where it has none'
+  $'letter label\tIf that string begins with an ASCII letter the label is that letter, uppercased'
+  $'symbols fallback\ta digit, a punctuation mark, an accented or non-Latin letter, or an empty string — files under `Symbols`'
+  $'symbols first\tThe Symbols group comes first**, ahead of A'
+  $'always on\tGrouping is always on.** There is nothing to switch on and no threshold'
+  $'top level only\tOnly the top level is grouped.** A sub-entry files under its parent rather than under a letter of its own'
+  $'class hook\tEach label is a `div` carrying the class `qi-letter` and nothing else'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -974,6 +991,30 @@ if missing:
 print(f'ok   M06-AC6: all {len(rows)} documented sort-key behaviors appear '
       f'verbatim in README.md')
 SORTDOCPY
+
+# M07-AC6 — and the same for the letter-group documentation.
+printf '%s\n' "${README_LETTER_CLAIMS[@]}" > "$WORK/readme-letter.txt"
+python3 - "$WORK/readme-letter.txt" README.md <<'LETTERDOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M07-AC6: README.md does not document letter groups as this '
+          'suite exercises them:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M07-AC6: all {len(rows)} documented letter-group behaviors appear '
+      f'verbatim in README.md')
+LETTERDOCPY
 
 # The probe set is pinned to the filter's own escape table, so a character the
 # filter handles can never go unprobed (and vice versa).
@@ -2574,6 +2615,7 @@ fi
 if grep -qxF 'Symbols' examples/demo.md; then
   fail "M07-AC5: gfm output carries a letter-group label"
 fi
+pass "M07-AC5: gfm output carries neither the heading class nor a group label"
 if grep -qE '^# Index$' examples/demo.md; then
   fail "M03-AC6: gfm output must not contain a generated index section"
 fi

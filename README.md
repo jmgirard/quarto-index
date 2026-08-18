@@ -370,11 +370,12 @@ differs, because the tools underneath them do:
    fail a PDF build, so the extension warns about it. An HTML index prints the
    locator and the cross-reference together on one entry, with nothing to
    clash, so the warning would name a problem that format does not have.
-3. **Sorting is the extension's own in HTML.** Entries sort by folding ASCII
-   uppercase to lowercase, then by character code, with a tie broken by
-   character code, applied to an entry's sort key where it has one. In LaTeX
-   the order is `makeindex`'s. Neither collates accented or non-Latin text the
-   way a language would, which is what sort keys are for.
+3. **Sorting is the extension's own in HTML.** Top-level entries are ranked
+   into letter groups first; inside a group, and at every level below the top,
+   the order folds ASCII uppercase to lowercase and then compares character
+   codes, breaking a tie by character code, over an entry's sort key where it
+   has one. In LaTeX the order is `makeindex`'s. Neither collates accented or
+   non-Latin text the way a language would, which is what sort keys are for.
 4. **Locators are numbered links in HTML**, in the order the marks are
    written, where LaTeX gives page numbers.
 5. **Cross-reference targets are hyperlinked in HTML** when the target names an
@@ -382,6 +383,29 @@ differs, because the tools underneath them do:
    cannot link at all.
 6. **A cross-reference carries no locator in either back-end.** The `see also`
    limitation described above is the same in both.
+
+### Letter groups in the HTML index
+
+The HTML index prints its top-level entries in groups, each introduced by a
+label of its own — one `Symbols` group, then one group per letter, A to Z.
+
+- **A group label comes from the string the entry files under**: its sort key
+  where it has one, and its printed text where it has none. If that string
+  begins with an ASCII letter the label is that letter, uppercased. Anything
+  else — a digit, a punctuation mark, an accented or non-Latin letter, or an
+  empty string — files under `Symbols`.
+- **The Symbols group comes first**, ahead of A, the way a printed index sets
+  it. A sort key is how you move an entry across that boundary, exactly as it
+  is how you move one within a group.
+- **Grouping is always on.** There is nothing to switch on and no threshold
+  below which it stops.
+- **Only the top level is grouped.** A sub-entry files under its parent rather
+  than under a letter of its own, so no label appears inside a nested list.
+
+Each label is a `div` carrying the class `qi-letter` and nothing else — a hook
+for your own CSS, and deliberately not a heading, so the alphabet does not
+land in your table of contents. As everywhere else here, the extension ships
+no stylesheet of its own.
 
 The extension's job ends at correct emitted output. Whether your toolchain
 then runs `makeindex` to build the index is up to your build setup; Quarto's

@@ -41,7 +41,11 @@ _None yet — populated as the codebase takes shape._
 - **Collation is best-effort**: non-ASCII terms appearing correctly is an IP2
   commitment, but sort *order* beyond what the user's index processor
   provides is best-effort. Sort keys (`sort=`) are how an author overrides it,
-  and each back-end orders under its own rules (corrected M06).
+  and each back-end orders under its own rules (corrected M06). The HTML
+  back-end ranks its top-level entries into letter groups — Symbols, then
+  A–Z — before collating within a group; only ASCII letters make a letter
+  group, which is honest about a collation that only folds ASCII (corrected
+  M07).
 
 ## Design Principles
 
@@ -142,7 +146,9 @@ Two back-ends ship:
   locator-contributing mark, and an index section at the marker or appended,
   built out of
   Pandoc AST nodes so that Pandoc's writer owns escaping (IP2). No level
-  ceiling, entries sorted by the filter itself, locators and resolvable
+  ceiling, entries sorted by the filter itself into letter groups introduced
+  by `qi-letter` div labels (top level only, never a Header — a heading's
+  inlines would be copied into the table of contents), locators and resolvable
   cross-reference targets as links.
 
   Ids are assigned in the **Pandoc** pass, not at the mark: an id must not

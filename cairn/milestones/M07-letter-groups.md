@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M07: Letter-group headings in the HTML index
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -114,12 +114,12 @@ class hooks only, unchanged).
 - [x] T5: Book fixture: add a same-letter entry in a second chapter;
       re-derive book HTML manifest (heading rows) and book PDF terms
       manifest.
-- [ ] T6: Run `tests/byte-diff.sh` (expect empty); extend gfm/control
+- [x] T6: Run `tests/byte-diff.sh` (expect empty); extend gfm/control
       negatives to assert no `qi-letter` and no group-label residue.
-- [ ] T7: README grouping section + `README_LETTER_CLAIMS` rows; replace the
+- [x] T7: README grouping section + `README_LETTER_CLAIMS` rows; replace the
       `collation rule` claim row (old sentence → `README_STALE`); correct
       DESIGN.md Conventions collation bullet (marked corrected M07).
-- [ ] T8: Full suite run; fix fallout.
+- [x] T8: Full suite run; fix fallout.
 
 ## Work log
 <!-- owner: any skill · append-only; one line per entry; absolute dates.
@@ -132,6 +132,7 @@ class hooks only, unchanged).
 - 2026-08-18: plan chose stating book LaTeX outside `tests/byte-diff.sh`'s domain over extending its `ls-tree` to recursive because the checker's promise stays untouched (checker-regress doctrine); falsified by a filter-caused book-LaTeX drift the suite's book checks miss.
 - 2026-08-18: /milestone-implement started; branch m07-letter-groups cut from main at 89af3d5.
 - 2026-08-18: implement gate chose `letter<TAB><label>` heading rows (no collision with depth-digit entry rows), a bare text block inside the `qi-letter` container, and a new `examples/letter-groups.qmd` for the AC2 probes.
+- 2026-08-18: T6-T8 done. `tests/byte-diff.sh`: all 19 merge-base fixtures render byte-identical `.tex` under this branch's filter and the merge base's, empty diff. README gained a `Letter groups in the HTML index` section pinned by 8 `README_LETTER_CLAIMS` rows; the old `collation rule` sentence moved to `README_STALE` and its replacement states top-level ranking plus within-group collation. DESIGN's Conventions collation bullet and HTML back-end bullet corrected M07. Suite 126 checks clean; pre-review `--self-test` run 140 checks clean.
 - 2026-08-18: T2-T5 done; suite green at 124 checks (was 104). Two findings on the way: `!` inside `sort=` is the level separator, so a symbol-initial key is written `!!`; and letter grouping put two of six top-level entries at the same position in the sortkey fixture's keyed and twin orders, which would have weakened M06's no-position-unchanged check in both back-ends — repaired by adding one probe entry (`Ursula K. Le Guin` filing under `Le Guin`) chosen so both the HTML and the makeindex orders are full derangements again, rather than by relaxing the check.
 - 2026-08-18: paused mid-T4 at the user's request; suite red at this checkpoint. Done: all HTML index manifests re-derived with heading rows, `check_letter_sweep` helper + 14 sweep call sites, `qi-letter` pinned as a fourth HTML identifier, `entry_records` routing so entry-only checks skip heading records, book fixture's `Beacon` (T5), gfm/control negatives (T6). Remaining: three manifest-PARSING checks (M06 sort-key disagreement, PDF-outline agreement, level-path split) still read heading rows as entry rows and must skip them; and letter grouping puts two of six sortkey.qmd top-level entries at the same position in the keyed and twin manifests, so M06's no-position-unchanged check needs one added probe entry (candidate: a printed `Sir Ian McKellen` filing under `Ian McKellen`) to restore the derangement rather than a weakened check.
 - 2026-08-18: filter grouping landed (T2 work): group rank ahead of collate at the root only, `qi-letter` Div per group, normative collation comment rewritten. Not ticked yet — every HTML index manifest is now stale, so `verify` cannot be clean until T3/T4/T5 re-derive them; T2–T5 therefore tick together (minor amendment: no re-ordering, one green point).
@@ -140,6 +141,20 @@ class hooks only, unchanged).
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote
      cross-cutting ones to cairn/DECISIONS.md. -->
+
+- 2026-08-18: A letter group's label is derived from the string an entry FILES
+  under — its sort key where it has one, its printed text otherwise — rather
+  than from its printed text alone. This keeps one lever: the same `sort=`
+  that moves an entry within a group is what moves it across a group boundary,
+  and an author never has to reason about two different orderings. The cost is
+  that an entry can print under `Q` and file under `Symbols`, which the README
+  states.
+- 2026-08-18: Only ASCII letters open a letter group; every other first
+  character, the first byte of a UTF-8 sequence included, files under
+  `Symbols`. The alternative — folding accented Latin letters into their base
+  letter's group — would promise a collation the extension does not have
+  (DESIGN: collation is best-effort, ASCII-only folding), so `Symbols` is the
+  honest home until a real collation arrives.
 
 ## Review
 <!-- owner: review · exclusive; evidence per criterion, consistency-gate

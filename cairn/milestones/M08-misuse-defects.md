@@ -306,3 +306,37 @@ findings, the first three verified here by running the filter:
 - R11 — `marker-shapes.qmd` is absent from README's fixture tour, as all four
   M08 fixtures are; pre-existing.
 
+**Third-pass review (fresh-context [O], adversarial shapes rendered by the
+reviewer).** Verified sound: the recursive `empties` rule matches what
+stripping does on ten constructed shapes, cross-checked against rendered HTML;
+the marker early-return loses no report (every return path funnels through
+`place_index`, which splices `marker_content` for every marker); no
+double-reporting; the `WARN_BOTH` pin is byte-exact; the `DefinitionList`
+branch works on real Quarto output. Findings:
+
+- Q1 — the report fires on Quarto's `__quarto_custom_scaffold` divs, so a
+  marker inside a callout, a tabset or a captioned figure is reported as having
+  left a div empty while the construct renders with its title bar, tab strip or
+  caption, and the div named is one the author never wrote. Verified here by
+  render. Reproduces identically at 8b5ba0a and at round 1, so it is not new to
+  round 3 — but M08 introduced the report, and this is the shape README:266
+  names first.
+- Q2 — a marker written in YAML `abstract:` survives verbatim into the HTML
+  header, filter residue of the IP2 class; `DESIGN.md` now asserts "no marker
+  survives into any output" three sentences before admitting metadata is not
+  walked. The ROADMAP row for R4 describes only a missing warning.
+- Q3, Q4, Q8 — round 3's own prose defects: a deleted blank line before "Two
+  back-ends ship:", stale comments in `run-tests.sh` contradicting the new ones
+  beside them, an orphaned "The pass" line in DESIGN.
+- Q5 — `check_warning_count "$WARN_EMPTIED" 3` passes against round 2's code
+  (div=2, footnote=1, definition=0); only the per-kind `div` and `definition`
+  loops catch it, and `div` is asserted by count rather than identity, so a rule
+  naming the inner marker div instead of the container passes every check.
+- Q6 — the suite cannot run on a clean checkout (`run-tests.sh:1388` reads
+  `examples/control.tex` 25 lines before `:1413` generates it), so every fresh
+  evidence run this milestone reused prior artifacts. Pre-existing; already a
+  ROADMAP row. Green at 155 checks on a pre-rendered tree.
+- Q7 — figure captions and table cells are emptied unreported, and a bullet
+  list emptied through its only item is reported as a list item rather than an
+  emptied list; README and DESIGN state the promise unqualified.
+

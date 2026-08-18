@@ -337,3 +337,35 @@ branch works on real Quarto output. Findings:
   list emptied through its only item is reported as a list item rather than an
   emptied list; README and DESIGN state the promise unqualified.
 
+### Final evidence, after the descope
+
+`tests/run-tests.sh --self-test` on m08-misuse-defects, 2026-08-18, with every
+render artifact purged beforehand and only `control.qmd` pre-rendered (the
+clean-checkout defect above): exit 0, **154 checks**.
+
+- **AC1** verified. No `qi-`-prefixed id carried by two elements; the five
+  claimed ids each appear once on the element that claimed them; the section,
+  located by its heading, minted `qi-index-5` past all five; all 3 links inside
+  it resolve to exactly one element each.
+- **AC2** verified. Four self-referential-target reports per render in all three
+  formats with the both-attributes report still firing; the `.tex` carries the
+  three keys plain, `\index{Dogs|seealso{Pets}}` with only the surviving
+  target, and the control `\index{Lynxes|see{Cats}}` untouched; in HTML the
+  three entries carry locators again, `Dogs` carries only its see-also, and no
+  entry links to itself.
+- **AC3** verified. Each misplaced site reports once per render in all three
+  formats; the `<h2>`, `<span>` and `<pre>` reach HTML with class and content
+  intact; gfm keeps their visible content with no back-end token; the index
+  lands at the real marker in both back-ends; a marker class in the document
+  title is reported nowhere; and a nested marker's content still survives in its
+  container.
+- **AC4** verified. `--self-test` exit 0.
+
+Consistency gate: `cairn_validate` all checks passed; no principle changed; the
+`generic` profile names no toolchain checks.
+
+Three review passes, three lenses on the first: two returns repaired, the third
+descoped by maintainer decision under the thrash rule. Findings F7, F8, F10, R4,
+R11, Q1, Q2, Q5, Q7 live on ROADMAP rows; Q3, Q4 and Q8 were fixed or removed
+with the descoped code.
+

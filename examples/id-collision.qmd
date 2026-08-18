@@ -1,0 +1,35 @@
+---
+title: "quarto-index id-collision probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Names the document has already taken
+
+Generated ids step over any name the document itself uses, however that name
+was written. This document claims five, in the five spellings the extension
+reads: a Pandoc attribute, and raw HTML with a double-quoted, an unquoted and
+an uppercase-`ID=` attribute, plus a raw *inline* one — the extension reads raw
+inlines as well as raw blocks, and single quotes as well as double.
+
+One term is marked here: [zeta]{.index}. Another, twice: [eta]{.index}, and
+[eta]{.index}.
+
+::: {#qi-index}
+A div claiming the generated section's own id, written as a Pandoc attribute.
+Deliberately not a heading: Quarto moves a heading's id onto the section
+wrapper it builds, which would put the claim somewhere the author did not
+write it.
+:::
+
+```{=html}
+<p id="qi-index-1">Raw HTML, double-quoted.</p>
+<p id=qi-index-2>Raw HTML, unquoted.</p>
+<p ID="qi-index-3">Raw HTML, uppercase attribute name.</p>
+```
+
+A raw inline claims the fifth: `<span id='qi-index-4'>single-quoted</span>`{=html}.
+
+::: {.qi-index-here}
+:::

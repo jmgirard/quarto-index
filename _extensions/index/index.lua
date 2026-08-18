@@ -666,7 +666,7 @@ local function Span(span)
     -- does not claim both were emitted: one of the two may have had no usable
     -- target, which its own warning above already reported.
     warn("index mark carries both see= and see-also=; this is probably a "
-         .. "mistake, and every usable target is kept")
+         .. "mistake, and neither is dropped for being one of two")
   end
 
   local levels, disposition = derive_levels(entry, visible, declared,
@@ -680,6 +680,28 @@ local function Span(span)
   -- text whatever format this is, and the both-attributes case would otherwise
   -- warn twice about the same entry.
   warn_empty_levels(levels, context)
+  -- A cross-reference target naming the entry it is written on says nothing:
+  -- "Cats, see Cats" in print, and in HTML a link from an entry to itself. The
+  -- target is dropped and the mark then indexes as usual — dropping the whole
+  -- mark would lose the term, which is the corruption IP2 forbids, and keeping
+  -- the target would leave the useless output in place.
+  --
+  -- Compared on the PRINTED levels rather than on the filing key: a sort key
+  -- never appears in the index a reader reads, so a target matching the printed
+  -- text is a self-reference whatever the mark files under. Before the back-end
+  -- branch, like every other judgement about what the author wrote.
+  local own_key = levels_key(levels)
+  local kept = {}
+  for _, xref in ipairs(xrefs) do
+    if levels_key(xref.levels) == own_key then
+      warn(("%s= on %s names the entry it is written on; a cross-reference to "
+            .. "itself says nothing, so it is dropped and the term is indexed "
+            .. "as usual"):format(xref.kind.attr, context))
+    else
+      kept[#kept + 1] = xref
+    end
+  end
+  xrefs = kept
   -- Resolved by the collect pass, which has already seen every mark of this
   -- entry: whichever mark declared the sort key, every mark of the entry files
   -- under it.
@@ -1216,12 +1238,35 @@ end
 -- both back-ends at once. `marks` is this document's own marks in a single
 -- document, and every chapter's marks in a book: one builder either way, so
 -- the two cannot drift apart on what an index looks like.
+-- The section id is minted like every other generated id, rather than fixed:
+-- a document that already uses `qi-index` — on an element of its own, or
+-- inside raw HTML — otherwise ended up with the name on two elements, which
+-- is invalid HTML and sends a link to whichever the browser picks. Anchors and
+-- entry ids have always stepped over a taken name; this closes the one
+-- exception. The bare name is preferred, so the id a document without a
+-- collision gets is the one it has always had.
+local function mint_section_id(taken)
+  if not taken[HTML_SECTION_ID] then
+    taken[HTML_SECTION_ID] = true
+    return HTML_SECTION_ID
+  end
+  local n = 0
+  local candidate
+  repeat
+    n = n + 1
+    candidate = HTML_SECTION_ID .. "-" .. n
+  until not taken[candidate]
+  taken[candidate] = true
+  return candidate
+end
+
 local function html_index_blocks(marks, taken)
   local root = build_entry_tree(marks)
+  local section_id = mint_section_id(taken)
   number_entries(root, 0, taken)
   local blocks = pandoc.Blocks({
     pandoc.Header(1, literal_inlines("Index"),
-                  pandoc.Attr(HTML_SECTION_ID, { "unnumbered" })),
+                  pandoc.Attr(section_id, { "unnumbered" })),
   })
   blocks:extend(grouped_blocks(root))
   return blocks
@@ -1238,6 +1283,55 @@ end
 
 local function is_marker(block)
   return block.t == "Div" and block.classes:includes(MARKER_CLASS)
+end
+
+-- The marker class means something on exactly one shape: an empty top-level
+-- div. Written anywhere else it is inert, and until now it was inert in
+-- silence — a heading or a span carrying it placed nothing and said nothing,
+-- which reads to an author exactly like a marker that failed. Every other
+-- shape is therefore reported. Format-neutral, like every other report about
+-- what the author wrote, so it fires wherever the document is rendered.
+--
+-- Nothing is edited: the element belongs to the author, and this extension
+-- removes markers, not the elements people mistake for them. The class
+-- accordingly survives into output, which is cosmetic and said out loud in
+-- the README rather than fixed by editing someone else's span.
+local MARKER_SITE_NAMES = {
+  Header = "heading",
+  Span = "inline span",
+  CodeBlock = "code block",
+  Code = "inline code",
+  Table = "table",
+  Figure = "figure",
+  Link = "link",
+  Image = "image",
+}
+
+local function report_marker_sites(doc)
+  local function note(element)
+    -- A Div is the one shape that CAN place an index; whether this particular
+    -- one does is resolve_markers' business, not this walk's.
+    if element.t == "Div" then
+      return nil
+    end
+    local attr = element.attr
+    if attr == nil or not attr.classes:includes(MARKER_CLASS) then
+      return nil
+    end
+    local name = MARKER_SITE_NAMES[element.t] or element.t
+    -- Every name this table can produce is an ordinary English noun phrase, so
+    -- the article follows from its first letter; a fallback name is a Pandoc
+    -- type name, where the same test still reads correctly ("an Emph").
+    local article = name:match("^[aeiouAEIOU]") and "an" or "a"
+    warn(("the index placement marker class is written on %s %s; only an empty "
+          .. "top-level div places an index, so nothing is placed here and the "
+          .. "%s is left as written"):format(article, name, name))
+    return nil
+  end
+  -- `doc.blocks`, never `doc`: walking a Pandoc value traverses `meta` too, and
+  -- a marker class written in the title is not a misplaced placement site — it
+  -- is text the marker machinery never reaches at all.
+  doc.blocks:walk({ Block = note, Inline = note })
 end
 
 -- A marker's own content is never dropped. The marker is documented as empty,
@@ -1766,6 +1860,7 @@ local function Pandoc(doc)
   -- Before any back-end branch: the marker is the author's syntax, so its
   -- misuse is diagnosed in every format and its residue removed in every
   -- format, whether or not that format has an index to place.
+  report_marker_sites(doc)
   local marker = resolve_markers(doc)
   -- A book chapter is not the whole document: the marks the marker places are
   -- mostly in other chapters, so "no marks here" says nothing about whether

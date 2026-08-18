@@ -1,0 +1,36 @@
+---
+title: "quarto-index self-reference probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# A cross-reference that points at its own entry
+
+"Cats, see Cats" tells a reader nothing and, in HTML, links an entry to itself.
+Such a target is reported and dropped; the term is then indexed as usual, which
+is the one outcome that neither leaves useless output nor loses the term.
+
+Four shapes, so that no single one stands in for the family:
+
+A single-level `see=` naming its own `entry=`: [cats]{.index entry="Cats"
+see="Cats"}.
+
+A `see-also=` naming its own two-level `entry=` path: [owls]{.index
+entry="Birds!Owls" see-also="Birds!Owls"}.
+
+A self-target on a mark whose entry comes from its visible text rather than
+from `entry=`: [ferrets]{.index see="ferrets"}.
+
+A mark carrying both attributes, of which only the `see=` is self-targeting —
+the surviving `see-also=` must still be emitted, and the both-attributes report
+must still fire: [dogs]{.index entry="Dogs" see="Dogs" see-also="Pets"}.
+
+# A cross-reference that does not
+
+A target naming a different entry is untouched, and is what tells a
+self-reference check from a check that drops every target:
+[lynxes]{.index entry="Lynxes" see="Cats"}.
+
+::: {.qi-index-here}
+:::

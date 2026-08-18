@@ -1050,6 +1050,61 @@ print(f'ok   M07-AC6: all {len(rows)} documented letter-group behaviors appear '
       f'verbatim in README.md')
 LETTERDOCPY
 
+# ---------------------------------------------------------------------------
+# README claims about misuse reporting (NORMATIVE, M08). Same discipline as
+# README_HTML_CLAIMS: the sentences are compared as bytes with whitespace
+# normalized, so what the README promises and what this suite exercises cannot
+# drift apart. Each row names a behavior M08 added; each PRESENT claim has a
+# check above that fails without the behavior, and the STALE row is the
+# sentence AC1 falsified.
+# ---------------------------------------------------------------------------
+README_MISUSE_CLAIMS=(
+  $'a div and nothing else\tThe marker class on a heading, on an inline span or on a code block places nothing and is reported'
+  $'element left as written\tYour element is left exactly as you wrote it, class included'
+  $'self-reference dropped\tThe target is reported and dropped, and the term is then indexed normally'
+  $'self-reference judged on print\tA target is judged against what the entry *prints*, so a sort key does not make a self-reference into something else'
+  $'section id minted\tThe section id is minted the same way: `qi-index` where the name is free, and `qi-index-1`, `qi-index-2` and so on where the document has taken it'
+  $'section id conditional\tin a section whose id is `qi-index` where the document has not taken that name and a minted one where it has'
+  $'both attributes narrowed\tNeither is dropped for being one of two: you get one entry carrying both targets'
+  $'self-target still dropped\tA target that names its own entry is still dropped for that reason, and the other one is then the only one emitted'
+)
+README_MISUSE_STALE=(
+  $'section id fixed\tthe section id `qi-index` itself, which is fixed rather than minted'
+  $'section id unconditional\tin a section carrying the id `qi-index`, listed in the table of contents'
+  $'nothing dropped\tNothing is dropped: you get one entry carrying both targets'
+)
+
+printf '%s\n' "${README_MISUSE_CLAIMS[@]}" > "$WORK/readme-misuse.txt"
+printf '%s\n' "${README_MISUSE_STALE[@]}" > "$WORK/readme-misuse-stale.txt"
+python3 - "$WORK/readme-misuse.txt" "$WORK/readme-misuse-stale.txt" README.md <<'MISUSEDOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+def rows(path):
+    return [l.rstrip('\n').split('\t', 1)
+            for l in open(path, encoding='utf-8') if l.strip()]
+
+
+claims, stale = rows(sys.argv[1]), rows(sys.argv[2])
+readme = flat(open(sys.argv[3], encoding='utf-8').read())
+bad = [f'  missing ({label}): <<{text}>>'
+       for label, text in claims if flat(text) not in readme]
+bad += [f'  still present ({label}): <<{text}>>'
+        for label, text in stale if flat(text) in readme]
+if bad:
+    print('FAIL: M08: README.md does not document the misuse reports as this '
+          'suite exercises them:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M08: all {len(claims)} documented misuse behaviors appear '
+      f'verbatim in README.md, and the {len(stale)} sentence(s) this milestone '
+      f'falsified are gone')
+MISUSEDOCPY
+
 # The probe set is pinned to the filter's own escape table, so a character the
 # filter handles can never go unprobed (and vice versa).
 PROBE_CHARS="$PROBE_CHARS" python3 - _extensions/index/index.lua <<'PY'
@@ -1213,7 +1268,10 @@ check_warning_count() {
     || fail "$label: expected $want occurrence(s) of <<$pattern>> in $logfile, got $got"
 }
 
-WARN_BOTH='index mark carries both see= and see-also='
+# The whole message, not its prefix: the tail was reworded in M08 when a
+# self-referential target became droppable, and README now pins the matching
+# sentence — a prefix-only pattern would let the two drift apart.
+WARN_BOTH='index mark carries both see= and see-also=; this is probably a mistake, and neither is dropped for being one of two'
 WARN_NO_SOURCE='cross-reference mark has no source entry'
 
 check_warning_count "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
@@ -2405,6 +2463,367 @@ if not first < p < second:
     sys.exit(1)
 print('ok   M04-AC4: one \\printindex, at the first marker, in a document '
       'carrying three')
+PY
+
+# ---------------------------------------------------------------------------
+# M08-AC3 — marker sites. The class only ever places an index on an empty
+# top-level div; written on a heading, an inline span or a code block it places
+# nothing and is reported, and the element is left exactly as the author wrote
+# it (M08's plan gate: the extension reports rather than edits). The message
+# M04 pinned for a nested marker is untouched.
+# ---------------------------------------------------------------------------
+WARN_SITE_HEADING='marker class is written on a heading'
+WARN_SITE_SPAN='marker class is written on an inline span'
+WARN_SITE_CODE='marker class is written on a code block'
+
+for fmt in html latex gfm; do
+  quarto render examples/marker-sites.qmd --to $fmt \
+    > "$WORK/sites-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/sites-$fmt.log" >&2; fail "M08-AC3: marker-sites.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_HEADING" 1 "M08-AC3"
+  check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_SPAN" 1 "M08-AC3"
+  check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_CODE" 1 "M08-AC3"
+done
+pass "M08-AC3: three misplaced marker classes each report, in HTML, LaTeX and gfm"
+
+# The three misplaced sites survive into HTML carrying the class and their
+# content. The heading case lands the class on BOTH the <h2> and the <section>
+# wrapper Quarto builds around it, so this asserts presence per tag, never a
+# count of elements.
+MARKER_CLASS="$MARKER_CLASS" python3 - examples/marker-sites.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+cls = os.environ['MARKER_CLASS']
+by_tag = {}
+for n in H.walk(doc):
+    if cls in H.classes(n):
+        by_tag.setdefault(n.tag, []).append(n)
+errs = []
+for tag, want in (('h2', 'A heading carrying the class'),
+                  ('span', 'right here'),
+                  ('pre', 'A fenced code block carrying the class places nothing.')):
+    got = by_tag.get(tag)
+    if not got:
+        errs.append(f'no <{tag}> carries the marker class')
+    elif not any(want in H.text(n) for n in got):
+        errs.append(f'the <{tag}> carrying the marker class lost its content '
+                    f'(wanted {want!r})')
+if errs:
+    print('FAIL: M08-AC3: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC3: the heading, inline span and code block carrying the '
+      'marker class all survive into HTML with their class and content')
+PY
+
+# gfm carries no index back-end, so nothing this extension emits may reach it.
+# Class survival is NOT claimed here: gfm has no heading attributes at all, so
+# a dropped heading class is the writer's doing and not this filter's.
+python3 - examples/marker-sites.md <<'PY'
+import re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+# gfm is a wrapped format: the writer breaks a line wherever it likes, so a
+# phrase is compared with whitespace collapsed. Token checks below read the
+# raw source, since no token this extension emits contains a space.
+flat = re.sub(r'\s+', ' ', src)
+errs = []
+for want in ('A heading carrying the class', 'right here',
+             'A fenced code block carrying the class places nothing.'):
+    if want not in flat:
+        errs.append(f'visible content {want!r} did not survive into gfm')
+for token in ('\\index{', '\\printindex', 'qi-mark-', 'qi-entry-'):
+    if token in src:
+        errs.append(f'back-end token {token!r} leaked into gfm')
+if '\n# Index\n' in src:
+    errs.append('an index section was written into gfm')
+if errs:
+    print('FAIL: M08-AC3: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC3: in gfm the three elements keep their visible content and '
+      'no index, anchor or back-end token appears')
+PY
+
+# The index still lands at the one real marker, in both back-ends: after the
+# delta mark written above it, before the After-the-marker section below it.
+python3 - examples/marker-sites.tex <<'PY'
+import sys
+src = open(sys.argv[1], encoding='utf-8').read()
+n = src.count('\\printindex')
+errs = []
+if n != 1:
+    errs.append(f'expected exactly one \\printindex, found {n}')
+else:
+    delta, after = src.find('\\index{delta}'), src.find('After the marker')
+    p = src.find('\\printindex')
+    if min(delta, after) < 0 or not delta < p < after:
+        errs.append('\\printindex is not at the one real marker')
+if errs:
+    print('FAIL: M08-AC3: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC3: one \\printindex, at the one real marker, in a document '
+      'carrying the class in five places')
+PY
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+python3 - examples/marker-sites.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+prefix = os.environ['HTML_ANCHOR_PREFIX']
+delta = H.position_of_id(doc, prefix + '1')
+index_at = H.position_of_id(doc, os.environ['HTML_SECTION_ID'])
+epsilon = H.position_of_id(doc, prefix + '2')
+if min(delta, index_at, epsilon) < 0 or not delta < epsilon < index_at:
+    print(f'FAIL: M08-AC3: the HTML index sits at {index_at}, not at the one '
+          f'real marker (after the epsilon mark at {epsilon}, itself after '
+          f'the delta mark at {delta})', file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC3: the HTML index is placed at the one real marker, and no '
+      'misplaced class placed anything')
+PY
+
+# ---------------------------------------------------------------------------
+# M08-AC3 (review F4) — the shapes the misplaced-class report must NOT fire on.
+# The marker class in the document title is metadata, which the marker
+# machinery never reaches; a report there would tell an author something
+# untrue. Its own fixture, so marker-sites.qmd's placement counts stay
+# undisturbed.
+# ---------------------------------------------------------------------------
+WARN_MARKER_SITE='marker class is written on'
+
+for fmt in html latex gfm; do
+  quarto render examples/marker-shapes.qmd --to $fmt \
+    > "$WORK/shapes-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/shapes-$fmt.log" >&2; fail "M08-AC3: marker-shapes.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_SITE" 0 "M08-AC3 (F4)"
+  # The nested markers still report, and the one carrying content still reports
+  # as non-empty — neither message is disturbed by the metadata exclusion.
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 2 "M08-AC3"
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_CONTENT" 1 "M08-AC3"
+done
+pass "M08-AC3: a marker class in the document title is reported nowhere, and the nested-marker messages are undisturbed"
+
+# What a nested marker carried is spliced in where it stood, so its container
+# keeps that content — pinned structurally, not merely by a warning count.
+python3 - examples/marker-shapes.html <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+errs = []
+kept = [n for n in H.walk(doc) if n.attrs.get('id') == 'keeps-content']
+if not kept:
+    errs.append('the container holding a marker with content is gone')
+elif 'Content the marker kept' not in H.text(kept[0]):
+    errs.append('the content a nested marker carried was not spliced into its '
+                'container')
+section = H.index_section(doc)
+if section is None:
+    errs.append('no index section was found')
+else:
+    after = [n for n in H.walk(doc)
+             if n.tag in ('h1', 'h2') and 'After the marker' in H.text(n)]
+    if not after or not H.position(doc, section) < H.position(doc, after[0]):
+        errs.append('the index is not at the marker that wrapped a nested one')
+if errs:
+    print('FAIL: M08-AC3: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC3: a nested marker\'s content survives in its container, and '
+      'the marker wrapping a nested one still places the index')
+PY
+
+# ---------------------------------------------------------------------------
+# M08-AC1 — the generated section id is minted, not fixed. Anchor and entry
+# ids have always stepped over a name the document already uses; the section
+# id did not, so a document claiming `qi-index` got two elements carrying it.
+# The fixture claims five names in the five spellings taken_identifiers reads
+# — a Pandoc attribute, and raw HTML double-quoted, unquoted, uppercase `ID=`
+# and single-quoted in a raw INLINE — so the mint has to step over all five.
+# ---------------------------------------------------------------------------
+quarto render examples/id-collision.qmd --to html \
+  > "$WORK/id-collision-html.log" 2>&1 \
+  || { tail -20 "$WORK/id-collision-html.log" >&2; fail "M08-AC1: id-collision.qmd failed to render to HTML"; }
+
+python3 - examples/id-collision.html <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+claimed = ['qi-index', 'qi-index-1', 'qi-index-2', 'qi-index-3', 'qi-index-4']
+errs = []
+
+# The universal is over the ids this extension mints and the names the fixture
+# claimed — the namespace it owns. A duplicate elsewhere on the page would be
+# Quarto's own furniture, which this milestone neither generates nor promises.
+dupes = H.duplicate_ids(doc, prefix='qi-')
+if dupes:
+    errs.append(f'ids carried by two elements: {dupes}')
+
+for name in claimed:
+    n = H.count_id(doc, name)
+    if n != 1:
+        errs.append(f'the claimed id {name!r} appears {n} time(s), not once')
+
+section = H.index_section(doc)
+if section is None:
+    errs.append('no index section was found by its heading')
+else:
+    got = section.attrs.get('id', '')
+    if not got:
+        errs.append('the index section carries no id at all')
+    elif got in claimed:
+        errs.append(f'the index section took {got!r}, a name the document '
+                    f'already claimed')
+
+if errs:
+    print('FAIL: M08-AC1: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M08-AC1: five claimed ids each survive once, the index section '
+      f'minted {H.index_section(doc).attrs["id"]!r} past all five, and no '
+      f'qi- id is carried twice')
+PY
+
+# The locators must still link: minting a fresh section id is worth nothing if
+# the index it names stopped resolving.
+python3 - examples/id-collision.html <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+section = H.index_section(doc)
+hrefs = [a.attrs.get('href', '') for a in H.find_all(section, 'a')]
+local = [h for h in hrefs if h.startswith('#')]
+missing = [h for h in local if H.count_id(doc, h[1:]) != 1]
+if not local:
+    print('FAIL: M08-AC1: the index section carries no local links at all',
+          file=sys.stderr)
+    sys.exit(1)
+if missing:
+    print(f'FAIL: M08-AC1: index links resolving to no unique element: '
+          f'{missing}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M08-AC1: all {len(local)} link(s) inside the minted index section '
+      f'resolve to exactly one element each')
+PY
+
+# ---------------------------------------------------------------------------
+# M08-AC2 — a cross-reference target naming its own entry. Reported and
+# dropped, and then the term indexes as usual: the positive residue is asserted
+# too, because an implementation that simply dropped the whole mark would
+# satisfy every absence clause here while losing the term — the IP2 corruption
+# this milestone exists to prevent.
+#
+# Four shapes: entry= single-level, entry= two-level, entry derived from the
+# visible text, and both attributes with only the see= self-targeting. A fifth
+# mark cross-references a DIFFERENT entry and must be untouched, which is what
+# tells this check from one that drops every target.
+# ---------------------------------------------------------------------------
+WARN_SELF_XREF='names the entry it is written on'
+
+for fmt in html latex gfm; do
+  quarto render examples/self-xref.qmd --to $fmt \
+    > "$WORK/self-xref-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/self-xref-$fmt.log" >&2; fail "M08-AC2: self-xref.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_SELF_XREF" 4 "M08-AC2"
+  # The both-attributes report is about the MARK, not about its targets, so
+  # dropping one of the two must not silence it.
+  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_BOTH" 1 "M08-AC2"
+done
+pass "M08-AC2: four self-referential targets each report once, in HTML, LaTeX and gfm, and the both-attributes report still fires"
+
+python3 - examples/self-xref.tex <<'PY'
+import sys
+src = open(sys.argv[1], encoding='utf-8').read()
+errs = []
+# The three marks whose only target was dropped index plainly: one \index each,
+# on their own key, carrying no encap at all.
+for want in ('\\index{Cats}', '\\index{Birds!Owls}', '\\index{ferrets}'):
+    # Exact: the encap form of the same key is `\index{Cats|see{...}}`, whose
+    # `|` sits where this string's closing brace is, so it cannot match here.
+    n = src.count(want)
+    if n != 1:
+        errs.append(f'expected exactly one {want}, found {n}')
+# The fourth keeps the target that was NOT self-referential, and only that one.
+if src.count('\\index{Dogs|seealso{Pets}}') != 1:
+    errs.append('the surviving see-also target on the both-attributes mark was '
+                'not emitted as its only encap')
+if 'quartoindexseeboth' in src:
+    errs.append('the both-targets command was emitted though one target was '
+                'dropped')
+# The control: a target naming a different entry is untouched.
+if src.count('\\index{Lynxes|see{Cats}}') != 1:
+    errs.append('the cross-reference to a DIFFERENT entry was not emitted; '
+                'this check cannot tell a self-reference from any reference')
+# No self-encap survives anywhere.
+for bad in ('\\index{Cats|see{Cats}}', '\\index{Birds!Owls|seealso{Birds: Owls}}',
+            '\\index{ferrets|see{ferrets}}', '\\index{Dogs|see{Dogs}}'):
+    if bad in src:
+        errs.append(f'a self-referential encap survived: {bad}')
+if errs:
+    print('FAIL: M08-AC2: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC2: three self-targeting marks index plainly, the fourth keeps '
+      'only its surviving see-also, and a target naming another entry is '
+      'untouched')
+PY
+
+python3 - examples/self-xref.html <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse('examples/self-xref.html')
+section = H.index_section(doc)
+errs = []
+
+records = H.entry_records(section)
+by_term = {r['term']: r for r in records}
+# The three marks whose only target was dropped are ordinary entries again:
+# each carries at least one locator link back into the text.
+for term in ('Cats', 'Owls', 'ferrets'):
+    rec = by_term.get(term)
+    if rec is None:
+        errs.append(f'entry {term!r} is not in the index at all')
+    elif not rec['locators']:
+        errs.append(f'entry {term!r} carries no locator')
+# The fourth carries its surviving cross-reference and, per the documented
+# semantics, no locator.
+dogs = by_term.get('Dogs')
+if dogs is None:
+    errs.append("entry 'Dogs' is not in the index")
+else:
+    if dogs['locators']:
+        errs.append("entry 'Dogs' carries a locator though it still has a "
+                    "cross-reference")
+    targets = [target for _kind, target, _linked, _href in dogs['xrefs']]
+    if targets != ['Pets']:
+        errs.append(f"entry 'Dogs' should carry exactly its surviving see-also "
+                    f"target, carries {targets}")
+# The control: a target naming a DIFFERENT entry is untouched and still links.
+lynxes = by_term.get('Lynxes')
+if lynxes is None:
+    errs.append("entry 'Lynxes' is not in the index")
+elif [t for _k, t, _l, _h in lynxes['xrefs']] != ['Cats']:
+    errs.append("the cross-reference to a different entry did not survive; "
+                "this check cannot tell a self-reference from any reference")
+
+# No link anywhere inside the index points at the entry that contains it.
+for record in records:
+    own = record['id']
+    if not own:
+        continue
+    hrefs = list(record['locators'])
+    hrefs += [href for _k, _t, _l, href in record['xrefs'] if href]
+    if ('#' + own) in hrefs:
+        errs.append(f'entry {record["term"]!r} links to itself')
+
+if errs:
+    print('FAIL: M08-AC2: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC2: the three dropped-target entries carry locators again, '
+      'the both-attributes entry keeps only its see-also, the control '
+      'cross-reference survives, and no entry links to itself')
 PY
 
 # ---------------------------------------------------------------------------

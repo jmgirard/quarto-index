@@ -36,3 +36,8 @@ second writes a key for exactly that level, and it is the second that must
 win, because it is the only declaration either mark makes there:
 [Ccc]{.index entry="Ccc!p" sort="!pk"} and later
 [Ccc]{.index entry="Ccc" sort="Www"}.
+
+Two skipped levels cannot sit side by side, because `!!` is the literal `!`
+this syntax gives an author and not two separators. The key below is one
+level reading `!Zed`, which is what places this term — not a third level
+redirected: [Literal]{.index entry="Literal" sort="!!Zed"}.

@@ -193,9 +193,19 @@ A sort level left empty means "file this level under its own printed text", so
 you only write the levels you are actually moving. Above, `mathematicians`
 files under itself and only the sub-entry is redirected.
 
+Two skipped levels cannot sit side by side, because `!!` is a literal `!` and
+not two separators — `sort="!!Zed"` is a one-level key reading `!Zed`. Where
+you would need to skip two in a row, write those levels' own printed text
+instead: `sort="One!Two!Zed"` rather than `sort="!!Zed"`.
+
 A sort key belongs to the entry, not to the mark you happened to write it on.
 Mark a term in six places and give one of them a `sort=`, and all six file
 under it — you never have to repeat it.
+
+More exactly, it belongs to the entry level you wrote it for, and places that
+level wherever it appears. A key written for `Hague, The` files it the same
+way whether the mark carries that term alone or as the parent of a sub-entry,
+so one term never files two ways.
 
 Three things are reported, in every output format, because each is a mistake
 about the mark rather than about any one back-end:

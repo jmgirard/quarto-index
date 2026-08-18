@@ -126,6 +126,8 @@ README_SORT_CLAIMS=(
   $'ordering is per back-end\tA sort key files an entry under the ordering of whichever back-end builds the'
   $'plain keys order alike\tSort keys of plain letters and digits order the same way everywhere'
   $'keys past the ceiling\tA sort key written for a level past the third goes with that level'
+  $'two skipped levels\tTwo skipped levels cannot sit side by side'
+  $'key belongs to the level\tit belongs to the entry level you wrote it for, and places that'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -1782,8 +1784,10 @@ MANIFEST
 #
 # Derived by hand: each entry files under its sort key where it has one
 # (Manifest 1m), under its own printed text where it does not, and the order
-# is the collation the README documents — ASCII case folded, then character
-# code. The sort keys in order are therefore Angstrom, Hague, mathematicians
+# is makeindex's, applied to those keys — NOT the HTML collation rule, which
+# is the extension's own and orders a punctuation-leading key elsewhere. The
+# keys in this fixture are plain letters, which the two order alike, so the
+# same row order serves both; a fixture keyed on punctuation would need two. The sort keys in order are therefore Angstrom, Hague, mathematicians
 # (which declares none of its own), Manet, Neumann, ten Downing Street. The
 # two
 # sub-entries under `mathematicians` file under Neumann and Turing, which
@@ -1881,6 +1885,7 @@ Beta!gkey@gamma
 Beta
 Www@Ccc!pk@p
 Www@Ccc
+"!Zed@Literal
 MANIFEST
 
 # ---------------------------------------------------------------------------
@@ -1890,7 +1895,9 @@ MANIFEST
 # The top-level keys are the ones manifest 1q derives — Zed, Beta, Www and
 # Hague — so the four top-level entries collate Beta, Hague, Www, Zed and
 # therefore print as Beta, `Hague, The`, Ccc, Alpha. Every top-level entry
-# here has exactly one sub-entry and one locator of its own.
+# here has exactly one sub-entry and one locator of its own, except `Literal`,
+# which has none: its key is the one-level `!Zed` that `sort="!!Zed"` gives,
+# and `!` sorts ahead of every letter, so it heads the index.
 #
 # `Ccc` is the row that reads differently under a key remembered against a
 # whole entry rather than against a level: there the first mark's untouched
@@ -1898,6 +1905,7 @@ MANIFEST
 # second rather than third.
 # ---------------------------------------------------------------------------
 read -r -d '' SORTKEY_PATHS_HTML_INDEX <<'MANIFEST' || true
+0	Literal	1
 0	Beta	1
 1	gamma	1
 0	Hague, The	1

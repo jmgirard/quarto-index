@@ -1,6 +1,6 @@
 # M06: Sort keys
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -139,7 +139,7 @@ what prints; the sort key carried through the book sidecar record with
 - [x] T12: `clamp_sort`'s silent drop past level 3 and `index_argument`'s
       misfiring guard on the folded level (F5); `sort=""`, the doubled `!` in
       warning text, and the v1-store warning's misattributed cause (F11-F13).
-- [ ] T13: `DESIGN.md`'s "two passes" and "sort keys land later" (F6); the
+- [x] T13: `DESIGN.md`'s "two passes" and "sort keys land later" (F6); the
       README's skipped-level rule and the sentence F1 falsifies, re-pinned;
       manifest 1n's header (F10); the two prior-review follow-ups absorbed
       into the standing accumulator ROADMAP row; `--self-test` and
@@ -147,6 +147,8 @@ what prints; the sort key carried through the book sidecar record with
 
 ## Work log
 
+- 2026-08-17: T13 done — `DESIGN.md` corrected in place at three sites (three passes not two, sort keys shipped not pending, the LaTeX bullet naming `sortkey@printed`); README gained the two-adjacent-skipped-levels limit and the level-not-entry precision, both pinned and the first now carried by a fixture mark; manifest 1n's header no longer attributes the PDF order to the HTML collation rule. The two prior-review follow-ups widened their standing ROADMAP rows rather than opening new ones. `tests/run-tests.sh --self-test` clean at 117 checks (89 at the merge base) and `tests/byte-diff.sh` reports every merge-base fixture byte-identical.
+- 2026-08-17: all fix tasks done; status -> review for the second time. AC4 re-ticks on the strengthened probe; AC1/AC2/AC3/AC6 evidence was rebuilt by the fixes rather than merely re-run.
 - 2026-08-17: T12 done — the folded-level guard now compares a sort key against the level it was aligned with rather than against the folded text, so a third level nobody keyed no longer comes out carrying `three@three, four`; the fold rule for sort keys is documented and pinned. A store record from an older extension version is reported as stale rather than as unreadable. `sort=""` and the doubled `!` are dispositioned as by-design in this file's Decisions. Suite 101 -> 103 checks.
 - 2026-08-17: T12 found a pre-existing suite gap this milestone opened — every planted store record was written with `"version":1`, so after T5 bumped the version they were being rejected on version rather than on the rule each check existed to prove. The version is now read from the filter, and the ghost-chapter check asserts no record-ignored report fires, which is what makes the chapter-list filter the thing that kept it out.
 - 2026-08-17: T11 done — the AC3 LaTeX leg now reads the emitted sort fields structurally: every entry must split at the separator the back-end writes, and the index tool must print each term as its text alone. Proved discriminating by a filter emitting no sort field at all, which makeindex accepts just as happily (94 accepted, 0 rejected) while the new check fails on all 94. README gained the ordering rule, pinned by two more `README_SORT_CLAIMS` rows. Suite 100 -> 101 checks.

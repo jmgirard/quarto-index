@@ -40,7 +40,8 @@ _None yet — populated as the codebase takes shape._
   statistical work enters the project.
 - **Collation is best-effort**: non-ASCII terms appearing correctly is an IP2
   commitment, but sort *order* beyond what the user's index processor
-  provides is best-effort, aided by the sort-key feature once it lands.
+  provides is best-effort. Sort keys (`sort=`) are how an author overrides it,
+  and each back-end orders under its own rules (corrected M06).
 
 ## Design Principles
 
@@ -97,8 +98,15 @@ ordinary plan-gate choice.
 
 ## Architecture
 
-One Pandoc-Lua filter, `_extensions/index/index.lua`, run as two passes over
-each document.
+One Pandoc-Lua filter, `_extensions/index/index.lua`, run as three passes over
+each document (corrected M06).
+
+The **collect pass** reads every mark that writes a `sort=` and registers the
+sort key against the printed level path it was written for, reporting a level
+given two different keys. It runs first because a sort key belongs to the
+entry rather than to the mark that declared it: the emitting pass has to know
+every key before it emits the first mark, or a mark goes out under a key a
+later mark contradicts. It only reads; nothing it sees changes the document.
 
 The **Span pass** handles one mark at a time. Everything that depends only on
 what the author wrote happens *before* any back-end is chosen: the `entry=`
@@ -127,7 +135,9 @@ Two back-ends ship:
   literal per character
   by whichever mechanism that character needs, clamped to makeindex's
   three-level ceiling, and a term marked two incompatible ways is reported
-  document-wide.
+  document-wide. A level with a sort key is written in makeindex's own
+  `sortkey@printed` form, that `@` being the one the back-end writes and so
+  the only one left unquoted (corrected M06).
 - **HTML** (`FORMAT` containing `html`): a link target for each
   locator-contributing mark, and an index section at the marker or appended,
   built out of

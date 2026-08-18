@@ -1,0 +1,55 @@
+---
+title: "quarto-index marker-site probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Where a marker can be written
+
+The placement marker is an empty top-level div and nothing else. This document
+writes the class in three places that cannot place an index — a heading, an
+inline span and a fenced code block — and puts a nested marker alone inside two
+containers of different kinds. Each misuse is reported, nothing an author wrote
+is deleted, and the index still lands at the one real marker below.
+
+One term is marked here: [delta]{.index}.
+
+## A heading carrying the class {.qi-index-here}
+
+A heading is not a div, so this places nothing. The heading itself is left
+exactly as written — the extension reports the mistake rather than editing an
+element the author wrote.
+
+An inline span carrying the class, [right here]{.qi-index-here}, places nothing
+either, and likewise survives with its class.
+
+``` {.qi-index-here}
+A fenced code block carrying the class places nothing.
+```
+
+# Containers emptied by a nested marker
+
+A marker below the top level places nothing. Where it is the only thing in its
+container, removing it leaves that container empty, which is reported as well —
+the container is kept, since nothing the author wrote is deleted.
+
+::: {#emptied-div .surrounding}
+::: {.qi-index-here}
+:::
+:::
+
+> ::: {.qi-index-here}
+> :::
+
+# The marker that counts
+
+The one real marker follows. Another term is marked here: [epsilon]{.index}.
+
+::: {.qi-index-here}
+:::
+
+# After the marker
+
+Text after the marker, so the index's position is provable rather than merely
+last.

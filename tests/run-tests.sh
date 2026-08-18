@@ -2408,6 +2408,154 @@ print('ok   M04-AC4: one \\printindex, at the first marker, in a document '
 PY
 
 # ---------------------------------------------------------------------------
+# M08-AC3 / M08-AC4 — marker sites. The class only ever places an index on an
+# empty top-level div; written on a heading, an inline span or a code block it
+# places nothing and is reported, and the element is left exactly as the author
+# wrote it (M08's plan gate: the extension reports rather than edits). A nested
+# marker that was its container's ONLY content leaves that container empty,
+# which is reported as a second message beside the existing nested-marker one —
+# both are kept, so the message M04 pinned keeps its wording.
+# ---------------------------------------------------------------------------
+WARN_SITE_HEADING='marker class is written on a heading'
+WARN_SITE_SPAN='marker class is written on an inline span'
+WARN_SITE_CODE='marker class is written on a code block'
+WARN_EMPTIED='was the only content of the'
+
+for fmt in html latex gfm; do
+  quarto render examples/marker-sites.qmd --to $fmt \
+    > "$WORK/sites-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/sites-$fmt.log" >&2; fail "M08-AC3: marker-sites.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_HEADING" 1 "M08-AC3"
+  check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_SPAN" 1 "M08-AC3"
+  check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_CODE" 1 "M08-AC3"
+  check_warning_count "$WORK/sites-$fmt.log" "$WARN_EMPTIED" 2 "M08-AC4"
+  # The message M04 pinned still fires for both nested markers: the emptied-
+  # container report is additive, never a replacement.
+  check_warning_count "$WORK/sites-$fmt.log" "$WARN_MARKER_NESTED" 2 "M08-AC4"
+done
+pass "M08-AC3/AC4: three misplaced marker classes and two emptied containers each report, in HTML, LaTeX and gfm"
+
+# The three misplaced sites survive into HTML carrying the class and their
+# content. The heading case lands the class on BOTH the <h2> and the <section>
+# wrapper Quarto builds around it, so this asserts presence per tag, never a
+# count of elements.
+MARKER_CLASS="$MARKER_CLASS" python3 - examples/marker-sites.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+cls = os.environ['MARKER_CLASS']
+by_tag = {}
+for n in H.walk(doc):
+    if cls in H.classes(n):
+        by_tag.setdefault(n.tag, []).append(n)
+errs = []
+for tag, want in (('h2', 'A heading carrying the class'),
+                  ('span', 'right here'),
+                  ('pre', 'A fenced code block carrying the class places nothing.')):
+    got = by_tag.get(tag)
+    if not got:
+        errs.append(f'no <{tag}> carries the marker class')
+    elif not any(want in H.text(n) for n in got):
+        errs.append(f'the <{tag}> carrying the marker class lost its content '
+                    f'(wanted {want!r})')
+if errs:
+    print('FAIL: M08-AC3: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC3: the heading, inline span and code block carrying the '
+      'marker class all survive into HTML with their class and content')
+PY
+
+# Both emptied containers survive, structurally, and are empty — two container
+# kinds, because strip_nested_markers walks every nested Blocks list and one
+# shape cannot stand in for that family.
+python3 - examples/marker-sites.html <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+errs = []
+divs = [n for n in H.walk(doc) if n.attrs.get('id') == 'emptied-div']
+if not divs:
+    errs.append('the div whose only content was a nested marker is gone')
+elif H.text(divs[0]).strip():
+    errs.append(f'that div is not empty: {H.text(divs[0])!r}')
+quotes = [n for n in H.walk(doc) if n.tag == 'blockquote']
+if not quotes:
+    errs.append('the block quote whose only content was a nested marker is gone')
+elif all(H.text(q).strip() for q in quotes):
+    errs.append('no block quote was left empty')
+if errs:
+    print('FAIL: M08-AC4: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC4: both emptied containers — a div and a block quote — are '
+      'still in the page, and both are empty')
+PY
+
+# gfm carries no index back-end, so nothing this extension emits may reach it.
+# Class survival is NOT claimed here: gfm has no heading attributes at all, so
+# a dropped heading class is the writer's doing and not this filter's.
+python3 - examples/marker-sites.md <<'PY'
+import sys
+src = open(sys.argv[1], encoding='utf-8').read()
+errs = []
+for want in ('A heading carrying the class', 'right here',
+             'A fenced code block carrying the class places nothing.'):
+    if want not in src:
+        errs.append(f'visible content {want!r} did not survive into gfm')
+for token in ('\\index{', '\\printindex', 'qi-mark-', 'qi-entry-'):
+    if token in src:
+        errs.append(f'back-end token {token!r} leaked into gfm')
+if '\n# Index\n' in src:
+    errs.append('an index section was written into gfm')
+if errs:
+    print('FAIL: M08-AC3: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC3: in gfm the three elements keep their visible content and '
+      'no index, anchor or back-end token appears')
+PY
+
+# The index still lands at the one real marker, in both back-ends: after the
+# delta mark written above it, before the After-the-marker section below it.
+python3 - examples/marker-sites.tex <<'PY'
+import sys
+src = open(sys.argv[1], encoding='utf-8').read()
+n = src.count('\\printindex')
+errs = []
+if n != 1:
+    errs.append(f'expected exactly one \\printindex, found {n}')
+else:
+    delta, after = src.find('\\index{delta}'), src.find('After the marker')
+    p = src.find('\\printindex')
+    if min(delta, after) < 0 or not delta < p < after:
+        errs.append('\\printindex is not at the one real marker')
+if errs:
+    print('FAIL: M08-AC3: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC3: one \\printindex, at the one real marker, in a document '
+      'carrying the class in five places')
+PY
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+python3 - examples/marker-sites.html <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+prefix = os.environ['HTML_ANCHOR_PREFIX']
+delta = H.position_of_id(doc, prefix + '1')
+index_at = H.position_of_id(doc, os.environ['HTML_SECTION_ID'])
+epsilon = H.position_of_id(doc, prefix + '2')
+if min(delta, index_at, epsilon) < 0 or not delta < epsilon < index_at:
+    print(f'FAIL: M08-AC3: the HTML index sits at {index_at}, not at the one '
+          f'real marker (after the epsilon mark at {epsilon}, itself after '
+          f'the delta mark at {delta})', file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC3: the HTML index is placed at the one real marker, and no '
+      'misplaced class placed anything')
+PY
+
+# ---------------------------------------------------------------------------
 # M04-AC4 — a marker in a document with no index marks. The residue claim is
 # made at its strongest here: the same document with the marker deleted by
 # hand renders byte-for-byte identically, in every format. An empty div, an

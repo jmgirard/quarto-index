@@ -115,6 +115,11 @@ author reads or markup an HTML reader receives.
       the AC2 checks, failing.
 - [ ] T7: Detect a cross-reference target equal to the mark's own entry levels
       before the back-end branch; warn and drop that target.
+- [ ] T9: Update README.md for the three new behaviors — the misplaced marker
+      class, the emptied container, and the dropped self-reference — and correct
+      the sentence at README.md:329 claiming the section id is "fixed rather
+      than minted", which AC1 falsifies; pin each new sentence in the suite's
+      normative README arrays, since a documented claim owes a test.
 - [ ] T8: Revert each of the four fixes alone and record the failing check and
       its message in the work log. Process evidence, deliberately mapped to no
       criterion: an acceptance criterion binding the harness rather than the
@@ -129,6 +134,10 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: plan gate chose warn-and-drop the self-referential target over keeping it (which leaves useless "cats, see cats" output) and over dropping the whole mark (which loses the term, the IP2 corruption class this milestone targets); falsified by an authoring case where a self-target carries meaning, such as a printed form differing from its sort form.
 - 2026-08-18: plan chose four defects here with the sort-key clamp as M09 over one five-defect milestone, which reached ~13 tasks past the sizing tripwire; falsified if M09 turns out to share fixtures or code paths with M08 such that splitting duplicates the work.
 
+- 2026-08-18: implement gate — the emptied-container report is additive: the nested-marker message M04 pinned (run-tests.sh:2323) keeps its wording and its check, and the new message names only the extra consequence, so one mistake reads two lines rather than rewriting a pinned contract.
+- 2026-08-18: implement gate — a self-target counts as self-referential when it matches what the entry PRINTS, not what it files under, because a reader sees "cats, see cats" whichever sort key the mark carries and the key never appears in the printed index.
+- 2026-08-18: minor amendment — added T9 (README + its normative pins). Discovered at T1: README.md documents the marker rules and the cross-reference behavior in prose and README.md:329 states the section id is "fixed rather than minted", which AC1 falsifies; the suite compares named README sentences as bytes, so a documented claim owes a test.
+- 2026-08-18: T1 — examples/marker-sites.qmd added (marker class on a heading, an inline span and a fenced code block; a div and a block quote each holding a nested marker as their only content; one real top-level marker with text after it) plus the AC3/AC4 checks. Suite red by design: the first new check reports 0 occurrences of a warning no code emits yet, and every pre-existing check passes.
 ## Decisions
 
 ## Review

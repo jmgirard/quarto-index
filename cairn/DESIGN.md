@@ -116,27 +116,34 @@ The **Span pass** handles one mark at a time. Everything that depends only on
 what the author wrote happens *before* any back-end is chosen: the `entry=`
 value is parsed into levels, cross-reference targets are parsed and validated —
 a target naming the mark's own printed levels is reported and dropped, so the
-term indexes plainly rather than pointing at itself (corrected M08) — and the
-warnings for a malformed mark are emitted, so a misused mark is
-diagnosed in every output format, not only where a back-end exists. The pass
+term indexes plainly rather than pointing at itself (corrected M08; the
+comparison is on unclamped levels with empty ones kept, so a self-reference the
+three-level fold or a dropped empty level makes equal still survives —
+ROADMAP) — and the warnings for a malformed mark are emitted, so a misused
+mark is diagnosed in every output format, not only where a back-end exists.
+The pass
 then branches per format and records what that back-end will need.
 
 The **Pandoc pass** runs once the whole document has been seen, and is where a
-back-end emits anything document-wide. It opens format-neutrally: the
-placement marker — an empty top-level div, class `qi-index-here` — is resolved
-before any back-end is chosen, so a misused one (nested, duplicate, non-empty,
-or in a document with no marks) is diagnosed in every format and no marker
-survives into any output. Two further misuses are reported rather than edited
-away (corrected M08): the marker class written where it cannot place an index —
-any block that is not a div, or an inline span — which leaves that element
-exactly as the author wrote it, class included; and a container an empty nested
-marker was the only content of, which is kept and reported as left empty. The
-first is read from the document's blocks alone, never its metadata; the second
-from the shape, so a marker carrying content — whose content is spliced back in
-— empties nothing and is not reported. One shared function then puts a back-end's index at
-the surviving marker, or at the end of the document when there is none, so the
-two back-ends cannot drift apart on where an index goes.
-
+back-end emits anything document-wide. It opens format-neutrally: the placement
+marker — an empty top-level div, class `qi-index-here` — is resolved before any
+back-end is chosen, so a misused one (nested, duplicate, non-empty, or in a
+document with no marks) is diagnosed in every format and no marker survives
+into any output. Two further misuses are reported rather than edited away
+(corrected M08): the marker class written where it cannot place an index — any
+block that is not a div, and any inline carrying attributes at all, a span,
+inline code, a link or an image among them — which leaves that element exactly
+as the author wrote it, class included; and a container a marker was the only
+content of, which is kept and reported as left empty. The first is read from
+the document's blocks alone, never its metadata, so a class written in the
+title or the abstract is reported nowhere. The second asks whether a block list
+leaves nothing once stripping is done, recursively: a marker contributes
+whatever its own content contributes, so one wrapping only markers empties its
+container and one carrying a paragraph empties nothing. A marker is never
+itself such a container, being removed whole at every depth. One shared
+function then puts a back-end's index at the surviving marker, or at the end of
+the document when there is none, so the two back-ends cannot drift apart on
+where an index goes.
 Two back-ends ship:
 
 - **LaTeX** (`FORMAT` containing `latex`, which covers PDF): an `\index{…}`
@@ -162,14 +169,14 @@ Two back-ends ship:
 
   Ids are assigned in the **Pandoc** pass, not at the mark: an id must not
   collide with one the author wrote — ids written in raw HTML included — and
-  that is only knowable once the whole document has been seen. A mark keeps
-  an id of the author's own and is otherwise tagged by the Span pass and
-  given a minted id later. The index section's own id is minted the same way
-  (corrected M08): the bare `qi-index` where that name is free, and a numbered
-  one past it where the document has taken it. No anchor id stays inside a heading, because
-  Quarto copies a heading's inlines into the table of contents and the id
-  would then appear twice; a heading mark's anchor — author id or minted —
-  sits on an empty span emitted just after the heading.
+  that is only knowable once the whole document has been seen. A mark keeps an
+  id of the author's own and is otherwise tagged by the Span pass and given a
+  minted id later. The index section's own id is minted the same way (corrected
+  M08): the bare `qi-index` where that name is free, and a numbered one past it
+  where the document has taken it. No anchor id stays inside a heading, because
+  Quarto copies a heading's inlines into the table of contents and the id would
+  then appear twice; a heading mark's anchor — author id or minted — sits on an
+  empty span emitted just after the heading.
 
 Every other format — beamer, revealjs, epub, gfm — takes neither branch: no
 index, no anchors, no back-end tokens, and the visible text exactly as

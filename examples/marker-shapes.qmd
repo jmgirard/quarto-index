@@ -38,10 +38,39 @@ left empty by anything.
 :::
 :::
 
+A marker that wraps another marker is still a marker: it is removed whole and
+is no container. Neither the outer marker below nor the container holding it is
+left empty, because the container keeps this paragraph.
+
+::: {#keeps-text .surrounding}
+Text that survives, so this container is not emptied by anything.
+
+::: {.qi-index-here}
+::: {.qi-index-here}
+:::
+:::
+:::
+
 # The shape that IS reported
 
 A footnote whose only content is a marker is emptied exactly as a div or a
 block quote is, and is reported for the same reason.[^gone]
+
+A container is emptied by a marker that wraps only empty markers too: what the
+marker leaves behind is what its content leaves behind, all the way down.
+
+::: {#emptied-deep .surrounding}
+::: {.qi-index-here}
+::: {.qi-index-here}
+:::
+:::
+:::
+
+A definition's body is a container as much as a div is.
+
+term
+:   ::: {.qi-index-here}
+    :::
 
 [^gone]:
     ::: {.qi-index-here}

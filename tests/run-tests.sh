@@ -1103,8 +1103,8 @@ if bad:
     print('\n'.join(bad), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M08: all {len(claims)} documented misuse behaviors appear '
-      f'verbatim in README.md, and the {len(stale)} sentence AC1 falsified is '
-      f'gone')
+      f'verbatim in README.md, and the {len(stale)} sentence(s) this milestone '
+      f'falsified are gone')
 MISUSEDOCPY
 
 # The probe set is pinned to the filter's own escape table, so a character the
@@ -1270,7 +1270,10 @@ check_warning_count() {
     || fail "$label: expected $want occurrence(s) of <<$pattern>> in $logfile, got $got"
 }
 
-WARN_BOTH='index mark carries both see= and see-also='
+# The whole message, not its prefix: the tail was reworded in M08 when a
+# self-referential target became droppable, and README now pins the matching
+# sentence — a prefix-only pattern would let the two drift apart.
+WARN_BOTH='index mark carries both see= and see-also=; this is probably a mistake, and neither is dropped for being one of two'
 WARN_NO_SOURCE='cross-reference mark has no source entry'
 
 check_warning_count "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
@@ -2637,22 +2640,25 @@ for fmt in html latex gfm; do
     || { tail -20 "$WORK/shapes-$fmt.log" >&2; fail "M08-AC4: marker-shapes.qmd failed to render to $fmt"; }
   # Exactly one container is emptied here: the footnote. The other two shapes
   # are the false positives this fixture exists to fence.
-  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_EMPTIED" 1 "M08-AC4 (F1/F2)"
+  # Three containers are emptied here: a div, a footnote and a definition. The
+  # other shapes are the false positives this fixture exists to fence.
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_EMPTIED" 3 "M08-AC4 (R1/R2)"
   # No misplaced-class report at all: the only marker class outside a div in
   # this document is in its title.
   check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_SITE" 0 "M08-AC3 (F4)"
-  # The three nested markers still report, and the one carrying content still
+  # Every nested marker still reports, and the one carrying content still
   # reports as non-empty — neither message is disturbed by the above.
-  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 3 "M08-AC4"
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 8 "M08-AC4"
   check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_CONTENT" 1 "M08-AC4"
+  # Named per kind, so the three reports cannot silently swap which container
+  # they are about — a count alone passed while the report named a marker div.
+  for kind in div footnote definition; do
+    check_warning_count "$WORK/shapes-$fmt.log" \
+      "was the only content of the $kind" 1 "M08-AC4 (R1/R3)"
+  done
 done
-pass "M08-AC3/AC4: only the emptied footnote is reported — not the container that kept content, not the marker that places the index, not the document title"
+pass "M08-AC3/AC4: exactly the emptied div, footnote and definition are reported — not the container that kept content, not any marker div, not the document title"
 
-# The emptied-container report must name the footnote, not some other kind: a
-# count alone would pass if the report moved from one shape to another.
-grep -qF -- 'was the only content of the footnote' "$WORK/shapes-gfm.log" \
-  || fail "M08-AC4 (F3): the emptied container was not reported as a footnote"
-pass "M08-AC4 (F3): the emptied footnote is reported by its own kind"
 
 # Structural proof of the F1 claim: the container really does keep its content.
 python3 - examples/marker-shapes.html <<'PY'
@@ -2660,13 +2666,25 @@ import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
 doc = H.parse(sys.argv[1])
-kept = [n for n in H.walk(doc) if n.attrs.get('id') == 'keeps-content']
 errs = []
-if not kept:
-    errs.append('the container holding a marker with content is gone')
-elif not H.text(kept[0]).strip():
-    errs.append('that container is empty, so the report claiming it was left '
-                'empty would have been right and this check proves nothing')
+# Two containers that must SURVIVE non-empty — one holding a marker that has
+# content, one holding a marker that wraps only markers but keeping text of its
+# own. Both are shapes a report reading the pre-strip shape got wrong.
+for ident, why in (('keeps-content', 'holds a marker that has content'),
+                   ('keeps-text', 'keeps a paragraph of its own')):
+    kept = [n for n in H.walk(doc) if n.attrs.get('id') == ident]
+    if not kept:
+        errs.append(f'the container that {why} is gone')
+    elif not H.text(kept[0]).strip():
+        errs.append(f'#{ident}, which {why}, is empty — so a report claiming '
+                    f'it was emptied would have been right and this check '
+                    f'proves nothing')
+# And one that must be emptied, through two levels of marker.
+deep = [n for n in H.walk(doc) if n.attrs.get('id') == 'emptied-deep']
+if not deep:
+    errs.append('the container emptied through nested markers is gone')
+elif H.text(deep[0]).strip():
+    errs.append('#emptied-deep is not empty, so its report would be wrong')
 # The index still lands at the top-level marker that wrapped a nested one.
 section = H.index_section(doc)
 if section is None:

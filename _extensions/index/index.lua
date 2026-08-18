@@ -1380,17 +1380,28 @@ local CONTAINER_NAMES = {
   Note = "footnote",
 }
 
--- Every element a marker, AND every one of those markers empty. The second
--- half is not decoration: marker_content splices a non-empty marker's content
--- in where the marker stood, so a container holding one keeps that content and
--- is not emptied at all. Reporting it would tell an author their container is
--- empty while the page plainly shows it is not.
-local function all_empty_markers(blocks)
+-- Does this block list leave NOTHING once every marker in it is stripped? The
+-- question is recursive because the answer is: a marker contributes whatever
+-- its own content contributes, since marker_content splices that content in
+-- where the marker stood. So a list empties when every element is a marker
+-- whose content is empty or itself empties — a marker wrapping only empty
+-- markers contributes nothing however deep it goes, and one paragraph anywhere
+-- inside means the container keeps something.
+--
+-- Two rounds of review defects came from asking a shallower question. Reading
+-- only the top layer reported a container that visibly kept its content; adding
+-- "and every marker is empty" then skipped the container that WAS emptied
+-- through two levels and reported the marker div inside it instead — a true
+-- sentence about the wrong element. This is the rule those were approximating.
+local function empties(blocks)
   if blocks == nil or #blocks == 0 then
     return false
   end
   for _, inner in ipairs(blocks) do
-    if not is_marker(inner) or #inner.content > 0 then
+    if not is_marker(inner) then
+      return false
+    end
+    if #inner.content > 0 and not empties(inner.content) then
       return false
     end
   end
@@ -1404,14 +1415,30 @@ local function report_emptied(name)
 end
 
 local function check_emptied(el)
+  -- A marker is never a container: it is removed whole at every depth, so it
+  -- reaches no output and is nothing an author could find left empty. Guarding
+  -- only the top-level block left every nested marker div reporting itself.
+  if is_marker(el) then
+    return
+  end
   if el.t == "BulletList" or el.t == "OrderedList" then
     -- A list's content is a list of block lists, one per item.
     for _, item in ipairs(el.content) do
-      if all_empty_markers(item) then
+      if empties(item) then
         report_emptied("list item")
       end
     end
-  elseif all_empty_markers(el.content) then
+  elseif el.t == "DefinitionList" then
+    -- Each element is {term, {definition, ...}}, a definition being a block
+    -- list of its own.
+    for _, entry in ipairs(el.content) do
+      for _, definition in ipairs(entry[2]) do
+        if empties(definition) then
+          report_emptied("definition")
+        end
+      end
+    end
+  elseif empties(el.content) then
     report_emptied(CONTAINER_NAMES[el.t] or el.t)
   end
 end
@@ -1421,14 +1448,9 @@ local function report_emptied_containers(block)
   -- container at issue is often the top-level block handed in — the div or the
   -- block quote a nested marker was written alone inside. So it is checked
   -- here, and its descendants by the walk.
-  --
-  -- Unless the top-level block is itself a marker: resolve_markers owns that
-  -- one and removes it whole, so it reaches no output and is no container an
-  -- author could find left empty. A marker wrapping a marker still reports the
-  -- inner one as nested, which is the true thing to say about it.
-  if not is_marker(block) then
-    check_emptied(block)
-  end
+  -- check_emptied refuses a marker itself, so the top-level marker resolve_markers
+  -- owns is passed here like any other block and declines on its own.
+  check_emptied(block)
   block:walk({
     Block = function(el)
       check_emptied(el)

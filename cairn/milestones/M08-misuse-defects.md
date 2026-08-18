@@ -122,16 +122,16 @@ author reads or markup an HTML reader receives.
 - [x] T14: F3 — report an emptied footnote; ROADMAP row for what is uncovered.
 - [x] T15: F5 — narrow the both-attributes warning and its README sentence.
 - [x] T16: F6, F9 — DESIGN Architecture prose; README's `qi-index` claim.
-- [ ] T17: R1/R2 root cause — `check_emptied` skips any marker at every depth,
+- [x] T17: R1/R2 root cause — `check_emptied` skips any marker at every depth,
       and "leaves nothing behind" becomes recursive: a marker whose content
       itself empties contributes nothing.
-- [ ] T18: R3 — report an emptied definition-list definition; re-word the
+- [x] T18: R3 — report an emptied definition-list definition; re-word the
       ROADMAP row to name what is and is not covered.
-- [ ] T19: R1/R2/R5 — fixtures and checks for the two shapes that fooled the
+- [x] T19: R1/R2/R5 — fixtures and checks for the two shapes that fooled the
       report, each naming the container it is about.
-- [ ] T20: R6/R7/R8 — DESIGN prose: the report's real reach, the self-target
+- [x] T20: R6/R7/R8 — DESIGN prose: the report's real reach, the self-target
       caveat, the marker exclusion, the line wrap.
-- [ ] T21: R9/R10 — pin the reworded both-attributes tail; fix the stale
+- [x] T21: R9/R10 — pin the reworded both-attributes tail; fix the stale
       sentence-count in the README-pin check message.
 - [x] T8: Revert each fix alone and record the failing check. Process evidence,
       deliberately mapped to no criterion: a criterion binding the harness
@@ -170,6 +170,9 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: discrimination for the four review fixes, each reverted alone after committing. F1: "M08-AC4 (F1/F2): expected 1 occurrence(s) of <<was the only content of the>> ... got 2". F2: the same check, same count. F3: "M08-AC4 (F3): the emptied container was not reported as a footnote". F4: "M08-AC3 (F4): expected 0 occurrence(s) of <<marker class is written on>> ... got 1". All four fenced; tree clean after each.
 - 2026-08-18: re-review — tests/run-tests.sh --self-test clean, 156 checks (153 before the return). Status back to review.
 - 2026-08-18: REVIEW RETURN (defect return 2). No acceptance criterion failed as written; the maintainer judged R1/R2 load-bearing at the gate. Root cause named: check_emptied predicts the strip from the pre-strip shape and is called on marker divs as well as containers, so it reported a marker div while skipping the container that was genuinely emptied, and reported a container that kept its content. Actioned: R1, R2, R3, R5, R6, R7, R8, R9, R10. Deferred: R4 (a marker class in subtitle/abstract is reported nowhere) and R11 (no M08 fixture is in README's tour) — ROADMAP rows. Tasks T17-T21 added; approved at the gate's disposition chip.
+- 2026-08-18: T17/T18 — `all_empty_markers` became `empties`, recursive: a list empties when every element is a marker whose content is empty or itself empties, which is what stripping actually does. `check_emptied` refuses any marker at any depth, so the top-level-only guard is gone. DefinitionList branch added. The probe fixture now reports exactly the emptied div, footnote and definition, and stays silent on the container that keeps a marker's content, the container that keeps its own text, and every marker div.
+- 2026-08-18: T19 — marker-shapes.qmd gained the two shapes that fooled the previous fix (a container keeping text beside a marker-wrapping-marker; a container emptied through two marker levels) and a definition; the checks now assert one report per container KIND, so a count can no longer pass while the report names the wrong element.
+- 2026-08-18: T20/T21 — DESIGN records the report's real reach (any attributed inline, not only spans), the metadata exclusion, the recursive emptying rule, the marker exclusion, and the self-target caveat that clamped and empty-level cases survive; WARN_BOTH now pins the whole reworded message rather than its prefix; the README-pin check message no longer claims all stale sentences were falsified by AC1. Deferred to the ROADMAP: the subtitle/abstract gap and the fixture tour.
 ## Decisions
 
 ## Review

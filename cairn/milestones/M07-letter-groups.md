@@ -132,6 +132,7 @@ class hooks only, unchanged).
 - 2026-08-18: plan chose stating book LaTeX outside `tests/byte-diff.sh`'s domain over extending its `ls-tree` to recursive because the checker's promise stays untouched (checker-regress doctrine); falsified by a filter-caused book-LaTeX drift the suite's book checks miss.
 - 2026-08-18: /milestone-implement started; branch m07-letter-groups cut from main at 89af3d5.
 - 2026-08-18: implement gate chose `letter<TAB><label>` heading rows (no collision with depth-digit entry rows), a bare text block inside the `qi-letter` container, and a new `examples/letter-groups.qmd` for the AC2 probes.
+- 2026-08-18: /milestone-review: all seven criteria verified with fresh evidence and ticked; consistency gate clean; two fix-now findings fixed on the branch (manifest 1e's oracle comment, a missing heading assertion on content.html). Blocked on the [O] diff-bug lens — four spawns each died on a 529 (Opus capacity), so the milestone stays at `review` at the user's selection, awaiting that one reviewer plus the merge gate. PR #7 open as draft.
 - 2026-08-18: T6-T8 done. `tests/byte-diff.sh`: all 19 merge-base fixtures render byte-identical `.tex` under this branch's filter and the merge base's, empty diff. README gained a `Letter groups in the HTML index` section pinned by 8 `README_LETTER_CLAIMS` rows; the old `collation rule` sentence moved to `README_STALE` and its replacement states top-level ranking plus within-group collation. DESIGN's Conventions collation bullet and HTML back-end bullet corrected M07. Suite 126 checks clean; pre-review `--self-test` run 140 checks clean.
 - 2026-08-18: T2-T5 done; suite green at 124 checks (was 104). Two findings on the way: `!` inside `sort=` is the level separator, so a symbol-initial key is written `!!`; and letter grouping put two of six top-level entries at the same position in the sortkey fixture's keyed and twin orders, which would have weakened M06's no-position-unchanged check in both back-ends — repaired by adding one probe entry (`Ursula K. Le Guin` filing under `Le Guin`) chosen so both the HTML and the makeindex orders are full derangements again, rather than by relaxing the check.
 - 2026-08-18: paused mid-T4 at the user's request; suite red at this checkpoint. Done: all HTML index manifests re-derived with heading rows, `check_letter_sweep` helper + 14 sweep call sites, `qi-letter` pinned as a fourth HTML identifier, `entry_records` routing so entry-only checks skip heading records, book fixture's `Beacon` (T5), gfm/control negatives (T6). Remaining: three manifest-PARSING checks (M06 sort-key disagreement, PDF-outline agreement, level-path split) still read heading rows as entry rows and must skip them; and letter grouping puts two of six sortkey.qmd top-level entries at the same position in the keyed and twin manifests, so M06's no-position-unchanged check needs one added probe entry (candidate: a printed `Sir Ian McKellen` filing under `Ian McKellen`) to restore the derangement rather than a weakened check.
@@ -225,6 +226,11 @@ No CI is configured on this repo (`gh pr checks 7`: no checks reported).
   generated index but had no heading assertion, so AC1's "every HTML index the
   acceptance suite renders" was not met as written. Fixed by a hand-derived
   sweep (one group, `F`, from the single indexing mark `entry="Figure!Dot"`).
+- [O diff-bug]: NOT YET RUN. Four spawn attempts on 2026-08-18 each died on
+  a server-side 529 (Opus capacity), none on anything in the diff. At the
+  user's selection the milestone parks at `review` rather than substituting a
+  weaker reader or merging on two lenses; a fresh session re-runs this one
+  lens and then the merge gate.
 - [S prior-review]: no prior-review regressions. All 39 candidate rows read;
   the module-level-state row is not worsened (the new code is pure functions
   over the existing sorted list, the only new module binding a constant), and

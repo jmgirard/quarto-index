@@ -94,7 +94,7 @@ class hooks only, unchanged).
 
 ## Tasks
 
-- [ ] T1: Instrument: `tests/htmlindex.py` yields heading records in rendered
+- [x] T1: Instrument: `tests/htmlindex.py` yields heading records in rendered
       order as distinct manifest rows, plus a whole-document `qi-letter`
       sweep helper (count, order, text, outside-any-`li`).
 - [ ] T2: Implement grouping in `_extensions/index/index.lua`: group rank
@@ -131,6 +131,8 @@ class hooks only, unchanged).
 - 2026-08-18: plan gate chose always-on headings over a ≥2-group threshold or opt-in metadata because zero-config default (GP4) and print convention; falsified by reader evidence that headings on very small indexes hurt.
 - 2026-08-18: plan chose stating book LaTeX outside `tests/byte-diff.sh`'s domain over extending its `ls-tree` to recursive because the checker's promise stays untouched (checker-regress doctrine); falsified by a filter-caused book-LaTeX drift the suite's book checks miss.
 - 2026-08-18: /milestone-implement started; branch m07-letter-groups cut from main at 89af3d5.
+- 2026-08-18: implement gate chose `letter<TAB><label>` heading rows (no collision with depth-digit entry rows), a bare text block inside the `qi-letter` container, and a new `examples/letter-groups.qmd` for the AC2 probes.
+- 2026-08-18: T1 done — `tests/htmlindex.py` yields kind-tagged records (heading rows in rendered order) and a whole-document `letter_sweep`; suite still 104 checks clean.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

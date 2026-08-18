@@ -224,6 +224,17 @@ LETTER_CLASS = 'qi-letter'
 LETTER_TOKEN = 'letter'
 
 
+def letter_label(node):
+    """A group heading's label text.
+
+    Surrounding whitespace is stripped: the HTML writer decides whether a
+    block element's content sits on its own line, and a label that ended up
+    spanning lines could not be a manifest row at all. A label is a single
+    letter or the word Symbols, so nothing meaningful is stripped.
+    """
+    return text(node).strip()
+
+
 def index_entries(section):
     """Flatten the generated index section into records, in rendered order.
 
@@ -288,7 +299,7 @@ def index_entries(section):
         if not isinstance(top, Node):
             continue
         if LETTER_CLASS in classes(top):
-            records.append({'kind': 'heading', 'label': text(top)})
+            records.append({'kind': 'heading', 'label': letter_label(top)})
         elif top.tag in LIST_TAGS:
             read_list(top, 0)
     if not any(r['kind'] == 'entry' for r in records):
@@ -344,7 +355,8 @@ def letter_sweep(root):
             if not isinstance(child, Node):
                 continue
             if LETTER_CLASS in classes(child):
-                hits.append({'label': text(child), 'in_item': in_item})
+                hits.append({'label': letter_label(child),
+                             'in_item': in_item})
             descend(child, in_item or child.tag == 'li')
 
     descend(root, False)

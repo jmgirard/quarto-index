@@ -132,6 +132,7 @@ class hooks only, unchanged).
 - 2026-08-18: plan chose stating book LaTeX outside `tests/byte-diff.sh`'s domain over extending its `ls-tree` to recursive because the checker's promise stays untouched (checker-regress doctrine); falsified by a filter-caused book-LaTeX drift the suite's book checks miss.
 - 2026-08-18: /milestone-implement started; branch m07-letter-groups cut from main at 89af3d5.
 - 2026-08-18: implement gate chose `letter<TAB><label>` heading rows (no collision with depth-digit entry rows), a bare text block inside the `qi-letter` container, and a new `examples/letter-groups.qmd` for the AC2 probes.
+- 2026-08-18: filter grouping landed (T2 work): group rank ahead of collate at the root only, `qi-letter` Div per group, normative collation comment rewritten. Not ticked yet — every HTML index manifest is now stale, so `verify` cannot be clean until T3/T4/T5 re-derive them; T2–T5 therefore tick together (minor amendment: no re-ordering, one green point).
 - 2026-08-18: T1 done — `tests/htmlindex.py` yields kind-tagged records (heading rows in rendered order) and a whole-document `letter_sweep`; suite still 104 checks clean.
 
 ## Decisions

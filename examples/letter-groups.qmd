@@ -1,0 +1,42 @@
+---
+title: "quarto-index letter-group probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Which group an entry lands in, and why
+
+A top-level entry's group comes from the string it FILES under — its sort key
+where it has one, its printed text where it does not. Every entry below is
+written so that one of those two paths reaches one of the two outcomes, a
+letter group or the leading Symbols group.
+
+Printed text, reaching a letter: [zebra]{.index}.
+
+Printed text, reaching Symbols, and the first of the pair whose adjacency is
+the point: [\#hashtag]{.index}.
+
+The second of that pair. Between `#` and `~` in character order sit every
+letter and every digit, so these two are neighbours only because the letters
+have been lifted out into groups of their own — an index that merely sorted by
+character code would print half the alphabet between them:
+[\~tilde]{.index}.
+
+A sort key, reaching a letter: the entry prints as a symbol but files under a
+word, so it leaves Symbols altogether:
+[\#1 priority]{.index sort="alpha priority"}.
+
+A sort key, reaching Symbols: the entry prints as a word but files under a
+symbol, so it leaves its letter group. The key is written `!!` because a
+single `!` separates sort levels — this key is one level whose first character
+is a literal exclamation mark: [Quixote]{.index sort="!!quixote"}.
+
+An entry whose printed text begins outside ASCII files under Symbols, which is
+honest about a collation that only folds ASCII: [éclair]{.index}.
+
+An entry with no top-level text at all — an empty filing string, which is not
+a letter either: [sub]{.index entry="!windmill"}.
+
+Two more letters, so the alphabet's own order is visible: [alpha]{.index} and
+[Mango]{.index}.

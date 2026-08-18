@@ -314,6 +314,17 @@ def index_entries(section):
     return records
 
 
+def entry_records(section):
+    """Only the entry records of a generated index section.
+
+    Most checks ask a question about entries — how many, which terms, where
+    the locators point — and a letter-group heading has no term at all. They
+    read through here so that adding headings could not quietly slip an
+    entry-shaped hole into a check that indexes records by term.
+    """
+    return [r for r in index_entries(section) if r['kind'] == 'entry']
+
+
 def row(record, hrefs=False):
     """The manifest form of one entry record. The format is defined here so
     the hand-written rows and the extraction cannot drift apart.

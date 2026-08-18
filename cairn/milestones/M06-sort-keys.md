@@ -123,7 +123,7 @@ what prints; the sort key carried through the book sidecar record with
       keyed by printed level text — and compare sort keys in
       `number_entries`' `table.sort` (`index.lua:593`), ties falling through
       to `collate` on the printed text.
-- [ ] T5: Book path: add the sort key to the sidecar mark record
+- [x] T5: Book path: add the sort key to the sidecar mark record
       (`index.lua:1056-1057`), accept it in `valid_record`
       (`index.lua:1093-1121`), bump `STORE_VERSION` to 2 (`index.lua:970`);
       add a cross-chapter sort key to `examples/book/` and a cross-chapter
@@ -147,6 +147,7 @@ what prints; the sort key carried through the book sidecar record with
 - 2026-08-17: implement gate — user chose to proceed on the `ip-touching` tripwire without escalation, and chose format-neutral scope for the sort-key conflict warning over index-building formats only.
 - 2026-08-17: T1 done — `sort=` parsed with `entry=`'s level syntax, aligned per level with printed-text fallback, plus `levels_key`, `sort_levels`, `register_sort`/`sort_for`, `clamp_sort`, and a shared `derive_levels` used by both Span passes.
 - 2026-08-17: T1 minor amendment — parse moved into a new `CollectSort` pass ahead of the emitting pass; task text updated, rationale in this file's Decisions.
+- 2026-08-17: T5 done — the sidecar mark record carries `sort`, `valid_record` checks it is one string per level, `STORE_VERSION` 1 -> 2, and a new `book_sort_keys` resolves one key per entry across the whole book (first in book order wins) since no chapter's process can see another's. `examples/book/` gained a cross-chapter sort key on `Shared Term`; `examples/book-order/` gained a term sorted two ways in two chapters, reported once in two renders — derived, not observed: only the second render has both chapters' records. Suite 90 -> 92 checks.
 - 2026-08-17: T8 done (single-document half) — `examples/sortkey-misuse.qmd`, the three reports asserted exactly once each in `latex` and in `gfm`, a control assertion that none fires on the well-formed fixture, and three `warn_discrimination` reversion proofs. AC4's cross-chapter conflict probe rides with T5. Suite 87 -> 94 checks (103 with --self-test).
 - 2026-08-17: T8 found two suite gaps and fixed both — the warning-distinctness check scanned only double-quoted Lua literals, so a single-quoted message (needed because report 3 contains double quotes) sat outside a check whose comment claimed full coverage; and `warn_discrimination`'s pass line hardcoded `M02-AC5`, filing every other milestone's evidence under the wrong criterion.
 - 2026-08-17: T6 done — exhaustive HTML manifests 1o/1p for the fixture and its twin, compared in order at every depth, plus a check asserting the two manifests disagree at every position so neither could be satisfied by an index that ignored sort keys. Suite 83 -> 87 checks.

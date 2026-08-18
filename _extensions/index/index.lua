@@ -1189,7 +1189,7 @@ local STORE_SUFFIX = ".qi.json"
 -- version that wrote it: nothing prunes it, and a project keeps rendering
 -- across extension upgrades. A record whose version is not this one is
 -- ignored rather than read as if its fields still meant what they did.
-local STORE_VERSION = 1
+local STORE_VERSION = 2
 
 -- Paths from Quarto are the host's; hrefs are always `/`-separated.
 local function as_href(path)
@@ -1276,7 +1276,8 @@ local function store_write(ctx, marker)
       xrefs[#xrefs + 1] = { attr = xref.kind.attr, levels = xref.levels }
     end
     marks[#marks + 1] =
-      { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor }
+      { levels = mark.levels, sort = mark.sort, xrefs = xrefs,
+        anchor = mark.anchor }
   end
   -- Every step here can fail on an ordinary machine — a stale file where the
   -- directory belongs, a read-only project tree, a full disk — and none of
@@ -1335,6 +1336,18 @@ local function valid_record(data, file)
     if mark.anchor ~= nil and type(mark.anchor) ~= "string" then
       return false
     end
+    -- A sort key is one string per level, aligned with them: a record whose
+    -- two lists disagree would file some level under a key meant for another.
+    if mark.sort ~= nil then
+      if type(mark.sort) ~= "table" or #mark.sort ~= #mark.levels then
+        return false
+      end
+      for _, key in ipairs(mark.sort) do
+        if type(key) ~= "string" then
+          return false
+        end
+      end
+    end
     if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
       return false
     end
@@ -1367,7 +1380,36 @@ end
 -- Every chapter's marks as the entry builder wants them: the kind tables
 -- restored from their attribute names, and each locator pointed at the page
 -- of the chapter that carries it.
+-- One entry, one sort key — across a whole book, not only within a chapter.
+-- Each chapter renders in its own process, so the in-document collect pass
+-- cannot see a second chapter's key; this is where the book's records meet,
+-- and so the only place the conflict can be found. First in BOOK order wins,
+-- which is the same rule a single document uses and, unlike "last one seen",
+-- does not depend on which chapter Quarto happened to render last.
+local function book_sort_keys(records)
+  local resolved = {}
+  for _, record in ipairs(records) do
+    for _, mark in ipairs(record.marks or {}) do
+      if mark.sort ~= nil and type(mark.levels) == "table" then
+        local key = levels_key(mark.levels)
+        local seen = resolved[key]
+        if seen == nil then
+          resolved[key] = { sort = mark.sort, file = record.file }
+        elseif levels_key(seen.sort) ~= levels_key(mark.sort) then
+          warn(('index entry "%s" is sorted as "%s" in %s and as "%s" in %s; '
+                .. 'one entry cannot file in two places, so the first in book '
+                .. 'order wins')
+               :format(key, levels_key(seen.sort), seen.file,
+                       levels_key(mark.sort), record.file))
+        end
+      end
+    end
+  end
+  return resolved
+end
+
 local function book_marks(ctx, records)
+  local sort_keys = book_sort_keys(records)
   local marks = {}
   for _, record in ipairs(records) do
     for _, mark in ipairs(record.marks or {}) do
@@ -1378,8 +1420,13 @@ local function book_marks(ctx, records)
           xrefs[#xrefs + 1] = { kind = kind, levels = xref.levels }
         end
       end
+      local resolved = sort_keys[levels_key(mark.levels)]
       marks[#marks + 1] = {
         levels = mark.levels,
+        -- The book's key for this entry, not this mark's own: a term marked
+        -- in three chapters with a sort key written in one of them files
+        -- under that key everywhere, exactly as it does inside one document.
+        sort = resolved and resolved.sort or nil,
         xrefs = xrefs,
         anchor = mark.anchor,
         -- A mark in the chapter holding the index links within its own page,

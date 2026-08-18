@@ -466,13 +466,13 @@ MANIFEST
 read -r -d '' BOOK_HTML_INDEX <<'MANIFEST' || true
 0	Alpha	index.html#qi-mark-2
 0	Beta	one.html#qi-mark-1
+0	Shared Term	index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html#qi-mark-1
 0	Delta		see-link Alpha
 0	Epsilon		see-plain No Such Entry
 0	Gamma	one.html#gamma-anchor
 0	Invisible Entry	index.html#qi-mark-3
 0	Kappa	
 1	Sub Level	one.html#qi-mark-3
-0	Shared Term	index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html#qi-mark-1
 0	Zeta	#qi-mark-1
 MANIFEST
 
@@ -531,16 +531,22 @@ WARN_STORE_UNREADABLE='could not be read and were ignored'
 WARN_STORE_UNWRITABLE='could not record index marks for'
 WARN_MARKER_NOT_LAST='chapter(s) come after it'
 WARN_MARKER_SECOND='comes first in book order and carries one too'
+# One entry given two sort keys in two chapters (M06-AC4). Only the pass that
+# has BOTH chapters' records can see it, so it is reported once in two renders.
+WARN_BOOK_SORT_CONFLICT='one entry cannot file in two places, so the first in book order wins'
 
 # ---------------------------------------------------------------------------
 # Manifest 8 — the ordering fixture's index (M05 hardening), in the same href
 # format as manifest 5. Derived by hand from examples/book-order: the marker
 # is in index.qmd, `Early` is marked there and `Late` in "later chapter.qmd",
-# collation puts Early before Late, and after two renders the later chapter's
-# stored record contributes its locator. The space in the filename is written
+# collation puts Early before Late; `Contested` is marked in both chapters
+# with a different sort key in each, and the first in book order (Aaa) wins,
+# which files it ahead of both. After two renders the later chapter's stored
+# record contributes its locators. The space in the filename is written
 # raw, exactly as Quarto writes its own links to that page.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_ORDER_INDEX <<'MANIFEST' || true
+0	Contested	#qi-mark-2 later chapter.html#qi-mark-2
 0	Early	#qi-mark-1
 0	Late	later chapter.html#qi-mark-1
 MANIFEST
@@ -3260,6 +3266,16 @@ check_warning_count "$WORK/book-order.log" "$WARN_MARKER_SECOND" 2 \
   "M05 hardening"
 pass "M05 hardening: a marker that is not last, and a second marker chapter, are each reported once per render"
 
+# M06-AC4 (c), the half a single document cannot probe: each chapter renders in
+# its own process, so a term sorted one way in one chapter and another way in
+# a second is invisible to the in-document collect pass. Reported ONCE across
+# the two renders, and derived rather than observed: on the first render the
+# marker chapter runs before the later chapter and the store holds no record
+# of it, so only the second render has both keys to compare.
+check_warning_count "$WORK/book-order.log" "$WARN_BOOK_SORT_CONFLICT" 1 \
+  "M06-AC4 (book)"
+pass "M06-AC4: one entry sorted two ways in two chapters is reported once, and the first chapter in book order wins"
+
 printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
 HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$ORDER_OUT" \
   "$WORK/order-index.txt" <<'PY'
@@ -3558,6 +3574,49 @@ if bad:
 print(f'ok   M06-AC4: none of the {len(patterns)} sort-key reports fires on '
       f'examples/sortkey.qmd, whose sort keys are all well formed')
 CONTROLPY
+
+# ---------------------------------------------------------------------------
+# M06-AC5 — the book's sort key is written in a chapter other than the one
+# holding the marker. Asserted by construction against the fixture rather than
+# stated in a comment: if the key were ever moved into the marker chapter, the
+# aggregated-index manifest would still pass while proving nothing about
+# carrying a sort key ACROSS chapters, which is the criterion.
+# ---------------------------------------------------------------------------
+python3 - examples/book <<'BOOKSORTPY'
+import os, re, sys
+root = sys.argv[1]
+declaring, marker_chapters = [], []
+for dirpath, _dirs, files in os.walk(root):
+    if '_book' in dirpath or '_extensions' in dirpath or '.quarto' in dirpath:
+        continue
+    for name in sorted(files):
+        if not name.endswith('.qmd'):
+            continue
+        path = os.path.join(dirpath, name)
+        text = open(path, encoding='utf-8').read()
+        rel = os.path.relpath(path, root)
+        if re.search(r'\bsort="', text):
+            declaring.append(rel)
+        if 'qi-index-here' in text:
+            marker_chapters.append(rel)
+if not declaring:
+    print('FAIL: M06-AC5: no chapter of the book fixture declares a sort key',
+          file=sys.stderr)
+    sys.exit(1)
+if not marker_chapters:
+    print('FAIL: M06-AC5: the book fixture has no marker chapter',
+          file=sys.stderr)
+    sys.exit(1)
+overlap = sorted(set(declaring) & set(marker_chapters))
+if overlap:
+    print(f'FAIL: M06-AC5: sort key(s) declared in the marker chapter '
+          f'{overlap}; the criterion is about carrying one across chapters',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC5: the book\'s sort key(s) are declared in {declaring} and '
+      f'the marker is in {marker_chapters}, so the aggregated order above '
+      f'crossed a chapter boundary')
+BOOKSORTPY
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.

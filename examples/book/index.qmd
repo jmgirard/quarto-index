@@ -1,7 +1,7 @@
 # Opening
 
 The first chapter contributes the first locator for a term three chapters
-share: [Shared Term]{.index} appears here.
+share: [Shared Term]{.index sort="Common Term"} appears here.
 
 A plain mark whose entry another chapter's cross-reference points at:
 [Alpha]{.index}.

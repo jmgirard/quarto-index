@@ -141,6 +141,7 @@ what prints; the sort key carried through the book sidecar record with
 
 ## Work log
 
+- 2026-08-18: review pass 3 — fresh evidence for every criterion (118 checks, exit 0; byte-diff clean; cairn_validate clean). AC1/AC2/AC3/AC5/AC7 ticked. F1 fixed during the pass (conflict now reports once per rival key). F2-F10 presented at the gate; F2 falsifies a pinned README claim and is the maintainer's load-bearing call.
 - 2026-08-18: T14 done — a level key equal to its own printed text no longer registers, so the README's documented skip-two-levels workaround stops discarding a later real key and stops reporting an entry as already sorted as itself; the in-document conflict now reports once per printed level path. Both proved discriminating by reversion: with F1 reverted `Mmm` loses `Qqq` entirely and draws the nonsense report, with F2 reverted one mistake draws two reports. `examples/sortkey-paths.qmd` gained the self-declaration case and `examples/sortkey-misuse.qmd` a third mark repeating the rival key. Suite 103 -> 104 checks.
 - 2026-08-18: T14 records — the two README sentences narrowed to what holds in both back-ends (HTML has no level ceiling, so it honors a key LaTeX drops), and the plain-key claim is now carried by a check comparing the PDF and HTML manifests row for row rather than by assertion alone. Manifest 1n's derivation named the wrong key order and was mangled by T13's reflow; the book check's comment claimed a discrimination the version-3 record shape makes structurally impossible; `PATHSPY` split on a quoted `!` and exempted its own last row. All corrected.
 - 2026-08-18: implement gate (return 2) — user chose to close AC4's recorded-text gap by recording the missing message rather than amending the criterion to bind the filter's literals by procedure, holding the criteria set where it has been through two returns. No acceptance criterion changed; the amendment return is discharged without an amendment.
@@ -276,169 +277,126 @@ level path rather than once per mark.
 
 **PR:** https://github.com/jmgirard/quarto-index/pull/6
 
-Second review pass, 2026-08-17. All evidence below is from a fresh
-`tests/run-tests.sh --self-test` run at the branch head (exit 0, **117
-checks**, against 89 at the merge base), plus `tests/byte-diff.sh` and
-`cairn_validate` runs of the same date.
+Third review pass, 2026-08-18, at branch head. Evidence from a fresh
+`tests/run-tests.sh --self-test` (exit 0, **118 checks**, against 89 at the
+merge base), `tests/byte-diff.sh`, and `cairn_validate` of the same date. One
+earlier suite run died on a Quarto/Deno segmentation fault while three
+reviewer subagents were rendering concurrently; the clean run above is the
+record, and the fault was in Quarto's runtime, not in a check.
 
-**Outcome: returned to `in-progress`** on one load-bearing defect (finding 1
-below), with an amendment return riding beside it on AC4's recorded-text
-clause. Criteria evidence is recorded first; the findings and their
-dispositions follow.
+**AC1 — PDF order and nesting. [verified]** Six checks. The manifest names
+every one of the 7 sort keys the fixture declares and no others; the compiled
+PDF "prints all 8 index entries in the order and nesting their sort keys
+derive"; the twin proves the order is the keys' doing ("removing the sort keys
+moves every one of the 6 top-level entries"); the level-path fixture emits
+"all 11 entries as the manifest derives them, each of the 6 top-level terms
+under one key whether or not a sub-entry follows it".
 
-**AC1 — PDF order and nesting.** Four checks, plus two the level-path fix
-added. The manifest is verified against the fixture by construction ("names
-every one of the 7 sort keys examples/sortkey.qmd declares, and no others");
-the compiled PDF "prints all 8 index entries in the order and nesting their
-sort keys derive", read from `pdftotext -bbox-layout` word positions; the twin
-proves the ordering is the keys' doing ("removing the sort keys moves every one
-of the 6 top-level entries"). The new level-path fixture emits "all 9 entries
-as the manifest derives them, each of the 5 top-level terms under one key
-whether or not a sub-entry follows it". Verified.
+**AC2 — HTML order at every depth. [verified]** Six checks. The generated
+index matches all 8 manifest rows in order and the twin's likewise; the two
+manifests disagree at every position at both depths; the level-path index
+matches all 12 rows in order and all 11 links resolve.
 
-**AC2 — HTML order at every depth.** Four checks plus two. The generated index
-"matches all 8 manifest rows, in order" and the twin's likewise; the two
-manifests are asserted to disagree at every position ("the sort keys move all
-8 entries, at every one of the 2 depths the index nests to"). The level-path
-index "matches all 9 manifest rows, in order" and all its links resolve.
-Verified.
+**AC3 — every printable ASCII character as a sort key, three formats.
+[verified]** Five checks over a domain derived by construction from the same
+0x21-0x7E range the entry-key probe uses. makeindex accepts all 94; all 94
+carry a sort field split at the back-end's own separator and the index tool
+printed every one as its text alone; all 94 reach the HTML index and it
+carries no others; gfm is identical to the sort-stripped twin once `data-sort`
+is removed.
 
-**AC3 — every printable ASCII character as a sort key, three formats.** Five
-checks. The domain is derived by construction from the same 0x21-0x7E range
-the entry-key probe uses ("covers all 94 printable ASCII characters"). LaTeX:
-"all 94 entries accepted" by makeindex, and — new this pass — "all 94 entries
-carry a sort field split at the separator the back-end writes, and the index
-tool printed every one of them as its text alone", which is what the
-acceptance count alone could not tell from no sort field at all. HTML: "all 94
-sort-keyed entries reach the HTML index, and it carries no others". gfm: "all
-94 sort keys change nothing but the one attribute carrying each". Verified.
+**AC4 — the three reports. Held pending the gate disposition.** All three fire
+in `latex` and in `gfm` with the texts this file's Decisions records, the
+fourth (book) text now recorded too; the conflict count of 2 over four marks
+discriminates all three candidate reporting rules; each report has a
+`warn_discrimination` proof and a control render. The promise is met as
+written. The tick is held because finding F2 below may change the conflict
+semantics.
 
-**AC4 — the three reports. NOT VERIFIED (amendment return).** The three
-single-document reports fire exactly once each in `latex` and in `gfm`, each
-is proved discriminating by `warn_discrimination`, and the control confirms
-none fires on the well-formed fixture. The cross-chapter half now asserts
-which render finds the conflict (0 on the first, 1 on the second) and has its
-own discrimination proof. But the criterion promises the diagnostics fire
-"with the message text recorded in this milestone's Decisions section", and
-the filter emits FOUR sort-related `warn()` literals against THREE recorded
-there — the missing one being `index entry "%s" is sorted as "%s" in %s and
-as "%s" in %s; one entry cannot file in two places, so the first in book order
-wins`, which is precisely the text AC4(c)'s "across two chapters of one book"
-probe asserts. The work is right; the criterion assumed (c) had one text. See
-the amendment return below.
+**AC5 — book aggregation across chapters. [verified]** The aggregated index
+matches all 10 manifest rows in order with `Shared Term` under its
+cross-chapter key, and the crossing is asserted by construction.
 
-**AC5 — book aggregation across chapters.** The aggregated book index matches
-all 10 manifest rows in order, with `Shared Term` filed under its
-cross-chapter sort key, and that the key crosses a chapter boundary is
-asserted by construction ("the book's sort key(s) are declared in
-['index.qmd'] and the marker is in ['last.qmd']"). Verified.
+**AC6 — README. NOT VERIFIED.** The presence checks pass ("all 13 documented
+sort-key behaviors appear verbatim"), and presence is what the criterion
+promises — but F2 below shows one pinned sentence is false and F7/F10 show
+two more are incomplete or imprecise, so the tick is withheld until the
+wording is repaired and the evidence re-gathered.
 
-**AC6 — README. NOT VERIFIED.** The suite's presence checks pass ("all 13
-documented sort-key behaviors appear verbatim in README.md"; "all 5 stale
-pass-through sentences are gone"; "all 7 HTML claims appear"; "all 9
-normative syntax exemplars appear verbatim"). The criterion's promise is
-presence, and presence holds — but two of the sentences it pins are false
-(findings 1 and 4), and repairing them changes the text this evidence is
-about, so the tick is withheld until the evidence is re-gathered against the
-corrected wording.
-
-**AC7 — verify slot and byte-identity.** `tests/run-tests.sh --self-test`
-exit 0, 117 checks. `tests/byte-diff.sh`: "Every merge-base fixture renders
-byte-identically" across the 13 top-level fixtures it enumerates via
-`git ls-tree`. Verified.
+**AC7 — verify slot and byte-identity. [verified]** `--self-test` exit 0 at
+118 checks; `tests/byte-diff.sh` reports every one of the 13 merge-base
+fixtures byte-identical.
 
 **Consistency gate.** `cairn_validate` — all checks passed, one advisory
-(`sizing`: 13 tasks, past the >10 tripwire, because four repair tasks were
-added after the first return; they repair the same deliverable rather than
-add scope). `cairn_impact` not run: the DESIGN diff adds and corrects no
-numbered principle. Profile `generic` names no toolchain checks, so that half
-of the gate is a clean no-op.
+(`sizing`: 14 tasks). `cairn_impact` not run: the DESIGN diff changes no
+numbered principle. Profile `generic` names no toolchain checks.
 
-### Review findings (three-lens fan-out, second pass, 2026-08-17)
+### Review findings (three-lens fan-out, third pass, 2026-08-18)
 
-**[O] diff-bug — 10 findings plus 3 suspected.** **[S] blame-history — no
-regressions**; it corroborated that the level-path rework and the store bump
-match their stated rationale rather than relabelling old behavior, and raised
-no item this pass had not already dispositioned. **[S] prior-review-record —
-no reintroductions**; the GitHub inline-comment probe returned empty, so the
-per-PR thread walk was skipped and archived `## Review` sections plus the
-ROADMAP candidate rows were the evidence base.
+**[O] diff-bug — 10 findings.** **[S] blame-history — no regressions**, with
+one behavioral consequence of T14 raised and fixed during the pass (below).
+**[S] prior-review-record — no reintroductions**; every finding from pass 2 is
+fixed with a discriminating test, routed to a candidate row, or correctly
+rejected. The GitHub inline-comment probe returned empty again.
 
-Dispositions:
+- **F1 (fixed during the pass).** T14 suppressed every further conflict at a
+  level path once one was reported, so a third mark naming a DIFFERENT rival
+  key drew nothing and the author learned of it only after fixing the first
+  and rendering again. Suppression is now per rival key; the misuse fixture
+  carries keys Aaa, Bbb, Bbb, Ccc and the expected count of 2 fails under
+  once-per-mark (3) and once-per-level-path (1).
+- **F2 (load-bearing, for the maintainer).** A key equal to its level's own
+  printed text registers nothing even when it rivals a real key, so it neither
+  wins nor reports. Reproduced: `entry="Bbb" sort="Bbb"` followed by
+  `entry="Bbb" sort="Yyy"` emits `\index{Yyy@Bbb}` — the SECOND key wins,
+  silently, falsifying README:218 "the first one in the document wins", which
+  `README_SORT_CLAIMS` pins. Written the other way round, an explicit
+  `sort="Aaa"` on `entry="Aaa"` is discarded with no diagnostic. The T14 skip
+  is what makes the documented two-adjacent-skipped-levels workaround safe,
+  but the rival case was never carved out of it.
+- **F3.** `book_sort_keys` has no suppression at all, so the book side
+  reports once per conflicting CHAPTER where the single-document side now
+  reports once per rival key; three chapters naming one rival key draw two
+  warnings for one thing to fix. Read-verified in the code; the suite cannot
+  catch it, since `examples/book-order/` has only two chapters.
+- **F4.** Manifest 8's comment still claims the second mark shows per-entry
+  rather than per-mark reporting — the claim pass 2's F5 fix removed from the
+  check itself. Fixed in one of the two places it lives.
+- **F5.** Manifest 1r's derivation says "the four top-level entries" where six
+  are listed, never mentions `Mmm` (the row T14 added), and its "except
+  `Literal`, which has none" sentence is false twice. Under the ORACLE RULE
+  the comment is the derivation, so two rows are unbacked.
+- **F6.** The plain-key cross-back-end check asserts a property manifest 1n's
+  own header says it borrowed ("the same row order serves both here"), so
+  that check cannot fail independently. The property does hold — confirmed
+  against makeindex on plain keys — but the check's comment overclaims.
+- **F7.** Three records state a reporting rule the code no longer has: the
+  comment above `book_sort_keys`, this file's Decisions entry for the
+  cross-chapter report, and DESIGN's phrasing.
+- **F8.** The T14 rule is undocumented: the README tells an author to write a
+  level's own printed text to skip past it but never says such a key
+  registers nothing, so with F2 the outcome of `sort="Bbb"` on `entry="Bbb"`
+  cannot be predicted from the documentation.
+- **F9.** "the extra sort levels were ignored" fires when the extra level is
+  EMPTY. Reproduced: `sort="Zed!"` on a one-level entry warns, though an
+  empty sort level is the documented "leave this level alone" and nothing was
+  ignored. The guard counts parsed levels rather than declared ones.
+- **F10.** README's "Three things are reported, in every output format" is
+  imprecise: the fourth text fires only in an HTML book.
+- **F11 (confirmed open, already a candidate row).** Level paths keyed on
+  unclamped levels while LaTeX prints clamped ones. README now documents the
+  consequence correctly, so this is a scoped limitation.
 
-- **F1 (floor return).** `register_sort` (index.lua:330-348) registers a
-  declared level key even when it equals that level's own printed text, so a
-  self-declaration occupies the level path and, being first in document
-  order, beats a genuine later key. Reproduced: `entry="One!Two!Three"
-  sort="One!Two!Zed"` beside `entry="One" sort="Uno"` emits
-  `\index{One!Two!Zed@Three}` and `\index{One}` — `Uno` discarded — with the
-  report `index entry in entry="One" is already sorted as "One"`, which reads
-  as nonsense. This is what an author gets for following the workaround
-  README:196-199 prescribes for two adjacent skipped levels, added in T13.
-- **F2 (fix on return).** The in-document conflict fires once per MARK where
-  the book side was fixed to fire once per printed level path. Reproduced:
-  four marks of one term, three of them agreeing, draw three byte-identical
-  warnings for one mistake. The suite's exact count passes only because the
-  misuse fixture happens to carry two conflicting marks.
-- **F3 (fix on return).** Two pinned normative README sentences are false for
-  the HTML back-end, which has no level ceiling. Reproduced:
-  `entry="w!x!y!aaa" sort="w!x!y!Zzz"` beside `entry="w!x!y!bbb"` orders
-  `bbb, aaa` in HTML — the key honored — and `w!x!y, aaa` before
-  `w!x!y, bbb` in LaTeX, the key dropped. `Zzz` is plain letters, so
-  "Sort keys of plain letters and digits order the same way everywhere"
-  (README:227-228) is false, and "goes with that level" (README:72-75) is
-  true only under the LaTeX-scoped heading it sits beneath.
-- **F4 (fix on return).** Manifest 1n's derivation comment orders the keys
-  "Hague, mathematicians ..., Manet" while the manifest it derives lists
-  `Édouard Manet` first. Under the suite's ORACLE RULE the comment is the
-  derivation, so the manifest is right only by accident of the prose being
-  wrong. The same block was reflowed badly by T13.
-- **F5 (fix on return).** The book-conflict check's comment claims the
-  second conflicting mark discriminates per-path from per-mark reporting;
-  under the version-3 record shape a chapter contributes one map entry per
-  path however many marks carry it, so per-mark reporting is structurally
-  impossible there and the comment claims more than the check asserts.
-- **F6 (fix on return).** `PATHSPY`'s one-key-per-term property splits an
-  entry on a bare `!` without honoring makeindex quoting, so the
-  `"!Zed@Literal` row files under a junk key and sits outside the property
-  the block exists to assert.
-- **F7 (fix on return).** index.lua:725-726 still says ordering is
-  best-effort "until sort keys land" — the same stale class T13 fixed in
-  DESIGN.md and missed here.
-- **F8 (fix on return, records).** The cross-chapter conflict message is not
-  recorded in this file's Decisions section, which is what AC4's amendment
-  return below is about.
-- **F9 (follow-up).** Level paths are keyed on unclamped levels while the
-  LaTeX back-end prints clamped ones, so a 4-level entry and a 3-level entry
-  spelling the folded form collide under two makeindex keys with no report.
-  The printed-text collision itself predates this branch; sort keys widen it.
-  Candidate row.
-- **F10 (reject, out of scope).** The AC4 control render is implied by
-  earlier no-warning assertions on the same logs. Redundant, not absent —
-  AC4 asks for a control, and one exists.
-- **F11, F12 (suspected, follow-up).** The sidecar's `sorts` map is written
-  in `pairs` order, so an identical chapter's record is byte-unstable
-  (read as a map, so no correctness effect). `clamp_sort` truncates where
-  `clamp_levels` joins — documented and intentional, but see F3 for the half
-  that was not true.
-- **F13 (reject, pre-existing).** The suite cannot run from a clean checkout
-  (a check reads `examples/control.tex` before anything renders it). Already
-  a standing ROADMAP row from M04 review F9.
+**Verified clean by the [O] lens:** `level_path`/`levels_key` injectivity,
+hand-derivation of manifests 1q and 1r against all 11 marks, empty first
+levels, `!`- and `@`-bearing level text, one-level and four-level entries,
+`index_argument`'s comparison against the aligned level, the single unquoted
+`@`, `number_entries`' comparator totality, `build_entry_tree`'s first-wins
+safety, the book store's declared-vs-resolved distinction, `valid_record`'s
+shape check and the stale-vs-unreadable split, and IP1/IP2 on the gfm twin.
 
-**Verified clean by the [O] lens:** the `@` separator quoting (exactly one
-unquoted `@` per level, author `@` and `!` quoted), `number_entries`'
-comparator totality, node identity in `build_entry_tree`, the shared
-`derive_levels` across the three passes, the store round-trip through
-`pandoc.json` for empty, numeric-string-keyed and `!`-bearing maps, empty
-levels with sort keys, byte identity for documents writing no sort key, and
-the ORACLE RULE (no manifest read back from a render; F4 is a wrong hand
-derivation, not a derived-from-output one).
+**Defect returns:** two so far. Whether F2 makes this a third is the
+maintainer's judgment at the gate.
 
-**Defect returns:** two — the first pass's AC4/F1 return, and this one. The
-third would trigger the descope-or-park disposition; this is not it, and the
-same criterion is not failing twice by the same shape (the first return was
-AC4 failing on differing level paths; this one is a user-facing defect in a
-documented workaround).
-
-**Amendment returns:** two — AC3 at implement time before the first review,
-and AC4's recorded-text clause here.
+**Amendment returns:** two — AC3 at implement time, and AC4's recorded-text
+clause at pass 2, discharged without an amendment.

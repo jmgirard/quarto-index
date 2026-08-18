@@ -70,7 +70,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 
 ## Tasks
 
-- [ ] T1: Add `examples/sortkey-clamp.qmd` (both pairs, rival keys) and
+- [x] T1: Add `examples/sortkey-clamp.qmd` (both pairs, rival keys) and
       `examples/sortkey-clamp-twin.qmd` (shared keys, each differing from the
       entries' third-level printed text — state that constraint in the fixture
       prose); add the AC1 and AC3 `.tex` checks to `tests/run-tests.sh`, failing.
@@ -93,6 +93,8 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 - 2026-08-18: criteria audit ran in FULL mode (user-facing tier), fresh-context [O] reader; it confirmed the premise by building the fixture and rendering it (two makeindex keys, one printed path, nothing reported) and returned AC1 probing only the one-side-clamped shape (both-clamped pair added), AC3 holding only while the shared key differs from the third-level printed text (constraint stated), and every criterion stopping at the .tex though the symptom is a doubled entry in the built index (AC3 extended to the compiled PDF under GP6, T4 added); AC2 passed every question unchanged.
 - 2026-08-18: plan chose reporting the collision over keying the sort registry on clamped level paths, because the registry is format-neutral and filled before the back-end branch while the three-level fold is a makeindex property the HTML back-end does not share; falsified by a case where the collision is mechanically resolvable — the two entries genuinely being one entry — rather than an authoring mistake only the author can settle.
 - 2026-08-18: implement started on branch m09-sortkey-clamp.
+
+- 2026-08-18: T1 — both fixtures added and the AC1/AC3 `.tex` checks written, with a by-construction check tying the twin to the fixture (same entries, one shared key per pair, each pair folding to one printed path, each shared key differing from both its entries' third level). The LaTeX render confirms the defect as planned: the fixture emits `alpha!beta!Zed@gamma, delta` and `alpha!beta!Ada@gamma, delta`, plus `mu!nu!Wye@xi, omicron, pi` and `mu!nu!Vee@xi, omicron, pi` — two keys per printed path — and the AC1 count check reports 0 occurrences of the report against 2 wanted. The twin already emits one key per pair, so its `.tex` check passes ahead of the fix.
 
 ## Decisions
 

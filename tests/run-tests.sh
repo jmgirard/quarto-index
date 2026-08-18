@@ -4988,6 +4988,173 @@ print('ok   M07-AC2: the below-`a` and above-`z` symbol entries are adjacent, '
 ADJPY
 
 # ---------------------------------------------------------------------------
+# M09 — two entries that print in one place and file under two keys.
+#
+# The index tool stores three levels and this back-end folds anything deeper
+# into the third rather than lose it, while a sort key is declared against the
+# level path the author wrote, which the fold does not change. Two entries
+# whose paths differ before the fold and agree after it therefore reach the
+# index tool as two keys under one printed path: it stores the entry twice and
+# prints it twice, in two places, identically. The fixture writes that
+# collision twice — once with one side folded, once with both — and the twin
+# writes the same entries with one shared key per pair, which is the same
+# document without the mistake.
+# ---------------------------------------------------------------------------
+WARN_CLAMP_SPLIT='file under more than one sort key'
+
+# The two fixtures are asserted against each other BY CONSTRUCTION, because
+# every check below reads them as the same entries under different keys. So is
+# the twin's stated constraint — each shared key differing from the third-level
+# printed text of both entries carrying it: a shared key equal to one entry's
+# third level emits no sort field for that entry, which splits the pair again
+# and would make the twin's checks pass for the wrong reason. And so is the
+# collision itself: each rival pair must fold to ONE printed level path, or the
+# fixture has stopped exercising anything.
+python3 - examples/sortkey-clamp.qmd examples/sortkey-clamp-twin.qmd <<'CLAMPTWINPY'
+import re, sys
+
+MAX_LEVELS = 3
+
+
+def marks(path):
+    src = open(path, encoding='utf-8').read()
+    out = []
+    for m in re.finditer(r'\{\.index ([^}]*)\}', src):
+        attrs = dict(re.findall(r'(\w+)="([^"]*)"', m.group(1)))
+        out.append((attrs.get('entry'), attrs.get('sort')))
+    return out
+
+
+def levels(value):
+    # No fixture entry or key here contains the doubled `!!` that writes a
+    # literal `!`, which this split would not honor; asserted rather than
+    # assumed, since a later edit could add one.
+    if '!!' in value:
+        print(f'FAIL: M09: {value!r} carries a literal `!`, which this '
+              f'derivation does not read', file=sys.stderr)
+        sys.exit(1)
+    return value.split('!')
+
+
+def folded(entry):
+    lv = levels(entry)
+    if len(lv) <= MAX_LEVELS:
+        return lv
+    return lv[:MAX_LEVELS - 1] + [', '.join(lv[MAX_LEVELS - 1:])]
+
+
+rival, twin = marks(sys.argv[1]), marks(sys.argv[2])
+if len(rival) != 4 or len(twin) != 4:
+    print(f'FAIL: M09: the fixtures write {len(rival)} and {len(twin)} index '
+          f'marks; both are two pairs', file=sys.stderr)
+    sys.exit(1)
+if [e for e, _ in rival] != [e for e, _ in twin]:
+    print('FAIL: M09: the twin does not index the same entries, in the same '
+          'order, as the fixture:', file=sys.stderr)
+    for a, b in zip(rival, twin):
+        if a[0] != b[0]:
+            print(f'  {a[0]!r} against {b[0]!r}', file=sys.stderr)
+    sys.exit(1)
+
+pairs = [(0, 1), (2, 3)]
+for i, j in pairs:
+    if folded(rival[i][0]) != folded(rival[j][0]):
+        print(f'FAIL: M09: {rival[i][0]!r} and {rival[j][0]!r} do not fold to '
+              f'one printed level path, so this pair is not the collision',
+              file=sys.stderr)
+        sys.exit(1)
+    if levels(rival[i][0]) == levels(rival[j][0]):
+        print(f'FAIL: M09: {rival[i][0]!r} and {rival[j][0]!r} are the same '
+              f'entry before the fold; the collision needs two', file=sys.stderr)
+        sys.exit(1)
+if folded(rival[0][0]) == folded(rival[2][0]):
+    print('FAIL: M09: both pairs fold to the same printed path, so the two '
+          'reports below cannot be told apart', file=sys.stderr)
+    sys.exit(1)
+# One side folded in the first pair, both sides in the second: the two shapes
+# the criteria name, asserted of the fixture rather than trusted to its prose.
+shapes = [sorted(len(levels(rival[i][0])) > MAX_LEVELS for i in pair)
+          for pair in pairs]
+if shapes != [[False, True], [True, True]]:
+    print(f'FAIL: M09: the fixture no longer writes one one-side-folded pair '
+          f'and one both-sides-folded pair: {shapes}', file=sys.stderr)
+    sys.exit(1)
+
+if len({s for _, s in rival}) != 4:
+    print(f'FAIL: M09: the fixture must give all four entries different sort '
+          f'keys: {[s for _, s in rival]}', file=sys.stderr)
+    sys.exit(1)
+for i, j in pairs:
+    if twin[i][1] != twin[j][1]:
+        print(f'FAIL: M09: the twin pair {twin[i][1]!r}/{twin[j][1]!r} does '
+              f'not share one sort key', file=sys.stderr)
+        sys.exit(1)
+if twin[0][1] == twin[2][1]:
+    print('FAIL: M09: the twin gives both pairs the same key, so its two '
+          'entries would contest one printed path', file=sys.stderr)
+    sys.exit(1)
+for entry, key in twin:
+    third_key = levels(key)[MAX_LEVELS - 1]
+    third_level = levels(entry)[MAX_LEVELS - 1]
+    if third_key == third_level:
+        print(f'FAIL: M09: the twin key {key!r} names the third level of '
+              f'{entry!r} verbatim, so that entry emits no sort field and the '
+              f'pair files apart again', file=sys.stderr)
+        sys.exit(1)
+print('ok   M09: the two fixtures write the same four entries, the first '
+      'under four rival keys and the twin under one key per pair, each pair '
+      'folding to one printed level path and each twin key differing from '
+      'both its entries\' third level')
+CLAMPTWINPY
+
+quarto render examples/sortkey-clamp.qmd --to latex \
+  > "$WORK/sortkey-clamp-latex.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-clamp-latex.log" >&2; fail "M09-AC1: sortkey-clamp.qmd failed to render to LaTeX"; }
+# Exactly one report per PAIR, naming that pair's two keys and the printed
+# path they contest. The whole-message checks are what make the count mean
+# what it says: two reports about one pair, or one naming the wrong keys,
+# would satisfy the count alone.
+check_warning_count "$WORK/sortkey-clamp-latex.log" "$WARN_CLAMP_SPLIT" 2 \
+  "M09-AC1"
+check_warning_count "$WORK/sortkey-clamp-latex.log" \
+  'index entries printed as "alpha!beta!gamma, delta" file under more than one sort key ("alpha!beta!Ada" and "alpha!beta!Zed")' \
+  1 "M09-AC1"
+check_warning_count "$WORK/sortkey-clamp-latex.log" \
+  'index entries printed as "mu!nu!xi, omicron, pi" file under more than one sort key ("mu!nu!Vee" and "mu!nu!Wye")' \
+  1 "M09-AC1"
+pass "M09-AC1: each pair of entries contesting one printed level path is reported once, naming both sort keys and the path"
+
+# ---------------------------------------------------------------------------
+# M09-AC3 — the same entries with one shared key per pair: nothing to report,
+# one index-tool key per pair, and (below, with the PDF) one printed entry.
+# ---------------------------------------------------------------------------
+for fmt in latex html; do
+  quarto render examples/sortkey-clamp-twin.qmd --to "$fmt" \
+    > "$WORK/sortkey-clamp-twin-$fmt.log" 2>&1 \
+    || { tail -40 "$WORK/sortkey-clamp-twin-$fmt.log" >&2; fail "M09-AC3: sortkey-clamp-twin.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/sortkey-clamp-twin-$fmt.log" "$WARN_CLAMP_SPLIT" \
+    0 "M09-AC3 ($fmt)"
+done
+# Hand-derived from the twin: each pair's two marks emit the same argument —
+# the pair's printed level path, folded, filed under the one key both carry —
+# so the tool receives one key per pair and two locators for it.
+python3 - examples/sortkey-clamp-twin.tex <<'CLAMPTWINTEXPY'
+import re, sys
+from collections import Counter
+tex = open(sys.argv[1], encoding='utf-8').read()
+args = Counter(re.findall(r'\\index\{(.*?)\}', tex))
+want = Counter({'alpha!beta!Kay@gamma, delta': 2,
+                'mu!nu!Jay@xi, omicron, pi': 2})
+if args != want:
+    print('FAIL: M09-AC3: the twin does not write one index-tool key per '
+          f'pair.\n  expected {dict(want)}\n  got      {dict(args)}',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M09-AC3: each twin pair reaches the index tool as one key, '
+      'carrying both of its marks')
+CLAMPTWINTEXPY
+
+# ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--self-test" ]; then

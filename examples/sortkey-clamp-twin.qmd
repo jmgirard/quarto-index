@@ -1,0 +1,34 @@
+---
+title: "quarto-index sort-key level-fold twin"
+from: markdown-smart
+filters:
+  - index
+---
+
+# The same entries, one sort key per pair
+
+This is `sortkey-clamp.qmd` with the two entries of each pair given one shared
+sort key instead of two rival ones. The entries, their level paths and their
+printed text are unchanged; only the keys are. Written this way the index tool
+receives one key per pair, files each pair as one entry, and prints it once.
+
+Each shared key is chosen to differ from the third-level printed text of both
+entries it is written on. That constraint is the fixture's, not a rule an
+author has to remember: the back-end emits a sort field only where the key
+differs from the level it was written for, so a key equal to one entry's third
+level and not the other's would leave the pair filing apart again — which is
+the very collision this twin exists to be free of.
+
+## One side folded, the other written folded
+
+`Kay` is neither `gamma` nor `gamma, delta`:
+
+[Delta]{.index entry="alpha!beta!gamma!delta" sort="alpha!beta!Kay"} and
+[Gamma, delta]{.index entry="alpha!beta!gamma, delta" sort="alpha!beta!Kay"}.
+
+## Both sides folded
+
+`Jay` is neither `xi` nor `xi, omicron`:
+
+[Pi]{.index entry="mu!nu!xi!omicron!pi" sort="mu!nu!Jay"} and
+[Omicron, pi]{.index entry="mu!nu!xi, omicron!pi" sort="mu!nu!Jay"}.

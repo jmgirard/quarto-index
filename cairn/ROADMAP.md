@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-17 (M06 planned; sort-key candidate row promoted, l
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M06 | Sort keys | in-progress | — | normal | milestones/M06-sort-keys.md |
+| M06 | Sort keys | review | — | normal | milestones/M06-sort-keys.md |
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
 | M05 | Multi-chapter book support | done | M04 | normal | milestones/archive/M05-book-support.md |
 | M03 | HTML index back-end | done | M02 | normal | milestones/archive/M03-html-backend.md |
@@ -53,4 +53,6 @@ _Last hygiene check: 2026-08-17 (M06 planned; sort-key candidate row promoted, l
 - Headings consumed by Quarto constructs (callout titles, tabsets) bypass the after-heading anchor relocation; no TOC copy today, so no defect — the invariant is unpinned against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8
 - Locator hrefs into chapter pages cannot be percent-escaped at the filter layer: Quarto normalizes a link target either way (verified — the filter emitted `later%20chapter.html`, output carried `later chapter.html`, matching Quarto's own `./later chapter.html`), so a chapter filename containing `#` or `?` yields a broken locator — added 2026-08-17 — M05 review F11
 - The per-chapter store is never pruned: a renamed or removed chapter leaves its record forever, harmless today because reads are filtered by the current chapter list and validated against a store version — added 2026-08-17 — M05 review F4/F13
+- Sort-key level paths are keyed on unclamped levels while the LaTeX back-end prints clamped ones, so a 4-level entry and a 3-level entry spelling the folded form collide under two makeindex keys with no report; the printed-text collision itself predates sort keys — added 2026-08-18 — M06 review pass 2 F9
+- The book sidecar writes its declared-key map in `pairs` order, so an identical chapter's record is byte-unstable between renders; read as a map, so no ordering effect — added 2026-08-18 — M06 review pass 2 F11
 - A book page rendered but absent from `book.render` (via `project: render:`) gets its own per-chapter index rather than contributing to the book's — added 2026-08-17 — M05 review F13

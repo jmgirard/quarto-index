@@ -333,15 +333,26 @@ local function register_sort(levels, declared, context)
   end
   for i = 1, #levels do
     local key = declared[i]
-    if key then
+    -- A key equal to the level's own printed text declares nothing: it asks
+    -- for exactly what the absence of a key already gives. Registering it
+    -- anyway would let it occupy the level path and, being first in document
+    -- order, beat a real key written later — which is what an author gets for
+    -- writing a level's own text to skip past it, the one way this syntax
+    -- offers of skipping two levels in a row. It would also report the entry
+    -- as "already sorted as" itself.
+    if key and key ~= levels[i] then
       local path = level_path(levels, i)
       local seen = sort_keys[path]
       if seen == nil then
         sort_keys[path] = { sort = key, context = context }
-      elseif seen.sort ~= key then
+      elseif seen.sort ~= key and not seen.reported then
+        -- Once per printed level path, not once per mark that carries it: a
+        -- term is usually marked in several places and the author has one
+        -- thing to fix however many of those marks repeat the rival key.
         -- The two marks are usually described identically — the same term,
         -- twice — so the message names the two KEYS, which are what actually
         -- differ and what the author has to choose between.
+        seen.reported = true
         warn(('index entry in %s is already sorted as "%s"; the sort key '
               .. '"%s" written here cannot apply as well, so the first one '
               .. 'wins'):format(context, seen.sort, key))
@@ -722,8 +733,8 @@ end
 -- The normative collation rule: fold ASCII uppercase to lowercase, order by
 -- codepoint, break a fold tie by codepoint. Lua compares strings byte by
 -- byte and UTF-8 byte order IS codepoint order, so `<` is the rule as
--- stated. Only ASCII case folds: ordering beyond that is best-effort until
--- sort keys land (DESIGN, Conventions).
+-- stated. Only ASCII case folds: ordering beyond that is best-effort, and a
+-- sort key is how an author overrides it (DESIGN, Conventions).
 local function fold_case(s)
   return (s:gsub("[A-Z]", string.lower))
 end

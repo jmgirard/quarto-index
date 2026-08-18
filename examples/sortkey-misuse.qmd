@@ -27,7 +27,9 @@ enough: both back-ends order an index level by level, so the shared level
 would file under one key here and another there, and the term would print
 twice. The first mark in document order wins and the second is reported:
 [Ambivalence]{.index entry="Ambivalence!first" sort="Aaa"} and later
-[Ambivalence]{.index entry="Ambivalence!second" sort="Bbb"}.
+[Ambivalence]{.index entry="Ambivalence!second" sort="Bbb"}. A third mark
+repeating the rival key adds nothing for the author to fix, so it draws no
+second report: [Ambivalence]{.index entry="Ambivalence!third" sort="Bbb"}.
 
 # A sort key for a level the back-end cannot store
 

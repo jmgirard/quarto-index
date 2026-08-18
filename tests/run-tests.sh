@@ -124,8 +124,8 @@ README_SORT_CLAIMS=(
   $'report: extra levels\ta `sort=` with more levels than its entry has, whose extra levels are'
   $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
   $'ordering is per back-end\tA sort key files an entry under the ordering of whichever back-end builds the'
-  $'plain keys order alike\tSort keys of plain letters and digits order the same way everywhere'
-  $'keys past the ceiling\tA sort key written for a level past the third goes with that level'
+  $'plain keys order alike\tSort keys of plain letters and digits order the same way in both back-ends'
+  $'keys past the ceiling\tA sort key written for a level past the third goes with that level in this'
   $'two skipped levels\tTwo skipped levels cannot sit side by side'
   $'key belongs to the level\tit belongs to the entry level you wrote it for, and places that'
 )
@@ -1787,9 +1787,9 @@ MANIFEST
 # is makeindex's, applied to those keys — NOT the HTML collation rule, which
 # is the extension's own and orders a punctuation-leading key elsewhere. The
 # keys in this fixture are plain letters, which the two order alike, so the
-# same row order serves both; a fixture keyed on punctuation would need two. The sort keys in order are therefore Angstrom, Hague, mathematicians
-# (which declares none of its own), Manet, Neumann, ten Downing Street. The
-# two
+# same row order serves both here; a fixture keyed on punctuation would need
+# two. The keys in order are therefore Angstrom, Hague, Manet, mathematicians
+# (which declares none of its own), Neumann, ten Downing Street. The two
 # sub-entries under `mathematicians` file under Neumann and Turing, which
 # reverses the order their printed text alone would give them.
 #
@@ -1886,6 +1886,8 @@ Beta
 Www@Ccc!pk@p
 Www@Ccc
 "!Zed@Literal
+Qqq@Mmm!nn!Ooo@oo
+Qqq@Mmm
 MANIFEST
 
 # ---------------------------------------------------------------------------
@@ -1910,6 +1912,9 @@ read -r -d '' SORTKEY_PATHS_HTML_INDEX <<'MANIFEST' || true
 1	gamma	1
 0	Hague, The	1
 1	Scheveningen	1
+0	Mmm	1
+1	nn	0
+2	oo	1
 0	Ccc	1
 1	p	1
 0	Alpha	1
@@ -3442,9 +3447,13 @@ check_warning_count "$WORK/book-order-1.log" "$WARN_BOOK_SORT_CONFLICT" 0 \
   "M06-AC4 (book, first render)"
 check_warning_count "$WORK/book-order-2.log" "$WARN_BOOK_SORT_CONFLICT" 1 \
   "M06-AC4 (book, second render)"
-# The later chapter marks the contested term TWICE. The clash is one thing for
-# the author to fix, so the report is per printed level path and not per mark;
-# without a second mark the count above would pass on either rule.
+# The later chapter marks the contested term twice, which the three-locator row
+# of manifest 8 reads. It does NOT discriminate per-path from per-mark
+# reporting on this leg: a chapter's record carries one declared key per
+# printed level path however many marks write it, so per-mark reporting is not
+# expressible here. That discrimination lives on the single-document leg,
+# where examples/sortkey-misuse.qmd carries a third mark repeating the rival
+# key and the exact count above it would fail under a per-mark rule.
 pass "M06-AC4: one entry sorted two ways in two chapters is reported once on the render that can see both, and the first chapter in book order wins"
 
 printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
@@ -3702,6 +3711,46 @@ print(f'ok   M06-AC2: the sort keys move all {moved} entries, at every one of '
       f'the {len(keyed)} depths the index nests to')
 ORDERPY
 
+# The README claims sort keys of plain letters and digits order the same way
+# in both back-ends. examples/sortkey.qmd is keyed entirely in plain letters
+# and spaces, so its two manifests — the PDF outline (1n) and the HTML index
+# (1o) — must agree row for row on term and depth. Asserted of the manifests,
+# which are independently hand-derived from the fixture under two different
+# collation rules; agreeing by construction is the claim.
+printf '%s\n' "$SORTKEY_PDF_OUTLINE" > "$WORK/sk-pdf-outline.txt"
+python3 - "$WORK/sk-pdf-outline.txt" "$WORK/sk-html.txt" <<'AGREEPY'
+import sys
+
+
+def rows(path, keep):
+    out = []
+    for line in open(path, encoding='utf-8'):
+        line = line.rstrip('\n')
+        if line.strip():
+            out.append(tuple(line.split('\t')[:keep]))
+    return out
+
+
+pdf, html = rows(sys.argv[1], 2), rows(sys.argv[2], 2)
+if not pdf:
+    print('FAIL: M06-AC1/AC2: the PDF outline manifest is empty',
+          file=sys.stderr)
+    sys.exit(1)
+if pdf != html:
+    print('FAIL: M06-AC1/AC2: the two back-ends are documented to order plain '
+          'letter and digit keys alike, but the manifests disagree:',
+          file=sys.stderr)
+    for i in range(max(len(pdf), len(html))):
+        a = pdf[i] if i < len(pdf) else '<no such row>'
+        b = html[i] if i < len(html) else '<no such row>'
+        if a != b:
+            print(f'  row {i + 1}: pdf {a}  html {b}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC1/AC2: all {len(pdf)} rows of the PDF index and the HTML '
+      f'index agree on term and depth, so the plain-key ordering the README '
+      f'documents holds in both back-ends')
+AGREEPY
+
 # ---------------------------------------------------------------------------
 # M06-AC1/AC2 — a sort key belongs to a LEVEL, under its own parents, not to
 # the whole entry that declared it.
@@ -3757,17 +3806,50 @@ if actual != expected:
 # it cannot be satisfied by a manifest that stopped testing it: each printed
 # top-level term must carry ONE sort field across every entry that starts with
 # it, however deep that entry goes.
+#
+# Both splits honor makeindex's quote, which covers the character after it: a
+# naive split on `!` cuts `"!Zed@Literal` at the author's literal `!` and
+# files that row under junk, exempting it from the property below.
+def first_level(arg):
+    i = 0
+    while i < len(arg):
+        if arg[i] == '"':
+            i += 2
+            continue
+        if arg[i] == '!':
+            return arg[:i]
+        i += 1
+    return arg
+
+
+def sort_field(level):
+    i = 0
+    while i < len(level):
+        if level[i] == '"':
+            i += 2
+            continue
+        if level[i] == '@':
+            return level[:i]
+        i += 1
+    return None            # files under its own printed text
+
+
 keys = {}
 for entry in expected:
-    level1 = entry.split('!')[0]
-    sortkey, _, printed = level1.partition('@')
-    if not printed:
-        sortkey, printed = printed, sortkey
-    keys.setdefault(printed, set()).add(sortkey)
-split = {p: sorted(k) for p, k in keys.items() if len(k) > 1}
+    level = first_level(entry)
+    key = sort_field(level)
+    printed = level if key is None else level[len(key) + 1:]
+    keys.setdefault(printed, set()).add(key)
+split = {p: sorted('<own text>' if k is None else k for k in ks)
+         for p, ks in keys.items() if len(ks) > 1}
 if split:
     print(f'FAIL: M06-AC1: manifest files one printed term under two keys, '
           f'which is the split it exists to rule out: {split}',
+          file=sys.stderr)
+    sys.exit(1)
+if len(keys) < 2:
+    print(f'FAIL: M06-AC1: only {len(keys)} top-level term(s) parsed out of '
+          f'the manifest; the split property is not being tested',
           file=sys.stderr)
     sys.exit(1)
 print(f'ok   M06-AC1: all {len(expected)} entries emitted as the manifest '

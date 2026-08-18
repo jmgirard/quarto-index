@@ -41,3 +41,11 @@ Two skipped levels cannot sit side by side, because `!!` is the literal `!`
 this syntax gives an author and not two separators. The key below is one
 level reading `!Zed`, which is what places this term — not a third level
 redirected: [Literal]{.index entry="Literal" sort="!!Zed"}.
+
+Writing a level's own printed text is how this syntax reaches past a level,
+and it has to stay a way of skipping rather than become a declaration. The
+first mark below names `Mmm` and `nn` only to reach its third level; the later
+mark is the one that actually chooses where `Mmm` files, and it must not be
+refused for arriving second:
+[Mmm]{.index entry="Mmm!nn!oo" sort="Mmm!nn!Ooo"} and later
+[Mmm]{.index entry="Mmm" sort="Qqq"}.

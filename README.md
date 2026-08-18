@@ -69,10 +69,11 @@ folded into it, joined with `, `, and you get a warning naming the entry. So
 empty level inside a folded tail is dropped, since it would otherwise leave a
 dangling separator in the printed index.
 
-A sort key written for a level past the third goes with that level: the level
-is folded away, so its key has nothing left to place. The folded level files
-under the third level's own sort key where you wrote one, and under its
-printed text where you did not.
+A sort key written for a level past the third goes with that level in this
+back-end: the level is folded away here, so its key has nothing left to place.
+The folded level files under the third level's own sort key where you wrote
+one, and under its printed text where you did not. The HTML index has no
+ceiling, so it keeps both the level and the key written for it.
 
 `!` and `!!` are the extension's own syntax, not LaTeX. They mean the same
 thing whatever format you render to.
@@ -225,7 +226,9 @@ index, and the two orderings need not agree. In HTML the ordering is the
 extension's own — ASCII case folded, then character code. In PDF it is
 `makeindex`'s, which groups punctuation ahead of letters and reads the key in
 the escaped form the back-end writes for it. Sort keys of plain letters and
-digits order the same way everywhere; one built out of punctuation may not.
+digits order the same way in both back-ends; one built out of punctuation may
+not, and neither will a key written past the three-level ceiling, which HTML
+honors and LaTeX drops with the level it was written for.
 
 ### Placing the index
 

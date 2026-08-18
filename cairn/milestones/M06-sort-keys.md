@@ -1,6 +1,6 @@
 # M06: Sort keys
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -126,27 +126,24 @@ what prints; the sort key carried through the book sidecar record with
       renders, and a reversion proof for each.
 - [x] T9: README `sort=` section; `README_HTML_CLAIMS` updated and the
       `README_STALE` absence assertion added.
-- [x] T10: Re-key sort registration from the entry path to the level path, so
-      every mark of one printed level sorts alike and two marks sorting that
-      level differently conflict whatever paths they sit on (F1, F1b, F1c);
-      the same re-keying per entry in `book_sort_keys` (F4); fixtures for the
-      class, with the AC4(c) probe rewritten onto its strongest instance (F7).
-      F8 landed here too, in the same check.
-- [x] T11: Document that a sort key orders under each back-end's own rules,
-      the premise that they could be made to agree having been compiled and
-      falsified (F3); the AC3 LaTeX leg strengthened to tell correct escaping
-      from no sort field at all (F9).
-- [x] T12: `clamp_sort`'s silent drop past level 3 and `index_argument`'s
-      misfiring guard on the folded level (F5); `sort=""`, the doubled `!` in
-      warning text, and the v1-store warning's misattributed cause (F11-F13).
-- [x] T13: `DESIGN.md`'s "two passes" and "sort keys land later" (F6); the
-      README's skipped-level rule and the sentence F1 falsifies, re-pinned;
-      manifest 1n's header (F10); the two prior-review follow-ups absorbed
-      into the standing accumulator ROADMAP row; `--self-test` and
-      `byte-diff.sh` clean.
+- [x] T10: Sort registration re-keyed from the entry path to the level path,
+      in one document and across a book's chapters; fixtures for the class.
+- [x] T11: Each back-end orders under its own rules, documented; the AC3
+      LaTeX leg tells correct escaping from no sort field at all.
+- [x] T12: The folded-level guard, the stale store record, and two flagged
+      non-defects dispositioned in this file's Decisions.
+- [x] T13: `DESIGN.md` and README corrected where the fix falsified them;
+      manifest 1n's header; the prior-review follow-ups absorbed.
+- [x] T14 (return 2): a key equal to its level's own printed text registers
+      nothing; the conflict reports once per level path; the two pinned README
+      sentences narrowed, the plain-key claim carried by a check; four suite
+      and comment defects corrected; the fourth report text recorded.
 
 ## Work log
 
+- 2026-08-18: T14 done — a level key equal to its own printed text no longer registers, so the README's documented skip-two-levels workaround stops discarding a later real key and stops reporting an entry as already sorted as itself; the in-document conflict now reports once per printed level path. Both proved discriminating by reversion: with F1 reverted `Mmm` loses `Qqq` entirely and draws the nonsense report, with F2 reverted one mistake draws two reports. `examples/sortkey-paths.qmd` gained the self-declaration case and `examples/sortkey-misuse.qmd` a third mark repeating the rival key. Suite 103 -> 104 checks.
+- 2026-08-18: T14 records — the two README sentences narrowed to what holds in both back-ends (HTML has no level ceiling, so it honors a key LaTeX drops), and the plain-key claim is now carried by a check comparing the PDF and HTML manifests row for row rather than by assertion alone. Manifest 1n's derivation named the wrong key order and was mangled by T13's reflow; the book check's comment claimed a discrimination the version-3 record shape makes structurally impossible; `PATHSPY` split on a quoted `!` and exempted its own last row. All corrected.
+- 2026-08-18: implement gate (return 2) — user chose to close AC4's recorded-text gap by recording the missing message rather than amending the criterion to bind the filter's literals by procedure, holding the criteria set where it has been through two returns. No acceptance criterion changed; the amendment return is discharged without an amendment.
 - 2026-08-17: REVIEW RETURN (defect return 2) — F1: `register_sort` registers a level key equal to that level's own printed text, so the workaround README:196-199 prescribes for two adjacent skipped levels self-declares the levels it names and beats a genuine later key. Reproduced: `entry="One!Two!Three" sort="One!Two!Zed"` beside `entry="One" sort="Uno"` discards `Uno` and reports `already sorted as "One"`. F2-F8 ride the same fix; F9/F11/F12 are follow-ups, F10/F13 rejected. Status -> in-progress. AC6 unticked (two pinned sentences false and about to change); AC1/AC2/AC3/AC5/AC7 evidence stands.
 - 2026-08-17: REVIEW AMENDMENT RETURN — AC4 promises the diagnostics fire with the message text recorded in this file's Decisions section; the filter emits four sort-related `warn()` literals against three recorded, the missing one being the cross-chapter conflict text that AC4(c)'s own book probe asserts. The criterion assumed (c) had one text. Routes to the gated criterion-amendment protocol.
 - 2026-08-17: T13 done — `DESIGN.md` corrected in place at three sites (three passes not two, sort keys shipped not pending, the LaTeX bullet naming `sortkey@printed`); README gained the two-adjacent-skipped-levels limit and the level-not-entry precision, both pinned and the first now carried by a fixture mark; manifest 1n's header no longer attributes the PDF order to the HTML collation rule. The two prior-review follow-ups widened their standing ROADMAP rows rather than opening new ones. `tests/run-tests.sh --self-test` clean at 117 checks (89 at the merge base) and `tests/byte-diff.sh` reports every merge-base fixture byte-identical.
@@ -251,6 +248,29 @@ really is a path.
 **Consequences:** Three reports stay three. No fourth diagnostic is added, so
 the README's "Three things are reported, in every output format" stays true,
 and AC4's domain is unchanged.
+
+### The cross-chapter conflict report, verbatim
+
+**Context:** AC4 asserts three diagnostics "with the message text recorded in
+this milestone's Decisions section", and its third is probed both within one
+document and across two chapters of one book. The two probes draw different
+text: a book's chapters render in separate processes, so the report that finds
+a cross-chapter conflict can name the two chapters, which the single-document
+report cannot. The entry above recorded only the single-document three.
+
+**Decision:** The fourth text is:
+
+4. `index entry "%s" is sorted as "%s" in %s and as "%s" in %s; one entry cannot file in two places, so the first in book order wins`
+
+It is the same diagnostic as report 3 — one printed index key given two
+different sort keys — reported where the rival key sits in another chapter. It
+names the level path and both chapters, because with the two marks in
+different files the author needs to know which file to open.
+
+**Consequences:** Every text the filter can draw from a sort key is now
+recorded. AC4's three diagnostics stand; its third has two texts, one per
+probe setting. Both are proved discriminating, and both fire once per printed
+level path rather than once per mark.
 
 ## Review
 

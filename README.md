@@ -116,6 +116,13 @@ you never write LaTeX in it, and every printable ASCII character works, along
 with accented Latin-1 text, including the ones that would otherwise break the
 build.
 
+**A cross-reference to its own entry is dropped.** `see="Cats"` on the entry
+`Cats` prints as "Cats, see Cats" and, in an HTML index, links the entry to
+itself. The target is reported and dropped, and the term is then indexed
+normally, with its usual page numbers or links — dropping the mark instead
+would lose the term. A target is judged against what the entry *prints*, so a
+sort key does not make a self-reference into something else.
+
 **Both attributes on one mark** is almost always a mistake — "see" says the
 entries are elsewhere, "see also" says there are entries here too. Nothing is
 dropped: you get one entry carrying both targets, `see Aye; see also Bee`, and
@@ -254,11 +261,18 @@ Both back-ends honour the same marker: the HTML index section and the LaTeX
 `\printindex` each land where you wrote it. A format with no index back-end
 drops the marker and leaves nothing in its place.
 
-Four rules, each of which warns rather than breaking your build:
+Five rules, each of which warns rather than breaking your build:
 
 - **Top level only.** A marker inside a callout, a list or another div places
   nothing: a printed index inside a LaTeX group or environment is a render
-  risk. It is dropped, and the index keeps its default place at the end.
+  risk. It is dropped, and the index keeps its default place at the end. Where
+  the marker was the only thing in its container, removing it leaves that
+  container empty, and you are told so — the container itself is kept, since
+  nothing you wrote is deleted.
+- **A div, and nothing else.** The marker class on a heading, on an inline span
+  or on a code block places nothing and is reported. Your element is left
+  exactly as you wrote it, class included: this extension removes markers, not
+  the elements people mistake for them.
 - **The first marker wins.** A second one is reported by its position and
   dropped.
 - **The marker is empty.** Write anything inside it and your content stays
@@ -323,10 +337,11 @@ can link to it. Both kinds of generated id skip any name written in the
 document itself — on its elements, or inside raw HTML in its source — so
 writing `qi-mark-1` yourself is safe: the numbering steps over it and your
 element keeps the name. That leaves gaps in the sequence, which is harmless —
-the numbers are link targets, not a count of anything. Two names sit outside
-that promise: an id injected around the document at render time
-(`include-in-header` and its relatives are never seen by the filter), and the
-section id `qi-index` itself, which is fixed rather than minted.
+the numbers are link targets, not a count of anything. The section id is minted
+the same way: `qi-index` where the name is free, and `qi-index-1`, `qi-index-2`
+and so on where the document has taken it. One name sits outside that promise:
+an id injected around the document at render time (`include-in-header` and its
+relatives are never seen by the filter).
 
 An entry's locators are numbered links to those anchors: `1`, `2`, `3` for the
 first, second and third time the term is marked, restarting at `1` for each

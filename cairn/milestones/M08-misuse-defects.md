@@ -115,7 +115,7 @@ author reads or markup an HTML reader receives.
       the AC2 checks, failing.
 - [x] T7: Detect a cross-reference target equal to the mark's own entry levels
       before the back-end branch; warn and drop that target.
-- [ ] T9: Update README.md for the three new behaviors — the misplaced marker
+- [x] T9: Update README.md for the three new behaviors — the misplaced marker
       class, the emptied container, and the dropped self-reference — and correct
       the sentence at README.md:329 claiming the section id is "fixed rather
       than minted", which AC1 falsifies; pin each new sentence in the suite's
@@ -145,6 +145,7 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: T5 — mint_section_id prefers the bare qi-index and otherwise counts past taken names, so a document with no collision keeps the id it has always had; the fixture's section now mints qi-index-5 and no qi- id is carried twice. Suite green: 135 checks.
 - 2026-08-18: T6 — examples/self-xref.qmd carries the four self-reference shapes plus a fifth mark cross-referencing a DIFFERENT entry, the control that tells this check from one dropping every target. Verified failing first: the .tex carried \\index{Cats|see{Cats}}, \\index{Birds!Owls|seealso{Birds: Owls}}, \\index{ferrets|see{ferrets}} and \\index{Dogs|quartoindexseeboth{Dogs}{Pets}}.
 - 2026-08-18: T7 — the self-target filter sits after warn_empty_levels and before the back-end branch, comparing levels_key of the target against levels_key of the mark's own levels, so it is format-neutral and compares printed text rather than the filing key. The four reports fire in all three formats; the .tex now carries the three plain keys, Dogs with only its surviving seealso, and Lynxes untouched. Suite green: 138 checks.
+- 2026-08-18: T9 — README now states five marker rules (the div-only rule added, the top-level rule extended with the emptied container), documents that a self-referential target is dropped and judged on printed text, and replaces the "fixed rather than minted" section-id sentence with the minting rule. Seven new sentences pinned as bytes in README_MISUSE_CLAIMS and the falsified one in README_MISUSE_STALE. Suite green: 139 checks.
 ## Decisions
 
 ## Review

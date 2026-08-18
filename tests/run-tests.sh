@@ -1050,6 +1050,58 @@ print(f'ok   M07-AC6: all {len(rows)} documented letter-group behaviors appear '
       f'verbatim in README.md')
 LETTERDOCPY
 
+# ---------------------------------------------------------------------------
+# README claims about misuse reporting (NORMATIVE, M08). Same discipline as
+# README_HTML_CLAIMS: the sentences are compared as bytes with whitespace
+# normalized, so what the README promises and what this suite exercises cannot
+# drift apart. Each row names a behavior M08 added; each PRESENT claim has a
+# check above that fails without the behavior, and the STALE row is the
+# sentence AC1 falsified.
+# ---------------------------------------------------------------------------
+README_MISUSE_CLAIMS=(
+  $'a div and nothing else\tThe marker class on a heading, on an inline span or on a code block places nothing and is reported'
+  $'element left as written\tYour element is left exactly as you wrote it, class included'
+  $'emptied container\tWhere the marker was the only thing in its container, removing it leaves that container empty, and you are told so'
+  $'container kept\tthe container itself is kept, since nothing you wrote is deleted'
+  $'self-reference dropped\tThe target is reported and dropped, and the term is then indexed normally'
+  $'self-reference judged on print\tA target is judged against what the entry *prints*, so a sort key does not make a self-reference into something else'
+  $'section id minted\tThe section id is minted the same way: `qi-index` where the name is free, and `qi-index-1`, `qi-index-2` and so on where the document has taken it'
+)
+README_MISUSE_STALE=(
+  $'section id fixed\tthe section id `qi-index` itself, which is fixed rather than minted'
+)
+
+printf '%s\n' "${README_MISUSE_CLAIMS[@]}" > "$WORK/readme-misuse.txt"
+printf '%s\n' "${README_MISUSE_STALE[@]}" > "$WORK/readme-misuse-stale.txt"
+python3 - "$WORK/readme-misuse.txt" "$WORK/readme-misuse-stale.txt" README.md <<'MISUSEDOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+def rows(path):
+    return [l.rstrip('\n').split('\t', 1)
+            for l in open(path, encoding='utf-8') if l.strip()]
+
+
+claims, stale = rows(sys.argv[1]), rows(sys.argv[2])
+readme = flat(open(sys.argv[3], encoding='utf-8').read())
+bad = [f'  missing ({label}): <<{text}>>'
+       for label, text in claims if flat(text) not in readme]
+bad += [f'  still present ({label}): <<{text}>>'
+        for label, text in stale if flat(text) in readme]
+if bad:
+    print('FAIL: M08: README.md does not document the misuse reports as this '
+          'suite exercises them:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M08: all {len(claims)} documented misuse behaviors appear '
+      f'verbatim in README.md, and the {len(stale)} sentence AC1 falsified is '
+      f'gone')
+MISUSEDOCPY
+
 # The probe set is pinned to the filter's own escape table, so a character the
 # filter handles can never go unprobed (and vice versa).
 PROBE_CHARS="$PROBE_CHARS" python3 - _extensions/index/index.lua <<'PY'

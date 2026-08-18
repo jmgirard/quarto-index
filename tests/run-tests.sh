@@ -123,6 +123,8 @@ README_SORT_CLAIMS=(
   $'report: nothing to sort\ta `sort=` on a mark that indexes nothing, which has nothing to sort'
   $'report: extra levels\ta `sort=` with more levels than its entry has, whose extra levels are'
   $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
+  $'ordering is per back-end\tA sort key files an entry under the ordering of whichever back-end builds the'
+  $'plain keys order alike\tSort keys of plain letters and digits order the same way everywhere'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -3876,6 +3878,95 @@ grep -qE "\($SORTESC_MARKS entries accepted, 0 rejected\)" \
   "$WORK/sortesc/sort-escaping.ilg" \
   || { grep -E 'accepted|rejected' "$WORK/sortesc/sort-escaping.ilg" >&2; fail "M06-AC3: makeindex did not accept all $SORTESC_MARKS sort-key entries"; }
 pass "M06-AC3: every printable ASCII character survives as a sort key through the index tool, all $SORTESC_MARKS entries accepted"
+
+# The acceptance count alone cannot tell correct escaping from NO SORT FIELD:
+# a filter that emitted a bare `\index{term-21}` for every mark would be
+# accepted just as happily. Two structural checks close that, both derived by
+# construction from the fixture's own term list.
+#
+#   1. In the .tex, every entry has the shape `key@term-XX`, split at the one
+#      `@` the back-end writes itself — so an author `@` left unquoted, which
+#      would move the split, fails here as loudly as a missing sort field.
+#   2. In the .ind the index tool wrote, the printed entry is `term-XX` and
+#      nothing else, which is what proves the tool read that `@` as the
+#      separator rather than as part of the text.
+python3 - examples/sort-escaping.qmd "$WORK/sortesc/sort-escaping.tex" \
+  "$WORK/sortesc/sort-escaping.ind" <<'SORTFIELDPY'
+import re, sys
+qmd = open(sys.argv[1], encoding='utf-8').read()
+tex = open(sys.argv[2], encoding='utf-8').read()
+ind = open(sys.argv[3], encoding='utf-8').read()
+terms = re.findall(r'\[(term-[0-9a-f]{2})\]\{\.index', qmd)
+if not terms:
+    print('FAIL: M06-AC3: no probe marks found in the fixture', file=sys.stderr)
+    sys.exit(1)
+
+
+def arguments(text):
+    # Every `\index{...}` argument, brace-balanced. A plain regex cannot do
+    # this: half the escaped forms the probe produces are LaTeX commands with
+    # braces of their own (`\textbraceleft{}`), and a non-greedy match ends at
+    # the first one of those.
+    out = []
+    for m in re.finditer(r'\\index\{', text):
+        i, depth = m.end(), 1
+        while i < len(text) and depth:
+            if text[i] == '{':
+                depth += 1
+            elif text[i] == '}':
+                depth -= 1
+            i += 1
+        out.append(text[m.end():i - 1])
+    return out
+
+
+def split_at_separator(arg):
+    # The argument split at the ONE `@` the back-end writes unquoted; every
+    # `@` the author wrote is quoted, and makeindex's quote covers exactly the
+    # character after it.
+    i = 0
+    while i < len(arg):
+        if arg[i] == '"':
+            i += 2
+            continue
+        if arg[i] == '@':
+            return arg[:i], arg[i + 1:]
+        i += 1
+    return None, arg
+
+
+args = arguments(tex)
+if len(args) != len(terms):
+    print(f'FAIL: M06-AC3: the fixture writes {len(terms)} marks but the .tex '
+          f'carries {len(args)} index entries', file=sys.stderr)
+    sys.exit(1)
+bad = []
+for term, arg in zip(terms, args):
+    key, printed = split_at_separator(arg)
+    if key is None:
+        bad.append(f'  {term}: no sort field emitted at all  <<{arg}>>')
+    elif key == '':
+        bad.append(f'  {term}: empty sort field  <<{arg}>>')
+    elif printed != term:
+        bad.append(f'  {term}: the separator fell in the wrong place; the '
+                   f'printed text reads <<{printed}>>')
+if bad:
+    print('FAIL: M06-AC3: the emitted sort fields are not what the fixture '
+          'declares:', file=sys.stderr)
+    print('\n'.join(bad[:10]), file=sys.stderr)
+    sys.exit(1)
+
+printed = re.findall(r'\\item (term-[0-9a-f]{2})', ind)
+if sorted(printed) != sorted(terms):
+    missing = sorted(set(terms) - set(printed))
+    print(f'FAIL: M06-AC3: the index tool printed {len(printed)} of '
+          f'{len(terms)} probe terms as their text alone; missing '
+          f'{missing[:10]}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC3: all {len(terms)} entries carry a sort field split at '
+      f'the separator the back-end writes, and the index tool printed every '
+      f'one of them as its text alone')
+SORTFIELDPY
 
 # Leg 2 — HTML: the same characters reach the generated section as entries.
 quarto render examples/sort-escaping.qmd --to html > "$WORK/sortesc-html.log" 2>&1 \

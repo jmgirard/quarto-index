@@ -132,10 +132,10 @@ what prints; the sort key carried through the book sidecar record with
       the same re-keying per entry in `book_sort_keys` (F4); fixtures for the
       class, with the AC4(c) probe rewritten onto its strongest instance (F7).
       F8 landed here too, in the same check.
-- [ ] T11: Write the LaTeX sort field with makeindex's own quoting rather than
-      LaTeX escaping, so both back-ends order on the same characters —
-      compiled, not inferred (F3); the AC3 LaTeX leg strengthened to tell
-      correct escaping from no sort field at all (F9).
+- [x] T11: Document that a sort key orders under each back-end's own rules,
+      the premise that they could be made to agree having been compiled and
+      falsified (F3); the AC3 LaTeX leg strengthened to tell correct escaping
+      from no sort field at all (F9).
 - [ ] T12: `clamp_sort`'s silent drop past level 3 and `index_argument`'s
       misfiring guard on the folded level (F5); `sort=""`, the doubled `!` in
       warning text, and the v1-store warning's misattributed cause (F11-F13).
@@ -147,6 +147,8 @@ what prints; the sort key carried through the book sidecar record with
 
 ## Work log
 
+- 2026-08-17: T11 done — the AC3 LaTeX leg now reads the emitted sort fields structurally: every entry must split at the separator the back-end writes, and the index tool must print each term as its text alone. Proved discriminating by a filter emitting no sort field at all, which makeindex accepts just as happily (94 accepted, 0 rejected) while the new check fails on all 94. README gained the ordering rule, pinned by two more `README_SORT_CLAIMS` rows. Suite 100 -> 101 checks.
+- 2026-08-17: T11 amendment (substantive premise, gated) — F3 asked that both back-ends order on the same characters. Compiled against makeindex: a sort key of `|` sorts before `mango` in PDF and after it in HTML with NO escaping involved, because makeindex groups punctuation ahead of letters while the HTML collator folds case and compares bytes. Escaping is not the cause and removing it would not fix it (it does reorder within LaTeX: `<key` before `~key` raw, after it escaped). User chose documenting the rule over minimising the escaping. No acceptance criterion asked for cross-back-end order identity, so none changed.
 - 2026-08-17: T10 done — sort keys now register against a printed LEVEL path rather than a whole entry, so a key written for `Aaa` applies whether `Aaa` stands alone or parents a sub-entry, and a level a mark leaves alone no longer shuts out the mark that declares it. `sort_levels` returns what the author declared (the fallback moved into `sort_for`); the book store carries the chapter's declared key map instead of a resolved key per mark, `STORE_VERSION` 2 -> 3, and `book_sort_keys` merges those maps per path, reporting once per entry. `examples/sortkey-paths.qmd` + manifests 1q/1r pin both legs; the AC4(c) probe moved onto differing level paths. Suite 97 -> 100 checks (114 with --self-test).
 - 2026-08-17: T10 discrimination — the pre-fix filter, rendered against the new fixture, emits `\index{Hague@Hague, The}` beside `\index{Hague, The!Scheveningen}` (one term, two makeindex keys) and files `Ccc` in the HTML index under its printed text with the declared `Www` discarded; both new checks fail on it, and the strengthened AC4(c) probe draws the conflict report 0 times.
 - 2026-08-17: T10 amendment (minor) — F8's two halves landed with T10 rather than T12: the book conflict report gained a `warn_discrimination` proof, and its render-order assumption is now asserted by logging the two renders separately (0 on the first, 1 on the second) instead of stated in a comment.

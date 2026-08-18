@@ -205,6 +205,13 @@ Sorting is otherwise best-effort: neither back-end collates accented or
 non-Latin text the way a language would, and a sort key is how you fix an
 entry that files wrongly.
 
+A sort key files an entry under the ordering of whichever back-end builds the
+index, and the two orderings need not agree. In HTML the ordering is the
+extension's own — ASCII case folded, then character code. In PDF it is
+`makeindex`'s, which groups punctuation ahead of letters and reads the key in
+the escaped form the back-end writes for it. Sort keys of plain letters and
+digits order the same way everywhere; one built out of punctuation may not.
+
 ### Placing the index
 
 By default the index goes at the end of the document. To put it somewhere

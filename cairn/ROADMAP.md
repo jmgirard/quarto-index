@@ -1,12 +1,14 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-18 (M07 done and archived; M02 row pruned to the 5-row retention; two follow-up rows added from M07 review; 2 lessons captured, none retired — the M06 manifest-comment lesson was violated this milestone, so it still earns its line; caps and byte budgets clean)_
+_Last hygiene check: 2026-08-18 (M08 and M09 planned from the latent-defect candidate rows; the five rows they absorb stay until the milestones complete (records-hygiene 1), two more left standing as unreachable; earlier pass: M07 done and archived; M02 row pruned to the 5-row retention; two follow-up rows added from M07 review; 2 lessons captured, none retired — the M06 manifest-comment lesson was violated this milestone, so it still earns its line; caps and byte budgets clean)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M08 | Reachable mark and marker misuse defects | planned | — | normal | milestones/M08-misuse-defects.md |
+| M09 | Sort keys under the LaTeX level clamp | planned | — | normal | milestones/M09-sortkey-clamp.md |
 | M07 | Letter-group headings (HTML index) | done | — | normal | milestones/archive/M07-letter-groups.md |
 | M06 | Sort keys | done | — | normal | milestones/archive/M06-sort-keys.md |
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
@@ -25,7 +27,7 @@ _Last hygiene check: 2026-08-18 (M07 done and archived; M02 row pruned to the 5-
 - Submit to Quarto extension listing at first release — added 2026-08-16 — window user-declared
 - Leading/medial empty index levels are rejected by makeindex ("Illegal null field"), destroying the whole entry — added 2026-08-16 — M01 review R12; only the trailing case is probed
 - Non-Latin-1 scripts in index terms (Greek, CJK, combining marks, RTL) need an engine/font decision — added 2026-08-16 — M01 review R7/R9; pdflatex default fonts do not cover them
-- Harden the acceptance suite: brace-aware \index scanner (no longer benign now that unbalanced braces are probed) — added 2026-08-16 — M01 review R14; the script-exit-code item was done in M01, and \printindex ordering has its own row
+- Acceptance-suite hardening (clustered): brace-aware `\index` scanner (no longer benign now that unbalanced braces are probed); BSD-sed portability; `]{.index` substring undercount; `include_text` guard; the run fails on a clean checkout (a check reads examples/control.tex before anything renders it); no structural residue check on LaTeX misuse output; three renders write examples/marker.tex in one run; the check-count baseline is not mechanized — added 2026-08-16, extended 2026-08-17, clustered 2026-08-18 — M01 review R14/N12/N13/N14, M04 review F9/F10/F13 + a clean-clone failure hit at review; the script-exit-code item shipped in M01 and `\printindex` ordering has its own row
 - Quarto version floor is an untested contract claim; CI matrix would fence it — added 2026-08-16 — M01 review R15; folds into the existing CI-matrix candidate
 - Windows checkouts without symlink support break examples/_extensions — added 2026-08-16 — M01 review R18
 - `marks_seen` is module-level state, latent if Lua state is ever reused across documents; the HTML back-end adds one more such accumulator (`html_marks`) — added 2026-08-16, widened by M03 review P1, corrected M03 (the second accumulator was refactored away by the F1/F2 fix), corrected M04 (`marks_emitted` became the format-neutral `marks_seen`), widened by M06 review F-a (`sort_keys`, the sort-key registry, is another) — M01 review R16
@@ -34,7 +36,6 @@ _Last hygiene check: 2026-08-18 (M07 done and archived; M02 row pruned to the 5-
 - Escaping probe covers characters singly; combinations remain an untested axis — added 2026-08-16 — M01 review; see the milestone Decisions entry
 - `[` and `]` are escaped by Pandoc's LaTeX writer but are not in the filter's escape table — added 2026-08-16 — M01 review N11; verified harmless in practice
 - Bare (unquoted) `entry=`, `see=` and `see-also=` values escape both the no-leak sweep and the probe-coverage pin; for no-leak this is a false pass, not a false failure — added 2026-08-16 — M01 review N9, widened by M02 review, widened by M06 review F-b (the suite's `sort=` extraction is double-quote-only too; no false pass today, since every fixture quotes its values)
-- Acceptance suite: BSD-sed portability, `]{.index` substring undercount, `include_text` guard — added 2026-08-16 — M01 review N12/N13/N14
 - Demo manifests have no independent count, so coverage can shrink silently — added 2026-08-16 — M01 review P10
 - The demo's own makeindex acceptance is never asserted — added 2026-08-16 — M01 review P11
 - `\printindex` precedes a bibliography rather than following it, since Quarto appends reference blocks after filters run — added 2026-08-16 — M01 review P2; README states the current behavior
@@ -46,7 +47,6 @@ _Last hygiene check: 2026-08-18 (M07 done and archived; M02 row pruned to the 5-
 - A self-referential cross-reference (`[cats]{.index see="cats"}`) resolves and links an entry to itself — added 2026-08-17 — M03 review F13
 - The planted-defect self-test mutates only the `.tex` fixture; no HTML index check has a planted-defect proof — added 2026-08-17 — M03 review F14
 - Marker hardening: a nested marker leaves its container empty, and the marker class on a non-div (span, heading) is ignored with no warning — added 2026-08-17 — M04 review F6/F7
-- Acceptance suite: the run fails on a clean checkout (a check reads examples/control.tex before anything renders it), no structural residue check on LaTeX misuse output, three renders write examples/marker.tex in one run, the check-count baseline is not mechanized — added 2026-08-17 — M04 review F9/F10/F13 + a clean-clone failure hit at review
 - `resolve_markers` rebuilds every Blocks list in every format whether or not a marker exists; the LaTeX byte-diff proves that output-neutral, HTML has no equivalent byte check — added 2026-08-17 — M04 review F12
 - Headings consumed by Quarto constructs (callout titles, tabsets) bypass the after-heading anchor relocation; no TOC copy today, so no defect — the invariant is unpinned against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8
 - Locator hrefs into chapter pages cannot be percent-escaped at the filter layer: Quarto normalizes a link target either way (verified — the filter emitted `later%20chapter.html`, output carried `later chapter.html`, matching Quarto's own `./later chapter.html`), so a chapter filename containing `#` or `?` yields a broken locator — added 2026-08-17 — M05 review F11

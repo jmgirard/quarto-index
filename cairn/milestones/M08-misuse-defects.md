@@ -1,0 +1,134 @@
+# M08: Reachable mark and marker misuse defects
+
+- **Status:** planned
+- **Priority:** normal
+- **Depends on:** —
+- **Driving RR:** —
+- **Principles touched:** IP2
+- **Branch/PR:** —
+
+## Goal
+
+Four author-reachable misuse cases the earlier reviews left latent — a document
+claiming the index section's id, a cross-reference pointing at its own entry,
+the placement-marker class written where it cannot place an index, and a nested
+marker that empties its container — are each reported and handled rather than
+silently mishandled.
+
+## Scope
+
+Surface tier: **user-facing** — every deliverable here is either a warning an
+author reads or markup an HTML reader receives.
+
+**In:**
+- The HTML index section's id is minted past ids already taken in the document,
+  as anchor and entry ids already are (`html_index_blocks`, index.lua:1219).
+- A cross-reference target equal to the mark's own entry is reported and that
+  target dropped, before the back-end branch (`Span`, index.lua:629).
+- The marker class on a block that is not a Div, or on an inline span, is
+  reported; the element itself is left untouched (`is_marker`, index.lua:1239).
+- A nested marker that was its container's only content is reported as having
+  left that container empty; the container is kept (`strip_nested_markers`,
+  index.lua:1273).
+- Fixtures and checks for all four, each shown to fail when its fix is reverted.
+
+**Out:**
+- Sort keys registered against unclamped level paths while LaTeX writes clamped
+  ones → M09.
+- Resetting module-level filter state between documents → candidate row; Quarto
+  renders each document in its own process, so it is unreachable today.
+- An empty entry tree rendering a bare `Index` heading → candidate row;
+  unreachable, every path building the section is gated on a mark.
+- Percent-escaping locator hrefs for chapter filenames holding `#` or `?` →
+  candidate row; not fixable at the filter layer (M05 review F11).
+
+## Acceptance criteria
+
+- [ ] AC1: In an HTML render of `examples/id-collision.qmd`, whose own elements
+      claim the ids `qi-index` (a Pandoc attribute on a Div, never a heading —
+      Quarto migrates a heading's id to its wrapper `<section>`), `qi-index-1`,
+      `qi-index-2` and `qi-index-3` (a `{=html}` raw block, spelled
+      double-quoted, unquoted and uppercase `ID=`) and `qi-index-4` (a `{=html}`
+      raw inline, single-quoted): `tests/htmlindex.py`'s scan of every `id`
+      attribute in the rendered page reports no `qi-`-prefixed id carried by two
+      elements; each of the five claimed ids appears exactly once, on the
+      element that claimed it; and the index section, located by the heading
+      whose text is `Index`, carries an id distinct from all five.
+- [ ] AC2: In a LaTeX, an HTML and a gfm render of `examples/self-xref.qmd`,
+      carrying four marks — a single-level `see=` naming its own entry, a
+      `see-also=` naming its own two-level `entry=` path, a self-target on a
+      mark whose entry comes from its visible text rather than `entry=`, and a
+      mark carrying both attributes of which only the `see=` is self-targeting —
+      exactly four warnings naming a self-referential target appear per render,
+      one per self-targeting attribute. In the LaTeX render the first three
+      marks each emit one `\index{}` on their own key carrying no encap, and the
+      fourth emits one `\index{}` carrying only its surviving `seealso` encap.
+      In the HTML render the first three entries each carry a locator link, the
+      fourth carries its cross-reference and no locator, and a scan of every
+      locator and cross-reference link inside the index section finds none whose
+      href is the id of the entry that contains it.
+- [ ] AC3: In a LaTeX, an HTML and a gfm render of `examples/marker-sites.qmd`,
+      which writes the marker class on a Header, on an inline span and on a
+      fenced code block and holds one real top-level marker, each of the three
+      sites is reported exactly once per render by a warning naming that site
+      kind, and the index lands at the real marker in the LaTeX and HTML
+      renders. In the HTML render all three elements survive carrying the class
+      and their content unchanged; in the gfm render their visible content
+      survives and no index, anchor or back-end token appears — gfm drops a
+      header's attributes itself, so class survival is claimed only of HTML.
+- [ ] AC4: In the same three renders of `examples/marker-sites.qmd`, which also
+      holds two containers of different kinds (a Div and a blockquote) whose
+      only content is a nested placement marker, exactly two warnings per render
+      say that removing a marker left its container empty, one per container; no
+      index is placed at either container's position; and both containers are
+      still present, structurally, in the HTML output.
+- [ ] AC5: `tests/run-tests.sh --self-test` clean (the `verify` slot).
+
+## Coverage
+
+- AC1 → T4, T5
+- AC2 → T6, T7
+- AC3 → T1, T2
+- AC4 → T1, T3
+- AC5 → T1, T4, T6
+
+## Tasks
+
+- [ ] T1: Add `examples/marker-sites.qmd` with the three misplaced-class sites
+      and the two sole-content nested containers; add the AC3/AC4 checks to
+      `tests/run-tests.sh`, failing. A fresh fixture, not an extension of
+      `marker-misuse.qmd`: run-tests.sh:2308 pins the duplicate-marker message
+      *with its top-level block position*, and :2323 asserts the nested-marker
+      warning fires exactly once.
+- [ ] T2: Report the marker class on any block that is not a Div and on any
+      inline span, format-neutrally, naming the site kind; leave the element
+      itself untouched.
+- [ ] T3: Report that stripping a nested marker left its container with no
+      content; keep the container.
+- [ ] T4: Add `examples/id-collision.qmd` with the five id claims; give
+      `tests/htmlindex.py` a heading-based index-section lookup (reading the id
+      off the `<h1>`'s wrapper `<section>`) and a duplicate-`qi-`-id scan; add
+      the AC1 check, failing.
+- [ ] T5: Mint the HTML index section id against the taken-id table in
+      `html_index_blocks`.
+- [ ] T6: Add `examples/self-xref.qmd` with the four self-reference shapes; add
+      the AC2 checks, failing.
+- [ ] T7: Detect a cross-reference target equal to the mark's own entry levels
+      before the back-end branch; warn and drop that target.
+- [ ] T8: Revert each of the four fixes alone and record the failing check and
+      its message in the work log. Process evidence, deliberately mapped to no
+      criterion: an acceptance criterion binding the harness rather than the
+      emitted output is the instrument-bound shape the plan audit rejected.
+
+## Work log
+
+- 2026-08-18: created by /milestone-plan.
+- 2026-08-18: criteria audit ran in FULL mode (user-facing tier), two passes, fresh-context [O] reader; pass 1 returned findings on all five drafts — AC1 self-contradictory (one id string claimed twice could be neither unchanged nor unduplicated), AC2 absence-only and satisfiable by dropping the mark, AC3 an ambiguous count with no residue claim, AC4 leaving the deliverable undetermined, AC5 instrument-bound (deleted) — and pass 2 over the final wording returned AC2 unsatisfiable for the fourth mark (index.lua:720: one \index carries the encap, and no anchor is minted for a mark with an xref), AC3's gfm survival clause false of the writer rather than the filter, T1 breaking run-tests.sh:2308 and :2323, and probe-variety gaps in AC1 and AC4; all disposed in the criteria above, none left to the gate.
+- 2026-08-18: plan gate chose warning without editing the element over stripping the misplaced marker class, because the extension otherwise never edits an element the author wrote and the residue is cosmetic; falsified by evidence that the residual class changes rendering or is picked up by styling the extension's own class names invite.
+- 2026-08-18: plan gate chose keeping the emptied container and warning over removing it, because deleting a container the author wrote goes beyond removing the marker they asked to be removed; falsified by evidence that an empty container renders as furniture readers read as broken.
+- 2026-08-18: plan gate chose warn-and-drop the self-referential target over keeping it (which leaves useless "cats, see cats" output) and over dropping the whole mark (which loses the term, the IP2 corruption class this milestone targets); falsified by an authoring case where a self-target carries meaning, such as a printed form differing from its sort form.
+- 2026-08-18: plan chose four defects here with the sort-key clamp as M09 over one five-defect milestone, which reached ~13 tasks past the sizing tripwire; falsified if M09 turns out to share fixtures or code paths with M08 such that splitting duplicates the work.
+
+## Decisions
+
+## Review

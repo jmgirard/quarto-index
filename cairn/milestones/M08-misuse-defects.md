@@ -276,3 +276,32 @@ Deferred, on ROADMAP rows: F7 (clamping hides a self-reference, folded into the
 sort-key clamp row M09 owns), F8 (empty-level asymmetry, new row), F10
 (`index_section` first-match, folded into the acceptance-suite cluster).
 
+**Re-review findings (fresh-context [O] on the repair commits).** F5, F6 (in
+part), F9 and F11 confirmed closed; the `Note` handler verified not to
+double-report; `doc.blocks:walk` verified to miss no body block; the "two
+markers, one empty one not" and "empty marker plus other content" cases
+verified correctly silent; all ten README pins verified verbatim. Eleven
+findings, the first three verified here by running the filter:
+
+- R1/R2 — one root cause. `check_emptied` predicts the strip from the pre-strip
+  shape and is called on marker divs as well as containers. A container holding
+  a marker that wraps an empty marker is skipped (its marker "has content")
+  while the marker div itself reports — the message is right by coincidence,
+  about the wrong element; and a container that keeps other content reports as
+  emptied. The F2 guard was top-level only, so nested marker divs still report.
+- R3 — a definition-list definition emptied by a marker is unreported; the
+  ROADMAP row names only table cells.
+- R4 — `doc.blocks:walk` fixes the title but leaves a marker class in
+  `subtitle:`/`abstract:` reported nowhere, though Quarto renders both.
+- R5 — reverting F1 and reverting F2 produce byte-identical failures.
+- R6/R7/R8 — DESIGN prose: "any block that is not a div, or an inline span"
+  understates a report that fires on any attributed inline; the self-target is
+  called "reported and dropped" unqualified though F7/F8 survive; the F2
+  exclusion is unstated; two lines break the file's wrap.
+- R9 — `WARN_BOTH` matches only the message prefix, so the reworded tail is
+  unpinned.
+- R10 — a check message still says "the {n} sentence AC1 falsified" now that
+  the stale list holds three.
+- R11 — `marker-shapes.qmd` is absent from README's fixture tour, as all four
+  M08 fixtures are; pre-existing.
+

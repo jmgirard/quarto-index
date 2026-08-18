@@ -97,21 +97,21 @@ class hooks only, unchanged).
 - [x] T1: Instrument: `tests/htmlindex.py` yields heading records in rendered
       order as distinct manifest rows, plus a whole-document `qi-letter`
       sweep helper (count, order, text, outside-any-`li`).
-- [ ] T2: Implement grouping in `_extensions/index/index.lua`: group rank
+- [x] T2: Implement grouping in `_extensions/index/index.lua`: group rank
       (Symbols, then A–Z) ahead of `collate` in `number_entries`' top-level
       comparator only; label derivation from the filing string's first
       character (ASCII-letter test); `qi-letter` Div emission in
       `entry_list`/`html_index_blocks` at top level only; update the
       normative collation comment (index.lua:759).
-- [ ] T3: AC2 probe fixtures — sort-key/Symbols/non-ASCII/empty-filing
+- [x] T3: AC2 probe fixtures — sort-key/Symbols/non-ASCII/empty-filing
       probes plus adjacent below-`a` and above-`z` entries, landed outside
       `examples/html-index.qmd` (which stays the no-Symbols negative);
       hand-derive their manifest rows.
-- [ ] T4: Update every HTML index manifest with heading rows and any
+- [x] T4: Update every HTML index manifest with heading rows and any
       ranking-reordered entry rows; hand-derive heading lists for the
       set-checked escaping and sort-escaping renders and wire the sweep
       check across all verified renders.
-- [ ] T5: Book fixture: add a same-letter entry in a second chapter;
+- [x] T5: Book fixture: add a same-letter entry in a second chapter;
       re-derive book HTML manifest (heading rows) and book PDF terms
       manifest.
 - [ ] T6: Run `tests/byte-diff.sh` (expect empty); extend gfm/control
@@ -132,6 +132,7 @@ class hooks only, unchanged).
 - 2026-08-18: plan chose stating book LaTeX outside `tests/byte-diff.sh`'s domain over extending its `ls-tree` to recursive because the checker's promise stays untouched (checker-regress doctrine); falsified by a filter-caused book-LaTeX drift the suite's book checks miss.
 - 2026-08-18: /milestone-implement started; branch m07-letter-groups cut from main at 89af3d5.
 - 2026-08-18: implement gate chose `letter<TAB><label>` heading rows (no collision with depth-digit entry rows), a bare text block inside the `qi-letter` container, and a new `examples/letter-groups.qmd` for the AC2 probes.
+- 2026-08-18: T2-T5 done; suite green at 124 checks (was 104). Two findings on the way: `!` inside `sort=` is the level separator, so a symbol-initial key is written `!!`; and letter grouping put two of six top-level entries at the same position in the sortkey fixture's keyed and twin orders, which would have weakened M06's no-position-unchanged check in both back-ends — repaired by adding one probe entry (`Ursula K. Le Guin` filing under `Le Guin`) chosen so both the HTML and the makeindex orders are full derangements again, rather than by relaxing the check.
 - 2026-08-18: paused mid-T4 at the user's request; suite red at this checkpoint. Done: all HTML index manifests re-derived with heading rows, `check_letter_sweep` helper + 14 sweep call sites, `qi-letter` pinned as a fourth HTML identifier, `entry_records` routing so entry-only checks skip heading records, book fixture's `Beacon` (T5), gfm/control negatives (T6). Remaining: three manifest-PARSING checks (M06 sort-key disagreement, PDF-outline agreement, level-path split) still read heading rows as entry rows and must skip them; and letter grouping puts two of six sortkey.qmd top-level entries at the same position in the keyed and twin manifests, so M06's no-position-unchanged check needs one added probe entry (candidate: a printed `Sir Ian McKellen` filing under `Ian McKellen`) to restore the derangement rather than a weakened check.
 - 2026-08-18: filter grouping landed (T2 work): group rank ahead of collate at the root only, `qi-letter` Div per group, normative collation comment rewritten. Not ticked yet — every HTML index manifest is now stale, so `verify` cannot be clean until T3/T4/T5 re-derive them; T2–T5 therefore tick together (minor amendment: no re-ordering, one green point).
 - 2026-08-18: T1 done — `tests/htmlindex.py` yields kind-tagged records (heading rows in rendered order) and a whole-document `letter_sweep`; suite still 104 checks clean.

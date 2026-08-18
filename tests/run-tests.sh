@@ -1877,6 +1877,7 @@ Angstrom
 ten Downing Street
 Neumann
 Manet
+Le Guin
 !Turing
 !Neumann
 MANIFEST
@@ -1894,8 +1895,9 @@ MANIFEST
 # from manifest 1o, which is what lets the check comparing the two mean
 # something; the keys here are plain letters, on which the two rules happen to
 # agree, and a fixture keyed on punctuation would need two orders.
-# The keys in order are therefore Angstrom, Hague, Manet, mathematicians
-# (which declares none of its own), Neumann, ten Downing Street. The two
+# The keys in order are therefore Angstrom, Hague, Le Guin, Manet,
+# mathematicians (which declares none of its own), Neumann, ten Downing
+# Street. The two
 # sub-entries under `mathematicians` file under Neumann and Turing, which
 # reverses the order their printed text alone would give them.
 #
@@ -1905,6 +1907,7 @@ MANIFEST
 read -r -d '' SORTKEY_PDF_OUTLINE <<'MANIFEST' || true
 0	Ångström
 0	The Hague
+0	Ursula K. Le Guin
 0	Édouard Manet
 0	mathematicians
 1	von Neumann
@@ -1933,6 +1936,8 @@ letter	A
 0	Ångström	1
 letter	H
 0	The Hague	2
+letter	L
+0	Ursula K. Le Guin	1
 letter	M
 0	Édouard Manet	1
 0	mathematicians	0
@@ -1962,6 +1967,8 @@ letter	M
 1	von Neumann	1
 letter	T
 0	The Hague	2
+letter	U
+0	Ursula K. Le Guin	1
 letter	V
 0	von Neumann	1
 MANIFEST
@@ -3839,14 +3846,14 @@ if grep -q '^(W)' "$WORK/sortkey-html.log"; then
 fi
 check_html_index_manifest examples/sortkey.html "$SORTKEY_HTML_INDEX" "M06-AC2"
 check_letter_sweep examples/sortkey.html "M07-AC3 (sort keys)" \
-  $'A\nH\nM\nN\nT'
+  $'A\nH\nL\nM\nN\nT'
 check_html_index_links examples/sortkey.html "M06-AC2"
 
 quarto render examples/sortkey-twin.qmd --to html > "$WORK/sortkey-twin-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-twin-html.log" >&2; fail "M06-AC2: sortkey-twin.qmd failed to render to HTML"; }
 check_html_index_manifest examples/sortkey-twin.html "$SORTKEY_TWIN_HTML_INDEX" "M06-AC2 (twin)"
 check_letter_sweep examples/sortkey-twin.html "M07-AC3 (sort-key twin)" \
-  $'Symbols\nM\nT\nV'
+  $'Symbols\nM\nT\nU\nV'
 
 # The two manifests must disagree at every top-level position and at every
 # sub-entry position, or one of them could be satisfied by an index that
@@ -3864,6 +3871,10 @@ def by_depth(path):
         line = line.rstrip('\n')
         if line.strip():
             fields = line.split('\t')
+            # A letter-group heading is not an entry and has no depth; the
+            # question here is where the ENTRIES sit.
+            if fields[0] == 'letter':
+                continue
             out.setdefault(int(fields[0]), []).append(fields[1])
     return out
 
@@ -3909,7 +3920,12 @@ def rows(path, keep):
     for line in open(path, encoding='utf-8'):
         line = line.rstrip('\n')
         if line.strip():
-            out.append(tuple(line.split('\t')[:keep]))
+            fields = line.split('\t')
+            # Heading rows are dropped: only the HTML manifest has them, and
+            # the claim compared here is about entry order in both back-ends.
+            if fields[0] == 'letter':
+                continue
+            out.append(tuple(fields[:keep]))
     return out
 
 

@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-17 (M06 planned; sort-key candidate row promoted, l
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M06 | Sort keys | review | — | normal | milestones/M06-sort-keys.md |
+| M06 | Sort keys | in-progress | — | normal | milestones/M06-sort-keys.md |
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
 | M05 | Multi-chapter book support | done | M04 | normal | milestones/archive/M05-book-support.md |
 | M03 | HTML index back-end | done | M02 | normal | milestones/archive/M03-html-backend.md |

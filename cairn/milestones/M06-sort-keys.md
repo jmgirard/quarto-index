@@ -1,6 +1,6 @@
 # M06: Sort keys
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -69,7 +69,7 @@ what prints; the sort key carried through the book sidecar record with
       `data-sort` attribute should ride into such a format at all is the
       standing ROADMAP question M03 deferred (M03 review F4/F9); this
       milestone does not settle it.
-- [x] AC4: Three diagnostics fire with the message text recorded in this
+- [ ] AC4: Three diagnostics fire with the message text recorded in this
       milestone's Decisions section: (a) `sort=` on a mark with no indexable
       text, (b) a `sort=` value with more levels than the mark's entry has,
       (c) one printed index key given two different sort keys — probed both
@@ -154,6 +154,7 @@ what prints; the sort key carried through the book sidecar record with
 - 2026-08-17: implement gate — user chose to proceed on the `ip-touching` tripwire without escalation, and chose format-neutral scope for the sort-key conflict warning over index-building formats only.
 - 2026-08-17: T1 done — `sort=` parsed with `entry=`'s level syntax, aligned per level with printed-text fallback, plus `levels_key`, `sort_levels`, `register_sort`/`sort_for`, `clamp_sort`, and a shared `derive_levels` used by both Span passes.
 - 2026-08-17: T1 minor amendment — parse moved into a new `CollectSort` pass ahead of the emitting pass; task text updated, rationale in this file's Decisions.
+- 2026-08-17: REVIEW RETURN (defect return 1) — AC4 fails inside its own promise: report (c) does not fire when one printed index key is given two different sort keys through differing level paths. Root cause F1: sort keys register per full entry path while HTML applies them per level, so a key neither propagates to nor conflicts with a sibling or parent path — reproduced emitting `\index{Aaa!subkey@sub}` beside `\index{Zzz@Aaa}`, one entry split in two, silently. F2 compounds it: consecutive empty sort levels are unexpressible, so `sort="!!Zed"` files level 1 under the literal `!Zed` rather than redirecting level 3. Status -> in-progress; F3-F10 and the two prior-review findings ride the same fix. AC4 unticked; AC1/AC2/AC3/AC5/AC7 evidence stands, AC6's promise holds but the sentence it pins is falsified by F1.
 - 2026-08-17: review — draft PR #6 opened; every criterion executed with fresh evidence (110 checks, exit 0), byte-diff clean, cairn_validate clean; three-lens fan-out spawned.
 - 2026-08-17: all tasks done; `tests/run-tests.sh --self-test` clean (110 checks, 89 at the merge base) and `tests/byte-diff.sh` clean. Status -> review.
 - 2026-08-17: T9 done — README gained "Sorting an entry under something else"; two `SUPPORTED_FORMS` exemplars, eight `README_SORT_CLAIMS` rows, the superseded "sort keys ... will arrive later" sentence pinned absent via `README_STALE`, and the `README_HTML_CLAIMS` collation row updated to what ships. Suite 96 -> 97 checks (110 with --self-test); `tests/byte-diff.sh` reports every merge-base fixture byte-identical.
@@ -284,6 +285,71 @@ byte-identically" across the 13 top-level fixtures it enumerates via
 run: no `DESIGN.md` principle changed (the DESIGN edit corrects a description
 of behavior, not an IP/GP). Profile `generic` names no toolchain checks, so
 that half of the gate is a clean no-op.
+
+### Review findings (three-lens fan-out, 2026-08-17)
+
+**[O] diff-bug — 6 confirmed defects, 4 test-quality findings, 3 suspected.**
+**[S] blame-history — no confirmed regressions** (traced every `derive_levels`
+branch against the pre-diff `Span` body; zero lines changed in
+`LATEX_LITERAL`, `escape_level`, or the anchor machinery). One asymmetry
+noted for a human: `clamp_sort` truncates where `clamp_levels` joins.
+**[S] prior-review-record — 2 findings.** GitHub inline-comment probe returned
+empty, so the per-PR thread walk was skipped; archived `## Review` sections
+were the evidence base.
+
+Dispositions:
+
+- **F1 (floor return).** Sort keys register per full entry PATH
+  (`register_sort`/`sort_for`, index.lua:309-334) while HTML applies them per
+  LEVEL (`build_entry_tree`, index.lua:757-767). Reproduced independently:
+  `entry="Aaa!sub" sort="!subkey"` beside `entry="Aaa" sort="Zzz"` emits
+  `\index{Aaa!subkey@sub}` and `\index{Zzz@Aaa}` — one entry split across two
+  makeindex keys, printed twice in two places, silently. F1b shows AC4's
+  report (c) not firing when one printed index key is given two different sort
+  keys via differing paths — the criterion failing inside its own promise.
+  F1c shows an explicit `sort="Zzz"` discarded outright in HTML because a
+  sibling mark's printed-text fallback already occupied `child.sort`. Also
+  falsifies the README sentence pinned by `README_SORT_CLAIMS`.
+- **F2 (floor return, load-bearing).** Consecutive empty sort levels are
+  unexpressible: `parse_levels` reads `!!` as a literal `!`. Reproduced:
+  `entry="aaa!bbb!ccc" sort="!!Zed"` emits `\index{"!Zed@aaa!bbb!ccc}` —
+  level 1 filed under the literal `!Zed` instead of level 3 redirected. No
+  warning. Falsifies the README's "you only write the levels you are actually
+  moving" for any level ≥3 or any non-leading gap.
+- **F3 (fix on return).** LaTeX sorts on the LaTeX-ESCAPED key
+  (`index_argument`, index.lua:357-372) while HTML sorts on the raw one, so
+  the back-ends order differently for any key containing an escaped
+  character. makeindex half inferred, not compiled — verify when fixing.
+- **F4 (fix on return).** `book_sort_keys` (index.lua:1389-1409) warns per
+  conflicting MARK, not per entry; masked only because the fixture marks the
+  term once.
+- **F5 (fix on return).** `clamp_sort` silently drops sort levels past the
+  third, and `index_argument`'s `keys[i] ~= level` guard always misfires on
+  the folded level 3, emitting a redundant sort field.
+- **F6 (fix on return).** `DESIGN.md:100` still says "two passes" (now three);
+  `DESIGN.md:43` still says sort keys land later; the LaTeX bullet never
+  mentions `sortkey@printed`.
+- **F7, F8, F9, F10 (fix on return).** No fixture covers the F1 class and the
+  AC4(c) probe is its weakest instance; `WARN_BOOK_SORT_CONFLICT` has no
+  `warn_discrimination` proof and its count silently encodes a render-order
+  assumption; the AC3 LaTeX leg cannot distinguish correct escaping from no
+  sort field emitted at all; manifest 1n's header attributes the PDF order to
+  the HTML collation rule rather than makeindex's.
+- **Prior-review F-a (follow-up).** `sort_conflicts` (index.lua:300) is a
+  third module-level accumulator, widening the standing ROADMAP row from M01
+  review R16 / M03 review P1 — absorb into that row.
+- **Prior-review F-b (follow-up).** The sort-key extraction regex is
+  double-quote-only, propagating the M01 review N9 blind spot; no false pass
+  today since every fixture quotes its values — absorb into that row.
+- **F11, F12, F13 (suspected, carry to the fix).** Silent no-op for
+  `sort=""`; warning text renders `!` doubled; the v1-store warning
+  attributes a version bump to unreadability.
+
+**Verified clean by the [O] lens:** the `@` separator escaping (every author
+`@` quoted, only the back-end's bare), `sort=` combined with cross-references,
+`number_entries`' comparator totality, once-per-mark warning firing,
+`levels_key` injectivity, and no manifest copied from output anywhere in the
+diff (the ORACLE RULE holds).
 
 **Amendment returns:** one, at implement time and before review — AC3, gated
 and user-approved (see the work log). No defect returns.

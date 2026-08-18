@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-18 (M08 and M09 planned from the latent-defect cand
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M08 | Reachable mark and marker misuse defects | in-progress | — | normal | milestones/M08-misuse-defects.md |
+| M08 | Reachable mark and marker misuse defects | review | — | normal | milestones/M08-misuse-defects.md |
 | M09 | Sort keys under the LaTeX level clamp | planned | — | normal | milestones/M09-sortkey-clamp.md |
 | M07 | Letter-group headings (HTML index) | done | — | normal | milestones/archive/M07-letter-groups.md |
 | M06 | Sort keys | done | — | normal | milestones/archive/M06-sort-keys.md |

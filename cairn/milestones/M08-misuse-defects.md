@@ -1,6 +1,6 @@
 # M08: Reachable mark and marker misuse defects
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -82,7 +82,7 @@ author reads or markup an HTML reader receives.
       say that removing a marker left its container empty, one per container; no
       index is placed at either container's position; and both containers are
       still present, structurally, in the HTML output.
-- [ ] AC5: `tests/run-tests.sh --self-test` clean (the `verify` slot).
+- [x] AC5: `tests/run-tests.sh --self-test` clean (the `verify` slot).
 
 ## Coverage
 
@@ -120,7 +120,7 @@ author reads or markup an HTML reader receives.
       the sentence at README.md:329 claiming the section id is "fixed rather
       than minted", which AC1 falsifies; pin each new sentence in the suite's
       normative README arrays, since a documented claim owes a test.
-- [ ] T8: Revert each of the four fixes alone and record the failing check and
+- [x] T8: Revert each of the four fixes alone and record the failing check and
       its message in the work log. Process evidence, deliberately mapped to no
       criterion: an acceptance criterion binding the harness rather than the
       emitted output is the instrument-bound shape the plan audit rejected.
@@ -146,6 +146,8 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: T6 — examples/self-xref.qmd carries the four self-reference shapes plus a fifth mark cross-referencing a DIFFERENT entry, the control that tells this check from one dropping every target. Verified failing first: the .tex carried \\index{Cats|see{Cats}}, \\index{Birds!Owls|seealso{Birds: Owls}}, \\index{ferrets|see{ferrets}} and \\index{Dogs|quartoindexseeboth{Dogs}{Pets}}.
 - 2026-08-18: T7 — the self-target filter sits after warn_empty_levels and before the back-end branch, comparing levels_key of the target against levels_key of the mark's own levels, so it is format-neutral and compares printed text rather than the filing key. The four reports fire in all three formats; the .tex now carries the three plain keys, Dogs with only its surviving seealso, and Lynxes untouched. Suite green: 138 checks.
 - 2026-08-18: T9 — README now states five marker rules (the div-only rule added, the top-level rule extended with the emptied container), documents that a self-referential target is dropped and judged on printed text, and replaces the "fixed rather than minted" section-id sentence with the minting rule. Seven new sentences pinned as bytes in README_MISUSE_CLAIMS and the falsified one in README_MISUSE_STALE. Suite green: 139 checks.
+- 2026-08-18: T8 — each fix reverted alone, suite run, first FAIL recorded. T2 removed: "M08-AC3: expected 1 occurrence(s) of <<marker class is written on a heading>> ... got 0". T3 removed: "M08-AC4: expected 2 occurrence(s) of <<was the only content of the>> ... got 0". T5 reverted to the fixed id: "M08-AC1: ids carried by two elements: ['qi-index']; the claimed id 'qi-index' appears 2 time(s), not once; the index section took 'qi-index', a name the document already claimed". T7 reverted: "M08-AC2: expected exactly one \\index{Cats}, found 0; ... a self-referential encap survived: \\index{Cats|see{Cats}}" and seven further clauses. All four fenced; working tree restored clean after each.
+- 2026-08-18: completion — tests/run-tests.sh --self-test clean, 153 checks (139 in the plain run). Status to review.
 ## Decisions
 
 ## Review

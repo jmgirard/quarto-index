@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-18 (M06 done and archived; M01 row pruned to the 5-
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M07 | Letter-group headings (HTML index) | planned | — | normal | milestones/M07-letter-groups.md |
+| M07 | Letter-group headings (HTML index) | in-progress | — | normal | milestones/M07-letter-groups.md |
 | M06 | Sort keys | done | — | normal | milestones/archive/M06-sort-keys.md |
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
 | M05 | Multi-chapter book support | done | M04 | normal | milestones/archive/M05-book-support.md |

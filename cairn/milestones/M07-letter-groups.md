@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M07: Letter-group headings in the HTML index
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP4, GP6
-- **Branch/PR:** —
+- **Branch/PR:** m07-letter-groups
 
 ## Goal
 
@@ -130,6 +130,7 @@ class hooks only, unchanged).
 - 2026-08-18: plan gate chose a `qi-letter` Div over a real H2 heading because Quarto copies heading inlines into the TOC (the M03 defect class) and minted heading ids would enter the uniqueness-checked namespace; falsified by accessibility evidence that non-heading group labels impede assistive navigation.
 - 2026-08-18: plan gate chose always-on headings over a ≥2-group threshold or opt-in metadata because zero-config default (GP4) and print convention; falsified by reader evidence that headings on very small indexes hurt.
 - 2026-08-18: plan chose stating book LaTeX outside `tests/byte-diff.sh`'s domain over extending its `ls-tree` to recursive because the checker's promise stays untouched (checker-regress doctrine); falsified by a filter-caused book-LaTeX drift the suite's book checks miss.
+- 2026-08-18: /milestone-implement started; branch m07-letter-groups cut from main at 89af3d5.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-18 (M06 done and archived; M01 row pruned to the 5-row retention; two follow-up rows added, two widened; 3 lessons captured, none retired; caps and byte budgets clean)_
+_Last hygiene check: 2026-08-18 (M07 done and archived; M02 row pruned to the 5-row retention; two follow-up rows added from M07 review; 2 lessons captured, none retired — the M06 manifest-comment lesson was violated this milestone, so it still earns its line; caps and byte budgets clean)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M07 | Letter-group headings (HTML index) | review | — | normal | milestones/M07-letter-groups.md |
+| M07 | Letter-group headings (HTML index) | done | — | normal | milestones/archive/M07-letter-groups.md |
 | M06 | Sort keys | done | — | normal | milestones/archive/M06-sort-keys.md |
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
 | M05 | Multi-chapter book support | done | M04 | normal | milestones/archive/M05-book-support.md |
 | M03 | HTML index back-end | done | M02 | normal | milestones/archive/M03-html-backend.md |
-| M02 | Cross-references (see / see also) | done | M01 | normal | milestones/archive/M02-cross-references.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

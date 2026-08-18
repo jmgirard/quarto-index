@@ -246,3 +246,33 @@ Review fan-out — three lenses, fresh context.
   section id `qi-index` unconditionally. F10 `index_section` takes the first
   `Index` heading. F11 no check discriminates F1 or F2.
 
+### Re-review after the defect return
+
+Fresh evidence, `tests/run-tests.sh --self-test` on m08-misuse-defects at
+c9d40bf, 2026-08-18: exit 0, **156 checks** (153 before the return, 133 on main).
+All five criteria re-verified by that run; the added checks fence AC3 and AC4
+harder rather than changing what they promise.
+
+- **F1, F2** closed and fenced. `examples/marker-shapes.qmd` holds a container
+  whose marker carries content and a top-level marker wrapping a nested one;
+  exactly one emptied-container report fires per render — the footnote — where
+  two fired before. Structural check confirms `#keeps-content` is non-empty in
+  the page, so the check proves the container really survives rather than
+  agreeing with a wrong report.
+- **F3** partially closed, deliberately. Footnotes are now reported by their own
+  kind; table cells remain uncovered and carry a ROADMAP row rather than an
+  over-promise.
+- **F4** closed. Zero misplaced-class reports in a document whose title carries
+  the marker class.
+- **F5, F9** closed. The warning and README now say neither target is dropped
+  for being one of two, with the self-target exception stated; README's section
+  sentence is conditional. Three sentences pinned, two added to the stale list.
+- **F6** closed. DESIGN.md's Architecture prose corrected in place in three
+  places, marked `corrected M08`.
+- **F11** closed. Each of the four fixes reverted alone after committing and
+  caught by a check naming the defect; messages in the work log.
+
+Deferred, on ROADMAP rows: F7 (clamping hides a self-reference, folded into the
+sort-key clamp row M09 owns), F8 (empty-level asymmetry, new row), F10
+(`index_section` first-match, folded into the acceptance-suite cluster).
+

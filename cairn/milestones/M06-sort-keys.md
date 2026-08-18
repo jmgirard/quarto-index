@@ -1,11 +1,11 @@
 # M06: Sort keys
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP2, GP4, GP5, GP6
-- **Branch/PR:** —
+- **Branch/PR:** `m06-sort-keys`
 
 ## Goal
 
@@ -101,13 +101,15 @@ what prints; the sort key carried through the book sidecar record with
 
 ## Tasks
 
-- [ ] T1: Parse `sort=` in the Span pass beside `entry=`
+- [x] T1: Parse `sort=` in the Span pass beside `entry=`
       (`index.lua:341`), reusing `parse_levels` (`index.lua:139-159`), and
       align it positionally against the derived levels before the back-end
       branch (`index.lua:399-402`) so both back-ends see one representation.
-      A level with no sort key falls back to its printed text.
+      A level with no sort key falls back to its printed text. Amended in
+      flight: the parse moved into a third filter pass ahead of the emitting
+      one — see this file's Decisions.
       *(RB tripwire: ip-touching — IP1 format-neutrality of the new syntax.)*
-- [ ] T2: LaTeX emission: extend `index_argument` (`index.lua:236-242`) to
+- [x] T2: LaTeX emission: extend `index_argument` (`index.lua:236-242`) to
       write `sortkey@printed` per level, keeping `LATEX_LITERAL`'s `"@`
       quoting (`index.lua:92`) for every `@` the extension does not itself
       write as the separator.
@@ -141,11 +143,39 @@ what prints; the sort key carried through the book sidecar record with
 ## Work log
 
 - 2026-08-17: created by /milestone-plan.
+- 2026-08-17: implementation started on `m06-sort-keys`, cut from main at 6be9f93.
+- 2026-08-17: implement gate — user chose to proceed on the `ip-touching` tripwire without escalation, and chose format-neutral scope for the sort-key conflict warning over index-building formats only.
+- 2026-08-17: T1 done — `sort=` parsed with `entry=`'s level syntax, aligned per level with printed-text fallback, plus `levels_key`, `sort_levels`, `register_sort`/`sort_for`, `clamp_sort`, and a shared `derive_levels` used by both Span passes.
+- 2026-08-17: T1 minor amendment — parse moved into a new `CollectSort` pass ahead of the emitting pass; task text updated, rationale in this file's Decisions.
+- 2026-08-17: T2 done — `index_argument` writes makeindex `sortkey@printed` per level, the separator `@` being the only unquoted one; all 79 existing suite checks pass unchanged.
 - 2026-08-17: plan-gate criteria audit ran in **full** mode (user-facing tier), fresh-context [O] reader: 11 findings + 4 coverage gaps returned; all fixed in the criteria before writing (AC1 hand-list proxy, AC1 boundary/region wording, AC2 top-level-only domain, AC3 form-list proxy + LaTeX-only scope + non-printing sort key, AC4 single-document probe axis, the byte-identity criterion's unenumerable domain + misdescribed byte-diff.sh scope, the README criterion's instrument-bound converse claim + README_HTML_CLAIMS reachability conflict; gaps 1-3 folded into AC3/AC1/AC2, gap 4 posed at the gate). Criteria then renumbered when the byte-identity criterion merged into the verify-slot criterion to clear the >7 sizing tripwire; the merged wording was re-asked the audit's questions and passes (both halves name enumerating procedures).
 - 2026-08-17: plan gate chose a separate `sort=` span attribute over an inline per-level delimiter inside `entry=` because D-001 forbids raw back-end code in mark values, `@` is a documented literal in `entry=` today (README.md:164), and README.md:164-166 already commits to separate span attributes; falsified by an authoring case per-level alignment cannot express that an inline delimiter can.
 - 2026-08-17: plan gate chose breaking a sort-key tie by printed text through the existing collator over warning on the tie because two terms legitimately share one sort key; falsified by evidence that silent tie-breaking produces order a reader reads as nondeterministic.
 - 2026-08-17: plan gate chose bumping `STORE_VERSION` to 2 over relying on `valid_record` tolerating an unknown field because a retained v1 record would be read as valid with no sort keys and silently produce a wrongly-ordered book index; falsified by evidence that a stale record cannot survive a version-bumping render.
 
 ## Decisions
+
+### Sort keys are collected in a pass of their own, before marks are emitted
+
+**Context:** T1 planned to parse `sort=` in the existing Span pass. That pass
+emits `\index{...}` inline at the mark, because the mark's position is what
+gives the entry its page. A sort key, though, belongs to the *entry*, not to
+the mark: if one mark of "The Hague" carries `sort="Hague"` and another does
+not, the two emit different makeindex keys and the term prints twice, in two
+places, identically. Requiring `sort=` on every mark of a term would fix that
+and contradict GP4.
+
+**Decision:** A third filter pass, `{ Span = CollectSort }`, runs before the
+emitting Span pass. It derives each mark's levels with the same code the
+emitting pass uses (`derive_levels`, called with reporting off so no warning
+fires twice), registers the entry's sort key, and reports a conflict; the
+emitting pass then looks the resolved key up by printed levels and applies it
+to every mark of that entry, whether or not that mark wrote `sort=`.
+
+**Consequences:** `sort=` on any one mark of a term sorts all of them. The
+levels derivation is now shared rather than duplicated, so the two passes
+cannot drift on what an entry's levels are. The conflict report keeps
+first-in-document-order-wins semantics and now fires before any emission, so
+no mark is emitted under a key the report then contradicts.
 
 ## Review

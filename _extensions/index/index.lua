@@ -727,8 +727,13 @@ local function same_levels(a, b)
   return true
 end
 
+-- `key` is the level's printed text, and it is what `children` is keyed by:
+-- node identity stays the printed text so that two terms sharing one sort key
+-- remain two entries. `sort` is only where the node FILES, filled in from the
+-- mark's aligned sort levels and falling back to `key` when there is none.
 local function new_entry(key)
-  return { key = key, children = {}, sorted = {}, locators = {}, xrefs = {} }
+  return { key = key, sort = nil, children = {}, sorted = {},
+           locators = {}, xrefs = {} }
 end
 
 -- Where a locator link points. In a single document that is the mark's anchor
@@ -744,11 +749,18 @@ local function build_entry_tree(marks)
   local root = new_entry(nil)
   for _, mark in ipairs(marks) do
     local node = root
-    for _, level in ipairs(mark.levels) do
+    for i, level in ipairs(mark.levels) do
       local child = node.children[level]
       if not child then
         child = new_entry(level)
         node.children[level] = child
+      end
+      -- One entry has one sort key: the collect pass settled which, and every
+      -- mark of the entry arrives carrying it. Assigned only once all the
+      -- same, so that a book aggregating chapters cannot have a later
+      -- chapter's record quietly overwrite the key the index was ordered by.
+      if child.sort == nil and mark.sort ~= nil then
+        child.sort = mark.sort[i]
       end
       node = child
     end
@@ -786,7 +798,18 @@ local function number_entries(node, counter, taken)
   for key in pairs(node.children) do
     keys[#keys + 1] = key
   end
-  table.sort(keys, collate)
+  -- Entries file under their sort key where they have one and under their own
+  -- printed text where they do not, and two entries sharing one sort key fall
+  -- back to collating their printed text — which keeps the order total, so
+  -- table.sort cannot see an inconsistent comparator.
+  table.sort(keys, function(a, b)
+    local ka = node.children[a].sort or a
+    local kb = node.children[b].sort or b
+    if ka ~= kb then
+      return collate(ka, kb)
+    end
+    return collate(a, b)
+  end)
   node.sorted = keys
   for _, key in ipairs(keys) do
     local child = node.children[key]

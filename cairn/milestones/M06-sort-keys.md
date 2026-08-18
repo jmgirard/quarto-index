@@ -98,57 +98,59 @@ what prints; the sort key carried through the book sidecar record with
 
 ## Coverage
 
-- AC1 → T1, T2, T3
-- AC2 → T1, T4, T6
-- AC3 → T2, T4, T7
-- AC4 → T1, T5, T8
-- AC5 → T5, T6
-- AC6 → T9
-- AC7 → T9
+- AC1 → T1, T2, T3, T11
+- AC2 → T1, T4, T6, T10
+- AC3 → T2, T4, T7, T11
+- AC4 → T1, T5, T8, T10
+- AC5 → T5, T6, T10
+- AC6 → T9, T13
+- AC7 → T9, T13
 
 ## Tasks
 
-- [x] T1: Parse `sort=` in the Span pass beside `entry=`
-      (`index.lua:341`), reusing `parse_levels` (`index.lua:139-159`), and
-      align it positionally against the derived levels before the back-end
-      branch (`index.lua:399-402`) so both back-ends see one representation.
-      A level with no sort key falls back to its printed text. Amended in
-      flight: the parse moved into a third filter pass ahead of the emitting
-      one — see this file's Decisions.
+- [x] T1: Parse `sort=` beside `entry=`, aligned per level with printed-text
+      fallback; moved in flight into its own `CollectSort` pass (Decisions).
       *(RB tripwire: ip-touching — IP1 format-neutrality of the new syntax.)*
-- [x] T2: LaTeX emission: extend `index_argument` (`index.lua:236-242`) to
-      write `sortkey@printed` per level, keeping `LATEX_LITERAL`'s `"@`
-      quoting (`index.lua:92`) for every `@` the extension does not itself
-      write as the separator.
-- [x] T3: `examples/sortkey.qmd` fixture (multi-level entries, a
-      second-level-only sort key, terms whose sort order differs from printed
-      order) and its sort-stripped twin; PDF check in `tests/run-tests.sh`
-      with the manifest derived from the fixture by construction.
-- [x] T4: HTML collation: carry the sort key onto the entry-tree node
-      (`new_entry`, `index.lua:534-536`; `build_entry_tree`,
-      `index.lua:547-580`) without changing node identity — `children` stays
-      keyed by printed level text — and compare sort keys in
-      `number_entries`' `table.sort` (`index.lua:593`), ties falling through
-      to `collate` on the printed text.
-- [x] T5: Book path: add the sort key to the sidecar mark record
-      (`index.lua:1056-1057`), accept it in `valid_record`
-      (`index.lua:1093-1121`), bump `STORE_VERSION` to 2 (`index.lua:970`);
-      add a cross-chapter sort key to `examples/book/` and a cross-chapter
-      conflicting-sort-key fixture.
-- [x] T6: HTML checks for the sortkey fixture and its twin in
-      `tests/htmlindex.py` + `tests/run-tests.sh`, asserting order at every
-      level.
-- [x] T7: Extend the escaping probe to `sort=` values across PDF, HTML and
-      gfm legs.
-- [x] T8: The three diagnostics, their message text recorded in this file's
-      Decisions section, their control renders, and the reversion proof for
-      each.
-- [x] T9: README `sort=` section; update `README_HTML_CLAIMS` and add the
-      `README_STALE` absence assertion; run `tests/byte-diff.sh` and
-      `tests/run-tests.sh --self-test`.
+- [x] T2: LaTeX emission: `index_argument` writes `sortkey@printed` per level,
+      keeping `LATEX_LITERAL`'s quoting for every `@` the extension itself
+      does not write.
+- [x] T3: `examples/sortkey.qmd`, its sort-stripped twin, and PDF checks whose
+      manifest is derived from the fixture by construction.
+- [x] T4: HTML collation on the sort key in `number_entries`, node identity
+      still keyed on printed text, ties falling through to `collate`.
+- [x] T5: Book path: sort key in the sidecar record, `valid_record` accepts
+      it, `STORE_VERSION` 1 → 2, cross-chapter fixtures.
+- [x] T6: HTML order checks at every level, fixture and twin.
+- [x] T7: The escaping probe extended to `sort=` across PDF, HTML and gfm.
+- [x] T8: The three diagnostics, their text in this file's Decisions, control
+      renders, and a reversion proof for each.
+- [x] T9: README `sort=` section; `README_HTML_CLAIMS` updated and the
+      `README_STALE` absence assertion added.
+- [x] T10: Re-key sort registration from the entry path to the level path, so
+      every mark of one printed level sorts alike and two marks sorting that
+      level differently conflict whatever paths they sit on (F1, F1b, F1c);
+      the same re-keying per entry in `book_sort_keys` (F4); fixtures for the
+      class, with the AC4(c) probe rewritten onto its strongest instance (F7).
+      F8 landed here too, in the same check.
+- [ ] T11: Write the LaTeX sort field with makeindex's own quoting rather than
+      LaTeX escaping, so both back-ends order on the same characters —
+      compiled, not inferred (F3); the AC3 LaTeX leg strengthened to tell
+      correct escaping from no sort field at all (F9).
+- [ ] T12: `clamp_sort`'s silent drop past level 3 and `index_argument`'s
+      misfiring guard on the folded level (F5); `sort=""`, the doubled `!` in
+      warning text, and the v1-store warning's misattributed cause (F11-F13).
+- [ ] T13: `DESIGN.md`'s "two passes" and "sort keys land later" (F6); the
+      README's skipped-level rule and the sentence F1 falsifies, re-pinned;
+      manifest 1n's header (F10); the two prior-review follow-ups absorbed
+      into the standing accumulator ROADMAP row; `--self-test` and
+      `byte-diff.sh` clean.
 
 ## Work log
 
+- 2026-08-17: T10 done — sort keys now register against a printed LEVEL path rather than a whole entry, so a key written for `Aaa` applies whether `Aaa` stands alone or parents a sub-entry, and a level a mark leaves alone no longer shuts out the mark that declares it. `sort_levels` returns what the author declared (the fallback moved into `sort_for`); the book store carries the chapter's declared key map instead of a resolved key per mark, `STORE_VERSION` 2 -> 3, and `book_sort_keys` merges those maps per path, reporting once per entry. `examples/sortkey-paths.qmd` + manifests 1q/1r pin both legs; the AC4(c) probe moved onto differing level paths. Suite 97 -> 100 checks (114 with --self-test).
+- 2026-08-17: T10 discrimination — the pre-fix filter, rendered against the new fixture, emits `\index{Hague@Hague, The}` beside `\index{Hague, The!Scheveningen}` (one term, two makeindex keys) and files `Ccc` in the HTML index under its printed text with the declared `Www` discarded; both new checks fail on it, and the strengthened AC4(c) probe draws the conflict report 0 times.
+- 2026-08-17: T10 amendment (minor) — F8's two halves landed with T10 rather than T12: the book conflict report gained a `warn_discrimination` proof, and its render-order assumption is now asserted by logging the two renders separately (0 on the first, 1 on the second) instead of stated in a comment.
+- 2026-08-17: implement gate (resume) — user chose level-path sort keys, documenting the two-adjacent-skipped-levels limit rather than adding syntax for it, and accepted the Coverage amendment naming the fix tasks.
 - 2026-08-17: created by /milestone-plan.
 - 2026-08-17: implementation started on `m06-sort-keys`, cut from main at 6be9f93.
 - 2026-08-17: implement gate — user chose to proceed on the `ip-touching` tripwire without escalation, and chose format-neutral scope for the sort-key conflict warning over index-building formats only.

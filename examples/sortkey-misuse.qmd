@@ -19,7 +19,12 @@ A sort key deeper than the entry it sorts. The entry is the visible term,
 which is always a single level, so the second sort level places nothing:
 [Solo]{.index sort="first!second"}.
 
-One entry given two different sort keys files in two places, which is not
-something an index can do. The first mark in document order is the one that
-wins, and the second is reported: [Ambivalence]{.index sort="Aaa"} and later
-[Ambivalence]{.index sort="Bbb"}.
+One printed index level given two different sort keys files in two places,
+which is not something an index can do. The two marks below do not write the
+same entry — each carries its own sub-entry — but they share their first
+level, and it is that level each of them writes a key for. Sharing a level is
+enough: both back-ends order an index level by level, so the shared level
+would file under one key here and another there, and the term would print
+twice. The first mark in document order wins and the second is reported:
+[Ambivalence]{.index entry="Ambivalence!first" sort="Aaa"} and later
+[Ambivalence]{.index entry="Ambivalence!second" sort="Bbb"}.

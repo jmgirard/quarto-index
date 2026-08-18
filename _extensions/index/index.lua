@@ -253,15 +253,18 @@ local function warn_empty_levels(levels, context)
   end
 end
 
--- Parse a `sort=` value and line it up with the entry's levels. An absent or
--- empty sort level means "file this level under its own printed text", so the
--- caller never has to ask whether a sort level exists — the returned list is
--- always exactly as long as `levels`. That fallback is why an empty sort level
--- is not warned about the way an empty ENTRY level is: there it is a hole in
--- what the author is indexing, here it is the ordinary way to say "leave this
--- level alone".
+-- Parse a `sort=` value and line it up with the entry's levels. The result
+-- says only what the AUTHOR declared: element i is the sort key written for
+-- level i, or `false` where the author wrote nothing there. The printed-text
+-- fallback is applied later, by `sort_for`, because only the registry knows
+-- whether some other mark of the same level declared a key — substituting the
+-- fallback here is what made a silent mark overwrite a declaring one.
 --
--- Returns nil when the value contributes no sort key at all, which keeps a
+-- An empty sort level means "leave this level alone", which is why it is not
+-- warned about the way an empty ENTRY level is: there it is a hole in what the
+-- author is indexing, here it is the ordinary way to skip a level.
+--
+-- Returns nil when the value declares no sort key at all, which keeps a
 -- document that never writes `sort=` byte-identical in the LaTeX back-end.
 local function sort_levels(value, levels, context, report)
   if value == nil then
@@ -272,65 +275,101 @@ local function sort_levels(value, levels, context, report)
     warn(("sort= on %s has %d levels but the entry has %d; the extra sort "
           .. "levels were ignored"):format(context, #parsed, #levels))
   end
-  local aligned, any = {}, false
+  local declared, any = {}, false
   for i = 1, #levels do
     local key = parsed[i]
     if key ~= nil and key ~= "" then
-      aligned[i] = key
+      declared[i] = key
       any = true
     else
-      aligned[i] = levels[i]
+      -- `false`, not nil: the list is written to the book store and read back
+      -- through JSON, where a hole in the middle of an array is not a shape
+      -- either side can rely on.
+      declared[i] = false
     end
   end
   if not any then
     return nil
   end
-  return aligned
+  return declared
 end
 
--- Printed index key -> the first sort key seen for it, and the context that
--- wrote it. Two marks that file ONE printed entry under two different sort
--- keys are an authoring mistake with a visible cost in both back-ends: the
--- HTML tree is keyed on the printed levels, so one of the two keys simply
+-- The printed level path down to level `n`, as one injective string. A sort
+-- key belongs to a LEVEL under its own parents, not to a whole entry: both
+-- back-ends order level by level — makeindex reads `sortkey@printed` inside
+-- each `!`-separated level, and the HTML tree keys each node on its printed
+-- level text — so "Aaa" must file the same way whether it was written alone
+-- or as the parent of a sub-entry. Keying the registry on the full entry path
+-- instead is what split one printed entry across two keys.
+local function level_path(levels, n)
+  local prefix = {}
+  for i = 1, n do
+    prefix[i] = levels[i]
+  end
+  return levels_key(prefix)
+end
+
+-- Printed level path -> the first sort key declared for it, and the context
+-- that declared it. Two marks that file ONE printed level under two different
+-- sort keys are an authoring mistake with a visible cost in both back-ends:
+-- the HTML tree is keyed on the printed levels, so one of the two keys simply
 -- loses, and makeindex treats the two as different keys and prints the entry
 -- twice, in two places, identically. Neither is recoverable from the output,
 -- so the mistake is reported instead. The accumulator is format-neutral —
 -- filled before any back-end branch — because it is a property of what the
 -- author wrote, like every other warning about the mark itself.
-local sort_conflicts = {}
+local sort_keys = {}
 
--- Register a mark's declared sort key for its printed entry, and report a
--- second, different one. First mark in document order wins, so the index does
--- not depend on which mark the author edits last. Only a mark that actually
--- writes `sort=` registers or conflicts: a term is usually marked in several
--- places and a sort key written on one of them is meant for the entry, not for
--- that one mark (GP4), so the marks that stay silent inherit it rather than
--- contradict it.
-local function register_sort(levels, sort, context)
-  if sort == nil then
+-- Register a mark's declared sort keys, one per level, and report a second,
+-- different key for a level already spoken for. First mark in document order
+-- wins, so the index does not depend on which mark the author edits last.
+-- Only a level the author actually wrote a key for registers or conflicts: a
+-- term is usually marked in several places and a sort key written on one of
+-- them is meant for the entry, not for that one mark (GP4), so the marks that
+-- stay silent inherit it rather than contradict it.
+local function register_sort(levels, declared, context)
+  if declared == nil then
     return
   end
-  local key = levels_key(levels)
-  local seen = sort_conflicts[key]
-  if seen == nil then
-    sort_conflicts[key] = { sort = sort, context = context }
-    return
-  end
-  if levels_key(seen.sort) ~= levels_key(sort) then
-    -- The two marks are usually described identically — the same term, twice
-    -- — so the message names the two KEYS, which are what actually differ
-    -- and what the author has to choose between.
-    warn(('index entry in %s is already sorted as "%s"; the sort key "%s" '
-          .. 'written here cannot apply as well, so the first one wins')
-         :format(context, levels_key(seen.sort), levels_key(sort)))
+  for i = 1, #levels do
+    local key = declared[i]
+    if key then
+      local path = level_path(levels, i)
+      local seen = sort_keys[path]
+      if seen == nil then
+        sort_keys[path] = { sort = key, context = context }
+      elseif seen.sort ~= key then
+        -- The two marks are usually described identically — the same term,
+        -- twice — so the message names the two KEYS, which are what actually
+        -- differ and what the author has to choose between.
+        warn(('index entry in %s is already sorted as "%s"; the sort key '
+              .. '"%s" written here cannot apply as well, so the first one '
+              .. 'wins'):format(context, seen.sort, key))
+      end
+    end
   end
 end
 
--- What the emitting pass applies: the sort key the collect pass resolved for
--- this printed entry, whichever mark of it declared one.
+-- What the emitting pass applies: for each level, the key registered for that
+-- level's path — whichever mark of it declared one — and the level's own
+-- printed text where no mark declared anything. Returns nil when no level on
+-- this path has a key, so a mark with no sort key anywhere above or at it
+-- emits exactly what it always did.
 local function sort_for(levels)
-  local seen = sort_conflicts[levels_key(levels)]
-  return seen and seen.sort or nil
+  local resolved, any = {}, false
+  for i = 1, #levels do
+    local seen = sort_keys[level_path(levels, i)]
+    if seen then
+      resolved[i] = seen.sort
+      any = true
+    else
+      resolved[i] = levels[i]
+    end
+  end
+  if not any then
+    return nil
+  end
+  return resolved
 end
 
 -- Clamp sort levels alongside the entry levels clamp_levels performs. The
@@ -1189,7 +1228,7 @@ local STORE_SUFFIX = ".qi.json"
 -- version that wrote it: nothing prunes it, and a project keeps rendering
 -- across extension upgrades. A record whose version is not this one is
 -- ignored rather than read as if its fields still meant what they did.
-local STORE_VERSION = 2
+local STORE_VERSION = 3
 
 -- Paths from Quarto are the host's; hrefs are always `/`-separated.
 local function as_href(path)
@@ -1276,8 +1315,17 @@ local function store_write(ctx, marker)
       xrefs[#xrefs + 1] = { attr = xref.kind.attr, levels = xref.levels }
     end
     marks[#marks + 1] =
-      { levels = mark.levels, sort = mark.sort, xrefs = xrefs,
-        anchor = mark.anchor }
+      { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor }
+  end
+  -- The chapter's DECLARED sort keys, one per printed level path, rather than
+  -- a resolved key per mark. A mark's resolved key already has this chapter's
+  -- fallbacks filled in, and a fallback is indistinguishable from a declared
+  -- key once written down — so the book would read one chapter's fallback as
+  -- a rival to another chapter's real key, and, being first in book order,
+  -- let the fallback win.
+  local sorts = {}
+  for path, seen in pairs(sort_keys) do
+    sorts[path] = seen.sort
   end
   -- Every step here can fail on an ordinary machine — a stale file where the
   -- directory belongs, a read-only project tree, a full disk — and none of
@@ -1292,7 +1340,7 @@ local function store_write(ctx, marker)
     end
     local written, write_err = fh:write(pandoc.json.encode(
       { version = STORE_VERSION, file = ctx.file, href = ctx.href,
-        marker = marker, marks = marks }))
+        marker = marker, marks = marks, sorts = sorts }))
     fh:close()
     if not written then
       error(tostring(write_err), 0)
@@ -1336,20 +1384,21 @@ local function valid_record(data, file)
     if mark.anchor ~= nil and type(mark.anchor) ~= "string" then
       return false
     end
-    -- A sort key is one string per level, aligned with them: a record whose
-    -- two lists disagree would file some level under a key meant for another.
-    if mark.sort ~= nil then
-      if type(mark.sort) ~= "table" or #mark.sort ~= #mark.levels then
-        return false
-      end
-      for _, key in ipairs(mark.sort) do
-        if type(key) ~= "string" then
-          return false
-        end
-      end
-    end
     if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
       return false
+    end
+  end
+  -- The chapter's declared sort keys: a printed level path to the key filed
+  -- under it, both strings. A record with none is ordinary — most chapters
+  -- declare no sort key at all.
+  if data.sorts ~= nil then
+    if type(data.sorts) ~= "table" then
+      return false
+    end
+    for path, key in pairs(data.sorts) do
+      if type(path) ~= "string" or type(key) ~= "string" then
+        return false
+      end
     end
   end
   return true
@@ -1389,27 +1438,54 @@ end
 local function book_sort_keys(records)
   local resolved = {}
   for _, record in ipairs(records) do
-    for _, mark in ipairs(record.marks or {}) do
-      if mark.sort ~= nil and type(mark.levels) == "table" then
-        local key = levels_key(mark.levels)
-        local seen = resolved[key]
-        if seen == nil then
-          resolved[key] = { sort = mark.sort, file = record.file }
-        elseif levels_key(seen.sort) ~= levels_key(mark.sort) then
-          warn(('index entry "%s" is sorted as "%s" in %s and as "%s" in %s; '
-                .. 'one entry cannot file in two places, so the first in book '
-                .. 'order wins')
-               :format(key, levels_key(seen.sort), seen.file,
-                       levels_key(mark.sort), record.file))
-        end
+    -- One chapter's paths in a fixed order. `pairs` walks a Lua table in
+    -- whatever order it likes, and two chapters each declaring two rival keys
+    -- would otherwise report them in an order that changed between renders.
+    local paths = {}
+    for path in pairs(record.sorts or {}) do
+      paths[#paths + 1] = path
+    end
+    table.sort(paths)
+    for _, path in ipairs(paths) do
+      local key = record.sorts[path]
+      local seen = resolved[path]
+      if seen == nil then
+        resolved[path] = { sort = key, file = record.file }
+      elseif seen.sort ~= key then
+        -- Once per printed level path, not once per mark that carries it: the
+        -- author has one thing to fix however many times the term is marked.
+        warn(('index entry "%s" is sorted as "%s" in %s and as "%s" in %s; '
+              .. 'one entry cannot file in two places, so the first in book '
+              .. 'order wins')
+             :format(path, seen.sort, seen.file, key, record.file))
       end
     end
   end
   return resolved
 end
 
+-- The book counterpart of `sort_for`: the same level-path lookup with the
+-- same printed-text fallback, reading the book's merged registry rather than
+-- this chapter's.
+local function book_sort_for(keys, levels)
+  local resolved, any = {}, false
+  for i = 1, #levels do
+    local seen = keys[level_path(levels, i)]
+    if seen then
+      resolved[i] = seen.sort
+      any = true
+    else
+      resolved[i] = levels[i]
+    end
+  end
+  if not any then
+    return nil
+  end
+  return resolved
+end
+
 local function book_marks(ctx, records)
-  local sort_keys = book_sort_keys(records)
+  local book_keys = book_sort_keys(records)
   local marks = {}
   for _, record in ipairs(records) do
     for _, mark in ipairs(record.marks or {}) do
@@ -1420,13 +1496,14 @@ local function book_marks(ctx, records)
           xrefs[#xrefs + 1] = { kind = kind, levels = xref.levels }
         end
       end
-      local resolved = sort_keys[levels_key(mark.levels)]
       marks[#marks + 1] = {
         levels = mark.levels,
-        -- The book's key for this entry, not this mark's own: a term marked
-        -- in three chapters with a sort key written in one of them files
-        -- under that key everywhere, exactly as it does inside one document.
-        sort = resolved and resolved.sort or nil,
+        -- The book's keys for this mark's levels, not this chapter's own: a
+        -- term marked in three chapters with a sort key written in one of
+        -- them files under that key everywhere, exactly as it does inside one
+        -- document — and a level's key applies wherever that level appears,
+        -- alone or as some sub-entry's parent.
+        sort = book_sort_for(book_keys, mark.levels),
         xrefs = xrefs,
         anchor = mark.anchor,
         -- A mark in the chapter holding the index links within its own page,

@@ -565,9 +565,14 @@ WARN_BOOK_SORT_CONFLICT='one entry cannot file in two places, so the first in bo
 # which files it ahead of both. After two renders the later chapter's stored
 # record contributes its locators. The space in the filename is written
 # raw, exactly as Quarto writes its own links to that page.
+#
+# `Contested` carries three locators: one from index.qmd, and two from the
+# later chapter, which marks it twice to show that the conflict is reported
+# once for the entry rather than once per mark that carries it. Locators
+# appear in book order and, within a chapter, in the order they are marked.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_ORDER_INDEX <<'MANIFEST' || true
-0	Contested	#qi-mark-2 later chapter.html#qi-mark-2
+0	Contested	#qi-mark-2 later chapter.html#qi-mark-2 later chapter.html#qi-mark-3
 0	Early	#qi-mark-1
 0	Late	later chapter.html#qi-mark-1
 MANIFEST
@@ -1836,6 +1841,67 @@ read -r -d '' SORTKEY_TWIN_HTML_INDEX <<'MANIFEST' || true
 0	von Neumann	1
 0	Ångström	1
 0	Édouard Manet	1
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 1q — every `\index{}` argument examples/sortkey-paths.tex must
+# carry, in document order (M06-AC1/AC2). ORACLE RULE: derived by hand from
+# examples/sortkey-paths.qmd, never read back from a render.
+#
+# Derived as follows. A sort key is declared for one LEVEL of the entry it is
+# written on — positionally, an empty sort level meaning "leave this level
+# alone" — and applies to that level wherever that level appears, under the
+# same parents. A level no mark declares a key for keeps its own printed text,
+# and a level whose key equals its printed text needs no `sortkey@` prefix at
+# all. So:
+#
+#   `Hague, The` is declared `Hague` on the mark that carries no sub-entry,
+#   and the later `Hague, The!Scheveningen` inherits it at level 1 while
+#   level 2 keeps its own text.
+#   `Alpha` is declared `Zed` on the mark that DOES carry a sub-entry, and
+#   the later bare `Alpha` inherits it — the same rule read the other way.
+#   `Beta` has a key declared for level 2 only, so level 1 stays `Beta` and
+#   the bare `Beta` mark carries no sort field anywhere: a key must not climb.
+#   `Ccc` is left alone by the first mark and declared `Www` by the second,
+#   so `Www` is the only declaration at that level and wins for both marks.
+#
+# The check below also asserts this manifest names as many entries as the
+# fixture has marks, so a row cannot go missing unnoticed.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_PATHS_ENTRIES <<'MANIFEST' || true
+Hague@Hague, The
+Hague@Hague, The!Scheveningen
+Zed@Alpha!inner
+Zed@Alpha
+Beta!gkey@gamma
+Beta
+Www@Ccc!pk@p
+Www@Ccc
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 1r — the generated index in examples/sortkey-paths.html
+# (M06-AC2). EXHAUSTIVE, same format and oracle rule as manifest 1o.
+#
+# The top-level keys are the ones manifest 1q derives — Zed, Beta, Www and
+# Hague — so the four top-level entries collate Beta, Hague, Www, Zed and
+# therefore print as Beta, `Hague, The`, Ccc, Alpha. Every top-level entry
+# here has exactly one sub-entry and one locator of its own.
+#
+# `Ccc` is the row that reads differently under a key remembered against a
+# whole entry rather than against a level: there the first mark's untouched
+# level 1 would occupy the slot and file the term under `Ccc`, putting it
+# second rather than third.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_PATHS_HTML_INDEX <<'MANIFEST' || true
+0	Beta	1
+1	gamma	1
+0	Hague, The	1
+1	Scheveningen	1
+0	Ccc	1
+1	p	1
+0	Alpha	1
+1	inner	1
 MANIFEST
 
 # Manifest 1j — the \index{} commands examples/marker.tex must carry (M04-AC2).
@@ -3302,9 +3368,16 @@ rm -rf "$ORDER_OUT" "$ORDER_DIR/.quarto"
 # Rendered twice on purpose: on the first pass the later chapter has not run
 # when the marker chapter builds the index, which is the very hazard the
 # marker-not-last warning is about.
-( cd "$ORDER_DIR" && quarto render --to html && quarto render --to html ) \
-  > "$WORK/book-order.log" 2>&1 \
-  || { tail -30 "$WORK/book-order.log" >&2; fail "M05 hardening: the ordering fixture failed to render"; }
+# Logged separately rather than appended to one file: the cross-chapter sort
+# conflict below is asserted per render, so which render finds it is checked
+# instead of assumed.
+( cd "$ORDER_DIR" && quarto render --to html ) \
+  > "$WORK/book-order-1.log" 2>&1 \
+  || { tail -30 "$WORK/book-order-1.log" >&2; fail "M05 hardening: the ordering fixture failed to render"; }
+( cd "$ORDER_DIR" && quarto render --to html ) \
+  > "$WORK/book-order-2.log" 2>&1 \
+  || { tail -30 "$WORK/book-order-2.log" >&2; fail "M05 hardening: the ordering fixture failed to render (second pass)"; }
+cat "$WORK/book-order-1.log" "$WORK/book-order-2.log" > "$WORK/book-order.log"
 
 check_warning_count "$WORK/book-order.log" "$WARN_MARKER_NOT_LAST" 2 \
   "M05 hardening"
@@ -3314,13 +3387,22 @@ pass "M05 hardening: a marker that is not last, and a second marker chapter, are
 
 # M06-AC4 (c), the half a single document cannot probe: each chapter renders in
 # its own process, so a term sorted one way in one chapter and another way in
-# a second is invisible to the in-document collect pass. Reported ONCE across
-# the two renders, and derived rather than observed: on the first render the
-# marker chapter runs before the later chapter and the store holds no record
-# of it, so only the second render has both keys to compare.
-check_warning_count "$WORK/book-order.log" "$WARN_BOOK_SORT_CONFLICT" 1 \
-  "M06-AC4 (book)"
-pass "M06-AC4: one entry sorted two ways in two chapters is reported once, and the first chapter in book order wins"
+# a second is invisible to the in-document collect pass.
+#
+# Which render finds it is asserted, not assumed. On the first pass the marker
+# chapter builds the index before the later chapter has run, so the store holds
+# no record of it and there is nothing to compare; only the second pass has
+# both chapters' keys. A single combined count would pass just as happily if
+# the report fired on the first pass and not the second, which would mean the
+# conflict was being found somewhere it cannot yet be known.
+check_warning_count "$WORK/book-order-1.log" "$WARN_BOOK_SORT_CONFLICT" 0 \
+  "M06-AC4 (book, first render)"
+check_warning_count "$WORK/book-order-2.log" "$WARN_BOOK_SORT_CONFLICT" 1 \
+  "M06-AC4 (book, second render)"
+# The later chapter marks the contested term TWICE. The clash is one thing for
+# the author to fix, so the report is per printed level path and not per mark;
+# without a second mark the count above would pass on either rule.
+pass "M06-AC4: one entry sorted two ways in two chapters is reported once on the render that can see both, and the first chapter in book order wins"
 
 printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
 HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$ORDER_OUT" \
@@ -3576,6 +3658,86 @@ for depth in sorted(keyed):
 print(f'ok   M06-AC2: the sort keys move all {moved} entries, at every one of '
       f'the {len(keyed)} depths the index nests to')
 ORDERPY
+
+# ---------------------------------------------------------------------------
+# M06-AC1/AC2 — a sort key belongs to a LEVEL, under its own parents, not to
+# the whole entry that declared it.
+#
+# Both back-ends order level by level: the index tool reads `sortkey@printed`
+# inside each level of an entry, and the HTML tree keys each node on its own
+# printed text. A key remembered against the whole entry therefore files one
+# printed term under two different keys depending on whether a sub-entry
+# happened to follow it — in LaTeX the term is printed twice, in two places,
+# identically, with nothing in the log to say so.
+#
+# Both legs are checked, because the two fail differently: LaTeX splits the
+# entry, while HTML keeps one node and silently drops one of the two keys.
+# ---------------------------------------------------------------------------
+quarto render examples/sortkey-paths.qmd --to latex \
+  > "$WORK/sortkey-paths-latex.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-paths-latex.log" >&2; fail "M06-AC1: sortkey-paths.qmd failed to render to LaTeX"; }
+if grep -q '^(W)' "$WORK/sortkey-paths-latex.log"; then
+  grep '^(W)' "$WORK/sortkey-paths-latex.log" >&2
+  fail "M06-AC1: examples/sortkey-paths.qmd warned; every mark in it is well formed"
+fi
+printf '%s\n' "$SORTKEY_PATHS_ENTRIES" > "$WORK/sk-paths-entries.txt"
+python3 - examples/sortkey-paths.qmd examples/sortkey-paths.tex \
+  "$WORK/sk-paths-entries.txt" <<'PATHSPY'
+import re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+tex = open(sys.argv[2], encoding='utf-8').read()
+expected = [l for l in open(sys.argv[3], encoding='utf-8').read().split('\n')
+            if l.strip()]
+
+# By construction, not by hand: the manifest must account for every mark the
+# fixture writes. A row quietly dropped from it would otherwise turn a split
+# entry into a passing check.
+marks = src.count('{.index')
+if marks != len(expected):
+    print(f'FAIL: M06-AC1: the fixture writes {marks} index marks but the '
+          f'manifest names {len(expected)} entries', file=sys.stderr)
+    sys.exit(1)
+
+actual = re.findall(r'\\index\{(.*?)\}', tex)
+if actual != expected:
+    print('FAIL: M06-AC1: the emitted index entries do not match the manifest',
+          file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such entry emitted>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  entry {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+
+# The property the manifest exists to pin, asserted of the manifest itself so
+# it cannot be satisfied by a manifest that stopped testing it: each printed
+# top-level term must carry ONE sort field across every entry that starts with
+# it, however deep that entry goes.
+keys = {}
+for entry in expected:
+    level1 = entry.split('!')[0]
+    sortkey, _, printed = level1.partition('@')
+    if not printed:
+        sortkey, printed = printed, sortkey
+    keys.setdefault(printed, set()).add(sortkey)
+split = {p: sorted(k) for p, k in keys.items() if len(k) > 1}
+if split:
+    print(f'FAIL: M06-AC1: manifest files one printed term under two keys, '
+          f'which is the split it exists to rule out: {split}',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC1: all {len(expected)} entries emitted as the manifest '
+      f'derives them, each of the {len(keys)} top-level terms under one key '
+      f'whether or not a sub-entry follows it')
+PATHSPY
+
+quarto render examples/sortkey-paths.qmd --to html \
+  > "$WORK/sortkey-paths-html.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-paths-html.log" >&2; fail "M06-AC2: sortkey-paths.qmd failed to render to HTML"; }
+check_html_index_manifest examples/sortkey-paths.html \
+  "$SORTKEY_PATHS_HTML_INDEX" "M06-AC2 (level paths)"
+check_html_index_links examples/sortkey-paths.html "M06-AC2 (level paths)"
 
 # ---------------------------------------------------------------------------
 # M06-AC4 — the three sort-key reports.
@@ -3884,6 +4046,11 @@ PY
   warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_EXTRA" 1 \
     "M06-AC4"
   warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_CONFLICT" 1 \
+    "M06-AC4"
+  # The cross-chapter conflict is the only report an author gets that two
+  # chapters sorted one term two ways; it is proved discriminating like the
+  # three a single document can draw.
+  warn_discrimination "$WORK/book-order-2.log" "$WARN_BOOK_SORT_CONFLICT" 1 \
     "M06-AC4"
   warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"

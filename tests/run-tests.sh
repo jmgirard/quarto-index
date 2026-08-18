@@ -125,6 +125,7 @@ README_SORT_CLAIMS=(
   $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
   $'ordering is per back-end\tA sort key files an entry under the ordering of whichever back-end builds the'
   $'plain keys order alike\tSort keys of plain letters and digits order the same way everywhere'
+  $'keys past the ceiling\tA sort key written for a level past the third goes with that level'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -551,6 +552,7 @@ MANIFEST
 # read or write a record, so a check that stopped firing would leave an IP2
 # guarantee unproven.
 WARN_STORE_UNREADABLE='could not be read and were ignored'
+WARN_STORE_STALE='were written by a different version of this extension and were ignored'
 WARN_STORE_UNWRITABLE='could not record index marks for'
 WARN_MARKER_NOT_LAST='chapter(s) come after it'
 WARN_MARKER_SECOND='comes first in book order and carries one too'
@@ -2976,6 +2978,14 @@ BOOK_DIR="examples/book"
 BOOK_OUT="$BOOK_DIR/_book"
 STORE_SUFFIX='.qi.json'
 STORE_DIR='quarto-index'
+# Read from the filter rather than written down here. Every planted record
+# below has to be one the CURRENT filter would accept, or the check meant to
+# prove some other rule keeps it out passes because the version rejected it
+# first — which is what happened when this milestone bumped the version.
+STORE_VERSION=$(sed -n 's/^local STORE_VERSION = \([0-9][0-9]*\)$/\1/p' \
+  _extensions/index/index.lua)
+[ -n "$STORE_VERSION" ] \
+  || fail "M05-AC1: could not read STORE_VERSION from the filter"
 
 # The store's own name is a pinned surface like the HTML back-end's ids: the
 # footprint sweep below asks "no file named like this under the output
@@ -3336,13 +3346,21 @@ check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
 # planted record is well-formed and names a chapter absent from _quarto.yml,
 # so only the chapter-list filter can keep it out.
 GHOST="$BOOK_DIR/.quarto/$STORE_DIR/ghost.qmd$STORE_SUFFIX"
-cat > "$GHOST" <<'JSON'
-{"version":1,"file":"ghost.qmd","href":"ghost.html","marker":false,
+cat > "$GHOST" <<JSON
+{"version":$STORE_VERSION,"file":"ghost.qmd","href":"ghost.html","marker":false,
  "marks":[{"levels":["Ghost Chapter Term"],"xrefs":[],"anchor":"qi-mark-1"}]}
 JSON
+# The planted record must be one this filter would otherwise accept, or the
+# chapter-list filter is not what kept it out. Asserted, not assumed: no
+# record-ignored report may fire on this render.
+
 ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
   > "$WORK/book-ghost.log" 2>&1 \
   || { tail -30 "$WORK/book-ghost.log" >&2; fail "M05 hardening: the marker chapter failed to re-render"; }
+check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M05 hardening (ghost record)"
+check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE" 0 \
+  "M05 hardening (ghost record)"
 check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (stale chapter ignored)" hrefs
 rm -f "$GHOST"
@@ -3351,7 +3369,7 @@ rm -f "$GHOST"
 # so, never take the render down (IP2).
 CORRUPT="$BOOK_DIR/.quarto/$STORE_DIR/one.qmd$STORE_SUFFIX"
 cp "$CORRUPT" "$WORK/one-record.json"
-printf '{"version":1,"file":"one.qmd","href":"one.html","marker":false,"marks":[{"levels":"not a list"}]}\n' > "$CORRUPT"
+printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":false,"marks":[{"levels":"not a list"}]}\n' "$STORE_VERSION" > "$CORRUPT"
 ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
   > "$WORK/book-corrupt.log" 2>&1 \
   || { tail -30 "$WORK/book-corrupt.log" >&2; fail "M05 hardening: a wrongly shaped store record took the render down; IP2 forbids it"; }
@@ -3359,6 +3377,21 @@ check_warning_count "$WORK/book-corrupt.log" "$WARN_STORE_UNREADABLE" 1 \
   "M05 hardening"
 cp "$WORK/one-record.json" "$CORRUPT"
 pass "M05 hardening: a wrongly shaped store record is reported and skipped, and the render survives"
+
+# A record an OLDER version of the extension left behind is perfectly readable
+# and merely stale. It costs the same chapter and takes the same fix, but the
+# author is told which of the two it is: sent looking for a corrupt file that
+# is not there, they cannot act on the report they were given.
+printf '{"version":0,"file":"one.qmd","href":"one.html","marker":false,"marks":[{"levels":["Older Version Term"],"xrefs":[],"anchor":"qi-mark-1"}]}\n' > "$CORRUPT"
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-stale.log" 2>&1 \
+  || { tail -30 "$WORK/book-stale.log" >&2; fail "M05 hardening: a record from an older version took the render down; IP2 forbids it"; }
+check_warning_count "$WORK/book-stale.log" "$WARN_STORE_STALE" 1 \
+  "M06 (stale store record)"
+check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M06 (stale store record)"
+cp "$WORK/one-record.json" "$CORRUPT"
+pass "M06: a record from an older extension version is reported as stale rather than as unreadable, and the render survives"
 
 # ---------------------------------------------------------------------------
 # The ordering fixture: marker in the first chapter, a second marker in the
@@ -3761,6 +3794,31 @@ for fmt in latex gfm; do
     "M06-AC4 ($fmt)"
   pass "M06-AC4: all three sort-key reports fire exactly once each in $fmt"
 done
+
+# The two folded-entry marks in the same fixture. A sort key is aligned with
+# the entry level it was written for, so the guard that decides whether a
+# level needs a sort field at all has to compare against THAT level and not
+# against the folded text the back-end prints — otherwise every folded entry
+# comes out carrying a sort field naming its own third level, which is what
+# no sort field already means.
+python3 - examples/sortkey-misuse.tex <<'FOLDPY'
+import re, sys
+tex = open(sys.argv[1], encoding='utf-8').read()
+args = re.findall(r'\\index\{(.*?)\}', tex)
+want = ['Alpha@one!two!three, four', 'aa!bb!Ckey@cc, dd']
+for expected in want:
+    if expected not in args:
+        print(f'FAIL: M06: the folded entry was not emitted as expected\n'
+              f'  expected <<{expected}>>\n  got      {args}', file=sys.stderr)
+        sys.exit(1)
+redundant = [a for a in args if 'three@three, four' in a or 'cc@cc, dd' in a]
+if redundant:
+    print(f'FAIL: M06: a folded level carries a sort field naming its own '
+          f'third level: {redundant}', file=sys.stderr)
+    sys.exit(1)
+print('ok   M06: a folded entry carries a sort field only where a key was '
+      'written for the level it was aligned with')
+FOLDPY
 
 # The control: a fixture whose sort keys are all well formed must draw none of
 # the three. Without this the counts above would be satisfied by a report that

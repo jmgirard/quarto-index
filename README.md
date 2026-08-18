@@ -69,6 +69,11 @@ folded into it, joined with `, `, and you get a warning naming the entry. So
 empty level inside a folded tail is dropped, since it would otherwise leave a
 dangling separator in the printed index.
 
+A sort key written for a level past the third goes with that level: the level
+is folded away, so its key has nothing left to place. The folded level files
+under the third level's own sort key where you wrote one, and under its
+printed text where you did not.
+
 `!` and `!!` are the extension's own syntax, not LaTeX. They mean the same
 thing whatever format you render to.
 

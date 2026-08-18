@@ -376,7 +376,9 @@ end
 -- folded third level is one printed string built from several, so it files
 -- under the sort key of the first level that went into it — joining sort keys
 -- the way the printed text is joined would file the entry under text no author
--- wrote.
+-- wrote. A key written for a level past the third goes where that level went:
+-- the level itself is folded away, so there is nothing left for its key to
+-- place, and the fold warning already names the entry.
 local function clamp_sort(sort)
   if sort == nil or #sort <= MAX_LEVELS then
     return sort
@@ -399,7 +401,13 @@ local function index_argument(levels, sort, context)
   local parts = {}
   for i, level in ipairs(clamped) do
     local printed = escape_level(level)
-    if keys ~= nil and keys[i] ~= nil and keys[i] ~= level then
+    -- Compared against the level the key was ALIGNED with, not against the
+    -- clamped text: where levels were folded, the third clamped level is a
+    -- join of several and never equals the key resolved for the third level,
+    -- so comparing against it emits a sort field on every folded entry —
+    -- filing it under the third level's own printed text, which is what the
+    -- absence of a sort field already means.
+    if keys ~= nil and keys[i] ~= nil and keys[i] ~= levels[i] then
       parts[#parts + 1] = escape_level(keys[i]) .. "@" .. printed
     else
       parts[#parts + 1] = printed
@@ -1415,11 +1423,22 @@ local function store_read(ctx)
       if ok and valid_record(data, file) then
         records[#records + 1] = data
       else
-        -- Never silent: the cost of an unreadable record is a chapter missing
-        -- from the index, and the fix is to render that chapter again.
-        warn(("the recorded index marks for %s could not be read and were "
-              .. "ignored; render that chapter again, or render the whole "
-              .. "book, to put its terms back in the index"):format(file))
+        -- Never silent: the cost of a record this version cannot use is a
+        -- chapter missing from the index, and the fix is the same either way
+        -- — render that chapter again. WHY it could not be used is not: a
+        -- record left by an older version of this extension is perfectly
+        -- readable and simply stale, and calling that unreadable sends an
+        -- author looking for a corrupt file that is not there.
+        if ok and type(data) == "table" and data.version ~= STORE_VERSION then
+          warn(("the recorded index marks for %s were written by a different "
+                .. "version of this extension and were ignored; render that "
+                .. "chapter again, or render the whole book, to put its "
+                .. "terms back in the index"):format(file))
+        else
+          warn(("the recorded index marks for %s could not be read and were "
+                .. "ignored; render that chapter again, or render the whole "
+                .. "book, to put its terms back in the index"):format(file))
+        end
       end
     end
   end

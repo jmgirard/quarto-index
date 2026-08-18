@@ -28,3 +28,19 @@ would file under one key here and another there, and the term would print
 twice. The first mark in document order wins and the second is reported:
 [Ambivalence]{.index entry="Ambivalence!first" sort="Aaa"} and later
 [Ambivalence]{.index entry="Ambivalence!second" sort="Bbb"}.
+
+# A sort key for a level the back-end cannot store
+
+The LaTeX back-end stores three levels and folds everything past the third
+into it. A sort key written for one of the folded levels goes where that level
+went — there is nothing left for it to place — and the fold warning already
+names the entry. What must not happen is the opposite: an entry whose third
+level was never given a key of its own must not come out carrying one, which
+is what comparing the key against the folded text rather than against the
+level it was written for produces.
+
+No key for the third level, so the folded level carries none:
+[Deep]{.index entry="one!two!three!four" sort="Alpha"}.
+
+A key written for the third level, which the fold keeps:
+[Deeper]{.index entry="aa!bb!cc!dd" sort="aa!bb!Ckey"}.

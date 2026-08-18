@@ -136,7 +136,7 @@ what prints; the sort key carried through the book sidecar record with
       the premise that they could be made to agree having been compiled and
       falsified (F3); the AC3 LaTeX leg strengthened to tell correct escaping
       from no sort field at all (F9).
-- [ ] T12: `clamp_sort`'s silent drop past level 3 and `index_argument`'s
+- [x] T12: `clamp_sort`'s silent drop past level 3 and `index_argument`'s
       misfiring guard on the folded level (F5); `sort=""`, the doubled `!` in
       warning text, and the v1-store warning's misattributed cause (F11-F13).
 - [ ] T13: `DESIGN.md`'s "two passes" and "sort keys land later" (F6); the
@@ -147,6 +147,8 @@ what prints; the sort key carried through the book sidecar record with
 
 ## Work log
 
+- 2026-08-17: T12 done — the folded-level guard now compares a sort key against the level it was aligned with rather than against the folded text, so a third level nobody keyed no longer comes out carrying `three@three, four`; the fold rule for sort keys is documented and pinned. A store record from an older extension version is reported as stale rather than as unreadable. `sort=""` and the doubled `!` are dispositioned as by-design in this file's Decisions. Suite 101 -> 103 checks.
+- 2026-08-17: T12 found a pre-existing suite gap this milestone opened — every planted store record was written with `"version":1`, so after T5 bumped the version they were being rejected on version rather than on the rule each check existed to prove. The version is now read from the filter, and the ghost-chapter check asserts no record-ignored report fires, which is what makes the chapter-list filter the thing that kept it out.
 - 2026-08-17: T11 done — the AC3 LaTeX leg now reads the emitted sort fields structurally: every entry must split at the separator the back-end writes, and the index tool must print each term as its text alone. Proved discriminating by a filter emitting no sort field at all, which makeindex accepts just as happily (94 accepted, 0 rejected) while the new check fails on all 94. README gained the ordering rule, pinned by two more `README_SORT_CLAIMS` rows. Suite 100 -> 101 checks.
 - 2026-08-17: T11 amendment (substantive premise, gated) — F3 asked that both back-ends order on the same characters. Compiled against makeindex: a sort key of `|` sorts before `mango` in PDF and after it in HTML with NO escaping involved, because makeindex groups punctuation ahead of letters while the HTML collator folds case and compares bytes. Escaping is not the cause and removing it would not fix it (it does reorder within LaTeX: `<key` before `~key` raw, after it escaped). User chose documenting the rule over minimising the escaping. No acceptance criterion asked for cross-back-end order identity, so none changed.
 - 2026-08-17: T10 done — sort keys now register against a printed LEVEL path rather than a whole entry, so a key written for `Aaa` applies whether `Aaa` stands alone or parents a sub-entry, and a level a mark leaves alone no longer shuts out the mark that declares it. `sort_levels` returns what the author declared (the fallback moved into `sort_for`); the book store carries the chapter's declared key map instead of a resolved key per mark, `STORE_VERSION` 2 -> 3, and `book_sort_keys` merges those maps per path, reporting once per entry. `examples/sortkey-paths.qmd` + manifests 1q/1r pin both legs; the AC4(c) probe moved onto differing level paths. Suite 97 -> 100 checks (114 with --self-test).
@@ -225,6 +227,26 @@ levels derivation is now shared rather than duplicated, so the two passes
 cannot drift on what an entry's levels are. The conflict report keeps
 first-in-document-order-wins semantics and now fires before any emission, so
 no mark is emitted under a key the report then contradicts.
+
+### `sort=""` and a doubled `!` in a report are the syntax working, not defects
+
+**Context:** The review carried two suspected defects into this fix: `sort=""`
+is a silent no-op, and a report renders a level's `!` doubled.
+
+**Decision:** Neither changes. An empty sort level means "leave this level
+alone" — the documented fallback — so a `sort=` value empty at every level
+leaves every level alone, which is exactly what writing no `sort=` at all
+does. Nothing is lost for an author to be told about. The doubled `!` is the
+syntax an author writes: `levels_key` doubles a level's own `!` exactly as
+`entry=` requires it, so a report naming a level PATH names it in the form
+that would reproduce it. The in-document conflict report no longer passes a
+path through `levels_key` at all — it names the two sort KEYS, each a single
+level — so the doubling now appears only in the book report, whose subject
+really is a path.
+
+**Consequences:** Three reports stay three. No fourth diagnostic is added, so
+the README's "Three things are reported, in every output format" stays true,
+and AC4's domain is unchanged.
 
 ## Review
 

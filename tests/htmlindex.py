@@ -163,6 +163,46 @@ def find_id(root, identifier):
     return None
 
 
+def index_section(root):
+    """The generated index section, found by its heading rather than by its id.
+
+    An id-collision probe is exactly the case that must not assume the id, and
+    Quarto puts a heading's id on the `<section>` wrapper it builds rather than
+    on the `<h1>` itself — so the heading locates the section and the wrapper
+    carries the name. Returns the innermost section containing the heading, or
+    the heading itself where the writer emitted no wrapper.
+    """
+    heads = [n for n in walk(root)
+             if n.tag in ('h1', 'h2') and text(n).strip() == 'Index']
+    if not heads:
+        return None
+    head = heads[0]
+    best = None
+    # walk() is pre-order, so an ancestor is seen before its descendants and
+    # the LAST matching section is the innermost one.
+    for node in walk(root):
+        if node.tag == 'section' and any(d is head for d in walk(node)):
+            best = node
+    return best if best is not None else head
+
+
+def duplicate_ids(root, prefix=None):
+    """Every id carried by more than one element, in first-seen order.
+
+    `prefix` narrows the sweep to the ids one namespace owns — a page also
+    carries whatever its renderer's own furniture claims, which is nothing
+    this extension mints or promises.
+    """
+    seen, dupes = set(), []
+    for identifier in all_ids(root):
+        if prefix is not None and not identifier.startswith(prefix):
+            continue
+        if identifier in seen and identifier not in dupes:
+            dupes.append(identifier)
+        seen.add(identifier)
+    return dupes
+
+
 def count_id(root, identifier):
     return sum(1 for node in walk(root) if node.attrs.get('id') == identifier)
 

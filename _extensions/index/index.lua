@@ -1216,12 +1216,35 @@ end
 -- both back-ends at once. `marks` is this document's own marks in a single
 -- document, and every chapter's marks in a book: one builder either way, so
 -- the two cannot drift apart on what an index looks like.
+-- The section id is minted like every other generated id, rather than fixed:
+-- a document that already uses `qi-index` — on an element of its own, or
+-- inside raw HTML — otherwise ended up with the name on two elements, which
+-- is invalid HTML and sends a link to whichever the browser picks. Anchors and
+-- entry ids have always stepped over a taken name; this closes the one
+-- exception. The bare name is preferred, so the id a document without a
+-- collision gets is the one it has always had.
+local function mint_section_id(taken)
+  if not taken[HTML_SECTION_ID] then
+    taken[HTML_SECTION_ID] = true
+    return HTML_SECTION_ID
+  end
+  local n = 0
+  local candidate
+  repeat
+    n = n + 1
+    candidate = HTML_SECTION_ID .. "-" .. n
+  until not taken[candidate]
+  taken[candidate] = true
+  return candidate
+end
+
 local function html_index_blocks(marks, taken)
   local root = build_entry_tree(marks)
+  local section_id = mint_section_id(taken)
   number_entries(root, 0, taken)
   local blocks = pandoc.Blocks({
     pandoc.Header(1, literal_inlines("Index"),
-                  pandoc.Attr(HTML_SECTION_ID, { "unnumbered" })),
+                  pandoc.Attr(section_id, { "unnumbered" })),
   })
   blocks:extend(grouped_blocks(root))
   return blocks

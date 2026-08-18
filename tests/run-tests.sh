@@ -2560,6 +2560,80 @@ print('ok   M08-AC3: the HTML index is placed at the one real marker, and no '
 PY
 
 # ---------------------------------------------------------------------------
+# M08-AC1 — the generated section id is minted, not fixed. Anchor and entry
+# ids have always stepped over a name the document already uses; the section
+# id did not, so a document claiming `qi-index` got two elements carrying it.
+# The fixture claims five names in the five spellings taken_identifiers reads
+# — a Pandoc attribute, and raw HTML double-quoted, unquoted, uppercase `ID=`
+# and single-quoted in a raw INLINE — so the mint has to step over all five.
+# ---------------------------------------------------------------------------
+quarto render examples/id-collision.qmd --to html \
+  > "$WORK/id-collision-html.log" 2>&1 \
+  || { tail -20 "$WORK/id-collision-html.log" >&2; fail "M08-AC1: id-collision.qmd failed to render to HTML"; }
+
+python3 - examples/id-collision.html <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+claimed = ['qi-index', 'qi-index-1', 'qi-index-2', 'qi-index-3', 'qi-index-4']
+errs = []
+
+# The universal is over the ids this extension mints and the names the fixture
+# claimed — the namespace it owns. A duplicate elsewhere on the page would be
+# Quarto's own furniture, which this milestone neither generates nor promises.
+dupes = H.duplicate_ids(doc, prefix='qi-')
+if dupes:
+    errs.append(f'ids carried by two elements: {dupes}')
+
+for name in claimed:
+    n = H.count_id(doc, name)
+    if n != 1:
+        errs.append(f'the claimed id {name!r} appears {n} time(s), not once')
+
+section = H.index_section(doc)
+if section is None:
+    errs.append('no index section was found by its heading')
+else:
+    got = section.attrs.get('id', '')
+    if not got:
+        errs.append('the index section carries no id at all')
+    elif got in claimed:
+        errs.append(f'the index section took {got!r}, a name the document '
+                    f'already claimed')
+
+if errs:
+    print('FAIL: M08-AC1: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M08-AC1: five claimed ids each survive once, the index section '
+      f'minted {H.index_section(doc).attrs["id"]!r} past all five, and no '
+      f'qi- id is carried twice')
+PY
+
+# The locators must still link: minting a fresh section id is worth nothing if
+# the index it names stopped resolving.
+python3 - examples/id-collision.html <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+section = H.index_section(doc)
+hrefs = [a.attrs.get('href', '') for a in H.find_all(section, 'a')]
+local = [h for h in hrefs if h.startswith('#')]
+missing = [h for h in local if H.count_id(doc, h[1:]) != 1]
+if not local:
+    print('FAIL: M08-AC1: the index section carries no local links at all',
+          file=sys.stderr)
+    sys.exit(1)
+if missing:
+    print(f'FAIL: M08-AC1: index links resolving to no unique element: '
+          f'{missing}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M08-AC1: all {len(local)} link(s) inside the minted index section '
+      f'resolve to exactly one element each')
+PY
+
+# ---------------------------------------------------------------------------
 # M04-AC4 — a marker in a document with no index marks. The residue claim is
 # made at its strongest here: the same document with the marker deleted by
 # hand renders byte-for-byte identically, in every format. An empty div, an

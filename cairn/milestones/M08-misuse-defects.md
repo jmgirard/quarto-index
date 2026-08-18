@@ -105,11 +105,11 @@ author reads or markup an HTML reader receives.
       itself untouched.
 - [x] T3: Report that stripping a nested marker left its container with no
       content; keep the container.
-- [ ] T4: Add `examples/id-collision.qmd` with the five id claims; give
+- [x] T4: Add `examples/id-collision.qmd` with the five id claims; give
       `tests/htmlindex.py` a heading-based index-section lookup (reading the id
       off the `<h1>`'s wrapper `<section>`) and a duplicate-`qi-`-id scan; add
       the AC1 check, failing.
-- [ ] T5: Mint the HTML index section id against the taken-id table in
+- [x] T5: Mint the HTML index section id against the taken-id table in
       `html_index_blocks`.
 - [ ] T6: Add `examples/self-xref.qmd` with the four self-reference shapes; add
       the AC2 checks, failing.
@@ -141,6 +141,8 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: T2 — report_marker_sites walks the whole document before resolve_markers and reports the marker class on any non-Div block or inline span, naming the site kind (heading / inline span / code block, falling back to the Pandoc type name); the element is never edited. Format-neutral, so it fires in all three formats.
 - 2026-08-18: T3 — report_emptied_containers reports, from the shape rather than from walk order, every non-empty block list whose every element is a marker; walk visits contents and never the element itself, so the top-level block is checked directly and its descendants by the walk. Covers Div, block quote, figure and list items, falling back to the type name.
 - 2026-08-18: T1's gfm phrase check compared unwrapped text against a wrapped writer's output; the check now collapses whitespace before comparing, the token checks still reading raw source. Suite green: 133 checks.
+- 2026-08-18: T4 — examples/id-collision.qmd claims qi-index through qi-index-4 in the five spellings taken_identifiers reads (Pandoc attribute; raw-block double-quoted, unquoted and uppercase ID=; raw-inline single-quoted); htmlindex.py gained index_section (locates the section by its Index heading and returns the wrapper section Quarto puts the id on) and duplicate_ids (prefix-scoped, so Quarto's own furniture is not this milestone's promise). Verified failing first: the render carried qi-index on two elements and the section took a claimed name.
+- 2026-08-18: T5 — mint_section_id prefers the bare qi-index and otherwise counts past taken names, so a document with no collision keeps the id it has always had; the fixture's section now mints qi-index-5 and no qi- id is carried twice. Suite green: 135 checks.
 ## Decisions
 
 ## Review

@@ -1,11 +1,11 @@
 # M08: Reachable mark and marker misuse defects
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** —
+- **Branch/PR:** m08-misuse-defects
 
 ## Goal
 

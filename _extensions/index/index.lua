@@ -271,20 +271,43 @@ local function sort_levels(value, levels, context, report)
     return nil
   end
   local parsed = parse_levels(value)
-  if report and #parsed > #levels then
-    warn(("sort= on %s has %d levels but the entry has %d; the extra sort "
-          .. "levels were ignored"):format(context, #parsed, #levels))
+  -- The last position the author actually wrote a key for. Everything before
+  -- it that merely restates the level's own printed text is positional filler
+  -- — the way this syntax reaches a deeper level, since two separators in a
+  -- row are a literal `!` — while a self-equal key AT that last position is a
+  -- real declaration, the author saying where this level files.
+  local last = 0
+  for i = 1, #parsed do
+    if parsed[i] ~= "" then
+      last = i
+    end
+  end
+  if report then
+    -- Counted over the levels the author DECLARED past the entry's depth: an
+    -- empty sort level is the documented "leave this level alone", so a
+    -- trailing empty one ignores nothing and must not say it did.
+    local ignored = 0
+    for i = #levels + 1, #parsed do
+      if parsed[i] ~= "" then
+        ignored = ignored + 1
+      end
+    end
+    if ignored > 0 then
+      warn(("sort= on %s has %d levels but the entry has %d; the extra sort "
+            .. "levels were ignored"):format(context, #parsed, #levels))
+    end
   end
   local declared, any = {}, false
   for i = 1, #levels do
     local key = parsed[i]
-    if key ~= nil and key ~= "" then
+    if key ~= nil and key ~= "" and not (key == levels[i] and i < last) then
       declared[i] = key
       any = true
     else
       -- `false`, not nil: the list is written to the book store and read back
       -- through JSON, where a hole in the middle of an array is not a shape
-      -- either side can rely on.
+      -- either side can rely on. Filler lands here too, so it never reaches
+      -- the registry and never rivals a key some other mark declared.
       declared[i] = false
     end
   end
@@ -333,14 +356,11 @@ local function register_sort(levels, declared, context)
   end
   for i = 1, #levels do
     local key = declared[i]
-    -- A key equal to the level's own printed text declares nothing: it asks
-    -- for exactly what the absence of a key already gives. Registering it
-    -- anyway would let it occupy the level path and, being first in document
-    -- order, beat a real key written later — which is what an author gets for
-    -- writing a level's own text to skip past it, the one way this syntax
-    -- offers of skipping two levels in a row. It would also report the entry
-    -- as "already sorted as" itself.
-    if key and key ~= levels[i] then
+    -- Positional filler was already dropped by sort_levels, so everything
+    -- arriving here is a declaration — including one whose text equals the
+    -- level's own, which is an author saying where the level files and so
+    -- wins ties and reports rivals like any other.
+    if key then
       local path = level_path(levels, i)
       local seen = sort_keys[path]
       if seen == nil then
@@ -1486,10 +1506,13 @@ local function book_sort_keys(records)
       local key = record.sorts[path]
       local seen = resolved[path]
       if seen == nil then
-        resolved[path] = { sort = key, file = record.file }
-      elseif seen.sort ~= key then
-        -- Once per printed level path, not once per mark that carries it: the
-        -- author has one thing to fix however many times the term is marked.
+        resolved[path] = { sort = key, file = record.file, reported = {} }
+      elseif seen.sort ~= key and not seen.reported[key] then
+        -- Once per RIVAL KEY at this path, the same rule the in-document
+        -- report follows: a term marked in three chapters under one rival key
+        -- is one thing for the author to fix, while a second, different rival
+        -- is a second thing and names a key the first report never mentions.
+        seen.reported[key] = true
         warn(('index entry "%s" is sorted as "%s" in %s and as "%s" in %s; '
               .. 'one entry cannot file in two places, so the first in book '
               .. 'order wins')

@@ -199,6 +199,12 @@ not two separators — `sort="!!Zed"` is a one-level key reading `!Zed`. Where
 you would need to skip two in a row, write those levels' own printed text
 instead: `sort="One!Two!Zed"` rather than `sort="!!Zed"`.
 
+Restating a level's own text on the way to a deeper one declares nothing for
+that level — it is how you reach past it — so a key another mark writes for
+that level still applies. Written as the last level of a sort key it is an
+ordinary declaration: the level files under its own text, and a different key
+written elsewhere is reported rather than quietly preferred.
+
 A sort key belongs to the entry, not to the mark you happened to write it on.
 Mark a term in six places and give one of them a `sort=`, and all six file
 under it — you never have to repeat it.
@@ -216,6 +222,10 @@ about the mark rather than about any one back-end:
   ignored;
 - one entry given two different sort keys, which cannot file in two places —
   the first one in the document wins, and in a book the first in book order.
+
+A book adds a fourth report, for a term two chapters sort differently. No
+single document can see that clash, since each chapter renders on its own, so
+it is reported where the book's index is built.
 
 Sorting is otherwise best-effort: neither back-end collates accented or
 non-Latin text the way a language would, and a sort key is how you fix an

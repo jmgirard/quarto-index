@@ -1,0 +1,6 @@
+# A third chapter repeating the second chapter's sort key
+
+The contested term once more, sorted the way the chapter before it sorted it.
+A rival key repeated in a further chapter is not a further thing for the
+author to fix, so it must draw no report of its own:
+[Contested]{.index sort="Zzz"}.

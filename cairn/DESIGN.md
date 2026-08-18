@@ -102,8 +102,8 @@ One Pandoc-Lua filter, `_extensions/index/index.lua`, run as three passes over
 each document (corrected M06).
 
 The **collect pass** reads every mark that writes a `sort=` and registers the
-sort key against the printed level path it was written for, reporting a level
-given two different keys. It runs first because a sort key belongs to the
+sort key against the printed level path it was written for, reporting once per
+rival key a level is given (corrected M06). It runs first because a sort key belongs to the
 entry rather than to the mark that declared it: the emitting pass has to know
 every key before it emits the first mark, or a mark goes out under a key a
 later mark contradicts. It only reads; nothing it sees changes the document.

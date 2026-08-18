@@ -123,6 +123,8 @@ README_SORT_CLAIMS=(
   $'report: nothing to sort\ta `sort=` on a mark that indexes nothing, which has nothing to sort'
   $'report: extra levels\ta `sort=` with more levels than its entry has, whose extra levels are'
   $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
+  $'reaching past a level\ton the way to a deeper one declares nothing for that level'
+  $'book adds a fourth report\tA book adds a fourth report, for a term two chapters sort differently'
   $'ordering is per back-end\tA sort key files an entry under the ordering of whichever back-end builds the'
   $'plain keys order alike\tSort keys of plain letters and digits order the same way in both back-ends'
   $'keys past the ceiling\tA sort key written for a level past the third goes with that level in this'
@@ -572,13 +574,16 @@ WARN_BOOK_SORT_CONFLICT='one entry cannot file in two places, so the first in bo
 # record contributes its locators. The space in the filename is written
 # raw, exactly as Quarto writes its own links to that page.
 #
-# `Contested` carries three locators: one from index.qmd, and two from the
-# later chapter, which marks it twice to show that the conflict is reported
-# once for the entry rather than once per mark that carries it. Locators
+# `Contested` carries four locators: one from index.qmd, two from the later
+# chapter, which marks it twice, and one from third.qmd. Neither of the two
+# extra marks discriminates a per-mark reporting rule — a chapter's record
+# carries one declared key per printed level path however many marks write it
+# — but third.qmd repeating the SECOND chapter's rival key does discriminate
+# once-per-rival-key reporting from once-per-conflicting-chapter. Locators
 # appear in book order and, within a chapter, in the order they are marked.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_ORDER_INDEX <<'MANIFEST' || true
-0	Contested	#qi-mark-2 later chapter.html#qi-mark-2 later chapter.html#qi-mark-3
+0	Contested	#qi-mark-2 later chapter.html#qi-mark-2 later chapter.html#qi-mark-3 third.html#qi-mark-1
 0	Early	#qi-mark-1
 0	Late	later chapter.html#qi-mark-1
 MANIFEST
@@ -1785,10 +1790,12 @@ MANIFEST
 # Derived by hand: each entry files under its sort key where it has one
 # (Manifest 1m), under its own printed text where it does not, and the order
 # is makeindex's, applied to those keys — NOT the HTML collation rule, which
-# is the extension's own and orders a punctuation-leading key elsewhere. The
-# keys in this fixture are plain letters, which the two order alike, so the
-# same row order serves both here; a fixture keyed on punctuation would need
-# two. The keys in order are therefore Angstrom, Hague, Manet, mathematicians
+# is the extension's own and orders a punctuation-leading key elsewhere. This
+# manifest is derived from makeindex's rule alone and borrows no row order
+# from manifest 1o, which is what lets the check comparing the two mean
+# something; the keys here are plain letters, on which the two rules happen to
+# agree, and a fixture keyed on punctuation would need two orders.
+# The keys in order are therefore Angstrom, Hague, Manet, mathematicians
 # (which declares none of its own), Neumann, ten Downing Street. The two
 # sub-entries under `mathematicians` file under Neumann and Turing, which
 # reverses the order their printed text alone would give them.
@@ -1894,12 +1901,18 @@ MANIFEST
 # Manifest 1r — the generated index in examples/sortkey-paths.html
 # (M06-AC2). EXHAUSTIVE, same format and oracle rule as manifest 1o.
 #
-# The top-level keys are the ones manifest 1q derives — Zed, Beta, Www and
-# Hague — so the four top-level entries collate Beta, Hague, Www, Zed and
-# therefore print as Beta, `Hague, The`, Ccc, Alpha. Every top-level entry
-# here has exactly one sub-entry and one locator of its own, except `Literal`,
-# which has none: its key is the one-level `!Zed` that `sort="!!Zed"` gives,
-# and `!` sorts ahead of every letter, so it heads the index.
+# The top-level keys are the ones manifest 1q derives: `!Zed` for `Literal`,
+# Beta, Hague, Qqq for `Mmm`, Www for `Ccc`, and Zed for `Alpha`. Case-folded
+# and ordered by character code those give !zed, beta, hague, qqq, www, zed,
+# so the six top-level entries print as Literal, Beta, `Hague, The`, Mmm, Ccc,
+# Alpha — `!` sorting ahead of every letter is what heads the index with
+# `Literal`, whose key is the one-level `!Zed` that `sort="!!Zed"` gives.
+#
+# Locators sit on the deepest level each mark writes. `Literal` is marked
+# alone, so it carries its own locator and no sub-entry. `Mmm` is marked twice
+# — once as `Mmm!nn!oo` and once bare — so it carries one locator, its
+# sub-entry `nn` carries none, and `oo` beneath that carries one. The other
+# four each have one sub-entry carrying one locator, and one of their own.
 #
 # `Ccc` is the row that reads differently under a key remembered against a
 # whole entry rather than against a level: there the first mark's untouched
@@ -3412,6 +3425,12 @@ pass "M06: a record from an older extension version is reported as stale rather 
 # ---------------------------------------------------------------------------
 ORDER_DIR="examples/book-order"
 ORDER_OUT="$ORDER_DIR/_book"
+# Derived from the fixture, not written down: the per-chapter reports below
+# are counted once per chapter, and a hardcoded count silently stops meaning
+# "per chapter" the moment the fixture gains one.
+ORDER_CHAPTERS=$(ls "$ORDER_DIR"/*.qmd | wc -l | tr -d ' ')
+[ "$ORDER_CHAPTERS" -ge 3 ] \
+  || fail "M05 hardening: the ordering fixture needs at least 3 chapters; it has $ORDER_CHAPTERS"
 rm -rf "$ORDER_OUT" "$ORDER_DIR/.quarto"
 # Rendered twice on purpose: on the first pass the later chapter has not run
 # when the marker chapter builds the index, which is the very hazard the
@@ -3515,8 +3534,8 @@ mkdir -p "$ORDER_DIR/.quarto"
 printf 'not a directory\n' > "$ORDER_DIR/.quarto/$STORE_DIR"
 ( cd "$ORDER_DIR" && quarto render --to html ) > "$WORK/book-nostore.log" 2>&1 \
   || { tail -30 "$WORK/book-nostore.log" >&2; fail "M05 hardening: a store that cannot be written took the render down; IP2 forbids it"; }
-check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" 2 \
-  "M05 hardening"
+check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" \
+  "$ORDER_CHAPTERS" "M05 hardening"
 rm -f "$ORDER_DIR/.quarto/$STORE_DIR"
 pass "M05 hardening: a store that cannot be written is reported per chapter and the book still renders"
 
@@ -3880,13 +3899,15 @@ for fmt in latex gfm; do
     "M06-AC4 ($fmt)"
   check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_EXTRA" 1 \
     "M06-AC4 ($fmt)"
-  # TWO, from four marks sharing one printed level: keys Aaa, Bbb, Bbb, Ccc.
-  # The count discriminates all three candidate rules — once per mark would
-  # give 3, once per level path 1, and once per rival key at a path 2, which
-  # is the rule: repeating a rival gives the author nothing further to fix,
-  # while a second, different rival is a second thing to fix and would
-  # otherwise stay unmentioned until the first was resolved.
-  check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_CONFLICT" 2 \
+  # THREE: two from the four marks sharing the printed level `Ambivalence`
+  # (keys Aaa, Bbb, Bbb, Ccc) and one from `Steady`, whose first key names the
+  # level's own text and so is a declaration a later key rivals. The count
+  # discriminates all three candidate rules — once per mark would give 4,
+  # once per level path 2, and once per rival key at a path 3, which is the
+  # rule: repeating a rival gives the author nothing further to fix, while a
+  # second, different rival is a second thing to fix and would otherwise stay
+  # unmentioned until the first was resolved.
+  check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_CONFLICT" 3 \
     "M06-AC4 ($fmt)"
   pass "M06-AC4: the three sort-key reports fire in $fmt, the conflict once per rival key rather than once per mark or once per entry"
 done
@@ -3901,16 +3922,23 @@ python3 - examples/sortkey-misuse.tex <<'FOLDPY'
 import re, sys
 tex = open(sys.argv[1], encoding='utf-8').read()
 args = re.findall(r'\\index\{(.*?)\}', tex)
-want = ['Alpha@one!two!three, four', 'aa!bb!Ckey@cc, dd']
+want = ['Alpha@one!two!three, four', 'aa!bb!Ckey@cc, dd',
+        # `Steady` declares its own printed text and is first, so it wins the
+        # tie and files under that text — which needs no sort field at all.
+        # `Rrr` reaching the emission would mean the later key had won.
+        'Steady']
 for expected in want:
     if expected not in args:
         print(f'FAIL: M06: the folded entry was not emitted as expected\n'
               f'  expected <<{expected}>>\n  got      {args}', file=sys.stderr)
         sys.exit(1)
-redundant = [a for a in args if 'three@three, four' in a or 'cc@cc, dd' in a]
+redundant = [a for a in args
+             if 'three@three, four' in a or 'cc@cc, dd' in a
+             or 'Rrr' in a]
 if redundant:
-    print(f'FAIL: M06: a folded level carries a sort field naming its own '
-          f'third level: {redundant}', file=sys.stderr)
+    print(f'FAIL: M06: a level carries a sort field it should not — a folded '
+          f'level naming its own third level, or a rival key that lost: '
+          f'{redundant}', file=sys.stderr)
     sys.exit(1)
 print('ok   M06: a folded entry carries a sort field only where a key was '
       'written for the level it was aligned with')
@@ -4281,8 +4309,8 @@ PY
   # exactly like one that kept them.
   warn_discrimination "$WORK/book-corrupt.log" "$WARN_STORE_UNREADABLE" 1 \
     "M05 hardening"
-  warn_discrimination "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" 2 \
-    "M05 hardening"
+  warn_discrimination "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" \
+    "$ORDER_CHAPTERS" "M05 hardening"
   # The three sort-key reports are the only evidence an author gets that a
   # sort key did not do what they wrote it to do; each is proved to fail both
   # when it goes missing and when it fires twice.
@@ -4290,7 +4318,7 @@ PY
     "M06-AC4"
   warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_EXTRA" 1 \
     "M06-AC4"
-  warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_CONFLICT" 2 \
+  warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_CONFLICT" 3 \
     "M06-AC4"
   # The cross-chapter conflict is the only report an author gets that two
   # chapters sorted one term two ways; it is proved discriminating like the

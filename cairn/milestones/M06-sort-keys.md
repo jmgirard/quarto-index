@@ -69,7 +69,7 @@ what prints; the sort key carried through the book sidecar record with
       `data-sort` attribute should ride into such a format at all is the
       standing ROADMAP question M03 deferred (M03 review F4/F9); this
       milestone does not settle it.
-- [ ] AC4: Three diagnostics fire with the message text recorded in this
+- [x] AC4: Three diagnostics fire with the message text recorded in this
       milestone's Decisions section: (a) `sort=` on a mark with no indexable
       text, (b) a `sort=` value with more levels than the mark's entry has,
       (c) one printed index key given two different sort keys — probed both
@@ -81,7 +81,7 @@ what prints; the sort key carried through the book sidecar record with
       chapter other than the marker's: `examples/book/` gains such a sort key
       and `tests/htmlindex.py` asserts the aggregated index orders that term
       by its sort key rather than its printed text.
-- [ ] AC6: README documents `sort=` — syntax, per-level alignment, the
+- [x] AC6: README documents `sort=` — syntax, per-level alignment, the
       fallback for a level with no sort key, and the three diagnostics — and
       the suite asserts verbatim one normative sentence per documented
       behavior, following the existing `README_HTML_CLAIMS` precedent. The
@@ -141,6 +141,7 @@ what prints; the sort key carried through the book sidecar record with
 
 ## Work log
 
+- 2026-08-18: review pass 3 gate fixes — F2 (a key naming its level's own text is filler only before the last level the author wrote, so it stops letting a later rival win silently), F3 (the book conflict reports once per rival key, matching the document side), F9 (no extra-levels report for an empty trailing sort level), and six record and test-quality repairs. `examples/book-order/` gained a third chapter and the fixture's per-chapter counts are now derived from it. AC4 and AC6 ticked on re-gathered evidence; 118 checks.
 - 2026-08-18: review pass 3 — fresh evidence for every criterion (118 checks, exit 0; byte-diff clean; cairn_validate clean). AC1/AC2/AC3/AC5/AC7 ticked. F1 fixed during the pass (conflict now reports once per rival key). F2-F10 presented at the gate; F2 falsifies a pinned README claim and is the maintainer's load-bearing call.
 - 2026-08-18: T14 done — a level key equal to its own printed text no longer registers, so the README's documented skip-two-levels workaround stops discarding a later real key and stops reporting an entry as already sorted as itself; the in-document conflict now reports once per printed level path. Both proved discriminating by reversion: with F1 reverted `Mmm` loses `Qqq` entirely and draws the nonsense report, with F2 reverted one mistake draws two reports. `examples/sortkey-paths.qmd` gained the self-declaration case and `examples/sortkey-misuse.qmd` a third mark repeating the rival key. Suite 103 -> 104 checks.
 - 2026-08-18: T14 records — the two README sentences narrowed to what holds in both back-ends (HTML has no level ceiling, so it honors a key LaTeX drops), and the plain-key claim is now carried by a check comparing the PDF and HTML manifests row for row rather than by assertion alone. Manifest 1n's derivation named the wrong key order and was mangled by T13's reflow; the book check's comment claimed a discrimination the version-3 record shape makes structurally impossible; `PATHSPY` split on a quoted `!` and exempted its own last row. All corrected.
@@ -273,6 +274,44 @@ recorded. AC4's three diagnostics stand; its third has two texts, one per
 probe setting. Both are proved discriminating, and both fire once per printed
 level path rather than once per mark.
 
+### The sort-key conflict is reported once per rival key
+
+**Context:** This supersedes the reporting rule stated in the entry above
+("both fire once per printed level path rather than once per mark"), which the
+review's third pass falsified in both directions: on the single-document side
+a third mark naming a DIFFERENT rival key drew nothing at all, and on the book
+side no suppression existed, so one rival key repeated across chapters drew a
+warning per chapter.
+
+**Decision:** Both sides suppress per rival key at a printed level path.
+Repeating a rival adds no report; a second, different rival draws its own. The
+message names the key it is about, so suppressing a distinct rival would leave
+that key unmentioned until the first was resolved and the document rendered
+again.
+
+**Consequences:** `examples/sortkey-misuse.qmd` carries four marks on one
+level (keys Aaa, Bbb, Bbb, Ccc) plus a self-declared level rivalled by one
+other, expecting three reports — once per mark gives four, once per level path
+two. `examples/book-order/` gained a third chapter repeating the second's
+rival key, expecting one report where once-per-conflicting-chapter gives two.
+
+### A sort key equal to its level own printed text
+
+**Context:** T14 made such a key register nothing, so the documented way of
+reaching past two levels at once would stop beating a real key written later.
+The review's third pass showed that went too far: the key also stopped
+rivalling a real key, so `entry="Bbb" sort="Bbb"` followed by
+`entry="Bbb" sort="Yyy"` let the SECOND key win, silently, against the
+README's "the first one in the document wins".
+
+**Decision:** Such a key is positional filler only before the last level the
+author actually wrote a key for. At that last position it is an ordinary
+declaration: it wins ties, and a different key written elsewhere is reported.
+
+**Consequences:** `sort="One!Two!Zed"` on `entry="One!Two!Three"` still
+declares only `Zed`, so the workaround stays safe, while `sort="Bbb"` on
+`entry="Bbb"` is a declaration and behaves like any other.
+
 ## Review
 
 **PR:** https://github.com/jmgirard/quarto-index/pull/6
@@ -305,23 +344,25 @@ printed every one as its text alone; all 94 reach the HTML index and it
 carries no others; gfm is identical to the sort-stripped twin once `data-sort`
 is removed.
 
-**AC4 — the three reports. Held pending the gate disposition.** All three fire
-in `latex` and in `gfm` with the texts this file's Decisions records, the
-fourth (book) text now recorded too; the conflict count of 2 over four marks
-discriminates all three candidate reporting rules; each report has a
-`warn_discrimination` proof and a control render. The promise is met as
-written. The tick is held because finding F2 below may change the conflict
-semantics.
+**AC4 — the three reports. [verified]** All three fire in `latex` and in
+`gfm` with the texts this file's Decisions records, the fourth (book) text
+recorded too. After the gate fixes: the single-document conflict count of 3
+discriminates once-per-mark (4) and once-per-level-path (2) from the shipped
+once-per-rival-key rule, and the book count of 1 discriminates
+once-per-conflicting-chapter (2); each report has a `warn_discrimination`
+proof and a control render that does not fire it.
 
 **AC5 — book aggregation across chapters. [verified]** The aggregated index
 matches all 10 manifest rows in order with `Shared Term` under its
 cross-chapter key, and the crossing is asserted by construction.
 
-**AC6 — README. NOT VERIFIED.** The presence checks pass ("all 13 documented
-sort-key behaviors appear verbatim"), and presence is what the criterion
-promises — but F2 below shows one pinned sentence is false and F7/F10 show
-two more are incomplete or imprecise, so the tick is withheld until the
-wording is repaired and the evidence re-gathered.
+**AC6 — README. [verified]** "All 15 documented sort-key behaviors appear
+verbatim in README.md"; the superseded out-of-scope sentence is pinned absent
+with the other stale ones; the HTML collation claim was updated in place; the
+normative syntax exemplars are pinned. Re-gathered after the gate fixes, which
+repaired the sentence F2 falsified and added the two the README was missing —
+the rule that reaching past a level declares nothing for it, and the book's
+fourth report.
 
 **AC7 — verify slot and byte-identity. [verified]** `--self-test` exit 0 at
 118 checks; `tests/byte-diff.sh` reports every one of the 13 merge-base
@@ -345,7 +386,7 @@ rejected. The GitHub inline-comment probe returned empty again.
   and rendering again. Suppression is now per rival key; the misuse fixture
   carries keys Aaa, Bbb, Bbb, Ccc and the expected count of 2 fails under
   once-per-mark (3) and once-per-level-path (1).
-- **F2 (load-bearing, for the maintainer).** A key equal to its level's own
+- **F2 (fixed at the gate, maintainer directed).** A key equal to its level's own
   printed text registers nothing even when it rivals a real key, so it neither
   wins nor reports. Reproduced: `entry="Bbb" sort="Bbb"` followed by
   `entry="Bbb" sort="Yyy"` emits `\index{Yyy@Bbb}` — the SECOND key wins,
@@ -354,34 +395,34 @@ rejected. The GitHub inline-comment probe returned empty again.
   `sort="Aaa"` on `entry="Aaa"` is discarded with no diagnostic. The T14 skip
   is what makes the documented two-adjacent-skipped-levels workaround safe,
   but the rival case was never carved out of it.
-- **F3.** `book_sort_keys` has no suppression at all, so the book side
+- **F3 (fixed at the gate).** `book_sort_keys` has no suppression at all, so the book side
   reports once per conflicting CHAPTER where the single-document side now
   reports once per rival key; three chapters naming one rival key draw two
   warnings for one thing to fix. Read-verified in the code; the suite cannot
   catch it, since `examples/book-order/` has only two chapters.
-- **F4.** Manifest 8's comment still claims the second mark shows per-entry
+- **F4 (fixed at the gate).** Manifest 8's comment still claims the second mark shows per-entry
   rather than per-mark reporting — the claim pass 2's F5 fix removed from the
   check itself. Fixed in one of the two places it lives.
-- **F5.** Manifest 1r's derivation says "the four top-level entries" where six
+- **F5 (fixed at the gate).** Manifest 1r's derivation says "the four top-level entries" where six
   are listed, never mentions `Mmm` (the row T14 added), and its "except
   `Literal`, which has none" sentence is false twice. Under the ORACLE RULE
   the comment is the derivation, so two rows are unbacked.
-- **F6.** The plain-key cross-back-end check asserts a property manifest 1n's
+- **F6 (fixed at the gate).** The plain-key cross-back-end check asserts a property manifest 1n's
   own header says it borrowed ("the same row order serves both here"), so
   that check cannot fail independently. The property does hold — confirmed
   against makeindex on plain keys — but the check's comment overclaims.
-- **F7.** Three records state a reporting rule the code no longer has: the
+- **F7 (fixed at the gate).** Three records state a reporting rule the code no longer has: the
   comment above `book_sort_keys`, this file's Decisions entry for the
   cross-chapter report, and DESIGN's phrasing.
-- **F8.** The T14 rule is undocumented: the README tells an author to write a
+- **F8 (fixed at the gate).** The T14 rule is undocumented: the README tells an author to write a
   level's own printed text to skip past it but never says such a key
   registers nothing, so with F2 the outcome of `sort="Bbb"` on `entry="Bbb"`
   cannot be predicted from the documentation.
-- **F9.** "the extra sort levels were ignored" fires when the extra level is
+- **F9 (fixed at the gate).** "the extra sort levels were ignored" fires when the extra level is
   EMPTY. Reproduced: `sort="Zed!"` on a one-level entry warns, though an
   empty sort level is the documented "leave this level alone" and nothing was
   ignored. The guard counts parsed levels rather than declared ones.
-- **F10.** README's "Three things are reported, in every output format" is
+- **F10 (fixed at the gate).** README's "Three things are reported, in every output format" is
   imprecise: the fourth text fires only in an HTML book.
 - **F11 (confirmed open, already a candidate row).** Level paths keyed on
   unclamped levels while LaTeX prints clamped ones. README now documents the
@@ -395,8 +436,16 @@ levels, `!`- and `@`-bearing level text, one-level and four-level entries,
 safety, the book store's declared-vs-resolved distinction, `valid_record`'s
 shape check and the stale-vs-unreadable split, and IP1/IP2 on the gfm twin.
 
-**Defect returns:** two so far. Whether F2 makes this a third is the
-maintainer's judgment at the gate.
+**Gate fixes.** F1 was fixed during the pass; F2-F10 were fixed at the gate at
+the maintainer's direction, committed on the branch and re-verified before any
+approval. Each code fix carries a reversion proof: with F2 reverted the second
+key wins silently, with F3 reverted three chapters draw two reports, with F9
+reverted an empty trailing sort level claims levels were ignored. The
+suite grew a derived chapter count for the ordering fixture, the last
+hardcoded per-chapter number in it.
+
+**Defect returns:** two. The maintainer judged F2 gate-fixable rather than
+load-bearing-for-return, so this pass adds none.
 
 **Amendment returns:** two — AC3 at implement time, and AC4's recorded-text
 clause at pass 2, discharged without an amendment.

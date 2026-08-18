@@ -48,3 +48,15 @@ No key for the third level, so the folded level carries none:
 
 A key written for the third level, which the fold keeps:
 [Deeper]{.index entry="aa!bb!cc!dd" sort="aa!bb!Ckey"}.
+
+# A key that names the level's own text, and an empty level past the end
+
+A sort key written as the level's own printed text is a declaration when it
+is the last level the author wrote, so it wins ties like any other and a
+different key written later is reported rather than quietly preferred:
+[Steady]{.index entry="Steady" sort="Steady"} and later
+[Steady]{.index entry="Steady" sort="Rrr"}.
+
+A trailing empty sort level past the end of the entry ignores nothing — an
+empty level means "leave this level alone" — so it must draw no report about
+extra levels: [Trailing]{.index sort="Zed!"}.

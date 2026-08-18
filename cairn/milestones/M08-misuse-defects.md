@@ -1,6 +1,6 @@
 # M08: Reachable mark and marker misuse defects
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -172,6 +172,8 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: T11/T12/T13/T14 — all_markers became all_empty_markers (a marker with content splices its content back, so it empties nothing); the top-level block is checked only when it is not itself a marker; report_marker_sites walks doc.blocks rather than doc, so metadata is not a placement site; a Note handler covers footnotes. Table cells remain uncovered — ROADMAP row added rather than over-promising.
 - 2026-08-18: T15/T16 — the both-attributes warning now says neither target is dropped for being one of two, and README says so too with the self-target exception stated; README's unconditional "a section carrying the id qi-index" is now conditional; DESIGN.md's Architecture prose corrected in place (marked "corrected M08") for the two new reports, the dropped self-target and the minted section id. Three new README sentences pinned, two stale ones added to README_MISUSE_STALE.
 - 2026-08-18: the first revert-probe run of these four fixes destroyed them — `git checkout -- index.lua` inside the probe restores HEAD, and the fixes were not yet committed. Reapplied and re-verified before committing; the probe is re-run after the commit, which is the only order that works.
+- 2026-08-18: discrimination for the four review fixes, each reverted alone after committing. F1: "M08-AC4 (F1/F2): expected 1 occurrence(s) of <<was the only content of the>> ... got 2". F2: the same check, same count. F3: "M08-AC4 (F3): the emptied container was not reported as a footnote". F4: "M08-AC3 (F4): expected 0 occurrence(s) of <<marker class is written on>> ... got 1". All four fenced; tree clean after each.
+- 2026-08-18: re-review — tests/run-tests.sh --self-test clean, 156 checks (153 before the return). Status back to review.
 ## Decisions
 
 ## Review

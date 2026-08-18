@@ -796,6 +796,15 @@ PY
 # section, so a heading that leaked outside the index fails here even though
 # the manifest above would never see it. Every hit must also sit outside any
 # list item: a group heading introduces the entry list, it is not an entry.
+#
+# The ELEMENT is asserted, not only its text. AC1 promises a Div and never a
+# Header, and the difference is invisible in the label: Quarto copies a
+# heading's inlines into the table of contents and mints an id for it, so a
+# Header here would put the whole alphabet in the sidebar and add ids to the
+# namespace the generated ones are checked against. The class list and the id
+# are pinned for the same reason — the README documents the label as carrying
+# `qi-letter` and nothing else, and an extra class or a minted id would break
+# an author's CSS or that namespace while every label still read correctly.
 check_letter_sweep() {
   local htmlfile="$1" label="$2" expected="$3"
   printf '%s\n' "$expected" > "$WORK/letter-sweep.txt"
@@ -824,8 +833,21 @@ if inside:
     print(f'FAIL: {label}: heading(s) {inside} sit inside a list item',
           file=sys.stderr)
     sys.exit(1)
-print(f'ok   {label}: {len(actual)} letter-group heading(s), in order, every '
-      f'one outside any entry list item')
+wrong_tag = [(h['label'], h['tag']) for h in hits if h['tag'] != 'div']
+if wrong_tag:
+    print(f'FAIL: {label}: heading(s) are not a div: {wrong_tag}; a heading '
+          f'element would copy its text into the table of contents and mint '
+          f'an id', file=sys.stderr)
+    sys.exit(1)
+extra = [(h['label'], h['classes'], h['ident']) for h in hits
+         if h['classes'] != [H.LETTER_CLASS] or h['ident'] != '']
+if extra:
+    print(f'FAIL: {label}: heading(s) carry more than the documented class '
+          f'and no id: {extra}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: {len(actual)} letter-group heading(s), in order, each a '
+      f'div carrying only {H.LETTER_CLASS} and no id, every one outside any '
+      f'entry list item')
 SWEEPPY
 }
 
@@ -2631,7 +2653,7 @@ done
 if grep -qF -- "$HTML_LETTER_CLASS" examples/demo.md; then
   fail "M07-AC5: gfm output must not contain $HTML_LETTER_CLASS"
 fi
-if grep -qxF 'Symbols' examples/demo.md; then
+if grep -qF 'Symbols' examples/demo.md; then
   fail "M07-AC5: gfm output carries a letter-group label"
 fi
 pass "M07-AC5: gfm output carries neither the heading class nor a group label"

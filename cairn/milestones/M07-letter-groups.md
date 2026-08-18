@@ -132,6 +132,7 @@ class hooks only, unchanged).
 - 2026-08-18: plan chose stating book LaTeX outside `tests/byte-diff.sh`'s domain over extending its `ls-tree` to recursive because the checker's promise stays untouched (checker-regress doctrine); falsified by a filter-caused book-LaTeX drift the suite's book checks miss.
 - 2026-08-18: /milestone-implement started; branch m07-letter-groups cut from main at 89af3d5.
 - 2026-08-18: implement gate chose `letter<TAB><label>` heading rows (no collision with depth-digit entry rows), a bare text block inside the `qi-letter` container, and a new `examples/letter-groups.qmd` for the AC2 probes.
+- 2026-08-18: /milestone-review completed: [O] diff-bug lens ran on retry, 7 findings — 5 fixed now (the load-bearing one: nothing asserted the heading is a Div not a Header, AC1's one unevidenced clause; the fix is verified discriminating against a planted Header), 2 to candidate rows. Suite 141 checks clean after the fixes. ROADMAP now at 59 of its 60-line cap — prune at post-merge hygiene.
 - 2026-08-18: /milestone-review: all seven criteria verified with fresh evidence and ticked; consistency gate clean; two fix-now findings fixed on the branch (manifest 1e's oracle comment, a missing heading assertion on content.html). Blocked on the [O] diff-bug lens — four spawns each died on a 529 (Opus capacity), so the milestone stays at `review` at the user's selection, awaiting that one reviewer plus the merge gate. PR #7 open as draft.
 - 2026-08-18: T6-T8 done. `tests/byte-diff.sh`: all 19 merge-base fixtures render byte-identical `.tex` under this branch's filter and the merge base's, empty diff. README gained a `Letter groups in the HTML index` section pinned by 8 `README_LETTER_CLAIMS` rows; the old `collation rule` sentence moved to `README_STALE` and its replacement states top-level ranking plus within-group collation. DESIGN's Conventions collation bullet and HTML back-end bullet corrected M07. Suite 126 checks clean; pre-review `--self-test` run 140 checks clean.
 - 2026-08-18: T2-T5 done; suite green at 124 checks (was 104). Two findings on the way: `!` inside `sort=` is the level separator, so a symbol-initial key is written `!!`; and letter grouping put two of six top-level entries at the same position in the sortkey fixture's keyed and twin orders, which would have weakened M06's no-position-unchanged check in both back-ends — repaired by adding one probe entry (`Ursula K. Le Guin` filing under `Le Guin`) chosen so both the HTML and the makeindex orders are full derangements again, rather than by relaxing the check.
@@ -202,7 +203,8 @@ class hooks only, unchanged).
   rule` sentence is now a 6th `README_STALE` row and is absent; its
   replacement claim states top-level ranking plus within-group collation.
 - AC7: `tests/run-tests.sh --self-test` exit 0, 141 checks, all passing —
-  re-run after both fix-now findings landed. Plain `tests/run-tests.sh` is
+  re-run after every fix-now finding landed, the diff-bug lens's five
+  included. Plain `tests/run-tests.sh` is
   127 of those; the remaining 14 are the planted-defect self-test, which the
   profile names as the pre-review check.
 
@@ -226,11 +228,39 @@ No CI is configured on this repo (`gh pr checks 7`: no checks reported).
   generated index but had no heading assertion, so AC1's "every HTML index the
   acceptance suite renders" was not met as written. Fixed by a hand-derived
   sweep (one group, `F`, from the single indexing mark `entry="Figure!Dot"`).
-- [O diff-bug]: NOT YET RUN. Four spawn attempts on 2026-08-18 each died on
-  a server-side 529 (Opus capacity), none on anything in the diff. At the
-  user's selection the milestone parks at `review` rather than substituting a
-  weaker reader or merging on two lenses; a fresh session re-runs this one
-  lens and then the merge gate.
+- [O diff-bug]: ran 2026-08-18 after four spawns died on server-side 529s
+  (Opus capacity), none on anything in the diff. Seven findings; the
+  comparator, top-level identification, LaTeX isolation and the "does any
+  check now assert less" audit all came back clean. Triage:
+  - F1 [fix-now, fixed]: nothing asserted the heading is a Div rather than a
+    Header — AC1's one clause with no evidence behind it. Swapping
+    `pandoc.Div` for `pandoc.Header` left every manifest, sweep and negative
+    green while the alphabet entered the TOC and each label minted an id.
+    Fixed: `letter_sweep` now reports the element's tag, class list and id,
+    and `check_letter_sweep` pins all three. Verified discriminating by
+    planting exactly that swap — the check fails, and Quarto additionally
+    wraps the Header in a `section` carrying the same class, which swallows
+    the whole group into the label.
+  - F2 [fix-now, fixed]: `index_entries`' "the index lost its lists" guard
+    failed open after grouping — before M07 an empty index still emitted an
+    empty list, so the guard always found a list to object to; a grouped
+    section can carry none, and the guard returned `[]` silently. Now raises
+    either way, naming which shape it found.
+  - F5 [fix-now, fixed]: the README documents the label as carrying
+    `qi-letter` and nothing else, which nothing checked. Covered by F1's
+    class-list and id assertions.
+  - F7 [fix-now, fixed]: `letter_sweep`'s `in_item` ignored the hit node
+    itself. Unreachable (Pandoc cannot emit a Div as a list item) but the
+    comment claimed full generality; now the node's own tag counts.
+  - F4 [fix-now, fixed]: the gfm group-label negative matched a whole line
+    only, which no realistic regression could trip. Now a substring match —
+    `demo.md` contains no `Symbols` today, so the check is strictly stronger.
+  - F3 [follow-up]: an empty entry tree would render a bare `Index` heading
+    with no list. Traced unreachable on every path; ROADMAP candidate row.
+  - F6 [follow-up]: `Symbols` is a second hard-coded English reader-facing
+    string with no `lang` policy in DESIGN. Convention observation, not a
+    defect; ROADMAP candidate row cross-referencing the non-Latin-1 terms
+    row, which is about author text rather than the extension's own.
 - [S prior-review]: no prior-review regressions. All 39 candidate rows read;
   the module-level-state row is not worsened (the new code is pure functions
   over the existing sorted list, the only new module binding a constant), and

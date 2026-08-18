@@ -303,14 +303,19 @@ def index_entries(section):
         elif top.tag in LIST_TAGS:
             read_list(top, 0)
     if not any(r['kind'] == 'entry' for r in records):
-        # A section with no list at its top level means the shape changed;
-        # silently returning nothing would let every manifest check pass by
-        # comparing two empty sets. Headings alone do not clear this: a
-        # grouped index that lost its lists would otherwise look populated.
+        # A generated section always has entries — it is built only where
+        # marks exist — so no entry record means the shape changed, and
+        # silently returning nothing would let every set-shaped check pass by
+        # comparing two empty sets. Raise either way, naming which shape was
+        # found: before letter groups an empty index still emitted an empty
+        # list, so the misplaced-list case was the only one reachable; a
+        # grouped section can now carry no list at all, and that must not be
+        # the quieter failure. Headings alone do not clear this.
         for node in walk(section):
             if node.tag in LIST_TAGS:
                 raise ValueError('the index list is not a direct child of the '
                                  'index section')
+        raise ValueError('the index section carries no entry list at all')
     return records
 
 
@@ -352,12 +357,19 @@ def row(record, hrefs=False):
 def letter_sweep(root):
     """Every `qi-letter` element in the WHOLE document, in document order.
 
-    Each hit is a dict: `label` (its text) and `in_item` (whether any
-    ancestor is a list item). The sweep is whole-document rather than
-    section-scoped on purpose — a heading that leaked outside the generated
-    index is exactly what a check reading only the section cannot see — and
-    `in_item` answers the other half: a heading belongs between the entry
-    lists, never inside one.
+    Each hit is a dict: `label` (its text), `tag` (the element it is),
+    `classes` (every class it carries), `ident` (its id, or the empty
+    string), and `in_item` (whether it or any ancestor is a list item). The
+    sweep is whole-document rather than section-scoped on purpose — a heading
+    that leaked outside the generated index is exactly what a check reading
+    only the section cannot see — and `in_item` answers the other half: a
+    heading belongs between the entry lists, never inside one.
+
+    `tag`, `classes` and `ident` are reported because WHICH element carries
+    the class is the whole point of the choice: a heading element would copy
+    its text into the table of contents and mint an id into the namespace the
+    generated ids are checked against, which is exactly what a div avoids.
+    Reading only the label could not tell the two apart.
     """
     hits = []
 
@@ -365,10 +377,16 @@ def letter_sweep(root):
         for child in node.children:
             if not isinstance(child, Node):
                 continue
+            # The hit's own tag counts: an element that were itself a list
+            # item is inside one, whatever its ancestors are.
+            here = in_item or child.tag == 'li'
             if LETTER_CLASS in classes(child):
                 hits.append({'label': letter_label(child),
-                             'in_item': in_item})
-            descend(child, in_item or child.tag == 'li')
+                             'tag': child.tag,
+                             'classes': sorted(classes(child)),
+                             'ident': child.attrs.get('id', ''),
+                             'in_item': here})
+            descend(child, here)
 
     descend(root, False)
     return hits

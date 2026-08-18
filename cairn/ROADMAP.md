@@ -1,19 +1,18 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-18 (M08 and M09 planned from the latent-defect candidate rows; the five rows they absorb stay until the milestones complete (records-hygiene 1), two more left standing as unreachable; earlier pass: M07 done and archived; M02 row pruned to the 5-row retention; two follow-up rows added from M07 review; 2 lessons captured, none retired — the M06 manifest-comment lesson was violated this milestone, so it still earns its line; caps and byte budgets clean)_
+_Last hygiene check: 2026-08-18 (M08 done and archived; the qi-index collision row graduated, the self-reference row narrowed to the clamped and empty-level cases M08 could not see, the emptied-container work descoped onto its own row with every shape that breaks it; 4 lessons captured, none retired; caps and byte budgets clean)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M08 | Reachable mark and marker misuse defects | review | — | normal | milestones/M08-misuse-defects.md |
+| M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
 | M09 | Sort keys under the LaTeX level clamp | planned | — | normal | milestones/M09-sortkey-clamp.md |
 | M07 | Letter-group headings (HTML index) | done | — | normal | milestones/archive/M07-letter-groups.md |
 | M06 | Sort keys | done | — | normal | milestones/archive/M06-sort-keys.md |
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
 | M05 | Multi-chapter book support | done | M04 | normal | milestones/archive/M05-book-support.md |
-| M03 | HTML index back-end | done | M02 | normal | milestones/archive/M03-html-backend.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -43,8 +42,7 @@ _Last hygiene check: 2026-08-18 (M08 and M09 planned from the latent-defect cand
 - The PDF cross-reference checks assert substring presence, not counts, so a cross-reference printed twice would pass — added 2026-08-16 — M02 review; mirrors the existing AC6 approach
 - Choose and add a LICENSE file (user decision; needed before public listing) — added 2026-08-16 — M01 README omits a license claim for want of one
 - A mark's attribute values ride into pass-through formats on the span itself (`data-see` etc. in gfm); whether that markup residue is acceptable is unsettled — added 2026-08-17 — M03 review F4/F9; AC3's scope note defers it
-- An author can claim `qi-index` and collide with the generated section; minted anchor and entry ids skip taken names but the section id does not — added 2026-08-17 — M03 review F11
-- A self-referential cross-reference (`[cats]{.index see="cats"}`) resolves and links an entry to itself — added 2026-08-17 — M03 review F13; M08 drops such a target, except that the comparison uses unclamped levels and keeps empty ones, so `entry="Cats!"` + `see="Cats!"` compare unequal and the self-target still survives (M08 review F8)
+- A self-referential cross-reference still survives where the comparison cannot see it: M08 drops a target equal to the mark's own printed levels, but compares unclamped levels and keeps empty ones, so `entry="A!B!C!D"` + `see-also="A!B!C, D"` and `entry="Cats!"` + `see="Cats!"` both emit a self-encap — added 2026-08-17 — M03 review F13 (shipped M08), M08 review F7/F8
 - The planted-defect self-test mutates only the `.tex` fixture; no HTML index check has a planted-defect proof — added 2026-08-17 — M03 review F14
 - Report a container a nested marker leaves empty — descoped out of M08 at its third review return (2026-08-18) and to be planned on its own; the recursive rule is right (a marker contributes what its content contributes; a marker is never itself a container) but naming the container is not, and these shapes are known to break it: Quarto wraps callouts, tabsets and captioned figures in `__quarto_custom_scaffold` divs, so the report names a div no author wrote while the construct renders its title bar or caption; figure captions and table cells are emptied unreported; a bullet list emptied through its only item reports as a list item; and a per-kind check on `div` cannot tell the container from the marker div inside it — added 2026-08-17 — M04 review F6, M08 review F1/F3/R1/R2/R3/Q1/Q5/Q7
 - A marker written in YAML `abstract:` survives verbatim into the HTML header — filter residue of the IP2 class, since `resolve_markers` reads `doc.blocks` alone; the misplaced-class report is silent there for the same reason — added 2026-08-18 — M08 review R4/Q2
@@ -52,7 +50,7 @@ _Last hygiene check: 2026-08-18 (M08 and M09 planned from the latent-defect cand
 - Headings consumed by Quarto constructs (callout titles, tabsets) bypass the after-heading anchor relocation; no TOC copy today, so no defect — the invariant is unpinned against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8
 - Locator hrefs into chapter pages cannot be percent-escaped at the filter layer: Quarto normalizes a link target either way (verified — the filter emitted `later%20chapter.html`, output carried `later chapter.html`, matching Quarto's own `./later chapter.html`), so a chapter filename containing `#` or `?` yields a broken locator — added 2026-08-17 — M05 review F11
 - The per-chapter store is never pruned: a renamed or removed chapter leaves its record forever, harmless today because reads are filtered by the current chapter list and validated against a store version — added 2026-08-17 — M05 review F4/F13
-- Sort-key level paths are keyed on unclamped levels while the LaTeX back-end prints clamped ones, so a 4-level entry and a 3-level entry spelling the folded form collide under two makeindex keys with no report; the printed-text collision itself predates sort keys — added 2026-08-18 — M06 review pass 2 F9, widened by M08 review F7 — the same unclamped-vs-clamped mismatch hides a self-reference from M08's check: entry="A!B!C!D" with see-also="A!B!C, D" still emits \index{A!B!C, D|seealso{A: B: C, D}}
+- Sort-key level paths are keyed on unclamped levels while the LaTeX back-end prints clamped ones, so a 4-level entry and a 3-level entry spelling the folded form collide under two makeindex keys with no report; the printed-text collision itself predates sort keys — added 2026-08-18 — M06 review pass 2 F9
 - The book sidecar writes its declared-key map in `pairs` order, so an identical chapter's record is byte-unstable between renders; read as a map, so no ordering effect — added 2026-08-18 — M06 review pass 2 F11
 - An empty entry tree would render the index as a bare `Index` heading with no list and no warning; unreachable today (every path that builds the section is gated on a mark with at least one level), so this is latent — added 2026-08-18 — M07 review F3
 - Reader-facing strings the filter emits are hard-coded English (`Index`, and now the `Symbols` group label) with no `lang` policy in DESIGN — added 2026-08-18 — M07 review F6; distinct from the non-Latin-1 author-terms row above, which is about what an author writes

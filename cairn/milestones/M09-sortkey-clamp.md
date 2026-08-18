@@ -82,6 +82,9 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
       for these rows rather than borrowed from another manifest.
 - [x] T4: Build the twin's PDF and pin that each pair's entry prints once,
       following the existing PDF checks (run-tests.sh:1968, :2853).
+- [x] T6: Document the report in the README as the PDF-only fifth sort-key
+      report, pin its sentences in the suite's documented-claims list, and add
+      it to the planted-defect self-test's discrimination proofs.
 - [ ] T5: Revert the fix and record the failing check and its message in the
       work log. Process evidence, deliberately mapped to no criterion — a
       criterion binding the harness rather than the emitted output is the
@@ -99,6 +102,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 - 2026-08-18: T2 — the report lands in the document-wide LaTeX pass beside the multi-encap one, once per contested printed path, naming every key filed under it; `index_argument` now also returns the printed and filing paths it emitted. Full suite green (143 checks), the two AC1 reports firing as hand-derived and no other fixture newly warning.
 - 2026-08-18: T3 — the HTML manifest is derived for these rows, ordering spelled out through each level's sort key (Ada before Zed puts `gamma, delta` ahead of `gamma`; Vee before Wye puts `xi, omicron` ahead of `xi`), which is the opposite of what the printed text would give in both groups. Rendered index matched the hand-derived 14 rows first time; the report fires 0 times in HTML. Suite 145 checks green.
 - 2026-08-18: T4 — the twin's PDF is built and its printed index read with tests/pdfindex.py: six rows, `alpha!beta!gamma, delta` and `mu!nu!xi, omicron, pi` each printed once, matching the hand-derived outline, with a no-term-twice check named separately as the criterion. Suite 147 checks green.
+- 2026-08-18: minor amendment — T6 added at the implementation question gate, where the user chose to document the new report rather than ship it undocumented. README gains the PDF-only fifth report, three claim rows pin its sentences, and the self-test proves the AC1 check fails both when the report goes missing and when it fires twice. `--self-test` clean at 162 checks.
 
 ## Decisions
 

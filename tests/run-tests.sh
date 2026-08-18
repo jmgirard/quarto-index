@@ -126,6 +126,9 @@ README_SORT_CLAIMS=(
   $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
   $'reaching past a level\ton the way to a deeper one declares nothing for that level'
   $'book adds a fourth report\tA book adds a fourth report, for a term two chapters sort differently'
+  $'pdf adds a fifth report\tA fifth report belongs to PDF alone'
+  $'the fold makes the collision\ttwo entries written at different depths can end up printing at one place'
+  $'no ceiling in HTML\tThe HTML index applies no such ceiling'
   $'ordering is per back-end\tA sort key files an entry under the ordering of whichever back-end builds the'
   $'plain keys order alike\tSort keys of plain letters and digits order the same way in both back-ends'
   $'keys past the ceiling\tA sort key written for a level past the third goes with that level in this'
@@ -5381,6 +5384,11 @@ PY
   # three a single document can draw.
   warn_discrimination "$WORK/book-order-2.log" "$WARN_BOOK_SORT_CONFLICT" 1 \
     "M06-AC4"
+  # The level-fold collision is the only evidence an author gets that two
+  # entries reached the index tool as two keys under one printed path; proved
+  # discriminating like the reports about a mark.
+  warn_discrimination "$WORK/sortkey-clamp-latex.log" "$WARN_CLAMP_SPLIT" 2 \
+    "M09-AC1"
   warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
 fi

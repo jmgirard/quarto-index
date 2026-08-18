@@ -3880,9 +3880,15 @@ for fmt in latex gfm; do
     "M06-AC4 ($fmt)"
   check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_EXTRA" 1 \
     "M06-AC4 ($fmt)"
-  check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_CONFLICT" 1 \
+  # TWO, from four marks sharing one printed level: keys Aaa, Bbb, Bbb, Ccc.
+  # The count discriminates all three candidate rules — once per mark would
+  # give 3, once per level path 1, and once per rival key at a path 2, which
+  # is the rule: repeating a rival gives the author nothing further to fix,
+  # while a second, different rival is a second thing to fix and would
+  # otherwise stay unmentioned until the first was resolved.
+  check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_CONFLICT" 2 \
     "M06-AC4 ($fmt)"
-  pass "M06-AC4: all three sort-key reports fire exactly once each in $fmt"
+  pass "M06-AC4: the three sort-key reports fire in $fmt, the conflict once per rival key rather than once per mark or once per entry"
 done
 
 # The two folded-entry marks in the same fixture. A sort key is aligned with
@@ -4284,7 +4290,7 @@ PY
     "M06-AC4"
   warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_EXTRA" 1 \
     "M06-AC4"
-  warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_CONFLICT" 1 \
+  warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_CONFLICT" 2 \
     "M06-AC4"
   # The cross-chapter conflict is the only report an author gets that two
   # chapters sorted one term two ways; it is proved discriminating like the

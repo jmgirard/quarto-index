@@ -345,17 +345,23 @@ local function register_sort(levels, declared, context)
       local seen = sort_keys[path]
       if seen == nil then
         sort_keys[path] = { sort = key, context = context }
-      elseif seen.sort ~= key and not seen.reported then
-        -- Once per printed level path, not once per mark that carries it: a
-        -- term is usually marked in several places and the author has one
-        -- thing to fix however many of those marks repeat the rival key.
+      elseif seen.sort ~= key then
+        -- Once per RIVAL KEY at this path, not once per mark carrying it: a
+        -- term is usually marked in several places, and repeating one rival
+        -- key gives the author nothing further to fix. A second, different
+        -- rival is a second thing to fix, though — the message names the key
+        -- it is about, so suppressing it would leave that key unmentioned
+        -- until the first was resolved and the document rendered again.
         -- The two marks are usually described identically — the same term,
         -- twice — so the message names the two KEYS, which are what actually
         -- differ and what the author has to choose between.
-        seen.reported = true
-        warn(('index entry in %s is already sorted as "%s"; the sort key '
-              .. '"%s" written here cannot apply as well, so the first one '
-              .. 'wins'):format(context, seen.sort, key))
+        seen.reported = seen.reported or {}
+        if not seen.reported[key] then
+          seen.reported[key] = true
+          warn(('index entry in %s is already sorted as "%s"; the sort key '
+                .. '"%s" written here cannot apply as well, so the first one '
+                .. 'wins'):format(context, seen.sort, key))
+        end
       end
     end
   end

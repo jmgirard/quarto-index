@@ -1240,6 +1240,52 @@ local function is_marker(block)
   return block.t == "Div" and block.classes:includes(MARKER_CLASS)
 end
 
+-- The marker class means something on exactly one shape: an empty top-level
+-- div. Written anywhere else it is inert, and until now it was inert in
+-- silence — a heading or a span carrying it placed nothing and said nothing,
+-- which reads to an author exactly like a marker that failed. Every other
+-- shape is therefore reported. Format-neutral, like every other report about
+-- what the author wrote, so it fires wherever the document is rendered.
+--
+-- Nothing is edited: the element belongs to the author, and this extension
+-- removes markers, not the elements people mistake for them. The class
+-- accordingly survives into output, which is cosmetic and said out loud in
+-- the README rather than fixed by editing someone else's span.
+local MARKER_SITE_NAMES = {
+  Header = "heading",
+  Span = "inline span",
+  CodeBlock = "code block",
+  Code = "inline code",
+  Table = "table",
+  Figure = "figure",
+  Link = "link",
+  Image = "image",
+}
+
+local function report_marker_sites(doc)
+  local function note(element)
+    -- A Div is the one shape that CAN place an index; whether this particular
+    -- one does is resolve_markers' business, not this walk's.
+    if element.t == "Div" then
+      return nil
+    end
+    local attr = element.attr
+    if attr == nil or not attr.classes:includes(MARKER_CLASS) then
+      return nil
+    end
+    local name = MARKER_SITE_NAMES[element.t] or element.t
+    -- Every name this table can produce is an ordinary English noun phrase, so
+    -- the article follows from its first letter; a fallback name is a Pandoc
+    -- type name, where the same test still reads correctly ("an Emph").
+    local article = name:match("^[aeiouAEIOU]") and "an" or "a"
+    warn(("the index placement marker class is written on %s %s; only an empty "
+          .. "top-level div places an index, so nothing is placed here and the "
+          .. "%s is left as written"):format(article, name, name))
+    return nil
+  end
+  doc:walk({ Block = note, Inline = note })
+end
+
 -- A marker's own content is never dropped. The marker is documented as empty,
 -- but deleting what an author wrote inside one would be IP2 corruption, so the
 -- content is spliced in where the marker stood and the author is told.
@@ -1267,10 +1313,74 @@ local function marker_content(block)
   return block.content
 end
 
+-- Removing a nested marker takes nothing the author wrote with it — but where
+-- the marker was the container's ONLY content, what is left is an empty
+-- container the author never wrote and would not otherwise account for. The
+-- container is kept, because deleting one goes further than removing the
+-- marker; the consequence is reported instead, beside the nested-marker
+-- message rather than folded into it, so that message keeps the wording it has
+-- always had.
+--
+-- Reported BEFORE anything is stripped, from the shape itself — every element
+-- of a non-empty block list being a marker is exactly the condition that
+-- empties its container — so this does not depend on the order a walk visits
+-- an element and its own content in.
+local CONTAINER_NAMES = {
+  Div = "div",
+  BlockQuote = "block quote",
+  Figure = "figure",
+}
+
+local function all_markers(blocks)
+  if blocks == nil or #blocks == 0 then
+    return false
+  end
+  for _, inner in ipairs(blocks) do
+    if not is_marker(inner) then
+      return false
+    end
+  end
+  return true
+end
+
+local function report_emptied(name)
+  warn(("the index placement marker was the only content of the %s it was "
+        .. "written in; the marker is removed, so that %s is left empty")
+       :format(name, name))
+end
+
+local function check_emptied(el)
+  if el.t == "BulletList" or el.t == "OrderedList" then
+    -- A list's content is a list of block lists, one per item.
+    for _, item in ipairs(el.content) do
+      if all_markers(item) then
+        report_emptied("list item")
+      end
+    end
+  elseif all_markers(el.content) then
+    report_emptied(CONTAINER_NAMES[el.t] or el.t)
+  end
+end
+
+local function report_emptied_containers(block)
+  -- `walk` visits an element's contents, never the element itself, and the
+  -- container at issue is often the top-level block handed in — the div or the
+  -- block quote a nested marker was written alone inside. So it is checked
+  -- here, and its descendants by the walk.
+  check_emptied(block)
+  block:walk({
+    Block = function(el)
+      check_emptied(el)
+      return nil
+    end,
+  })
+end
+
 -- Strip every marker below the top level of one top-level block. A
 -- `\printindex` inside a group or environment is an IP2-class render risk, so
 -- a nested marker places nothing; the index keeps its automatic position.
 local function strip_nested_markers(block)
+  report_emptied_containers(block)
   return block:walk({
     Blocks = function(blocks)
       local out = pandoc.Blocks({})
@@ -1766,6 +1876,7 @@ local function Pandoc(doc)
   -- Before any back-end branch: the marker is the author's syntax, so its
   -- misuse is diagnosed in every format and its residue removed in every
   -- format, whether or not that format has an index to place.
+  report_marker_sites(doc)
   local marker = resolve_markers(doc)
   -- A book chapter is not the whole document: the marks the marker places are
   -- mostly in other chapters, so "no marks here" says nothing about whether

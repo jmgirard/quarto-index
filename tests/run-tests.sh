@@ -2496,12 +2496,16 @@ PY
 # Class survival is NOT claimed here: gfm has no heading attributes at all, so
 # a dropped heading class is the writer's doing and not this filter's.
 python3 - examples/marker-sites.md <<'PY'
-import sys
+import re, sys
 src = open(sys.argv[1], encoding='utf-8').read()
+# gfm is a wrapped format: the writer breaks a line wherever it likes, so a
+# phrase is compared with whitespace collapsed. Token checks below read the
+# raw source, since no token this extension emits contains a space.
+flat = re.sub(r'\s+', ' ', src)
 errs = []
 for want in ('A heading carrying the class', 'right here',
              'A fenced code block carrying the class places nothing.'):
-    if want not in src:
+    if want not in flat:
         errs.append(f'visible content {want!r} did not survive into gfm')
 for token in ('\\index{', '\\printindex', 'qi-mark-', 'qi-entry-'):
     if token in src:

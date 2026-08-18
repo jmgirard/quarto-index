@@ -94,16 +94,16 @@ author reads or markup an HTML reader receives.
 
 ## Tasks
 
-- [ ] T1: Add `examples/marker-sites.qmd` with the three misplaced-class sites
+- [x] T1: Add `examples/marker-sites.qmd` with the three misplaced-class sites
       and the two sole-content nested containers; add the AC3/AC4 checks to
       `tests/run-tests.sh`, failing. A fresh fixture, not an extension of
       `marker-misuse.qmd`: run-tests.sh:2308 pins the duplicate-marker message
       *with its top-level block position*, and :2323 asserts the nested-marker
       warning fires exactly once.
-- [ ] T2: Report the marker class on any block that is not a Div and on any
+- [x] T2: Report the marker class on any block that is not a Div and on any
       inline span, format-neutrally, naming the site kind; leave the element
       itself untouched.
-- [ ] T3: Report that stripping a nested marker left its container with no
+- [x] T3: Report that stripping a nested marker left its container with no
       content; keep the container.
 - [ ] T4: Add `examples/id-collision.qmd` with the five id claims; give
       `tests/htmlindex.py` a heading-based index-section lookup (reading the id
@@ -138,6 +138,9 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: implement gate — a self-target counts as self-referential when it matches what the entry PRINTS, not what it files under, because a reader sees "cats, see cats" whichever sort key the mark carries and the key never appears in the printed index.
 - 2026-08-18: minor amendment — added T9 (README + its normative pins). Discovered at T1: README.md documents the marker rules and the cross-reference behavior in prose and README.md:329 states the section id is "fixed rather than minted", which AC1 falsifies; the suite compares named README sentences as bytes, so a documented claim owes a test.
 - 2026-08-18: T1 — examples/marker-sites.qmd added (marker class on a heading, an inline span and a fenced code block; a div and a block quote each holding a nested marker as their only content; one real top-level marker with text after it) plus the AC3/AC4 checks. Suite red by design: the first new check reports 0 occurrences of a warning no code emits yet, and every pre-existing check passes.
+- 2026-08-18: T2 — report_marker_sites walks the whole document before resolve_markers and reports the marker class on any non-Div block or inline span, naming the site kind (heading / inline span / code block, falling back to the Pandoc type name); the element is never edited. Format-neutral, so it fires in all three formats.
+- 2026-08-18: T3 — report_emptied_containers reports, from the shape rather than from walk order, every non-empty block list whose every element is a marker; walk visits contents and never the element itself, so the top-level block is checked directly and its descendants by the walk. Covers Div, block quote, figure and list items, falling back to the type name.
+- 2026-08-18: T1's gfm phrase check compared unwrapped text against a wrapped writer's output; the check now collapses whitespace before comparing, the token checks still reading raw source. Suite green: 133 checks.
 ## Decisions
 
 ## Review

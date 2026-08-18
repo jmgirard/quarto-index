@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** m09-sortkey-clamp
+- **Branch/PR:** m09-sortkey-clamp / https://github.com/jmgirard/quarto-index/pull/9
 
 ## Goal
 
@@ -40,7 +40,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 
 ## Acceptance criteria
 
-- [ ] AC1: In a LaTeX render of `examples/sortkey-clamp.qmd`, which holds two
+- [x] AC1: In a LaTeX render of `examples/sortkey-clamp.qmd`, which holds two
       pairs of entries whose printed level paths differ before the three-level
       fold and are identical after it — one pair written as four levels against
       three whose third spells the folded form, one pair written as two
@@ -48,18 +48,18 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
       different sort keys, exactly two warnings appear per render, one per pair,
       each naming that pair's two sort keys and the printed level path they
       contest.
-- [ ] AC2: In an HTML render of the same fixture, none of those warnings
+- [x] AC2: In an HTML render of the same fixture, none of those warnings
       appears, and all four entries remain distinct at their unfolded level
       paths, the index's entries and level paths pinned by a hand-derived
       manifest — derived through the entries' sort keys, which is what orders
       them, not their printed text.
-- [ ] AC3: In a LaTeX and an HTML render of `examples/sortkey-clamp-twin.qmd`,
+- [x] AC3: In a LaTeX and an HTML render of `examples/sortkey-clamp-twin.qmd`,
       differing only in that each pair's two entries carry one shared sort key
       (chosen to differ from either entry's third-level printed text, since
       `index_argument` compares a key against the *unclamped* level at
       index.lua:449), no such warning appears, the `.tex` writes each pair under
       one makeindex key, and the PDF built from it prints each pair's entry once.
-- [ ] AC4: `tests/run-tests.sh --self-test` clean (the `verify` slot).
+- [x] AC4: `tests/run-tests.sh --self-test` clean (the `verify` slot).
 
 ## Coverage
 
@@ -121,3 +121,38 @@ key where it wrote a sort field and the clamped printed text where it did not
 — and the report compares those.
 
 ## Review
+
+Fresh evidence, 2026-08-18, from `tests/run-tests.sh --self-test` on
+m09-sortkey-clamp at 1fcc2f6 (exit 0, 162 checks).
+
+- AC1 — a LaTeX render of `examples/sortkey-clamp.qmd` emits the report
+  exactly twice, once per pair. Each message is checked whole and found once:
+  the one-side-folded pair naming `"alpha!beta!Ada"` and `"alpha!beta!Zed"`
+  against the path `alpha!beta!gamma, delta`, the both-sides-folded pair
+  naming `"mu!nu!Vee"` and `"mu!nu!Wye"` against `mu!nu!xi, omicron, pi`.
+  The suite's by-construction check confirms the fixture still writes those
+  two shapes (one pair with one side past the ceiling, one with both) under
+  four different keys, each pair folding to one printed path. The
+  planted-defect self-test proves the count check fails both when the report
+  is removed from the log and when it is duplicated.
+- AC2 — an HTML render of the same fixture emits the report 0 times, and its
+  index matches all 14 rows of the hand-derived manifest, in order: the four
+  entries stay distinct at their unfolded paths, ordered through their sort
+  keys (`gamma, delta` ahead of `gamma`, `xi, omicron` ahead of `xi` — the
+  reverse of what their printed text gives). All 4 index links resolve and
+  every id is unique.
+- AC3 — `examples/sortkey-clamp-twin.qmd` emits the report 0 times in LaTeX,
+  in HTML and in the PDF render. Its `.tex` carries exactly two distinct
+  index-tool arguments, `alpha!beta!Kay@gamma, delta` and
+  `mu!nu!Jay@xi, omicron, pi`, twice each — one key per pair, two locators
+  for it. The compiled PDF prints 6 index rows and no term twice, matching
+  the hand-derived outline. The shared keys are asserted to differ from both
+  entries' third-level printed text, so the pairs cannot be filing together
+  for a reason the criterion does not name.
+- AC4 — `tests/run-tests.sh --self-test` exits 0 with 162 checks passing,
+  the planted-defect self-test included.
+
+Consistency gate: `cairn_validate` all checks passed (exit 0); the `generic`
+profile names no toolchain checks; no DESIGN principle changed, so
+`cairn_impact` does not apply.
+

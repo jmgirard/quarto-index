@@ -5013,10 +5013,24 @@ WARN_CLAMP_SPLIT='file under more than one sort key'
 # and would make the twin's checks pass for the wrong reason. And so is the
 # collision itself: each rival pair must fold to ONE printed level path, or the
 # fixture has stopped exercising anything.
-python3 - examples/sortkey-clamp.qmd examples/sortkey-clamp-twin.qmd <<'CLAMPTWINPY'
-import re, sys
+# Both read from the filter rather than written down here: this fixture's
+# shapes are defined relative to the level ceiling and the string the fold
+# joins with, and either one moving would leave the derivation below deriving
+# something the back-end no longer does — while still passing, since it
+# compares its own derivations against each other.
+MAX_LEVELS=$(sed -n 's/^local MAX_LEVELS = \([0-9][0-9]*\)$/\1/p' \
+  _extensions/index/index.lua)
+[ -n "$MAX_LEVELS" ] || fail "M09: could not read MAX_LEVELS from the filter"
+OVERFLOW_JOIN=$(sed -n 's/^local OVERFLOW_JOIN = "\(.*\)"$/\1/p' \
+  _extensions/index/index.lua)
+[ -n "$OVERFLOW_JOIN" ] \
+  || fail "M09: could not read OVERFLOW_JOIN from the filter"
+MAX_LEVELS="$MAX_LEVELS" OVERFLOW_JOIN="$OVERFLOW_JOIN" \
+  python3 - examples/sortkey-clamp.qmd examples/sortkey-clamp-twin.qmd <<'CLAMPTWINPY'
+import os, re, sys
 
-MAX_LEVELS = 3
+MAX_LEVELS = int(os.environ['MAX_LEVELS'])
+OVERFLOW_JOIN = os.environ['OVERFLOW_JOIN']
 
 
 def marks(path):
@@ -5043,7 +5057,7 @@ def folded(entry):
     lv = levels(entry)
     if len(lv) <= MAX_LEVELS:
         return lv
-    return lv[:MAX_LEVELS - 1] + [', '.join(lv[MAX_LEVELS - 1:])]
+    return lv[:MAX_LEVELS - 1] + [OVERFLOW_JOIN.join(lv[MAX_LEVELS - 1:])]
 
 
 rival, twin = marks(sys.argv[1]), marks(sys.argv[2])

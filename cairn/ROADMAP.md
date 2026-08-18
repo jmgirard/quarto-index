@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-17 (M06 planned; sort-key candidate row promoted, l
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M06 | Sort keys | planned | — | normal | milestones/M06-sort-keys.md |
+| M06 | Sort keys | review | — | normal | milestones/M06-sort-keys.md |
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
 | M05 | Multi-chapter book support | done | M04 | normal | milestones/archive/M05-book-support.md |
 | M03 | HTML index back-end | done | M02 | normal | milestones/archive/M03-html-backend.md |
@@ -29,13 +29,13 @@ _Last hygiene check: 2026-08-17 (M06 planned; sort-key candidate row promoted, l
 - Harden the acceptance suite: brace-aware \index scanner (no longer benign now that unbalanced braces are probed) — added 2026-08-16 — M01 review R14; the script-exit-code item was done in M01, and \printindex ordering has its own row
 - Quarto version floor is an untested contract claim; CI matrix would fence it — added 2026-08-16 — M01 review R15; folds into the existing CI-matrix candidate
 - Windows checkouts without symlink support break examples/_extensions — added 2026-08-16 — M01 review R18
-- `marks_seen` is module-level state, latent if Lua state is ever reused across documents; the HTML back-end adds one more such accumulator (`html_marks`) — added 2026-08-16, widened by M03 review P1, corrected M03 (the second accumulator was refactored away by the F1/F2 fix), corrected M04 (`marks_emitted` became the format-neutral `marks_seen`) — M01 review R16
+- `marks_seen` is module-level state, latent if Lua state is ever reused across documents; the HTML back-end adds one more such accumulator (`html_marks`) — added 2026-08-16, widened by M03 review P1, corrected M03 (the second accumulator was refactored away by the F1/F2 fix), corrected M04 (`marks_emitted` became the format-neutral `marks_seen`), widened by M06 review F-a (`sort_keys`, the sort-key registry, is another) — M01 review R16
 - `\index` inside a moving argument (section heading) is unprobed — added 2026-08-16 — M01 review R17
 - Letter-group headings in the HTML index (A/B/C breaks) — added 2026-08-16 — deferred at the M03 gate pending sort-key collation; kept out of M06 at its gate, plannable once M06 lands
 - see-also entries keep their locators (print convention) in both back-ends — added 2026-08-16 — M03 gate chose LaTeX-aligned no-locator semantics; pairs with the plain+cross-reference clash row
 - Escaping probe covers characters singly; combinations remain an untested axis — added 2026-08-16 — M01 review; see the milestone Decisions entry
 - `[` and `]` are escaped by Pandoc's LaTeX writer but are not in the filter's escape table — added 2026-08-16 — M01 review N11; verified harmless in practice
-- Bare (unquoted) `entry=`, `see=` and `see-also=` values escape both the no-leak sweep and the probe-coverage pin; for no-leak this is a false pass, not a false failure — added 2026-08-16 — M01 review N9, widened by M02 review
+- Bare (unquoted) `entry=`, `see=` and `see-also=` values escape both the no-leak sweep and the probe-coverage pin; for no-leak this is a false pass, not a false failure — added 2026-08-16 — M01 review N9, widened by M02 review, widened by M06 review F-b (the suite's `sort=` extraction is double-quote-only too; no false pass today, since every fixture quotes its values)
 - Acceptance suite: BSD-sed portability, `]{.index` substring undercount, `include_text` guard — added 2026-08-16 — M01 review N12/N13/N14
 - Demo manifests have no independent count, so coverage can shrink silently — added 2026-08-16 — M01 review P10
 - The demo's own makeindex acceptance is never asserted — added 2026-08-16 — M01 review P11
@@ -53,4 +53,6 @@ _Last hygiene check: 2026-08-17 (M06 planned; sort-key candidate row promoted, l
 - Headings consumed by Quarto constructs (callout titles, tabsets) bypass the after-heading anchor relocation; no TOC copy today, so no defect — the invariant is unpinned against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8
 - Locator hrefs into chapter pages cannot be percent-escaped at the filter layer: Quarto normalizes a link target either way (verified — the filter emitted `later%20chapter.html`, output carried `later chapter.html`, matching Quarto's own `./later chapter.html`), so a chapter filename containing `#` or `?` yields a broken locator — added 2026-08-17 — M05 review F11
 - The per-chapter store is never pruned: a renamed or removed chapter leaves its record forever, harmless today because reads are filtered by the current chapter list and validated against a store version — added 2026-08-17 — M05 review F4/F13
+- Sort-key level paths are keyed on unclamped levels while the LaTeX back-end prints clamped ones, so a 4-level entry and a 3-level entry spelling the folded form collide under two makeindex keys with no report; the printed-text collision itself predates sort keys — added 2026-08-18 — M06 review pass 2 F9
+- The book sidecar writes its declared-key map in `pairs` order, so an identical chapter's record is byte-unstable between renders; read as a map, so no ordering effect — added 2026-08-18 — M06 review pass 2 F11
 - A book page rendered but absent from `book.render` (via `project: render:`) gets its own per-chapter index rather than contributing to the book's — added 2026-08-17 — M05 review F13

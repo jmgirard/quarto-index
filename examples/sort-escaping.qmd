@@ -1,0 +1,207 @@
+---
+title: "quarto-index sort-key escaping probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Sort-key escaping probe
+
+Every printable ASCII character except the space, each as the whole sort
+key of an entry of its own. A sort key travels the same channel an entry
+key does, so the same characters need the same mechanisms — with one
+character that only matters here: `@` is what the LaTeX back-end writes
+between a sort key and the text it files, so an `@` the author writes must
+still reach the index tool quoted. Generated to cover the range by
+construction rather than by recall.
+
+A literal `!` is written `!!`, since a lone `!` is a level separator; `\\`
+and `\"` are the two Pandoc consumes a backslash level from.
+
+[term-21]{.index sort="!!"}
+
+[term-22]{.index sort="\""}
+
+[term-23]{.index sort="#"}
+
+[term-24]{.index sort="$"}
+
+[term-25]{.index sort="%"}
+
+[term-26]{.index sort="&"}
+
+[term-27]{.index sort="'"}
+
+[term-28]{.index sort="("}
+
+[term-29]{.index sort=")"}
+
+[term-2a]{.index sort="*"}
+
+[term-2b]{.index sort="+"}
+
+[term-2c]{.index sort=","}
+
+[term-2d]{.index sort="-"}
+
+[term-2e]{.index sort="."}
+
+[term-2f]{.index sort="/"}
+
+[term-30]{.index sort="0"}
+
+[term-31]{.index sort="1"}
+
+[term-32]{.index sort="2"}
+
+[term-33]{.index sort="3"}
+
+[term-34]{.index sort="4"}
+
+[term-35]{.index sort="5"}
+
+[term-36]{.index sort="6"}
+
+[term-37]{.index sort="7"}
+
+[term-38]{.index sort="8"}
+
+[term-39]{.index sort="9"}
+
+[term-3a]{.index sort=":"}
+
+[term-3b]{.index sort=";"}
+
+[term-3c]{.index sort="<"}
+
+[term-3d]{.index sort="="}
+
+[term-3e]{.index sort=">"}
+
+[term-3f]{.index sort="?"}
+
+[term-40]{.index sort="@"}
+
+[term-41]{.index sort="A"}
+
+[term-42]{.index sort="B"}
+
+[term-43]{.index sort="C"}
+
+[term-44]{.index sort="D"}
+
+[term-45]{.index sort="E"}
+
+[term-46]{.index sort="F"}
+
+[term-47]{.index sort="G"}
+
+[term-48]{.index sort="H"}
+
+[term-49]{.index sort="I"}
+
+[term-4a]{.index sort="J"}
+
+[term-4b]{.index sort="K"}
+
+[term-4c]{.index sort="L"}
+
+[term-4d]{.index sort="M"}
+
+[term-4e]{.index sort="N"}
+
+[term-4f]{.index sort="O"}
+
+[term-50]{.index sort="P"}
+
+[term-51]{.index sort="Q"}
+
+[term-52]{.index sort="R"}
+
+[term-53]{.index sort="S"}
+
+[term-54]{.index sort="T"}
+
+[term-55]{.index sort="U"}
+
+[term-56]{.index sort="V"}
+
+[term-57]{.index sort="W"}
+
+[term-58]{.index sort="X"}
+
+[term-59]{.index sort="Y"}
+
+[term-5a]{.index sort="Z"}
+
+[term-5b]{.index sort="["}
+
+[term-5c]{.index sort="\\"}
+
+[term-5d]{.index sort="]"}
+
+[term-5e]{.index sort="^"}
+
+[term-5f]{.index sort="_"}
+
+[term-60]{.index sort="`"}
+
+[term-61]{.index sort="a"}
+
+[term-62]{.index sort="b"}
+
+[term-63]{.index sort="c"}
+
+[term-64]{.index sort="d"}
+
+[term-65]{.index sort="e"}
+
+[term-66]{.index sort="f"}
+
+[term-67]{.index sort="g"}
+
+[term-68]{.index sort="h"}
+
+[term-69]{.index sort="i"}
+
+[term-6a]{.index sort="j"}
+
+[term-6b]{.index sort="k"}
+
+[term-6c]{.index sort="l"}
+
+[term-6d]{.index sort="m"}
+
+[term-6e]{.index sort="n"}
+
+[term-6f]{.index sort="o"}
+
+[term-70]{.index sort="p"}
+
+[term-71]{.index sort="q"}
+
+[term-72]{.index sort="r"}
+
+[term-73]{.index sort="s"}
+
+[term-74]{.index sort="t"}
+
+[term-75]{.index sort="u"}
+
+[term-76]{.index sort="v"}
+
+[term-77]{.index sort="w"}
+
+[term-78]{.index sort="x"}
+
+[term-79]{.index sort="y"}
+
+[term-7a]{.index sort="z"}
+
+[term-7b]{.index sort="{"}
+
+[term-7c]{.index sort="|"}
+
+[term-7d]{.index sort="}"}
+
+[term-7e]{.index sort="~"}

@@ -5,7 +5,10 @@
 #   - a SECOND chapter carries a marker too, which must be refused rather than
 #     produce a second index;
 #   - a chapter filename contains a space, so its locator href has to be
-#     escaped before it goes into a link.
+#     escaped before it goes into a link;
+#   - a THIRD chapter repeats the second's rival sort key, so the
+#     cross-chapter conflict count discriminates once-per-rival-key reporting
+#     from once-per-conflicting-chapter.
 project:
   type: book
 
@@ -14,6 +17,7 @@ book:
   chapters:
     - index.qmd
     - "later chapter.qmd"
+    - third.qmd
 
 format:
   html: default

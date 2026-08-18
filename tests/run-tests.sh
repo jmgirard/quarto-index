@@ -73,6 +73,8 @@ SUPPORTED_FORMS=(
   $'see cross-reference\t[term]{.index see="Other"}'
   $'see-also cross-reference\t[term]{.index see-also="Other"}'
   $'placement marker\t::: {.qi-index-here}'
+  $'sort key span\t[The Hague]{.index sort="Hague"}'
+  $'sub-level sort key\t[]{.index entry="mathematicians!von Neumann" sort="!Neumann"}'
 )
 
 # ---------------------------------------------------------------------------
@@ -89,6 +91,7 @@ README_STALE=(
   $'cross-reference pass-through\tIn formats with no index back-end, a cross-reference mark is simply a mark'
   $'one back-end\tLaTeX/PDF is the back-end that ships today'
   $'automatic placement\tPlacement is automatic; there is no option to put the index elsewhere yet'
+  $'sort keys unimplemented\tSort keys and locator styling, which use those characters in raw `makeindex` syntax, are not part of this syntax and will arrive later as separate span attributes'
 )
 
 # Each must be PRESENT: one beamer-scoped pass-through sentence, and one row
@@ -98,10 +101,35 @@ README_HTML_CLAIMS=(
   $'beamer pass-through\tIn beamer, and in any other format with no index back-end, marks pass through'
   $'no level ceiling\tNo level ceiling in HTML'
   $'clash warning scope\tThe clash warning is LaTeX-only'
-  $'collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code'
+  $'collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code, applied to an entry\'s sort key where it has one'
   $'numbered locator links\tLocators are numbered links in HTML'
   $'targets hyperlinked\tCross-reference targets are hyperlinked in HTML'
   $'no locator from a cross-reference\tA cross-reference carries no locator in either back-end'
+)
+
+# ---------------------------------------------------------------------------
+# README claims about sort keys (NORMATIVE, M06-AC6). Same discipline as
+# README_HTML_CLAIMS: one row per behavior the extension documents, compared
+# as bytes, so the docs and what this suite exercises cannot drift apart.
+# These assert the named sentences are PRESENT; they never claim the README
+# says nothing else, which no procedure here could establish.
+# ---------------------------------------------------------------------------
+README_SORT_CLAIMS=(
+  $'not tool syntax\tA sort key is ordinary text, not index-tool syntax'
+  $'level alignment\tlines up with it position by position'
+  $'empty level fallback\tfile this level under its own printed text'
+  $'key belongs to the entry\tA sort key belongs to the entry, not to the mark you happened to write it on'
+  $'reported in every format\tThree things are reported, in every output format'
+  $'report: nothing to sort\ta `sort=` on a mark that indexes nothing, which has nothing to sort'
+  $'report: extra levels\ta `sort=` with more levels than its entry has, whose extra levels are'
+  $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
+  $'reaching past a level\ton the way to a deeper one declares nothing for that level'
+  $'book adds a fourth report\tA book adds a fourth report, for a term two chapters sort differently'
+  $'ordering is per back-end\tA sort key files an entry under the ordering of whichever back-end builds the'
+  $'plain keys order alike\tSort keys of plain letters and digits order the same way in both back-ends'
+  $'keys past the ceiling\tA sort key written for a level past the third goes with that level in this'
+  $'two skipped levels\tTwo skipped levels cannot sit side by side'
+  $'key belongs to the level\tit belongs to the entry level you wrote it for, and places that'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -466,13 +494,13 @@ MANIFEST
 read -r -d '' BOOK_HTML_INDEX <<'MANIFEST' || true
 0	Alpha	index.html#qi-mark-2
 0	Beta	one.html#qi-mark-1
+0	Shared Term	index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html#qi-mark-1
 0	Delta		see-link Alpha
 0	Epsilon		see-plain No Such Entry
 0	Gamma	one.html#gamma-anchor
 0	Invisible Entry	index.html#qi-mark-3
 0	Kappa	
 1	Sub Level	one.html#qi-mark-3
-0	Shared Term	index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html#qi-mark-1
 0	Zeta	#qi-mark-1
 MANIFEST
 
@@ -528,19 +556,34 @@ MANIFEST
 # read or write a record, so a check that stopped firing would leave an IP2
 # guarantee unproven.
 WARN_STORE_UNREADABLE='could not be read and were ignored'
+WARN_STORE_STALE='were written by a different version of this extension and were ignored'
 WARN_STORE_UNWRITABLE='could not record index marks for'
 WARN_MARKER_NOT_LAST='chapter(s) come after it'
 WARN_MARKER_SECOND='comes first in book order and carries one too'
+# One entry given two sort keys in two chapters (M06-AC4). Only the pass that
+# has BOTH chapters' records can see it, so it is reported once in two renders.
+WARN_BOOK_SORT_CONFLICT='one entry cannot file in two places, so the first in book order wins'
 
 # ---------------------------------------------------------------------------
 # Manifest 8 — the ordering fixture's index (M05 hardening), in the same href
 # format as manifest 5. Derived by hand from examples/book-order: the marker
 # is in index.qmd, `Early` is marked there and `Late` in "later chapter.qmd",
-# collation puts Early before Late, and after two renders the later chapter's
-# stored record contributes its locator. The space in the filename is written
+# collation puts Early before Late; `Contested` is marked in both chapters
+# with a different sort key in each, and the first in book order (Aaa) wins,
+# which files it ahead of both. After two renders the later chapter's stored
+# record contributes its locators. The space in the filename is written
 # raw, exactly as Quarto writes its own links to that page.
+#
+# `Contested` carries four locators: one from index.qmd, two from the later
+# chapter, which marks it twice, and one from third.qmd. Neither of the two
+# extra marks discriminates a per-mark reporting rule — a chapter's record
+# carries one declared key per printed level path however many marks write it
+# — but third.qmd repeating the SECOND chapter's rival key does discriminate
+# once-per-rival-key reporting from once-per-conflicting-chapter. Locators
+# appear in book order and, within a chapter, in the order they are marked.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_ORDER_INDEX <<'MANIFEST' || true
+0	Contested	#qi-mark-2 later chapter.html#qi-mark-2 later chapter.html#qi-mark-3 third.html#qi-mark-1
 0	Early	#qi-mark-1
 0	Late	later chapter.html#qi-mark-1
 MANIFEST
@@ -843,6 +886,31 @@ print(f'ok   M03-AC7: all {len(stale)} stale pass-through sentences are gone '
       f'and all {len(claims)} HTML claims appear in README.md')
 PY
 
+# M06-AC6 — the same discipline for the sort-key documentation. Separate from
+# the block above so a failure names which milestone's docs drifted.
+printf '%s\n' "${README_SORT_CLAIMS[@]}" > "$WORK/readme-sort.txt"
+python3 - "$WORK/readme-sort.txt" README.md <<'SORTDOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M06-AC6: README.md does not document sort keys as this suite '
+          'exercises them:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC6: all {len(rows)} documented sort-key behaviors appear '
+      f'verbatim in README.md')
+SORTDOCPY
+
 # The probe set is pinned to the filter's own escape table, so a character the
 # filter handles can never go unprobed (and vice versa).
 PROBE_CHARS="$PROBE_CHARS" python3 - _extensions/index/index.lua <<'PY'
@@ -1018,7 +1086,12 @@ python3 - _extensions/index/index.lua <<'PY'
 import re, sys
 src = open(sys.argv[1], encoding='utf-8').read()
 # Each warn(...) call's leading string literal, which is the part a grep sees.
-lits = re.findall(r'warn\(\s*\(?"((?:[^"\\]|\\.)*)"', src)
+# Lua string literals take either quote, and a message that itself contains a
+# double quote is written with single quotes — so a scan for one quote style
+# only would leave that warning outside this check while the comment above
+# still claimed every warning was covered.
+lits = [m.group(2) for m in re.finditer(
+    r'''warn\(\s*\(?(["'])((?:[^\\]|\\.)*?)\1''', src)]
 if len(lits) < 6:
     print(f'FAIL: M02-AC5: found only {len(lits)} warn() literals; the '
           f'distinctness check is not reading the filter', file=sys.stderr)
@@ -1691,6 +1764,176 @@ read -r -d '' MARKER_HTML_INDEX <<'MANIFEST' || true
 0	gamma	1
 MANIFEST
 
+# ---------------------------------------------------------------------------
+# Manifest 1m — every sort key examples/sortkey.qmd declares (M06-AC1).
+# Derived BY HAND from the fixture, and then checked against the fixture BY
+# CONSTRUCTION: the check below extracts every `sort="..."` value the file
+# actually carries and fails unless the two sets are equal. A hand-list alone
+# would let a sort key added to the fixture go unprobed while the suite still
+# reported a pass.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_KEYS <<'MANIFEST' || true
+Hague
+Angstrom
+ten Downing Street
+Neumann
+Manet
+!Turing
+!Neumann
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 1n — the order and nesting examples/sortkey.pdf must print its
+# index in (M06-AC1). Format: <level><TAB><term>, top to bottom, level 0 for
+# a top-level entry.
+#
+# Derived by hand: each entry files under its sort key where it has one
+# (Manifest 1m), under its own printed text where it does not, and the order
+# is makeindex's, applied to those keys — NOT the HTML collation rule, which
+# is the extension's own and orders a punctuation-leading key elsewhere. This
+# manifest is derived from makeindex's rule alone and borrows no row order
+# from manifest 1o, which is what lets the check comparing the two mean
+# something; the keys here are plain letters, on which the two rules happen to
+# agree, and a fixture keyed on punctuation would need two orders.
+# The keys in order are therefore Angstrom, Hague, Manet, mathematicians
+# (which declares none of its own), Neumann, ten Downing Street. The two
+# sub-entries under `mathematicians` file under Neumann and Turing, which
+# reverses the order their printed text alone would give them.
+#
+# This order differs from the twin fixture's at every top-level position, so
+# the check cannot pass on an index that ignored the sort keys.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_PDF_OUTLINE <<'MANIFEST' || true
+0	Ångström
+0	The Hague
+0	Édouard Manet
+0	mathematicians
+1	von Neumann
+1	Alan Turing
+0	von Neumann
+0	10 Downing Street
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 1o — the generated index in examples/sortkey.html (M06-AC2).
+# EXHAUSTIVE, same format and same oracle rule as manifest 1e, with one
+# further layer derived by hand on top of it:
+#   8. Order: an entry files under its sort key (manifest 1m) where it has
+#      one and under its own printed text where it does not, and the
+#      collation of manifest 1e step 5 is then applied to those keys. This
+#      is applied at EVERY depth, so the two sub-entries of `mathematicians`
+#      file under Neumann and Turing and appear in that order, which is the
+#      reverse of what their printed text alone would give.
+#
+# `The Hague` carries two locators from two marks, only one of which writes
+# a sort= of its own: a sort key belongs to the entry, so both marks file
+# under it and the term stays one entry rather than becoming two.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_HTML_INDEX <<'MANIFEST' || true
+0	Ångström	1
+0	The Hague	2
+0	Édouard Manet	1
+0	mathematicians	0
+1	von Neumann	1
+1	Alan Turing	1
+0	von Neumann	1
+0	10 Downing Street	1
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 1p — the same index in examples/sortkey-twin.html (M06-AC2): the
+# same entries with no sort keys at all, so manifest 1e step 5 applies to the
+# printed text directly. Every top-level row is in a different position than
+# it holds in manifest 1o, and the two sub-entries are in the opposite order;
+# the check below asserts that rather than trusting this comment.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_TWIN_HTML_INDEX <<'MANIFEST' || true
+0	10 Downing Street	1
+0	mathematicians	0
+1	Alan Turing	1
+1	von Neumann	1
+0	The Hague	2
+0	von Neumann	1
+0	Ångström	1
+0	Édouard Manet	1
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 1q — every `\index{}` argument examples/sortkey-paths.tex must
+# carry, in document order (M06-AC1/AC2). ORACLE RULE: derived by hand from
+# examples/sortkey-paths.qmd, never read back from a render.
+#
+# Derived as follows. A sort key is declared for one LEVEL of the entry it is
+# written on — positionally, an empty sort level meaning "leave this level
+# alone" — and applies to that level wherever that level appears, under the
+# same parents. A level no mark declares a key for keeps its own printed text,
+# and a level whose key equals its printed text needs no `sortkey@` prefix at
+# all. So:
+#
+#   `Hague, The` is declared `Hague` on the mark that carries no sub-entry,
+#   and the later `Hague, The!Scheveningen` inherits it at level 1 while
+#   level 2 keeps its own text.
+#   `Alpha` is declared `Zed` on the mark that DOES carry a sub-entry, and
+#   the later bare `Alpha` inherits it — the same rule read the other way.
+#   `Beta` has a key declared for level 2 only, so level 1 stays `Beta` and
+#   the bare `Beta` mark carries no sort field anywhere: a key must not climb.
+#   `Ccc` is left alone by the first mark and declared `Www` by the second,
+#   so `Www` is the only declaration at that level and wins for both marks.
+#
+# The check below also asserts this manifest names as many entries as the
+# fixture has marks, so a row cannot go missing unnoticed.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_PATHS_ENTRIES <<'MANIFEST' || true
+Hague@Hague, The
+Hague@Hague, The!Scheveningen
+Zed@Alpha!inner
+Zed@Alpha
+Beta!gkey@gamma
+Beta
+Www@Ccc!pk@p
+Www@Ccc
+"!Zed@Literal
+Qqq@Mmm!nn!Ooo@oo
+Qqq@Mmm
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 1r — the generated index in examples/sortkey-paths.html
+# (M06-AC2). EXHAUSTIVE, same format and oracle rule as manifest 1o.
+#
+# The top-level keys are the ones manifest 1q derives: `!Zed` for `Literal`,
+# Beta, Hague, Qqq for `Mmm`, Www for `Ccc`, and Zed for `Alpha`. Case-folded
+# and ordered by character code those give !zed, beta, hague, qqq, www, zed,
+# so the six top-level entries print as Literal, Beta, `Hague, The`, Mmm, Ccc,
+# Alpha — `!` sorting ahead of every letter is what heads the index with
+# `Literal`, whose key is the one-level `!Zed` that `sort="!!Zed"` gives.
+#
+# Locators sit on the deepest level each mark writes. `Literal` is marked
+# alone, so it carries its own locator and no sub-entry. `Mmm` is marked twice
+# — once as `Mmm!nn!oo` and once bare — so it carries one locator, its
+# sub-entry `nn` carries none, and `oo` beneath that carries one. The other
+# four each have one sub-entry carrying one locator, and one of their own.
+#
+# `Ccc` is the row that reads differently under a key remembered against a
+# whole entry rather than against a level: there the first mark's untouched
+# level 1 would occupy the slot and file the term under `Ccc`, putting it
+# second rather than third.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_PATHS_HTML_INDEX <<'MANIFEST' || true
+0	Literal	1
+0	Beta	1
+1	gamma	1
+0	Hague, The	1
+1	Scheveningen	1
+0	Mmm	1
+1	nn	0
+2	oo	1
+0	Ccc	1
+1	p	1
+0	Alpha	1
+1	inner	1
+MANIFEST
+
 # Manifest 1j — the \index{} commands examples/marker.tex must carry (M04-AC2).
 read -r -d '' MARKER_ENTRIES <<'MANIFEST' || true
 2	alpha
@@ -1857,6 +2100,11 @@ PY
 WARN_MARKER_NESTED='index placement marker below the top level'
 WARN_MARKER_DUP='index placement marker 2 (top-level block 8) is ignored'
 WARN_MARKER_CONTENT='index placement marker is not empty'
+# The three sort-key reports (M06-AC4). Each is a report about the MARK, so
+# each is asserted in a format with an index back-end and in one without.
+WARN_SORT_ORPHAN='has nothing to sort; the mark indexes no entry'
+WARN_SORT_EXTRA='the extra sort levels were ignored'
+WARN_SORT_CONFLICT='written here cannot apply as well, so the first one wins'
 WARN_MARKER_NOMARKS='index placement marker in a document with no index marks'
 MARKER_KEPT_CONTENT='Content written inside a marker, which no misuse may delete.'
 
@@ -2756,6 +3004,14 @@ BOOK_DIR="examples/book"
 BOOK_OUT="$BOOK_DIR/_book"
 STORE_SUFFIX='.qi.json'
 STORE_DIR='quarto-index'
+# Read from the filter rather than written down here. Every planted record
+# below has to be one the CURRENT filter would accept, or the check meant to
+# prove some other rule keeps it out passes because the version rejected it
+# first — which is what happened when this milestone bumped the version.
+STORE_VERSION=$(sed -n 's/^local STORE_VERSION = \([0-9][0-9]*\)$/\1/p' \
+  _extensions/index/index.lua)
+[ -n "$STORE_VERSION" ] \
+  || fail "M05-AC1: could not read STORE_VERSION from the filter"
 
 # The store's own name is a pinned surface like the HTML back-end's ids: the
 # footprint sweep below asks "no file named like this under the output
@@ -3116,13 +3372,21 @@ check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
 # planted record is well-formed and names a chapter absent from _quarto.yml,
 # so only the chapter-list filter can keep it out.
 GHOST="$BOOK_DIR/.quarto/$STORE_DIR/ghost.qmd$STORE_SUFFIX"
-cat > "$GHOST" <<'JSON'
-{"version":1,"file":"ghost.qmd","href":"ghost.html","marker":false,
+cat > "$GHOST" <<JSON
+{"version":$STORE_VERSION,"file":"ghost.qmd","href":"ghost.html","marker":false,
  "marks":[{"levels":["Ghost Chapter Term"],"xrefs":[],"anchor":"qi-mark-1"}]}
 JSON
+# The planted record must be one this filter would otherwise accept, or the
+# chapter-list filter is not what kept it out. Asserted, not assumed: no
+# record-ignored report may fire on this render.
+
 ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
   > "$WORK/book-ghost.log" 2>&1 \
   || { tail -30 "$WORK/book-ghost.log" >&2; fail "M05 hardening: the marker chapter failed to re-render"; }
+check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M05 hardening (ghost record)"
+check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE" 0 \
+  "M05 hardening (ghost record)"
 check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (stale chapter ignored)" hrefs
 rm -f "$GHOST"
@@ -3131,7 +3395,7 @@ rm -f "$GHOST"
 # so, never take the render down (IP2).
 CORRUPT="$BOOK_DIR/.quarto/$STORE_DIR/one.qmd$STORE_SUFFIX"
 cp "$CORRUPT" "$WORK/one-record.json"
-printf '{"version":1,"file":"one.qmd","href":"one.html","marker":false,"marks":[{"levels":"not a list"}]}\n' > "$CORRUPT"
+printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":false,"marks":[{"levels":"not a list"}]}\n' "$STORE_VERSION" > "$CORRUPT"
 ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
   > "$WORK/book-corrupt.log" 2>&1 \
   || { tail -30 "$WORK/book-corrupt.log" >&2; fail "M05 hardening: a wrongly shaped store record took the render down; IP2 forbids it"; }
@@ -3140,25 +3404,76 @@ check_warning_count "$WORK/book-corrupt.log" "$WARN_STORE_UNREADABLE" 1 \
 cp "$WORK/one-record.json" "$CORRUPT"
 pass "M05 hardening: a wrongly shaped store record is reported and skipped, and the render survives"
 
+# A record an OLDER version of the extension left behind is perfectly readable
+# and merely stale. It costs the same chapter and takes the same fix, but the
+# author is told which of the two it is: sent looking for a corrupt file that
+# is not there, they cannot act on the report they were given.
+printf '{"version":0,"file":"one.qmd","href":"one.html","marker":false,"marks":[{"levels":["Older Version Term"],"xrefs":[],"anchor":"qi-mark-1"}]}\n' > "$CORRUPT"
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-stale.log" 2>&1 \
+  || { tail -30 "$WORK/book-stale.log" >&2; fail "M05 hardening: a record from an older version took the render down; IP2 forbids it"; }
+check_warning_count "$WORK/book-stale.log" "$WARN_STORE_STALE" 1 \
+  "M06 (stale store record)"
+check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M06 (stale store record)"
+cp "$WORK/one-record.json" "$CORRUPT"
+pass "M06: a record from an older extension version is reported as stale rather than as unreadable, and the render survives"
+
 # ---------------------------------------------------------------------------
 # The ordering fixture: marker in the first chapter, a second marker in the
 # last, and a chapter filename with a space in it.
 # ---------------------------------------------------------------------------
 ORDER_DIR="examples/book-order"
 ORDER_OUT="$ORDER_DIR/_book"
+# Derived from the fixture, not written down: the per-chapter reports below
+# are counted once per chapter, and a hardcoded count silently stops meaning
+# "per chapter" the moment the fixture gains one.
+ORDER_CHAPTERS=$(ls "$ORDER_DIR"/*.qmd | wc -l | tr -d ' ')
+[ "$ORDER_CHAPTERS" -ge 3 ] \
+  || fail "M05 hardening: the ordering fixture needs at least 3 chapters; it has $ORDER_CHAPTERS"
 rm -rf "$ORDER_OUT" "$ORDER_DIR/.quarto"
 # Rendered twice on purpose: on the first pass the later chapter has not run
 # when the marker chapter builds the index, which is the very hazard the
 # marker-not-last warning is about.
-( cd "$ORDER_DIR" && quarto render --to html && quarto render --to html ) \
-  > "$WORK/book-order.log" 2>&1 \
-  || { tail -30 "$WORK/book-order.log" >&2; fail "M05 hardening: the ordering fixture failed to render"; }
+# Logged separately rather than appended to one file: the cross-chapter sort
+# conflict below is asserted per render, so which render finds it is checked
+# instead of assumed.
+( cd "$ORDER_DIR" && quarto render --to html ) \
+  > "$WORK/book-order-1.log" 2>&1 \
+  || { tail -30 "$WORK/book-order-1.log" >&2; fail "M05 hardening: the ordering fixture failed to render"; }
+( cd "$ORDER_DIR" && quarto render --to html ) \
+  > "$WORK/book-order-2.log" 2>&1 \
+  || { tail -30 "$WORK/book-order-2.log" >&2; fail "M05 hardening: the ordering fixture failed to render (second pass)"; }
+cat "$WORK/book-order-1.log" "$WORK/book-order-2.log" > "$WORK/book-order.log"
 
 check_warning_count "$WORK/book-order.log" "$WARN_MARKER_NOT_LAST" 2 \
   "M05 hardening"
 check_warning_count "$WORK/book-order.log" "$WARN_MARKER_SECOND" 2 \
   "M05 hardening"
 pass "M05 hardening: a marker that is not last, and a second marker chapter, are each reported once per render"
+
+# M06-AC4 (c), the half a single document cannot probe: each chapter renders in
+# its own process, so a term sorted one way in one chapter and another way in
+# a second is invisible to the in-document collect pass.
+#
+# Which render finds it is asserted, not assumed. On the first pass the marker
+# chapter builds the index before the later chapter has run, so the store holds
+# no record of it and there is nothing to compare; only the second pass has
+# both chapters' keys. A single combined count would pass just as happily if
+# the report fired on the first pass and not the second, which would mean the
+# conflict was being found somewhere it cannot yet be known.
+check_warning_count "$WORK/book-order-1.log" "$WARN_BOOK_SORT_CONFLICT" 0 \
+  "M06-AC4 (book, first render)"
+check_warning_count "$WORK/book-order-2.log" "$WARN_BOOK_SORT_CONFLICT" 1 \
+  "M06-AC4 (book, second render)"
+# The later chapter marks the contested term twice, which the three-locator row
+# of manifest 8 reads. It does NOT discriminate per-path from per-mark
+# reporting on this leg: a chapter's record carries one declared key per
+# printed level path however many marks write it, so per-mark reporting is not
+# expressible here. That discrimination lives on the single-document leg,
+# where examples/sortkey-misuse.qmd carries a third mark repeating the rival
+# key and the exact count above it would fail under a per-mark rule.
+pass "M06-AC4: one entry sorted two ways in two chapters is reported once on the render that can see both, and the first chapter in book order wins"
 
 printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
 HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$ORDER_OUT" \
@@ -3219,10 +3534,691 @@ mkdir -p "$ORDER_DIR/.quarto"
 printf 'not a directory\n' > "$ORDER_DIR/.quarto/$STORE_DIR"
 ( cd "$ORDER_DIR" && quarto render --to html ) > "$WORK/book-nostore.log" 2>&1 \
   || { tail -30 "$WORK/book-nostore.log" >&2; fail "M05 hardening: a store that cannot be written took the render down; IP2 forbids it"; }
-check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" 2 \
-  "M05 hardening"
+check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" \
+  "$ORDER_CHAPTERS" "M05 hardening"
 rm -f "$ORDER_DIR/.quarto/$STORE_DIR"
 pass "M05 hardening: a store that cannot be written is reported per chapter and the book still renders"
+
+# ---------------------------------------------------------------------------
+# M06-AC1 — sort keys, end to end in the PDF.
+#
+# The manifest is checked against the fixture BY CONSTRUCTION first: every
+# `sort="..."` value the fixture carries must be a manifest row and every
+# manifest row must be in the fixture. Without that, a sort key added to the
+# fixture later would simply go unprobed while this section still passed.
+#
+# The printed order is then read with tests/pdfindex.py rather than out of
+# pdftotext's text output: a two-column index interleaves the columns there,
+# so that output's order is not the index's — see that module's header.
+# ---------------------------------------------------------------------------
+printf '%s\n' "$SORTKEY_KEYS" > "$WORK/sortkeys.txt"
+python3 - examples/sortkey.qmd "$WORK/sortkeys.txt" <<'SORTKEYPY'
+import re, sys
+source = open(sys.argv[1], encoding='utf-8').read()
+declared = sorted(re.findall(r'\bsort="([^"]*)"', source))
+listed = sorted(l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8')
+                if l.strip())
+if declared != listed:
+    print('FAIL: M06-AC1: the sort-key manifest and the fixture disagree.',
+          file=sys.stderr)
+    print(f'  only in the fixture:  {sorted(set(declared) - set(listed))}',
+          file=sys.stderr)
+    print(f'  only in the manifest: {sorted(set(listed) - set(declared))}',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC1: the manifest names every one of the {len(declared)} '
+      f'sort keys examples/sortkey.qmd declares, and no others')
+SORTKEYPY
+
+# The twin is the fixture with every sort= attribute deleted and NOTHING else
+# changed, so a difference between the two indexes is caused by the sort keys
+# alone. Asserted rather than assumed: a twin edited by hand could drift into
+# a fixture that differs for some other reason.
+python3 - examples/sortkey.qmd examples/sortkey-twin.qmd <<'TWINPY'
+import re, sys
+source = open(sys.argv[1], encoding='utf-8').read()
+twin = open(sys.argv[2], encoding='utf-8').read()
+# Escape-aware: a sort key can BE a double quote, written `\"`, and a naive
+# ` sort="[^"]*"` stops at it and leaves a stray `"}` behind.
+if re.sub(r' sort="(?:[^"\\]|\\.)*"', '', source) != twin:
+    print('FAIL: M06-AC1/AC2: examples/sortkey-twin.qmd is not '
+          'examples/sortkey.qmd with its sort= attributes removed',
+          file=sys.stderr)
+    sys.exit(1)
+if re.search(r'\bsort="', twin):
+    print('FAIL: M06-AC1/AC2: the twin still carries a sort= attribute',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M06-AC1/AC2: the twin fixture is the sort-key fixture with every '
+      'sort= attribute deleted, and nothing else')
+TWINPY
+
+quarto render examples/sortkey.qmd --to pdf > "$WORK/sortkey-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-pdf.log" >&2; fail "M06-AC1: sortkey.qmd failed to render to PDF"; }
+[ -s examples/sortkey.pdf ] || fail "M06-AC1: examples/sortkey.pdf is empty"
+# A sort key must not cost the author a warning: every mark in this fixture is
+# well formed, so a clean render is part of the criterion.
+if grep -q '^(W)' "$WORK/sortkey-pdf.log"; then
+  grep '^(W)' "$WORK/sortkey-pdf.log" >&2
+  fail "M06-AC1: examples/sortkey.qmd warned; every mark in it is well formed"
+fi
+
+printf '%s\n' "$SORTKEY_PDF_OUTLINE" > "$WORK/sortkey-outline.txt"
+python3 - examples/sortkey.pdf "$WORK/sortkey-outline.txt" <<'OUTLINEPY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+
+entries = pdfindex.read(sys.argv[1])
+if not pdfindex.columns_carry_top_level(entries):
+    print('FAIL: M06-AC1: a column of the printed index carries no top-level '
+          'entry, so pdfindex cannot read its indent levels', file=sys.stderr)
+    sys.exit(1)
+actual = pdfindex.outline(entries)
+expected = []
+for line in open(sys.argv[2], encoding='utf-8'):
+    line = line.rstrip('\n')
+    if line.strip():
+        level, term = line.split('\t', 1)
+        expected.append((int(level), term))
+if actual != expected:
+    print('FAIL: M06-AC1: the printed index is not in the order the manifest '
+          'derives.', file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        a = actual[i] if i < len(actual) else None
+        e = expected[i] if i < len(expected) else None
+        print(f'{"  " if a == e else "->"} {i}: got {a!r} want {e!r}',
+              file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC1: the compiled PDF prints all {len(expected)} index '
+      f'entries in the order and nesting their sort keys derive')
+OUTLINEPY
+
+# The twin proves the ordering above is the sort keys' doing and not something
+# the fixture would have done anyway: the same terms, no sort keys, and an
+# order that must differ at every top-level position.
+quarto render examples/sortkey-twin.qmd --to pdf > "$WORK/sortkey-twin-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-twin-pdf.log" >&2; fail "M06-AC1: sortkey-twin.qmd failed to render to PDF"; }
+python3 - examples/sortkey.pdf examples/sortkey-twin.pdf <<'DIFFPY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+
+keyed = [t for lv, t in pdfindex.outline(pdfindex.read(sys.argv[1]))
+         if lv == 0]
+twin = [t for lv, t in pdfindex.outline(pdfindex.read(sys.argv[2]))
+        if lv == 0]
+if sorted(keyed) != sorted(twin):
+    print('FAIL: M06-AC1: the twin indexes a different set of terms, so the '
+          'two orders are not comparable', file=sys.stderr)
+    print(f'  keyed: {keyed}\n  twin:  {twin}', file=sys.stderr)
+    sys.exit(1)
+same = [i for i, (a, b) in enumerate(zip(keyed, twin)) if a == b]
+if same:
+    print(f'FAIL: M06-AC1: sort keys left top-level position(s) {same} '
+          'unchanged, so this fixture cannot tell a sorted index from an '
+          'unsorted one', file=sys.stderr)
+    print(f'  keyed: {keyed}\n  twin:  {twin}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC1: removing the sort keys moves every one of the '
+      f'{len(keyed)} top-level entries, so the printed order is theirs')
+DIFFPY
+
+# ---------------------------------------------------------------------------
+# M06-AC2 — sort keys in the HTML index, at every depth.
+#
+# The twin renders alongside, so the ordering below is attributed to the sort
+# keys rather than to anything the fixture would have done anyway. Both
+# manifests are exhaustive and compared in order, which is what makes a
+# collation failure a failure rather than something set equality swallows.
+# ---------------------------------------------------------------------------
+quarto render examples/sortkey.qmd --to html > "$WORK/sortkey-html.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-html.log" >&2; fail "M06-AC2: sortkey.qmd failed to render to HTML"; }
+if grep -q '^(W)' "$WORK/sortkey-html.log"; then
+  grep '^(W)' "$WORK/sortkey-html.log" >&2
+  fail "M06-AC2: examples/sortkey.qmd warned in HTML; every mark in it is well formed"
+fi
+check_html_index_manifest examples/sortkey.html "$SORTKEY_HTML_INDEX" "M06-AC2"
+check_html_index_links examples/sortkey.html "M06-AC2"
+
+quarto render examples/sortkey-twin.qmd --to html > "$WORK/sortkey-twin-html.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-twin-html.log" >&2; fail "M06-AC2: sortkey-twin.qmd failed to render to HTML"; }
+check_html_index_manifest examples/sortkey-twin.html "$SORTKEY_TWIN_HTML_INDEX" "M06-AC2 (twin)"
+
+# The two manifests must disagree at every top-level position and at every
+# sub-entry position, or one of them could be satisfied by an index that
+# ignored the sort keys. Asserted of the manifests themselves, so the claim
+# holds even if both renders were to fail in the same direction.
+printf '%s\n' "$SORTKEY_HTML_INDEX" > "$WORK/sk-html.txt"
+printf '%s\n' "$SORTKEY_TWIN_HTML_INDEX" > "$WORK/sk-twin-html.txt"
+python3 - "$WORK/sk-html.txt" "$WORK/sk-twin-html.txt" <<'ORDERPY'
+import sys
+
+
+def by_depth(path):
+    out = {}
+    for line in open(path, encoding='utf-8'):
+        line = line.rstrip('\n')
+        if line.strip():
+            fields = line.split('\t')
+            out.setdefault(int(fields[0]), []).append(fields[1])
+    return out
+
+
+keyed, twin = by_depth(sys.argv[1]), by_depth(sys.argv[2])
+if set(keyed) != set(twin):
+    print('FAIL: M06-AC2: the two manifests do not nest to the same depths',
+          file=sys.stderr)
+    sys.exit(1)
+moved = 0
+for depth in sorted(keyed):
+    a, b = keyed[depth], twin[depth]
+    if sorted(a) != sorted(b):
+        print(f'FAIL: M06-AC2: depth {depth} lists different terms in the two '
+              f'manifests, so their orders are not comparable', file=sys.stderr)
+        print(f'  keyed: {a}\n  twin:  {b}', file=sys.stderr)
+        sys.exit(1)
+    same = [i for i, (x, y) in enumerate(zip(a, b)) if x == y]
+    if same:
+        print(f'FAIL: M06-AC2: at depth {depth} the sort keys leave '
+              f'position(s) {same} unchanged, so the manifest could be '
+              f'satisfied by an index that ignored them', file=sys.stderr)
+        print(f'  keyed: {a}\n  twin:  {b}', file=sys.stderr)
+        sys.exit(1)
+    moved += len(a)
+print(f'ok   M06-AC2: the sort keys move all {moved} entries, at every one of '
+      f'the {len(keyed)} depths the index nests to')
+ORDERPY
+
+# The README claims sort keys of plain letters and digits order the same way
+# in both back-ends. examples/sortkey.qmd is keyed entirely in plain letters
+# and spaces, so its two manifests — the PDF outline (1n) and the HTML index
+# (1o) — must agree row for row on term and depth. Asserted of the manifests,
+# which are independently hand-derived from the fixture under two different
+# collation rules; agreeing by construction is the claim.
+printf '%s\n' "$SORTKEY_PDF_OUTLINE" > "$WORK/sk-pdf-outline.txt"
+python3 - "$WORK/sk-pdf-outline.txt" "$WORK/sk-html.txt" <<'AGREEPY'
+import sys
+
+
+def rows(path, keep):
+    out = []
+    for line in open(path, encoding='utf-8'):
+        line = line.rstrip('\n')
+        if line.strip():
+            out.append(tuple(line.split('\t')[:keep]))
+    return out
+
+
+pdf, html = rows(sys.argv[1], 2), rows(sys.argv[2], 2)
+if not pdf:
+    print('FAIL: M06-AC1/AC2: the PDF outline manifest is empty',
+          file=sys.stderr)
+    sys.exit(1)
+if pdf != html:
+    print('FAIL: M06-AC1/AC2: the two back-ends are documented to order plain '
+          'letter and digit keys alike, but the manifests disagree:',
+          file=sys.stderr)
+    for i in range(max(len(pdf), len(html))):
+        a = pdf[i] if i < len(pdf) else '<no such row>'
+        b = html[i] if i < len(html) else '<no such row>'
+        if a != b:
+            print(f'  row {i + 1}: pdf {a}  html {b}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC1/AC2: all {len(pdf)} rows of the PDF index and the HTML '
+      f'index agree on term and depth, so the plain-key ordering the README '
+      f'documents holds in both back-ends')
+AGREEPY
+
+# ---------------------------------------------------------------------------
+# M06-AC1/AC2 — a sort key belongs to a LEVEL, under its own parents, not to
+# the whole entry that declared it.
+#
+# Both back-ends order level by level: the index tool reads `sortkey@printed`
+# inside each level of an entry, and the HTML tree keys each node on its own
+# printed text. A key remembered against the whole entry therefore files one
+# printed term under two different keys depending on whether a sub-entry
+# happened to follow it — in LaTeX the term is printed twice, in two places,
+# identically, with nothing in the log to say so.
+#
+# Both legs are checked, because the two fail differently: LaTeX splits the
+# entry, while HTML keeps one node and silently drops one of the two keys.
+# ---------------------------------------------------------------------------
+quarto render examples/sortkey-paths.qmd --to latex \
+  > "$WORK/sortkey-paths-latex.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-paths-latex.log" >&2; fail "M06-AC1: sortkey-paths.qmd failed to render to LaTeX"; }
+if grep -q '^(W)' "$WORK/sortkey-paths-latex.log"; then
+  grep '^(W)' "$WORK/sortkey-paths-latex.log" >&2
+  fail "M06-AC1: examples/sortkey-paths.qmd warned; every mark in it is well formed"
+fi
+printf '%s\n' "$SORTKEY_PATHS_ENTRIES" > "$WORK/sk-paths-entries.txt"
+python3 - examples/sortkey-paths.qmd examples/sortkey-paths.tex \
+  "$WORK/sk-paths-entries.txt" <<'PATHSPY'
+import re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+tex = open(sys.argv[2], encoding='utf-8').read()
+expected = [l for l in open(sys.argv[3], encoding='utf-8').read().split('\n')
+            if l.strip()]
+
+# By construction, not by hand: the manifest must account for every mark the
+# fixture writes. A row quietly dropped from it would otherwise turn a split
+# entry into a passing check.
+marks = src.count('{.index')
+if marks != len(expected):
+    print(f'FAIL: M06-AC1: the fixture writes {marks} index marks but the '
+          f'manifest names {len(expected)} entries', file=sys.stderr)
+    sys.exit(1)
+
+actual = re.findall(r'\\index\{(.*?)\}', tex)
+if actual != expected:
+    print('FAIL: M06-AC1: the emitted index entries do not match the manifest',
+          file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such entry emitted>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  entry {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+
+# The property the manifest exists to pin, asserted of the manifest itself so
+# it cannot be satisfied by a manifest that stopped testing it: each printed
+# top-level term must carry ONE sort field across every entry that starts with
+# it, however deep that entry goes.
+#
+# Both splits honor makeindex's quote, which covers the character after it: a
+# naive split on `!` cuts `"!Zed@Literal` at the author's literal `!` and
+# files that row under junk, exempting it from the property below.
+def first_level(arg):
+    i = 0
+    while i < len(arg):
+        if arg[i] == '"':
+            i += 2
+            continue
+        if arg[i] == '!':
+            return arg[:i]
+        i += 1
+    return arg
+
+
+def sort_field(level):
+    i = 0
+    while i < len(level):
+        if level[i] == '"':
+            i += 2
+            continue
+        if level[i] == '@':
+            return level[:i]
+        i += 1
+    return None            # files under its own printed text
+
+
+keys = {}
+for entry in expected:
+    level = first_level(entry)
+    key = sort_field(level)
+    printed = level if key is None else level[len(key) + 1:]
+    keys.setdefault(printed, set()).add(key)
+split = {p: sorted('<own text>' if k is None else k for k in ks)
+         for p, ks in keys.items() if len(ks) > 1}
+if split:
+    print(f'FAIL: M06-AC1: manifest files one printed term under two keys, '
+          f'which is the split it exists to rule out: {split}',
+          file=sys.stderr)
+    sys.exit(1)
+if len(keys) < 2:
+    print(f'FAIL: M06-AC1: only {len(keys)} top-level term(s) parsed out of '
+          f'the manifest; the split property is not being tested',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC1: all {len(expected)} entries emitted as the manifest '
+      f'derives them, each of the {len(keys)} top-level terms under one key '
+      f'whether or not a sub-entry follows it')
+PATHSPY
+
+quarto render examples/sortkey-paths.qmd --to html \
+  > "$WORK/sortkey-paths-html.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-paths-html.log" >&2; fail "M06-AC2: sortkey-paths.qmd failed to render to HTML"; }
+check_html_index_manifest examples/sortkey-paths.html \
+  "$SORTKEY_PATHS_HTML_INDEX" "M06-AC2 (level paths)"
+check_html_index_links examples/sortkey-paths.html "M06-AC2 (level paths)"
+
+# ---------------------------------------------------------------------------
+# M06-AC4 — the three sort-key reports.
+#
+# Rendered to gfm as well as to LaTeX because all three are reports about the
+# MARK rather than about a back-end's limits: an author drafting to a format
+# that builds no index at all still gets them. The counts are exact, so a
+# report that started firing twice fails here as loudly as one that stopped.
+# ---------------------------------------------------------------------------
+for fmt in latex gfm; do
+  quarto render examples/sortkey-misuse.qmd --to "$fmt" \
+    > "$WORK/sortkey-misuse-$fmt.log" 2>&1 \
+    || { tail -40 "$WORK/sortkey-misuse-$fmt.log" >&2; fail "M06-AC4: sortkey-misuse.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_ORPHAN" 1 \
+    "M06-AC4 ($fmt)"
+  check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_EXTRA" 1 \
+    "M06-AC4 ($fmt)"
+  # THREE: two from the four marks sharing the printed level `Ambivalence`
+  # (keys Aaa, Bbb, Bbb, Ccc) and one from `Steady`, whose first key names the
+  # level's own text and so is a declaration a later key rivals. The count
+  # discriminates all three candidate rules — once per mark would give 4,
+  # once per level path 2, and once per rival key at a path 3, which is the
+  # rule: repeating a rival gives the author nothing further to fix, while a
+  # second, different rival is a second thing to fix and would otherwise stay
+  # unmentioned until the first was resolved.
+  check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_CONFLICT" 3 \
+    "M06-AC4 ($fmt)"
+  pass "M06-AC4: the three sort-key reports fire in $fmt, the conflict once per rival key rather than once per mark or once per entry"
+done
+
+# The two folded-entry marks in the same fixture. A sort key is aligned with
+# the entry level it was written for, so the guard that decides whether a
+# level needs a sort field at all has to compare against THAT level and not
+# against the folded text the back-end prints — otherwise every folded entry
+# comes out carrying a sort field naming its own third level, which is what
+# no sort field already means.
+python3 - examples/sortkey-misuse.tex <<'FOLDPY'
+import re, sys
+tex = open(sys.argv[1], encoding='utf-8').read()
+args = re.findall(r'\\index\{(.*?)\}', tex)
+want = ['Alpha@one!two!three, four', 'aa!bb!Ckey@cc, dd',
+        # `Steady` declares its own printed text and is first, so it wins the
+        # tie and files under that text — which needs no sort field at all.
+        # `Rrr` reaching the emission would mean the later key had won.
+        'Steady']
+for expected in want:
+    if expected not in args:
+        print(f'FAIL: M06: the folded entry was not emitted as expected\n'
+              f'  expected <<{expected}>>\n  got      {args}', file=sys.stderr)
+        sys.exit(1)
+redundant = [a for a in args
+             if 'three@three, four' in a or 'cc@cc, dd' in a
+             or 'Rrr' in a]
+if redundant:
+    print(f'FAIL: M06: a level carries a sort field it should not — a folded '
+          f'level naming its own third level, or a rival key that lost: '
+          f'{redundant}', file=sys.stderr)
+    sys.exit(1)
+print('ok   M06: a folded entry carries a sort field only where a key was '
+      'written for the level it was aligned with')
+FOLDPY
+
+# The control: a fixture whose sort keys are all well formed must draw none of
+# the three. Without this the counts above would be satisfied by a report that
+# fires on every document.
+python3 - "$WORK/sortkey-pdf.log" "$WORK/sortkey-html.log" <<'CONTROLPY'
+import sys
+patterns = {
+    'nothing to sort': 'has nothing to sort',
+    'extra sort levels': 'the extra sort levels were ignored',
+    'two sort keys': 'cannot apply as well',
+}
+bad = []
+for path in sys.argv[1:]:
+    text = open(path, encoding='utf-8', errors='replace').read()
+    for name, needle in patterns.items():
+        if needle in text:
+            bad.append(f'  {path}: {name}')
+if bad:
+    print('FAIL: M06-AC4: a well-formed fixture drew a sort-key report:',
+          file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC4: none of the {len(patterns)} sort-key reports fires on '
+      f'examples/sortkey.qmd, whose sort keys are all well formed')
+CONTROLPY
+
+# ---------------------------------------------------------------------------
+# M06-AC5 — the book's sort key is written in a chapter other than the one
+# holding the marker. Asserted by construction against the fixture rather than
+# stated in a comment: if the key were ever moved into the marker chapter, the
+# aggregated-index manifest would still pass while proving nothing about
+# carrying a sort key ACROSS chapters, which is the criterion.
+# ---------------------------------------------------------------------------
+python3 - examples/book <<'BOOKSORTPY'
+import os, re, sys
+root = sys.argv[1]
+declaring, marker_chapters = [], []
+for dirpath, _dirs, files in os.walk(root):
+    if '_book' in dirpath or '_extensions' in dirpath or '.quarto' in dirpath:
+        continue
+    for name in sorted(files):
+        if not name.endswith('.qmd'):
+            continue
+        path = os.path.join(dirpath, name)
+        text = open(path, encoding='utf-8').read()
+        rel = os.path.relpath(path, root)
+        if re.search(r'\bsort="', text):
+            declaring.append(rel)
+        if 'qi-index-here' in text:
+            marker_chapters.append(rel)
+if not declaring:
+    print('FAIL: M06-AC5: no chapter of the book fixture declares a sort key',
+          file=sys.stderr)
+    sys.exit(1)
+if not marker_chapters:
+    print('FAIL: M06-AC5: the book fixture has no marker chapter',
+          file=sys.stderr)
+    sys.exit(1)
+overlap = sorted(set(declaring) & set(marker_chapters))
+if overlap:
+    print(f'FAIL: M06-AC5: sort key(s) declared in the marker chapter '
+          f'{overlap}; the criterion is about carrying one across chapters',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC5: the book\'s sort key(s) are declared in {declaring} and '
+      f'the marker is in {marker_chapters}, so the aggregated order above '
+      f'crossed a chapter boundary')
+BOOKSORTPY
+
+# ---------------------------------------------------------------------------
+# M06-AC3 — every printable ASCII character as a sort key, in three formats.
+#
+# A sort key travels the same channel an entry key does, so the same characters
+# need the same mechanisms — plus one that matters only here: `@` is what the
+# LaTeX back-end writes BETWEEN a sort key and the text it files, so an `@` the
+# author wrote must still reach the index tool quoted. The domain is derived by
+# construction from the same range the entry-key probe uses, so a character the
+# filter handles can never go unprobed.
+# ---------------------------------------------------------------------------
+python3 - examples/sort-escaping.qmd <<'SORTESCPY'
+import re, sys
+qmd = open(sys.argv[1], encoding='utf-8').read()
+unescape = lambda t: re.sub(r'\\(.)', r'\1', t)
+keys = {unescape(m) for m in re.findall(r'sort="((?:\\.|[^"\\])*)"', qmd)}
+domain = [chr(c) for c in range(0x21, 0x7F)]
+missing = [f'  {c!r} is not its own sort= value' for c in domain
+           if ('!!' if c == '!' else c) not in keys]
+if missing:
+    print('FAIL: M06-AC3: sort-escaping.qmd does not cover printable ASCII:',
+          file=sys.stderr)
+    print('\n'.join(missing[:20]), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC3: sort-key probe covers all {len(domain)} printable ASCII '
+      f'characters (space excluded) as sort keys')
+SORTESCPY
+
+# Leg 1 — LaTeX: the index tool must ACCEPT every entry. This is where a
+# missing quote on an author's `@` or `!` shows up, because makeindex would
+# read it as its own operator and reject or mis-file the entry.
+mkdir -p "$WORK/sortesc"
+# The .tex first: `--to pdf` does not leave one behind, and the makeindex leg
+# below needs the argument text the filter actually emitted.
+quarto render examples/sort-escaping.qmd --to latex > "$WORK/sortesc-latex.log" 2>&1 \
+  || { tail -20 "$WORK/sortesc-latex.log" >&2; fail "M06-AC3: sort-escaping.qmd failed to render to LaTeX"; }
+cp examples/sort-escaping.tex "$WORK/sortesc/"
+quarto render examples/sort-escaping.qmd --to pdf > "$WORK/sortesc-pdf.log" 2>&1 \
+  || { tail -20 "$WORK/sortesc-pdf.log" >&2; fail "M06-AC3: the sort-key escaping probe failed to compile through Quarto's own PDF engine"; }
+( cd "$WORK/sortesc" && pdflatex -interaction=nonstopmode sort-escaping.tex ) \
+  > "$WORK/sortesc-tex.log" 2>&1 \
+  || { grep -E '^! ' "$WORK/sortesc-tex.log" | head -5 >&2; fail "M06-AC3: the sort-key escaping probe failed to compile"; }
+( cd "$WORK/sortesc" && makeindex sort-escaping.idx ) > "$WORK/sortesc-mkidx.log" 2>&1 \
+  || fail "M06-AC3: makeindex failed on the sort-key escaping probe"
+SORTESC_MARKS=$(( 0x7F - 0x21 ))
+grep -qE "\($SORTESC_MARKS entries accepted, 0 rejected\)" \
+  "$WORK/sortesc/sort-escaping.ilg" \
+  || { grep -E 'accepted|rejected' "$WORK/sortesc/sort-escaping.ilg" >&2; fail "M06-AC3: makeindex did not accept all $SORTESC_MARKS sort-key entries"; }
+pass "M06-AC3: every printable ASCII character survives as a sort key through the index tool, all $SORTESC_MARKS entries accepted"
+
+# The acceptance count alone cannot tell correct escaping from NO SORT FIELD:
+# a filter that emitted a bare `\index{term-21}` for every mark would be
+# accepted just as happily. Two structural checks close that, both derived by
+# construction from the fixture's own term list.
+#
+#   1. In the .tex, every entry has the shape `key@term-XX`, split at the one
+#      `@` the back-end writes itself — so an author `@` left unquoted, which
+#      would move the split, fails here as loudly as a missing sort field.
+#   2. In the .ind the index tool wrote, the printed entry is `term-XX` and
+#      nothing else, which is what proves the tool read that `@` as the
+#      separator rather than as part of the text.
+python3 - examples/sort-escaping.qmd "$WORK/sortesc/sort-escaping.tex" \
+  "$WORK/sortesc/sort-escaping.ind" <<'SORTFIELDPY'
+import re, sys
+qmd = open(sys.argv[1], encoding='utf-8').read()
+tex = open(sys.argv[2], encoding='utf-8').read()
+ind = open(sys.argv[3], encoding='utf-8').read()
+terms = re.findall(r'\[(term-[0-9a-f]{2})\]\{\.index', qmd)
+if not terms:
+    print('FAIL: M06-AC3: no probe marks found in the fixture', file=sys.stderr)
+    sys.exit(1)
+
+
+def arguments(text):
+    # Every `\index{...}` argument, brace-balanced. A plain regex cannot do
+    # this: half the escaped forms the probe produces are LaTeX commands with
+    # braces of their own (`\textbraceleft{}`), and a non-greedy match ends at
+    # the first one of those.
+    out = []
+    for m in re.finditer(r'\\index\{', text):
+        i, depth = m.end(), 1
+        while i < len(text) and depth:
+            if text[i] == '{':
+                depth += 1
+            elif text[i] == '}':
+                depth -= 1
+            i += 1
+        out.append(text[m.end():i - 1])
+    return out
+
+
+def split_at_separator(arg):
+    # The argument split at the ONE `@` the back-end writes unquoted; every
+    # `@` the author wrote is quoted, and makeindex's quote covers exactly the
+    # character after it.
+    i = 0
+    while i < len(arg):
+        if arg[i] == '"':
+            i += 2
+            continue
+        if arg[i] == '@':
+            return arg[:i], arg[i + 1:]
+        i += 1
+    return None, arg
+
+
+args = arguments(tex)
+if len(args) != len(terms):
+    print(f'FAIL: M06-AC3: the fixture writes {len(terms)} marks but the .tex '
+          f'carries {len(args)} index entries', file=sys.stderr)
+    sys.exit(1)
+bad = []
+for term, arg in zip(terms, args):
+    key, printed = split_at_separator(arg)
+    if key is None:
+        bad.append(f'  {term}: no sort field emitted at all  <<{arg}>>')
+    elif key == '':
+        bad.append(f'  {term}: empty sort field  <<{arg}>>')
+    elif printed != term:
+        bad.append(f'  {term}: the separator fell in the wrong place; the '
+                   f'printed text reads <<{printed}>>')
+if bad:
+    print('FAIL: M06-AC3: the emitted sort fields are not what the fixture '
+          'declares:', file=sys.stderr)
+    print('\n'.join(bad[:10]), file=sys.stderr)
+    sys.exit(1)
+
+printed = re.findall(r'\\item (term-[0-9a-f]{2})', ind)
+if sorted(printed) != sorted(terms):
+    missing = sorted(set(terms) - set(printed))
+    print(f'FAIL: M06-AC3: the index tool printed {len(printed)} of '
+          f'{len(terms)} probe terms as their text alone; missing '
+          f'{missing[:10]}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC3: all {len(terms)} entries carry a sort field split at '
+      f'the separator the back-end writes, and the index tool printed every '
+      f'one of them as its text alone')
+SORTFIELDPY
+
+# Leg 2 — HTML: the same characters reach the generated section as entries.
+quarto render examples/sort-escaping.qmd --to html > "$WORK/sortesc-html.log" 2>&1 \
+  || { tail -20 "$WORK/sortesc-html.log" >&2; fail "M06-AC3: sort-escaping.qmd failed to render to HTML"; }
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/sort-escaping.html \
+  examples/sort-escaping.qmd <<'SORTESCHTMLPY'
+import os, re, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+qmd = open(sys.argv[2], encoding='utf-8').read()
+want = re.findall(r'\[(term-[0-9a-f]{2})\]\{\.index', qmd)
+rows = H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))
+got = {r['term'] for r in rows}
+missing = [t for t in want if t not in got]
+if missing:
+    print(f'FAIL: M06-AC3: {len(missing)} probe entr(ies) absent from the '
+          f'HTML index: {missing[:10]}', file=sys.stderr)
+    sys.exit(1)
+if len(rows) != len(want):
+    print(f'FAIL: M06-AC3: the HTML index has {len(rows)} entries for '
+          f'{len(want)} marks', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC3: all {len(want)} sort-keyed entries reach the HTML index, '
+      f'and it carries no others')
+SORTESCHTMLPY
+
+# Leg 3 — gfm, the format with no index back-end at all (IP2). The twin is the
+# probe with its sort= attributes deleted, so the two renders must come out
+# IDENTICAL once the data-sort attribute Pandoc passes through is removed. A
+# sort key that reached visible text — inside the mark's span or beside it —
+# breaks that equality, and so does any other change a sort key makes to a
+# format that builds no index.
+for f in sort-escaping sort-escaping-twin; do
+  quarto render "examples/$f.qmd" --to gfm > "$WORK/$f-gfm.log" 2>&1 \
+    || { tail -20 "$WORK/$f-gfm.log" >&2; fail "M06-AC3: $f.qmd failed to render to gfm"; }
+done
+python3 - examples/sort-escaping.qmd examples/sort-escaping-twin.qmd \
+  examples/sort-escaping.md examples/sort-escaping-twin.md <<'SORTESCGFMPY'
+import re, sys
+source, twin_src, rendered, twin_rendered = sys.argv[1:5]
+# Two layers, two grammars, and they are NOT the same. In a Pandoc markdown
+# attribute a backslash escapes the next character, so `\"` is a literal quote
+# inside the value. In an HTML attribute it escapes nothing — the value ends at
+# the first `"`, and a quote in the value is written `&quot;`. Parsing the
+# rendered HTML with the markdown rule makes `data-sort="\"` (the mark whose
+# sort key IS a backslash) swallow everything up to the next quote, two spans
+# later.
+SORT_ATTR = r' sort="(?:[^"\\]|\\.)*"'
+DATA_SORT_ATTR = r' data-sort="[^"]*"'
+src = open(source, encoding='utf-8').read()
+if re.sub(SORT_ATTR, '', src) != open(twin_src, encoding='utf-8').read():
+    print('FAIL: M06-AC3: the gfm twin fixture is not the probe with its '
+          'sort= attributes removed', file=sys.stderr)
+    sys.exit(1)
+marks = len(re.findall(SORT_ATTR, src))
+out = open(rendered, encoding='utf-8').read()
+residue = re.findall(DATA_SORT_ATTR, out)
+if len(residue) != marks:
+    print(f'FAIL: M06-AC3: {marks} marks carry a sort key but gfm output '
+          f'carries {len(residue)} data-sort attributes', file=sys.stderr)
+    sys.exit(1)
+stripped = re.sub(DATA_SORT_ATTR, '', out)
+if stripped != open(twin_rendered, encoding='utf-8').read():
+    print('FAIL: M06-AC3: a sort key changed gfm output beyond the attribute '
+          'that carries it', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC3: in gfm all {marks} sort keys change nothing but the one '
+      f'attribute carrying each, so none reaches visible text')
+SORTESCGFMPY
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
@@ -3274,7 +4270,7 @@ PY
     # The unmutated log must still pass, or the two failures above would prove
     # only that the check always fails.
     check_warning_count "$logfile" "$pattern" "$want" "$label"
-    pass "M02-AC5: the check for <<$pattern>> fails when it is missing and when it is duplicated, and passes as rendered"
+    pass "$label: the check for <<$pattern>> fails when it is missing and when it is duplicated, and passes as rendered"
   }
 
   warn_discrimination "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
@@ -3313,8 +4309,22 @@ PY
   # exactly like one that kept them.
   warn_discrimination "$WORK/book-corrupt.log" "$WARN_STORE_UNREADABLE" 1 \
     "M05 hardening"
-  warn_discrimination "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" 2 \
-    "M05 hardening"
+  warn_discrimination "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" \
+    "$ORDER_CHAPTERS" "M05 hardening"
+  # The three sort-key reports are the only evidence an author gets that a
+  # sort key did not do what they wrote it to do; each is proved to fail both
+  # when it goes missing and when it fires twice.
+  warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_ORPHAN" 1 \
+    "M06-AC4"
+  warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_EXTRA" 1 \
+    "M06-AC4"
+  warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_CONFLICT" 3 \
+    "M06-AC4"
+  # The cross-chapter conflict is the only report an author gets that two
+  # chapters sorted one term two ways; it is proved discriminating like the
+  # three a single document can draw.
+  warn_discrimination "$WORK/book-order-2.log" "$WARN_BOOK_SORT_CONFLICT" 1 \
+    "M06-AC4"
   warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
 fi

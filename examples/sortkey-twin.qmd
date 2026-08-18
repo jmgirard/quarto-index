@@ -1,0 +1,47 @@
+---
+title: "quarto-index sort-key probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Terms that file under something other than what they print
+
+Every term below is written so that its sorted position differs from the
+position its printed text alone would give it. The order the marks appear in
+is deliberately not the order the index must print, and the twin fixture —
+this file with every `sort=` attribute removed and nothing else changed —
+prints them in a demonstrably different order.
+
+A leading article files under the word that matters:
+[The Hague]{.index}.
+
+A name whose first character sorts nowhere near where a reader looks for it:
+[Ångström]{.index}.
+
+A number files where it is spoken:
+[10 Downing Street]{.index}.
+
+A nobiliary particle is not the surname:
+[von Neumann]{.index}.
+
+A surname files ahead of the given name that precedes it:
+[Édouard Manet]{.index}.
+
+# One sort key, several marks
+
+The same term marked again, this time with no `sort=` of its own. A sort key
+belongs to the entry rather than to the mark that happened to declare it, so
+this mark files under `Hague` too — were it to file under its printed text
+instead, the index would carry the term twice, in two places, printed
+identically: [The Hague]{.index}.
+
+# Sub-entries sort by their own keys
+
+Two sub-entries under one parent, written in the order their printed text
+would give them, so the index cannot be right by having left them alone. The
+first level of each sort key is empty, which means "file this level under its
+own printed text" — only the second level is being redirected.
+
+Turing: []{.index entry="mathematicians!Alan Turing"}
+Neumann: []{.index entry="mathematicians!von Neumann"}

@@ -7,6 +7,7 @@
 --   []{.index entry="..."}          invisible entry
 --   [term]{.index see="..."}        cross-reference: "see <target>"
 --   [term]{.index see-also="..."}   cross-reference: "see also <target>"
+--   [term]{.index sort="..."}       file the entry under different text
 --
 -- In `entry=`, a single `!` separates sub-entry levels and `!!` is a literal
 -- `!`, scanned left-to-right longest-match. Each level is literal text: the
@@ -17,6 +18,14 @@
 -- A cross-reference target uses those same level semantics. Its source entry
 -- is `entry=` when present, else the visible term, and the cross-reference
 -- takes the place of the locator, as printed indexes do.
+--
+-- `sort=` uses those same level semantics again, and lines up position by
+-- position with the entry's levels: the Nth sort level says where the Nth
+-- entry level files, and a level with no sort level of its own files under
+-- its own printed text. The value is ordinary author text like every other
+-- mark value (IP1) — the back-end alone writes whatever syntax its index
+-- tool needs. `sort=` is not accepted on a cross-reference target: a target
+-- is prose naming another entry, and that entry carries its own sort key.
 
 local INDEX_CLASS = "index"
 
@@ -158,6 +167,19 @@ local function parse_levels(value)
   return levels
 end
 
+-- The inverse of parse_levels: one string that identifies a level list, and
+-- identifies it injectively, because a level's own `!` is doubled exactly as
+-- an author would have written it. A plain `table.concat(levels, "!")` would
+-- make {"a!b"} and {"a","b"} the same string, which would merge two distinct
+-- entries in the conflict report below. Format-neutral: no back-end escaping.
+local function levels_key(levels)
+  local parts = {}
+  for i, level in ipairs(levels) do
+    parts[i] = level:gsub("!", "!!")
+  end
+  return table.concat(parts, "!")
+end
+
 -- Render one literal level as a LaTeX `\index{}` argument fragment.
 local function escape_level(level)
   return (level:gsub(".", function(c)
@@ -231,12 +253,202 @@ local function warn_empty_levels(levels, context)
   end
 end
 
+-- Parse a `sort=` value and line it up with the entry's levels. The result
+-- says only what the AUTHOR declared: element i is the sort key written for
+-- level i, or `false` where the author wrote nothing there. The printed-text
+-- fallback is applied later, by `sort_for`, because only the registry knows
+-- whether some other mark of the same level declared a key — substituting the
+-- fallback here is what made a silent mark overwrite a declaring one.
+--
+-- An empty sort level means "leave this level alone", which is why it is not
+-- warned about the way an empty ENTRY level is: there it is a hole in what the
+-- author is indexing, here it is the ordinary way to skip a level.
+--
+-- Returns nil when the value declares no sort key at all, which keeps a
+-- document that never writes `sort=` byte-identical in the LaTeX back-end.
+local function sort_levels(value, levels, context, report)
+  if value == nil then
+    return nil
+  end
+  local parsed = parse_levels(value)
+  -- The last position the author actually wrote a key for. Everything before
+  -- it that merely restates the level's own printed text is positional filler
+  -- — the way this syntax reaches a deeper level, since two separators in a
+  -- row are a literal `!` — while a self-equal key AT that last position is a
+  -- real declaration, the author saying where this level files.
+  local last = 0
+  for i = 1, #parsed do
+    if parsed[i] ~= "" then
+      last = i
+    end
+  end
+  if report then
+    -- Counted over the levels the author DECLARED past the entry's depth: an
+    -- empty sort level is the documented "leave this level alone", so a
+    -- trailing empty one ignores nothing and must not say it did.
+    local ignored = 0
+    for i = #levels + 1, #parsed do
+      if parsed[i] ~= "" then
+        ignored = ignored + 1
+      end
+    end
+    if ignored > 0 then
+      warn(("sort= on %s has %d levels but the entry has %d; the extra sort "
+            .. "levels were ignored"):format(context, #parsed, #levels))
+    end
+  end
+  local declared, any = {}, false
+  for i = 1, #levels do
+    local key = parsed[i]
+    if key ~= nil and key ~= "" and not (key == levels[i] and i < last) then
+      declared[i] = key
+      any = true
+    else
+      -- `false`, not nil: the list is written to the book store and read back
+      -- through JSON, where a hole in the middle of an array is not a shape
+      -- either side can rely on. Filler lands here too, so it never reaches
+      -- the registry and never rivals a key some other mark declared.
+      declared[i] = false
+    end
+  end
+  if not any then
+    return nil
+  end
+  return declared
+end
+
+-- The printed level path down to level `n`, as one injective string. A sort
+-- key belongs to a LEVEL under its own parents, not to a whole entry: both
+-- back-ends order level by level — makeindex reads `sortkey@printed` inside
+-- each `!`-separated level, and the HTML tree keys each node on its printed
+-- level text — so "Aaa" must file the same way whether it was written alone
+-- or as the parent of a sub-entry. Keying the registry on the full entry path
+-- instead is what split one printed entry across two keys.
+local function level_path(levels, n)
+  local prefix = {}
+  for i = 1, n do
+    prefix[i] = levels[i]
+  end
+  return levels_key(prefix)
+end
+
+-- Printed level path -> the first sort key declared for it, and the context
+-- that declared it. Two marks that file ONE printed level under two different
+-- sort keys are an authoring mistake with a visible cost in both back-ends:
+-- the HTML tree is keyed on the printed levels, so one of the two keys simply
+-- loses, and makeindex treats the two as different keys and prints the entry
+-- twice, in two places, identically. Neither is recoverable from the output,
+-- so the mistake is reported instead. The accumulator is format-neutral —
+-- filled before any back-end branch — because it is a property of what the
+-- author wrote, like every other warning about the mark itself.
+local sort_keys = {}
+
+-- Register a mark's declared sort keys, one per level, and report a second,
+-- different key for a level already spoken for. First mark in document order
+-- wins, so the index does not depend on which mark the author edits last.
+-- Only a level the author actually wrote a key for registers or conflicts: a
+-- term is usually marked in several places and a sort key written on one of
+-- them is meant for the entry, not for that one mark (GP4), so the marks that
+-- stay silent inherit it rather than contradict it.
+local function register_sort(levels, declared, context)
+  if declared == nil then
+    return
+  end
+  for i = 1, #levels do
+    local key = declared[i]
+    -- Positional filler was already dropped by sort_levels, so everything
+    -- arriving here is a declaration — including one whose text equals the
+    -- level's own, which is an author saying where the level files and so
+    -- wins ties and reports rivals like any other.
+    if key then
+      local path = level_path(levels, i)
+      local seen = sort_keys[path]
+      if seen == nil then
+        sort_keys[path] = { sort = key, context = context }
+      elseif seen.sort ~= key then
+        -- Once per RIVAL KEY at this path, not once per mark carrying it: a
+        -- term is usually marked in several places, and repeating one rival
+        -- key gives the author nothing further to fix. A second, different
+        -- rival is a second thing to fix, though — the message names the key
+        -- it is about, so suppressing it would leave that key unmentioned
+        -- until the first was resolved and the document rendered again.
+        -- The two marks are usually described identically — the same term,
+        -- twice — so the message names the two KEYS, which are what actually
+        -- differ and what the author has to choose between.
+        seen.reported = seen.reported or {}
+        if not seen.reported[key] then
+          seen.reported[key] = true
+          warn(('index entry in %s is already sorted as "%s"; the sort key '
+                .. '"%s" written here cannot apply as well, so the first one '
+                .. 'wins'):format(context, seen.sort, key))
+        end
+      end
+    end
+  end
+end
+
+-- What the emitting pass applies: for each level, the key registered for that
+-- level's path — whichever mark of it declared one — and the level's own
+-- printed text where no mark declared anything. Returns nil when no level on
+-- this path has a key, so a mark with no sort key anywhere above or at it
+-- emits exactly what it always did.
+local function sort_for(levels)
+  local resolved, any = {}, false
+  for i = 1, #levels do
+    local seen = sort_keys[level_path(levels, i)]
+    if seen then
+      resolved[i] = seen.sort
+      any = true
+    else
+      resolved[i] = levels[i]
+    end
+  end
+  if not any then
+    return nil
+  end
+  return resolved
+end
+
+-- Clamp sort levels alongside the entry levels clamp_levels performs. The
+-- folded third level is one printed string built from several, so it files
+-- under the sort key of the first level that went into it — joining sort keys
+-- the way the printed text is joined would file the entry under text no author
+-- wrote. A key written for a level past the third goes where that level went:
+-- the level itself is folded away, so there is nothing left for its key to
+-- place, and the fold warning already names the entry.
+local function clamp_sort(sort)
+  if sort == nil or #sort <= MAX_LEVELS then
+    return sort
+  end
+  local clamped = {}
+  for i = 1, MAX_LEVELS do
+    clamped[i] = sort[i]
+  end
+  return clamped
+end
+
 -- Build the `\index{...}` argument from literal levels, joining with the
--- unquoted `!` that makeindex reads as a level separator.
-local function index_argument(levels, context)
+-- unquoted `!` that makeindex reads as a level separator. With a sort key,
+-- each level becomes makeindex's own `sortkey@printed` form: the `@` here is
+-- written by this back-end and so is the ONE `@` that stays unquoted, while
+-- every `@` the author wrote is still quoted by escape_level (LATEX_LITERAL).
+local function index_argument(levels, sort, context)
+  local clamped = clamp_levels(levels, context)
+  local keys = clamp_sort(sort)
   local parts = {}
-  for _, level in ipairs(clamp_levels(levels, context)) do
-    parts[#parts + 1] = escape_level(level)
+  for i, level in ipairs(clamped) do
+    local printed = escape_level(level)
+    -- Compared against the level the key was ALIGNED with, not against the
+    -- clamped text: where levels were folded, the third clamped level is a
+    -- join of several and never equals the key resolved for the third level,
+    -- so comparing against it emits a sort field on every folded entry —
+    -- filing it under the third level's own printed text, which is what the
+    -- absence of a sort field already means.
+    if keys ~= nil and keys[i] ~= nil and keys[i] ~= levels[i] then
+      parts[#parts + 1] = escape_level(keys[i]) .. "@" .. printed
+    else
+      parts[#parts + 1] = printed
+    end
   end
   return table.concat(parts, "!")
 end
@@ -322,6 +534,97 @@ local function record_key(key, encap)
   seen[encap] = true
 end
 
+-- The one place a mark's index levels are derived from what the author wrote.
+-- Both Span passes call it, so they cannot drift on what an entry's levels
+-- are; only the emitting pass passes `report`, so a mark's warnings fire once
+-- however many passes read it.
+--
+-- Returns `levels, nil` when there is something to index, and
+-- `nil, "drop"|"keep"` when there is not — "drop" removing a genuinely empty
+-- mark, "keep" leaving content the author wrote untouched (IP2).
+local function derive_levels(entry, visible, declared, content_count, context,
+                             sort_value, report)
+  if entry ~= nil and entry ~= "" then
+    return parse_levels(entry), nil
+  end
+  if visible ~= "" then
+    -- A visible term is one literal level; `!` in it is not a separator.
+    return { visible }, nil
+  end
+
+  -- Nothing to index. A sort key says where an entry files, so one on a mark
+  -- that indexes no entry is asking for something that cannot happen — the
+  -- one warning every branch below shares.
+  if report and sort_value ~= nil then
+    warn(("sort= on %s has nothing to sort; the mark indexes no entry")
+         :format(context))
+  end
+
+  if declared > 0 then
+    -- A cross-reference needs something to hang off. This is its own warning
+    -- rather than either of the two below, because the fix is different: give
+    -- the mark an entry= or some visible text.
+    if report then
+      warn("cross-reference mark has no source entry (no entry= and no "
+           .. "visible text); nothing to index")
+    end
+    -- Same content policy as the two cases below: an empty mark is dropped,
+    -- a mark with content keeps every bit of it.
+    return nil, content_count == 0 and "drop" or "keep"
+  end
+  if content_count == 0 then
+    if report then
+      warn("index mark with no visible term and no entry=; nothing to index")
+    end
+    -- Genuinely empty and nothing to index: drop the mark rather than leave
+    -- an empty group behind in the output.
+    return nil, "drop"
+  end
+  -- The span HAS content, it just yields no text to derive an entry from
+  -- (an image with empty alt text, say). Index nothing, but never remove
+  -- the content — deleting what the author wrote would be IP2 corruption.
+  if report then
+    warn("index mark whose content has no text and no entry=; nothing to "
+         .. "index, content left untouched")
+  end
+  return nil, "keep"
+end
+
+-- The collect pass: a full traversal that only reads. It runs before the
+-- emitting pass so that a sort key written on ANY mark of an entry is known
+-- before the first mark of that entry is emitted — a mark emitted under a key
+-- a later mark then contradicts would print the entry twice.
+local function CollectSort(span)
+  if not span.classes:includes(INDEX_CLASS) then
+    return nil
+  end
+  local sort_value = span.attributes["sort"]
+  if sort_value == nil then
+    -- Only a declaring mark registers anything, so a document that never
+    -- writes `sort=` leaves this pass with no state at all.
+    return nil
+  end
+  local entry = span.attributes["entry"]
+  local visible = span_text(span)
+  local context = describe(entry, visible)
+  local declared = 0
+  for _, kind in ipairs(XREF_KINDS) do
+    if span.attributes[kind.attr] ~= nil then
+      declared = declared + 1
+    end
+  end
+  local levels = derive_levels(entry, visible, declared, #span.content,
+                               context, sort_value, false)
+  if levels == nil then
+    return nil
+  end
+  -- Reported here rather than in the emitting pass: this is the pass that can
+  -- see a conflict before anything has been emitted under either key.
+  register_sort(levels, sort_levels(sort_value, levels, context, true),
+                context)
+  return nil
+end
+
 local function Span(span)
   local forged = span.attributes[HTML_PENDING_ATTR] ~= nil
   if forged then
@@ -341,6 +644,7 @@ local function Span(span)
   local entry = span.attributes["entry"]
   local visible = span_text(span)
   local context = describe(entry, visible)
+  local sort_value = span.attributes["sort"]
 
   -- Cross-references are parsed and validated before the format branch below,
   -- so their misuse warnings fire in every format.
@@ -364,42 +668,21 @@ local function Span(span)
          .. "mistake, and every usable target is kept")
   end
 
-  local levels
-  if entry ~= nil and entry ~= "" then
-    levels = parse_levels(entry)
-  elseif visible ~= "" then
-    -- A visible term is one literal level; `!` in it is not a separator.
-    levels = { visible }
-  elseif declared > 0 then
-    -- A cross-reference needs something to hang off. This is its own warning
-    -- rather than either of the two below, because the fix is different: give
-    -- the mark an entry= or some visible text.
-    warn("cross-reference mark has no source entry (no entry= and no visible "
-         .. "text); nothing to index")
-    -- Same content policy as the two cases below: an empty mark is dropped,
-    -- a mark with content keeps every bit of it.
-    if #span.content == 0 then
-      return {}
-    end
-    return nil
-  elseif #span.content == 0 then
-    warn("index mark with no visible term and no entry=; nothing to index")
-    -- Genuinely empty and nothing to index: drop the mark rather than leave
-    -- an empty group behind in the output.
-    return {}
-  else
-    -- The span HAS content, it just yields no text to derive an entry from
-    -- (an image with empty alt text, say). Index nothing, but never remove
-    -- the content — deleting what the author wrote would be IP2 corruption.
-    warn("index mark whose content has no text and no entry=; nothing to "
-         .. "index, content left untouched")
-    return nil
+  local levels, disposition = derive_levels(entry, visible, declared,
+                                            #span.content, context,
+                                            sort_value, true)
+  if levels == nil then
+    return disposition == "drop" and {} or nil
   end
 
   -- Derived once, and before the back-end branch: the levels are the author's
   -- text whatever format this is, and the both-attributes case would otherwise
   -- warn twice about the same entry.
   warn_empty_levels(levels, context)
+  -- Resolved by the collect pass, which has already seen every mark of this
+  -- entry: whichever mark declared the sort key, every mark of the entry files
+  -- under it.
+  local sort = sort_for(levels)
   -- Every path from here indexes the mark in whichever back-end is running:
   -- one `\index` command in LaTeX, one record in HTML, nothing at all where
   -- there is no back-end. The count is what the marker's no-marks warning and
@@ -407,7 +690,7 @@ local function Span(span)
   marks_seen = marks_seen + 1
 
   if is_html() then
-    local record = { levels = levels, xrefs = xrefs }
+    local record = { levels = levels, sort = sort, xrefs = xrefs }
     html_marks[#html_marks + 1] = record
     if #xrefs == 0 then
       -- Only a locator-contributing mark needs somewhere to link back to; a
@@ -426,7 +709,7 @@ local function Span(span)
     return nil
   end
 
-  local source = index_argument(levels, context)
+  local source = index_argument(levels, sort, context)
 
   local result = pandoc.List(span.content)
 
@@ -476,8 +759,8 @@ end
 -- The normative collation rule: fold ASCII uppercase to lowercase, order by
 -- codepoint, break a fold tie by codepoint. Lua compares strings byte by
 -- byte and UTF-8 byte order IS codepoint order, so `<` is the rule as
--- stated. Only ASCII case folds: ordering beyond that is best-effort until
--- sort keys land (DESIGN, Conventions).
+-- stated. Only ASCII case folds: ordering beyond that is best-effort, and a
+-- sort key is how an author overrides it (DESIGN, Conventions).
 local function fold_case(s)
   return (s:gsub("[A-Z]", string.lower))
 end
@@ -531,8 +814,13 @@ local function same_levels(a, b)
   return true
 end
 
+-- `key` is the level's printed text, and it is what `children` is keyed by:
+-- node identity stays the printed text so that two terms sharing one sort key
+-- remain two entries. `sort` is only where the node FILES, filled in from the
+-- mark's aligned sort levels and falling back to `key` when there is none.
 local function new_entry(key)
-  return { key = key, children = {}, sorted = {}, locators = {}, xrefs = {} }
+  return { key = key, sort = nil, children = {}, sorted = {},
+           locators = {}, xrefs = {} }
 end
 
 -- Where a locator link points. In a single document that is the mark's anchor
@@ -548,11 +836,18 @@ local function build_entry_tree(marks)
   local root = new_entry(nil)
   for _, mark in ipairs(marks) do
     local node = root
-    for _, level in ipairs(mark.levels) do
+    for i, level in ipairs(mark.levels) do
       local child = node.children[level]
       if not child then
         child = new_entry(level)
         node.children[level] = child
+      end
+      -- One entry has one sort key: the collect pass settled which, and every
+      -- mark of the entry arrives carrying it. Assigned only once all the
+      -- same, so that a book aggregating chapters cannot have a later
+      -- chapter's record quietly overwrite the key the index was ordered by.
+      if child.sort == nil and mark.sort ~= nil then
+        child.sort = mark.sort[i]
       end
       node = child
     end
@@ -590,7 +885,18 @@ local function number_entries(node, counter, taken)
   for key in pairs(node.children) do
     keys[#keys + 1] = key
   end
-  table.sort(keys, collate)
+  -- Entries file under their sort key where they have one and under their own
+  -- printed text where they do not, and two entries sharing one sort key fall
+  -- back to collating their printed text — which keeps the order total, so
+  -- table.sort cannot see an inconsistent comparator.
+  table.sort(keys, function(a, b)
+    local ka = node.children[a].sort or a
+    local kb = node.children[b].sort or b
+    if ka ~= kb then
+      return collate(ka, kb)
+    end
+    return collate(a, b)
+  end)
   node.sorted = keys
   for _, key in ipairs(keys) do
     local child = node.children[key]
@@ -967,7 +1273,7 @@ local STORE_SUFFIX = ".qi.json"
 -- version that wrote it: nothing prunes it, and a project keeps rendering
 -- across extension upgrades. A record whose version is not this one is
 -- ignored rather than read as if its fields still meant what they did.
-local STORE_VERSION = 1
+local STORE_VERSION = 3
 
 -- Paths from Quarto are the host's; hrefs are always `/`-separated.
 local function as_href(path)
@@ -1056,6 +1362,16 @@ local function store_write(ctx, marker)
     marks[#marks + 1] =
       { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor }
   end
+  -- The chapter's DECLARED sort keys, one per printed level path, rather than
+  -- a resolved key per mark. A mark's resolved key already has this chapter's
+  -- fallbacks filled in, and a fallback is indistinguishable from a declared
+  -- key once written down — so the book would read one chapter's fallback as
+  -- a rival to another chapter's real key, and, being first in book order,
+  -- let the fallback win.
+  local sorts = {}
+  for path, seen in pairs(sort_keys) do
+    sorts[path] = seen.sort
+  end
   -- Every step here can fail on an ordinary machine — a stale file where the
   -- directory belongs, a read-only project tree, a full disk — and none of
   -- them may take the render down with it: a marked-up document always
@@ -1069,7 +1385,7 @@ local function store_write(ctx, marker)
     end
     local written, write_err = fh:write(pandoc.json.encode(
       { version = STORE_VERSION, file = ctx.file, href = ctx.href,
-        marker = marker, marks = marks }))
+        marker = marker, marks = marks, sorts = sorts }))
     fh:close()
     if not written then
       error(tostring(write_err), 0)
@@ -1117,6 +1433,19 @@ local function valid_record(data, file)
       return false
     end
   end
+  -- The chapter's declared sort keys: a printed level path to the key filed
+  -- under it, both strings. A record with none is ordinary — most chapters
+  -- declare no sort key at all.
+  if data.sorts ~= nil then
+    if type(data.sorts) ~= "table" then
+      return false
+    end
+    for path, key in pairs(data.sorts) do
+      if type(path) ~= "string" or type(key) ~= "string" then
+        return false
+      end
+    end
+  end
   return true
 end
 
@@ -1131,11 +1460,22 @@ local function store_read(ctx)
       if ok and valid_record(data, file) then
         records[#records + 1] = data
       else
-        -- Never silent: the cost of an unreadable record is a chapter missing
-        -- from the index, and the fix is to render that chapter again.
-        warn(("the recorded index marks for %s could not be read and were "
-              .. "ignored; render that chapter again, or render the whole "
-              .. "book, to put its terms back in the index"):format(file))
+        -- Never silent: the cost of a record this version cannot use is a
+        -- chapter missing from the index, and the fix is the same either way
+        -- — render that chapter again. WHY it could not be used is not: a
+        -- record left by an older version of this extension is perfectly
+        -- readable and simply stale, and calling that unreadable sends an
+        -- author looking for a corrupt file that is not there.
+        if ok and type(data) == "table" and data.version ~= STORE_VERSION then
+          warn(("the recorded index marks for %s were written by a different "
+                .. "version of this extension and were ignored; render that "
+                .. "chapter again, or render the whole book, to put its "
+                .. "terms back in the index"):format(file))
+        else
+          warn(("the recorded index marks for %s could not be read and were "
+                .. "ignored; render that chapter again, or render the whole "
+                .. "book, to put its terms back in the index"):format(file))
+        end
       end
     end
   end
@@ -1145,7 +1485,66 @@ end
 -- Every chapter's marks as the entry builder wants them: the kind tables
 -- restored from their attribute names, and each locator pointed at the page
 -- of the chapter that carries it.
+-- One entry, one sort key — across a whole book, not only within a chapter.
+-- Each chapter renders in its own process, so the in-document collect pass
+-- cannot see a second chapter's key; this is where the book's records meet,
+-- and so the only place the conflict can be found. First in BOOK order wins,
+-- which is the same rule a single document uses and, unlike "last one seen",
+-- does not depend on which chapter Quarto happened to render last.
+local function book_sort_keys(records)
+  local resolved = {}
+  for _, record in ipairs(records) do
+    -- One chapter's paths in a fixed order. `pairs` walks a Lua table in
+    -- whatever order it likes, and two chapters each declaring two rival keys
+    -- would otherwise report them in an order that changed between renders.
+    local paths = {}
+    for path in pairs(record.sorts or {}) do
+      paths[#paths + 1] = path
+    end
+    table.sort(paths)
+    for _, path in ipairs(paths) do
+      local key = record.sorts[path]
+      local seen = resolved[path]
+      if seen == nil then
+        resolved[path] = { sort = key, file = record.file, reported = {} }
+      elseif seen.sort ~= key and not seen.reported[key] then
+        -- Once per RIVAL KEY at this path, the same rule the in-document
+        -- report follows: a term marked in three chapters under one rival key
+        -- is one thing for the author to fix, while a second, different rival
+        -- is a second thing and names a key the first report never mentions.
+        seen.reported[key] = true
+        warn(('index entry "%s" is sorted as "%s" in %s and as "%s" in %s; '
+              .. 'one entry cannot file in two places, so the first in book '
+              .. 'order wins')
+             :format(path, seen.sort, seen.file, key, record.file))
+      end
+    end
+  end
+  return resolved
+end
+
+-- The book counterpart of `sort_for`: the same level-path lookup with the
+-- same printed-text fallback, reading the book's merged registry rather than
+-- this chapter's.
+local function book_sort_for(keys, levels)
+  local resolved, any = {}, false
+  for i = 1, #levels do
+    local seen = keys[level_path(levels, i)]
+    if seen then
+      resolved[i] = seen.sort
+      any = true
+    else
+      resolved[i] = levels[i]
+    end
+  end
+  if not any then
+    return nil
+  end
+  return resolved
+end
+
 local function book_marks(ctx, records)
+  local book_keys = book_sort_keys(records)
   local marks = {}
   for _, record in ipairs(records) do
     for _, mark in ipairs(record.marks or {}) do
@@ -1158,6 +1557,12 @@ local function book_marks(ctx, records)
       end
       marks[#marks + 1] = {
         levels = mark.levels,
+        -- The book's keys for this mark's levels, not this chapter's own: a
+        -- term marked in three chapters with a sort key written in one of
+        -- them files under that key everywhere, exactly as it does inside one
+        -- document — and a level's key applies wherever that level appears,
+        -- alone or as some sub-entry's parent.
+        sort = book_sort_for(book_keys, mark.levels),
         xrefs = xrefs,
         anchor = mark.anchor,
         -- A mark in the chapter holding the index links within its own page,
@@ -1389,6 +1794,7 @@ end
 -- whole document — which ids are taken, which marks sit inside headings —
 -- waits for the Pandoc pass.
 return {
+  { Span = CollectSort },
   { Span = Span },
   { Pandoc = Pandoc },
 }

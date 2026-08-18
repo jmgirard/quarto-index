@@ -1,0 +1,51 @@
+---
+title: "quarto-index sort-key level-path probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# A sort key belongs to a level, not to a whole entry
+
+Both back-ends order an index level by level: the LaTeX index tool reads a
+sort key inside each level of an entry, and the HTML index keys each node on
+its own printed text. So a key written for a level has to apply to that level
+wherever it appears — on its own, or above a sub-entry. Were a key instead
+remembered against the whole entry that declared it, the same printed term
+would file under two different keys depending on whether a sub-entry happened
+to follow it, and an index would carry it twice, in two places, printed
+identically.
+
+The key is declared on the term alone, and the sub-entry written later must
+inherit it: [The Hague]{.index entry="Hague, The" sort="Hague"} has a district
+[Scheveningen]{.index entry="Hague, The!Scheveningen"}.
+
+The other way round — the key declared where the term carries a sub-entry, and
+the bare term written later:
+[Alpha]{.index entry="Alpha!inner" sort="Zed"} and later plain
+[Alpha]{.index entry="Alpha"}.
+
+A key written for a level must not climb to the level above it. Only the
+second level is redirected here, so the first keeps its own printed text:
+[Beta]{.index entry="Beta!gamma" sort="!gkey"} and later plain
+[Beta]{.index entry="Beta"}.
+
+A level a declaring mark leaves alone must not shut out the mark that does
+declare it. The first mark below writes nothing for its first level; the
+second writes a key for exactly that level, and it is the second that must
+win, because it is the only declaration either mark makes there:
+[Ccc]{.index entry="Ccc!p" sort="!pk"} and later
+[Ccc]{.index entry="Ccc" sort="Www"}.
+
+Two skipped levels cannot sit side by side, because `!!` is the literal `!`
+this syntax gives an author and not two separators. The key below is one
+level reading `!Zed`, which is what places this term — not a third level
+redirected: [Literal]{.index entry="Literal" sort="!!Zed"}.
+
+Writing a level's own printed text is how this syntax reaches past a level,
+and it has to stay a way of skipping rather than become a declaration. The
+first mark below names `Mmm` and `nn` only to reach its third level; the later
+mark is the one that actually chooses where `Mmm` files, and it must not be
+refused for arriving second:
+[Mmm]{.index entry="Mmm!nn!oo" sort="Mmm!nn!Ooo"} and later
+[Mmm]{.index entry="Mmm" sort="Qqq"}.

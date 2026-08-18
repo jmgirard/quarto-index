@@ -2,5 +2,10 @@
 
 The marker is written here rather than in the last chapter: [Early]{.index}.
 
+A term this chapter sorts one way and a later chapter sorts another. Each
+chapter renders in its own process, so neither can see the other's key; the
+book's records only meet where the index is built:
+[Contested]{.index sort="Aaa"}.
+
 ::: {.qi-index-here}
 :::

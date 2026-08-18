@@ -3,5 +3,12 @@
 This chapter marks a term, [Late]{.index}, and carries a marker of its own —
 which must be refused, because the first chapter in book order already has one.
 
+The contested term again, sorted differently here. The first chapter in book
+order wins, and this one is reported: [Contested]{.index sort="Zzz"}.
+
+Marked a second time, with the same key this chapter already wrote. The clash
+with the first chapter is one thing for the author to fix, not one per mark,
+so the report must still fire exactly once: [Contested]{.index sort="Zzz"}.
+
 ::: {.qi-index-here}
 :::

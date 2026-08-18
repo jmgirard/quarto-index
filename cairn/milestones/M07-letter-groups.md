@@ -37,7 +37,7 @@ class hooks only, unchanged).
 
 ## Acceptance criteria
 
-- [ ] AC1: In every HTML index the acceptance suite renders, top-level
+- [x] AC1: In every HTML index the acceptance suite renders, top-level
       entries are partitioned into groups in rendered order: one Symbols
       group first (present exactly when a non-letter-filing top-level entry
       exists), then one group per ASCII letter present, in A–Z order; each
@@ -50,7 +50,7 @@ class hooks only, unchanged).
       hand-derived heading list for the set-checked renders (escaping,
       sort-escaping). At least one verified render's manifest carries no
       Symbols heading row.
-- [ ] AC2: A top-level entry's group label is `Symbols` unless the string it
+- [x] AC2: A top-level entry's group label is `Symbols` unless the string it
       files under — its registered sort key where one exists, its printed
       text otherwise — begins with an ASCII letter, in which case the label
       is that letter uppercased; an empty filing string labels `Symbols`.
@@ -61,26 +61,26 @@ class hooks only, unchanged).
       codepoint order); a non-ASCII-initial entry filing in the leading
       Symbols group; and an empty top-level filing string. These probes land
       outside the fixture serving AC1's no-Symbols negative.
-- [ ] AC3: A whole-document class sweep of each verified render finds
+- [x] AC3: A whole-document class sweep of each verified render finds
       `qi-letter` exactly on that render's expected heading rows, in order,
       with every hit outside any entry list item.
-- [ ] AC4: The book fixture's aggregated index groups identically, including
+- [x] AC4: The book fixture's aggregated index groups identically, including
       one letter group containing entries contributed by two different
       chapters — verified against the book manifest's heading rows.
-- [ ] AC5: The filter change alone changes no LaTeX output: each fixture in
+- [x] AC5: The filter change alone changes no LaTeX output: each fixture in
       `tests/byte-diff.sh`'s merge-base list renders byte-identical `.tex`
       under this branch's filter and the merge base's (empty diff; book LaTeX
       sits outside that procedure's list and is covered by the suite's book
       checks). The gfm and no-mark control renders contain no `qi-letter`
       class and no group-label residue — verified by the suite's negatives.
-- [ ] AC6: The README documents the grouping rule — label derivation and
+- [x] AC6: The README documents the grouping rule — label derivation and
       sort-key precedence, Symbols-first group order, always-on behavior,
       top-level-only headings — each documented sentence pinned as a
       `README_LETTER_CLAIMS` row checked by the suite; the existing
       `collation rule` claim row is replaced (old sentence moved to
       `README_STALE`, new sentence stating top-level ranking plus
       within-group collation).
-- [ ] AC7: The acceptance suite (`tests/run-tests.sh`) passes clean.
+- [x] AC7: The acceptance suite (`tests/run-tests.sh`) passes clean.
 
 ## Coverage
 
@@ -159,3 +159,73 @@ class hooks only, unchanged).
 ## Review
 <!-- owner: review · exclusive; evidence per criterion, consistency-gate
      results, review findings + triage. -->
+
+**Evidence (2026-08-18, PR #7, `tests/run-tests.sh --self-test`).**
+
+- AC1: 15 renders carry a generated HTML index; every one now has a heading
+  assertion. Ordered-manifest renders (demo, xref-conflict, html-index,
+  placement, marker, marker-misuse, sortkey, sortkey-twin, sortkey-paths,
+  letter-groups, book `last.html`) carry `letter` rows interleaved in rendered
+  order and pass `check_html_index_manifest` in order; the set-checked and
+  manifest-less renders (escaping 27 headings, sort-escaping 27, book-order
+  index 3, content 1) pass hand-derived `check_letter_sweep` lists. Symbols
+  leads wherever a non-letter-filing top-level entry exists (demo 13 groups,
+  sortkey-twin 5, sortkey-paths 6); `html-index.html` is the no-Symbols
+  negative — its 9 headings are A,B,E,I,K,L,N,T,Z. Nested levels carry no
+  heading (every sweep reports zero hits inside a list item) and their
+  collation rows are unchanged from M03/M06.
+- AC2: `examples/letter-groups.qmd` renders 14 manifest rows in order, all
+  matched. Both derivation paths reach both outcomes — printed text to a
+  letter (`zebra`) and to Symbols (`#hashtag`, `~tilde`), a sort key to a
+  letter (`#1 priority` under `alpha priority`) and to Symbols (`Quixote`
+  under the literal-bang key `!!quixote`). The non-ASCII-initial `éclair`
+  files in the leading Symbols group; the empty top-level filing string of
+  `entry="!windmill"` labels Symbols. The below-`a`/above-`z` pair is asserted
+  adjacent by its own check, which reads the render. These probes live outside
+  `examples/html-index.qmd`, which stays the no-Symbols negative.
+- AC3: `check_letter_sweep` runs whole-document over each verified render —
+  14 call sites — comparing labels to a hand-derived list in order and failing
+  on any hit inside a list item. Zero in-item hits across all renders.
+- AC4: the book's 9 groups match the ordered book manifest, whose B group
+  holds `Beacon` (`sub/two.html#qi-mark-2`) and `Beta` (`one.html#qi-mark-1`)
+  — two chapters, one group. Asserted on all three book renders, the stale-
+  chapter render included.
+- AC5: `tests/byte-diff.sh` re-run at review — all 19 merge-base fixtures
+  render byte-identical `.tex` under this branch's filter and the merge base's,
+  empty diff, exit 0. The gfm negative asserts `demo.md` carries neither
+  `qi-letter` nor a `Symbols` label line; the control negative asserts a
+  no-marks document carries no `qi-letter`.
+- AC6: 8 `README_LETTER_CLAIMS` rows — label derivation, sort-key precedence,
+  letter-uppercased, the Symbols fallback set, Symbols-first, always-on,
+  top-level-only, the class hook — all present verbatim. The old `collation
+  rule` sentence is now a 6th `README_STALE` row and is absent; its
+  replacement claim states top-level ranking plus within-group collation.
+- AC7: `tests/run-tests.sh --self-test` exit 0, 141 checks, all passing —
+  re-run after both fix-now findings landed. Plain `tests/run-tests.sh` is
+  127 of those; the remaining 14 are the planted-defect self-test, which the
+  profile names as the pre-review check.
+
+**Consistency gate.** `cairn_validate` exit 0, every check PASS/OK. Weight
+caps clean: ROADMAP 57 lines / 8,500 bytes, LESSONS 29 lines / 5,902 bytes. No
+IP/GP principle changed, so `cairn_impact` does not apply. The `generic`
+profile's `consistency-gate` slot names no toolchain checks — a clean no-op.
+No CI is configured on this repo (`gh pr checks 7`: no checks reported).
+
+**Findings.**
+
+- F-a [S blame-history, fix-now, fixed]: manifest 1e's derivation comment —
+  the oracle for its own rows and, by reference, for seven derived manifests —
+  still described one row shape and a single-collation Order step after the
+  diff added `letter` rows, leaving the new rows unbacked. This is the literal
+  case the M06 lesson names. Fixed: 1e now states both row shapes and an Order
+  step in two parts (top-level group ranking, then within-group collation);
+  manifest 1q's per-entry derivation is renumbered as a detailing of that step
+  rather than a rule of its own.
+- F-b [review-side, fix-now, fixed]: `examples/content.html` carries a
+  generated index but had no heading assertion, so AC1's "every HTML index the
+  acceptance suite renders" was not met as written. Fixed by a hand-derived
+  sweep (one group, `F`, from the single indexing mark `entry="Figure!Dot"`).
+- [S prior-review]: no prior-review regressions. All 39 candidate rows read;
+  the module-level-state row is not worsened (the new code is pure functions
+  over the existing sorted list, the only new module binding a constant), and
+  the GitHub inline-comment probe returned empty, so that surface was skipped.

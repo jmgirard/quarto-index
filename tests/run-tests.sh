@@ -227,16 +227,28 @@ HTML_LETTER_CLASS='qi-letter'
 # Manifest 1e — the generated index in examples/demo.html (M03-AC2).
 # EXHAUSTIVE: a rendered entry absent from this list fails, as does a listed
 # entry the render does not produce.
-# Format: <depth><TAB><entry text><TAB><locator count>[<TAB><cross-reference>]…
+# Two row shapes. An ENTRY row is
+# <depth><TAB><entry text><TAB><locator count>[<TAB><cross-reference>]…
 # where a cross-reference is `see-plain`/`see-link`/`also-plain`/`also-link`,
-# a space, and the target as a reader sees it.
+# a space, and the target as a reader sees it. A letter-group HEADING row is
+# `letter`<TAB><label>; an entry row always opens with a depth digit, so the
+# two shapes cannot be confused. Rows appear in rendered order, headings
+# among the entries they introduce.
 # Same oracle rule as manifest 1, with the HTML back-end's own layers derived
 # by hand on top of the level parse:
 #   4. No level ceiling: the three-level clamp is a makeindex property, so
 #      `One!Two!Three!Four!Five!` nests six deep here, trailing empty level
 #      included.
-#   5. Order: fold ASCII uppercase to lowercase, compare by codepoint, break a
-#      fold tie by codepoint — applied to siblings at every depth.
+#   5. Order, in two parts (M07). Top-level entries are first RANKED INTO
+#      GROUPS by the string each files under — its sort key where it has one
+#      (step 8, where a manifest has sort keys), its printed text otherwise:
+#      the label is that string's first character uppercased when that
+#      character is an ASCII letter, and `Symbols` otherwise, the empty
+#      filing string included; groups rank `Symbols` first, then A-Z, and each
+#      is introduced by one heading row. Then, WITHIN a group and at every
+#      depth below the top — which is not grouped, a sub-entry filing under
+#      its parent rather than under a letter — fold ASCII uppercase to
+#      lowercase, compare by codepoint, break a fold tie by codepoint.
 #   6. Locators: one per locator-contributing mark on that entry, in document
 #      order. A cross-reference mark contributes none.
 #   7. Cross-reference targets join with `: ` and are hyperlinked exactly when
@@ -1497,6 +1509,13 @@ CONTENT_IDX=$(grep -o '\\index{[^}]*}' examples/content.tex | wc -l | tr -d ' ')
 [ "$CONTENT_IDX" = "1" ] \
   || fail "AC7: expected exactly one \\index from content.qmd (the entry= mark), got $CONTENT_IDX"
 pass "AC7: marked content with no derivable text is indexed not at all and deleted not at all"
+
+# M07-AC1: this render has no entry manifest of its own — its checks are about
+# images and \index counts — so its grouping is asserted by a hand-derived
+# sweep. Only one mark here indexes anything (entry="Figure!Dot"); the others
+# yield no text or are cross-references with no source entry. So one top-level
+# entry, `Figure`, and one group.
+check_letter_sweep examples/content.html "M07-AC1 (marked content)" $'F'
 
 # M02-AC5 case (a): a cross-reference mark with no source entry. Two shapes —
 # content that yields no text, and a genuinely empty mark — both warn, neither
@@ -4453,8 +4472,9 @@ SORTESCGFMPY
 # ---------------------------------------------------------------------------
 # Manifest 1q — the generated index in examples/letter-groups.html
 # (M07-AC1/AC2). EXHAUSTIVE, same format and same oracle rule as manifest 1e,
-# with the grouping layer derived by hand on top of it:
-#   9. Group: a top-level entry's label is the first character of the string
+# every group derivation spelled out entry by entry — the same rule manifest
+# 1e's step 5 states, applied here to a fixture built to exercise it:
+#   5a. Group: a top-level entry's label is the first character of the string
 #      it FILES under — its sort key where it has one, its printed text where
 #      it does not — uppercased when that character is an ASCII letter, and
 #      `Symbols` in every other case, the empty filing string included. Groups

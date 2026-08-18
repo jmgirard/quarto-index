@@ -1,11 +1,11 @@
 # M09: Sort keys under the LaTeX level clamp
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** —
+- **Branch/PR:** m09-sortkey-clamp
 
 ## Goal
 
@@ -92,6 +92,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 - 2026-08-18: created by /milestone-plan.
 - 2026-08-18: criteria audit ran in FULL mode (user-facing tier), fresh-context [O] reader; it confirmed the premise by building the fixture and rendering it (two makeindex keys, one printed path, nothing reported) and returned AC1 probing only the one-side-clamped shape (both-clamped pair added), AC3 holding only while the shared key differs from the third-level printed text (constraint stated), and every criterion stopping at the .tex though the symptom is a doubled entry in the built index (AC3 extended to the compiled PDF under GP6, T4 added); AC2 passed every question unchanged.
 - 2026-08-18: plan chose reporting the collision over keying the sort registry on clamped level paths, because the registry is format-neutral and filled before the back-end branch while the three-level fold is a makeindex property the HTML back-end does not share; falsified by a case where the collision is mechanically resolvable — the two entries genuinely being one entry — rather than an authoring mistake only the author can settle.
+- 2026-08-18: implement started on branch m09-sortkey-clamp.
 
 ## Decisions
 

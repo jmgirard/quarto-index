@@ -7,6 +7,7 @@ _Last hygiene check: 2026-08-18 (M06 done and archived; M01 row pruned to the 5-
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M07 | Letter-group headings (HTML index) | planned | — | normal | milestones/M07-letter-groups.md |
 | M06 | Sort keys | done | — | normal | milestones/archive/M06-sort-keys.md |
 | M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
 | M05 | Multi-chapter book support | done | M04 | normal | milestones/archive/M05-book-support.md |
@@ -30,7 +31,6 @@ _Last hygiene check: 2026-08-18 (M06 done and archived; M01 row pruned to the 5-
 - Windows checkouts without symlink support break examples/_extensions — added 2026-08-16 — M01 review R18
 - `marks_seen` is module-level state, latent if Lua state is ever reused across documents; the HTML back-end adds one more such accumulator (`html_marks`) — added 2026-08-16, widened by M03 review P1, corrected M03 (the second accumulator was refactored away by the F1/F2 fix), corrected M04 (`marks_emitted` became the format-neutral `marks_seen`), widened by M06 review F-a (`sort_keys`, the sort-key registry, is another) — M01 review R16
 - `\index` inside a moving argument (section heading) is unprobed — added 2026-08-16 — M01 review R17
-- Letter-group headings in the HTML index (A/B/C breaks) — added 2026-08-16 — deferred at the M03 gate pending sort-key collation; kept out of M06 at its gate, plannable once M06 lands
 - see-also entries keep their locators (print convention) in both back-ends — added 2026-08-16 — M03 gate chose LaTeX-aligned no-locator semantics; pairs with the plain+cross-reference clash row
 - Escaping probe covers characters singly; combinations remain an untested axis — added 2026-08-16 — M01 review; see the milestone Decisions entry
 - `[` and `]` are escaped by Pandoc's LaTeX writer but are not in the filter's escape table — added 2026-08-16 — M01 review N11; verified harmless in practice

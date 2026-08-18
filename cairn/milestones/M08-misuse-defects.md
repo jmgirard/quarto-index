@@ -196,4 +196,27 @@ Review fan-out — three lenses, fresh context.
   `gh api .../pulls/comments` probe returned empty, so the per-PR thread walk
   was skipped. It noted the four candidate rows are still on the ROADMAP, which
   is correct: rows graduate at completion, not at review.
+- **[S] blame-history: no defects.** Verified the seven README byte-pins match
+  verbatim and the falsified sentence is gone; M04's nested-marker message keeps
+  its wording and count with the new report additive; M07's Div-not-Header rule
+  untouched; the self-reference comparison runs before `sort_for`, so a sort key
+  cannot influence it. Two coverage observations, both low severity: no fixture
+  combines `sort=` with a self-referential target, and `CONTAINER_NAMES`'
+  `Figure` branch is unexercised.
+- **[O] diff-bug: 11 ranked findings**, five verified by running the filter at
+  review. F1 the emptied-container report fires when the container is NOT left
+  empty (`all_markers` tests only that every child is a marker, and a marker
+  with content has its content spliced in) — falsifies the README sentence the
+  suite pins. F2 the same report fires on the surviving top-level marker itself,
+  naming a div that reaches no output. F3 containers that are not Blocks with a
+  block-list `.content` (a footnote, a table cell) are emptied unreported,
+  against README's unqualified promise. F4 `doc:walk` traverses `meta`, so a
+  marker class in the title is reported as a misplaced site. F5 the
+  both-attributes warning and README still say every usable target is kept,
+  now false in exactly the case AC2 exercises. F6 DESIGN.md's Architecture prose
+  is not updated. F7 clamping hides a self-reference (`entry="A!B!C!D"` +
+  `see-also="A!B!C, D"` still emits a self-encap). F8 empty-level asymmetry
+  hides another (`entry="Cats!"` + `see="Cats!"`). F9 README:314 still calls the
+  section id `qi-index` unconditionally. F10 `index_section` takes the first
+  `Index` heading. F11 no check discriminates F1 or F2.
 

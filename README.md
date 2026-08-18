@@ -159,11 +159,51 @@ Note that `\!` is **not** an escape. The parser turns it into a plain `!`,
 which the extension then reads as a level separator — so `entry="A\!B"`
 produces the entry `A` with sub-entry `B`, not `A!B`. Use `!!`.
 
-The same two rules apply inside `see=` and `see-also=`.
+The same two rules apply inside `see=` and `see-also=`, and inside `sort=`.
 
-`@`, `|` and `"` are ordinary literal characters here. Sort keys and locator
-styling, which use those characters in raw `makeindex` syntax, are not part
-of this syntax and will arrive later as separate span attributes.
+`@`, `|` and `"` are ordinary literal characters here. Locator styling, which
+uses some of them in raw `makeindex` syntax, is not part of this syntax and
+will arrive later as a separate span attribute.
+
+### Sorting an entry under something else
+
+Some terms do not file where their spelling puts them. `The Hague` belongs
+under H, `von Neumann` under N, `10 Downing Street` where a reader would say
+it. Write a sort key and the entry prints one way and files another:
+
+```markdown
+[The Hague]{.index sort="Hague"}
+```
+
+A sort key is ordinary text, not index-tool syntax — the extension writes
+whatever its back-end needs. It uses the same level syntax `entry=` does, and
+lines up with it position by position: the first sort level places the first
+entry level, the second places the second, and so on.
+
+```markdown
+[]{.index entry="mathematicians!von Neumann" sort="!Neumann"}
+```
+
+A sort level left empty means "file this level under its own printed text", so
+you only write the levels you are actually moving. Above, `mathematicians`
+files under itself and only the sub-entry is redirected.
+
+A sort key belongs to the entry, not to the mark you happened to write it on.
+Mark a term in six places and give one of them a `sort=`, and all six file
+under it — you never have to repeat it.
+
+Three things are reported, in every output format, because each is a mistake
+about the mark rather than about any one back-end:
+
+- a `sort=` on a mark that indexes nothing, which has nothing to sort;
+- a `sort=` with more levels than its entry has, whose extra levels are
+  ignored;
+- one entry given two different sort keys, which cannot file in two places —
+  the first one in the document wins, and in a book the first in book order.
+
+Sorting is otherwise best-effort: neither back-end collates accented or
+non-Latin text the way a language would, and a sort key is how you fix an
+entry that files wrongly.
 
 ### Placing the index
 
@@ -297,9 +337,9 @@ differs, because the tools underneath them do:
    clash, so the warning would name a problem that format does not have.
 3. **Sorting is the extension's own in HTML.** Entries sort by folding ASCII
    uppercase to lowercase, then by character code, with a tie broken by
-   character code. In LaTeX the order is `makeindex`'s. Neither collates
-   accented or non-Latin text the way a language would; sort keys are the
-   planned fix.
+   character code, applied to an entry's sort key where it has one. In LaTeX
+   the order is `makeindex`'s. Neither collates accented or non-Latin text the
+   way a language would, which is what sort keys are for.
 4. **Locators are numbered links in HTML**, in the order the marks are
    written, where LaTeX gives page numbers.
 5. **Cross-reference targets are hyperlinked in HTML** when the target names an

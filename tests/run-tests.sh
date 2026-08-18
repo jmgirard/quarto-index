@@ -73,6 +73,8 @@ SUPPORTED_FORMS=(
   $'see cross-reference\t[term]{.index see="Other"}'
   $'see-also cross-reference\t[term]{.index see-also="Other"}'
   $'placement marker\t::: {.qi-index-here}'
+  $'sort key span\t[The Hague]{.index sort="Hague"}'
+  $'sub-level sort key\t[]{.index entry="mathematicians!von Neumann" sort="!Neumann"}'
 )
 
 # ---------------------------------------------------------------------------
@@ -89,6 +91,7 @@ README_STALE=(
   $'cross-reference pass-through\tIn formats with no index back-end, a cross-reference mark is simply a mark'
   $'one back-end\tLaTeX/PDF is the back-end that ships today'
   $'automatic placement\tPlacement is automatic; there is no option to put the index elsewhere yet'
+  $'sort keys unimplemented\tSort keys and locator styling, which use those characters in raw `makeindex` syntax, are not part of this syntax and will arrive later as separate span attributes'
 )
 
 # Each must be PRESENT: one beamer-scoped pass-through sentence, and one row
@@ -98,10 +101,28 @@ README_HTML_CLAIMS=(
   $'beamer pass-through\tIn beamer, and in any other format with no index back-end, marks pass through'
   $'no level ceiling\tNo level ceiling in HTML'
   $'clash warning scope\tThe clash warning is LaTeX-only'
-  $'collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code'
+  $'collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code, applied to an entry\'s sort key where it has one'
   $'numbered locator links\tLocators are numbered links in HTML'
   $'targets hyperlinked\tCross-reference targets are hyperlinked in HTML'
   $'no locator from a cross-reference\tA cross-reference carries no locator in either back-end'
+)
+
+# ---------------------------------------------------------------------------
+# README claims about sort keys (NORMATIVE, M06-AC6). Same discipline as
+# README_HTML_CLAIMS: one row per behavior the extension documents, compared
+# as bytes, so the docs and what this suite exercises cannot drift apart.
+# These assert the named sentences are PRESENT; they never claim the README
+# says nothing else, which no procedure here could establish.
+# ---------------------------------------------------------------------------
+README_SORT_CLAIMS=(
+  $'not tool syntax\tA sort key is ordinary text, not index-tool syntax'
+  $'level alignment\tlines up with it position by position'
+  $'empty level fallback\tfile this level under its own printed text'
+  $'key belongs to the entry\tA sort key belongs to the entry, not to the mark you happened to write it on'
+  $'reported in every format\tThree things are reported, in every output format'
+  $'report: nothing to sort\ta `sort=` on a mark that indexes nothing, which has nothing to sort'
+  $'report: extra levels\ta `sort=` with more levels than its entry has, whose extra levels are'
+  $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -848,6 +869,31 @@ if bad:
 print(f'ok   M03-AC7: all {len(stale)} stale pass-through sentences are gone '
       f'and all {len(claims)} HTML claims appear in README.md')
 PY
+
+# M06-AC6 — the same discipline for the sort-key documentation. Separate from
+# the block above so a failure names which milestone's docs drifted.
+printf '%s\n' "${README_SORT_CLAIMS[@]}" > "$WORK/readme-sort.txt"
+python3 - "$WORK/readme-sort.txt" README.md <<'SORTDOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M06-AC6: README.md does not document sort keys as this suite '
+          'exercises them:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC6: all {len(rows)} documented sort-key behaviors appear '
+      f'verbatim in README.md')
+SORTDOCPY
 
 # The probe set is pinned to the filter's own escape table, so a character the
 # filter handles can never go unprobed (and vice versa).

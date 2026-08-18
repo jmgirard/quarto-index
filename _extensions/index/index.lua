@@ -317,9 +317,12 @@ local function register_sort(levels, sort, context)
     return
   end
   if levels_key(seen.sort) ~= levels_key(sort) then
-    warn(("index entry in %s is already sorted as written in %s; one entry "
-          .. "cannot file in two places, so the first sort key wins")
-         :format(context, seen.context))
+    -- The two marks are usually described identically — the same term, twice
+    -- — so the message names the two KEYS, which are what actually differ
+    -- and what the author has to choose between.
+    warn(('index entry in %s is already sorted as "%s"; the sort key "%s" '
+          .. 'written here cannot apply as well, so the first one wins')
+         :format(context, levels_key(seen.sort), levels_key(sort)))
   end
 end
 

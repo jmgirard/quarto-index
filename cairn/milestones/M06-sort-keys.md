@@ -133,7 +133,7 @@ what prints; the sort key carried through the book sidecar record with
       level.
 - [ ] T7: Extend the escaping probe to `sort=` values across PDF, HTML and
       gfm legs.
-- [ ] T8: The three diagnostics, their message text recorded in this file's
+- [x] T8: The three diagnostics, their message text recorded in this file's
       Decisions section, their control renders, and the reversion proof for
       each.
 - [ ] T9: README `sort=` section; update `README_HTML_CLAIMS` and add the
@@ -147,6 +147,8 @@ what prints; the sort key carried through the book sidecar record with
 - 2026-08-17: implement gate — user chose to proceed on the `ip-touching` tripwire without escalation, and chose format-neutral scope for the sort-key conflict warning over index-building formats only.
 - 2026-08-17: T1 done — `sort=` parsed with `entry=`'s level syntax, aligned per level with printed-text fallback, plus `levels_key`, `sort_levels`, `register_sort`/`sort_for`, `clamp_sort`, and a shared `derive_levels` used by both Span passes.
 - 2026-08-17: T1 minor amendment — parse moved into a new `CollectSort` pass ahead of the emitting pass; task text updated, rationale in this file's Decisions.
+- 2026-08-17: T8 done (single-document half) — `examples/sortkey-misuse.qmd`, the three reports asserted exactly once each in `latex` and in `gfm`, a control assertion that none fires on the well-formed fixture, and three `warn_discrimination` reversion proofs. AC4's cross-chapter conflict probe rides with T5. Suite 87 -> 94 checks (103 with --self-test).
+- 2026-08-17: T8 found two suite gaps and fixed both — the warning-distinctness check scanned only double-quoted Lua literals, so a single-quoted message (needed because report 3 contains double quotes) sat outside a check whose comment claimed full coverage; and `warn_discrimination`'s pass line hardcoded `M02-AC5`, filing every other milestone's evidence under the wrong criterion.
 - 2026-08-17: T6 done — exhaustive HTML manifests 1o/1p for the fixture and its twin, compared in order at every depth, plus a check asserting the two manifests disagree at every position so neither could be satisfied by an index that ignored sort keys. Suite 83 -> 87 checks.
 - 2026-08-17: T4 done — the entry-tree node carries a `sort` field, node identity stays keyed on printed text, and `number_entries` collates on the sort key with a printed-text tie-break; the rendered HTML index now matches the PDF order, sub-entry reversal included. All 83 checks still pass.
 - 2026-08-17: T3 done — `examples/sortkey.qmd` + its derived twin, manifests 1m/1n, and four PDF checks; the manifest is checked against the fixture by construction and the twin proves the order is the sort keys' doing. Suite 79 -> 83 checks.
@@ -159,6 +161,28 @@ what prints; the sort key carried through the book sidecar record with
 - 2026-08-17: plan gate chose bumping `STORE_VERSION` to 2 over relying on `valid_record` tolerating an unknown field because a retained v1 record would be read as valid with no sort keys and silently produce a wrongly-ordered book index; falsified by evidence that a stale record cannot survive a version-bumping render.
 
 ## Decisions
+
+### The three sort-key reports, verbatim
+
+**Context:** AC4 asserts three diagnostics "with the message text recorded in
+this milestone's Decisions section". These are those texts, as the filter
+emits them (`%s` filled from the mark's context, `%d` from level counts).
+
+**Decision:** The reports are:
+
+1. `sort= on %s has nothing to sort; the mark indexes no entry`
+2. `sort= on %s has %d levels but the entry has %d; the extra sort levels were ignored`
+3. `index entry in %s is already sorted as "%s"; the sort key "%s" written here cannot apply as well, so the first one wins`
+
+Report 3 names the two sort KEYS rather than the two marks: both marks
+usually describe identically — the same term, twice — so naming the contexts
+told an author nothing about what to change.
+
+**Consequences:** All three are emitted before any back-end branch, so they
+reach an author drafting to a format that builds no index; the suite asserts
+each in `latex` and in `gfm`. Each is proved discriminating by the suite's
+`warn_discrimination` helper, and `examples/sortkey.qmd` is the control that
+draws none of them.
 
 ### Sort keys are collected in a pass of their own, before marks are emitted
 

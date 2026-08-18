@@ -1018,7 +1018,12 @@ python3 - _extensions/index/index.lua <<'PY'
 import re, sys
 src = open(sys.argv[1], encoding='utf-8').read()
 # Each warn(...) call's leading string literal, which is the part a grep sees.
-lits = re.findall(r'warn\(\s*\(?"((?:[^"\\]|\\.)*)"', src)
+# Lua string literals take either quote, and a message that itself contains a
+# double quote is written with single quotes — so a scan for one quote style
+# only would leave that warning outside this check while the comment above
+# still claimed every warning was covered.
+lits = [m.group(2) for m in re.finditer(
+    r'''warn\(\s*\(?(["'])((?:[^\\]|\\.)*?)\1''', src)]
 if len(lits) < 6:
     print(f'FAIL: M02-AC5: found only {len(lits)} warn() literals; the '
           f'distinctness check is not reading the filter', file=sys.stderr)
@@ -1947,6 +1952,11 @@ PY
 WARN_MARKER_NESTED='index placement marker below the top level'
 WARN_MARKER_DUP='index placement marker 2 (top-level block 8) is ignored'
 WARN_MARKER_CONTENT='index placement marker is not empty'
+# The three sort-key reports (M06-AC4). Each is a report about the MARK, so
+# each is asserted in a format with an index back-end and in one without.
+WARN_SORT_ORPHAN='has nothing to sort; the mark indexes no entry'
+WARN_SORT_EXTRA='the extra sort levels were ignored'
+WARN_SORT_CONFLICT='written here cannot apply as well, so the first one wins'
 WARN_MARKER_NOMARKS='index placement marker in a document with no index marks'
 MARKER_KEPT_CONTENT='Content written inside a marker, which no misuse may delete.'
 
@@ -3504,6 +3514,52 @@ print(f'ok   M06-AC2: the sort keys move all {moved} entries, at every one of '
 ORDERPY
 
 # ---------------------------------------------------------------------------
+# M06-AC4 — the three sort-key reports.
+#
+# Rendered to gfm as well as to LaTeX because all three are reports about the
+# MARK rather than about a back-end's limits: an author drafting to a format
+# that builds no index at all still gets them. The counts are exact, so a
+# report that started firing twice fails here as loudly as one that stopped.
+# ---------------------------------------------------------------------------
+for fmt in latex gfm; do
+  quarto render examples/sortkey-misuse.qmd --to "$fmt" \
+    > "$WORK/sortkey-misuse-$fmt.log" 2>&1 \
+    || { tail -40 "$WORK/sortkey-misuse-$fmt.log" >&2; fail "M06-AC4: sortkey-misuse.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_ORPHAN" 1 \
+    "M06-AC4 ($fmt)"
+  check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_EXTRA" 1 \
+    "M06-AC4 ($fmt)"
+  check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_CONFLICT" 1 \
+    "M06-AC4 ($fmt)"
+  pass "M06-AC4: all three sort-key reports fire exactly once each in $fmt"
+done
+
+# The control: a fixture whose sort keys are all well formed must draw none of
+# the three. Without this the counts above would be satisfied by a report that
+# fires on every document.
+python3 - "$WORK/sortkey-pdf.log" "$WORK/sortkey-html.log" <<'CONTROLPY'
+import sys
+patterns = {
+    'nothing to sort': 'has nothing to sort',
+    'extra sort levels': 'the extra sort levels were ignored',
+    'two sort keys': 'cannot apply as well',
+}
+bad = []
+for path in sys.argv[1:]:
+    text = open(path, encoding='utf-8', errors='replace').read()
+    for name, needle in patterns.items():
+        if needle in text:
+            bad.append(f'  {path}: {name}')
+if bad:
+    print('FAIL: M06-AC4: a well-formed fixture drew a sort-key report:',
+          file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC4: none of the {len(patterns)} sort-key reports fires on '
+      f'examples/sortkey.qmd, whose sort keys are all well formed')
+CONTROLPY
+
+# ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--self-test" ]; then
@@ -3553,7 +3609,7 @@ PY
     # The unmutated log must still pass, or the two failures above would prove
     # only that the check always fails.
     check_warning_count "$logfile" "$pattern" "$want" "$label"
-    pass "M02-AC5: the check for <<$pattern>> fails when it is missing and when it is duplicated, and passes as rendered"
+    pass "$label: the check for <<$pattern>> fails when it is missing and when it is duplicated, and passes as rendered"
   }
 
   warn_discrimination "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
@@ -3594,6 +3650,15 @@ PY
     "M05 hardening"
   warn_discrimination "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" 2 \
     "M05 hardening"
+  # The three sort-key reports are the only evidence an author gets that a
+  # sort key did not do what they wrote it to do; each is proved to fail both
+  # when it goes missing and when it fires twice.
+  warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_ORPHAN" 1 \
+    "M06-AC4"
+  warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_EXTRA" 1 \
+    "M06-AC4"
+  warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_CONFLICT" 1 \
+    "M06-AC4"
   warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
 fi

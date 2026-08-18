@@ -1,0 +1,25 @@
+---
+title: "quarto-index sort-key misuse probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Three ways to misuse a sort key
+
+Each mark below draws exactly one report, and each report is about the mark
+rather than about any one back-end — so every one of them reaches an author
+writing to a format that builds no index at all.
+
+A sort key on a mark that indexes nothing has nothing to sort. The mark is
+empty and carries no `entry=`, so there is no entry for the key to place:
+[]{.index sort="Nowhere"}
+
+A sort key deeper than the entry it sorts. The entry is the visible term,
+which is always a single level, so the second sort level places nothing:
+[Solo]{.index sort="first!second"}.
+
+One entry given two different sort keys files in two places, which is not
+something an index can do. The first mark in document order is the one that
+wins, and the second is reported: [Ambivalence]{.index sort="Aaa"} and later
+[Ambivalence]{.index sort="Bbb"}.

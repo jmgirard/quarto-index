@@ -134,6 +134,7 @@ end
 local HTML_SECTION_ID = "qi-index"
 local HTML_ANCHOR_PREFIX = "qi-mark-"
 local HTML_ENTRY_PREFIX = "qi-entry-"
+local HTML_LETTER_CLASS = "qi-letter"
 
 -- A mark's anchor cannot be settled while the mark is being visited: whether
 -- the mark's own id serves, where the anchor may sit, and what a minted id
@@ -756,11 +757,17 @@ end
 -- style, not a stylesheet this extension imposes (GP4).
 -- ---------------------------------------------------------------------------
 
--- The normative collation rule: fold ASCII uppercase to lowercase, order by
--- codepoint, break a fold tie by codepoint. Lua compares strings byte by
--- byte and UTF-8 byte order IS codepoint order, so `<` is the rule as
--- stated. Only ASCII case folds: ordering beyond that is best-effort, and a
--- sort key is how an author overrides it (DESIGN, Conventions).
+-- The normative collation rule, in two parts (M07).
+--
+-- Top-level entries are RANKED INTO GROUPS first: everything that does not
+-- file under an ASCII letter comes first as one Symbols group, then one group
+-- per letter in A-Z order. Within a group — and at every level below the top,
+-- which is not grouped at all — the rule is: fold ASCII uppercase to
+-- lowercase, order by codepoint, break a fold tie by codepoint. Lua compares
+-- strings byte by byte and UTF-8 byte order IS codepoint order, so `<` is
+-- that part of the rule as stated. Only ASCII case folds: ordering beyond
+-- that is best-effort, and a sort key is how an author overrides it (DESIGN,
+-- Conventions).
 local function fold_case(s)
   return (s:gsub("[A-Z]", string.lower))
 end
@@ -771,6 +778,36 @@ local function collate(a, b)
     return fa < fb
   end
   return a < b
+end
+
+local SYMBOLS_LABEL = "Symbols"
+
+-- The group a top-level entry belongs to, named by the label its heading
+-- shows. The argument is the string the entry FILES under — its sort key
+-- where it has one, its printed text where it does not — so an author moves
+-- an entry between groups exactly the way they move it within one. Only an
+-- ASCII letter makes a letter group: the first byte of a UTF-8 sequence is
+-- never one, so a term starting in any other script files under Symbols,
+-- which is honest about a collation that is ASCII-only anyway.
+local function group_label(filing)
+  local first = filing:sub(1, 1)
+  -- `[A-Za-z]` rather than `%a`, whose meaning follows the C locale and so
+  -- could differ between one machine and another.
+  if first:match("^[A-Za-z]$") then
+    return first:upper()
+  end
+  return SYMBOLS_LABEL
+end
+
+-- Where a group sorts among the groups. Symbols ranks as the empty string,
+-- which is below every letter, so it leads — one group, ahead of A, as print
+-- convention and makeindex both set an index.
+local function group_rank(filing)
+  local label = group_label(filing)
+  if label == SYMBOLS_LABEL then
+    return ""
+  end
+  return fold_case(label)
 end
 
 -- A cross-reference target as a reader sees it: the same `: ` join the LaTeX
@@ -889,9 +926,22 @@ local function number_entries(node, counter, taken)
   -- printed text where they do not, and two entries sharing one sort key fall
   -- back to collating their printed text — which keeps the order total, so
   -- table.sort cannot see an inconsistent comparator.
+  --
+  -- The top level, and only the top level, ranks by group before it collates:
+  -- the root is the one node with no key of its own, and a sub-entry files
+  -- under its parent rather than under a letter. Group rank is a function of
+  -- the same filing string the collation reads, so two entries that collate
+  -- equal can never rank into different groups.
+  local top_level = node.key == nil
   table.sort(keys, function(a, b)
     local ka = node.children[a].sort or a
     local kb = node.children[b].sort or b
+    if top_level then
+      local ga, gb = group_rank(ka), group_rank(kb)
+      if ga ~= gb then
+        return ga < gb
+      end
+    end
     if ka ~= kb then
       return collate(ka, kb)
     end
@@ -978,9 +1028,14 @@ local function entry_inlines(root, node)
   return inlines
 end
 
-local function entry_list(root, node)
+-- One list item per key, in the order given. Named separately from the list
+-- itself because the top level is built one GROUP at a time — a slice of the
+-- sorted keys — while every level below it is built whole.
+local entry_list
+
+local function entry_items(root, node, keys)
   local items = pandoc.List()
-  for _, key in ipairs(node.sorted) do
+  for _, key in ipairs(keys) do
     local child = node.children[key]
     local blocks = pandoc.List({ pandoc.Plain(entry_inlines(root, child)) })
     if #child.sorted > 0 then
@@ -988,7 +1043,48 @@ local function entry_list(root, node)
     end
     items:insert(blocks)
   end
-  return pandoc.BulletList(items)
+  return items
+end
+
+function entry_list(root, node)
+  return pandoc.BulletList(entry_items(root, node, node.sorted))
+end
+
+-- The top level: one heading, then one list, per group.
+--
+-- Each heading is a Div and never a Header. Quarto copies a heading's inlines
+-- into the table of contents, so real headings would put the alphabet in the
+-- sidebar — the defect class the mark anchors already had to be moved out of
+-- headings to avoid — and a minted heading id would enter the same namespace
+-- an author's own ids live in. A Div carries the class an author styles with
+-- and nothing else (GP4: a hook, not a stylesheet).
+local function grouped_blocks(root)
+  local blocks = pandoc.Blocks({})
+  local pending = {}
+  local label = nil
+
+  local function flush()
+    if #pending > 0 then
+      blocks:insert(pandoc.Div(pandoc.Plain(literal_inlines(label)),
+                               pandoc.Attr("", { HTML_LETTER_CLASS })))
+      blocks:insert(pandoc.BulletList(entry_items(root, root, pending)))
+      pending = {}
+    end
+  end
+
+  for _, key in ipairs(root.sorted) do
+    local child = root.children[key]
+    local this = group_label(child.sort or key)
+    if this ~= label then
+      -- The keys are already ranked by group, so a change of label is the end
+      -- of a group rather than the start of a second run of one.
+      flush()
+      label = this
+    end
+    pending[#pending + 1] = key
+  end
+  flush()
+  return blocks
 end
 
 -- Every id already in the document. Collected before any id is minted, so a
@@ -1123,11 +1219,12 @@ end
 local function html_index_blocks(marks, taken)
   local root = build_entry_tree(marks)
   number_entries(root, 0, taken)
-  return pandoc.Blocks({
+  local blocks = pandoc.Blocks({
     pandoc.Header(1, literal_inlines("Index"),
                   pandoc.Attr(HTML_SECTION_ID, { "unnumbered" })),
-    entry_list(root, root),
   })
+  blocks:extend(grouped_blocks(root))
+  return blocks
 end
 
 -- ---------------------------------------------------------------------------

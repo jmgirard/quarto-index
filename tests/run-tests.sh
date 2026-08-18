@@ -92,6 +92,7 @@ README_STALE=(
   $'one back-end\tLaTeX/PDF is the back-end that ships today'
   $'automatic placement\tPlacement is automatic; there is no option to put the index elsewhere yet'
   $'sort keys unimplemented\tSort keys and locator styling, which use those characters in raw `makeindex` syntax, are not part of this syntax and will arrive later as separate span attributes'
+  $'ungrouped collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code, applied to an entry\'s sort key where it has one'
 )
 
 # Each must be PRESENT: one beamer-scoped pass-through sentence, and one row
@@ -101,7 +102,7 @@ README_HTML_CLAIMS=(
   $'beamer pass-through\tIn beamer, and in any other format with no index back-end, marks pass through'
   $'no level ceiling\tNo level ceiling in HTML'
   $'clash warning scope\tThe clash warning is LaTeX-only'
-  $'collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code, applied to an entry\'s sort key where it has one'
+  $'collation rule\tTop-level entries are ranked into letter groups first; inside a group, and at every level below the top, the order folds ASCII uppercase to lowercase and then compares character codes, breaking a tie by character code, over an entry\'s sort key where it has one'
   $'numbered locator links\tLocators are numbered links in HTML'
   $'targets hyperlinked\tCross-reference targets are hyperlinked in HTML'
   $'no locator from a cross-reference\tA cross-reference carries no locator in either back-end'
@@ -130,6 +131,22 @@ README_SORT_CLAIMS=(
   $'keys past the ceiling\tA sort key written for a level past the third goes with that level in this'
   $'two skipped levels\tTwo skipped levels cannot sit side by side'
   $'key belongs to the level\tit belongs to the entry level you wrote it for, and places that'
+)
+
+# ---------------------------------------------------------------------------
+# README claims about letter groups (NORMATIVE, M07-AC6). Same discipline as
+# README_HTML_CLAIMS: one row per behavior the extension documents, compared
+# as bytes, so the docs and what this suite exercises cannot drift apart.
+# ---------------------------------------------------------------------------
+README_LETTER_CLAIMS=(
+  $'label derivation\tA group label comes from the string the entry files under'
+  $'sort-key precedence\tits sort key where it has one, and its printed text where it has none'
+  $'letter label\tIf that string begins with an ASCII letter the label is that letter, uppercased'
+  $'symbols fallback\ta digit, a punctuation mark, an accented or non-Latin letter, or an empty string — files under `Symbols`'
+  $'symbols first\tThe Symbols group comes first**, ahead of A'
+  $'always on\tGrouping is always on.** There is nothing to switch on and no threshold'
+  $'top level only\tOnly the top level is grouped.** A sub-entry files under its parent rather than under a letter of its own'
+  $'class hook\tEach label is a `div` carrying the class `qi-letter` and nothing else'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -204,21 +221,34 @@ XREF_BOTH_COMMAND='quartoindexseeboth'
 HTML_SECTION_ID='qi-index'
 HTML_ANCHOR_PREFIX='qi-mark-'
 HTML_ENTRY_PREFIX='qi-entry-'
+HTML_LETTER_CLASS='qi-letter'
 
 # ---------------------------------------------------------------------------
 # Manifest 1e — the generated index in examples/demo.html (M03-AC2).
 # EXHAUSTIVE: a rendered entry absent from this list fails, as does a listed
 # entry the render does not produce.
-# Format: <depth><TAB><entry text><TAB><locator count>[<TAB><cross-reference>]…
+# Two row shapes. An ENTRY row is
+# <depth><TAB><entry text><TAB><locator count>[<TAB><cross-reference>]…
 # where a cross-reference is `see-plain`/`see-link`/`also-plain`/`also-link`,
-# a space, and the target as a reader sees it.
+# a space, and the target as a reader sees it. A letter-group HEADING row is
+# `letter`<TAB><label>; an entry row always opens with a depth digit, so the
+# two shapes cannot be confused. Rows appear in rendered order, headings
+# among the entries they introduce.
 # Same oracle rule as manifest 1, with the HTML back-end's own layers derived
 # by hand on top of the level parse:
 #   4. No level ceiling: the three-level clamp is a makeindex property, so
 #      `One!Two!Three!Four!Five!` nests six deep here, trailing empty level
 #      included.
-#   5. Order: fold ASCII uppercase to lowercase, compare by codepoint, break a
-#      fold tie by codepoint — applied to siblings at every depth.
+#   5. Order, in two parts (M07). Top-level entries are first RANKED INTO
+#      GROUPS by the string each files under — its sort key where it has one
+#      (step 8, where a manifest has sort keys), its printed text otherwise:
+#      the label is that string's first character uppercased when that
+#      character is an ASCII letter, and `Symbols` otherwise, the empty
+#      filing string included; groups rank `Symbols` first, then A-Z, and each
+#      is introduced by one heading row. Then, WITHIN a group and at every
+#      depth below the top — which is not grouped, a sub-entry filing under
+#      its parent rather than under a letter — fold ASCII uppercase to
+#      lowercase, compare by codepoint, break a fold tie by codepoint.
 #   6. Locators: one per locator-contributing mark on that entry, in document
 #      order. A cross-reference mark contributes none.
 #   7. Cross-reference targets join with `: ` and are hyperlinked exactly when
@@ -227,31 +257,41 @@ HTML_ENTRY_PREFIX='qi-entry-'
 #      colliding-string cases live in xref-conflict.qmd (M03-AC4).
 # ---------------------------------------------------------------------------
 read -r -d '' DEMO_HTML_INDEX <<'MANIFEST' || true
+letter	Symbols
 0	!Bang leads	1
 0	\	1
+0	{Braced}	1
+0	~tilde dollar$	1
+letter	A
 0	A!	0
 1	B	1
 0	A!B	0
 1		1
 0	Alpha	0
 1	Beta	1
+letter	B
 0	bang	0	see-plain Wow!Hey
 0	bang ! quote "	1
 0	both	0	see-plain Aye	also-plain Bee
 0	bs \ tilde ~ caret ^	1
+letter	C
 0	café naïve	1
 0	Canids	0
 1	Foxes	0	see-plain Vulpes
 0	cats	0	see-plain Felines
 0	Custom Entry	1
+letter	D
 0	dogs	0	also-plain Pets
 0	dollar $ at @ bar |	1
+letter	G
 0	Ghost	0
 1	Sub	1
 0	Ghosts	0	also-plain Spirits
 0	Grüße	0
 1	Straße	1
+letter	L
 0	less < more >	1
+letter	O
 0	One	0
 1	Two	0
 2	Three	0
@@ -259,17 +299,20 @@ read -r -d '' DEMO_HTML_INDEX <<'MANIFEST' || true
 4	Five	0
 5		1
 0	owls	0	see-plain Birds: Owls
+letter	P
 0	pandoc	3
 0	pct % amp & hash #	1
+letter	S
 0	Specials % & # _ { } \ ~ ^ $ @ | ! " < >	1
+letter	T
 0	Top	0
 1	Middle	0
 2	Leaf	1
 0	Trail bang!	1
+letter	U
 0	us _ brace { }	1
+letter	W
 0	Wow!Really	1
-0	{Braced}	1
-0	~tilde dollar$	1
 MANIFEST
 
 # ---------------------------------------------------------------------------
@@ -492,15 +535,25 @@ MANIFEST
 #      no chapter at all.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_HTML_INDEX <<'MANIFEST' || true
+letter	A
 0	Alpha	index.html#qi-mark-2
+letter	B
+0	Beacon	sub/two.html#qi-mark-2
 0	Beta	one.html#qi-mark-1
+letter	C
 0	Shared Term	index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html#qi-mark-1
+letter	D
 0	Delta		see-link Alpha
+letter	E
 0	Epsilon		see-plain No Such Entry
+letter	G
 0	Gamma	one.html#gamma-anchor
+letter	I
 0	Invisible Entry	index.html#qi-mark-3
+letter	K
 0	Kappa	
 1	Sub Level	one.html#qi-mark-3
+letter	Z
 0	Zeta	#qi-mark-1
 MANIFEST
 
@@ -526,6 +579,7 @@ MANIFEST
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_PDF_TERMS <<'MANIFEST' || true
 1	Alpha
+1	Beacon
 1	Beta
 1	Gamma
 1	Invisible Entry
@@ -736,6 +790,67 @@ print(f'ok   {label}: the generated index matches all {len(expected)} '
 PY
 }
 
+# A WHOLE-DOCUMENT sweep for the letter-group heading class (M07-AC3). The
+# expected labels are hand-derived, one per line, in the order the page must
+# show them; the sweep reads the entire document rather than the index
+# section, so a heading that leaked outside the index fails here even though
+# the manifest above would never see it. Every hit must also sit outside any
+# list item: a group heading introduces the entry list, it is not an entry.
+#
+# The ELEMENT is asserted, not only its text. AC1 promises a Div and never a
+# Header, and the difference is invisible in the label: Quarto copies a
+# heading's inlines into the table of contents and mints an id for it, so a
+# Header here would put the whole alphabet in the sidebar and add ids to the
+# namespace the generated ones are checked against. The class list and the id
+# are pinned for the same reason — the README documents the label as carrying
+# `qi-letter` and nothing else, and an extra class or a minted id would break
+# an author's CSS or that namespace while every label still read correctly.
+check_letter_sweep() {
+  local htmlfile="$1" label="$2" expected="$3"
+  printf '%s\n' "$expected" > "$WORK/letter-sweep.txt"
+  HTML_LETTER_CLASS="$HTML_LETTER_CLASS" python3 - \
+    "$htmlfile" "$WORK/letter-sweep.txt" "$label" <<'SWEEPPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+html_path, expected_path, label = sys.argv[1:4]
+if H.LETTER_CLASS != os.environ['HTML_LETTER_CLASS']:
+    print(f'FAIL: {label}: the suite and the instrument disagree on the '
+          f'heading class', file=sys.stderr)
+    sys.exit(1)
+hits = H.letter_sweep(H.parse(html_path))
+expected = H.read_manifest(expected_path)
+if not expected:
+    print(f'FAIL: {label}: the expected heading list is empty', file=sys.stderr)
+    sys.exit(1)
+actual = [h['label'] for h in hits]
+if actual != expected:
+    print(f'FAIL: {label}: {html_path} carries heading labels {actual}, '
+          f'expected {expected}', file=sys.stderr)
+    sys.exit(1)
+inside = [h['label'] for h in hits if h['in_item']]
+if inside:
+    print(f'FAIL: {label}: heading(s) {inside} sit inside a list item',
+          file=sys.stderr)
+    sys.exit(1)
+wrong_tag = [(h['label'], h['tag']) for h in hits if h['tag'] != 'div']
+if wrong_tag:
+    print(f'FAIL: {label}: heading(s) are not a div: {wrong_tag}; a heading '
+          f'element would copy its text into the table of contents and mint '
+          f'an id', file=sys.stderr)
+    sys.exit(1)
+extra = [(h['label'], h['classes'], h['ident']) for h in hits
+         if h['classes'] != [H.LETTER_CLASS] or h['ident'] != '']
+if extra:
+    print(f'FAIL: {label}: heading(s) carry more than the documented class '
+          f'and no id: {extra}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: {len(actual)} letter-group heading(s), in order, each a '
+      f'div carrying only {H.LETTER_CLASS} and no id, every one outside any '
+      f'entry list item')
+SWEEPPY
+}
+
 # Every generated id in a rendered file is document-unique, and every link
 # inside the generated index resolves to an id in that same file. Applied to
 # each HTML fixture, including the two that carry the shapes demo.qmd's
@@ -911,6 +1026,30 @@ print(f'ok   M06-AC6: all {len(rows)} documented sort-key behaviors appear '
       f'verbatim in README.md')
 SORTDOCPY
 
+# M07-AC6 — and the same for the letter-group documentation.
+printf '%s\n' "${README_LETTER_CLAIMS[@]}" > "$WORK/readme-letter.txt"
+python3 - "$WORK/readme-letter.txt" README.md <<'LETTERDOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M07-AC6: README.md does not document letter groups as this '
+          'suite exercises them:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M07-AC6: all {len(rows)} documented letter-group behaviors appear '
+      f'verbatim in README.md')
+LETTERDOCPY
+
 # The probe set is pinned to the filter's own escape table, so a character the
 # filter handles can never go unprobed (and vice versa).
 PROBE_CHARS="$PROBE_CHARS" python3 - _extensions/index/index.lua <<'PY'
@@ -960,15 +1099,17 @@ PY
 # expected diff is empty. Run it from a clean tree on the milestone branch.
 # ---------------------------------------------------------------------------
 
-# The HTML back-end's three identifiers are a public surface — a reader's URL
+# The HTML back-end's four identifiers are a public surface — a reader's URL
 # and an author's CSS hold on to them — so the suite's copies are pinned to
 # the filter's own constants, exactly as the dual-target command name is.
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - _extensions/index/index.lua <<'PY'
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" HTML_LETTER_CLASS="$HTML_LETTER_CLASS" \
+python3 - _extensions/index/index.lua <<'PY'
 import os, re, sys
 src = open(sys.argv[1], encoding='utf-8').read()
 bad = []
-for name in ('HTML_SECTION_ID', 'HTML_ANCHOR_PREFIX', 'HTML_ENTRY_PREFIX'):
+for name in ('HTML_SECTION_ID', 'HTML_ANCHOR_PREFIX', 'HTML_ENTRY_PREFIX',
+             'HTML_LETTER_CLASS'):
     m = re.search(rf'{name}\s*=\s*"([^"]*)"', src)
     if not m:
         bad.append(f'  {name} is not defined in the filter')
@@ -980,7 +1121,7 @@ if bad:
           'identifiers:', file=sys.stderr)
     print('\n'.join(bad), file=sys.stderr)
     sys.exit(1)
-print('ok   M03-AC3: all 3 HTML identifiers pinned to the filter constants')
+print('ok   M03-AC3: all 4 HTML identifiers pinned to the filter constants')
 PY
 
 quarto render examples/demo.qmd --to latex > "$WORK/demo-latex.log" 2>&1 \
@@ -1235,6 +1376,8 @@ done
 # M03-AC2 / M03-AC3 — the generated HTML index, its anchors and its links.
 # ---------------------------------------------------------------------------
 check_html_index_manifest examples/demo.html "$DEMO_HTML_INDEX" "M03-AC2"
+check_letter_sweep examples/demo.html "M07-AC3 (demo)" \
+  $'Symbols\nA\nB\nC\nD\nG\nL\nO\nP\nS\nT\nU\nW'
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
 HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - examples/demo.html \
@@ -1389,6 +1532,13 @@ CONTENT_IDX=$(grep -o '\\index{[^}]*}' examples/content.tex | wc -l | tr -d ' ')
   || fail "AC7: expected exactly one \\index from content.qmd (the entry= mark), got $CONTENT_IDX"
 pass "AC7: marked content with no derivable text is indexed not at all and deleted not at all"
 
+# M07-AC1: this render has no entry manifest of its own — its checks are about
+# images and \index counts — so its grouping is asserted by a hand-derived
+# sweep. Only one mark here indexes anything (entry="Figure!Dot"); the others
+# yield no text or are cross-references with no source entry. So one top-level
+# entry, `Figure`, and one group.
+check_letter_sweep examples/content.html "M07-AC1 (marked content)" $'F'
+
 # M02-AC5 case (a): a cross-reference mark with no source entry. Two shapes —
 # content that yields no text, and a genuinely empty mark — both warn, neither
 # adds an \index (the count above is unchanged by them), and neither deletes
@@ -1435,17 +1585,25 @@ pass "M02-AC5: the clash report names both differing-encap keys once each, ignor
 # locator AND a cross-reference, which makeindex rejects but HTML does not.
 # ---------------------------------------------------------------------------
 read -r -d '' XREF_HTML_INDEX <<'MANIFEST' || true
+letter	K
 0	kappa	1	see-plain Elsewhere
+letter	L
 0	lambda	0	see-plain Here	also-plain There
+letter	M
 0	mu	0	see-plain Same
+letter	N
 0	Note	0
 1	on birds	1
 0	nu	2
+letter	R
 0	rho	0	see-plain Note: on birds
+letter	S
 0	sigma	0	see-link Note: on birds
 MANIFEST
 
 check_html_index_manifest examples/xref-conflict.html "$XREF_HTML_INDEX" "M03-AC4"
+check_letter_sweep examples/xref-conflict.html "M07-AC3 (cross-references)" \
+  $'K\nL\nM\nN\nR\nS'
 
 # The token above says sigma's target is A link; this says it is the RIGHT
 # link. A cross-reference pointing at some other entry would satisfy the
@@ -1455,7 +1613,7 @@ import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
 doc = H.parse(sys.argv[1])
-records = H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))
+records = H.entry_records(H.find_id(doc, os.environ['HTML_SECTION_ID']))
 by_term = {r['term']: r for r in records}
 target_id = by_term['on birds']['id']
 href = by_term['sigma']['xrefs'][0][3]
@@ -1491,22 +1649,33 @@ PY
 # takes qi-mark-2, iota qi-mark-4, kappa qi-mark-5, bee qi-mark-6, Bee
 # qi-mark-7, and the entries are numbered from qi-entry-2.
 read -r -d '' HTML_INDEX_MANIFEST <<'MANIFEST' || true
+letter	A
 0	A	0
 1	B	1
+letter	B
 0	Bee	1
 0	bee	1
+letter	E
 0	eta	0	see-link A: B	see-plain A: B
+letter	I
 0	iota	1
+letter	K
 0	kappa	1
+letter	L
 0	lambda	1
+letter	N
 0	nu	0	see-link A: B
+letter	T
 0	theta	1
+letter	Z
 0	zeta	0	see-link A: B
 MANIFEST
 
 quarto render examples/html-index.qmd --to html > "$WORK/html-index.log" 2>&1 \
   || { tail -20 "$WORK/html-index.log" >&2; fail "M03-AC4: html-index.qmd failed to render to HTML"; }
 check_html_index_manifest examples/html-index.html "$HTML_INDEX_MANIFEST" "M03-AC4"
+check_letter_sweep examples/html-index.html "M07-AC3 (no Symbols group)" \
+  $'A\nB\nE\nI\nK\nL\nN\nT\nZ'
 check_html_index_links examples/html-index.html "M03-AC3"
 
 # M03-AC3 — a minted id must never be an id the document already uses. Two
@@ -1529,7 +1698,7 @@ if dupes:
           f'minted scheme: {dupes}', file=sys.stderr)
     sys.exit(1)
 records = {r['term']: r for r in
-           H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))}
+           H.entry_records(H.find_id(doc, os.environ['HTML_SECTION_ID']))}
 # The author's own ids are kept and linked, not taken over...
 for term, want in (('theta', f'#{anchor_prefix}1'),
                    ('lambda', f'#{entry_prefix}1')):
@@ -1572,19 +1741,28 @@ PY
 # an inline footnote whose text renders at the foot of the page.
 # ---------------------------------------------------------------------------
 read -r -d '' PLACEMENT_HTML_INDEX <<'MANIFEST' || true
+letter	C
 0	contraption	0	see-link widget
+letter	D
 0	doohickey	1
+letter	F
 0	flange	1
+letter	G
 0	gadget	1
 0	gizmo	1
+letter	S
 0	sprocket	1
+letter	T
 0	thingamajig	1
+letter	W
 0	widget	3
 MANIFEST
 
 quarto render examples/placement.qmd --to html > "$WORK/placement-html.log" 2>&1 \
   || { tail -20 "$WORK/placement-html.log" >&2; fail "M03-AC2: placement.qmd failed to render to HTML"; }
 check_html_index_manifest examples/placement.html "$PLACEMENT_HTML_INDEX" "M03-AC2"
+check_letter_sweep examples/placement.html "M07-AC3 (placement)" \
+  $'C\nD\nF\nG\nS\nT\nW'
 check_html_index_links examples/placement.html "M03-AC3"
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
@@ -1596,7 +1774,7 @@ import htmlindex as H
 doc = H.parse(sys.argv[1])
 prefix = os.environ['HTML_ANCHOR_PREFIX']
 records = {r['term']: r for r in
-           H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))}
+           H.entry_records(H.find_id(doc, os.environ['HTML_SECTION_ID']))}
 
 # Numbered in the order the marks are WRITTEN. The footnote's mark is written
 # third and rendered last, so a numbering taken from rendered position would
@@ -1758,9 +1936,12 @@ PY
 # is never marked, so it carries no locator and its sub-entry carries one.
 # ---------------------------------------------------------------------------
 read -r -d '' MARKER_HTML_INDEX <<'MANIFEST' || true
+letter	A
 0	alpha	2
+letter	B
 0	Beta	0
 1	Nested	1
+letter	G
 0	gamma	1
 MANIFEST
 
@@ -1778,6 +1959,7 @@ Angstrom
 ten Downing Street
 Neumann
 Manet
+Le Guin
 !Turing
 !Neumann
 MANIFEST
@@ -1795,8 +1977,9 @@ MANIFEST
 # from manifest 1o, which is what lets the check comparing the two mean
 # something; the keys here are plain letters, on which the two rules happen to
 # agree, and a fixture keyed on punctuation would need two orders.
-# The keys in order are therefore Angstrom, Hague, Manet, mathematicians
-# (which declares none of its own), Neumann, ten Downing Street. The two
+# The keys in order are therefore Angstrom, Hague, Le Guin, Manet,
+# mathematicians (which declares none of its own), Neumann, ten Downing
+# Street. The two
 # sub-entries under `mathematicians` file under Neumann and Turing, which
 # reverses the order their printed text alone would give them.
 #
@@ -1806,6 +1989,7 @@ MANIFEST
 read -r -d '' SORTKEY_PDF_OUTLINE <<'MANIFEST' || true
 0	Ångström
 0	The Hague
+0	Ursula K. Le Guin
 0	Édouard Manet
 0	mathematicians
 1	von Neumann
@@ -1830,13 +2014,20 @@ MANIFEST
 # under it and the term stays one entry rather than becoming two.
 # ---------------------------------------------------------------------------
 read -r -d '' SORTKEY_HTML_INDEX <<'MANIFEST' || true
+letter	A
 0	Ångström	1
+letter	H
 0	The Hague	2
+letter	L
+0	Ursula K. Le Guin	1
+letter	M
 0	Édouard Manet	1
 0	mathematicians	0
 1	von Neumann	1
 1	Alan Turing	1
+letter	N
 0	von Neumann	1
+letter	T
 0	10 Downing Street	1
 MANIFEST
 
@@ -1848,14 +2039,20 @@ MANIFEST
 # the check below asserts that rather than trusting this comment.
 # ---------------------------------------------------------------------------
 read -r -d '' SORTKEY_TWIN_HTML_INDEX <<'MANIFEST' || true
+letter	Symbols
 0	10 Downing Street	1
+0	Ångström	1
+0	Édouard Manet	1
+letter	M
 0	mathematicians	0
 1	Alan Turing	1
 1	von Neumann	1
+letter	T
 0	The Hague	2
+letter	U
+0	Ursula K. Le Guin	1
+letter	V
 0	von Neumann	1
-0	Ångström	1
-0	Édouard Manet	1
 MANIFEST
 
 # ---------------------------------------------------------------------------
@@ -1920,16 +2117,22 @@ MANIFEST
 # second rather than third.
 # ---------------------------------------------------------------------------
 read -r -d '' SORTKEY_PATHS_HTML_INDEX <<'MANIFEST' || true
+letter	Symbols
 0	Literal	1
+letter	B
 0	Beta	1
 1	gamma	1
+letter	H
 0	Hague, The	1
 1	Scheveningen	1
+letter	Q
 0	Mmm	1
 1	nn	0
 2	oo	1
+letter	W
 0	Ccc	1
 1	p	1
+letter	Z
 0	Alpha	1
 1	inner	1
 MANIFEST
@@ -1944,7 +2147,9 @@ MANIFEST
 # Manifest 1k — the generated index in examples/marker-misuse.html (M04-AC4):
 # one term marked on each side of the surviving first marker.
 read -r -d '' MISUSE_HTML_INDEX <<'MANIFEST' || true
+letter	D
 0	delta	1
+letter	E
 0	epsilon	1
 MANIFEST
 
@@ -1995,6 +2200,8 @@ PY
 quarto render examples/marker.qmd --to html > "$WORK/marker-html.log" 2>&1 \
   || { tail -20 "$WORK/marker-html.log" >&2; fail "M04-AC1: marker.qmd failed to render to HTML"; }
 check_html_index_manifest examples/marker.html "$MARKER_HTML_INDEX" "M04-AC1"
+check_letter_sweep examples/marker.html "M07-AC3 (marker)" \
+  $'A\nB\nG'
 check_html_index_links examples/marker.html "M04-AC1"
 check_no_html_residue examples/marker.html "M04-AC1"
 
@@ -2127,6 +2334,8 @@ done
 pass "M04-AC4: content written inside a misused marker survives in every format"
 
 check_html_index_manifest examples/marker-misuse.html "$MISUSE_HTML_INDEX" "M04-AC4"
+check_letter_sweep examples/marker-misuse.html "M07-AC3 (misused marker)" \
+  $'D\nE'
 
 # The content lives inside the marker that PLACES the index, so this pins the
 # splice in place_index — not merely the one in resolve_markers, which the
@@ -2367,7 +2576,7 @@ if section is None:
     print('FAIL: M03-AC5: escaping.html has no generated index section',
           file=sys.stderr)
     sys.exit(1)
-terms = {r['term'] for r in H.index_entries(section)}
+terms = {r['term'] for r in H.entry_records(section)}
 domain = [chr(c) for c in range(0x21, 0x7F)]
 missing = [c for c in domain if c not in terms]
 if missing:
@@ -2378,6 +2587,14 @@ print(f'ok   M03-AC5: all {len(domain)} printable ASCII characters (space '
       f'excluded) are entries of the generated HTML index, {len(terms)} '
       f'entries in all')
 PY
+
+# M07-AC1/AC3 — the heading list for a render whose entries are checked as a
+# SET rather than in order. Derived by hand from the fixture's own domain:
+# every printable ASCII character except space files at the top level, so the
+# non-letters form the leading Symbols group and each letter forms a group
+# holding its upper- and lower-case entries — 27 headings, Symbols then A-Z.
+check_letter_sweep examples/escaping.html "M07-AC1 (escaping)" \
+  $'Symbols\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\nM\nN\nO\nP\nQ\nR\nS\nT\nU\nV\nW\nX\nY\nZ'
 
 # M03-AC3 — the pending tag is filter plumbing and must never survive into
 # rendered output; nor may an author's FORGED copy steal a real mark's anchor
@@ -2415,6 +2632,12 @@ print('ok   M03-AC6: a document with no marks gets no index section and no '
       'anchors')
 PY
 
+# M07-AC5 — and no letter-group heading either: no marks, no groups.
+if grep -qF -- "$HTML_LETTER_CLASS" examples/control.html; then
+  fail "M07-AC5: a document with no marks carries $HTML_LETTER_CLASS"
+fi
+pass "M07-AC5: a document with no marks gets no letter-group heading"
+
 quarto render examples/demo.qmd --to gfm > "$WORK/demo-gfm.log" 2>&1 \
   || { tail -20 "$WORK/demo-gfm.log" >&2; fail "M03-AC6: demo.qmd failed to render to gfm"; }
 [ -s examples/demo.md ] || fail "M03-AC6: examples/demo.md is empty"
@@ -2423,6 +2646,17 @@ for tok in 'qi-index' 'qi-mark-' 'qi-entry-' '\index' '\printindex'; do
     fail "M03-AC6: gfm output must not contain $tok (gfm has no index back-end)"
   fi
 done
+# M07-AC5 — a format with no index back-end builds no index, so it can carry
+# neither the heading class nor the label a heading would show. `Symbols` is
+# the one label that is a word rather than a letter, so it is the one that can
+# be looked for without matching ordinary prose.
+if grep -qF -- "$HTML_LETTER_CLASS" examples/demo.md; then
+  fail "M07-AC5: gfm output must not contain $HTML_LETTER_CLASS"
+fi
+if grep -qF 'Symbols' examples/demo.md; then
+  fail "M07-AC5: gfm output carries a letter-group label"
+fi
+pass "M07-AC5: gfm output carries neither the heading class nor a group label"
 if grep -qE '^# Index$' examples/demo.md; then
   fail "M03-AC6: gfm output must not contain a generated index section"
 fi
@@ -3043,6 +3277,10 @@ rm -rf "$BOOK_OUT" "$BOOK_DIR/.quarto"
 
 check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
   "M05-AC1/AC3" hrefs
+# M07-AC4: the book's B group holds Beta, marked in one.qmd, and Beacon,
+# marked in sub/two.qmd — a group gathers what every chapter contributed.
+check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4" \
+  $'A\nB\nC\nD\nE\nG\nI\nK\nZ'
 
 # The manifest above is the positive half: it says the marker chapter's index
 # is the whole book's. This is the negative half, and the questions only a
@@ -3106,7 +3344,7 @@ if leaked:
 # --- every locator link reaches a real anchor on a real page (AC2) --------
 ids = {page: set(H.all_ids(doc)) for page, doc in docs.items()}
 section = H.find_id(docs[INDEX_PAGE], section_id)
-records = H.index_entries(section)
+records = H.entry_records(section)
 locators = [href for r in records for href in r['locators']]
 broken = []
 for link in H.find_all(section, 'a'):
@@ -3194,7 +3432,7 @@ import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
 doc = H.parse(sys.argv[1])
-records = H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))
+records = H.entry_records(H.find_id(doc, os.environ['HTML_SECTION_ID']))
 by_term = {r['term']: r for r in records}
 rows = [l.rstrip('\n').split('\t') for l in open(sys.argv[2], encoding='utf-8')
         if l.strip()]
@@ -3367,6 +3605,8 @@ PY
   || { tail -30 "$WORK/book-html2.log" >&2; fail "M05 hardening: the second book render failed"; }
 check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (second render)" hrefs
+check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4 (second render)" \
+  $'A\nB\nC\nD\nE\nG\nI\nK\nZ'
 
 # A record for a chapter the book does not list must not reach the index. The
 # planted record is well-formed and names a chapter absent from _quarto.yml,
@@ -3389,6 +3629,8 @@ check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE" 0 \
   "M05 hardening (ghost record)"
 check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (stale chapter ignored)" hrefs
+check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4 (stale chapter)" \
+  $'A\nB\nC\nD\nE\nG\nI\nK\nZ'
 rm -f "$GHOST"
 
 # A record this filter cannot read must cost that chapter's entries and say
@@ -3475,6 +3717,13 @@ check_warning_count "$WORK/book-order-2.log" "$WARN_BOOK_SORT_CONFLICT" 1 \
 # key and the exact count above it would fail under a per-mark rule.
 pass "M06-AC4: one entry sorted two ways in two chapters is reported once on the render that can see both, and the first chapter in book order wins"
 
+# M07-AC1: this render's index is checked entry-by-entry below, so its
+# headings are asserted by the hand-derived sweep instead. `Contested` files
+# under the sort key the FIRST chapter in book order gives it, `Aaa`, not the
+# `Zzz` two later chapters write and not its own printed text — so its group
+# is A. `Early` and `Late` file under their printed text.
+check_letter_sweep "$ORDER_OUT/index.html" "M07-AC1 (book order)" $'A\nE\nL'
+
 printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
 HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$ORDER_OUT" \
   "$WORK/order-index.txt" <<'PY'
@@ -3493,7 +3742,7 @@ if carrying != [INDEX_PAGE]:
           f'on {carrying}, expected only [{INDEX_PAGE!r}]', file=sys.stderr)
     sys.exit(1)
 actual = [H.row(r, hrefs=True)
-          for r in H.index_entries(H.find_id(docs[INDEX_PAGE], section_id))]
+          for r in H.entry_records(H.find_id(docs[INDEX_PAGE], section_id))]
 expected = H.read_manifest(manifest)
 if actual != expected:
     print('FAIL: M05 hardening: the ordering fixture index does not match the '
@@ -3509,7 +3758,7 @@ if actual != expected:
 # resolve like any other, and it is written the way Quarto writes its own
 # links to that page rather than percent-escaped.
 ids = {page: set(H.all_ids(doc)) for page, doc in docs.items()}
-spaced = [href for r in H.index_entries(H.find_id(docs[INDEX_PAGE], section_id))
+spaced = [href for r in H.entry_records(H.find_id(docs[INDEX_PAGE], section_id))
           for href in r['locators'] if ' ' in href]
 if not spaced:
     print('FAIL: M05 hardening: no locator reaches the space-named chapter, '
@@ -3679,11 +3928,15 @@ if grep -q '^(W)' "$WORK/sortkey-html.log"; then
   fail "M06-AC2: examples/sortkey.qmd warned in HTML; every mark in it is well formed"
 fi
 check_html_index_manifest examples/sortkey.html "$SORTKEY_HTML_INDEX" "M06-AC2"
+check_letter_sweep examples/sortkey.html "M07-AC3 (sort keys)" \
+  $'A\nH\nL\nM\nN\nT'
 check_html_index_links examples/sortkey.html "M06-AC2"
 
 quarto render examples/sortkey-twin.qmd --to html > "$WORK/sortkey-twin-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-twin-html.log" >&2; fail "M06-AC2: sortkey-twin.qmd failed to render to HTML"; }
 check_html_index_manifest examples/sortkey-twin.html "$SORTKEY_TWIN_HTML_INDEX" "M06-AC2 (twin)"
+check_letter_sweep examples/sortkey-twin.html "M07-AC3 (sort-key twin)" \
+  $'Symbols\nM\nT\nU\nV'
 
 # The two manifests must disagree at every top-level position and at every
 # sub-entry position, or one of them could be satisfied by an index that
@@ -3701,6 +3954,10 @@ def by_depth(path):
         line = line.rstrip('\n')
         if line.strip():
             fields = line.split('\t')
+            # A letter-group heading is not an entry and has no depth; the
+            # question here is where the ENTRIES sit.
+            if fields[0] == 'letter':
+                continue
             out.setdefault(int(fields[0]), []).append(fields[1])
     return out
 
@@ -3746,7 +4003,12 @@ def rows(path, keep):
     for line in open(path, encoding='utf-8'):
         line = line.rstrip('\n')
         if line.strip():
-            out.append(tuple(line.split('\t')[:keep]))
+            fields = line.split('\t')
+            # Heading rows are dropped: only the HTML manifest has them, and
+            # the claim compared here is about entry order in both back-ends.
+            if fields[0] == 'letter':
+                continue
+            out.append(tuple(fields[:keep]))
     return out
 
 
@@ -3881,6 +4143,8 @@ quarto render examples/sortkey-paths.qmd --to html \
   || { tail -40 "$WORK/sortkey-paths-html.log" >&2; fail "M06-AC2: sortkey-paths.qmd failed to render to HTML"; }
 check_html_index_manifest examples/sortkey-paths.html \
   "$SORTKEY_PATHS_HTML_INDEX" "M06-AC2 (level paths)"
+check_letter_sweep examples/sortkey-paths.html "M07-AC3 (level paths)" \
+  $'Symbols\nB\nH\nQ\nW\nZ'
 check_html_index_links examples/sortkey-paths.html "M06-AC2 (level paths)"
 
 # ---------------------------------------------------------------------------
@@ -4161,7 +4425,7 @@ import htmlindex as H
 doc = H.parse(sys.argv[1])
 qmd = open(sys.argv[2], encoding='utf-8').read()
 want = re.findall(r'\[(term-[0-9a-f]{2})\]\{\.index', qmd)
-rows = H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))
+rows = H.entry_records(H.find_id(doc, os.environ['HTML_SECTION_ID']))
 got = {r['term'] for r in rows}
 missing = [t for t in want if t not in got]
 if missing:
@@ -4175,6 +4439,12 @@ if len(rows) != len(want):
 print(f'ok   M06-AC3: all {len(want)} sort-keyed entries reach the HTML index, '
       f'and it carries no others')
 SORTESCHTMLPY
+
+# The same 27 groups, reached the other way: every entry here prints as
+# `term-XX` and would file under T on its printed text alone, so the groups
+# below are the SORT KEYS' doing — one printable ASCII character each.
+check_letter_sweep examples/sort-escaping.html "M07-AC1 (sort-escaping)" \
+  $'Symbols\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\nM\nN\nO\nP\nQ\nR\nS\nT\nU\nV\nW\nX\nY\nZ'
 
 # Leg 3 — gfm, the format with no index back-end at all (IP2). The twin is the
 # probe with its sort= attributes deleted, so the two renders must come out
@@ -4219,6 +4489,84 @@ if stripped != open(twin_rendered, encoding='utf-8').read():
 print(f'ok   M06-AC3: in gfm all {marks} sort keys change nothing but the one '
       f'attribute carrying each, so none reaches visible text')
 SORTESCGFMPY
+
+
+# ---------------------------------------------------------------------------
+# Manifest 1q — the generated index in examples/letter-groups.html
+# (M07-AC1/AC2). EXHAUSTIVE, same format and same oracle rule as manifest 1e,
+# every group derivation spelled out entry by entry — the same rule manifest
+# 1e's step 5 states, applied here to a fixture built to exercise it:
+#   5a. Group: a top-level entry's label is the first character of the string
+#      it FILES under — its sort key where it has one, its printed text where
+#      it does not — uppercased when that character is an ASCII letter, and
+#      `Symbols` in every other case, the empty filing string included. Groups
+#      rank Symbols first, then A-Z; within a group, and at every level below
+#      the top, step 5's collation is unchanged.
+#
+# Derived per entry, filing string in parentheses:
+#   `` (``)                  empty first level of `!windmill`   -> Symbols
+#   `Quixote` (`!quixote`)   `!!` is the literal `!`             -> Symbols
+#   `#hashtag` (`#hashtag`)  printed text                        -> Symbols
+#   `~tilde` (`~tilde`)      printed text                        -> Symbols
+#   `éclair` (`éclair`)      first byte of a UTF-8 sequence      -> Symbols
+#   `alpha` (`alpha`)        printed text                        -> A
+#   `#1 priority` (`alpha priority`)  sort key                   -> A
+#   `Mango` (`Mango`)        printed text                        -> M
+#   `zebra` (`zebra`)        printed text                        -> Z
+# ---------------------------------------------------------------------------
+read -r -d '' LETTER_GROUPS_INDEX <<'MANIFEST' || true
+letter	Symbols
+0		0
+1	windmill	1
+0	Quixote	1
+0	#hashtag	1
+0	~tilde	1
+0	éclair	1
+letter	A
+0	alpha	1
+0	#1 priority	1
+letter	M
+0	Mango	1
+letter	Z
+0	zebra	1
+MANIFEST
+
+quarto render examples/letter-groups.qmd --to html \
+  > "$WORK/letter-groups-html.log" 2>&1 \
+  || { tail -40 "$WORK/letter-groups-html.log" >&2; fail "M07-AC2: letter-groups.qmd failed to render to HTML"; }
+check_html_index_manifest examples/letter-groups.html "$LETTER_GROUPS_INDEX" \
+  "M07-AC2"
+check_html_index_links examples/letter-groups.html "M07-AC2"
+check_letter_sweep examples/letter-groups.html "M07-AC3 (letter groups)" \
+  $'Symbols\nA\nM\nZ'
+
+# The discriminator the manifest above carries but does not name: `#` and `~`
+# are the first and last of the printable ASCII symbols, and every letter and
+# digit sits between them in character order. They are neighbours in the
+# rendered index ONLY because the letters have been lifted into groups of
+# their own — an index that merely collated by character code would print the
+# whole alphabet between these two rows.
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/letter-groups.html <<'ADJPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+terms = [r['term'] for r in
+         H.entry_records(H.find_id(doc, os.environ['HTML_SECTION_ID']))]
+try:
+    i, j = terms.index('#hashtag'), terms.index('~tilde')
+except ValueError:
+    print('FAIL: M07-AC2: the adjacency probe entries are not in the index',
+          file=sys.stderr)
+    sys.exit(1)
+if j != i + 1:
+    print(f'FAIL: M07-AC2: `#hashtag` and `~tilde` are {j - i} rows apart, so '
+          f'group ranking did not lift the letters out from between them',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M07-AC2: the below-`a` and above-`z` symbol entries are adjacent, '
+      'which only group ranking makes them')
+ADJPY
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.

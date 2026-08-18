@@ -10,3 +10,7 @@ A cross-reference to a target no chapter contributes at all, which must
 render as unlinked text: [Epsilon]{.index see="No Such Entry"}.
 
 The shared term picks up its third locator here: [Shared Term]{.index}.
+
+One more term for the letter group `Beta` opens in the chapter before this
+one: a group gathers what every chapter contributed, not what one chapter
+did. [Beacon]{.index}.

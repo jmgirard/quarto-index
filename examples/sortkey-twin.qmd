@@ -28,6 +28,13 @@ A nobiliary particle is not the surname:
 A surname files ahead of the given name that precedes it:
 [Édouard Manet]{.index}.
 
+A second name filed by its surname, whose printed and sorted positions are
+chosen so that the two orders of this fixture share no position at all —
+without it two of these terms would happen to land in the same slot under
+both orders, and the fixture could no longer tell a sorted index from an
+unsorted one:
+[Ursula K. Le Guin]{.index}.
+
 # One sort key, several marks
 
 The same term marked again, this time with no `sort=` of its own. A sort key

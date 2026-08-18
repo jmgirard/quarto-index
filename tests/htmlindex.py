@@ -217,14 +217,36 @@ XREF_TOKEN = {
     ('see also', False): 'also-plain', ('see also', True): 'also-link',
 }
 
+# The class a letter-group heading carries, and the token its manifest row
+# starts with. An entry row always starts with a depth digit, so the two row
+# shapes cannot be mistaken for one another.
+LETTER_CLASS = 'qi-letter'
+LETTER_TOKEN = 'letter'
+
+
+def letter_label(node):
+    """A group heading's label text.
+
+    Surrounding whitespace is stripped: the HTML writer decides whether a
+    block element's content sits on its own line, and a label that ended up
+    spanning lines could not be a manifest row at all. A label is a single
+    letter or the word Symbols, so nothing meaningful is stripped.
+    """
+    return text(node).strip()
+
 
 def index_entries(section):
-    """Flatten the generated index section into (depth, entry) records.
+    """Flatten the generated index section into records, in rendered order.
 
-    Each record is a dict: `depth` (0 for a top-level entry), `term` (the
-    entry's own text), `locators` (the href of each numbered link, in order),
-    and `xrefs` (one tuple per cross-reference: kind, target text, linked,
-    href or None). Records come out in rendered order.
+    Two record kinds, distinguished by `kind`. An `entry` record is a dict:
+    `depth` (0 for a top-level entry), `term` (the entry's own text),
+    `locators` (the href of each numbered link, in order), and `xrefs` (one
+    tuple per cross-reference: kind, target text, linked, href or None). A
+    `heading` record is a letter-group heading: `label`, the text it shows.
+
+    Headings and lists are read from the section's own children in the order
+    they sit there, so a heading's place among the entries is what the page
+    shows rather than something this function decides.
     """
     records = []
 
@@ -262,6 +284,7 @@ def index_entries(section):
                 xrefs.append((kind, text(targets[0]), bool(links),
                               links[0].attrs.get('href') if links else None))
             records.append({
+                'kind': 'entry',
                 'depth': depth,
                 'term': text(terms[0]),
                 'locators': locators,
@@ -273,17 +296,38 @@ def index_entries(section):
                     read_list(nested, depth + 1)
 
     for top in section.children:
-        if isinstance(top, Node) and top.tag in LIST_TAGS:
+        if not isinstance(top, Node):
+            continue
+        if LETTER_CLASS in classes(top):
+            records.append({'kind': 'heading', 'label': letter_label(top)})
+        elif top.tag in LIST_TAGS:
             read_list(top, 0)
-    if not records:
-        # A section with no list at its top level means the shape changed;
-        # silently returning nothing would let every manifest check pass by
-        # comparing two empty sets.
+    if not any(r['kind'] == 'entry' for r in records):
+        # A generated section always has entries — it is built only where
+        # marks exist — so no entry record means the shape changed, and
+        # silently returning nothing would let every set-shaped check pass by
+        # comparing two empty sets. Raise either way, naming which shape was
+        # found: before letter groups an empty index still emitted an empty
+        # list, so the misplaced-list case was the only one reachable; a
+        # grouped section can now carry no list at all, and that must not be
+        # the quieter failure. Headings alone do not clear this.
         for node in walk(section):
             if node.tag in LIST_TAGS:
                 raise ValueError('the index list is not a direct child of the '
                                  'index section')
+        raise ValueError('the index section carries no entry list at all')
     return records
+
+
+def entry_records(section):
+    """Only the entry records of a generated index section.
+
+    Most checks ask a question about entries — how many, which terms, where
+    the locators point — and a letter-group heading has no term at all. They
+    read through here so that adding headings could not quietly slip an
+    entry-shaped hole into a check that indexes records by term.
+    """
+    return [r for r in index_entries(section) if r['kind'] == 'entry']
 
 
 def row(record, hrefs=False):
@@ -296,13 +340,56 @@ def row(record, hrefs=False):
     locator points, space-separated in order. A count cannot answer the book
     question — three locators on one entry is exactly what a book gets right
     by accident when every one of them points at the wrong chapter.
+
+    A letter-group heading is its own row shape, `letter<TAB><label>`, which
+    no entry row can collide with: an entry row starts with a depth digit.
     """
+    if record['kind'] == 'heading':
+        return f'{LETTER_TOKEN}\t{record["label"]}'
     fields = [str(record['depth']), record['term'],
               ' '.join(record['locators']) if hrefs
               else str(len(record['locators']))]
     for kind, target, linked, _href in record['xrefs']:
         fields.append(f'{XREF_TOKEN[(kind, linked)]} {target}')
     return '\t'.join(fields)
+
+
+def letter_sweep(root):
+    """Every `qi-letter` element in the WHOLE document, in document order.
+
+    Each hit is a dict: `label` (its text), `tag` (the element it is),
+    `classes` (every class it carries), `ident` (its id, or the empty
+    string), and `in_item` (whether it or any ancestor is a list item). The
+    sweep is whole-document rather than section-scoped on purpose — a heading
+    that leaked outside the generated index is exactly what a check reading
+    only the section cannot see — and `in_item` answers the other half: a
+    heading belongs between the entry lists, never inside one.
+
+    `tag`, `classes` and `ident` are reported because WHICH element carries
+    the class is the whole point of the choice: a heading element would copy
+    its text into the table of contents and mint an id into the namespace the
+    generated ids are checked against, which is exactly what a div avoids.
+    Reading only the label could not tell the two apart.
+    """
+    hits = []
+
+    def descend(node, in_item):
+        for child in node.children:
+            if not isinstance(child, Node):
+                continue
+            # The hit's own tag counts: an element that were itself a list
+            # item is inside one, whatever its ancestors are.
+            here = in_item or child.tag == 'li'
+            if LETTER_CLASS in classes(child):
+                hits.append({'label': letter_label(child),
+                             'tag': child.tag,
+                             'classes': sorted(classes(child)),
+                             'ident': child.attrs.get('id', ''),
+                             'in_item': here})
+            descend(child, here)
+
+    descend(root, False)
+    return hits
 
 
 # ---------------------------------------------------------------------------

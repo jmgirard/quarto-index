@@ -74,7 +74,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
       `examples/sortkey-clamp-twin.qmd` (shared keys, each differing from the
       entries' third-level printed text — state that constraint in the fixture
       prose); add the AC1 and AC3 `.tex` checks to `tests/run-tests.sh`, failing.
-- [ ] T2: Report two distinct LaTeX index keys sharing one printed level path,
+- [x] T2: Report two distinct LaTeX index keys sharing one printed level path,
       in the document-wide LaTeX pass beside the existing multi-encap report
       (index.lua:1815 neighborhood), naming both sort keys and the path.
 - [ ] T3: Hand-derive the HTML manifest for `sortkey-clamp.qmd` and add the AC2
@@ -96,6 +96,20 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 
 - 2026-08-18: T1 — both fixtures added and the AC1/AC3 `.tex` checks written, with a by-construction check tying the twin to the fixture (same entries, one shared key per pair, each pair folding to one printed path, each shared key differing from both its entries' third level). The LaTeX render confirms the defect as planned: the fixture emits `alpha!beta!Zed@gamma, delta` and `alpha!beta!Ada@gamma, delta`, plus `mu!nu!Wye@xi, omicron, pi` and `mu!nu!Vee@xi, omicron, pi` — two keys per printed path — and the AC1 count check reports 0 occurrences of the report against 2 wanted. The twin already emits one key per pair, so its `.tex` check passes ahead of the fix.
 
+- 2026-08-18: T2 — the report lands in the document-wide LaTeX pass beside the multi-encap one, once per contested printed path, naming every key filed under it; `index_argument` now also returns the printed and filing paths it emitted. Full suite green (143 checks), the two AC1 reports firing as hand-derived and no other fixture newly warning.
+
 ## Decisions
+
+### 2026-08-18: the report compares filing paths, not emitted arguments
+
+Two entries contest one printed path when the index tool reads two different
+keys for it, which is not the same as their two `\index` arguments differing
+as strings: a level whose resolved key equals its own printed text emits
+`key@text` where the key was written for the unfolded level and a bare `text`
+where it was not, and those two arguments are one key to the index tool.
+Comparing arguments would report that pair as a collision it is not. So
+`index_argument` returns the filing path it actually emitted — per level, the
+key where it wrote a sort field and the clamped printed text where it did not
+— and the report compares those.
 
 ## Review

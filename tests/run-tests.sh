@@ -1691,6 +1691,52 @@ read -r -d '' MARKER_HTML_INDEX <<'MANIFEST' || true
 0	gamma	1
 MANIFEST
 
+# ---------------------------------------------------------------------------
+# Manifest 1m — every sort key examples/sortkey.qmd declares (M06-AC1).
+# Derived BY HAND from the fixture, and then checked against the fixture BY
+# CONSTRUCTION: the check below extracts every `sort="..."` value the file
+# actually carries and fails unless the two sets are equal. A hand-list alone
+# would let a sort key added to the fixture go unprobed while the suite still
+# reported a pass.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_KEYS <<'MANIFEST' || true
+Hague
+Angstrom
+ten Downing Street
+Neumann
+Manet
+!Turing
+!Neumann
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 1n — the order and nesting examples/sortkey.pdf must print its
+# index in (M06-AC1). Format: <level><TAB><term>, top to bottom, level 0 for
+# a top-level entry.
+#
+# Derived by hand: each entry files under its sort key where it has one
+# (Manifest 1m), under its own printed text where it does not, and the order
+# is the collation the README documents — ASCII case folded, then character
+# code. The sort keys in order are therefore Angstrom, Hague, mathematicians
+# (which declares none of its own), Manet, Neumann, ten Downing Street. The
+# two
+# sub-entries under `mathematicians` file under Neumann and Turing, which
+# reverses the order their printed text alone would give them.
+#
+# This order differs from the twin fixture's at every top-level position, so
+# the check cannot pass on an index that ignored the sort keys.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_PDF_OUTLINE <<'MANIFEST' || true
+0	Ångström
+0	The Hague
+0	Édouard Manet
+0	mathematicians
+1	von Neumann
+1	Alan Turing
+0	von Neumann
+0	10 Downing Street
+MANIFEST
+
 # Manifest 1j — the \index{} commands examples/marker.tex must carry (M04-AC2).
 read -r -d '' MARKER_ENTRIES <<'MANIFEST' || true
 2	alpha
@@ -3223,6 +3269,129 @@ check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" 2 \
   "M05 hardening"
 rm -f "$ORDER_DIR/.quarto/$STORE_DIR"
 pass "M05 hardening: a store that cannot be written is reported per chapter and the book still renders"
+
+# ---------------------------------------------------------------------------
+# M06-AC1 — sort keys, end to end in the PDF.
+#
+# The manifest is checked against the fixture BY CONSTRUCTION first: every
+# `sort="..."` value the fixture carries must be a manifest row and every
+# manifest row must be in the fixture. Without that, a sort key added to the
+# fixture later would simply go unprobed while this section still passed.
+#
+# The printed order is then read with tests/pdfindex.py rather than out of
+# pdftotext's text output: a two-column index interleaves the columns there,
+# so that output's order is not the index's — see that module's header.
+# ---------------------------------------------------------------------------
+printf '%s\n' "$SORTKEY_KEYS" > "$WORK/sortkeys.txt"
+python3 - examples/sortkey.qmd "$WORK/sortkeys.txt" <<'SORTKEYPY'
+import re, sys
+source = open(sys.argv[1], encoding='utf-8').read()
+declared = sorted(re.findall(r'\bsort="([^"]*)"', source))
+listed = sorted(l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8')
+                if l.strip())
+if declared != listed:
+    print('FAIL: M06-AC1: the sort-key manifest and the fixture disagree.',
+          file=sys.stderr)
+    print(f'  only in the fixture:  {sorted(set(declared) - set(listed))}',
+          file=sys.stderr)
+    print(f'  only in the manifest: {sorted(set(listed) - set(declared))}',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC1: the manifest names every one of the {len(declared)} '
+      f'sort keys examples/sortkey.qmd declares, and no others')
+SORTKEYPY
+
+# The twin is the fixture with every sort= attribute deleted and NOTHING else
+# changed, so a difference between the two indexes is caused by the sort keys
+# alone. Asserted rather than assumed: a twin edited by hand could drift into
+# a fixture that differs for some other reason.
+python3 - examples/sortkey.qmd examples/sortkey-twin.qmd <<'TWINPY'
+import re, sys
+source = open(sys.argv[1], encoding='utf-8').read()
+twin = open(sys.argv[2], encoding='utf-8').read()
+if re.sub(r' sort="[^"]*"', '', source) != twin:
+    print('FAIL: M06-AC1/AC2: examples/sortkey-twin.qmd is not '
+          'examples/sortkey.qmd with its sort= attributes removed',
+          file=sys.stderr)
+    sys.exit(1)
+if re.search(r'\bsort="', twin):
+    print('FAIL: M06-AC1/AC2: the twin still carries a sort= attribute',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M06-AC1/AC2: the twin fixture is the sort-key fixture with every '
+      'sort= attribute deleted, and nothing else')
+TWINPY
+
+quarto render examples/sortkey.qmd --to pdf > "$WORK/sortkey-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-pdf.log" >&2; fail "M06-AC1: sortkey.qmd failed to render to PDF"; }
+[ -s examples/sortkey.pdf ] || fail "M06-AC1: examples/sortkey.pdf is empty"
+# A sort key must not cost the author a warning: every mark in this fixture is
+# well formed, so a clean render is part of the criterion.
+if grep -q '^(W)' "$WORK/sortkey-pdf.log"; then
+  grep '^(W)' "$WORK/sortkey-pdf.log" >&2
+  fail "M06-AC1: examples/sortkey.qmd warned; every mark in it is well formed"
+fi
+
+printf '%s\n' "$SORTKEY_PDF_OUTLINE" > "$WORK/sortkey-outline.txt"
+python3 - examples/sortkey.pdf "$WORK/sortkey-outline.txt" <<'OUTLINEPY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+
+entries = pdfindex.read(sys.argv[1])
+if not pdfindex.columns_carry_top_level(entries):
+    print('FAIL: M06-AC1: a column of the printed index carries no top-level '
+          'entry, so pdfindex cannot read its indent levels', file=sys.stderr)
+    sys.exit(1)
+actual = pdfindex.outline(entries)
+expected = []
+for line in open(sys.argv[2], encoding='utf-8'):
+    line = line.rstrip('\n')
+    if line.strip():
+        level, term = line.split('\t', 1)
+        expected.append((int(level), term))
+if actual != expected:
+    print('FAIL: M06-AC1: the printed index is not in the order the manifest '
+          'derives.', file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        a = actual[i] if i < len(actual) else None
+        e = expected[i] if i < len(expected) else None
+        print(f'{"  " if a == e else "->"} {i}: got {a!r} want {e!r}',
+              file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC1: the compiled PDF prints all {len(expected)} index '
+      f'entries in the order and nesting their sort keys derive')
+OUTLINEPY
+
+# The twin proves the ordering above is the sort keys' doing and not something
+# the fixture would have done anyway: the same terms, no sort keys, and an
+# order that must differ at every top-level position.
+quarto render examples/sortkey-twin.qmd --to pdf > "$WORK/sortkey-twin-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-twin-pdf.log" >&2; fail "M06-AC1: sortkey-twin.qmd failed to render to PDF"; }
+python3 - examples/sortkey.pdf examples/sortkey-twin.pdf <<'DIFFPY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+
+keyed = [t for lv, t in pdfindex.outline(pdfindex.read(sys.argv[1]))
+         if lv == 0]
+twin = [t for lv, t in pdfindex.outline(pdfindex.read(sys.argv[2]))
+        if lv == 0]
+if sorted(keyed) != sorted(twin):
+    print('FAIL: M06-AC1: the twin indexes a different set of terms, so the '
+          'two orders are not comparable', file=sys.stderr)
+    print(f'  keyed: {keyed}\n  twin:  {twin}', file=sys.stderr)
+    sys.exit(1)
+same = [i for i, (a, b) in enumerate(zip(keyed, twin)) if a == b]
+if same:
+    print(f'FAIL: M06-AC1: sort keys left top-level position(s) {same} '
+          'unchanged, so this fixture cannot tell a sorted index from an '
+          'unsorted one', file=sys.stderr)
+    print(f'  keyed: {keyed}\n  twin:  {twin}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC1: removing the sort keys moves every one of the '
+      f'{len(keyed)} top-level entries, so the printed order is theirs')
+DIFFPY
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.

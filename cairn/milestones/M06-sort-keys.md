@@ -113,7 +113,7 @@ what prints; the sort key carried through the book sidecar record with
       write `sortkey@printed` per level, keeping `LATEX_LITERAL`'s `"@`
       quoting (`index.lua:92`) for every `@` the extension does not itself
       write as the separator.
-- [ ] T3: `examples/sortkey.qmd` fixture (multi-level entries, a
+- [x] T3: `examples/sortkey.qmd` fixture (multi-level entries, a
       second-level-only sort key, terms whose sort order differs from printed
       order) and its sort-stripped twin; PDF check in `tests/run-tests.sh`
       with the manifest derived from the fixture by construction.
@@ -147,6 +147,9 @@ what prints; the sort key carried through the book sidecar record with
 - 2026-08-17: implement gate — user chose to proceed on the `ip-touching` tripwire without escalation, and chose format-neutral scope for the sort-key conflict warning over index-building formats only.
 - 2026-08-17: T1 done — `sort=` parsed with `entry=`'s level syntax, aligned per level with printed-text fallback, plus `levels_key`, `sort_levels`, `register_sort`/`sort_for`, `clamp_sort`, and a shared `derive_levels` used by both Span passes.
 - 2026-08-17: T1 minor amendment — parse moved into a new `CollectSort` pass ahead of the emitting pass; task text updated, rationale in this file's Decisions.
+- 2026-08-17: T3 done — `examples/sortkey.qmd` + its derived twin, manifests 1m/1n, and four PDF checks; the manifest is checked against the fixture by construction and the twin proves the order is the sort keys' doing. Suite 79 -> 83 checks.
+- 2026-08-17: T3 discovered sub-task (minor amendment) — `tests/pdfindex.py`: a two-column index interleaves under `pdftotext`/`-layout`, so printed order is read from `-bbox-layout` word positions instead; without it the AC1 check could not tell a sorted index from an unsorted one.
+- 2026-08-17: T3 fixture repaired at authoring — the discrimination check found `von Neumann` occupying the same position with and without sort keys; a sixth keyed term (`Édouard Manet`) makes the two orders differ at every top-level position.
 - 2026-08-17: T2 done — `index_argument` writes makeindex `sortkey@printed` per level, the separator `@` being the only unquoted one; all 79 existing suite checks pass unchanged.
 - 2026-08-17: plan-gate criteria audit ran in **full** mode (user-facing tier), fresh-context [O] reader: 11 findings + 4 coverage gaps returned; all fixed in the criteria before writing (AC1 hand-list proxy, AC1 boundary/region wording, AC2 top-level-only domain, AC3 form-list proxy + LaTeX-only scope + non-printing sort key, AC4 single-document probe axis, the byte-identity criterion's unenumerable domain + misdescribed byte-diff.sh scope, the README criterion's instrument-bound converse claim + README_HTML_CLAIMS reachability conflict; gaps 1-3 folded into AC3/AC1/AC2, gap 4 posed at the gate). Criteria then renumbered when the byte-identity criterion merged into the verify-slot criterion to clear the >7 sizing tripwire; the merged wording was re-asked the audit's questions and passes (both halves name enumerating procedures).
 - 2026-08-17: plan gate chose a separate `sort=` span attribute over an inline per-level delimiter inside `entry=` because D-001 forbids raw back-end code in mark values, `@` is a documented literal in `entry=` today (README.md:164), and README.md:164-166 already commits to separate span attributes; falsified by an authoring case per-level alignment cannot express that an inline delimiter can.

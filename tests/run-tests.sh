@@ -5125,6 +5125,60 @@ check_warning_count "$WORK/sortkey-clamp-latex.log" \
 pass "M09-AC1: each pair of entries contesting one printed level path is reported once, naming both sort keys and the path"
 
 # ---------------------------------------------------------------------------
+# Manifest 1s — the generated index in examples/sortkey-clamp.html (M09-AC2).
+# EXHAUSTIVE, same row format as manifest 1e, and DERIVED FOR THESE ROWS: the
+# HTML back-end applies no level ceiling, so the four entries the LaTeX side
+# folds into two stay four here, at the level paths they were written with.
+#
+# Ordering is derived through the SORT KEYS, which is what orders these rows —
+# their printed text would give the opposite order in both groups:
+#   `alpha` (`alpha`)  no key at this path, so its printed text  -> group A
+#     `beta` (`beta`)  likewise
+#       `gamma, delta` (`alpha!beta!Ada`) declared by its own mark
+#       `gamma`        (`alpha!beta!Zed`) declared by the four-level mark
+#         -> `Ada` before `Zed`, which is `gamma, delta` before `gamma`
+#         `delta`      no key; the only child of `gamma`
+#   `mu` (`mu`), `nu` (`nu`)  no key at either path            -> group M
+#       `xi, omicron` (`mu!nu!Vee`) declared by the four-level mark
+#       `xi`          (`mu!nu!Wye`) declared by the five-level mark
+#         -> `Vee` before `Wye`, which is `xi, omicron` before `xi`
+#         `pi`, and `omicron` > `pi`: each the only child of its parent
+#
+# Locators: one per mark, on the entry the mark was written for — the deepest
+# level of each of the four paths. Every level above them is a parent no mark
+# indexes on its own, so it carries none.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_CLAMP_HTML_INDEX <<'MANIFEST' || true
+letter	A
+0	alpha	0
+1	beta	0
+2	gamma, delta	1
+2	gamma	0
+3	delta	1
+letter	M
+0	mu	0
+1	nu	0
+2	xi, omicron	0
+3	pi	1
+2	xi	0
+3	omicron	0
+4	pi	1
+MANIFEST
+
+quarto render examples/sortkey-clamp.qmd --to html \
+  > "$WORK/sortkey-clamp-html.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-clamp-html.log" >&2; fail "M09-AC2: sortkey-clamp.qmd failed to render to HTML"; }
+# The report is the LaTeX back-end's alone: the fold is the index tool's
+# ceiling, not an index's, and the entries it collides are four distinct ones
+# here. A report that fired in every format would be telling an HTML author to
+# fix something that is not wrong.
+check_warning_count "$WORK/sortkey-clamp-html.log" "$WARN_CLAMP_SPLIT" 0 \
+  "M09-AC2"
+check_html_index_manifest examples/sortkey-clamp.html \
+  "$SORTKEY_CLAMP_HTML_INDEX" "M09-AC2"
+check_html_index_links examples/sortkey-clamp.html "M09-AC2"
+
+# ---------------------------------------------------------------------------
 # M09-AC3 — the same entries with one shared key per pair: nothing to report,
 # one index-tool key per pair, and (below, with the PDF) one printed entry.
 # ---------------------------------------------------------------------------

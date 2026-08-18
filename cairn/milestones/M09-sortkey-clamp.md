@@ -77,7 +77,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 - [x] T2: Report two distinct LaTeX index keys sharing one printed level path,
       in the document-wide LaTeX pass beside the existing multi-encap report
       (index.lua:1815 neighborhood), naming both sort keys and the path.
-- [ ] T3: Hand-derive the HTML manifest for `sortkey-clamp.qmd` and add the AC2
+- [x] T3: Hand-derive the HTML manifest for `sortkey-clamp.qmd` and add the AC2
       check; the derivation comment is the manifest's oracle, so it is written
       for these rows rather than borrowed from another manifest.
 - [ ] T4: Build the twin's PDF and pin that each pair's entry prints once,
@@ -97,6 +97,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 - 2026-08-18: T1 — both fixtures added and the AC1/AC3 `.tex` checks written, with a by-construction check tying the twin to the fixture (same entries, one shared key per pair, each pair folding to one printed path, each shared key differing from both its entries' third level). The LaTeX render confirms the defect as planned: the fixture emits `alpha!beta!Zed@gamma, delta` and `alpha!beta!Ada@gamma, delta`, plus `mu!nu!Wye@xi, omicron, pi` and `mu!nu!Vee@xi, omicron, pi` — two keys per printed path — and the AC1 count check reports 0 occurrences of the report against 2 wanted. The twin already emits one key per pair, so its `.tex` check passes ahead of the fix.
 
 - 2026-08-18: T2 — the report lands in the document-wide LaTeX pass beside the multi-encap one, once per contested printed path, naming every key filed under it; `index_argument` now also returns the printed and filing paths it emitted. Full suite green (143 checks), the two AC1 reports firing as hand-derived and no other fixture newly warning.
+- 2026-08-18: T3 — the HTML manifest is derived for these rows, ordering spelled out through each level's sort key (Ada before Zed puts `gamma, delta` ahead of `gamma`; Vee before Wye puts `xi, omicron` ahead of `xi`), which is the opposite of what the printed text would give in both groups. Rendered index matched the hand-derived 14 rows first time; the report fires 0 times in HTML. Suite 145 checks green.
 
 ## Decisions
 

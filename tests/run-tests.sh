@@ -2634,6 +2634,124 @@ print(f'ok   M08-AC1: all {len(local)} link(s) inside the minted index section '
 PY
 
 # ---------------------------------------------------------------------------
+# M08-AC2 — a cross-reference target naming its own entry. Reported and
+# dropped, and then the term indexes as usual: the positive residue is asserted
+# too, because an implementation that simply dropped the whole mark would
+# satisfy every absence clause here while losing the term — the IP2 corruption
+# this milestone exists to prevent.
+#
+# Four shapes: entry= single-level, entry= two-level, entry derived from the
+# visible text, and both attributes with only the see= self-targeting. A fifth
+# mark cross-references a DIFFERENT entry and must be untouched, which is what
+# tells this check from one that drops every target.
+# ---------------------------------------------------------------------------
+WARN_SELF_XREF='names the entry it is written on'
+
+for fmt in html latex gfm; do
+  quarto render examples/self-xref.qmd --to $fmt \
+    > "$WORK/self-xref-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/self-xref-$fmt.log" >&2; fail "M08-AC2: self-xref.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_SELF_XREF" 4 "M08-AC2"
+  # The both-attributes report is about the MARK, not about its targets, so
+  # dropping one of the two must not silence it.
+  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_BOTH" 1 "M08-AC2"
+done
+pass "M08-AC2: four self-referential targets each report once, in HTML, LaTeX and gfm, and the both-attributes report still fires"
+
+python3 - examples/self-xref.tex <<'PY'
+import sys
+src = open(sys.argv[1], encoding='utf-8').read()
+errs = []
+# The three marks whose only target was dropped index plainly: one \index each,
+# on their own key, carrying no encap at all.
+for want in ('\\index{Cats}', '\\index{Birds!Owls}', '\\index{ferrets}'):
+    # Exact: the encap form of the same key is `\index{Cats|see{...}}`, whose
+    # `|` sits where this string's closing brace is, so it cannot match here.
+    n = src.count(want)
+    if n != 1:
+        errs.append(f'expected exactly one {want}, found {n}')
+# The fourth keeps the target that was NOT self-referential, and only that one.
+if src.count('\\index{Dogs|seealso{Pets}}') != 1:
+    errs.append('the surviving see-also target on the both-attributes mark was '
+                'not emitted as its only encap')
+if 'quartoindexseeboth' in src:
+    errs.append('the both-targets command was emitted though one target was '
+                'dropped')
+# The control: a target naming a different entry is untouched.
+if src.count('\\index{Lynxes|see{Cats}}') != 1:
+    errs.append('the cross-reference to a DIFFERENT entry was not emitted; '
+                'this check cannot tell a self-reference from any reference')
+# No self-encap survives anywhere.
+for bad in ('\\index{Cats|see{Cats}}', '\\index{Birds!Owls|seealso{Birds: Owls}}',
+            '\\index{ferrets|see{ferrets}}', '\\index{Dogs|see{Dogs}}'):
+    if bad in src:
+        errs.append(f'a self-referential encap survived: {bad}')
+if errs:
+    print('FAIL: M08-AC2: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC2: three self-targeting marks index plainly, the fourth keeps '
+      'only its surviving see-also, and a target naming another entry is '
+      'untouched')
+PY
+
+python3 - examples/self-xref.html <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse('examples/self-xref.html')
+section = H.index_section(doc)
+errs = []
+
+records = H.entry_records(section)
+by_term = {r['term']: r for r in records}
+# The three marks whose only target was dropped are ordinary entries again:
+# each carries at least one locator link back into the text.
+for term in ('Cats', 'Owls', 'ferrets'):
+    rec = by_term.get(term)
+    if rec is None:
+        errs.append(f'entry {term!r} is not in the index at all')
+    elif not rec['locators']:
+        errs.append(f'entry {term!r} carries no locator')
+# The fourth carries its surviving cross-reference and, per the documented
+# semantics, no locator.
+dogs = by_term.get('Dogs')
+if dogs is None:
+    errs.append("entry 'Dogs' is not in the index")
+else:
+    if dogs['locators']:
+        errs.append("entry 'Dogs' carries a locator though it still has a "
+                    "cross-reference")
+    targets = [target for _kind, target, _linked, _href in dogs['xrefs']]
+    if targets != ['Pets']:
+        errs.append(f"entry 'Dogs' should carry exactly its surviving see-also "
+                    f"target, carries {targets}")
+# The control: a target naming a DIFFERENT entry is untouched and still links.
+lynxes = by_term.get('Lynxes')
+if lynxes is None:
+    errs.append("entry 'Lynxes' is not in the index")
+elif [t for _k, t, _l, _h in lynxes['xrefs']] != ['Cats']:
+    errs.append("the cross-reference to a different entry did not survive; "
+                "this check cannot tell a self-reference from any reference")
+
+# No link anywhere inside the index points at the entry that contains it.
+for record in records:
+    own = record['id']
+    if not own:
+        continue
+    hrefs = list(record['locators'])
+    hrefs += [href for _k, _t, _l, href in record['xrefs'] if href]
+    if ('#' + own) in hrefs:
+        errs.append(f'entry {record["term"]!r} links to itself')
+
+if errs:
+    print('FAIL: M08-AC2: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC2: the three dropped-target entries carry locators again, '
+      'the both-attributes entry keeps only its see-also, the control '
+      'cross-reference survives, and no entry links to itself')
+PY
+
+# ---------------------------------------------------------------------------
 # M04-AC4 — a marker in a document with no index marks. The residue claim is
 # made at its strongest here: the same document with the marker deleted by
 # hand renders byte-for-byte identically, in every format. An empty div, an

@@ -680,6 +680,28 @@ local function Span(span)
   -- text whatever format this is, and the both-attributes case would otherwise
   -- warn twice about the same entry.
   warn_empty_levels(levels, context)
+  -- A cross-reference target naming the entry it is written on says nothing:
+  -- "Cats, see Cats" in print, and in HTML a link from an entry to itself. The
+  -- target is dropped and the mark then indexes as usual — dropping the whole
+  -- mark would lose the term, which is the corruption IP2 forbids, and keeping
+  -- the target would leave the useless output in place.
+  --
+  -- Compared on the PRINTED levels rather than on the filing key: a sort key
+  -- never appears in the index a reader reads, so a target matching the printed
+  -- text is a self-reference whatever the mark files under. Before the back-end
+  -- branch, like every other judgement about what the author wrote.
+  local own_key = levels_key(levels)
+  local kept = {}
+  for _, xref in ipairs(xrefs) do
+    if levels_key(xref.levels) == own_key then
+      warn(("%s= on %s names the entry it is written on; a cross-reference to "
+            .. "itself says nothing, so it is dropped and the term is indexed "
+            .. "as usual"):format(xref.kind.attr, context))
+    else
+      kept[#kept + 1] = xref
+    end
+  end
+  xrefs = kept
   -- Resolved by the collect pass, which has already seen every mark of this
   -- entry: whichever mark declared the sort key, every mark of the entry files
   -- under it.

@@ -111,9 +111,9 @@ author reads or markup an HTML reader receives.
       the AC1 check, failing.
 - [x] T5: Mint the HTML index section id against the taken-id table in
       `html_index_blocks`.
-- [ ] T6: Add `examples/self-xref.qmd` with the four self-reference shapes; add
+- [x] T6: Add `examples/self-xref.qmd` with the four self-reference shapes; add
       the AC2 checks, failing.
-- [ ] T7: Detect a cross-reference target equal to the mark's own entry levels
+- [x] T7: Detect a cross-reference target equal to the mark's own entry levels
       before the back-end branch; warn and drop that target.
 - [ ] T9: Update README.md for the three new behaviors — the misplaced marker
       class, the emptied container, and the dropped self-reference — and correct
@@ -143,6 +143,8 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: T1's gfm phrase check compared unwrapped text against a wrapped writer's output; the check now collapses whitespace before comparing, the token checks still reading raw source. Suite green: 133 checks.
 - 2026-08-18: T4 — examples/id-collision.qmd claims qi-index through qi-index-4 in the five spellings taken_identifiers reads (Pandoc attribute; raw-block double-quoted, unquoted and uppercase ID=; raw-inline single-quoted); htmlindex.py gained index_section (locates the section by its Index heading and returns the wrapper section Quarto puts the id on) and duplicate_ids (prefix-scoped, so Quarto's own furniture is not this milestone's promise). Verified failing first: the render carried qi-index on two elements and the section took a claimed name.
 - 2026-08-18: T5 — mint_section_id prefers the bare qi-index and otherwise counts past taken names, so a document with no collision keeps the id it has always had; the fixture's section now mints qi-index-5 and no qi- id is carried twice. Suite green: 135 checks.
+- 2026-08-18: T6 — examples/self-xref.qmd carries the four self-reference shapes plus a fifth mark cross-referencing a DIFFERENT entry, the control that tells this check from one dropping every target. Verified failing first: the .tex carried \\index{Cats|see{Cats}}, \\index{Birds!Owls|seealso{Birds: Owls}}, \\index{ferrets|see{ferrets}} and \\index{Dogs|quartoindexseeboth{Dogs}{Pets}}.
+- 2026-08-18: T7 — the self-target filter sits after warn_empty_levels and before the back-end branch, comparing levels_key of the target against levels_key of the mark's own levels, so it is format-neutral and compares printed text rather than the filing key. The four reports fire in all three formats; the .tex now carries the three plain keys, Dogs with only its surviving seealso, and Lynxes untouched. Suite green: 138 checks.
 ## Decisions
 
 ## Review

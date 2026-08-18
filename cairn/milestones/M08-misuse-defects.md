@@ -1,6 +1,6 @@
 # M08: Reachable mark and marker misuse defects
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -94,54 +94,49 @@ author reads or markup an HTML reader receives.
 
 ## Tasks
 
-- [x] T1: Add `examples/marker-sites.qmd` with the three misplaced-class sites
-      and the two sole-content nested containers; add the AC3/AC4 checks to
-      `tests/run-tests.sh`, failing. A fresh fixture, not an extension of
-      `marker-misuse.qmd`: run-tests.sh:2308 pins the duplicate-marker message
-      *with its top-level block position*, and :2323 asserts the nested-marker
-      warning fires exactly once.
-- [x] T2: Report the marker class on any block that is not a Div and on any
-      inline span, format-neutrally, naming the site kind; leave the element
-      itself untouched.
-- [x] T3: Report that stripping a nested marker left its container with no
-      content; keep the container.
-- [x] T4: Add `examples/id-collision.qmd` with the five id claims; give
-      `tests/htmlindex.py` a heading-based index-section lookup (reading the id
-      off the `<h1>`'s wrapper `<section>`) and a duplicate-`qi-`-id scan; add
-      the AC1 check, failing.
-- [x] T5: Mint the HTML index section id against the taken-id table in
-      `html_index_blocks`.
-- [x] T6: Add `examples/self-xref.qmd` with the four self-reference shapes; add
-      the AC2 checks, failing.
-- [x] T7: Detect a cross-reference target equal to the mark's own entry levels
-      before the back-end branch; warn and drop that target.
-- [x] T9: Update README.md for the three new behaviors — the misplaced marker
-      class, the emptied container, and the dropped self-reference — and correct
-      the sentence at README.md:329 claiming the section id is "fixed rather
-      than minted", which AC1 falsifies; pin each new sentence in the suite's
-      normative README arrays, since a documented claim owes a test.
-- [x] T10: Add `examples/marker-shapes.qmd` — a container holding a marker that
-      HAS content, a top-level marker wrapping a nested one, a footnote whose
-      only content is a marker, and the marker class in the document title —
-      with checks pinning which reports fire and which must not (F1, F2, F3,
-      F4, F11). A separate fixture, so `marker-sites.qmd`'s placement counts
-      are undisturbed.
-- [x] T11: F1 — report an emptied container only when every marker in the list
-      is itself empty; a marker with content leaves its content behind.
-- [x] T12: F2 — do not report the top-level block when it is itself a marker;
-      `resolve_markers` owns it and it reaches no output.
-- [x] T13: F4 — walk `doc.blocks`, not `doc`: metadata is not a placement site.
-- [x] T14: F3 — report a footnote emptied by a nested marker; record any
-      container kind still uncovered as a ROADMAP row rather than over-promising.
-- [x] T15: F5 — narrow the both-attributes warning and its README sentence,
-      both of which still claim every usable target is kept.
-- [x] T16: F6, F9 — update DESIGN.md's Architecture prose for the two new
-      reports, the dropped self-target and the minted section id; fix
-      README.md:314's unconditional `qi-index` claim.
-- [x] T8: Revert each of the four fixes alone and record the failing check and
-      its message in the work log. Process evidence, deliberately mapped to no
-      criterion: an acceptance criterion binding the harness rather than the
-      emitted output is the instrument-bound shape the plan audit rejected.
+<!-- Positions 1-7 are load-bearing: the Coverage map above indexes tasks
+     positionally. Detail for a finished task lives in the work log. -->
+
+- [x] T1: `examples/marker-sites.qmd` (three misplaced-class sites, two
+      sole-content nested containers) + the AC3/AC4 checks, failing. A fresh
+      fixture: run-tests.sh:2308 pins the duplicate-marker message with its
+      block position and :2323 pins the nested count.
+- [x] T2: Report the marker class on any non-Div block and any inline span,
+      naming the site kind; leave the element untouched.
+- [x] T3: Report a nested marker that leaves its container with no content;
+      keep the container.
+- [x] T4: `examples/id-collision.qmd` (five id claims) + `index_section` and
+      `duplicate_ids` in `tests/htmlindex.py` + the AC1 check, failing.
+- [x] T5: Mint the HTML index section id against the taken-id table.
+- [x] T6: `examples/self-xref.qmd` (four self-reference shapes + a control)
+      + the AC2 checks, failing.
+- [x] T7: Drop a cross-reference target equal to the mark's own entry levels,
+      before the back-end branch.
+- [x] T9: README for the three new behaviors + the falsified section-id
+      sentence; pin each in the suite's normative arrays.
+- [x] T10: `examples/marker-shapes.qmd` — the shapes the reports must NOT fire
+      on, beside the one they must (F1-F4, F11).
+- [x] T11: F1 — report an emptied container only when every marker is empty.
+- [x] T12: F2 — do not check the top-level block when it is itself a marker.
+- [x] T13: F4 — walk `doc.blocks`, not `doc`.
+- [x] T14: F3 — report an emptied footnote; ROADMAP row for what is uncovered.
+- [x] T15: F5 — narrow the both-attributes warning and its README sentence.
+- [x] T16: F6, F9 — DESIGN Architecture prose; README's `qi-index` claim.
+- [ ] T17: R1/R2 root cause — `check_emptied` skips any marker at every depth,
+      and "leaves nothing behind" becomes recursive: a marker whose content
+      itself empties contributes nothing.
+- [ ] T18: R3 — report an emptied definition-list definition; re-word the
+      ROADMAP row to name what is and is not covered.
+- [ ] T19: R1/R2/R5 — fixtures and checks for the two shapes that fooled the
+      report, each naming the container it is about.
+- [ ] T20: R6/R7/R8 — DESIGN prose: the report's real reach, the self-target
+      caveat, the marker exclusion, the line wrap.
+- [ ] T21: R9/R10 — pin the reworded both-attributes tail; fix the stale
+      sentence-count in the README-pin check message.
+- [x] T8: Revert each fix alone and record the failing check. Process evidence,
+      deliberately mapped to no criterion: a criterion binding the harness
+      rather than the emitted output is the instrument-bound shape the plan
+      audit rejected.
 
 ## Work log
 
@@ -174,6 +169,7 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: the first revert-probe run of these four fixes destroyed them — `git checkout -- index.lua` inside the probe restores HEAD, and the fixes were not yet committed. Reapplied and re-verified before committing; the probe is re-run after the commit, which is the only order that works.
 - 2026-08-18: discrimination for the four review fixes, each reverted alone after committing. F1: "M08-AC4 (F1/F2): expected 1 occurrence(s) of <<was the only content of the>> ... got 2". F2: the same check, same count. F3: "M08-AC4 (F3): the emptied container was not reported as a footnote". F4: "M08-AC3 (F4): expected 0 occurrence(s) of <<marker class is written on>> ... got 1". All four fenced; tree clean after each.
 - 2026-08-18: re-review — tests/run-tests.sh --self-test clean, 156 checks (153 before the return). Status back to review.
+- 2026-08-18: REVIEW RETURN (defect return 2). No acceptance criterion failed as written; the maintainer judged R1/R2 load-bearing at the gate. Root cause named: check_emptied predicts the strip from the pre-strip shape and is called on marker divs as well as containers, so it reported a marker div while skipping the container that was genuinely emptied, and reported a container that kept its content. Actioned: R1, R2, R3, R5, R6, R7, R8, R9, R10. Deferred: R4 (a marker class in subtitle/abstract is reported nowhere) and R11 (no M08 fixture is in README's tour) — ROADMAP rows. Tasks T17-T21 added; approved at the gate's disposition chip.
 ## Decisions
 
 ## Review

@@ -1,6 +1,6 @@
 # M08: Reachable mark and marker misuse defects
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -173,6 +173,8 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: T17/T18 — `all_empty_markers` became `empties`, recursive: a list empties when every element is a marker whose content is empty or itself empties, which is what stripping actually does. `check_emptied` refuses any marker at any depth, so the top-level-only guard is gone. DefinitionList branch added. The probe fixture now reports exactly the emptied div, footnote and definition, and stays silent on the container that keeps a marker's content, the container that keeps its own text, and every marker div.
 - 2026-08-18: T19 — marker-shapes.qmd gained the two shapes that fooled the previous fix (a container keeping text beside a marker-wrapping-marker; a container emptied through two marker levels) and a definition; the checks now assert one report per container KIND, so a count can no longer pass while the report names the wrong element.
 - 2026-08-18: T20/T21 — DESIGN records the report's real reach (any attributed inline, not only spans), the metadata exclusion, the recursive emptying rule, the marker exclusion, and the self-target caveat that clamped and empty-level cases survive; WARN_BOTH now pins the whole reworded message rather than its prefix; the README-pin check message no longer claims all stale sentences were falsified by AC1. Deferred to the ROADMAP: the subtitle/abstract gap and the fixture tour.
+- 2026-08-18: discrimination for the root-cause fix, each part reverted alone after committing. Reverting `empties` to the PREVIOUS ROUND's shallow rule: "expected 3 occurrence(s) of <<was the only content of the>> ... got 2" — the suite now catches the defect that shipped last round. Removing the marker guard: "... got 6". Removing the DefinitionList branch: "... got 2". All three fenced; tree clean after each.
+- 2026-08-18: tests/run-tests.sh --self-test clean, 155 checks. Status back to review (third pass).
 ## Decisions
 
 ## Review

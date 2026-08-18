@@ -128,7 +128,7 @@ what prints; the sort key carried through the book sidecar record with
       (`index.lua:1093-1121`), bump `STORE_VERSION` to 2 (`index.lua:970`);
       add a cross-chapter sort key to `examples/book/` and a cross-chapter
       conflicting-sort-key fixture.
-- [ ] T6: HTML checks for the sortkey fixture and its twin in
+- [x] T6: HTML checks for the sortkey fixture and its twin in
       `tests/htmlindex.py` + `tests/run-tests.sh`, asserting order at every
       level.
 - [ ] T7: Extend the escaping probe to `sort=` values across PDF, HTML and
@@ -147,6 +147,7 @@ what prints; the sort key carried through the book sidecar record with
 - 2026-08-17: implement gate — user chose to proceed on the `ip-touching` tripwire without escalation, and chose format-neutral scope for the sort-key conflict warning over index-building formats only.
 - 2026-08-17: T1 done — `sort=` parsed with `entry=`'s level syntax, aligned per level with printed-text fallback, plus `levels_key`, `sort_levels`, `register_sort`/`sort_for`, `clamp_sort`, and a shared `derive_levels` used by both Span passes.
 - 2026-08-17: T1 minor amendment — parse moved into a new `CollectSort` pass ahead of the emitting pass; task text updated, rationale in this file's Decisions.
+- 2026-08-17: T6 done — exhaustive HTML manifests 1o/1p for the fixture and its twin, compared in order at every depth, plus a check asserting the two manifests disagree at every position so neither could be satisfied by an index that ignored sort keys. Suite 83 -> 87 checks.
 - 2026-08-17: T4 done — the entry-tree node carries a `sort` field, node identity stays keyed on printed text, and `number_entries` collates on the sort key with a printed-text tie-break; the rendered HTML index now matches the PDF order, sub-entry reversal included. All 83 checks still pass.
 - 2026-08-17: T3 done — `examples/sortkey.qmd` + its derived twin, manifests 1m/1n, and four PDF checks; the manifest is checked against the fixture by construction and the twin proves the order is the sort keys' doing. Suite 79 -> 83 checks.
 - 2026-08-17: T3 discovered sub-task (minor amendment) — `tests/pdfindex.py`: a two-column index interleaves under `pdftotext`/`-layout`, so printed order is read from `-bbox-layout` word positions instead; without it the AC1 check could not tell a sorted index from an unsorted one.

@@ -1737,6 +1737,50 @@ read -r -d '' SORTKEY_PDF_OUTLINE <<'MANIFEST' || true
 0	10 Downing Street
 MANIFEST
 
+# ---------------------------------------------------------------------------
+# Manifest 1o — the generated index in examples/sortkey.html (M06-AC2).
+# EXHAUSTIVE, same format and same oracle rule as manifest 1e, with one
+# further layer derived by hand on top of it:
+#   8. Order: an entry files under its sort key (manifest 1m) where it has
+#      one and under its own printed text where it does not, and the
+#      collation of manifest 1e step 5 is then applied to those keys. This
+#      is applied at EVERY depth, so the two sub-entries of `mathematicians`
+#      file under Neumann and Turing and appear in that order, which is the
+#      reverse of what their printed text alone would give.
+#
+# `The Hague` carries two locators from two marks, only one of which writes
+# a sort= of its own: a sort key belongs to the entry, so both marks file
+# under it and the term stays one entry rather than becoming two.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_HTML_INDEX <<'MANIFEST' || true
+0	Ångström	1
+0	The Hague	2
+0	Édouard Manet	1
+0	mathematicians	0
+1	von Neumann	1
+1	Alan Turing	1
+0	von Neumann	1
+0	10 Downing Street	1
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Manifest 1p — the same index in examples/sortkey-twin.html (M06-AC2): the
+# same entries with no sort keys at all, so manifest 1e step 5 applies to the
+# printed text directly. Every top-level row is in a different position than
+# it holds in manifest 1o, and the two sub-entries are in the opposite order;
+# the check below asserts that rather than trusting this comment.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_TWIN_HTML_INDEX <<'MANIFEST' || true
+0	10 Downing Street	1
+0	mathematicians	0
+1	Alan Turing	1
+1	von Neumann	1
+0	The Hague	2
+0	von Neumann	1
+0	Ångström	1
+0	Édouard Manet	1
+MANIFEST
+
 # Manifest 1j — the \index{} commands examples/marker.tex must carry (M04-AC2).
 read -r -d '' MARKER_ENTRIES <<'MANIFEST' || true
 2	alpha
@@ -3392,6 +3436,72 @@ if same:
 print(f'ok   M06-AC1: removing the sort keys moves every one of the '
       f'{len(keyed)} top-level entries, so the printed order is theirs')
 DIFFPY
+
+# ---------------------------------------------------------------------------
+# M06-AC2 — sort keys in the HTML index, at every depth.
+#
+# The twin renders alongside, so the ordering below is attributed to the sort
+# keys rather than to anything the fixture would have done anyway. Both
+# manifests are exhaustive and compared in order, which is what makes a
+# collation failure a failure rather than something set equality swallows.
+# ---------------------------------------------------------------------------
+quarto render examples/sortkey.qmd --to html > "$WORK/sortkey-html.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-html.log" >&2; fail "M06-AC2: sortkey.qmd failed to render to HTML"; }
+if grep -q '^(W)' "$WORK/sortkey-html.log"; then
+  grep '^(W)' "$WORK/sortkey-html.log" >&2
+  fail "M06-AC2: examples/sortkey.qmd warned in HTML; every mark in it is well formed"
+fi
+check_html_index_manifest examples/sortkey.html "$SORTKEY_HTML_INDEX" "M06-AC2"
+check_html_index_links examples/sortkey.html "M06-AC2"
+
+quarto render examples/sortkey-twin.qmd --to html > "$WORK/sortkey-twin-html.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-twin-html.log" >&2; fail "M06-AC2: sortkey-twin.qmd failed to render to HTML"; }
+check_html_index_manifest examples/sortkey-twin.html "$SORTKEY_TWIN_HTML_INDEX" "M06-AC2 (twin)"
+
+# The two manifests must disagree at every top-level position and at every
+# sub-entry position, or one of them could be satisfied by an index that
+# ignored the sort keys. Asserted of the manifests themselves, so the claim
+# holds even if both renders were to fail in the same direction.
+printf '%s\n' "$SORTKEY_HTML_INDEX" > "$WORK/sk-html.txt"
+printf '%s\n' "$SORTKEY_TWIN_HTML_INDEX" > "$WORK/sk-twin-html.txt"
+python3 - "$WORK/sk-html.txt" "$WORK/sk-twin-html.txt" <<'ORDERPY'
+import sys
+
+
+def by_depth(path):
+    out = {}
+    for line in open(path, encoding='utf-8'):
+        line = line.rstrip('\n')
+        if line.strip():
+            fields = line.split('\t')
+            out.setdefault(int(fields[0]), []).append(fields[1])
+    return out
+
+
+keyed, twin = by_depth(sys.argv[1]), by_depth(sys.argv[2])
+if set(keyed) != set(twin):
+    print('FAIL: M06-AC2: the two manifests do not nest to the same depths',
+          file=sys.stderr)
+    sys.exit(1)
+moved = 0
+for depth in sorted(keyed):
+    a, b = keyed[depth], twin[depth]
+    if sorted(a) != sorted(b):
+        print(f'FAIL: M06-AC2: depth {depth} lists different terms in the two '
+              f'manifests, so their orders are not comparable', file=sys.stderr)
+        print(f'  keyed: {a}\n  twin:  {b}', file=sys.stderr)
+        sys.exit(1)
+    same = [i for i, (x, y) in enumerate(zip(a, b)) if x == y]
+    if same:
+        print(f'FAIL: M06-AC2: at depth {depth} the sort keys leave '
+              f'position(s) {same} unchanged, so the manifest could be '
+              f'satisfied by an index that ignored them', file=sys.stderr)
+        print(f'  keyed: {a}\n  twin:  {b}', file=sys.stderr)
+        sys.exit(1)
+    moved += len(a)
+print(f'ok   M06-AC2: the sort keys move all {moved} entries, at every one of '
+      f'the {len(keyed)} depths the index nests to')
+ORDERPY
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.

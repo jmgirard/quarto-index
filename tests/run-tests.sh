@@ -5208,6 +5208,74 @@ print('ok   M09-AC3: each twin pair reaches the index tool as one key, '
       'carrying both of its marks')
 CLAMPTWINTEXPY
 
+# The symptom the report exists to prevent is a doubled entry in the built
+# index, so the twin is followed all the way there: one key per pair in the
+# .tex above, and one printed entry per pair in the compiled PDF. Read with
+# tests/pdfindex.py rather than out of pdftotext's text output, for the reason
+# that module's header gives.
+#
+# Derived by hand from the twin: each pair's two marks index one entry, whose
+# printed path is the pair's levels folded into three — `alpha!beta!gamma,
+# delta` and `mu!nu!xi, omicron, pi` — so the index prints two top-level
+# entries, each two levels deep, and neither term twice.
+quarto render examples/sortkey-clamp-twin.qmd --to pdf \
+  > "$WORK/sortkey-clamp-twin-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-clamp-twin-pdf.log" >&2; fail "M09-AC3: sortkey-clamp-twin.qmd failed to render to PDF"; }
+[ -s examples/sortkey-clamp-twin.pdf ] \
+  || fail "M09-AC3: examples/sortkey-clamp-twin.pdf is empty"
+check_warning_count "$WORK/sortkey-clamp-twin-pdf.log" "$WARN_CLAMP_SPLIT" 0 \
+  "M09-AC3 (pdf)"
+read -r -d '' SORTKEY_CLAMP_TWIN_OUTLINE <<'MANIFEST' || true
+0	alpha
+1	beta
+2	gamma, delta
+0	mu
+1	nu
+2	xi, omicron, pi
+MANIFEST
+printf '%s\n' "$SORTKEY_CLAMP_TWIN_OUTLINE" > "$WORK/clamp-twin-outline.txt"
+python3 - examples/sortkey-clamp-twin.pdf "$WORK/clamp-twin-outline.txt" \
+  <<'CLAMPPDFPY'
+import sys
+from collections import Counter
+sys.path.insert(0, 'tests')
+import pdfindex
+
+entries = pdfindex.read(sys.argv[1])
+if not pdfindex.columns_carry_top_level(entries):
+    print('FAIL: M09-AC3: a column of the printed index carries no top-level '
+          'entry, so pdfindex cannot read its indent levels', file=sys.stderr)
+    sys.exit(1)
+actual = pdfindex.outline(entries)
+expected = []
+for line in open(sys.argv[2], encoding='utf-8'):
+    line = line.rstrip('\n')
+    if line.strip():
+        level, term = line.split('\t', 1)
+        expected.append((int(level), term))
+if actual != expected:
+    print('FAIL: M09-AC3: the printed index is not what the twin derives.',
+          file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        a = actual[i] if i < len(actual) else None
+        e = expected[i] if i < len(expected) else None
+        print(f'{"  " if a == e else "->"} {i}: got {a!r} want {e!r}',
+              file=sys.stderr)
+    sys.exit(1)
+# Named separately from the comparison above, because it is the criterion:
+# the collision prints its entry once per key, so a pair that files as one key
+# has to print its entry exactly once.
+printed = Counter(term for _, term in actual)
+doubled = {t: n for t, n in printed.items() if n > 1}
+if doubled:
+    print(f'FAIL: M09-AC3: the printed index carries {doubled}, so a pair '
+          f'filed apart after all', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M09-AC3: the compiled PDF prints each pair as one entry at its '
+      f'folded level path, {len(expected)} rows and no term twice')
+CLAMPPDFPY
+pass "M09-AC3: two entries sharing one sort key per pair are reported not at all, reach the index tool as one key each, and print once each in the built index"
+
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------

@@ -80,7 +80,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 - [x] T3: Hand-derive the HTML manifest for `sortkey-clamp.qmd` and add the AC2
       check; the derivation comment is the manifest's oracle, so it is written
       for these rows rather than borrowed from another manifest.
-- [ ] T4: Build the twin's PDF and pin that each pair's entry prints once,
+- [x] T4: Build the twin's PDF and pin that each pair's entry prints once,
       following the existing PDF checks (run-tests.sh:1968, :2853).
 - [ ] T5: Revert the fix and record the failing check and its message in the
       work log. Process evidence, deliberately mapped to no criterion — a
@@ -98,6 +98,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 
 - 2026-08-18: T2 — the report lands in the document-wide LaTeX pass beside the multi-encap one, once per contested printed path, naming every key filed under it; `index_argument` now also returns the printed and filing paths it emitted. Full suite green (143 checks), the two AC1 reports firing as hand-derived and no other fixture newly warning.
 - 2026-08-18: T3 — the HTML manifest is derived for these rows, ordering spelled out through each level's sort key (Ada before Zed puts `gamma, delta` ahead of `gamma`; Vee before Wye puts `xi, omicron` ahead of `xi`), which is the opposite of what the printed text would give in both groups. Rendered index matched the hand-derived 14 rows first time; the report fires 0 times in HTML. Suite 145 checks green.
+- 2026-08-18: T4 — the twin's PDF is built and its printed index read with tests/pdfindex.py: six rows, `alpha!beta!gamma, delta` and `mu!nu!xi, omicron, pi` each printed once, matching the hand-derived outline, with a no-term-twice check named separately as the criterion. Suite 147 checks green.
 
 ## Decisions
 

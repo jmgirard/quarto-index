@@ -1061,8 +1061,6 @@ LETTERDOCPY
 README_MISUSE_CLAIMS=(
   $'a div and nothing else\tThe marker class on a heading, on an inline span or on a code block places nothing and is reported'
   $'element left as written\tYour element is left exactly as you wrote it, class included'
-  $'emptied container\tWhere the marker was the only thing in its container, removing it leaves that container empty, and you are told so'
-  $'container kept\tthe container itself is kept, since nothing you wrote is deleted'
   $'self-reference dropped\tThe target is reported and dropped, and the term is then indexed normally'
   $'self-reference judged on print\tA target is judged against what the entry *prints*, so a sort key does not make a self-reference into something else'
   $'section id minted\tThe section id is minted the same way: `qi-index` where the name is free, and `qi-index-1`, `qi-index-2` and so on where the document has taken it'
@@ -2468,18 +2466,15 @@ print('ok   M04-AC4: one \\printindex, at the first marker, in a document '
 PY
 
 # ---------------------------------------------------------------------------
-# M08-AC3 / M08-AC4 — marker sites. The class only ever places an index on an
-# empty top-level div; written on a heading, an inline span or a code block it
-# places nothing and is reported, and the element is left exactly as the author
-# wrote it (M08's plan gate: the extension reports rather than edits). A nested
-# marker that was its container's ONLY content leaves that container empty,
-# which is reported as a second message beside the existing nested-marker one —
-# both are kept, so the message M04 pinned keeps its wording.
+# M08-AC3 — marker sites. The class only ever places an index on an empty
+# top-level div; written on a heading, an inline span or a code block it places
+# nothing and is reported, and the element is left exactly as the author wrote
+# it (M08's plan gate: the extension reports rather than edits). The message
+# M04 pinned for a nested marker is untouched.
 # ---------------------------------------------------------------------------
 WARN_SITE_HEADING='marker class is written on a heading'
 WARN_SITE_SPAN='marker class is written on an inline span'
 WARN_SITE_CODE='marker class is written on a code block'
-WARN_EMPTIED='was the only content of the'
 
 for fmt in html latex gfm; do
   quarto render examples/marker-sites.qmd --to $fmt \
@@ -2488,12 +2483,8 @@ for fmt in html latex gfm; do
   check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_HEADING" 1 "M08-AC3"
   check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_SPAN" 1 "M08-AC3"
   check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_CODE" 1 "M08-AC3"
-  check_warning_count "$WORK/sites-$fmt.log" "$WARN_EMPTIED" 2 "M08-AC4"
-  # The message M04 pinned still fires for both nested markers: the emptied-
-  # container report is additive, never a replacement.
-  check_warning_count "$WORK/sites-$fmt.log" "$WARN_MARKER_NESTED" 2 "M08-AC4"
 done
-pass "M08-AC3/AC4: three misplaced marker classes and two emptied containers each report, in HTML, LaTeX and gfm"
+pass "M08-AC3: three misplaced marker classes each report, in HTML, LaTeX and gfm"
 
 # The three misplaced sites survive into HTML carrying the class and their
 # content. The heading case lands the class on BOTH the <h2> and the <section>
@@ -2524,32 +2515,6 @@ if errs:
     sys.exit(1)
 print('ok   M08-AC3: the heading, inline span and code block carrying the '
       'marker class all survive into HTML with their class and content')
-PY
-
-# Both emptied containers survive, structurally, and are empty — two container
-# kinds, because strip_nested_markers walks every nested Blocks list and one
-# shape cannot stand in for that family.
-python3 - examples/marker-sites.html <<'PY'
-import sys
-sys.path.insert(0, 'tests')
-import htmlindex as H
-doc = H.parse(sys.argv[1])
-errs = []
-divs = [n for n in H.walk(doc) if n.attrs.get('id') == 'emptied-div']
-if not divs:
-    errs.append('the div whose only content was a nested marker is gone')
-elif H.text(divs[0]).strip():
-    errs.append(f'that div is not empty: {H.text(divs[0])!r}')
-quotes = [n for n in H.walk(doc) if n.tag == 'blockquote']
-if not quotes:
-    errs.append('the block quote whose only content was a nested marker is gone')
-elif all(H.text(q).strip() for q in quotes):
-    errs.append('no block quote was left empty')
-if errs:
-    print('FAIL: M08-AC4: ' + '; '.join(errs), file=sys.stderr)
-    sys.exit(1)
-print('ok   M08-AC4: both emptied containers — a div and a block quote — are '
-      'still in the page, and both are empty')
 PY
 
 # gfm carries no index back-end, so nothing this extension emits may reach it.
@@ -2620,86 +2585,53 @@ print('ok   M08-AC3: the HTML index is placed at the one real marker, and no '
 PY
 
 # ---------------------------------------------------------------------------
-# M08-AC3 / M08-AC4 (review F1-F4, F11) — the shapes these reports must tell
-# apart. A report that fires on a container which is NOT left empty, or on a
-# marker that reaches no output, or on document metadata, tells an author
-# something untrue — worse than saying nothing, since the value of these
-# messages is that they can be trusted. Its own fixture, so marker-sites.qmd's
-# placement counts stay undisturbed.
-#
-# Reported here: ONE emptied container, the footnote. Not reported: the
-# container whose marker had content (spliced in, so it is not empty), the
-# top-level marker wrapping a nested one (removed whole; it places the index),
-# and the marker class in the document title (metadata is no placement site).
+# M08-AC3 (review F4) — the shapes the misplaced-class report must NOT fire on.
+# The marker class in the document title is metadata, which the marker
+# machinery never reaches; a report there would tell an author something
+# untrue. Its own fixture, so marker-sites.qmd's placement counts stay
+# undisturbed.
 # ---------------------------------------------------------------------------
 WARN_MARKER_SITE='marker class is written on'
 
 for fmt in html latex gfm; do
   quarto render examples/marker-shapes.qmd --to $fmt \
     > "$WORK/shapes-$fmt.log" 2>&1 \
-    || { tail -20 "$WORK/shapes-$fmt.log" >&2; fail "M08-AC4: marker-shapes.qmd failed to render to $fmt"; }
-  # Exactly one container is emptied here: the footnote. The other two shapes
-  # are the false positives this fixture exists to fence.
-  # Three containers are emptied here: a div, a footnote and a definition. The
-  # other shapes are the false positives this fixture exists to fence.
-  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_EMPTIED" 3 "M08-AC4 (R1/R2)"
-  # No misplaced-class report at all: the only marker class outside a div in
-  # this document is in its title.
+    || { tail -20 "$WORK/shapes-$fmt.log" >&2; fail "M08-AC3: marker-shapes.qmd failed to render to $fmt"; }
   check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_SITE" 0 "M08-AC3 (F4)"
-  # Every nested marker still reports, and the one carrying content still
-  # reports as non-empty — neither message is disturbed by the above.
-  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 8 "M08-AC4"
-  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_CONTENT" 1 "M08-AC4"
-  # Named per kind, so the three reports cannot silently swap which container
-  # they are about — a count alone passed while the report named a marker div.
-  for kind in div footnote definition; do
-    check_warning_count "$WORK/shapes-$fmt.log" \
-      "was the only content of the $kind" 1 "M08-AC4 (R1/R3)"
-  done
+  # The nested markers still report, and the one carrying content still reports
+  # as non-empty — neither message is disturbed by the metadata exclusion.
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 2 "M08-AC3"
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_CONTENT" 1 "M08-AC3"
 done
-pass "M08-AC3/AC4: exactly the emptied div, footnote and definition are reported — not the container that kept content, not any marker div, not the document title"
+pass "M08-AC3: a marker class in the document title is reported nowhere, and the nested-marker messages are undisturbed"
 
-
-# Structural proof of the F1 claim: the container really does keep its content.
+# What a nested marker carried is spliced in where it stood, so its container
+# keeps that content — pinned structurally, not merely by a warning count.
 python3 - examples/marker-shapes.html <<'PY'
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
 doc = H.parse(sys.argv[1])
 errs = []
-# Two containers that must SURVIVE non-empty — one holding a marker that has
-# content, one holding a marker that wraps only markers but keeping text of its
-# own. Both are shapes a report reading the pre-strip shape got wrong.
-for ident, why in (('keeps-content', 'holds a marker that has content'),
-                   ('keeps-text', 'keeps a paragraph of its own')):
-    kept = [n for n in H.walk(doc) if n.attrs.get('id') == ident]
-    if not kept:
-        errs.append(f'the container that {why} is gone')
-    elif not H.text(kept[0]).strip():
-        errs.append(f'#{ident}, which {why}, is empty — so a report claiming '
-                    f'it was emptied would have been right and this check '
-                    f'proves nothing')
-# And one that must be emptied, through two levels of marker.
-deep = [n for n in H.walk(doc) if n.attrs.get('id') == 'emptied-deep']
-if not deep:
-    errs.append('the container emptied through nested markers is gone')
-elif H.text(deep[0]).strip():
-    errs.append('#emptied-deep is not empty, so its report would be wrong')
-# The index still lands at the top-level marker that wrapped a nested one.
+kept = [n for n in H.walk(doc) if n.attrs.get('id') == 'keeps-content']
+if not kept:
+    errs.append('the container holding a marker with content is gone')
+elif 'Content the marker kept' not in H.text(kept[0]):
+    errs.append('the content a nested marker carried was not spliced into its '
+                'container')
 section = H.index_section(doc)
 if section is None:
     errs.append('no index section was found')
 else:
-    at = H.position(doc, section)
     after = [n for n in H.walk(doc)
              if n.tag in ('h1', 'h2') and 'After the marker' in H.text(n)]
-    if not after or not at < H.position(doc, after[0]):
+    if not after or not H.position(doc, section) < H.position(doc, after[0]):
         errs.append('the index is not at the marker that wrapped a nested one')
 if errs:
-    print('FAIL: M08-AC4 (F1/F2): ' + '; '.join(errs), file=sys.stderr)
+    print('FAIL: M08-AC3: ' + '; '.join(errs), file=sys.stderr)
     sys.exit(1)
-print('ok   M08-AC4 (F1/F2): the container that kept content is non-empty in '
-      'the page, and the marker wrapping a nested one still places the index')
+print('ok   M08-AC3: a nested marker\'s content survives in its container, and '
+      'the marker wrapping a nested one still places the index')
 PY
 
 # ---------------------------------------------------------------------------

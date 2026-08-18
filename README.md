@@ -266,10 +266,8 @@ Five rules, each of which warns rather than breaking your build:
 
 - **Top level only.** A marker inside a callout, a list or another div places
   nothing: a printed index inside a LaTeX group or environment is a render
-  risk. It is dropped, and the index keeps its default place at the end. Where
-  the marker was the only thing in its container, removing it leaves that
-  container empty, and you are told so — the container itself is kept, since
-  nothing you wrote is deleted.
+  risk. It is dropped, and the index keeps its default place at the end.
+  Anything written inside it is kept, spliced in where the marker stood.
 - **A div, and nothing else.** The marker class on a heading, on an inline span
   or on a code block places nothing and is reported. Your element is left
   exactly as you wrote it, class included: this extension removes markers, not

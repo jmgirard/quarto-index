@@ -28,20 +28,6 @@ either, and likewise survives with its class.
 A fenced code block carrying the class places nothing.
 ```
 
-# Containers emptied by a nested marker
-
-A marker below the top level places nothing. Where it is the only thing in its
-container, removing it leaves that container empty, which is reported as well —
-the container is kept, since nothing the author wrote is deleted.
-
-::: {#emptied-div .surrounding}
-::: {.qi-index-here}
-:::
-:::
-
-> ::: {.qi-index-here}
-> :::
-
 # The marker that counts
 
 The one real marker follows. Another term is marked here: [epsilon]{.index}.

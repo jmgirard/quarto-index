@@ -27,9 +27,6 @@ author reads or markup an HTML reader receives.
   target dropped, before the back-end branch (`Span`, index.lua:629).
 - The marker class on a block that is not a Div, or on an inline span, is
   reported; the element itself is left untouched (`is_marker`, index.lua:1239).
-- A nested marker that was its container's only content is reported as having
-  left that container empty; the container is kept (`strip_nested_markers`,
-  index.lua:1273).
 - Fixtures and checks for all four, each shown to fail when its fix is reverted.
 
 **Out:**
@@ -41,6 +38,11 @@ author reads or markup an HTML reader receives.
   unreachable, every path building the section is gated on a mark.
 - Percent-escaping locator hrefs for chapter filenames holding `#` or `?` →
   candidate row; not fixable at the filter layer (M05 review F11).
+- Reporting a container a nested marker leaves empty → descoped at the third
+  review return and moved to its own milestone; the ROADMAP row carries every
+  shape now known to break it. What a nested marker carried is still spliced
+  back into its container, and the nested-marker warning M04 shipped is
+  untouched — only the new report leaves.
 
 ## Acceptance criteria
 
@@ -76,21 +78,14 @@ author reads or markup an HTML reader receives.
       and their content unchanged; in the gfm render their visible content
       survives and no index, anchor or back-end token appears — gfm drops a
       header's attributes itself, so class survival is claimed only of HTML.
-- [x] AC4: In the same three renders of `examples/marker-sites.qmd`, which also
-      holds two containers of different kinds (a Div and a blockquote) whose
-      only content is a nested placement marker, exactly two warnings per render
-      say that removing a marker left its container empty, one per container; no
-      index is placed at either container's position; and both containers are
-      still present, structurally, in the HTML output.
-- [x] AC5: `tests/run-tests.sh --self-test` clean (the `verify` slot).
+- [x] AC4: `tests/run-tests.sh --self-test` clean (the `verify` slot).
 
 ## Coverage
 
 - AC1 → T4, T5
 - AC2 → T6, T7
 - AC3 → T1, T2
-- AC4 → T1, T3
-- AC5 → T1, T4, T6
+- AC4 → T1, T4, T6
 
 ## Tasks
 
@@ -175,6 +170,8 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: T20/T21 — DESIGN records the report's real reach (any attributed inline, not only spans), the metadata exclusion, the recursive emptying rule, the marker exclusion, and the self-target caveat that clamped and empty-level cases survive; WARN_BOTH now pins the whole reworded message rather than its prefix; the README-pin check message no longer claims all stale sentences were falsified by AC1. Deferred to the ROADMAP: the subtitle/abstract gap and the fixture tour.
 - 2026-08-18: discrimination for the root-cause fix, each part reverted alone after committing. Reverting `empties` to the PREVIOUS ROUND's shallow rule: "expected 3 occurrence(s) of <<was the only content of the>> ... got 2" — the suite now catches the defect that shipped last round. Removing the marker guard: "... got 6". Removing the DefinitionList branch: "... got 2". All three fenced; tree clean after each.
 - 2026-08-18: tests/run-tests.sh --self-test clean, 155 checks. Status back to review (third pass).
+- 2026-08-18: DESCOPE (third defect return, thrash rule trigger (a); chosen by the maintainer at the gate). AC4 and the emptied-container report leave M08: `empties`, `check_emptied`, `report_emptied_containers` and `CONTAINER_NAMES` removed from the filter, their fixtures, checks and README/DESIGN prose with them. The recursive rule was verified correct on ten adversarial shapes; what defeats it is naming the container under Quarto's AST, where callouts, tabsets and captioned figures are wrapped in scaffold divs no author wrote. That work is a ROADMAP row carrying every known shape, to be planned on its own. M08 ships the three fixes clean through all three reviews: the minted section id, the dropped self-reference, and the misplaced-class report.
+- 2026-08-18: post-descope verification. Every render artifact purged (examples/*.tex|html|md|pdf|epub, *_files, tests/.work), confirming Q6 first-hand: the run dies with FileNotFoundError on examples/control.tex, which a check reads 25 lines before anything generates it. With control.qmd pre-rendered and nothing else, tests/run-tests.sh --self-test is clean at 154 checks — the first genuinely fresh-artifact evidence this milestone has produced. The clean-checkout defect stays a ROADMAP row; it is not M08's.
 ## Decisions
 
 ## Review

@@ -666,7 +666,7 @@ local function Span(span)
     -- does not claim both were emitted: one of the two may have had no usable
     -- target, which its own warning above already reported.
     warn("index mark carries both see= and see-also=; this is probably a "
-         .. "mistake, and every usable target is kept")
+         .. "mistake, and neither is dropped for being one of two")
   end
 
   local levels, disposition = derive_levels(entry, visible, declared,
@@ -1328,7 +1328,10 @@ local function report_marker_sites(doc)
           .. "%s is left as written"):format(article, name, name))
     return nil
   end
-  doc:walk({ Block = note, Inline = note })
+  -- `doc.blocks`, never `doc`: walking a Pandoc value traverses `meta` too, and
+  -- a marker class written in the title is not a misplaced placement site — it
+  -- is text the marker machinery never reaches at all.
+  doc.blocks:walk({ Block = note, Inline = note })
 end
 
 -- A marker's own content is never dropped. The marker is documented as empty,
@@ -1374,14 +1377,20 @@ local CONTAINER_NAMES = {
   Div = "div",
   BlockQuote = "block quote",
   Figure = "figure",
+  Note = "footnote",
 }
 
-local function all_markers(blocks)
+-- Every element a marker, AND every one of those markers empty. The second
+-- half is not decoration: marker_content splices a non-empty marker's content
+-- in where the marker stood, so a container holding one keeps that content and
+-- is not emptied at all. Reporting it would tell an author their container is
+-- empty while the page plainly shows it is not.
+local function all_empty_markers(blocks)
   if blocks == nil or #blocks == 0 then
     return false
   end
   for _, inner in ipairs(blocks) do
-    if not is_marker(inner) then
+    if not is_marker(inner) or #inner.content > 0 then
       return false
     end
   end
@@ -1398,11 +1407,11 @@ local function check_emptied(el)
   if el.t == "BulletList" or el.t == "OrderedList" then
     -- A list's content is a list of block lists, one per item.
     for _, item in ipairs(el.content) do
-      if all_markers(item) then
+      if all_empty_markers(item) then
         report_emptied("list item")
       end
     end
-  elseif all_markers(el.content) then
+  elseif all_empty_markers(el.content) then
     report_emptied(CONTAINER_NAMES[el.t] or el.t)
   end
 end
@@ -1412,9 +1421,23 @@ local function report_emptied_containers(block)
   -- container at issue is often the top-level block handed in — the div or the
   -- block quote a nested marker was written alone inside. So it is checked
   -- here, and its descendants by the walk.
-  check_emptied(block)
+  --
+  -- Unless the top-level block is itself a marker: resolve_markers owns that
+  -- one and removes it whole, so it reaches no output and is no container an
+  -- author could find left empty. A marker wrapping a marker still reports the
+  -- inner one as nested, which is the true thing to say about it.
+  if not is_marker(block) then
+    check_emptied(block)
+  end
   block:walk({
     Block = function(el)
+      check_emptied(el)
+      return nil
+    end,
+    -- A footnote is an Inline whose content is a block list, so the Block
+    -- filter alone never reaches it and a footnote emptied by a marker went
+    -- unreported.
+    Note = function(el)
       check_emptied(el)
       return nil
     end,

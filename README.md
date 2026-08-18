@@ -124,9 +124,10 @@ would lose the term. A target is judged against what the entry *prints*, so a
 sort key does not make a self-reference into something else.
 
 **Both attributes on one mark** is almost always a mistake — "see" says the
-entries are elsewhere, "see also" says there are entries here too. Nothing is
-dropped: you get one entry carrying both targets, `see Aye; see also Bee`, and
-a warning.
+entries are elsewhere, "see also" says there are entries here too. Neither is
+dropped for being one of two: you get one entry carrying both targets, `see
+Aye; see also Bee`, and a warning. A target that names its own entry is still
+dropped for that reason, and the other one is then the only one emitted.
 
 **One term marked two different ways can fail the build.** If `cats` gets a
 plain mark in one place and a cross-reference in another — or a `see=` in one
@@ -311,9 +312,10 @@ index](#placing-the-index).
 
 For HTML the extension adds an index of its own at the end of the body, or at
 your placement marker if the document has one: an
-unnumbered level-one **Index** heading, in a section carrying the id
-`qi-index`, listed in the table of contents, followed by a nested bullet list
-of the entries. It is built out of Pandoc's own document nodes rather than out
+unnumbered level-one **Index** heading, in a section whose id is `qi-index`
+where the document has not taken that name and a minted one where it has (see
+below), listed in the table of contents, followed by a nested bullet list of
+the entries. It is built out of Pandoc's own document nodes rather than out
 of HTML text, so Pandoc's writer does the escaping. No stylesheet is added; the
 class names below are hooks for styling it yourself.
 

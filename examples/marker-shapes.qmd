@@ -1,0 +1,52 @@
+---
+title: "quarto-index marker-shape probe with [x]{.qi-index-here} in the title"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Shapes that must NOT be reported
+
+Three shapes here look like the reported ones and are not. A report that
+cannot tell them apart tells an author something untrue, which is worse than
+saying nothing: the whole point of these messages is that an author can trust
+them.
+
+The document title carries the marker class. Metadata is not a placement site
+at all — the marker machinery never reaches it — so nothing about it is
+reported.
+
+One term is marked here: [theta]{.index}.
+
+A container holding a marker that HAS content is not left empty: the content is
+spliced in where the marker stood, so the container still has something in it.
+
+::: {#keeps-content .surrounding}
+::: {.qi-index-here}
+Content the marker kept, which leaves this container non-empty.
+:::
+:::
+
+# The shape that places the index
+
+The top-level marker below wraps a nested one. The outer marker is removed
+whole — it places the index and reaches no output — so it is not a container
+left empty by anything.
+
+::: {.qi-index-here}
+::: {.qi-index-here}
+:::
+:::
+
+# The shape that IS reported
+
+A footnote whose only content is a marker is emptied exactly as a div or a
+block quote is, and is reported for the same reason.[^gone]
+
+[^gone]:
+    ::: {.qi-index-here}
+    :::
+
+# After the marker
+
+Text after the marker, so the index's position is provable.

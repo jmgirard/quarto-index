@@ -1066,9 +1066,14 @@ README_MISUSE_CLAIMS=(
   $'self-reference dropped\tThe target is reported and dropped, and the term is then indexed normally'
   $'self-reference judged on print\tA target is judged against what the entry *prints*, so a sort key does not make a self-reference into something else'
   $'section id minted\tThe section id is minted the same way: `qi-index` where the name is free, and `qi-index-1`, `qi-index-2` and so on where the document has taken it'
+  $'section id conditional\tin a section whose id is `qi-index` where the document has not taken that name and a minted one where it has'
+  $'both attributes narrowed\tNeither is dropped for being one of two: you get one entry carrying both targets'
+  $'self-target still dropped\tA target that names its own entry is still dropped for that reason, and the other one is then the only one emitted'
 )
 README_MISUSE_STALE=(
   $'section id fixed\tthe section id `qi-index` itself, which is fixed rather than minted'
+  $'section id unconditional\tin a section carrying the id `qi-index`, listed in the table of contents'
+  $'nothing dropped\tNothing is dropped: you get one entry carrying both targets'
 )
 
 printf '%s\n' "${README_MISUSE_CLAIMS[@]}" > "$WORK/readme-misuse.txt"
@@ -2609,6 +2614,74 @@ if min(delta, index_at, epsilon) < 0 or not delta < epsilon < index_at:
     sys.exit(1)
 print('ok   M08-AC3: the HTML index is placed at the one real marker, and no '
       'misplaced class placed anything')
+PY
+
+# ---------------------------------------------------------------------------
+# M08-AC3 / M08-AC4 (review F1-F4, F11) — the shapes these reports must tell
+# apart. A report that fires on a container which is NOT left empty, or on a
+# marker that reaches no output, or on document metadata, tells an author
+# something untrue — worse than saying nothing, since the value of these
+# messages is that they can be trusted. Its own fixture, so marker-sites.qmd's
+# placement counts stay undisturbed.
+#
+# Reported here: ONE emptied container, the footnote. Not reported: the
+# container whose marker had content (spliced in, so it is not empty), the
+# top-level marker wrapping a nested one (removed whole; it places the index),
+# and the marker class in the document title (metadata is no placement site).
+# ---------------------------------------------------------------------------
+WARN_MARKER_SITE='marker class is written on'
+
+for fmt in html latex gfm; do
+  quarto render examples/marker-shapes.qmd --to $fmt \
+    > "$WORK/shapes-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/shapes-$fmt.log" >&2; fail "M08-AC4: marker-shapes.qmd failed to render to $fmt"; }
+  # Exactly one container is emptied here: the footnote. The other two shapes
+  # are the false positives this fixture exists to fence.
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_EMPTIED" 1 "M08-AC4 (F1/F2)"
+  # No misplaced-class report at all: the only marker class outside a div in
+  # this document is in its title.
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_SITE" 0 "M08-AC3 (F4)"
+  # The three nested markers still report, and the one carrying content still
+  # reports as non-empty — neither message is disturbed by the above.
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 3 "M08-AC4"
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_CONTENT" 1 "M08-AC4"
+done
+pass "M08-AC3/AC4: only the emptied footnote is reported — not the container that kept content, not the marker that places the index, not the document title"
+
+# The emptied-container report must name the footnote, not some other kind: a
+# count alone would pass if the report moved from one shape to another.
+grep -qF -- 'was the only content of the footnote' "$WORK/shapes-gfm.log" \
+  || fail "M08-AC4 (F3): the emptied container was not reported as a footnote"
+pass "M08-AC4 (F3): the emptied footnote is reported by its own kind"
+
+# Structural proof of the F1 claim: the container really does keep its content.
+python3 - examples/marker-shapes.html <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+kept = [n for n in H.walk(doc) if n.attrs.get('id') == 'keeps-content']
+errs = []
+if not kept:
+    errs.append('the container holding a marker with content is gone')
+elif not H.text(kept[0]).strip():
+    errs.append('that container is empty, so the report claiming it was left '
+                'empty would have been right and this check proves nothing')
+# The index still lands at the top-level marker that wrapped a nested one.
+section = H.index_section(doc)
+if section is None:
+    errs.append('no index section was found')
+else:
+    at = H.position(doc, section)
+    after = [n for n in H.walk(doc)
+             if n.tag in ('h1', 'h2') and 'After the marker' in H.text(n)]
+    if not after or not at < H.position(doc, after[0]):
+        errs.append('the index is not at the marker that wrapped a nested one')
+if errs:
+    print('FAIL: M08-AC4 (F1/F2): ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M08-AC4 (F1/F2): the container that kept content is non-empty in '
+      'the page, and the marker wrapping a nested one still places the index')
 PY
 
 # ---------------------------------------------------------------------------

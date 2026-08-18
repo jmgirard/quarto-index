@@ -120,6 +120,24 @@ author reads or markup an HTML reader receives.
       the sentence at README.md:329 claiming the section id is "fixed rather
       than minted", which AC1 falsifies; pin each new sentence in the suite's
       normative README arrays, since a documented claim owes a test.
+- [x] T10: Add `examples/marker-shapes.qmd` — a container holding a marker that
+      HAS content, a top-level marker wrapping a nested one, a footnote whose
+      only content is a marker, and the marker class in the document title —
+      with checks pinning which reports fire and which must not (F1, F2, F3,
+      F4, F11). A separate fixture, so `marker-sites.qmd`'s placement counts
+      are undisturbed.
+- [x] T11: F1 — report an emptied container only when every marker in the list
+      is itself empty; a marker with content leaves its content behind.
+- [x] T12: F2 — do not report the top-level block when it is itself a marker;
+      `resolve_markers` owns it and it reaches no output.
+- [x] T13: F4 — walk `doc.blocks`, not `doc`: metadata is not a placement site.
+- [x] T14: F3 — report a footnote emptied by a nested marker; record any
+      container kind still uncovered as a ROADMAP row rather than over-promising.
+- [x] T15: F5 — narrow the both-attributes warning and its README sentence,
+      both of which still claim every usable target is kept.
+- [x] T16: F6, F9 — update DESIGN.md's Architecture prose for the two new
+      reports, the dropped self-target and the minted section id; fix
+      README.md:314's unconditional `qi-index` claim.
 - [x] T8: Revert each of the four fixes alone and record the failing check and
       its message in the work log. Process evidence, deliberately mapped to no
       criterion: an acceptance criterion binding the harness rather than the
@@ -149,6 +167,11 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: T8 — each fix reverted alone, suite run, first FAIL recorded. T2 removed: "M08-AC3: expected 1 occurrence(s) of <<marker class is written on a heading>> ... got 0". T3 removed: "M08-AC4: expected 2 occurrence(s) of <<was the only content of the>> ... got 0". T5 reverted to the fixed id: "M08-AC1: ids carried by two elements: ['qi-index']; the claimed id 'qi-index' appears 2 time(s), not once; the index section took 'qi-index', a name the document already claimed". T7 reverted: "M08-AC2: expected exactly one \\index{Cats}, found 0; ... a self-referential encap survived: \\index{Cats|see{Cats}}" and seven further clauses. All four fenced; working tree restored clean after each.
 - 2026-08-18: completion — tests/run-tests.sh --self-test clean, 153 checks (139 in the plain run). Status to review.
 - 2026-08-18: REVIEW RETURN (defect return 1). No acceptance criterion failed as written — all five verified with fresh evidence — but the maintainer judged three findings load-bearing at the gate: the emptied-container report fires when the container keeps content spliced in from a non-empty marker (F1, falsifying the README sentence the suite pins), fires on the surviving top-level marker itself for a div that reaches no output (F2), and report_marker_sites walks doc.meta so a marker class in the title is reported as a misplaced site (F4). Actioned with them: F3 (footnote and table-cell containers emptied unreported, against README's unqualified promise), F5 (the both-attributes warning and README still say every usable target is kept, now false in the case AC2 exercises), F6 (DESIGN.md Architecture prose not updated), F9 (README:314 still calls the section id qi-index unconditionally), F11 (no check discriminates F1 or F2). Deferred to ROADMAP rows: F7, F8, F10. Status to in-progress; the eight actioned findings are the work.
+- 2026-08-18: amendment — added T10-T16, the review return's eight actioned findings, as approved at the review gate's disposition chip (which showed the fix/defer split verbatim). No acceptance-criterion wording changes: F11's checks fence AC3/AC4 harder rather than restating them, so no criteria audit is owed.
+- 2026-08-18: T10 — examples/marker-shapes.qmd probes the three shapes the reports must NOT fire on (a container whose marker has content, a top-level marker wrapping a nested one, the marker class in the title) beside the one they must (an emptied footnote), with counts pinned per format and the emptied kind named. Verified failing first: two emptied-container reports where one is right.
+- 2026-08-18: T11/T12/T13/T14 — all_markers became all_empty_markers (a marker with content splices its content back, so it empties nothing); the top-level block is checked only when it is not itself a marker; report_marker_sites walks doc.blocks rather than doc, so metadata is not a placement site; a Note handler covers footnotes. Table cells remain uncovered — ROADMAP row added rather than over-promising.
+- 2026-08-18: T15/T16 — the both-attributes warning now says neither target is dropped for being one of two, and README says so too with the self-target exception stated; README's unconditional "a section carrying the id qi-index" is now conditional; DESIGN.md's Architecture prose corrected in place (marked "corrected M08") for the two new reports, the dropped self-target and the minted section id. Three new README sentences pinned, two stale ones added to README_MISUSE_STALE.
+- 2026-08-18: the first revert-probe run of these four fixes destroyed them — `git checkout -- index.lua` inside the probe restores HEAD, and the fixes were not yet committed. Reapplied and re-verified before committing; the probe is re-run after the commit, which is the only order that works.
 ## Decisions
 
 ## Review

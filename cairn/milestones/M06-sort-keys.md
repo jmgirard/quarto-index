@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP2, GP4, GP5, GP6
-- **Branch/PR:** `m06-sort-keys`
+- **Branch/PR:** `m06-sort-keys` / https://github.com/jmgirard/quarto-index/pull/6
 
 ## Goal
 
@@ -43,19 +43,19 @@ what prints; the sort key carried through the book sidecar record with
 
 ## Acceptance criteria
 
-- [ ] AC1: Rendering `examples/sortkey.qmd` to PDF produces an index in which
+- [x] AC1: Rendering `examples/sortkey.qmd` to PDF produces an index in which
       each term the fixture's manifest names appears at the position its sort
       key dictates, read within the `pdftotext` index region; a boundary term
       names the one neighbour it has. The suite fails unless the manifest
       names every `sort=` occurrence in the fixture, derived from the fixture
       by construction rather than hand-listed. The fixture includes an entry
       whose sort key covers only its second level.
-- [ ] AC2: Rendering `examples/sortkey.qmd` to HTML produces a `qi-index`
+- [x] AC2: Rendering `examples/sortkey.qmd` to HTML produces a `qi-index`
       section whose entry order **at every level** equals the order its
       manifest states (read structurally by `tests/htmlindex.py`), and that
       order differs from the order the same printed terms take in a
       sort-stripped twin fixture the suite also renders.
-- [ ] AC3: For each printable ASCII character `tests/run-tests.sh` derives for
+- [x] AC3: For each printable ASCII character `tests/run-tests.sh` derives for
       the `examples/escaping.qmd` domain, a companion fixture places that
       character in a `sort=` value; the suite renders it with the engine the
       PDF build uses and confirms the index tool accepted every entry,
@@ -69,7 +69,7 @@ what prints; the sort key carried through the book sidecar record with
       `data-sort` attribute should ride into such a format at all is the
       standing ROADMAP question M03 deferred (M03 review F4/F9); this
       milestone does not settle it.
-- [ ] AC4: Three diagnostics fire with the message text recorded in this
+- [x] AC4: Three diagnostics fire with the message text recorded in this
       milestone's Decisions section: (a) `sort=` on a mark with no indexable
       text, (b) a `sort=` value with more levels than the mark's entry has,
       (c) one printed index key given two different sort keys — probed both
@@ -77,11 +77,11 @@ what prints; the sort key carried through the book sidecar record with
       asserted by a suite check proved discriminating by reverting the
       diagnostic and observing the check fail, and each has a control render
       that does not fire it.
-- [ ] AC5: A book's aggregated HTML index honors a sort key written in a
+- [x] AC5: A book's aggregated HTML index honors a sort key written in a
       chapter other than the marker's: `examples/book/` gains such a sort key
       and `tests/htmlindex.py` asserts the aggregated index orders that term
       by its sort key rather than its printed text.
-- [ ] AC6: README documents `sort=` — syntax, per-level alignment, the
+- [x] AC6: README documents `sort=` — syntax, per-level alignment, the
       fallback for a level with no sort key, and the three diagnostics — and
       the suite asserts verbatim one normative sentence per documented
       behavior, following the existing `README_HTML_CLAIMS` precedent. The
@@ -89,7 +89,7 @@ what prints; the sort key carried through the book sidecar record with
       asserted absent like `README_STALE`, and the pinned HTML collation
       sentence (README.md:303-305) is updated in `README_HTML_CLAIMS` rather
       than left contradicting what ships.
-- [ ] AC7: `tests/run-tests.sh --self-test` clean (the `verify` slot of
+- [x] AC7: `tests/run-tests.sh --self-test` clean (the `verify` slot of
       `cairn/PROFILE.md`, plus the planted-defect self-test the pre-review
       check uses), and every `.qmd` fixture the merge base carries at the top
       level of `examples/` emits byte-identical LaTeX — `tests/byte-diff.sh`
@@ -154,6 +154,7 @@ what prints; the sort key carried through the book sidecar record with
 - 2026-08-17: implement gate — user chose to proceed on the `ip-touching` tripwire without escalation, and chose format-neutral scope for the sort-key conflict warning over index-building formats only.
 - 2026-08-17: T1 done — `sort=` parsed with `entry=`'s level syntax, aligned per level with printed-text fallback, plus `levels_key`, `sort_levels`, `register_sort`/`sort_for`, `clamp_sort`, and a shared `derive_levels` used by both Span passes.
 - 2026-08-17: T1 minor amendment — parse moved into a new `CollectSort` pass ahead of the emitting pass; task text updated, rationale in this file's Decisions.
+- 2026-08-17: review — draft PR #6 opened; every criterion executed with fresh evidence (110 checks, exit 0), byte-diff clean, cairn_validate clean; three-lens fan-out spawned.
 - 2026-08-17: all tasks done; `tests/run-tests.sh --self-test` clean (110 checks, 89 at the merge base) and `tests/byte-diff.sh` clean. Status -> review.
 - 2026-08-17: T9 done — README gained "Sorting an entry under something else"; two `SUPPORTED_FORMS` exemplars, eight `README_SORT_CLAIMS` rows, the superseded "sort keys ... will arrive later" sentence pinned absent via `README_STALE`, and the `README_HTML_CLAIMS` collation row updated to what ships. Suite 96 -> 97 checks (110 with --self-test); `tests/byte-diff.sh` reports every merge-base fixture byte-identical.
 - 2026-08-17: T7 done — `examples/sort-escaping.qmd` generated by construction over the same 0x21-0x7E range the entry-key probe uses, plus its derived gfm twin; three legs pass (94 entries accepted by makeindex with the author's `@` quoted and only the back-end's separator bare, 94 entries in the HTML index and no others, gfm identical to the twin once `data-sort` is stripped). Suite 92 -> 96 checks.
@@ -221,3 +222,69 @@ first-in-document-order-wins semantics and now fires before any emission, so
 no mark is emitted under a key the report then contradicts.
 
 ## Review
+
+**PR:** https://github.com/jmgirard/quarto-index/pull/6
+
+All evidence below is from a fresh `tests/run-tests.sh --self-test` run on
+2026-08-17 at the branch head (exit 0, **110 checks**, against 89 at the merge
+base), plus `tests/byte-diff.sh` and `cairn_validate` runs of the same date.
+
+**AC1 — PDF order and nesting.** Four checks. The manifest is verified against
+the fixture by construction ("names every one of the 7 sort keys
+examples/sortkey.qmd declares, and no others"); the compiled PDF "prints all 8
+index entries in the order and nesting their sort keys derive", read from
+`pdftotext -bbox-layout` word positions because a two-column index interleaves
+under plain extraction; and the twin proves the ordering is the keys' doing —
+"removing the sort keys moves every one of the 6 top-level entries". The twin
+is itself verified to be the fixture minus its `sort=` attributes and nothing
+else.
+
+**AC2 — HTML order at every depth.** Four checks. The generated index "matches
+all 8 manifest rows, in order" and the twin's likewise; the two manifests are
+asserted to disagree at every position — "the sort keys move all 8 entries, at
+every one of the 2 depths the index nests to" — so neither could be satisfied
+by an index that ignored sort keys. All 8 index links resolve.
+
+**AC3 — every printable ASCII character as a sort key, three formats.** Four
+checks. The domain is derived by construction from the same 0x21–0x7E range
+the entry-key probe uses ("covers all 94 printable ASCII characters"). LaTeX:
+"all 94 entries accepted" by makeindex, which is where a missing quote on an
+author's `@` or `!` would surface. HTML: "all 94 sort-keyed entries reach the
+HTML index, and it carries no others". gfm: "all 94 sort keys change nothing
+but the one attribute carrying each, so none reaches visible text", compared
+against a sort-stripped twin.
+
+**AC4 — the three reports.** Seven checks. Each fires exactly once in `latex`
+and once in `gfm`; the cross-chapter case — invisible to a single document,
+since each chapter renders in its own process — "is reported once, and the
+first chapter in book order wins". The control confirms none fires on the
+well-formed fixture, and each of the three is proved discriminating by
+`warn_discrimination`, failing both when removed and when duplicated. The
+message texts are those recorded in this file's Decisions section.
+
+**AC5 — book aggregation across chapters.** The aggregated book index matches
+all 10 manifest rows in order, with `Shared Term` filed under its cross-chapter
+sort key. That the key crosses a chapter boundary is asserted by construction
+rather than assumed: "the book's sort key(s) are declared in ['index.qmd'] and
+the marker is in ['last.qmd']".
+
+**AC6 — README.** "All 8 documented sort-key behaviors appear verbatim in
+README.md"; the superseded sentence declaring sort keys out of scope is pinned
+absent ("all 5 stale pass-through sentences are gone"); the collation claim was
+updated in place rather than left contradicting what ships ("all 7 HTML claims
+appear"); and the two new authoring exemplars are pinned ("all 9 normative
+syntax exemplars appear verbatim").
+
+**AC7 — verify slot and byte-identity.** `tests/run-tests.sh --self-test`
+exit 0, 110 checks. `tests/byte-diff.sh`: "Every merge-base fixture renders
+byte-identically" across the 13 top-level fixtures it enumerates via
+`git ls-tree`, so a document writing no sort key emits the LaTeX it always did.
+
+**Consistency gate.** `cairn_validate` — all checks passed. `cairn_impact` not
+run: no `DESIGN.md` principle changed (the DESIGN edit corrects a description
+of behavior, not an IP/GP). Profile `generic` names no toolchain checks, so
+that half of the gate is a clean no-op.
+
+**Amendment returns:** one, at implement time and before review — AC3, gated
+and user-approved (see the work log). No defect returns.
+

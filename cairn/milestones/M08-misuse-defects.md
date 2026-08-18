@@ -1,6 +1,6 @@
 # M08: Reachable mark and marker misuse defects
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -148,6 +148,7 @@ author reads or markup an HTML reader receives.
 - 2026-08-18: T9 — README now states five marker rules (the div-only rule added, the top-level rule extended with the emptied container), documents that a self-referential target is dropped and judged on printed text, and replaces the "fixed rather than minted" section-id sentence with the minting rule. Seven new sentences pinned as bytes in README_MISUSE_CLAIMS and the falsified one in README_MISUSE_STALE. Suite green: 139 checks.
 - 2026-08-18: T8 — each fix reverted alone, suite run, first FAIL recorded. T2 removed: "M08-AC3: expected 1 occurrence(s) of <<marker class is written on a heading>> ... got 0". T3 removed: "M08-AC4: expected 2 occurrence(s) of <<was the only content of the>> ... got 0". T5 reverted to the fixed id: "M08-AC1: ids carried by two elements: ['qi-index']; the claimed id 'qi-index' appears 2 time(s), not once; the index section took 'qi-index', a name the document already claimed". T7 reverted: "M08-AC2: expected exactly one \\index{Cats}, found 0; ... a self-referential encap survived: \\index{Cats|see{Cats}}" and seven further clauses. All four fenced; working tree restored clean after each.
 - 2026-08-18: completion — tests/run-tests.sh --self-test clean, 153 checks (139 in the plain run). Status to review.
+- 2026-08-18: REVIEW RETURN (defect return 1). No acceptance criterion failed as written — all five verified with fresh evidence — but the maintainer judged three findings load-bearing at the gate: the emptied-container report fires when the container keeps content spliced in from a non-empty marker (F1, falsifying the README sentence the suite pins), fires on the surviving top-level marker itself for a div that reaches no output (F2), and report_marker_sites walks doc.meta so a marker class in the title is reported as a misplaced site (F4). Actioned with them: F3 (footnote and table-cell containers emptied unreported, against README's unqualified promise), F5 (the both-attributes warning and README still say every usable target is kept, now false in the case AC2 exercises), F6 (DESIGN.md Architecture prose not updated), F9 (README:314 still calls the section id qi-index unconditionally), F11 (no check discriminates F1 or F2). Deferred to ROADMAP rows: F7, F8, F10. Status to in-progress; the eight actioned findings are the work.
 ## Decisions
 
 ## Review

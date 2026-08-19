@@ -3221,7 +3221,10 @@ for want in ('\\index{Cats}', '\\index{Birds!Owls}', '\\index{ferrets}'):
     if n != 1:
         errs.append(f'expected exactly one {want}, found {n}')
 # The fourth keeps the target that was NOT self-referential, and only that one.
-if src.count('\\index{Dogs|seealso{Pets}}') != 1:
+# M14 retargeted it from `Pets`, which this file never indexed, to `Cats`,
+# which it does: the surviving half of a both-attributes mark is meant to be a
+# working cross-reference, and a target naming nothing is now itself reported.
+if src.count('\\index{Dogs|seealso{Cats}}') != 1:
     errs.append('the surviving see-also target on the both-attributes mark was '
                 'not emitted as its only encap')
 if 'quartoindexseeboth' in src:
@@ -3272,7 +3275,7 @@ else:
         errs.append("entry 'Dogs' carries a locator though it still has a "
                     "cross-reference")
     targets = [target for _kind, target, _linked, _href in dogs['xrefs']]
-    if targets != ['Pets']:
+    if targets != ['Cats']:
         errs.append(f"entry 'Dogs' should carry exactly its surviving see-also "
                     f"target, carries {targets}")
 # The control: a target naming a DIFFERENT entry is untouched and still links.
@@ -5963,8 +5966,9 @@ for want in ([(0, 'A'), (1, 'B'), (2, 'C, D')],
 # cannot be the domain: a surviving target is typeset on the entry's own line,
 # so an entry that kept one no longer prints the term the list would name, and
 # the clause would pass by not matching. These two are the whole of it, and
-# both are M08 shapes this milestone does not touch.
-CROSS_REFERENCED = ('Dogs, see also Pets', 'Lynxes, see Cats')
+# both are M08 shapes this milestone does not touch. (M14 retargeted the first
+# from `Pets` to `Cats`, an entry the file marks; the shape is unchanged.)
+CROSS_REFERENCED = ('Dogs, see also Cats', 'Lynxes, see Cats')
 printed = [e.text for e in entries]
 for entry in entries:
     printed_xref = ', see ' in entry.text or ', see also ' in entry.text
@@ -6476,6 +6480,269 @@ print(f'ok   M11-AC1: the compiled index prints all {len(got)} manifest '
       f'every one')
 EMPTYPDFPY
 pass "M11-AC1: every entry written with an empty level survives to the compiled index"
+
+# ---------------------------------------------------------------------------
+# M14 — a cross-reference target that names no index entry is reported.
+#
+# Two fixtures, deliberately twinned. In examples/dangling-xref.qmd every
+# report the filter can draw is drawn; in examples/resolving-xref.qmd none is.
+# Neither alone is enough: a filter that reported every target would satisfy
+# the first fixture entirely, and a filter that reported none would satisfy
+# the second.
+#
+# Rendered to all three formats because the report is format-neutral (IP1):
+# whether a target names a term the document indexes is a fact about what the
+# author wrote, so the same document must draw the same reports in a format
+# with a LaTeX index, one with an HTML index, and one with no index at all.
+# ---------------------------------------------------------------------------
+
+# One report's full text, assembled from the two halves rather than written
+# out per shape: the head carries the attribute, the mark and the target, and
+# the tail is WARN_DANGLING, which every instance shares and which is pinned
+# once where that constant is defined.
+dangling_report() {
+  printf '%s= on %s points at "%s", which no index mark in this %s %s' \
+    "$1" "$2" "$3" "$4" "$WARN_DANGLING"
+}
+
+for fmt in latex html gfm; do
+  quarto render examples/dangling-xref.qmd --to $fmt \
+    > "$WORK/dangling-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/dangling-$fmt.log" >&2; fail "M14-AC1: dangling-xref.qmd failed to render to $fmt"; }
+  quarto render examples/resolving-xref.qmd --to $fmt \
+    > "$WORK/resolving-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/resolving-$fmt.log" >&2; fail "M14-AC2: resolving-xref.qmd failed to render to $fmt"; }
+done
+
+# M14-AC1 — the criterion shape: the document indexes `Cats`, a mark points at
+# `Felines`, which nothing indexes, and exactly one report names it.
+for fmt in latex html gfm; do
+  check_warning_count "$WORK/dangling-$fmt.log" \
+    "$(dangling_report see 'entry="Lions"' Felines document)" 1 "M14-AC1 ($fmt)"
+done
+pass "M14-AC1: a target naming a term the document does not index draws exactly one report, naming it, in LaTeX, HTML and gfm"
+
+# M14-AC3 — one row per shape, each with the count it must draw. `Lynxes` is
+# written on two marks and draws two reports, which is what says the rule is
+# per mark per target rather than per distinct target. The rows are checked
+# against the log AND their total against the log's whole count of the report,
+# so a shape the filter reports that the manifest does not name fails too.
+read -r -d '' DANGLING_SHAPES <<'MANIFEST' || true
+1	see-also	entry="Pumas"	Ocelots
+1	see	entry="Jaguars"	Servals
+1	see	entry="Caracals"	Wild!Cats!Small
+1	see	entry="Margays"	Cats!Kittens
+1	see	entry="Ocelots Marked"	Lynxes
+1	see	entry="Bobcats"	Lynxes
+MANIFEST
+
+DANGLING_TOTAL=1
+while IFS=$'\t' read -r want attr context target; do
+  [ -n "${want:-}" ] || continue
+  DANGLING_TOTAL=$((DANGLING_TOTAL + want))
+  for fmt in latex html gfm; do
+    check_warning_count "$WORK/dangling-$fmt.log" \
+      "$(dangling_report "$attr" "$context" "$target" document)" "$want" \
+      "M14-AC3 ($fmt)"
+  done
+done <<< "$DANGLING_SHAPES"
+
+for fmt in latex html gfm; do
+  check_warning_count "$WORK/dangling-$fmt.log" "$WARN_DANGLING" \
+    "$DANGLING_TOTAL" "M14-AC3 (total, $fmt)"
+  # The resolving halves of the two both-attribute marks. Both name `Cats`,
+  # which the fixture indexes, so no report may name it — the trailing comma
+  # keeps this from matching the `Cats!Kittens` report, which is a different
+  # target and must still be drawn.
+  if grep -F -- "$WARN_DANGLING" "$WORK/dangling-$fmt.log" \
+     | grep -qF 'points at "Cats",'; then
+    grep -F -- "$WARN_DANGLING" "$WORK/dangling-$fmt.log" >&2
+    fail "M14-AC3 ($fmt): a report names \`Cats\`, which the fixture indexes; the resolving half of a both-attribute mark must draw none"
+  fi
+done
+pass "M14-AC3: each of the six further shapes draws exactly its own count in all three formats, those counts are the whole of what the fixture reports, and the resolving target appears in no report line"
+
+# M14-AC2 — the twin: every target resolves, so the report is silent. An exact
+# zero over each of the three formats, which is the half that says the rule
+# resolves rather than merely fires.
+for fmt in latex html gfm; do
+  check_warning_count "$WORK/resolving-$fmt.log" "$WARN_DANGLING" 0 \
+    "M14-AC2 ($fmt)"
+done
+pass "M14-AC2: a fixture whose every target resolves — an exact single-level match, a full multi-level path, and a level that exists only as a parent — draws no report in any of the three formats"
+
+# The milestone-local decision on what makes a target resolve says the report
+# and the HTML back-end's own walk (`lookup_entry`) must agree, and that they
+# cannot share code: the entry tree exists in one format only. The agreement
+# is asserted here instead. In the HTML index a target is a link exactly when
+# the walk found its entry, so the set of unlinked targets must be exactly the
+# set of targets the report named.
+python3 - "$WORK/dangling-html.log" examples/dangling-xref.html \
+         "$WORK/resolving-html.log" examples/resolving-xref.html <<'PY'
+import re, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+
+# The report writes a target the way the author typed it (`!` separating
+# levels, `!!` a literal one); the HTML index prints it the way a reader reads
+# it. Converted here rather than compared loosely, so a target whose own text
+# contains a level separator cannot be read as a deeper path.
+def printed(target):
+    parts, current, i = [], [], 0
+    while i < len(target):
+        if target[i] == '!':
+            if target[i + 1:i + 2] == '!':
+                current.append('!')
+                i += 2
+                continue
+            parts.append(''.join(current))
+            current = []
+            i += 1
+            continue
+        current.append(target[i])
+        i += 1
+    parts.append(''.join(current))
+    return ': '.join(parts)
+
+
+REPORTED = re.compile(r'points at "(.*?)", which no index mark in this')
+errs = []
+for log, page, label in ((sys.argv[1], sys.argv[2], 'dangling'),
+                         (sys.argv[3], sys.argv[4], 'resolving')):
+    text = open(log, encoding='utf-8', errors='replace').read()
+    reported = sorted({printed(m.group(1)) for m in REPORTED.finditer(text)})
+    records = H.entry_records(H.index_section(H.parse(page)))
+    targets = [(target, linked)
+               for r in records for _kind, target, linked, _href in r['xrefs']]
+    if not targets:
+        errs.append(f'{label}: the rendered index carries no cross-reference '
+                    f'at all, so this check compares nothing')
+        continue
+    unlinked = sorted({target for target, linked in targets if not linked})
+    if unlinked != reported:
+        errs.append(f'{label}: the index leaves {unlinked} unlinked while the '
+                    f'report names {reported}')
+if errs:
+    print('FAIL: M14 (resolution rule): ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M14: in both fixtures the targets the HTML index leaves unlinked '
+      'are exactly the targets the format-neutral report names, so the report '
+      'and the HTML entry walk agree without sharing code')
+PY
+
+# M14-AC4 — a target dropped as a format-neutral self-reference draws its own
+# report and not this one. Asserted over the six marks whose target names the
+# entry they are written on, by their context strings: no report line names
+# any of them. The three fold-induced shapes are the other half — they DO
+# dangle format-neutrally, since the path they name is one the author never
+# indexed, so their counts are pinned nonzero rather than zeroed.
+for fmt in latex html gfm; do
+  for context in 'entry="Cats"' 'entry="Birds!Owls"' 'term "ferrets"' \
+                 'entry="Dogs"' 'entry="Moles!"' 'entry="P!Q!R!"'; do
+    if grep -F -- "$WARN_DANGLING" "$WORK/self-xref-$fmt.log" \
+       | grep -qF "on $context points at"; then
+      fail "M14-AC4 ($fmt): the mark $context had its target dropped as a self-reference and is reported as dangling as well"
+    fi
+  done
+  # Their existing reports are still there — without this the clause above
+  # would pass on a filter that had stopped reporting self-references at all.
+  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_SELF_XREF" 6 "M14-AC4 ($fmt)"
+  for context in 'entry="A!B!C!D"' 'entry="F!G!H!I!J"' 'entry="M!N!O!P"'; do
+    check_warning_count "$WORK/self-xref-$fmt.log" \
+      "on $context points at" 1 "M14-AC4 (fold shape, $fmt)"
+  done
+  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_DANGLING" 3 \
+    "M14-AC4 (total, $fmt)"
+done
+pass "M14-AC4: none of the six self-referential targets is also reported as dangling, all six keep their own report, and the three fold-induced targets — which name a path the author never indexed — are reported here in every format"
+
+# M14-AC5, the ordering fixture's half. The marker sits in the FIRST chapter,
+# which is also where the index is built; `Early Reference` there points at
+# `Late`, marked in the second chapter, and must draw nothing. It is the
+# discriminating shape: a report drawn by the chapter that builds the index
+# would call that target broken, on both renders. `Missing Reference` names a
+# term no chapter marks and is reported once per whole-book render — once, not
+# once per chapter, which is only reachable if a single chapter draws it.
+ORDER_DANGLING="$(dangling_report see 'entry="Missing Reference"' 'Nowhere At All' book)"
+for pass_log in 1 2; do
+  check_warning_count "$WORK/book-order-$pass_log.log" "$ORDER_DANGLING" 1 \
+    "M14-AC5 (render $pass_log)"
+  check_warning_count "$WORK/book-order-$pass_log.log" "$WARN_DANGLING" 1 \
+    "M14-AC5 (total, render $pass_log)"
+done
+pass "M14-AC5: in a book whose marker sits first, a target another chapter indexes draws nothing on either render, and the one target no chapter indexes is reported exactly once per whole-book render"
+
+# ---------------------------------------------------------------------------
+# The corpus reconciliation the report forces. Every example that writes a
+# cross-reference target now has an expected report count, and which examples
+# those are is derived by grepping the corpus rather than written down: a new
+# fixture carrying a target cannot slip past this by not being on a list.
+#
+# The counts are pinned rather than computed. A routine that re-derived them
+# would be a second implementation of the same resolution rule and could agree
+# with the filter by sharing its bug; a number that has to be changed by hand
+# cannot.
+#
+# examples/xref-escaping.qmd is the large one: its ~250 probe targets name
+# level paths built by construction to cover the printable ASCII range, and
+# nothing indexes them. Reconciling that corpus is its own piece of work, and
+# is a ROADMAP candidate; this milestone pins what it reports.
+# ---------------------------------------------------------------------------
+read -r -d '' DANGLING_CORPUS <<'MANIFEST' || true
+examples/book-order/index.qmd	0
+examples/book-order/later chapter.qmd	1
+examples/book/sub/two.qmd	1
+examples/content.qmd	0
+examples/dangling-xref.qmd	7
+examples/demo.qmd	8
+examples/empty-levels.qmd	0
+examples/html-index.qmd	1
+examples/placement.qmd	0
+examples/resolving-xref.qmd	0
+examples/self-xref.qmd	3
+examples/xref-conflict.qmd	6
+examples/xref-escaping.qmd	271
+MANIFEST
+
+printf '%s\n' "$DANGLING_CORPUS" > "$WORK/dangling-corpus.txt"
+# The roster, from the corpus itself. `see=`/`see-also=` as an attribute, so a
+# prose mention of the attribute name in a fixture's own explanatory text does
+# not put that file on the roster.
+find examples -name '*.qmd' -print0 \
+  | xargs -0 grep -lE '(see|see-also)="' \
+  | LC_ALL=C sort > "$WORK/dangling-roster.txt"
+cut -f1 "$WORK/dangling-corpus.txt" | LC_ALL=C sort > "$WORK/dangling-listed.txt"
+if ! diff -u "$WORK/dangling-roster.txt" "$WORK/dangling-listed.txt" >&2; then
+  fail "M14: the examples that write a cross-reference target are not the examples the count manifest lists (- carries targets and has no count; + is listed and carries none)"
+fi
+pass "M14: every example writing a cross-reference target carries an expected report count, and the roster is read out of the corpus rather than written down"
+
+# Each single-document example, rendered to gfm — the format with no index
+# back-end at all, so a count that holds here is a count the report owes to
+# what the author wrote rather than to a back-end that happened to run.
+BOOK_EXPECTED_TOTAL=0
+while IFS=$'\t' read -r file want; do
+  [ -n "${file:-}" ] || continue
+  case "$file" in
+    examples/book*)
+      BOOK_EXPECTED_TOTAL=$((BOOK_EXPECTED_TOTAL + want))
+      continue
+      ;;
+  esac
+  quarto render "$file" --to gfm > "$WORK/corpus-$(basename "$file" .qmd).log" 2>&1 \
+    || { tail -20 "$WORK/corpus-$(basename "$file" .qmd).log" >&2; fail "M14: $file failed to render to gfm"; }
+  check_warning_count "$WORK/corpus-$(basename "$file" .qmd).log" \
+    "$WARN_DANGLING" "$want" "M14 (corpus, $file)"
+done <<< "$DANGLING_CORPUS"
+
+# The book chapters' rows are per chapter, but the report is drawn once for
+# the whole book, so what they must add up to is what each book render emits.
+# Two books carry targets and each reports one, which is what the sum states.
+[ "$BOOK_EXPECTED_TOTAL" = "2" ] \
+  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but the two book fixtures report one each"
+check_warning_count "$WORK/book-html.log" "$WARN_DANGLING" 1 "M14 (corpus, examples/book)"
+check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING" 1 "M14 (corpus, examples/book-order)"
+pass "M14: every example's dangling-target report count matches its pinned expectation, in a format with no index back-end, and the book chapters' counts add up to what their books report"
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.

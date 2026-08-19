@@ -46,22 +46,22 @@ none; not plannable.
 
 ## Acceptance criteria
 
-- [ ] AC1: Every emptied-place report the run emits is the single message
+- [x] AC1: Every emptied-place report the run emits is the single message
       template `index placement marker in top-level block N was the only thing
       written where it stood; the marker is removed, so nothing you wrote
       remains there`, with the block index its only variable part. Evidence: a
       full-line equality check over every report line the renders emit, so no
       report can carry an element kind, a class or an id.
-- [ ] AC2: For each of the three renders of `examples/marker-shapes.qmd`
+- [x] AC2: For each of the three renders of `examples/marker-shapes.qmd`
       (html, latex, gfm), the multiset of emptied-place report lines equals
       the expected list derived in the fixture's manifest comment — positives
       and non-reports settled by one comparison, so a report that fires where
       none is expected fails as loudly as one that goes missing.
-- [ ] AC3: A block list whose owner is itself a marker draws no report: the
+- [x] AC3: A block list whose owner is itself a marker draws no report: the
       doubly-nested and triply-nested marker shapes each draw exactly one
       report, at the position of the outermost marker, and never one per
       level. Evidence: those shapes' lines in AC2's comparison.
-- [ ] AC4: Four mutations, each applied after the fix is committed and
+- [x] AC4: Four mutations, each applied after the fix is committed and
       reverted after, each making a check fail: deleting the report call;
       widening the rule to fire for any block list that merely contains a
       marker; shifting the reported position by one; and stopping markers
@@ -73,8 +73,8 @@ none; not plannable.
       carry that one, latex carries none. Occurrences are located, not counted,
       so a marker div surviving into a body fails the check; AC4's fourth
       mutation plants exactly that, to prove it can.
-- [ ] AC6: `tests/run-tests.sh --self-test` clean.
-- [ ] AC7: README and `cairn/DESIGN.md` state the report, that it names no
+- [x] AC6: `tests/run-tests.sh --self-test` clean.
+- [x] AC7: README and `cairn/DESIGN.md` state the report, that it names no
       container by design, and why — a callout holding only a marker still
       renders its title bar, so a message calling it empty is false.
 
@@ -136,3 +136,36 @@ none; not plannable.
 - 2026-08-19: T4 — `tests/run-tests.sh --self-test` clean at 187 checks, the planted-defect pass included. All three renders produce the manifest's 10 reports and the located-residue check passes.
 - 2026-08-19: T5 — all four AC4 mutations caught. Deleting the report call, widening the rule to any list merely containing a marker, and shifting the position by one each fail the set-equality check; stopping markers being stripped at all fails the located-residue check. The harness refuses to run against a dirty tree, since it reverts with `git checkout --` (M08 lesson).
 - 2026-08-19: T6 — README gains a sixth marker rule and DESIGN's marker paragraph gains the report, both stating that it names no container and why. Self-test clean at 187 checks after the docs change. Status to review.
+
+## Review
+
+**Fresh evidence, 2026-08-19** (branch m12-emptied-place, PR #12, main unmoved
+since the branch was cut).
+
+- AC1 — the three per-format checks compare the whole tail of every report line,
+  not a count: 10 lines in each of html, latex and gfm, every one the single
+  template with only its block index differing. A report carrying an element
+  kind, a class or an id would have carried it into the compared text.
+- AC2 — set equality against the fixture manifest holds in all three renders,
+  10 expected against 10 emitted, no missing and no unexpected line. The
+  manifest's two halves (position list, line per shape) were compared to each
+  other before either was used.
+- AC3 — the doubly- and triply-nested shapes contribute one line each (blocks 20
+  and 22) and the footnote-nested shape one (block 24); the top-level placement
+  marker at block 27 contributes none. All four settled inside AC2's comparison.
+- AC4 — four mutations, each against the committed fix with a clean tree, each
+  caught: deleting the report call, widening to any list merely containing a
+  marker, shifting the position by one (all three fail the set-equality check),
+  and stopping markers being stripped so one rides into a body (fails the
+  located-residue check).
+- AC5 — the located-residue check passes: the only `qi-index-here` in any output
+  is the title span Quarto writes from the fixture's YAML, present in the html
+  and gfm outputs and absent from the tex.
+- AC6 — `tests/run-tests.sh --self-test` clean at 187 checks, planted-defect
+  pass included.
+- AC7 — README carries a sixth marker rule and DESIGN's marker paragraph the
+  report, both stating that it names no container and why.
+
+**Consistency gate:** `cairn_validate` all checks passed, `coverage complete`
+among them. No `DESIGN.md` principle text changed, so `cairn_impact` does not
+apply. The `generic` profile names no toolchain consistency checks.

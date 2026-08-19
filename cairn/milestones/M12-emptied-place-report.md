@@ -142,17 +142,21 @@ none; not plannable.
 **Fresh evidence, 2026-08-19** (branch m12-emptied-place, PR #12, main unmoved
 since the branch was cut).
 
-- AC1 — the three per-format checks compare the whole tail of every report line,
-  not a count: 10 lines in each of html, latex and gfm, every one the single
-  template with only its block index differing. A report carrying an element
-  kind, a class or an id would have carried it into the compared text.
+- AC1 — re-recorded after the review strengthened the check (finding 1 below).
+  Every warning line each render emits is now partitioned: 34 warnings per
+  format, the 21 that are the fixture's two other known messages, and the 13
+  that must each equal the template with only the block index differing. A
+  report reworded past the template, or one carrying a container name before
+  it, lands in the second partition and fails.
 - AC2 — set equality against the fixture manifest holds in all three renders,
-  10 expected against 10 emitted, no missing and no unexpected line. The
-  manifest's two halves (position list, line per shape) were compared to each
+  13 expected against 13 emitted, none missing and none unexpected. The
+  manifest's two halves (position list, line per report) were compared to each
   other before either was used.
 - AC3 — the doubly- and triply-nested shapes contribute one line each (blocks 20
   and 22) and the footnote-nested shape one (block 24); the top-level placement
-  marker at block 27 contributes none. All four settled inside AC2's comparison.
+  marker at block 31 contributes none. Two emptied places under one top-level
+  block (block 26) contribute two byte-identical lines, which the multiset
+  comparison requires exactly twice. All settled inside AC2's comparison.
 - AC4 — four mutations, each against the committed fix with a clean tree, each
   caught: deleting the report call, widening to any list merely containing a
   marker, shifting the position by one (all three fail the set-equality check),
@@ -162,10 +166,58 @@ since the branch was cut).
   is the title span Quarto writes from the fixture's YAML, present in the html
   and gfm outputs and absent from the tex.
 - AC6 — `tests/run-tests.sh --self-test` clean at 187 checks, planted-defect
-  pass included.
+  pass included; re-run clean after the review fixes.
 - AC7 — README carries a sixth marker rule and DESIGN's marker paragraph the
   report, both stating that it names no container and why.
 
 **Consistency gate:** `cairn_validate` all checks passed, `coverage complete`
 among them. No `DESIGN.md` principle text changed, so `cairn_impact` does not
 apply. The `generic` profile names no toolchain consistency checks.
+
+**Independent review — three lenses, 2026-08-19.** [O] diff-bug, [S]
+blame-history, [S] prior-review. The [O] lens tried to break `emptied_places`
+on five shapes the fixture does not hold and found no defect, and independently
+re-derived the manifest (29 top-level blocks then; correct). The prior-review
+lens probed `gh api .../pulls/comments` and found no inline review comments in
+the repo at all, so its evidence is the archived `## Review` record. No finding
+demonstrated an acceptance criterion failing, so none met the return floor.
+
+Fixed now, at the maintainer's triage (all seven):
+
+1. AC1's evidence did not establish AC1 — the check searched for lines already
+   matching the template, so a reworded report was invisible and a container
+   name written *before* the template was never compared. Now every warning
+   line is partitioned and compared whole.
+2. Two emptied places under one top-level block were unexercised, T1 having
+   built the fixture to avoid byte-identical lines. Now pinned: a bullet list
+   with two marker-only items, listed twice in the manifest.
+3. The `warn()` message was three concatenated literals against T3's own
+   instruction and the M10 lesson; the distinctness scan reads only the first.
+   Now one literal.
+4. The harness comment said "15 nested markers" above an assertion of 17. Both
+   were wrong — the render emits 20; comment and assertion corrected, and the
+   comment now shows its arithmetic.
+5. The README bullet read as covering a lone top-level marker, which places the
+   index and empties nothing. Qualified to a nested marker.
+6. DESIGN and a code comment claimed a figure *caption* is a block list like
+   any other; the fixture backs a figure *body*. Reworded to the table cell,
+   footnote body and definition it does back.
+7. M08 review R3 — a definition emptied by a marker — was neither addressed nor
+   tested, though it is cited on the ROADMAP row this milestone absorbed. Added
+   to the fixture; the generic walk handles it unaided.
+
+Follow-up (candidate rows at hygiene): the reported position is a post-Quarto
+AST index, unverified where Quarto injects top-level blocks; in a book the
+positions are chapter-local and the message names no file; the callout, tabset
+and figure rows depend on Quarto's scaffold wrapping, so an upstream change
+would read as a regression here; AC5's residue check reads working-tree
+artifacts rather than `$WORK`; and its title exemption is line-scoped.
+
+Rejected: the manifest self-comparison fences a half-edit rather than a wrong
+expectation — true, and answered by the [O] lens re-deriving it independently.
+`count_owner(block)`'s reliance on `walk` never visiting the walked element is
+safe by construction, as that lens states. The milestone file changing on disk
+mid-review was this review writing its own section.
+
+**AC4 re-run after the fixes:** all four mutations caught again, against the
+committed fix with a clean tree.

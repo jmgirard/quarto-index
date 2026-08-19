@@ -139,7 +139,21 @@ back-end emits anything document-wide. It opens format-neutrally: the placement
 marker — an empty top-level div, class `qi-index-here` — is resolved before any
 back-end is chosen, so a misused one (nested, duplicate, non-empty, or in a
 document with no marks) is diagnosed in every format and no marker survives
-into any output. One further misuse is reported rather than edited away (corrected M08): the marker class written where it cannot place an index — any block that is not a div, and any inline carrying attributes at all, a span, inline code, a link or an image among them — which leaves that element exactly as the author wrote it, class included. It is read from the document's blocks alone, never its metadata, so a class written in the title or the abstract is reported nowhere — and a marker written there is not resolved either, and survives into output (ROADMAP). One shared
+into any output. A nested marker that was the only thing in the block list it stood in empties
+that place, which is reported — carrying the marker's top-level block position
+and naming nothing else (added M12). Naming what held it is what the report
+refuses: Quarto wraps a callout, a tabset and a captioned figure in scaffold
+divs no author wrote, so every available name is invented or false, and a
+callout holding only a marker still renders its title bar and so is not empty
+at all. The count is taken before anything is stripped — the strip runs
+bottom-up, so an outer list would look empty by the time it were visited — and
+a block list a marker owns is subtracted, because a marker is removed whole at
+every depth and is never itself a place an author can find emptied. Counting
+that way is what keeps the rule free of per-container code, and so free of the
+gap that came with it: a figure caption and a table cell are block lists like
+any other here, where the kind-by-kind check M08 tried reached neither.
+
+One further misuse is reported rather than edited away (corrected M08): the marker class written where it cannot place an index — any block that is not a div, and any inline carrying attributes at all, a span, inline code, a link or an image among them — which leaves that element exactly as the author wrote it, class included. It is read from the document's blocks alone, never its metadata, so a class written in the title or the abstract is reported nowhere — and a marker written there is not resolved either, and survives into output (ROADMAP). One shared
 function then puts a back-end's index at the surviving marker, or at the end of
 the document when there is none, so the two back-ends cannot drift apart on
 where an index goes.

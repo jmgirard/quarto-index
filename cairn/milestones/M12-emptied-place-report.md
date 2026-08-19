@@ -1,6 +1,6 @@
 # M12: A marker that leaves nothing behind is reported without naming what held it
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -118,7 +118,7 @@ none; not plannable.
 - [x] T5: Run the four AC4 mutations, each against the committed fix, never
       with uncommitted work in the tree (M08 lesson: `git checkout --` inside
       a probe destroys it).
-- [ ] T6: Document the report in README and the marker paragraph of
+- [x] T6: Document the report in README and the marker paragraph of
       `cairn/DESIGN.md` — what it says, that it names no container by design,
       and the callout title-bar reason it does not.
 
@@ -135,3 +135,4 @@ none; not plannable.
 - 2026-08-19: T3 — the report emits from strip_nested_markers, counted as every emptying block list minus every one a marker owns, which needs no per-container code and so reaches a figure caption and a table cell like any other list. The plan's Note handler was dropped after a probe: on Pandoc 3.10.2 the Block filter reaches a footnote's blocks unaided, so M08's Note handler would double-count and under-report a marker nested inside a marker inside a footnote — that shape is now in the fixture, which is how the double count was found. All three formats emit the manifest's 10 reports.
 - 2026-08-19: T4 — `tests/run-tests.sh --self-test` clean at 187 checks, the planted-defect pass included. All three renders produce the manifest's 10 reports and the located-residue check passes.
 - 2026-08-19: T5 — all four AC4 mutations caught. Deleting the report call, widening the rule to any list merely containing a marker, and shifting the position by one each fail the set-equality check; stopping markers being stripped at all fails the located-residue check. The harness refuses to run against a dirty tree, since it reverts with `git checkout --` (M08 lesson).
+- 2026-08-19: T6 — README gains a sixth marker rule and DESIGN's marker paragraph gains the report, both stating that it names no container and why. Self-test clean at 187 checks after the docs change. Status to review.

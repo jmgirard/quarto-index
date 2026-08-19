@@ -39,6 +39,19 @@ A sort key written across both levels. The key at the empty level goes with it,
 so the surviving level keeps the key written for it and files under `aardvark`
 rather than under `mmm`: [zebra]{.index entry="!Zebra" sort="mmm!aardvark"}.
 
+A sort key reaching past an entry whose own depth the empty-level drop
+reduces, so three depths differ at once: the value is written with two levels,
+the sort key with three, and the entry indexes at one. The report about the
+extra sort levels must therefore state which count it is measuring against
+rather than leave the number to be read as the depth the entry indexes at.
+The term is one no other mark here indexes, so its sort key cannot attach to a
+probe this shape is not about: [moles]{.index entry="Moles!" sort="a!b!c"}.
+
+The same overreaching sort key with no `entry=` at all. The mark indexes at the
+one level its visible text makes, a level the author wrote no `entry=` for, so
+the report must not tell them what their index entry was written with:
+[ferns]{.index sort="a!b!c"}.
+
 # An entry that is nothing but empty levels
 
 Nothing survives the drop, so there is no entry to index and the mark says so

@@ -51,13 +51,16 @@ existing candidate row.
       and `entry="Dogs!"` with the echoed value masked out, proved
       discriminating by revert (T6) — the pre-milestone reports differ only in
       the echoed value and must fail this check.
-- [ ] AC3 Both numbers in the extra-sort-levels report are labelled as depths
-      of the `sort=` and `entry=` values **as written**, so neither reads as
-      the depth the entry indexes at. Evidence: a fixture whose written entry
-      depth (2), sort depth (3) and indexed depth (1) all differ
-      (`entry="Cats!" sort="a!b!c"`); the report's new text asserted verbatim,
-      and the `\index{Cats}` emitted for that same mark asserted, showing the
-      indexed depth the report does not name.
+- [ ] AC3 Both numbers in the extra-sort-levels report are labelled as counts
+      taken before any empty level is dropped, so neither reads as the depth
+      the entry indexes at, and the wording holds for a mark carrying `sort=`
+      with no `entry=`. Evidence: a fixture whose written entry depth (2),
+      sort depth (3) and indexed depth (1) all differ (`entry="Moles!"
+      sort="a!b!c"`), and a second mark of the no-`entry=` shape
+      (`sort="a!b!c"` on visible text, one level via the fallback at
+      `index.lua:311`); each report's new text asserted verbatim, and the
+      single-level `\index{a@Moles}` emitted for the first mark asserted,
+      showing the indexed depth the report does not name.
 - [ ] AC4 Every `warn(` message in `index.lua` is distinct from every other,
       and each of the two rewritten reports is written as a single literal, so
       the scan reads whole messages rather than first fragments (M10 lesson).
@@ -84,11 +87,12 @@ existing candidate row.
 
 ## Tasks
 
-- [ ] T1 Baseline probe: render `examples/empty-levels.qmd` and
+- [x] T1 Baseline probe: render `examples/empty-levels.qmd` and
       `examples/demo.qmd` to LaTeX, HTML and gfm and record verbatim what each
       of the two reports says today and how many times each fires per mark.
-- [ ] T2 Fixture work in `examples/empty-levels.qmd`: add the three-way depth
-      shape (`entry="Cats!" sort="a!b!c"`).
+- [x] T2 Fixture work in `examples/empty-levels.qmd`: add the three-way depth
+      shape (`entry="Moles!" sort="a!b!c"`) and the no-`entry=` shape
+      (`sort="a!b!c"` on visible text).
 - [ ] T3 Rewrite the empty-level report (`index.lua:266`): one report per
       mark, naming the empty written positions and the levels that remain in
       the value. One literal per message.
@@ -118,6 +122,11 @@ existing candidate row.
 - 2026-08-19: T1 baseline probe: `entry="!Sub!"` draws two byte-identical empty-level reports and the leading/trailing pair differs only in the echoed value, confirming AC1 and AC2's premises.
 - 2026-08-19: amendment (substantive, mini gate): AC5 was unsatisfiable — its control `entry="Q!R"` correctly draws the extra-sort report, since `sort="Q!R!S"` overreaches by design. Amended to drop that control, state the bounded claim directly, and name the logs the suite actually produces (sortkey.qmd has pdf and HTML only, no gfm or LaTeX). T2's control clause trimmed to match. Fresh-context [O] reader ran the full-mode questions on the amended wording before it was written.
 - 2026-08-19: implement gate chose numbered written positions over named ends for the empty-level report because named ends have no wording for a middle position, and "was written with" over naming `entry=` directly for the extra-sort report because a mark can carry `sort=` with no `entry=`; falsified by evidence that authors read a position number as an output position rather than a position in their own value.
+
+- 2026-08-19: amendment (substantive, mini gate): AC3's fixture value renamed `Cats!` -> `Moles!` — `entry="Cats!"` shares its level path with the file's existing `entry="!Cats"` probe, so the registered sort key `a` attached to that probe too and its `\index{Cats}` became `\index{a@Cats}` (verified by render).
+- 2026-08-19: amendment (substantive, second on AC3, user-selected): the fresh-context [O] reader of the renamed wording found the proposed message false for a mark with `sort=` and no `entry=` — it reaches the report through the visible-text fallback (index.lua:311) and would be told its index entry "was written with" a depth it never wrote. Message reworded to "against the N it has to sort before empty levels are dropped"; AC3 widened to cover that shape and T2 given its fixture.
+
+- 2026-08-19: T2 done — `entry="Moles!" sort="a!b!c"` and `[ferns]{.index sort="a!b!c"}` added to examples/empty-levels.qmd; render confirms `\index{a@Moles}`, `\index{a@ferns}` and `\index{Cats}` unsorted again.
 
 ## Decisions
 

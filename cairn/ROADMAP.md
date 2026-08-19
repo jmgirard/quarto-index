@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-19 (M13 done and archived; no defect returns, three gated AC amendments at implement and sixteen review findings fixed at the gate, one rejected. Three new candidate rows clustered to one; the M11 warning-wording row retired as shipped and the M10 first-literal lesson retired as enforced; 2 lessons captured. Caps and byte budgets clean.)_
+_Last hygiene check: 2026-08-19 (M14 done and archived; no defect returns, no amendment returns, seventeen review findings — twelve fixed at the gate, one to a widened candidate row, two rejected. The written-levels/LaTeX-fold row widened to both directions and the module-state row to this milestone's two accumulators; the M01/M06/M08 revert-probe lessons consolidated into one and 2 lessons captured. M08 row pruned under terminal-row retention. Caps and byte budgets clean.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M13 | Level reports name a depth the author can act on | done | — | normal | milestones/archive/M13-level-report-wording.md |
-| M14 | A cross-reference target that names no index entry is reported | review | — | normal | milestones/M14-dangling-xref-target.md |
+| M14 | A cross-reference target that names no index entry is reported | done | — | normal | milestones/archive/M14-dangling-xref-target.md |
 | M12 | A marker that leaves nothing behind is reported without naming what held it | done | — | normal | milestones/archive/M12-emptied-place-report.md |
 | M11 | Empty index levels never lose the entry | done | — | normal | milestones/archive/M11-empty-levels.md |
 | M10 | Self-references the level fold and empty levels hide | done | — | normal | milestones/archive/M10-selfref-fold-empty.md |
-| M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

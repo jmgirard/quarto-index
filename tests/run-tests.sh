@@ -2715,10 +2715,131 @@ for fmt in html latex gfm; do
   check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_SITE" 0 "M08-AC3 (F4)"
   # The nested markers still report, and the one carrying content still reports
   # as non-empty — neither message is disturbed by the metadata exclusion.
-  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 2 "M08-AC3"
+  # 20 nested markers, counted down the fixture: nine singles — #keeps-content,
+  # #keeps-sibling, the callout, the tabset, the figure, the block quote, the
+  # bullet list, the table cell and the footnote; then two in #doubly, three in
+  # #triply, two in the footnote holding a marker inside a marker, two in the
+  # bullet list with two marker-only items, one in the definition list, and the
+  # one the top-level placement marker wraps (M12). 9+2+3+2+2+1+1 = 20.
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 20 "M08-AC3"
+  # Still one: #keeps-content's marker is the only one carrying content of its
+  # own, since the nested markers are stripped bottom-up and each outer one is
+  # empty by the time it is spliced.
   check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_CONTENT" 1 "M08-AC3"
 done
 pass "M08-AC3: a marker class in the document title is reported nowhere, and the nested-marker messages are undisturbed"
+
+# ---------------------------------------------------------------------------
+# M12-AC1/AC2/AC3 — the emptied-place report. Every WARNING line the render
+# emits is compared whole, not just the lines that already look like the report:
+# a report reworded so it no longer matches the template would slip past a
+# template-shaped search entirely, and one carrying a container name BEFORE the
+# template would slip past a search anchored at the template's first word. So
+# the check partitions all of the render's warnings — the two the fixture's
+# other shapes are expected to produce, and the emptied-place reports — and any
+# line belonging to neither partition fails.
+# ---------------------------------------------------------------------------
+for fmt in html latex gfm; do
+  python3 - "$WORK/shapes-$fmt.log" examples/marker-shapes.qmd "$fmt" <<'PY'
+import re, sys
+
+log, fixture, fmt = sys.argv[1], sys.argv[2], sys.argv[3]
+TEMPLATE = ('index placement marker in top-level block {} was the only thing '
+            'written where it stood; the marker is removed, so nothing you '
+            'wrote remains there')
+# The other two warnings this fixture draws, whose counts are pinned above.
+OTHER = {
+    'index placement marker below the top level of the document places '
+    'nothing; write it as a top-level block',
+    'index placement marker is not empty; the marker should be an empty div, '
+    'and its content is kept where the marker was written',
+}
+
+src = open(fixture, encoding='utf-8').read()
+row = re.search(r'^#\s+reports at top-level blocks:(.*)$', src, re.M)
+shapes = re.findall(r'^#\s+(\d+)\s{2}\S', src, re.M)
+if row is None or not shapes:
+    print('FAIL: M12-AC2: examples/marker-shapes.qmd carries no manifest for '
+          'the emptied-place report', file=sys.stderr)
+    sys.exit(1)
+listed = row.group(1).split()
+# The manifest states its expectation twice, once as a list of positions and
+# once as a line per report. They are compared to each other before either is
+# used, so a manifest that quietly lost a row cannot make this check pass by
+# expecting less than the fixture holds.
+if sorted(listed, key=int) != sorted(shapes, key=int):
+    print(f'FAIL: M12-AC2: the manifest disagrees with itself — positions '
+          f'{listed} against report lines {shapes}', file=sys.stderr)
+    sys.exit(1)
+
+text = re.sub(r'\x1b\[[0-9;]*m', '', open(log, encoding='utf-8',
+                                          errors='replace').read())
+# Every warning the render emitted, as its full text.
+emitted = [m.group(1).rstrip() for m in re.finditer(r'^\(W\) (.*)$', text, re.M)]
+got = sorted(w for w in emitted if w not in OTHER)
+want = sorted(TEMPLATE.format(n) for n in listed)
+
+if got != want:
+    print(f'FAIL: M12-AC1/AC2 ({fmt}): the warnings that are not the fixture\'s '
+          f'two known ones are not the manifest\'s emptied-place reports',
+          file=sys.stderr)
+    for w in want:
+        if w not in got:
+            print(f'  missing: <<{w}>>', file=sys.stderr)
+    for g in got:
+        if g not in want:
+            print(f'  unexpected: <<{g}>>', file=sys.stderr)
+    sys.exit(1)
+if len(emitted) == len(got):
+    print('FAIL: M12-AC1: the render emitted none of the fixture\'s other two '
+          'warnings, so the partition this check rests on is not fencing '
+          'anything', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M12-AC1/AC2/AC3 ({fmt}): of {len(emitted)} warnings, the {len(got)} '
+      f'that are not the fixture\'s two known ones are exactly the manifest\'s '
+      f'emptied-place reports, each the one template with only its block '
+      f'position varying')
+PY
+done
+pass "M12-AC1/AC2/AC3: every warning the three renders emit is either one of the fixture's two known ones or an emptied-place report matching the manifest whole, naming nothing"
+
+# M12-AC5 (IP2) — the fixture renders in all three formats above, and the only
+# marker class any output carries is the one Quarto writes from the fixture's
+# own YAML title. That one is metadata, which the marker machinery never
+# reaches (M08) and this milestone does not touch; every other occurrence would
+# be a marker div that survived into a body, which is the residue IP2 forbids.
+# Located, not counted: the check reads what each occurrence sits in, so a body
+# occurrence fails even though the total is unchanged.
+python3 - examples/marker-shapes.html examples/marker-shapes.tex examples/marker-shapes.md <<'PY'
+import re, sys
+
+errs = []
+for path in sys.argv[1:]:
+    try:
+        text = open(path, encoding='utf-8', errors='replace').read()
+    except OSError:
+        errs.append(f'{path} was not produced')
+        continue
+    for m in re.finditer(r'qi-index-here', text):
+        start = text.rfind('\n', 0, m.start()) + 1
+        end = text.find('\n', m.end())
+        line = text[start:end if end != -1 else len(text)]
+        # The title Quarto writes from the fixture's YAML, in the two formats
+        # that carry one: an <h1 class="title"> in HTML, the leading `# ` line
+        # in gfm. Anything else carrying the class is a surviving marker.
+        if 'class="title"' in line or line.startswith('# quarto-index marker-shape probe'):
+            continue
+        errs.append(f'{path}: the marker class survives outside the title: '
+                    f'{line.strip()[:120]}')
+
+if errs:
+    print('FAIL: M12-AC5: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M12-AC5: marker-shapes renders to all three formats, and the only '
+      'qi-index-here in any output is the one Quarto writes from the '
+      'fixture\'s own title')
+PY
+
 
 # What a nested marker carried is spliced in where it stood, so its container
 # keeps that content — pinned structurally, not merely by a warning count.

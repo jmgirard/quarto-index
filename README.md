@@ -299,7 +299,7 @@ Both back-ends honour the same marker: the HTML index section and the LaTeX
 `\printindex` each land where you wrote it. A format with no index back-end
 drops the marker and leaves nothing in its place.
 
-Five rules, each of which warns rather than breaking your build:
+Six rules, each of which warns rather than breaking your build:
 
 - **Top level only.** A marker inside a callout, a list or another div places
   nothing: a printed index inside a LaTeX group or environment is a render
@@ -314,6 +314,15 @@ Five rules, each of which warns rather than breaking your build:
 - **The marker is empty.** Write anything inside it and your content stays
   where the marker was, with a warning. Nothing you wrote is deleted.
 - **A marker in a document with no index marks** places nothing, and says so.
+- **A nested marker that was the only thing there** empties the place it was
+  written in, and that is reported by the number of the top-level block it sat
+  under. (A lone top-level marker places the index, so it empties nothing.)
+  The report does not name what held it, on purpose: Quarto wraps a callout, a
+  tabset and a captioned figure in divs it generates and you never wrote, so
+  any name the extension could print is either invented or wrong — and a
+  callout holding only a marker still renders its title bar, which is not
+  "empty" at all. A marker nested inside another marker empties one place, not
+  one per level.
 
 A document carrying a marker loads `imakeidx` with its `noautomatic` option.
 Printing an index in the middle of a document otherwise closes the file the

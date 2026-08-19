@@ -1544,10 +1544,100 @@ local function marker_content(block)
   return block.content
 end
 
+-- Removing a nested marker takes nothing the author wrote with it — but where
+-- the marker was the only thing in the block list it stood in, what is left is
+-- a place the author put something into and will find nothing in. That is
+-- reported, and deliberately without naming what held it. Every name available
+-- here is invented or false: Quarto wraps a callout, a tabset and a captioned
+-- figure in scaffold divs no author wrote, and a callout holding only a marker
+-- still renders its title bar, so calling it empty is untrue however the div
+-- is named. The marker's own top-level position is the part an author can act
+-- on, so that is what the report carries.
+--
+-- Does this block list leave NOTHING once every marker in it is stripped? The
+-- question is recursive because the answer is: a marker contributes whatever
+-- its own content contributes, since marker_content splices that content in
+-- where the marker stood. So a list empties when every element is a marker
+-- whose content is empty or itself empties — a marker wrapping only empty
+-- markers contributes nothing however deep it goes, and one paragraph anywhere
+-- inside means the container keeps something.
+local function empties(blocks)
+  if blocks == nil or #blocks == 0 then
+    return false
+  end
+  for _, inner in ipairs(blocks) do
+    if not is_marker(inner) then
+      return false
+    end
+    if #inner.content > 0 and not empties(inner.content) then
+      return false
+    end
+  end
+  return true
+end
+
+-- How many places one top-level block loses. Counted rather than located: a
+-- walk hands over a block list without saying which element owns it, and the
+-- owner is the whole question, because a list a MARKER owns is not a place
+-- anything was emptied out of — the marker is removed whole at every depth and
+-- reaches no output, so there is nothing an author could find left empty
+-- inside one. Every emptying list, minus every emptying list a marker owns, is
+-- therefore exactly the places the author wrote into and will find empty. A
+-- count is enough because every report under one top-level block carries that
+-- block's position and nothing else.
+--
+-- Counting this way is what keeps the rule free of per-container code, and so
+-- free of the gap that came with it: a table cell, a footnote body and a
+-- definition are block lists like any other here, where a check written kind
+-- by kind reached none of them.
+local function emptied_places(block)
+  local lists, owned = 0, 0
+  block:walk({
+    Blocks = function(blocks)
+      if empties(blocks) then
+        lists = lists + 1
+      end
+      return nil
+    end,
+  })
+  local function count_owner(element)
+    if is_marker(element) and empties(element.content) then
+      owned = owned + 1
+    end
+  end
+  -- `walk` visits an element's contents and never the element itself, so the
+  -- top-level block is counted here rather than by the walk below.
+  --
+  -- No Note handler, deliberately. A footnote is an Inline whose content is a
+  -- block list, and M08 needed one to reach inside; on Pandoc 3.10.2 the Block
+  -- filter reaches a footnote's blocks on its own, so adding one counts every
+  -- marker in a footnote twice — which subtracts one report too many from a
+  -- marker nested inside a marker inside a footnote. Probed, not assumed.
+  count_owner(block)
+  block:walk({
+    Block = function(element)
+      count_owner(element)
+      return nil
+    end,
+  })
+  return lists - owned
+end
+
 -- Strip every marker below the top level of one top-level block. A
 -- `\printindex` inside a group or environment is an IP2-class render risk, so
 -- a nested marker places nothing; the index keeps its automatic position.
-local function strip_nested_markers(block)
+--
+-- The emptied places are reported BEFORE anything is stripped, from the shape
+-- as the author wrote it: the strip runs bottom-up, so by the time an outer
+-- list is visited its markers have already lost their content and every list
+-- would look empty.
+local function strip_nested_markers(block, position)
+  for _ = 1, emptied_places(block) do
+    -- One literal, not concatenated: the distinctness scan reads each warn()
+    -- call's FIRST literal, so a message built with `..` is compared by its
+    -- prefix while the report is about the whole of it (M10).
+    warn(("index placement marker in top-level block %d was the only thing written where it stood; the marker is removed, so nothing you wrote remains there"):format(position))
+  end
   return block:walk({
     Blocks = function(blocks)
       local out = pandoc.Blocks({})
@@ -1573,7 +1663,7 @@ local function resolve_markers(doc)
   local out = pandoc.Blocks({})
   local seen = 0
   for position, block in ipairs(doc.blocks) do
-    block = strip_nested_markers(block)
+    block = strip_nested_markers(block, position)
     if is_marker(block) then
       seen = seen + 1
       if seen == 1 then

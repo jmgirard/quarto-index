@@ -1,11 +1,11 @@
 # M14: A cross-reference target that names no index entry is reported
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, GP1
-- **Branch/PR:** —
+- **Branch/PR:** `m14-dangling-xref-target`
 
 ## Goal
 
@@ -124,6 +124,7 @@ the existing candidate row.
 - 2026-08-19: plan gate chose a format-neutral report in the Pandoc pass over an HTML-back-end-only report because whether a target names an indexed term depends on what the author wrote and what the document indexes, not on any back-end (IP1); falsified by evidence that a format without an index back-end cannot know its own marked-entry set.
 - 2026-08-19: plan gate chose drawing the book report from the last chapter in book order over the chapter that builds the index, because every chapter reads the whole store (index.lua:2069) but only the last has seen every record — a marker-first book would otherwise report resolving cross-chapter targets as broken; falsified by evidence that the last chapter can fail to render in a partial render the report must still be right about.
 - 2026-08-19: plan gate chose pinning the expected report count for each existing example over adding ~250 index marks so the probe corpus resolves, because the escaping probe's assertions are built on its current marks; falsified by the pinned counts proving unmaintainable across later fixture edits. Corpus reconciliation queued as a candidate row.
+- 2026-08-19: implement gate chose the actionable "points at" wording (target named, reader consequence, both fixes) over a short form, and pinned per-example report counts with a grep-derived roster of the examples that must carry one over a Python routine re-deriving counts from source, which could share a bug with the filter.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 4 findings against this file: AC2 was unsatisfiable (~250 corpus targets dangle) and AC5 rested on a false claim about which chapter knows the book's entries — both went to the question gate and are settled above; AC4's exact-zero over self-xref.qmd was narrowed to the four format-neutral marks, AC3's single exemplar was widened to five shapes, and AC6's unfalsifiable literal-count claim was dropped.
 
 ## Decisions

@@ -8,7 +8,7 @@ _Last hygiene check: 2026-08-19 (M13 done and archived; no defect returns, three
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M13 | Level reports name a depth the author can act on | done | — | normal | milestones/archive/M13-level-report-wording.md |
-| M14 | A cross-reference target that names no index entry is reported | planned | — | normal | milestones/M14-dangling-xref-target.md |
+| M14 | A cross-reference target that names no index entry is reported | in-progress | — | normal | milestones/M14-dangling-xref-target.md |
 | M12 | A marker that leaves nothing behind is reported without naming what held it | done | — | normal | milestones/archive/M12-emptied-place-report.md |
 | M11 | Empty index levels never lose the entry | done | — | normal | milestones/archive/M11-empty-levels.md |
 | M10 | Self-references the level fold and empty levels hide | done | — | normal | milestones/archive/M10-selfref-fold-empty.md |

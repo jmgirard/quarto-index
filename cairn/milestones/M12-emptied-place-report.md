@@ -61,13 +61,18 @@ none; not plannable.
       doubly-nested and triply-nested marker shapes each draw exactly one
       report, at the position of the outermost marker, and never one per
       level. Evidence: those shapes' lines in AC2's comparison.
-- [ ] AC4: Three mutations, each applied after the fix is committed and
-      reverted after, each making AC1/AC2's checks fail: deleting the report
-      call; widening the rule to fire for any block list that merely contains
-      a marker; and shifting the reported position by one.
+- [ ] AC4: Four mutations, each applied after the fix is committed and
+      reverted after, each making a check fail: deleting the report call;
+      widening the rule to fire for any block list that merely contains a
+      marker; shifting the reported position by one; and stopping markers
+      being stripped at all, so a marker div survives into a body and AC5's
+      residue check fails.
 - [ ] AC5 (IP2): `examples/marker-shapes.qmd` renders without error to html,
-      latex and gfm, and no output of any of the three carries the
-      `qi-index-here` class.
+      latex and gfm, and no output carries `qi-index-here` anywhere but the
+      title span Quarto emits from the fixture's own YAML title — html and gfm
+      carry that one, latex carries none. Occurrences are located, not counted,
+      so a marker div surviving into a body fails the check; AC4's fourth
+      mutation plants exactly that, to prove it can.
 - [ ] AC6: `tests/run-tests.sh --self-test` clean.
 - [ ] AC7: README and `cairn/DESIGN.md` state the report, that it names no
       container by design, and why — a callout holding only a marker still
@@ -101,7 +106,7 @@ none; not plannable.
 - [x] T2: Add the failing checks to `tests/run-tests.sh` — full-line equality
       per report line and the per-render set comparison against T1's manifest
       — and watch them fail against the current filter.
-- [ ] T3: Restore `empties` in `_extensions/index/index.lua` beside
+- [x] T3: Restore `empties` in `_extensions/index/index.lua` beside
       `marker_content` (`_extensions/index/index.lua:1546`) and emit the
       report from `strip_nested_markers`, once per emptied block list whose
       owner is not a marker, threading the top-level position
@@ -126,3 +131,5 @@ none; not plannable.
 - 2026-08-18: criteria audit ran in FULL mode (user-facing tier), fresh-context [O] reader over the final drafted wording. Returned 15 findings across AC1-AC6 (AC7 clean); every one had a clear right answer and was fixed before writing, none escalated to a gate question.
 - 2026-08-19: T1 — fixture extended with nine emptying shapes and four non-reporting ones; the manifest's hand-derived positions 12 13 14 15 16 17 18 20 22 were confirmed against the post-Quarto AST by a throwaway dump filter, which also showed the marker-owned subtraction is what keeps the doubly- and triply-nested shapes at one report each and the top-level placement marker at none. The plan's "marker whose only sibling is whitespace" non-report shape was dropped: markdown whitespace produces no block, so that shape is the reporting case, not a negative. Suite green, 165 checks.
 - 2026-08-19: T2 — the set-equality check and the residue check added; against the current filter all three formats report 0 of the manifest's 9, so the check fails for the reason it exists. The manifest's must-not-report rows were reworded to carry no bare leading number, so the parse that reads the reporting rows cannot pick them up — the first draft's parse did, and the two halves of the manifest disagreed.
+- 2026-08-19: amended AC4 and AC5 at a mini gate. AC5 as planned promised no output carries qi-index-here; the fixture's own YAML title carries the class and Quarto emits it into the html and gfm output, which is metadata the marker machinery never reaches (M08) and predates M12. AC5 narrowed to that one located occurrence; AC4 grew a fourth mutation so the located-residue check has a discrimination proof. A fresh-context [O] reader audited the amended wording in full mode before it was written and returned three findings — a false "each of the three carries one" implication, a mechanism claim over all metadata, and an unprobed counterfactual — all three folded into the adopted text.
+- 2026-08-19: T3 — the report emits from strip_nested_markers, counted as every emptying block list minus every one a marker owns, which needs no per-container code and so reaches a figure caption and a table cell like any other list. The plan's Note handler was dropped after a probe: on Pandoc 3.10.2 the Block filter reaches a footnote's blocks unaided, so M08's Note handler would double-count and under-report a marker nested inside a marker inside a footnote — that shape is now in the fixture, which is how the double count was found. All three formats emit the manifest's 10 reports.

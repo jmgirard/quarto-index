@@ -2718,8 +2718,9 @@ for fmt in html latex gfm; do
   # 15 nested markers, counted down the fixture: one each in #keeps-content,
   # #keeps-sibling, the callout, the tabset, the figure, the block quote, the
   # bullet list, the table cell and the footnote; two in #doubly, three in
-  # #triply, and the one the top-level placement marker wraps (M12).
-  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 15 "M08-AC3"
+  # #triply, two in the footnote holding a marker inside a marker, and the one
+  # the top-level placement marker wraps (M12).
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 17 "M08-AC3"
   # Still one: #keeps-content's marker is the only one carrying content of its
   # own, since the nested markers are stripped bottom-up and each outer one is
   # empty by the time it is spliced.
@@ -2784,15 +2785,42 @@ PY
 done
 pass "M12-AC1/AC2/AC3: the emptied-place report fires exactly where the manifest says, in HTML, LaTeX and gfm, naming nothing"
 
-# M12-AC5 (IP2) — the fixture renders in all three formats above, and no
-# marker class rides into any of the three outputs.
-for out in examples/marker-shapes.html examples/marker-shapes.tex examples/marker-shapes.md; do
-  [ -f "$out" ] || fail "M12-AC5: $out was not produced"
-  if grep -qF 'qi-index-here' "$out"; then
-    fail "M12-AC5: the marker class survived into $out"
-  fi
-done
-pass "M12-AC5: marker-shapes renders to all three formats with no qi-index-here residue in any output"
+# M12-AC5 (IP2) — the fixture renders in all three formats above, and the only
+# marker class any output carries is the one Quarto writes from the fixture's
+# own YAML title. That one is metadata, which the marker machinery never
+# reaches (M08) and this milestone does not touch; every other occurrence would
+# be a marker div that survived into a body, which is the residue IP2 forbids.
+# Located, not counted: the check reads what each occurrence sits in, so a body
+# occurrence fails even though the total is unchanged.
+python3 - examples/marker-shapes.html examples/marker-shapes.tex examples/marker-shapes.md <<'PY'
+import re, sys
+
+errs = []
+for path in sys.argv[1:]:
+    try:
+        text = open(path, encoding='utf-8', errors='replace').read()
+    except OSError:
+        errs.append(f'{path} was not produced')
+        continue
+    for m in re.finditer(r'qi-index-here', text):
+        start = text.rfind('\n', 0, m.start()) + 1
+        end = text.find('\n', m.end())
+        line = text[start:end if end != -1 else len(text)]
+        # The title Quarto writes from the fixture's YAML, in the two formats
+        # that carry one: an <h1 class="title"> in HTML, the leading `# ` line
+        # in gfm. Anything else carrying the class is a surviving marker.
+        if 'class="title"' in line or line.startswith('# quarto-index marker-shape probe'):
+            continue
+        errs.append(f'{path}: the marker class survives outside the title: '
+                    f'{line.strip()[:120]}')
+
+if errs:
+    print('FAIL: M12-AC5: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M12-AC5: marker-shapes renders to all three formats, and the only '
+      'qi-index-here in any output is the one Quarto writes from the '
+      'fixture\'s own title')
+PY
 
 
 # What a nested marker carried is spliced in where it stood, so its container

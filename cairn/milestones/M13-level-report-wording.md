@@ -1,0 +1,119 @@
+# M13: Level reports name a depth the author can act on
+
+- **Status:** planned
+- **Priority:** normal
+- **Depends on:** —
+- **Driving RR:** —
+- **Principles touched:** IP1, GP1
+- **Branch/PR:** —
+
+## Goal
+
+The two reports about a mark's levels say something the author can act on: an
+empty level is reported once per mark naming which written positions were
+empty, and the extra-sort-levels report stops reading as a claim about the
+depth the entry indexes at.
+
+## Scope
+
+Surface tier: **user-facing** — the deliverable is author-visible warning text
+the whole Quarto community reads (GP1).
+
+**In:** the empty-index-level report in `drop_empty_levels`
+(`_extensions/index/index.lua:266`), rewritten to fire once per mark and name
+the empty positions in the value as the author wrote it; the
+extra-sort-levels report in `sort_levels` (`index.lua:337`), rewritten so both
+its numbers are labelled as depths of the values as written; the suite checks,
+fixtures and prose those two rewrites move.
+
+**Out:** reporting a cross-reference target that names no index entry → M14.
+Any change to which levels are dropped or which sort keys survive — D-002's
+semantics stand, only the reports change; a change there returns to plan.
+Naming the depth the entry *indexes* at, which the shared layer cannot know
+because the LaTeX fold happens later (`index.lua:209`) → refused outright, not
+deferred. Reader-facing string policy (hard-coded English, `lang`) → stays the
+existing candidate row.
+
+## Acceptance criteria
+
+- [ ] AC1 A mark whose `entry=` value carries empty levels draws exactly one
+      empty-level report, naming which written positions were empty and how
+      many levels remain **in the value**. Shapes probed: leading
+      (`entry="!Cats"`), trailing (`entry="Dogs!"`), both in one mark
+      (`entry="!Sub!"`), and the deep trailing shape `demo.qmd` already
+      carries. A value that is only empty levels keeps its existing
+      whole-value report and draws none of this one. Evidence: those shapes
+      rendered to LaTeX, HTML and gfm; the report text asserted verbatim and
+      counted as exactly 1 per mark in each of the three render logs.
+- [ ] AC2 The report distinguishes a leading empty level from a trailing one
+      by naming the position, not merely by echoing a different `entry=`
+      value. Evidence: a suite check comparing the reports for `entry="!Cats"`
+      and `entry="Dogs!"` with the echoed value masked out, proved
+      discriminating by revert (T6) — the pre-milestone reports differ only in
+      the echoed value and must fail this check.
+- [ ] AC3 Both numbers in the extra-sort-levels report are labelled as depths
+      of the `sort=` and `entry=` values **as written**, so neither reads as
+      the depth the entry indexes at. Evidence: a fixture whose written entry
+      depth (2), sort depth (3) and indexed depth (1) all differ
+      (`entry="Cats!" sort="a!b!c"`); the report's new text asserted verbatim,
+      and the `\index{Cats}` emitted for that same mark asserted, showing the
+      indexed depth the report does not name.
+- [ ] AC4 Every `warn(` message in `index.lua` is distinct from every other,
+      and each of the two rewritten reports is written as a single literal, so
+      the scan reads whole messages rather than first fragments (M10 lesson).
+      Evidence: the suite's distinctness scan, which enumerates every
+      `warn(`-leading literal in the source, passes.
+- [ ] AC5 Neither report names a well-formed mark. Evidence: per-line greps
+      over the LaTeX, HTML and gfm logs the suite already produces for
+      `examples/sortkey.qmd` and for the no-empty-level control marks of
+      `examples/empty-levels.qmd` (`entry="Birds!Wrens"`, `entry="Q!R"`),
+      asserting no report line names those values.
+- [ ] AC6 The `verify` slot is clean: `tests/run-tests.sh --self-test`
+      passes.
+
+## Coverage
+
+- AC1 → T2, T3, T5
+- AC2 → T3, T5, T6
+- AC3 → T2, T4, T5
+- AC4 → T3, T4, T5
+- AC5 → T2, T5
+- AC6 → T7
+
+## Tasks
+
+- [ ] T1 Baseline probe: render `examples/empty-levels.qmd` and
+      `examples/demo.qmd` to LaTeX, HTML and gfm and record verbatim what each
+      of the two reports says today and how many times each fires per mark.
+- [ ] T2 Fixture work in `examples/empty-levels.qmd`: add the three-way depth
+      shape (`entry="Cats!" sort="a!b!c"`), and extend the no-empty-level
+      control so it covers both reports.
+- [ ] T3 Rewrite the empty-level report (`index.lua:266`): one report per
+      mark, naming the empty written positions and the levels that remain in
+      the value. One literal per message.
+- [ ] T4 Rewrite the extra-sort-levels report (`index.lua:337`) so both
+      numbers are labelled as written depths.
+- [ ] T5 Suite, by procedure not by hand-list: grep every occurrence of
+      `WARN_EMPTY_LEVEL`, `WARN_SORT_EXTRA` and `WARN_SORT_DROPPED` and every
+      literal quoting either message, and update each hit — the known ones are
+      `tests/run-tests.sh:1245`, `:2486`, `:3537`, `:5033`, `:5087`, `:5973`,
+      `:5991`, `:6007`, `:6010`, `:6238`. Add the AC1–AC3 and AC5 checks,
+      asserting message identity rather than occurrence alone (M08 lesson),
+      and pin the distinctness scan's literal count to an explicit integer so
+      a fragmented message fails it.
+- [ ] T6 Prove each new check discriminating: commit the fix first, then
+      revert each report rewrite in turn and record which check fails (M08
+      lesson — a revert probe on uncommitted work destroys it).
+- [ ] T7 Update the README and DESIGN prose that quotes either report; run
+      `tests/run-tests.sh --self-test`.
+
+## Work log
+
+- 2026-08-19: created by /milestone-plan.
+- 2026-08-19: plan gate chose one report per mark naming written positions over one report per dropped level because two byte-identical warnings name neither end (M11 review F8); falsified by evidence that a written position is not something an author can locate in their own value.
+- 2026-08-19: plan gate chose labelling the extra-sort-levels numbers as written depths over restating them as indexed depths because the shared layer cannot know the indexed depth — the LaTeX fold runs later (index.lua:209); falsified by evidence that the author needs the indexed depth at that report rather than at the empty-level one.
+- 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 8 findings against this file; all 8 had one clear repair and were fixed here — AC1 no longer promises the indexed depth, AC2 now requires a position clause (it was satisfied at HEAD), AC3 became a labelling requirement (its property was already true), AC4 dropped an unfalsifiable literal-count claim, AC5's evidence became per-line greps rather than an impossible zero-grep over a whole log, and T5's hand-list became a grep procedure with six further sites named.
+
+## Decisions
+
+## Review

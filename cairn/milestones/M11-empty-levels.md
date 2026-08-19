@@ -124,7 +124,7 @@ separators cannot be written; only the leading one is destructive.
       `!windmill` mark and its manifest (`tests/run-tests.sh:5121`), and
       `examples/self-xref.qmd`'s M10-AC6 derivation comment plus every warning
       count named in AC5.
-- [ ] T6 — With T3–T5 committed, revert the drop and confirm the AC1 and AC2
+- [x] T6 — With T3–T5 committed, revert the drop and confirm the AC1 and AC2
       checks fail naming the lost entry, then restore. (Commit first: the M08
       lesson.)
 - [ ] T7 — README "Sub-entry levels" (`README.md:60`) and the Symbols bullet
@@ -144,6 +144,8 @@ separators cannot be written; only the leading one is destructive.
 - 2026-08-18: T5 — two predictions I made about self-xref were wrong and are corrected here: `entry="P!Q!R!"` was ALREADY caught by the format-neutral self-target pass before this milestone, so the self-reference count stays 6 and the fold-induced count stays 3. What M11 actually moves there is the fold-DEPTH count, 4 to 3, which is the double-warning row. Also moved: the demo LaTeX and HTML manifests (`A!!B!` and the depth-6 probe each lose a level), the letter-groups fixture and manifest (`!windmill` files under W, not the empty string in Symbols), and the M10 HTML checks, which located two entries by the empty-level child that no longer exists.
 - 2026-08-18: T5 — the M11 null-field scan moved into a `check_no_null_field` helper called beside each fixture's own latex render: reading `examples/self-xref.tex` from the M11 block failed because the later PDF render of that fixture removes it (the M05 lesson).
 - 2026-08-18: verify slot clean — `tests/run-tests.sh`, 164 checks, all passed.
+- 2026-08-18: T6 — revert probe against the committed fix. With the drop removed, AC1 fails naming all seven wrong arguments against the manifest, and AC2 fails naming four null fields (`\index{Dogs!}`, `\index{mmm@!Sub!}` and two `\index{mmm@!}`). Both restored clean afterwards.
+- 2026-08-18: T6 turned up the limit of AC2's scan, recorded rather than papered over: `\index{mmm@!Cats}` has no empty FIELD, so the null-field scan passes it, and makeindex accepts it too — probed directly, it prints `mmm` as a parent term the author never wrote, falling back to the sort key where the printed half is empty. A leading empty level carrying a sort key is therefore corruption of a different kind than a null field, and AC1's manifest comparison is what catches it.
 - 2026-08-18: criteria audit ran in FULL mode (surface tier user-facing) but NOT in a fresh context — this session carries a standing directive against spawning subagents, so the author read their own criteria; deviation recorded rather than skipped. Two findings, both fixed before writing: a draft AC1 promising makeindex's `.ilg` report "0 rejected entries" was unreachable as evidence (Quarto does not surface the `.ilg`) and was rewritten onto the compiled PDF; and a draft AC "reverting the drop makes the checks fail" bound a property of the instrument rather than of the deliverable (D-118) and moved to T6.
 
 ## Decisions

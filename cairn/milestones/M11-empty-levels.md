@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M11: Empty index levels never lose the entry
 
-- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
@@ -149,6 +149,7 @@ separators cannot be written; only the leading one is destructive.
 - 2026-08-18: T7 — README's sub-entry-levels section rewritten (the drop, why the LaTeX index tool makes it necessary, the unspellable middle level, the all-empty fallback, the sort pairing), the ceiling paragraph's dangling-separator sentence replaced by depth-counted-after-the-drop, and the letter-group bullet's empty filing string removed; DESIGN's Span-pass and shared-layer paragraphs updated; the M10-F8 candidate row retired.
 - 2026-08-18: T7 — two suite consequences of the docs edit: the M07-AC6 README pin quoted the letter-group sentence I changed and was re-pinned, and a README_EMPTY_CLAIMS pin was added on the same M06/M07 pattern so the eight new documented claims cannot drift from what the fixture exercises.
 - 2026-08-18: verify slot clean — `tests/run-tests.sh --self-test`, 182 checks, all passed.
+- 2026-08-18: review return 1 (defect) — three fresh-context reviewers spawned at the user's direction; the diff-bug lens found F1, a regression confirmed by probe on entries with NO empty level: `sort_levels` computes `last` over the realigned sort list instead of over what the author wrote, so positional filler becomes a declaration, a second mark's genuine sort key is lost and a spurious rival-key report fires. F2 (a sort key for a dropped level is discarded silently) and F3 (the all-empty fallback re-aligns every sort level, making the README/DESIGN sort-pairing sentence false) travel with it. User directed return-to-in-progress and a joint fix; status back to `in-progress`.
 - 2026-08-18: criteria audit ran in FULL mode (surface tier user-facing) but NOT in a fresh context — this session carries a standing directive against spawning subagents, so the author read their own criteria; deviation recorded rather than skipped. Two findings, both fixed before writing: a draft AC1 promising makeindex's `.ilg` report "0 rejected entries" was unreachable as evidence (Quarto does not surface the `.ilg`) and was rewritten onto the compiled PDF; and a draft AC "reverting the drop makes the checks fail" bound a property of the instrument rather than of the deliverable (D-118) and moved to T6.
 
 ## Decisions
@@ -285,5 +286,26 @@ unreachable (traced independently — no path delivers an empty level to
 correctly scoped; the new manifests are genuine hand-derived oracles rather than
 render read-backs, and the checks discriminate.
 
-### Triage
+### Triage (2026-08-18, at the gate)
+
+- **F1 — fix now. Return floor fires:** a load-bearing defect in what the
+  extension emits for users, confirmed by probing the branch filter against
+  `main`'s on one document. Status back to `in-progress`.
+- **F2, F3 — fix now**, with F1: all three are the same gate decision and the
+  same two functions.
+- **F5 — fix now if cheap, else follow-up row.** AC2 is not falsified (the claim
+  holds for both fixtures), so this is instrument strength, not a criterion
+  failure.
+- **F4, F6, F7, F8 — decide during the fix**; each is small and local.
+- **F9 — reject or absorb into the fix's DESIGN wording**; the reviewer agrees the
+  choice is right and objects only to which half of the justification leads.
+- **F10 — decide during the fix**: whether the three `entry=` semantics warrant a
+  D-entry beside D-001.
+- **F-h1 — fix now** (stale line numbers in AC5's parenthetical citations; a
+  criterion-text edit, so it goes through the amendment gate if the wording
+  changes at all).
+
+Every criterion tick above stands on evidence recorded before this triage; the
+return is under the floor's second clause (a user-facing defect), not a criterion
+failure, so no acceptance criterion is unticked by it.
 

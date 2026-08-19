@@ -1,6 +1,6 @@
 # M10: Self-references the level fold and empty levels hide
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -108,7 +108,7 @@ Acceptance-suite hardening → its clustered candidate row.
       including `Dogs`' surviving see-also.
 - [x] T6. Add the PDF render of `examples/self-xref.qmd` and its hand-derived
       index manifest (derivation comment is the oracle — M06 lesson).
-- [ ] T7. Revert-the-fix discrimination probe for every new check, run only
+- [x] T7. Revert-the-fix discrimination probe for every new check, run only
       **after** the fix is committed (M08 lesson: `git checkout --` inside the
       probe destroys uncommitted work); record the observed failures in the
       work log.
@@ -124,3 +124,6 @@ Acceptance-suite hardening → its clustered candidate row.
 - 2026-08-18: T3/T4 — LaTeX-only comparison added after the fold, plus its message. `index_argument` now returns the clamped levels rather than the caller recomputing them, because `clamp_levels` warns and a second call would report the fold twice. Counts are 6/6/6 self-reference and 3/0/0 fold-self-reference, exactly AC4. The sort shape's report quotes the printed folded path `M!N!O, P`, not the filing path `m!n!o`.
 - 2026-08-18: T5 — M08's four shapes verified against shipped behaviour by the full suite, whose M08-AC2 blocks are unchanged: the three single-target shapes index plainly and `entry="Dogs"` keeps `\index{Dogs|seealso{Pets}}` with no locator. Full suite green, 150 checks.
 - 2026-08-18: T6 — PDF render and hand-derived assertion added. Both folded entries print at their three derived levels and none of the five M10 entries prints a cross-reference; the two entries that legitimately keep one (`Dogs, see also Pets`, `Lynxes, see Cats`) are asserted present, so the absence check cannot pass on an index that lost every cross-reference. Full suite green, 152 checks.
+- 2026-08-18: T7 — revert-the-fix probes, all run after the fixes were committed. (R1) empty-strip reverted: `expected 6 occurrence(s) of <<names the entry it is written on>>, got 4`. (R2) fold pass reverted: `expected 3 occurrence(s) of <<names the folded path this entry prints>>, got 0`, and the PDF block, run alone against a PDF built without the pass, named all three surviving self-encaps. (R3) message reworded to contain M08's key: M08's own count went 6 to 9, which is the collision AC4 exists to prevent. The key-distinctness block, run standalone, fails on a stale key (`matches 0 filter warnings`) and on an overlapping one (`matches 2`).
+- 2026-08-18: T7 also strengthened the PDF check. Naming the five entries by term made the cross-reference clause vacuous under a revert — an entry that keeps a target no longer prints the term the list names — so the clause now runs over every printed entry, with the two M08 entries entitled to a cross-reference named and asserted present.
+- 2026-08-18: complete — `tests/run-tests.sh --self-test` green, 169 checks.

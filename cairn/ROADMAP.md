@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-18 (M10 planned; the surviving-self-reference row g
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M10 | Self-references the level fold and empty levels hide | in-progress | — | normal | milestones/M10-selfref-fold-empty.md |
+| M10 | Self-references the level fold and empty levels hide | review | — | normal | milestones/M10-selfref-fold-empty.md |
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
 | M09 | Sort keys under the LaTeX level clamp | done | — | normal | milestones/archive/M09-sortkey-clamp.md |
 | M07 | Letter-group headings (HTML index) | done | — | normal | milestones/archive/M07-letter-groups.md |

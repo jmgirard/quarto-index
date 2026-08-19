@@ -5522,19 +5522,21 @@ for want in ([(0, 'A'), (1, 'B'), (2, 'C, D')],
     if not any(actual[i:i + n] == want for i in range(len(actual) - n + 1)):
         errs.append(f'{want} does not appear as consecutive rows')
 
-# The five entries M10 added, by the text each prints. A cross-reference is
-# typeset on the entry's own line, so its absence is a property of that line.
-FOLDED = ('C, D', 'H, I, J', 'O, P')
-EMPTY_LEVEL = ('Moles', 'R')
-for entry in entries:
-    if entry.term in FOLDED + EMPTY_LEVEL:
-        if 'see' in entry.text:
-            errs.append(f'entry {entry.text!r} still prints a cross-reference')
-
-# The control, and the reason the loop above is not vacuous: the two entries
-# that should keep a cross-reference still print one.
+# Which lines may print a cross-reference at all, stated over EVERY printed
+# entry rather than over the five M10 added. Naming the five by their term
+# cannot be the domain: a surviving target is typeset on the entry's own line,
+# so an entry that kept one no longer prints the term the list would name, and
+# the clause would pass by not matching. These two are the whole of it, and
+# both are M08 shapes this milestone does not touch.
+CROSS_REFERENCED = ('Dogs, see also Pets', 'Lynxes, see Cats')
 printed = [e.text for e in entries]
-for want in ('Dogs, see also Pets', 'Lynxes, see Cats'):
+for entry in entries:
+    if 'see' in entry.text and entry.text not in CROSS_REFERENCED:
+        errs.append(f'entry {entry.text!r} prints a cross-reference and is not '
+                    f'one of the two entitled to')
+# ...and both of those must actually be there, or the loop above is satisfied
+# by an index that lost every cross-reference in the document.
+for want in CROSS_REFERENCED:
     if want not in printed:
         errs.append(f'{want!r} is not in the printed index, so the check above '
                     f'cannot tell a dropped target from a lost one')

@@ -7,6 +7,7 @@ _Last hygiene check: 2026-08-18 (M11 done and archived; one defect return at rev
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M12 | A marker that leaves nothing behind is reported without naming what held it | planned | — | normal | milestones/M12-emptied-place-report.md |
 | M11 | Empty index levels never lose the entry | done | — | normal | milestones/archive/M11-empty-levels.md |
 | M10 | Self-references the level fold and empty levels hide | done | — | normal | milestones/archive/M10-selfref-fold-empty.md |
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
@@ -43,7 +44,6 @@ _Last hygiene check: 2026-08-18 (M11 done and archived; one defect return at rev
 - Choose and add a LICENSE file (user decision; needed before public listing) — added 2026-08-16 — M01 README omits a license claim for want of one
 - A mark's attribute values ride into pass-through formats on the span itself (`data-see` etc. in gfm); whether that markup residue is acceptable is unsettled — added 2026-08-17 — M03 review F4/F9; AC3's scope note defers it
 - The planted-defect self-test mutates only the `.tex` fixture; no HTML index check has a planted-defect proof — added 2026-08-17 — M03 review F14
-- Report a container a nested marker leaves empty — descoped out of M08 at its third review return (2026-08-18) and to be planned on its own; the recursive rule is right (a marker contributes what its content contributes; a marker is never itself a container) but naming the container is not, and these shapes are known to break it: Quarto wraps callouts, tabsets and captioned figures in `__quarto_custom_scaffold` divs, so the report names a div no author wrote while the construct renders its title bar or caption; figure captions and table cells are emptied unreported; a bullet list emptied through its only item reports as a list item; and a per-kind check on `div` cannot tell the container from the marker div inside it — added 2026-08-17 — M04 review F6, M08 review F1/F3/R1/R2/R3/Q1/Q5/Q7
 - A marker written in YAML `abstract:` survives verbatim into the HTML header — filter residue of the IP2 class, since `resolve_markers` reads `doc.blocks` alone; the misplaced-class report is silent there for the same reason — added 2026-08-18 — M08 review R4/Q2
 - `resolve_markers` rebuilds every Blocks list in every format whether or not a marker exists; the LaTeX byte-diff proves that output-neutral, HTML has no equivalent byte check — added 2026-08-17 — M04 review F12
 - Headings consumed by Quarto constructs (callout titles, tabsets) bypass the after-heading anchor relocation; no TOC copy today, so no defect — the invariant is unpinned against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8

@@ -1,23 +1,26 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-18 (M11 done and archived; one defect return at review — a sort-key regression on entries with no empty level — fixed and guarded. D-002 records the empty-level semantics. The M10-F8 double-warning row retired; one new clustered row for warning-wording polish (M11 review F7/F8); 4 lessons captured, none retired; M06's terminal row pruned to the 5-row retention; caps and byte budgets clean.)_
+_Last hygiene check: 2026-08-19 (M12 done and archived; no defect returns, one gated AC amendment at implement and seven review findings fixed at the gate. Five new candidate rows from the M12 review, one absorbed row retired at plan; 3 lessons captured, none retired; M07's terminal row pruned to the 5-row retention; caps and byte budgets clean.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M12 | A marker that leaves nothing behind is reported without naming what held it | review | — | normal | milestones/M12-emptied-place-report.md |
+| M12 | A marker that leaves nothing behind is reported without naming what held it | done | — | normal | milestones/archive/M12-emptied-place-report.md |
 | M11 | Empty index levels never lose the entry | done | — | normal | milestones/archive/M11-empty-levels.md |
 | M10 | Self-references the level fold and empty levels hide | done | — | normal | milestones/archive/M10-selfref-fold-empty.md |
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
 | M09 | Sort keys under the LaTeX level clamp | done | — | normal | milestones/archive/M09-sortkey-clamp.md |
-| M07 | Letter-group headings (HTML index) | done | — | normal | milestones/archive/M07-letter-groups.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
 <!-- unnumbered ideas; one line each: idea — added YYYY-MM-DD — links -->
+- The emptied-place report's position is a post-Quarto AST index, not the author's source block count, and is unverified where Quarto injects top-level blocks (executable cells, shortcodes); M04's duplicate-marker message shares the convention, which M12 makes load-bearing — added 2026-08-19 — M12 review F6
+- In a book the emptied-place position is chapter-local and the message names no file, unlike the book-aware marker warnings which carry `ctx.file` — added 2026-08-19 — M12 review F7
+- The emptied-place reports for a callout, a tabset and a captioned figure exist only because Quarto's scaffold wrapping happens to leave the marker alone in an inner block list — the private structure M12's gate refused to model — so an upstream change would surface as a manifest mismatch reading like a regression here — added 2026-08-19 — M12 review F12
+- The M12 residue check reads working-tree artifacts (`examples/marker-shapes.{html,tex,md}`) rather than `$WORK` and treats only OSError as "not produced", so a stale artifact could satisfy it; and its title exemption is line-scoped, so a marker on the title's own output line would pass — added 2026-08-19 — M12 review F8/F9; folds into the acceptance-suite hardening cluster
 - First tagged release (window user-declared, never agent-proposed) — added 2026-08-16
 - Chapter-based locator labels in the book HTML index (e.g. 2.1 instead of 1, 2, 3) — added 2026-08-17 — M05 gate kept numeric locators; promote on reader evidence that numeric locators fail in long books
 - Page-range & styling control (open/close marks, principal-mention locators) — added 2026-08-16 — suite target

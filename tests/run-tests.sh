@@ -150,6 +150,9 @@ README_EMPTY_CLAIMS=(
   $'unspellable middle\tTwo empty levels can never sit side by side'
   $'all-empty fallback\tfalls back to its own visible text where it has some'
   $'sort pairing\tfiles `Cats` under `cats` and never under `zzz`'
+  $'dropped keys reported\tyou get a warning saying how many keys went'
+  $'fallback takes no key\tnever under a key written for a level that is gone'
+  $'no empty level, no change\tstill declares nothing for it'
   $'depth after the drop\tDepth is counted after empty levels have gone'
 )
 
@@ -1310,10 +1313,37 @@ PY
 check_no_null_field() {
   local texfile="$1" label="$2"
   python3 - "$texfile" "$label" <<'NULLFIELDPY'
-import re, sys
+import sys
 path, label = sys.argv[1:3]
-src = open(path, encoding='utf-8').read()
-args = re.findall(r'\\index\{([^}]*)\}', src)
+
+
+def arguments(path):
+    """Every `\index{...}` argument in a file, brace-matched.
+
+    A regex stopping at the first `}` reads an argument carrying an encap
+    truncated — `\index{Cats!|see{X}}` comes back as `Cats!|see{X`, whose
+    last field is non-empty however the real argument actually ends — so a
+    trailing null field on any cross-referencing entry was invisible to a
+    scan built that way (M11 review F5).
+    """
+    src = open(path, encoding='utf-8').read()
+    out, i, token = [], 0, '\\index{'
+    while True:
+        start = src.find(token, i)
+        if start < 0:
+            return out
+        j, depth = start + len(token), 1
+        while j < len(src) and depth > 0:
+            if src[j] == '{':
+                depth += 1
+            elif src[j] == '}':
+                depth -= 1
+            j += 1
+        out.append(src[start + len(token):j - 1])
+        i = j
+
+
+args = arguments(path)
 if not args:
     print(f'FAIL: {label}: no \\index commands in {path} at all, so this scan '
           f'proves nothing about it', file=sys.stderr)
@@ -5700,6 +5730,17 @@ pass "M10-AC6: the fold-induced self-target is gone from the compiled index, not
 #   `entry="!"` on []                    -> nothing indexed, no text to fall
 #                                           back on
 #   `entry="Birds!Wrens"`                -> Birds -> Wrens (control, untouched)
+#   `entry="Q!R"` marked twice, `sort="Q!R!S"` then `sort="Q!yyy"` -> Q -> R
+#                                         filing under `yyy`: the first mark's
+#                                         `R` restates the level's own text on
+#                                         the way to a deeper one and so
+#                                         declares nothing, leaving the second
+#                                         mark's `yyy` uncontested. NO empty
+#                                         level anywhere in this shape — it is
+#                                         here to say that dropping empty
+#                                         levels did not change what a sort key
+#                                         means for an entry that has none
+#                                         (M11 review F1)
 # ---------------------------------------------------------------------------
 
 # The emitted LaTeX arguments, one per indexed mark, in document order. `!`
@@ -5714,6 +5755,8 @@ Owls
 aardvark@Zebra
 Ferrets
 Birds!Wrens
+Q!yyy@R
+Q!yyy@R
 MANIFEST
 
 # The printed index of the compiled PDF: (level, term) rows in the index
@@ -5727,6 +5770,8 @@ read -r -d '' EMPTY_LEVELS_PDF <<'MANIFEST' || true
 0	Dogs
 0	Ferrets
 0	Owls
+0	Q
+1	R
 0	Sub
 MANIFEST
 
@@ -5750,6 +5795,9 @@ letter	F
 0	Ferrets	1
 letter	O
 0	Owls	1
+letter	Q
+0	Q	0
+1	R	2
 letter	S
 0	Sub	1
 MANIFEST
@@ -5758,12 +5806,30 @@ MANIFEST
 # a file, and one argument split on the separators the index tool reads.
 index_fields() {
   cat <<'FIELDSPY'
-import re
-
-
 def arguments(path):
-    return re.findall(r'\\index\{([^}]*)\}',
-                      open(path, encoding='utf-8').read())
+    """Every `\index{...}` argument in a file, brace-matched.
+
+    A regex stopping at the first `}` reads an argument carrying an encap
+    truncated — `\index{Cats!|see{X}}` comes back as `Cats!|see{X`, whose
+    last field is non-empty however the real argument actually ends — so a
+    trailing null field on any cross-referencing entry was invisible to a
+    scan built that way (M11 review F5).
+    """
+    src = open(path, encoding='utf-8').read()
+    out, i, token = [], 0, '\\index{'
+    while True:
+        start = src.find(token, i)
+        if start < 0:
+            return out
+        j, depth = start + len(token), 1
+        while j < len(src) and depth > 0:
+            if src[j] == '{':
+                depth += 1
+            elif src[j] == '}':
+                depth -= 1
+            j += 1
+        out.append(src[start + len(token):j - 1])
+        i = j
 
 
 def fields(arg):
@@ -5786,6 +5852,10 @@ FIELDSPY
 WARN_EMPTY_LEVEL='an empty level prints nothing, so it is dropped and the entry indexes at the levels that remain'
 WARN_ONLY_EMPTY_FALLBACK='is only empty levels, which print nothing; the mark indexes under its visible text instead'
 WARN_ONLY_EMPTY_NOTHING='is only empty levels, which print nothing; nothing to index'
+# The stable half of the dropped-sort-key report; its count of levels varies.
+WARN_SORT_DROPPED='a key is dropped with the level it was written for, and the levels that remain keep their own'
+WARN_SORT_EXTRA='the extra sort levels were ignored'
+WARN_SORT_RIVAL='is already sorted as'
 
 for fmt in html latex gfm; do
   quarto render examples/empty-levels.qmd --to $fmt \
@@ -5807,8 +5877,24 @@ for fmt in html latex gfm; do
   # must not leave one looking deep — a leading empty level and two real ones
   # is three levels, not four.
   check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_FOLD_DEPTH" 0 "M11-AC5"
+  # A key written for a level that prints nothing is dropped with it, and said
+  # so rather than lost quietly: `entry="!Zebra" sort="mmm!aardvark"` loses
+  # `mmm`, and `entry="!" sort="fff"` loses all of `fff`, none of it landing on
+  # the level the mark falls back to (M11 review F2, F3).
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_DROPPED" 2 "M11-AC5"
+  # `entry="Q!R" sort="Q!R!S"` reaches one level past the entry; that is the
+  # pre-existing ignored-levels case and must stay one warning, not two.
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_EXTRA" 1 "M11-AC5"
+  # The F1 regression guard, and the reason the `Q!R` pair is in the fixture at
+  # all. Both marks file that entry under one key, because the first mark's `R`
+  # merely restates the level's own text on the way to a deeper level and so
+  # declares nothing. Reading the last-declared position off the REALIGNED sort
+  # list instead of off what the author wrote made it a declaration, which lost
+  # the second mark's `yyy` and reported a rival that does not exist — on an
+  # entry with no empty level anywhere in it.
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_RIVAL" 0 "M11-AC5"
 done
-pass "M11-AC5: six empty levels across five marks each warn once in HTML, LaTeX and gfm; the two all-empty entries each say which way they went; nothing folds"
+pass "M11-AC5: six empty levels across five marks each warn once in HTML, LaTeX and gfm; the two all-empty entries each say which way they went; both dropped sort keys are reported; nothing folds and no rival key is invented for the entry that has no empty level"
 
 check_no_null_field examples/empty-levels.tex "M11-AC2 (empty-levels)"
 
@@ -5841,7 +5927,7 @@ check_html_index_manifest examples/empty-levels.html "$EMPTY_LEVELS_HTML" \
   "M11-AC3"
 check_html_index_links examples/empty-levels.html "M11-AC3"
 check_letter_sweep examples/empty-levels.html "M11-AC3 (letter groups)" \
-  $'A\nB\nC\nD\nF\nO\nS'
+  $'A\nB\nC\nD\nF\nO\nQ\nS'
 
 # The two back-ends compared against each other rather than each against its
 # own manifest: two manifests can drift apart while both still pass, and the
@@ -5910,9 +5996,15 @@ if got != want:
 # A locator on each: an entry the tool REJECTED is absent, but so is one it
 # accepted and printed with nothing pointing at it, and only the second of
 # those two would survive a check that read the terms alone.
-for e in entries:
-    if (e.level, e.term) == (0, 'Birds'):
-        continue          # a parent whose locator hangs off its child
+#
+# A parent carries no locator of its own — its marks hang off its children — so
+# the exemption is DERIVED from the printed tree (any row the next row is
+# deeper than) rather than named as a list of terms: a hand-list is a list the
+# next fixture entry silently falls off.
+for i, e in enumerate(entries):
+    deeper = i + 1 < len(entries) and entries[i + 1].level > e.level
+    if deeper:
+        continue
     if e.text == e.term:
         errs.append(f'the entry {e.term!r} prints with no locator')
 if errs:

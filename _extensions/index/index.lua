@@ -310,9 +310,16 @@ local function sort_levels(value, levels, context, report, kept, depth)
   -- — the way this syntax reaches a deeper level, since two separators in a
   -- row are a literal `!` — while a self-equal key AT that last position is a
   -- real declaration, the author saying where this level files.
+  --
+  -- Found in `written` and compared below against each level's ORIGINAL
+  -- position, because it is a fact about what the author typed. Reading it off
+  -- the realigned list instead makes the last surviving level a declaration
+  -- whenever the sort key ran deeper than the entry — turning filler into a
+  -- declaration on entries with no empty level at all, which loses another
+  -- mark's genuine key and invents a rival-key report (M11 review F1).
   local last = 0
-  for i = 1, #parsed do
-    if parsed[i] ~= "" then
+  for i = 1, #written do
+    if written[i] ~= "" then
       last = i
     end
   end
@@ -330,11 +337,39 @@ local function sort_levels(value, levels, context, report, kept, depth)
       warn(("sort= on %s has %d levels but the entry has %d; the extra sort "
             .. "levels were ignored"):format(context, #written, depth))
     end
+    -- A key written for a level that prints nothing goes with that level. That
+    -- is the rule, but it costs the author something they typed, so it is said
+    -- rather than done quietly (M11 review F2). Counted only within the depth
+    -- the author wrote: anything past it is the ignored-levels case above, and
+    -- an EMPTY sort level lost with an empty entry level costs nothing.
+    if kept ~= nil then
+      local surviving = {}
+      for _, original in ipairs(kept) do
+        surviving[original] = true
+      end
+      local lost = 0
+      for i = 1, math.min(depth, #written) do
+        if not surviving[i] and written[i] ~= "" then
+          lost = lost + 1
+        end
+      end
+      if lost > 0 then
+        local how_many = lost == 1 and "one index level that prints nothing"
+                         or ("%d index levels that print nothing"):format(lost)
+        warn(("sort= on %s writes a key for %s; a key is dropped with the "
+              .. "level it was written for, and the levels that remain keep "
+              .. "their own"):format(context, how_many))
+      end
+    end
   end
   local declared, any = {}, false
   for i = 1, #levels do
     local key = parsed[i]
-    if key ~= nil and key ~= "" and not (key == levels[i] and i < last) then
+    -- Where this level sat in the value the author wrote, which is what `last`
+    -- is measured in.
+    local position = kept ~= nil and kept[i] or i
+    if key ~= nil and key ~= ""
+       and not (key == levels[i] and position < last) then
       declared[i] = key
       any = true
     else
@@ -637,7 +672,11 @@ local function derive_levels(entry, visible, declared, content_count, context,
         warn(("%s is only empty levels, which print nothing; the mark indexes "
               .. "under its visible text instead"):format(context))
       end
-      return { visible }, nil
+      -- An EMPTY `kept`, not a nil one: every level the author wrote is gone,
+      -- so no sort key they wrote belongs to the level this falls back to.
+      -- Passing nil would re-align the whole sort value onto that level and
+      -- put a key on a level it was never written for (M11 review F3).
+      return { visible }, nil, {}, depth
     end
     if report then
       warn(("%s is only empty levels, which print nothing; nothing to index")
@@ -661,9 +700,17 @@ local function derive_levels(entry, visible, declared, content_count, context,
     -- A cross-reference needs something to hang off. This is its own warning
     -- rather than either of the two below, because the fix is different: give
     -- the mark an entry= or some visible text.
-    if report and not explained then
-      warn("cross-reference mark has no source entry (no entry= and no "
-           .. "visible text); nothing to index")
+    if report then
+      if explained then
+        -- The entry has already been reported; what this adds is that the
+        -- cross-reference went with it (M11 review F4).
+        warn(("the cross-reference on %s has no source entry left to hang "
+              .. "off, so it was dropped too; give the mark an entry= that "
+              .. "prints something, or some visible text"):format(context))
+      else
+        warn("cross-reference mark has no source entry (no entry= and no "
+             .. "visible text); nothing to index")
+      end
     end
     -- Same content policy as the two cases below: an empty mark is dropped,
     -- a mark with content keeps every bit of it.
@@ -770,9 +817,9 @@ local function Span(span)
   -- Derived once, and before the back-end branch: the levels are the author's
   -- text whatever format this is, and the empty-level warnings the derivation
   -- emits would otherwise fire twice for one mark.
-  local levels, disposition, kept, depth =
-    derive_levels(entry, visible, declared, #span.content, context,
-                  sort_value, true)
+  local levels, disposition = derive_levels(entry, visible, declared,
+                                            #span.content, context,
+                                            sort_value, true)
   if levels == nil then
     return disposition == "drop" and {} or nil
   end

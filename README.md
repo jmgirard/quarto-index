@@ -80,8 +80,13 @@ a warning naming the value you wrote.
 
 A sort level goes with the entry level it was written for. If that level is
 dropped, its key is dropped with it, so `entry="!Cats" sort="zzz!cats"` files
-`Cats` under `cats` and never under `zzz`. See the ceiling below for what
-happens in an entry deeper than three levels.
+`Cats` under `cats` and never under `zzz`; you get a warning saying how many
+keys went. Where every level is dropped, every key goes with them — a mark
+falling back to its visible text files under that text, never under a key
+written for a level that is gone. Dropping empty levels changes nothing for an
+entry that has none: restating a level's own text on the way to a deeper level
+still declares nothing for it. See the ceiling below for what happens in an
+entry deeper than three levels.
 
 **Three levels is the ceiling.** The LaTeX index back-end stores at most
 three. A deeper entry is not dropped: everything past the third level is

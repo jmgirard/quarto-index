@@ -118,7 +118,8 @@ value is parsed into levels and its empty ones are dropped, since a level that
 prints nothing is not a level and a leading one is a null field the LaTeX index
 tool rejects the whole entry for, silently (added M11; a value that is only
 empty levels falls back to the mark's visible text, and a sort level is dropped
-with the entry level it was written for). Cross-reference targets are parsed
+with the entry level it was written for and reported, never re-aligned onto a
+level it was not written for — corrected M11 review). Cross-reference targets are parsed
 and validated —
 a target naming the mark's own printed levels is reported and dropped, so the
 term indexes plainly rather than pointing at itself (corrected M08; neither

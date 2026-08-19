@@ -44,8 +44,9 @@ rather than under `mmm`: [zebra]{.index entry="!Zebra" sort="mmm!aardvark"}.
 Nothing survives the drop, so there is no entry to index and the mark says so
 rather than claiming no `entry=` was written.
 
-With visible text to fall back on, the mark indexes under that text:
-[Ferrets]{.index entry="!"}.
+With visible text to fall back on, the mark indexes under that text. Its sort
+key was written for levels that are all gone, so none of it lands on the level
+it falls back to, and it is told so: [Ferrets]{.index entry="!" sort="fff"}.
 
 With no visible text and nothing to fall back on, the mark indexes nothing and
 is removed: []{.index entry="!"}.
@@ -54,6 +55,15 @@ is removed: []{.index entry="!"}.
 
 Two ordinary levels, so a check that the empty ones are gone is told apart from
 a check that lost every level: [wrens]{.index entry="Birds!Wrens"}.
+
+An entry with no empty level whose sort key reaches past its own depth, marked
+twice. Restating a level's own text on the way to a deeper level declares
+nothing for that level, so the first mark's `R` is positional filler and the
+second mark's `yyy` is the key both marks file under — one entry, one key, no
+rival reported. This shape has no empty level anywhere in it, which is the
+point: dropping empty levels must not change what a sort key means for an entry
+that has none: [quail]{.index entry="Q!R" sort="Q!R!S"} and
+[rook]{.index entry="Q!R" sort="Q!yyy"}.
 
 ::: {.qi-index-here}
 :::

@@ -98,7 +98,7 @@ existing candidate row.
       the value. One literal per message.
 - [x] T4 Rewrite the extra-sort-levels report (`index.lua:337`) so both
       numbers are labelled as written depths.
-- [ ] T5 Suite, by procedure not by hand-list: grep every occurrence of
+- [x] T5 Suite, by procedure not by hand-list: grep every occurrence of
       `WARN_EMPTY_LEVEL`, `WARN_SORT_EXTRA` and `WARN_SORT_DROPPED` and every
       literal quoting either message, and update each hit — the known ones are
       `tests/run-tests.sh:1245`, `:2486`, `:3537`, `:5033`, `:5087`, `:5973`,
@@ -129,6 +129,8 @@ existing candidate row.
 - 2026-08-19: T2 done — `entry="Moles!" sort="a!b!c"` and `[ferns]{.index sort="a!b!c"}` added to examples/empty-levels.qmd; render confirms `\index{a@Moles}`, `\index{a@ferns}` and `\index{Cats}` unsorted again.
 
 - 2026-08-19: T3, T4 done — both reports rewritten as single literals; suite green at 170 checks after updating the M11 counts (empty-level 6 marks not 6 levels, sort-dropped 2->3, sort-extra 1->3), manifest 1r's derivation comment, and the three empty-levels manifests for the two new marks.
+
+- 2026-08-19: T5 done — M13-AC1/AC2/AC3/AC5 checks added, asserting whole message text; the distinctness scan's `< 6` floor replaced with a pinned count of 36 plus a call-site/literal agreement check. That new check found a defect in itself, not in the filter: `\bwarn\(` also matches the definition and two comment mentions, so it now scans with line comments stripped. Suite 170 -> 174 checks.
 
 ## Decisions
 

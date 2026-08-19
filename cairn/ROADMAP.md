@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-18 (M11 planned — the leading/medial empty-level row graduated into it, carrying its M10 review F2/F5 widening; the M10-F8 double-fold-warning row stays open until M11 retires it. Earlier: M10 done and archived; the surviving-self-reference row graduated at plan time, the empty-levels row widened with the leading-empty behaviour change and the trailing-vs-leading null-field asymmetry, two new rows from M10 review; 4 lessons captured, none retired; M05's terminal row pruned to the 5-row retention; caps and byte budgets clean)_
+_Last hygiene check: 2026-08-18 (M11 done and archived; one defect return at review — a sort-key regression on entries with no empty level — fixed and guarded. D-002 records the empty-level semantics. The M10-F8 double-warning row retired; one new clustered row for warning-wording polish (M11 review F7/F8); 4 lessons captured, none retired; M06's terminal row pruned to the 5-row retention; caps and byte budgets clean.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M11 | Empty index levels never lose the entry | review | — | normal | milestones/M11-empty-levels.md |
+| M11 | Empty index levels never lose the entry | done | — | normal | milestones/archive/M11-empty-levels.md |
 | M10 | Self-references the level fold and empty levels hide | done | — | normal | milestones/archive/M10-selfref-fold-empty.md |
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
 | M09 | Sort keys under the LaTeX level clamp | done | — | normal | milestones/archive/M09-sortkey-clamp.md |
 | M07 | Letter-group headings (HTML index) | done | — | normal | milestones/archive/M07-letter-groups.md |
-| M06 | Sort keys | done | — | normal | milestones/archive/M06-sort-keys.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

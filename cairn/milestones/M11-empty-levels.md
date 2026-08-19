@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M11: Empty index levels never lose the entry
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
@@ -289,7 +289,48 @@ unreachable (traced independently — no path delivers an empty level to
 correctly scoped; the new manifests are genuine hand-derived oracles rather than
 render read-backs, and the checks discriminate.
 
-### Triage (2026-08-18, at the gate)
+### Disposition after the fix (2026-08-18, second pass)
+
+Suite re-run after the fix: `tests/run-tests.sh --self-test`, 182 checks, exit 0;
+`cairn_validate` clean. Every criterion's evidence above re-verified by that run.
+
+- **F1 — fixed and guarded.** `sort_levels` finds `last` in `written` and
+  compares each level's original position against it. Revert probe: with the fix
+  undone the new guard reports 1 rival-key warning where it requires 0, and
+  `\index{Q!yyy@R}` degrades to `\index{Q!R}`; restored, both are correct.
+- **F2 — fixed.** A key dropped with its level is now reported, counted only
+  within the depth the author wrote, and never for an empty sort level lost with
+  an empty entry level.
+- **F3 — fixed.** The fallback returns an empty `kept`, so no written key lands
+  on the level it falls back to; README and DESIGN restated to match, three new
+  claims pinned.
+- **F4 — fixed.** The cross-reference branch now says the target went with the
+  entry rather than being suppressed.
+- **F5 — fixed, and its premise partly corrected.** `arguments()` is
+  brace-matched at both sites. But probed directly, makeindex ACCEPTS
+  `\index{Cats!|see{X}}`, absorbing the trailing `!` before an encap rather
+  than reading a null field — so the hazard as described does not exist. The fix
+  stands because reading a truncated argument was wrong regardless; the scanner
+  is proved discriminating on `\index{!Cats|see{X}}`, which it flags.
+- **F6 — fixed.** The dead `kept`/`depth` locals are gone from `Span`.
+- **F7, F8 — follow-up.** One clustered ROADMAP row; both are warning-wording
+  polish with no behavioural consequence.
+- **F9 — fixed.** DESIGN now leads with the format-neutral justification and
+  names the makeindex rejection as what made the defect urgent, not as what
+  makes the rule right — which is what keeps it consistent with the three-level
+  ceiling staying inside its back-end.
+- **F10 — fixed.** D-002 records the three `entry=` semantics beside D-001.
+- **F-h1 — rejected as cosmetic.** AC5's parenthetical line numbers drifted, but
+  the criterion names its constants unambiguously and its substance is
+  unaffected; amending criterion text through the gate to refresh a parenthetical
+  is not worth the churn.
+
+Two findings I introduced while fixing, both caught and fixed here: the PDF
+locator check exempted the parent `Birds` by name, so the new parent `Q` failed
+it — the exemption is now derived from the printed tree; and `WARN_SORT_EXTRA`
+was redefined where it already existed, now reused.
+
+### Triage (2026-08-18, first pass, at the gate)
 
 - **F1 — fix now. Return floor fires:** a load-bearing defect in what the
   extension emits for users, confirmed by probing the branch filter against

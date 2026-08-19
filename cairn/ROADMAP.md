@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-18 (M11 planned — the leading/medial empty-level 
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M11 | Empty index levels never lose the entry | in-progress | — | normal | milestones/M11-empty-levels.md |
+| M11 | Empty index levels never lose the entry | review | — | normal | milestones/M11-empty-levels.md |
 | M10 | Self-references the level fold and empty levels hide | done | — | normal | milestones/archive/M10-selfref-fold-empty.md |
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
 | M09 | Sort keys under the LaTeX level clamp | done | — | normal | milestones/archive/M09-sortkey-clamp.md |
@@ -24,6 +24,7 @@ _Last hygiene check: 2026-08-18 (M11 planned — the leading/medial empty-level 
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN)
 - Submit to Quarto extension listing at first release — added 2026-08-16 — window user-declared
+- Warning-wording polish (clustered): the "extra sort levels were ignored" report counts the entry's levels as written, not as indexed, so it can say "the entry has 2" for an entry that indexes at one; and a value with two empty levels draws two byte-identical warnings, neither naming which end went — added 2026-08-18 — M11 review F7/F8
 - A cross-reference target that resolves to no entry is never reported: in HTML the three M10 fold shapes keep a target rendered as plain text with no href, and LaTeX diagnoses and drops the same marks while HTML ships the dangling target silently — added 2026-08-18 — M10 review F9; consistent with M10's gate reading of IP1, but nothing tells the author
 - Non-Latin-1 scripts in index terms (Greek, CJK, combining marks, RTL) need an engine/font decision — added 2026-08-16 — M01 review R7/R9; pdflatex default fonts do not cover them
 - Acceptance-suite hardening (clustered): brace-aware `\index` scanner (no longer benign now that unbalanced braces are probed); BSD-sed portability; `]{.index` substring undercount; `include_text` guard; the run fails on a clean checkout (a check reads examples/control.tex before anything renders it); no structural residue check on LaTeX misuse output; three renders write examples/marker.tex in one run; the check-count baseline is not mechanized — added 2026-08-16, extended 2026-08-17, clustered 2026-08-18 — M01 review R14/N12/N13/N14, M04 review F9/F10/F13 + a clean-clone failure hit at review; the script-exit-code item shipped in M01 and `\printindex` ordering has its own row; tests/htmlindex.py's index_section takes the FIRST heading whose text is Index, so a fixture carrying its own would silently locate the wrong element (M08 review F10)

@@ -5854,7 +5854,9 @@ WARN_ONLY_EMPTY_FALLBACK='is only empty levels, which print nothing; the mark in
 WARN_ONLY_EMPTY_NOTHING='is only empty levels, which print nothing; nothing to index'
 # The stable half of the dropped-sort-key report; its count of levels varies.
 WARN_SORT_DROPPED='a key is dropped with the level it was written for, and the levels that remain keep their own'
-WARN_SORT_EXTRA='the extra sort levels were ignored'
+# The rival-key report's own key. `WARN_SORT_EXTRA` and `WARN_SORT_CONFLICT`
+# are already defined above with the other sort-key reports (M06-AC4) and are
+# reused here rather than redefined.
 WARN_SORT_RIVAL='is already sorted as'
 
 for fmt in html latex gfm; do

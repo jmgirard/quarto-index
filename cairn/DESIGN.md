@@ -114,9 +114,12 @@ later mark contradicts. It only reads; nothing it sees changes the document.
 
 The **Span pass** handles one mark at a time. Everything that depends only on
 what the author wrote happens *before* any back-end is chosen: the `entry=`
-value is parsed into levels and its empty ones are dropped, since a level that
-prints nothing is not a level and a leading one is a null field the LaTeX index
-tool rejects the whole entry for, silently (added M11; a value that is only
+value is parsed into levels and its empty ones are dropped, because a level that
+prints nothing is not a level — a format-neutral fact, which is why the drop
+lives here and not in a back-end the way the three-level ceiling does. That the
+LaTeX index tool also rejects a whole entry for a leading null field, silently,
+is what made the defect urgent rather than what makes the rule right (added M11;
+a value that is only
 empty levels falls back to the mark's visible text, and a sort level is dropped
 with the entry level it was written for and reported, never re-aligned onto a
 level it was not written for — corrected M11 review). Cross-reference targets are parsed

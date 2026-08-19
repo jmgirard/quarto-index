@@ -2,12 +2,12 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M11: Empty index levels never lose the entry
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Principles touched:** IP1, IP2, GP6   <!-- owner: plan · create/amend-via-gate -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create -->
+- **Branch/PR:** m11-empty-levels   <!-- owner: implement (branch) / review (PR URL) · create -->
 
 ## Goal
 <!-- owner: plan · create -->
@@ -104,7 +104,7 @@ separators cannot be written; only the leading one is destructive.
 ## Tasks
 <!-- owner: plan (create) / implement (check-off, minor edits) -->
 
-- [ ] T1 — Add `examples/empty-levels.qmd` covering every spellable shape:
+- [x] T1 — Add `examples/empty-levels.qmd` covering every spellable shape:
       leading (`entry="!Cats"`), trailing (`entry="Dogs!"`), leading with a
       cross-reference (`entry="!Owls" see="Owls"`, the M10-F2/F5 shape),
       all-empty with visible text (`entry="!"`), a leading empty level carrying
@@ -137,6 +137,8 @@ separators cannot be written; only the leading one is destructive.
 - 2026-08-18: plan gate chose dropping empty levels format-neutrally over repairing only the LaTeX back-end because the shared parse layer exists to stop the back-ends printing different paths for one mark; falsified by evidence that an author depends on HTML's empty top-level Symbols entry.
 - 2026-08-18: plan gate chose falling back to visible text for an all-empty `entry=` over reporting and indexing nothing because IP2 forbids losing the term and `derive_levels` already routes `entry=""` that way; falsified by an author report that the fallback hides a typo.
 - 2026-08-18: plan gate chose compiled-PDF evidence over reading the emitted `.tex` alone because the M01 lesson is that reading an argument cannot establish that the consumer accepts it — which is exactly how this defect survived; falsified by the added PDF render proving too slow or flaky for the suite.
+- 2026-08-18: implement gate settled three open items: a sort level pairs with the entry level it was written for and is dropped with it; the empty-level warning reads "an empty level prints nothing, so it is dropped and the entry indexes at the levels that remain"; an `entry=` that is only empty levels gets its own message rather than the existing "no entry=" one, which would be false about it.
+- 2026-08-18: T1 — `examples/empty-levels.qmd` added; rendered against the unchanged filter to record the pre-fix behaviour. Beyond the planned defect it exposed an unplanned one: `sort_for` keys a level's sort key on its printed level path and a leading empty level's path is the empty string, so the `mmm` declared by one mark filed four unrelated entries under it with no rival-key report — visible as `\index{zzz@!Cats}` in the pre-fix render. The drop removes it at the root, since no surviving level path can be empty.
 - 2026-08-18: criteria audit ran in FULL mode (surface tier user-facing) but NOT in a fresh context — this session carries a standing directive against spawning subagents, so the author read their own criteria; deviation recorded rather than skipped. Two findings, both fixed before writing: a draft AC1 promising makeindex's `.ilg` report "0 rejected entries" was unreachable as evidence (Quarto does not surface the `.ilg`) and was rewritten onto the compiled PDF; and a draft AC "reverting the drop makes the checks fail" bound a property of the instrument rather than of the deliverable (D-118) and moved to T6.
 
 ## Decisions

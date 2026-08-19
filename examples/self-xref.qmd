@@ -32,5 +32,38 @@ A target naming a different entry is untouched, and is what tells a
 self-reference check from a check that drops every target:
 [lynxes]{.index entry="Lynxes" see="Cats"}.
 
+# A self-reference the comparison could not see
+
+Two shapes hide a self-reference from a comparison run on the author's
+unclamped levels. Both are the same rule M08 states — a self-target is judged
+on what the entry PRINTS — applied where printing is not what the author wrote.
+
+The LaTeX back-end stores three levels and folds the rest into the third, so a
+deeper entry prints a path the author never spelled. A target spelling that
+folded path is a self-reference in LaTeX and is not one in HTML, which has no
+ceiling. Three shapes, so that neither the depth nor the attribute nor the
+presence of a sort key stands in for the family:
+
+Depth four, `see-also=`: [alpha]{.index entry="A!B!C!D" see-also="A!B!C, D"}.
+
+Depth five, `see=`, where the printed third level joins two folded levels:
+[foxtrot]{.index entry="F!G!H!I!J" see="F!G!H, I, J"}.
+
+A folded entry carrying a sort key, where the path it FILES under and the path
+it PRINTS are different strings and only the printed one is a self-reference:
+[mike]{.index entry="M!N!O!P" sort="m!n!o!p" see-also="M!N!O, P"}.
+
+An empty level prints nothing, so an entry whose non-empty levels are the
+target's does read "X, see X" — but the two spellings differ, because a target
+drops its empty levels and an entry keeps them. This is format-neutral: it is
+true wherever the mark is rendered, so both back-ends report it, and so does a
+format with no index back-end at all.
+
+Two levels, the second empty, so the fold cannot reach it and the empty-level
+path is what is being tested: [moles]{.index entry="Moles!" see="Moles"}.
+
+Four levels, the last empty — the fold and the empty level at once:
+[papa]{.index entry="P!Q!R!" see-also="P!Q!R"}.
+
 ::: {.qi-index-here}
 :::

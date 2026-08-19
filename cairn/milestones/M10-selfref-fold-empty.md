@@ -1,11 +1,11 @@
 # M10: Self-references the level fold and empty levels hide
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
-- **Branch/PR:** —
+- **Branch/PR:** m10-selfref-fold-empty
 
 ## Goal
 
@@ -90,7 +90,7 @@ Acceptance-suite hardening → its clustered candidate row.
 
 ## Tasks
 
-- [ ] T1. Extend `examples/self-xref.qmd` with the five new shapes (three fold,
+- [x] T1. Extend `examples/self-xref.qmd` with the five new shapes (three fold,
       two empty) in their own section, and add the failing checks to
       `tests/run-tests.sh`: per-shape `\index{}` argument assertions, the HTML
       node assertions via `tests/htmlindex.py`, and per-format message counts
@@ -119,3 +119,4 @@ Acceptance-suite hardening → its clustered candidate row.
 - 2026-08-18: plan gate chose the hybrid comparison (format-neutral empty-strip plus a LaTeX-only post-fold pass) over moving the comparison wholly into the back-ends, because a back-end-local comparison stops diagnosing self-targets in gfm and every other back-end-less format, which DESIGN commits to ("a misused mark is diagnosed in every output format, not only where a back-end exists"); falsified by a format acquiring a level ceiling of its own, which would make the LaTeX-only pass the wrong home for the fold rule.
 - 2026-08-18: plan gate chose dropping a fold-induced target over reporting and keeping it, because keeping it ships the useless "P, Q, R, S, see also P: Q: R, S" line M08's rule exists to prevent; falsified by evidence that authors rely on the emitted target surviving a fold they did not intend.
 - 2026-08-18: criteria audit ran in FULL mode (user-facing tier), two rounds, fresh-context [O] reader both times. Round 1 returned 13 findings, none of the six criteria clean; nine were fixed silently and four became the gate's questions. Round 2 over the revised wording returned 16 findings, none clean; all were fixed except the suggested leading-empty probe, rejected because makeindex rejects a leading null field and the shape is an unfixed defect on its own candidate row.
+- 2026-08-18: T1 — fixture extended with the five shapes and the checks added; both new check blocks run and fail pre-fix for the right reasons (all five expected plain `\index` arguments found 0 times, all five pre-fix self-encaps present, and both empty-level HTML entries still carrying their targets with no locator). The AC3 clauses passed pre-fix, as they must: HTML never had the defect.

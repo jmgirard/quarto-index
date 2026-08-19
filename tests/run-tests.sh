@@ -2725,16 +2725,70 @@ PY
 # ---------------------------------------------------------------------------
 WARN_SELF_XREF='names the entry it is written on'
 
+# M10 replaces one shared constant with a count per format. The counts must be
+# free to differ: a fold-induced self-reference exists only where the levels
+# are folded, so LaTeX reports three that HTML and gfm correctly report none of
+# (M10-AC4). A single shared constant cannot express that, and a check that
+# cannot express the difference cannot detect losing it.
+WARN_FOLD_SELF='names the folded path this entry prints'
+WARN_FOLD_DEPTH='levels deep; the back-end stores'
+
 for fmt in html latex gfm; do
   quarto render examples/self-xref.qmd --to $fmt \
     > "$WORK/self-xref-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/self-xref-$fmt.log" >&2; fail "M08-AC2: self-xref.qmd failed to render to $fmt"; }
-  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_SELF_XREF" 4 "M08-AC2"
+  # M08's four shapes plus M10's two empty-level shapes. The empty-level case
+  # is format-neutral — an empty level prints nothing in every back-end and in
+  # none — so the count is the same in all three.
+  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_SELF_XREF" 6 "M10-AC4"
   # The both-attributes report is about the MARK, not about its targets, so
   # dropping one of the two must not silence it.
   check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_BOTH" 1 "M08-AC2"
 done
-pass "M08-AC2: four self-referential targets each report once, in HTML, LaTeX and gfm, and the both-attributes report still fires"
+# Three in LaTeX, none anywhere else. The zero is the load-bearing half: it is
+# what says the fold rule stayed inside the back-end whose fold it is.
+check_warning_count "$WORK/self-xref-latex.log" "$WARN_FOLD_SELF" 3 "M10-AC4"
+check_warning_count "$WORK/self-xref-html.log"  "$WARN_FOLD_SELF" 0 "M10-AC4"
+check_warning_count "$WORK/self-xref-gfm.log"   "$WARN_FOLD_SELF" 0 "M10-AC4"
+pass "M08-AC2/M10-AC4: six self-referential targets each report once in HTML, LaTeX and gfm; the three fold-induced ones report in LaTeX alone; the both-attributes report still fires"
+
+# ---------------------------------------------------------------------------
+# M10-AC4 — the three messages that speak about these marks must stay
+# separable. All three quote the same `entry="..."` context, so a count keyed
+# on context alone cannot come back as one; what keeps them apart is the key
+# each check greps for. Asserted as the operational claim: each key matches its
+# own filter warning and neither of the other two. The domain is the three
+# keys, enumerated here.
+# ---------------------------------------------------------------------------
+python3 - "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" \
+         _extensions/index/index.lua <<'PY'
+import re, sys
+keys = sys.argv[1:4]
+src = open(sys.argv[4], encoding='utf-8').read()
+pattern = r'warn\(\s*\(?("|\x27)((?:[^\\]|\\.)*?)\1'
+lits = [m.group(2) for m in re.finditer(pattern, src)]
+errs = []
+# Each key must find its own message in the filter, or the key is stale and
+# every count using it reads zero forever.
+owner = {}
+for key in keys:
+    owners = [l for l in lits if key in l]
+    if len(owners) != 1:
+        errs.append(f'key <<{key}>> matches {len(owners)} filter warnings, want 1')
+    else:
+        owner[key] = owners[0]
+# ...and must match neither of the other two messages.
+for key in keys:
+    for other in keys:
+        if key != other and other in owner and key in owner[other]:
+            errs.append(f'key <<{key}>> also matches the message owned by <<{other}>>')
+if errs:
+    print('FAIL: M10-AC4: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M10-AC4: the self-reference, fold-self-reference and fold-depth '
+      'grep keys each match exactly their own filter warning and neither of '
+      'the other two')
+PY
 
 python3 - examples/self-xref.tex <<'PY'
 import sys
@@ -2827,6 +2881,138 @@ if errs:
 print('ok   M08-AC2: the three dropped-target entries carry locators again, '
       'the both-attributes entry keeps only its see-also, the control '
       'cross-reference survives, and no entry links to itself')
+PY
+
+# ---------------------------------------------------------------------------
+# M10-AC1/AC2 — the five shapes M08's comparison could not see. Each expected
+# argument is stated in full: an extractor keyed on the author's `entry=` text
+# would find nothing for the sort-key shape, whose emitted argument
+# (`m@M!n@N!o@O, P`) contains none of it, and would then pass vacuously.
+#
+# Exactness works the same way it does in the M08 block above: the encap form
+# of any of these keys puts a `|` exactly where the expected string's closing
+# brace is, so no expected string can match an encapped command.
+# ---------------------------------------------------------------------------
+python3 - examples/self-xref.tex <<'PY'
+import re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+errs = []
+# AC1: the three fold shapes. AC2: the two empty-level shapes. Each indexes
+# plainly, on the key it always filed under, with no encap at all.
+plain = {
+    'A!B!C!D':     '\\index{A!B!C, D}',
+    'F!G!H!I!J':   '\\index{F!G!H, I, J}',
+    'M!N!O!P':     '\\index{m@M!n@N!o@O, P}',
+    'Moles!':      '\\index{Moles!}',
+    'P!Q!R!':      '\\index{P!Q!R}',
+}
+for entry, want in plain.items():
+    n = src.count(want)
+    if n != 1:
+        errs.append(f'entry="{entry}": expected exactly one {want}, found {n}')
+# The pre-fix output, named literally. A rule that stopped emitting these marks
+# altogether would satisfy every clause above; these say the target went and
+# the term stayed.
+for bad in ('\\index{A!B!C, D|seealso{A: B: C, D}}',
+            '\\index{F!G!H, I, J|see{F: G: H, I, J}}',
+            '\\index{m@M!n@N!o@O, P|seealso{M: N: O, P}}',
+            '\\index{Moles!|see{Moles}}',
+            '\\index{P!Q!R|seealso{P: Q: R}}'):
+    if bad in src:
+        errs.append(f'a self-referential encap survived the fold: {bad}')
+# The count of \index commands is asserted so that "found exactly one" above
+# cannot be met by a run that emitted the mark twice under different keys.
+total = len(re.findall(r'\\index\{', src))
+if total != 10:
+    errs.append(f'expected 10 \\index commands in the fixture, found {total}')
+if errs:
+    print('FAIL: M10-AC1/AC2: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M10-AC1/AC2: the three folded shapes and the two empty-level '
+      'shapes each index plainly, and no pre-fix self-encap survives')
+PY
+
+# ---------------------------------------------------------------------------
+# M10-AC2/AC3 — the same five shapes in HTML, where there is no level ceiling.
+# The two empty-level shapes are self-references here too and lose their
+# targets; the three folded shapes are NOT, and must keep theirs. Entries are
+# located by tree position and asserted on tag, class list and id — the
+# empty-level entries print no text at all, so a check reading text could not
+# tell one of them from the other.
+# ---------------------------------------------------------------------------
+python3 - examples/self-xref.html <<'PY'
+import re, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse('examples/self-xref.html')
+section = H.index_section(doc)
+records = H.entry_records(section)
+errs = []
+
+def after(term, depth):
+    """The record following the one whose term is `term` at depth `depth-1`.
+
+    Positional, because the entries this locates print no text: `entry="Moles!"`
+    files under a child of `Moles` whose own term is the empty string, and so
+    does every other trailing-empty entry in the document.
+    """
+    for i, r in enumerate(records):
+        if r['term'] == term and r['depth'] == depth - 1:
+            if i + 1 < len(records) and records[i + 1]['depth'] == depth:
+                return records[i + 1]
+            return None
+    return None
+
+# AC2 — the empty-level children of `Moles` and of `R`. Each is a real entry
+# node (a span carrying qi-term and a minted qi-entry id), carries no
+# cross-reference any more, and carries a locator instead: the mark still
+# indexes, which is the IP2 half of the rule.
+for parent, depth in (('Moles', 1), ('R', 3)):
+    rec = after(parent, depth)
+    if rec is None:
+        errs.append(f'no depth-{depth} entry under {parent!r}')
+        continue
+    if rec['term'] != '':
+        errs.append(f"the child of {parent!r} should be the empty level, is {rec['term']!r}")
+    node = H.find_id(doc, rec['id']) if rec['id'] else None
+    if node is None:
+        errs.append(f'the empty level under {parent!r} carries no id')
+    else:
+        if node.tag != 'span':
+            errs.append(f'the empty level under {parent!r} is a <{node.tag}>, want span')
+        if 'qi-term' not in H.classes(node):
+            errs.append(f'the empty level under {parent!r} lacks the qi-term class, '
+                        f'has {H.classes(node)}')
+        if not re.fullmatch(r'qi-entry-\d+', rec['id']):
+            errs.append(f'the empty level under {parent!r} carries a non-minted id '
+                        f'{rec["id"]!r}')
+    if rec['xrefs']:
+        errs.append(f'the empty level under {parent!r} still carries '
+                    f'{[t for _k, t, _l, _h in rec["xrefs"]]}')
+    if not rec['locators']:
+        errs.append(f'the empty level under {parent!r} carries no locator, so the '
+                    f'term was lost rather than indexed plainly')
+
+# AC3 — HTML applies no fold, so none of the three folded shapes is a
+# self-reference here and all three keep their targets.
+for parent, depth, want in (('D', 4, 'A: B: C, D'),
+                            ('J', 5, 'F: G: H, I, J'),
+                            ('P', 4, 'M: N: O, P')):
+    rec = next((r for r in records
+                if r['term'] == parent and r['depth'] == depth - 1), None)
+    if rec is None:
+        errs.append(f'the depth-{depth-1} entry {parent!r} is missing from the index')
+        continue
+    targets = [t for _k, t, _l, _h in rec['xrefs']]
+    if targets != [want]:
+        errs.append(f'entry {parent!r} should keep its target [{want!r}], has {targets}')
+
+if errs:
+    print('FAIL: M10-AC2/AC3: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M10-AC2/AC3: both empty-level entries lost their self-targets and '
+      'index plainly, and all three folded entries keep theirs, HTML having no '
+      'level ceiling to fold under')
 PY
 
 # ---------------------------------------------------------------------------

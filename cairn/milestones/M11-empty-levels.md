@@ -7,7 +7,7 @@
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Principles touched:** IP1, IP2, GP6   <!-- owner: plan · create/amend-via-gate -->
-- **Branch/PR:** m11-empty-levels   <!-- owner: implement (branch) / review (PR URL) · create -->
+- **Branch/PR:** m11-empty-levels · https://github.com/jmgirard/quarto-index/pull/11   <!-- owner: implement (branch) / review (PR URL) · create -->
 
 ## Goal
 <!-- owner: plan · create -->
@@ -59,35 +59,35 @@ separators cannot be written; only the leading one is destructive.
 ## Acceptance criteria
 <!-- owner: plan · create/amend-via-gate; review reads, never reinterprets. -->
 
-- [ ] AC1 — In the compiled `examples/empty-levels.pdf`, every entry the
+- [x] AC1 — In the compiled `examples/empty-levels.pdf`, every entry the
       fixture writes with a leading empty level prints with that level gone and
       a locator beside it (`entry="!Cats"` prints as the top-level entry
       `Cats`). Evidence: the (level, text) rows `tests/pdfindex.py` reads from
       the PDF, compared against the fixture's hand-derived manifest.
-- [ ] AC2 — A scan over every `\index{...}` argument in
+- [x] AC2 — A scan over every `\index{...}` argument in
       `examples/empty-levels.tex` and `examples/self-xref.tex` finds no null
       field: no argument begins with an unquoted `!`, ends with one, or
       contains two adjacent unquoted `!`.
-- [ ] AC3 — The two back-ends print the same paths: the level paths
+- [x] AC3 — The two back-ends print the same paths: the level paths
       `tests/htmlindex.py` reads from `examples/empty-levels.html` and the
       paths the scan of AC2 reads from `examples/empty-levels.tex` correspond
       one-to-one.
-- [ ] AC4 — A mark written `entry="!"` with visible text indexes under that
+- [x] AC4 — A mark written `entry="!"` with visible text indexes under that
       visible text: the term appears in the printed index of both
       `examples/empty-levels.tex` and `examples/empty-levels.html`.
-- [ ] AC5 — Warnings: rendering `examples/empty-levels.qmd` to latex, html and
+- [x] AC5 — Warnings: rendering `examples/empty-levels.qmd` to latex, html and
       gfm emits the empty-level warning once per empty level the fixture
       writes, in each format, and the message states the level was dropped; and
       every warning count the change moves in the `self-xref.qmd` block
       (`WARN_FOLD_DEPTH`, `WARN_FOLD_SELF`, `WARN_SELF_XREF` at
       `tests/run-tests.sh:2743`, `:2750`, `:5509`) is re-derived from the
       fixture with the comment backing it rewritten.
-- [ ] AC6 — README's "Sub-entry levels" section states that an empty level is
+- [x] AC6 — README's "Sub-entry levels" section states that an empty level is
       dropped in every format and why; README's HTML-back-end bullet no longer
       claims an empty filing string files under `Symbols`; DESIGN's Span-pass
       paragraph records the drop; the M10-F8 fold-warning ROADMAP row is
       retired.
-- [ ] AC7 — `tests/run-tests.sh --self-test` passes in a working tree whose
+- [x] AC7 — `tests/run-tests.sh --self-test` passes in a working tree whose
       fixtures have been rendered.
 
 ## Coverage
@@ -156,3 +156,61 @@ separators cannot be written; only the leading one is destructive.
 
 ## Review
 <!-- owner: review · exclusive -->
+
+### Evidence (fresh, 2026-08-18; `tests/run-tests.sh --self-test`, 182 checks, exit 0)
+
+- **AC1 — the entry survives to the compiled index.** `examples/empty-levels.pdf`
+  rendered and read by `tests/pdfindex.py`: all 8 manifest rows print in the
+  index tool's own collation order, `Zebra` leading on its surviving sort key
+  `aardvark`, each row carrying a locator except the `Birds` parent whose
+  locator hangs off its child. The emitted `\index{!Cats}` of the pre-fix
+  filter is now `\index{Cats}`. Checks: "the compiled index prints all 8
+  manifest entries in order, each with a locator"; "every entry written with an
+  empty level survives to the compiled index".
+- **AC2 — no null field.** `check_no_null_field` scans every `\index` argument
+  in each fixture while its own `.tex` still exists: 7 arguments in
+  `examples/empty-levels.tex` and 10 in `examples/self-xref.tex`, no empty
+  field at any level in either. Limit recorded at T6 and not papered over: a
+  leading empty level carrying a sort key emits no empty FIELD, so this scan
+  cannot see it — AC1's manifest comparison is what catches that shape.
+- **AC3 — the two back-ends agree.** The HTML index matches all 15 manifest
+  rows in order across 7 letter groups (A, B, C, D, F, O, S), every id unique
+  and all 7 links resolving; and the back-ends are compared directly against
+  each other, not each against its own manifest — each of the 7 LaTeX level
+  paths is printed by the HTML index, which prints none the LaTeX one does not
+  reach.
+- **AC4 — the all-empty fallback.** `[Ferrets]{.index entry="!"}` emits
+  `\index{Ferrets}` in the LaTeX render (read from the rendered `.tex`) and
+  prints as the depth-0 entry `Ferrets` with one locator in the HTML index
+  (read by `tests/htmlindex.py`).
+- **AC5 — the warnings.** In each of latex, html and gfm: 6 empty-level
+  warnings across 5 marks (2 of them on `entry="!Sub!"`, which is what says the
+  warning is per level and not per mark), 1 all-empty fallback message, 1
+  all-empty nothing-to-index message, 1 self-reference, and 0 fold-depth. Every
+  self-xref count re-derived from the fixture with its backing comment
+  rewritten: the self-reference count stays 6 and the fold-induced count stays
+  3 — both predictions in the T5 plan text were wrong and are corrected in the
+  work log — while the fold-DEPTH count falls 4 to 3, which is the
+  double-warning row this milestone retires.
+- **AC6 — the docs.** README's sub-entry-levels section states the drop and its
+  reason; 8 documented empty-level claims are pinned verbatim by a new
+  `README_EMPTY_CLAIMS` drift check on the M06/M07 pattern. README's letter-group
+  bullet no longer lists an empty string among the Symbols cases. DESIGN's Span-pass
+  paragraph records the drop and the shared-layer sentence names it. The M10-F8
+  fold-warning ROADMAP row is deleted.
+- **AC7 — the verify slot.** `tests/run-tests.sh --self-test` exits 0 with 182
+  checks passing, in a working tree whose fixtures have been rendered (the bar
+  the plan set; a clean checkout stays the acceptance-suite-hardening row's
+  business and is out of scope here).
+
+### Consistency gate
+
+- `cairn_validate` exits 0 — every check PASS/OK, `coverage complete` and
+  `roadmap<->disk orphans` included.
+- `cairn_impact` skipped: the DESIGN.md diff changes no `IPn`/`GPn` principle
+  text (the milestone works under IP1, IP2 and GP6, and amends neither).
+- Toolchain checks: the active profile is `generic`, whose `consistency-gate`
+  slot names none — a clean no-op.
+
+### Independent review
+

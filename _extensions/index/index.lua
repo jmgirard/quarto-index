@@ -636,6 +636,43 @@ local html_marks = {}
 -- it, so a document without one gets nothing extra in its preamble.
 local xref_both_emitted = false
 
+-- Every level path this document's marks index, each mark's parent levels
+-- included, as `levels_key` strings. This is the set a cross-reference target
+-- is resolved against, and it is format-neutral for the same reason the rest
+-- of the mark's diagnosis is: whether a target names a term the document
+-- indexes is a fact about what the author wrote (IP1), not about a back-end.
+-- The HTML entry tree could answer the same question, but it exists in one
+-- format only, so the answer would too.
+local marked_paths = {}
+-- Every surviving cross-reference target, in document order, carrying the
+-- mark it was written on. Held until the Pandoc pass, which is the first
+-- point that has seen every mark: a target may name an entry marked further
+-- down the page, and judging it at the mark would call that broken.
+local pending_xrefs = {}
+
+local function record_marked(levels)
+  for i = 1, #levels do
+    marked_paths[level_path(levels, i)] = true
+  end
+end
+
+-- One report per mark per target that names nothing the marks index. `scope`
+-- is what the path set was drawn from — one document, or a whole book —
+-- because the two are different claims, and an author told "this document" in
+-- a book would go looking in the wrong file.
+local function report_dangling(paths, xrefs, scope)
+  for _, xref in ipairs(xrefs) do
+    -- The target as the author wrote it: `levels_key` doubles a literal `!`
+    -- back, exactly as it must be typed, so the string in the report is the
+    -- string to search the source for. Its empty levels are already gone, and
+    -- were already reported when they were dropped.
+    local target = levels_key(xref.levels)
+    if not paths[target] then
+      warn(('%s= on %s points at "%s", which no index mark in this %s indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'):format(xref.attr, xref.context, target, scope))
+    end
+  end
+end
+
 -- Index key -> the set of distinct encap strings the document emitted for it
 -- (the empty string for a plain locator mark). Two marks on one key whose
 -- encaps DIFFER are the same makeindex conflict the both-attributes case hits,
@@ -899,9 +936,20 @@ local function Span(span)
   -- there is no back-end. The count is what the marker's no-marks warning and
   -- both back-ends read.
   marks_seen = marks_seen + 1
+  -- Recorded here, after every drop and before the back-end branch, so the
+  -- resolution set and the targets judged against it are the same in every
+  -- format. A target dropped as a self-reference above is not among these; one
+  -- the LaTeX fold will drop below still is, because format-neutrally it names
+  -- a path the author never indexed.
+  record_marked(levels)
+  for _, xref in ipairs(xrefs) do
+    pending_xrefs[#pending_xrefs + 1] =
+      { attr = xref.kind.attr, levels = xref.levels, context = context }
+  end
 
   if is_html() then
-    local record = { levels = levels, sort = sort, xrefs = xrefs }
+    local record = { levels = levels, sort = sort, xrefs = xrefs,
+                     context = context }
     html_marks[#html_marks + 1] = record
     if #xrefs == 0 then
       -- Only a locator-contributing mark needs somewhere to link back to; a
@@ -1774,7 +1822,7 @@ local STORE_SUFFIX = ".qi.json"
 -- version that wrote it: nothing prunes it, and a project keeps rendering
 -- across extension upgrades. A record whose version is not this one is
 -- ignored rather than read as if its fields still meant what they did.
-local STORE_VERSION = 3
+local STORE_VERSION = 4
 
 -- Paths from Quarto are the host's; hrefs are always `/`-separated.
 local function as_href(path)
@@ -1861,7 +1909,13 @@ local function store_write(ctx, marker)
       xrefs[#xrefs + 1] = { attr = xref.kind.attr, levels = xref.levels }
     end
     marks[#marks + 1] =
-      { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor }
+      -- `context` is how a report names the mark — `entry="..."` or the term
+      -- the author wrote. Derived where the mark was read and carried here,
+      -- because the book's dangling-target report runs in another chapter's
+      -- process, where the mark itself is long gone and only this record is
+      -- left to name it.
+      { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor,
+        context = mark.context }
   end
   -- The chapter's DECLARED sort keys, one per printed level path, rather than
   -- a resolved key per mark. A mark's resolved key already has this chapter's
@@ -1928,6 +1982,13 @@ local function valid_record(data, file)
       end
     end
     if mark.anchor ~= nil and type(mark.anchor) ~= "string" then
+      return false
+    end
+    -- Required, not optional: every record this version writes names its
+    -- marks, and a record that does not is one this version cannot report
+    -- about. An older store says so by its version and is ignored before it
+    -- reaches here.
+    if type(mark.context) ~= "string" then
       return false
     end
     if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
@@ -2080,6 +2141,36 @@ local function book_marks(ctx, records)
   return marks
 end
 
+-- The book's counterpart of the in-document dangling-target report: the path
+-- set is every chapter's marks and the targets are every chapter's too, so a
+-- target naming a term another chapter indexes resolves, exactly as a reader
+-- following it in the book's one index would find it.
+--
+-- Drawn by the last chapter in book order alone (its caller decides), which is
+-- the only chapter that has seen every other one's record — a book whose
+-- marker sits first would otherwise report every resolving cross-chapter
+-- target as broken. Records arrive in book order and marks within a record in
+-- document order, so the reports do not depend on render order.
+local function report_book_dangling(records)
+  local paths, xrefs = {}, {}
+  for _, record in ipairs(records) do
+    for _, mark in ipairs(record.marks or {}) do
+      for i = 1, #mark.levels do
+        paths[level_path(mark.levels, i)] = true
+      end
+    end
+  end
+  for _, record in ipairs(records) do
+    for _, mark in ipairs(record.marks or {}) do
+      for _, xref in ipairs(mark.xrefs or {}) do
+        xrefs[#xrefs + 1] = { attr = xref.attr, levels = xref.levels,
+                              context = mark.context }
+      end
+    end
+  end
+  report_dangling(paths, xrefs, "book")
+end
+
 -- The first chapter in book order that carries a marker, by position, or nil.
 local function marker_chapter(ctx, records)
   local first = nil
@@ -2107,6 +2198,14 @@ end
 local function html_book(doc, ctx, marker, taken)
   store_write(ctx, marker)
   local records = store_read(ctx)
+  -- Before anything about the marker: a broken cross-reference is a defect
+  -- whether or not this book places an index, and the last chapter is the one
+  -- that can see the whole book's marks (report_book_dangling). A book whose
+  -- last chapter is not rendered gets no report — the same partial-render
+  -- limit every cross-chapter judgement here already carries.
+  if ctx.position == #ctx.chapters then
+    report_book_dangling(records)
+  end
   -- Whether THIS chapter carries the marker is known here, and is never read
   -- back from the store: a chapter whose own record failed to write would
   -- otherwise conclude that some other chapter holds the marker, build no
@@ -2189,6 +2288,15 @@ local function Pandoc(doc)
   if marker and marks_seen == 0 and not book then
     warn("index placement marker in a document with no index marks; there is "
          .. "no index to place")
+  end
+  -- Format-neutral, and before any back-end branch, like every other judgement
+  -- about what the author wrote (IP1): a target that names no indexed term is
+  -- broken wherever the mark is rendered, including in a format that builds no
+  -- index at all. A book chapter is not the document its targets are judged
+  -- against — the whole store is, and the last chapter in book order draws
+  -- that report instead (report_book_dangling).
+  if not book then
+    report_dangling(marked_paths, pending_xrefs, "document")
   end
 
   if is_html() then

@@ -1396,6 +1396,12 @@ check_warning_count() {
 # sentence — a prefix-only pattern would let the two drift apart.
 WARN_BOTH='index mark carries both see= and see-also=; this is probably a mistake, and neither is dropped for being one of two'
 WARN_NO_SOURCE='cross-reference mark has no source entry'
+# M14's dangling-target report, keyed on the invariant tail: the head carries
+# the attribute, the mark and the target, which differ per report, so a family
+# count greps the part every instance shares. The tail is the half that tells
+# the author what to do, so pinning it here is what keeps that half from being
+# reworded away unnoticed.
+WARN_DANGLING='indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'
 
 check_warning_count "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
 pass "M02-AC5: case (b) warned exactly once in the demo render"
@@ -1520,7 +1526,7 @@ if blank:
     sys.exit(1)
 # An exact count, not a floor: a floor passes while a warning quietly stops
 # being read. This number changes when a warning is added or removed.
-EXPECTED = 36
+EXPECTED = 37
 if len(lits) != EXPECTED:
     print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
           f'{EXPECTED}. Either a warning was added or removed without updating '
@@ -1532,12 +1538,16 @@ if len(lits) != EXPECTED:
         print(f'  <<{l}>>', file=sys.stderr)
     sys.exit(1)
 # AC4's second clause, which the join above cannot evidence: the two reports
-# M13 rewrote are each ONE literal. Asserted on the calls themselves, since a
+# M13 rewrote — and the one M14 added — are each ONE literal. Asserted on the calls themselves, since a
 # joined message reads identically either way. Keeping them whole is also why
 # those two lines run past the file's usual width (review F9, F18).
 SINGLE_LITERAL = (
     'empty index level in %s at %s;',
     'sort= on %s writes %d levels against the %d it has to sort',
+    # M14-AC6: the dangling-target report, for the same reason — a message
+    # split across `..` is read by this scan only to its first fragment, and a
+    # scan that compares warnings on a prefix is the blindness M10 hit.
+    '%s= on %s points at "%s", which no index mark in this %s indexes;',
 )
 for needle in SINGLE_LITERAL:
     owner = [m for m in re.finditer(r'\bwarn\(', code)
@@ -1550,8 +1560,8 @@ for needle in SINGLE_LITERAL:
     pieces = LITERAL.findall(code[owner[0].end():end])
     if len(pieces) != 1:
         print(f'FAIL: M02-AC5: the report <<{needle}>> is built from '
-              f'{len(pieces)} literals; M13-AC4 requires one, so the whole '
-              f'message is visible at its call site', file=sys.stderr)
+              f'{len(pieces)} literals; M13-AC4 and M14-AC6 require one, so '
+              f'the whole message is visible at its call site', file=sys.stderr)
         sys.exit(1)
 
 dupes = {l for l in lits if lits.count(l) > 1}
@@ -4470,14 +4480,20 @@ print(f'ok   M05-AC4: all {len(rows)} cross-file cross-reference(s) link to '
 PY
 
 # The unresolvable target is in the exhaustive manifest above as `see-plain`,
-# which is the criterion's "renders as unlinked text"; this is the other half
-# of AC4 — a well-formed book renders with nothing to report at all, so a
-# cross-file target never draws the warning a missing one would.
-if grep -q '^(W)' "$WORK/book-html.log"; then
+# which is the criterion's "renders as unlinked text". M14 replaces AC4's
+# other half — "the book renders with nothing to report at all" — because that
+# target names a term no chapter indexes and M14-AC5 requires the book to say
+# so, once. What AC4 was really asserting survives as the stronger claim: the
+# ONLY warning the whole book emits is that one report, so `see="Alpha"`,
+# whose entry another chapter contributes, draws none. Counted across the
+# whole four-chapter render, which is what says a single chapter drew it.
+BOOK_DANGLING='see= on term "Epsilon" points at "No Such Entry", which no index mark in this book indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'
+check_warning_count "$WORK/book-html.log" "$BOOK_DANGLING" 1 "M14-AC5"
+if [ "$( { grep -c '^(W)' "$WORK/book-html.log" || true; } )" != "1" ]; then
   grep '^(W)' "$WORK/book-html.log" >&2
-  fail "M05-AC4: the book fixture rendered with warning(s); a resolvable cross-file target must draw none"
+  fail "M05-AC4/M14-AC5: the book fixture emitted warning(s) beyond the single dangling-target report; a resolvable cross-file target must draw none"
 fi
-pass "M05-AC4: the book renders warning-free, unresolvable target included"
+pass "M05-AC4/M14-AC5: the book's one warning is the single report naming the target no chapter indexes; the resolvable cross-file target draws none"
 
 # ---------------------------------------------------------------------------
 # M05-AC6 — a book with marks and no marker chapter.

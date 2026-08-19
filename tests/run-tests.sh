@@ -1123,7 +1123,8 @@ LETTERDOCPY
 # normalized, so what the README promises and what this suite exercises cannot
 # drift apart. Each row names a behavior M08 added; each PRESENT claim has a
 # check above that fails without the behavior, and the STALE row is the
-# sentence AC1 falsified.
+# sentence AC1 falsified. M14 adds the dangling-target report to the same
+# family: it is a misuse report about the mark, told in every format.
 # ---------------------------------------------------------------------------
 README_MISUSE_CLAIMS=(
   $'a div and nothing else\tThe marker class on a heading, on an inline span or on a code block places nothing and is reported'
@@ -1134,6 +1135,10 @@ README_MISUSE_CLAIMS=(
   $'section id conditional\tin a section whose id is `qi-index` where the document has not taken that name and a minted one where it has'
   $'both attributes narrowed\tNeither is dropped for being one of two: you get one entry carrying both targets'
   $'self-target still dropped\tA target that names its own entry is still dropped for that reason, and the other one is then the only one emitted'
+  $'dangling target reported\tA `see=` or `see-also=` naming a term nothing indexes sends a reader to an entry the index does not have'
+  $'dangling target kept\tIt is not dropped — what you wrote is yours — but you get a warning naming the mark and the target, once per mark per target, whatever you render to'
+  $'parent level resolves\tincluding a level that exists only because a deeper entry hangs from it'
+  $'book report drawn once\tthe report is drawn once, by the last chapter in book order'
 )
 README_MISUSE_STALE=(
   $'section id fixed\tthe section id `qi-index` itself, which is fixed rather than minted'

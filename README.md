@@ -176,6 +176,18 @@ levels, not on the text a reader sees: `see="Note!on birds"` points at the
 sub-entry `on birds` under `Note`, while `see="Note: on birds"` is one level
 that merely prints the same way, and does not link.
 
+**A target that names no entry is reported.** A `see=` or `see-also=` naming a
+term nothing indexes sends a reader to an entry the index does not have. It is
+not dropped — what you wrote is yours — but you get a warning naming the mark
+and the target, once per mark per target, whatever you render to. A target
+resolves when its levels name an entry the document indexes, including a level
+that exists only because a deeper entry hangs from it: with
+`entry="Trees!Oak!Acorn"` marked somewhere, `see-also="Trees!Oak"` resolves. In
+a book the whole book's marks are what a target is judged against, so a target
+naming a term another chapter marks is fine; the report is drawn once, by the
+last chapter in book order, so a render that stops short of that chapter draws
+none.
+
 ### Special characters
 
 Everything in a visible term or an `entry=` level is literal text. You never

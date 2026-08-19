@@ -5480,6 +5480,75 @@ CLAMPPDFPY
 pass "M09-AC3: two entries sharing one sort key per pair are reported not at all, reach the index tool as one key each, and print once each in the built index"
 
 # ---------------------------------------------------------------------------
+# M10-AC6 — the fold-induced drop, followed to the compiled artifact (GP6).
+# The emitted `\index` command is checked above; what a reader actually gets
+# is settled by makeindex and LaTeX, which run after this extension's contract
+# ends, so the entry is read out of the built PDF as well.
+#
+# ORACLE RULE: the expected rows below are derived BY HAND from
+# examples/self-xref.qmd plus the documented fold — the LaTeX back-end stores
+# three levels, so `entry="A!B!C!D"` prints `A`, `B`, `C, D` and
+# `entry="M!N!O!P"` prints `M`, `N`, `O, P`. Nothing here is read back from
+# tests/pdfindex.py, per that module's own header.
+#
+# Both directions are asserted. The five M10 entries must carry no
+# cross-reference text, and the two M08 entries that legitimately keep one
+# must still show it — a "no see also anywhere" check would pass just as well
+# on an index that had lost every cross-reference in the document.
+# ---------------------------------------------------------------------------
+quarto render examples/self-xref.qmd --to pdf \
+  > "$WORK/self-xref-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/self-xref-pdf.log" >&2; fail "M10-AC6: self-xref.qmd failed to render to PDF"; }
+[ -s examples/self-xref.pdf ] || fail "M10-AC6: examples/self-xref.pdf is empty"
+check_warning_count "$WORK/self-xref-pdf.log" "$WARN_FOLD_SELF" 3 "M10-AC6"
+python3 - examples/self-xref.pdf <<'SELFXREFPDFPY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+
+entries = pdfindex.read(sys.argv[1])
+if not pdfindex.columns_carry_top_level(entries):
+    print('FAIL: M10-AC6: a column of the printed index carries no top-level '
+          'entry, so pdfindex cannot read its indent levels', file=sys.stderr)
+    sys.exit(1)
+actual = pdfindex.outline(entries)
+errs = []
+
+# Hand-derived: each folded entry prints its first two levels as written and
+# its overflow joined into the third, at levels 0, 1, 2, consecutively.
+for want in ([(0, 'A'), (1, 'B'), (2, 'C, D')],
+             [(0, 'M'), (1, 'N'), (2, 'O, P')]):
+    n = len(want)
+    if not any(actual[i:i + n] == want for i in range(len(actual) - n + 1)):
+        errs.append(f'{want} does not appear as consecutive rows')
+
+# The five entries M10 added, by the text each prints. A cross-reference is
+# typeset on the entry's own line, so its absence is a property of that line.
+FOLDED = ('C, D', 'H, I, J', 'O, P')
+EMPTY_LEVEL = ('Moles', 'R')
+for entry in entries:
+    if entry.term in FOLDED + EMPTY_LEVEL:
+        if 'see' in entry.text:
+            errs.append(f'entry {entry.text!r} still prints a cross-reference')
+
+# The control, and the reason the loop above is not vacuous: the two entries
+# that should keep a cross-reference still print one.
+printed = [e.text for e in entries]
+for want in ('Dogs, see also Pets', 'Lynxes, see Cats'):
+    if want not in printed:
+        errs.append(f'{want!r} is not in the printed index, so the check above '
+                    f'cannot tell a dropped target from a lost one')
+
+if errs:
+    print('FAIL: M10-AC6: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M10-AC6: the built index prints both folded entries at their three '
+      'derived levels with no cross-reference on any of the five M10 entries, '
+      'while the two entries that keep a cross-reference still print one')
+SELFXREFPDFPY
+pass "M10-AC6: the fold-induced self-target is gone from the compiled index, not only from the emitted LaTeX"
+
+# ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--self-test" ]; then

@@ -85,7 +85,7 @@ none; not plannable.
 
 ## Tasks
 
-- [ ] T1: Extend `examples/marker-shapes.qmd` with the shapes this milestone
+- [x] T1: Extend `examples/marker-shapes.qmd` with the shapes this milestone
       is about, one emptied place per top-level block so two reports can never
       be byte-identical, and head the file with a manifest comment deriving
       the expected report line for each — derived from the fixture's own
@@ -124,3 +124,4 @@ none; not plannable.
 - 2026-08-18: plan gate chose a second warning beside M04's nested-marker message over folding the two together, because M08's reason still holds — the M04 wording and every check pinned to it stay untouched; falsified by the pair reading redundantly to an author who sees both fire on one marker.
 - 2026-08-18: plan gate chose claiming the marker's own place is empty over claiming the container is, because a callout, a tabset and a captioned figure still render a title bar or caption; falsified by a shape where the marker's place and the container coincide and the wording reads as evasive.
 - 2026-08-18: criteria audit ran in FULL mode (user-facing tier), fresh-context [O] reader over the final drafted wording. Returned 15 findings across AC1-AC6 (AC7 clean); every one had a clear right answer and was fixed before writing, none escalated to a gate question.
+- 2026-08-19: T1 — fixture extended with nine emptying shapes and four non-reporting ones; the manifest's hand-derived positions 12 13 14 15 16 17 18 20 22 were confirmed against the post-Quarto AST by a throwaway dump filter, which also showed the marker-owned subtraction is what keeps the doubly- and triply-nested shapes at one report each and the top-level placement marker at none. The plan's "marker whose only sibling is whitespace" non-report shape was dropped: markdown whitespace produces no block, so that shape is the reporting case, not a negative. Suite green, 165 checks.

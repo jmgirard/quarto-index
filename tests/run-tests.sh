@@ -2715,7 +2715,14 @@ for fmt in html latex gfm; do
   check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_SITE" 0 "M08-AC3 (F4)"
   # The nested markers still report, and the one carrying content still reports
   # as non-empty — neither message is disturbed by the metadata exclusion.
-  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 2 "M08-AC3"
+  # 15 nested markers, counted down the fixture: one each in #keeps-content,
+  # #keeps-sibling, the callout, the tabset, the figure, the block quote, the
+  # bullet list, the table cell and the footnote; two in #doubly, three in
+  # #triply, and the one the top-level placement marker wraps (M12).
+  check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 15 "M08-AC3"
+  # Still one: #keeps-content's marker is the only one carrying content of its
+  # own, since the nested markers are stripped bottom-up and each outer one is
+  # empty by the time it is spliced.
   check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_CONTENT" 1 "M08-AC3"
 done
 pass "M08-AC3: a marker class in the document title is reported nowhere, and the nested-marker messages are undisturbed"

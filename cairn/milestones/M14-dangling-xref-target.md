@@ -92,7 +92,7 @@ the existing candidate row.
 
 ## Tasks
 
-- [ ] T1 Baseline probe: render a dangling-target shape to LaTeX, HTML and
+- [x] T1 Baseline probe: render a dangling-target shape to LaTeX, HTML and
       gfm and to both book fixtures, and record what each format emits today
       and where it is silent.
 - [ ] T2 Pin the resolution rule against the HTML back-end's own walk
@@ -125,6 +125,7 @@ the existing candidate row.
 - 2026-08-19: plan gate chose drawing the book report from the last chapter in book order over the chapter that builds the index, because every chapter reads the whole store (index.lua:2069) but only the last has seen every record — a marker-first book would otherwise report resolving cross-chapter targets as broken; falsified by evidence that the last chapter can fail to render in a partial render the report must still be right about.
 - 2026-08-19: plan gate chose pinning the expected report count for each existing example over adding ~250 index marks so the probe corpus resolves, because the escaping probe's assertions are built on its current marks; falsified by the pinned counts proving unmaintainable across later fixture edits. Corpus reconciliation queued as a candidate row.
 - 2026-08-19: implement gate chose the actionable "points at" wording (target named, reader consequence, both fixes) over a short form, and pinned per-example report counts with a grep-derived roster of the examples that must carry one over a Python routine re-deriving counts from source, which could share a bug with the filter.
+- 2026-08-19: T1 baseline probe: a mark whose `see=` names a term nothing indexes is silent today in all three formats (LaTeX emits `\index{Lions|see{Felines}}`, HTML renders the target as an unlinked `qi-target` span, gfm passes the attribute through) and silent in both book fixtures — `examples/book` renders warning-free with its `see="No Such Entry"` already in place, and `examples/book-order` emits only its two marker-order warnings.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 4 findings against this file: AC2 was unsatisfiable (~250 corpus targets dangle) and AC5 rested on a false claim about which chapter knows the book's entries — both went to the question gate and are settled above; AC4's exact-zero over self-xref.qmd was narrowed to the four format-neutral marks, AC3's single exemplar was widened to five shapes, and AC6's unfalsifiable literal-count claim was dropped.
 
 ## Decisions

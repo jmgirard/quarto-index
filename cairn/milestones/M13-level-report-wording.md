@@ -132,6 +132,8 @@ existing candidate row.
 
 - 2026-08-19: T5 done — M13-AC1/AC2/AC3/AC5 checks added, asserting whole message text; the distinctness scan's `< 6` floor replaced with a pinned count of 36 plus a call-site/literal agreement check. That new check found a defect in itself, not in the filter: `\bwarn\(` also matches the definition and two comment mentions, so it now scans with line comments stripped. Suite 170 -> 174 checks.
 
+- 2026-08-19: T6 in progress — probe 1 (revert the empty-level report to its pre-M13 per-level form) fails M11-AC5 on the per-mark count (7 not 6) and, once past that, M13-AC1 on the position-naming text; the pre-M13 message draws 0 of the 1 expected. Probe 2 (revert the extra-sort report) and the distinctness-pin probe not yet run. Paused here at the user's request; working tree clean at this commit.
+
 ## Decisions
 
 ## Review

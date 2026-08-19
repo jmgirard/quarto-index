@@ -75,8 +75,15 @@ Acceptance-suite hardening → its clustered candidate row.
       `(0,'M'), (1,'N'), (2,'O, P')` as consecutive outline rows, and no
       `Entry.text` among the five entries AC1 and AC2 name contains "see also"
       or "see ".
-- [x] AC7. The profile's `verify` slot is clean: `tests/run-tests.sh` and
-      `tests/run-tests.sh --self-test` both pass on a clean checkout.
+- [x] AC7. The profile's `verify` slot passes at a31ae0d in a working tree that
+      has already completed one full render pass: `tests/run-tests.sh` and
+      `tests/run-tests.sh --self-test` each exit 0. A fresh-clone run is not
+      claimed — the suite opens `examples/control.tex` before the line that
+      renders it, and that residue is gitignored; the bootstrap is an
+      acceptance-suite-hardening item this milestone's Scope puts Out.
+      `--self-test` certifies only that the manifest machinery still catches a
+      removed, an altered and a spurious command in `demo-latex.tex`;
+      discrimination for this milestone's own checks is T7's revert probes.
 
 ## Coverage
 
@@ -86,7 +93,7 @@ Acceptance-suite hardening → its clustered candidate row.
 - AC4 → T1, T4
 - AC5 → T1, T5
 - AC6 → T6
-- AC7 → T7
+- AC7 → T1, T2, T3, T4, T5, T6, T7
 
 ## Tasks
 
@@ -127,6 +134,9 @@ Acceptance-suite hardening → its clustered candidate row.
 - 2026-08-18: T7 — revert-the-fix probes, all run after the fixes were committed. (R1) empty-strip reverted: `expected 6 occurrence(s) of <<names the entry it is written on>>, got 4`. (R2) fold pass reverted: `expected 3 occurrence(s) of <<names the folded path this entry prints>>, got 0`, and the PDF block, run alone against a PDF built without the pass, named all three surviving self-encaps. (R3) message reworded to contain M08's key: M08's own count went 6 to 9, which is the collision AC4 exists to prevent. The key-distinctness block, run standalone, fails on a stale key (`matches 0 filter warnings`) and on an overlapping one (`matches 2`).
 - 2026-08-18: T7 also strengthened the PDF check. Naming the five entries by term made the cross-reference clause vacuous under a revert — an entry that keeps a target no longer prints the term the list names — so the clause now runs over every printed entry, with the two M08 entries entitled to a cross-reference named and asserted present.
 - 2026-08-18: complete — `tests/run-tests.sh --self-test` green, 169 checks.
+- 2026-08-18: amendment return: AC7 — "The profile's `verify` slot passes at a31ae0d in a working tree that has already completed one full render pass: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` each exit 0."
+- 2026-08-18: the amended wording was audited by a fresh-context [O] reader twice before being written. Revision 1 (bind to the branch, add a check-count clause) returned six findings — a fresh clone is on the branch too, and the count clause was a tautology since `--self-test` only adds `pass` lines. Revision 2 returned three more: the tree was unpinned and unreconstructible, and `--self-test` was invoked with its meaning disclaimed rather than stated. The accepted wording pins the commit and the residue precondition and says what `--self-test` does certify.
+- 2026-08-18: review found no defect returns. Five review findings were fixed on the branch (DESIGN.md prose, the grep-key check reading only leading literals, the PDF check missing AC2's IP2 half, a duplicated `levels_key` derivation, a bare `see` substring scan); four went to candidate rows; one was rejected as latent with nothing that mutates it.
 
 ## Review
 
@@ -164,10 +174,16 @@ this milestone).
   consecutive outline rows against a hand-derived manifest, and no printed
   entry shows a cross-reference except the two entitled to — both asserted
   present, so the absence clause cannot pass on an index that lost them all.
-- AC7 — met. Verify slot clean, both plain and `--self-test`, on this branch.
-
+- AC7 — met, as amended. At a31ae0d in this working tree: `tests/run-tests.sh`
+  exit 0, 152 checks; `tests/run-tests.sh --self-test` exit 0, 169 checks.
+  The original wording ("on a clean checkout") was false and was amended
+  rather than read charitably: a fresh clone of this branch fails 15 checks
+  in at `FileNotFoundError: examples/control.tex`, and a fresh clone of
+  `main` fails identically at the same check, so the failure predates this
+  milestone and is verbatim an item on the acceptance-suite-hardening row
+  this milestone's Scope puts Out.
 Consistency gate: `cairn_validate` exit 0, 23 checks, no FAIL and no WARN. The
 `generic` profile names no toolchain checks, so that half is a clean no-op. No
 DESIGN principle changed, so `cairn_impact` was not run.
 
-Defect returns this milestone: 0. Amendment returns: 0.
+Defect returns this milestone: 0. Amendment returns: 1 (AC7, below).

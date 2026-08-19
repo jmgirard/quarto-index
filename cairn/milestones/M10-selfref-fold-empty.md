@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
-- **Branch/PR:** m10-selfref-fold-empty
+- **Branch/PR:** m10-selfref-fold-empty · https://github.com/jmgirard/quarto-index/pull/10
 
 ## Goal
 
@@ -36,7 +36,7 @@ Acceptance-suite hardening → its clustered candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1. For each of the three fold shapes added to `examples/self-xref.qmd`
+- [x] AC1. For each of the three fold shapes added to `examples/self-xref.qmd`
       — `entry="A!B!C!D" see-also="A!B!C, D"`, `entry="F!G!H!I!J"
       see="F!G!H, I, J"`, and `entry="M!N!O!P" sort="m!n!o!p"
       see-also="M!N!O, P"` — the `\index{}` command in `examples/self-xref.tex`
@@ -45,17 +45,17 @@ Acceptance-suite hardening → its clustered candidate row.
       Verified by `tests/run-tests.sh` extracting every `\index{}` command from
       `examples/self-xref.tex` and matching each expected argument against the
       extracted set.
-- [ ] AC2. For `entry="Moles!" see="Moles"` (two levels, so the fold cannot
+- [x] AC2. For `entry="Moles!" see="Moles"` (two levels, so the fold cannot
       reach it) and `entry="P!Q!R!" see-also="P!Q!R"`: the `\index{}` command
       for each in `examples/self-xref.tex` carries no encap, and in
       `examples/self-xref.html` the entry node each mark files under — the sole
       child of the `Moles` node, and the sole child of the `R` node — carries
       no `.qi-xref` descendant, asserted on tag, class list and id via
       `tests/htmlindex.py`, never on text.
-- [ ] AC3. In `examples/self-xref.html` the `entry="A!B!C!D"` mark's
+- [x] AC3. In `examples/self-xref.html` the `entry="A!B!C!D"` mark's
       fourth-level entry node still carries its `.qi-see-also` target element.
       HTML applies no level fold, so the match exists only in LaTeX.
-- [ ] AC4. The fold-self-reference message quotes the printed folded path the
+- [x] AC4. The fold-self-reference message quotes the printed folded path the
       comparison used (`A!B!C, D`) alongside the author's unclamped `entry=`
       text and states the fold as the reason; the grep key `tests/run-tests.sh`
       uses for each of the three messages — M08's self-reference message, the
@@ -65,17 +65,17 @@ Acceptance-suite hardening → its clustered candidate row.
       `examples/self-xref.qmd` already produces for latex, html and gfm, the
       self-reference message fires 6 / 6 / 6 (M08's four shapes plus AC2's two)
       and the fold-self-reference message fires 3 / 0 / 0.
-- [ ] AC5. M08's four shapes are unchanged in kind: the three single-target
+- [x] AC5. M08's four shapes are unchanged in kind: the three single-target
       shapes index plainly, and `entry="Dogs" see="Dogs" see-also="Pets"` still
       emits `\index{Dogs|seealso{Pets}}` with no locator; `entry="Lynxes"
       see="Cats"` still emits its `see` target in both back-ends.
-- [ ] AC6. `examples/self-xref.qmd` builds to PDF and its compiled index,
+- [x] AC6. `examples/self-xref.qmd` builds to PDF and its compiled index,
       read via `tests/pdfindex.py` and asserted in `tests/run-tests.sh` against
       a hand-derived manifest, carries `(0,'A'), (1,'B'), (2,'C, D')` and
       `(0,'M'), (1,'N'), (2,'O, P')` as consecutive outline rows, and no
       `Entry.text` among the five entries AC1 and AC2 name contains "see also"
       or "see ".
-- [ ] AC7. The profile's `verify` slot is clean: `tests/run-tests.sh` and
+- [x] AC7. The profile's `verify` slot is clean: `tests/run-tests.sh` and
       `tests/run-tests.sh --self-test` both pass on a clean checkout.
 
 ## Coverage
@@ -127,3 +127,47 @@ Acceptance-suite hardening → its clustered candidate row.
 - 2026-08-18: T7 — revert-the-fix probes, all run after the fixes were committed. (R1) empty-strip reverted: `expected 6 occurrence(s) of <<names the entry it is written on>>, got 4`. (R2) fold pass reverted: `expected 3 occurrence(s) of <<names the folded path this entry prints>>, got 0`, and the PDF block, run alone against a PDF built without the pass, named all three surviving self-encaps. (R3) message reworded to contain M08's key: M08's own count went 6 to 9, which is the collision AC4 exists to prevent. The key-distinctness block, run standalone, fails on a stale key (`matches 0 filter warnings`) and on an overlapping one (`matches 2`).
 - 2026-08-18: T7 also strengthened the PDF check. Naming the five entries by term made the cross-reference clause vacuous under a revert — an entry that keeps a target no longer prints the term the list names — so the clause now runs over every printed entry, with the two M08 entries entitled to a cross-reference named and asserted present.
 - 2026-08-18: complete — `tests/run-tests.sh --self-test` green, 169 checks.
+
+## Review
+
+Fresh evidence, 2026-08-18, on m10-selfref-fold-empty at 8326e31, PR #10.
+Verify slot: `tests/run-tests.sh --self-test` — exit 0, 169 checks (150 before
+this milestone).
+
+- AC1 — met. `examples/self-xref.tex` carries `\index{A!B!C, D}`,
+  `\index{F!G!H, I, J}` and `\index{m@M!n@N!o@O, P}`, each once and each with
+  no encap; the suite's M10-AC1/AC2 block extracts every `\index{}` command
+  from the file, matches all five expected arguments, names the five pre-fix
+  self-encaps as forbidden, and pins the file's total at 10 commands so a mark
+  emitted twice under different keys could not satisfy it.
+- AC2 — met. Same block covers `\index{Moles!}` and `\index{P!Q!R}`. The
+  M10-AC2/AC3 HTML block locates each empty-level entry by tree position (the
+  sole child of `Moles`, the sole child of `R`), asserts the node is a `span`
+  carrying `qi-term` with a minted `qi-entry-N` id, and asserts it carries no
+  `.qi-xref` descendant and at least one locator — the term indexes rather
+  than being lost.
+- AC3 — met. The same HTML block asserts all three folded entries keep their
+  targets in HTML (`A: B: C, D`, `F: G: H, I, J`, `M: N: O, P`), and the
+  fold-self-reference count in the html log is 0.
+- AC4 — met. Fresh renders: self-reference 6/6/6 and fold-self-reference 3/0/0
+  across latex/html/gfm. The message quotes the printed folded path and the
+  author's unclamped `entry=` text — for the sort shape it quotes `M!N!O, P`,
+  the path printed, not `m!n!o`, the path filed under. The grep-key check reads
+  the filter's own `warn()` literals and confirms each of the three keys
+  matches exactly its own message and neither of the other two.
+- AC5 — met. M08's three checks pass unchanged: the three single-target shapes
+  index plainly, `entry="Dogs"` keeps `\index{Dogs|seealso{Pets}}` with no
+  locator, and `entry="Lynxes" see="Cats"` still emits its target in both
+  back-ends.
+- AC6 — met. `examples/self-xref.pdf` builds; the compiled index carries
+  `(0,'A'), (1,'B'), (2,'C, D')` and `(0,'M'), (1,'N'), (2,'O, P')` as
+  consecutive outline rows against a hand-derived manifest, and no printed
+  entry shows a cross-reference except the two entitled to — both asserted
+  present, so the absence clause cannot pass on an index that lost them all.
+- AC7 — met. Verify slot clean, both plain and `--self-test`, on this branch.
+
+Consistency gate: `cairn_validate` exit 0, 23 checks, no FAIL and no WARN. The
+`generic` profile names no toolchain checks, so that half is a clean no-op. No
+DESIGN principle changed, so `cairn_impact` was not run.
+
+Defect returns this milestone: 0. Amendment returns: 0.

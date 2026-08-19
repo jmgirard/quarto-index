@@ -127,7 +127,7 @@ separators cannot be written; only the leading one is destructive.
 - [x] T6 — With T3–T5 committed, revert the drop and confirm the AC1 and AC2
       checks fail naming the lost entry, then restore. (Commit first: the M08
       lesson.)
-- [ ] T7 — README "Sub-entry levels" (`README.md:60`) and the Symbols bullet
+- [x] T7 — README "Sub-entry levels" (`README.md:60`) and the Symbols bullet
       (`:421`); DESIGN's Span-pass paragraph; retire the M10-F8 ROADMAP row.
 
 ## Work log
@@ -146,6 +146,9 @@ separators cannot be written; only the leading one is destructive.
 - 2026-08-18: verify slot clean — `tests/run-tests.sh`, 164 checks, all passed.
 - 2026-08-18: T6 — revert probe against the committed fix. With the drop removed, AC1 fails naming all seven wrong arguments against the manifest, and AC2 fails naming four null fields (`\index{Dogs!}`, `\index{mmm@!Sub!}` and two `\index{mmm@!}`). Both restored clean afterwards.
 - 2026-08-18: T6 turned up the limit of AC2's scan, recorded rather than papered over: `\index{mmm@!Cats}` has no empty FIELD, so the null-field scan passes it, and makeindex accepts it too — probed directly, it prints `mmm` as a parent term the author never wrote, falling back to the sort key where the printed half is empty. A leading empty level carrying a sort key is therefore corruption of a different kind than a null field, and AC1's manifest comparison is what catches it.
+- 2026-08-18: T7 — README's sub-entry-levels section rewritten (the drop, why the LaTeX index tool makes it necessary, the unspellable middle level, the all-empty fallback, the sort pairing), the ceiling paragraph's dangling-separator sentence replaced by depth-counted-after-the-drop, and the letter-group bullet's empty filing string removed; DESIGN's Span-pass and shared-layer paragraphs updated; the M10-F8 candidate row retired.
+- 2026-08-18: T7 — two suite consequences of the docs edit: the M07-AC6 README pin quoted the letter-group sentence I changed and was re-pinned, and a README_EMPTY_CLAIMS pin was added on the same M06/M07 pattern so the eight new documented claims cannot drift from what the fixture exercises.
+- 2026-08-18: verify slot clean — `tests/run-tests.sh --self-test`, 182 checks, all passed.
 - 2026-08-18: criteria audit ran in FULL mode (surface tier user-facing) but NOT in a fresh context — this session carries a standing directive against spawning subagents, so the author read their own criteria; deviation recorded rather than skipped. Two findings, both fixed before writing: a draft AC1 promising makeindex's `.ilg` report "0 rejected entries" was unreachable as evidence (Quarto does not surface the `.ilg`) and was rewritten onto the compiled PDF; and a draft AC "reverting the drop makes the checks fail" bound a property of the instrument rather than of the deliverable (D-118) and moved to T6.
 
 ## Decisions

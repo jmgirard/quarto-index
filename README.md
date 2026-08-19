@@ -58,16 +58,38 @@ literal exclamation mark:
 ```
 
 Levels are scanned left to right, longest match first, so `A!!!B` is the
-entry `A!` with sub-entry `B`. A trailing empty level in an entry of three
-levels or fewer is left as written and warned about rather than silently
-repaired; see the ceiling below for what happens in a deeper one.
+entry `A!` with sub-entry `B`.
+
+**An empty level is dropped.** A `!` at either end of the value, or a value
+that is only `!`, asks for a level that prints no text at all. You get a
+warning naming the entry, the empty level is dropped, and the entry indexes
+at the levels that remain — so `entry="!Cats"` and `entry="Cats!"` both index
+as `Cats`. This is the same in every format, and it is not tidiness: the
+LaTeX index tool rejects an entry outright for a leading or middle null field,
+drops it from the index, and still reports no warning and exits 0, so the
+entry would vanish from a build that looked clean.
+
+Two empty levels can never sit side by side, because `!!` is a literal `!` and
+not two separators, so a level between two others is not something you can
+write.
+
+A value that is *only* empty levels leaves nothing to index. The mark falls
+back to its own visible text where it has some — `[Cats]{.index entry="!"}`
+indexes as `Cats` — and indexes nothing where it has none. Either way you get
+a warning naming the value you wrote.
+
+A sort level goes with the entry level it was written for. If that level is
+dropped, its key is dropped with it, so `entry="!Cats" sort="zzz!cats"` files
+`Cats` under `cats` and never under `zzz`. See the ceiling below for what
+happens in an entry deeper than three levels.
 
 **Three levels is the ceiling.** The LaTeX index back-end stores at most
 three. A deeper entry is not dropped: everything past the third level is
 folded into it, joined with `, `, and you get a warning naming the entry. So
-`entry="One!Two!Three!Four"` indexes as `One` → `Two` → `Three, Four`. An
-empty level inside a folded tail is dropped, since it would otherwise leave a
-dangling separator in the printed index.
+`entry="One!Two!Three!Four"` indexes as `One` → `Two` → `Three, Four`. Depth
+is counted after empty levels have gone, so a stray `!` cannot push an entry
+over the ceiling on its own: `entry="One!Two!Three!"` is three levels and
+folds nothing.
 
 A sort key written for a level past the third goes with that level in this
 back-end: the level is folded away here, so its key has nothing left to place.
@@ -417,8 +439,9 @@ label of its own — one `Symbols` group, then one group per letter, A to Z.
 - **A group label comes from the string the entry files under**: its sort key
   where it has one, and its printed text where it has none. If that string
   begins with an ASCII letter the label is that letter, uppercased. Anything
-  else — a digit, a punctuation mark, an accented or non-Latin letter, or an
-  empty string — files under `Symbols`.
+  else — a digit, a punctuation mark, or an accented or non-Latin letter —
+  files under `Symbols`. Nothing files under an empty string: a level that
+  would print nothing is dropped before it gets this far.
 - **The Symbols group comes first**, ahead of A, the way a printed index sets
   it. A sort key is how you move an entry across that boundary, exactly as it
   is how you move one within a group.

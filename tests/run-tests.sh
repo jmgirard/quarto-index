@@ -137,6 +137,23 @@ README_SORT_CLAIMS=(
 )
 
 # ---------------------------------------------------------------------------
+# README claims about empty levels (NORMATIVE, M11-AC6). Same discipline as
+# the arrays around it: one row per behavior the extension documents, compared
+# as bytes, so what README promises about a dropped level and what the M11
+# fixture exercises cannot drift apart.
+# ---------------------------------------------------------------------------
+README_EMPTY_CLAIMS=(
+  $'the drop\tthe empty level is dropped, and the entry indexes at the levels that remain'
+  $'both ends\t`entry="!Cats"` and `entry="Cats!"` both index as `Cats`'
+  $'format-neutral\tThis is the same in every format'
+  $'why it matters\trejects an entry outright for a leading or middle null field'
+  $'unspellable middle\tTwo empty levels can never sit side by side'
+  $'all-empty fallback\tfalls back to its own visible text where it has some'
+  $'sort pairing\tfiles `Cats` under `cats` and never under `zzz`'
+  $'depth after the drop\tDepth is counted after empty levels have gone'
+)
+
+# ---------------------------------------------------------------------------
 # README claims about letter groups (NORMATIVE, M07-AC6). Same discipline as
 # README_HTML_CLAIMS: one row per behavior the extension documents, compared
 # as bytes, so the docs and what this suite exercises cannot drift apart.
@@ -145,7 +162,10 @@ README_LETTER_CLAIMS=(
   $'label derivation\tA group label comes from the string the entry files under'
   $'sort-key precedence\tits sort key where it has one, and its printed text where it has none'
   $'letter label\tIf that string begins with an ASCII letter the label is that letter, uppercased'
-  $'symbols fallback\ta digit, a punctuation mark, an accented or non-Latin letter, or an empty string — files under `Symbols`'
+  $'symbols fallback\ta digit, a punctuation mark, or an accented or non-Latin letter'
+  # M11: no entry can file under the empty string any more, so README no
+  # longer lists it among the cases and this pin no longer asks it to.
+  $'no empty filing string\tNothing files under an empty string: a level that'
   $'symbols first\tThe Symbols group comes first**, ahead of A'
   $'always on\tGrouping is always on.** There is nothing to switch on and no threshold'
   $'top level only\tOnly the top level is grouped.** A sub-entry files under its parent rather than under a letter of its own'
@@ -1027,6 +1047,30 @@ if missing:
 print(f'ok   M06-AC6: all {len(rows)} documented sort-key behaviors appear '
       f'verbatim in README.md')
 SORTDOCPY
+
+# M11-AC6 — and the same for what README says about an empty level.
+printf '%s\n' "${README_EMPTY_CLAIMS[@]}" > "$WORK/readme-empty.txt"
+python3 - "$WORK/readme-empty.txt" README.md <<'EMPTYDOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M11-AC6: README.md does not document empty levels as this '
+          'suite exercises them:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M11-AC6: all {len(rows)} documented empty-level behaviors appear '
+      f'verbatim in README.md')
+EMPTYDOCPY
 
 # M07-AC6 — and the same for the letter-group documentation.
 printf '%s\n' "${README_LETTER_CLAIMS[@]}" > "$WORK/readme-letter.txt"

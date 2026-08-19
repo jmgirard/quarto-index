@@ -114,11 +114,16 @@ later mark contradicts. It only reads; nothing it sees changes the document.
 
 The **Span pass** handles one mark at a time. Everything that depends only on
 what the author wrote happens *before* any back-end is chosen: the `entry=`
-value is parsed into levels, cross-reference targets are parsed and validated —
+value is parsed into levels and its empty ones are dropped, since a level that
+prints nothing is not a level and a leading one is a null field the LaTeX index
+tool rejects the whole entry for, silently (added M11; a value that is only
+empty levels falls back to the mark's visible text, and a sort level is dropped
+with the entry level it was written for). Cross-reference targets are parsed
+and validated —
 a target naming the mark's own printed levels is reported and dropped, so the
-term indexes plainly rather than pointing at itself (corrected M08; empty
-levels are ignored on both sides of the comparison, because an empty level
-prints nothing — corrected M10) — and the warnings for a malformed mark are
+term indexes plainly rather than pointing at itself (corrected M08; neither
+side can carry an empty level any more, so the comparison that reconciled the
+two spellings is gone — corrected M11) — and the warnings for a malformed mark are
 emitted, so a misused mark is diagnosed in every output format, not only where
 a back-end exists. One report is the exception, and it is one by construction:
 a target that only the LaTeX level fold makes self-referential is judged inside
@@ -207,10 +212,10 @@ marker with chapters after it (whose entries are one render behind), and a page
 Quarto presents as a book chapter without the metadata this needs — which falls
 back to indexing that page alone, the pre-M05 defect, and so is never silent.
 
-Shared between them: the level parse, the cross-reference target parse and its
-`: ` join, and every warning about the mark itself except one — the
-fold-induced self-target, which belongs to the back-end whose fold creates it
-(corrected M10).
+Shared between them: the level parse and its empty-level drop, the
+cross-reference target parse and its `: ` join, and every warning about the
+mark itself except one — the fold-induced self-target, which belongs to the
+back-end whose fold creates it (corrected M10).
 
 `examples/` holds the fixtures; `tests/run-tests.sh` is the acceptance suite,
 which renders them and checks each render against hand-derived manifests

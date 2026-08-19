@@ -98,7 +98,7 @@ none; not plannable.
       and a container the author left empty with no marker in it — the M11
       lesson, since a fixture built only from the shapes that change cannot
       catch a regression in the ones that do not.
-- [ ] T2: Add the failing checks to `tests/run-tests.sh` — full-line equality
+- [x] T2: Add the failing checks to `tests/run-tests.sh` — full-line equality
       per report line and the per-render set comparison against T1's manifest
       — and watch them fail against the current filter.
 - [ ] T3: Restore `empties` in `_extensions/index/index.lua` beside
@@ -125,3 +125,4 @@ none; not plannable.
 - 2026-08-18: plan gate chose claiming the marker's own place is empty over claiming the container is, because a callout, a tabset and a captioned figure still render a title bar or caption; falsified by a shape where the marker's place and the container coincide and the wording reads as evasive.
 - 2026-08-18: criteria audit ran in FULL mode (user-facing tier), fresh-context [O] reader over the final drafted wording. Returned 15 findings across AC1-AC6 (AC7 clean); every one had a clear right answer and was fixed before writing, none escalated to a gate question.
 - 2026-08-19: T1 — fixture extended with nine emptying shapes and four non-reporting ones; the manifest's hand-derived positions 12 13 14 15 16 17 18 20 22 were confirmed against the post-Quarto AST by a throwaway dump filter, which also showed the marker-owned subtraction is what keeps the doubly- and triply-nested shapes at one report each and the top-level placement marker at none. The plan's "marker whose only sibling is whitespace" non-report shape was dropped: markdown whitespace produces no block, so that shape is the reporting case, not a negative. Suite green, 165 checks.
+- 2026-08-19: T2 — the set-equality check and the residue check added; against the current filter all three formats report 0 of the manifest's 9, so the check fails for the reason it exists. The manifest's must-not-report rows were reworded to carry no bare leading number, so the parse that reads the reporting rows cannot pick them up — the first draft's parse did, and the two halves of the manifest disagreed.

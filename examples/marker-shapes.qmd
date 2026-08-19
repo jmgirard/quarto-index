@@ -26,12 +26,14 @@ filters:
 #     20  a marker alone inside a marker — ONE report, not one per level
 #     22  a marker three deep — ONE report
 #
-#   no report anywhere else. The must-not-report shapes and why:
-#     5   a marker carrying content, which is spliced back in
-#     7   a marker beside a paragraph the author wrote
-#     9   a container the author left empty, holding no marker at all
-#     25  the top-level placement marker, removed whole rather than emptied
-#     title  the marker class in metadata, which the machinery never reaches
+#   No report anywhere else. The must-not-report shapes are written without a
+#   bare leading number, so the reporting rows above are the only ones a parse
+#   of this manifest picks up:
+#     block 5 — a marker carrying content, which is spliced back in
+#     block 7 — a marker beside a paragraph the author wrote
+#     block 9 — a container the author left empty, holding no marker at all
+#     block 25 — the top-level placement marker, removed whole, not emptied
+#     the title — the marker class in metadata, which the machinery never reaches
 ---
 
 # Shapes that must NOT be reported

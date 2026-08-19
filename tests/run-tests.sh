@@ -2727,6 +2727,74 @@ for fmt in html latex gfm; do
 done
 pass "M08-AC3: a marker class in the document title is reported nowhere, and the nested-marker messages are undisturbed"
 
+# ---------------------------------------------------------------------------
+# M12-AC1/AC2/AC3 — the emptied-place report. Set equality, not a count: the
+# whole tail of every report line is compared against the fixture manifest's
+# derived list, so a report that fires where none is expected fails as loudly
+# as one that goes missing, and a report that named a container, a class or an
+# id would carry that name in the compared text and fail too.
+# ---------------------------------------------------------------------------
+for fmt in html latex gfm; do
+  python3 - "$WORK/shapes-$fmt.log" examples/marker-shapes.qmd "$fmt" <<'PY'
+import re, sys
+
+log, fixture, fmt = sys.argv[1], sys.argv[2], sys.argv[3]
+PREFIX = 'index placement marker in top-level block '
+TAIL = (' was the only thing written where it stood; the marker is removed, '
+        'so nothing you wrote remains there')
+
+src = open(fixture, encoding='utf-8').read()
+row = re.search(r'^#\s+reports at top-level blocks:(.*)$', src, re.M)
+shapes = re.findall(r'^#\s+(\d+)\s{2}\S', src, re.M)
+if row is None or not shapes:
+    print('FAIL: M12-AC2: examples/marker-shapes.qmd carries no manifest for '
+          'the emptied-place report', file=sys.stderr)
+    sys.exit(1)
+listed = row.group(1).split()
+# The manifest states its expectation twice, once as a list of positions and
+# once as a line per shape. They are compared to each other before either is
+# used, so a manifest that quietly lost a row cannot make this check pass by
+# expecting less than the fixture contains.
+if sorted(listed, key=int) != sorted(shapes, key=int):
+    print(f'FAIL: M12-AC2: the manifest disagrees with itself — positions '
+          f'{listed} against shape lines {shapes}', file=sys.stderr)
+    sys.exit(1)
+
+text = open(log, encoding='utf-8', errors='replace').read()
+# Quarto colours its warnings, and the reset code rides on the end of the line.
+text = re.sub(r'\x1b\[[0-9;]*m', '', text)
+got = sorted(m.group(0).rstrip()
+             for m in re.finditer(re.escape(PREFIX) + r'.*', text))
+want = sorted(PREFIX + n + TAIL for n in listed)
+
+if got != want:
+    missing = [w for w in want if w not in got]
+    extra = [g for g in got if g not in want]
+    print(f'FAIL: M12-AC2 ({fmt}): the emptied-place reports are not the '
+          f'manifest\'s', file=sys.stderr)
+    for w in missing:
+        print(f'  missing: <<{w}>>', file=sys.stderr)
+    for g in extra:
+        print(f'  unexpected: <<{g}>>', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M12-AC1/AC2/AC3 ({fmt}): {len(got)} emptied-place reports, each '
+      f'the one message with only its block position varying, matching the '
+      f'fixture manifest exactly')
+PY
+done
+pass "M12-AC1/AC2/AC3: the emptied-place report fires exactly where the manifest says, in HTML, LaTeX and gfm, naming nothing"
+
+# M12-AC5 (IP2) — the fixture renders in all three formats above, and no
+# marker class rides into any of the three outputs.
+for out in examples/marker-shapes.html examples/marker-shapes.tex examples/marker-shapes.md; do
+  [ -f "$out" ] || fail "M12-AC5: $out was not produced"
+  if grep -qF 'qi-index-here' "$out"; then
+    fail "M12-AC5: the marker class survived into $out"
+  fi
+done
+pass "M12-AC5: marker-shapes renders to all three formats with no qi-index-here residue in any output"
+
+
 # What a nested marker carried is spliced in where it stood, so its container
 # keeps that content — pinned structurally, not merely by a warning count.
 python3 - examples/marker-shapes.html <<'PY'

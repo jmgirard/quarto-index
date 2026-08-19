@@ -1,17 +1,16 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-18 (M08 done and archived; the qi-index collision row graduated, the self-reference row narrowed to the clamped and empty-level cases M08 could not see, the emptied-container work descoped onto its own row with every shape that breaks it; 4 lessons captured, none retired; caps and byte budgets clean)_
+_Last hygiene check: 2026-08-18 (M09 done and archived; the sort-key-under-the-clamp row graduated, the module-level-accumulator row widened with `clamped_paths`; 2 lessons captured, none retired; M04's terminal row pruned to the 5-row retention; caps and byte budgets clean)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
-| M09 | Sort keys under the LaTeX level clamp | review | — | normal | milestones/M09-sortkey-clamp.md |
+| M09 | Sort keys under the LaTeX level clamp | done | — | normal | milestones/archive/M09-sortkey-clamp.md |
 | M07 | Letter-group headings (HTML index) | done | — | normal | milestones/archive/M07-letter-groups.md |
 | M06 | Sort keys | done | — | normal | milestones/archive/M06-sort-keys.md |
-| M04 | Index placement marker | done | — | normal | milestones/archive/M04-placement-marker.md |
 | M05 | Multi-chapter book support | done | M04 | normal | milestones/archive/M05-book-support.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->

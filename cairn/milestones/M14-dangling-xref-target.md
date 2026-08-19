@@ -1,11 +1,11 @@
 # M14: A cross-reference target that names no index entry is reported
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, GP1
-- **Branch/PR:** —
+- **Branch/PR:** `m14-dangling-xref-target` / https://github.com/jmgirard/quarto-index/pull/14
 
 ## Goal
 
@@ -42,42 +42,42 @@ the existing candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1 A document that indexes `Cats` and writes `see="Felines"`, which
+- [x] AC1 A document that indexes `Cats` and writes `see="Felines"`, which
       nothing indexes, draws exactly one report naming `Felines`. Evidence: a
       new fixture rendered to LaTeX, HTML and gfm; the report's full text and
       an occurrence count of 1 asserted in each of the three render logs.
-- [ ] AC2 A target that resolves draws no report, across every resolution
+- [x] AC2 A target that resolves draws no report, across every resolution
       shape the new fixture carries: an exact single-level match, a
       multi-level path match, and a match against a level that exists only as
       a parent of a deeper entry. Evidence: exact-zero assertions for the
       report's text over the LaTeX, HTML and gfm logs of a purpose-built
       fixture whose every target resolves.
-- [ ] AC3 The report fires per mark per target, over a family varied in form
+- [x] AC3 The report fires per mark per target, over a family varied in form
       as well as position: a dangling `see-also=` beside a resolving `see=`,
       the inversion of that, a multi-level dangling target, a partial-path
       target (`Cats!Kittens` where only `Cats` is indexed), and one dangling
       target written on two separate marks. Evidence: each shape in the new
       fixture with its own expected count asserted, and the resolving target's
       text asserted absent from every report line.
-- [ ] AC4 A target dropped as a format-neutral self-reference draws its
+- [x] AC4 A target dropped as a format-neutral self-reference draws its
       existing report and not this one. Evidence: over the LaTeX, HTML and gfm
       logs of `examples/self-xref.qmd`, the new report's text asserted absent
       from the lines naming the four format-neutral self-target marks, with
       their existing reports asserted still present. The file's three
       fold-induced shapes (`self-xref.qmd:47-54`) do dangle format-neutrally
       and their nonzero counts are pinned rather than zeroed.
-- [ ] AC5 In an HTML book the report is drawn once for a target naming
+- [x] AC5 In an HTML book the report is drawn once for a target naming
       nothing in the book, and not at all for a target naming a term indexed
       in another chapter — including in `examples/book-order`, whose
       placement marker sits in the first chapter. Evidence: both shapes added
       to both book fixtures; the report counted as exactly 1 across each whole
       book render, which is only reachable if a single chapter draws it.
-- [ ] AC6 The new report is distinct from every other `warn(` message in
+- [x] AC6 The new report is distinct from every other `warn(` message in
       `index.lua` and is written as a single literal, so the scan reads the
       whole message rather than its first fragment (M10 lesson). Evidence: the
       suite's distinctness scan, which enumerates every `warn(`-leading
       literal in the source, passes.
-- [ ] AC7 The `verify` slot is clean: `tests/run-tests.sh --self-test`
+- [x] AC7 The `verify` slot is clean: `tests/run-tests.sh --self-test`
       passes.
 
 ## Coverage
@@ -92,30 +92,30 @@ the existing candidate row.
 
 ## Tasks
 
-- [ ] T1 Baseline probe: render a dangling-target shape to LaTeX, HTML and
+- [x] T1 Baseline probe: render a dangling-target shape to LaTeX, HTML and
       gfm and to both book fixtures, and record what each format emits today
       and where it is silent.
-- [ ] T2 Pin the resolution rule against the HTML back-end's own walk
+- [x] T2 Pin the resolution rule against the HTML back-end's own walk
       (`lookup_entry`, `index.lua:1172`): a target resolves when its level
       list is a path in the marked-entry set, parent nodes included. Record it
       as a milestone-local decision so the two cannot drift.
-- [ ] T3 Build the marked-entry path set format-neutrally in the Pandoc pass
+- [x] T3 Build the marked-entry path set format-neutrally in the Pandoc pass
       and emit the report there, once per mark per target, excluding targets
       already dropped as self-references (`index.lua:848`).
-- [ ] T4 Book path: draw the report from the last chapter in book order,
+- [x] T4 Book path: draw the report from the last chapter in book order,
       against the store as of this render, reusing the chapter-position logic
       the no-marker report already uses (`index.lua:2110-2118`).
-- [ ] T5 Fixtures: a new dangling-target fixture carrying AC1's and AC3's
+- [x] T5 Fixtures: a new dangling-target fixture carrying AC1's and AC3's
       shapes; a new all-resolving fixture for AC2; a cross-chapter resolving
       target and a book-wide dangling one added to both book fixtures.
-- [ ] T6 Suite checks for AC1–AC6, and the corpus reconciliation the report
+- [x] T6 Suite checks for AC1–AC6, and the corpus reconciliation the report
       forces: grep every `see=`/`see-also=` value in `examples/` and record
       the expected report count for each example whose targets dangle
       (`demo.qmd`, `xref-escaping.qmd`, `self-xref.qmd` among them), by
       procedure rather than by hand-list.
-- [ ] T7 Prove each new check discriminating: commit the fix first, then
+- [x] T7 Prove each new check discriminating: commit the fix first, then
       revert the report and record which checks fail (M08 lesson).
-- [ ] T8 Update the DESIGN architecture paragraph on cross-reference targets
+- [x] T8 Update the DESIGN architecture paragraph on cross-reference targets
       and the README; run `tests/run-tests.sh --self-test`.
 
 ## Work log
@@ -124,8 +124,169 @@ the existing candidate row.
 - 2026-08-19: plan gate chose a format-neutral report in the Pandoc pass over an HTML-back-end-only report because whether a target names an indexed term depends on what the author wrote and what the document indexes, not on any back-end (IP1); falsified by evidence that a format without an index back-end cannot know its own marked-entry set.
 - 2026-08-19: plan gate chose drawing the book report from the last chapter in book order over the chapter that builds the index, because every chapter reads the whole store (index.lua:2069) but only the last has seen every record — a marker-first book would otherwise report resolving cross-chapter targets as broken; falsified by evidence that the last chapter can fail to render in a partial render the report must still be right about.
 - 2026-08-19: plan gate chose pinning the expected report count for each existing example over adding ~250 index marks so the probe corpus resolves, because the escaping probe's assertions are built on its current marks; falsified by the pinned counts proving unmaintainable across later fixture edits. Corpus reconciliation queued as a candidate row.
+- 2026-08-19: implement gate chose the actionable "points at" wording (target named, reader consequence, both fixes) over a short form, and pinned per-example report counts with a grep-derived roster of the examples that must carry one over a Python routine re-deriving counts from source, which could share a bug with the filter.
+- 2026-08-19: T1 baseline probe: a mark whose `see=` names a term nothing indexes is silent today in all three formats (LaTeX emits `\index{Lions|see{Felines}}`, HTML renders the target as an unlinked `qi-target` span, gfm passes the attribute through) and silent in both book fixtures — `examples/book` renders warning-free with its `see="No Such Entry"` already in place, and `examples/book-order` emits only its two marker-order warnings.
+- 2026-08-19: T2 pinned the resolution rule as a milestone-local decision, and why the report cannot share the HTML walk.
+- 2026-08-19: T3 built the marked-entry path set (`marked_paths`, every mark's level prefixes) and the deferred target list (`pending_xrefs`) format-neutrally in the Span pass, and emit the report from the Pandoc pass, which is the first point that has seen every mark; a target dropped as a self-reference never enters the list, one the LaTeX fold later drops still does.
+- 2026-08-19: T4 draws the book report from the last chapter in book order against the whole store; the mark's context string is now carried in the per-chapter record (STORE_VERSION 3 -> 4, `valid_record` requires it) because the reporting chapter runs in another process. Verified on `examples/book`: one report naming `No Such Entry`, none for the cross-chapter `see="Alpha"`.
+- 2026-08-19: T3/T4 fallout in the suite, committed with them so `verify` stays clean: the warn-distinctness count 36 -> 37 with the new report added to the single-literal list (M14-AC6), and M05-AC4's "the book renders warning-free" replaced by the stronger claim it was really making -- the book's only warning is the one dangling report, so the resolvable cross-file target draws none.
+- 2026-08-19: T5 added `examples/dangling-xref.qmd` (AC1's shape plus AC3's five: dangling see-also beside a resolving see=, the inversion, a multi-level target, a partial-path target, and one target on two marks -- 7 reports, identical in LaTeX, HTML and gfm) and `examples/resolving-xref.qmd` (exact single-level, full multi-level path, and parent-of-a-deeper-entry -- 0 reports in all three). `examples/book` already carried both AC5 shapes (`see="Alpha"` cross-chapter, `see="No Such Entry"` book-wide), so only `examples/book-order` gained them: `Early Reference` -> `Late` in the marker-first chapter draws nothing even on the first render, `Missing Reference` draws exactly one across the whole book. Neither new mark carries a locator, so no existing anchor moved; manifest 8 and the letter sweep gained their rows (E, M).
+- 2026-08-19: T6 added the M14 suite section: AC1's full report text counted 1 in each of LaTeX, HTML and gfm; AC3's six further shapes each with its own count plus a total, so a shape the manifest does not name fails too, and `Cats` absent from every report line; AC2's exact zeros over the resolving fixture; AC4 over the self-xref logs; AC5 over both book-order renders. Added the T2 decision's cross-check: in both fixtures the targets the HTML index leaves unlinked are exactly the targets the report names.
+- 2026-08-19: T6 corpus reconciliation: a pinned count per example (`demo` 8, `html-index` 1, `self-xref` 3, `xref-conflict` 6, `xref-escaping` 271, the rest 0 or the new fixtures' own), each checked against a gfm render, with the roster of examples that must carry a count derived by grepping `examples/` rather than written down. Book chapters carry per-chapter rows that must sum to what their book reports.
+- 2026-08-19: T6 fixture reconciliation found by the new report: `examples/self-xref.qmd`'s both-attributes mark carried `see-also="Pets"`, a target the file never indexed, so the surviving half of the mark M08 added to prove a surviving target is still emitted was itself a broken cross-reference. Retargeted to `Cats`, which the file marks; the three suite pins on that encap follow it. Without this AC4's absence clause was unsatisfiable, since that mark's line would carry a dangling report of its own.
+- 2026-08-19: T7 discrimination probes, run against a non-exiting copy of the suite so every failure is collected rather than only the first. (a) Report reverted (both call sites neutered): 51 checks fail -- every AC1, AC3, AC4 fold-shape, AC5 and corpus count, plus the resolution-rule cross-check. (b) Report over-reporting (resolution ignored, every target named): 26 fail -- AC2's three exact zeros, AC4's self-reference absence clause on `entry="Dogs"`, AC3's `Cats` absence clause, every pinned corpus count, and the cross-check again. (c) Resolution truncated to the target's first level: 24 fail, led by AC3's partial-path row (`Cats!Kittens`) and the multi-level row, which is the defect those two rows exist for. The exact-zero clauses cannot fail under (a) and the counts cannot fail under (b) -- each direction is discriminated by its partner in the same fixture family, which is why both fixtures exist.
+- 2026-08-19: T8 documented the report in DESIGN (a new paragraph beside the shared-layer one: why it is drawn from the collected level paths rather than the HTML entry tree, that a prefix resolves, and the book's last-chapter rule) and in README (a `see=`/`see-also=` naming nothing indexed is reported, not dropped, once per mark per target, with the parent-level and book cases). Four README sentences pinned in the misuse-claims array. Widened the `marks_seen` module-level-state candidate row with the two accumulators this milestone adds. `tests/run-tests.sh --self-test` passes: 216 checks.
+- 2026-08-19: all tasks done; `tests/run-tests.sh --self-test` clean at 216 checks (183 without the self-test, up from 175). Status -> review.
+- 2026-08-19: review fixed 12 of 17 findings on the branch, sent 1 to a widened candidate row and rejected 2; `tests/run-tests.sh --self-test` exits 0 at 218 checks and every per-criterion count is unchanged.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 4 findings against this file: AC2 was unsatisfiable (~250 corpus targets dangle) and AC5 rested on a false claim about which chapter knows the book's entries — both went to the question gate and are settled above; AC4's exact-zero over self-xref.qmd was narrowed to the four format-neutral marks, AC3's single exemplar was widened to five shapes, and AC6's unfalsifiable literal-count claim was dropped.
 
 ## Decisions
 
+### 2026-08-19 — What makes a cross-reference target resolve
+
+A target resolves when its parsed level list is a path in the set of level
+paths this document's marks index, every proper prefix of a marked path
+included. The set is built format-neutrally from the levels `derive_levels`
+returns for each mark that indexes something — the same levels the HTML
+back-end builds its entry tree from (`build_entry_tree`, `index.lua:1114`) —
+so a target of `Cats` resolves against a mark indexing `Cats!Kittens`, exactly
+as `lookup_entry` (`index.lua:1209`) resolves it: that walk creates a node per
+level and returns whichever node the target's last level reaches, parent nodes
+included. Paths are compared as `levels_key` strings, which double a literal
+`!`, so a single level containing `!` can never read as a two-level path.
+
+The report cannot simply call `lookup_entry`: the tree it walks is built from
+the HTML back-end's per-mark records, which a format with no index back-end
+never builds. The two are held together by evidence instead of by shared code
+— the suite asserts that in the HTML render every target the report does not
+name is a link into the index, and every target it does name is unlinked text.
+
+### 2026-08-19 — Correction: which function creates the entry nodes (supersedes the entry above)
+
+The entry above says `lookup_entry` "creates a node per level and returns
+whichever node the target's last level reaches". `lookup_entry`
+(`index.lua:1209`) only walks, and returns nil on a miss; `build_entry_tree`
+(`index.lua:1160`) is what creates a node per level, which is why a parent
+level exists to be found at all. The conclusion the entry draws — that a
+prefix of a marked path resolves — is unchanged and correct: it follows from
+how the tree is built rather than from how it is walked. Found by the M14
+review (F14).
+
 ## Review
+
+Fresh evidence, 2026-08-19, on `m14-dangling-xref-target` at the pre-gate
+checkpoint. The `verify` slot was run whole (`tests/run-tests.sh --self-test`,
+exit 0, 216 checks; 183 without the self-test, against 175 on `main`); the
+per-criterion counts below were then read back out of that run's own render
+logs in `tests/.work/` by command, not from the suite's pass lines.
+
+- **AC1** — `examples/dangling-xref.qmd` indexes `Cats` and points a mark at
+  `Felines`. `points at "Felines"` occurs exactly 1 time in each of the LaTeX,
+  HTML and gfm logs, and the report's full text is asserted verbatim there by
+  `M14-AC1 (<fmt>)`.
+- **AC2** — `examples/resolving-xref.qmd` carries the three resolution shapes
+  (exact single-level `Robins`; full multi-level path `Birds!Owls!Barn`; the
+  parent-only `Trees!Oak`, a level no mark writes as an entry of its own).
+  Exact zero occurrences of the report in all three logs. The paired
+  cross-check on the rendered HTML — the targets the index leaves unlinked are
+  exactly the targets the report names, in both fixtures — passes, which is
+  the milestone-local decision's agreement claim between the report and
+  `lookup_entry`.
+- **AC3** — the six further shapes each draw their own asserted count in all
+  three formats: dangling `see-also=` beside a resolving `see=` (Pumas), the
+  inversion (Jaguars), a multi-level target (Caracals), a partial-path target
+  (Margays, `Cats!Kittens` where only `Cats` is indexed), and one target on two
+  separate marks (Ocelots Marked and Bobcats, 2 reports). Total per format is
+  7, equal to the manifest's sum, so no unnamed shape is reported; `points at
+  "Cats",` occurs in no report line.
+- **AC4** — over the LaTeX, HTML and gfm logs of `examples/self-xref.qmd`, no
+  report line names any of the six marks whose target was dropped as a
+  format-neutral self-reference (`entry="Cats"`, `entry="Birds!Owls"`, `term
+  "ferrets"`, `entry="Dogs"`, `entry="Moles!"`, `entry="P!Q!R!"`), while their
+  own report still occurs 6 times per format. The three fold-induced shapes
+  (`self-xref.qmd:47-54`) each draw exactly 1, total 3 per format, pinned
+  nonzero.
+- **AC5** — `examples/book`: the report occurs 1 time across the whole
+  four-chapter render, naming `No Such Entry`, and it is the book's only
+  warning, so the cross-chapter `see="Alpha"` draws none.
+  `examples/book-order`, whose placement marker sits in the first chapter: 1
+  occurrence on each of the two renders, naming `Nowhere At All`, while `Early
+  Reference` -> `Late` draws none on either.
+- **AC6** — the distinctness scan reads 37 whole `warn()` messages, all
+  mutually distinct and none a prefix of another, and the single-literal clause
+  now covers the new report.
+- **AC7** — `tests/run-tests.sh --self-test` exits 0 at 216 checks.
+
+Consistency gate: `cairn_validate` all checks passed. The `generic` profile
+names no toolchain `consistency-gate` checks, so that half is a clean no-op.
+No `DESIGN.md` principle changed, so `cairn_impact` is skipped.
+
+Discrimination: the milestone's T7 work-log line records three planted-defect
+probes (report reverted, report over-reporting, resolution truncated to the
+first level) failing 51, 26 and 24 checks respectively.
+
+### Independent review — findings and disposition
+
+Three fresh-context reviewers, none having seen the implementation. The
+blame-history lens ([S]) reported no conflicts across ten examined regions,
+judging the `Pets` -> `Cats` fixture retarget a defect fix the new check
+surfaced in M08's own fixture rather than a weakening of it. The
+prior-review lens ([S]) found no conflicts; the GitHub inline-comment probe
+returned empty, so the archive was its whole evidence base. The diff-bug lens
+([O]) returned 17 ranked findings, all triaged at the gate and all recorded
+here.
+
+Fixed on the branch (12):
+
+- F3 the book report named no chapter file, so it was unactionable in a book —
+  the record's file is now joined onto the mark's naming string.
+- F4 `context`, a field only a warning reads, had forced `STORE_VERSION` 3->4,
+  which would drop every other chapter's terms from the index after a
+  single-chapter re-render — reverted to 3, the field optional with a named
+  fallback, and a regression check pins that a record without it is accepted
+  and keeps its chapter's terms.
+- F5 the corpus counts were output-derived against the suite's own ORACLE
+  RULE — every row now carries its by-hand derivation, `xref-escaping`'s 271
+  as 272 target attributes less the one written `see=""`.
+- F9 `valid_record` never checked xref shape and M14 added a second consumer
+  reached before the marker logic; a truncated record would have taken the
+  render down (IP2). Validated, with a regression check.
+- F8 `report_book_dangling` read attribute names the entry tree drops, and
+  would have errored formatting a nil one — same filter as `book_marks` now.
+- F6 the degraded book fallback reported every cross-chapter target as
+  dangling on top of its own warning — suppressed there.
+- F10 the roster's `find | xargs grep -l` pipeline aborted the whole suite with
+  no FAIL line when a batch matched nothing (reproduced) — one recursive grep
+  with its no-match exit absorbed, build directories pruned.
+- F11 the roster regex matched any attribute ending in `see="` — anchored on a
+  whitespace boundary.
+- F2 the book prose was HTML-only; a PDF book reports correctly but says
+  "document" (reproduced) — README and DESIGN now scope the claim.
+- F7 the prose documented only the silent direction of a partial render, not
+  the false-positive one — both now stated.
+- F14 this file's first Decisions entry misdescribed `lookup_entry`; superseded
+  above rather than edited (IP4).
+- F13, F15, F16 the total's seed is named, the module-state candidate row
+  carries this state's larger blast radius, and README's examples inventory
+  lists the two new fixtures.
+
+Follow-up (1):
+
+- F1 in LaTeX a fold-induced self-target now draws two contradictory reports —
+  "so it is dropped" beside "correct the target" (reproduced on
+  `examples/self-xref.qmd`). Real, and the exact inverse of the divergence this
+  milestone already queued as a candidate; that row is widened to carry both
+  directions and to record that AC4 pins this half, so closing it takes a
+  criterion amendment rather than a fix here.
+
+Rejected (2):
+
+- F12 the book rows' sum check called decoration — it pins that the
+  per-chapter split agrees with the per-book totals, which nothing else does.
+- F17 the resolution cross-check called weaker than its message — it asserts
+  set equality and its message says set equality; the cardinality difference
+  it notes is what AC3 requires.
+
+Post-fix verification: `tests/run-tests.sh --self-test` exits 0; the
+per-criterion counts above were re-read after the fixes and are unchanged
+except the two book report strings, which now name their chapter.

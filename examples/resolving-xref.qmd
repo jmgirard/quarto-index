@@ -1,0 +1,33 @@
+---
+title: "quarto-index resolving cross-reference probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# A cross-reference target that names an entry this document has
+
+The twin of the dangling-target probe: here every target resolves, so the
+dangling-target report must be silent in every format. A check that only ever
+saw the dangling fixture would pass just as happily on a filter that reported
+every target, which is why this file exists.
+
+Three resolution shapes, which are the whole of the rule.
+
+An exact single-level match — the target is a top-level entry this document
+marks: [robins]{.index entry="Robins"} is marked, and
+[wrens]{.index entry="Wrens" see="Robins"} points at it.
+
+A multi-level path match — the target names every level of a deeper entry:
+[barn owls]{.index entry="Birds!Owls!Barn"} is marked, and
+[finches]{.index entry="Finches" see="Birds!Owls!Barn"} points at the whole
+path.
+
+A match against a level that exists only as the PARENT of a deeper entry. No
+mark writes `Trees!Oak` as an entry of its own, but the index has that level
+because a deeper entry hangs from it, and a reader following the target lands
+there: [acorns]{.index entry="Trees!Oak!Acorn"} is marked, and
+[sap]{.index entry="Sap" see-also="Trees!Oak"} points at its parent.
+
+::: {.qi-index-here}
+:::

@@ -242,6 +242,25 @@ cross-reference target parse and its `: ` join, and every warning about the
 mark itself except one — the fold-induced self-target, which belongs to the
 back-end whose fold creates it (corrected M10).
 
+A cross-reference target naming nothing the marks index is reported from the
+same shared layer (M14), and for the same reason: whether a target names an
+indexed term depends on what the author wrote and what the document indexes,
+not on any back-end, so the report is drawn from the level paths the Pandoc
+pass collected rather than from the HTML entry tree — which exists in one
+format only. A target resolves against a marked path or any prefix of one,
+matching the HTML walk that turns a target into a link. In a book the set is
+the whole store's, so a target another chapter indexes resolves; the report is
+drawn by the last chapter in book order, the only chapter that has seen every
+record, and a render stopping short of it draws none — while a render whose
+other chapters have no record yet reports their terms as unindexed, the same
+partial-render cost every cross-chapter judgement here carries. A PDF book
+takes neither path: it is already one document, so the per-document report is
+the right one and says so. The degraded fallback — a page Quarto calls a
+chapter without the metadata this needs — draws no dangling report at all,
+since every cross-chapter target on it would be reported falsely. The mark's own naming
+string travels in its stored record, because the reporting chapter runs in
+another process.
+
 `examples/` holds the fixtures; `tests/run-tests.sh` is the acceptance suite,
 which renders them and checks each render against hand-derived manifests
 (`tests/htmlindex.py` reads rendered HTML structurally for that).

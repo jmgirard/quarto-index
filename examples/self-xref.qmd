@@ -24,7 +24,9 @@ from `entry=`: [ferrets]{.index see="ferrets"}.
 
 A mark carrying both attributes, of which only the `see=` is self-targeting —
 the surviving `see-also=` must still be emitted, and the both-attributes report
-must still fire: [dogs]{.index entry="Dogs" see="Dogs" see-also="Pets"}.
+must still fire. Its target is `Cats`, an entry this file marks, so the
+surviving half is a working cross-reference rather than one pointing at a term
+nothing here indexes: [dogs]{.index entry="Dogs" see="Dogs" see-also="Cats"}.
 
 # A cross-reference that does not
 

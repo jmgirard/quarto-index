@@ -261,12 +261,37 @@ local function drop_empty_levels(parsed, context, report)
   -- Silent when NOTHING survived: the caller has a single message for that
   -- mark, about the value as a whole, and a count of levels none of which
   -- printed anything would only bury it.
-  if report and #levels > 0 then
-    for _ = 1, #parsed - #levels do
-      warn(("empty index level in %s; an empty level prints nothing, so it is "
-            .. "dropped and the entry indexes at the levels that remain")
-           :format(context))
+  --
+  -- One report per MARK, not one per dropped level. Two byte-identical
+  -- warnings for `entry="!Sub!"` told the author a level went twice and which
+  -- end neither time (M11 review F8). The positions are counted in the value
+  -- as the author wrote it, which is the only numbering they can find their
+  -- own `!` by; how many levels remain is stated of that same written value,
+  -- never of what the entry indexes at, because the LaTeX ceiling folds later
+  -- and this layer is format-neutral.
+  if report and #levels > 0 and #levels < #parsed then
+    local empty = {}
+    for i, level in ipairs(parsed) do
+      if level == "" then
+        empty[#empty + 1] = tostring(i)
+      end
     end
+    local where
+    if #empty == 1 then
+      where = ("position %s of %d"):format(empty[1], #parsed)
+    else
+      where = ("positions %s and %s of %d")
+              :format(table.concat(empty, ", ", 1, #empty - 1),
+                      empty[#empty], #parsed)
+    end
+    local remain = #levels == 1
+                   and ("1 of the %d written levels remains"):format(#parsed)
+                   or ("%d of the %d written levels remain")
+                      :format(#levels, #parsed)
+    -- One literal, not concatenated: the distinctness scan reads each warn()
+    -- call's FIRST literal, so a message split across `..` is compared on its
+    -- first fragment alone (M10).
+    warn(("empty index level in %s at %s; an empty level prints nothing, so it is dropped and %s"):format(context, where, remain))
   end
   return levels, kept, #parsed
 end
@@ -334,8 +359,16 @@ local function sort_levels(value, levels, context, report, kept, depth)
       end
     end
     if ignored > 0 then
-      warn(("sort= on %s has %d levels but the entry has %d; the extra sort "
-            .. "levels were ignored"):format(context, #written, depth))
+      -- Both numbers are counts taken BEFORE the empty-level drop: `#written`
+      -- is what the author wrote in `sort=`, and `depth` what the mark had to
+      -- sort at the time this comparison is made. Saying so is the point —
+      -- the old wording ("but the entry has %d") read as the depth the entry
+      -- indexes at, which is a third number again (`entry="Moles!"` is
+      -- written with 2, sorted with 3, and indexes at 1). It also has to hold
+      -- for a mark with no `entry=` at all, which reaches here through the
+      -- visible-text fallback above and was never told anything about an
+      -- entry value it did not write. One literal (M10).
+      warn(("sort= on %s writes %d levels against the %d it has to sort before empty levels are dropped; the extra sort levels were ignored"):format(context, #written, depth))
     end
     -- A key written for a level that prints nothing goes with that level. That
     -- is the rule, but it costs the author something they typed, so it is said

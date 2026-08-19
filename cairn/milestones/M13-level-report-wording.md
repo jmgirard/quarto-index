@@ -93,10 +93,10 @@ existing candidate row.
 - [x] T2 Fixture work in `examples/empty-levels.qmd`: add the three-way depth
       shape (`entry="Moles!" sort="a!b!c"`) and the no-`entry=` shape
       (`sort="a!b!c"` on visible text).
-- [ ] T3 Rewrite the empty-level report (`index.lua:266`): one report per
+- [x] T3 Rewrite the empty-level report (`index.lua:266`): one report per
       mark, naming the empty written positions and the levels that remain in
       the value. One literal per message.
-- [ ] T4 Rewrite the extra-sort-levels report (`index.lua:337`) so both
+- [x] T4 Rewrite the extra-sort-levels report (`index.lua:337`) so both
       numbers are labelled as written depths.
 - [ ] T5 Suite, by procedure not by hand-list: grep every occurrence of
       `WARN_EMPTY_LEVEL`, `WARN_SORT_EXTRA` and `WARN_SORT_DROPPED` and every
@@ -127,6 +127,8 @@ existing candidate row.
 - 2026-08-19: amendment (substantive, second on AC3, user-selected): the fresh-context [O] reader of the renamed wording found the proposed message false for a mark with `sort=` and no `entry=` — it reaches the report through the visible-text fallback (index.lua:311) and would be told its index entry "was written with" a depth it never wrote. Message reworded to "against the N it has to sort before empty levels are dropped"; AC3 widened to cover that shape and T2 given its fixture.
 
 - 2026-08-19: T2 done — `entry="Moles!" sort="a!b!c"` and `[ferns]{.index sort="a!b!c"}` added to examples/empty-levels.qmd; render confirms `\index{a@Moles}`, `\index{a@ferns}` and `\index{Cats}` unsorted again.
+
+- 2026-08-19: T3, T4 done — both reports rewritten as single literals; suite green at 170 checks after updating the M11 counts (empty-level 6 marks not 6 levels, sort-dropped 2->3, sort-extra 1->3), manifest 1r's derivation comment, and the three empty-levels manifests for the two new marks.
 
 ## Decisions
 

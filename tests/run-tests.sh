@@ -5847,6 +5847,18 @@ pass "M10-AC6: the fold-induced self-target is gone from the compiled index, not
 #   `entry="!Zebra" sort="mmm!aardvark"` -> Zebra, filing under `aardvark`:
 #                                           `mmm` was written for the empty
 #                                           level and went with it
+#   `entry="Moles!" sort="a!b!c"`       -> Moles, filing under `a`: written
+#                                           with two levels, sorted with
+#                                           three, indexing at one — the shape
+#                                           whose three differing depths the
+#                                           extra-sort report must not conflate
+#                                           (M13). `b` went with the empty
+#                                           level it was written for, `c` past
+#                                           the end was ignored
+#   `sort="a!b!c"` on [ferns], no entry= -> ferns, filing under `a`: the same
+#                                           overreach with no entry= at all,
+#                                           reaching the report through the
+#                                           visible-text fallback (M13)
 #   `entry="!"` on [Ferrets]             -> Ferrets  (visible-text fallback)
 #   `entry="!"` on []                    -> nothing indexed, no text to fall
 #                                           back on
@@ -5874,6 +5886,8 @@ Dogs
 Sub
 Owls
 aardvark@Zebra
+a@Moles
+a@ferns
 Ferrets
 Birds!Wrens
 Q!yyy@R
@@ -5882,8 +5896,12 @@ MANIFEST
 
 # The printed index of the compiled PDF: (level, term) rows in the index
 # tool's own order, which collates on the string each entry FILES under, so
-# `Zebra` leads the index on `aardvark`. Derived from the manifest above.
+# `ferns` and `Moles` both file on `a` and so lead the index, collated
+# case-insensitively against each other; `Zebra` follows on `aardvark`.
+# Derived from the manifest above.
 read -r -d '' EMPTY_LEVELS_PDF <<'MANIFEST' || true
+0	ferns
+0	Moles
 0	Zebra
 0	Birds
 1	Wrens
@@ -5904,6 +5922,8 @@ MANIFEST
 # `mmm`, in M. Row format is manifest 1e's: depth, term, locator count.
 read -r -d '' EMPTY_LEVELS_HTML <<'MANIFEST' || true
 letter	A
+0	ferns	1
+0	Moles	1
 0	Zebra	1
 letter	B
 0	Birds	0
@@ -5970,7 +5990,9 @@ def fields(arg):
 FIELDSPY
 }
 
-WARN_EMPTY_LEVEL='an empty level prints nothing, so it is dropped and the entry indexes at the levels that remain'
+# The stable half of the empty-level report; the positions it names and the
+# count of levels that remain both vary with the value.
+WARN_EMPTY_LEVEL='an empty level prints nothing, so it is dropped and '
 WARN_ONLY_EMPTY_FALLBACK='is only empty levels, which print nothing; the mark indexes under its visible text instead'
 WARN_ONLY_EMPTY_NOTHING='is only empty levels, which print nothing; nothing to index'
 # The stable half of the dropped-sort-key report; its count of levels varies.
@@ -5984,10 +6006,11 @@ for fmt in html latex gfm; do
   quarto render examples/empty-levels.qmd --to $fmt \
     > "$WORK/empty-levels-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/empty-levels-$fmt.log" >&2; fail "M11-AC5: empty-levels.qmd failed to render to $fmt"; }
-  # Six empty levels across five marks — two of them on `entry="!Sub!"`, which
-  # is what says the warning is per level and not per mark. Format-neutral: an
-  # empty level prints nothing in every back-end and in none, so the count is
-  # the same in all three.
+  # One report per MARK carrying an empty level, not one per empty level
+  # (M13): `!Cats`, `Dogs!`, `!Sub!`, `!Owls`, `!Zebra` and `Moles!` are six
+  # such marks, and `!Sub!` — which carries two empty levels — draws one of the
+  # six rather than two of seven. Format-neutral: an empty level prints nothing
+  # in every back-end and in none, so the count is the same in all three.
   check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_EMPTY_LEVEL" 6 "M11-AC5"
   # The all-empty pair: one message each, and each says which way its mark
   # went, rather than the "no entry=" message that would be false about both.
@@ -6002,12 +6025,15 @@ for fmt in html latex gfm; do
   check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_FOLD_DEPTH" 0 "M11-AC5"
   # A key written for a level that prints nothing is dropped with it, and said
   # so rather than lost quietly: `entry="!Zebra" sort="mmm!aardvark"` loses
-  # `mmm`, and `entry="!" sort="fff"` loses all of `fff`, none of it landing on
-  # the level the mark falls back to (M11 review F2, F3).
-  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_DROPPED" 2 "M11-AC5"
-  # `entry="Q!R" sort="Q!R!S"` reaches one level past the entry; that is the
-  # pre-existing ignored-levels case and must stay one warning, not two.
-  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_EXTRA" 1 "M11-AC5"
+  # `mmm`, `entry="!" sort="fff"` loses all of `fff`, none of it landing on the
+  # level the mark falls back to (M11 review F2, F3), and `entry="Moles!"
+  # sort="a!b!c"` loses `b` with its own trailing empty level (M13).
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_DROPPED" 3 "M11-AC5"
+  # Three marks reach past what they have to sort: `entry="Q!R" sort="Q!R!S"`
+  # by one level, and M13's two shapes — `entry="Moles!" sort="a!b!c"` and the
+  # `sort="a!b!c"` mark with no `entry=` at all — each by more. Each draws one
+  # warning, never two.
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_EXTRA" 3 "M11-AC5"
   # The F1 regression guard, and the reason the `Q!R` pair is in the fixture at
   # all. Both marks file that entry under one key, because the first mark's `R`
   # merely restates the level's own text on the way to a deeper level and so
@@ -6017,7 +6043,7 @@ for fmt in html latex gfm; do
   # entry with no empty level anywhere in it.
   check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_RIVAL" 0 "M11-AC5"
 done
-pass "M11-AC5: six empty levels across five marks each warn once in HTML, LaTeX and gfm; the two all-empty entries each say which way they went; both dropped sort keys are reported; nothing folds and no rival key is invented for the entry that has no empty level"
+pass "M11-AC5: each of the six marks carrying an empty level warns exactly once in HTML, LaTeX and gfm, the two-empty-level mark included; the two all-empty entries each say which way they went; both dropped sort keys are reported; nothing folds and no rival key is invented for the entry that has no empty level"
 
 check_no_null_field examples/empty-levels.tex "M11-AC2 (empty-levels)"
 

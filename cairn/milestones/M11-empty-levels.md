@@ -214,3 +214,76 @@ separators cannot be written; only the leading one is destructive.
 
 ### Independent review
 
+Three fresh-context reviewers, none of which saw the implementation. Spawned at
+the user's explicit direction: this session carries a standing instruction
+against subagents, and the alternative was self-review of a diff I wrote.
+
+- **[S] prior-review lens — 0 findings.** Read all ten archived milestone
+  summaries and LESSONS.md; the GitHub comment probe returned `[]`, so the
+  archived `## Review` sections were the whole surface. Confirmed both M10-review
+  rows this milestone acts on are resolved and four lessons this diff could have
+  regressed are honoured.
+- **[S] blame-history lens — 1 minor finding (F-h1), no silent undo.** Traced
+  seven items; corrected my briefing on one point (the `clamp_levels` empty-level
+  skip originated in M01 `22faf8e`, not M10).
+- **[O] diff-bug lens — 10 findings, one of them a confirmed regression.**
+
+**F1 (high, CONFIRMED by direct probe) — `sort_levels` turns positional filler
+into a declaration, on entries with no empty level at all.** `last` ("the last
+position the author actually wrote a key for") is computed over the realigned,
+truncated `parsed` rather than over `written`, and compared against the
+post-drop index instead of the original one. Probe: two marks on
+`entry="A!B"`, one `sort="A!B!C"` and one `sort="A!zzz"`. `main` emits
+`\index{A!zzz@B}` twice with no warning; the branch emits `\index{A!B}` twice
+and adds `index entry in entry="A!B" is already sorted as "B"; the sort key
+"zzz" written here cannot apply as well`. The second mark's genuine sort key is
+lost. Contradicts README's "Restating a level's own text on the way to a deeper
+one declares nothing for that level". `kept` is non-nil on every `entry=` path,
+so the blast radius is wider than this milestone's scope, and no suite check
+covers it.
+
+**F2 (medium, CONFIRMED) — a sort key written for a dropped level is discarded
+silently.** `entry="!Cats" sort="mmm"` emits `\index{Cats}` and says nothing
+about `mmm`. The gate chose pair-and-drop knowing the key would go; it did not
+decide the loss should be unreported, and every other unusable sort in this
+filter warns.
+
+**F3 (medium, CONFIRMED) — the all-empty fallback breaks this milestone's own
+sort-pairing rule, making README and DESIGN false.** `derive_levels` returns
+`{ visible }` with no `kept`, so every written sort level re-aligns onto the
+fallback: `entry="!" sort="mmm!nnn"` emits `\index{mmm@Vis}`, putting `mmm` —
+written for the empty first level — on a level it was never written for.
+
+**F4 (medium-low) — the `explained` flag suppresses the cross-reference
+diagnosis.** `[]{.index entry="!" see="Cats"}` no longer says the `see=` target
+went with the entry, losing the actionable half of the message.
+
+**F5 (medium-low) — `check_no_null_field` cannot see a trailing null field on an
+argument carrying an encap, so AC2 is weaker than its wording claims.** The
+`\index\{([^}]*)\}` capture stops at the first `}`, so `\index{Cats!|see{X}}`
+is scanned as `Cats!|see{X`, whose last field is non-empty. AC2's claim happens
+to hold for both fixtures, so the criterion is not falsified — the instrument is
+weaker than the promise. This inherits the pre-existing brace-unaware-scanner
+ROADMAP row while claiming a stronger property than the old scanner did.
+
+**F6 (low)** — `kept` and `depth` are destructured in `Span` and never read.
+**F7 (low)** — "sort= has 3 levels but the entry has 2" now describes the written
+depth, not the entry as indexed. **F8 (low)** — a multi-empty value draws N
+byte-identical warnings, neither naming which end went. **F9 (low, design
+tension)** — DESIGN justifies a shared-layer drop partly by a makeindex property,
+while the sibling constraint (`clamp_levels`) was deliberately kept inside the
+LaTeX back-end for being back-end-specific. **F10 (low, process)** — the three
+`entry=` semantics the implement gate settled live only in the work log, where
+D-001 records exactly this class of choice.
+
+**F-h1 (minor, blame lens)** — AC5's text cites `tests/run-tests.sh:2743`,
+`:2750`, `:5509`; those constants now sit at 2808/2815/2816.
+
+Reviewer categories that produced no findings: removed code was genuinely
+unreachable (traced independently — no path delivers an empty level to
+`clamp_levels` or either self-target comparison); the `explained` flag is
+correctly scoped; the new manifests are genuine hand-derived oracles rather than
+render read-backs, and the checks discriminate.
+
+### Triage
+

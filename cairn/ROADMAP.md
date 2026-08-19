@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-18 (M10 planned; the surviving-self-reference row graduated to it. Earlier same-day check: M09 done and archived; the sort-key-under-the-clamp row graduated, the module-level-accumulator row widened with `clamped_paths`; 2 lessons captured, none retired; M04's terminal row pruned to the 5-row retention; caps and byte budgets clean)_
+_Last hygiene check: 2026-08-18 (M10 done and archived; the surviving-self-reference row graduated at plan time, the empty-levels row widened with the leading-empty behaviour change and the trailing-vs-leading null-field asymmetry, two new rows from M10 review; 4 lessons captured, none retired; M05's terminal row pruned to the 5-row retention; caps and byte budgets clean)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M10 | Self-references the level fold and empty levels hide | review | — | normal | milestones/M10-selfref-fold-empty.md |
+| M10 | Self-references the level fold and empty levels hide | done | — | normal | milestones/archive/M10-selfref-fold-empty.md |
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
 | M09 | Sort keys under the LaTeX level clamp | done | — | normal | milestones/archive/M09-sortkey-clamp.md |
 | M07 | Letter-group headings (HTML index) | done | — | normal | milestones/archive/M07-letter-groups.md |
 | M06 | Sort keys | done | — | normal | milestones/archive/M06-sort-keys.md |
-| M05 | Multi-chapter book support | done | M04 | normal | milestones/archive/M05-book-support.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

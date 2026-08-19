@@ -113,7 +113,7 @@ none; not plannable.
       `resolve_markers` already loops with (`index.lua:1572`). Write the
       message as one literal so a scan reading each `warn()` call's first
       literal sees the whole of it (M10 lesson). Commit.
-- [ ] T4: `tests/run-tests.sh --self-test` clean; confirm the three renders
+- [x] T4: `tests/run-tests.sh --self-test` clean; confirm the three renders
       and the absence of `qi-index-here` in each output.
 - [ ] T5: Run the three AC4 mutations, each against the committed fix, never
       with uncommitted work in the tree (M08 lesson: `git checkout --` inside
@@ -133,3 +133,4 @@ none; not plannable.
 - 2026-08-19: T2 — the set-equality check and the residue check added; against the current filter all three formats report 0 of the manifest's 9, so the check fails for the reason it exists. The manifest's must-not-report rows were reworded to carry no bare leading number, so the parse that reads the reporting rows cannot pick them up — the first draft's parse did, and the two halves of the manifest disagreed.
 - 2026-08-19: amended AC4 and AC5 at a mini gate. AC5 as planned promised no output carries qi-index-here; the fixture's own YAML title carries the class and Quarto emits it into the html and gfm output, which is metadata the marker machinery never reaches (M08) and predates M12. AC5 narrowed to that one located occurrence; AC4 grew a fourth mutation so the located-residue check has a discrimination proof. A fresh-context [O] reader audited the amended wording in full mode before it was written and returned three findings — a false "each of the three carries one" implication, a mechanism claim over all metadata, and an unprobed counterfactual — all three folded into the adopted text.
 - 2026-08-19: T3 — the report emits from strip_nested_markers, counted as every emptying block list minus every one a marker owns, which needs no per-container code and so reaches a figure caption and a table cell like any other list. The plan's Note handler was dropped after a probe: on Pandoc 3.10.2 the Block filter reaches a footnote's blocks unaided, so M08's Note handler would double-count and under-report a marker nested inside a marker inside a footnote — that shape is now in the fixture, which is how the double count was found. All three formats emit the manifest's 10 reports.
+- 2026-08-19: T4 — `tests/run-tests.sh --self-test` clean at 187 checks, the planted-defect pass included. All three renders produce the manifest's 10 reports and the located-residue check passes.

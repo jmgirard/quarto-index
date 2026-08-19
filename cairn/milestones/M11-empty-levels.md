@@ -109,7 +109,7 @@ separators cannot be written; only the leading one is destructive.
       cross-reference (`entry="!Owls" see="Owls"`, the M10-F2/F5 shape),
       all-empty with visible text (`entry="!"`), a leading empty level carrying
       a `sort=`, and a control with no empty level.
-- [ ] T2 — Tests first: add the suite block rendering the fixture to latex,
+- [x] T2 — Tests first: add the suite block rendering the fixture to latex,
       pdf, html and gfm with hand-derived manifests asserting the post-fix
       behaviour, and confirm each new check FAILS against the current filter.
 - [ ] T3 — Drop empty levels in `derive_levels`
@@ -139,6 +139,7 @@ separators cannot be written; only the leading one is destructive.
 - 2026-08-18: plan gate chose compiled-PDF evidence over reading the emitted `.tex` alone because the M01 lesson is that reading an argument cannot establish that the consumer accepts it — which is exactly how this defect survived; falsified by the added PDF render proving too slow or flaky for the suite.
 - 2026-08-18: implement gate settled three open items: a sort level pairs with the entry level it was written for and is dropped with it; the empty-level warning reads "an empty level prints nothing, so it is dropped and the entry indexes at the levels that remain"; an `entry=` that is only empty levels gets its own message rather than the existing "no entry=" one, which would be false about it.
 - 2026-08-18: T1 — `examples/empty-levels.qmd` added; rendered against the unchanged filter to record the pre-fix behaviour. Beyond the planned defect it exposed an unplanned one: `sort_for` keys a level's sort key on its printed level path and a leading empty level's path is the empty string, so the `mmm` declared by one mark filed four unrelated entries under it with no rival-key report — visible as `\index{zzz@!Cats}` in the pre-fix render. The drop removes it at the root, since no surviving level path can be empty.
+- 2026-08-18: T2 — M11 suite block added (manifest 1r: emitted LaTeX arguments, compiled-PDF rows, HTML letter-grouped rows, five warning counts per format, a null-field scan over both empty-level fixtures, and a direct back-end-against-back-end path comparison). Run against the unchanged filter: the suite reaches M11 clean and fails on its first check, 0 of 6 expected empty-level warnings.
 - 2026-08-18: criteria audit ran in FULL mode (surface tier user-facing) but NOT in a fresh context — this session carries a standing directive against spawning subagents, so the author read their own criteria; deviation recorded rather than skipped. Two findings, both fixed before writing: a draft AC1 promising makeindex's `.ilg` report "0 rejected entries" was unreachable as evidence (Quarto does not surface the `.ilg`) and was rewritten onto the compiled PDF; and a draft AC "reverting the drop makes the checks fail" bound a property of the instrument rather than of the deliverable (D-118) and moved to T6.
 
 ## Decisions

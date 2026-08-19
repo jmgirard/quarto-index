@@ -181,20 +181,6 @@ local function levels_key(levels)
   return table.concat(parts, "!")
 end
 
--- The levels that actually print, for a comparison about what a reader sees.
--- An empty level occupies a position in the entry the author wrote but puts no
--- text in the index, so two level lists differing only in empty levels print
--- the same path.
-local function nonempty_levels(levels)
-  local kept = {}
-  for _, level in ipairs(levels) do
-    if level ~= "" then
-      kept[#kept + 1] = level
-    end
-  end
-  return kept
-end
-
 -- Render one literal level as a LaTeX `\index{}` argument fragment.
 local function escape_level(level)
   return (level:gsub(".", function(c)
@@ -213,13 +199,12 @@ local function clamp_levels(levels, context)
   if #levels <= MAX_LEVELS then
     return levels
   end
+  -- Every level here prints something: an empty one was dropped when the entry
+  -- was derived (drop_empty_levels), so the join can never leave a dangling
+  -- separator in the printed index.
   local tail = {}
   for i = MAX_LEVELS, #levels do
-    -- An empty level here would leave a dangling separator in the printed
-    -- index; it is warned about above and dropped from the join.
-    if levels[i] ~= "" then
-      tail[#tail + 1] = levels[i]
-    end
+    tail[#tail + 1] = levels[i]
   end
   warn(("index entry in %s is %d levels deep; the back-end stores %d, so "
         .. "levels %d and deeper were folded into the third")
@@ -255,17 +240,35 @@ local function target_argument(levels)
   return table.concat(parts, TARGET_JOIN)
 end
 
--- An empty level is a property of what the author wrote, not of any one
--- back-end, so this warns wherever the document is rendered — and before any
--- back-end folds levels together, since folding absorbs a trailing empty level
--- into the level above it and would otherwise swallow the warning.
-local function warn_empty_levels(levels, context)
-  for _, level in ipairs(levels) do
-    if level == "" then
-      warn(("empty index level in %s; the level is kept as written, and a "
-             .. "back-end that cannot store it may drop it"):format(context))
+-- An empty level prints nothing, so it is not a level: the entry indexes at
+-- whatever is left. Dropping it is a property of what the author wrote rather
+-- than of any one back-end, so it happens once here and every format sees the
+-- same levels — and it is what keeps a null field away from the LaTeX index
+-- tool, which rejects an entry outright for a leading or middle one, drops it,
+-- reports no warning and exits 0.
+--
+-- Returns the surviving levels, the ORIGINAL index of each (so a sort level
+-- can be dropped together with the entry level it was written for), and the
+-- depth the author actually wrote.
+local function drop_empty_levels(parsed, context, report)
+  local levels, kept = {}, {}
+  for i, level in ipairs(parsed) do
+    if level ~= "" then
+      levels[#levels + 1] = level
+      kept[#kept + 1] = i
     end
   end
+  -- Silent when NOTHING survived: the caller has a single message for that
+  -- mark, about the value as a whole, and a count of levels none of which
+  -- printed anything would only bury it.
+  if report and #levels > 0 then
+    for _ = 1, #parsed - #levels do
+      warn(("empty index level in %s; an empty level prints nothing, so it is "
+            .. "dropped and the entry indexes at the levels that remain")
+           :format(context))
+    end
+  end
+  return levels, kept, #parsed
 end
 
 -- Parse a `sort=` value and line it up with the entry's levels. The result
@@ -281,19 +284,42 @@ end
 --
 -- Returns nil when the value declares no sort key at all, which keeps a
 -- document that never writes `sort=` byte-identical in the LaTeX back-end.
-local function sort_levels(value, levels, context, report)
+local function sort_levels(value, levels, context, report, kept, depth)
   if value == nil then
     return nil
   end
-  local parsed = parse_levels(value)
+  local written = parse_levels(value)
+  -- Lined up with the entry levels that SURVIVED the empty-level drop. A sort
+  -- level belongs to the level it was written for, so one written for a level
+  -- that printed nothing goes with it rather than sliding onto the next: with
+  -- `entry="!Cats" sort="mmm!cats"`, `Cats` files under `cats`, never `mmm`.
+  local parsed = written
+  if kept ~= nil then
+    parsed = {}
+    for i, original in ipairs(kept) do
+      parsed[i] = written[original]
+    end
+  end
+  -- The depth the AUTHOR wrote, which is what the ignored-levels count below
+  -- is measured against — an entry whose empty level was dropped has not
+  -- ignored the sort level that went with it, and saying so would draw a
+  -- second warning for one mistake.
+  depth = depth or #levels
   -- The last position the author actually wrote a key for. Everything before
   -- it that merely restates the level's own printed text is positional filler
   -- — the way this syntax reaches a deeper level, since two separators in a
   -- row are a literal `!` — while a self-equal key AT that last position is a
   -- real declaration, the author saying where this level files.
+  --
+  -- Found in `written` and compared below against each level's ORIGINAL
+  -- position, because it is a fact about what the author typed. Reading it off
+  -- the realigned list instead makes the last surviving level a declaration
+  -- whenever the sort key ran deeper than the entry — turning filler into a
+  -- declaration on entries with no empty level at all, which loses another
+  -- mark's genuine key and invents a rival-key report (M11 review F1).
   local last = 0
-  for i = 1, #parsed do
-    if parsed[i] ~= "" then
+  for i = 1, #written do
+    if written[i] ~= "" then
       last = i
     end
   end
@@ -302,20 +328,48 @@ local function sort_levels(value, levels, context, report)
     -- empty sort level is the documented "leave this level alone", so a
     -- trailing empty one ignores nothing and must not say it did.
     local ignored = 0
-    for i = #levels + 1, #parsed do
-      if parsed[i] ~= "" then
+    for i = depth + 1, #written do
+      if written[i] ~= "" then
         ignored = ignored + 1
       end
     end
     if ignored > 0 then
       warn(("sort= on %s has %d levels but the entry has %d; the extra sort "
-            .. "levels were ignored"):format(context, #parsed, #levels))
+            .. "levels were ignored"):format(context, #written, depth))
+    end
+    -- A key written for a level that prints nothing goes with that level. That
+    -- is the rule, but it costs the author something they typed, so it is said
+    -- rather than done quietly (M11 review F2). Counted only within the depth
+    -- the author wrote: anything past it is the ignored-levels case above, and
+    -- an EMPTY sort level lost with an empty entry level costs nothing.
+    if kept ~= nil then
+      local surviving = {}
+      for _, original in ipairs(kept) do
+        surviving[original] = true
+      end
+      local lost = 0
+      for i = 1, math.min(depth, #written) do
+        if not surviving[i] and written[i] ~= "" then
+          lost = lost + 1
+        end
+      end
+      if lost > 0 then
+        local how_many = lost == 1 and "one index level that prints nothing"
+                         or ("%d index levels that print nothing"):format(lost)
+        warn(("sort= on %s writes a key for %s; a key is dropped with the "
+              .. "level it was written for, and the levels that remain keep "
+              .. "their own"):format(context, how_many))
+      end
     end
   end
   local declared, any = {}, false
   for i = 1, #levels do
     local key = parsed[i]
-    if key ~= nil and key ~= "" and not (key == levels[i] and i < last) then
+    -- Where this level sat in the value the author wrote, which is what `last`
+    -- is measured in.
+    local position = kept ~= nil and kept[i] or i
+    if key ~= nil and key ~= ""
+       and not (key == levels[i] and position < last) then
       declared[i] = key
       any = true
     else
@@ -600,10 +654,36 @@ end
 -- mark, "keep" leaving content the author wrote untouched (IP2).
 local function derive_levels(entry, visible, declared, content_count, context,
                              sort_value, report)
+  -- Set once the author has already been told WHY nothing is indexable, so
+  -- the generic messages below never claim they wrote no entry= when the
+  -- value they wrote is right there in the warning above.
+  local explained = false
   if entry ~= nil and entry ~= "" then
-    return parse_levels(entry), nil
-  end
-  if visible ~= "" then
+    local levels, kept, depth = drop_empty_levels(parse_levels(entry), context,
+                                                  report)
+    if #levels > 0 then
+      return levels, nil, kept, depth
+    end
+    -- Every level empty. The per-level warning above did not fire for this
+    -- mark: one message about the value as a whole says more than a count of
+    -- levels none of which printed anything.
+    if visible ~= "" then
+      if report then
+        warn(("%s is only empty levels, which print nothing; the mark indexes "
+              .. "under its visible text instead"):format(context))
+      end
+      -- An EMPTY `kept`, not a nil one: every level the author wrote is gone,
+      -- so no sort key they wrote belongs to the level this falls back to.
+      -- Passing nil would re-align the whole sort value onto that level and
+      -- put a key on a level it was never written for (M11 review F3).
+      return { visible }, nil, {}, depth
+    end
+    if report then
+      warn(("%s is only empty levels, which print nothing; nothing to index")
+           :format(context))
+    end
+    explained = true
+  elseif visible ~= "" then
     -- A visible term is one literal level; `!` in it is not a separator.
     return { visible }, nil
   end
@@ -621,15 +701,23 @@ local function derive_levels(entry, visible, declared, content_count, context,
     -- rather than either of the two below, because the fix is different: give
     -- the mark an entry= or some visible text.
     if report then
-      warn("cross-reference mark has no source entry (no entry= and no "
-           .. "visible text); nothing to index")
+      if explained then
+        -- The entry has already been reported; what this adds is that the
+        -- cross-reference went with it (M11 review F4).
+        warn(("the cross-reference on %s has no source entry left to hang "
+              .. "off, so it was dropped too; give the mark an entry= that "
+              .. "prints something, or some visible text"):format(context))
+      else
+        warn("cross-reference mark has no source entry (no entry= and no "
+             .. "visible text); nothing to index")
+      end
     end
     -- Same content policy as the two cases below: an empty mark is dropped,
     -- a mark with content keeps every bit of it.
     return nil, content_count == 0 and "drop" or "keep"
   end
   if content_count == 0 then
-    if report then
+    if report and not explained then
       warn("index mark with no visible term and no entry=; nothing to index")
     end
     -- Genuinely empty and nothing to index: drop the mark rather than leave
@@ -639,7 +727,7 @@ local function derive_levels(entry, visible, declared, content_count, context,
   -- The span HAS content, it just yields no text to derive an entry from
   -- (an image with empty alt text, say). Index nothing, but never remove
   -- the content — deleting what the author wrote would be IP2 corruption.
-  if report then
+  if report and not explained then
     warn("index mark whose content has no text and no entry=; nothing to "
          .. "index, content left untouched")
   end
@@ -669,14 +757,16 @@ local function CollectSort(span)
       declared = declared + 1
     end
   end
-  local levels = derive_levels(entry, visible, declared, #span.content,
-                               context, sort_value, false)
+  local levels, _, kept, depth = derive_levels(entry, visible, declared,
+                                              #span.content, context,
+                                              sort_value, false)
   if levels == nil then
     return nil
   end
   -- Reported here rather than in the emitting pass: this is the pass that can
   -- see a conflict before anything has been emitted under either key.
-  register_sort(levels, sort_levels(sort_value, levels, context, true),
+  register_sort(levels,
+                sort_levels(sort_value, levels, context, true, kept, depth),
                 context)
   return nil
 end
@@ -724,6 +814,9 @@ local function Span(span)
          .. "mistake, and neither is dropped for being one of two")
   end
 
+  -- Derived once, and before the back-end branch: the levels are the author's
+  -- text whatever format this is, and the empty-level warnings the derivation
+  -- emits would otherwise fire twice for one mark.
   local levels, disposition = derive_levels(entry, visible, declared,
                                             #span.content, context,
                                             sort_value, true)
@@ -731,10 +824,6 @@ local function Span(span)
     return disposition == "drop" and {} or nil
   end
 
-  -- Derived once, and before the back-end branch: the levels are the author's
-  -- text whatever format this is, and the both-attributes case would otherwise
-  -- warn twice about the same entry.
-  warn_empty_levels(levels, context)
   -- A cross-reference target naming the entry it is written on says nothing:
   -- "Cats, see Cats" in print, and in HTML a link from an entry to itself. The
   -- target is dropped and the mark then indexes as usual — dropping the whole
@@ -746,25 +835,24 @@ local function Span(span)
   -- text is a self-reference whatever the mark files under. Before the back-end
   -- branch, like every other judgement about what the author wrote.
   --
-  -- Empty levels are ignored on BOTH sides, because an empty level prints
-  -- nothing: `entry="Cats!"` and a target of `Cats` are two spellings of one
-  -- printed path, and "Cats, see Cats" is what a reader gets. Dropping them on
-  -- the target side alone is what M08 did, and is why the two spellings
-  -- compared unequal — a target has its empty levels dropped when it is parsed
-  -- (target_levels), an entry keeps its own (warn_empty_levels: "the level is
-  -- kept as written"), so the asymmetry was in the comparison, not in the mark.
-  local own_key = levels_key(nonempty_levels(levels))
-  local kept = {}
+  -- Neither side can carry an empty level any more: a target drops its own
+  -- when it is parsed (target_levels) and an entry drops its own when it is
+  -- derived (drop_empty_levels), so `entry="Cats!"` and a target of `Cats` are
+  -- one printed path and compare equal without the comparison knowing anything
+  -- about emptiness. M10 reconciled the two spellings here instead, because
+  -- the entry side kept what it was written with.
+  local own_key = levels_key(levels)
+  local surviving = {}
   for _, xref in ipairs(xrefs) do
-    if levels_key(nonempty_levels(xref.levels)) == own_key then
+    if levels_key(xref.levels) == own_key then
       warn(("%s= on %s names the entry it is written on; a cross-reference to "
             .. "itself says nothing, so it is dropped and the term is indexed "
             .. "as usual"):format(xref.kind.attr, context))
     else
-      kept[#kept + 1] = xref
+      surviving[#surviving + 1] = xref
     end
   end
-  xrefs = kept
+  xrefs = surviving
   -- Resolved by the collect pass, which has already seen every mark of this
   -- entry: whichever mark declared the sort key, every mark of the entry files
   -- under it.
@@ -809,12 +897,12 @@ local function Span(span)
   -- first pass could not see. It lives here, and not beside the first pass,
   -- because the three-level ceiling is a property of this back-end alone:
   -- HTML has none, so the same document keeps the target there, and a format
-  -- with no index back-end never reaches this line. Empty levels are ignored
-  -- on both sides for the same reason they are above.
-  local printed_key = levels_key(nonempty_levels(clamped))
+  -- with no index back-end never reaches this line. Neither side carries an
+  -- empty level, for the same reason neither does above.
+  local printed_key = levels_key(clamped)
   local kept_after_fold = {}
   for _, xref in ipairs(xrefs) do
-    if levels_key(nonempty_levels(xref.levels)) == printed_key then
+    if levels_key(xref.levels) == printed_key then
       -- The folded path is quoted because the author never wrote it: it is
       -- what their entry prints once the back-end has folded it, and a report
       -- naming only what they typed would describe a match they cannot see.

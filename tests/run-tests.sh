@@ -137,6 +137,26 @@ README_SORT_CLAIMS=(
 )
 
 # ---------------------------------------------------------------------------
+# README claims about empty levels (NORMATIVE, M11-AC6). Same discipline as
+# the arrays around it: one row per behavior the extension documents, compared
+# as bytes, so what README promises about a dropped level and what the M11
+# fixture exercises cannot drift apart.
+# ---------------------------------------------------------------------------
+README_EMPTY_CLAIMS=(
+  $'the drop\tthe empty level is dropped, and the entry indexes at the levels that remain'
+  $'both ends\t`entry="!Cats"` and `entry="Cats!"` both index as `Cats`'
+  $'format-neutral\tThis is the same in every format'
+  $'why it matters\trejects an entry outright for a leading or middle null field'
+  $'unspellable middle\tTwo empty levels can never sit side by side'
+  $'all-empty fallback\tfalls back to its own visible text where it has some'
+  $'sort pairing\tfiles `Cats` under `cats` and never under `zzz`'
+  $'dropped keys reported\tyou get a warning saying how many keys went'
+  $'fallback takes no key\tnever under a key written for a level that is gone'
+  $'no empty level, no change\tstill declares nothing for it'
+  $'depth after the drop\tDepth is counted after empty levels have gone'
+)
+
+# ---------------------------------------------------------------------------
 # README claims about letter groups (NORMATIVE, M07-AC6). Same discipline as
 # README_HTML_CLAIMS: one row per behavior the extension documents, compared
 # as bytes, so the docs and what this suite exercises cannot drift apart.
@@ -145,7 +165,10 @@ README_LETTER_CLAIMS=(
   $'label derivation\tA group label comes from the string the entry files under'
   $'sort-key precedence\tits sort key where it has one, and its printed text where it has none'
   $'letter label\tIf that string begins with an ASCII letter the label is that letter, uppercased'
-  $'symbols fallback\ta digit, a punctuation mark, an accented or non-Latin letter, or an empty string — files under `Symbols`'
+  $'symbols fallback\ta digit, a punctuation mark, or an accented or non-Latin letter'
+  # M11: no entry can file under the empty string any more, so README no
+  # longer lists it among the cases and this pin no longer asks it to.
+  $'no empty filing string\tNothing files under an empty string: a level that'
   $'symbols first\tThe Symbols group comes first**, ahead of A'
   $'always on\tGrouping is always on.** There is nothing to switch on and no threshold'
   $'top level only\tOnly the top level is grouped.** A sub-entry files under its parent rather than under a letter of its own'
@@ -178,7 +201,7 @@ read -r -d '' DEMO_ENTRIES <<'MANIFEST' || true
 1	A"!!B
 1	\textbackslash{}
 1	Alpha!Beta
-1	A"!B!
+1	A"!B
 1	One!Two!Three, Four, Five
 1	pct \% amp \& hash \#
 1	us \_ brace \textbraceleft{} \textbraceright{}
@@ -240,14 +263,15 @@ HTML_LETTER_CLASS='qi-letter'
 # Same oracle rule as manifest 1, with the HTML back-end's own layers derived
 # by hand on top of the level parse:
 #   4. No level ceiling: the three-level clamp is a makeindex property, so
-#      `One!Two!Three!Four!Five!` nests six deep here, trailing empty level
-#      included.
+#      `One!Two!Three!Four!Five!` nests five deep here — its trailing empty
+#      level is dropped when the entry is derived (M11), in every back-end.
 #   5. Order, in two parts (M07). Top-level entries are first RANKED INTO
 #      GROUPS by the string each files under — its sort key where it has one
 #      (step 8, where a manifest has sort keys), its printed text otherwise:
 #      the label is that string's first character uppercased when that
-#      character is an ASCII letter, and `Symbols` otherwise, the empty
-#      filing string included; groups rank `Symbols` first, then A-Z, and each
+#      character is an ASCII letter, and `Symbols` otherwise; no entry files
+#      under the empty string, a level that prints nothing having been dropped
+#      (M11); groups rank `Symbols` first, then A-Z, and each
 #      is introduced by one heading row. Then, WITHIN a group and at every
 #      depth below the top — which is not grouped, a sub-entry filing under
 #      its parent rather than under a letter — fold ASCII uppercase to
@@ -268,8 +292,7 @@ letter	Symbols
 letter	A
 0	A!	0
 1	B	1
-0	A!B	0
-1		1
+0	A!B	1
 0	Alpha	0
 1	Beta	1
 letter	B
@@ -299,8 +322,7 @@ letter	O
 1	Two	0
 2	Three	0
 3	Four	0
-4	Five	0
-5		1
+4	Five	1
 0	owls	0	see-plain Birds: Owls
 letter	P
 0	pandoc	3
@@ -1029,6 +1051,30 @@ print(f'ok   M06-AC6: all {len(rows)} documented sort-key behaviors appear '
       f'verbatim in README.md')
 SORTDOCPY
 
+# M11-AC6 — and the same for what README says about an empty level.
+printf '%s\n' "${README_EMPTY_CLAIMS[@]}" > "$WORK/readme-empty.txt"
+python3 - "$WORK/readme-empty.txt" README.md <<'EMPTYDOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M11-AC6: README.md does not document empty levels as this '
+          'suite exercises them:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M11-AC6: all {len(rows)} documented empty-level behaviors appear '
+      f'verbatim in README.md')
+EMPTYDOCPY
+
 # M07-AC6 — and the same for the letter-group documentation.
 printf '%s\n' "${README_LETTER_CLAIMS[@]}" > "$WORK/readme-letter.txt"
 python3 - "$WORK/readme-letter.txt" README.md <<'LETTERDOCPY'
@@ -1257,6 +1303,72 @@ PY
 # ---------------------------------------------------------------------------
 # M02-AC5 — misuse case (b): one warning, one command, render still clean.
 # ---------------------------------------------------------------------------
+
+# Assert no `\index` argument in a rendered fixture carries a null field. The
+# index tool rejects an entry whose first or middle level is empty — "Illegal
+# null field" — drops it, reports no warning and exits 0, so the build looks
+# clean and the entry is gone; a trailing one it swallows instead. The domain
+# is every `\index` command in the file, read out of the file rather than
+# listed here, so a command added later is covered without editing this check.
+check_no_null_field() {
+  local texfile="$1" label="$2"
+  python3 - "$texfile" "$label" <<'NULLFIELDPY'
+import sys
+path, label = sys.argv[1:3]
+
+
+def arguments(path):
+    """Every `\index{...}` argument in a file, brace-matched.
+
+    A regex stopping at the first `}` reads an argument carrying an encap
+    truncated — `\index{Cats!|see{X}}` comes back as `Cats!|see{X`, whose
+    last field is non-empty however the real argument actually ends — so a
+    trailing null field on any cross-referencing entry was invisible to a
+    scan built that way (M11 review F5).
+    """
+    src = open(path, encoding='utf-8').read()
+    out, i, token = [], 0, '\\index{'
+    while True:
+        start = src.find(token, i)
+        if start < 0:
+            return out
+        j, depth = start + len(token), 1
+        while j < len(src) and depth > 0:
+            if src[j] == '{':
+                depth += 1
+            elif src[j] == '}':
+                depth -= 1
+            j += 1
+        out.append(src[start + len(token):j - 1])
+        i = j
+
+
+args = arguments(path)
+if not args:
+    print(f'FAIL: {label}: no \\index commands in {path} at all, so this scan '
+          f'proves nothing about it', file=sys.stderr)
+    sys.exit(1)
+errs = []
+for arg in args:
+    # An author's own `!` is quoted `"!` by the escape table, so an unquoted
+    # one is a level separator and an empty piece beside it is a null field.
+    seps = [i for i, c in enumerate(arg)
+            if c == '!' and (i == 0 or arg[i - 1] != '"')]
+    fields, last = [], 0
+    for i in seps:
+        fields.append(arg[last:i])
+        last = i + 1
+    fields.append(arg[last:])
+    for n, field in enumerate(fields, 1):
+        if field == '':
+            errs.append(f'\\index{{{arg}}} has an empty field at level {n}')
+if errs:
+    print(f'FAIL: {label}: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: all {len(args)} \\index arguments in {path} carry no '
+      f'null field at any level')
+NULLFIELDPY
+}
 
 # Assert a warning appears an EXACT number of times. Presence alone would pass
 # on a run that warned about the wrong mark, or warned twice for one.
@@ -2739,18 +2851,32 @@ for fmt in html latex gfm; do
     || { tail -20 "$WORK/self-xref-$fmt.log" >&2; fail "M08-AC2: self-xref.qmd failed to render to $fmt"; }
   # M08's four shapes plus M10's two empty-level shapes. The empty-level case
   # is format-neutral — an empty level prints nothing in every back-end and in
-  # none — so the count is the same in all three.
+  # none — so the count is the same in all three, and M11 does not move it:
+  # both shapes were already caught here, M10 by ignoring empty levels on both
+  # sides of the comparison and M11 by there being none left to ignore.
   check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_SELF_XREF" 6 "M10-AC4"
   # The both-attributes report is about the MARK, not about its targets, so
   # dropping one of the two must not silence it.
   check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_BOTH" 1 "M08-AC2"
 done
 # Three in LaTeX, none anywhere else. The zero is the load-bearing half: it is
-# what says the fold rule stayed inside the back-end whose fold it is.
+# what says the fold rule stayed inside the back-end whose fold it is. These
+# are the three genuinely over-deep entries; `entry="P!Q!R!"` is not among them
+# and never was, its target having been caught by the format-neutral pass above
+# before this back-end ran.
 check_warning_count "$WORK/self-xref-latex.log" "$WARN_FOLD_SELF" 3 "M10-AC4"
 check_warning_count "$WORK/self-xref-html.log"  "$WARN_FOLD_SELF" 0 "M10-AC4"
 check_warning_count "$WORK/self-xref-gfm.log"   "$WARN_FOLD_SELF" 0 "M10-AC4"
-pass "M08-AC2/M10-AC4: six self-referential targets each report once in HTML, LaTeX and gfm; the three fold-induced ones report in LaTeX alone; the both-attributes report still fires"
+# M11: one trivial mistake draws one warning. `entry="P!Q!R!"` used to be told
+# as well that it was four levels deep and had been folded, though the path it
+# printed was unchanged — two warnings for one stray `!`. With the empty level
+# dropped it is three levels and nothing folds, so this count is three and not
+# four: A!B!C!D, F!G!H!I!J and M!N!O!P, the entries that really are too deep.
+# The zeros say the fold belongs to the back-end that folds.
+check_warning_count "$WORK/self-xref-latex.log" "$WARN_FOLD_DEPTH" 3 "M11-AC5"
+check_warning_count "$WORK/self-xref-html.log"  "$WARN_FOLD_DEPTH" 0 "M11-AC5"
+check_warning_count "$WORK/self-xref-gfm.log"   "$WARN_FOLD_DEPTH" 0 "M11-AC5"
+pass "M08-AC2/M10-AC4/M11-AC5: six self-referential targets each report once in HTML, LaTeX and gfm; the three fold-induced ones report in LaTeX alone; only the three genuinely over-deep entries are told they folded, the stray trailing `!` no longer among them; the both-attributes report still fires"
 
 # ---------------------------------------------------------------------------
 # M10-AC4 — the three messages that speak about these marks must stay
@@ -2903,13 +3029,14 @@ python3 - examples/self-xref.tex <<'PY'
 import re, sys
 src = open(sys.argv[1], encoding='utf-8').read()
 errs = []
-# AC1: the three fold shapes. AC2: the two empty-level shapes. Each indexes
-# plainly, on the key it always filed under, with no encap at all.
+# AC1: the three fold shapes. AC2: the two empty-level shapes, which since M11
+# reach this back-end with their empty levels already dropped. Each indexes
+# plainly, on the key it files under, with no encap at all.
 plain = {
     'A!B!C!D':     '\\index{A!B!C, D}',
     'F!G!H!I!J':   '\\index{F!G!H, I, J}',
     'M!N!O!P':     '\\index{m@M!n@N!o@O, P}',
-    'Moles!':      '\\index{Moles!}',
+    'Moles!':      '\\index{Moles}',
     'P!Q!R!':      '\\index{P!Q!R}',
 }
 for entry, want in plain.items():
@@ -2922,7 +3049,7 @@ for entry, want in plain.items():
 for bad in ('\\index{A!B!C, D|seealso{A: B: C, D}}',
             '\\index{F!G!H, I, J|see{F: G: H, I, J}}',
             '\\index{m@M!n@N!o@O, P|seealso{M: N: O, P}}',
-            '\\index{Moles!|see{Moles}}',
+            '\\index{Moles|see{Moles}}',
             '\\index{P!Q!R|seealso{P: Q: R}}'):
     if bad in src:
         errs.append(f'a self-referential encap survived the fold: {bad}')
@@ -2937,14 +3064,19 @@ if errs:
 print('ok   M10-AC1/AC2: the three folded shapes and the two empty-level '
       'shapes each index plainly, and no pre-fix self-encap survives')
 PY
+# M11-AC2, taken here rather than in the M11 block below: this fixture is
+# re-rendered to PDF later in the run and the .tex does not survive it.
+check_no_null_field examples/self-xref.tex "M11-AC2 (self-xref)"
 
 # ---------------------------------------------------------------------------
 # M10-AC2/AC3 — the same five shapes in HTML, where there is no level ceiling.
 # The two empty-level shapes are self-references here too and lose their
-# targets; the three folded shapes are NOT, and must keep theirs. Entries are
-# located by tree position and asserted on tag, class list and id — the
-# empty-level entries print no text at all, so a check reading text could not
-# tell one of them from the other.
+# targets; the three folded shapes are NOT, and must keep theirs. Since M11 an
+# empty level is dropped rather than kept, so the entries that used to print no
+# text at all are gone: `entry="Moles!"` is the single top-level term `Moles`
+# and `entry="P!Q!R!"` is `P` -> `Q` -> `R`. Both are asserted to have NO child
+# below them, which is what says the level went rather than merely printing
+# blank, and to carry the locator themselves.
 # ---------------------------------------------------------------------------
 python3 - examples/self-xref.html <<'PY'
 import re, sys
@@ -2955,48 +3087,50 @@ section = H.index_section(doc)
 records = H.entry_records(section)
 errs = []
 
-def after(term, depth):
-    """The record following the one whose term is `term` at depth `depth-1`.
+def entry_at(term, depth):
+    """The record whose term is `term` at `depth`, and the record after it.
 
-    Positional, because the entries this locates print no text: `entry="Moles!"`
-    files under a child of `Moles` whose own term is the empty string, and so
-    does every other trailing-empty entry in the document.
+    By term now rather than by position: since M11 the entries this locates
+    print their own text, an empty level having been dropped rather than kept
+    as a child that printed nothing.
     """
     for i, r in enumerate(records):
-        if r['term'] == term and r['depth'] == depth - 1:
-            if i + 1 < len(records) and records[i + 1]['depth'] == depth:
-                return records[i + 1]
-            return None
-    return None
+        if r['term'] == term and r['depth'] == depth:
+            nxt = records[i + 1] if i + 1 < len(records) else None
+            return r, nxt
+    return None, None
 
-# AC2 — the empty-level children of `Moles` and of `R`. Each is a real entry
+# AC2 — the two entries whose empty level was dropped. Each is a real entry
 # node (a span carrying qi-term and a minted qi-entry id), carries no
-# cross-reference any more, and carries a locator instead: the mark still
-# indexes, which is the IP2 half of the rule.
-for parent, depth in (('Moles', 1), ('R', 3)):
-    rec = after(parent, depth)
+# cross-reference any more, and carries the locator itself: the mark still
+# indexes, which is the IP2 half of the rule. The deepest level is the entry's
+# own, so nothing hangs below it — the check that says the level went rather
+# than merely rendering blank.
+for term, depth in (('Moles', 0), ('R', 2)):
+    rec, nxt = entry_at(term, depth)
     if rec is None:
-        errs.append(f'no depth-{depth} entry under {parent!r}')
+        errs.append(f'no depth-{depth} entry {term!r}')
         continue
-    if rec['term'] != '':
-        errs.append(f"the child of {parent!r} should be the empty level, is {rec['term']!r}")
+    if nxt is not None and nxt['depth'] > depth:
+        errs.append(f'{term!r} still has a child {nxt["term"]!r} at depth '
+                    f'{nxt["depth"]}, so the empty level was kept')
     node = H.find_id(doc, rec['id']) if rec['id'] else None
     if node is None:
-        errs.append(f'the empty level under {parent!r} carries no id')
+        errs.append(f'the entry {term!r} carries no id')
     else:
         if node.tag != 'span':
-            errs.append(f'the empty level under {parent!r} is a <{node.tag}>, want span')
+            errs.append(f'the entry {term!r} is a <{node.tag}>, want span')
         if 'qi-term' not in H.classes(node):
-            errs.append(f'the empty level under {parent!r} lacks the qi-term class, '
+            errs.append(f'the entry {term!r} lacks the qi-term class, '
                         f'has {H.classes(node)}')
         if not re.fullmatch(r'qi-entry-\d+', rec['id']):
-            errs.append(f'the empty level under {parent!r} carries a non-minted id '
+            errs.append(f'the entry {term!r} carries a non-minted id '
                         f'{rec["id"]!r}')
     if rec['xrefs']:
-        errs.append(f'the empty level under {parent!r} still carries '
+        errs.append(f'the entry {term!r} still carries '
                     f'{[t for _k, t, _l, _h in rec["xrefs"]]}')
     if not rec['locators']:
-        errs.append(f'the empty level under {parent!r} carries no locator, so the '
+        errs.append(f'the entry {term!r} carries no locator, so the '
                     f'term was lost rather than indexed plainly')
 
 # AC3 — HTML applies no fold, so none of the three folded shapes is a
@@ -3016,9 +3150,9 @@ for parent, depth, want in (('D', 4, 'A: B: C, D'),
 if errs:
     print('FAIL: M10-AC2/AC3: ' + '; '.join(errs), file=sys.stderr)
     sys.exit(1)
-print('ok   M10-AC2/AC3: both empty-level entries lost their self-targets and '
-      'index plainly, and all three folded entries keep theirs, HTML having no '
-      'level ceiling to fold under')
+print('ok   M10-AC2/AC3: both empty-level entries lost their self-targets, '
+      'index plainly at the levels that survived with nothing below them, and '
+      'all three folded entries keep theirs, HTML having no level ceiling')
 PY
 
 # ---------------------------------------------------------------------------
@@ -5113,12 +5247,13 @@ SORTESCGFMPY
 #   5a. Group: a top-level entry's label is the first character of the string
 #      it FILES under — its sort key where it has one, its printed text where
 #      it does not — uppercased when that character is an ASCII letter, and
-#      `Symbols` in every other case, the empty filing string included. Groups
-#      rank Symbols first, then A-Z; within a group, and at every level below
-#      the top, step 5's collation is unchanged.
+#      `Symbols` in every other case. Groups rank Symbols first, then A-Z;
+#      within a group, and at every level below the top, step 5's collation is
+#      unchanged. No entry can file under the empty string: a level that would
+#      print nothing is dropped when the entry is derived (M11), and a mark
+#      with nothing left indexes under its visible text or not at all.
 #
 # Derived per entry, filing string in parentheses:
-#   `` (``)                  empty first level of `!windmill`   -> Symbols
 #   `Quixote` (`!quixote`)   `!!` is the literal `!`             -> Symbols
 #   `#hashtag` (`#hashtag`)  printed text                        -> Symbols
 #   `~tilde` (`~tilde`)      printed text                        -> Symbols
@@ -5126,12 +5261,11 @@ SORTESCGFMPY
 #   `alpha` (`alpha`)        printed text                        -> A
 #   `#1 priority` (`alpha priority`)  sort key                   -> A
 #   `Mango` (`Mango`)        printed text                        -> M
+#   `windmill` (`windmill`)  `!windmill` lost its empty level    -> W
 #   `zebra` (`zebra`)        printed text                        -> Z
 # ---------------------------------------------------------------------------
 read -r -d '' LETTER_GROUPS_INDEX <<'MANIFEST' || true
 letter	Symbols
-0		0
-1	windmill	1
 0	Quixote	1
 0	#hashtag	1
 0	~tilde	1
@@ -5141,6 +5275,8 @@ letter	A
 0	#1 priority	1
 letter	M
 0	Mango	1
+letter	W
+0	windmill	1
 letter	Z
 0	zebra	1
 MANIFEST
@@ -5152,7 +5288,7 @@ check_html_index_manifest examples/letter-groups.html "$LETTER_GROUPS_INDEX" \
   "M07-AC2"
 check_html_index_links examples/letter-groups.html "M07-AC2"
 check_letter_sweep examples/letter-groups.html "M07-AC3 (letter groups)" \
-  $'Symbols\nA\nM\nZ'
+  $'Symbols\nA\nM\nW\nZ'
 
 # The discriminator the manifest above carries but does not name: `#` and `~`
 # are the first and last of the printable ASCII symbols, and every letter and
@@ -5550,9 +5686,11 @@ for want in CROSS_REFERENCED:
 
 # The IP2 half, followed to the artifact: dropping a target must leave the term
 # indexed. Hand-derived from the .qmd — the depth-5 entry folds to F, G,
-# "H, I, J"; `entry="P!Q!R!"` folds its trailing empty away and prints P, Q, R;
-# and `entry="Moles!"` hands makeindex a trailing null field, which it
-# swallows, so the entry prints as the single top-level term `Moles`.
+# "H, I, J"; and since M11 an empty level is dropped when the entry is derived,
+# so `entry="P!Q!R!"` is the three levels P, Q, R with no fold at all, and
+# `entry="Moles!"` is the single top-level term `Moles`. Neither hands the
+# index tool a null field any more — the trailing one it used to swallow, the
+# leading one it would have rejected outright.
 for want in ([(0, 'F'), (1, 'G'), (2, 'H, I, J')],
              [(0, 'P'), (1, 'Q'), (2, 'R')]):
     n = len(want)
@@ -5570,6 +5708,315 @@ print('ok   M10-AC6: the built index prints both folded entries at their three '
       'while the two entries that keep a cross-reference still print one')
 SELFXREFPDFPY
 pass "M10-AC6: the fold-induced self-target is gone from the compiled index, not only from the emitted LaTeX"
+
+# ---------------------------------------------------------------------------
+# M11 — empty index levels are dropped, so a leading empty level can no longer
+# hand the index tool a null field that destroys the entry.
+#
+# Manifest 1r — examples/empty-levels.qmd, derived from the .qmd by applying
+# the rule this milestone ships: an empty level prints nothing and is dropped,
+# a value that is nothing BUT empty levels falls back to the mark's visible
+# text, and a sort level is dropped together with the entry level it was
+# written for. Entry by entry, in .qmd order:
+#   `entry="!Cats"`                      -> Cats     (leading empty gone)
+#   `entry="Dogs!"`                      -> Dogs     (trailing empty gone)
+#   `entry="!Sub!"`                      -> Sub      (both gone)
+#   `entry="!Owls" see="Owls"`           -> Owls, target dropped as a
+#                                           self-reference
+#   `entry="!Zebra" sort="mmm!aardvark"` -> Zebra, filing under `aardvark`:
+#                                           `mmm` was written for the empty
+#                                           level and went with it
+#   `entry="!"` on [Ferrets]             -> Ferrets  (visible-text fallback)
+#   `entry="!"` on []                    -> nothing indexed, no text to fall
+#                                           back on
+#   `entry="Birds!Wrens"`                -> Birds -> Wrens (control, untouched)
+#   `entry="Q!R"` marked twice, `sort="Q!R!S"` then `sort="Q!yyy"` -> Q -> R
+#                                         filing under `yyy`: the first mark's
+#                                         `R` restates the level's own text on
+#                                         the way to a deeper one and so
+#                                         declares nothing, leaving the second
+#                                         mark's `yyy` uncontested. NO empty
+#                                         level anywhere in this shape — it is
+#                                         here to say that dropping empty
+#                                         levels did not change what a sort key
+#                                         means for an entry that has none
+#                                         (M11 review F1)
+# ---------------------------------------------------------------------------
+
+# The emitted LaTeX arguments, one per indexed mark, in document order. `!`
+# here is the index tool's level separator: the author's own `!` is quoted
+# `"!` by the escape table, so an UNQUOTED `!` at either end of an argument,
+# or two in a row, is a null field.
+read -r -d '' EMPTY_LEVELS_TEX <<'MANIFEST' || true
+Cats
+Dogs
+Sub
+Owls
+aardvark@Zebra
+Ferrets
+Birds!Wrens
+Q!yyy@R
+Q!yyy@R
+MANIFEST
+
+# The printed index of the compiled PDF: (level, term) rows in the index
+# tool's own order, which collates on the string each entry FILES under, so
+# `Zebra` leads the index on `aardvark`. Derived from the manifest above.
+read -r -d '' EMPTY_LEVELS_PDF <<'MANIFEST' || true
+0	Zebra
+0	Birds
+1	Wrens
+0	Cats
+0	Dogs
+0	Ferrets
+0	Owls
+0	Q
+1	R
+0	Sub
+MANIFEST
+
+# The same entries in the HTML index, in this back-end's own letter grouping,
+# each group labelled by the first character of the string the entry FILES
+# under. `Zebra` files under `aardvark`, so it lands in A and not in Z — which
+# is what tells a sort level dropped WITH its own level from one re-aligned
+# onto the level that survived, since re-aligning would file `Zebra` under
+# `mmm`, in M. Row format is manifest 1e's: depth, term, locator count.
+read -r -d '' EMPTY_LEVELS_HTML <<'MANIFEST' || true
+letter	A
+0	Zebra	1
+letter	B
+0	Birds	0
+1	Wrens	1
+letter	C
+0	Cats	1
+letter	D
+0	Dogs	1
+letter	F
+0	Ferrets	1
+letter	O
+0	Owls	1
+letter	Q
+0	Q	0
+1	R	2
+letter	S
+0	Sub	1
+MANIFEST
+
+# The shared Python the two checks below both need: every `\index` argument in
+# a file, and one argument split on the separators the index tool reads.
+index_fields() {
+  cat <<'FIELDSPY'
+def arguments(path):
+    """Every `\index{...}` argument in a file, brace-matched.
+
+    A regex stopping at the first `}` reads an argument carrying an encap
+    truncated — `\index{Cats!|see{X}}` comes back as `Cats!|see{X`, whose
+    last field is non-empty however the real argument actually ends — so a
+    trailing null field on any cross-referencing entry was invisible to a
+    scan built that way (M11 review F5).
+    """
+    src = open(path, encoding='utf-8').read()
+    out, i, token = [], 0, '\\index{'
+    while True:
+        start = src.find(token, i)
+        if start < 0:
+            return out
+        j, depth = start + len(token), 1
+        while j < len(src) and depth > 0:
+            if src[j] == '{':
+                depth += 1
+            elif src[j] == '}':
+                depth -= 1
+            j += 1
+        out.append(src[start + len(token):j - 1])
+        i = j
+
+
+def fields(arg):
+    """One `\index` argument split on the separators the index tool reads.
+
+    An author's own `!` is quoted `"!` by the escape table, so an unquoted one
+    is a level separator.
+    """
+    seps = [i for i, c in enumerate(arg)
+            if c == '!' and (i == 0 or arg[i - 1] != '"')]
+    out, last = [], 0
+    for i in seps:
+        out.append(arg[last:i])
+        last = i + 1
+    out.append(arg[last:])
+    return out
+FIELDSPY
+}
+
+WARN_EMPTY_LEVEL='an empty level prints nothing, so it is dropped and the entry indexes at the levels that remain'
+WARN_ONLY_EMPTY_FALLBACK='is only empty levels, which print nothing; the mark indexes under its visible text instead'
+WARN_ONLY_EMPTY_NOTHING='is only empty levels, which print nothing; nothing to index'
+# The stable half of the dropped-sort-key report; its count of levels varies.
+WARN_SORT_DROPPED='a key is dropped with the level it was written for, and the levels that remain keep their own'
+# The rival-key report's own key. `WARN_SORT_EXTRA` and `WARN_SORT_CONFLICT`
+# are already defined above with the other sort-key reports (M06-AC4) and are
+# reused here rather than redefined.
+WARN_SORT_RIVAL='is already sorted as'
+
+for fmt in html latex gfm; do
+  quarto render examples/empty-levels.qmd --to $fmt \
+    > "$WORK/empty-levels-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/empty-levels-$fmt.log" >&2; fail "M11-AC5: empty-levels.qmd failed to render to $fmt"; }
+  # Six empty levels across five marks — two of them on `entry="!Sub!"`, which
+  # is what says the warning is per level and not per mark. Format-neutral: an
+  # empty level prints nothing in every back-end and in none, so the count is
+  # the same in all three.
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_EMPTY_LEVEL" 6 "M11-AC5"
+  # The all-empty pair: one message each, and each says which way its mark
+  # went, rather than the "no entry=" message that would be false about both.
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_ONLY_EMPTY_FALLBACK" 1 "M11-AC5"
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_ONLY_EMPTY_NOTHING" 1 "M11-AC5"
+  # The self-reference reaches the comparison in every format now, because the
+  # entry drops its empty levels exactly as its target already did.
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SELF_XREF" 1 "M11-AC5"
+  # The load-bearing zero: nothing here is deep enough to fold, and the drop
+  # must not leave one looking deep — a leading empty level and two real ones
+  # is three levels, not four.
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_FOLD_DEPTH" 0 "M11-AC5"
+  # A key written for a level that prints nothing is dropped with it, and said
+  # so rather than lost quietly: `entry="!Zebra" sort="mmm!aardvark"` loses
+  # `mmm`, and `entry="!" sort="fff"` loses all of `fff`, none of it landing on
+  # the level the mark falls back to (M11 review F2, F3).
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_DROPPED" 2 "M11-AC5"
+  # `entry="Q!R" sort="Q!R!S"` reaches one level past the entry; that is the
+  # pre-existing ignored-levels case and must stay one warning, not two.
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_EXTRA" 1 "M11-AC5"
+  # The F1 regression guard, and the reason the `Q!R` pair is in the fixture at
+  # all. Both marks file that entry under one key, because the first mark's `R`
+  # merely restates the level's own text on the way to a deeper level and so
+  # declares nothing. Reading the last-declared position off the REALIGNED sort
+  # list instead of off what the author wrote made it a declaration, which lost
+  # the second mark's `yyy` and reported a rival that does not exist — on an
+  # entry with no empty level anywhere in it.
+  check_warning_count "$WORK/empty-levels-$fmt.log" "$WARN_SORT_RIVAL" 0 "M11-AC5"
+done
+pass "M11-AC5: six empty levels across five marks each warn once in HTML, LaTeX and gfm; the two all-empty entries each say which way they went; both dropped sort keys are reported; nothing folds and no rival key is invented for the entry that has no empty level"
+
+check_no_null_field examples/empty-levels.tex "M11-AC2 (empty-levels)"
+
+# ---------------------------------------------------------------------------
+# M11-AC1/AC4 — the emitted LaTeX, argument for argument.
+# ---------------------------------------------------------------------------
+python3 - examples/empty-levels.tex "$EMPTY_LEVELS_TEX" <<EMPTYTEXPY
+import sys
+$(index_fields)
+
+want = [line for line in sys.argv[2].splitlines() if line.strip()]
+got = arguments(sys.argv[1])
+if got != want:
+    print(f'FAIL: M11-AC1: emitted \\\\index arguments {got} do not match the '
+          f'manifest {want}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M11-AC1: all {len(got)} \\\\index arguments match the manifest in '
+      f'document order, the visible-text fallback and the surviving sort key '
+      f'included')
+EMPTYTEXPY
+pass "M11-AC1/AC4: the emitted LaTeX indexes every mark with anything left to index, and only those"
+
+# ---------------------------------------------------------------------------
+# M11-AC3/AC4 — the same entries through the HTML back-end.
+# ---------------------------------------------------------------------------
+quarto render examples/empty-levels.qmd --to html \
+  > "$WORK/empty-levels-html.log" 2>&1 \
+  || { tail -40 "$WORK/empty-levels-html.log" >&2; fail "M11-AC3: empty-levels.qmd failed to render to HTML"; }
+check_html_index_manifest examples/empty-levels.html "$EMPTY_LEVELS_HTML" \
+  "M11-AC3"
+check_html_index_links examples/empty-levels.html "M11-AC3"
+check_letter_sweep examples/empty-levels.html "M11-AC3 (letter groups)" \
+  $'A\nB\nC\nD\nF\nO\nQ\nS'
+
+# The two back-ends compared against each other rather than each against its
+# own manifest: two manifests can drift apart while both still pass, and the
+# claim here is that one mark prints one path wherever it is rendered.
+python3 - examples/empty-levels.tex examples/empty-levels.html <<BOTHENDSPY
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+$(index_fields)
+
+tex_paths = []
+for arg in arguments(sys.argv[1]):
+    printed = []
+    for field in fields(arg):
+        # A level written \`sortkey@printed\` prints the half after the \`@\` this
+        # back-end wrote; the author's own \`@\` is quoted \`"@\`.
+        at = [i for i, c in enumerate(field)
+              if c == '@' and (i == 0 or field[i - 1] != '"')]
+        printed.append(field[at[0] + 1:] if at else field)
+    tex_paths.append(tuple(printed))
+
+section = H.find_id(H.parse(sys.argv[2]), '$HTML_SECTION_ID')
+html_paths, stack = [], []
+for record in H.entry_records(section):
+    stack = stack[:record['depth']] + [record['term']]
+    html_paths.append(tuple(stack))
+
+tex_set, html_set = set(tex_paths), set(html_paths)
+missing = sorted(tex_set - html_set)
+# The HTML back-end prints a parent row of its own where LaTeX writes the
+# parent only as the prefix of its child, so a path every LaTeX path extends
+# is not an extra entry.
+extra = sorted(p for p in html_set - tex_set
+               if not any(q[:len(p)] == p and q != p for q in tex_set))
+if missing or extra:
+    print(f'FAIL: M11-AC3: the back-ends print different level paths — in '
+          f'LaTeX only: {missing}; in HTML only: {extra}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M11-AC3: each of the {len(tex_set)} level paths the LaTeX index '
+      f'prints is printed by the HTML index too, and the HTML index prints '
+      f'none the LaTeX one does not reach')
+BOTHENDSPY
+pass "M11-AC3: the two back-ends agree on every printed level path, compared against each other rather than each against its own manifest"
+
+# ---------------------------------------------------------------------------
+# M11-AC1 — followed to the compiled artifact, the only thing that settles
+# whether the index tool ACCEPTED an entry: it rejects a null field, drops the
+# entry, reports "0 warnings" and exits 0, so a clean build proves nothing.
+# ---------------------------------------------------------------------------
+quarto render examples/empty-levels.qmd --to pdf \
+  > "$WORK/empty-levels-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/empty-levels-pdf.log" >&2; fail "M11-AC1: empty-levels.qmd failed to render to PDF"; }
+[ -s examples/empty-levels.pdf ] || fail "M11-AC1: examples/empty-levels.pdf is empty"
+python3 - examples/empty-levels.pdf "$EMPTY_LEVELS_PDF" <<'EMPTYPDFPY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+
+want = [(int(level), term) for level, term in
+        (line.split('\t') for line in sys.argv[2].splitlines() if line.strip())]
+entries = pdfindex.read(sys.argv[1])
+got = [(e.level, e.term) for e in entries]
+errs = []
+if got != want:
+    errs.append(f'the printed index is {got}, not the manifest {want}')
+# A locator on each: an entry the tool REJECTED is absent, but so is one it
+# accepted and printed with nothing pointing at it, and only the second of
+# those two would survive a check that read the terms alone.
+#
+# A parent carries no locator of its own — its marks hang off its children — so
+# the exemption is DERIVED from the printed tree (any row the next row is
+# deeper than) rather than named as a list of terms: a hand-list is a list the
+# next fixture entry silently falls off.
+for i, e in enumerate(entries):
+    deeper = i + 1 < len(entries) and entries[i + 1].level > e.level
+    if deeper:
+        continue
+    if e.text == e.term:
+        errs.append(f'the entry {e.term!r} prints with no locator')
+if errs:
+    print('FAIL: M11-AC1: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M11-AC1: the compiled index prints all {len(got)} manifest '
+      f'entries in order, each with a locator, so the index tool accepted '
+      f'every one')
+EMPTYPDFPY
+pass "M11-AC1: every entry written with an empty level survives to the compiled index"
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.

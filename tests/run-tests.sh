@@ -1399,28 +1399,12 @@ pass "M02-AC5: case (b) warned exactly once in the demo render"
 python3 - _extensions/index/index.lua <<'PY'
 import re, sys
 src = open(sys.argv[1], encoding='utf-8').read()
-# Each warn(...) call's leading string literal, which is the part a grep sees.
-# Lua string literals take either quote, and a message that itself contains a
-# double quote is written with single quotes — so a scan for one quote style
-# only would leave that warning outside this check while the comment above
-# still claimed every warning was covered.
-lits = [m.group(2) for m in re.finditer(
-    r'''warn\(\s*\(?(["'])((?:[^\\]|\\.)*?)\1''', src)]
-# An exact count, not a floor. The scan reads each warn() call's FIRST
-# literal, so a message written as `"a" .. "b"` is compared on `a` alone and
-# silently leaves the distinctness domain (M10). A floor cannot see that; a
-# pinned count fails the moment the number of warn() calls and the number of
-# literals stop agreeing, in either direction.
-EXPECTED = 36
-if len(lits) != EXPECTED:
-    print(f'FAIL: M02-AC5: found {len(lits)} warn() literals, expected '
-          f'{EXPECTED}. A warning added or removed updates this number; one '
-          f'that vanished without the count changing was split across `..` '
-          f'and is no longer being compared whole.', file=sys.stderr)
-    sys.exit(1)
-# Call sites only: `\bwarn\(` also matches the function's own definition and
-# every mention of `warn()` in a comment, so the code is scanned with line
-# comments removed — tracking quotes, since a message may itself contain `--`.
+
+
+# Line comments removed before anything is read: `\bwarn\(` otherwise matches
+# the function's own definition and every mention of `warn()` in a comment,
+# and a comment containing a quote would contribute a phantom literal. Quotes
+# are tracked while stripping, since a message may itself contain `--`.
 def uncommented(text):
     out = []
     for line in text.split('\n'):
@@ -1441,13 +1425,71 @@ def uncommented(text):
         out.append(line)
     return '\n'.join(out)
 
+
+# Lua string literals take either quote, and a message containing a double
+# quote is written with single quotes, so both styles are read.
+LITERAL = re.compile(r"""(["'])((?:[^\\]|\\.)*?)\1""")
+
+
+def message_at(text, open_paren):
+    """Join every string literal in one warn() call's message expression.
+
+    The WHOLE message, not its leading literal: most of these messages are
+    written as several literals joined with `..` across source lines, and
+    reading only the first compares warnings by a prefix while reporting on
+    the message -- the way a distinctness scan goes blind (M10). A revert
+    probe proved a pinned literal count cannot see this (M13 T6): splitting a
+    message across `..` leaves both the literal count and the call count
+    unchanged. Joining the literals is what can.
+
+    The expression ends at the call's own closing paren, or at the `:format(`
+    that fills it in -- the arguments to `format` are values, not message
+    text, and must not be swept in.
+    """
+    depth, i, quote = 1, open_paren + 1, None
+    while i < len(text):
+        c = text[i]
+        if quote:
+            if c == '\\':
+                i += 1
+            elif c == quote:
+                quote = None
+        elif c in '"\'':
+            quote = c
+        elif c == '(':
+            depth += 1
+        elif c == ')':
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    call = text[open_paren + 1:i]
+    cut = call.find(':format(')
+    if cut != -1:
+        call = call[:cut]
+    return ''.join(m.group(2) for m in LITERAL.finditer(call))
+
+
 code = uncommented(src)
-calls = len([m for m in re.finditer(r'\bwarn\(', code)
-             if not code[:m.start()].rstrip().endswith('function')])
-if calls != len(lits):
-    print(f'FAIL: M02-AC5: {calls} warn() calls but {len(lits)} leading '
-          f'literals; a call whose message does not start with a literal is '
-          f'outside this check', file=sys.stderr)
+calls = [m for m in re.finditer(r'\bwarn\(', code)
+         if not code[:m.start()].rstrip().endswith('function')]
+lits = [message_at(code, m.end() - 1) for m in calls]
+
+# A call whose message is not built from literals at all -- a variable, a
+# helper's return -- is text this check never sees, so it is named rather than
+# silently skipped.
+blank = [i for i, l in enumerate(lits) if not l]
+if blank:
+    print(f'FAIL: M02-AC5: {len(blank)} warn() call(s) pass no string literal, '
+          f'so their message text is outside this check', file=sys.stderr)
+    sys.exit(1)
+# An exact count, not a floor: a floor passes while a warning quietly stops
+# being read. This number changes when a warning is added or removed.
+EXPECTED = 36
+if len(lits) != EXPECTED:
+    print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
+          f'{EXPECTED}; a warning was added or removed without updating this '
+          f'count', file=sys.stderr)
     sys.exit(1)
 dupes = {l for l in lits if lits.count(l) > 1}
 if dupes:
@@ -1463,7 +1505,8 @@ for a in lits:
             print(f'FAIL: M02-AC5: warning <<{a}>> is a prefix of <<{b}>>',
                   file=sys.stderr)
             sys.exit(1)
-print(f'ok   M02-AC5: all {len(lits)} filter warnings are mutually distinct')
+print(f'ok   M02-AC5: all {len(lits)} filter warnings are mutually distinct, '
+      f'compared as whole messages')
 PY
 
 # The dual-target command must take its labels from LaTeX's own, or a document

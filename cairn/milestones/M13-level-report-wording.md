@@ -134,6 +134,10 @@ existing candidate row.
 
 - 2026-08-19: T6 in progress — probe 1 (revert the empty-level report to its pre-M13 per-level form) fails M11-AC5 on the per-mark count (7 not 6) and, once past that, M13-AC1 on the position-naming text; the pre-M13 message draws 0 of the 1 expected. Probe 2 (revert the extra-sort report) and the distinctness-pin probe not yet run. Paused here at the user's request; working tree clean at this commit.
 
+- 2026-08-19: T6 probe 2: reverting the extra-sort report to its pre-M13 wording fails M13-AC3, which draws 0 of the 1 expected.
+- 2026-08-19: T6 probe 3 PASSED, which is the finding: splitting a message across `..` leaves both the literal count and the call count unchanged, so the pinned count committed at T5 cannot see fragmentation. The T5 commit message's claim that it could is wrong, superseded here. Repaired by rewriting the distinctness scan to join every literal in a warn() call's message expression, so all 36 warnings are compared whole rather than by first fragment — the underlying property AC4 names, now enforced directly instead of via a proxy.
+- 2026-08-19: T6 probe 3b: a duplicate message planted as a concatenation whose first literal differs is caught by the whole-message scan and invisible to the first-literal one — the two scans run side by side on the same planted filter.
+
 ## Decisions
 
 ## Review

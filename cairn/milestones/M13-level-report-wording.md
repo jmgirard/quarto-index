@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, GP1
-- **Branch/PR:** m13-level-report-wording
+- **Branch/PR:** m13-level-report-wording / https://github.com/jmgirard/quarto-index/pull/13
 
 ## Goal
 
@@ -36,7 +36,7 @@ existing candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1 A mark whose `entry=` value carries empty levels draws exactly one
+- [x] AC1 A mark whose `entry=` value carries empty levels draws exactly one
       empty-level report, naming which written positions were empty and how
       many levels remain **in the value**. Shapes probed: leading
       (`entry="!Cats"`), trailing (`entry="Dogs!"`), both in one mark
@@ -45,13 +45,13 @@ existing candidate row.
       whole-value report and draws none of this one. Evidence: those shapes
       rendered to LaTeX, HTML and gfm; the report text asserted verbatim and
       counted as exactly 1 per mark in each of the three render logs.
-- [ ] AC2 The report distinguishes a leading empty level from a trailing one
+- [x] AC2 The report distinguishes a leading empty level from a trailing one
       by naming the position, not merely by echoing a different `entry=`
       value. Evidence: a suite check comparing the reports for `entry="!Cats"`
       and `entry="Dogs!"` with the echoed value masked out, proved
       discriminating by revert (T6) — the pre-milestone reports differ only in
       the echoed value and must fail this check.
-- [ ] AC3 Both numbers in the extra-sort-levels report are labelled as counts
+- [x] AC3 Both numbers in the extra-sort-levels report are labelled as counts
       taken before any empty level is dropped, so neither reads as the depth
       the entry indexes at, and the wording holds for a mark carrying `sort=`
       with no `entry=`. Evidence: a fixture whose written entry depth (2),
@@ -61,19 +61,19 @@ existing candidate row.
       `index.lua:311`); each report's new text asserted verbatim, and the
       single-level `\index{a@Moles}` emitted for the first mark asserted,
       showing the indexed depth the report does not name.
-- [ ] AC4 Every `warn(` message in `index.lua` is distinct from every other,
+- [x] AC4 Every `warn(` message in `index.lua` is distinct from every other,
       and each of the two rewritten reports is written as a single literal, so
       the scan reads whole messages rather than first fragments (M10 lesson).
       Evidence: the suite's distinctness scan, which enumerates every
       `warn(`-leading literal in the source, passes.
-- [ ] AC5 Neither report fires for the well-formed marks of `examples/sortkey.qmd`
+- [x] AC5 Neither report fires for the well-formed marks of `examples/sortkey.qmd`
       or for the no-empty-level control `entry="Birds!Wrens"` of
       `examples/empty-levels.qmd`. Evidence: per-line greps over the pdf and
       HTML logs the suite already produces for `examples/sortkey.qmd`
       (`tests/run-tests.sh:4714`, `:4793`) and over the LaTeX, HTML and gfm logs
       it produces for `examples/empty-levels.qmd` (`:5984`), asserting no report
       line names any mark of `sortkey.qmd` or that control.
-- [ ] AC6 The `verify` slot is clean: `tests/run-tests.sh --self-test`
+- [x] AC6 The `verify` slot is clean: `tests/run-tests.sh --self-test`
       passes.
 
 ## Coverage
@@ -145,3 +145,40 @@ existing candidate row.
 ## Decisions
 
 ## Review
+
+Evidence gathered 2026-08-19 on the branch at b6c884c, by running the verify
+slot fresh (`tests/run-tests.sh --self-test`, exit 0, 191 checks).
+
+- AC1 — `M13-AC1` passes: the leading, trailing and both-ends reports each
+  appear exactly once in the LaTeX, HTML and gfm logs of `empty-levels.qmd`,
+  the all-empty mark draws zero of them, and the six-level shape in
+  `demo-latex.log` reports 5 of 6 written levels remaining. The two-empty-level
+  mark draws one report, not two.
+- AC2 — `M13-AC2` passes: the leading and trailing reports remain distinct
+  once the echoed `entry=` value is masked out, so the difference is the named
+  position and not the echoed value.
+- AC3 — `M13-AC3` passes in all three formats for both shapes: the mark whose
+  written, sorted and indexed depths are 2, 3 and 1, and the mark carrying
+  `sort=` with no `entry=`. `\index{a@Moles}` is asserted present and the
+  multi-level form asserted absent, so the indexed depth the report does not
+  name is pinned.
+- AC4 — `M02-AC5` passes, reporting all 36 filter warnings mutually distinct
+  and compared as whole messages. Both rewritten reports are single literals
+  (`index.lua:294`, `index.lua:371`).
+- AC5 — `M13-AC5` passes: zero occurrences of either report in the pdf and
+  HTML logs of `sortkey.qmd`, and zero report lines naming
+  `entry="Birds!Wrens"` in the three `empty-levels.qmd` logs.
+- AC6 — the verify slot is clean: `tests/run-tests.sh --self-test` exits 0 at
+  191 checks (170 before this milestone).
+
+Consistency gate: `cairn_validate` all checks passed. No `DESIGN.md` principle
+changed, so `cairn_impact` does not apply. The `generic` profile names no
+toolchain checks, so that half of the gate is a clean no-op.
+
+Discrimination: four revert probes recorded at T6 — reverting the empty-level
+report fails `M11-AC5` and `M13-AC1`, and `M13-AC2` once those are relaxed so
+the run reaches it; reverting the extra-sort report fails `M13-AC3`; a
+duplicate planted as a concatenation is caught by the rewritten distinctness
+scan and invisible to the old one.
+
+### Findings

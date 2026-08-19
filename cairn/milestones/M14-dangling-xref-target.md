@@ -95,7 +95,7 @@ the existing candidate row.
 - [x] T1 Baseline probe: render a dangling-target shape to LaTeX, HTML and
       gfm and to both book fixtures, and record what each format emits today
       and where it is silent.
-- [ ] T2 Pin the resolution rule against the HTML back-end's own walk
+- [x] T2 Pin the resolution rule against the HTML back-end's own walk
       (`lookup_entry`, `index.lua:1172`): a target resolves when its level
       list is a path in the marked-entry set, parent nodes included. Record it
       as a milestone-local decision so the two cannot drift.
@@ -126,8 +126,28 @@ the existing candidate row.
 - 2026-08-19: plan gate chose pinning the expected report count for each existing example over adding ~250 index marks so the probe corpus resolves, because the escaping probe's assertions are built on its current marks; falsified by the pinned counts proving unmaintainable across later fixture edits. Corpus reconciliation queued as a candidate row.
 - 2026-08-19: implement gate chose the actionable "points at" wording (target named, reader consequence, both fixes) over a short form, and pinned per-example report counts with a grep-derived roster of the examples that must carry one over a Python routine re-deriving counts from source, which could share a bug with the filter.
 - 2026-08-19: T1 baseline probe: a mark whose `see=` names a term nothing indexes is silent today in all three formats (LaTeX emits `\index{Lions|see{Felines}}`, HTML renders the target as an unlinked `qi-target` span, gfm passes the attribute through) and silent in both book fixtures — `examples/book` renders warning-free with its `see="No Such Entry"` already in place, and `examples/book-order` emits only its two marker-order warnings.
+- 2026-08-19: T2 pinned the resolution rule as a milestone-local decision, and why the report cannot share the HTML walk.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 4 findings against this file: AC2 was unsatisfiable (~250 corpus targets dangle) and AC5 rested on a false claim about which chapter knows the book's entries — both went to the question gate and are settled above; AC4's exact-zero over self-xref.qmd was narrowed to the four format-neutral marks, AC3's single exemplar was widened to five shapes, and AC6's unfalsifiable literal-count claim was dropped.
 
 ## Decisions
+
+### 2026-08-19 — What makes a cross-reference target resolve
+
+A target resolves when its parsed level list is a path in the set of level
+paths this document's marks index, every proper prefix of a marked path
+included. The set is built format-neutrally from the levels `derive_levels`
+returns for each mark that indexes something — the same levels the HTML
+back-end builds its entry tree from (`build_entry_tree`, `index.lua:1114`) —
+so a target of `Cats` resolves against a mark indexing `Cats!Kittens`, exactly
+as `lookup_entry` (`index.lua:1209`) resolves it: that walk creates a node per
+level and returns whichever node the target's last level reaches, parent nodes
+included. Paths are compared as `levels_key` strings, which double a literal
+`!`, so a single level containing `!` can never read as a two-level path.
+
+The report cannot simply call `lookup_entry`: the tree it walks is built from
+the HTML back-end's per-mark records, which a format with no index back-end
+never builds. The two are held together by evidence instead of by shared code
+— the suite asserts that in the HTML render every target the report does not
+name is a link into the index, and every target it does name is unlinked text.
 
 ## Review

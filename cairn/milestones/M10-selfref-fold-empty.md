@@ -98,13 +98,13 @@ Acceptance-suite hardening → its clustered candidate row.
       per-format constants (`tests/run-tests.sh:2728`).
 - [x] T2. Strip empty levels from both sides of the existing format-neutral
       self-target comparison (`_extensions/index/index.lua:727-737`).
-- [ ] T3. Add the LaTeX-only comparison after `clamp_levels`, inside
+- [x] T3. Add the LaTeX-only comparison after `clamp_levels`, inside
       `index_argument`'s caller (`_extensions/index/index.lua:770`), against
       the clamped printed path with empties stripped; drop the matching target
       before the encap is built.
-- [ ] T4. Author the fold-self-reference message per AC4, and add the
+- [x] T4. Author the fold-self-reference message per AC4, and add the
       three-way grep-key distinctness check.
-- [ ] T5. Re-verify M08's four shapes against their actual shipped behaviour,
+- [x] T5. Re-verify M08's four shapes against their actual shipped behaviour,
       including `Dogs`' surviving see-also.
 - [ ] T6. Add the PDF render of `examples/self-xref.qmd` and its hand-derived
       index manifest (derivation comment is the oracle — M06 lesson).
@@ -121,3 +121,5 @@ Acceptance-suite hardening → its clustered candidate row.
 - 2026-08-18: criteria audit ran in FULL mode (user-facing tier), two rounds, fresh-context [O] reader both times. Round 1 returned 13 findings, none of the six criteria clean; nine were fixed silently and four became the gate's questions. Round 2 over the revised wording returned 16 findings, none clean; all were fixed except the suggested leading-empty probe, rejected because makeindex rejects a leading null field and the shape is an unfixed defect on its own candidate row.
 - 2026-08-18: T1 — fixture extended with the five shapes and the checks added; both new check blocks run and fail pre-fix for the right reasons (all five expected plain `\index` arguments found 0 times, all five pre-fix self-encaps present, and both empty-level HTML entries still carrying their targets with no locator). The AC3 clauses passed pre-fix, as they must: HTML never had the defect.
 - 2026-08-18: T2 — empty levels ignored on both sides of the format-neutral comparison. The self-reference count went 4 to 6 in latex, html and gfm alike, both empty-level shapes now emit a bare `\index` command, and the HTML check block passes in full (its AC3 clauses included). The three fold shapes are untouched, as expected: they are T3.
+- 2026-08-18: T3/T4 — LaTeX-only comparison added after the fold, plus its message. `index_argument` now returns the clamped levels rather than the caller recomputing them, because `clamp_levels` warns and a second call would report the fold twice. Counts are 6/6/6 self-reference and 3/0/0 fold-self-reference, exactly AC4. The sort shape's report quotes the printed folded path `M!N!O, P`, not the filing path `m!n!o`.
+- 2026-08-18: T5 — M08's four shapes verified against shipped behaviour by the full suite, whose M08-AC2 blocks are unchanged: the three single-target shapes index plainly and `entry="Dogs"` keeps `\index{Dogs|seealso{Pets}}` with no locator. Full suite green, 150 checks.

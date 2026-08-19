@@ -455,6 +455,10 @@ end
 -- because only the emitted argument settles which of a level's two candidate
 -- strings the index tool will read as its key. Both are literal text, not
 -- escaped: they are read by an author, not by the index tool.
+--
+-- The clamped levels are returned as well, for the self-target comparison the
+-- caller runs against them. They are returned rather than recomputed because
+-- clamp_levels warns about the fold, and a second call would report it twice.
 local function index_argument(levels, sort, context)
   local clamped = clamp_levels(levels, context)
   local keys = clamp_sort(sort)
@@ -478,7 +482,8 @@ local function index_argument(levels, sort, context)
       filing[i] = level
     end
   end
-  return table.concat(parts, "!"), levels_key(clamped), levels_key(filing)
+  return table.concat(parts, "!"), levels_key(clamped),
+         levels_key(filing), clamped
 end
 
 local function span_text(span)
@@ -790,12 +795,39 @@ local function Span(span)
     return nil
   end
 
-  local source, printed_path, filing_path = index_argument(levels, sort,
-                                                           context)
+  local source, printed_path, filing_path, clamped =
+    index_argument(levels, sort, context)
   -- Recorded for every mark whatever it emits: a cross-reference mark files
   -- under the same key a plain one does, so it contests a printed path just
   -- as a locator mark would.
   record_clamped(printed_path, filing_path)
+
+  -- The self-target comparison again, now against what THIS back-end prints.
+  -- The format-neutral pass above ran on the levels the author wrote; here the
+  -- fold has already rewritten them, so an entry can print a path the author
+  -- never spelled and a target spelling that path is a self-reference the
+  -- first pass could not see. It lives here, and not beside the first pass,
+  -- because the three-level ceiling is a property of this back-end alone:
+  -- HTML has none, so the same document keeps the target there, and a format
+  -- with no index back-end never reaches this line. Empty levels are ignored
+  -- on both sides for the same reason they are above.
+  local printed_key = levels_key(nonempty_levels(clamped))
+  local kept_after_fold = {}
+  for _, xref in ipairs(xrefs) do
+    if levels_key(nonempty_levels(xref.levels)) == printed_key then
+      -- The folded path is quoted because the author never wrote it: it is
+      -- what their entry prints once the back-end has folded it, and a report
+      -- naming only what they typed would describe a match they cannot see.
+      warn(("%s= on %s names the folded path this entry prints (%s); the "
+            .. "back-end stores %d levels, and the fold made the target a "
+            .. "cross-reference to itself, so it is dropped and the term is "
+            .. "indexed as usual")
+           :format(xref.kind.attr, context, levels_key(clamped), MAX_LEVELS))
+    else
+      kept_after_fold[#kept_after_fold + 1] = xref
+    end
+  end
+  xrefs = kept_after_fold
 
   local result = pandoc.List(span.content)
 

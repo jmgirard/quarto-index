@@ -126,6 +126,9 @@ README_SORT_CLAIMS=(
   $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
   $'reaching past a level\ton the way to a deeper one declares nothing for that level'
   $'book adds a fourth report\tA book adds a fourth report, for a term two chapters sort differently'
+  $'latex adds a fifth report\tA fifth report is LaTeX-only'
+  $'the fold makes the collision\ttwo entries written at different depths can end up printing at one place'
+  $'no ceiling in HTML\tThe HTML index applies no such ceiling'
   $'ordering is per back-end\tA sort key files an entry under the ordering of whichever back-end builds the'
   $'plain keys order alike\tSort keys of plain letters and digits order the same way in both back-ends'
   $'keys past the ceiling\tA sort key written for a level past the third goes with that level in this'
@@ -4988,6 +4991,309 @@ print('ok   M07-AC2: the below-`a` and above-`z` symbol entries are adjacent, '
 ADJPY
 
 # ---------------------------------------------------------------------------
+# M09 — two entries that print in one place and file under two keys.
+#
+# The index tool stores three levels and this back-end folds anything deeper
+# into the third rather than lose it, while a sort key is declared against the
+# level path the author wrote, which the fold does not change. Two entries
+# whose paths differ before the fold and agree after it therefore reach the
+# index tool as two keys under one printed path: it stores the entry twice and
+# prints it twice, in two places, identically. The fixture writes that
+# collision twice — once with one side folded, once with both — and the twin
+# writes the same entries with one shared key per pair, which is the same
+# document without the mistake.
+# ---------------------------------------------------------------------------
+WARN_CLAMP_SPLIT='file under more than one key'
+
+# The two fixtures are asserted against each other BY CONSTRUCTION, because
+# every check below reads them as the same entries under different keys. So is
+# the twin's stated constraint — each shared key differing from the third-level
+# printed text of both entries carrying it: a shared key equal to one entry's
+# third level emits no sort field for that entry, which splits the pair again
+# and would make the twin's checks pass for the wrong reason. And so is the
+# collision itself: each rival pair must fold to ONE printed level path, or the
+# fixture has stopped exercising anything.
+# Both read from the filter rather than written down here: this fixture's
+# shapes are defined relative to the level ceiling and the string the fold
+# joins with, and either one moving would leave the derivation below deriving
+# something the back-end no longer does — while still passing, since it
+# compares its own derivations against each other.
+MAX_LEVELS=$(sed -n 's/^local MAX_LEVELS = \([0-9][0-9]*\)$/\1/p' \
+  _extensions/index/index.lua)
+[ -n "$MAX_LEVELS" ] || fail "M09: could not read MAX_LEVELS from the filter"
+OVERFLOW_JOIN=$(sed -n 's/^local OVERFLOW_JOIN = "\(.*\)"$/\1/p' \
+  _extensions/index/index.lua)
+[ -n "$OVERFLOW_JOIN" ] \
+  || fail "M09: could not read OVERFLOW_JOIN from the filter"
+MAX_LEVELS="$MAX_LEVELS" OVERFLOW_JOIN="$OVERFLOW_JOIN" \
+  python3 - examples/sortkey-clamp.qmd examples/sortkey-clamp-twin.qmd <<'CLAMPTWINPY'
+import os, re, sys
+
+MAX_LEVELS = int(os.environ['MAX_LEVELS'])
+OVERFLOW_JOIN = os.environ['OVERFLOW_JOIN']
+
+
+def marks(path):
+    src = open(path, encoding='utf-8').read()
+    out = []
+    for m in re.finditer(r'\{\.index ([^}]*)\}', src):
+        attrs = dict(re.findall(r'(\w+)="([^"]*)"', m.group(1)))
+        out.append((attrs.get('entry'), attrs.get('sort')))
+    return out
+
+
+def levels(value):
+    # No fixture entry or key here contains the doubled `!!` that writes a
+    # literal `!`, which this split would not honor; asserted rather than
+    # assumed, since a later edit could add one.
+    if '!!' in value:
+        print(f'FAIL: M09: {value!r} carries a literal `!`, which this '
+              f'derivation does not read', file=sys.stderr)
+        sys.exit(1)
+    return value.split('!')
+
+
+def folded(entry):
+    lv = levels(entry)
+    if len(lv) <= MAX_LEVELS:
+        return lv
+    return lv[:MAX_LEVELS - 1] + [OVERFLOW_JOIN.join(lv[MAX_LEVELS - 1:])]
+
+
+rival, twin = marks(sys.argv[1]), marks(sys.argv[2])
+if len(rival) != 4 or len(twin) != 4:
+    print(f'FAIL: M09: the fixtures write {len(rival)} and {len(twin)} index '
+          f'marks; both are two pairs', file=sys.stderr)
+    sys.exit(1)
+if [e for e, _ in rival] != [e for e, _ in twin]:
+    print('FAIL: M09: the twin does not index the same entries, in the same '
+          'order, as the fixture:', file=sys.stderr)
+    for a, b in zip(rival, twin):
+        if a[0] != b[0]:
+            print(f'  {a[0]!r} against {b[0]!r}', file=sys.stderr)
+    sys.exit(1)
+
+pairs = [(0, 1), (2, 3)]
+for i, j in pairs:
+    if folded(rival[i][0]) != folded(rival[j][0]):
+        print(f'FAIL: M09: {rival[i][0]!r} and {rival[j][0]!r} do not fold to '
+              f'one printed level path, so this pair is not the collision',
+              file=sys.stderr)
+        sys.exit(1)
+    if levels(rival[i][0]) == levels(rival[j][0]):
+        print(f'FAIL: M09: {rival[i][0]!r} and {rival[j][0]!r} are the same '
+              f'entry before the fold; the collision needs two', file=sys.stderr)
+        sys.exit(1)
+if folded(rival[0][0]) == folded(rival[2][0]):
+    print('FAIL: M09: both pairs fold to the same printed path, so the two '
+          'reports below cannot be told apart', file=sys.stderr)
+    sys.exit(1)
+# One side folded in the first pair, both sides in the second: the two shapes
+# the criteria name, asserted of the fixture rather than trusted to its prose.
+shapes = [sorted(len(levels(rival[i][0])) > MAX_LEVELS for i in pair)
+          for pair in pairs]
+if shapes != [[False, True], [True, True]]:
+    print(f'FAIL: M09: the fixture no longer writes one one-side-folded pair '
+          f'and one both-sides-folded pair: {shapes}', file=sys.stderr)
+    sys.exit(1)
+
+if len({s for _, s in rival}) != 4:
+    print(f'FAIL: M09: the fixture must give all four entries different sort '
+          f'keys: {[s for _, s in rival]}', file=sys.stderr)
+    sys.exit(1)
+for i, j in pairs:
+    if twin[i][1] != twin[j][1]:
+        print(f'FAIL: M09: the twin pair {twin[i][1]!r}/{twin[j][1]!r} does '
+              f'not share one sort key', file=sys.stderr)
+        sys.exit(1)
+if twin[0][1] == twin[2][1]:
+    print('FAIL: M09: the twin gives both pairs the same key, so its two '
+          'entries would contest one printed path', file=sys.stderr)
+    sys.exit(1)
+for entry, key in twin:
+    third_key = levels(key)[MAX_LEVELS - 1]
+    third_level = levels(entry)[MAX_LEVELS - 1]
+    if third_key == third_level:
+        print(f'FAIL: M09: the twin key {key!r} names the third level of '
+              f'{entry!r} verbatim, so that entry emits no sort field and the '
+              f'pair files apart again', file=sys.stderr)
+        sys.exit(1)
+print('ok   M09: the two fixtures write the same four entries, the first '
+      'under four rival keys and the twin under one key per pair, each pair '
+      'folding to one printed level path and each twin key differing from '
+      'both its entries\' third level')
+CLAMPTWINPY
+
+quarto render examples/sortkey-clamp.qmd --to latex \
+  > "$WORK/sortkey-clamp-latex.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-clamp-latex.log" >&2; fail "M09-AC1: sortkey-clamp.qmd failed to render to LaTeX"; }
+# Exactly one report per PAIR, naming that pair's two keys and the printed
+# path they contest. The whole-message checks are what make the count mean
+# what it says: two reports about one pair, or one naming the wrong keys,
+# would satisfy the count alone.
+check_warning_count "$WORK/sortkey-clamp-latex.log" "$WARN_CLAMP_SPLIT" 2 \
+  "M09-AC1"
+check_warning_count "$WORK/sortkey-clamp-latex.log" \
+  'index entries printed as "alpha!beta!gamma, delta" file under more than one key ("alpha!beta!Ada" and "alpha!beta!Zed")' \
+  1 "M09-AC1"
+check_warning_count "$WORK/sortkey-clamp-latex.log" \
+  'index entries printed as "mu!nu!xi, omicron, pi" file under more than one key ("mu!nu!Vee" and "mu!nu!Wye")' \
+  1 "M09-AC1"
+pass "M09-AC1: each pair of entries contesting one printed level path is reported once, naming both sort keys and the path"
+
+# ---------------------------------------------------------------------------
+# Manifest 1s — the generated index in examples/sortkey-clamp.html (M09-AC2).
+# EXHAUSTIVE, same row format as manifest 1e, and DERIVED FOR THESE ROWS: the
+# HTML back-end applies no level ceiling, so the four entries the LaTeX side
+# folds into two stay four here, at the level paths they were written with.
+#
+# Ordering is derived through the SORT KEYS, which is what orders these rows —
+# their printed text would give the opposite order in both groups:
+#   `alpha` (`alpha`)  no key at this path, so its printed text  -> group A
+#     `beta` (`beta`)  likewise
+#       `gamma, delta` (`alpha!beta!Ada`) declared by its own mark
+#       `gamma`        (`alpha!beta!Zed`) declared by the four-level mark
+#         -> `Ada` before `Zed`, which is `gamma, delta` before `gamma`
+#         `delta`      no key; the only child of `gamma`
+#   `mu` (`mu`), `nu` (`nu`)  no key at either path            -> group M
+#       `xi, omicron` (`mu!nu!Vee`) declared by the four-level mark
+#       `xi`          (`mu!nu!Wye`) declared by the five-level mark
+#         -> `Vee` before `Wye`, which is `xi, omicron` before `xi`
+#         `pi`, and `omicron` > `pi`: each the only child of its parent
+#
+# Locators: one per mark, on the entry the mark was written for — the deepest
+# level of each of the four paths. Every level above them is a parent no mark
+# indexes on its own, so it carries none.
+# ---------------------------------------------------------------------------
+read -r -d '' SORTKEY_CLAMP_HTML_INDEX <<'MANIFEST' || true
+letter	A
+0	alpha	0
+1	beta	0
+2	gamma, delta	1
+2	gamma	0
+3	delta	1
+letter	M
+0	mu	0
+1	nu	0
+2	xi, omicron	0
+3	pi	1
+2	xi	0
+3	omicron	0
+4	pi	1
+MANIFEST
+
+quarto render examples/sortkey-clamp.qmd --to html \
+  > "$WORK/sortkey-clamp-html.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-clamp-html.log" >&2; fail "M09-AC2: sortkey-clamp.qmd failed to render to HTML"; }
+# The report is the LaTeX back-end's alone: the fold is the index tool's
+# ceiling, not an index's, and the entries it collides are four distinct ones
+# here. A report that fired in every format would be telling an HTML author to
+# fix something that is not wrong.
+check_warning_count "$WORK/sortkey-clamp-html.log" "$WARN_CLAMP_SPLIT" 0 \
+  "M09-AC2"
+check_html_index_manifest examples/sortkey-clamp.html \
+  "$SORTKEY_CLAMP_HTML_INDEX" "M09-AC2"
+check_html_index_links examples/sortkey-clamp.html "M09-AC2"
+
+# ---------------------------------------------------------------------------
+# M09-AC3 — the same entries with one shared key per pair: nothing to report,
+# one index-tool key per pair, and (below, with the PDF) one printed entry.
+# ---------------------------------------------------------------------------
+for fmt in latex html; do
+  quarto render examples/sortkey-clamp-twin.qmd --to "$fmt" \
+    > "$WORK/sortkey-clamp-twin-$fmt.log" 2>&1 \
+    || { tail -40 "$WORK/sortkey-clamp-twin-$fmt.log" >&2; fail "M09-AC3: sortkey-clamp-twin.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/sortkey-clamp-twin-$fmt.log" "$WARN_CLAMP_SPLIT" \
+    0 "M09-AC3 ($fmt)"
+done
+# Hand-derived from the twin: each pair's two marks emit the same argument —
+# the pair's printed level path, folded, filed under the one key both carry —
+# so the tool receives one key per pair and two locators for it.
+python3 - examples/sortkey-clamp-twin.tex <<'CLAMPTWINTEXPY'
+import re, sys
+from collections import Counter
+tex = open(sys.argv[1], encoding='utf-8').read()
+args = Counter(re.findall(r'\\index\{(.*?)\}', tex))
+want = Counter({'alpha!beta!Kay@gamma, delta': 2,
+                'mu!nu!Jay@xi, omicron, pi': 2})
+if args != want:
+    print('FAIL: M09-AC3: the twin does not write one index-tool key per '
+          f'pair.\n  expected {dict(want)}\n  got      {dict(args)}',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M09-AC3: each twin pair reaches the index tool as one key, '
+      'carrying both of its marks')
+CLAMPTWINTEXPY
+
+# The symptom the report exists to prevent is a doubled entry in the built
+# index, so the twin is followed all the way there: one key per pair in the
+# .tex above, and one printed entry per pair in the compiled PDF. Read with
+# tests/pdfindex.py rather than out of pdftotext's text output, for the reason
+# that module's header gives.
+#
+# Derived by hand from the twin: each pair's two marks index one entry, whose
+# printed path is the pair's levels folded into three — `alpha!beta!gamma,
+# delta` and `mu!nu!xi, omicron, pi` — so the index prints two top-level
+# entries, each two levels deep, and neither term twice.
+quarto render examples/sortkey-clamp-twin.qmd --to pdf \
+  > "$WORK/sortkey-clamp-twin-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/sortkey-clamp-twin-pdf.log" >&2; fail "M09-AC3: sortkey-clamp-twin.qmd failed to render to PDF"; }
+[ -s examples/sortkey-clamp-twin.pdf ] \
+  || fail "M09-AC3: examples/sortkey-clamp-twin.pdf is empty"
+check_warning_count "$WORK/sortkey-clamp-twin-pdf.log" "$WARN_CLAMP_SPLIT" 0 \
+  "M09-AC3 (pdf)"
+read -r -d '' SORTKEY_CLAMP_TWIN_OUTLINE <<'MANIFEST' || true
+0	alpha
+1	beta
+2	gamma, delta
+0	mu
+1	nu
+2	xi, omicron, pi
+MANIFEST
+printf '%s\n' "$SORTKEY_CLAMP_TWIN_OUTLINE" > "$WORK/clamp-twin-outline.txt"
+python3 - examples/sortkey-clamp-twin.pdf "$WORK/clamp-twin-outline.txt" \
+  <<'CLAMPPDFPY'
+import sys
+from collections import Counter
+sys.path.insert(0, 'tests')
+import pdfindex
+
+entries = pdfindex.read(sys.argv[1])
+if not pdfindex.columns_carry_top_level(entries):
+    print('FAIL: M09-AC3: a column of the printed index carries no top-level '
+          'entry, so pdfindex cannot read its indent levels', file=sys.stderr)
+    sys.exit(1)
+actual = pdfindex.outline(entries)
+expected = []
+for line in open(sys.argv[2], encoding='utf-8'):
+    line = line.rstrip('\n')
+    if line.strip():
+        level, term = line.split('\t', 1)
+        expected.append((int(level), term))
+if actual != expected:
+    print('FAIL: M09-AC3: the printed index is not what the twin derives.',
+          file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        a = actual[i] if i < len(actual) else None
+        e = expected[i] if i < len(expected) else None
+        print(f'{"  " if a == e else "->"} {i}: got {a!r} want {e!r}',
+              file=sys.stderr)
+    sys.exit(1)
+# Named separately from the comparison above, because it is the criterion:
+# the collision prints its entry once per key, so a pair that files as one key
+# has to print its entry exactly once.
+printed = Counter(term for _, term in actual)
+doubled = {t: n for t, n in printed.items() if n > 1}
+if doubled:
+    print(f'FAIL: M09-AC3: the printed index carries {doubled}, so a pair '
+          f'filed apart after all', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M09-AC3: the compiled PDF prints each pair as one entry at its '
+      f'folded level path, {len(expected)} rows and no term twice')
+CLAMPPDFPY
+pass "M09-AC3: two entries sharing one sort key per pair are reported not at all, reach the index tool as one key each, and print once each in the built index"
+
+# ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--self-test" ]; then
@@ -5092,6 +5398,20 @@ PY
   # three a single document can draw.
   warn_discrimination "$WORK/book-order-2.log" "$WARN_BOOK_SORT_CONFLICT" 1 \
     "M06-AC4"
+  # The level-fold collision is the only evidence an author gets that two
+  # entries reached the index tool as two keys under one printed path; proved
+  # discriminating like the reports about a mark.
+  warn_discrimination "$WORK/sortkey-clamp-latex.log" "$WARN_CLAMP_SPLIT" 2 \
+    "M09-AC1"
+  # The count alone is the coarse half of the criterion; what carries its
+  # substance is that each report names THAT pair's keys and path, so both
+  # whole-message checks are proved discriminating too.
+  warn_discrimination "$WORK/sortkey-clamp-latex.log" \
+    'index entries printed as "alpha!beta!gamma, delta" file under more than one key ("alpha!beta!Ada" and "alpha!beta!Zed")' \
+    1 "M09-AC1"
+  warn_discrimination "$WORK/sortkey-clamp-latex.log" \
+    'index entries printed as "mu!nu!xi, omicron, pi" file under more than one key ("mu!nu!Vee" and "mu!nu!Wye")' \
+    1 "M09-AC1"
   warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
 fi

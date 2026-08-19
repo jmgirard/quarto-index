@@ -1,0 +1,43 @@
+---
+title: "quarto-index sort-key level-fold probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Two entries that print in one place and file under two keys
+
+The index tool the LaTeX back-end writes for stores three levels. An entry
+written deeper is folded into its third level rather than dropped, so two
+entries whose level paths differ before the fold can be identical after it.
+Sort keys are declared against the paths an author wrote, which the fold does
+not change, so each of the two keeps a key of its own — and the index tool,
+reading two different keys, files the one printed entry twice and prints it
+twice, in two places, identically.
+
+Every pair below is that collision, so this fixture is a document of mistakes
+rather than one to copy. Its twin, `sortkey-clamp-twin.qmd`, writes the same
+entries with one shared key per pair, which is the same document without the
+mistake.
+
+The HTML back-end applies no such ceiling — the fold is the index tool's
+limit, not an index's — so there the four entries below stay four, at the
+level paths they were written with.
+
+## One side folded, the other written folded
+
+Four levels against three whose third level spells the folded form. `Zed` is
+written for the four-level entry's third level and `Ada` for the other's, so
+the two file apart although both print at `alpha!beta!gamma, delta`:
+
+[Delta]{.index entry="alpha!beta!gamma!delta" sort="alpha!beta!Zed"} and
+[Gamma, delta]{.index entry="alpha!beta!gamma, delta" sort="alpha!beta!Ada"}.
+
+## Both sides folded
+
+Five levels against four. Neither entry is written at the printed depth this
+time — the fold builds the same third level out of two different tails — and
+`Wye` and `Vee` file the result two ways:
+
+[Pi]{.index entry="mu!nu!xi!omicron!pi" sort="mu!nu!Wye"} and
+[Omicron, pi]{.index entry="mu!nu!xi, omicron!pi" sort="mu!nu!Vee"}.

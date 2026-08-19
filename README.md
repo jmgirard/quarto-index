@@ -235,6 +235,16 @@ A book adds a fourth report, for a term two chapters sort differently. No
 single document can see that clash, since each chapter renders on its own, so
 it is reported where the book's index is built.
 
+A fifth report is LaTeX-only. The index tool stores three levels, and this
+extension folds a deeper entry into its third rather than lose it, so two
+entries written at different depths can end up printing at one place — and each
+still files where it was written to file, under its own sort key or, with none,
+under its printed text. That stores the entry once per key and prints it in as
+many places, identically. Every key contesting the path is named along with the
+path itself, because which one you meant is yours to choose. The HTML index
+applies no such ceiling, so there the two entries are two and nothing is
+reported.
+
 Sorting is otherwise best-effort: neither back-end collates accented or
 non-Latin text the way a language would, and a sort key is how you fix an
 entry that files wrongly.

@@ -433,10 +433,18 @@ end
 -- each level becomes makeindex's own `sortkey@printed` form: the `@` here is
 -- written by this back-end and so is the ONE `@` that stays unquoted, while
 -- every `@` the author wrote is still quoted by escape_level (LATEX_LITERAL).
+--
+-- Returns three strings: the argument, the PRINTED level path after the fold,
+-- and the FILING path — for each level, the sort key this argument actually
+-- files it under. The last two are what the collision report below compares,
+-- and they are built here rather than by a second derivation elsewhere,
+-- because only the emitted argument settles which of a level's two candidate
+-- strings the index tool will read as its key. Both are literal text, not
+-- escaped: they are read by an author, not by the index tool.
 local function index_argument(levels, sort, context)
   local clamped = clamp_levels(levels, context)
   local keys = clamp_sort(sort)
-  local parts = {}
+  local parts, filing = {}, {}
   for i, level in ipairs(clamped) do
     local printed = escape_level(level)
     -- Compared against the level the key was ALIGNED with, not against the
@@ -447,11 +455,16 @@ local function index_argument(levels, sort, context)
     -- absence of a sort field already means.
     if keys ~= nil and keys[i] ~= nil and keys[i] ~= levels[i] then
       parts[#parts + 1] = escape_level(keys[i]) .. "@" .. printed
+      filing[i] = keys[i]
     else
       parts[#parts + 1] = printed
+      -- No sort field emitted, so the index tool files this level under the
+      -- text it prints — the CLAMPED text, which is not always the level the
+      -- key was compared against.
+      filing[i] = level
     end
   end
-  return table.concat(parts, "!")
+  return table.concat(parts, "!"), levels_key(clamped), levels_key(filing)
 end
 
 local function span_text(span)
@@ -533,6 +546,29 @@ local function record_key(key, encap)
     key_marks[key] = seen
   end
   seen[encap] = true
+end
+
+-- Printed level path (AFTER the three-level fold) -> the set of filing paths
+-- the document emitted for it. Sort keys are declared against the level paths
+-- the author wrote, and the fold does not change those, so two entries whose
+-- paths differ before the fold and agree after it keep a key each: the index
+-- tool receives two keys, stores the one printed entry twice, and prints it
+-- twice, in two places, identically, with nothing in the log to say so.
+-- Neither key is this filter's to drop (IP2) and which of the two the author
+-- meant is not recoverable from the document, so the pair is reported.
+--
+-- LaTeX-only, unlike the sort-key reports about a mark: the fold is the index
+-- tool's ceiling rather than a property of what the author wrote, and the HTML
+-- back-end applies none, so there the two entries are genuinely two.
+local clamped_paths = {}
+
+local function record_clamped(path, filing)
+  local seen = clamped_paths[path]
+  if not seen then
+    seen = {}
+    clamped_paths[path] = seen
+  end
+  seen[filing] = true
 end
 
 -- The one place a mark's index levels are derived from what the author wrote.
@@ -732,7 +768,12 @@ local function Span(span)
     return nil
   end
 
-  local source = index_argument(levels, sort, context)
+  local source, printed_path, filing_path = index_argument(levels, sort,
+                                                           context)
+  -- Recorded for every mark whatever it emits: a cross-reference mark files
+  -- under the same key a plain one does, so it contests a printed path just
+  -- as a locator mark would.
+  record_clamped(printed_path, filing_path)
 
   local result = pandoc.List(span.content)
 
@@ -1928,6 +1969,47 @@ local function Pandoc(doc)
           .. "cross-reference, or two different cross-references); if two such "
           .. "marks land on one page the index tool rejects the pair and the "
           .. "render fails"):format(key))
+  end
+
+  -- The level-fold collision, reported the same way and for the same reason:
+  -- it takes the whole document to know that a second entry prints where the
+  -- first one does. Once per contested printed path rather than once per key
+  -- or once per mark — the author's fix is a single choice between the keys,
+  -- and the message has to show all of them to let them make it. Paths are
+  -- walked in sorted order, and so are the keys within one, so the report does
+  -- not depend on Lua's table iteration order.
+  local contested = {}
+  for path, filings in pairs(clamped_paths) do
+    local keys = {}
+    for filing in pairs(filings) do
+      keys[#keys + 1] = filing
+    end
+    if #keys > 1 then
+      table.sort(keys)
+      contested[#contested + 1] = { path = path, keys = keys }
+    end
+  end
+  table.sort(contested, function(a, b) return a.path < b.path end)
+  for _, clash in ipairs(contested) do
+    local named = {}
+    for i, key in ipairs(clash.keys) do
+      if key == clash.path then
+        -- Not a key the author wrote: it is what an entry carrying no sort
+        -- key files under. Quoting it back as one would name a string they
+        -- never typed and cannot search for — and it is the printed path
+        -- already quoted earlier in the same sentence.
+        named[i] = "its printed text, which is what an entry with no sort "
+          .. "key there files under"
+      else
+        named[i] = '"' .. key .. '"'
+      end
+    end
+    local last = table.remove(named)
+    warn(('index entries printed as "%s" file under more than one key (%s), '
+          .. 'so the index tool stores one key each and prints that entry '
+          .. 'once per key, in as many places; give them one sort key, or '
+          .. 'write them as one entry')
+         :format(clash.path, table.concat(named, ", ") .. " and " .. last))
   end
   if not (quarto and quarto.doc and quarto.doc.use_latex_package
           and quarto.doc.include_text) then

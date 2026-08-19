@@ -1,11 +1,11 @@
 # M09: Sort keys under the LaTeX level clamp
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** —
+- **Branch/PR:** m09-sortkey-clamp / https://github.com/jmgirard/quarto-index/pull/9
 
 ## Goal
 
@@ -40,7 +40,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 
 ## Acceptance criteria
 
-- [ ] AC1: In a LaTeX render of `examples/sortkey-clamp.qmd`, which holds two
+- [x] AC1: In a LaTeX render of `examples/sortkey-clamp.qmd`, which holds two
       pairs of entries whose printed level paths differ before the three-level
       fold and are identical after it — one pair written as four levels against
       three whose third spells the folded form, one pair written as two
@@ -48,18 +48,18 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
       different sort keys, exactly two warnings appear per render, one per pair,
       each naming that pair's two sort keys and the printed level path they
       contest.
-- [ ] AC2: In an HTML render of the same fixture, none of those warnings
+- [x] AC2: In an HTML render of the same fixture, none of those warnings
       appears, and all four entries remain distinct at their unfolded level
       paths, the index's entries and level paths pinned by a hand-derived
       manifest — derived through the entries' sort keys, which is what orders
       them, not their printed text.
-- [ ] AC3: In a LaTeX and an HTML render of `examples/sortkey-clamp-twin.qmd`,
+- [x] AC3: In a LaTeX and an HTML render of `examples/sortkey-clamp-twin.qmd`,
       differing only in that each pair's two entries carry one shared sort key
       (chosen to differ from either entry's third-level printed text, since
       `index_argument` compares a key against the *unclamped* level at
       index.lua:449), no such warning appears, the `.tex` writes each pair under
       one makeindex key, and the PDF built from it prints each pair's entry once.
-- [ ] AC4: `tests/run-tests.sh --self-test` clean (the `verify` slot).
+- [x] AC4: `tests/run-tests.sh --self-test` clean (the `verify` slot).
 
 ## Coverage
 
@@ -70,19 +70,22 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 
 ## Tasks
 
-- [ ] T1: Add `examples/sortkey-clamp.qmd` (both pairs, rival keys) and
+- [x] T1: Add `examples/sortkey-clamp.qmd` (both pairs, rival keys) and
       `examples/sortkey-clamp-twin.qmd` (shared keys, each differing from the
       entries' third-level printed text — state that constraint in the fixture
       prose); add the AC1 and AC3 `.tex` checks to `tests/run-tests.sh`, failing.
-- [ ] T2: Report two distinct LaTeX index keys sharing one printed level path,
+- [x] T2: Report two distinct LaTeX index keys sharing one printed level path,
       in the document-wide LaTeX pass beside the existing multi-encap report
       (index.lua:1815 neighborhood), naming both sort keys and the path.
-- [ ] T3: Hand-derive the HTML manifest for `sortkey-clamp.qmd` and add the AC2
+- [x] T3: Hand-derive the HTML manifest for `sortkey-clamp.qmd` and add the AC2
       check; the derivation comment is the manifest's oracle, so it is written
       for these rows rather than borrowed from another manifest.
-- [ ] T4: Build the twin's PDF and pin that each pair's entry prints once,
+- [x] T4: Build the twin's PDF and pin that each pair's entry prints once,
       following the existing PDF checks (run-tests.sh:1968, :2853).
-- [ ] T5: Revert the fix and record the failing check and its message in the
+- [x] T6: Document the report in the README as the PDF-only fifth sort-key
+      report, pin its sentences in the suite's documented-claims list, and add
+      it to the planted-defect self-test's discrimination proofs.
+- [x] T5: Revert the fix and record the failing check and its message in the
       work log. Process evidence, deliberately mapped to no criterion — a
       criterion binding the harness rather than the emitted output is the
       instrument-bound shape the plan audit rejected.
@@ -92,7 +95,101 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 - 2026-08-18: created by /milestone-plan.
 - 2026-08-18: criteria audit ran in FULL mode (user-facing tier), fresh-context [O] reader; it confirmed the premise by building the fixture and rendering it (two makeindex keys, one printed path, nothing reported) and returned AC1 probing only the one-side-clamped shape (both-clamped pair added), AC3 holding only while the shared key differs from the third-level printed text (constraint stated), and every criterion stopping at the .tex though the symptom is a doubled entry in the built index (AC3 extended to the compiled PDF under GP6, T4 added); AC2 passed every question unchanged.
 - 2026-08-18: plan chose reporting the collision over keying the sort registry on clamped level paths, because the registry is format-neutral and filled before the back-end branch while the three-level fold is a makeindex property the HTML back-end does not share; falsified by a case where the collision is mechanically resolvable — the two entries genuinely being one entry — rather than an authoring mistake only the author can settle.
+- 2026-08-18: implement started on branch m09-sortkey-clamp.
+
+- 2026-08-18: T1 — both fixtures added and the AC1/AC3 `.tex` checks written, with a by-construction check tying the twin to the fixture (same entries, one shared key per pair, each pair folding to one printed path, each shared key differing from both its entries' third level). The LaTeX render confirms the defect as planned: the fixture emits `alpha!beta!Zed@gamma, delta` and `alpha!beta!Ada@gamma, delta`, plus `mu!nu!Wye@xi, omicron, pi` and `mu!nu!Vee@xi, omicron, pi` — two keys per printed path — and the AC1 count check reports 0 occurrences of the report against 2 wanted. The twin already emits one key per pair, so its `.tex` check passes ahead of the fix.
+
+- 2026-08-18: T2 — the report lands in the document-wide LaTeX pass beside the multi-encap one, once per contested printed path, naming every key filed under it; `index_argument` now also returns the printed and filing paths it emitted. Full suite green (143 checks), the two AC1 reports firing as hand-derived and no other fixture newly warning.
+- 2026-08-18: T3 — the HTML manifest is derived for these rows, ordering spelled out through each level's sort key (Ada before Zed puts `gamma, delta` ahead of `gamma`; Vee before Wye puts `xi, omicron` ahead of `xi`), which is the opposite of what the printed text would give in both groups. Rendered index matched the hand-derived 14 rows first time; the report fires 0 times in HTML. Suite 145 checks green.
+- 2026-08-18: T4 — the twin's PDF is built and its printed index read with tests/pdfindex.py: six rows, `alpha!beta!gamma, delta` and `mu!nu!xi, omicron, pi` each printed once, matching the hand-derived outline, with a no-term-twice check named separately as the criterion. Suite 147 checks green.
+- 2026-08-18: minor amendment — T6 added at the implementation question gate, where the user chose to document the new report rather than ship it undocumented. README gains the PDF-only fifth report, three claim rows pin its sentences, and the self-test proves the AC1 check fails both when the report goes missing and when it fires twice. `--self-test` clean at 162 checks.
+- 2026-08-18: T5 — with `_extensions/index/index.lua` reverted to its pre-fix state (the T1 commit) and everything else on the branch left in place, the suite exits 1 at `FAIL: M09-AC1: expected 2 occurrence(s) of <<file under more than one sort key>> in tests/.work/sortkey-clamp-latex.log, got 0`; the filter was restored and the suite re-run clean afterwards.
+- 2026-08-18: all tasks done; `tests/run-tests.sh --self-test` clean at 162 checks. Status → review.
+- 2026-08-18: review — three-lens fan-out; 7 findings, 6 fixed on the branch at the gate, 1 folded into an existing candidate row. Suite 164 checks green, cairn_validate clean.
 
 ## Decisions
 
+### 2026-08-18: the report compares filing paths, not emitted arguments
+
+Two entries contest one printed path when the index tool reads two different
+keys for it, which is not the same as their two `\index` arguments differing
+as strings: a level whose resolved key equals its own printed text emits
+`key@text` where the key was written for the unfolded level and a bare `text`
+where it was not, and those two arguments are one key to the index tool.
+Comparing arguments would report that pair as a collision it is not. So
+`index_argument` returns the filing path it actually emitted — per level, the
+key where it wrote a sort field and the clamped printed text where it did not
+— and the report compares those.
+
 ## Review
+
+Fresh evidence, 2026-08-18, from `tests/run-tests.sh --self-test` on
+m09-sortkey-clamp at 1fcc2f6 (exit 0, 162 checks).
+
+- AC1 — a LaTeX render of `examples/sortkey-clamp.qmd` emits the report
+  exactly twice, once per pair. Each message is checked whole and found once:
+  the one-side-folded pair naming `"alpha!beta!Ada"` and `"alpha!beta!Zed"`
+  against the path `alpha!beta!gamma, delta`, the both-sides-folded pair
+  naming `"mu!nu!Vee"` and `"mu!nu!Wye"` against `mu!nu!xi, omicron, pi`.
+  The suite's by-construction check confirms the fixture still writes those
+  two shapes (one pair with one side past the ceiling, one with both) under
+  four different keys, each pair folding to one printed path. The
+  planted-defect self-test proves the count check fails both when the report
+  is removed from the log and when it is duplicated.
+- AC2 — an HTML render of the same fixture emits the report 0 times, and its
+  index matches all 14 rows of the hand-derived manifest, in order: the four
+  entries stay distinct at their unfolded paths, ordered through their sort
+  keys (`gamma, delta` ahead of `gamma`, `xi, omicron` ahead of `xi` — the
+  reverse of what their printed text gives). All 4 index links resolve and
+  every id is unique.
+- AC3 — `examples/sortkey-clamp-twin.qmd` emits the report 0 times in LaTeX,
+  in HTML and in the PDF render. Its `.tex` carries exactly two distinct
+  index-tool arguments, `alpha!beta!Kay@gamma, delta` and
+  `mu!nu!Jay@xi, omicron, pi`, twice each — one key per pair, two locators
+  for it. The compiled PDF prints 6 index rows and no term twice, matching
+  the hand-derived outline. The shared keys are asserted to differ from both
+  entries' third-level printed text, so the pairs cannot be filing together
+  for a reason the criterion does not name.
+- AC4 — `tests/run-tests.sh --self-test` exits 0 with 162 checks passing,
+  the planted-defect self-test included.
+
+Independent fresh-context review, three lenses (full fan-out: the diff touches
+executable surface and the tier is user-facing). Blame-history: no findings.
+Prior-review: one. Diff-bug: six, and it reports that it could construct
+neither a false positive nor a false negative in the collision report, having
+probed cross-reference marks, keyless pairs, the key-spells-the-folded-text
+case, literal `!` in a level, empty folded levels, entries under three levels
+and rival-key resolution by render.
+
+- F1 (diff-bug) — the report named a printed level path as a "sort key" where
+  one entry of a pair carries no key, quoting back a string the author never
+  wrote. FIXED: such a contestant is now named as its printed text, and the
+  message says "more than one key" rather than "sort key".
+- F2 (diff-bug) — DESIGN.md's LaTeX back-end bullet enumerated one
+  document-wide report and omitted this one. FIXED in place, per that
+  section's annotation convention.
+- F3 (diff-bug) — the README said "both keys" where three or more entries can
+  contest one path and the message builder is n-ary. FIXED.
+- F4 (diff-bug) — the README called the report PDF-only where it fires on any
+  latex-derived render, against the README's own "LaTeX-only" idiom for the
+  analogous report. FIXED, and the claim row pinning that sentence with it.
+- F5 (diff-bug) — the self-test proved only the coarse substring
+  discriminating, not the two whole-message checks that carry AC1's substance.
+  FIXED: both are now discrimination-proved (suite 162 -> 164 checks).
+- F6 (diff-bug, non-blocking) — `clamped_paths` is module-level state that is
+  never reset, like the accumulators before it. FOLLOW-UP: folded into the
+  existing ROADMAP candidate row on that class rather than duplicated.
+- F7 (prior-review) — the fixture-shape check hardcoded the filter's
+  `MAX_LEVELS`, the anti-pattern a recorded lesson names and a nearby
+  precedent (`STORE_VERSION`) avoids. FIXED at e9641c7: both `MAX_LEVELS` and
+  `OVERFLOW_JOIN` are read from the filter.
+
+Post-fix evidence: `tests/run-tests.sh --self-test` exits 0 with 164 checks;
+the one-sided shape F1 named was rendered by hand and emits the reworded
+message. No finding demonstrated an acceptance criterion failing, so the
+return floor did not fire.
+
+Consistency gate: `cairn_validate` all checks passed (exit 0); the `generic`
+profile names no toolchain checks; no DESIGN principle changed, so
+`cairn_impact` does not apply.
+

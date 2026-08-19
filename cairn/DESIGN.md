@@ -143,8 +143,9 @@ Two back-ends ship:
   in, and every mark below the marker is silently lost. Levels are made
   literal per character
   by whichever mechanism that character needs, clamped to makeindex's
-  three-level ceiling, and a term marked two incompatible ways is reported
-  document-wide. A level with a sort key is written in makeindex's own
+  three-level ceiling, and two document-wide reports are drawn: a term marked
+  two incompatible ways, and two entries the ceiling folds onto one printed
+  level path while their sort keys keep them apart (added M09). A level with a sort key is written in makeindex's own
   `sortkey@printed` form, that `@` being the one the back-end writes and so
   the only one left unquoted (corrected M06).
 - **HTML** (`FORMAT` containing `html`): a link target for each

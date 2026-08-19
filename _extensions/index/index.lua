@@ -1991,16 +1991,25 @@ local function Pandoc(doc)
   end
   table.sort(contested, function(a, b) return a.path < b.path end)
   for _, clash in ipairs(contested) do
-    local quoted = {}
+    local named = {}
     for i, key in ipairs(clash.keys) do
-      quoted[i] = '"' .. key .. '"'
+      if key == clash.path then
+        -- Not a key the author wrote: it is what an entry carrying no sort
+        -- key files under. Quoting it back as one would name a string they
+        -- never typed and cannot search for — and it is the printed path
+        -- already quoted earlier in the same sentence.
+        named[i] = "its printed text, which is what an entry with no sort "
+          .. "key there files under"
+      else
+        named[i] = '"' .. key .. '"'
+      end
     end
-    local last = table.remove(quoted)
-    warn(('index entries printed as "%s" file under more than one sort key '
-          .. '(%s), so the index tool stores one key each and prints that '
-          .. 'entry once per key, in as many places; give them one sort key, '
-          .. 'or write them as one entry')
-         :format(clash.path, table.concat(quoted, ", ") .. " and " .. last))
+    local last = table.remove(named)
+    warn(('index entries printed as "%s" file under more than one key (%s), '
+          .. 'so the index tool stores one key each and prints that entry '
+          .. 'once per key, in as many places; give them one sort key, or '
+          .. 'write them as one entry')
+         :format(clash.path, table.concat(named, ", ") .. " and " .. last))
   end
   if not (quarto and quarto.doc and quarto.doc.use_latex_package
           and quarto.doc.include_text) then

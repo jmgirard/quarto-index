@@ -126,7 +126,7 @@ README_SORT_CLAIMS=(
   $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
   $'reaching past a level\ton the way to a deeper one declares nothing for that level'
   $'book adds a fourth report\tA book adds a fourth report, for a term two chapters sort differently'
-  $'pdf adds a fifth report\tA fifth report belongs to PDF alone'
+  $'latex adds a fifth report\tA fifth report is LaTeX-only'
   $'the fold makes the collision\ttwo entries written at different depths can end up printing at one place'
   $'no ceiling in HTML\tThe HTML index applies no such ceiling'
   $'ordering is per back-end\tA sort key files an entry under the ordering of whichever back-end builds the'
@@ -5003,7 +5003,7 @@ ADJPY
 # writes the same entries with one shared key per pair, which is the same
 # document without the mistake.
 # ---------------------------------------------------------------------------
-WARN_CLAMP_SPLIT='file under more than one sort key'
+WARN_CLAMP_SPLIT='file under more than one key'
 
 # The two fixtures are asserted against each other BY CONSTRUCTION, because
 # every check below reads them as the same entries under different keys. So is
@@ -5134,10 +5134,10 @@ quarto render examples/sortkey-clamp.qmd --to latex \
 check_warning_count "$WORK/sortkey-clamp-latex.log" "$WARN_CLAMP_SPLIT" 2 \
   "M09-AC1"
 check_warning_count "$WORK/sortkey-clamp-latex.log" \
-  'index entries printed as "alpha!beta!gamma, delta" file under more than one sort key ("alpha!beta!Ada" and "alpha!beta!Zed")' \
+  'index entries printed as "alpha!beta!gamma, delta" file under more than one key ("alpha!beta!Ada" and "alpha!beta!Zed")' \
   1 "M09-AC1"
 check_warning_count "$WORK/sortkey-clamp-latex.log" \
-  'index entries printed as "mu!nu!xi, omicron, pi" file under more than one sort key ("mu!nu!Vee" and "mu!nu!Wye")' \
+  'index entries printed as "mu!nu!xi, omicron, pi" file under more than one key ("mu!nu!Vee" and "mu!nu!Wye")' \
   1 "M09-AC1"
 pass "M09-AC1: each pair of entries contesting one printed level path is reported once, naming both sort keys and the path"
 
@@ -5403,6 +5403,15 @@ PY
   # discriminating like the reports about a mark.
   warn_discrimination "$WORK/sortkey-clamp-latex.log" "$WARN_CLAMP_SPLIT" 2 \
     "M09-AC1"
+  # The count alone is the coarse half of the criterion; what carries its
+  # substance is that each report names THAT pair's keys and path, so both
+  # whole-message checks are proved discriminating too.
+  warn_discrimination "$WORK/sortkey-clamp-latex.log" \
+    'index entries printed as "alpha!beta!gamma, delta" file under more than one key ("alpha!beta!Ada" and "alpha!beta!Zed")' \
+    1 "M09-AC1"
+  warn_discrimination "$WORK/sortkey-clamp-latex.log" \
+    'index entries printed as "mu!nu!xi, omicron, pi" file under more than one key ("mu!nu!Vee" and "mu!nu!Wye")' \
+    1 "M09-AC1"
   warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
 fi

@@ -105,6 +105,7 @@ entry prints twice, identically, in two places. Confirmed by render at plan time
 - 2026-08-18: minor amendment — T6 added at the implementation question gate, where the user chose to document the new report rather than ship it undocumented. README gains the PDF-only fifth report, three claim rows pin its sentences, and the self-test proves the AC1 check fails both when the report goes missing and when it fires twice. `--self-test` clean at 162 checks.
 - 2026-08-18: T5 — with `_extensions/index/index.lua` reverted to its pre-fix state (the T1 commit) and everything else on the branch left in place, the suite exits 1 at `FAIL: M09-AC1: expected 2 occurrence(s) of <<file under more than one sort key>> in tests/.work/sortkey-clamp-latex.log, got 0`; the filter was restored and the suite re-run clean afterwards.
 - 2026-08-18: all tasks done; `tests/run-tests.sh --self-test` clean at 162 checks. Status → review.
+- 2026-08-18: review — three-lens fan-out; 7 findings, 6 fixed on the branch at the gate, 1 folded into an existing candidate row. Suite 164 checks green, cairn_validate clean.
 
 ## Decisions
 
@@ -151,6 +152,42 @@ m09-sortkey-clamp at 1fcc2f6 (exit 0, 162 checks).
   for a reason the criterion does not name.
 - AC4 — `tests/run-tests.sh --self-test` exits 0 with 162 checks passing,
   the planted-defect self-test included.
+
+Independent fresh-context review, three lenses (full fan-out: the diff touches
+executable surface and the tier is user-facing). Blame-history: no findings.
+Prior-review: one. Diff-bug: six, and it reports that it could construct
+neither a false positive nor a false negative in the collision report, having
+probed cross-reference marks, keyless pairs, the key-spells-the-folded-text
+case, literal `!` in a level, empty folded levels, entries under three levels
+and rival-key resolution by render.
+
+- F1 (diff-bug) — the report named a printed level path as a "sort key" where
+  one entry of a pair carries no key, quoting back a string the author never
+  wrote. FIXED: such a contestant is now named as its printed text, and the
+  message says "more than one key" rather than "sort key".
+- F2 (diff-bug) — DESIGN.md's LaTeX back-end bullet enumerated one
+  document-wide report and omitted this one. FIXED in place, per that
+  section's annotation convention.
+- F3 (diff-bug) — the README said "both keys" where three or more entries can
+  contest one path and the message builder is n-ary. FIXED.
+- F4 (diff-bug) — the README called the report PDF-only where it fires on any
+  latex-derived render, against the README's own "LaTeX-only" idiom for the
+  analogous report. FIXED, and the claim row pinning that sentence with it.
+- F5 (diff-bug) — the self-test proved only the coarse substring
+  discriminating, not the two whole-message checks that carry AC1's substance.
+  FIXED: both are now discrimination-proved (suite 162 -> 164 checks).
+- F6 (diff-bug, non-blocking) — `clamped_paths` is module-level state that is
+  never reset, like the accumulators before it. FOLLOW-UP: folded into the
+  existing ROADMAP candidate row on that class rather than duplicated.
+- F7 (prior-review) — the fixture-shape check hardcoded the filter's
+  `MAX_LEVELS`, the anti-pattern a recorded lesson names and a nearby
+  precedent (`STORE_VERSION`) avoids. FIXED at e9641c7: both `MAX_LEVELS` and
+  `OVERFLOW_JOIN` are read from the filter.
+
+Post-fix evidence: `tests/run-tests.sh --self-test` exits 0 with 164 checks;
+the one-sided shape F1 named was rendered by hand and emits the reworded
+message. No finding demonstrated an acceptance criterion failing, so the
+return floor did not fire.
 
 Consistency gate: `cairn_validate` all checks passed (exit 0); the `generic`
 profile names no toolchain checks; no DESIGN principle changed, so

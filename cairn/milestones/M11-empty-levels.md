@@ -112,15 +112,15 @@ separators cannot be written; only the leading one is destructive.
 - [x] T2 — Tests first: add the suite block rendering the fixture to latex,
       pdf, html and gfm with hand-derived manifests asserting the post-fix
       behaviour, and confirm each new check FAILS against the current filter.
-- [ ] T3 — Drop empty levels in `derive_levels`
+- [x] T3 — Drop empty levels in `derive_levels`
       (`_extensions/index/index.lua:601`), letting the all-empty case fall
       through to the visible-text branch; rework `warn_empty_levels` (`:262`)
       to fire before the drop and say the level was dropped.
-- [ ] T4 — Realign `sort_levels` (`:284`) onto the surviving levels; remove the
+- [x] T4 — Realign `sort_levels` (`:284`) onto the surviving levels; remove the
       now-unreachable empty-level skip in `clamp_levels` (`:212`) and the
       `nonempty_levels` calls in the self-target comparisons (`:756`, `:814`)
       the drop makes redundant.
-- [ ] T5 — Update what the change moves: `examples/letter-groups.qmd`'s
+- [x] T5 — Update what the change moves: `examples/letter-groups.qmd`'s
       `!windmill` mark and its manifest (`tests/run-tests.sh:5121`), and
       `examples/self-xref.qmd`'s M10-AC6 derivation comment plus every warning
       count named in AC5.
@@ -140,6 +140,10 @@ separators cannot be written; only the leading one is destructive.
 - 2026-08-18: implement gate settled three open items: a sort level pairs with the entry level it was written for and is dropped with it; the empty-level warning reads "an empty level prints nothing, so it is dropped and the entry indexes at the levels that remain"; an `entry=` that is only empty levels gets its own message rather than the existing "no entry=" one, which would be false about it.
 - 2026-08-18: T1 — `examples/empty-levels.qmd` added; rendered against the unchanged filter to record the pre-fix behaviour. Beyond the planned defect it exposed an unplanned one: `sort_for` keys a level's sort key on its printed level path and a leading empty level's path is the empty string, so the `mmm` declared by one mark filed four unrelated entries under it with no rival-key report — visible as `\index{zzz@!Cats}` in the pre-fix render. The drop removes it at the root, since no surviving level path can be empty.
 - 2026-08-18: T2 — M11 suite block added (manifest 1r: emitted LaTeX arguments, compiled-PDF rows, HTML letter-grouped rows, five warning counts per format, a null-field scan over both empty-level fixtures, and a direct back-end-against-back-end path comparison). Run against the unchanged filter: the suite reaches M11 clean and fails on its first check, 0 of 6 expected empty-level warnings.
+- 2026-08-18: T3+T4 landed in one commit — the drop alone leaves the suite red until the sort realignment lands with it, so the verify slot could not be clean between them (minor amendment, task order only). `warn_empty_levels` became `drop_empty_levels`, which warns per empty level and returns the surviving levels, each one's ORIGINAL index and the depth the author wrote; `derive_levels` routes an all-empty value to the visible text or to nothing with its own message and suppresses the generic "no entry=" ones; `sort_levels` picks its levels through the surviving indices and counts ignored levels against the written depth; `nonempty_levels` and the empty-level skip in `clamp_levels` are gone as unreachable.
+- 2026-08-18: T5 — two predictions I made about self-xref were wrong and are corrected here: `entry="P!Q!R!"` was ALREADY caught by the format-neutral self-target pass before this milestone, so the self-reference count stays 6 and the fold-induced count stays 3. What M11 actually moves there is the fold-DEPTH count, 4 to 3, which is the double-warning row. Also moved: the demo LaTeX and HTML manifests (`A!!B!` and the depth-6 probe each lose a level), the letter-groups fixture and manifest (`!windmill` files under W, not the empty string in Symbols), and the M10 HTML checks, which located two entries by the empty-level child that no longer exists.
+- 2026-08-18: T5 — the M11 null-field scan moved into a `check_no_null_field` helper called beside each fixture's own latex render: reading `examples/self-xref.tex` from the M11 block failed because the later PDF render of that fixture removes it (the M05 lesson).
+- 2026-08-18: verify slot clean — `tests/run-tests.sh`, 164 checks, all passed.
 - 2026-08-18: criteria audit ran in FULL mode (surface tier user-facing) but NOT in a fresh context — this session carries a standing directive against spawning subagents, so the author read their own criteria; deviation recorded rather than skipped. Two findings, both fixed before writing: a draft AC1 promising makeindex's `.ilg` report "0 rejected entries" was unreachable as evidence (Quarto does not surface the `.ilg`) and was rewritten onto the compiled PDF; and a draft AC "reverting the drop makes the checks fail" bound a property of the instrument rather than of the deliverable (D-118) and moved to T6.
 
 ## Decisions

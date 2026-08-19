@@ -1,12 +1,13 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-18 (M10 done and archived; the surviving-self-reference row graduated at plan time, the empty-levels row widened with the leading-empty behaviour change and the trailing-vs-leading null-field asymmetry, two new rows from M10 review; 4 lessons captured, none retired; M05's terminal row pruned to the 5-row retention; caps and byte budgets clean)_
+_Last hygiene check: 2026-08-18 (M11 planned — the leading/medial empty-level row graduated into it, carrying its M10 review F2/F5 widening; the M10-F8 double-fold-warning row stays open until M11 retires it. Earlier: M10 done and archived; the surviving-self-reference row graduated at plan time, the empty-levels row widened with the leading-empty behaviour change and the trailing-vs-leading null-field asymmetry, two new rows from M10 review; 4 lessons captured, none retired; M05's terminal row pruned to the 5-row retention; caps and byte budgets clean)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M11 | Empty index levels never lose the entry | planned | — | normal | milestones/M11-empty-levels.md |
 | M10 | Self-references the level fold and empty levels hide | done | — | normal | milestones/archive/M10-selfref-fold-empty.md |
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
 | M09 | Sort keys under the LaTeX level clamp | done | — | normal | milestones/archive/M09-sortkey-clamp.md |
@@ -23,7 +24,6 @@ _Last hygiene check: 2026-08-18 (M10 done and archived; the surviving-self-refer
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN)
 - Submit to Quarto extension listing at first release — added 2026-08-16 — window user-declared
-- Leading/medial empty index levels are rejected by makeindex ("Illegal null field"), destroying the whole entry — added 2026-08-16 — M01 review R12; only the trailing case is probed, and the asymmetry is unrecorded anywhere: a TRAILING null field is tolerated and silently swallowed (M10 ships `\index{Moles!}`, which prints as the bare top-level term). Widened by M10 review F2/F5: M10's empty-level stripping also changed the leading-empty shape — `entry="!Cats" see="Cats"` is now reported and dropped as a self-reference — which is untested, since the fixture cannot render it, and M10's Out clause does not mention it
 - A fold-depth warning fires on an entry whose only folded level is empty: `entry="P!Q!R!"` is told "is 4 levels deep; levels 3 and deeper were folded into the third" though the printed path is unchanged, so one trivial mistake draws two warnings — added 2026-08-18 — M10 review F8; pre-existing `clamp_levels` behaviour that M10's fixture now ships as an example
 - A cross-reference target that resolves to no entry is never reported: in HTML the three M10 fold shapes keep a target rendered as plain text with no href, and LaTeX diagnoses and drops the same marks while HTML ships the dangling target silently — added 2026-08-18 — M10 review F9; consistent with M10's gate reading of IP1, but nothing tells the author
 - Non-Latin-1 scripts in index terms (Greek, CJK, combining marks, RTL) need an engine/font decision — added 2026-08-16 — M01 review R7/R9; pdflatex default fonts do not cover them

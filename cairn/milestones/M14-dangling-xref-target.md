@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, GP1
-- **Branch/PR:** `m14-dangling-xref-target`
+- **Branch/PR:** `m14-dangling-xref-target` / https://github.com/jmgirard/quarto-index/pull/14
 
 ## Goal
 
@@ -42,42 +42,42 @@ the existing candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1 A document that indexes `Cats` and writes `see="Felines"`, which
+- [x] AC1 A document that indexes `Cats` and writes `see="Felines"`, which
       nothing indexes, draws exactly one report naming `Felines`. Evidence: a
       new fixture rendered to LaTeX, HTML and gfm; the report's full text and
       an occurrence count of 1 asserted in each of the three render logs.
-- [ ] AC2 A target that resolves draws no report, across every resolution
+- [x] AC2 A target that resolves draws no report, across every resolution
       shape the new fixture carries: an exact single-level match, a
       multi-level path match, and a match against a level that exists only as
       a parent of a deeper entry. Evidence: exact-zero assertions for the
       report's text over the LaTeX, HTML and gfm logs of a purpose-built
       fixture whose every target resolves.
-- [ ] AC3 The report fires per mark per target, over a family varied in form
+- [x] AC3 The report fires per mark per target, over a family varied in form
       as well as position: a dangling `see-also=` beside a resolving `see=`,
       the inversion of that, a multi-level dangling target, a partial-path
       target (`Cats!Kittens` where only `Cats` is indexed), and one dangling
       target written on two separate marks. Evidence: each shape in the new
       fixture with its own expected count asserted, and the resolving target's
       text asserted absent from every report line.
-- [ ] AC4 A target dropped as a format-neutral self-reference draws its
+- [x] AC4 A target dropped as a format-neutral self-reference draws its
       existing report and not this one. Evidence: over the LaTeX, HTML and gfm
       logs of `examples/self-xref.qmd`, the new report's text asserted absent
       from the lines naming the four format-neutral self-target marks, with
       their existing reports asserted still present. The file's three
       fold-induced shapes (`self-xref.qmd:47-54`) do dangle format-neutrally
       and their nonzero counts are pinned rather than zeroed.
-- [ ] AC5 In an HTML book the report is drawn once for a target naming
+- [x] AC5 In an HTML book the report is drawn once for a target naming
       nothing in the book, and not at all for a target naming a term indexed
       in another chapter — including in `examples/book-order`, whose
       placement marker sits in the first chapter. Evidence: both shapes added
       to both book fixtures; the report counted as exactly 1 across each whole
       book render, which is only reachable if a single chapter draws it.
-- [ ] AC6 The new report is distinct from every other `warn(` message in
+- [x] AC6 The new report is distinct from every other `warn(` message in
       `index.lua` and is written as a single literal, so the scan reads the
       whole message rather than its first fragment (M10 lesson). Evidence: the
       suite's distinctness scan, which enumerates every `warn(`-leading
       literal in the source, passes.
-- [ ] AC7 The `verify` slot is clean: `tests/run-tests.sh --self-test`
+- [x] AC7 The `verify` slot is clean: `tests/run-tests.sh --self-test`
       passes.
 
 ## Coverage
@@ -161,3 +161,54 @@ never builds. The two are held together by evidence instead of by shared code
 name is a link into the index, and every target it does name is unlinked text.
 
 ## Review
+
+Fresh evidence, 2026-08-19, on `m14-dangling-xref-target` at the pre-gate
+checkpoint. The `verify` slot was run whole (`tests/run-tests.sh --self-test`,
+exit 0, 216 checks; 183 without the self-test, against 175 on `main`); the
+per-criterion counts below were then read back out of that run's own render
+logs in `tests/.work/` by command, not from the suite's pass lines.
+
+- **AC1** — `examples/dangling-xref.qmd` indexes `Cats` and points a mark at
+  `Felines`. `points at "Felines"` occurs exactly 1 time in each of the LaTeX,
+  HTML and gfm logs, and the report's full text is asserted verbatim there by
+  `M14-AC1 (<fmt>)`.
+- **AC2** — `examples/resolving-xref.qmd` carries the three resolution shapes
+  (exact single-level `Robins`; full multi-level path `Birds!Owls!Barn`; the
+  parent-only `Trees!Oak`, a level no mark writes as an entry of its own).
+  Exact zero occurrences of the report in all three logs. The paired
+  cross-check on the rendered HTML — the targets the index leaves unlinked are
+  exactly the targets the report names, in both fixtures — passes, which is
+  the milestone-local decision's agreement claim between the report and
+  `lookup_entry`.
+- **AC3** — the six further shapes each draw their own asserted count in all
+  three formats: dangling `see-also=` beside a resolving `see=` (Pumas), the
+  inversion (Jaguars), a multi-level target (Caracals), a partial-path target
+  (Margays, `Cats!Kittens` where only `Cats` is indexed), and one target on two
+  separate marks (Ocelots Marked and Bobcats, 2 reports). Total per format is
+  7, equal to the manifest's sum, so no unnamed shape is reported; `points at
+  "Cats",` occurs in no report line.
+- **AC4** — over the LaTeX, HTML and gfm logs of `examples/self-xref.qmd`, no
+  report line names any of the six marks whose target was dropped as a
+  format-neutral self-reference (`entry="Cats"`, `entry="Birds!Owls"`, `term
+  "ferrets"`, `entry="Dogs"`, `entry="Moles!"`, `entry="P!Q!R!"`), while their
+  own report still occurs 6 times per format. The three fold-induced shapes
+  (`self-xref.qmd:47-54`) each draw exactly 1, total 3 per format, pinned
+  nonzero.
+- **AC5** — `examples/book`: the report occurs 1 time across the whole
+  four-chapter render, naming `No Such Entry`, and it is the book's only
+  warning, so the cross-chapter `see="Alpha"` draws none.
+  `examples/book-order`, whose placement marker sits in the first chapter: 1
+  occurrence on each of the two renders, naming `Nowhere At All`, while `Early
+  Reference` -> `Late` draws none on either.
+- **AC6** — the distinctness scan reads 37 whole `warn()` messages, all
+  mutually distinct and none a prefix of another, and the single-literal clause
+  now covers the new report.
+- **AC7** — `tests/run-tests.sh --self-test` exits 0 at 216 checks.
+
+Consistency gate: `cairn_validate` all checks passed. The `generic` profile
+names no toolchain `consistency-gate` checks, so that half is a clean no-op.
+No `DESIGN.md` principle changed, so `cairn_impact` is skipped.
+
+Discrimination: the milestone's T7 work-log line records three planted-defect
+probes (report reverted, report over-reporting, resolution truncated to the
+first level) failing 51, 26 and 24 checks respectively.

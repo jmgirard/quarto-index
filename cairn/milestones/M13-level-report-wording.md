@@ -1,6 +1,6 @@
 # M13: Level reports name a depth the author can act on
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -106,10 +106,10 @@ existing candidate row.
       asserting message identity rather than occurrence alone (M08 lesson),
       and pin the distinctness scan's literal count to an explicit integer so
       a fragmented message fails it.
-- [ ] T6 Prove each new check discriminating: commit the fix first, then
+- [x] T6 Prove each new check discriminating: commit the fix first, then
       revert each report rewrite in turn and record which check fails (M08
       lesson — a revert probe on uncommitted work destroys it).
-- [ ] T7 Update the README and DESIGN prose that quotes either report; run
+- [x] T7 Update the README and DESIGN prose that quotes either report; run
       `tests/run-tests.sh --self-test`.
 
 ## Work log
@@ -137,6 +137,10 @@ existing candidate row.
 - 2026-08-19: T6 probe 2: reverting the extra-sort report to its pre-M13 wording fails M13-AC3, which draws 0 of the 1 expected.
 - 2026-08-19: T6 probe 3 PASSED, which is the finding: splitting a message across `..` leaves both the literal count and the call count unchanged, so the pinned count committed at T5 cannot see fragmentation. The T5 commit message's claim that it could is wrong, superseded here. Repaired by rewriting the distinctness scan to join every literal in a warn() call's message expression, so all 36 warnings are compared whole rather than by first fragment — the underlying property AC4 names, now enforced directly instead of via a proxy.
 - 2026-08-19: T6 probe 3b: a duplicate message planted as a concatenation whose first literal differs is caught by the whole-message scan and invisible to the first-literal one — the two scans run side by side on the same planted filter.
+
+- 2026-08-19: T6 probe 4: reverting the empty-level report with the AC1 checks relaxed so the run reaches it fails M13-AC2 on exactly its own terms — the two reports are identical once the echoed value is masked. All four probes recorded; every new check fails against the pre-M13 filter.
+- 2026-08-19: T7 done — README's empty-level paragraph and sort-report bullet rewritten against observed output, DESIGN's Span-pass paragraph given the two reports' rule; the README-claim pins for both sections updated (M06-AC6 gains one claim, M11-AC6 three). `tests/run-tests.sh --self-test` green at 191 checks.
+- 2026-08-19: all tasks done, verify slot clean; status -> review.
 
 ## Decisions
 

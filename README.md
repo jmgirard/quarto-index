@@ -61,9 +61,11 @@ Levels are scanned left to right, longest match first, so `A!!!B` is the
 entry `A!` with sub-entry `B`.
 
 **An empty level is dropped.** A `!` at either end of the value, or a value
-that is only `!`, asks for a level that prints no text at all. You get a
-warning naming the entry, the empty level is dropped, and the entry indexes
-at the levels that remain — so `entry="!Cats"` and `entry="Cats!"` both index
+that is only `!`, asks for a level that prints no text at all. You get one
+warning per mark, naming the entry and which positions in the value were
+empty — `entry="!Sub!"` reports positions 1 and 3 of 3, and says that 1 of the
+3 written levels remains. The empty levels are dropped and the entry indexes
+at the levels that remain, so `entry="!Cats"` and `entry="Cats!"` both index
 as `Cats`. This is the same in every format, and it is not tidiness: the
 LaTeX index tool rejects an entry outright for a leading or middle null field,
 drops it from the index, and still reports no warning and exits 0, so the
@@ -253,8 +255,11 @@ Three things are reported, in every output format, because each is a mistake
 about the mark rather than about any one back-end:
 
 - a `sort=` on a mark that indexes nothing, which has nothing to sort;
-- a `sort=` with more levels than its entry has, whose extra levels are
-  ignored;
+- a `sort=` with more levels than there are to sort, whose extra levels are
+  ignored. Both counts in that report are taken before empty levels are
+  dropped, so neither is the depth the entry finally indexes at:
+  `entry="Moles!" sort="a!b!c"` is written with two levels, sorted with
+  three, and indexes at one;
 - one entry given two different sort keys, which cannot file in two places —
   the first one in the document wins, and in a book the first in book order.
 

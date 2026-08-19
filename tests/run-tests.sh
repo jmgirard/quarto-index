@@ -122,7 +122,10 @@ README_SORT_CLAIMS=(
   $'key belongs to the entry\tA sort key belongs to the entry, not to the mark you happened to write it on'
   $'reported in every format\tThree things are reported, in every output format'
   $'report: nothing to sort\ta `sort=` on a mark that indexes nothing, which has nothing to sort'
-  $'report: extra levels\ta `sort=` with more levels than its entry has, whose extra levels are'
+  $'report: extra levels\ta `sort=` with more levels than there are to sort, whose extra levels are'
+  # M13: the report's two counts are both taken before the empty-level drop,
+  # so README must not let either be read as the depth the entry indexes at.
+  $'report: counts are pre-drop\tBoth counts in that report are taken before empty levels are'
   $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
   $'reaching past a level\ton the way to a deeper one declares nothing for that level'
   $'book adds a fourth report\tA book adds a fourth report, for a term two chapters sort differently'
@@ -143,7 +146,12 @@ README_SORT_CLAIMS=(
 # fixture exercises cannot drift apart.
 # ---------------------------------------------------------------------------
 README_EMPTY_CLAIMS=(
-  $'the drop\tthe empty level is dropped, and the entry indexes at the levels that remain'
+  $'the drop\tThe empty levels are dropped and the entry indexes'
+  # M13: one report per mark, naming the positions the author can find in
+  # their own value, and the count of WRITTEN levels that remain.
+  $'one report per mark\twarning per mark, naming the entry and which positions in the value were'
+  $'positions named\t`entry="!Sub!"` reports positions 1 and 3 of 3'
+  $'written levels remain\t3 written levels remains'
   $'both ends\t`entry="!Cats"` and `entry="Cats!"` both index as `Cats`'
   $'format-neutral\tThis is the same in every format'
   $'why it matters\trejects an entry outright for a leading or middle null field'

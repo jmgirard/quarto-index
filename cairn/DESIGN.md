@@ -122,7 +122,13 @@ is what made the defect urgent rather than what makes the rule right (added M11;
 a value that is only
 empty levels falls back to the mark's visible text, and a sort level is dropped
 with the entry level it was written for and reported, never re-aligned onto a
-level it was not written for — corrected M11 review). Cross-reference targets are parsed
+level it was not written for — corrected M11 review). The drop is reported once
+per mark, naming the positions empty in the value as the author wrote it and how
+many of those written levels remain — never how many the entry indexes at, which
+this layer cannot know, since the three-level fold runs later in the back-end
+that imposes it. The report about a `sort=` reaching past what it has to sort
+states its counts on the same footing, before any empty level is dropped (added
+M13). Cross-reference targets are parsed
 and validated —
 a target naming the mark's own printed levels is reported and dropped, so the
 term indexes plainly rather than pointing at itself (corrected M08; neither

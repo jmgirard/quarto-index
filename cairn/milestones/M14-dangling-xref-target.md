@@ -1,6 +1,6 @@
 # M14: A cross-reference target that names no index entry is reported
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -136,6 +136,7 @@ the existing candidate row.
 - 2026-08-19: T6 fixture reconciliation found by the new report: `examples/self-xref.qmd`'s both-attributes mark carried `see-also="Pets"`, a target the file never indexed, so the surviving half of the mark M08 added to prove a surviving target is still emitted was itself a broken cross-reference. Retargeted to `Cats`, which the file marks; the three suite pins on that encap follow it. Without this AC4's absence clause was unsatisfiable, since that mark's line would carry a dangling report of its own.
 - 2026-08-19: T7 discrimination probes, run against a non-exiting copy of the suite so every failure is collected rather than only the first. (a) Report reverted (both call sites neutered): 51 checks fail -- every AC1, AC3, AC4 fold-shape, AC5 and corpus count, plus the resolution-rule cross-check. (b) Report over-reporting (resolution ignored, every target named): 26 fail -- AC2's three exact zeros, AC4's self-reference absence clause on `entry="Dogs"`, AC3's `Cats` absence clause, every pinned corpus count, and the cross-check again. (c) Resolution truncated to the target's first level: 24 fail, led by AC3's partial-path row (`Cats!Kittens`) and the multi-level row, which is the defect those two rows exist for. The exact-zero clauses cannot fail under (a) and the counts cannot fail under (b) -- each direction is discriminated by its partner in the same fixture family, which is why both fixtures exist.
 - 2026-08-19: T8 documented the report in DESIGN (a new paragraph beside the shared-layer one: why it is drawn from the collected level paths rather than the HTML entry tree, that a prefix resolves, and the book's last-chapter rule) and in README (a `see=`/`see-also=` naming nothing indexed is reported, not dropped, once per mark per target, with the parent-level and book cases). Four README sentences pinned in the misuse-claims array. Widened the `marks_seen` module-level-state candidate row with the two accumulators this milestone adds. `tests/run-tests.sh --self-test` passes: 216 checks.
+- 2026-08-19: all tasks done; `tests/run-tests.sh --self-test` clean at 216 checks (183 without the self-test, up from 175). Status -> review.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 4 findings against this file: AC2 was unsatisfiable (~250 corpus targets dangle) and AC5 rested on a false claim about which chapter knows the book's entries — both went to the question gate and are settled above; AC4's exact-zero over self-xref.qmd was narrowed to the four format-neutral marks, AC3's single exemplar was widened to five shapes, and AC6's unfalsifiable literal-count claim was dropped.
 
 ## Decisions

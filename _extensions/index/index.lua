@@ -1587,9 +1587,9 @@ end
 -- block's position and nothing else.
 --
 -- Counting this way is what keeps the rule free of per-container code, and so
--- free of the gap that came with it: a figure caption and a table cell are
--- block lists like any other here, where a check written kind by kind reached
--- neither.
+-- free of the gap that came with it: a table cell, a footnote body and a
+-- definition are block lists like any other here, where a check written kind
+-- by kind reached none of them.
 local function emptied_places(block)
   local lists, owned = 0, 0
   block:walk({
@@ -1633,9 +1633,10 @@ end
 -- would look empty.
 local function strip_nested_markers(block, position)
   for _ = 1, emptied_places(block) do
-    warn(("index placement marker in top-level block %d was the only thing "
-          .. "written where it stood; the marker is removed, so nothing you "
-          .. "wrote remains there"):format(position))
+    -- One literal, not concatenated: the distinctness scan reads each warn()
+    -- call's FIRST literal, so a message built with `..` is compared by its
+    -- prefix while the report is about the whole of it (M10).
+    warn(("index placement marker in top-level block %d was the only thing written where it stood; the marker is removed, so nothing you wrote remains there"):format(position))
   end
   return block:walk({
     Blocks = function(blocks)

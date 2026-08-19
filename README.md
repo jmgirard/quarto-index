@@ -314,8 +314,9 @@ Six rules, each of which warns rather than breaking your build:
 - **The marker is empty.** Write anything inside it and your content stays
   where the marker was, with a warning. Nothing you wrote is deleted.
 - **A marker in a document with no index marks** places nothing, and says so.
-- **A marker that was the only thing there** empties the place it was written
-  in, and that is reported by the number of the top-level block it sat under.
+- **A nested marker that was the only thing there** empties the place it was
+  written in, and that is reported by the number of the top-level block it sat
+  under. (A lone top-level marker places the index, so it empties nothing.)
   The report does not name what held it, on purpose: Quarto wraps a callout, a
   tabset and a captioned figure in divs it generates and you never wrote, so
   any name the extension could print is either invented or wrong — and a

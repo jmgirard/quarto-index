@@ -14,7 +14,7 @@ filters:
 # what the manifest is about; the container kind is deliberately absent,
 # because the report never names one.
 #
-#   reports at top-level blocks: 12 13 14 15 16 17 18 20 22 24
+#   reports at top-level blocks: 12 13 14 15 16 17 18 20 22 24 26 26 28
 #
 #     12  a Quarto callout holding only the marker
 #     13  a tabset whose first tab holds only the marker
@@ -26,6 +26,9 @@ filters:
 #     20  a marker alone inside a marker — ONE report, not one per level
 #     22  a marker three deep — ONE report
 #     24  a marker inside a marker inside a FOOTNOTE — still ONE report
+#     26  a bullet list with TWO marker-only items (first of the two)
+#     26  a bullet list with TWO marker-only items (second of the two)
+#     28  a definition list whose first definition holds only the marker
 #
 #   No report anywhere else. The must-not-report shapes are written without a
 #   bare leading number, so the reporting rows above are the only ones a parse
@@ -33,7 +36,7 @@ filters:
 #     block 5 — a marker carrying content, which is spliced back in
 #     block 7 — a marker beside a paragraph the author wrote
 #     block 9 — a container the author left empty, holding no marker at all
-#     block 27 — the top-level placement marker, removed whole, not emptied
+#     block 31 — the top-level placement marker, removed whole, not emptied
 #     the title — the marker class in metadata, which the machinery never reaches
 ---
 
@@ -149,6 +152,29 @@ A footnote holding a marker inside a marker.[^nested]
     ::: {.qi-index-here}
     :::
     :::
+
+Two places emptied under ONE top-level block draw two reports, and the two are
+byte-identical because the report carries the block's position and nothing
+finer. That is the honest limit of naming nothing, so it is pinned rather than
+avoided.
+
+- ::: {.qi-index-here}
+  :::
+
+- ::: {.qi-index-here}
+  :::
+
+A definition list is the container M08's kind-by-kind check needed its own
+branch for. Here it is a block list like every other.
+
+Term whose definition is only a marker
+
+:   ::: {.qi-index-here}
+    :::
+
+Term with a real definition
+
+:   Text, so this definition keeps something.
 
 # The shape that places the index
 

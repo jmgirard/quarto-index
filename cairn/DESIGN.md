@@ -116,11 +116,13 @@ The **Span pass** handles one mark at a time. Everything that depends only on
 what the author wrote happens *before* any back-end is chosen: the `entry=`
 value is parsed into levels, cross-reference targets are parsed and validated —
 a target naming the mark's own printed levels is reported and dropped, so the
-term indexes plainly rather than pointing at itself (corrected M08; the
-comparison is on unclamped levels with empty ones kept, so a self-reference the
-three-level fold or a dropped empty level makes equal still survives —
-ROADMAP) — and the warnings for a malformed mark are emitted, so a misused
-mark is diagnosed in every output format, not only where a back-end exists.
+term indexes plainly rather than pointing at itself (corrected M08; empty
+levels are ignored on both sides of the comparison, because an empty level
+prints nothing — corrected M10) — and the warnings for a malformed mark are
+emitted, so a misused mark is diagnosed in every output format, not only where
+a back-end exists. One report is the exception, and it is one by construction:
+a target that only the LaTeX level fold makes self-referential is judged inside
+that back-end, since no other format folds (added M10).
 then branches per format and records what that back-end will need.
 
 The **Pandoc pass** runs once the whole document has been seen, and is where a
@@ -143,7 +145,10 @@ Two back-ends ship:
   in, and every mark below the marker is silently lost. Levels are made
   literal per character
   by whichever mechanism that character needs, clamped to makeindex's
-  three-level ceiling, and two document-wide reports are drawn: a term marked
+  three-level ceiling. The self-target comparison is then run a second time
+  against the clamped levels, because the fold can make an entry print a path
+  the author never spelled and a target naming that path is a self-reference
+  only here (added M10). Two document-wide reports are drawn: a term marked
   two incompatible ways, and two entries the ceiling folds onto one printed
   level path while their sort keys keep them apart (added M09). A level with a sort key is written in makeindex's own
   `sortkey@printed` form, that `@` being the one the back-end writes and so
@@ -203,7 +208,9 @@ Quarto presents as a book chapter without the metadata this needs — which fall
 back to indexing that page alone, the pre-M05 defect, and so is never silent.
 
 Shared between them: the level parse, the cross-reference target parse and its
-`: ` join, and every warning about the mark itself.
+`: ` join, and every warning about the mark itself except one — the
+fold-induced self-target, which belongs to the back-end whose fold creates it
+(corrected M10).
 
 `examples/` holds the fixtures; `tests/run-tests.sh` is the acceptance suite,
 which renders them and checks each render against hand-derived manifests

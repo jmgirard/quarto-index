@@ -251,7 +251,13 @@ format only. A target resolves against a marked path or any prefix of one,
 matching the HTML walk that turns a target into a link. In a book the set is
 the whole store's, so a target another chapter indexes resolves; the report is
 drawn by the last chapter in book order, the only chapter that has seen every
-record, and a render stopping short of it draws none. The mark's own naming
+record, and a render stopping short of it draws none — while a render whose
+other chapters have no record yet reports their terms as unindexed, the same
+partial-render cost every cross-chapter judgement here carries. A PDF book
+takes neither path: it is already one document, so the per-document report is
+the right one and says so. The degraded fallback — a page Quarto calls a
+chapter without the metadata this needs — draws no dangling report at all,
+since every cross-chapter target on it would be reported falsely. The mark's own naming
 string travels in its stored record, because the reporting chapter runs in
 another process.
 

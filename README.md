@@ -184,9 +184,12 @@ resolves when its levels name an entry the document indexes, including a level
 that exists only because a deeper entry hangs from it: with
 `entry="Trees!Oak!Acorn"` marked somewhere, `see-also="Trees!Oak"` resolves. In
 a book the whole book's marks are what a target is judged against, so a target
-naming a term another chapter marks is fine; the report is drawn once, by the
-last chapter in book order, so a render that stops short of that chapter draws
-none.
+naming a term another chapter marks is fine. A PDF book is one document by the
+time the extension runs, so nothing special happens there. An HTML book renders
+each chapter on its own, so the report is drawn once, by the last chapter in
+book order — which means a render that stops short of that chapter draws none,
+and a render whose other chapters have never been rendered has nothing recorded
+for them and will call their terms unindexed. Render the whole book.
 
 ### Special characters
 
@@ -557,6 +560,9 @@ written. `examples/marker.qmd` puts the index between two sections with a
 placement marker; `examples/marker-misuse.qmd` and
 `examples/marker-nomarks.qmd` are its misuse cases. `examples/control.qmd` is
 a negative control: mark-like text inside code, which must never be indexed.
+`examples/dangling-xref.qmd` and `examples/resolving-xref.qmd` are a pair:
+every cross-reference target in the first names a term nothing indexes, and
+every target in the second resolves.
 
 ```bash
 quarto render examples/demo.qmd --to pdf

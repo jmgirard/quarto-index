@@ -1822,7 +1822,7 @@ local STORE_SUFFIX = ".qi.json"
 -- version that wrote it: nothing prunes it, and a project keeps rendering
 -- across extension upgrades. A record whose version is not this one is
 -- ignored rather than read as if its fields still meant what they did.
-local STORE_VERSION = 4
+local STORE_VERSION = 3
 
 -- Paths from Quarto are the host's; hrefs are always `/`-separated.
 local function as_href(path)
@@ -1984,12 +1984,30 @@ local function valid_record(data, file)
     if mark.anchor ~= nil and type(mark.anchor) ~= "string" then
       return false
     end
-    -- Required, not optional: every record this version writes names its
-    -- marks, and a record that does not is one this version cannot report
-    -- about. An older store says so by its version and is ignored before it
-    -- reaches here.
-    if type(mark.context) ~= "string" then
+    -- Optional, and deliberately not a version bump (review F4): `context`
+    -- is read by one warning and by nothing that reaches the index, so a
+    -- record written before it existed is still a perfectly good record. The
+    -- alternative — invalidating every stored chapter — costs an author their
+    -- terms until the whole book is rendered again, which is a real loss
+    -- traded for a warning that reads slightly better.
+    if mark.context ~= nil and type(mark.context) ~= "string" then
       return false
+    end
+    -- Validated here rather than trusted (review F9): a record whose xref
+    -- lost its levels reaches `levels_key` and takes the render down with it,
+    -- which IP2 forbids. Two consumers read these now — the entry builder and
+    -- the book's dangling-target report — and the report reads them on every
+    -- last-chapter render, before any of the marker logic runs.
+    for _, xref in ipairs(mark.xrefs or {}) do
+      if type(xref) ~= "table" or type(xref.attr) ~= "string"
+         or type(xref.levels) ~= "table" or #xref.levels == 0 then
+        return false
+      end
+      for _, level in ipairs(xref.levels) do
+        if type(level) ~= "string" then
+          return false
+        end
+      end
     end
     if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
       return false
@@ -2163,8 +2181,23 @@ local function report_book_dangling(records)
   for _, record in ipairs(records) do
     for _, mark in ipairs(record.marks or {}) do
       for _, xref in ipairs(mark.xrefs or {}) do
-        xrefs[#xrefs + 1] = { attr = xref.attr, levels = xref.levels,
-                              context = mark.context }
+        -- The same filter `book_marks` applies before the entry tree is
+        -- built: an attribute name this version does not know never reaches
+        -- the index, so reporting on it would name a cross-reference no
+        -- reader will ever see (review F8).
+        if XREF_KIND_BY_ATTR[xref.attr] then
+          xrefs[#xrefs + 1] = {
+            attr = xref.attr,
+            levels = xref.levels,
+            -- Which chapter the mark is in, joined onto how the mark names
+            -- itself: in a book of forty chapters `term "Shared Term"` alone
+            -- is not somewhere an author can go (review F3). The fallback is
+            -- for a record written before chapters carried their marks'
+            -- naming strings — it names the file, which is the half that
+            -- matters most here.
+            context = (mark.context or "a mark") .. " in " .. record.file,
+          }
+        end
       end
     end
   end
@@ -2295,7 +2328,13 @@ local function Pandoc(doc)
   -- index at all. A book chapter is not the document its targets are judged
   -- against — the whole store is, and the last chapter in book order draws
   -- that report instead (report_book_dangling).
-  if not book then
+  -- Not on the degraded book path (review F6): there Quarto called this page
+  -- a book chapter and withheld what it takes to aggregate one, so the page
+  -- was indexed on its own and the warning above says so. Every cross-chapter
+  -- target on it would then be reported as naming nothing indexed, which is
+  -- false of the book the author is writing and buries the one warning that
+  -- is true.
+  if not book and not (is_html() and doc.meta.book ~= nil) then
     report_dangling(marked_paths, pending_xrefs, "document")
   end
 

@@ -1418,6 +1418,15 @@ WARN_NO_SOURCE='cross-reference mark has no source entry'
 # reworded away unnoticed.
 WARN_DANGLING='indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'
 
+# One report's full text, assembled from the two halves rather than written
+# out per shape: the head carries the attribute, the mark and the target, and
+# the tail is WARN_DANGLING, which every instance shares and which is pinned
+# once where that constant is defined.
+dangling_report() {
+  printf '%s= on %s points at "%s", which no index mark in this %s %s' \
+    "$1" "$2" "$3" "$4" "$WARN_DANGLING"
+}
+
 check_warning_count "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
 pass "M02-AC5: case (b) warned exactly once in the demo render"
 
@@ -4505,7 +4514,7 @@ PY
 # ONLY warning the whole book emits is that one report, so `see="Alpha"`,
 # whose entry another chapter contributes, draws none. Counted across the
 # whole four-chapter render, which is what says a single chapter drew it.
-BOOK_DANGLING='see= on term "Epsilon" points at "No Such Entry", which no index mark in this book indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'
+BOOK_DANGLING='see= on term "Epsilon" in sub/two.qmd points at "No Such Entry", which no index mark in this book indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'
 check_warning_count "$WORK/book-html.log" "$BOOK_DANGLING" 1 "M14-AC5"
 if [ "$( { grep -c '^(W)' "$WORK/book-html.log" || true; } )" != "1" ]; then
   grep '^(W)' "$WORK/book-html.log" >&2
@@ -4708,6 +4717,41 @@ check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE" 0 \
   "M06 (stale store record)"
 cp "$WORK/one-record.json" "$CORRUPT"
 pass "M06: a record from an older extension version is reported as stale rather than as unreadable, and the render survives"
+
+# M14 (review F9) — a record whose cross-reference lost its levels. Two
+# consumers read these now, and the newer of them runs on every last-chapter
+# render before any of the marker logic; reaching it with no levels is a hard
+# error and a dead render, which IP2 forbids. Validated and skipped instead.
+printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":false,"marks":[{"levels":["Beta"],"xrefs":[{"attr":"see"}],"anchor":"qi-mark-1"}]}\n' "$STORE_VERSION" > "$CORRUPT"
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-badxref.log" 2>&1 \
+  || { tail -30 "$WORK/book-badxref.log" >&2; fail "M14 (review F9): a record whose cross-reference lost its levels took the render down; IP2 forbids it"; }
+check_warning_count "$WORK/book-badxref.log" "$WARN_STORE_UNREADABLE" 1 \
+  "M14 (review F9)"
+cp "$WORK/one-record.json" "$CORRUPT"
+pass "M14: a stored cross-reference with no levels is reported and skipped rather than taking the render down"
+
+# M14 (review F4) — a record written before chapters carried their marks'
+# naming strings. `context` is read by one warning and by nothing that reaches
+# the index, so such a record is still a good record: rejecting it would cost
+# an author that chapter's terms for the sake of wording. It is accepted with
+# neither store warning, its term reaches the index, and the report it draws
+# names the chapter and says only what it knows about the mark.
+printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":false,"marks":[{"levels":["Legacy Term"],"xrefs":[{"attr":"see","levels":["Nothing Indexed Here"]}],"anchor":"qi-mark-1"}]}\n' "$STORE_VERSION" > "$CORRUPT"
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-nocontext.log" 2>&1 \
+  || { tail -30 "$WORK/book-nocontext.log" >&2; fail "M14 (review F4): a record with no per-mark naming string took the render down"; }
+check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M14 (review F4)"
+check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_STALE" 0 \
+  "M14 (review F4)"
+check_warning_count "$WORK/book-nocontext.log" \
+  "$(dangling_report see 'a mark in one.qmd' 'Nothing Indexed Here' book)" 1 \
+  "M14 (review F4)"
+grep -qF 'Legacy Term' "$BOOK_OUT/last.html" \
+  || fail "M14 (review F4): the chapter's term is missing from the index, so the record was rejected after all"
+cp "$WORK/one-record.json" "$CORRUPT"
+pass "M14: a record predating the per-mark naming string is accepted, keeps its chapter's terms in the index, and its report names the chapter it came from"
 
 # ---------------------------------------------------------------------------
 # The ordering fixture: marker in the first chapter, a second marker in the
@@ -6501,15 +6545,6 @@ pass "M11-AC1: every entry written with an empty level survives to the compiled 
 # with a LaTeX index, one with an HTML index, and one with no index at all.
 # ---------------------------------------------------------------------------
 
-# One report's full text, assembled from the two halves rather than written
-# out per shape: the head carries the attribute, the mark and the target, and
-# the tail is WARN_DANGLING, which every instance shares and which is pinned
-# once where that constant is defined.
-dangling_report() {
-  printf '%s= on %s points at "%s", which no index mark in this %s %s' \
-    "$1" "$2" "$3" "$4" "$WARN_DANGLING"
-}
-
 for fmt in latex html gfm; do
   quarto render examples/dangling-xref.qmd --to $fmt \
     > "$WORK/dangling-$fmt.log" 2>&1 \
@@ -6541,6 +6576,9 @@ read -r -d '' DANGLING_SHAPES <<'MANIFEST' || true
 1	see	entry="Bobcats"	Lynxes
 MANIFEST
 
+# Seeded with AC1's own report — the `Felines` shape asserted above, which is
+# not one of the rows below — so that the total this loop builds is the whole
+# of what the fixture may report (review F13).
 DANGLING_TOTAL=1
 while IFS=$'\t' read -r want attr context target; do
   [ -n "${want:-}" ] || continue
@@ -6668,7 +6706,9 @@ pass "M14-AC4: none of the six self-referential targets is also reported as dang
 # would call that target broken, on both renders. `Missing Reference` names a
 # term no chapter marks and is reported once per whole-book render — once, not
 # once per chapter, which is only reachable if a single chapter draws it.
-ORDER_DANGLING="$(dangling_report see 'entry="Missing Reference"' 'Nowhere At All' book)"
+# The book form names the chapter as well as the mark (review F3): in a book
+# the mark's own naming string is not somewhere an author can go.
+ORDER_DANGLING="$(dangling_report see 'entry="Missing Reference" in later chapter.qmd' 'Nowhere At All' book)"
 for pass_log in 1 2; do
   check_warning_count "$WORK/book-order-$pass_log.log" "$ORDER_DANGLING" 1 \
     "M14-AC5 (render $pass_log)"
@@ -6688,10 +6728,52 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 # with the filter by sharing its bug; a number that has to be changed by hand
 # cannot.
 #
-# examples/xref-escaping.qmd is the large one: its ~250 probe targets name
-# level paths built by construction to cover the printable ASCII range, and
-# nothing indexes them. Reconciling that corpus is its own piece of work, and
-# is a ROADMAP candidate; this milestone pins what it reports.
+# ORACLE RULE, as for every other manifest here: each count is DERIVED from
+# the .qmd source and the documented semantics, never read off a render
+# (review F5). The derivations, one per nonzero row and one per row whose zero
+# is not simply "no targets":
+#
+#   xref-escaping  272 target attributes, of which one is written `see=""`
+#                  and is dropped with "has no usable target text" before any
+#                  target exists to resolve. The other 271 name level paths
+#                  built by construction from the printable ASCII range
+#                  (`L1!x!L3` and its rotations); the file indexes only its
+#                  visible probe labels (`x00`, `a00`, ...), so none resolves.
+#                  271.
+#   demo           8 attributes (Felines, Pets, Birds!Owls, Wow!!Hey, Vulpes,
+#                  Spirits, Aye, Bee). The file's entries are its visible terms
+#                  plus `Canids!Foxes`, `Ghosts`, `Wow!!Really`, `Top!Middle!
+#                  Leaf` and the escaping entries; no target is among them, and
+#                  `Wow!!Hey` parses to the single level `Wow!Hey`, which
+#                  `Wow!!Really` does not spell. 8.
+#   dangling-xref  9 attributes, of which 2 name `Cats`, which the file
+#                  indexes. 7.
+#   xref-conflict  7 attributes. Only `see="Note!on birds"` names the file's
+#                  one `entry=` path; `see="Note: on birds"` is a single level
+#                  that merely prints the same way (the M02 shape). 6.
+#   html-index     5 attributes: `see="A!B"` four times, which names the file's
+#                  one entry, and `see="A: B"` once, which does not. 1.
+#   self-xref      11 attributes. 6 name the entry they are written on and are
+#                  dropped as self-references; 2 name `Cats`, which the file
+#                  indexes; the remaining 3 name the path the LaTeX fold makes
+#                  the entry print, which no mark writes as an entry. 3.
+#   book/sub/two   2 attributes: `see="Alpha"`, contributed by index.qmd, and
+#                  `see="No Such Entry"`, contributed by no chapter. 1.
+#   book-order     `index.qmd` points at `Late`, marked in the second chapter:
+#                  0. `later chapter.qmd` points at `Nowhere At All`, marked
+#                  nowhere: 1.
+#   content        2 attributes, both on marks with no source entry at all —
+#                  an image mark and an empty one — so neither is indexed and
+#                  neither target is ever resolved. 0.
+#   empty-levels   1 attribute: `entry="!Owls"` drops its empty level to
+#                  `Owls`, which `see="Owls"` then names, so it is dropped as a
+#                  self-reference. 0.
+#   placement      1 attribute: `see="widget"`, and `widget` is marked three
+#                  times in that file. 0.
+#   resolving-xref 3 attributes, all three resolving by construction. 0.
+#
+# Reconciling xref-escaping's corpus so its targets resolve is its own piece of
+# work and is a ROADMAP candidate; this milestone pins what it reports.
 # ---------------------------------------------------------------------------
 read -r -d '' DANGLING_CORPUS <<'MANIFEST' || true
 examples/book-order/index.qmd	0
@@ -6710,11 +6792,16 @@ examples/xref-escaping.qmd	271
 MANIFEST
 
 printf '%s\n' "$DANGLING_CORPUS" > "$WORK/dangling-corpus.txt"
-# The roster, from the corpus itself. `see=`/`see-also=` as an attribute, so a
-# prose mention of the attribute name in a fixture's own explanatory text does
-# not put that file on the roster.
-find examples -name '*.qmd' -print0 \
-  | xargs -0 grep -lE '(see|see-also)="' \
+# The roster, from the corpus itself. The attribute is matched after
+# whitespace, so `notsee="..."` and a bare prose mention of the name do not put
+# a file on the roster (review F11). Build output is pruned rather than trusted
+# not to hold a copy of a source file, and the whole recursive grep is one
+# command with its no-match exit absorbed: piping `find` into `xargs grep` dies
+# under `pipefail` with no FAIL line at all when a batch matches nothing
+# (review F10). An empty roster cannot pass silently — the diff below fails on
+# it.
+{ grep -rlE --include='*.qmd' '[[:space:]](see|see-also)="' examples || true; } \
+  | grep -v '/_book/\|/\.quarto/' \
   | LC_ALL=C sort > "$WORK/dangling-roster.txt"
 cut -f1 "$WORK/dangling-corpus.txt" | LC_ALL=C sort > "$WORK/dangling-listed.txt"
 if ! diff -u "$WORK/dangling-roster.txt" "$WORK/dangling-listed.txt" >&2; then

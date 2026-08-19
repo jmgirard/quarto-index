@@ -822,7 +822,7 @@ local function Span(span)
             .. "back-end stores %d levels, and the fold made the target a "
             .. "cross-reference to itself, so it is dropped and the term is "
             .. "indexed as usual")
-           :format(xref.kind.attr, context, levels_key(clamped), MAX_LEVELS))
+           :format(xref.kind.attr, context, printed_path, MAX_LEVELS))
     else
       kept_after_fold[#kept_after_fold + 1] = xref
     end

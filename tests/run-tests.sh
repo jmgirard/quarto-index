@@ -2765,8 +2765,14 @@ python3 - "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" \
 import re, sys
 keys = sys.argv[1:4]
 src = open(sys.argv[4], encoding='utf-8').read()
-pattern = r'warn\(\s*\(?("|\x27)((?:[^\\]|\\.)*?)\1'
-lits = [m.group(2) for m in re.finditer(pattern, src)]
+# Each warn() call's message, with its concatenated fragments joined back
+# together: these messages are written as `("..." .. "..."):format(...)`, so a
+# scan that read only the leading literal would compare keys against a PREFIX
+# of each message while claiming to compare them against the message.
+calls = re.findall(r'warn\((.*?)\)\s*$', src, re.S | re.M)
+frag = re.compile(r'("|\x27)((?:[^\\]|\\.)*?)\1')
+lits = [''.join(m.group(2) for m in frag.finditer(c)) for c in calls]
+lits = [l for l in lits if l]
 errs = []
 # Each key must find its own message in the filter, or the key is stale and
 # every count using it reads zero forever.
@@ -5531,7 +5537,8 @@ for want in ([(0, 'A'), (1, 'B'), (2, 'C, D')],
 CROSS_REFERENCED = ('Dogs, see also Pets', 'Lynxes, see Cats')
 printed = [e.text for e in entries]
 for entry in entries:
-    if 'see' in entry.text and entry.text not in CROSS_REFERENCED:
+    printed_xref = ', see ' in entry.text or ', see also ' in entry.text
+    if printed_xref and entry.text not in CROSS_REFERENCED:
         errs.append(f'entry {entry.text!r} prints a cross-reference and is not '
                     f'one of the two entitled to')
 # ...and both of those must actually be there, or the loop above is satisfied
@@ -5540,6 +5547,20 @@ for want in CROSS_REFERENCED:
     if want not in printed:
         errs.append(f'{want!r} is not in the printed index, so the check above '
                     f'cannot tell a dropped target from a lost one')
+
+# The IP2 half, followed to the artifact: dropping a target must leave the term
+# indexed. Hand-derived from the .qmd — the depth-5 entry folds to F, G,
+# "H, I, J"; `entry="P!Q!R!"` folds its trailing empty away and prints P, Q, R;
+# and `entry="Moles!"` hands makeindex a trailing null field, which it
+# swallows, so the entry prints as the single top-level term `Moles`.
+for want in ([(0, 'F'), (1, 'G'), (2, 'H, I, J')],
+             [(0, 'P'), (1, 'Q'), (2, 'R')]):
+    n = len(want)
+    if not any(actual[i:i + n] == want for i in range(len(actual) - n + 1)):
+        errs.append(f'{want} does not appear as consecutive rows, so a term '
+                    f'was lost rather than indexed plainly')
+if (0, 'Moles') not in actual:
+    errs.append("the entry 'Moles' is not in the printed index at all")
 
 if errs:
     print('FAIL: M10-AC6: ' + '; '.join(errs), file=sys.stderr)

@@ -105,7 +105,7 @@ the existing candidate row.
 - [x] T4 Book path: draw the report from the last chapter in book order,
       against the store as of this render, reusing the chapter-position logic
       the no-marker report already uses (`index.lua:2110-2118`).
-- [ ] T5 Fixtures: a new dangling-target fixture carrying AC1's and AC3's
+- [x] T5 Fixtures: a new dangling-target fixture carrying AC1's and AC3's
       shapes; a new all-resolving fixture for AC2; a cross-chapter resolving
       target and a book-wide dangling one added to both book fixtures.
 - [ ] T6 Suite checks for AC1–AC6, and the corpus reconciliation the report
@@ -130,6 +130,7 @@ the existing candidate row.
 - 2026-08-19: T3 built the marked-entry path set (`marked_paths`, every mark's level prefixes) and the deferred target list (`pending_xrefs`) format-neutrally in the Span pass, and emit the report from the Pandoc pass, which is the first point that has seen every mark; a target dropped as a self-reference never enters the list, one the LaTeX fold later drops still does.
 - 2026-08-19: T4 draws the book report from the last chapter in book order against the whole store; the mark's context string is now carried in the per-chapter record (STORE_VERSION 3 -> 4, `valid_record` requires it) because the reporting chapter runs in another process. Verified on `examples/book`: one report naming `No Such Entry`, none for the cross-chapter `see="Alpha"`.
 - 2026-08-19: T3/T4 fallout in the suite, committed with them so `verify` stays clean: the warn-distinctness count 36 -> 37 with the new report added to the single-literal list (M14-AC6), and M05-AC4's "the book renders warning-free" replaced by the stronger claim it was really making -- the book's only warning is the one dangling report, so the resolvable cross-file target draws none.
+- 2026-08-19: T5 added `examples/dangling-xref.qmd` (AC1's shape plus AC3's five: dangling see-also beside a resolving see=, the inversion, a multi-level target, a partial-path target, and one target on two marks -- 7 reports, identical in LaTeX, HTML and gfm) and `examples/resolving-xref.qmd` (exact single-level, full multi-level path, and parent-of-a-deeper-entry -- 0 reports in all three). `examples/book` already carried both AC5 shapes (`see="Alpha"` cross-chapter, `see="No Such Entry"` book-wide), so only `examples/book-order` gained them: `Early Reference` -> `Late` in the marker-first chapter draws nothing even on the first render, `Missing Reference` draws exactly one across the whole book. Neither new mark carries a locator, so no existing anchor moved; manifest 8 and the letter sweep gained their rows (E, M).
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 4 findings against this file: AC2 was unsatisfiable (~250 corpus targets dangle) and AC5 rested on a false claim about which chapter knows the book's entries — both went to the question gate and are settled above; AC4's exact-zero over self-xref.qmd was narrowed to the four format-neutral marks, AC3's single exemplar was widened to five shapes, and AC6's unfalsifiable literal-count claim was dropped.
 
 ## Decisions

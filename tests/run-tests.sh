@@ -668,11 +668,21 @@ WARN_BOOK_SORT_CONFLICT='one entry cannot file in two places, so the first in bo
 # — but third.qmd repeating the SECOND chapter's rival key does discriminate
 # once-per-rival-key reporting from once-per-conflicting-chapter. Locators
 # appear in book order and, within a chapter, in the order they are marked.
+#
+# M14 adds the two cross-reference-only marks. Neither carries a locator — a
+# cross-reference takes the locator's place — so neither consumes a
+# `qi-mark-<n>` and every row above keeps the anchor it had. `Early Reference`
+# is marked in the FIRST chapter and points at `Late`, which the SECOND
+# contributes: after two renders the store holds that record, so the target is
+# a link. `Missing Reference` points at a term no chapter marks, so it stays
+# plain text — and is the one thing the whole book reports.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_ORDER_INDEX <<'MANIFEST' || true
 0	Contested	#qi-mark-2 later chapter.html#qi-mark-2 later chapter.html#qi-mark-3 third.html#qi-mark-1
 0	Early	#qi-mark-1
+0	Early Reference		see-link Late
 0	Late	later chapter.html#qi-mark-1
+0	Missing Reference		see-plain Nowhere At All
 MANIFEST
 
 # The missing-marker report, named once (M05-AC6). The class name is part of
@@ -4751,8 +4761,10 @@ pass "M06-AC4: one entry sorted two ways in two chapters is reported once on the
 # headings are asserted by the hand-derived sweep instead. `Contested` files
 # under the sort key the FIRST chapter in book order gives it, `Aaa`, not the
 # `Zzz` two later chapters write and not its own printed text — so its group
-# is A. `Early` and `Late` file under their printed text.
-check_letter_sweep "$ORDER_OUT/index.html" "M07-AC1 (book order)" $'A\nE\nL'
+# is A. `Early`, `Early Reference`, `Late` and `Missing Reference` file under
+# their printed text, which puts M14's two cross-reference-only entries in the
+# E and M groups.
+check_letter_sweep "$ORDER_OUT/index.html" "M07-AC1 (book order)" $'A\nE\nL\nM'
 
 printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
 HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$ORDER_OUT" \

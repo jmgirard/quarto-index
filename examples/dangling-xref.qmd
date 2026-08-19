@@ -1,0 +1,48 @@
+---
+title: "quarto-index dangling cross-reference probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# A cross-reference target that names no index entry
+
+"Cats, see Felines" sends a reader to an entry the index does not have. The
+target is not dropped — what the author wrote is theirs (IP2) — but it is
+reported, in every format, because whether a target names a term the document
+indexes is a fact about the document rather than about a back-end.
+
+The criterion shape: this document indexes `Cats`, and a mark points at
+`Felines`, which nothing here indexes. [cats]{.index entry="Cats"} is the
+entry that exists; [lions]{.index entry="Lions" see="Felines"} points at the
+one that does not.
+
+# Every shape the report has to fire on
+
+Varied in form as well as in position, so that no single shape stands in for
+the family.
+
+A dangling `see-also=` beside a resolving `see=`, on one mark: the resolving
+half must stay silent while the other is reported, and the both-attributes
+report fires as it always does. [pumas]{.index entry="Pumas" see="Cats"
+see-also="Ocelots"}.
+
+The inversion — a dangling `see=` beside a resolving `see-also=` — so that
+neither attribute is the one the report happens to read:
+[jaguars]{.index entry="Jaguars" see="Servals" see-also="Cats"}.
+
+A multi-level target, none of whose levels this document indexes:
+[caracals]{.index entry="Caracals" see="Wild!Cats!Small"}.
+
+A partial-path target, where the FIRST level is indexed and the second is
+not. This is the shape a resolution rule that stops at the first level would
+pass and a reader would still be sent nowhere:
+[margays]{.index entry="Margays" see="Cats!Kittens"}.
+
+One dangling target written on two separate marks. The report is per mark per
+target, not per distinct target: each mark is its own place in the source for
+the author to go and fix. [ocelots]{.index entry="Ocelots Marked"
+see="Lynxes"} and [bobcats]{.index entry="Bobcats" see="Lynxes"}.
+
+::: {.qi-index-here}
+:::

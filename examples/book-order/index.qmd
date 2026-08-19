@@ -7,5 +7,11 @@ chapter renders in its own process, so neither can see the other's key; the
 book's records only meet where the index is built:
 [Contested]{.index sort="Aaa"}.
 
+A cross-reference whose target is marked in a LATER chapter. Nothing in this
+chapter indexes `Late`, and this is the chapter that builds the index, so a
+report drawn here would call a perfectly good target broken. It is drawn by
+the last chapter in book order instead, which has seen every record:
+[early reference]{.index entry="Early Reference" see="Late"}.
+
 ::: {.qi-index-here}
 :::

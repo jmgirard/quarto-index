@@ -181,6 +181,20 @@ local function levels_key(levels)
   return table.concat(parts, "!")
 end
 
+-- The levels that actually print, for a comparison about what a reader sees.
+-- An empty level occupies a position in the entry the author wrote but puts no
+-- text in the index, so two level lists differing only in empty levels print
+-- the same path.
+local function nonempty_levels(levels)
+  local kept = {}
+  for _, level in ipairs(levels) do
+    if level ~= "" then
+      kept[#kept + 1] = level
+    end
+  end
+  return kept
+end
+
 -- Render one literal level as a LaTeX `\index{}` argument fragment.
 local function escape_level(level)
   return (level:gsub(".", function(c)
@@ -726,10 +740,18 @@ local function Span(span)
   -- never appears in the index a reader reads, so a target matching the printed
   -- text is a self-reference whatever the mark files under. Before the back-end
   -- branch, like every other judgement about what the author wrote.
-  local own_key = levels_key(levels)
+  --
+  -- Empty levels are ignored on BOTH sides, because an empty level prints
+  -- nothing: `entry="Cats!"` and a target of `Cats` are two spellings of one
+  -- printed path, and "Cats, see Cats" is what a reader gets. Dropping them on
+  -- the target side alone is what M08 did, and is why the two spellings
+  -- compared unequal — a target has its empty levels dropped when it is parsed
+  -- (target_levels), an entry keeps its own (warn_empty_levels: "the level is
+  -- kept as written"), so the asymmetry was in the comparison, not in the mark.
+  local own_key = levels_key(nonempty_levels(levels))
   local kept = {}
   for _, xref in ipairs(xrefs) do
-    if levels_key(xref.levels) == own_key then
+    if levels_key(nonempty_levels(xref.levels)) == own_key then
       warn(("%s= on %s names the entry it is written on; a cross-reference to "
             .. "itself says nothing, so it is dropped and the term is indexed "
             .. "as usual"):format(xref.kind.attr, context))

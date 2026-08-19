@@ -96,7 +96,7 @@ Acceptance-suite hardening → its clustered candidate row.
       node assertions via `tests/htmlindex.py`, and per-format message counts
       replacing M08's single shared `check_warning_count ... 4` loop with
       per-format constants (`tests/run-tests.sh:2728`).
-- [ ] T2. Strip empty levels from both sides of the existing format-neutral
+- [x] T2. Strip empty levels from both sides of the existing format-neutral
       self-target comparison (`_extensions/index/index.lua:727-737`).
 - [ ] T3. Add the LaTeX-only comparison after `clamp_levels`, inside
       `index_argument`'s caller (`_extensions/index/index.lua:770`), against
@@ -120,3 +120,4 @@ Acceptance-suite hardening → its clustered candidate row.
 - 2026-08-18: plan gate chose dropping a fold-induced target over reporting and keeping it, because keeping it ships the useless "P, Q, R, S, see also P: Q: R, S" line M08's rule exists to prevent; falsified by evidence that authors rely on the emitted target surviving a fold they did not intend.
 - 2026-08-18: criteria audit ran in FULL mode (user-facing tier), two rounds, fresh-context [O] reader both times. Round 1 returned 13 findings, none of the six criteria clean; nine were fixed silently and four became the gate's questions. Round 2 over the revised wording returned 16 findings, none clean; all were fixed except the suggested leading-empty probe, rejected because makeindex rejects a leading null field and the shape is an unfixed defect on its own candidate row.
 - 2026-08-18: T1 — fixture extended with the five shapes and the checks added; both new check blocks run and fail pre-fix for the right reasons (all five expected plain `\index` arguments found 0 times, all five pre-fix self-encaps present, and both empty-level HTML entries still carrying their targets with no locator). The AC3 clauses passed pre-fix, as they must: HTML never had the defect.
+- 2026-08-18: T2 — empty levels ignored on both sides of the format-neutral comparison. The self-reference count went 4 to 6 in latex, html and gfm alike, both empty-level shapes now emit a bare `\index` command, and the HTML check block passes in full (its AC3 clauses included). The three fold shapes are untouched, as expected: they are T3.

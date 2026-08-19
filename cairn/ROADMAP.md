@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-18 (M11 done and archived; one defect return at rev
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M12 | A marker that leaves nothing behind is reported without naming what held it | planned | — | normal | milestones/M12-emptied-place-report.md |
+| M12 | A marker that leaves nothing behind is reported without naming what held it | in-progress | — | normal | milestones/M12-emptied-place-report.md |
 | M11 | Empty index levels never lose the entry | done | — | normal | milestones/archive/M11-empty-levels.md |
 | M10 | Self-references the level fold and empty levels hide | done | — | normal | milestones/archive/M10-selfref-fold-empty.md |
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |

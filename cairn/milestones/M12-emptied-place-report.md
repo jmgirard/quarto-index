@@ -1,11 +1,11 @@
 # M12: A marker that leaves nothing behind is reported without naming what held it
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP1, GP5
-- **Branch/PR:** —
+- **Branch/PR:** m12-emptied-place
 
 ## Goal
 

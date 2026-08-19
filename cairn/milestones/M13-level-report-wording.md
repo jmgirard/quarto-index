@@ -1,11 +1,11 @@
 # M13: Level reports name a depth the author can act on
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, GP1
-- **Branch/PR:** —
+- **Branch/PR:** m13-level-report-wording
 
 ## Goal
 
@@ -63,11 +63,13 @@ existing candidate row.
       the scan reads whole messages rather than first fragments (M10 lesson).
       Evidence: the suite's distinctness scan, which enumerates every
       `warn(`-leading literal in the source, passes.
-- [ ] AC5 Neither report names a well-formed mark. Evidence: per-line greps
-      over the LaTeX, HTML and gfm logs the suite already produces for
-      `examples/sortkey.qmd` and for the no-empty-level control marks of
-      `examples/empty-levels.qmd` (`entry="Birds!Wrens"`, `entry="Q!R"`),
-      asserting no report line names those values.
+- [ ] AC5 Neither report fires for the well-formed marks of `examples/sortkey.qmd`
+      or for the no-empty-level control `entry="Birds!Wrens"` of
+      `examples/empty-levels.qmd`. Evidence: per-line greps over the pdf and
+      HTML logs the suite already produces for `examples/sortkey.qmd`
+      (`tests/run-tests.sh:4714`, `:4793`) and over the LaTeX, HTML and gfm logs
+      it produces for `examples/empty-levels.qmd` (`:5984`), asserting no report
+      line names any mark of `sortkey.qmd` or that control.
 - [ ] AC6 The `verify` slot is clean: `tests/run-tests.sh --self-test`
       passes.
 
@@ -86,8 +88,7 @@ existing candidate row.
       `examples/demo.qmd` to LaTeX, HTML and gfm and record verbatim what each
       of the two reports says today and how many times each fires per mark.
 - [ ] T2 Fixture work in `examples/empty-levels.qmd`: add the three-way depth
-      shape (`entry="Cats!" sort="a!b!c"`), and extend the no-empty-level
-      control so it covers both reports.
+      shape (`entry="Cats!" sort="a!b!c"`).
 - [ ] T3 Rewrite the empty-level report (`index.lua:266`): one report per
       mark, naming the empty written positions and the levels that remain in
       the value. One literal per message.
@@ -113,6 +114,10 @@ existing candidate row.
 - 2026-08-19: plan gate chose one report per mark naming written positions over one report per dropped level because two byte-identical warnings name neither end (M11 review F8); falsified by evidence that a written position is not something an author can locate in their own value.
 - 2026-08-19: plan gate chose labelling the extra-sort-levels numbers as written depths over restating them as indexed depths because the shared layer cannot know the indexed depth — the LaTeX fold runs later (index.lua:209); falsified by evidence that the author needs the indexed depth at that report rather than at the empty-level one.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 8 findings against this file; all 8 had one clear repair and were fixed here — AC1 no longer promises the indexed depth, AC2 now requires a position clause (it was satisfied at HEAD), AC3 became a labelling requirement (its property was already true), AC4 dropped an unfalsifiable literal-count claim, AC5's evidence became per-line greps rather than an impossible zero-grep over a whole log, and T5's hand-list became a grep procedure with six further sites named.
+
+- 2026-08-19: T1 baseline probe: `entry="!Sub!"` draws two byte-identical empty-level reports and the leading/trailing pair differs only in the echoed value, confirming AC1 and AC2's premises.
+- 2026-08-19: amendment (substantive, mini gate): AC5 was unsatisfiable — its control `entry="Q!R"` correctly draws the extra-sort report, since `sort="Q!R!S"` overreaches by design. Amended to drop that control, state the bounded claim directly, and name the logs the suite actually produces (sortkey.qmd has pdf and HTML only, no gfm or LaTeX). T2's control clause trimmed to match. Fresh-context [O] reader ran the full-mode questions on the amended wording before it was written.
+- 2026-08-19: implement gate chose numbered written positions over named ends for the empty-level report because named ends have no wording for a middle position, and "was written with" over naming `entry=` directly for the extra-sort report because a mark can carry `sort=` with no `entry=`; falsified by evidence that authors read a position number as an output position rather than a position in their own value.
 
 ## Decisions
 

@@ -25,8 +25,9 @@ A trailing empty level, which the index tool tolerates by swallowing it, so
 the two shapes fail in opposite ways and neither is evidence about the other:
 [dogs]{.index entry="Dogs!"}.
 
-Two empty levels around one that survives, so a mark can be seen to warn once
-per empty level rather than once per mark: [sub]{.index entry="!Sub!"}.
+Two empty levels around one that survives, so a mark carrying more than one
+can be seen to draw a single report naming both of them rather than one report
+per level, byte-identical to its twin: [sub]{.index entry="!Sub!"}.
 
 # An empty level next to the rest of the syntax
 

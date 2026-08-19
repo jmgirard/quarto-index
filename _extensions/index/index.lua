@@ -266,9 +266,11 @@ local function drop_empty_levels(parsed, context, report)
   -- warnings for `entry="!Sub!"` told the author a level went twice and which
   -- end neither time (M11 review F8). The positions are counted in the value
   -- as the author wrote it, which is the only numbering they can find their
-  -- own `!` by; how many levels remain is stated of that same written value,
-  -- never of what the entry indexes at, because the LaTeX ceiling folds later
-  -- and this layer is format-neutral.
+  -- own `!` by — levels, note, not `!` characters, since `!!` is a literal `!`
+  -- and not two separators. How many levels remain is stated of that same
+  -- written value, never of what the entry indexes at, which this layer cannot
+  -- state format-neutrally: the three-level fold runs later, in the back-end
+  -- that imposes it.
   if report and #levels > 0 and #levels < #parsed then
     local empty = {}
     for i, level in ipairs(parsed) do
@@ -288,9 +290,11 @@ local function drop_empty_levels(parsed, context, report)
                    and ("1 of the %d written levels remains"):format(#parsed)
                    or ("%d of the %d written levels remain")
                       :format(#levels, #parsed)
-    -- One literal, not concatenated: the distinctness scan reads each warn()
-    -- call's FIRST literal, so a message split across `..` is compared on its
-    -- first fragment alone (M10).
+    -- One literal, not concatenated. The distinctness scan joins every literal
+    -- in a call's message expression now, so a split would not hide this
+    -- message from it — but the suite asserts the single-literal form here,
+    -- because a message assembled from fragments is one an editor can change a
+    -- fragment of without seeing what the whole says.
     warn(("empty index level in %s at %s; an empty level prints nothing, so it is dropped and %s"):format(context, where, remain))
   end
   return levels, kept, #parsed
@@ -1666,9 +1670,9 @@ end
 -- would look empty.
 local function strip_nested_markers(block, position)
   for _ = 1, emptied_places(block) do
-    -- One literal, not concatenated: the distinctness scan reads each warn()
-    -- call's FIRST literal, so a message built with `..` is compared by its
-    -- prefix while the report is about the whole of it (M10).
+    -- One literal, not concatenated. Written this way when the distinctness
+    -- scan read only a call's FIRST literal (M10); the scan joins them all
+    -- now, so the form is a readability choice here rather than a requirement.
     warn(("index placement marker in top-level block %d was the only thing written where it stood; the marker is removed, so nothing you wrote remains there"):format(position))
   end
   return block:walk({

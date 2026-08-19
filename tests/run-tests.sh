@@ -1413,6 +1413,30 @@ src = open(sys.argv[1], encoding='utf-8').read()
 # the function's own definition and every mention of `warn()` in a comment,
 # and a comment containing a quote would contribute a phantom literal. Quotes
 # are tracked while stripping, since a message may itself contain `--`.
+def strip_block_comments(text):
+    """Remove Lua long-bracket comments, --[[ ... ]] and --[==[ ... ]==].
+
+    A per-line scan cannot see these: a `warn(` written inside one is real
+    source to the line scanner and a phantom warning to everything downstream,
+    which would break the pinned count with a message blaming a warning change
+    (review F6). Newlines are preserved so nothing else shifts line for line.
+    """
+    out, i = [], 0
+    while i < len(text):
+        m = re.compile(r'--\[(=*)\[').search(text, i)
+        if not m:
+            out.append(text[i:])
+            break
+        out.append(text[i:m.start()])
+        close = text.find(']' + m.group(1) + ']', m.end())
+        if close == -1:
+            i = len(text)
+            break
+        out.append('\n' * text.count('\n', m.start(), close))
+        i = close + len(m.group(1)) + 2
+    return ''.join(out)
+
+
 def uncommented(text):
     out = []
     for line in text.split('\n'):
@@ -1454,7 +1478,7 @@ def message_at(text, open_paren):
     that fills it in -- the arguments to `format` are values, not message
     text, and must not be swept in.
     """
-    depth, i, quote = 1, open_paren + 1, None
+    depth, i, quote, cut = 1, open_paren + 1, None, -1
     while i < len(text):
         c = text[i]
         if quote:
@@ -1465,20 +1489,23 @@ def message_at(text, open_paren):
         elif c in '"\'':
             quote = c
         elif c == '(':
+            # Found OUTSIDE a literal, which is the whole point: a message
+            # whose own text contains `:format(` would otherwise be cut there,
+            # silently comparing a distinct warning on a prefix — the exact
+            # blindness this scan exists to remove (review F7).
+            if cut == -1 and text[i - 7:i + 1] == ':format(':
+                cut = i - 7
             depth += 1
         elif c == ')':
             depth -= 1
             if depth == 0:
                 break
         i += 1
-    call = text[open_paren + 1:i]
-    cut = call.find(':format(')
-    if cut != -1:
-        call = call[:cut]
+    call = text[open_paren + 1:cut if cut != -1 else i]
     return ''.join(m.group(2) for m in LITERAL.finditer(call))
 
 
-code = uncommented(src)
+code = uncommented(strip_block_comments(src))
 calls = [m for m in re.finditer(r'\bwarn\(', code)
          if not code[:m.start()].rstrip().endswith('function')]
 lits = [message_at(code, m.end() - 1) for m in calls]
@@ -1496,9 +1523,37 @@ if blank:
 EXPECTED = 36
 if len(lits) != EXPECTED:
     print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
-          f'{EXPECTED}; a warning was added or removed without updating this '
-          f'count', file=sys.stderr)
+          f'{EXPECTED}. Either a warning was added or removed without updating '
+          f'this count, or this scan stopped reading the filter — a renamed '
+          f'helper, a construct the comment stripper mishandles, or a call the '
+          f'definition filter wrongly excluded. What it did read:',
+          file=sys.stderr)
+    for l in lits:
+        print(f'  <<{l}>>', file=sys.stderr)
     sys.exit(1)
+# AC4's second clause, which the join above cannot evidence: the two reports
+# M13 rewrote are each ONE literal. Asserted on the calls themselves, since a
+# joined message reads identically either way. Keeping them whole is also why
+# those two lines run past the file's usual width (review F9, F18).
+SINGLE_LITERAL = (
+    'empty index level in %s at %s;',
+    'sort= on %s writes %d levels against the %d it has to sort',
+)
+for needle in SINGLE_LITERAL:
+    owner = [m for m in re.finditer(r'\bwarn\(', code)
+             if needle in code[m.start():m.start() + 400]]
+    if len(owner) != 1:
+        print(f'FAIL: M02-AC5: expected exactly one warn() call carrying '
+              f'<<{needle}>>, found {len(owner)}', file=sys.stderr)
+        sys.exit(1)
+    end = code.index(')', code.index(needle, owner[0].start()))
+    pieces = LITERAL.findall(code[owner[0].end():end])
+    if len(pieces) != 1:
+        print(f'FAIL: M02-AC5: the report <<{needle}>> is built from '
+              f'{len(pieces)} literals; M13-AC4 requires one, so the whole '
+              f'message is visible at its call site', file=sys.stderr)
+        sys.exit(1)
+
 dupes = {l for l in lits if lits.count(l) > 1}
 if dupes:
     print('FAIL: M02-AC5: warning messages are not distinct:', file=sys.stderr)
@@ -6171,7 +6226,8 @@ pass "M13-AC1: each mark carrying empty levels draws one report naming the writt
 # this discriminating: before M13 the two messages were identical either side
 # of `entry="..."`, so a plain string-inequality check passed on a filter that
 # named no position at all.
-python3 - "$WORK/empty-levels-html.log" <<'M13AC2PY'
+for fmt in html latex gfm; do
+python3 - "$WORK/empty-levels-$fmt.log" <<'M13AC2PY'
 import re, sys
 lines = [l.rstrip('\n') for l in open(sys.argv[1], encoding='utf-8',
                                       errors='replace')
@@ -6179,7 +6235,8 @@ lines = [l.rstrip('\n') for l in open(sys.argv[1], encoding='utf-8',
          or 'empty index level in entry="Dogs!"' in l]
 if len(lines) != 2:
     print(f'FAIL: M13-AC2: expected one report each for the leading and '
-          f'trailing shapes, got {len(lines)}', file=sys.stderr)
+          f'trailing shapes in {sys.argv[1]}, got {len(lines)}',
+          file=sys.stderr)
     sys.exit(1)
 masked = [re.sub(r'entry="[^"]*"', 'entry=<masked>', l) for l in lines]
 if masked[0] == masked[1]:
@@ -6188,9 +6245,9 @@ if masked[0] == masked[1]:
           'end went:', file=sys.stderr)
     print(f'  <<{masked[0]}>>', file=sys.stderr)
     sys.exit(1)
-print('ok   M13-AC2: the leading and trailing empty-level reports differ in '
-      'the position they name, not only in the value they echo')
 M13AC2PY
+done
+pass 'M13-AC2: in HTML, LaTeX and gfm alike, the leading and trailing empty-level reports differ in the position they name, not only in the value they echo'
 
 # AC3. Both numbers in the extra-sort-levels report are counts taken BEFORE
 # the empty-level drop, so neither can be read as the depth the entry indexes
@@ -6204,24 +6261,72 @@ for fmt in html latex gfm; do
   check_warning_count "$WORK/empty-levels-$fmt.log" "$M13_SORT_EXTRA_ENTRY" 1 "M13-AC3"
   check_warning_count "$WORK/empty-levels-$fmt.log" "$M13_SORT_EXTRA_NOENTRY" 1 "M13-AC3"
 done
+# Exactly one Moles argument, and it is the single-level form: a bare
+# presence test for `\index{a@Moles}` plus an absence test for the two-level
+# form cannot both fail, since the first already requires the closing brace
+# (review F12). Counting every argument that files under `a@Moles` is what
+# actually pins the indexed depth at one.
+moles=$( { grep -oF 'index{a@Moles' examples/empty-levels.tex || true; } | wc -l | tr -d ' ')
+[ "$moles" = 1 ] \
+  || fail "M13-AC3: expected exactly 1 emitted argument filing under a@Moles, got $moles"
 grep -qF '\index{a@Moles}' examples/empty-levels.tex \
-  || fail "M13-AC3: the mark the report is about must emit one level; \index{a@Moles} is not in examples/empty-levels.tex"
-if grep -qF '\index{a@Moles!' examples/empty-levels.tex; then
-  fail "M13-AC3: the mark indexes at more than one level, so the report's numbers are not the three-way-distinct case"
-fi
+  || fail "M13-AC3: the one a@Moles argument is not the single-level \index{a@Moles}; the report's numbers are not the three-way-distinct case"
 pass "M13-AC3: the extra-sort report states both counts as taken before the empty-level drop, for a mark whose written, sorted and indexed depths are 2, 3 and 1, and for one carrying sort= with no entry= at all"
 
 # AC5. Neither report fires for a well-formed mark. sortkey.qmd is asserted
 # warning-free above (M06-AC1/AC2); this is the per-line half — no report line
 # anywhere names it, or names the no-empty-level control of empty-levels.qmd.
-for log in sortkey-pdf sortkey-html; do
-  check_warning_count "$WORK/$log.log" 'empty index level in ' 0 "M13-AC5"
-  check_warning_count "$WORK/$log.log" 'the extra sort levels were ignored' 0 "M13-AC5"
-done
+# Not a grep for the report text in those logs: M06-AC1 and M06-AC2 already
+# abort on ANY `^(W)` line there, so such a grep is a tautology by the time it
+# runs (review F11). What AC5 actually says is that no report line NAMES a
+# well-formed mark, so the marks are read out of the fixture and looked for on
+# every warning line the suite produced anywhere.
+python3 - "$WORK" examples/sortkey.qmd <<'M13AC5PY'
+import glob, os, re, sys
+work, fixture = sys.argv[1], sys.argv[2]
+qmd = open(fixture, encoding='utf-8').read()
+
+# How the filter NAMES a mark in a report (describe()): the entry= value where
+# there is one, else the visible text. Both forms are built here, so a report
+# naming any mark of this fixture is caught whichever way it refers to it.
+SPAN = re.compile(r'\[((?:\\.|[^\]\\])*)\]\{\.index((?:[^}\\]|\\.)*)\}')
+spans = SPAN.findall(qmd)
+named = set()
+for visible, attrs in spans:
+    entry = re.search(r'entry="((?:\\.|[^"\\])*)"', attrs)
+    named.add(f'entry="{entry.group(1)}"' if entry else f'term "{visible}"')
+
+# Derived, not planted: every `{.index` in the fixture must have been parsed,
+# so a fixture edit that outruns this regex fails here instead of quietly
+# shrinking the control (M06 lesson).
+written = qmd.count('{.index')
+if len(spans) != written:
+    print(f'FAIL: M13-AC5: parsed {len(spans)} marks from {fixture} but the '
+          f'file writes {written}; the control is not being read whole',
+          file=sys.stderr)
+    sys.exit(1)
+
+REPORTS = ('empty index level in ', 'the extra sort levels were ignored')
+bad = []
+for log in sorted(glob.glob(os.path.join(work, '*.log'))):
+    for line in open(log, encoding='utf-8', errors='replace'):
+        if not line.startswith('(W)') or not any(r in line for r in REPORTS):
+            continue
+        for mark in named:
+            if mark in line:
+                bad.append(f'  {os.path.basename(log)}: {line.strip()}')
+if bad:
+    print(f'FAIL: M13-AC5: a level report names a well-formed mark of '
+          f'{fixture}:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M13-AC5: neither report names any of the {len(named)} well-formed '
+      f'marks of {fixture}, across every render log the suite produced')
+M13AC5PY
 for fmt in html latex gfm; do
   check_warning_count "$WORK/empty-levels-$fmt.log" 'entry="Birds!Wrens"' 0 "M13-AC5"
 done
-pass "M13-AC5: neither report names a mark of sortkey.qmd or the no-empty-level control entry=\"Birds!Wrens\""
+pass "M13-AC5: neither report names the no-empty-level control entry=\"Birds!Wrens\""
 
 
 check_no_null_field examples/empty-levels.tex "M11-AC2 (empty-levels)"
@@ -6438,6 +6543,24 @@ PY
   # The three sort-key reports are the only evidence an author gets that a
   # sort key did not do what they wrote it to do; each is proved to fail both
   # when it goes missing and when it fires twice.
+  # M13's six message pins, held to the same bar: a report that quietly
+  # stopped firing would leave the count checks green (review F10). The revert
+  # probes in the work log proved the same thing once; these re-prove it on
+  # every run.
+  for fmt in html latex gfm; do
+    warn_discrimination "$WORK/empty-levels-$fmt.log" "$M13_EMPTY_LEADING" 1 \
+      "M13-AC1"
+    warn_discrimination "$WORK/empty-levels-$fmt.log" "$M13_EMPTY_TRAILING" 1 \
+      "M13-AC1"
+    warn_discrimination "$WORK/empty-levels-$fmt.log" "$M13_EMPTY_BOTH" 1 \
+      "M13-AC1"
+    warn_discrimination "$WORK/empty-levels-$fmt.log" \
+      "$M13_SORT_EXTRA_ENTRY" 1 "M13-AC3"
+    warn_discrimination "$WORK/empty-levels-$fmt.log" \
+      "$M13_SORT_EXTRA_NOENTRY" 1 "M13-AC3"
+  done
+  warn_discrimination "$WORK/demo-latex.log" "$M13_EMPTY_DEEP" 1 "M13-AC1"
+
   warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_ORPHAN" 1 \
     "M06-AC4"
   warn_discrimination "$WORK/sortkey-misuse-latex.log" "$WARN_SORT_EXTRA" 1 \

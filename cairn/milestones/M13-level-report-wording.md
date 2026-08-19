@@ -182,3 +182,76 @@ duplicate planted as a concatenation is caught by the rewritten distinctness
 scan and invisible to the old one.
 
 ### Findings
+
+Three fresh-context lenses. Blame-history: no regressions — every modified
+line traces to a named prior item (M11 F7/F8, M10's first-literal blind spot)
+and D-002's semantics are untouched. Prior-PR-comments: no reintroduced
+finding; the GitHub inline-comment surface was probed and is empty, so the
+archive was the whole evidence base. Diff-bug: 20 findings, ranked, below with
+their gate disposition. None demonstrates an acceptance criterion failing
+inside its named procedure's domain, so none is a floor return.
+
+- F1 `examples/empty-levels.qmd:28-29` — shipped fixture prose says the `!Sub!`
+  mark shows the warning firing "once per empty level rather than once per
+  mark", the behaviour M13 removed.
+- F2 `README.md:63-66` — the sentence names the only-`!` shape but promises it
+  a position-naming warning the code does not emit for it.
+- F3 `README.md:259-260` — "so neither is the depth the entry finally indexes
+  at" is false for a mark with no empty level, where both numbers are.
+- F4 `index.lua:371` — "the 2 it has to sort" names a count the Moles mark does
+  not sort (one level survives), the qualifier carrying the whole claim.
+- F5 `index.lua:291-293` and `:1669` — comments justify the single-literal form
+  by a first-literal scan this branch replaced.
+- F6 `tests/run-tests.sh` `uncommented` — Lua block comments unhandled, so a
+  `--[[ ... warn( ... ]]` span injects a phantom warning. Latent today.
+- F7 `tests/run-tests.sh` `message_at` — `:format(` is found anywhere including
+  inside a message literal, truncating or emptying that message. Proven on
+  probe files; reintroduces the M10 blindness the rewrite exists to fix.
+- F8 the `EXPECTED = 36` failure message names only "added or removed", not
+  "the scan stopped reading the filter".
+- F9 AC4's single-literal clause has no evidence: the scan joins literals by
+  design, so nothing distinguishes one literal from a concatenation.
+- F10 none of the six M13 message pins runs through `warn_discrimination`,
+  which every other whole-message pin in the suite uses.
+- F11 the sortkey half of M13-AC5 is a tautology — those logs already abort on
+  any `^(W)` line.
+- F12 the negative `\index{a@Moles!` grep cannot fail beside the positive one.
+- F13 M13-AC2 runs against the HTML log only, where AC1/AC3/AC5 loop all three.
+- F14 `index.lua:291` / `DESIGN.md` — "cannot know" overstates; the constraint
+  is that it cannot be stated format-neutrally.
+- F15 `DESIGN.md` — "states its counts on the same footing" overstates; only
+  the second count is a pre-drop measurement.
+- F16 `examples/.gitignore` — `/.quarto/` is already covered at the root, and
+  the ipynb rule is unrelated to M13 and in no scope line.
+- F17 "positions in the value" numbers levels, not `!` characters, so
+  `entry="A!!B!"` reports position 2 of 2 where the author typed three `!`.
+- F18 `index.lua:294` (130 chars) and `:371` (175) break the file's ~80-column
+  style, a consequence of F5's now-false rationale.
+- F19 AC5's cited line numbers are stale (`:4714`, `:4793`, `:5984` against
+  actual `:4804`, `:4883`, `:6095`).
+- F20 the README claim pins and the warning literals are two hand-maintained
+  copies of the same strings, able to drift without failing.
+
+**Gate triage.** Fixed now: F1, F2, F3, F5, F6, F7, F8, F9, F10, F11, F12,
+F13, F14, F15, F17. Rejected: F18 — its fix (wrapping the two long lines back
+across `..`) would falsify AC4's single-literal clause, so the lines stay and
+F9's new check is what makes keeping them principled. Follow-up rows: F4
+(the "it has to sort" wording), F16 (`examples/.gitignore`), F20 (README claim
+pins and warning literals as two hand-maintained copies). Logged, not
+actioned: F19 — AC5's stale line citations, which review cannot edit and which
+are not worth an amendment round.
+
+Fix-now evidence, each probed rather than asserted:
+- F7 repaired and proved: against a filter whose message text contains
+  `:format(`, the old scan read `''` and hard-failed naming the wrong cause;
+  the repaired scan reads `alpha mentions :format( inside its own text` whole.
+- F6 repaired and proved: a `warn(` planted inside a `--[[ ... ]]` span made
+  the old scan count 37 messages; the repaired scan counts 36.
+- F11 repaired and proved: the replacement check reads all 8 well-formed marks
+  of `sortkey.qmd` by both names the filter can use for them, and fails on a
+  planted report line naming one.
+- F10: all six M13 message pins now run through `warn_discrimination` in all
+  three formats, so each is re-proved discriminating on every run rather than
+  once in a work-log probe.
+- Verify slot after the fixes: `tests/run-tests.sh --self-test` exit 0 at 208
+  checks, up from 191 at first review and 170 before the milestone.

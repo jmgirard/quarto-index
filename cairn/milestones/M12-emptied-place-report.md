@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP1, GP5
-- **Branch/PR:** m12-emptied-place
+- **Branch/PR:** m12-emptied-place · https://github.com/jmgirard/quarto-index/pull/12
 
 ## Goal
 

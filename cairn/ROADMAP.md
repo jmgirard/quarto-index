@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-18 (M11 planned — the leading/medial empty-level 
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M11 | Empty index levels never lose the entry | in-progress | — | normal | milestones/M11-empty-levels.md |
+| M11 | Empty index levels never lose the entry | review | — | normal | milestones/M11-empty-levels.md |
 | M10 | Self-references the level fold and empty levels hide | done | — | normal | milestones/archive/M10-selfref-fold-empty.md |
 | M08 | Reachable mark and marker misuse defects | done | — | normal | milestones/archive/M08-misuse-defects.md |
 | M09 | Sort keys under the LaTeX level clamp | done | — | normal | milestones/archive/M09-sortkey-clamp.md |

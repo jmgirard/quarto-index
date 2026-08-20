@@ -122,7 +122,7 @@ the task that made it.
       move together.
 - [x] T3: Move LaTeX emission — `index_argument` through `fold_xrefs`
       (`:582-775`) — into `modules/latex.lua`.
-- [ ] T4: Move shared mark derivation — `span_text` through `derive_levels`
+- [x] T4: Move shared mark derivation — `span_text` through `derive_levels`
       (`:776-992`) — into `modules/marks.lua`.
 - [ ] T5: Move the three Span passes — `CollectSort`, `CollectKeys`, `Span`
       (`:993-1282`) — into `modules/passes.lua`.
@@ -154,6 +154,7 @@ the task that made it.
 - 2026-08-20: T1 — `modules/core.lua` (constants, `warn`, `is_latex_derived`, `is_html`), 17 definitions, 86 call sites qualified to `core.`; `tests/movedefs.py` rewritten to relocate from the source set `filtersrc.py` enumerates under the scratch root it is passed. Verify clean: 195 ok lines identical to the merge base, 230 under `--self-test` with the one exempted interpolated line reading `(2 -> 3)`.
 - 2026-08-20: T2 — `modules/levels.lua` (11 definitions, 38 sites) and `modules/sortkeys.lua` (4 definitions, 6 sites). T1's `core` alias renamed to `qi_core` in the same commit under the aliasing decision below. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(4 -> 5)`.
 - 2026-08-20: T3 — `modules/latex.lua`, 9 definitions, 11 sites. `xref_both_emitted` moved here from T4's range and both emission flags became `M["name"]` fields, since a scalar cannot be shared by aliasing a local. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(5 -> 6)`.
+- 2026-08-20: T4 — `modules/marks.lua`, 12 definitions, 28 sites, carrying `html_marks`, `marked_paths`, `pending_xrefs`, `clamped_paths` as shared tables and `marks_seen` as a field. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(6 -> 7)`.
 
 ## Decisions
 

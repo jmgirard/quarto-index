@@ -1,6 +1,6 @@
 # M16: The suite's source checks read the whole extension, not one file
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -100,7 +100,7 @@ records why. Making module-level state per-document → stays the standing
       on the LaTeX byte-diff.
 - [x] T6: Append the D-entry recording the rejection of byte-level
       output-neutrality evidence, with its rationale.
-- [ ] T7: Run both verify slots; record the check count and the merge-base
+- [x] T7: Run both verify slots; record the check count and the merge-base
       comparison.
 
 ## Work log
@@ -123,6 +123,8 @@ records why. Making module-level state per-document → stays the standing
 - 2026-08-20: T4 complete — `tests/plantdefect.py` plants, per scan, a defect of the kind that scan names (a pinned value changed where the check compares one; the definition renamed out of reach where the check only has to locate it) into the moved module, and the probe requires the scan to exit non-zero AND to print the named failure marker, so a scan killed by a broken probe cannot read as a scan catching the defect. All twelve discriminate. Full `--self-test` run exit 0, 231 checks, 0 FAIL.
 - 2026-08-20: T5 complete — `tests/byte-diff.sh` deleted and its reference in `run-tests.sh` (drifted from :1242 to :1286 under this milestone's own insertions) rewritten to name D-004 and state that the checks in that file are the whole output-neutrality oracle. AC4's domain grep over `tests/ README.md _extensions/` now reports nothing. The task's third clause was already satisfied: both ROADMAP rows resting on the merge-base render comparison were rewritten in the plan commit. Plain verify slot: exit 0, 196 checks.
 - 2026-08-20: T6 ticked as the no-op the work log recorded on 2026-08-20 — D-004 landed in the plan commit; verified present in `cairn/DECISIONS.md` before ticking.
+- 2026-08-20: T7 complete — branch exit 0 in both slots: 196 checks plain, 231 under `--self-test`. The merge-base suite run in this same working tree (its `tests/` checked out over the branch's, then restored to a clean tree) also exits 0 in both slots: 195 plain, 228 self-test. The branch's self-test pass set is a strict superset of the merge base's — three lines added (the enumeration-agreement check, the AC2 enumeration probe, the AC3 moved-definition-and-planted-defect probe), none lost.
+- 2026-08-20: status → review.
 
 ## Decisions
 

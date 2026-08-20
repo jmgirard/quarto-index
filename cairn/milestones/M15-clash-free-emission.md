@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP1, GP2
-- **Branch/PR:** `m15-clash-free-emission`
+- **Branch/PR:** `m15-clash-free-emission` / https://github.com/jmgirard/quarto-index/pull/15
 
 ## Goal
 
@@ -79,7 +79,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
       asserted to typeset in the compiled index, the same bar
       `examples/xref-escaping.qmd` already holds the encap channel to (IP2).
 
-- [ ] AC5 No report tells an author the render can fail from rival
+- [x] AC5 No report tells an author the render can fail from rival
       encapsulations. Evidence: over each `warn()` call's **joined** message —
       the list the distinctness scan already builds, never a single literal,
       which the M13 lesson records a per-literal test cannot see — no message
@@ -87,7 +87,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
       fails`; and the replacement report's full text asserted present, once per
       contested key, over the fixture.
 
-- [ ] AC6 The README and DESIGN claims this milestone falsifies are corrected
+- [x] AC6 The README and DESIGN claims this milestone falsifies are corrected
       and the new behaviour is pinned. Evidence: the three passages naming the
       old outcome — README's "can fail the build" paragraph, its "The clash
       warning is LaTeX-only" row, and its claim that a cross-reference is
@@ -167,54 +167,78 @@ candidate row; every criterion here is evidenced in a warmed tree.
 - 2026-08-20: mid-work gate — the replacement report named an entry by the argument the back-end composed (`tree@Tree!branch@Branch!Cedar, Dogwood`), which an author cannot search their source for; the user chose naming the entry path as written over pinning that string and filing a candidate. The report now reads a printed path carried on the contested-key record beside the emitted argument, and its lead is `index entry` rather than `index key`. README's "warning naming the key" corrected in the same commit. Suite 193 -> 195 checks.
 - 2026-08-20: return repair 3 of 3 — AC6's two unpinned passages now have stale pins in both directions. The back-ends-differ row's old name and its old reason join `README_STALE`, beside the sentence that replaced them already pinned present; the unqualified encapsulation-channel claim — pinned as it stood, example and closing period included, so a re-qualification cannot slip past it — joins `README_MISUSE_STALE`, with the exception that replaced it pinned present. Discrimination run against `main`'s README: the back-ends-differ block reports both sentences still present and the replacement missing, and the misuse block reports the encapsulation claim still present and its exception missing. DESIGN gained the clause repair 1 made load-bearing: a level carrying a folded cross-reference always takes the `sortkey@printed` form, and is given the key it would have filed under with nothing folded in. `tests/run-tests.sh --self-test` passes at 228 checks, from 224.
 - 2026-08-20: return gate — the work log records the review's diff-bug lens returning 13 findings with one refuted and "the remainder" recorded for the return, but the return itself names three; nothing in the repo carries the other nine. The user chose repairing the three recorded over re-running the lens here, since the next review pass runs the same lens in a fresh session. Recorded so a reader of this file does not read the return as the whole of what that pass found.
+- 2026-08-20: second review pass — PR #15 (draft) recorded in the header; `main` had not moved, so no merge was needed. All six criteria re-executed with fresh evidence and ticked; `cairn_validate` clean. Review fan-out spawned three lenses; the diff-bug lens ([O]) failed on an API limit on its first spawn and was re-spawned.
 
 ## Decisions
 
 ## Review
 
-Fresh evidence, 2026-08-19, on `m15-clash-free-emission` at the pre-gate
-checkpoint. The `verify` slot was run whole (`tests/run-tests.sh --self-test`,
-exit 0, 224 checks; 191 without the self-test, against 175 on `main`), and the
-per-criterion figures below were read back out of that run's own artifacts by
-command rather than from its pass lines.
+Fresh evidence, 2026-08-20, on `m15-clash-free-emission` at commit `668c773`
+— the second review pass, after the three defects the 2026-08-19 return named
+were repaired. The `verify` slot was run whole (`tests/run-tests.sh
+--self-test`, exit 0, 228 checks; 195 without the self-test, against 175 on
+`main`), and every figure below was read back out of that run's own artifacts
+by command rather than from its pass lines.
 
-- **AC1** — `examples/xref-conflict.qmd` renders to PDF and the render exits 0.
-  Its log carries zero occurrences of `error generating index` and zero of
-  `Conflicting entries: multiple encaps for the same page under same key`, the
-  two strings the T1 baseline recorded from the same fixture at exit 1.
+- **AC1** — `examples/xref-conflict.qmd` renders to PDF and the render exits 0,
+  producing a 25,260-byte PDF. Its log carries 0 occurrences of `error
+  generating index` and 0 of `Conflicting entries: multiple encaps for the same
+  page under same key`, the two strings the T1 baseline recorded from the same
+  fixture at exit 1.
 - **AC2** — the compiled index matches the exhaustive hand-derived manifest
-  over all 14 printed lines — level, term and locator count each — with the
+  over all 18 printed lines — level, term and locator count each — with the
   contested entries, the uncontested `mu` and `nu` controls and every unrelated
-  entry alike. `kappa` prints 2 locators, from its plain marks on pages 1 and
+  entry alike; `columns_carry_top_level` holds, so no column's indent is read a
+  level shallow. `kappa` prints 2 locators, from its plain marks on pages 1 and
   2, and not the 3 it would print if its cross-reference mark on page 3
   contributed one. The manifest states that a page range counts as the one
-  locator it prints, and `tests/pdfindex.py` now folds a wrapped entry's
+  locator it prints, and `tests/pdfindex.py` folds a wrapped entry's
   continuation line back into it rather than discarding it as a footer, which
   is what makes `chi`'s locator visible at all.
 - **AC3** — all five contested pairings are exercised (plain against `see=`,
   plain against `see-also=`, `see=` against `see-also=`, `see=` against a
   different `see=`, and a both-attributes mark against a plain mark), one of
-  them on the sub-entry key `Deep!Level`, and each of the 7 contested terms
-  prints as exactly 1 entry.
+  them on the sub-entry key `Deep!Level`, and each of the 8 contested terms
+  prints as exactly 1 entry. The eighth is the four-level `Tree!Branch!Cedar,
+  Dogwood` the return added, whose emitted filing path is `tree!branch!Cedar,
+  Dogwood` — the same third-level string its uncontested twin `Maple, Holly`
+  files under, and not the `Cedar` the pre-repair render emitted.
 - **AC4** — the folded target of `chi` carries all 16 characters README pins as
   escaped, each asserted present in the typeset index; the emitted argument
   shows makeindex's own `"@` and `"!` quoting beside the LaTeX escapes, from
   the same `target_argument` the encapsulation channel uses.
-- **AC5** — the phrase `the index tool rejects the pair and the render fails`
-  occurs 0 times in `index.lua`, and the replacement report fires 7 times over
-  the fixture, once per contested key. A glob over the 14 rendered LaTeX
-  artifacts finds the contested-key emission in the one fixture that has a
-  contested key and in no other.
-- **AC6** — the suite's README-claims comparison passes: 16 documented misuse
-  behaviours present, and the 6 sentences this milestone falsified asserted
-  gone. DESIGN's LaTeX back-end paragraph states both repairs and why they
-  differ.
+- **AC5** — read over each `warn()` call's joined message, as the criterion
+  words it: on this branch 0 of the 38 joined messages carry `the index tool
+  rejects the pair and the render fails`, and on `main`'s filter 1 of 38 does —
+  where a raw substring scan of the file reports it absent in BOTH, which is
+  why the returned check passed against the filter that still emitted the
+  claim. The scan carries two controls: it fails if it reads no `warn()` call,
+  and if the replacement report is not among the messages it read. The
+  replacement report's full text is drawn exactly once for each of the 8
+  contested entries over the fixture, naming each by the entry path the author
+  wrote. A glob over the 15 rendered LaTeX artifacts finds the contested-key
+  emission in the one fixture that has a contested key — read from a copy kept
+  before the PDF render removes it — and in no other.
+- **AC6** — the suite's README-claims comparisons pass: 17 documented misuse
+  behaviours present and the 7 sentences this milestone falsified gone, plus 7
+  HTML-back-end claims present and 8 stale sentences gone. All three passages
+  the criterion names are now pinned in both directions; against `main`'s
+  README the two blocks report the old back-ends-differ row and the unqualified
+  encapsulation-channel claim still present, with their replacements missing.
+  DESIGN's LaTeX back-end paragraph states both repairs, why they differ, and
+  the filing invariant repair 1 made load-bearing.
 
-Consistency gate: `cairn_validate` all checks passed. The `generic` profile
-names no toolchain `consistency-gate` checks, so that half is a clean no-op.
-No `DESIGN.md` principle definition changed — D-003 records a reading of GP2
-rather than an amendment to it — so `cairn_impact` is skipped.
+Consistency gate: `cairn_validate` — all 16 checks PASS, 7 advisories OK. The
+`generic` profile names no toolchain `consistency-gate` checks, so that half is
+a clean no-op. No `DESIGN.md` principle definition changed — D-003 records a
+reading of GP2 rather than an amendment to it — so `cairn_impact` is skipped.
 
 Discrimination: the T8 work-log line records three planted-defect probes
-failing 7, 1 and 3 checks — the repair reverted, the cross-reference mark made
-to contribute a locator, and the folded field's makeindex quoting removed.
+failing 7, 1 and 3 checks. The return repairs add three more, each run against
+the exact pre-repair artifact: the deep entry's filing string reverted to
+`Cedar` fails the filing check; the old double-quoted clash message spliced
+back into the current filter fails the joined-message read; and `main`'s README
+fails both claim blocks, naming the two passages that had no stale pin.
+
+## Findings
+

@@ -52,6 +52,19 @@ cross-reference hangs off a sub-entry rather than off a top-level term:
 [psi]{.index entry="Deep!Level"} and
 [omega]{.index entry="Deep!Level" see="Shallow"}.
 
+A contested key DEEPER than the back-end stores, carrying a sort key. The
+fold makes the third level a join of several, and an entry with no key of its
+own for that level files under the text it prints. Contesting the key must not
+move it: it has to file exactly where the same entry files uncontested, and
+only what it prints may change.
+[theta]{.index entry="Tree!Branch!Cedar!Dogwood" sort="tree!branch!Cedar"} and
+[eta]{.index entry="Tree!Branch!Cedar!Dogwood" sort="tree!branch!Cedar" see="Afar"}.
+
+The uncontested twin of that entry — the same depth, and a sort key of the
+same shape, whose third level repeats the level's own text — which is what
+says where the contested one had to file:
+[iota]{.index entry="Tree!Branch!Maple!Holly" sort="tree!branch!Maple"}.
+
 A contested key whose target carries every character this extension escapes.
 Folding a target out of the encapsulation channel and into the entry's
 printed text moves it into a field the index tool reads for its own operators

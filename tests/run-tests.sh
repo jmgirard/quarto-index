@@ -1918,6 +1918,10 @@ for fmt in latex html; do
   quarto render examples/xref-conflict.qmd --to $fmt > "$WORK/conflict-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/conflict-$fmt.log" >&2; fail "M02-AC5: xref-conflict.qmd failed to render to $fmt"; }
 done
+# The emitted LaTeX, kept: the PDF render in the M15 section below removes
+# examples/xref-conflict.tex, and two checks there read the argument this
+# fixture emits rather than the index it prints.
+cp examples/xref-conflict.tex "$WORK/conflict-latex.tex"
 # M15 replaced this report's text: the emission no longer risks the failed
 # render the old wording warned of, so the report now says what the author's
 # two marks print as. Keyed on the clause that names the outcome, not on the
@@ -1925,8 +1929,8 @@ done
 WARN_CLASH='they are printed as one entry with its page numbers and its cross-reference together'
 # kappa (plain against a cross-reference) and lambda (see against see-also),
 # once each; mu (two identical see= marks) and nu (two plain marks) must NOT
-# be reported, which the exact count of 2 is what fences.
-check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH" 7 "M02-AC5"
+# be reported, which the exact count is what fences.
+check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH" 8 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index key kappa ' 1 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index key lambda ' 1 "M02-AC5"
 # Deliberately LaTeX-only, and it stays that way now that HTML has a back-end
@@ -1971,6 +1975,12 @@ letter	S
 0	sigma	0	see-link Note: on birds
 letter	T
 0	tau	1	also-plain Elsewhere Again
+0	Tree	0
+1	Branch	0
+2	Cedar	0
+3	Dogwood	1	see-plain Afar
+2	Maple	0
+3	Holly	1
 letter	U
 0	upsilon	0	see-plain One Way	see-plain Another Way
 MANIFEST
@@ -6770,11 +6780,11 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  `Wow!!Really` does not spell. 8.
 #   dangling-xref  9 attributes, of which 2 name `Cats`, which the file
 #                  indexes. 7.
-#   xref-conflict  14 attributes after M15 extended it. Only
+#   xref-conflict  15 attributes after M15 extended it. Only
 #                  `see="Note!on birds"` names an entry the file marks;
 #                  `see="Note: on birds"` is a single level that merely prints
-#                  the same way (the M02 shape), and the other twelve name
-#                  nothing. 13.
+#                  the same way (the M02 shape), and the other thirteen name
+#                  nothing. 14.
 #   html-index     5 attributes: `see="A!B"` four times, which names the file's
 #                  one entry, and `see="A: B"` once, which does not. 1.
 #   self-xref      11 attributes. 6 name the entry they are written on and are
@@ -6811,7 +6821,7 @@ examples/html-index.qmd	1
 examples/placement.qmd	0
 examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
-examples/xref-conflict.qmd	13
+examples/xref-conflict.qmd	14
 examples/xref-escaping.qmd	271
 MANIFEST
 
@@ -6905,6 +6915,15 @@ pass "M15-AC1: the fixture that could not build now renders to PDF, with neither
 #   phi        a both-attributes mark against a plain mark, folded: 1.
 #   rho/sigma  single uncontested cross-references, untouched: 0 each.
 #   tau        plain against see-also=, folded: 1.
+#   Tree       a parent, as Deep: 0.  Branch  its parent sub-entry: 0.
+#   Cedar, …   the contested key written FOUR levels deep: the back-end folds
+#              `Cedar!Dogwood` into one third level, and the fold appends its
+#              cross-reference to the printed text as it does for chi. One
+#              plain mark: 1. It files under `Cedar, Dogwood` — the text it
+#              prints before the fold — which is what puts it ahead of the
+#              uncontested twin below rather than under `Cedar` alone.
+#   Maple, …   that twin: the same depth and the same shape of sort key, with
+#              no cross-reference to contest the key. One plain mark: 1.
 #   upsilon    two DIFFERENT see= targets, no plain mark, as lambda: 0.
 #
 # Printed in collation order with each sub-entry under its parent, which is the
@@ -6923,6 +6942,10 @@ read -r -d '' CONFLICT_PDF_INDEX <<'MANIFEST' || true
 0	rho, see Note: on birds	0
 0	sigma, see Note: on birds	0
 0	tau, see also Elsewhere Again	1
+0	Tree	0
+1	Branch	0
+2	Cedar, Dogwood, see Afar	1
+2	Maple, Holly	1
 0	upsilon, see One Way; see Another Way	0
 MANIFEST
 
@@ -6968,10 +6991,16 @@ if got != want:
 # M15-AC3: each contested term prints as ONE entry. The repair merges the marks
 # the index tool would otherwise have stored twice, and a count of entries
 # whose term begins with the contested term is what says they merged.
-CONTESTED = ('chi', 'Level', 'kappa', 'lambda', 'phi', 'tau', 'upsilon')
+CONTESTED = ('chi', 'Level', 'kappa', 'lambda', 'phi', 'tau', 'upsilon',
+             'Cedar, Dogwood')
 errs = []
 for term in CONTESTED:
-    n = len([e for e in entries if e.term.split(',')[0] == term])
+    # "begins with the contested term" — the term itself, or the term with a
+    # folded cross-reference behind it. Split on the first comma would read
+    # `Cedar, Dogwood` as `Cedar` and count an entry that is not the one the
+    # criterion names.
+    n = len([e for e in entries
+             if e.term == term or e.term.startswith(term + ',')])
     if n != 1:
         errs.append(f'{term!r} prints as {n} entries, expected 1')
 if errs:
@@ -7002,6 +7031,94 @@ print(f'ok   M15-AC2/AC3/AC4: all {len(want)} printed index lines match the '
 CONFLICTPDFPY
 pass "M15-AC2/AC3/AC4: the compiled index matches the exhaustive manifest, every contested key prints once, and the folded target typesets whole"
 
+# M15 (defect return 1) — contesting a key must not MOVE the entry. The folded
+# printed text forces a sort field onto the last level, and forcing the
+# declared key there would file a folded entry under the third level's own key
+# while the same entry uncontested files under the joined text it prints. The
+# fixture holds the pair: `Tree!Branch!Cedar!Dogwood`, contested, against
+# `Tree!Branch!Maple!Holly`, not contested, both four levels deep and both
+# carrying a sort key whose third level merely repeats that level's text — a
+# key that declares nothing, so both must file under the text they print.
+# Read from the emitted argument, which is the only place the filing key is
+# visible: the printed index shows the order, not the string that produced it.
+python3 - "$WORK/conflict-latex.tex" <<'M15FILINGPY'
+import re, sys
+
+src = open(sys.argv[1], encoding='utf-8').read()
+
+
+def arguments(text):
+    """Every `\index{...}` argument, brace-balanced.
+
+    A folded argument carries `\see{...}`, so the first `}` is not the end of
+    the command.
+    """
+    for m in re.finditer(r'\\index\{', text):
+        depth, i = 1, m.end()
+        while i < len(text) and depth:
+            if text[i] == '{':
+                depth += 1
+            elif text[i] == '}':
+                depth -= 1
+            i += 1
+        yield text[m.end():i - 1]
+
+
+def filing(argument):
+    """The key each level files under, from what was emitted.
+
+    Levels split on makeindex's unquoted `!`; within a level, an unquoted `@`
+    separates the sort field from the printed text, and a level with no `@`
+    files under the text it prints. Neither entry read here carries an
+    author-written `!` or `@`, which would arrive quoted as `"!` / `"@`.
+    """
+    keys = []
+    for level in re.split(r'(?<!")!', argument):
+        keys.append(re.split(r'(?<!")@', level, maxsplit=1)[0])
+    return keys
+
+
+# Derived by hand from the fixture: level 3 is the fold of `Cedar!Dogwood`,
+# joined the way the back-end joins an overflow, and the entry files under
+# exactly that. The contested one is the SAME string it would be without the
+# cross-reference — that is the claim.
+WANT = {
+    'contested': ['tree', 'branch', 'Cedar, Dogwood'],
+    'twin': ['tree', 'branch', 'Maple, Holly'],
+}
+got = {}
+for argument in arguments(src):
+    if argument.startswith('tree@Tree!branch@Branch!Cedar'):
+        got['contested'] = filing(argument)
+        if '\\see{Afar}' not in argument:
+            print('FAIL: M15: the deep entry read as contested carries no '
+                  f'folded cross-reference: <<{argument}>>', file=sys.stderr)
+            sys.exit(1)
+    elif argument.startswith('tree@Tree!branch@Branch!Maple'):
+        got['twin'] = filing(argument)
+        if '\\see' in argument:
+            print('FAIL: M15: the uncontested twin carries a cross-reference, '
+                  f'so it is no control: <<{argument}>>', file=sys.stderr)
+            sys.exit(1)
+
+missing = [name for name in WANT if name not in got]
+if missing:
+    print(f'FAIL: M15: no emitted argument for {missing} in '
+          f'{sys.argv[1]}; the deep contested probe is not in the fixture',
+          file=sys.stderr)
+    sys.exit(1)
+bad = [f'  {name}: expected {WANT[name]}, got {got[name]}'
+       for name in sorted(WANT) if got[name] != WANT[name]]
+if bad:
+    print('FAIL: M15: a contested entry deeper than the back-end stores does '
+          'not file where the same entry files uncontested:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print('ok   M15: the four-level contested entry files under the text it '
+      'prints, exactly as its uncontested twin does')
+M15FILINGPY
+pass "M15: contesting a key changes what the entry prints and not where it files, at the depth where the two could differ"
+
 # M15-AC5 — no report claims a build can fail from rival encapsulations, since
 # the emission no longer risks one. Read over each warn() call's JOINED
 # message, never over a single literal: the old message was three concatenated
@@ -7024,23 +7141,28 @@ M15AC5PY
 # emission of the ONE fixture that has a contested key and nowhere else. The
 # files are discovered by glob over what the run rendered, not named in a list
 # that a later fixture would silently fall off.
-python3 - <<'M15UNTOUCHEDPY'
+CONFLICT_TEX="$WORK/conflict-latex.tex" python3 - <<'M15UNTOUCHEDPY'
 import glob, os, sys
 LIST_COMMAND = 'quartoindexxrefs'
-stray = []
-for path in sorted(glob.glob('examples/*.tex')):
-    src = open(path, encoding='utf-8').read()
-    if os.path.basename(path) == 'xref-conflict.tex':
-        continue
-    if LIST_COMMAND in src:
-        stray.append(path)
+# Both halves, or the check would pass on a filter that emitted the command
+# nowhere at all. The contested fixture's own artifact is read from the copy
+# kept before the PDF render removed it — a glob over examples/*.tex cannot
+# see it at this point, so the basename it would have matched is not there.
+kept = os.environ['CONFLICT_TEX']
+if LIST_COMMAND not in open(kept, encoding='utf-8').read():
+    print(f'FAIL: M15: the fixture that HAS a contested key emitted no '
+          f'{LIST_COMMAND}, so the sweep below proves nothing',
+          file=sys.stderr)
+    sys.exit(1)
+stray = [path for path in sorted(glob.glob('examples/*.tex'))
+         if LIST_COMMAND in open(path, encoding='utf-8').read()]
 if stray:
     print(f'FAIL: M15: the contested-key emission reached {stray}, which have '
           f'no contested key', file=sys.stderr)
     sys.exit(1)
-print(f'ok   M15: of the {len(glob.glob("examples/*.tex"))} rendered LaTeX '
-      f'artifacts, only the contested-key fixture carries the contested-key '
-      f'emission')
+print(f'ok   M15: the contested-key fixture carries the contested-key '
+      f'emission, and none of the {len(glob.glob("examples/*.tex"))} other '
+      f'rendered LaTeX artifacts does')
 M15UNTOUCHEDPY
 pass "M15-AC5: the failed-render claim is gone from the filter, and the contested-key emission reaches only the fixture that has one"
 
@@ -7101,7 +7223,7 @@ PY
   warn_discrimination "$WORK/content-latex.log" "$WARN_NO_SOURCE" 2 "M02-AC5"
   # Not named by a criterion, but the same discipline: a clash report nothing
   # proves discriminating is a report that can quietly stop firing.
-  warn_discrimination "$WORK/conflict-latex.log" "$WARN_CLASH" 7 "M02-AC5"
+  warn_discrimination "$WORK/conflict-latex.log" "$WARN_CLASH" 8 "M02-AC5"
   # Same discipline for the marker's warnings: a report of a misused marker
   # that quietly stopped firing would leave every misuse check passing on a
   # log that says nothing.

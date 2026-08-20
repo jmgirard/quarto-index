@@ -586,7 +586,17 @@ local function index_argument(levels, sort, context, report, fold)
   for i, level in ipairs(clamped) do
     local printed = escape_level(level)
     if fold ~= nil and i == #clamped then
-      local key = (keys ~= nil and keys[i] ~= nil) and keys[i] or level
+      -- A sort field is unavoidable here — the printed half now carries the
+      -- folded cross-reference, and without a key the entry would file under
+      -- that whole string. What it files under is still decided by the SAME
+      -- comparison the uncontested branch below makes, so contesting a key
+      -- moves nothing: a key that merely repeats its level declares nothing,
+      -- and the level the entry files under is then the clamped text, join
+      -- and all, exactly as it is when no cross-reference is folded in.
+      local key = level
+      if keys ~= nil and keys[i] ~= nil and keys[i] ~= levels[i] then
+        key = keys[i]
+      end
       parts[#parts + 1] =
         escape_level(key) .. "@" .. printed .. ", " .. fold
       filing[i] = key

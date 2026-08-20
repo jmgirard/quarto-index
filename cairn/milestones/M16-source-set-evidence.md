@@ -222,3 +222,80 @@ advisory OK. The active profile is `generic`, whose `consistency-gate` slot
 names no toolchain checks, so that half is a clean no-op. No `DESIGN.md`
 principle changed in this diff, so `cairn_impact` was not run.
 
+**Independent review.** Three fresh-context reviewers, none having seen the
+implementation. The [S] prior-review lens reported no findings (its probe found
+no real PR review threads; every archived finding touching these files is
+preserved or, for the deletion, pre-authorised by D-004). The [S] blame-history
+lens reported no defects, confirming each lifted scanner is logically identical
+to its merge-base body and every review-cited hardening comment survives; it
+noted informationally that `mark-report-keys.py`'s `warn(` regex is weaker than
+`m15-joined-messages.py`'s paren-balanced one — pre-existing, untouched here,
+and already inside the standing acceptance-suite hardening row. The [O] diff-bug
+lens verified the lift mechanically (nine of nine heredoc bodies line-for-line
+identical apart from the source read) and returned thirteen ranked findings,
+logged below with disposition. No finding demonstrates an acceptance criterion
+failing inside its named procedure's domain, so none met the return floor; F1
+was judged the closest call and put to the maintainer as such at the gate.
+
+Findings F1, F2, F5, F6, F9 and F4 were re-verified against the code before
+triage. F2 could not be reproduced under this machine's environment (locale
+unset, and the case-differing pair cannot coexist on this filesystem), so it is
+recorded as plausible rather than confirmed.
+Ranked findings and disposition (proposed at the gate; the maintainer's
+selection is recorded in the work log):
+
+- F1 (fix now) — the source set is built by *two* independent recursive
+  enumerations, not one: `find | sort` in the shell and `os.walk` + `sorted()`
+  in `filtersrc.py`, reconciled only by a runtime equality check. AC2 says "one
+  recursive enumeration" and `run-tests.sh:65` claims it "lives in exactly one
+  place". Closest call to a return; fixed rather than returned because the
+  repair makes the criterion's words true without touching them.
+- F2 (fix now, dissolved by F1) — `find | sort` is locale-collated while
+  `sorted()` is codepoint-ordered, so the agreement check could fail spuriously
+  once M17 adds a module whose name differs only by `-`/`_`/case. Not
+  reproducible here; the file already writes `LC_ALL=C sort` elsewhere.
+- F3 (follow-up) — four scans take the *first* `re.search` match over a domain
+  that is now multi-file, so a stale duplicate definition left in `index.lua`
+  would mask the live one in a module. The three constant scans got an
+  exactly-one pin when they moved to the source set; these four did not.
+- F4 (fix now) — an ambient exported `QI_EXT_DIR` silently redirects all twelve
+  source-reading checks away from the tree the renders actually use, since
+  renders resolve the filter through the `examples/_extensions` symlink. A hole
+  this milestone opened; nothing asserts on the printed header.
+- F5 (fix now, dissolved by F1) — the comment justifying the agreement check is
+  false: it says "the sed-based checks read the first", but all three were
+  converted to Python in this same diff, leaving `$FILTER_SOURCES` with no
+  consumer but the printed listing and the check itself. Confirmed by grep.
+- F6 (fix now, falls out of F1) — the three `[ -n "$STORE_VERSION" ] || fail`
+  style guards are now unreachable: under `set -e` the command substitution
+  aborts first. Both paths fail loudly, so a stale-code note, not a hole.
+- F7 (follow-up) — AC3(b) probes only the count clause of `warn-distinct`,
+  leaving its `SINGLE_LITERAL`, duplicate and prefix clauses unproven against
+  the moved-definition case. Within the letter of AC3, which says "a defect of
+  the kind that site names", singular.
+- F8 (follow-up) — the exact-count pin counts *files under `tests/scans/`*, not
+  the twelve merge-base sites, so a one-for-one swap passes it. Caught
+  downstream by `run_scan`'s file check and `plantdefect`'s unknown-name error,
+  so a weak-pin note; the comment claims more than the pin delivers.
+- F9 (fix now) — `filtersrc.lines()` emits a spurious trailing empty line per
+  file (2730 entries for a 2729-line file, confirmed) and has no caller, so it
+  ships unverified for M17-AC1 to inherit.
+- F10 (fix now, dissolved by F1) — the empty-set refusal is probed for
+  `filtersrc.sources()` only; the shell guard is never exercised.
+- F11 (follow-up) — the `warn-distinct` defect marker hardcodes both counts
+  (`found 37 ... expected 38`), coupling two files that must be edited together.
+  Fails loudly and in the right direction.
+- F12 (fix now) — `movedefs.block()`'s fallback silently moves a single line for
+  any definition shape it does not recognise, where its docstring promises an
+  unknown or ambiguous name is an error. Latent: all seventeen current names
+  match a recognised shape.
+- F13 (fix now) — `cairn/DESIGN.md`'s harness paragraph was not updated for
+  `tests/filtersrc.py`, `tests/scans/`, `tests/movedefs.py`,
+  `tests/plantdefect.py`, or the deletion. Architecture lives in DESIGN.md, and
+  the source-set enumeration is now a standing structural fact M17 depends on.
+
+Blame-history informational note (follow-up, absorbed): `mark-report-keys.py`'s
+non-paren-balanced `warn(` regex is weaker than `m15-joined-messages.py`'s.
+Pre-existing; the standing acceptance-suite hardening row already names the
+two-independent-readers drift risk this belongs to.
+

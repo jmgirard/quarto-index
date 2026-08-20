@@ -191,7 +191,11 @@ Two back-ends ship:
   different ways, and two entries the ceiling folds onto one printed
   level path while their sort keys keep them apart (added M09). A level with a sort key is written in makeindex's own
   `sortkey@printed` form, that `@` being the one the back-end writes and so
-  the only one left unquoted (corrected M06).
+  the only one left unquoted (corrected M06). A level carrying a folded
+  cross-reference always takes that form, its printed half no longer being the
+  entry text alone; the key it is given is the one that level would have filed
+  under with nothing folded in, so contesting a key changes what an entry
+  prints and never where it files (added M15).
 - **HTML** (`FORMAT` containing `html`): a link target for each
   locator-contributing mark, and an index section at the marker or appended,
   built out of

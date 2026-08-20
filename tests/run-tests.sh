@@ -93,6 +93,11 @@ README_STALE=(
   $'automatic placement\tPlacement is automatic; there is no option to put the index elsewhere yet'
   $'sort keys unimplemented\tSort keys and locator styling, which use those characters in raw `makeindex` syntax, are not part of this syntax and will arrive later as separate span attributes'
   $'ungrouped collation rule\tEntries sort by folding ASCII uppercase to lowercase, then by character code, with a tie broken by character code, applied to an entry\'s sort key where it has one'
+  # M15: the row said the warning existed because the build could fail. It
+  # cannot now, so both the row\'s name and its reason are retired; the
+  # sentence that replaced them is pinned in README_HTML_CLAIMS below.
+  $'clash warning name\tThe clash warning is LaTeX-only'
+  $'clash warning reason\tOne term marked two different ways can fail a PDF build, so the extension warns about it'
 )
 
 # Each must be PRESENT: one beamer-scoped pass-through sentence, and one row
@@ -1143,6 +1148,7 @@ README_MISUSE_CLAIMS=(
   $'dangling target kept\tIt is not dropped — what you wrote is yours — but you get a warning naming the mark and the target, once per mark per target, whatever you render to'
   $'parent level resolves\tincluding a level that exists only because a deeper entry hangs from it'
   $'book report drawn once\tthe report is drawn once, by the last chapter in book order'
+  $'xref channel has an exception\texcept where a term is marked two different ways, whose single composed entry carries the cross-reference in its printed text instead'
 )
 README_MISUSE_STALE=(
   $'clash can fail the build\tOne term marked two different ways can fail the build'
@@ -1151,6 +1157,10 @@ README_MISUSE_STALE=(
   $'section id fixed\tthe section id `qi-index` itself, which is fixed rather than minted'
   $'section id unconditional\tin a section carrying the id `qi-index`, listed in the table of contents'
   $'nothing dropped\tNothing is dropped: you get one entry carrying both targets'
+  # M15: the unqualified claim, which ENDED at the example. A cross-reference
+  # on a contested key now travels in the entry\'s printed text instead, so the
+  # sentence is pinned as it stood, example and closing period included.
+  $'xref always in the encap channel\tA cross-reference is written into the same `\\index{…}` command, through `makeindex`\'s encapsulation channel — `\\index{cats|see{Felines}}`.'
 )
 
 printf '%s\n' "${README_MISUSE_CLAIMS[@]}" > "$WORK/readme-misuse.txt"

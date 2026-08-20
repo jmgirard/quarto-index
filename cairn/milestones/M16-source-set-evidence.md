@@ -302,3 +302,24 @@ non-paren-balanced `warn(` regex is weaker than `m15-joined-messages.py`'s.
 Pre-existing; the standing acceptance-suite hardening row already names the
 two-independent-readers drift risk this belongs to.
 
+**Re-verification after the gate-directed fixes.** The fixes changed the suite,
+so every criterion was executed again against the changed tree. AC1: the domain
+grep still reports exactly three lines, none reading filter source — the root
+literal was deliberately kept on the `QI_EXT_DIR` line the criterion names, so
+its wording stays true unamended. AC2: now literally one recursive enumeration,
+`tests/filtersrc.py`'s, the shell `find` and its agreement check deleted; the
+`--self-test` probe still reports the enumeration reaching `modules/` (1 -> 2
+with no edit to the suite) and refusing an empty set. AC3: all twelve still find
+what they read with their definitions moved, and each still fails naming the
+planted defect. AC4: the domain grep still reports nothing. AC5: branch exit 0
+in both slots — 195 checks plain, 230 under `--self-test`, zero FAIL in either;
+merge base 195 and 228 in the same tree. Compared line for line, the branch
+loses no passing check in either slot and adds two under `--self-test` (the AC2
+enumeration probe and the AC3 probe); the plain slot's pass set is now identical
+to the merge base's, the enumeration-agreement check having been the finding-F1
+duplication that was removed. `cairn_validate` still exits 0.
+
+Also corrected here: `examples/demo.log`, a render artifact `git add -A` swept
+into the fixes commit while a suite run was in flight. Removed; the branch's
+diff under `examples/` is empty.
+

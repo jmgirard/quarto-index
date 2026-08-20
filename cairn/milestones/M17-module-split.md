@@ -128,9 +128,9 @@ the task that made it.
       (`:993-1282`) — into `modules/passes.lua`.
 - [x] T6: Move HTML index building — `fold_case` through `html_index_blocks`
       (`:1283-1773`) — into `modules/html.lua`.
-- [ ] T7: Move marker and placement — `is_marker` through `place_index`
+- [x] T7: Move marker and placement — `is_marker` through `place_index`
       (`:1774-2049`) — into `modules/marker.lua`.
-- [ ] T8: Move book support — `as_href` through `html_book` (`:2050-2522`) —
+- [x] T8: Move book support — `as_href` through `html_book` (`:2050-2522`) —
       into `modules/book.lua`, leaving `Pandoc` and the returned pass list.
 - [ ] T9: Add the install-path probe of AC3 — package, `quarto add` into a
       scratch project, render the four combinations, compare byte for byte.
@@ -157,6 +157,7 @@ the task that made it.
 - 2026-08-20: T4 — `modules/marks.lua`, 12 definitions, 28 sites, carrying `html_marks`, `marked_paths`, `pending_xrefs`, `clamped_paths` as shared tables and `marks_seen` as a field. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(6 -> 7)`.
 - 2026-08-20: T5 — `modules/passes.lua`, the three Span passes, 4 sites. The walk-filter and return-table keys named `Span` stay bare; only the values are qualified. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(7 -> 8)`.
 - 2026-08-20: T6 — `modules/html.lua`, 23 definitions, 5 sites; only `html_index_blocks`, `taken_identifiers`, `relocate_heading_anchors` and `assign_anchors` are reached from outside it. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(8 -> 9)`.
+- 2026-08-20: T7 — `modules/marker.lua`, 9 definitions, 10 sites. T8 — `modules/book.lua`, 18 definitions, 3 sites, carrying the three `STORE_*` constants. `index.lua` is now 256 lines: the mark-syntax header, nine requires in dependency order, `Pandoc`, and the pass list. AC1's grep over the source set reports one definition line whose file is `index.lua`: `local function Pandoc(doc)`. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(10 -> 11)`.
 
 ## Decisions
 

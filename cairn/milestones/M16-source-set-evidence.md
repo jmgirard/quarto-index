@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
-- **Branch/PR:** m16-source-set-evidence
+- **Branch/PR:** m16-source-set-evidence · https://github.com/jmgirard/quarto-index/pull/16
 
 ## Goal
 

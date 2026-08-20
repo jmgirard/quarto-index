@@ -101,7 +101,7 @@ README_STALE=(
 README_HTML_CLAIMS=(
   $'beamer pass-through\tIn beamer, and in any other format with no index back-end, marks pass through'
   $'no level ceiling\tNo level ceiling in HTML'
-  $'clash warning scope\tThe clash warning is LaTeX-only'
+  $'one-entry warning scope\tThe one-entry warning is LaTeX-only'
   $'collation rule\tTop-level entries are ranked into letter groups first; inside a group, and at every level below the top, the order folds ASCII uppercase to lowercase and then compares character codes, breaking a tie by character code, over an entry\'s sort key where it has one'
   $'numbered locator links\tLocators are numbered links in HTML'
   $'targets hyperlinked\tCross-reference targets are hyperlinked in HTML'
@@ -1136,11 +1136,18 @@ README_MISUSE_CLAIMS=(
   $'both attributes narrowed\tNeither is dropped for being one of two: you get one entry carrying both targets'
   $'self-target still dropped\tA target that names its own entry is still dropped for that reason, and the other one is then the only one emitted'
   $'dangling target reported\tA `see=` or `see-also=` naming a term nothing indexes sends a reader to an entry the index does not have'
+  $'two ways print as one entry\tOne term marked two different ways prints as one entry'
+  $'two ways keep the locators\tyou get a single entry carrying its page numbers and its cross-reference together'
+  $'two ways no locator from the xref\tThe cross-reference mark contributes no page number of its own'
+  $'two ways no longer fails\tThe extension no longer emits such a pair'
   $'dangling target kept\tIt is not dropped — what you wrote is yours — but you get a warning naming the mark and the target, once per mark per target, whatever you render to'
   $'parent level resolves\tincluding a level that exists only because a deeper entry hangs from it'
   $'book report drawn once\tthe report is drawn once, by the last chapter in book order'
 )
 README_MISUSE_STALE=(
+  $'clash can fail the build\tOne term marked two different ways can fail the build'
+  $'clash cannot be prevented\tPage numbers do not exist when the extension runs, so it cannot prevent the clash'
+  $'clash workaround\tGive the cross-reference its own entry, or move the marks apart'
   $'section id fixed\tthe section id `qi-index` itself, which is fixed rather than minted'
   $'section id unconditional\tin a section carrying the id `qi-index`, listed in the table of contents'
   $'nothing dropped\tNothing is dropped: you get one entry carrying both targets'

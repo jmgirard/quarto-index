@@ -161,14 +161,20 @@ dropped for being one of two: you get one entry carrying both targets, `see
 Aye; see also Bee`, and a warning. A target that names its own entry is still
 dropped for that reason, and the other one is then the only one emitted.
 
-**One term marked two different ways can fail the build.** If `cats` gets a
+**One term marked two different ways prints as one entry.** If `cats` gets a
 plain mark in one place and a cross-reference in another — or a `see=` in one
-place and a `see-also=` in another — and the two land on the same printed page,
-`makeindex` rejects the pair and the PDF build fails. Marking a term twice
-*the same* way is fine; the index tool folds those together. Page numbers do
-not exist when the extension runs, so it cannot prevent the clash — it warns
-instead, naming the key. Give the cross-reference its own entry, or move the
-marks apart.
+place and a `see-also=` in another — you get a single entry carrying its page
+numbers and its cross-reference together: `cats, see Felines, 3, 7`. The
+cross-reference mark contributes no page number of its own, exactly as it does
+not when it stands alone. You also get a warning naming the key, because two
+marks describing one term differently is more often a slip than a plan.
+
+This used to fail the PDF build outright, and in a document that had never
+been built to PDF it could sit unnoticed for a long time: `makeindex` rejects
+two marks that share an index key and a printed page but describe it
+differently, and Quarto turns that rejection into a failed render. The
+extension no longer emits such a pair. Marking a term twice *the same* way was
+always fine, and still is.
 
 In an HTML index the target is a link when it names an entry that exists in the
 same index, and plain text when it does not. Whether it does is decided on the
@@ -366,11 +372,13 @@ with no configuration. In a document with a bibliography the index currently
 prints before the references. A document with no marks gets none of this.
 
 A cross-reference is written into the same `\index{…}` command, through
-`makeindex`'s encapsulation channel — `\index{cats|see{Felines}}`. A document
-that puts both attributes on one mark also gets one small
-`\providecommand` in its preamble, which prints the pair through LaTeX's own
-`\seename` and `\alsoname`, so a document loading `babel` keeps its
-translations. A document with no such mark gets nothing extra.
+`makeindex`'s encapsulation channel — `\index{cats|see{Felines}}` — except
+where a term is marked two different ways, whose single composed entry carries
+the cross-reference in its printed text instead. A document that puts both
+attributes on one mark, or that composes such an entry, also gets one small
+`\providecommand` in its preamble, which prints cross-references through
+LaTeX's own `\seename` and `\alsoname`, so a document loading `babel` keeps
+its translations. A document with neither gets nothing extra.
 
 Placement is automatic unless you write a marker; see [Placing the
 index](#placing-the-index).
@@ -450,10 +458,11 @@ differs, because the tools underneath them do:
 1. **No level ceiling in HTML.** Sub-entries nest as deep as you write them.
    The three-level ceiling described above is `makeindex`'s limit, not the
    extension's.
-2. **The clash warning is LaTeX-only.** One term marked two different ways can
-   fail a PDF build, so the extension warns about it. An HTML index prints the
-   locator and the cross-reference together on one entry, with nothing to
-   clash, so the warning would name a problem that format does not have.
+2. **The one-entry warning is LaTeX-only.** A term marked two different ways
+   reaches the LaTeX index tool as one entry the extension had to compose, so
+   the extension says it did. An HTML index prints the locator and the
+   cross-reference together on one entry by itself, with nothing to compose,
+   so the warning would name a decision that format never has to make.
 3. **Sorting is the extension's own in HTML.** Top-level entries are ranked
    into letter groups first; inside a group, and at every level below the top,
    the order folds ASCII uppercase to lowercase and then compares character

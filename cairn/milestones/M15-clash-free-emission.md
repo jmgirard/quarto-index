@@ -1,6 +1,6 @@
 # M15: A term marked both plainly and with a cross-reference builds
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -131,7 +131,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
       glob rather than by a list.
 - [x] T8 Prove each new check discriminating: commit the fix, then revert the
       emission change and record which checks fail.
-- [ ] T9 Correct DESIGN's LaTeX back-end paragraph and README's three
+- [x] T9 Correct DESIGN's LaTeX back-end paragraph and README's three
       falsified passages, pin the replacements, and run
       `tests/run-tests.sh --self-test`.
 
@@ -158,6 +158,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
 - 2026-08-19: T5 needed no code change, and the verification says why rather than asserting it: the folded field is rendered by the same `target_argument`/`escape_level` path the encapsulation channel uses, and the emitted argument for the sixteen-character target carries `\%`, `\textbraceleft{}`, `\textbackslash{}`, `\textbar{}`, `\textquotedbl{}`, `\textless{}`, `\textgreater{}` and makeindex's own `"@` and `"!` quoting. The assertion that each character typesets lives in the suite, not in a one-off probe.
 - 2026-08-19: T7 added the M15 suite section: the PDF render with both failure strings asserted absent (AC1); an exhaustive hand-derived manifest over every printed index line, level, term and locator count, quantified over all fourteen rather than over the contested seven (AC2/AC3, the M10 lesson); one printed entry per contested term; each of the sixteen escaped characters asserted present in the folded target (AC4); the old failed-render phrase asserted gone from the filter (AC5); and a glob over the rendered LaTeX artifacts asserting the contested-key emission reaches only the fixture that has one. The manifest matched on its first run. Suite 185 -> 191 checks.
 - 2026-08-19: T8 discrimination probes, against a non-exiting copy of the suite so every failure is collected rather than only the first, with a clean control run first. (a) The repair reverted, so contested keys emit rival encapsulations again: 7 checks fail, including the PDF render itself with both baseline failure strings back, the whole printed-index manifest, and the report's per-key counts. (b) The cross-reference mark made to emit as well, so it contributes a locator: the manifest fails on `kappa`, expected 2 and got 1 — makeindex collapses the resulting three consecutive pages into one printed range, which is the documented behaviour and is now stated where the locator count is computed. (c) The folded field's makeindex quoting removed: 3 fail, the PDF render among them, since an unquoted `!` or `@` in that field is rejected exactly as it is in the encapsulation channel.
+- 2026-08-19: T9 corrected the three README passages the fix falsified — the "can fail the build" paragraph, the back-ends-differ row, and the claim that a cross-reference always travels through the encapsulation channel — and DESIGN's LaTeX back-end paragraph, which now states both repairs and why they differ. Four new claims pinned in the README-claims array and the three sentences naming the old outcome pinned as stale, so neither the promise nor its retirement can drift from the code. `tests/run-tests.sh --self-test` passes at 224 checks.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 12 findings. Two were fatal and are fixed above: AC5 tested a phrase no single literal carries, so it would have passed against the unmodified filter, and AC3's exhaustive manifest named four of the eight lines the index prints. AC4's two-fixture list was narrowed to a globbed domain, the verify-slot criterion was dropped as instrument-bound and became T9, an escaping criterion was added for the printed field (IP2), and a README/DESIGN criterion was added (GP1). GP2 and the locator question went to the gate.
 
 ## Decisions

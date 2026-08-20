@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-19 (M14 done and archived; no defect returns, no am
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M15 | A term marked both plainly and with a cross-reference builds | in-progress | — | normal | milestones/M15-clash-free-emission.md |
+| M15 | A term marked both plainly and with a cross-reference builds | review | — | normal | milestones/M15-clash-free-emission.md |
 | M13 | Level reports name a depth the author can act on | done | — | normal | milestones/archive/M13-level-report-wording.md |
 | M14 | A cross-reference target that names no index entry is reported | done | — | normal | milestones/archive/M14-dangling-xref-target.md |
 | M12 | A marker that leaves nothing behind is reported without naming what held it | done | — | normal | milestones/archive/M12-emptied-place-report.md |

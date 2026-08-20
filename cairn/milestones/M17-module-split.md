@@ -1,6 +1,6 @@
 # M17: index.lua becomes a thin entry point over required modules
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M16
 - **Driving RR:** —
@@ -134,7 +134,7 @@ the task that made it.
       into `modules/book.lua`, leaving `Pandoc` and the returned pass list.
 - [x] T9: Add the install-path probe of AC3 — package, `quarto add` into a
       scratch project, render the four combinations, compare byte for byte.
-- [ ] T10: Rewrite `cairn/DESIGN.md`'s Architecture section for the module
+- [x] T10: Rewrite `cairn/DESIGN.md`'s Architecture section for the module
       layout and the relative-`require` convention; confirm `_extension.yml`
       unchanged.
 
@@ -160,6 +160,8 @@ the task that made it.
 - 2026-08-20: T7 — `modules/marker.lua`, 9 definitions, 10 sites. T8 — `modules/book.lua`, 18 definitions, 3 sites, carrying the three `STORE_*` constants. `index.lua` is now 256 lines: the mark-syntax header, nine requires in dependency order, `Pandoc`, and the pass list. AC1's grep over the source set reports one definition line whose file is `index.lua`: `local function Pandoc(doc)`. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(10 -> 11)`.
 - 2026-08-20: T9 — the AC3 install-path probe, 131 added lines and zero deleted in `tests/run-tests.sh`. Two new checks: 32 require calls all at file top level above their file's first definition, and four byte-identical outputs (standalone and book, each to latex and html) between a `quarto add` install and the working tree. Run totals 195 -> 197 and 230 -> 232, every merge-base line verbatim and in order.
 - 2026-08-20: the AC3 probe discriminates, verified out of band rather than in the run: deleting `modules/marks.lua` from an installed copy fails the render at filter-load time (`inject_user_filters_at_entry_points`), which is the claim that makes fixture choice a non-axis; and moving `sortkeys.lua`'s `qi_levels` require below its first definition fails the position check naming both lines. Neither is a planted-defect check in the suite — that gap goes to the acceptance-suite hardening row.
+- 2026-08-20: T10 — `cairn/DESIGN.md`'s Architecture section opens on the module layout and names all ten source files in their `.lua` form; `_extension.yml` unchanged against the merge base (`git diff cb782df` empty for it). Two probe gaps recorded on the acceptance-suite hardening candidate row.
+- 2026-08-20: tasks complete, status to `review`. Pre-review check clean: `tests/run-tests.sh` 197, `--self-test` 232, both exit 0. Every merge-base ok line verbatim and in order in both runs, the one exempted interpolated line reading `(10 -> 11)` for the extension's 10 `.lua` files with identical text either side of the parentheses. `git status --porcelain` over `tests/`, `examples/` and `README.md` is clean; `git diff --numstat cb782df` over them names two files, `tests/movedefs.py` (54/26) and `tests/run-tests.sh` (134/0, zero deletions).
 
 ## Decisions
 

@@ -7102,10 +7102,30 @@ filtersrc.sources()" >/dev/null 2>&1; then
     || fail "M16-AC3: found $SCAN_COUNT source scans under tests/scans, expected 12; either a source-reading check left the probed set or one was added without extending this proof"
 
   for SCAN_NAME in $SCAN_NAMES; do
+    # (a) It still finds what it reads. The passing control: without it, the
+    # failure below would be evidence only that the check always fails.
     ( export QI_EXT_DIR="$SCAN_PROBE/ext"; run_scan "$SCAN_NAME" ) >/dev/null \
       || fail "M16-AC3: $SCAN_NAME does not find what it reads once the definition moves to modules/moved.lua; it is reading one named file, not the source set"
+
+    # (b) ...and it is still ASSERTING something about it. Finding a definition
+    # is not reading it: a check whose pattern quietly stopped matching passes
+    # (a) forever. So plant a defect of the kind this check names, in the moved
+    # definition, and require the check to fail SAYING SO — the marker, not the
+    # bare exit status, since a scan that died of a broken probe also exits
+    # non-zero and would otherwise be read as the scan catching the defect.
+    rm -rf "$SCAN_PROBE/defect"
+    cp -R "$SCAN_PROBE/ext" "$SCAN_PROBE/defect"
+    SCAN_EXPECT=$(python3 tests/plantdefect.py "$SCAN_PROBE/defect" "$SCAN_NAME")
+    set +e
+    SCAN_OUT=$( export QI_EXT_DIR="$SCAN_PROBE/defect"; run_scan "$SCAN_NAME" 2>&1 )
+    SCAN_RC=$?
+    set -e
+    [ "$SCAN_RC" -ne 0 ] \
+      || fail "M16-AC3: $SCAN_NAME passed with a defect planted in the moved definition; it finds the definition and asserts nothing about it"
+    printf '%s' "$SCAN_OUT" | grep -qF -- "$SCAN_EXPECT" \
+      || { printf '%s\n' "$SCAN_OUT" >&2; fail "M16-AC3: $SCAN_NAME exited $SCAN_RC on the planted defect but did not report it; expected <<$SCAN_EXPECT>>"; }
   done
-  pass "M16-AC3: all $SCAN_COUNT source-reading checks still find what they read with their definitions moved into modules/moved.lua"
+  pass "M16-AC3: all $SCAN_COUNT source-reading checks still find what they read with their definitions moved into modules/moved.lua, and each one fails, naming the defect, when one of the kind it checks for is planted there"
   # Same discipline for the marker's warnings: a report of a misused marker
   # that quietly stopped firing would leave every misuse check passing on a
   # log that says nothing.

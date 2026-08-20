@@ -93,7 +93,7 @@ records why. Making module-level state per-document → stays the standing
       source (the `examples/.../\_extension.yml` existence check) alone.
 - [x] T3: Add the `--self-test` moved-definition probe for each retargeted
       site: scratch copy, definition moved into `modules/`, site still finds it.
-- [ ] T4: Add the planted-defect half for each retargeted site — a defect of
+- [x] T4: Add the planted-defect half for each retargeted site — a defect of
       the kind that site names, planted in the moved definition, makes it fail.
 - [ ] T5: Delete `tests/byte-diff.sh`; drop the reference at
       `tests/run-tests.sh:1242`; rewrite the ROADMAP candidate row that rests
@@ -120,6 +120,7 @@ records why. Making module-level state per-document → stays the standing
 - 2026-08-20: T2 complete — all twelve sites retargeted onto the source set, zero `index.lua` references left, and AC1's post-state grep reports exactly the three predicted lines. Full `--self-test` run exit 0, 230 checks, pass set byte-identical to the pre-retarget run. That identity is consistent with a correct retarget AND with a vacuous one; T3/T4 are what discriminate.
 - 2026-08-20: T2 also dropped the drifting line numbers from its own task text (minor edit, implement-owned) for the same reason the criterion did.
 - 2026-08-20: T3 complete — the twelve scanner bodies lifted into `tests/scans/<name>.py`, a `run_scan` dispatcher holding each one's environment and arguments in one place, `tests/movedefs.py` building the moved-definition tree, and a `--self-test` probe running all twelve against it. Full `--self-test` run exit 0, 231 checks (230 + the new AC3 line), 0 FAIL; the probe reports all 12 still finding what they read with 17 definitions relocated into `modules/moved.lua`.
+- 2026-08-20: T4 complete — `tests/plantdefect.py` plants, per scan, a defect of the kind that scan names (a pinned value changed where the check compares one; the definition renamed out of reach where the check only has to locate it) into the moved module, and the probe requires the scan to exit non-zero AND to print the named failure marker, so a scan killed by a broken probe cannot read as a scan catching the defect. All twelve discriminate. Full `--self-test` run exit 0, 231 checks, 0 FAIL.
 
 ## Decisions
 

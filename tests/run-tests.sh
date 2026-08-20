@@ -79,6 +79,46 @@ FILTER_SOURCES=$(find "$QI_EXT_DIR" -name '*.lua' | sort)
 FILTER_SOURCE_COUNT=$(printf '%s\n' "$FILTER_SOURCES" | wc -l | tr -d ' ')
 
 # ---------------------------------------------------------------------------
+# The source-reading checks (M16). Each one's body lives in tests/scans/<name>.py
+# and reads the source set through tests/filtersrc.py; this function is the one
+# place that says how each is invoked — which environment it gets and which
+# arguments. The run calls it at the site, and the M16-AC3 probe calls it again
+# with QI_EXT_DIR pointed at a scratch tree whose definitions have been moved.
+# Two copies of these env/argv lines would let the probe exercise an invocation
+# the run does not, which is the vacuous pass this milestone exists to close.
+#
+# The globals below are read when run_scan is CALLED, not when it is defined,
+# so a scan whose pinned constant is set further down the file still gets it.
+# ---------------------------------------------------------------------------
+run_scan() {
+  local name="$1"
+  local script="tests/scans/$name.py"
+  [ -f "$script" ] || fail "M16: no source scan named $name (looked for $script)"
+  case "$name" in
+    latex-escape-table)
+      PROBE_CHARS="$PROBE_CHARS" python3 "$script" ;;
+    html-identifiers)
+      HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+      HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" HTML_LETTER_CLASS="$HTML_LETTER_CLASS" \
+        python3 "$script" ;;
+    xref-manifest)
+      XREF_BOTH_COMMAND="$XREF_BOTH_COMMAND" \
+        python3 "$script" examples/demo.qmd "$WORK/xref-manifest.txt" ;;
+    warn-distinct|xref-both-definition|store-version|max-levels|overflow-join|m15-joined-messages)
+      python3 "$script" ;;
+    marker-class)
+      MARKER_CLASS="$MARKER_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
+        python3 "$script" ;;
+    mark-report-keys)
+      python3 "$script" "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" ;;
+    store-names)
+      STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
+    *)
+      fail "M16: tests/scans/$name.py has no invocation in run_scan; the M16-AC3 probe would run it with the wrong environment and report a defect that is its own" ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
 # Supported forms (NORMATIVE). The README documents exactly these authoring
 # forms — the mark spans, and the div that places the index — and no others.
 # Each row is <label><TAB><exemplar>: the exemplar is the exact
@@ -1238,46 +1278,7 @@ MISUSEDOCPY
 
 # The probe set is pinned to the filter's own escape table, so a character the
 # filter handles can never go unprobed (and vice versa).
-PROBE_CHARS="$PROBE_CHARS" python3 - <<'PY'
-import os, re, sys
-sys.path.insert(0, 'tests')
-import filtersrc
-src = filtersrc.text()
-table = src.split('local LATEX_LITERAL = {', 1)[1].split('\n}', 1)[0]
-keys = set()
-for m in re.finditer(r'^\s*\[(".*?"|\'"\')\]\s*=', table, re.MULTILINE):
-    raw = m.group(1)
-    keys.add('"' if raw == "'\"'" else raw[1:-1].replace('\\\\', '\\'))
-probes = set(os.environ['PROBE_CHARS'].split(' '))
-if keys != probes:
-    print('FAIL: AC4: probe characters do not match the filter escape table',
-          file=sys.stderr)
-    print(f'  in filter, not probed: {sorted(keys - probes)}', file=sys.stderr)
-    print(f'  probed, not in filter: {sorted(probes - keys)}', file=sys.stderr)
-    sys.exit(1)
-
-# The pin above compares the probe set to the filter. That alone does not stop
-# a character sitting in both and being probed nowhere, so also require each
-# one to appear in BOTH contexts of the demo, which is what AC4 promises.
-qmd = open('examples/demo.qmd', encoding='utf-8').read()
-unescape = lambda t: re.sub(r'\\(.)', r'\1', t)
-visible = ''.join(unescape(m) for m in re.findall(r'\[((?:\\.|[^\]\\])*)\]\{\.index', qmd))
-entries = ''.join(unescape(m)
-                  for m in re.findall(r'entry="((?:\\.|[^"\\])*)"', qmd))
-missing = []
-for c in sorted(probes):
-    if c not in visible:
-        missing.append(f'  {c!r} never appears in a visible term')
-    if c not in entries:
-        missing.append(f'  {c!r} never appears in an entry= level')
-if missing:
-    print('FAIL: AC4: escape-domain characters unprobed in examples/demo.qmd:',
-          file=sys.stderr)
-    print('\n'.join(missing), file=sys.stderr)
-    sys.exit(1)
-print(f'ok   AC4: probe set pinned to the filter escape table ({len(keys)} '
-      f'chars), each probed in both contexts')
-PY
+run_scan latex-escape-table
 
 # ---------------------------------------------------------------------------
 # REVIEW-TIME EVIDENCE, NOT A CHECK: the LaTeX back-end is untouched.
@@ -1290,29 +1291,7 @@ PY
 # The HTML back-end's four identifiers are a public surface — a reader's URL
 # and an author's CSS hold on to them — so the suite's copies are pinned to
 # the filter's own constants, exactly as the dual-target command name is.
-HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" HTML_LETTER_CLASS="$HTML_LETTER_CLASS" \
-python3 - <<'PY'
-import os, re, sys
-sys.path.insert(0, 'tests')
-import filtersrc
-src = filtersrc.text()
-bad = []
-for name in ('HTML_SECTION_ID', 'HTML_ANCHOR_PREFIX', 'HTML_ENTRY_PREFIX',
-             'HTML_LETTER_CLASS'):
-    m = re.search(rf'{name}\s*=\s*"([^"]*)"', src)
-    if not m:
-        bad.append(f'  {name} is not defined in the filter')
-    elif m.group(1) != os.environ[name]:
-        bad.append(f'  {name}: suite says {os.environ[name]!r}, filter '
-                   f'defines {m.group(1)!r}')
-if bad:
-    print('FAIL: M03-AC3: the suite and the filter disagree on the HTML '
-          'identifiers:', file=sys.stderr)
-    print('\n'.join(bad), file=sys.stderr)
-    sys.exit(1)
-print('ok   M03-AC3: all 4 HTML identifiers pinned to the filter constants')
-PY
+run_scan html-identifiers
 
 quarto render examples/demo.qmd --to latex > "$WORK/demo-latex.log" 2>&1 \
   || { cat "$WORK/demo-latex.log" >&2; fail "AC1: demo.qmd failed to render to LaTeX"; }
@@ -1337,56 +1316,7 @@ pass "AC4: both the fold and empty-level warnings emitted for the deep probe"
 # describes is the form the filter emits.
 # ---------------------------------------------------------------------------
 printf '%s\n' "$XREF_ENTRIES" > "$WORK/xref-manifest.txt"
-XREF_BOTH_COMMAND="$XREF_BOTH_COMMAND" python3 - examples/demo.qmd \
-  "$WORK/xref-manifest.txt" <<'PY'
-import os, re, sys
-sys.path.insert(0, 'tests')
-import filtersrc
-qmd_path, manifest_path = sys.argv[1:3]
-both = os.environ['XREF_BOTH_COMMAND']
-
-# The manifest names the dual-target command; the filter defines it. If they
-# ever disagree, every dual row silently reclassifies as single-target and the
-# arithmetic below stops meaning anything.
-lua = filtersrc.text()
-m = re.search(r'XREF_BOTH_COMMAND\s*=\s*"([^"]+)"', lua)
-if not m:
-    print('FAIL: M02-AC1: no XREF_BOTH_COMMAND in the filter', file=sys.stderr)
-    sys.exit(1)
-if m.group(1) != both:
-    print(f'FAIL: M02-AC1: manifest names {both!r}, filter defines '
-          f'{m.group(1)!r}', file=sys.stderr)
-    sys.exit(1)
-
-single = dual = 0
-for line in open(manifest_path, encoding='utf-8'):
-    line = line.rstrip('\n')
-    if not line.strip():
-        continue
-    count, text = line.split('\t', 1)
-    if '|' + both in text:
-        dual += int(count)
-    else:
-        single += int(count)
-
-qmd = open(qmd_path, encoding='utf-8').read()
-# Occurrences, not matching lines, and quoted values only — the same limits the
-# entry= pins carry, recorded as known holes in the milestone file.
-found = qmd.count('see="') + qmd.count('see-also="')
-expected = single + 2 * dual
-if found != expected:
-    print(f'FAIL: M02-AC1: examples/demo.qmd has {found} cross-reference '
-          f'attribute occurrence(s), but the manifest accounts for {expected} '
-          f'({single} single-target + 2 x {dual} dual-target)', file=sys.stderr)
-    sys.exit(1)
-# The arithmetic above is exact only because demo.qmd holds no mark whose
-# target is unusable and none with no source entry — those emit an attribute
-# occurrence but no row. Both shapes live in other fixtures on purpose; this
-# check reports the invariant by name so a violation is not misread as a
-# manifest error.
-print(f'ok   M02-AC1: {single} single-target and {dual} dual-target rows '
-      f'account for all {found} cross-reference attributes in demo.qmd')
-PY
+run_scan xref-manifest
 
 # ---------------------------------------------------------------------------
 # M02-AC5 — misuse case (b): one warning, one command, render still clean.
@@ -1499,205 +1429,12 @@ pass "M02-AC5: case (b) warned exactly once in the demo render"
 # distinctive message text" is not a property the suite can rely on. The
 # domain is the filter's own warn() literals, so a warning added later is
 # covered without editing this check.
-python3 - <<'PY'
-import re, sys
-sys.path.insert(0, 'tests')
-import filtersrc
-src = filtersrc.text()
-
-
-# Line comments removed before anything is read: `\bwarn\(` otherwise matches
-# the function's own definition and every mention of `warn()` in a comment,
-# and a comment containing a quote would contribute a phantom literal. Quotes
-# are tracked while stripping, since a message may itself contain `--`.
-def strip_block_comments(text):
-    """Remove Lua long-bracket comments, --[[ ... ]] and --[==[ ... ]==].
-
-    A per-line scan cannot see these: a `warn(` written inside one is real
-    source to the line scanner and a phantom warning to everything downstream,
-    which would break the pinned count with a message blaming a warning change
-    (review F6). Newlines are preserved so nothing else shifts line for line.
-    """
-    out, i = [], 0
-    while i < len(text):
-        m = re.compile(r'--\[(=*)\[').search(text, i)
-        if not m:
-            out.append(text[i:])
-            break
-        out.append(text[i:m.start()])
-        close = text.find(']' + m.group(1) + ']', m.end())
-        if close == -1:
-            i = len(text)
-            break
-        out.append('\n' * text.count('\n', m.start(), close))
-        i = close + len(m.group(1)) + 2
-    return ''.join(out)
-
-
-def uncommented(text):
-    out = []
-    for line in text.split('\n'):
-        quote, i = None, 0
-        while i < len(line):
-            c = line[i]
-            if quote:
-                if c == '\\':
-                    i += 1
-                elif c == quote:
-                    quote = None
-            elif c in '"\'':
-                quote = c
-            elif c == '-' and line[i:i + 2] == '--':
-                line = line[:i]
-                break
-            i += 1
-        out.append(line)
-    return '\n'.join(out)
-
-
-# Lua string literals take either quote, and a message containing a double
-# quote is written with single quotes, so both styles are read.
-LITERAL = re.compile(r"""(["'])((?:[^\\]|\\.)*?)\1""")
-
-
-def message_at(text, open_paren):
-    """Join every string literal in one warn() call's message expression.
-
-    The WHOLE message, not its leading literal: most of these messages are
-    written as several literals joined with `..` across source lines, and
-    reading only the first compares warnings by a prefix while reporting on
-    the message -- the way a distinctness scan goes blind (M10). A revert
-    probe proved a pinned literal count cannot see this (M13 T6): splitting a
-    message across `..` leaves both the literal count and the call count
-    unchanged. Joining the literals is what can.
-
-    The expression ends at the call's own closing paren, or at the `:format(`
-    that fills it in -- the arguments to `format` are values, not message
-    text, and must not be swept in.
-    """
-    depth, i, quote, cut = 1, open_paren + 1, None, -1
-    while i < len(text):
-        c = text[i]
-        if quote:
-            if c == '\\':
-                i += 1
-            elif c == quote:
-                quote = None
-        elif c in '"\'':
-            quote = c
-        elif c == '(':
-            # Found OUTSIDE a literal, which is the whole point: a message
-            # whose own text contains `:format(` would otherwise be cut there,
-            # silently comparing a distinct warning on a prefix — the exact
-            # blindness this scan exists to remove (review F7).
-            if cut == -1 and text[i - 7:i + 1] == ':format(':
-                cut = i - 7
-            depth += 1
-        elif c == ')':
-            depth -= 1
-            if depth == 0:
-                break
-        i += 1
-    call = text[open_paren + 1:cut if cut != -1 else i]
-    return ''.join(m.group(2) for m in LITERAL.finditer(call))
-
-
-code = uncommented(strip_block_comments(src))
-calls = [m for m in re.finditer(r'\bwarn\(', code)
-         if not code[:m.start()].rstrip().endswith('function')]
-lits = [message_at(code, m.end() - 1) for m in calls]
-
-# A call whose message is not built from literals at all -- a variable, a
-# helper's return -- is text this check never sees, so it is named rather than
-# silently skipped.
-blank = [i for i, l in enumerate(lits) if not l]
-if blank:
-    print(f'FAIL: M02-AC5: {len(blank)} warn() call(s) pass no string literal, '
-          f'so their message text is outside this check', file=sys.stderr)
-    sys.exit(1)
-# An exact count, not a floor: a floor passes while a warning quietly stops
-# being read. This number changes when a warning is added or removed.
-EXPECTED = 38
-if len(lits) != EXPECTED:
-    print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
-          f'{EXPECTED}. Either a warning was added or removed without updating '
-          f'this count, or this scan stopped reading the filter — a renamed '
-          f'helper, a construct the comment stripper mishandles, or a call the '
-          f'definition filter wrongly excluded. What it did read:',
-          file=sys.stderr)
-    for l in lits:
-        print(f'  <<{l}>>', file=sys.stderr)
-    sys.exit(1)
-# AC4's second clause, which the join above cannot evidence: the two reports
-# M13 rewrote — and the one M14 added — are each ONE literal. Asserted on the calls themselves, since a
-# joined message reads identically either way. Keeping them whole is also why
-# those two lines run past the file's usual width (review F9, F18).
-SINGLE_LITERAL = (
-    'empty index level in %s at %s;',
-    'sort= on %s writes %d levels against the %d it has to sort',
-    # M14-AC6: the dangling-target report, for the same reason — a message
-    # split across `..` is read by this scan only to its first fragment, and a
-    # scan that compares warnings on a prefix is the blindness M10 hit.
-    '%s= on %s points at "%s", which no index mark in this %s indexes;',
-)
-for needle in SINGLE_LITERAL:
-    owner = [m for m in re.finditer(r'\bwarn\(', code)
-             if needle in code[m.start():m.start() + 400]]
-    if len(owner) != 1:
-        print(f'FAIL: M02-AC5: expected exactly one warn() call carrying '
-              f'<<{needle}>>, found {len(owner)}', file=sys.stderr)
-        sys.exit(1)
-    end = code.index(')', code.index(needle, owner[0].start()))
-    pieces = LITERAL.findall(code[owner[0].end():end])
-    if len(pieces) != 1:
-        print(f'FAIL: M02-AC5: the report <<{needle}>> is built from '
-              f'{len(pieces)} literals; M13-AC4 and M14-AC6 require one, so '
-              f'the whole message is visible at its call site', file=sys.stderr)
-        sys.exit(1)
-
-dupes = {l for l in lits if lits.count(l) > 1}
-if dupes:
-    print('FAIL: M02-AC5: warning messages are not distinct:', file=sys.stderr)
-    for d in sorted(dupes):
-        print(f'  <<{d}>>', file=sys.stderr)
-    sys.exit(1)
-# Neither may be a prefix of another, or a grep for the shorter also matches
-# the longer and the two stop being separable.
-for a in lits:
-    for b in lits:
-        if a is not b and b.startswith(a):
-            print(f'FAIL: M02-AC5: warning <<{a}>> is a prefix of <<{b}>>',
-                  file=sys.stderr)
-            sys.exit(1)
-print(f'ok   M02-AC5: all {len(lits)} filter warnings are mutually distinct, '
-      f'compared as whole messages')
-PY
+run_scan warn-distinct
 
 # The dual-target command must take its labels from LaTeX's own, or a document
 # loading babel silently loses its translations — the property the milestone's
 # Decisions entry banks on.
-python3 - <<'PY'
-import re, sys
-sys.path.insert(0, 'tests')
-import filtersrc
-src = filtersrc.text()
-m = re.search(r'XREF_BOTH_DEFINITION\s*=\s*(.*?)\n\n', src, re.DOTALL)
-if not m:
-    print('FAIL: M02-AC5: no XREF_BOTH_DEFINITION in the filter', file=sys.stderr)
-    sys.exit(1)
-defn = m.group(1)
-for needed in ('seename', 'alsoname'):
-    if needed not in defn:
-        print(f'FAIL: M02-AC5: the dual-target definition does not use '
-              f'\\{needed}', file=sys.stderr)
-        sys.exit(1)
-if re.search(r'see\s+also|\bsee\b(?!name)', defn.replace('seename', '')):
-    print('FAIL: M02-AC5: the dual-target definition hard-codes label text '
-          'instead of using \\seename/\\alsoname', file=sys.stderr)
-    sys.exit(1)
-print('ok   M02-AC5: the dual-target command takes its labels from '
-      '\\seename/\\alsoname')
-PY
+run_scan xref-both-definition
 
 # ---------------------------------------------------------------------------
 # AC2 — preamble injection and \printindex placement.
@@ -2361,29 +2098,7 @@ PY
 # ---------------------------------------------------------------------------
 MARKER_CLASS='qi-index-here'
 
-MARKER_CLASS="$MARKER_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
-  <<'PY'
-import os, re, sys
-sys.path.insert(0, 'tests')
-import filtersrc
-src = filtersrc.text()
-m = re.search(r'MARKER_CLASS\s*=\s*"([^"]*)"', src)
-if not m:
-    print('FAIL: M04-AC1: MARKER_CLASS is not defined in the filter',
-          file=sys.stderr)
-    sys.exit(1)
-if m.group(1) != os.environ['MARKER_CLASS']:
-    print(f"FAIL: M04-AC1: suite says {os.environ['MARKER_CLASS']!r}, filter "
-          f"defines {m.group(1)!r}", file=sys.stderr)
-    sys.exit(1)
-if m.group(1) == os.environ['HTML_SECTION_ID']:
-    print(f'FAIL: M04-AC1: the marker class and the generated section id are '
-          f'the same string ({m.group(1)!r}); one string with two meanings is '
-          f'exactly the collision the marker token avoids', file=sys.stderr)
-    sys.exit(1)
-print('ok   M04-AC1: the marker class is pinned to the filter constant and '
-      'differs from the generated section id')
-PY
+run_scan marker-class
 
 # ---------------------------------------------------------------------------
 # Manifest 1i — the generated index in examples/marker.html (M04-AC1), same
@@ -3291,43 +3006,7 @@ pass "M08-AC2/M10-AC4/M11-AC5: six self-referential targets each report once in 
 # own filter warning and neither of the other two. The domain is the three
 # keys, enumerated here.
 # ---------------------------------------------------------------------------
-python3 - "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" \
-         <<'PY'
-import re, sys
-sys.path.insert(0, 'tests')
-import filtersrc
-keys = sys.argv[1:4]
-src = filtersrc.text()
-# Each warn() call's message, with its concatenated fragments joined back
-# together: these messages are written as `("..." .. "..."):format(...)`, so a
-# scan that read only the leading literal would compare keys against a PREFIX
-# of each message while claiming to compare them against the message.
-calls = re.findall(r'warn\((.*?)\)\s*$', src, re.S | re.M)
-frag = re.compile(r'("|\x27)((?:[^\\]|\\.)*?)\1')
-lits = [''.join(m.group(2) for m in frag.finditer(c)) for c in calls]
-lits = [l for l in lits if l]
-errs = []
-# Each key must find its own message in the filter, or the key is stale and
-# every count using it reads zero forever.
-owner = {}
-for key in keys:
-    owners = [l for l in lits if key in l]
-    if len(owners) != 1:
-        errs.append(f'key <<{key}>> matches {len(owners)} filter warnings, want 1')
-    else:
-        owner[key] = owners[0]
-# ...and must match neither of the other two messages.
-for key in keys:
-    for other in keys:
-        if key != other and other in owner and key in owner[other]:
-            errs.append(f'key <<{key}>> also matches the message owned by <<{other}>>')
-if errs:
-    print('FAIL: M10-AC4: ' + '; '.join(errs), file=sys.stderr)
-    sys.exit(1)
-print('ok   M10-AC4: the self-reference, fold-self-reference and fold-depth '
-      'grep keys each match exactly their own filter warning and neither of '
-      'the other two')
-PY
+run_scan mark-report-keys
 
 python3 - examples/self-xref.tex <<'PY'
 import sys
@@ -4400,8 +4079,7 @@ STORE_DIR='quarto-index'
 # below has to be one the CURRENT filter would accept, or the check meant to
 # prove some other rule keeps it out passes because the version rejected it
 # first — which is what happened when this milestone bumped the version.
-STORE_VERSION=$(sed -n 's/^local STORE_VERSION = \([0-9][0-9]*\)$/\1/p' \
-  $FILTER_SOURCES)
+STORE_VERSION=$(run_scan store-version)
 [ -n "$STORE_VERSION" ] \
   || fail "M05-AC1: could not read STORE_VERSION from the filter"
 
@@ -4409,25 +4087,7 @@ STORE_VERSION=$(sed -n 's/^local STORE_VERSION = \([0-9][0-9]*\)$/\1/p' \
 # footprint sweep below asks "no file named like this under the output
 # directory", which proves nothing if the filter names its files something
 # else entirely.
-STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 - <<'PY'
-import os, re, sys
-sys.path.insert(0, 'tests')
-import filtersrc
-src = filtersrc.text()
-missing = [f'{name} = {value!r}'
-           for name, value in (('STORE_SUFFIX', os.environ['STORE_SUFFIX']),
-                               ('STORE_DIR', os.environ['STORE_DIR']))
-           if not re.search(r'^local %s = "%s"$' % (name, re.escape(value)),
-                            src, re.MULTILINE)]
-if missing:
-    print('FAIL: M05-AC1: the suite and the filter disagree on the store\'s '
-          'name; the suite expects:', file=sys.stderr)
-    for m in missing:
-        print(f'  {m}', file=sys.stderr)
-    sys.exit(1)
-print('ok   M05-AC1: the store name the footprint sweep looks for is the one '
-      'the filter writes')
-PY
+run_scan store-names
 
 # A full render from nothing: the store starts empty, so an index built here
 # was built from THIS render's chapters and not from a record left behind.
@@ -5801,11 +5461,9 @@ WARN_CLAMP_SPLIT='file under more than one key'
 # joins with, and either one moving would leave the derivation below deriving
 # something the back-end no longer does — while still passing, since it
 # compares its own derivations against each other.
-MAX_LEVELS=$(sed -n 's/^local MAX_LEVELS = \([0-9][0-9]*\)$/\1/p' \
-  $FILTER_SOURCES)
+MAX_LEVELS=$(run_scan max-levels)
 [ -n "$MAX_LEVELS" ] || fail "M09: could not read MAX_LEVELS from the filter"
-OVERFLOW_JOIN=$(sed -n 's/^local OVERFLOW_JOIN = "\(.*\)"$/\1/p' \
-  $FILTER_SOURCES)
+OVERFLOW_JOIN=$(run_scan overflow-join)
 [ -n "$OVERFLOW_JOIN" ] \
   || fail "M09: could not read OVERFLOW_JOIN from the filter"
 MAX_LEVELS="$MAX_LEVELS" OVERFLOW_JOIN="$OVERFLOW_JOIN" \
@@ -7204,88 +6862,7 @@ pass "M15: contesting a key changes what the entry prints and not where it files
 # that still emits it, and passes for the wrong reason (the M13 lesson). The
 # joined message is what an author reads, so the joined message is what is
 # read here.
-python3 - <<'M15AC5PY'
-import re, sys
-sys.path.insert(0, 'tests')
-import filtersrc
-
-GONE = 'the index tool rejects the pair and the render fails'
-# The replacement, in both its shapes, each as a template with its one
-# substitution removed. Present as joined messages, which is also this
-# scanner's passing control: a scanner that found nothing would satisfy the
-# absence check for free. Both, because a scanner that found only one would
-# pass while the other shape's message went unread.
-REPLACEMENT = (
-    ('carries both a plain locator and a cross-reference; they are printed as '
-     'one entry with its page numbers and its cross-reference together, so '
-     'check that is the entry you meant'),
-    ('carries two different cross-references; they are printed as one entry '
-     'carrying both targets and, since neither mark contributes one, no page '
-     'numbers at all, so check that is the entry you meant'),
-)
-
-src = filtersrc.text()
-
-# One Lua string literal: '...' or "...", with backslash escapes. The same
-# pattern this suite already uses to read the filter's literals, and one
-# alternation rather than two, so which quote a literal happens to use cannot
-# change what is read out of it — a two-branch pattern silently returns the
-# empty string for whichever branch did not match. Long-bracket literals
-# ([[...]]) would need their own pattern; the filter writes none, and the
-# controls below are what would notice if that changed.
-LITERAL = re.compile(r"""(["'])((?:[^\\]|\\.)*?)\1""")
-
-
-def calls(text):
-    """Every warn(...) CALL's argument list, parenthesis-balanced.
-
-    `\bwarn\(` alone also matches `local function warn(msg)`, whose argument
-    list holds no literal — an empty message that inflates the count and
-    weakens the "read nothing at all" control below.
-    """
-    for m in re.finditer(r'(?<!function )\bwarn\(', text):
-        depth, i = 1, m.end()
-        while i < len(text) and depth:
-            if text[i] == '(':
-                depth += 1
-            elif text[i] == ')':
-                depth -= 1
-            i += 1
-        yield text[m.end():i - 1]
-
-
-messages = []
-for argument in calls(src):
-    joined = ''.join(body for _quote, body in LITERAL.findall(argument))
-    messages.append(joined)
-
-if not messages:
-    print('FAIL: M15-AC5: no warn() call was read out of the filter, so the '
-          'absence below is the scanner finding nothing, not the filter '
-          'saying nothing', file=sys.stderr)
-    sys.exit(1)
-unseen = [r for r in REPLACEMENT
-          if not any(r in message for message in messages)]
-if unseen:
-    print(f'FAIL: M15-AC5: {len(unseen)} of the {len(REPLACEMENT)} shapes of '
-          f'the replacement report are not among the {len(messages)} joined '
-          f'warn() messages this scanner read, so it is reading the file '
-          f'wrongly:', file=sys.stderr)
-    for r in unseen:
-        print(f'  <<{r}>>', file=sys.stderr)
-    sys.exit(1)
-guilty = [message for message in messages if GONE in message]
-if guilty:
-    print(f'FAIL: M15-AC5: {len(guilty)} joined warn() message(s) still tell '
-          f'an author <<{GONE}>>, which the emission no longer risks:',
-          file=sys.stderr)
-    for message in guilty:
-        print(f'  <<{message}>>', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M15-AC5: none of the {len(messages)} joined warn() messages in '
-      f'the filter claims a render can fail from rival encapsulations, and '
-      f'both shapes of the replacement report are among them')
-M15AC5PY
+run_scan m15-joined-messages
 
 # The other half of AC5: the replacement report's FULL text, once per contested
 # key, over the fixture. The keys are the entry paths the report names — what
@@ -7486,6 +7063,49 @@ filtersrc.sources()" >/dev/null 2>&1; then
     fail "M16-AC2: filtersrc.sources() returned successfully with no .lua files; every source-reading check would sweep nothing and pass"
   fi
   pass "M16-AC2: the enumeration reaches modules/ ($BEFORE -> $AFTER with no edit here) and refuses an empty source set"
+
+  # -------------------------------------------------------------------------
+  # M16-AC3 — every source-reading check keeps finding its definition once the
+  # definition moves into another file. The enumeration in filtersrc.py is what
+  # is supposed to make that true; nothing above proves it does, because a
+  # check that reads only index.lua passes identically while the definition is
+  # still there. So build a tree where it is NOT, and run the same checks
+  # against it through the same run_scan invocations the run itself uses.
+  #
+  # The list below is the probe's INPUT — which definitions to relocate — not a
+  # domain any check sweeps: one name per source-reading check, so no check is
+  # left reading a definition that never moved. movedefs.py fails on a name it
+  # cannot find or place, so a definition renamed out from under this list
+  # stops the run rather than quietly exercising nothing.
+  # -------------------------------------------------------------------------
+  MOVED_DEFINITIONS='LATEX_LITERAL HTML_SECTION_ID HTML_ANCHOR_PREFIX
+    HTML_ENTRY_PREFIX HTML_LETTER_CLASS XREF_BOTH_COMMAND XREF_BOTH_DEFINITION
+    MARKER_CLASS STORE_VERSION STORE_SUFFIX STORE_DIR MAX_LEVELS OVERFLOW_JOIN
+    clamp_levels latex_plan Span Pandoc'
+  SCAN_PROBE="$WORK/scan-probe"
+  rm -rf "$SCAN_PROBE"; mkdir -p "$SCAN_PROBE"
+  cp -R "$QI_EXT_DIR" "$SCAN_PROBE/ext"
+  # shellcheck disable=SC2086
+  python3 tests/movedefs.py "$SCAN_PROBE/ext" $MOVED_DEFINITIONS \
+    > "$WORK/movedefs.log" \
+    || { cat "$WORK/movedefs.log" >&2; fail "M16-AC3: could not build the moved-definition tree"; }
+
+  # Enumerated from the directory, never listed here — the same rule the source
+  # set itself follows. A scan file added without an invocation in run_scan
+  # fails there rather than going unprobed.
+  SCAN_NAMES=$(find tests/scans -name '*.py' | sed 's|.*/||; s|\.py$||' | sort)
+  SCAN_COUNT=$(printf '%s\n' "$SCAN_NAMES" | wc -l | tr -d ' ')
+  # An exact count, not a floor: AC3's domain is the twelve source-reading
+  # sites the merge-base run reported, and a floor would pass while one of them
+  # quietly stopped being probed.
+  [ "$SCAN_COUNT" -eq 12 ] \
+    || fail "M16-AC3: found $SCAN_COUNT source scans under tests/scans, expected 12; either a source-reading check left the probed set or one was added without extending this proof"
+
+  for SCAN_NAME in $SCAN_NAMES; do
+    ( export QI_EXT_DIR="$SCAN_PROBE/ext"; run_scan "$SCAN_NAME" ) >/dev/null \
+      || fail "M16-AC3: $SCAN_NAME does not find what it reads once the definition moves to modules/moved.lua; it is reading one named file, not the source set"
+  done
+  pass "M16-AC3: all $SCAN_COUNT source-reading checks still find what they read with their definitions moved into modules/moved.lua"
   # Same discipline for the marker's warnings: a report of a misused marker
   # that quietly stopped firing would leave every misuse check passing on a
   # log that says nothing.

@@ -91,7 +91,7 @@ records why. Making module-level state per-document → stays the standing
       to the source set — the twelve the merge-base run of AC1's grep
       reports. Leave the two `_extensions/index` lines that read no filter
       source (the `examples/.../\_extension.yml` existence check) alone.
-- [ ] T3: Add the `--self-test` moved-definition probe for each retargeted
+- [x] T3: Add the `--self-test` moved-definition probe for each retargeted
       site: scratch copy, definition moved into `modules/`, site still finds it.
 - [ ] T4: Add the planted-defect half for each retargeted site — a defect of
       the kind that site names, planted in the moved definition, makes it fail.
@@ -119,6 +119,7 @@ records why. Making module-level state per-document → stays the standing
 - 2026-08-20: AC1 amended at the mini gate (audited first by a fresh-context [O] reader in reduced mode; sound on both questions). Two defects, both found by executing the criterion: it named "the `find` enumeration of AC2" as a matching line, but `find "$QI_EXT_DIR" -name '*.lua'` carries no literal path and never matches its own grep — the matching line is the `QI_EXT_DIR` definition; and its pinned "lines 994-995" had already drifted to 1015-1016 from this milestone's own T1 insertions. The amended wording carries no line coordinates. The promise's strength is unchanged.
 - 2026-08-20: T2 complete — all twelve sites retargeted onto the source set, zero `index.lua` references left, and AC1's post-state grep reports exactly the three predicted lines. Full `--self-test` run exit 0, 230 checks, pass set byte-identical to the pre-retarget run. That identity is consistent with a correct retarget AND with a vacuous one; T3/T4 are what discriminate.
 - 2026-08-20: T2 also dropped the drifting line numbers from its own task text (minor edit, implement-owned) for the same reason the criterion did.
+- 2026-08-20: T3 complete — the twelve scanner bodies lifted into `tests/scans/<name>.py`, a `run_scan` dispatcher holding each one's environment and arguments in one place, `tests/movedefs.py` building the moved-definition tree, and a `--self-test` probe running all twelve against it. Full `--self-test` run exit 0, 231 checks (230 + the new AC3 line), 0 FAIL; the probe reports all 12 still finding what they read with 17 definitions relocated into `modules/moved.lua`.
 
 ## Decisions
 
@@ -143,5 +144,20 @@ records why. Making module-level state per-document → stays the standing
   symlink rather than `QI_EXT_DIR`, so the scratch tree would be read by the
   scanners while the renders still used the real filter, and each probe would
   cost a full multi-minute run).
+
+- 2026-08-20 (T3 mechanism, refined): the recorded mechanism had
+  `--source-scan-check <dir>` re-enter `run-tests.sh` to run every file under
+  `tests/scans/`. Executing it showed the re-entry cannot work: seven of the
+  twelve scans are handed a pinned constant the suite defines deep in the run
+  body (`MARKER_CLASS`, the three `WARN_*` keys, `STORE_SUFFIX`/`STORE_DIR`,
+  and the manifest file the xref scan reads), so a re-entry that skipped the
+  body would have to carry a second copy of those pins — and a probe running
+  the scans with pins of its own proves nothing about the pins the run uses.
+  Same decision, no flag: a `run_scan <name>` dispatcher holds each scan's
+  environment and arguments in one place, late-binding the globals, so the run
+  calls it at the site and the AC3 probe calls the same function with
+  `QI_EXT_DIR` pointed at the moved-definition tree. The scan bodies still
+  live one per file under `tests/scans/`, enumerated from the directory rather
+  than listed.
 
 ## Review

@@ -1,6 +1,6 @@
 # M17: index.lua becomes a thin entry point over required modules
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M16
 - **Driving RR:** —
@@ -54,7 +54,7 @@ Any behavior change → none; a rendered-output change is a defect here.
       which is why the pattern covers the nested and assigned forms and not
       just the top-level one. Afterwards it reports exactly one line whose file
       is `index.lua`: `Pandoc`.
-- [x] AC2: The split changes no check that existed at the merge base. Both
+- [ ] AC2: The split changes no check that existed at the merge base. Both
       `tests/run-tests.sh` and `tests/run-tests.sh --self-test` exit 0, and
       every `ok` line of the merge-base run — 195 and 230 of them, measured on
       this machine this session — stands verbatim, and in the same position,
@@ -162,6 +162,7 @@ the task that made it.
 - 2026-08-20: the AC3 probe discriminates, verified out of band rather than in the run: deleting `modules/marks.lua` from an installed copy fails the render at filter-load time (`inject_user_filters_at_entry_points`), which is the claim that makes fixture choice a non-axis; and moving `sortkeys.lua`'s `qi_levels` require below its first definition fails the position check naming both lines. Neither is a planted-defect check in the suite — that gap goes to the acceptance-suite hardening row.
 - 2026-08-20: T10 — `cairn/DESIGN.md`'s Architecture section opens on the module layout and names all ten source files in their `.lua` form; `_extension.yml` unchanged against the merge base (`git diff cb782df` empty for it). Two probe gaps recorded on the acceptance-suite hardening candidate row.
 - 2026-08-20: tasks complete, status to `review`. Pre-review check clean: `tests/run-tests.sh` 197, `--self-test` 232, both exit 0. Every merge-base ok line verbatim and in order in both runs, the one exempted interpolated line reading `(10 -> 11)` for the extension's 10 `.lua` files with identical text either side of the parentheses. `git status --porcelain` over `tests/`, `examples/` and `README.md` is clean; `git diff --numstat cb782df` over them names two files, `tests/movedefs.py` (54/26) and `tests/run-tests.sh` (134/0, zero deletions).
+- 2026-08-20: review return 1 (defect). AC2 failed: its position clause asks that every merge-base `ok` line stand "in the same position" in the split run's log, and in `--self-test` the probe's two lines shift merge-base lines 196-230 to 198-232. AC1, AC3, AC4 and AC5 verified; consistency gate clean. Status back to `in-progress` with seven further fix-now findings from the review; three findings go to candidate rows and three were refuted or rejected.
 
 ## Decisions
 
@@ -194,15 +195,19 @@ cb782df. PR: https://github.com/jmgirard/quarto-index/pull/17
   `index.lua` as its file: `50:local function Pandoc(doc)`. The other 87 are
   distributed across the nine modules (book 15, core 3, html 29, latex 6,
   levels 8, marker 13, marks 7, passes 3, sortkeys 3).
-- AC2 — `tests/run-tests.sh` 197 checks, `--self-test` 232, both exit 0. Every
-  merge-base `ok` line (195 and 230) stands verbatim and in the same position
-  in the corresponding split run; the one exempted line reads `(10 -> 11 with
-  no edit here)` for the extension's ten `.lua` files, with identical text
-  either side of the parentheses. `git status --porcelain` over `tests/`,
-  `examples/` and `README.md` is clean — no untracked path. `git diff
-  --numstat cb782df` over the same three names exactly two files:
+- AC2 — NOT MET, unticked at this review. `tests/run-tests.sh` 197 checks,
+  `--self-test` 232, both exit 0. The diff domain holds: `git status
+  --porcelain` over `tests/`, `examples/` and `README.md` is clean, and `git
+  diff --numstat cb782df` over the same three names exactly two files,
   `tests/movedefs.py` (54 added, 26 deleted) and `tests/run-tests.sh` (134
-  added, 0 deleted).
+  added, 0 deleted). The exempted line reads `(10 -> 11 with no edit here)`
+  with identical text either side of the parentheses. But the position clause
+  fails: the probe's two `ok` lines are emitted before the `--self-test`
+  section, so in the 232-line self-test log the merge-base lines 196-230 stand
+  at 198-232, not at their own positions. The plain run is unaffected (the two
+  land at 196-197, after all 195). Measured evidence was an in-order
+  subsequence, which is weaker than the criterion asks; the tick was withdrawn
+  rather than the criterion reread (review finding E).
 - AC3 — the two probe checks pass in the run above: 32 `require()` calls across
   the source set all at file top level above their file's first definition, and
   four byte-identical outputs (a standalone fixture and a book project, each to
@@ -222,5 +227,59 @@ No IP or GP text changed — the branch's only DESIGN.md edit is the Architectur
 section, which cites GP3 without altering it — so `cairn_impact` does not apply.
 
 Independent review: three fresh-context reviewers, none having seen the
-implementation.
+implementation. The [O] diff-bug reviewer reconstructed the output-neutrality
+oracle D-004 deleted — 29 fixtures x 3 formats and all 6 book-project renders,
+at cb782df and at the split — and found every output, every render log and
+every exit code byte-identical. It also confirmed the normalized code-line
+multiset equals the merge base's apart from the three scalars that became
+fields, each module's code is an in-order subsequence of the merge base, all
+ten files compile under `pandoc lua`, and loading all ten shows one global read
+(`ipairs`) and zero global writes. Fifteen findings, triaged at the gate:
+
+- E (AC2 position clause) — floor return; see AC2 above. Fix: move the probe
+  block below the self-test section so both runs keep every merge-base line at
+  its own position. Costs nothing: the nested `--plant-wrapper-defect` run dies
+  at `run-tests.sh:1066`, before any render.
+- C — the parity probe hard-codes its fixture file lists, the
+  written-down-list-becomes-the-sweep shape M16 and D-004 forbid. Fix now.
+- D — only two of the four compared outputs carry a non-emptiness guard. Fix now.
+- N — AC3 promises a report of each require line and each file's first
+  definition line; the check reports a count on success. Fix now.
+- G — `qi_levels` and `qi_sortkeys` are required in `index.lua` and never used
+  (verified: 0 uses each). Fix now.
+- H — the qualification pass rewrote an English word inside a comment,
+  `index.lua:129`. Fix now. Class bounded: all 1,038 merge-base comment lines
+  survive character-for-character once `qi_` prefixes are stripped, no string
+  literal contains `qi_`, and of the 17 prefixed comment lines this is the only
+  prose case.
+- F — the bracket-export rule and the definition-form rule bind the code but
+  live only in this file, which is archived on merge. Fix now: record both in
+  DESIGN.md Conventions.
+- K, L — DESIGN overstates the lifetime claim (the accumulators' lifetime is
+  now `package.loaded`'s, identical today only because Quarto runs one pandoc
+  process per document), and carries a stray hard break. Fix now.
+- A — no suite check guards AC1's one-definition rule. Follow-up: it cannot be
+  fixed here without breaching AC2's own bound on `run-tests.sh`. Absorbed into
+  the acceptance-suite hardening candidate row.
+- J, I — line-length drift (14 over-80 lines to 62) and whole-surface exports.
+  Follow-up: new clustered candidate row.
+- B — `quarto-required: ">=1.4.0"` called a newly unverified claim. Refuted:
+  Quarto's own 1.4 release notes state "Quarto v1.4 supports the use of
+  relative paths in `require()` calls", so the declared floor covers the
+  feature. That the floor is untested is the standing candidate row, unchanged
+  by this milestone.
+- M — AC2's parenthetical calls `movedefs.py` a script that "asserts nothing
+  about them", while `block()` does assert exactly-one. Imprecise, but the
+  operative clause describes the permitted edit accurately and the delivered
+  edit matches it, so the criterion is not falsified and this is not an
+  amendment return. Logged, rejected, no action.
+- O — no in-tree artifact of the parity block having run. Refuted:
+  `tests/.work/install-parity/` holds `ext.zip`, `stage`, `tree` and `inst`,
+  and `tests/.work/run.log` carries 232 `ok` lines including both `M17-AC3`
+  lines. The reviewer read the tree while a run was in flight.
+- Reviewers 2 and 3 (blame-history, prior-review record) reported no
+  regression; the blame lens found H independently, and the prior-review lens
+  verified empirically that the nested relative `require` resolves and shares
+  state under Quarto's extension-loading path though not under raw
+  `pandoc --lua-filter`.
 

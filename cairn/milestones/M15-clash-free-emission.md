@@ -45,14 +45,14 @@ candidate row; every criterion here is evidenced in a warmed tree.
 
 ## Acceptance criteria
 
-- [ ] AC1 A document marking one term plainly and with a cross-reference
+- [x] AC1 A document marking one term plainly and with a cross-reference
       renders to PDF instead of failing. Evidence: `examples/xref-conflict.qmd`
       rendered to PDF exits 0, and its log carries neither `error generating
       index` nor `Conflicting entries: multiple encaps for the same page under
       same key` — the two strings today's failing render emits, recorded in
       the work log below at plan time.
 
-- [ ] AC2 The compiled index matches an exhaustive hand-derived manifest over
+- [x] AC2 The compiled index matches an exhaustive hand-derived manifest over
       **every** line it prints, not over a named subset — the contested
       entries, the uncontested controls (`mu`, two identical cross-references
       the tool folds; `nu`, marked plainly twice) and every unrelated entry
@@ -63,7 +63,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
       a locator count of 2 rather than 3 is what says the cross-reference mark
       contributed none.
 
-- [ ] AC3 Every way two marks can contest one key is exercised, not one
+- [x] AC3 Every way two marks can contest one key is exercised, not one
       exemplar standing in for the family: plain against `see=`, plain against
       `see-also=`, `see=` against `see-also=`, `see=` against a *different*
       `see=`, and a both-attributes mark against a plain mark — each at the top
@@ -72,14 +72,14 @@ candidate row; every criterion here is evidenced in a warmed tree.
       printed entries whose term begins with each contested term asserted to
       be 1.
 
-- [ ] AC4 A cross-reference folded into an entry's printed text is quoted for
+- [x] AC4 A cross-reference folded into an entry's printed text is quoted for
       the field it now sits in. Evidence: a contested key whose target carries
       every character README pins as escaped — `! " < >` and the LaTeX
       specials — rendered to PDF, the render exiting 0 and each character
       asserted to typeset in the compiled index, the same bar
       `examples/xref-escaping.qmd` already holds the encap channel to (IP2).
 
-- [ ] AC5 No report tells an author the render can fail from rival
+- [x] AC5 No report tells an author the render can fail from rival
       encapsulations. Evidence: over each `warn()` call's **joined** message —
       the list the distinctness scan already builds, never a single literal,
       which the M13 lesson records a per-literal test cannot see — no message
@@ -87,7 +87,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
       fails`; and the replacement report's full text asserted present, once per
       contested key, over the fixture.
 
-- [ ] AC6 The README and DESIGN claims this milestone falsifies are corrected
+- [x] AC6 The README and DESIGN claims this milestone falsifies are corrected
       and the new behaviour is pinned. Evidence: the three passages naming the
       old outcome — README's "can fail the build" paragraph, its "The clash
       warning is LaTeX-only" row, and its claim that a cross-reference is
@@ -164,3 +164,50 @@ candidate row; every criterion here is evidenced in a warmed tree.
 ## Decisions
 
 ## Review
+
+Fresh evidence, 2026-08-19, on `m15-clash-free-emission` at the pre-gate
+checkpoint. The `verify` slot was run whole (`tests/run-tests.sh --self-test`,
+exit 0, 224 checks; 191 without the self-test, against 175 on `main`), and the
+per-criterion figures below were read back out of that run's own artifacts by
+command rather than from its pass lines.
+
+- **AC1** — `examples/xref-conflict.qmd` renders to PDF and the render exits 0.
+  Its log carries zero occurrences of `error generating index` and zero of
+  `Conflicting entries: multiple encaps for the same page under same key`, the
+  two strings the T1 baseline recorded from the same fixture at exit 1.
+- **AC2** — the compiled index matches the exhaustive hand-derived manifest
+  over all 14 printed lines — level, term and locator count each — with the
+  contested entries, the uncontested `mu` and `nu` controls and every unrelated
+  entry alike. `kappa` prints 2 locators, from its plain marks on pages 1 and
+  2, and not the 3 it would print if its cross-reference mark on page 3
+  contributed one. The manifest states that a page range counts as the one
+  locator it prints, and `tests/pdfindex.py` now folds a wrapped entry's
+  continuation line back into it rather than discarding it as a footer, which
+  is what makes `chi`'s locator visible at all.
+- **AC3** — all five contested pairings are exercised (plain against `see=`,
+  plain against `see-also=`, `see=` against `see-also=`, `see=` against a
+  different `see=`, and a both-attributes mark against a plain mark), one of
+  them on the sub-entry key `Deep!Level`, and each of the 7 contested terms
+  prints as exactly 1 entry.
+- **AC4** — the folded target of `chi` carries all 16 characters README pins as
+  escaped, each asserted present in the typeset index; the emitted argument
+  shows makeindex's own `"@` and `"!` quoting beside the LaTeX escapes, from
+  the same `target_argument` the encapsulation channel uses.
+- **AC5** — the phrase `the index tool rejects the pair and the render fails`
+  occurs 0 times in `index.lua`, and the replacement report fires 7 times over
+  the fixture, once per contested key. A glob over the 14 rendered LaTeX
+  artifacts finds the contested-key emission in the one fixture that has a
+  contested key and in no other.
+- **AC6** — the suite's README-claims comparison passes: 16 documented misuse
+  behaviours present, and the 6 sentences this milestone falsified asserted
+  gone. DESIGN's LaTeX back-end paragraph states both repairs and why they
+  differ.
+
+Consistency gate: `cairn_validate` all checks passed. The `generic` profile
+names no toolchain `consistency-gate` checks, so that half is a clean no-op.
+No `DESIGN.md` principle definition changed — D-003 records a reading of GP2
+rather than an amendment to it — so `cairn_impact` is skipped.
+
+Discrimination: the T8 work-log line records three planted-defect probes
+failing 7, 1 and 3 checks — the repair reverted, the cross-reference mark made
+to contribute a locator, and the folded field's makeindex quoting removed.

@@ -1,11 +1,11 @@
 # M16: The suite's source checks read the whole extension, not one file
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
-- **Branch/PR:** —
+- **Branch/PR:** m16-source-set-evidence
 
 ## Goal
 
@@ -109,6 +109,11 @@ records why. Making module-level state per-document → stays the standing
 - 2026-08-20: criteria audit ran in REDUCED mode (declared tier internal); returned findings on AC1's proxy grep domain, its non-recursive glob, and the artifact-side domain of the since-dropped HTML byte-diff criterion — all three fixed at the gate before the criteria were written.
 - 2026-08-20: plan gate chose deleting `tests/byte-diff.sh` over widening it to HTML and book projects because the widening is the checker-regress shape and the user took the simplify-or-delete disposition; falsified by a behavior-preserving change to the filter that the ~100-check acceptance suite passes while rendered output actually moves.
 - 2026-08-20: plan chose deletion over simplification of `byte-diff.sh` because its three known defects are all hardening repairs, and a byte-diff fails on invisible whitespace changes — the shape tracking-rules names as a defect in the test; falsified by a review needing byte-level evidence that no suite check can supply.
+- 2026-08-20: implement gate chose a `tests/filtersrc.py` helper over per-heredoc argv concatenation and over a sentinel-joined temp file, because the enumeration then lives in one place and keeps per-file identity; the sentinel option was rejected outright since its sentinels are Lua comments and the M02-AC5 scanner strips comments before reading.
+- 2026-08-20: implement gate chose extracting the twelve scanners into a scan block behind a `--source-scan-check <dir>` re-entry flag, over per-site functions called directly and over re-running the whole suite with the root overridden; the last is not viable (renders need the tree installed at examples/_extensions, and thirteen full runs cost minutes each).
+- 2026-08-20: T1 checkpoint, NOT complete — filtersrc.py, the recursive enumeration and the AC2 check are written and the AC2 check passes in-run, but the `--self-test` enumeration probe had not been reached when this was committed. T1 stays unticked until a full run is clean.
+- 2026-08-20: a comment drafted for T1 wrote the literal `byte-diff.sh` into tests/, which AC4's own domain grep requires to be empty; caught before commit and reworded to name D-004 instead.
+- 2026-08-20: T6 is already satisfied — D-004 was appended to cairn/DECISIONS.md in the plan commit, so the task is a no-op rather than work.
 
 ## Decisions
 

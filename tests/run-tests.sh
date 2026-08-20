@@ -58,6 +58,27 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 pass() { printf 'ok   %s\n' "$*"; }
 
 # ---------------------------------------------------------------------------
+# The filter's source set (M16). Every check that reads filter source reads
+# THIS set, never a named file: a definition moving into a new module has to
+# stay inside the domain a check sweeps, or the check goes on passing while it
+# reads nothing. The enumeration is recursive and lives in exactly one place —
+# a written-down list of file names becomes the sweep, and every file it omits
+# ships unread — which is how the deleted merge-base diff script's
+# non-recursive fixture list came to miss nine of the thirty-eight fixtures
+# without ever failing (D-004).
+#
+# QI_EXT_DIR lets a probe point the same checks at a scratch tree whose
+# definitions have been moved, which is how they are proved discriminating
+# against the file-moving case (M16-AC3). tests/filtersrc.py reads it too.
+# ---------------------------------------------------------------------------
+export QI_EXT_DIR="${QI_EXT_DIR:-_extensions/index}"
+[ -d "$QI_EXT_DIR" ] || fail "M16-AC2: no extension directory at $QI_EXT_DIR"
+FILTER_SOURCES=$(find "$QI_EXT_DIR" -name '*.lua' | sort)
+[ -n "$FILTER_SOURCES" ] \
+  || fail "M16-AC2: no .lua sources under $QI_EXT_DIR; every source-reading check would sweep nothing and pass vacuously"
+FILTER_SOURCE_COUNT=$(printf '%s\n' "$FILTER_SOURCES" | wc -l | tr -d ' ')
+
+# ---------------------------------------------------------------------------
 # Supported forms (NORMATIVE). The README documents exactly these authoring
 # forms — the mark spans, and the div that places the index — and no others.
 # Each row is <label><TAB><exemplar>: the exemplar is the exact
@@ -994,6 +1015,26 @@ printf '   probe characters: %s\n\n' "$PROBE_CHARS"
 [ -e examples/_extensions/index/_extension.yml ] \
   || fail "examples/_extensions/index is missing; examples must consume the installed extension"
 pass "AC1: demo resolves the extension via examples/_extensions"
+
+# ---------------------------------------------------------------------------
+# M16-AC2 — the source set is one recursive enumeration, and it is what every
+# source-reading check below sweeps. Printed rather than merely asserted: the
+# count is how a reader sees the domain grow when the filter is split, and a
+# silent enumeration is one nobody notices going empty.
+# ---------------------------------------------------------------------------
+printf '== filter source set (%s) ==\n' "$QI_EXT_DIR"
+printf '%s\n' "$FILTER_SOURCES" | sed 's/^/   /'
+printf '   %s file(s)\n\n' "$FILTER_SOURCE_COUNT"
+# The shell enumeration and the python helper must agree: the sed-based checks
+# read the first, the scanners read the second, and a disagreement would leave
+# half the checks sweeping a smaller domain than the other half — surfacing as
+# a defect in whichever check happened to read the smaller one.
+PY_LIST=$(python3 -c "
+import sys; sys.path.insert(0,'tests'); import filtersrc
+print('\n'.join(filtersrc.sources()))")
+[ "$FILTER_SOURCES" = "$PY_LIST" ] \
+  || fail "M16-AC2: the shell enumeration and tests/filtersrc.py disagree about the source set; half the checks would sweep a different domain than the other half"
+pass "M16-AC2: the shell enumeration and filtersrc.py agree on all $FILTER_SOURCE_COUNT source file(s)"
 
 # M02-AC6 — the docs and the normative list cannot drift apart. A count would
 # pass on a README that documented some other syntax; this compares the bytes.
@@ -7397,6 +7438,36 @@ PY
   # Not named by a criterion, but the same discipline: a clash report nothing
   # proves discriminating is a report that can quietly stop firing.
   warn_discrimination "$WORK/conflict-latex.log" "$WARN_CLASH" 8 "M02-AC5"
+
+  # M16-AC2 — the source-set enumeration is recursive, and it grows when the
+  # filter does. Proved on a scratch copy rather than by reading the `find`
+  # call: a non-recursive enumeration reads the same as a recursive one until
+  # a subdirectory exists, which is why the deleted merge-base diff script's
+  # fixture list went nine fixtures short for months without failing (D-004).
+  # The count must rise with NO edit to this script.
+  SRC_PROBE="$WORK/src-enum"
+  rm -rf "$SRC_PROBE"; mkdir -p "$SRC_PROBE"
+  cp -R "$QI_EXT_DIR" "$SRC_PROBE/ext"
+  BEFORE=$(QI_EXT_DIR="$SRC_PROBE/ext" python3 -c "
+import sys; sys.path.insert(0,'tests'); import filtersrc
+print(len(filtersrc.sources()))")
+  mkdir -p "$SRC_PROBE/ext/modules"
+  printf 'local M = {}\nreturn M\n' > "$SRC_PROBE/ext/modules/probe.lua"
+  AFTER=$(QI_EXT_DIR="$SRC_PROBE/ext" python3 -c "
+import sys; sys.path.insert(0,'tests'); import filtersrc
+print(len(filtersrc.sources()))")
+  [ "$AFTER" -eq $((BEFORE + 1)) ] \
+    || fail "M16-AC2: adding modules/probe.lua took the source set from $BEFORE to $AFTER, not $((BEFORE + 1)); the enumeration is not reaching subdirectories"
+
+  # And an enumeration that finds nothing must refuse, not sweep an empty
+  # domain — the vacuous pass this whole milestone exists to prevent.
+  mkdir -p "$SRC_PROBE/empty"
+  if QI_EXT_DIR="$SRC_PROBE/empty" python3 -c "
+import sys; sys.path.insert(0,'tests'); import filtersrc
+filtersrc.sources()" >/dev/null 2>&1; then
+    fail "M16-AC2: filtersrc.sources() returned successfully with no .lua files; every source-reading check would sweep nothing and pass"
+  fi
+  pass "M16-AC2: the enumeration reaches modules/ ($BEFORE -> $AFTER with no edit here) and refuses an empty source set"
   # Same discipline for the marker's warnings: a report of a misused marker
   # that quietly stopped firing would leave every misuse check passing on a
   # log that says nothing.

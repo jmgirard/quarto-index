@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-20 (M17 merged and archived; the extension ships as ten Lua files instead of one. Its three review follow-ups went to a new module-split row and the acceptance-suite hardening row rather than opening milestones; the `marks_seen` row was widened with `package.loaded` as a second mechanism. M12 pruned under terminal-row retention. LESSONS held at 49 lines — M17's two lessons extended the discriminating-checks and by-eye-derivation lines instead of taking their own. Caps and byte budgets clean: 56 lines, ROADMAP under 15.3k bytes against 24k, LESSONS under 13.4k against 20k.)_
+_Last hygiene check: 2026-08-20 (M18 planned: the LaTeX fold divergence candidate row was promoted whole and removed, and D-005 records that a back-end with a level ceiling resolves cross-reference targets against what it prints. Table holds at five terminal rows. Caps and byte budgets clean.)_
 
 ## Milestones
 
@@ -12,6 +12,7 @@ _Last hygiene check: 2026-08-20 (M17 merged and archived; the extension ships as
 | M15 | A term marked both plainly and with a cross-reference builds | done | — | normal | milestones/archive/M15-clash-free-emission.md |
 | M13 | Level reports name a depth the author can act on | done | — | normal | milestones/archive/M13-level-report-wording.md |
 | M14 | A cross-reference target that names no index entry is reported | done | — | normal | milestones/archive/M14-dangling-xref-target.md |
+| M18 | A cross-reference target is judged against the path the entry prints | planned | — | normal | milestones/M18-fold-aware-xref-targets.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -19,7 +20,6 @@ _Last hygiene check: 2026-08-20 (M17 merged and archived; the extension ships as
 <!-- unnumbered ideas; one line each: idea — added YYYY-MM-DD — links -->
 - M13 review follow-ups (clustered): the extra-sort report says "the N it has to sort before empty levels are dropped", but a mark whose empty level is dropped sorts fewer than N and a mark with no empty level has no drop to speak of; `examples/.gitignore` duplicates the root ignore's `examples/.quarto/` and adds an unrelated `**/*.quarto_ipynb` rule; and the README claim pins and the filter's warning literals are two hand-maintained copies of the same strings, the claim check asserting a string is in README and never that the filter emits it — added 2026-08-19 — M13 review F4/F16/F20
 - Reconcile the example corpus so its ~250 probe `see=`/`see-also=` targets name terms the fixture indexes; M14 pins the expected report counts instead — added 2026-08-19 — M14 plan gate
-- The written-levels/LaTeX-fold divergence is undiagnosed in both directions; the back-end-specific twin of M14's format-neutral report, the shape M10 put in the LaTeX back-end — added 2026-08-19, widened by M14 review F1 — a target that resolves as written but dangles after the fold draws nothing, and its inverse draws two contradictory reports at once: LaTeX says the fold made the target a self-reference "so it is dropped", while the format-neutral report says the same target "names no index mark in this document" and to go correct it. Verified on `examples/self-xref.qmd` at M14 review; M14-AC4 pins the second of the pair, so closing this takes a criterion amendment — M14 scope
 - Emptied-place report follow-ups (clustered): its position is a post-Quarto AST index, not the author's source block count, and is unverified where Quarto injects top-level blocks (executable cells, shortcodes) — M04's duplicate-marker message shares the convention M12 makes load-bearing; in a book the position is chapter-local and the message names no file, unlike the book-aware marker warnings which carry `ctx.file`; and the reports for a callout, a tabset and a captioned figure exist only because Quarto's scaffold wrapping happens to leave the marker alone in an inner block list — the private structure M12's gate refused to model — so an upstream change would surface as a manifest mismatch reading like a regression here — added 2026-08-19 — M12 review F6/F7/F12
 - Module-split follow-ups (clustered): the added `qi_` prefixes took lines over 80 columns from 14 at M17's merge base to 62, of which 47 are code lines whose rewrapping risks the single-literal warning messages `warn-distinct` pins; and every module exports its entire top-level surface (106 names — `html.lua` exports 23 where four are reached from outside), so no module boundary carries any information about what is API and what is internal — added 2026-08-20 — M17 review J/I
 - First tagged release (window user-declared, never agent-proposed) — added 2026-08-16

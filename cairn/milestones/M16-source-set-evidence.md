@@ -46,7 +46,7 @@ records why. Making module-level state per-document → stays the standing
       `examples/_extensions/index/_extension.yml` existence check, which reads
       no filter source. The pattern matches any path under the extension, so a
       check re-hardcoded to a module path stays inside the domain.
-- [ ] AC2: The source set is built by one recursive enumeration of
+- [x] AC2: The source set is built by one recursive enumeration of
       `_extensions/index/` (`find _extensions/index -name '*.lua'`), never a
       written-down list of file names. The run prints the member count and
       fails when the set is empty. Evidence: adding a second `.lua` file under
@@ -81,7 +81,7 @@ records why. Making module-level state per-document → stays the standing
 
 ## Tasks
 
-- [ ] T1: Add the source-set enumeration to `tests/run-tests.sh` — recursive
+- [x] T1: Add the source-set enumeration to `tests/run-tests.sh` — recursive
       `find` over `_extensions/index/`, a non-empty assertion, a printed
       member count, and for the python scanners a source view that keeps each
       line's FILE identity (never a bare concatenation), since M17-AC1 asks
@@ -114,6 +114,7 @@ records why. Making module-level state per-document → stays the standing
 - 2026-08-20: T1 checkpoint, NOT complete — filtersrc.py, the recursive enumeration and the AC2 check are written and the AC2 check passes in-run, but the `--self-test` enumeration probe had not been reached when this was committed. T1 stays unticked until a full run is clean.
 - 2026-08-20: a comment drafted for T1 wrote the literal `byte-diff.sh` into tests/, which AC4's own domain grep requires to be empty; caught before commit and reworded to name D-004 instead.
 - 2026-08-20: T6 is already satisfied — D-004 was appended to cairn/DECISIONS.md in the plan commit, so the task is a no-op rather than work.
+- 2026-08-20: T1 complete — full `--self-test` run exit 0, 230 checks, 0 FAIL; the AC2 self-test probe reports the enumeration reaching modules/ (1 -> 2 with no edit to the suite) and refusing an empty source set. AC2 ticked.
 
 ## Decisions
 

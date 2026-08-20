@@ -1238,9 +1238,11 @@ MISUSEDOCPY
 
 # The probe set is pinned to the filter's own escape table, so a character the
 # filter handles can never go unprobed (and vice versa).
-PROBE_CHARS="$PROBE_CHARS" python3 - _extensions/index/index.lua <<'PY'
+PROBE_CHARS="$PROBE_CHARS" python3 - <<'PY'
 import os, re, sys
-src = open(sys.argv[1], encoding='utf-8').read()
+sys.path.insert(0, 'tests')
+import filtersrc
+src = filtersrc.text()
 table = src.split('local LATEX_LITERAL = {', 1)[1].split('\n}', 1)[0]
 keys = set()
 for m in re.finditer(r'^\s*\[(".*?"|\'"\')\]\s*=', table, re.MULTILINE):
@@ -1290,9 +1292,11 @@ PY
 # the filter's own constants, exactly as the dual-target command name is.
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
 HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" HTML_LETTER_CLASS="$HTML_LETTER_CLASS" \
-python3 - _extensions/index/index.lua <<'PY'
+python3 - <<'PY'
 import os, re, sys
-src = open(sys.argv[1], encoding='utf-8').read()
+sys.path.insert(0, 'tests')
+import filtersrc
+src = filtersrc.text()
 bad = []
 for name in ('HTML_SECTION_ID', 'HTML_ANCHOR_PREFIX', 'HTML_ENTRY_PREFIX',
              'HTML_LETTER_CLASS'):
@@ -1334,15 +1338,17 @@ pass "AC4: both the fold and empty-level warnings emitted for the deep probe"
 # ---------------------------------------------------------------------------
 printf '%s\n' "$XREF_ENTRIES" > "$WORK/xref-manifest.txt"
 XREF_BOTH_COMMAND="$XREF_BOTH_COMMAND" python3 - examples/demo.qmd \
-  "$WORK/xref-manifest.txt" _extensions/index/index.lua <<'PY'
+  "$WORK/xref-manifest.txt" <<'PY'
 import os, re, sys
-qmd_path, manifest_path, lua_path = sys.argv[1:4]
+sys.path.insert(0, 'tests')
+import filtersrc
+qmd_path, manifest_path = sys.argv[1:3]
 both = os.environ['XREF_BOTH_COMMAND']
 
 # The manifest names the dual-target command; the filter defines it. If they
 # ever disagree, every dual row silently reclassifies as single-target and the
 # arithmetic below stops meaning anything.
-lua = open(lua_path, encoding='utf-8').read()
+lua = filtersrc.text()
 m = re.search(r'XREF_BOTH_COMMAND\s*=\s*"([^"]+)"', lua)
 if not m:
     print('FAIL: M02-AC1: no XREF_BOTH_COMMAND in the filter', file=sys.stderr)
@@ -1493,9 +1499,11 @@ pass "M02-AC5: case (b) warned exactly once in the demo render"
 # distinctive message text" is not a property the suite can rely on. The
 # domain is the filter's own warn() literals, so a warning added later is
 # covered without editing this check.
-python3 - _extensions/index/index.lua <<'PY'
+python3 - <<'PY'
 import re, sys
-src = open(sys.argv[1], encoding='utf-8').read()
+sys.path.insert(0, 'tests')
+import filtersrc
+src = filtersrc.text()
 
 
 # Line comments removed before anything is read: `\bwarn\(` otherwise matches
@@ -1668,9 +1676,11 @@ PY
 # The dual-target command must take its labels from LaTeX's own, or a document
 # loading babel silently loses its translations — the property the milestone's
 # Decisions entry banks on.
-python3 - _extensions/index/index.lua <<'PY'
+python3 - <<'PY'
 import re, sys
-src = open(sys.argv[1], encoding='utf-8').read()
+sys.path.insert(0, 'tests')
+import filtersrc
+src = filtersrc.text()
 m = re.search(r'XREF_BOTH_DEFINITION\s*=\s*(.*?)\n\n', src, re.DOTALL)
 if not m:
     print('FAIL: M02-AC5: no XREF_BOTH_DEFINITION in the filter', file=sys.stderr)
@@ -2352,9 +2362,11 @@ PY
 MARKER_CLASS='qi-index-here'
 
 MARKER_CLASS="$MARKER_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
-  _extensions/index/index.lua <<'PY'
+  <<'PY'
 import os, re, sys
-src = open(sys.argv[1], encoding='utf-8').read()
+sys.path.insert(0, 'tests')
+import filtersrc
+src = filtersrc.text()
 m = re.search(r'MARKER_CLASS\s*=\s*"([^"]*)"', src)
 if not m:
     print('FAIL: M04-AC1: MARKER_CLASS is not defined in the filter',
@@ -3280,10 +3292,12 @@ pass "M08-AC2/M10-AC4/M11-AC5: six self-referential targets each report once in 
 # keys, enumerated here.
 # ---------------------------------------------------------------------------
 python3 - "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" \
-         _extensions/index/index.lua <<'PY'
+         <<'PY'
 import re, sys
+sys.path.insert(0, 'tests')
+import filtersrc
 keys = sys.argv[1:4]
-src = open(sys.argv[4], encoding='utf-8').read()
+src = filtersrc.text()
 # Each warn() call's message, with its concatenated fragments joined back
 # together: these messages are written as `("..." .. "..."):format(...)`, so a
 # scan that read only the leading literal would compare keys against a PREFIX
@@ -4387,7 +4401,7 @@ STORE_DIR='quarto-index'
 # prove some other rule keeps it out passes because the version rejected it
 # first — which is what happened when this milestone bumped the version.
 STORE_VERSION=$(sed -n 's/^local STORE_VERSION = \([0-9][0-9]*\)$/\1/p' \
-  _extensions/index/index.lua)
+  $FILTER_SOURCES)
 [ -n "$STORE_VERSION" ] \
   || fail "M05-AC1: could not read STORE_VERSION from the filter"
 
@@ -4395,9 +4409,11 @@ STORE_VERSION=$(sed -n 's/^local STORE_VERSION = \([0-9][0-9]*\)$/\1/p' \
 # footprint sweep below asks "no file named like this under the output
 # directory", which proves nothing if the filter names its files something
 # else entirely.
-STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 - _extensions/index/index.lua <<'PY'
+STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 - <<'PY'
 import os, re, sys
-src = open(sys.argv[1], encoding='utf-8').read()
+sys.path.insert(0, 'tests')
+import filtersrc
+src = filtersrc.text()
 missing = [f'{name} = {value!r}'
            for name, value in (('STORE_SUFFIX', os.environ['STORE_SUFFIX']),
                                ('STORE_DIR', os.environ['STORE_DIR']))
@@ -5786,10 +5802,10 @@ WARN_CLAMP_SPLIT='file under more than one key'
 # something the back-end no longer does — while still passing, since it
 # compares its own derivations against each other.
 MAX_LEVELS=$(sed -n 's/^local MAX_LEVELS = \([0-9][0-9]*\)$/\1/p' \
-  _extensions/index/index.lua)
+  $FILTER_SOURCES)
 [ -n "$MAX_LEVELS" ] || fail "M09: could not read MAX_LEVELS from the filter"
 OVERFLOW_JOIN=$(sed -n 's/^local OVERFLOW_JOIN = "\(.*\)"$/\1/p' \
-  _extensions/index/index.lua)
+  $FILTER_SOURCES)
 [ -n "$OVERFLOW_JOIN" ] \
   || fail "M09: could not read OVERFLOW_JOIN from the filter"
 MAX_LEVELS="$MAX_LEVELS" OVERFLOW_JOIN="$OVERFLOW_JOIN" \
@@ -7188,8 +7204,10 @@ pass "M15: contesting a key changes what the entry prints and not where it files
 # that still emits it, and passes for the wrong reason (the M13 lesson). The
 # joined message is what an author reads, so the joined message is what is
 # read here.
-python3 - _extensions/index/index.lua <<'M15AC5PY'
+python3 - <<'M15AC5PY'
 import re, sys
+sys.path.insert(0, 'tests')
+import filtersrc
 
 GONE = 'the index tool rejects the pair and the render fails'
 # The replacement, in both its shapes, each as a template with its one
@@ -7206,7 +7224,7 @@ REPLACEMENT = (
      'numbers at all, so check that is the entry you meant'),
 )
 
-src = open(sys.argv[1], encoding='utf-8').read()
+src = filtersrc.text()
 
 # One Lua string literal: '...' or "...", with backslash escapes. The same
 # pattern this suite already uses to read the filter's literals, and one

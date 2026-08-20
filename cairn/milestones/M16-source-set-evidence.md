@@ -41,11 +41,12 @@ records why. Making module-level state per-document → stays the standing
 - [ ] AC1: Every site in `tests/run-tests.sh` naming a filter source path
       reads the source set instead. The domain is the lines
       `grep -n '_extensions/index' tests/run-tests.sh` reports — 14 at the
-      merge base. Afterwards that grep reports exactly three: the `find`
-      enumeration of AC2, and lines 994-995, the
-      `examples/_extensions/index/_extension.yml` existence check, which reads
-      no filter source. The pattern matches any path under the extension, so a
-      check re-hardcoded to a module path stays inside the domain.
+      merge base. Afterwards that grep reports exactly three, none of which
+      reads filter source: the line defining the enumeration root
+      `QI_EXT_DIR`, and the two lines of the
+      `examples/_extensions/index/_extension.yml` existence check. The pattern
+      matches any path under the extension, so a check re-hardcoded to a
+      module path stays inside the domain.
 - [ ] AC2: The source set is built by one recursive enumeration of
       `_extensions/index/` (`find _extensions/index -name '*.lua'`), never a
       written-down list of file names. The run prints the member count and
@@ -86,11 +87,10 @@ records why. Making module-level state per-document → stays the standing
       member count, and for the python scanners a source view that keeps each
       line's FILE identity (never a bare concatenation), since M17-AC1 asks
       which file a definition sits in.
-- [ ] T2: Retarget each of the twelve source-reading sites
-      (`tests/run-tests.sh:1200, 1252, 1296, 1455, 1630, 2314, 3242, 4349,
-      4357, 5748, 5751, 7150`) to the source set. Leave the two
-      `_extensions/index` sites that read no filter source (`:994`, the
-      `_extension.yml` existence check) alone.
+- [x] T2: Retarget each of the twelve source-reading sites
+      to the source set — the twelve the merge-base run of AC1's grep
+      reports. Leave the two `_extensions/index` lines that read no filter
+      source (the `examples/.../\_extension.yml` existence check) alone.
 - [ ] T3: Add the `--self-test` moved-definition probe for each retargeted
       site: scratch copy, definition moved into `modules/`, site still finds it.
 - [ ] T4: Add the planted-defect half for each retargeted site — a defect of
@@ -116,6 +116,9 @@ records why. Making module-level state per-document → stays the standing
 - 2026-08-20: T6 is already satisfied — D-004 was appended to cairn/DECISIONS.md in the plan commit, so the task is a no-op rather than work.
 - 2026-08-20: T1 complete — full `--self-test` run exit 0, 230 checks, 0 FAIL; the AC2 self-test probe reports the enumeration reaching modules/ (1 -> 2 with no edit to the suite) and refusing an empty source set.
 - 2026-08-20: reverted an AC2 checkbox tick made at the T1 commit — acceptance-criterion boxes are review's under AC fencing, not implement's; the evidence stands, the tick was mine to leave alone.
+- 2026-08-20: AC1 amended at the mini gate (audited first by a fresh-context [O] reader in reduced mode; sound on both questions). Two defects, both found by executing the criterion: it named "the `find` enumeration of AC2" as a matching line, but `find "$QI_EXT_DIR" -name '*.lua'` carries no literal path and never matches its own grep — the matching line is the `QI_EXT_DIR` definition; and its pinned "lines 994-995" had already drifted to 1015-1016 from this milestone's own T1 insertions. The amended wording carries no line coordinates. The promise's strength is unchanged.
+- 2026-08-20: T2 complete — all twelve sites retargeted onto the source set, zero `index.lua` references left, and AC1's post-state grep reports exactly the three predicted lines. Full `--self-test` run exit 0, 230 checks, pass set byte-identical to the pre-retarget run. That identity is consistent with a correct retarget AND with a vacuous one; T3/T4 are what discriminate.
+- 2026-08-20: T2 also dropped the drifting line numbers from its own task text (minor edit, implement-owned) for the same reason the criterion did.
 
 ## Decisions
 

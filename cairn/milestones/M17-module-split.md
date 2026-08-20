@@ -54,7 +54,7 @@ Any behavior change → none; a rendered-output change is a defect here.
       which is why the pattern covers the nested and assigned forms and not
       just the top-level one. Afterwards it reports exactly one line whose file
       is `index.lua`: `Pandoc`.
-- [ ] AC2: The split changes no check that existed at the merge base. Both
+- [x] AC2: The split changes no check that existed at the merge base. Both
       `tests/run-tests.sh` and `tests/run-tests.sh --self-test` exit 0, and
       every `ok` line of the merge-base run — 195 and 230 of them, measured on
       this machine this session — stands verbatim, and in the same position,
@@ -188,8 +188,10 @@ the task that made it.
 
 ## Review
 
-Verified 2026-08-20 on branch `m17-module-split` at 2cc8c19, against merge base
-cb782df. PR: https://github.com/jmgirard/quarto-index/pull/17
+Verified 2026-08-20 on branch `m17-module-split`, against merge base cb782df.
+PR: https://github.com/jmgirard/quarto-index/pull/17. Two passes: the first at
+2cc8c19 returned the milestone on AC2 (finding E); the evidence below is the
+second pass, at 3f7fe20, after the seven fix-now findings landed.
 
 - AC1 — `grep -nE '^[[:space:]]*(local )?function |= function\('` over the
   source set `tests/filtersrc.py` enumerates reports 88 definition lines, the
@@ -197,24 +199,27 @@ cb782df. PR: https://github.com/jmgirard/quarto-index/pull/17
   `index.lua` as its file: `50:local function Pandoc(doc)`. The other 87 are
   distributed across the nine modules (book 15, core 3, html 29, latex 6,
   levels 8, marker 13, marks 7, passes 3, sortkeys 3).
-- AC2 — NOT MET, unticked at this review. `tests/run-tests.sh` 197 checks,
-  `--self-test` 232, both exit 0. The diff domain holds: `git status
-  --porcelain` over `tests/`, `examples/` and `README.md` is clean, and `git
-  diff --numstat cb782df` over the same three names exactly two files,
-  `tests/movedefs.py` (54 added, 26 deleted) and `tests/run-tests.sh` (134
-  added, 0 deleted). The exempted line reads `(10 -> 11 with no edit here)`
-  with identical text either side of the parentheses. But the position clause
-  fails: the probe's two `ok` lines are emitted before the `--self-test`
-  section, so in the 232-line self-test log the merge-base lines 196-230 stand
-  at 198-232, not at their own positions. The plain run is unaffected (the two
-  land at 196-197, after all 195). Measured evidence was an in-order
-  subsequence, which is weaker than the criterion asks; the tick was withdrawn
-  rather than the criterion reread (review finding E).
-- AC3 — the two probe checks pass in the run above: 32 `require()` calls across
+- AC2 — `tests/run-tests.sh` 197 checks, `--self-test` 232, both exit 0. The
+  position clause holds literally in both runs: of the merge base's 195 and 230
+  `ok` lines, every one stands verbatim at its own position (zero mismatches at
+  any index), and the two lines this milestone adds land after all of them, at
+  196-197 and at 231-232. The one exempted line sits at position 200 in the
+  self-test log reading `(10 -> 11 with no edit here)` for the extension's ten
+  `.lua` files, with identical text either side of the parentheses. `git
+  status --porcelain` over `tests/`, `examples/` and `README.md` is clean — no
+  untracked path. `git diff --numstat cb782df` over the same three names
+  exactly two files: `tests/movedefs.py` (54 added, 26 deleted) and
+  `tests/run-tests.sh` (189 added, 0 deleted). At the first pass this criterion
+  was unticked: the probe's `ok` lines were emitted before the `--self-test`
+  section, shifting merge-base lines 196-230 to 198-232. The probe block now
+  runs last.
+- AC3 — the two probe checks pass in the run above: 30 `require()` calls across
   the source set all at file top level above their file's first definition, and
   four byte-identical outputs (a standalone fixture and a book project, each to
   latex and html) between an extension installed by `quarto add` and the working
-  tree. Both halves were shown discriminating at T9 (work log, 2026-08-20).
+  tree. The require check now reports each file's require lines and its first
+  definition line, which is the report the criterion asks for. Both halves were
+  shown discriminating at T9 (work log, 2026-08-20).
 - AC4 — `cairn/DESIGN.md:105` no longer describes the filter as one file. Each
   of the ten members of the source set is found in the Architecture section in
   its extension-bearing form: `index.lua`, `core.lua`, `levels.lua`,

@@ -1,6 +1,6 @@
 # M15: A term marked both plainly and with a cross-reference builds
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -79,7 +79,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
       asserted to typeset in the compiled index, the same bar
       `examples/xref-escaping.qmd` already holds the encap channel to (IP2).
 
-- [x] AC5 No report tells an author the render can fail from rival
+- [ ] AC5 No report tells an author the render can fail from rival
       encapsulations. Evidence: over each `warn()` call's **joined** message —
       the list the distinctness scan already builds, never a single literal,
       which the M13 lesson records a per-literal test cannot see — no message
@@ -87,7 +87,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
       fails`; and the replacement report's full text asserted present, once per
       contested key, over the fixture.
 
-- [x] AC6 The README and DESIGN claims this milestone falsifies are corrected
+- [ ] AC6 The README and DESIGN claims this milestone falsifies are corrected
       and the new behaviour is pinned. Evidence: the three passages naming the
       old outcome — README's "can fail the build" paragraph, its "The clash
       warning is LaTeX-only" row, and its claim that a cross-reference is
@@ -159,6 +159,8 @@ candidate row; every criterion here is evidenced in a warmed tree.
 - 2026-08-19: T7 added the M15 suite section: the PDF render with both failure strings asserted absent (AC1); an exhaustive hand-derived manifest over every printed index line, level, term and locator count, quantified over all fourteen rather than over the contested seven (AC2/AC3, the M10 lesson); one printed entry per contested term; each of the sixteen escaped characters asserted present in the folded target (AC4); the old failed-render phrase asserted gone from the filter (AC5); and a glob over the rendered LaTeX artifacts asserting the contested-key emission reaches only the fixture that has one. The manifest matched on its first run. Suite 185 -> 191 checks.
 - 2026-08-19: T8 discrimination probes, against a non-exiting copy of the suite so every failure is collected rather than only the first, with a clean control run first. (a) The repair reverted, so contested keys emit rival encapsulations again: 7 checks fail, including the PDF render itself with both baseline failure strings back, the whole printed-index manifest, and the report's per-key counts. (b) The cross-reference mark made to emit as well, so it contributes a locator: the manifest fails on `kappa`, expected 2 and got 1 — makeindex collapses the resulting three consecutive pages into one printed range, which is the documented behaviour and is now stated where the locator count is computed. (c) The folded field's makeindex quoting removed: 3 fail, the PDF render among them, since an unquoted `!` or `@` in that field is rejected exactly as it is in the encapsulation channel.
 - 2026-08-19: T9 corrected the three README passages the fix falsified — the "can fail the build" paragraph, the back-ends-differ row, and the claim that a cross-reference always travels through the encapsulation channel — and DESIGN's LaTeX back-end paragraph, which now states both repairs and why they differ. Four new claims pinned in the README-claims array and the three sentences naming the old outcome pinned as stale, so neither the promise nor its retirement can drift from the code. `tests/run-tests.sh --self-test` passes at 224 checks.
+- 2026-08-19: DEFECT RETURN 1 from /milestone-review. AC5 is unverified: its check is a raw substring scan over `index.lua`, not the joined-message read the criterion names, and the phrase spans a `..` so the scan reports absent against `main`'s filter too — it passes identically on the filter that still emits the claim, which is the M13 lesson and the very defect the plan's criteria audit flagged. AC6 is unverified: of the three passages the criterion names asserted absent, only the "can fail the build" trio is pinned stale; the "clash warning is LaTeX-only" sentence was replaced without a stale pin and the encapsulation-channel claim was qualified in place rather than removed. A third finding is a deliverable defect: `index_argument`'s fold branch forces `keys[i]` as the sort field, bypassing the `keys[i] ~= levels[i]` comparison the comment below it explains, so a contested entry deeper than three levels carrying a sort key files under a different string than the same entry files under uncontested, and `record_clamped` then records a filing path the document never emitted.
+- 2026-08-19: review lens results, all logged: prior-review record and blame-history returned no conflicts across their examined regions. The diff-bug lens returned 13 findings; one (contestation keyed on the emitted argument rather than the filing key) was refuted by a makeindex probe — the tool treats the sort key and printed text together as the entry identity, so `Cats@Felines` against `Cats|see{Dogs}` on one page yields two entries and zero warnings. The remainder are recorded for the return.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 12 findings. Two were fatal and are fixed above: AC5 tested a phrase no single literal carries, so it would have passed against the unmodified filter, and AC3's exhaustive manifest named four of the eight lines the index prints. AC4's two-fixture list was narrowed to a globbed domain, the verify-slot criterion was dropped as instrument-bound and became T9, an escaping criterion was added for the printed field (IP2), and a README/DESIGN criterion was added (GP1). GP2 and the locator question went to the gate.
 
 ## Decisions

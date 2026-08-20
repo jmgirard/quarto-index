@@ -126,7 +126,7 @@ the task that made it.
       (`:776-992`) — into `modules/marks.lua`.
 - [x] T5: Move the three Span passes — `CollectSort`, `CollectKeys`, `Span`
       (`:993-1282`) — into `modules/passes.lua`.
-- [ ] T6: Move HTML index building — `fold_case` through `html_index_blocks`
+- [x] T6: Move HTML index building — `fold_case` through `html_index_blocks`
       (`:1283-1773`) — into `modules/html.lua`.
 - [ ] T7: Move marker and placement — `is_marker` through `place_index`
       (`:1774-2049`) — into `modules/marker.lua`.
@@ -156,6 +156,7 @@ the task that made it.
 - 2026-08-20: T3 — `modules/latex.lua`, 9 definitions, 11 sites. `xref_both_emitted` moved here from T4's range and both emission flags became `M["name"]` fields, since a scalar cannot be shared by aliasing a local. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(5 -> 6)`.
 - 2026-08-20: T4 — `modules/marks.lua`, 12 definitions, 28 sites, carrying `html_marks`, `marked_paths`, `pending_xrefs`, `clamped_paths` as shared tables and `marks_seen` as a field. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(6 -> 7)`.
 - 2026-08-20: T5 — `modules/passes.lua`, the three Span passes, 4 sites. The walk-filter and return-table keys named `Span` stay bare; only the values are qualified. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(7 -> 8)`.
+- 2026-08-20: T6 — `modules/html.lua`, 23 definitions, 5 sites; only `html_index_blocks`, `taken_identifiers`, `relocate_heading_anchors` and `assign_anchors` are reached from outside it. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(8 -> 9)`.
 
 ## Decisions
 

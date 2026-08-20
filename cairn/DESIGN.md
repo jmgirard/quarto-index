@@ -38,6 +38,29 @@ _None yet — populated as the codebase takes shape._
   init, 2026-08-16): the universal ≥2-independent-oracle-types bar is waived;
   numeric results, if any arise, are checked ad hoc. Revisit if scoring or
   statistical work enters the project.
+- **A module's definitions keep their plain form, and it exports through
+  brackets** (added M17). Every *top-level* definition in
+  `_extensions/index/modules/` is written `local function NAME(` or
+  `local NAME = <literal>` at column 0, never `function M.NAME(`, and the
+  module table is populated afterwards as
+  `M["NAME"] = NAME`. Each half is load-bearing for the acceptance suite, and
+  each for its own reason. The bracket export: the source scans take the FIRST
+  `NAME =` match over the whole source set, so a plain `M.NAME = NAME` line
+  masks its own definition once the moved-definition probe relocates it (M16
+  review F3). The plain definition form: `tests/movedefs.py` finds a
+  definition only by `local function NAME(` or `local NAME =` at column 0 and
+  demands exactly one set-wide, and `tests/scans/warn-distinct.py` excludes
+  `warn`'s own definition from its pinned message count by testing that the
+  text before the match ends in `function` — which a `function M.warn(` would
+  defeat, counting the definition as a call. Helpers nested inside a function
+  are outside the rule and stay where they are — `flush` in `html.lua`, the
+  `note` and `count_owner` walkers in `html.lua` and `marker.lua` — since they
+  close over the locals of the function that holds them.
+- **A module is required under `qi_<name>`** (added M17), never its bare name:
+  `levels`, `marks` and `marker` are all ordinary local and parameter names in
+  this filter, and a top-of-file alias is shadowed by any later inner local or
+  parameter that shares its name — `sortkeys.lua`'s `register_sort(levels, …)`
+  is the case that forced the rule.
 - **Collation is best-effort**: non-ASCII terms appearing correctly is an IP2
   commitment, but sort *order* beyond what the user's index processor
   provides is best-effort. Sort keys (`sort=`) are how an author overrides it,
@@ -102,8 +125,46 @@ ordinary plan-gate choice.
 
 ## Architecture
 
-One Pandoc-Lua filter, `_extensions/index/index.lua`, run as three passes over
-each document (corrected M06).
+One Pandoc-Lua filter, run as three passes over each document (corrected M06).
+Its entry point is `_extensions/index/index.lua`, which defines the Pandoc pass
+and nothing else; every other definition lives in a module beside it under
+`_extensions/index/modules/`, loaded with a relative `require("./modules/<name>")`
+and bound under a `qi_` name so that no local can shadow a module — `levels`,
+`marks` and `marker` are all ordinary local names in this filter (added M17).
+The modules, in dependency order:
+
+- `core.lua` — the shared constants, the `warn` channel, and the two format
+  tests. It requires nothing; every other module requires it.
+- `levels.lua` — what an `entry=`, `see=` or `sort=` value means as a list of
+  levels: the parse, the empty-level drop, the three-level clamp, and the
+  level path a sort key is declared against.
+- `sortkeys.lua` — the registry mapping a printed level path to the first sort
+  key declared for it, and the report drawn when two marks disagree about it.
+- `latex.lua` — the LaTeX back-end: the `\index{...}` argument, the
+  encapsulation a cross-reference rides in, and the contested-key bookkeeping
+  that decides which shape a key gets.
+- `marks.lua` — what every back-end needs from one mark, derived once, and the
+  document-wide accumulators the passes share.
+- `passes.lua` — the three Span passes, in the order the filter returns them.
+- `html.lua` — the HTML back-end: the entry tree, its ordering and grouping,
+  the anchors that link an entry back to its mark, and the index section built
+  out of them.
+- `marker.lua` — recognizing the placement marker, reporting its misuse, and
+  putting the index where it stood.
+- `book.lua` — the per-chapter sidecar store, and the one index the chapter
+  carrying the marker builds out of it.
+
+The split relocates the document-wide accumulators without making them
+per-document: they are still module-level, and each still lasts as long as the
+state that holds it. What holds them did change — a module table in
+`package.loaded` rather than the filter chunk's own locals — which is
+indistinguishable today only because Quarto runs one pandoc process per
+document. Under the one scenario that row contemplates — a Lua state reused
+across documents — the two differ: the filter chunk re-initialized its locals
+per execution, while `require` returns the cached table and does not. That is
+a second mechanism behind the row, and a stronger one (added M17). What `quarto add` installs is
+unchanged in shape: `_extension.yml` contributes one filter, `index.lua`, and
+the install copies `modules/` along with it (GP3).
 
 The **collect pass** reads every mark that writes a `sort=` and registers the
 sort key against the printed level path it was written for, reporting once per

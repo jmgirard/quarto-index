@@ -7211,6 +7211,190 @@ filtersrc.sources()" >/dev/null 2>&1; then
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
 fi
 
+
+# ---------------------------------------------------------------------------
+# M17-AC3 — the split extension renders identically installed and from the
+# working tree.
+#
+# Two things could make an installed copy behave differently from this
+# checkout: a module the packaging leaves behind, and a `require` that
+# resolves against a directory the install does not reproduce. The first is
+# closed by the position check below — every require sits at file top level,
+# above that file's first definition, so a module missing from an installed
+# copy fails on ANY document rather than on whichever one happens to reach the
+# call. Fixture choice is therefore not an axis the install can affect, which
+# leaves project shape and format; the probe takes both whole, rendering the
+# same standalone fixture and the same book project from a tree that reaches
+# the extension the way examples/ does and from a project that got it through
+# `quarto add`.
+#
+# LAST in the run, after the self-test block, so the two `ok` lines it prints
+# land after every line the merge base printed rather than shifting the
+# self-test's own lines down by two (M17-AC2, review finding E).
+# ---------------------------------------------------------------------------
+python3 - <<'REQPY'
+import re, sys
+sys.path.insert(0, 'tests')
+import filtersrc
+
+# A definition in the sense M17-AC1 uses: the top-level, nested and assigned
+# forms alike. `local M = {}` is not one, and neither is a require.
+DEFN = re.compile(r'^\s*(local\s+)?function |=\s*function\(')
+REQ = re.compile(r'\brequire\(')
+TOP = re.compile(r'^local \w+ = require\("\./[\w/]+"\)\s*$')
+
+per, bad, seen = {}, [], 0
+for path, n, line in filtersrc.lines():
+    code = re.sub(r'--.*', '', line)
+    info = per.setdefault(path, {'req': [], 'def': None})
+    if REQ.search(code):
+        info['req'].append((n, line.strip()))
+        if not TOP.match(code.rstrip()):
+            bad.append('  %s:%d: not a top-level `local NAME = require("./...")`: %s'
+                       % (path, n, line.strip()))
+    if info['def'] is None and DEFN.search(code):
+        info['def'] = n
+
+for path, info in sorted(per.items()):
+    for n, _text in info['req']:
+        seen += 1
+        if info['def'] is not None and n > info['def']:
+            bad.append("  %s:%d: require sits below this file's first "
+                       'definition, at line %d' % (path, n, info['def']))
+if not seen:
+    print('FAIL: M17-AC3: the source set contains no require() at all, so the '
+          'position rule is asserted of nothing', file=sys.stderr)
+    sys.exit(1)
+if bad:
+    print('FAIL: M17-AC3: require placement:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+# Reported, not merely asserted: the criterion asks for each require line and
+# each file's first definition line, and a bare count would let the rule hold
+# over a source set nobody can see the shape of.
+for path, info in sorted(per.items()):
+    where = ('first definition at %d' % info['def']) if info['def'] else 'no definition'
+    print('     %s: %s' % (path, where))
+    for n, text in info['req']:
+        print('       %d: %s' % (n, text))
+print('ok   M17-AC3: all %d require() calls across the source set sit at file '
+      'top level, above their file\'s first definition' % seen)
+REQPY
+
+IP="$WORK/install-parity"
+rm -rf "$IP"
+mkdir -p "$IP/stage/_extensions"
+cp -R "$QI_EXT_DIR" "$IP/stage/_extensions/index"
+command -v zip >/dev/null \
+  || fail "M17-AC3: zip is not installed, so the extension cannot be packaged for quarto add; this check is never skipped"
+( cd "$IP/stage" && zip -qr ../ext.zip _extensions ) \
+  || fail "M17-AC3: could not package $QI_EXT_DIR for quarto add"
+[ -s "$IP/ext.zip" ] || fail "M17-AC3: the packaged extension is empty"
+# quarto add is run from inside each scratch project, so the archive it is
+# handed has to be named absolutely.
+IP_ABS=$( cd "$IP" && pwd )
+
+# The working-tree side reaches the extension exactly as examples/ does: a
+# symlink to the directory holding it, resolved from QI_EXT_DIR so the probe
+# cannot end up comparing a tree nothing else in this run reads.
+EXT_PARENT=$( cd "$(dirname "$QI_EXT_DIR")" && pwd )
+
+# The standalone fixture, copied as itself. Nothing enumerates what it needs
+# beside it — not a list of filenames and not a list of front-matter keys,
+# which is the same shape one layer down. What catches an asset the copy did
+# not bring is the guard further below: this run has ALREADY rendered the
+# fixture in place under examples/, where every asset it has is present, and
+# the probe's working-tree render is required to match that byte for byte.
+SOLO_FIXTURE="examples/demo.qmd"
+SOLO_NAME=$(basename "${SOLO_FIXTURE%.qmd}")
+for VARIANT in tree inst; do
+  mkdir -p "$IP/$VARIANT/solo"
+  cp "$SOLO_FIXTURE" "$IP/$VARIANT/solo/"
+  for FMT in latex html; do
+    # One project per format: a book render clears its output directory, so a
+    # shared project would leave only the last format's output to compare.
+    # Copied whole rather than file by file, for the same reason the standalone
+    # fixture's assets are derived: a chapter added to examples/book/ later
+    # must reach this probe without an edit here (review finding C).
+    mkdir -p "$IP/$VARIANT/book-$FMT"
+    ( cd examples/book && tar cf - --exclude=_book --exclude=.quarto \
+        --exclude=_extensions . ) | ( cd "$IP/$VARIANT/book-$FMT" && tar xf - ) \
+      || fail "M17-AC3: could not copy examples/book into $IP/$VARIANT/book-$FMT"
+    [ -f "$IP/$VARIANT/book-$FMT/_quarto.yml" ] \
+      || fail "M17-AC3: the copied book project has no _quarto.yml"
+  done
+  for PROJ in solo book-latex book-html; do
+    if [ "$VARIANT" = tree ]; then
+      ln -s "$EXT_PARENT" "$IP/$VARIANT/$PROJ/_extensions"
+    else
+      ( cd "$IP/$VARIANT/$PROJ" && quarto add "$IP_ABS/ext.zip" --no-prompt ) \
+        > "$WORK/parity-add-$PROJ.log" 2>&1 \
+        || { cat "$WORK/parity-add-$PROJ.log" >&2; fail "M17-AC3: quarto add failed in $IP/$VARIANT/$PROJ"; }
+      [ -f "$IP/$VARIANT/$PROJ/_extensions/index/index.lua" ] \
+        || fail "M17-AC3: quarto add installed no index.lua into $IP/$VARIANT/$PROJ"
+    fi
+  done
+done
+
+# The book the probe renders must be the book the suite's own book checks use,
+# chapter for chapter — otherwise the parity claim is made about a smaller
+# project than the one that ships.
+BOOK_CHAPTERS=$(find examples/book -name '*.qmd' -not -path '*/_book/*' -not -path '*/.quarto/*' | wc -l | tr -d ' ')
+COPIED_CHAPTERS=$(find "$IP/tree/book-html" -name '*.qmd' | wc -l | tr -d ' ')
+[ "$BOOK_CHAPTERS" -eq "$COPIED_CHAPTERS" ] \
+  || fail "M17-AC3: examples/book has $BOOK_CHAPTERS chapter(s) but the probe copied $COPIED_CHAPTERS"
+
+# Every module has to arrive: an install missing one is the failure this whole
+# criterion is about, and it would otherwise surface as a render error whose
+# cause the diff below cannot name.
+INSTALLED=$(find "$IP/inst/solo/_extensions/index" -name '*.lua' | wc -l | tr -d ' ')
+[ "$INSTALLED" -eq "$FILTER_SOURCE_COUNT" ] \
+  || fail "M17-AC3: quarto add installed $INSTALLED .lua file(s), but the extension has $FILTER_SOURCE_COUNT; a module did not survive packaging"
+
+for VARIANT in tree inst; do
+  for FMT in latex html; do
+    ( cd "$IP/$VARIANT/solo" && quarto render "$SOLO_NAME.qmd" --to "$FMT" ) \
+      > "$WORK/parity-$VARIANT-solo-$FMT.log" 2>&1 \
+      || { tail -30 "$WORK/parity-$VARIANT-solo-$FMT.log" >&2; fail "M17-AC3: the $VARIANT standalone render to $FMT failed"; }
+    ( cd "$IP/$VARIANT/book-$FMT" && quarto render --to "$FMT" ) \
+      > "$WORK/parity-$VARIANT-book-$FMT.log" 2>&1 \
+      || { tail -30 "$WORK/parity-$VARIANT-book-$FMT.log" >&2; fail "M17-AC3: the $VARIANT book render to $FMT failed"; }
+  done
+done
+
+SOLO_BASE="$IP/tree/solo/$SOLO_NAME"
+# The copy brought everything the fixture needs. Asserted against this run's
+# OWN in-place render of the same fixture under examples/, which has every
+# asset there is: an asset the scratch copy lacks moves that render's output
+# and is reported here, so no list of names has to be right (review, pass 2).
+cmp -s "$WORK/demo-latex.tex" "$SOLO_BASE.tex" \
+  || fail "M17-AC3: the probe's working-tree latex render of $SOLO_FIXTURE differs from this run's in-place render of the same fixture; the scratch copy is missing something the fixture needs"
+cmp -s "examples/$SOLO_NAME.html" "$SOLO_BASE.html" \
+  || fail "M17-AC3: the probe's working-tree html render of $SOLO_FIXTURE differs from this run's in-place render of the same fixture; the scratch copy is missing something the fixture needs"
+
+# The comparison is only worth making if each side actually built an index. A
+# pair of empty renders is byte-identical too, so all FOUR compared outputs
+# carry a guard, not just the two that had one (review finding D).
+grep -q '\\index{' "$SOLO_BASE.tex" \
+  || fail "M17-AC3: the working-tree standalone latex render emitted no \\index command, so the parity diff below compares two documents with no index in them"
+grep -q 'qi-index' "$SOLO_BASE.html" \
+  || fail "M17-AC3: the working-tree standalone html render built no index section, so its parity diff proves nothing"
+grep -q 'qi-index' "$IP/tree/book-html/_book/last.html" \
+  || fail "M17-AC3: the working-tree book html render built no index section, so its parity diff proves nothing"
+grep -rq '\\index{' "$IP/tree/book-latex/_book" \
+  || fail "M17-AC3: the working-tree book latex render emitted no \\index command, so its parity diff compares two books with no index entries in them"
+
+PARITY=0
+for PAIR in "solo/$SOLO_NAME.tex" "solo/$SOLO_NAME.html" book-latex/_book book-html/_book; do
+  [ -e "$IP/tree/$PAIR" ] || fail "M17-AC3: the working-tree render produced no $PAIR"
+  [ -e "$IP/inst/$PAIR" ] || fail "M17-AC3: the installed render produced no $PAIR"
+  PDIFF="$WORK/parity-$(printf '%s' "$PAIR" | tr '/' '-').diff"
+  diff -r "$IP/tree/$PAIR" "$IP/inst/$PAIR" > "$PDIFF" 2>&1 \
+    || { head -40 "$PDIFF" >&2; fail "M17-AC3: $PAIR differs between the installed extension and the working tree"; }
+  PARITY=$((PARITY + 1))
+done
+pass "M17-AC3: all $PARITY outputs — a standalone fixture and a book project, each to latex and html — are byte-identical rendered from an extension installed by quarto add and from the working tree"
+
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

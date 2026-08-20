@@ -66,24 +66,56 @@ class Entry:
         return f'<Entry level={self.level} {self.text!r}>'
 
 
+# A line of nothing but locator characters — digits, commas, spaces and the
+# dashes of a page range. Two very different things look like this, and telling
+# them apart is what _pages does below.
+LOCATOR_ONLY = re.compile(r'^[\d,\s\u2013-]+$')
+
+
 def _pages(pdf_path):
-    """Yield (page_number, page_width, [(xMin, yMin, text), ...])."""
+    """Yield (page_number, page_width, [(xMin, yMin, text), ...]).
+
+    Two kinds of line carry nothing but locator characters, and this module
+    read both as the page-number footer until M15's fixture produced the
+    second. The footer is the bottom-most line on the page. The other is a
+    CONTINUATION: makeindex prints an entry and its locators on one logical
+    line, but LaTeX wraps a long one, and the locators can land alone on the
+    next physical line — a long cross-reference target is enough to do it.
+    Dropping that as a footer loses the entry's locators silently, which is
+    exactly the kind of evidence a check here must not lose.
+
+    So the bottom-most such line on a page is dropped as the footer, and any
+    other is folded back into the line above it, restoring the one logical
+    line makeindex wrote. Folding rather than returning it: a continuation is
+    indented to neither the top-level nor the sub-entry edge, so returning it
+    would add a third left edge and shift every sub-entry a level deeper.
+    """
     xml = subprocess.run(
         ['pdftotext', '-bbox-layout', pdf_path, '-'],
         check=True, capture_output=True, text=True).stdout
     root = ET.fromstring(xml)
     for number, page in enumerate(root.iter(f'{{{NS["x"]}}}page'), start=1):
-        lines = []
+        raw = []
         for line in page.iter(f'{{{NS["x"]}}}line'):
             words = [w.text or '' for w in line.iter(f'{{{NS["x"]}}}word')]
             text = ' '.join(words).strip()
-            # A line of nothing but digits is the page-number footer. No index
-            # line can look like that: makeindex prints every locator on the
-            # same line as the term it belongs to, so an entry always carries
-            # non-digit text.
-            if text and not text.isdigit():
-                lines.append((float(line.get('xMin')),
-                              float(line.get('yMin')), text))
+            if text:
+                raw.append([float(line.get('xMin')),
+                            float(line.get('yMin')), text])
+        footer = None
+        for i, (_x, y, text) in enumerate(raw):
+            if LOCATOR_ONLY.match(text) and (footer is None
+                                             or y > raw[footer][1]):
+                footer = i
+        lines = []
+        for i, row in enumerate(raw):
+            if i == footer:
+                continue
+            if LOCATOR_ONLY.match(row[2]) and lines:
+                lines[-1] = (lines[-1][0], lines[-1][1],
+                             lines[-1][2] + ' ' + row[2])
+                continue
+            lines.append((row[0], row[1], row[2]))
         yield number, float(page.get('width')), lines
 
 

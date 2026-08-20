@@ -1911,7 +1911,11 @@ for fmt in latex html; do
   quarto render examples/xref-conflict.qmd --to $fmt > "$WORK/conflict-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/conflict-$fmt.log" >&2; fail "M02-AC5: xref-conflict.qmd failed to render to $fmt"; }
 done
-WARN_CLASH='is marked in more than one way'
+# M15 replaced this report's text: the emission no longer risks the failed
+# render the old wording warned of, so the report now says what the author's
+# two marks print as. Keyed on the clause that names the outcome, not on the
+# lead, so a reworded lead cannot pass a check that claims to read the outcome.
+WARN_CLASH='they are printed as one entry with its page numbers and its cross-reference together'
 # kappa (plain against a cross-reference) and lambda (see against see-also),
 # once each; mu (two identical see= marks) and nu (two plain marks) must NOT
 # be reported, which the exact count of 2 is what fences.

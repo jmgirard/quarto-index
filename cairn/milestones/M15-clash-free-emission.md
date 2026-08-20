@@ -114,16 +114,16 @@ candidate row; every criterion here is evidenced in a warmed tree.
       (`index.lua`), which today warns from `clamp_levels` as a side effect, so
       the first Span pass can compute each mark's key and encap without
       emitting a mark's warnings twice.
-- [ ] T3 Decide each mark's LaTeX argument in the pass that has seen every
+- [x] T3 Decide each mark's LaTeX argument in the pass that has seen every
       mark: a contested key with a plain mark folds its cross-references into
       the printed text; a contested key without one emits a common combined
       encap; an uncontested key is untouched.
-- [ ] T4 Emit nothing for a cross-reference mark on a contested key that has a
+- [x] T4 Emit nothing for a cross-reference mark on a contested key that has a
       plain mark, so a cross-reference still carries no locator.
 - [ ] T5 Quote the folded printed field for what the index tool reads there —
       `!`, `@`, `|` and `"` are its operators in that field as in the encap
       channel — and probe it with README's escaped-character set.
-- [ ] T6 Replace the clash report with one describing what was done; update the
+- [x] T6 Replace the clash report with one describing what was done; update the
       distinctness count and the three existing clash checks.
 - [ ] T7 Suite: AC2's exhaustive manifest, AC3's pairings, AC4's escaping
       assertions, and a guard that no uncontested key's emission changed —
@@ -148,6 +148,13 @@ candidate row; every criterion here is evidenced in a warmed tree.
 - 2026-08-19: T1 baseline on the final fixture, before any code changed: `quarto render examples/xref-conflict.qmd --to pdf` exits 1 with `error generating index` and `Conflicting entries: multiple encaps for the same page under same key.`, and the latex render reports seven contested keys — `Deep!Level`, `chi`, `kappa`, `lambda`, `phi`, `tau`, `upsilon`.
 - 2026-08-19: T1 suite consequences, derived by hand from the fixture source before any render was read: the HTML index manifest and letter sweep for the fixture (both passed first time), the clash count 2 -> 7, and the dangling-target corpus count 6 -> 13. The first derivation said 13 against 14 emitted; the cause was a duplicated `kappa` cross-reference mark left in the fixture, which was removed rather than the number adjusted.
 - 2026-08-19: T2 gave `clamp_levels` and `index_argument` the `report` flag `derive_levels` and `drop_empty_levels` already carry, rather than inventing a second mechanism, so a pass that needs a mark's key before anything is emitted does not report its fold twice. Behaviour-neutral: the suite passes unchanged at 185 checks.
+- 2026-08-19: T3 added a second read-only Span pass (`CollectKeys`) that settles which keys are contested before anything is emitted, and routed both it and the emitting pass through one `latex_plan`, so the pass that decides and the pass that emits cannot drift on a mark's key or its surviving targets. `index_argument` grew an optional `fold`, applied to the last level from the levels themselves rather than by taking the built argument apart again — an author's own `@` is makeindex-quoted inside a level, so no pattern over the finished string can find "the first `@`".
+- 2026-08-19: T3/T4 emission: a contested key with a plain mark folds its cross-references into the printed text on every plain mark, and its cross-reference marks emit nothing, so a cross-reference still contributes no locator. Verified on the compiled index — `kappa, see Elsewhere, 1, 2` carries the two plain marks' pages and not the cross-reference mark's third one.
+- 2026-08-19: T3 revised mid-task after a first attempt folded a no-plain-mark key into the printed text too: makeindex prints its term delimiter either way, so an entry with no locator ended on a dangling comma (`lambda, see Here; see also There,`). Such a key keeps its targets in the encapsulation channel, where the delimiter is the separator it has always been, rendered by one new command over the key's whole list so every mark carries the same string. `lambda` and `upsilon` now print exactly as the uncontested `mu` control does.
+- 2026-08-19: T3 corrected a wrong contestation predicate the suite caught: counting a key's TARGETS made `demo.qmd`'s single both-attributes mark contested, though one mark emits one command and contests nothing. Contestation is counted in the encapsulation strings marks would emit, built by one `mark_encap` shared with the emitting path.
+- 2026-08-19: T6 report replacement, done here so no commit carries the old claim that a render can fail: the report now reads the map that decided the emission rather than the encaps that were emitted (which no longer differ), and says what the two marks print as. `key_marks` had no consumer left and was removed.
+- 2026-08-19: discovered sub-task (minor amendment): `tests/pdfindex.py` dropped every digits-only line as the page-number footer, on the stated assumption that no index line can look like one. False — LaTeX wraps a long entry and its locators can land alone on the continuation, which `chi`'s sixteen-character target produces, and the entry's locators vanished from the evidence silently. The footer is now the bottom-most such line and any other is folded back into the line above, which also keeps a third left edge out of the indent clustering.
+- 2026-08-19: T3/T4/T6 verified: `examples/xref-conflict.qmd` renders to PDF with exit 0, neither failure string, and makeindex reporting 0 warnings, where the recorded baseline exits 1. Suite clean at 185 checks.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 12 findings. Two were fatal and are fixed above: AC5 tested a phrase no single literal carries, so it would have passed against the unmodified filter, and AC3's exhaustive manifest named four of the eight lines the index prints. AC4's two-fixture list was narrowed to a globbed domain, the verify-slot criterion was dropped as instrument-bound and became T9, an escaping criterion was added for the printed field (IP2), and a README/DESIGN criterion was added (GP1). GP2 and the locator question went to the gate.
 
 ## Decisions

@@ -66,7 +66,13 @@ def lines():
     """
     out = []
     for path in sources():
-        for n, line in enumerate(read(path).split('\n'), start=1):
+        body = read(path)
+        # A file ending in a newline has no line after it: splitting on '\n'
+        # would report one phantom empty line per source file, and M17-AC1 asks
+        # this view which file a definition sits in.
+        if body.endswith('\n'):
+            body = body[:-1]
+        for n, line in enumerate(body.split('\n'), start=1):
             out.append((path, n, line))
     return out
 

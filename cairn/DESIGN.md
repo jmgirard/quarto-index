@@ -276,7 +276,16 @@ another process.
 
 `examples/` holds the fixtures; `tests/run-tests.sh` is the acceptance suite,
 which renders them and checks each render against hand-derived manifests
-(`tests/htmlindex.py` reads rendered HTML structurally for that).
+(`tests/htmlindex.py` reads rendered HTML structurally for that). Checks that
+read the filter's own source read it through `tests/filtersrc.py`, which
+enumerates the extension's `.lua` files recursively from one place, so a
+definition moving between files stays inside the domain they sweep; each such
+check's body is a file under `tests/scans/`, invoked through the suite's
+`run_scan`, which is the single place each one's environment and arguments are
+written. Under `--self-test` those checks are held to that promise rather than
+trusted with it: `tests/movedefs.py` builds a scratch extension with the
+definitions relocated into a module, and `tests/plantdefect.py` plants a defect
+of the kind each check names, which the check must fail on, naming it.
 
 ## Known issues
 

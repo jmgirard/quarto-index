@@ -24,6 +24,13 @@ import os
 import re
 import sys
 
+# A definition complete on its own line: a quoted string, a number, a boolean,
+# nil, or a table opened and closed on the line. Anything else is a shape with a
+# continuation this script cannot see the end of, and is refused rather than
+# truncated.
+ONE_LINE = re.compile(
+    r'^local \w+ = (?:"[^"]*"|\'[^\']*\'|-?\d+(?:\.\d+)?|true|false|nil|\{.*\})\s*$')
+
 MOVED_HEADER = (
     '-- Definitions moved out of index.lua by tests/movedefs.py, for the M16-AC3\n'
     '-- probe. Text only: this tree is read by the source scans, never rendered.\n')
@@ -63,7 +70,12 @@ def block(lines, name):
         while j < len(lines) and lines[j].strip():
             j += 1
         return i, j
-    return i, i + 1
+    if ONE_LINE.match(head):
+        return i, i + 1
+    raise SystemExit(
+        'FAIL: movedefs: %r is written in a shape this script does not know how '
+        'to delimit (%s); moving its first line alone would build a tree that '
+        'is not the moved-definition case the probe reports on' % (name, head))
 
 
 def main(argv):

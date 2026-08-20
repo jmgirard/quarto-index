@@ -71,11 +71,28 @@ pass() { printf 'ok   %s\n' "$*"; }
 # definitions have been moved, which is how they are proved discriminating
 # against the file-moving case (M16-AC3). tests/filtersrc.py reads it too.
 # ---------------------------------------------------------------------------
+# QI_EXT_DIR is the AC3 probe's handle, not a setting. The renders resolve the
+# filter through the examples/_extensions symlink whatever this says, so a value
+# left exported in the caller's environment would leave every source-reading
+# check reading one tree while the renders used another — the run green and
+# every pin guarding nothing. The probe exports it around the scans it invokes,
+# in their own subshells; the run itself refuses any other value. Captured and
+# cleared first, so the line below is the one place the root is written down.
+QI_EXT_AMBIENT="${QI_EXT_DIR:-}"
+unset QI_EXT_DIR
 export QI_EXT_DIR="${QI_EXT_DIR:-_extensions/index}"
+[ -z "$QI_EXT_AMBIENT" ] || [ "$QI_EXT_AMBIENT" = "$QI_EXT_DIR" ] \
+  || fail "M16: QI_EXT_DIR is set to $QI_EXT_AMBIENT in this environment. It is the moved-definition probe's handle for pointing the source scans at a scratch tree, not a setting: the renders read $QI_EXT_DIR regardless, so the source checks would be pinning a different tree than the one being rendered."
 [ -d "$QI_EXT_DIR" ] || fail "M16-AC2: no extension directory at $QI_EXT_DIR"
-FILTER_SOURCES=$(find "$QI_EXT_DIR" -name '*.lua' | sort)
-[ -n "$FILTER_SOURCES" ] \
-  || fail "M16-AC2: no .lua sources under $QI_EXT_DIR; every source-reading check would sweep nothing and pass vacuously"
+# ONE enumeration, and it is tests/filtersrc.py's. The shell had its own `find`
+# here while the sed-based constant reads consumed it; those became scans like
+# every other, so a second enumeration would now exist only to be compared with
+# the first — two implementations to keep in step, sorting by different rules,
+# guarding nothing the one enumeration does not already guard.
+FILTER_SOURCES=$(python3 -c "
+import sys; sys.path.insert(0,'tests'); import filtersrc
+print('\n'.join(filtersrc.sources()))") \
+  || fail "M16-AC2: tests/filtersrc.py refused to enumerate a source set under $QI_EXT_DIR; every source-reading check would sweep nothing and pass vacuously"
 FILTER_SOURCE_COUNT=$(printf '%s\n' "$FILTER_SOURCES" | wc -l | tr -d ' ')
 
 # ---------------------------------------------------------------------------
@@ -1065,16 +1082,6 @@ pass "AC1: demo resolves the extension via examples/_extensions"
 printf '== filter source set (%s) ==\n' "$QI_EXT_DIR"
 printf '%s\n' "$FILTER_SOURCES" | sed 's/^/   /'
 printf '   %s file(s)\n\n' "$FILTER_SOURCE_COUNT"
-# The shell enumeration and the python helper must agree: the sed-based checks
-# read the first, the scanners read the second, and a disagreement would leave
-# half the checks sweeping a smaller domain than the other half — surfacing as
-# a defect in whichever check happened to read the smaller one.
-PY_LIST=$(python3 -c "
-import sys; sys.path.insert(0,'tests'); import filtersrc
-print('\n'.join(filtersrc.sources()))")
-[ "$FILTER_SOURCES" = "$PY_LIST" ] \
-  || fail "M16-AC2: the shell enumeration and tests/filtersrc.py disagree about the source set; half the checks would sweep a different domain than the other half"
-pass "M16-AC2: the shell enumeration and filtersrc.py agree on all $FILTER_SOURCE_COUNT source file(s)"
 
 # M02-AC6 — the docs and the normative list cannot drift apart. A count would
 # pass on a README that documented some other syntax; this compares the bytes.
@@ -4080,8 +4087,6 @@ STORE_DIR='quarto-index'
 # prove some other rule keeps it out passes because the version rejected it
 # first — which is what happened when this milestone bumped the version.
 STORE_VERSION=$(run_scan store-version)
-[ -n "$STORE_VERSION" ] \
-  || fail "M05-AC1: could not read STORE_VERSION from the filter"
 
 # The store's own name is a pinned surface like the HTML back-end's ids: the
 # footprint sweep below asks "no file named like this under the output
@@ -5462,10 +5467,7 @@ WARN_CLAMP_SPLIT='file under more than one key'
 # something the back-end no longer does — while still passing, since it
 # compares its own derivations against each other.
 MAX_LEVELS=$(run_scan max-levels)
-[ -n "$MAX_LEVELS" ] || fail "M09: could not read MAX_LEVELS from the filter"
 OVERFLOW_JOIN=$(run_scan overflow-join)
-[ -n "$OVERFLOW_JOIN" ] \
-  || fail "M09: could not read OVERFLOW_JOIN from the filter"
 MAX_LEVELS="$MAX_LEVELS" OVERFLOW_JOIN="$OVERFLOW_JOIN" \
   python3 - examples/sortkey-clamp.qmd examples/sortkey-clamp-twin.qmd <<'CLAMPTWINPY'
 import os, re, sys

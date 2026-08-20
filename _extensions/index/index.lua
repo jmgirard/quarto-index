@@ -12,7 +12,7 @@
 -- In `entry=`, a single `!` separates sub-entry levels and `!!` is a literal
 -- `!`, scanned left-to-right longest-match. Each level is literal text: the
 -- LaTeX back-end makes every character literal itself, by whichever mechanism
--- that character needs (see core.LATEX_LITERAL). A visible term is always a single
+-- that character needs (see qi_core.LATEX_LITERAL). A visible term is always a single
 -- literal level, so an `!` inside it is literal too.
 --
 -- A cross-reference target uses those same level semantics. Its source entry
@@ -27,407 +27,17 @@
 -- tool needs. `sort=` is not accepted on a cross-reference target: a target
 -- is prose naming another entry, and that entry carries its own sort key.
 
-local core = require("./modules/core")
+local qi_core = require("./modules/core")
 
--- Split an `entry=` value into sub-entry levels: `!` separates, `!!` is a
--- literal `!`, longest-match left to right.
-local function parse_levels(value)
-  local levels, current, i = {}, {}, 1
-  while i <= #value do
-    local c = value:sub(i, i)
-    if c == "!" then
-      if value:sub(i + 1, i + 1) == "!" then
-        current[#current + 1] = "!"
-        i = i + 2
-      else
-        levels[#levels + 1] = table.concat(current)
-        current = {}
-        i = i + 1
-      end
-    else
-      current[#current + 1] = c
-      i = i + 1
-    end
-  end
-  levels[#levels + 1] = table.concat(current)
-  return levels
-end
+local qi_levels = require("./modules/levels")
 
--- The inverse of parse_levels: one string that identifies a level list, and
--- identifies it injectively, because a level's own `!` is doubled exactly as
--- an author would have written it. A plain `table.concat(levels, "!")` would
--- make {"a!b"} and {"a","b"} the same string, which would merge two distinct
--- entries in the conflict report below. Format-neutral: no back-end escaping.
-local function levels_key(levels)
-  local parts = {}
-  for i, level in ipairs(levels) do
-    parts[i] = level:gsub("!", "!!")
-  end
-  return table.concat(parts, "!")
-end
-
--- Render one literal level as a LaTeX `\index{}` argument fragment.
-local function escape_level(level)
-  return (level:gsub(".", function(c)
-    return core.LATEX_LITERAL[c] or c
-  end))
-end
-
--- makeindex stores at most three levels: it rejects a deeper entry outright
--- ("Extra `!'"), drops it from the index, and still exits 0 — the build looks
--- clean and the entry is simply gone. Rather than lose it (IP2 forbids silent
--- corruption), fold everything past the third level into the third.
-local MAX_LEVELS = 3
-local OVERFLOW_JOIN = ", "
-
--- `report` follows the convention derive_levels and drop_empty_levels already
--- use: a mark's levels are derived by more than one pass, and only the pass
--- that emits says so, or one stray `!` is reported once per pass that looked.
-local function clamp_levels(levels, context, report)
-  if #levels <= MAX_LEVELS then
-    return levels
-  end
-  -- Every level here prints something: an empty one was dropped when the entry
-  -- was derived (drop_empty_levels), so the join can never leave a dangling
-  -- separator in the printed index.
-  local tail = {}
-  for i = MAX_LEVELS, #levels do
-    tail[#tail + 1] = levels[i]
-  end
-  if report then
-    core.warn(("index entry in %s is %d levels deep; the back-end stores %d, so "
-          .. "levels %d and deeper were folded into the third")
-         :format(context, #levels, MAX_LEVELS, MAX_LEVELS))
-  end
-  local clamped = {}
-  for i = 1, MAX_LEVELS - 1 do
-    clamped[i] = levels[i]
-  end
-  clamped[MAX_LEVELS] = table.concat(tail, OVERFLOW_JOIN)
-  return clamped
-end
-
--- Cross-reference targets are typeset prose, not an index key, so their levels
--- are joined for a reader rather than with makeindex's `!`. The `!` is not
--- available anyway: makeindex rejects an unquoted one inside the encap
--- argument ("Extra `!'") and Quarto turns that rejection into a failed render,
--- while a quoted `"!` survives but prints this extension's own level syntax in
--- the middle of a sentence. `, ` was rejected as the join because it is
--- ambiguous when a level itself contains a comma: "see Smith, John, early
--- work" against "see Smith, John: early work".
-local TARGET_JOIN = ": "
-
--- Render cross-reference target levels as an encap argument. The `.ind` file
--- makeindex writes is read back as ordinary LaTeX, so the same per-character
--- mechanisms a source level needs are the ones that work here; the spike put
--- every printable ASCII character through this path and makeindex rejected
--- none of them.
-local function target_argument(levels)
-  local parts = {}
-  for _, level in ipairs(levels) do
-    parts[#parts + 1] = escape_level(level)
-  end
-  return table.concat(parts, TARGET_JOIN)
-end
-
--- An empty level prints nothing, so it is not a level: the entry indexes at
--- whatever is left. Dropping it is a property of what the author wrote rather
--- than of any one back-end, so it happens once here and every format sees the
--- same levels — and it is what keeps a null field away from the LaTeX index
--- tool, which rejects an entry outright for a leading or middle one, drops it,
--- reports no warning and exits 0.
---
--- Returns the surviving levels, the ORIGINAL index of each (so a sort level
--- can be dropped together with the entry level it was written for), and the
--- depth the author actually wrote.
-local function drop_empty_levels(parsed, context, report)
-  local levels, kept = {}, {}
-  for i, level in ipairs(parsed) do
-    if level ~= "" then
-      levels[#levels + 1] = level
-      kept[#kept + 1] = i
-    end
-  end
-  -- Silent when NOTHING survived: the caller has a single message for that
-  -- mark, about the value as a whole, and a count of levels none of which
-  -- printed anything would only bury it.
-  --
-  -- One report per MARK, not one per dropped level. Two byte-identical
-  -- warnings for `entry="!Sub!"` told the author a level went twice and which
-  -- end neither time (M11 review F8). The positions are counted in the value
-  -- as the author wrote it, which is the only numbering they can find their
-  -- own `!` by — levels, note, not `!` characters, since `!!` is a literal `!`
-  -- and not two separators. How many levels remain is stated of that same
-  -- written value, never of what the entry indexes at, which this layer cannot
-  -- state format-neutrally: the three-level fold runs later, in the back-end
-  -- that imposes it.
-  if report and #levels > 0 and #levels < #parsed then
-    local empty = {}
-    for i, level in ipairs(parsed) do
-      if level == "" then
-        empty[#empty + 1] = tostring(i)
-      end
-    end
-    local where
-    if #empty == 1 then
-      where = ("position %s of %d"):format(empty[1], #parsed)
-    else
-      where = ("positions %s and %s of %d")
-              :format(table.concat(empty, ", ", 1, #empty - 1),
-                      empty[#empty], #parsed)
-    end
-    local remain = #levels == 1
-                   and ("1 of the %d written levels remains"):format(#parsed)
-                   or ("%d of the %d written levels remain")
-                      :format(#levels, #parsed)
-    -- One literal, not concatenated. The distinctness scan joins every literal
-    -- in a call's message expression now, so a split would not hide this
-    -- message from it — but the suite asserts the single-literal form here,
-    -- because a message assembled from fragments is one an editor can change a
-    -- fragment of without seeing what the whole says.
-    core.warn(("empty index level in %s at %s; an empty level prints nothing, so it is dropped and %s"):format(context, where, remain))
-  end
-  return levels, kept, #parsed
-end
-
--- Parse a `sort=` value and line it up with the entry's levels. The result
--- says only what the AUTHOR declared: element i is the sort key written for
--- level i, or `false` where the author wrote nothing there. The printed-text
--- fallback is applied later, by `sort_for`, because only the registry knows
--- whether some other mark of the same level declared a key — substituting the
--- fallback here is what made a silent mark overwrite a declaring one.
---
--- An empty sort level means "leave this level alone", which is why it is not
--- warned about the way an empty ENTRY level is: there it is a hole in what the
--- author is indexing, here it is the ordinary way to skip a level.
---
--- Returns nil when the value declares no sort key at all, which keeps a
--- document that never writes `sort=` byte-identical in the LaTeX back-end.
-local function sort_levels(value, levels, context, report, kept, depth)
-  if value == nil then
-    return nil
-  end
-  local written = parse_levels(value)
-  -- Lined up with the entry levels that SURVIVED the empty-level drop. A sort
-  -- level belongs to the level it was written for, so one written for a level
-  -- that printed nothing goes with it rather than sliding onto the next: with
-  -- `entry="!Cats" sort="mmm!cats"`, `Cats` files under `cats`, never `mmm`.
-  local parsed = written
-  if kept ~= nil then
-    parsed = {}
-    for i, original in ipairs(kept) do
-      parsed[i] = written[original]
-    end
-  end
-  -- The depth the AUTHOR wrote, which is what the ignored-levels count below
-  -- is measured against — an entry whose empty level was dropped has not
-  -- ignored the sort level that went with it, and saying so would draw a
-  -- second warning for one mistake.
-  depth = depth or #levels
-  -- The last position the author actually wrote a key for. Everything before
-  -- it that merely restates the level's own printed text is positional filler
-  -- — the way this syntax reaches a deeper level, since two separators in a
-  -- row are a literal `!` — while a self-equal key AT that last position is a
-  -- real declaration, the author saying where this level files.
-  --
-  -- Found in `written` and compared below against each level's ORIGINAL
-  -- position, because it is a fact about what the author typed. Reading it off
-  -- the realigned list instead makes the last surviving level a declaration
-  -- whenever the sort key ran deeper than the entry — turning filler into a
-  -- declaration on entries with no empty level at all, which loses another
-  -- mark's genuine key and invents a rival-key report (M11 review F1).
-  local last = 0
-  for i = 1, #written do
-    if written[i] ~= "" then
-      last = i
-    end
-  end
-  if report then
-    -- Counted over the levels the author DECLARED past the entry's depth: an
-    -- empty sort level is the documented "leave this level alone", so a
-    -- trailing empty one ignores nothing and must not say it did.
-    local ignored = 0
-    for i = depth + 1, #written do
-      if written[i] ~= "" then
-        ignored = ignored + 1
-      end
-    end
-    if ignored > 0 then
-      -- Both numbers are counts taken BEFORE the empty-level drop: `#written`
-      -- is what the author wrote in `sort=`, and `depth` what the mark had to
-      -- sort at the time this comparison is made. Saying so is the point —
-      -- the old wording ("but the entry has %d") read as the depth the entry
-      -- indexes at, which is a third number again (`entry="Moles!"` is
-      -- written with 2, sorted with 3, and indexes at 1). It also has to hold
-      -- for a mark with no `entry=` at all, which reaches here through the
-      -- visible-text fallback above and was never told anything about an
-      -- entry value it did not write. One literal (M10).
-      core.warn(("sort= on %s writes %d levels against the %d it has to sort before empty levels are dropped; the extra sort levels were ignored"):format(context, #written, depth))
-    end
-    -- A key written for a level that prints nothing goes with that level. That
-    -- is the rule, but it costs the author something they typed, so it is said
-    -- rather than done quietly (M11 review F2). Counted only within the depth
-    -- the author wrote: anything past it is the ignored-levels case above, and
-    -- an EMPTY sort level lost with an empty entry level costs nothing.
-    if kept ~= nil then
-      local surviving = {}
-      for _, original in ipairs(kept) do
-        surviving[original] = true
-      end
-      local lost = 0
-      for i = 1, math.min(depth, #written) do
-        if not surviving[i] and written[i] ~= "" then
-          lost = lost + 1
-        end
-      end
-      if lost > 0 then
-        local how_many = lost == 1 and "one index level that prints nothing"
-                         or ("%d index levels that print nothing"):format(lost)
-        core.warn(("sort= on %s writes a key for %s; a key is dropped with the "
-              .. "level it was written for, and the levels that remain keep "
-              .. "their own"):format(context, how_many))
-      end
-    end
-  end
-  local declared, any = {}, false
-  for i = 1, #levels do
-    local key = parsed[i]
-    -- Where this level sat in the value the author wrote, which is what `last`
-    -- is measured in.
-    local position = kept ~= nil and kept[i] or i
-    if key ~= nil and key ~= ""
-       and not (key == levels[i] and position < last) then
-      declared[i] = key
-      any = true
-    else
-      -- `false`, not nil: the list is written to the book store and read back
-      -- through JSON, where a hole in the middle of an array is not a shape
-      -- either side can rely on. Filler lands here too, so it never reaches
-      -- the registry and never rivals a key some other mark declared.
-      declared[i] = false
-    end
-  end
-  if not any then
-    return nil
-  end
-  return declared
-end
-
--- The printed level path down to level `n`, as one injective string. A sort
--- key belongs to a LEVEL under its own parents, not to a whole entry: both
--- back-ends order level by level — makeindex reads `sortkey@printed` inside
--- each `!`-separated level, and the HTML tree keys each node on its printed
--- level text — so "Aaa" must file the same way whether it was written alone
--- or as the parent of a sub-entry. Keying the registry on the full entry path
--- instead is what split one printed entry across two keys.
-local function level_path(levels, n)
-  local prefix = {}
-  for i = 1, n do
-    prefix[i] = levels[i]
-  end
-  return levels_key(prefix)
-end
-
--- Printed level path -> the first sort key declared for it, and the context
--- that declared it. Two marks that file ONE printed level under two different
--- sort keys are an authoring mistake with a visible cost in both back-ends:
--- the HTML tree is keyed on the printed levels, so one of the two keys simply
--- loses, and makeindex treats the two as different keys and prints the entry
--- twice, in two places, identically. Neither is recoverable from the output,
--- so the mistake is reported instead. The accumulator is format-neutral —
--- filled before any back-end branch — because it is a property of what the
--- author wrote, like every other warning about the mark itself.
-local sort_keys = {}
-
--- Register a mark's declared sort keys, one per level, and report a second,
--- different key for a level already spoken for. First mark in document order
--- wins, so the index does not depend on which mark the author edits last.
--- Only a level the author actually wrote a key for registers or conflicts: a
--- term is usually marked in several places and a sort key written on one of
--- them is meant for the entry, not for that one mark (GP4), so the marks that
--- stay silent inherit it rather than contradict it.
-local function register_sort(levels, declared, context)
-  if declared == nil then
-    return
-  end
-  for i = 1, #levels do
-    local key = declared[i]
-    -- Positional filler was already dropped by sort_levels, so everything
-    -- arriving here is a declaration — including one whose text equals the
-    -- level's own, which is an author saying where the level files and so
-    -- wins ties and reports rivals like any other.
-    if key then
-      local path = level_path(levels, i)
-      local seen = sort_keys[path]
-      if seen == nil then
-        sort_keys[path] = { sort = key, context = context }
-      elseif seen.sort ~= key then
-        -- Once per RIVAL KEY at this path, not once per mark carrying it: a
-        -- term is usually marked in several places, and repeating one rival
-        -- key gives the author nothing further to fix. A second, different
-        -- rival is a second thing to fix, though — the message names the key
-        -- it is about, so suppressing it would leave that key unmentioned
-        -- until the first was resolved and the document rendered again.
-        -- The two marks are usually described identically — the same term,
-        -- twice — so the message names the two KEYS, which are what actually
-        -- differ and what the author has to choose between.
-        seen.reported = seen.reported or {}
-        if not seen.reported[key] then
-          seen.reported[key] = true
-          core.warn(('index entry in %s is already sorted as "%s"; the sort key '
-                .. '"%s" written here cannot apply as well, so the first one '
-                .. 'wins'):format(context, seen.sort, key))
-        end
-      end
-    end
-  end
-end
-
--- What the emitting pass applies: for each level, the key registered for that
--- level's path — whichever mark of it declared one — and the level's own
--- printed text where no mark declared anything. Returns nil when no level on
--- this path has a key, so a mark with no sort key anywhere above or at it
--- emits exactly what it always did.
-local function sort_for(levels)
-  local resolved, any = {}, false
-  for i = 1, #levels do
-    local seen = sort_keys[level_path(levels, i)]
-    if seen then
-      resolved[i] = seen.sort
-      any = true
-    else
-      resolved[i] = levels[i]
-    end
-  end
-  if not any then
-    return nil
-  end
-  return resolved
-end
-
--- Clamp sort levels alongside the entry levels clamp_levels performs. The
--- folded third level is one printed string built from several, so it files
--- under the sort key of the first level that went into it — joining sort keys
--- the way the printed text is joined would file the entry under text no author
--- wrote. A key written for a level past the third goes where that level went:
--- the level itself is folded away, so there is nothing left for its key to
--- place, and the fold warning already names the entry.
-local function clamp_sort(sort)
-  if sort == nil or #sort <= MAX_LEVELS then
-    return sort
-  end
-  local clamped = {}
-  for i = 1, MAX_LEVELS do
-    clamped[i] = sort[i]
-  end
-  return clamped
-end
+local qi_sortkeys = require("./modules/sortkeys")
 
 -- Build the `\index{...}` argument from literal levels, joining with the
 -- unquoted `!` that makeindex reads as a level separator. With a sort key,
 -- each level becomes makeindex's own `sortkey@printed` form: the `@` here is
 -- written by this back-end and so is the ONE `@` that stays unquoted, while
--- every `@` the author wrote is still quoted by escape_level (core.LATEX_LITERAL).
+-- every `@` the author wrote is still quoted by qi_levels.escape_level (qi_core.LATEX_LITERAL).
 --
 -- Returns three strings: the argument, the PRINTED level path after the fold,
 -- and the FILING path — for each level, the sort key this argument actually
@@ -439,7 +49,7 @@ end
 --
 -- The clamped levels are returned as well, for the self-target comparison the
 -- caller runs against them. They are returned rather than recomputed because
--- clamp_levels warns about the fold, and a second call would report it twice.
+-- qi_levels.clamp_levels warns about the fold, and a second call would report it twice.
 -- `report` is passed through for the same reason: the pass that decides which
 -- keys are contested calls this before anything is emitted, and must not
 -- report a fold the emitting pass will report.
@@ -452,11 +62,11 @@ end
 -- an author's own `@` is makeindex-quoted inside a level, so "the first `@`"
 -- is not something a pattern over the finished string can find.
 local function index_argument(levels, sort, context, report, fold)
-  local clamped = clamp_levels(levels, context, report)
-  local keys = clamp_sort(sort)
+  local clamped = qi_levels.clamp_levels(levels, context, report)
+  local keys = qi_sortkeys.clamp_sort(sort)
   local parts, filing = {}, {}
   for i, level in ipairs(clamped) do
-    local printed = escape_level(level)
+    local printed = qi_levels.escape_level(level)
     if fold ~= nil and i == #clamped then
       -- A sort field is unavoidable here — the printed half now carries the
       -- folded cross-reference, and without a key the entry would file under
@@ -470,7 +80,7 @@ local function index_argument(levels, sort, context, report, fold)
         key = keys[i]
       end
       parts[#parts + 1] =
-        escape_level(key) .. "@" .. printed .. ", " .. fold
+        qi_levels.escape_level(key) .. "@" .. printed .. ", " .. fold
       filing[i] = key
       goto continue
     end
@@ -481,7 +91,7 @@ local function index_argument(levels, sort, context, report, fold)
     -- filing it under the third level's own printed text, which is what the
     -- absence of a sort field already means.
     if keys ~= nil and keys[i] ~= nil and keys[i] ~= levels[i] then
-      parts[#parts + 1] = escape_level(keys[i]) .. "@" .. printed
+      parts[#parts + 1] = qi_levels.escape_level(keys[i]) .. "@" .. printed
       filing[i] = keys[i]
     else
       parts[#parts + 1] = printed
@@ -492,8 +102,8 @@ local function index_argument(levels, sort, context, report, fold)
     end
     ::continue::
   end
-  return table.concat(parts, "!"), levels_key(clamped),
-         levels_key(filing), clamped
+  return table.concat(parts, "!"), qi_levels.levels_key(clamped),
+         qi_levels.levels_key(filing), clamped
 end
 
 -- ---------------------------------------------------------------------------
@@ -535,19 +145,19 @@ local function latex_plan(levels, sort, xrefs, context, report, fold)
   -- so the same document keeps the target there, and a format with no index
   -- back-end never reaches this line. Neither side carries an empty level, for
   -- the same reason neither does in the first pass.
-  local printed_key = levels_key(clamped)
+  local printed_key = qi_levels.levels_key(clamped)
   local kept = {}
   for _, xref in ipairs(xrefs) do
-    if levels_key(xref.levels) == printed_key then
+    if qi_levels.levels_key(xref.levels) == printed_key then
       if report then
         -- The folded path is quoted because the author never wrote it: it is
         -- what their entry prints once the back-end has folded it, and a report
         -- naming only what they typed would describe a match they cannot see.
-        core.warn(("%s= on %s names the folded path this entry prints (%s); the "
+        qi_core.warn(("%s= on %s names the folded path this entry prints (%s); the "
               .. "back-end stores %d levels, and the fold made the target a "
               .. "cross-reference to itself, so it is dropped and the term is "
               .. "indexed as usual")
-             :format(xref.kind.attr, context, printed_path, MAX_LEVELS))
+             :format(xref.kind.attr, context, printed_path, qi_levels.MAX_LEVELS))
       end
     else
       kept[#kept + 1] = xref
@@ -569,13 +179,13 @@ local function mark_encap(xrefs)
   end
   if #xrefs == 1 then
     return xrefs[1].kind.command ..
-      "{" .. target_argument(xrefs[1].levels) .. "}"
+      "{" .. qi_levels.target_argument(xrefs[1].levels) .. "}"
   end
   local args = {}
   for _, xref in ipairs(xrefs) do
-    args[#args + 1] = "{" .. target_argument(xref.levels) .. "}"
+    args[#args + 1] = "{" .. qi_levels.target_argument(xref.levels) .. "}"
   end
-  return core.XREF_BOTH_COMMAND .. table.concat(args)
+  return qi_core.XREF_BOTH_COMMAND .. table.concat(args)
 end
 
 -- Record what one mark does with its key: the encapsulation it would emit, and
@@ -606,7 +216,7 @@ local function record_contest(source, printed, xrefs)
     seen.plain = true
   end
   for _, xref in ipairs(xrefs) do
-    local id = xref.kind.attr .. "\0" .. levels_key(xref.levels)
+    local id = xref.kind.attr .. "\0" .. qi_levels.levels_key(xref.levels)
     if not seen.listed[id] then
       seen.listed[id] = true
       seen.xrefs[#seen.xrefs + 1] = xref
@@ -629,15 +239,15 @@ end
 -- the encap channel — and rendering them here rather than through a second
 -- command of our own is what keeps the folded form and the encapsulated form
 -- from drifting in how they print a target. `\see{A}{}; \seealso{B}{}`
--- expands to exactly what core.XREF_BOTH_COMMAND prints, so a both-attributes mark
+-- expands to exactly what qi_core.XREF_BOTH_COMMAND prints, so a both-attributes mark
 -- reads the same whether its key is contested or not.
 local function fold_xrefs(seen)
   local parts = {}
-  for _, kind in ipairs(core.XREF_KINDS) do
+  for _, kind in ipairs(qi_core.XREF_KINDS) do
     for _, xref in ipairs(seen.xrefs) do
       if xref.kind.attr == kind.attr then
         parts[#parts + 1] = "\\" .. kind.command ..
-          "{" .. target_argument(xref.levels) .. "}{}"
+          "{" .. qi_levels.target_argument(xref.levels) .. "}{}"
       end
     end
   end
@@ -660,10 +270,10 @@ local function target_levels(value, attr, context, report)
   local kept = {}
   -- An entirely empty value has no levels to complain about individually; it
   -- falls straight through to the one warning that names the real problem.
-  for _, level in ipairs(value == "" and {} or parse_levels(value)) do
+  for _, level in ipairs(value == "" and {} or qi_levels.parse_levels(value)) do
     if level == "" then
       if report then
-        core.warn(("empty level in %s= on %s; dropped from the cross-reference "
+        qi_core.warn(("empty level in %s= on %s; dropped from the cross-reference "
               .. "target"):format(attr, context))
       end
     else
@@ -675,7 +285,7 @@ local function target_levels(value, attr, context, report)
     -- go on to be indexed plainly, or not to be indexed at all if it has no
     -- source entry either, or to reach a format with no index back-end.
     if report then
-      core.warn(("%s= on %s has no usable target text; no cross-reference will be "
+      qi_core.warn(("%s= on %s has no usable target text; no cross-reference will be "
             .. "emitted for this mark"):format(attr, context))
     end
     return nil
@@ -709,7 +319,7 @@ local html_marks = {}
 local xref_both_emitted = false
 
 -- Every level path this document's marks index, each mark's parent levels
--- included, as `levels_key` strings. This is the set a cross-reference target
+-- included, as `qi_levels.levels_key` strings. This is the set a cross-reference target
 -- is resolved against, and it is format-neutral for the same reason the rest
 -- of the mark's diagnosis is: whether a target names a term the document
 -- indexes is a fact about what the author wrote (IP1), not about a back-end.
@@ -724,7 +334,7 @@ local pending_xrefs = {}
 
 local function record_marked(levels)
   for i = 1, #levels do
-    marked_paths[level_path(levels, i)] = true
+    marked_paths[qi_levels.level_path(levels, i)] = true
   end
 end
 
@@ -734,13 +344,13 @@ end
 -- a book would go looking in the wrong file.
 local function report_dangling(paths, xrefs, scope)
   for _, xref in ipairs(xrefs) do
-    -- The target as the author wrote it: `levels_key` doubles a literal `!`
+    -- The target as the author wrote it: `qi_levels.levels_key` doubles a literal `!`
     -- back, exactly as it must be typed, so the string in the report is the
     -- string to search the source for. Its empty levels are already gone, and
     -- were already reported when they were dropped.
-    local target = levels_key(xref.levels)
+    local target = qi_levels.levels_key(xref.levels)
     if not paths[target] then
-      core.warn(('%s= on %s points at "%s", which no index mark in this %s indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'):format(xref.attr, xref.context, target, scope))
+      qi_core.warn(('%s= on %s points at "%s", which no index mark in this %s indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'):format(xref.attr, xref.context, target, scope))
     end
   end
 end
@@ -783,7 +393,7 @@ local function derive_levels(entry, visible, declared, content_count, context,
   -- value they wrote is right there in the warning above.
   local explained = false
   if entry ~= nil and entry ~= "" then
-    local levels, kept, depth = drop_empty_levels(parse_levels(entry), context,
+    local levels, kept, depth = qi_levels.drop_empty_levels(qi_levels.parse_levels(entry), context,
                                                   report)
     if #levels > 0 then
       return levels, nil, kept, depth
@@ -793,7 +403,7 @@ local function derive_levels(entry, visible, declared, content_count, context,
     -- levels none of which printed anything.
     if visible ~= "" then
       if report then
-        core.warn(("%s is only empty levels, which print nothing; the mark indexes "
+        qi_core.warn(("%s is only empty levels, which print nothing; the mark indexes "
               .. "under its visible text instead"):format(context))
       end
       -- An EMPTY `kept`, not a nil one: every level the author wrote is gone,
@@ -803,7 +413,7 @@ local function derive_levels(entry, visible, declared, content_count, context,
       return { visible }, nil, {}, depth
     end
     if report then
-      core.warn(("%s is only empty levels, which print nothing; nothing to index")
+      qi_core.warn(("%s is only empty levels, which print nothing; nothing to index")
            :format(context))
     end
     explained = true
@@ -816,7 +426,7 @@ local function derive_levels(entry, visible, declared, content_count, context,
   -- that indexes no entry is asking for something that cannot happen — the
   -- one warning every branch below shares.
   if report and sort_value ~= nil then
-    core.warn(("sort= on %s has nothing to sort; the mark indexes no entry")
+    qi_core.warn(("sort= on %s has nothing to sort; the mark indexes no entry")
          :format(context))
   end
 
@@ -828,11 +438,11 @@ local function derive_levels(entry, visible, declared, content_count, context,
       if explained then
         -- The entry has already been reported; what this adds is that the
         -- cross-reference went with it (M11 review F4).
-        core.warn(("the cross-reference on %s has no source entry left to hang "
+        qi_core.warn(("the cross-reference on %s has no source entry left to hang "
               .. "off, so it was dropped too; give the mark an entry= that "
               .. "prints something, or some visible text"):format(context))
       else
-        core.warn("cross-reference mark has no source entry (no entry= and no "
+        qi_core.warn("cross-reference mark has no source entry (no entry= and no "
              .. "visible text); nothing to index")
       end
     end
@@ -842,7 +452,7 @@ local function derive_levels(entry, visible, declared, content_count, context,
   end
   if content_count == 0 then
     if report and not explained then
-      core.warn("index mark with no visible term and no entry=; nothing to index")
+      qi_core.warn("index mark with no visible term and no entry=; nothing to index")
     end
     -- Genuinely empty and nothing to index: drop the mark rather than leave
     -- an empty group behind in the output.
@@ -852,7 +462,7 @@ local function derive_levels(entry, visible, declared, content_count, context,
   -- (an image with empty alt text, say). Index nothing, but never remove
   -- the content — deleting what the author wrote would be IP2 corruption.
   if report and not explained then
-    core.warn("index mark whose content has no text and no entry=; nothing to "
+    qi_core.warn("index mark whose content has no text and no entry=; nothing to "
          .. "index, content left untouched")
   end
   return nil, "keep"
@@ -863,7 +473,7 @@ end
 -- before the first mark of that entry is emitted — a mark emitted under a key
 -- a later mark then contradicts would print the entry twice.
 local function CollectSort(span)
-  if not span.classes:includes(core.INDEX_CLASS) then
+  if not span.classes:includes(qi_core.INDEX_CLASS) then
     return nil
   end
   local sort_value = span.attributes["sort"]
@@ -876,7 +486,7 @@ local function CollectSort(span)
   local visible = span_text(span)
   local context = describe(entry, visible)
   local declared = 0
-  for _, kind in ipairs(core.XREF_KINDS) do
+  for _, kind in ipairs(qi_core.XREF_KINDS) do
     if span.attributes[kind.attr] ~= nil then
       declared = declared + 1
     end
@@ -889,8 +499,8 @@ local function CollectSort(span)
   end
   -- Reported here rather than in the emitting pass: this is the pass that can
   -- see a conflict before anything has been emitted under either key.
-  register_sort(levels,
-                sort_levels(sort_value, levels, context, true, kept, depth),
+  qi_sortkeys.register_sort(levels,
+                qi_levels.sort_levels(sort_value, levels, context, true, kept, depth),
                 context)
   return nil
 end
@@ -904,14 +514,14 @@ end
 -- LaTeX-only: contestation is makeindex's rule about its own encapsulation
 -- channel, and the HTML back-end has no such channel.
 local function CollectKeys(span)
-  if not span.classes:includes(core.INDEX_CLASS) or not core.is_latex_derived() then
+  if not span.classes:includes(qi_core.INDEX_CLASS) or not qi_core.is_latex_derived() then
     return nil
   end
   local entry = span.attributes["entry"]
   local visible = span_text(span)
   local context = describe(entry, visible)
   local xrefs, declared = {}, 0
-  for _, kind in ipairs(core.XREF_KINDS) do
+  for _, kind in ipairs(qi_core.XREF_KINDS) do
     local value = span.attributes[kind.attr]
     if value ~= nil then
       declared = declared + 1
@@ -929,29 +539,29 @@ local function CollectKeys(span)
   -- The format-neutral self-target drop, which the emitting pass makes too: a
   -- target naming its own entry never reaches an encapsulation, so it cannot
   -- contest anything.
-  local own_key = levels_key(levels)
+  local own_key = qi_levels.levels_key(levels)
   local surviving = {}
   for _, xref in ipairs(xrefs) do
-    if levels_key(xref.levels) ~= own_key then
+    if qi_levels.levels_key(xref.levels) ~= own_key then
       surviving[#surviving + 1] = xref
     end
   end
   local source, printed_path, _, kept =
-    latex_plan(levels, sort_for(levels), surviving, context, false)
+    latex_plan(levels, qi_sortkeys.sort_for(levels), surviving, context, false)
   record_contest(source, printed_path, kept)
   return nil
 end
 
 local function Span(span)
-  local forged = span.attributes[core.HTML_PENDING_ATTR] ~= nil
+  local forged = span.attributes[qi_core.HTML_PENDING_ATTR] ~= nil
   if forged then
-    -- The pending tag is this filter's own plumbing (see core.HTML_PENDING_ATTR).
+    -- The pending tag is this filter's own plumbing (see qi_core.HTML_PENDING_ATTR).
     -- One written by the author — on any span, a cross-reference mark
     -- included — would hijack a real mark's anchor in assign_anchors, so it
     -- is discarded wherever it is found.
-    span.attributes[core.HTML_PENDING_ATTR] = nil
+    span.attributes[qi_core.HTML_PENDING_ATTR] = nil
   end
-  if not span.classes:includes(core.INDEX_CLASS) then
+  if not span.classes:includes(qi_core.INDEX_CLASS) then
     if forged then
       return span
     end
@@ -966,7 +576,7 @@ local function Span(span)
   -- Cross-references are parsed and validated before the format branch below,
   -- so their misuse warnings fire in every format.
   local xrefs, declared = {}, 0
-  for _, kind in ipairs(core.XREF_KINDS) do
+  for _, kind in ipairs(qi_core.XREF_KINDS) do
     local value = span.attributes[kind.attr]
     if value ~= nil then
       declared = declared + 1
@@ -981,7 +591,7 @@ local function Span(span)
     -- usable target is kept and the author is told. The message deliberately
     -- does not claim both were emitted: one of the two may have had no usable
     -- target, which its own warning above already reported.
-    core.warn("index mark carries both see= and see-also=; this is probably a "
+    qi_core.warn("index mark carries both see= and see-also=; this is probably a "
          .. "mistake, and neither is dropped for being one of two")
   end
 
@@ -1008,15 +618,15 @@ local function Span(span)
   --
   -- Neither side can carry an empty level any more: a target drops its own
   -- when it is parsed (target_levels) and an entry drops its own when it is
-  -- derived (drop_empty_levels), so `entry="Cats!"` and a target of `Cats` are
+  -- derived (qi_levels.drop_empty_levels), so `entry="Cats!"` and a target of `Cats` are
   -- one printed path and compare equal without the comparison knowing anything
   -- about emptiness. M10 reconciled the two spellings here instead, because
   -- the entry side kept what it was written with.
-  local own_key = levels_key(levels)
+  local own_key = qi_levels.levels_key(levels)
   local surviving = {}
   for _, xref in ipairs(xrefs) do
-    if levels_key(xref.levels) == own_key then
-      core.warn(("%s= on %s names the entry it is written on; a cross-reference to "
+    if qi_levels.levels_key(xref.levels) == own_key then
+      qi_core.warn(("%s= on %s names the entry it is written on; a cross-reference to "
             .. "itself says nothing, so it is dropped and the term is indexed "
             .. "as usual"):format(xref.kind.attr, context))
     else
@@ -1027,7 +637,7 @@ local function Span(span)
   -- Resolved by the collect pass, which has already seen every mark of this
   -- entry: whichever mark declared the sort key, every mark of the entry files
   -- under it.
-  local sort = sort_for(levels)
+  local sort = qi_sortkeys.sort_for(levels)
   -- Every path from here indexes the mark in whichever back-end is running:
   -- one `\index` command in LaTeX, one record in HTML, nothing at all where
   -- there is no back-end. The count is what the marker's no-marks warning and
@@ -1044,7 +654,7 @@ local function Span(span)
       { attr = xref.kind.attr, levels = xref.levels, context = context }
   end
 
-  if core.is_html() then
+  if qi_core.is_html() then
     local record = { levels = levels, sort = sort, xrefs = xrefs,
                      context = context }
     html_marks[#html_marks + 1] = record
@@ -1054,12 +664,12 @@ local function Span(span)
       -- anchor of its own. WHICH id anchors it — the author's own, or a
       -- minted one — is settled in the Pandoc pass, which can see every id
       -- in the document and every heading a mark sits in.
-      span.attributes[core.HTML_PENDING_ATTR] = tostring(#html_marks)
+      span.attributes[qi_core.HTML_PENDING_ATTR] = tostring(#html_marks)
     end
     return span
   end
 
-  if not core.is_latex_derived() then
+  if not qi_core.is_latex_derived() then
     -- Formats with no index back-end pass the visible text through
     -- untouched, with no artifacts.
     return nil
@@ -1105,7 +715,7 @@ local function Span(span)
     -- carries the same string.
     xref_list_emitted = true
     result:insert(pandoc.RawInline("latex",
-      "\\index{" .. source .. "|" .. core.XREF_LIST_COMMAND ..
+      "\\index{" .. source .. "|" .. qi_core.XREF_LIST_COMMAND ..
       "{" .. fold_xrefs(seen) .. "}}"))
     return result
   end
@@ -1117,7 +727,7 @@ local function Span(span)
   -- here. imakeidx, which this back-end already loads, defines `\see`,
   -- `\seealso`, `\seename` and `\alsoname` with `\providecommand`, so nothing
   -- needs injecting for the single-target forms; the both-targets form needs
-  -- core.XREF_BOTH_COMMAND, which is injected only in a document that uses it.
+  -- qi_core.XREF_BOTH_COMMAND, which is injected only in a document that uses it.
   local encap = mark_encap(xrefs)
   if encap == "" then
     result:insert(pandoc.RawInline("latex", "\\index{" .. source .. "}"))
@@ -1197,7 +807,7 @@ end
 -- A cross-reference target as a reader sees it: the same `: ` join the LaTeX
 -- back-end prints, so the two back-ends cannot drift apart on target text.
 local function target_text(levels)
-  return table.concat(levels, TARGET_JOIN)
+  return table.concat(levels, qi_levels.TARGET_JOIN)
 end
 
 -- Literal text as inlines. Words and spaces are separate nodes because that is
@@ -1336,8 +946,8 @@ local function number_entries(node, counter, taken)
     local child = node.children[key]
     repeat
       counter = counter + 1
-    until not taken[core.HTML_ENTRY_PREFIX .. counter]
-    child.id = core.HTML_ENTRY_PREFIX .. counter
+    until not taken[qi_core.HTML_ENTRY_PREFIX .. counter]
+    child.id = qi_core.HTML_ENTRY_PREFIX .. counter
     taken[child.id] = true
     counter = number_entries(child, counter, taken)
   end
@@ -1450,7 +1060,7 @@ local function grouped_blocks(root)
   local function flush()
     if #pending > 0 then
       blocks:insert(pandoc.Div(pandoc.Plain(literal_inlines(label)),
-                               pandoc.Attr("", { core.HTML_LETTER_CLASS })))
+                               pandoc.Attr("", { qi_core.HTML_LETTER_CLASS })))
       blocks:insert(pandoc.BulletList(entry_items(root, root, pending)))
       pending = {}
     end
@@ -1535,8 +1145,8 @@ local function relocate_heading_anchors(doc)
               -- A cross-reference mark contributes no locator, but an id it
               -- carries duplicates into the table of contents exactly as a
               -- locator anchor would, so its id moves out too.
-              local pending = span.attributes[core.HTML_PENDING_ATTR]
-              local marked_id = span.classes:includes(core.INDEX_CLASS)
+              local pending = span.attributes[qi_core.HTML_PENDING_ATTR]
+              local marked_id = span.classes:includes(qi_core.INDEX_CLASS)
                 and span.identifier ~= ""
               if pending == nil and not marked_id then
                 return nil
@@ -1544,11 +1154,11 @@ local function relocate_heading_anchors(doc)
               local anchor = pandoc.Span({})
               anchor.identifier = span.identifier
               if pending ~= nil then
-                anchor.attributes[core.HTML_PENDING_ATTR] = pending
+                anchor.attributes[qi_core.HTML_PENDING_ATTR] = pending
               end
               anchors:insert(anchor)
               span.identifier = ""
-              span.attributes[core.HTML_PENDING_ATTR] = nil
+              span.attributes[qi_core.HTML_PENDING_ATTR] = nil
               return span
             end,
           })
@@ -1573,16 +1183,16 @@ local function assign_anchors(doc, taken)
   local number = 0
   return doc:walk({
     Span = function(span)
-      local pending = span.attributes[core.HTML_PENDING_ATTR]
+      local pending = span.attributes[qi_core.HTML_PENDING_ATTR]
       if pending == nil then
         return nil
       end
-      span.attributes[core.HTML_PENDING_ATTR] = nil
+      span.attributes[qi_core.HTML_PENDING_ATTR] = nil
       if span.identifier == "" then
         repeat
           number = number + 1
-        until not taken[core.HTML_ANCHOR_PREFIX .. number]
-        span.identifier = core.HTML_ANCHOR_PREFIX .. number
+        until not taken[qi_core.HTML_ANCHOR_PREFIX .. number]
+        span.identifier = qi_core.HTML_ANCHOR_PREFIX .. number
         taken[span.identifier] = true
       end
       local record = html_marks[tonumber(pending)]
@@ -1608,15 +1218,15 @@ end
 -- exception. The bare name is preferred, so the id a document without a
 -- collision gets is the one it has always had.
 local function mint_section_id(taken)
-  if not taken[core.HTML_SECTION_ID] then
-    taken[core.HTML_SECTION_ID] = true
-    return core.HTML_SECTION_ID
+  if not taken[qi_core.HTML_SECTION_ID] then
+    taken[qi_core.HTML_SECTION_ID] = true
+    return qi_core.HTML_SECTION_ID
   end
   local n = 0
   local candidate
   repeat
     n = n + 1
-    candidate = core.HTML_SECTION_ID .. "-" .. n
+    candidate = qi_core.HTML_SECTION_ID .. "-" .. n
   until not taken[candidate]
   taken[candidate] = true
   return candidate
@@ -1644,7 +1254,7 @@ end
 -- ---------------------------------------------------------------------------
 
 local function is_marker(block)
-  return block.t == "Div" and block.classes:includes(core.MARKER_CLASS)
+  return block.t == "Div" and block.classes:includes(qi_core.MARKER_CLASS)
 end
 
 -- The marker class means something on exactly one shape: an empty top-level
@@ -1677,7 +1287,7 @@ local function report_marker_sites(doc)
       return nil
     end
     local attr = element.attr
-    if attr == nil or not attr.classes:includes(core.MARKER_CLASS) then
+    if attr == nil or not attr.classes:includes(qi_core.MARKER_CLASS) then
       return nil
     end
     local name = MARKER_SITE_NAMES[element.t] or element.t
@@ -1685,7 +1295,7 @@ local function report_marker_sites(doc)
     -- the article follows from its first letter; a fallback name is a Pandoc
     -- type name, where the same test still reads correctly ("an Emph").
     local article = name:match("^[aeiouAEIOU]") and "an" or "a"
-    core.warn(("the index placement marker class is written on %s %s; only an empty "
+    qi_core.warn(("the index placement marker class is written on %s %s; only an empty "
           .. "top-level div places an index, so nothing is placed here and the "
           .. "%s is left as written"):format(article, name, name))
     return nil
@@ -1701,7 +1311,7 @@ end
 -- content is spliced in where the marker stood and the author is told.
 local function marker_content(block)
   if #block.content > 0 then
-    core.warn("index placement marker is not empty; the marker should be an empty "
+    qi_core.warn("index placement marker is not empty; the marker should be an empty "
          .. "div, and its content is kept where the marker was written")
   end
   -- The marker is a position, not an element: it is removed, so anything
@@ -1709,12 +1319,12 @@ local function marker_content(block)
   -- would silently resolve nowhere — so neither is dropped in silence.
   local extra = {}
   for _, class in ipairs(block.classes) do
-    if class ~= core.MARKER_CLASS then
+    if class ~= qi_core.MARKER_CLASS then
       extra[#extra + 1] = class
     end
   end
   if block.identifier ~= "" or #extra > 0 then
-    core.warn(("index placement marker carries an id or extra class (%s); a marker "
+    qi_core.warn(("index placement marker carries an id or extra class (%s); a marker "
           .. "is a position rather than an element, so it is removed and these "
           .. "are not carried onto the index"):format(
          block.identifier ~= "" and ("#" .. block.identifier)
@@ -1815,14 +1425,14 @@ local function strip_nested_markers(block, position)
     -- One literal, not concatenated. Written this way when the distinctness
     -- scan read only a call's FIRST literal (M10); the scan joins them all
     -- now, so the form is a readability choice here rather than a requirement.
-    core.warn(("index placement marker in top-level block %d was the only thing written where it stood; the marker is removed, so nothing you wrote remains there"):format(position))
+    qi_core.warn(("index placement marker in top-level block %d was the only thing written where it stood; the marker is removed, so nothing you wrote remains there"):format(position))
   end
   return block:walk({
     Blocks = function(blocks)
       local out = pandoc.Blocks({})
       for _, inner in ipairs(blocks) do
         if is_marker(inner) then
-          core.warn("index placement marker below the top level of the document "
+          qi_core.warn("index placement marker below the top level of the document "
                .. "places nothing; write it as a top-level block")
           out:extend(marker_content(inner))
         else
@@ -1848,7 +1458,7 @@ local function resolve_markers(doc)
       if seen == 1 then
         out:insert(block)
       else
-        core.warn(("index placement marker %d (top-level block %d) is ignored; the "
+        qi_core.warn(("index placement marker %d (top-level block %d) is ignored; the "
               .. "index is placed at the first marker"):format(seen, position))
         out:extend(marker_content(block))
       end
@@ -2018,7 +1628,7 @@ local function store_write(ctx, marker)
   -- a rival to another chapter's real key, and, being first in book order,
   -- let the fallback win.
   local sorts = {}
-  for path, seen in pairs(sort_keys) do
+  for path, seen in pairs(qi_sortkeys.sort_keys) do
     sorts[path] = seen.sort
   end
   -- Every step here can fail on an ordinary machine — a stale file where the
@@ -2041,7 +1651,7 @@ local function store_write(ctx, marker)
     end
   end)
   if not ok then
-    core.warn(("could not record index marks for %s (%s); this chapter's marks "
+    qi_core.warn(("could not record index marks for %s (%s); this chapter's marks "
           .. "will be missing from the book's index until it is rendered "
           .. "again"):format(ctx.file, tostring(err)))
   end
@@ -2088,7 +1698,7 @@ local function valid_record(data, file)
       return false
     end
     -- Validated here rather than trusted (review F9): a record whose xref
-    -- lost its levels reaches `levels_key` and takes the render down with it,
+    -- lost its levels reaches `qi_levels.levels_key` and takes the render down with it,
     -- which IP2 forbids. Two consumers read these now — the entry builder and
     -- the book's dangling-target report — and the report reads them on every
     -- last-chapter render, before any of the marker logic runs.
@@ -2141,12 +1751,12 @@ local function store_read(ctx)
         -- readable and simply stale, and calling that unreadable sends an
         -- author looking for a corrupt file that is not there.
         if ok and type(data) == "table" and data.version ~= STORE_VERSION then
-          core.warn(("the recorded index marks for %s were written by a different "
+          qi_core.warn(("the recorded index marks for %s were written by a different "
                 .. "version of this extension and were ignored; render that "
                 .. "chapter again, or render the whole book, to put its "
                 .. "terms back in the index"):format(file))
         else
-          core.warn(("the recorded index marks for %s could not be read and were "
+          qi_core.warn(("the recorded index marks for %s could not be read and were "
                 .. "ignored; render that chapter again, or render the whole "
                 .. "book, to put its terms back in the index"):format(file))
         end
@@ -2187,7 +1797,7 @@ local function book_sort_keys(records)
         -- is one thing for the author to fix, while a second, different rival
         -- is a second thing and names a key the first report never mentions.
         seen.reported[key] = true
-        core.warn(('index entry "%s" is sorted as "%s" in %s and as "%s" in %s; '
+        qi_core.warn(('index entry "%s" is sorted as "%s" in %s and as "%s" in %s; '
               .. 'one entry cannot file in two places, so the first in book '
               .. 'order wins')
              :format(path, seen.sort, seen.file, key, record.file))
@@ -2197,13 +1807,13 @@ local function book_sort_keys(records)
   return resolved
 end
 
--- The book counterpart of `sort_for`: the same level-path lookup with the
+-- The book counterpart of `qi_sortkeys.sort_for`: the same level-path lookup with the
 -- same printed-text fallback, reading the book's merged registry rather than
 -- this chapter's.
 local function book_sort_for(keys, levels)
   local resolved, any = {}, false
   for i = 1, #levels do
-    local seen = keys[level_path(levels, i)]
+    local seen = keys[qi_levels.level_path(levels, i)]
     if seen then
       resolved[i] = seen.sort
       any = true
@@ -2224,7 +1834,7 @@ local function book_marks(ctx, records)
     for _, mark in ipairs(record.marks or {}) do
       local xrefs = {}
       for _, xref in ipairs(mark.xrefs or {}) do
-        local kind = core.XREF_KIND_BY_ATTR[xref.attr]
+        local kind = qi_core.XREF_KIND_BY_ATTR[xref.attr]
         if kind then
           xrefs[#xrefs + 1] = { kind = kind, levels = xref.levels }
         end
@@ -2268,7 +1878,7 @@ local function report_book_dangling(records)
   for _, record in ipairs(records) do
     for _, mark in ipairs(record.marks or {}) do
       for i = 1, #mark.levels do
-        paths[level_path(mark.levels, i)] = true
+        paths[qi_levels.level_path(mark.levels, i)] = true
       end
     end
   end
@@ -2279,7 +1889,7 @@ local function report_book_dangling(records)
         -- built: an attribute name this version does not know never reaches
         -- the index, so reporting on it would name a cross-reference no
         -- reader will ever see (review F8).
-        if core.XREF_KIND_BY_ATTR[xref.attr] then
+        if qi_core.XREF_KIND_BY_ATTR[xref.attr] then
           xrefs[#xrefs + 1] = {
             attr = xref.attr,
             levels = xref.levels,
@@ -2347,7 +1957,7 @@ local function html_book(doc, ctx, marker, taken)
       -- The book path's counterpart to the single-document no-marks warning,
       -- which cannot be asked of one chapter. Without it a marker in a book
       -- that marks nothing renders an empty index section.
-      core.warn("index placement marker in a book whose chapters have no index "
+      qi_core.warn("index placement marker in a book whose chapters have no index "
            .. "marks; there is no index to place")
       return place_index(doc, nil)
     end
@@ -2360,7 +1970,7 @@ local function html_book(doc, ctx, marker, taken)
       -- run yet in this render: what the index shows for it is whatever an
       -- earlier render recorded, which may name terms that chapter no longer
       -- marks and link to anchors its page no longer has.
-      core.warn(("the index placement marker is in %s, and %d chapter(s) come "
+      qi_core.warn(("the index placement marker is in %s, and %d chapter(s) come "
             .. "after it (%s); the index is built where the marker is, so "
             .. "those chapters are represented by what an earlier render "
             .. "recorded — entries and links for them can be out of date or "
@@ -2371,7 +1981,7 @@ local function html_book(doc, ctx, marker, taken)
   end
 
   if marker then
-    core.warn(("index placement marker in %s is ignored; %s comes first in book "
+    qi_core.warn(("index placement marker in %s is ignored; %s comes first in book "
           .. "order and carries one too, and a book has a single index")
          :format(ctx.file, ctx.chapters[placing]))
   elseif ctx.position == #ctx.chapters and placing == nil
@@ -2380,7 +1990,7 @@ local function html_book(doc, ctx, marker, taken)
     -- that can know no other one asked for the index: every earlier chapter
     -- has written its record by the time this one runs. One full render
     -- therefore reports this exactly once.
-    core.warn("this book has index marks but no chapter carries an index "
+    qi_core.warn("this book has index marks but no chapter carries an index "
          .. "placement marker, so no index was built; write an empty div "
          .. "with class qi-index-here in the chapter that should hold the "
          .. "index, usually the last one")
@@ -2402,18 +2012,18 @@ local function Pandoc(doc)
   -- mostly in other chapters, so "no marks here" says nothing about whether
   -- there is an index to place, and the book path reports what it finds
   -- across the whole store instead.
-  local book = core.is_html() and book_context(doc) or nil
-  if core.is_html() and book == nil and doc.meta.book ~= nil then
+  local book = qi_core.is_html() and book_context(doc) or nil
+  if qi_core.is_html() and book == nil and doc.meta.book ~= nil then
     -- Falling back to a per-chapter index is not a safe default in a book: it
     -- is the shipped-before-M05 defect, one index per chapter and none of them
     -- the book's. Whatever Quarto did not tell us, the author hears about it
     -- rather than finding a stray index on a page later.
-    core.warn("this looks like a book, but the chapter list and output paths this "
+    qi_core.warn("this looks like a book, but the chapter list and output paths this "
          .. "extension needs were not available, so this page was indexed on "
          .. "its own instead of contributing to the book's index")
   end
   if marker and marks_seen == 0 and not book then
-    core.warn("index placement marker in a document with no index marks; there is "
+    qi_core.warn("index placement marker in a document with no index marks; there is "
          .. "no index to place")
   end
   -- Format-neutral, and before any back-end branch, like every other judgement
@@ -2428,11 +2038,11 @@ local function Pandoc(doc)
   -- target on it would then be reported as naming nothing indexed, which is
   -- false of the book the author is writing and buries the one warning that
   -- is true.
-  if not book and not (core.is_html() and doc.meta.book ~= nil) then
+  if not book and not (qi_core.is_html() and doc.meta.book ~= nil) then
     report_dangling(marked_paths, pending_xrefs, "document")
   end
 
-  if core.is_html() then
+  if qi_core.is_html() then
     -- Anchors are assigned before either path decides what to place: they are
     -- what a locator links back to, and in a book they are read by whichever
     -- chapter builds the index rather than by this one. A page with no marks
@@ -2456,7 +2066,7 @@ local function Pandoc(doc)
     return place_index(doc, html_index_blocks(html_marks, taken))
   end
 
-  if marks_seen == 0 or not core.is_latex_derived() then
+  if marks_seen == 0 or not qi_core.is_latex_derived() then
     return place_index(doc, nil)
   end
 
@@ -2485,9 +2095,9 @@ local function Pandoc(doc)
   table.sort(conflicting, function(a, b) return a.printed < b.printed end)
   for _, clash in ipairs(conflicting) do
     if clash.plain then
-      core.warn(('index entry %s carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(clash.printed))
+      qi_core.warn(('index entry %s carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(clash.printed))
     else
-      core.warn(('index entry %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant'):format(clash.printed))
+      qi_core.warn(('index entry %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant'):format(clash.printed))
     end
   end
 
@@ -2525,7 +2135,7 @@ local function Pandoc(doc)
       end
     end
     local last = table.remove(named)
-    core.warn(('index entries printed as "%s" file under more than one key (%s), '
+    qi_core.warn(('index entries printed as "%s" file under more than one key (%s), '
           .. 'so the index tool stores one key each and prints that entry '
           .. 'once per key, in as many places; give them one sort key, or '
           .. 'write them as one entry')
@@ -2535,7 +2145,7 @@ local function Pandoc(doc)
           and quarto.doc.include_text) then
     -- Running under plain pandoc rather than Quarto: emit the marks, but do
     -- not pretend we can inject a preamble.
-    core.warn("preamble injection needs Quarto; \\index commands emitted without "
+    qi_core.warn("preamble injection needs Quarto; \\index commands emitted without "
          .. "imakeidx setup")
     return place_index(doc, nil)
   end
@@ -2577,13 +2187,13 @@ local function Pandoc(doc)
     -- `\seename`/`\alsoname` are resolved where the command is used, in the
     -- generated index, not where it is defined — so nothing here depends on
     -- this landing after imakeidx.
-    quarto.doc.include_text("in-header", core.XREF_BOTH_DEFINITION)
+    quarto.doc.include_text("in-header", qi_core.XREF_BOTH_DEFINITION)
   end
   if xref_list_emitted then
     -- Same discipline: defined only in a document that has a contested key no
     -- plain mark contributes to, and with `\providecommand` so a document
     -- defining its own keeps it.
-    quarto.doc.include_text("in-header", core.XREF_LIST_DEFINITION)
+    quarto.doc.include_text("in-header", qi_core.XREF_LIST_DEFINITION)
   end
 
   return place_index(doc,

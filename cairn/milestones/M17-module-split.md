@@ -115,7 +115,7 @@ the task that made it.
 - [x] T1: Create `_extensions/index/modules/`; move the constants, `warn`,
       `is_latex_derived` and `is_html` (`index.lua:30-158`) into
       `modules/core.lua`; wire the relative require.
-- [ ] T2: Move level semantics — `parse_levels` through `level_path`
+- [x] T2: Move level semantics — `parse_levels` through `level_path`
       (`:160-458`) — into `modules/levels.lua`, and the sort registry —
       `sort_keys` through `clamp_sort` (`:459-581`) — into
       `modules/sortkeys.lua`; the registry keys on `level_path`, so the two
@@ -152,6 +152,7 @@ the task that made it.
 - 2026-08-20: two module-level flags beyond the plan's seven accumulators found while mapping the seams — `xref_list_emitted` and `xref_both_emitted`, both written in the Span pass and read in `Pandoc`. Both are LaTeX-emission state, so both land in `modules/latex.lua`; `xref_both_emitted` therefore moves out of T4's line range. Task-range refinement only, no scope change.
 - 2026-08-20: T7/T8 boundary refined from the plan's `:2049`/`:2050` to `:2020`/`:2021` — the `STORE_DIR`/`STORE_SUFFIX`/`STORE_VERSION` constants at `:2041-2047` sit under the plan's marker range but belong to book support, and the book section's own banner opens at `:2021`.
 - 2026-08-20: T1 — `modules/core.lua` (constants, `warn`, `is_latex_derived`, `is_html`), 17 definitions, 86 call sites qualified to `core.`; `tests/movedefs.py` rewritten to relocate from the source set `filtersrc.py` enumerates under the scratch root it is passed. Verify clean: 195 ok lines identical to the merge base, 230 under `--self-test` with the one exempted interpolated line reading `(2 -> 3)`.
+- 2026-08-20: T2 — `modules/levels.lua` (11 definitions, 38 sites) and `modules/sortkeys.lua` (4 definitions, 6 sites). T1's `core` alias renamed to `qi_core` in the same commit under the aliasing decision below. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(4 -> 5)`.
 
 ## Decisions
 
@@ -166,5 +167,11 @@ the task that made it.
 **Context:** T1 with plain `M.XREF_BOTH_DEFINITION = XREF_BOTH_DEFINITION` export lines failed the M16-AC3 probe: `FAIL: M02-AC5: the dual-target definition does not use \seename`. `tests/scans/xref-both-definition.py` takes the FIRST `XREF_BOTH_DEFINITION\s*=` match over the sorted source set, and once the probe relocates the real definition into `modules/moved.lua` — which sorts after `modules/core.lua` — the export line left behind in `core.lua` is what the scan reads. This is M16 review F3 arriving in the case it was written about. Narrows the entry above.
 **Decision:** Export lines use the bracket form, `M["warn"] = warn`. The name inside the brackets is followed by `"]`, not by `=`, so an export line is invisible to every scan that searches for `NAME =` and to `movedefs.block()`'s exactly-one count.
 **Consequences:** No module leaves a second textual `NAME =` behind that could mask its own definition once the probe moves it, and the four first-match scans M16's review flagged keep reading the definition they name. Each module carries a four-line comment saying so, so the unusual form is not read as an accident.
+
+### 2026-08-20: a module is required under the alias `qi_<name>`, not `<name>`
+
+**Context:** `local levels = require("./levels")` in `sortkeys.lua` is shadowed by the parameter of `register_sort(levels, declared, context)`, so `levels.level_path(levels, i)` would index the caller's level list instead of the module. The filter uses `levels` as a local on 131 lines, `marker` on 71 and `marks` on 57, so the collision is not incidental to one function.
+**Decision:** Every module is required under `qi_<name>` — `qi_core`, `qi_levels`, `qi_sortkeys` — while the files keep the plain names the plan gave them. `qi_` is already the extension's namespace on the reader-facing side (`qi-index`, `qi-mark-`), and no identifier in the filter begins with it.
+**Consequences:** No module alias can be shadowed by a local, and the rule is uniform rather than applied only to the four names that collide today — a later local named `html` or `book` cannot silently capture a module. Cross-module call sites carry three more characters than the bare alias would.
 
 ## Review

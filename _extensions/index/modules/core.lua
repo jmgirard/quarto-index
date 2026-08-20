@@ -1,8 +1,8 @@
 -- Shared constants, the warning channel, and the format tests.
 --
 -- Everything here is read by more than one of the modules beside it, so it
--- sits below all of them: `core` requires nothing, and every other module
--- requires `core`.
+-- sits below all of them: this module requires nothing, and every other
+-- module requires it as `qi_core`.
 
 local M = {}
 

@@ -120,7 +120,7 @@ the task that made it.
       `sort_keys` through `clamp_sort` (`:459-581`) — into
       `modules/sortkeys.lua`; the registry keys on `level_path`, so the two
       move together.
-- [ ] T3: Move LaTeX emission — `index_argument` through `fold_xrefs`
+- [x] T3: Move LaTeX emission — `index_argument` through `fold_xrefs`
       (`:582-775`) — into `modules/latex.lua`.
 - [ ] T4: Move shared mark derivation — `span_text` through `derive_levels`
       (`:776-992`) — into `modules/marks.lua`.
@@ -153,6 +153,7 @@ the task that made it.
 - 2026-08-20: T7/T8 boundary refined from the plan's `:2049`/`:2050` to `:2020`/`:2021` — the `STORE_DIR`/`STORE_SUFFIX`/`STORE_VERSION` constants at `:2041-2047` sit under the plan's marker range but belong to book support, and the book section's own banner opens at `:2021`.
 - 2026-08-20: T1 — `modules/core.lua` (constants, `warn`, `is_latex_derived`, `is_html`), 17 definitions, 86 call sites qualified to `core.`; `tests/movedefs.py` rewritten to relocate from the source set `filtersrc.py` enumerates under the scratch root it is passed. Verify clean: 195 ok lines identical to the merge base, 230 under `--self-test` with the one exempted interpolated line reading `(2 -> 3)`.
 - 2026-08-20: T2 — `modules/levels.lua` (11 definitions, 38 sites) and `modules/sortkeys.lua` (4 definitions, 6 sites). T1's `core` alias renamed to `qi_core` in the same commit under the aliasing decision below. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(4 -> 5)`.
+- 2026-08-20: T3 — `modules/latex.lua`, 9 definitions, 11 sites. `xref_both_emitted` moved here from T4's range and both emission flags became `M["name"]` fields, since a scalar cannot be shared by aliasing a local. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(5 -> 6)`.
 
 ## Decisions
 

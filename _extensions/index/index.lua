@@ -33,226 +33,7 @@ local qi_levels = require("./modules/levels")
 
 local qi_sortkeys = require("./modules/sortkeys")
 
--- Build the `\index{...}` argument from literal levels, joining with the
--- unquoted `!` that makeindex reads as a level separator. With a sort key,
--- each level becomes makeindex's own `sortkey@printed` form: the `@` here is
--- written by this back-end and so is the ONE `@` that stays unquoted, while
--- every `@` the author wrote is still quoted by qi_levels.escape_level (qi_core.LATEX_LITERAL).
---
--- Returns three strings: the argument, the PRINTED level path after the fold,
--- and the FILING path — for each level, the sort key this argument actually
--- files it under. The last two are what the collision report below compares,
--- and they are built here rather than by a second derivation elsewhere,
--- because only the emitted argument settles which of a level's two candidate
--- strings the index tool will read as its key. Both are literal text, not
--- escaped: they are read by an author, not by the index tool.
---
--- The clamped levels are returned as well, for the self-target comparison the
--- caller runs against them. They are returned rather than recomputed because
--- qi_levels.clamp_levels warns about the fold, and a second call would report it twice.
--- `report` is passed through for the same reason: the pass that decides which
--- keys are contested calls this before anything is emitted, and must not
--- report a fold the emitting pass will report.
---
--- `fold` (optional) is a contested key's cross-references, already rendered for
--- the printed field: it is appended to the LAST level's printed half, and that
--- level then always carries a sort field — its own text — so the entry files
--- exactly where it filed before and only what it prints changes. It is applied
--- here, from the levels, rather than by taking the built argument apart again:
--- an author's own `@` is makeindex-quoted inside a level, so "the first `@`"
--- is not something a pattern over the finished string can find.
-local function index_argument(levels, sort, context, report, fold)
-  local clamped = qi_levels.clamp_levels(levels, context, report)
-  local keys = qi_sortkeys.clamp_sort(sort)
-  local parts, filing = {}, {}
-  for i, level in ipairs(clamped) do
-    local printed = qi_levels.escape_level(level)
-    if fold ~= nil and i == #clamped then
-      -- A sort field is unavoidable here — the printed half now carries the
-      -- folded cross-reference, and without a key the entry would file under
-      -- that whole string. What it files under is still decided by the SAME
-      -- comparison the uncontested branch below makes, so contesting a key
-      -- moves nothing: a key that merely repeats its level declares nothing,
-      -- and the level the entry files under is then the clamped text, join
-      -- and all, exactly as it is when no cross-reference is folded in.
-      local key = level
-      if keys ~= nil and keys[i] ~= nil and keys[i] ~= levels[i] then
-        key = keys[i]
-      end
-      parts[#parts + 1] =
-        qi_levels.escape_level(key) .. "@" .. printed .. ", " .. fold
-      filing[i] = key
-      goto continue
-    end
-    -- Compared against the level the key was ALIGNED with, not against the
-    -- clamped text: where levels were folded, the third clamped level is a
-    -- join of several and never equals the key resolved for the third level,
-    -- so comparing against it emits a sort field on every folded entry —
-    -- filing it under the third level's own printed text, which is what the
-    -- absence of a sort field already means.
-    if keys ~= nil and keys[i] ~= nil and keys[i] ~= levels[i] then
-      parts[#parts + 1] = qi_levels.escape_level(keys[i]) .. "@" .. printed
-      filing[i] = keys[i]
-    else
-      parts[#parts + 1] = printed
-      -- No sort field emitted, so the index tool files this level under the
-      -- text it prints — the CLAMPED text, which is not always the level the
-      -- key was compared against.
-      filing[i] = level
-    end
-    ::continue::
-  end
-  return table.concat(parts, "!"), qi_levels.levels_key(clamped),
-         qi_levels.levels_key(filing), clamped
-end
-
--- ---------------------------------------------------------------------------
--- Contested keys.
---
--- makeindex rejects two marks that share a key and a printed page but carry
--- different encapsulations, and Quarto turns that rejection into a failed
--- render — a marked term breaking the document, which IP2 forbids. Page
--- numbers do not exist here, so the pair cannot be kept apart; what CAN be
--- done is to stop emitting rival encapsulations at all for such a key, by
--- folding its cross-references into the entry's printed text, where the index
--- tool reads them as part of the term rather than as a rival encapsulation.
---
--- Which keys are contested takes the whole document to know, so it is settled
--- in a pass of its own (CollectKeys) before anything is emitted. Both passes
--- go through latex_plan, so the pass that decides and the pass that emits
--- cannot drift on what a mark's key or surviving targets are (D-003 records
--- why repairing this sits inside GP2 rather than trading against it).
--- ---------------------------------------------------------------------------
-
--- Emitted argument -> what the document's marks do with that key: whether any
--- of them is a plain locator mark, and every distinct cross-reference target
--- written on it, in a fixed order. Module-level, like the other accumulators.
-local contested_keys = {}
-local xref_list_emitted = false
-
--- One mark's LaTeX shape, from levels the caller has already derived. `report`
--- follows the convention the rest of the file uses: only the emitting pass
--- says anything, so a fold is reported once however many passes read the mark.
-local function latex_plan(levels, sort, xrefs, context, report, fold)
-  local source, printed_path, filing_path, clamped =
-    index_argument(levels, sort, context, report, fold)
-  -- The self-target comparison against what THIS back-end prints. The
-  -- format-neutral pass ran on the levels the author wrote; here the fold has
-  -- already rewritten them, so an entry can print a path the author never
-  -- spelled and a target spelling that path is a self-reference the first pass
-  -- could not see. It lives here, and not beside the first pass, because the
-  -- three-level ceiling is a property of this back-end alone: HTML has none,
-  -- so the same document keeps the target there, and a format with no index
-  -- back-end never reaches this line. Neither side carries an empty level, for
-  -- the same reason neither does in the first pass.
-  local printed_key = qi_levels.levels_key(clamped)
-  local kept = {}
-  for _, xref in ipairs(xrefs) do
-    if qi_levels.levels_key(xref.levels) == printed_key then
-      if report then
-        -- The folded path is quoted because the author never wrote it: it is
-        -- what their entry prints once the back-end has folded it, and a report
-        -- naming only what they typed would describe a match they cannot see.
-        qi_core.warn(("%s= on %s names the folded path this entry prints (%s); the "
-              .. "back-end stores %d levels, and the fold made the target a "
-              .. "cross-reference to itself, so it is dropped and the term is "
-              .. "indexed as usual")
-             :format(xref.kind.attr, context, printed_path, qi_levels.MAX_LEVELS))
-      end
-    else
-      kept[#kept + 1] = xref
-    end
-  end
-  return source, printed_path, filing_path, kept
-end
-
--- The encapsulation one mark would put on its key: the empty string for a
--- plain locator mark, `\see`/`\seealso` for a single target, and the
--- both-targets command for a mark carrying two. Shared by the pass that
--- decides which keys are contested and by the pass that emits, because
--- contestation is a fact about these exact strings — makeindex rejects two
--- marks on one key and page whose encapsulations DIFFER, and folds together
--- two whose encapsulations agree.
-local function mark_encap(xrefs)
-  if #xrefs == 0 then
-    return ""
-  end
-  if #xrefs == 1 then
-    return xrefs[1].kind.command ..
-      "{" .. qi_levels.target_argument(xrefs[1].levels) .. "}"
-  end
-  local args = {}
-  for _, xref in ipairs(xrefs) do
-    args[#args + 1] = "{" .. qi_levels.target_argument(xref.levels) .. "}"
-  end
-  return qi_core.XREF_BOTH_COMMAND .. table.concat(args)
-end
-
--- Record what one mark does with its key: the encapsulation it would emit, and
--- its targets. Targets are kept in a fixed order — `see` before `see also` as
--- print convention has it, and first appearance within a kind — because every
--- mark of a contested key must emit the SAME text or the index tool sees two
--- entries where the author wrote one.
-local function record_contest(source, printed, xrefs)
-  local seen = contested_keys[source]
-  if not seen then
-    seen = { plain = false, encaps = {}, distinct = 0, xrefs = {}, listed = {},
-             -- The entry path this key PRINTS, carried alongside the emitted
-             -- argument so the report below can name what the author wrote.
-             -- The argument itself is the back-end's composition: an entry
-             -- with a sort key spells it `key@printed`, which is not a string
-             -- the author can search their source for. Every mark of one key
-             -- emits one argument and derives this path from the same clamped
-             -- levels, so whichever mark arrives first records the same value.
-             printed = printed }
-    contested_keys[source] = seen
-  end
-  local encap = mark_encap(xrefs)
-  if not seen.encaps[encap] then
-    seen.encaps[encap] = true
-    seen.distinct = seen.distinct + 1
-  end
-  if #xrefs == 0 then
-    seen.plain = true
-  end
-  for _, xref in ipairs(xrefs) do
-    local id = xref.kind.attr .. "\0" .. qi_levels.levels_key(xref.levels)
-    if not seen.listed[id] then
-      seen.listed[id] = true
-      seen.xrefs[#seen.xrefs + 1] = xref
-    end
-  end
-end
-
--- Is this key marked in more than one way? Counted in ENCAPSULATIONS a mark
--- would emit, never in targets: one mark carrying both attributes emits a
--- single command and contests nothing, however many targets it names, while
--- two marks carrying the same target emit the same string and are what the
--- index tool folds together by itself.
-local function is_contested(seen)
-  return seen ~= nil and seen.distinct > 1
-end
-
--- A contested key's cross-references, rendered for the entry's PRINTED field.
--- `\see`/`\seealso` are imakeidx's own two-argument commands and discard the
--- second, so an explicit empty page argument is what makes them usable outside
--- the encap channel — and rendering them here rather than through a second
--- command of our own is what keeps the folded form and the encapsulated form
--- from drifting in how they print a target. `\see{A}{}; \seealso{B}{}`
--- expands to exactly what qi_core.XREF_BOTH_COMMAND prints, so a both-attributes mark
--- reads the same whether its key is contested or not.
-local function fold_xrefs(seen)
-  local parts = {}
-  for _, kind in ipairs(qi_core.XREF_KINDS) do
-    for _, xref in ipairs(seen.xrefs) do
-      if xref.kind.attr == kind.attr then
-        parts[#parts + 1] = "\\" .. kind.command ..
-          "{" .. qi_levels.target_argument(xref.levels) .. "}{}"
-      end
-    end
-  end
-  return table.concat(parts, "; ")
-end
+local qi_latex = require("./modules/latex")
 
 
 local function span_text(span)
@@ -314,9 +95,6 @@ local marks_seen = 0
 -- (for a locator-contributing mark) the id of the anchor that links back to
 -- it. The Pandoc pass builds the whole index section out of these.
 local html_marks = {}
--- Likewise: the both-targets command is defined only in a document that uses
--- it, so a document without one gets nothing extra in its preamble.
-local xref_both_emitted = false
 
 -- Every level path this document's marks index, each mark's parent levels
 -- included, as `qi_levels.levels_key` strings. This is the set a cross-reference target
@@ -547,8 +325,8 @@ local function CollectKeys(span)
     end
   end
   local source, printed_path, _, kept =
-    latex_plan(levels, qi_sortkeys.sort_for(levels), surviving, context, false)
-  record_contest(source, printed_path, kept)
+    qi_latex.latex_plan(levels, qi_sortkeys.sort_for(levels), surviving, context, false)
+  qi_latex.record_contest(source, printed_path, kept)
   return nil
 end
 
@@ -677,7 +455,7 @@ local function Span(span)
 
   local source, printed_path, filing_path
   source, printed_path, filing_path, xrefs =
-    latex_plan(levels, sort, xrefs, context, true)
+    qi_latex.latex_plan(levels, sort, xrefs, context, true)
   -- Recorded for every mark whatever it emits: a cross-reference mark files
   -- under the same key a plain one does, so it contests a printed path just
   -- as a locator mark would.
@@ -690,8 +468,8 @@ local function Span(span)
   -- WHERE the cross-references go depends on whether the entry has a locator,
   -- because makeindex's term delimiter is printed either way. See "Contested
   -- keys" above.
-  local seen = contested_keys[source]
-  if is_contested(seen) then
+  local seen = qi_latex.contested_keys[source]
+  if qi_latex.is_contested(seen) then
     if seen.plain then
       -- Some mark of this key is a plain locator mark, so the entry prints
       -- page numbers and the delimiter before them has work to do. The
@@ -701,8 +479,8 @@ local function Span(span)
       -- extension documents and what print convention expects. Nothing is
       -- lost: its target is in the text every plain mark emits.
       if #xrefs == 0 then
-        local folded = select(1, latex_plan(levels, sort, xrefs, context,
-                                            false, fold_xrefs(seen)))
+        local folded = select(1, qi_latex.latex_plan(levels, sort, xrefs, context,
+                                            false, qi_latex.fold_xrefs(seen)))
         result:insert(pandoc.RawInline("latex", "\\index{" .. folded .. "}"))
       end
       return result
@@ -713,10 +491,10 @@ local function Span(span)
     -- cross-reference mark. The targets stay in the encapsulation channel,
     -- rendered by one command over the key's whole list so that every mark
     -- carries the same string.
-    xref_list_emitted = true
+    qi_latex.xref_list_emitted = true
     result:insert(pandoc.RawInline("latex",
       "\\index{" .. source .. "|" .. qi_core.XREF_LIST_COMMAND ..
-      "{" .. fold_xrefs(seen) .. "}}"))
+      "{" .. qi_latex.fold_xrefs(seen) .. "}}"))
     return result
   end
 
@@ -728,12 +506,12 @@ local function Span(span)
   -- `\seealso`, `\seename` and `\alsoname` with `\providecommand`, so nothing
   -- needs injecting for the single-target forms; the both-targets form needs
   -- qi_core.XREF_BOTH_COMMAND, which is injected only in a document that uses it.
-  local encap = mark_encap(xrefs)
+  local encap = qi_latex.mark_encap(xrefs)
   if encap == "" then
     result:insert(pandoc.RawInline("latex", "\\index{" .. source .. "}"))
   else
     if #xrefs > 1 then
-      xref_both_emitted = true
+      qi_latex.xref_both_emitted = true
     end
     result:insert(pandoc.RawInline("latex",
       "\\index{" .. source .. "|" .. encap .. "}"))
@@ -2086,8 +1864,8 @@ local function Pandoc(doc)
   -- had any. One message covering both would tell the author of a `see=`
   -- against a `see-also=` that their entry prints page numbers it does not.
   local conflicting = {}
-  for _, seen in pairs(contested_keys) do
-    if is_contested(seen) then
+  for _, seen in pairs(qi_latex.contested_keys) do
+    if qi_latex.is_contested(seen) then
       conflicting[#conflicting + 1] = { printed = seen.printed,
                                         plain = seen.plain }
     end
@@ -2182,14 +1960,14 @@ local function Pandoc(doc)
     quarto.doc.use_latex_package("imakeidx")
   end
   quarto.doc.include_text("in-header", "\\makeindex[intoc]")
-  if xref_both_emitted then
+  if qi_latex.xref_both_emitted then
     -- `\providecommand` so a document defining its own version keeps it.
     -- `\seename`/`\alsoname` are resolved where the command is used, in the
     -- generated index, not where it is defined — so nothing here depends on
     -- this landing after imakeidx.
     quarto.doc.include_text("in-header", qi_core.XREF_BOTH_DEFINITION)
   end
-  if xref_list_emitted then
+  if qi_latex.xref_list_emitted then
     -- Same discipline: defined only in a document that has a contested key no
     -- plain mark contributes to, and with `\providecommand` so a document
     -- defining its own keeps it.

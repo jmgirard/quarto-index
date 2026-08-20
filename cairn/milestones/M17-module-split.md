@@ -5,7 +5,7 @@
 - **Depends on:** M16
 - **Driving RR:** —
 - **Principles touched:** GP3
-- **Branch/PR:** `m17-module-split`
+- **Branch/PR:** `m17-module-split` / https://github.com/jmgirard/quarto-index/pull/17
 
 ## Goal
 
@@ -46,7 +46,7 @@ Any behavior change → none; a rendered-output change is a defect here.
 
 ## Acceptance criteria
 
-- [ ] AC1: `_extensions/index/index.lua` defines only the `Pandoc` entry
+- [x] AC1: `_extensions/index/index.lua` defines only the `Pandoc` entry
       point; every other function the filter defines lives under
       `_extensions/index/modules/`. The domain is every definition
       `grep -nE '^[[:space:]]*(local )?function |= function\('` reports over
@@ -54,7 +54,7 @@ Any behavior change → none; a rendered-output change is a defect here.
       which is why the pattern covers the nested and assigned forms and not
       just the top-level one. Afterwards it reports exactly one line whose file
       is `index.lua`: `Pandoc`.
-- [ ] AC2: The split changes no check that existed at the merge base. Both
+- [x] AC2: The split changes no check that existed at the merge base. Both
       `tests/run-tests.sh` and `tests/run-tests.sh --self-test` exit 0, and
       every `ok` line of the merge-base run — 195 and 230 of them, measured on
       this machine this session — stands verbatim, and in the same position,
@@ -75,7 +75,7 @@ Any behavior change → none; a rendered-output change is a defect here.
       survives and the additions are AC3's install-path probe. A merge-base
       *check* that needs editing to accommodate the move is a defect in that
       check (tracking-rules "What gets a test"), reported, never patched.
-- [ ] AC3: The split extension renders identically installed and from the
+- [x] AC3: The split extension renders identically installed and from the
       working tree. Every `require` in the extension is at file top level,
       above that file's first definition — checked by a grep reporting each
       `require` line and each file's first definition line — so a module
@@ -86,7 +86,7 @@ Any behavior change → none; a rendered-output change is a defect here.
       standalone fixture carrying marks and one book project, each to `latex`
       and `html`; all four outputs are byte-identical to the same render from
       the working tree.
-- [ ] AC4: `cairn/DESIGN.md` no longer describes the filter as one file: the
+- [x] AC4: `cairn/DESIGN.md` no longer describes the filter as one file: the
       sentence at `DESIGN.md:105` ("One Pandoc-Lua filter,
       `_extensions/index/index.lua`, run as three passes over…") is replaced,
       and the Architecture section names every module. The domain is the module
@@ -95,7 +95,7 @@ Any behavior change → none; a rendered-output change is a defect here.
       `levels`) and found. The bare-name form would not discriminate — seven of
       the nine words already appear in that section today, and none of the nine
       `.lua` forms does.
-- [ ] AC5: `_extensions/index/_extension.yml` still declares exactly one
+- [x] AC5: `_extensions/index/_extension.yml` still declares exactly one
       `contributes.filters` entry, `index.lua`, so the install story stays
       `quarto add` alone (GP3).
 
@@ -184,3 +184,43 @@ the task that made it.
 **Consequences:** No module alias can be shadowed by a local, and the rule is uniform rather than applied only to the four names that collide today — a later local named `html` or `book` cannot silently capture a module. Cross-module call sites carry three more characters than the bare alias would.
 
 ## Review
+
+Verified 2026-08-20 on branch `m17-module-split` at 2cc8c19, against merge base
+cb782df. PR: https://github.com/jmgirard/quarto-index/pull/17
+
+- AC1 — `grep -nE '^[[:space:]]*(local )?function |= function\('` over the
+  source set `tests/filtersrc.py` enumerates reports 88 definition lines, the
+  same 88 the merge base's `index.lua` carried alone. Exactly one has
+  `index.lua` as its file: `50:local function Pandoc(doc)`. The other 87 are
+  distributed across the nine modules (book 15, core 3, html 29, latex 6,
+  levels 8, marker 13, marks 7, passes 3, sortkeys 3).
+- AC2 — `tests/run-tests.sh` 197 checks, `--self-test` 232, both exit 0. Every
+  merge-base `ok` line (195 and 230) stands verbatim and in the same position
+  in the corresponding split run; the one exempted line reads `(10 -> 11 with
+  no edit here)` for the extension's ten `.lua` files, with identical text
+  either side of the parentheses. `git status --porcelain` over `tests/`,
+  `examples/` and `README.md` is clean — no untracked path. `git diff
+  --numstat cb782df` over the same three names exactly two files:
+  `tests/movedefs.py` (54 added, 26 deleted) and `tests/run-tests.sh` (134
+  added, 0 deleted).
+- AC3 — the two probe checks pass in the run above: 32 `require()` calls across
+  the source set all at file top level above their file's first definition, and
+  four byte-identical outputs (a standalone fixture and a book project, each to
+  latex and html) between an extension installed by `quarto add` and the working
+  tree. Both halves were shown discriminating at T9 (work log, 2026-08-20).
+- AC4 — `cairn/DESIGN.md:105` no longer describes the filter as one file. Each
+  of the ten members of the source set is found in the Architecture section in
+  its extension-bearing form: `index.lua`, `core.lua`, `levels.lua`,
+  `sortkeys.lua`, `latex.lua`, `marks.lua`, `passes.lua`, `html.lua`,
+  `marker.lua`, `book.lua`.
+- AC5 — `git diff cb782df -- _extensions/index/_extension.yml` is empty, and the
+  file declares one `contributes.filters` entry, `index.lua`.
+
+Consistency gate: `cairn_validate.py` exits 0, all checks passed. The active
+profile is `generic`, whose `consistency-gate` slot names no toolchain checks.
+No IP or GP text changed — the branch's only DESIGN.md edit is the Architecture
+section, which cites GP3 without altering it — so `cairn_impact` does not apply.
+
+Independent review: three fresh-context reviewers, none having seen the
+implementation.
+

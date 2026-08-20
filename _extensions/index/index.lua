@@ -711,10 +711,18 @@ end
 -- print convention has it, and first appearance within a kind — because every
 -- mark of a contested key must emit the SAME text or the index tool sees two
 -- entries where the author wrote one.
-local function record_contest(source, xrefs)
+local function record_contest(source, printed, xrefs)
   local seen = contested_keys[source]
   if not seen then
-    seen = { plain = false, encaps = {}, distinct = 0, xrefs = {}, listed = {} }
+    seen = { plain = false, encaps = {}, distinct = 0, xrefs = {}, listed = {},
+             -- The entry path this key PRINTS, carried alongside the emitted
+             -- argument so the report below can name what the author wrote.
+             -- The argument itself is the back-end's composition: an entry
+             -- with a sort key spells it `key@printed`, which is not a string
+             -- the author can search their source for. Every mark of one key
+             -- emits one argument and derives this path from the same clamped
+             -- levels, so whichever mark arrives first records the same value.
+             printed = printed }
     contested_keys[source] = seen
   end
   local encap = mark_encap(xrefs)
@@ -1056,9 +1064,9 @@ local function CollectKeys(span)
       surviving[#surviving + 1] = xref
     end
   end
-  local source, _, _, kept = latex_plan(levels, sort_for(levels), surviving,
-                                        context, false)
-  record_contest(source, kept)
+  local source, printed_path, _, kept =
+    latex_plan(levels, sort_for(levels), surviving, context, false)
+  record_contest(source, printed_path, kept)
   return nil
 end
 
@@ -2591,14 +2599,14 @@ local function Pandoc(doc)
   -- risks one; it says what the author's two marks print as, which is the one
   -- thing about the outcome they did not write down.
   local conflicting = {}
-  for key, seen in pairs(contested_keys) do
+  for _, seen in pairs(contested_keys) do
     if is_contested(seen) then
-      conflicting[#conflicting + 1] = key
+      conflicting[#conflicting + 1] = seen.printed
     end
   end
   table.sort(conflicting)
-  for _, key in ipairs(conflicting) do
-    warn(('index key %s carries both a plain locator and a cross-reference (or two different cross-references); they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(key))
+  for _, printed in ipairs(conflicting) do
+    warn(('index entry %s carries both a plain locator and a cross-reference (or two different cross-references); they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(printed))
   end
 
   -- The level-fold collision, reported the same way and for the same reason:

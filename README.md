@@ -166,7 +166,7 @@ plain mark in one place and a cross-reference in another — or a `see=` in one
 place and a `see-also=` in another — you get a single entry carrying its page
 numbers and its cross-reference together: `cats, see Felines, 3, 7`. The
 cross-reference mark contributes no page number of its own, exactly as it does
-not when it stands alone. You also get a warning naming the key, because two
+not when it stands alone. You also get a warning naming the entry, because two
 marks describing one term differently is more often a slip than a plan.
 
 This used to fail the PDF build outright, and in a document that had never

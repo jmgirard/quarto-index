@@ -1931,8 +1931,8 @@ WARN_CLASH='they are printed as one entry with its page numbers and its cross-re
 # once each; mu (two identical see= marks) and nu (two plain marks) must NOT
 # be reported, which the exact count is what fences.
 check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH" 8 "M02-AC5"
-check_warning_count "$WORK/conflict-latex.log" 'index key kappa ' 1 "M02-AC5"
-check_warning_count "$WORK/conflict-latex.log" 'index key lambda ' 1 "M02-AC5"
+check_warning_count "$WORK/conflict-latex.log" 'index entry kappa ' 1 "M02-AC5"
+check_warning_count "$WORK/conflict-latex.log" 'index entry lambda ' 1 "M02-AC5"
 # Deliberately LaTeX-only, and it stays that way now that HTML has a back-end
 # of its own: the clash is a property of makeindex, which rejects two marks
 # sharing a key and a page but carrying different encapsulations. The HTML
@@ -7121,21 +7121,119 @@ pass "M15: contesting a key changes what the entry prints and not where it files
 
 # M15-AC5 — no report claims a build can fail from rival encapsulations, since
 # the emission no longer risks one. Read over each warn() call's JOINED
-# message, never over a single literal: the old message was three concatenated
-# literals and no one of them carried the phrase, so a per-literal test would
-# have passed against the filter that still emitted it (the M13 lesson).
+# message, never over a raw scan of the file: the old message was built from
+# three literals joined with `..`, so the phrase existed at run time and in no
+# single literal — a scan of the source reports it absent against the filter
+# that still emits it, and passes for the wrong reason (the M13 lesson). The
+# joined message is what an author reads, so the joined message is what is
+# read here.
 python3 - _extensions/index/index.lua <<'M15AC5PY'
-import sys
-sys.path.insert(0, 'tests')
+import re, sys
+
 GONE = 'the index tool rejects the pair and the render fails'
+# The replacement, as a template with its one substitution removed. Present as
+# a joined message, which is also this scanner's passing control: a scanner
+# that found nothing would satisfy the absence check for free.
+REPLACEMENT = ('carries both a plain locator and a cross-reference (or two '
+               'different cross-references); they are printed as one entry '
+               'with its page numbers and its cross-reference together, so '
+               'check that is the entry you meant')
+
 src = open(sys.argv[1], encoding='utf-8').read()
-if GONE in src:
-    print(f'FAIL: M15-AC5: the filter still carries <<{GONE}>>, which the '
-          f'emission no longer risks', file=sys.stderr)
+
+# One Lua string literal: '...' or "...", with backslash escapes. The same
+# pattern this suite already uses to read the filter's literals, and one
+# alternation rather than two, so which quote a literal happens to use cannot
+# change what is read out of it — a two-branch pattern silently returns the
+# empty string for whichever branch did not match. Long-bracket literals
+# ([[...]]) would need their own pattern; the filter writes none, and the
+# controls below are what would notice if that changed.
+LITERAL = re.compile(r"""(["'])((?:[^\\]|\\.)*?)\1""")
+
+
+def calls(text):
+    """Every warn(...) argument list, parenthesis-balanced."""
+    for m in re.finditer(r'\bwarn\(', text):
+        depth, i = 1, m.end()
+        while i < len(text) and depth:
+            if text[i] == '(':
+                depth += 1
+            elif text[i] == ')':
+                depth -= 1
+            i += 1
+        yield text[m.end():i - 1]
+
+
+messages = []
+for argument in calls(src):
+    joined = ''.join(body for _quote, body in LITERAL.findall(argument))
+    messages.append(joined)
+
+if not messages:
+    print('FAIL: M15-AC5: no warn() call was read out of the filter, so the '
+          'absence below is the scanner finding nothing, not the filter '
+          'saying nothing', file=sys.stderr)
     sys.exit(1)
-print('ok   M15-AC5: no filter message claims a render can fail from rival '
-      'encapsulations')
+if not any(REPLACEMENT in message for message in messages):
+    print('FAIL: M15-AC5: the replacement report is not among the '
+          f'{len(messages)} joined warn() messages this scanner read, so it '
+          'is reading the file wrongly', file=sys.stderr)
+    sys.exit(1)
+guilty = [message for message in messages if GONE in message]
+if guilty:
+    print(f'FAIL: M15-AC5: {len(guilty)} joined warn() message(s) still tell '
+          f'an author <<{GONE}>>, which the emission no longer risks:',
+          file=sys.stderr)
+    for message in guilty:
+        print(f'  <<{message}>>', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M15-AC5: none of the {len(messages)} joined warn() messages in '
+      f'the filter claims a render can fail from rival encapsulations, and '
+      f'the replacement report is among them')
 M15AC5PY
+
+# The other half of AC5: the replacement report's FULL text, once per contested
+# key, over the fixture. The keys are the entry paths the report names — what
+# the author wrote, after the back-end's three-level fold — derived by hand
+# from examples/xref-conflict.qmd, not read back out of the log.
+read -r -d '' CONFLICT_REPORTED <<'MANIFEST' || true
+Deep!Level
+Tree!Branch!Cedar, Dogwood
+chi
+kappa
+lambda
+phi
+tau
+upsilon
+MANIFEST
+printf '%s\n' "$CONFLICT_REPORTED" > "$WORK/conflict-reported.txt"
+python3 - "$WORK/conflict-latex.log" "$WORK/conflict-reported.txt" <<'M15REPORTPY'
+import sys
+
+TEMPLATE = ('index entry {} carries both a plain locator and a '
+            'cross-reference (or two different cross-references); they are '
+            'printed as one entry with its page numbers and its '
+            'cross-reference together, so check that is the entry you meant')
+
+log = open(sys.argv[1], encoding='utf-8').read()
+keys = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
+bad = []
+for key in keys:
+    n = log.count(TEMPLATE.format(key))
+    if n != 1:
+        bad.append(f'  {key!r}: the full report appears {n} times, expected 1')
+# A key the fixture does NOT contest would not be seen by a count per key;
+# the exact count of this report over the same log, asserted above with the
+# other clash counts, is what fences that direction.
+if bad:
+    print('FAIL: M15-AC5: the replacement report is not drawn once per '
+          'contested key over examples/xref-conflict.qmd:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M15-AC5: the replacement report is drawn in full, exactly once, '
+      f'for each of the {len(keys)} contested entries the fixture writes')
+M15REPORTPY
+pass "M15-AC5: no joined filter message claims a failed render, and the report that replaced it is drawn in full once per contested entry"
 
 # The uncontested half: the folded form and the list command appear in the
 # emission of the ONE fixture that has a contested key and nowhere else. The

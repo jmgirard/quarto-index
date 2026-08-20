@@ -6933,7 +6933,14 @@ if not pdfindex.columns_carry_top_level(entries):
 
 
 def locators(entry):
-    """How many locators the entry prints, from the tail `term` strips."""
+    """How many locators the entry prints, from the tail `term` strips.
+
+    Comma-separated groups, so a page RANGE counts as the one locator it
+    prints: makeindex collapses three or more consecutive pages into `1--3`,
+    and counting the pages behind a range would make this number depend on
+    where the fixture's page breaks fall rather than on how many marks the
+    author wrote. No row below reaches a range today.
+    """
     tail = entry.text[len(entry.term):].lstrip(', ').strip()
     return len([part for part in tail.split(',') if part.strip()])
 

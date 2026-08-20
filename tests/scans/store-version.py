@@ -1,0 +1,24 @@
+"""Read the filter's own STORE_VERSION and print it.
+
+The suite derives fixtures from this value rather than writing it down, so a
+constant the filter changes cannot leave the derivation deriving something the
+back-end no longer does while still passing (it would compare its own
+derivations against each other). Reading it out of the SOURCE SET rather than
+one named file is what keeps that true when the definition moves into a module
+(M16-AC3).
+"""
+
+import re
+import sys
+
+sys.path.insert(0, 'tests')
+import filtersrc
+
+PATTERN = r'^local STORE_VERSION = ([0-9]+)$'
+
+found = re.findall(PATTERN, filtersrc.text(), re.MULTILINE)
+if len(found) != 1:
+    print(f'FAIL: M05-AC1: expected exactly one STORE_VERSION definition in the '
+          f'filter source set, found {len(found)}', file=sys.stderr)
+    sys.exit(1)
+print(found[0])

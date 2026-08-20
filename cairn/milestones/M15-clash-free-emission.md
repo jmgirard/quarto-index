@@ -168,6 +168,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
 - 2026-08-20: return repair 3 of 3 — AC6's two unpinned passages now have stale pins in both directions. The back-ends-differ row's old name and its old reason join `README_STALE`, beside the sentence that replaced them already pinned present; the unqualified encapsulation-channel claim — pinned as it stood, example and closing period included, so a re-qualification cannot slip past it — joins `README_MISUSE_STALE`, with the exception that replaced it pinned present. Discrimination run against `main`'s README: the back-ends-differ block reports both sentences still present and the replacement missing, and the misuse block reports the encapsulation claim still present and its exception missing. DESIGN gained the clause repair 1 made load-bearing: a level carrying a folded cross-reference always takes the `sortkey@printed` form, and is given the key it would have filed under with nothing folded in. `tests/run-tests.sh --self-test` passes at 228 checks, from 224.
 - 2026-08-20: return gate — the work log records the review's diff-bug lens returning 13 findings with one refuted and "the remainder" recorded for the return, but the return itself names three; nothing in the repo carries the other nine. The user chose repairing the three recorded over re-running the lens here, since the next review pass runs the same lens in a fresh session. Recorded so a reader of this file does not read the return as the whole of what that pass found.
 - 2026-08-20: second review pass — PR #15 (draft) recorded in the header; `main` had not moved, so no merge was needed. All six criteria re-executed with fresh evidence and ticked; `cairn_validate` clean. Review fan-out spawned three lenses; the diff-bug lens ([O]) failed on an API limit on its first spawn and was re-spawned.
+- 2026-08-20: review fan-out returned 11 findings across three lenses (diff-bug 9, blame-history 1, prior-review 0 with its PR-thread probe empty); the user chose fixing seven at the gate. Eight were fixed on the branch, two absorbed into existing candidate rows, two rejected with reason — all recorded in the Findings section. The report now has two shapes, because one message told a key with no plain mark that its entry prints page numbers it does not have. `tests/run-tests.sh --self-test` passes at 228 checks after the fixes.
 
 ## Decisions
 
@@ -216,10 +217,13 @@ by command rather than from its pass lines.
   and if the replacement report is not among the messages it read. The
   replacement report's full text is drawn exactly once for each of the 8
   contested entries over the fixture, naming each by the entry path the author
-  wrote. A glob over the 15 rendered LaTeX artifacts finds the contested-key
-  emission in the one fixture that has a contested key — read from a copy kept
-  before the PDF render removes it — and in no other.
-- **AC6** — the suite's README-claims comparisons pass: 17 documented misuse
+  wrote and in the shape that entry has — 6 with a plain mark, 2 without —
+  with the other shape's text asserted absent for each, so neither is told the
+  opposite about its page numbers. A glob over the 15 rendered LaTeX artifacts
+  finds both shapes of the contested-key emission in the one fixture that has
+  a contested key — read from a copy kept before the PDF render removes it —
+  and neither in any other.
+- **AC6** — the suite's README-claims comparisons pass: 18 documented misuse
   behaviours present and the 7 sentences this milestone falsified gone, plus 7
   HTML-back-end claims present and 8 stale sentences gone. All three passages
   the criterion names are now pinned in both directions; against `main`'s
@@ -241,4 +245,75 @@ back into the current filter fails the joined-message read; and `main`'s README
 fails both claim blocks, naming the two passages that had no stale pin.
 
 ## Findings
+
+Three fresh-context lenses, 2026-08-20. The prior-review lens found no
+regression against any recorded finding on the touched files and no PR-thread
+evidence (its probe returned an empty list). The blame-history lens returned
+one finding and named the regions it examined clean. The diff-bug lens returned
+nine findings, and separately refuted a hypothesis of its own by building a
+probe fixture: it suspected a no-plain contested key spanning pages would print
+its cross-reference once per page, rendered it, and got one merged entry.
+
+Fixed at the gate:
+
+- **F1 (diff-bug, high)** — the replacement report was emitted for every
+  contested key but claimed the entry prints "its page numbers and its
+  cross-reference together", which is false of a key with no plain mark
+  (`lambda`, `upsilon` print no locator — the whole reason the second repair
+  exists). README repeated the overclaim and this milestone had *pinned* the
+  sentence, so the suite enforced it. The report is now two messages, one per
+  shape; README states the shapes separately; the suite asserts the split
+  (6 plain, 2 not) and that neither entry draws the other shape's text.
+- **F1b (blame-history, sole finding)** — `README.md` still said "Marking the
+  term plainly elsewhere does **not** work around it — a plain mark and a
+  cross-reference on the same term can fail the build outright, as the next
+  paragraph explains", pointing at the paragraph this milestone rewrote to say
+  the opposite. Corrected against the fixture's own printed entry.
+- **F2 (diff-bug, med-high)** — `examples/xref-conflict.qmd`'s own opening
+  prose still stated the falsified claim, in a shipped example. Rewritten;
+  "three pages below" corrected to two.
+- **F3 (diff-bug, med)** — `tests/pdfindex.py` folded a wrapped continuation
+  into `lines[-1]` in raw extraction order, which the module's own docstring
+  says interleaves the two columns (confirmed on the fixture's index page:
+  `L L L R R L R L R R R R R L L L L L R L`). It worked only because `chi`'s
+  continuation happens to follow `chi`. The fold now runs in `read()`, after
+  the page/column/y sort, and only into a row on the same page and column.
+- **F4 (diff-bug, med), second half** — a continuation opening a column had no
+  line to fold into and fell through to become a phantom entry at a third left
+  edge. Such a row is now dropped with a note on stderr rather than mis-shaping
+  every sub-entry in its column. The first half — the footer heuristic assumes
+  a folio exists — went to the suite-hardening candidate row.
+- **F5 (diff-bug, med)** — the "nothing else changed" sweep looked only for
+  `quartoindexxrefs`, which the no-plain branch alone emits, so the folded
+  printed field was never swept for. The sweep now carries both marks and
+  fails if either is absent from the fixture that has one. Writing that check
+  produced a defect of the same class in miniature — the pattern was
+  `\seealso?`, which requires the literal `seeals` and would have missed a
+  fold carrying only `\see{`; caught by probing a spliced stray of each kind,
+  and fixed.
+- **F6/F7/F9a (diff-bug, low)** — the M02-AC5 comment and pass string still
+  described two contested keys where there are eight; the AC5 scanner's
+  `\bwarn\(` matched `local function warn(msg)`, contributing one empty
+  message and weakening its own "read nothing at all" control; one unused
+  `import re`. All three corrected.
+
+Sent to candidate rows (absorbed into existing rows, search-first): F4's
+folio-band assumption and the suite's now-two independent joined-`warn()`
+readers, into the acceptance-suite hardening cluster; the diff-bug lens's note
+that `see One Way; see Another Way` repeats `\seename` per same-kind target
+where print convention writes `see One Way; Another Way`, into the
+print-convention row.
+
+Rejected, with reason:
+
+- **F8 (diff-bug, low)** — AC2's clause "since `tests/pdfindex.py` returns one
+  as its own entry" is stale rationale: this milestone changed the instrument
+  so it no longer does. The requirement that clause introduces — the manifest
+  states how a wrapped continuation is derived — is met, so AC2 passes as
+  written. Recorded here rather than amended: convening an amendment round on
+  a return-adjacent milestone for a rationale clause narrows nothing.
+- **F9b (diff-bug, low)** — `goto continue` as the file's only `goto`, a
+  double blank line, and a 255-character warn literal consistent with four
+  others already in the file. Style, and the out-of-scope taxonomy's nitpick
+  member.
 

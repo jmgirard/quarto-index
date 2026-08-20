@@ -9,11 +9,13 @@ filters:
 
 `makeindex` rejects two marks that share an index key and a printed page but
 carry different encapsulations, and Quarto turns that rejection into a failed
-render. Page numbers do not exist when the filter runs, so it cannot prevent
-the clash — it reports it, once per key. This fixture holds one instance of
-each shape that clashes, and one that does not.
+render. The filter never emits such a pair: every mark of a key more than one
+mark describes differently emits one agreed command, which the index tool
+merges into a single entry. It reports what it composed, once per entry. This
+fixture holds one instance of each shape that has to be composed, and two that
+do not.
 
-A plain mark on [kappa]{.index} against a cross-reference three pages below
+A plain mark on [kappa]{.index} against a cross-reference two pages below
 it. The two plain marks are deliberately on
 different printed pages and the cross-reference mark on a third, so the
 printed locator count says which marks contributed one: two means the

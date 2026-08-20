@@ -2598,15 +2598,25 @@ local function Pandoc(doc)
   -- It no longer warns of a failed render, because the emission no longer
   -- risks one; it says what the author's two marks print as, which is the one
   -- thing about the outcome they did not write down.
+  --
+  -- Two shapes, two messages, because the outcome they describe differs: a key
+  -- with a plain mark keeps its page numbers, and a key with none has never
+  -- had any. One message covering both would tell the author of a `see=`
+  -- against a `see-also=` that their entry prints page numbers it does not.
   local conflicting = {}
   for _, seen in pairs(contested_keys) do
     if is_contested(seen) then
-      conflicting[#conflicting + 1] = seen.printed
+      conflicting[#conflicting + 1] = { printed = seen.printed,
+                                        plain = seen.plain }
     end
   end
-  table.sort(conflicting)
-  for _, printed in ipairs(conflicting) do
-    warn(('index entry %s carries both a plain locator and a cross-reference (or two different cross-references); they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(printed))
+  table.sort(conflicting, function(a, b) return a.printed < b.printed end)
+  for _, clash in ipairs(conflicting) do
+    if clash.plain then
+      warn(('index entry %s carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(clash.printed))
+    else
+      warn(('index entry %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant'):format(clash.printed))
+    end
   end
 
   -- The level-fold collision, reported the same way and for the same reason:

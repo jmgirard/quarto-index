@@ -28,6 +28,7 @@ The fixtures are written so that cannot happen, and
 
 import re
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 
 # `pdftotext -bbox-layout` emits XHTML in this namespace.
@@ -77,18 +78,19 @@ def _pages(pdf_path):
 
     Two kinds of line carry nothing but locator characters, and this module
     read both as the page-number footer until M15's fixture produced the
-    second. The footer is the bottom-most line on the page. The other is a
-    CONTINUATION: makeindex prints an entry and its locators on one logical
-    line, but LaTeX wraps a long one, and the locators can land alone on the
-    next physical line — a long cross-reference target is enough to do it.
-    Dropping that as a footer loses the entry's locators silently, which is
-    exactly the kind of evidence a check here must not lose.
+    second. The footer is the bottom-most line on the page, and it is the only
+    one dropped here. The other is a CONTINUATION: makeindex prints an entry
+    and its locators on one logical line, but LaTeX wraps a long one, and the
+    locators can land alone on the next physical line — a long cross-reference
+    target is enough to do it. Dropping that as a footer loses the entry's
+    locators silently, which is exactly the kind of evidence a check here must
+    not lose.
 
-    So the bottom-most such line on a page is dropped as the footer, and any
-    other is folded back into the line above it, restoring the one logical
-    line makeindex wrote. Folding rather than returning it: a continuation is
-    indented to neither the top-level nor the sub-entry edge, so returning it
-    would add a third left edge and shift every sub-entry a level deeper.
+    Continuations are NOT folded here. The line order this function sees is
+    document order, which interleaves the two columns (see the module
+    docstring), so "the line above" is not a question this function can answer
+    — the fold runs in read(), once the lines are in the order they are
+    printed in. Nothing else may consume this function's output directly.
     """
     xml = subprocess.run(
         ['pdftotext', '-bbox-layout', pdf_path, '-'],
@@ -107,16 +109,38 @@ def _pages(pdf_path):
             if LOCATOR_ONLY.match(text) and (footer is None
                                              or y > raw[footer][1]):
                 footer = i
-        lines = []
-        for i, row in enumerate(raw):
-            if i == footer:
-                continue
-            if LOCATOR_ONLY.match(row[2]) and lines:
-                lines[-1] = (lines[-1][0], lines[-1][1],
-                             lines[-1][2] + ' ' + row[2])
-                continue
-            lines.append((row[0], row[1], row[2]))
-        yield number, float(page.get('width')), lines
+        yield (number, float(page.get('width')),
+               [(x, y, text) for i, (x, y, text) in enumerate(raw)
+                if i != footer])
+
+
+def _fold_continuations(collected):
+    """Fold each locator-only line back into the entry it belongs to.
+
+    `collected` is `(page, column, y, x, text)` already sorted into printed
+    order, so the entry a continuation belongs to is the row before it IN THAT
+    ORDER — and only when that row is on the same page and in the same column,
+    which is what keeps a right-column continuation off the left column's last
+    entry. A continuation with no such row (an entry wrapping across a page or
+    column break, so its locators open a column) has nothing to fold into and
+    is dropped with a note rather than returned: returning it would add a
+    third left edge and read every sub-entry in that column a level deeper.
+    Dropped, its entry simply prints no locators, which a manifest row can
+    state; silently attaching them to a stranger, it could not.
+    """
+    folded, orphans = [], []
+    for row in collected:
+        page, column, _y, _x, text = row
+        if LOCATOR_ONLY.match(text):
+            if folded and folded[-1][0] == page and folded[-1][1] == column:
+                previous = folded[-1]
+                folded[-1] = (previous[0], previous[1], previous[2],
+                              previous[3], previous[4] + ' ' + text)
+            else:
+                orphans.append((page, column, text))
+            continue
+        folded.append(row)
+    return folded, orphans
 
 
 def _levels(edges):
@@ -157,6 +181,17 @@ def read(pdf_path, heading='Index'):
                 continue
             collected.append((number, 0 if x < middle else 1, y, x, text))
 
+    # Printed order first: by page, then column, then down the column. The
+    # fold below needs it, and so does the returned list.
+    collected.sort(key=lambda row: (row[0], row[1], row[2]))
+    collected, orphans = _fold_continuations(collected)
+    if orphans:
+        # Not silent: a dropped continuation is a locator count this module
+        # cannot report, and a check reading it deserves to know.
+        print(f'pdfindex: {len(orphans)} locator-only line(s) opened a column '
+              f'with no entry to fold into and were dropped: {orphans}',
+              file=sys.stderr)
+
     # Left edges cluster per column: the two columns sit at different edges,
     # and a sub-entry in one is further right than a top-level entry in the
     # other, so one global clustering would call them the same level.
@@ -165,7 +200,6 @@ def read(pdf_path, heading='Index'):
         by_column.setdefault(column, set()).add(x)
     levels = {column: _levels(edges) for column, edges in by_column.items()}
 
-    collected.sort(key=lambda row: (row[0], row[1], row[2]))
     return [Entry(text, levels[column][x], page, column, x, y)
             for page, column, y, x, text in collected]
 

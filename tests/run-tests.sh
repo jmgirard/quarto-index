@@ -1149,6 +1149,7 @@ README_MISUSE_CLAIMS=(
   $'parent level resolves\tincluding a level that exists only because a deeper entry hangs from it'
   $'book report drawn once\tthe report is drawn once, by the last chapter in book order'
   $'xref channel has an exception\texcept where a term is marked two different ways, whose single composed entry carries the cross-reference in its printed text instead'
+  $'two different xrefs keep no locator\tinto one entry carrying both targets and no page numbers at all, since neither mark contributes one'
 )
 README_MISUSE_STALE=(
   $'clash can fail the build\tOne term marked two different ways can fail the build'
@@ -1567,7 +1568,7 @@ if blank:
     sys.exit(1)
 # An exact count, not a floor: a floor passes while a warning quietly stops
 # being read. This number changes when a warning is added or removed.
-EXPECTED = 37
+EXPECTED = 38
 if len(lits) != EXPECTED:
     print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
           f'{EXPECTED}. Either a warning was added or removed without updating '
@@ -1935,12 +1936,21 @@ cp examples/xref-conflict.tex "$WORK/conflict-latex.tex"
 # M15 replaced this report's text: the emission no longer risks the failed
 # render the old wording warned of, so the report now says what the author's
 # two marks print as. Keyed on the clause that names the outcome, not on the
-# lead, so a reworded lead cannot pass a check that claims to read the outcome.
-WARN_CLASH='they are printed as one entry with its page numbers and its cross-reference together'
-# kappa (plain against a cross-reference) and lambda (see against see-also),
-# once each; mu (two identical see= marks) and nu (two plain marks) must NOT
-# be reported, which the exact count is what fences.
+# lead, so a reworded lead cannot pass a check that claims to read the outcome
+# — and since the two shapes print differently, on the tail both share plus
+# each shape's own outcome clause.
+WARN_CLASH='so check that is the entry you meant'
+WARN_CLASH_PLAIN='they are printed as one entry with its page numbers and its cross-reference together'
+WARN_CLASH_XREFS='they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all'
+# Eight contested entries, of which six have a plain mark (chi, Deep!Level,
+# kappa, phi, tau, Tree!Branch!Cedar, Dogwood) and two do not (lambda,
+# upsilon); mu (two identical see= marks) and nu (two plain marks) must NOT be
+# reported at all, which the exact counts are what fence. A no-plain entry told
+# it prints page numbers would be told something false, so the split is
+# asserted rather than the total alone.
 check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH" 8 "M02-AC5"
+check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH_PLAIN" 6 "M02-AC5"
+check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH_XREFS" 2 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index entry kappa ' 1 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index entry lambda ' 1 "M02-AC5"
 # Deliberately LaTeX-only, and it stays that way now that HTML has a back-end
@@ -1950,7 +1960,7 @@ check_warning_count "$WORK/conflict-latex.log" 'index entry lambda ' 1 "M02-AC5"
 # on the same entry — so warning about it there would report a problem the
 # reader's format does not have.
 check_warning_count "$WORK/conflict-html.log" "$WARN_CLASH" 0 "M02-AC5"
-pass "M02-AC5: the clash report names both differing-encap keys once each, ignores the two agreeing keys, and is silent in HTML"
+pass "M02-AC5: the composed-entry report names each of the eight contested entries once, in the shape that entry has, ignores the two agreeing keys, and is silent in HTML"
 
 # ---------------------------------------------------------------------------
 # M03-AC4 — cross-references in a generated HTML index.
@@ -6961,7 +6971,7 @@ MANIFEST
 
 printf '%s\n' "$CONFLICT_PDF_INDEX" > "$WORK/conflict-index.txt"
 python3 - examples/xref-conflict.pdf "$WORK/conflict-index.txt" <<'CONFLICTPDFPY'
-import re, sys
+import sys
 sys.path.insert(0, 'tests')
 import pdfindex
 
@@ -7141,13 +7151,19 @@ python3 - _extensions/index/index.lua <<'M15AC5PY'
 import re, sys
 
 GONE = 'the index tool rejects the pair and the render fails'
-# The replacement, as a template with its one substitution removed. Present as
-# a joined message, which is also this scanner's passing control: a scanner
-# that found nothing would satisfy the absence check for free.
-REPLACEMENT = ('carries both a plain locator and a cross-reference (or two '
-               'different cross-references); they are printed as one entry '
-               'with its page numbers and its cross-reference together, so '
-               'check that is the entry you meant')
+# The replacement, in both its shapes, each as a template with its one
+# substitution removed. Present as joined messages, which is also this
+# scanner's passing control: a scanner that found nothing would satisfy the
+# absence check for free. Both, because a scanner that found only one would
+# pass while the other shape's message went unread.
+REPLACEMENT = (
+    ('carries both a plain locator and a cross-reference; they are printed as '
+     'one entry with its page numbers and its cross-reference together, so '
+     'check that is the entry you meant'),
+    ('carries two different cross-references; they are printed as one entry '
+     'carrying both targets and, since neither mark contributes one, no page '
+     'numbers at all, so check that is the entry you meant'),
+)
 
 src = open(sys.argv[1], encoding='utf-8').read()
 
@@ -7162,8 +7178,13 @@ LITERAL = re.compile(r"""(["'])((?:[^\\]|\\.)*?)\1""")
 
 
 def calls(text):
-    """Every warn(...) argument list, parenthesis-balanced."""
-    for m in re.finditer(r'\bwarn\(', text):
+    """Every warn(...) CALL's argument list, parenthesis-balanced.
+
+    `\bwarn\(` alone also matches `local function warn(msg)`, whose argument
+    list holds no literal — an empty message that inflates the count and
+    weakens the "read nothing at all" control below.
+    """
+    for m in re.finditer(r'(?<!function )\bwarn\(', text):
         depth, i = 1, m.end()
         while i < len(text) and depth:
             if text[i] == '(':
@@ -7184,10 +7205,15 @@ if not messages:
           'absence below is the scanner finding nothing, not the filter '
           'saying nothing', file=sys.stderr)
     sys.exit(1)
-if not any(REPLACEMENT in message for message in messages):
-    print('FAIL: M15-AC5: the replacement report is not among the '
-          f'{len(messages)} joined warn() messages this scanner read, so it '
-          'is reading the file wrongly', file=sys.stderr)
+unseen = [r for r in REPLACEMENT
+          if not any(r in message for message in messages)]
+if unseen:
+    print(f'FAIL: M15-AC5: {len(unseen)} of the {len(REPLACEMENT)} shapes of '
+          f'the replacement report are not among the {len(messages)} joined '
+          f'warn() messages this scanner read, so it is reading the file '
+          f'wrongly:', file=sys.stderr)
+    for r in unseen:
+        print(f'  <<{r}>>', file=sys.stderr)
     sys.exit(1)
 guilty = [message for message in messages if GONE in message]
 if guilty:
@@ -7199,39 +7225,58 @@ if guilty:
     sys.exit(1)
 print(f'ok   M15-AC5: none of the {len(messages)} joined warn() messages in '
       f'the filter claims a render can fail from rival encapsulations, and '
-      f'the replacement report is among them')
+      f'both shapes of the replacement report are among them')
 M15AC5PY
 
 # The other half of AC5: the replacement report's FULL text, once per contested
 # key, over the fixture. The keys are the entry paths the report names — what
 # the author wrote, after the back-end's three-level fold — derived by hand
 # from examples/xref-conflict.qmd, not read back out of the log.
+# Rows are `<shape>\t<entry path>`: `plain` where some mark of the entry is a
+# plain locator mark, `xrefs` where none is. The shape decides which of the two
+# reports the entry must draw, and telling an `xrefs` entry it prints page
+# numbers would be telling the author something the index does not do.
 read -r -d '' CONFLICT_REPORTED <<'MANIFEST' || true
-Deep!Level
-Tree!Branch!Cedar, Dogwood
-chi
-kappa
-lambda
-phi
-tau
-upsilon
+plain	Deep!Level
+plain	Tree!Branch!Cedar, Dogwood
+plain	chi
+plain	kappa
+plain	phi
+plain	tau
+xrefs	lambda
+xrefs	upsilon
 MANIFEST
 printf '%s\n' "$CONFLICT_REPORTED" > "$WORK/conflict-reported.txt"
 python3 - "$WORK/conflict-latex.log" "$WORK/conflict-reported.txt" <<'M15REPORTPY'
 import sys
 
-TEMPLATE = ('index entry {} carries both a plain locator and a '
-            'cross-reference (or two different cross-references); they are '
-            'printed as one entry with its page numbers and its '
-            'cross-reference together, so check that is the entry you meant')
+TEMPLATE = {
+    'plain': ('index entry {} carries both a plain locator and a '
+              'cross-reference; they are printed as one entry with its page '
+              'numbers and its cross-reference together, so check that is the '
+              'entry you meant'),
+    'xrefs': ('index entry {} carries two different cross-references; they '
+              'are printed as one entry carrying both targets and, since '
+              'neither mark contributes one, no page numbers at all, so check '
+              'that is the entry you meant'),
+}
 
 log = open(sys.argv[1], encoding='utf-8').read()
-keys = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
 bad = []
-for key in keys:
-    n = log.count(TEMPLATE.format(key))
+for shape, key in rows:
+    n = log.count(TEMPLATE[shape].format(key))
     if n != 1:
-        bad.append(f'  {key!r}: the full report appears {n} times, expected 1')
+        bad.append(f'  {key!r}: the full {shape} report appears {n} times, '
+                   f'expected 1')
+    # And not the OTHER shape's report, which would tell this author the
+    # opposite about their page numbers.
+    other = 'xrefs' if shape == 'plain' else 'plain'
+    m = log.count(TEMPLATE[other].format(key))
+    if m:
+        bad.append(f'  {key!r}: also drew the {other} report {m} time(s), '
+                   f'which contradicts the {shape} one')
 # A key the fixture does NOT contest would not be seen by a count per key;
 # the exact count of this report over the same log, asserted above with the
 # other clash counts, is what fences that direction.
@@ -7240,8 +7285,9 @@ if bad:
           'contested key over examples/xref-conflict.qmd:', file=sys.stderr)
     print('\n'.join(bad), file=sys.stderr)
     sys.exit(1)
-print(f'ok   M15-AC5: the replacement report is drawn in full, exactly once, '
-      f'for each of the {len(keys)} contested entries the fixture writes')
+print(f'ok   M15-AC5: the replacement report is drawn in full, exactly once '
+      f'and in the shape the entry has, for each of the {len(rows)} contested '
+      f'entries the fixture writes')
 M15REPORTPY
 pass "M15-AC5: no joined filter message claims a failed render, and the report that replaced it is drawn in full once per contested entry"
 
@@ -7250,27 +7296,46 @@ pass "M15-AC5: no joined filter message claims a failed render, and the report t
 # files are discovered by glob over what the run rendered, not named in a list
 # that a later fixture would silently fall off.
 CONFLICT_TEX="$WORK/conflict-latex.tex" python3 - <<'M15UNTOUCHEDPY'
-import glob, os, sys
-LIST_COMMAND = 'quartoindexxrefs'
-# Both halves, or the check would pass on a filter that emitted the command
-# nowhere at all. The contested fixture's own artifact is read from the copy
-# kept before the PDF render removed it — a glob over examples/*.tex cannot
-# see it at this point, so the basename it would have matched is not there.
-kept = os.environ['CONFLICT_TEX']
-if LIST_COMMAND not in open(kept, encoding='utf-8').read():
-    print(f'FAIL: M15: the fixture that HAS a contested key emitted no '
-          f'{LIST_COMMAND}, so the sweep below proves nothing',
+import glob, os, re, sys
+# BOTH repairs, or the sweep fences only half of what the milestone changed:
+# the list command comes from the no-plain branch, and the folded printed field
+# from the other. `\see{` with a BACKSLASH is the fold's signature — an
+# uncontested cross-reference travels the encapsulation channel as `|see{...}`
+# with none, and the preamble's \providecommand defines no such macro.
+MARKS = {
+    'the combined-encapsulation command': re.compile(r'quartoindexxrefs'),
+    'a cross-reference folded into the printed field':
+        # `\see(?:also)?` — NOT `\seealso?`, which requires the literal
+        # `seeals` and so would miss a fold that carries only `\see{`.
+        re.compile(r'\\index\{[^\n]*\\see(?:also)?\{'),
+}
+
+
+def carried(path):
+    src = open(path, encoding='utf-8').read()
+    return [name for name, mark in MARKS.items() if mark.search(src)]
+
+
+# Both directions, or the check would pass on a filter that emitted neither
+# mark anywhere at all. The contested fixture's own artifact is read from the
+# copy kept before the PDF render removed it — a glob over examples/*.tex
+# cannot see it at this point, so the basename it would have matched is absent.
+missing = [name for name in MARKS if name not in carried(os.environ['CONFLICT_TEX'])]
+if missing:
+    print(f'FAIL: M15: the fixture that HAS contested keys of both shapes '
+          f'emitted no {missing}, so the sweep below proves nothing',
           file=sys.stderr)
     sys.exit(1)
-stray = [path for path in sorted(glob.glob('examples/*.tex'))
-         if LIST_COMMAND in open(path, encoding='utf-8').read()]
+stray = [(path, carried(path)) for path in sorted(glob.glob('examples/*.tex'))
+         if carried(path)]
 if stray:
     print(f'FAIL: M15: the contested-key emission reached {stray}, which have '
           f'no contested key', file=sys.stderr)
     sys.exit(1)
-print(f'ok   M15: the contested-key fixture carries the contested-key '
-      f'emission, and none of the {len(glob.glob("examples/*.tex"))} other '
-      f'rendered LaTeX artifacts does')
+print(f'ok   M15: the contested-key fixture carries both shapes of the '
+      f'contested-key emission, and none of the '
+      f'{len(glob.glob("examples/*.tex"))} other rendered LaTeX artifacts '
+      f'carries either')
 M15UNTOUCHEDPY
 pass "M15-AC5: the failed-render claim is gone from the filter, and the contested-key emission reaches only the fixture that has one"
 

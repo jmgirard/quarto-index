@@ -132,10 +132,10 @@ there.
 
 For `see-also=` it is a current limitation, not the intent: a printed index
 normally writes `cats, 12, 47, see also Felines`, and this extension cannot
-produce that yet. Marking the term plainly elsewhere does **not** work around
-it — a plain mark and a cross-reference on the same term can fail the build
-outright, as the next paragraph explains. Until that is fixed, a `see-also=`
-entry carries its cross-reference and no page numbers.
+produce that yet. Marking the term plainly elsewhere gets you the page numbers
+and the cross-reference on one entry, but in this extension's order — `cats,
+see also Felines, 12, 47` — not the printed convention above. On its own, a
+`see-also=` entry carries its cross-reference and no page numbers.
 
 **The target uses the same level syntax as `entry=`.** A single `!` separates
 levels and `!!` is a literal `!`, so `see="Birds!Owls"` points at the sub-entry
@@ -162,12 +162,17 @@ Aye; see also Bee`, and a warning. A target that names its own entry is still
 dropped for that reason, and the other one is then the only one emitted.
 
 **One term marked two different ways prints as one entry.** If `cats` gets a
-plain mark in one place and a cross-reference in another — or a `see=` in one
-place and a `see-also=` in another — you get a single entry carrying its page
-numbers and its cross-reference together: `cats, see Felines, 3, 7`. The
-cross-reference mark contributes no page number of its own, exactly as it does
-not when it stands alone. You also get a warning naming the entry, because two
-marks describing one term differently is more often a slip than a plan.
+plain mark in one place and a cross-reference in another, you get a single
+entry carrying its page numbers and its cross-reference together: `cats, see
+Felines, 3, 7`. The cross-reference mark contributes no page number of its own,
+exactly as it does not when it stands alone.
+
+Two *different* cross-references on one term — a `see=` in one place and a
+`see-also=` in another — merge the same way, but into one entry carrying both
+targets and no page numbers at all, since neither mark contributes one: `cats,
+see Felines; see also Dogs`. Either way you get a warning naming the entry and
+saying which of the two it drew, because two marks describing one term
+differently is more often a slip than a plan.
 
 This used to fail the PDF build outright, and in a document that had never
 been built to PDF it could sit unnoticed for a long time: `makeindex` rejects

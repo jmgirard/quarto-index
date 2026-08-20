@@ -95,10 +95,10 @@ records why. Making module-level state per-document → stays the standing
       site: scratch copy, definition moved into `modules/`, site still finds it.
 - [x] T4: Add the planted-defect half for each retargeted site — a defect of
       the kind that site names, planted in the moved definition, makes it fail.
-- [ ] T5: Delete `tests/byte-diff.sh`; drop the reference at
+- [x] T5: Delete `tests/byte-diff.sh`; drop the reference at
       `tests/run-tests.sh:1242`; rewrite the ROADMAP candidate row that rests
       on the LaTeX byte-diff.
-- [ ] T6: Append the D-entry recording the rejection of byte-level
+- [x] T6: Append the D-entry recording the rejection of byte-level
       output-neutrality evidence, with its rationale.
 - [ ] T7: Run both verify slots; record the check count and the merge-base
       comparison.
@@ -121,6 +121,8 @@ records why. Making module-level state per-document → stays the standing
 - 2026-08-20: T2 also dropped the drifting line numbers from its own task text (minor edit, implement-owned) for the same reason the criterion did.
 - 2026-08-20: T3 complete — the twelve scanner bodies lifted into `tests/scans/<name>.py`, a `run_scan` dispatcher holding each one's environment and arguments in one place, `tests/movedefs.py` building the moved-definition tree, and a `--self-test` probe running all twelve against it. Full `--self-test` run exit 0, 231 checks (230 + the new AC3 line), 0 FAIL; the probe reports all 12 still finding what they read with 17 definitions relocated into `modules/moved.lua`.
 - 2026-08-20: T4 complete — `tests/plantdefect.py` plants, per scan, a defect of the kind that scan names (a pinned value changed where the check compares one; the definition renamed out of reach where the check only has to locate it) into the moved module, and the probe requires the scan to exit non-zero AND to print the named failure marker, so a scan killed by a broken probe cannot read as a scan catching the defect. All twelve discriminate. Full `--self-test` run exit 0, 231 checks, 0 FAIL.
+- 2026-08-20: T5 complete — `tests/byte-diff.sh` deleted and its reference in `run-tests.sh` (drifted from :1242 to :1286 under this milestone's own insertions) rewritten to name D-004 and state that the checks in that file are the whole output-neutrality oracle. AC4's domain grep over `tests/ README.md _extensions/` now reports nothing. The task's third clause was already satisfied: both ROADMAP rows resting on the merge-base render comparison were rewritten in the plan commit. Plain verify slot: exit 0, 196 checks.
+- 2026-08-20: T6 ticked as the no-op the work log recorded on 2026-08-20 — D-004 landed in the plan commit; verified present in `cairn/DECISIONS.md` before ticking.
 
 ## Decisions
 

@@ -1281,11 +1281,11 @@ MISUSEDOCPY
 run_scan latex-escape-table
 
 # ---------------------------------------------------------------------------
-# REVIEW-TIME EVIDENCE, NOT A CHECK: the LaTeX back-end is untouched.
-# A checked-in golden `.tex` would be a snapshot, which the oracle rule above
-# forbids. `tests/byte-diff.sh` renders every fixture the merge base carries,
-# once with each filter, and compares the two `.tex` files byte for byte — the
-# expected diff is empty. Run it from a clean tree on the milestone branch.
+# OUTPUT NEUTRALITY — where the evidence comes from. A checked-in golden `.tex`
+# would be a snapshot, which the oracle rule above forbids; the merge-base
+# render comparison this repo once carried is deleted, and D-004 records why.
+# The checks in this file are the whole oracle for whether a change moved
+# rendered output.
 # ---------------------------------------------------------------------------
 
 # The HTML back-end's four identifiers are a public surface — a reader's URL

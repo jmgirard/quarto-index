@@ -38,6 +38,19 @@ _None yet — populated as the codebase takes shape._
   init, 2026-08-16): the universal ≥2-independent-oracle-types bar is waived;
   numeric results, if any arise, are checked ad hoc. Revisit if scoring or
   statistical work enters the project.
+- **A module's definitions keep their plain form, and it exports through
+  brackets** (added M17). Every definition in `_extensions/index/modules/` is
+  written `local function NAME(` or `local NAME = <literal>` at column 0, never
+  `function M.NAME(`, and the module table is populated afterwards as
+  `M["NAME"] = NAME`. Both halves are load-bearing for the acceptance suite,
+  not style: the source scans take the FIRST `NAME =` match over the whole
+  source set, so a plain `M.NAME = NAME` line masks its own definition once
+  the moved-definition probe relocates it (M16 review F3), and
+  `tests/movedefs.py` and `tests/scans/warn-distinct.py` both read the
+  column-0 `local` forms.
+- **A module is required under `qi_<name>`** (added M17), never its bare name:
+  `levels`, `marks` and `marker` are all ordinary local and parameter names in
+  this filter, and a bare alias is shadowed by the first one that shares it.
 - **Collation is best-effort**: non-ASCII terms appearing correctly is an IP2
   commitment, but sort *order* beyond what the user's index processor
   provides is best-effort. Sort keys (`sort=`) are how an author overrides it,
@@ -131,11 +144,15 @@ The modules, in dependency order:
 - `book.lua` — the per-chapter sidecar store, and the one index the chapter
   carrying the marker builds out of it.
 
-The split is a relocation, not a change of lifetime: the document-wide
-accumulators are still module-level, so they still last as long as the Lua
-state does. What
-`quarto add` installs is unchanged in shape — `_extension.yml` contributes one
-filter, `index.lua`, and the install copies `modules/` along with it (GP3).
+The split relocates the document-wide accumulators without making them
+per-document: they are still module-level, and each still lasts as long as the
+state that holds it. What holds them did change — a module table in
+`package.loaded` rather than the filter chunk's own locals — which is
+indistinguishable today only because Quarto runs one pandoc process per
+document. That is a second mechanism behind the standing `marks_seen`
+ROADMAP row, not a new behavior (added M17). What `quarto add` installs is
+unchanged in shape: `_extension.yml` contributes one filter, `index.lua`, and
+the install copies `modules/` along with it (GP3).
 
 The **collect pass** reads every mark that writes a `sort=` and registers the
 sort key against the printed level path it was written for, reporting once per

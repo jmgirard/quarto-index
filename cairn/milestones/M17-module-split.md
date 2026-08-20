@@ -1,6 +1,6 @@
 # M17: index.lua becomes a thin entry point over required modules
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M16
 - **Driving RR:** —
@@ -163,6 +163,8 @@ the task that made it.
 - 2026-08-20: T10 — `cairn/DESIGN.md`'s Architecture section opens on the module layout and names all ten source files in their `.lua` form; `_extension.yml` unchanged against the merge base (`git diff cb782df` empty for it). Two probe gaps recorded on the acceptance-suite hardening candidate row.
 - 2026-08-20: tasks complete, status to `review`. Pre-review check clean: `tests/run-tests.sh` 197, `--self-test` 232, both exit 0. Every merge-base ok line verbatim and in order in both runs, the one exempted interpolated line reading `(10 -> 11)` for the extension's 10 `.lua` files with identical text either side of the parentheses. `git status --porcelain` over `tests/`, `examples/` and `README.md` is clean; `git diff --numstat cb782df` over them names two files, `tests/movedefs.py` (54/26) and `tests/run-tests.sh` (134/0, zero deletions).
 - 2026-08-20: review return 1 (defect). AC2 failed: its position clause asks that every merge-base `ok` line stand "in the same position" in the split run's log, and in `--self-test` the probe's two lines shift merge-base lines 196-230 to 198-232. AC1, AC3, AC4 and AC5 verified; consistency gate clean. Status back to `in-progress` with seven further fix-now findings from the review; three findings go to candidate rows and three were refuted or rejected.
+- 2026-08-20: return 1 fixed. E — the AC3 probe block moved below the `--self-test` section, so its two `ok` lines land after every merge-base line instead of shifting the self-test's down by two; costs nothing, since the nested `--plant-wrapper-defect` run dies at `run-tests.sh:1066` before any render. C — the probe copies `examples/book` wholesale (excluding `_book`, `.quarto`, `_extensions`) and derives the standalone fixture's assets out of the fixture, with a guard comparing the chapter count it copied against the one `examples/book` holds. D — all four compared outputs now carry a non-emptiness guard, not two. N — the require check reports each file's require lines and its first definition line on success, as AC3 says. G — the two requires `index.lua` never used are gone (7 remain, each used). H — the corrupted comment restored to its merge-base wording. F — the bracket-export and definition-form rules recorded in DESIGN.md Conventions. K, L — the lifetime claim now names `package.loaded` as what changed and points at the standing `marks_seen` row; the stray hard break is gone.
+- 2026-08-20: AC2's position clause measured literally after the fix: in both runs every merge-base `ok` line stands verbatim at its own position (195 of 195, 230 of 230, zero mismatches), the exempt line sits at position 200 reading `(10 -> 11)` with identical text either side, and the two added lines land at 196-197 and 231-232. Suite 197 / 232, both exit 0. `git diff --numstat cb782df` over `tests/`, `examples/` and `README.md` still names two files, `tests/movedefs.py` (54/26) and `tests/run-tests.sh` (189/0, zero deletions); `git status --porcelain` over them is clean. Status back to `review`.
 
 ## Decisions
 

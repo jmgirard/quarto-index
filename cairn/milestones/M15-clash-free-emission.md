@@ -106,7 +106,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
 
 ## Tasks
 
-- [ ] T1 Extend `examples/xref-conflict.qmd` with AC3's five pairings, one on
+- [x] T1 Extend `examples/xref-conflict.qmd` with AC3's five pairings, one on
       a sub-entry key, and place one contested term's marks across three pages
       so AC2's locator count discriminates. Record the failing PDF render's
       exit status and its two failure strings before changing any code.
@@ -142,6 +142,11 @@ candidate row; every criterion here is evidenced in a warmed tree.
 - 2026-08-19: plan gate chose folding the cross-reference into the entry's printed text over keeping it a separate page-gobbled item, because the second prints the term twice in adjacent lines; both were verified against makeindex 2.18 to emit zero warnings where today's emission emits the fatal conflict. Falsified by evidence that a reader reads "cats, see Felines, 1, 3" as two entries rather than one.
 - 2026-08-19: plan gate chose a common combined encap over folding for a key whose marks are all cross-references, because folding would give such a key a locator it does not have today and the gate ruled that out. Falsified by evidence that two marks carrying one combined encap can still differ.
 - 2026-08-19: plan gate chose reading rival encaps as output the extension emitted wrongly over recording a trade against GP2 (D-003). Falsified by a case where the tool rejects output no alternative emission could avoid.
+- 2026-08-19: implement gate chose reusing `\see`/`\seealso` and the existing both-targets command with an explicit empty page argument over a new dedicated command, so the folded form and the encapsulated form cannot drift in how they render a target; the both-targets command is declared with three arguments and is fed its third by the index tool through the encap channel, so a printed-field use must pass it explicitly or LaTeX consumes what follows. Falsified by a case the shared rendering path cannot express.
+- 2026-08-19: implement gate chose the proposed replacement report wording (names the key, says the two marks print as one entry with both parts, asks the author to confirm the intent) over a shorter statement of outcome alone.
+- 2026-08-19: T1 extended `examples/xref-conflict.qmd` with AC3's five pairings (plain against see=, plain against see-also=, see= against see-also=, see= against a different see=, a both-attributes mark against a plain mark), one of them on the sub-entry key `Deep!Level`, and one whose target carries all sixteen characters README pins as escaped. `kappa`'s two plain marks now sit on pages 1 and 2 with its cross-reference mark on page 3, so a printed locator count of 2 rather than 3 discriminates the no-locator semantics.
+- 2026-08-19: T1 baseline on the final fixture, before any code changed: `quarto render examples/xref-conflict.qmd --to pdf` exits 1 with `error generating index` and `Conflicting entries: multiple encaps for the same page under same key.`, and the latex render reports seven contested keys — `Deep!Level`, `chi`, `kappa`, `lambda`, `phi`, `tau`, `upsilon`.
+- 2026-08-19: T1 suite consequences, derived by hand from the fixture source before any render was read: the HTML index manifest and letter sweep for the fixture (both passed first time), the clash count 2 -> 7, and the dangling-target corpus count 6 -> 13. The first derivation said 13 against 14 emitted; the cause was a duplicated `kappa` cross-reference mark left in the fixture, which was removed rather than the number adjusted.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 12 findings. Two were fatal and are fixed above: AC5 tested a phrase no single literal carries, so it would have passed against the unmodified filter, and AC3's exhaustive manifest named four of the eight lines the index prints. AC4's two-fixture list was narrowed to a globbed domain, the verify-slot criterion was dropped as instrument-bound and became T9, an escaping criterion was added for the printed field (IP2), and a README/DESIGN criterion was added (GP1). GP2 and the locator question went to the gate.
 
 ## Decisions

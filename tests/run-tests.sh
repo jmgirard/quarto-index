@@ -1915,7 +1915,7 @@ WARN_CLASH='is marked in more than one way'
 # kappa (plain against a cross-reference) and lambda (see against see-also),
 # once each; mu (two identical see= marks) and nu (two plain marks) must NOT
 # be reported, which the exact count of 2 is what fences.
-check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH" 2 "M02-AC5"
+check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH" 7 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index key kappa ' 1 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index key lambda ' 1 "M02-AC5"
 # Deliberately LaTeX-only, and it stays that way now that HTML has a back-end
@@ -1937,8 +1937,13 @@ pass "M02-AC5: the clash report names both differing-encap keys once each, ignor
 # locator AND a cross-reference, which makeindex rejects but HTML does not.
 # ---------------------------------------------------------------------------
 read -r -d '' XREF_HTML_INDEX <<'MANIFEST' || true
+letter	C
+0	chi	1	see-plain % & # _ { } \ ~ ^ $ @ | ! " < >
+letter	D
+0	Deep	0
+1	Level	1	see-plain Shallow
 letter	K
-0	kappa	1	see-plain Elsewhere
+0	kappa	2	see-plain Elsewhere
 letter	L
 0	lambda	0	see-plain Here	also-plain There
 letter	M
@@ -1947,15 +1952,21 @@ letter	N
 0	Note	0
 1	on birds	1
 0	nu	2
+letter	P
+0	phi	1	see-plain Aye Two	also-plain Bee Two
 letter	R
 0	rho	0	see-plain Note: on birds
 letter	S
 0	sigma	0	see-link Note: on birds
+letter	T
+0	tau	1	also-plain Elsewhere Again
+letter	U
+0	upsilon	0	see-plain One Way	see-plain Another Way
 MANIFEST
 
 check_html_index_manifest examples/xref-conflict.html "$XREF_HTML_INDEX" "M03-AC4"
 check_letter_sweep examples/xref-conflict.html "M07-AC3 (cross-references)" \
-  $'K\nL\nM\nN\nR\nS'
+  $'C\nD\nK\nL\nM\nN\nP\nR\nS\nT\nU'
 
 # The token above says sigma's target is A link; this says it is the RIGHT
 # link. A cross-reference pointing at some other entry would satisfy the
@@ -6748,9 +6759,11 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  `Wow!!Really` does not spell. 8.
 #   dangling-xref  9 attributes, of which 2 name `Cats`, which the file
 #                  indexes. 7.
-#   xref-conflict  7 attributes. Only `see="Note!on birds"` names the file's
-#                  one `entry=` path; `see="Note: on birds"` is a single level
-#                  that merely prints the same way (the M02 shape). 6.
+#   xref-conflict  14 attributes after M15 extended it. Only
+#                  `see="Note!on birds"` names an entry the file marks;
+#                  `see="Note: on birds"` is a single level that merely prints
+#                  the same way (the M02 shape), and the other twelve name
+#                  nothing. 13.
 #   html-index     5 attributes: `see="A!B"` four times, which names the file's
 #                  one entry, and `see="A: B"` once, which does not. 1.
 #   self-xref      11 attributes. 6 name the entry they are written on and are
@@ -6787,7 +6800,7 @@ examples/html-index.qmd	1
 examples/placement.qmd	0
 examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
-examples/xref-conflict.qmd	6
+examples/xref-conflict.qmd	13
 examples/xref-escaping.qmd	271
 MANIFEST
 
@@ -6893,7 +6906,7 @@ PY
   warn_discrimination "$WORK/content-latex.log" "$WARN_NO_SOURCE" 2 "M02-AC5"
   # Not named by a criterion, but the same discipline: a clash report nothing
   # proves discriminating is a report that can quietly stop firing.
-  warn_discrimination "$WORK/conflict-latex.log" "$WARN_CLASH" 2 "M02-AC5"
+  warn_discrimination "$WORK/conflict-latex.log" "$WARN_CLASH" 7 "M02-AC5"
   # Same discipline for the marker's warnings: a report of a misused marker
   # that quietly stopped firing would leave every misuse check passing on a
   # log that says nothing.

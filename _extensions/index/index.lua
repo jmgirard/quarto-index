@@ -68,6 +68,19 @@ local XREF_BOTH_DEFINITION =
   "\\providecommand*\\" .. XREF_BOTH_COMMAND ..
   "[3]{\\emph{\\seename} #1; \\emph{\\alsoname} #2}"
 
+-- A contested key whose marks are ALL cross-references keeps its targets in the
+-- encapsulation channel, where makeindex's own term/locator delimiter is the
+-- comma that separates the term from them — the same place a single-target
+-- mark has always put them. Folding such a key into the printed text instead
+-- would leave that delimiter standing before an encap printing nothing, ending
+-- the entry on a dangling comma. This command renders the whole target list,
+-- which is what lets every mark of the key carry the SAME encap however many
+-- targets they have between them, and discards the page makeindex appends,
+-- exactly as `\see` does. Emitted only where such a key exists.
+local XREF_LIST_COMMAND = "quartoindexxrefs"
+local XREF_LIST_DEFINITION =
+  "\\providecommand*\\" .. XREF_LIST_COMMAND .. "[2]{#1}"
+
 -- Characters that are literal text on the way in and need help on the way
 -- out. Most LaTeX specials are escaped with a backslash. Three groups cannot
 -- be: `!` and `@` are makeindex operators, made literal with its quote
@@ -195,7 +208,10 @@ end
 local MAX_LEVELS = 3
 local OVERFLOW_JOIN = ", "
 
-local function clamp_levels(levels, context)
+-- `report` follows the convention derive_levels and drop_empty_levels already
+-- use: a mark's levels are derived by more than one pass, and only the pass
+-- that emits says so, or one stray `!` is reported once per pass that looked.
+local function clamp_levels(levels, context, report)
   if #levels <= MAX_LEVELS then
     return levels
   end
@@ -206,9 +222,11 @@ local function clamp_levels(levels, context)
   for i = MAX_LEVELS, #levels do
     tail[#tail + 1] = levels[i]
   end
-  warn(("index entry in %s is %d levels deep; the back-end stores %d, so "
-        .. "levels %d and deeper were folded into the third")
-       :format(context, #levels, MAX_LEVELS, MAX_LEVELS))
+  if report then
+    warn(("index entry in %s is %d levels deep; the back-end stores %d, so "
+          .. "levels %d and deeper were folded into the third")
+         :format(context, #levels, MAX_LEVELS, MAX_LEVELS))
+  end
   local clamped = {}
   for i = 1, MAX_LEVELS - 1 do
     clamped[i] = levels[i]
@@ -550,12 +568,40 @@ end
 -- The clamped levels are returned as well, for the self-target comparison the
 -- caller runs against them. They are returned rather than recomputed because
 -- clamp_levels warns about the fold, and a second call would report it twice.
-local function index_argument(levels, sort, context)
-  local clamped = clamp_levels(levels, context)
+-- `report` is passed through for the same reason: the pass that decides which
+-- keys are contested calls this before anything is emitted, and must not
+-- report a fold the emitting pass will report.
+--
+-- `fold` (optional) is a contested key's cross-references, already rendered for
+-- the printed field: it is appended to the LAST level's printed half, and that
+-- level then always carries a sort field — its own text — so the entry files
+-- exactly where it filed before and only what it prints changes. It is applied
+-- here, from the levels, rather than by taking the built argument apart again:
+-- an author's own `@` is makeindex-quoted inside a level, so "the first `@`"
+-- is not something a pattern over the finished string can find.
+local function index_argument(levels, sort, context, report, fold)
+  local clamped = clamp_levels(levels, context, report)
   local keys = clamp_sort(sort)
   local parts, filing = {}, {}
   for i, level in ipairs(clamped) do
     local printed = escape_level(level)
+    if fold ~= nil and i == #clamped then
+      -- A sort field is unavoidable here — the printed half now carries the
+      -- folded cross-reference, and without a key the entry would file under
+      -- that whole string. What it files under is still decided by the SAME
+      -- comparison the uncontested branch below makes, so contesting a key
+      -- moves nothing: a key that merely repeats its level declares nothing,
+      -- and the level the entry files under is then the clamped text, join
+      -- and all, exactly as it is when no cross-reference is folded in.
+      local key = level
+      if keys ~= nil and keys[i] ~= nil and keys[i] ~= levels[i] then
+        key = keys[i]
+      end
+      parts[#parts + 1] =
+        escape_level(key) .. "@" .. printed .. ", " .. fold
+      filing[i] = key
+      goto continue
+    end
     -- Compared against the level the key was ALIGNED with, not against the
     -- clamped text: where levels were folded, the third clamped level is a
     -- join of several and never equals the key resolved for the third level,
@@ -572,10 +618,160 @@ local function index_argument(levels, sort, context)
       -- key was compared against.
       filing[i] = level
     end
+    ::continue::
   end
   return table.concat(parts, "!"), levels_key(clamped),
          levels_key(filing), clamped
 end
+
+-- ---------------------------------------------------------------------------
+-- Contested keys.
+--
+-- makeindex rejects two marks that share a key and a printed page but carry
+-- different encapsulations, and Quarto turns that rejection into a failed
+-- render — a marked term breaking the document, which IP2 forbids. Page
+-- numbers do not exist here, so the pair cannot be kept apart; what CAN be
+-- done is to stop emitting rival encapsulations at all for such a key, by
+-- folding its cross-references into the entry's printed text, where the index
+-- tool reads them as part of the term rather than as a rival encapsulation.
+--
+-- Which keys are contested takes the whole document to know, so it is settled
+-- in a pass of its own (CollectKeys) before anything is emitted. Both passes
+-- go through latex_plan, so the pass that decides and the pass that emits
+-- cannot drift on what a mark's key or surviving targets are (D-003 records
+-- why repairing this sits inside GP2 rather than trading against it).
+-- ---------------------------------------------------------------------------
+
+-- Emitted argument -> what the document's marks do with that key: whether any
+-- of them is a plain locator mark, and every distinct cross-reference target
+-- written on it, in a fixed order. Module-level, like the other accumulators.
+local contested_keys = {}
+local xref_list_emitted = false
+
+-- One mark's LaTeX shape, from levels the caller has already derived. `report`
+-- follows the convention the rest of the file uses: only the emitting pass
+-- says anything, so a fold is reported once however many passes read the mark.
+local function latex_plan(levels, sort, xrefs, context, report, fold)
+  local source, printed_path, filing_path, clamped =
+    index_argument(levels, sort, context, report, fold)
+  -- The self-target comparison against what THIS back-end prints. The
+  -- format-neutral pass ran on the levels the author wrote; here the fold has
+  -- already rewritten them, so an entry can print a path the author never
+  -- spelled and a target spelling that path is a self-reference the first pass
+  -- could not see. It lives here, and not beside the first pass, because the
+  -- three-level ceiling is a property of this back-end alone: HTML has none,
+  -- so the same document keeps the target there, and a format with no index
+  -- back-end never reaches this line. Neither side carries an empty level, for
+  -- the same reason neither does in the first pass.
+  local printed_key = levels_key(clamped)
+  local kept = {}
+  for _, xref in ipairs(xrefs) do
+    if levels_key(xref.levels) == printed_key then
+      if report then
+        -- The folded path is quoted because the author never wrote it: it is
+        -- what their entry prints once the back-end has folded it, and a report
+        -- naming only what they typed would describe a match they cannot see.
+        warn(("%s= on %s names the folded path this entry prints (%s); the "
+              .. "back-end stores %d levels, and the fold made the target a "
+              .. "cross-reference to itself, so it is dropped and the term is "
+              .. "indexed as usual")
+             :format(xref.kind.attr, context, printed_path, MAX_LEVELS))
+      end
+    else
+      kept[#kept + 1] = xref
+    end
+  end
+  return source, printed_path, filing_path, kept
+end
+
+-- The encapsulation one mark would put on its key: the empty string for a
+-- plain locator mark, `\see`/`\seealso` for a single target, and the
+-- both-targets command for a mark carrying two. Shared by the pass that
+-- decides which keys are contested and by the pass that emits, because
+-- contestation is a fact about these exact strings — makeindex rejects two
+-- marks on one key and page whose encapsulations DIFFER, and folds together
+-- two whose encapsulations agree.
+local function mark_encap(xrefs)
+  if #xrefs == 0 then
+    return ""
+  end
+  if #xrefs == 1 then
+    return xrefs[1].kind.command ..
+      "{" .. target_argument(xrefs[1].levels) .. "}"
+  end
+  local args = {}
+  for _, xref in ipairs(xrefs) do
+    args[#args + 1] = "{" .. target_argument(xref.levels) .. "}"
+  end
+  return XREF_BOTH_COMMAND .. table.concat(args)
+end
+
+-- Record what one mark does with its key: the encapsulation it would emit, and
+-- its targets. Targets are kept in a fixed order — `see` before `see also` as
+-- print convention has it, and first appearance within a kind — because every
+-- mark of a contested key must emit the SAME text or the index tool sees two
+-- entries where the author wrote one.
+local function record_contest(source, printed, xrefs)
+  local seen = contested_keys[source]
+  if not seen then
+    seen = { plain = false, encaps = {}, distinct = 0, xrefs = {}, listed = {},
+             -- The entry path this key PRINTS, carried alongside the emitted
+             -- argument so the report below can name what the author wrote.
+             -- The argument itself is the back-end's composition: an entry
+             -- with a sort key spells it `key@printed`, which is not a string
+             -- the author can search their source for. Every mark of one key
+             -- emits one argument and derives this path from the same clamped
+             -- levels, so whichever mark arrives first records the same value.
+             printed = printed }
+    contested_keys[source] = seen
+  end
+  local encap = mark_encap(xrefs)
+  if not seen.encaps[encap] then
+    seen.encaps[encap] = true
+    seen.distinct = seen.distinct + 1
+  end
+  if #xrefs == 0 then
+    seen.plain = true
+  end
+  for _, xref in ipairs(xrefs) do
+    local id = xref.kind.attr .. "\0" .. levels_key(xref.levels)
+    if not seen.listed[id] then
+      seen.listed[id] = true
+      seen.xrefs[#seen.xrefs + 1] = xref
+    end
+  end
+end
+
+-- Is this key marked in more than one way? Counted in ENCAPSULATIONS a mark
+-- would emit, never in targets: one mark carrying both attributes emits a
+-- single command and contests nothing, however many targets it names, while
+-- two marks carrying the same target emit the same string and are what the
+-- index tool folds together by itself.
+local function is_contested(seen)
+  return seen ~= nil and seen.distinct > 1
+end
+
+-- A contested key's cross-references, rendered for the entry's PRINTED field.
+-- `\see`/`\seealso` are imakeidx's own two-argument commands and discard the
+-- second, so an explicit empty page argument is what makes them usable outside
+-- the encap channel — and rendering them here rather than through a second
+-- command of our own is what keeps the folded form and the encapsulated form
+-- from drifting in how they print a target. `\see{A}{}; \seealso{B}{}`
+-- expands to exactly what XREF_BOTH_COMMAND prints, so a both-attributes mark
+-- reads the same whether its key is contested or not.
+local function fold_xrefs(seen)
+  local parts = {}
+  for _, kind in ipairs(XREF_KINDS) do
+    for _, xref in ipairs(seen.xrefs) do
+      if xref.kind.attr == kind.attr then
+        parts[#parts + 1] = "\\" .. kind.command ..
+          "{" .. target_argument(xref.levels) .. "}{}"
+      end
+    end
+  end
+  return table.concat(parts, "; ")
+end
+
 
 local function span_text(span)
   return pandoc.utils.stringify(span.content)
@@ -588,14 +784,16 @@ end
 -- An empty level is dropped rather than kept: a target is typeset prose, not
 -- an index key, so an empty one would leave a dangling separator mid-sentence
 -- in the printed index. It is warned about, never dropped silently (IP2).
-local function target_levels(value, attr, context)
+local function target_levels(value, attr, context, report)
   local kept = {}
   -- An entirely empty value has no levels to complain about individually; it
   -- falls straight through to the one warning that names the real problem.
   for _, level in ipairs(value == "" and {} or parse_levels(value)) do
     if level == "" then
-      warn(("empty level in %s= on %s; dropped from the cross-reference target")
-           :format(attr, context))
+      if report then
+        warn(("empty level in %s= on %s; dropped from the cross-reference "
+              .. "target"):format(attr, context))
+      end
     else
       kept[#kept + 1] = level
     end
@@ -604,8 +802,10 @@ local function target_levels(value, attr, context)
     -- Says only what is true in every branch and every format: the mark may
     -- go on to be indexed plainly, or not to be indexed at all if it has no
     -- source entry either, or to reach a format with no index back-end.
-    warn(("%s= on %s has no usable target text; no cross-reference will be "
-          .. "emitted for this mark"):format(attr, context))
+    if report then
+      warn(("%s= on %s has no usable target text; no cross-reference will be "
+            .. "emitted for this mark"):format(attr, context))
+    end
     return nil
   end
   return kept
@@ -671,28 +871,6 @@ local function report_dangling(paths, xrefs, scope)
       warn(('%s= on %s points at "%s", which no index mark in this %s indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'):format(xref.attr, xref.context, target, scope))
     end
   end
-end
-
--- Index key -> the set of distinct encap strings the document emitted for it
--- (the empty string for a plain locator mark). Two marks on one key whose
--- encaps DIFFER are the same makeindex conflict the both-attributes case hits,
--- except spread across the document: if the two land on one printed page the
--- index tool rejects the pair and Quarto fails the render. That is true of a
--- plain mark against a cross-reference AND of a `see=` against a `see-also=`,
--- so the set is keyed on the encap itself rather than on a kind — two marks
--- with the SAME encap are what makeindex quietly folds together, and must not
--- be reported. Page numbers do not exist yet here, so this cannot be prevented
--- at this layer — only reported, which beats an index-tool error naming
--- neither the term nor this extension.
-local key_marks = {}
-
-local function record_key(key, encap)
-  local seen = key_marks[key]
-  if not seen then
-    seen = {}
-    key_marks[key] = seen
-  end
-  seen[encap] = true
 end
 
 -- Printed level path (AFTER the three-level fold) -> the set of filing paths
@@ -845,6 +1023,53 @@ local function CollectSort(span)
   return nil
 end
 
+-- The key pass: a second full traversal that only reads, running after every
+-- sort key is registered and before anything is emitted. It exists because
+-- whether a key is contested is a fact about the WHOLE document — one mark
+-- cannot know that another names the same key a different way — and the repair
+-- has to be applied to every mark of that key alike.
+--
+-- LaTeX-only: contestation is makeindex's rule about its own encapsulation
+-- channel, and the HTML back-end has no such channel.
+local function CollectKeys(span)
+  if not span.classes:includes(INDEX_CLASS) or not is_latex_derived() then
+    return nil
+  end
+  local entry = span.attributes["entry"]
+  local visible = span_text(span)
+  local context = describe(entry, visible)
+  local xrefs, declared = {}, 0
+  for _, kind in ipairs(XREF_KINDS) do
+    local value = span.attributes[kind.attr]
+    if value ~= nil then
+      declared = declared + 1
+      local target = target_levels(value, kind.attr, context, false)
+      if target then
+        xrefs[#xrefs + 1] = { kind = kind, levels = target }
+      end
+    end
+  end
+  local levels = derive_levels(entry, visible, declared, #span.content,
+                               context, span.attributes["sort"], false)
+  if levels == nil then
+    return nil
+  end
+  -- The format-neutral self-target drop, which the emitting pass makes too: a
+  -- target naming its own entry never reaches an encapsulation, so it cannot
+  -- contest anything.
+  local own_key = levels_key(levels)
+  local surviving = {}
+  for _, xref in ipairs(xrefs) do
+    if levels_key(xref.levels) ~= own_key then
+      surviving[#surviving + 1] = xref
+    end
+  end
+  local source, printed_path, _, kept =
+    latex_plan(levels, sort_for(levels), surviving, context, false)
+  record_contest(source, printed_path, kept)
+  return nil
+end
+
 local function Span(span)
   local forged = span.attributes[HTML_PENDING_ATTR] ~= nil
   if forged then
@@ -873,7 +1098,7 @@ local function Span(span)
     local value = span.attributes[kind.attr]
     if value ~= nil then
       declared = declared + 1
-      local levels = target_levels(value, kind.attr, context)
+      local levels = target_levels(value, kind.attr, context, true)
       if levels then
         xrefs[#xrefs + 1] = { kind = kind, levels = levels }
       end
@@ -968,71 +1193,68 @@ local function Span(span)
     return nil
   end
 
-  local source, printed_path, filing_path, clamped =
-    index_argument(levels, sort, context)
+  local source, printed_path, filing_path
+  source, printed_path, filing_path, xrefs =
+    latex_plan(levels, sort, xrefs, context, true)
   -- Recorded for every mark whatever it emits: a cross-reference mark files
   -- under the same key a plain one does, so it contests a printed path just
   -- as a locator mark would.
   record_clamped(printed_path, filing_path)
 
-  -- The self-target comparison again, now against what THIS back-end prints.
-  -- The format-neutral pass above ran on the levels the author wrote; here the
-  -- fold has already rewritten them, so an entry can print a path the author
-  -- never spelled and a target spelling that path is a self-reference the
-  -- first pass could not see. It lives here, and not beside the first pass,
-  -- because the three-level ceiling is a property of this back-end alone:
-  -- HTML has none, so the same document keeps the target there, and a format
-  -- with no index back-end never reaches this line. Neither side carries an
-  -- empty level, for the same reason neither does above.
-  local printed_key = levels_key(clamped)
-  local kept_after_fold = {}
-  for _, xref in ipairs(xrefs) do
-    if levels_key(xref.levels) == printed_key then
-      -- The folded path is quoted because the author never wrote it: it is
-      -- what their entry prints once the back-end has folded it, and a report
-      -- naming only what they typed would describe a match they cannot see.
-      warn(("%s= on %s names the folded path this entry prints (%s); the "
-            .. "back-end stores %d levels, and the fold made the target a "
-            .. "cross-reference to itself, so it is dropped and the term is "
-            .. "indexed as usual")
-           :format(xref.kind.attr, context, printed_path, MAX_LEVELS))
-    else
-      kept_after_fold[#kept_after_fold + 1] = xref
-    end
-  end
-  xrefs = kept_after_fold
-
   local result = pandoc.List(span.content)
 
-  if #xrefs == 0 then
-    record_key(source, "")
-    result:insert(pandoc.RawInline("latex", "\\index{" .. source .. "}"))
-  elseif #xrefs == 1 then
-    -- `|` opens makeindex's encap channel, and `\see`/`\seealso` discard the
-    -- page number handed to them, which is what makes a cross-reference
-    -- replace the locator. hyperref rewrites the encap into
-    -- `|hyperxindexformat{\see{...}}` before makeindex runs; that is
-    -- transparent here. imakeidx, which this back-end already loads, defines
-    -- `\see`, `\seealso`, `\seename` and `\alsoname` with `\providecommand`,
-    -- so nothing needs injecting for the single-target forms.
-    local encap = xrefs[1].kind.command
-      .. "{" .. target_argument(xrefs[1].levels) .. "}"
-    record_key(source, encap)
-    result:insert(pandoc.RawInline("latex",
-      "\\index{" .. source .. "|" .. encap .. "}"))
-  else
-    -- Both targets in one command; see XREF_BOTH_COMMAND. Each target is
-    -- rendered by the same target_argument as a single-target mark, so the
-    -- two forms cannot drift apart in how they escape a character.
-    local args = {}
-    for _, xref in ipairs(xrefs) do
-      args[#args + 1] = "{" .. target_argument(xref.levels) .. "}"
+  -- A key more than one mark describes differently. Every mark of it emits the
+  -- SAME command, which is what makeindex folds together instead of rejecting.
+  -- WHERE the cross-references go depends on whether the entry has a locator,
+  -- because makeindex's term delimiter is printed either way. See "Contested
+  -- keys" above.
+  local seen = contested_keys[source]
+  if is_contested(seen) then
+    if seen.plain then
+      -- Some mark of this key is a plain locator mark, so the entry prints
+      -- page numbers and the delimiter before them has work to do. The
+      -- cross-references go into the printed text instead, and every plain
+      -- mark carries them; a cross-reference mark of the same key emits
+      -- nothing, so a cross-reference still contributes no locator — what this
+      -- extension documents and what print convention expects. Nothing is
+      -- lost: its target is in the text every plain mark emits.
+      if #xrefs == 0 then
+        local folded = select(1, latex_plan(levels, sort, xrefs, context,
+                                            false, fold_xrefs(seen)))
+        result:insert(pandoc.RawInline("latex", "\\index{" .. folded .. "}"))
+      end
+      return result
     end
-    local encap = XREF_BOTH_COMMAND .. table.concat(args)
-    record_key(source, encap)
+    -- No mark of this key is a plain locator mark, so the entry has no page
+    -- numbers and the delimiter's only job is to separate the term from its
+    -- cross-references — which is the job it already does for an uncontested
+    -- cross-reference mark. The targets stay in the encapsulation channel,
+    -- rendered by one command over the key's whole list so that every mark
+    -- carries the same string.
+    xref_list_emitted = true
+    result:insert(pandoc.RawInline("latex",
+      "\\index{" .. source .. "|" .. XREF_LIST_COMMAND ..
+      "{" .. fold_xrefs(seen) .. "}}"))
+    return result
+  end
+
+  -- `|` opens makeindex's encap channel, and `\see`/`\seealso` discard the
+  -- page number handed to them, which is what makes a cross-reference replace
+  -- the locator. hyperref rewrites the encap into
+  -- `|hyperxindexformat{\see{...}}` before makeindex runs; that is transparent
+  -- here. imakeidx, which this back-end already loads, defines `\see`,
+  -- `\seealso`, `\seename` and `\alsoname` with `\providecommand`, so nothing
+  -- needs injecting for the single-target forms; the both-targets form needs
+  -- XREF_BOTH_COMMAND, which is injected only in a document that uses it.
+  local encap = mark_encap(xrefs)
+  if encap == "" then
+    result:insert(pandoc.RawInline("latex", "\\index{" .. source .. "}"))
+  else
+    if #xrefs > 1 then
+      xref_both_emitted = true
+    end
     result:insert(pandoc.RawInline("latex",
       "\\index{" .. source .. "|" .. encap .. "}"))
-    xref_both_emitted = true
   end
   return result
 end
@@ -2367,24 +2589,34 @@ local function Pandoc(doc)
   end
 
   -- Reported here rather than at the mark, because it takes the whole document
-  -- to know that a term has been marked both ways. Keys are walked in sorted
+  -- to know that a term has been marked both ways. Read from the map that
+  -- DECIDED the emission, not from what was emitted: every mark of a contested
+  -- key now emits the same argument, so a report reading emitted encaps back
+  -- would find no two that differ and say nothing. Keys are walked in sorted
   -- order so the report does not depend on Lua's table iteration order.
+  --
+  -- It no longer warns of a failed render, because the emission no longer
+  -- risks one; it says what the author's two marks print as, which is the one
+  -- thing about the outcome they did not write down.
+  --
+  -- Two shapes, two messages, because the outcome they describe differs: a key
+  -- with a plain mark keeps its page numbers, and a key with none has never
+  -- had any. One message covering both would tell the author of a `see=`
+  -- against a `see-also=` that their entry prints page numbers it does not.
   local conflicting = {}
-  for key, encaps in pairs(key_marks) do
-    local distinct = 0
-    for _ in pairs(encaps) do
-      distinct = distinct + 1
-    end
-    if distinct > 1 then
-      conflicting[#conflicting + 1] = key
+  for _, seen in pairs(contested_keys) do
+    if is_contested(seen) then
+      conflicting[#conflicting + 1] = { printed = seen.printed,
+                                        plain = seen.plain }
     end
   end
-  table.sort(conflicting)
-  for _, key in ipairs(conflicting) do
-    warn(("index key %s is marked in more than one way (a plain locator and a "
-          .. "cross-reference, or two different cross-references); if two such "
-          .. "marks land on one page the index tool rejects the pair and the "
-          .. "render fails"):format(key))
+  table.sort(conflicting, function(a, b) return a.printed < b.printed end)
+  for _, clash in ipairs(conflicting) do
+    if clash.plain then
+      warn(('index entry %s carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(clash.printed))
+    else
+      warn(('index entry %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant'):format(clash.printed))
+    end
   end
 
   -- The level-fold collision, reported the same way and for the same reason:
@@ -2475,6 +2707,12 @@ local function Pandoc(doc)
     -- this landing after imakeidx.
     quarto.doc.include_text("in-header", XREF_BOTH_DEFINITION)
   end
+  if xref_list_emitted then
+    -- Same discipline: defined only in a document that has a contested key no
+    -- plain mark contributes to, and with `\providecommand` so a document
+    -- defining its own keeps it.
+    quarto.doc.include_text("in-header", XREF_LIST_DEFINITION)
+  end
 
   return place_index(doc,
     pandoc.Blocks({ pandoc.RawBlock("latex", "\\printindex") }))
@@ -2485,6 +2723,7 @@ end
 -- waits for the Pandoc pass.
 return {
   { Span = CollectSort },
+  { Span = CollectKeys },
   { Span = Span },
   { Pandoc = Pandoc },
 }

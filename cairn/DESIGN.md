@@ -178,11 +178,24 @@ Two back-ends ship:
   three-level ceiling. The self-target comparison is then run a second time
   against the clamped levels, because the fold can make an entry print a path
   the author never spelled and a target naming that path is a self-reference
-  only here (added M10). Two document-wide reports are drawn: a term marked
-  two incompatible ways, and two entries the ceiling folds onto one printed
+  only here (added M10). A key more than one mark describes differently is
+  composed into ONE command every mark of it emits, since makeindex rejects
+  rival encapsulations on one key and page and Quarto turns that into a failed
+  render (M15; D-003 records why repairing this sits inside GP2). Where the key
+  has a plain locator mark the cross-references go into the entry's printed
+  text and the cross-reference marks emit nothing, so a cross-reference still
+  carries no locator; where it has none they stay in the encapsulation channel,
+  rendered by one command over the key's whole list, because makeindex prints
+  its term delimiter either way and a folded entry with no locator would end on
+  a dangling comma. Two document-wide reports are drawn: a term marked two
+  different ways, and two entries the ceiling folds onto one printed
   level path while their sort keys keep them apart (added M09). A level with a sort key is written in makeindex's own
   `sortkey@printed` form, that `@` being the one the back-end writes and so
-  the only one left unquoted (corrected M06).
+  the only one left unquoted (corrected M06). A level carrying a folded
+  cross-reference always takes that form, its printed half no longer being the
+  entry text alone; the key it is given is the one that level would have filed
+  under with nothing folded in, so contesting a key changes what an entry
+  prints and never where it files (added M15).
 - **HTML** (`FORMAT` containing `html`): a link target for each
   locator-contributing mark, and an index section at the marker or appended,
   built out of

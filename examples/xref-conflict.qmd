@@ -9,15 +9,70 @@ filters:
 
 `makeindex` rejects two marks that share an index key and a printed page but
 carry different encapsulations, and Quarto turns that rejection into a failed
-render. Page numbers do not exist when the filter runs, so it cannot prevent
-the clash — it reports it, once per key. This fixture holds one instance of
-each shape that clashes, and one that does not.
+render. The filter never emits such a pair: every mark of a key more than one
+mark describes differently emits one agreed command, which the index tool
+merges into a single entry. It reports what it composed, once per entry. This
+fixture holds one instance of each shape that has to be composed, and two that
+do not.
 
-A plain mark on [kappa]{.index} against a cross-reference on
+A plain mark on [kappa]{.index} against a cross-reference two pages below
+it. The two plain marks are deliberately on
+different printed pages and the cross-reference mark on a third, so the
+printed locator count says which marks contributed one: two means the
+cross-reference mark contributed none, which is what this extension
+documents, and three would mean it did.
+
+{{< pagebreak >}}
+
+The second plain mark on the contested key, a page later: [kappa]{.index}.
+
+{{< pagebreak >}}
+
+The cross-reference mark on the contested key, a page later still:
 [kappa]{.index see="Elsewhere"}.
+
+{{< pagebreak >}}
 
 A `see=` on [lambda]{.index see="Here"} against a `see-also=` on
 [lambda]{.index see-also="There"}.
+
+A plain mark on [tau]{.index} against a `see-also=` on
+[tau]{.index see-also="Elsewhere Again"} — the pairing `kappa` does not
+carry, since which attribute is written changes which encapsulation the
+back-end emits.
+
+Two `see=` marks naming DIFFERENT targets, which contest the key without
+either being a plain mark: [upsilon]{.index see="One Way"} and
+[upsilon]{.index see="Another Way"}.
+
+A both-attributes mark, whose single encapsulation is neither a bare `see`
+nor a bare `see also`, against a plain mark: [phi]{.index} and
+[phi]{.index see="Aye Two" see-also="Bee Two"}.
+
+A contested key BELOW the top level, so the repair is exercised where the
+cross-reference hangs off a sub-entry rather than off a top-level term:
+[psi]{.index entry="Deep!Level"} and
+[omega]{.index entry="Deep!Level" see="Shallow"}.
+
+A contested key DEEPER than the back-end stores, carrying a sort key. The
+fold makes the third level a join of several, and an entry with no key of its
+own for that level files under the text it prints. Contesting the key must not
+move it: it has to file exactly where the same entry files uncontested, and
+only what it prints may change.
+[theta]{.index entry="Tree!Branch!Cedar!Dogwood" sort="tree!branch!Cedar"} and
+[eta]{.index entry="Tree!Branch!Cedar!Dogwood" sort="tree!branch!Cedar" see="Afar"}.
+
+The uncontested twin of that entry — the same depth, and a sort key of the
+same shape, whose third level repeats the level's own text — which is what
+says where the contested one had to file:
+[iota]{.index entry="Tree!Branch!Maple!Holly" sort="tree!branch!Maple"}.
+
+A contested key whose target carries every character this extension escapes.
+Folding a target out of the encapsulation channel and into the entry's
+printed text moves it into a field the index tool reads for its own operators
+too, so the escaping is probed there and not only where it already was:
+[chi]{.index} and
+[chi]{.index see="% & # _ { } \\ ~ ^ $ @ | !! \" < >"}.
 
 Two marks that agree, which `makeindex` folds together and which must NOT be
 reported: [mu]{.index see="Same"} and [mu]{.index see="Same"}.

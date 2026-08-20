@@ -132,10 +132,10 @@ there.
 
 For `see-also=` it is a current limitation, not the intent: a printed index
 normally writes `cats, 12, 47, see also Felines`, and this extension cannot
-produce that yet. Marking the term plainly elsewhere does **not** work around
-it — a plain mark and a cross-reference on the same term can fail the build
-outright, as the next paragraph explains. Until that is fixed, a `see-also=`
-entry carries its cross-reference and no page numbers.
+produce that yet. Marking the term plainly elsewhere gets you the page numbers
+and the cross-reference on one entry, but in this extension's order — `cats,
+see also Felines, 12, 47` — not the printed convention above. On its own, a
+`see-also=` entry carries its cross-reference and no page numbers.
 
 **The target uses the same level syntax as `entry=`.** A single `!` separates
 levels and `!!` is a literal `!`, so `see="Birds!Owls"` points at the sub-entry
@@ -161,14 +161,25 @@ dropped for being one of two: you get one entry carrying both targets, `see
 Aye; see also Bee`, and a warning. A target that names its own entry is still
 dropped for that reason, and the other one is then the only one emitted.
 
-**One term marked two different ways can fail the build.** If `cats` gets a
-plain mark in one place and a cross-reference in another — or a `see=` in one
-place and a `see-also=` in another — and the two land on the same printed page,
-`makeindex` rejects the pair and the PDF build fails. Marking a term twice
-*the same* way is fine; the index tool folds those together. Page numbers do
-not exist when the extension runs, so it cannot prevent the clash — it warns
-instead, naming the key. Give the cross-reference its own entry, or move the
-marks apart.
+**One term marked two different ways prints as one entry.** If `cats` gets a
+plain mark in one place and a cross-reference in another, you get a single
+entry carrying its page numbers and its cross-reference together: `cats, see
+Felines, 3, 7`. The cross-reference mark contributes no page number of its own,
+exactly as it does not when it stands alone.
+
+Two *different* cross-references on one term — a `see=` in one place and a
+`see-also=` in another — merge the same way, but into one entry carrying both
+targets and no page numbers at all, since neither mark contributes one: `cats,
+see Felines; see also Dogs`. Either way you get a warning naming the entry and
+saying which of the two it drew, because two marks describing one term
+differently is more often a slip than a plan.
+
+This used to fail the PDF build outright, and in a document that had never
+been built to PDF it could sit unnoticed for a long time: `makeindex` rejects
+two marks that share an index key and a printed page but describe it
+differently, and Quarto turns that rejection into a failed render. The
+extension no longer emits such a pair. Marking a term twice *the same* way was
+always fine, and still is.
 
 In an HTML index the target is a link when it names an entry that exists in the
 same index, and plain text when it does not. Whether it does is decided on the
@@ -366,11 +377,13 @@ with no configuration. In a document with a bibliography the index currently
 prints before the references. A document with no marks gets none of this.
 
 A cross-reference is written into the same `\index{…}` command, through
-`makeindex`'s encapsulation channel — `\index{cats|see{Felines}}`. A document
-that puts both attributes on one mark also gets one small
-`\providecommand` in its preamble, which prints the pair through LaTeX's own
-`\seename` and `\alsoname`, so a document loading `babel` keeps its
-translations. A document with no such mark gets nothing extra.
+`makeindex`'s encapsulation channel — `\index{cats|see{Felines}}` — except
+where a term is marked two different ways, whose single composed entry carries
+the cross-reference in its printed text instead. A document that puts both
+attributes on one mark, or that composes such an entry, also gets one small
+`\providecommand` in its preamble, which prints cross-references through
+LaTeX's own `\seename` and `\alsoname`, so a document loading `babel` keeps
+its translations. A document with neither gets nothing extra.
 
 Placement is automatic unless you write a marker; see [Placing the
 index](#placing-the-index).
@@ -450,10 +463,11 @@ differs, because the tools underneath them do:
 1. **No level ceiling in HTML.** Sub-entries nest as deep as you write them.
    The three-level ceiling described above is `makeindex`'s limit, not the
    extension's.
-2. **The clash warning is LaTeX-only.** One term marked two different ways can
-   fail a PDF build, so the extension warns about it. An HTML index prints the
-   locator and the cross-reference together on one entry, with nothing to
-   clash, so the warning would name a problem that format does not have.
+2. **The one-entry warning is LaTeX-only.** A term marked two different ways
+   reaches the LaTeX index tool as one entry the extension had to compose, so
+   the extension says it did. An HTML index prints the locator and the
+   cross-reference together on one entry by itself, with nothing to compose,
+   so the warning would name a decision that format never has to make.
 3. **Sorting is the extension's own in HTML.** Top-level entries are ranked
    into letter groups first; inside a group, and at every level below the top,
    the order folds ASCII uppercase to lowercase and then compares character

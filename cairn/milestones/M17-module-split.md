@@ -112,7 +112,7 @@ Any behavior change → none; a rendered-output change is a defect here.
 Each move task ends by running both verify slots, so a bad move is caught by
 the task that made it.
 
-- [ ] T1: Create `_extensions/index/modules/`; move the constants, `warn`,
+- [x] T1: Create `_extensions/index/modules/`; move the constants, `warn`,
       `is_latex_derived` and `is_html` (`index.lua:30-158`) into
       `modules/core.lua`; wire the relative require.
 - [ ] T2: Move level semantics — `parse_levels` through `level_path`
@@ -151,6 +151,7 @@ the task that made it.
 - 2026-08-20: criteria audit ran in FULL mode on the amended AC2 (declared tier user-facing), two fresh-context [O] readers, neither the author. First pass returned seven findings, of which two blocking: AC2's tests/-freeze contradicted the milestone's own T9/AC3, and the "confined to" clause silently constrained the Lua import idiom. Second pass on the repaired wording returned finding 1 fatal — `run-tests.sh`'s `M16-AC2: the enumeration reaches modules/ (1 -> 2 …)` line interpolates the source-set size, so no correct split can leave it verbatim — plus three narrowings (untracked/`examples/`/README left outside the diff domain; "confined to AC3's probe" unmechanizable; movedefs must enumerate the scratch root, not the ambient QI_EXT_DIR). All disposed into the wording written above; the import-idiom finding went to the milestone-local decision instead of the criterion.
 - 2026-08-20: two module-level flags beyond the plan's seven accumulators found while mapping the seams — `xref_list_emitted` and `xref_both_emitted`, both written in the Span pass and read in `Pandoc`. Both are LaTeX-emission state, so both land in `modules/latex.lua`; `xref_both_emitted` therefore moves out of T4's line range. Task-range refinement only, no scope change.
 - 2026-08-20: T7/T8 boundary refined from the plan's `:2049`/`:2050` to `:2020`/`:2021` — the `STORE_DIR`/`STORE_SUFFIX`/`STORE_VERSION` constants at `:2041-2047` sit under the plan's marker range but belong to book support, and the book section's own banner opens at `:2021`.
+- 2026-08-20: T1 — `modules/core.lua` (constants, `warn`, `is_latex_derived`, `is_html`), 17 definitions, 86 call sites qualified to `core.`; `tests/movedefs.py` rewritten to relocate from the source set `filtersrc.py` enumerates under the scratch root it is passed. Verify clean: 195 ok lines identical to the merge base, 230 under `--self-test` with the one exempted interpolated line reading `(2 -> 3)`.
 
 ## Decisions
 
@@ -159,5 +160,11 @@ the task that made it.
 **Context:** `tests/movedefs.py` matches `local function NAME(` or `local NAME =` at column 0 and demands exactly one hit per name, and `tests/scans/warn-distinct.py` excludes `warn`'s own definition by testing that the text before the match rstrips to `function`. Both are merge-base checks AC2 forbids editing.
 **Decision:** A name a module imports is reached through the exporting module's table (`core.warn(...)`, `levels.MAX_LEVELS`) and is never re-bound as a same-named local. Every definition keeps its merge-base form — `local function NAME(` or `local NAME = <literal>` at column 0 — in whichever module it lands in; the module table is populated by assignment afterwards, never by `function M.NAME(`.
 **Consequences:** `movedefs.py` still finds exactly one definition per name after the split, and `warn-distinct`'s pinned count of 38 messages holds because call sites still match `\bwarn\(` while the sole definition still rstrips to `function`. The cost is that cross-module call sites gain a module prefix.
+
+### 2026-08-20: a module exports through `M["NAME"]`, never `M.NAME`
+
+**Context:** T1 with plain `M.XREF_BOTH_DEFINITION = XREF_BOTH_DEFINITION` export lines failed the M16-AC3 probe: `FAIL: M02-AC5: the dual-target definition does not use \seename`. `tests/scans/xref-both-definition.py` takes the FIRST `XREF_BOTH_DEFINITION\s*=` match over the sorted source set, and once the probe relocates the real definition into `modules/moved.lua` — which sorts after `modules/core.lua` — the export line left behind in `core.lua` is what the scan reads. This is M16 review F3 arriving in the case it was written about. Narrows the entry above.
+**Decision:** Export lines use the bracket form, `M["warn"] = warn`. The name inside the brackets is followed by `"]`, not by `=`, so an export line is invisible to every scan that searches for `NAME =` and to `movedefs.block()`'s exactly-one count.
+**Consequences:** No module leaves a second textual `NAME =` behind that could mask its own definition once the probe moves it, and the four first-match scans M16's review flagged keep reading the definition they name. Each module carries a four-line comment saying so, so the unusual form is not read as an accident.
 
 ## Review

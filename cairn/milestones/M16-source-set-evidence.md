@@ -38,7 +38,7 @@ records why. Making module-level state per-document → stays the standing
 
 ## Acceptance criteria
 
-- [ ] AC1: Every site in `tests/run-tests.sh` naming a filter source path
+- [x] AC1: Every site in `tests/run-tests.sh` naming a filter source path
       reads the source set instead. The domain is the lines
       `grep -n '_extensions/index' tests/run-tests.sh` reports — 14 at the
       merge base. Afterwards that grep reports exactly three, none of which
@@ -47,13 +47,13 @@ records why. Making module-level state per-document → stays the standing
       `examples/_extensions/index/_extension.yml` existence check. The pattern
       matches any path under the extension, so a check re-hardcoded to a
       module path stays inside the domain.
-- [ ] AC2: The source set is built by one recursive enumeration of
+- [x] AC2: The source set is built by one recursive enumeration of
       `_extensions/index/` (`find _extensions/index -name '*.lua'`), never a
       written-down list of file names. The run prints the member count and
       fails when the set is empty. Evidence: adding a second `.lua` file under
       `_extensions/index/modules/` in a scratch copy raises the printed count
       by one with no edit to `run-tests.sh`.
-- [ ] AC3: Each site the merge-base run of AC1's grep reported is proven
+- [x] AC3: Each site the merge-base run of AC1's grep reported is proven
       discriminating against the definition-moving case. For each, under
       `--self-test`: a scratch copy of the extension is built with the
       definition that site reads moved into a second `.lua` file under
@@ -61,13 +61,13 @@ records why. Making module-level state per-document → stays the standing
       kind that site names planted in the moved definition, the site fails.
       The domain is the twelve source-reading sites the merge-base grep
       reports, enumerated by running it against the merge base.
-- [ ] AC4: `tests/byte-diff.sh` is deleted and `cairn/DECISIONS.md` carries the
+- [x] AC4: `tests/byte-diff.sh` is deleted and `cairn/DECISIONS.md` carries the
       entry recording why byte-level output-neutrality evidence was rejected as
       the refactor oracle. The domain of remaining references is the lines
       `grep -rn 'byte-diff' tests/ README.md _extensions/` reports — three at
       the merge base, none afterwards. `cairn/` is outside that domain on
       purpose: a tracking record naming what it deleted is the record working.
-- [ ] AC5: `tests/run-tests.sh` reports no failure in the working tree that a
+- [x] AC5: `tests/run-tests.sh` reports no failure in the working tree that a
       merge-base run in the same working tree does not also report, under both
       the plain and `--self-test` slots (`cairn/PROFILE.md` verify and
       pre-review). The printed check count is stated.
@@ -166,3 +166,59 @@ records why. Making module-level state per-document → stays the standing
   than listed.
 
 ## Review
+
+_Evidence gathered 2026-08-20 on `m16-source-set-evidence` at PR #16. Commands
+run in this working tree; counts are from those runs, not recalled._
+
+**AC1 — every source-reading site reads the source set.** `grep -c
+'_extensions/index'` against the merge base's `tests/run-tests.sh` reports 14
+lines, 12 of which read filter source. The same grep on the branch reports
+exactly three, and none reads filter source: `:74`, which defines the
+enumeration root `QI_EXT_DIR`, and `:1055`–`:1056`, the
+`examples/_extensions/index/_extension.yml` existence check. Verified.
+
+**AC2 — one recursive enumeration, no written-down file list.** The set is built
+twice and cross-checked: `find "$QI_EXT_DIR" -name '*.lua'` in the shell and
+`os.walk` over the same root in `tests/filtersrc.py`. Neither carries a file
+name; the run prints the root and the member count, and check 18 of the run
+fails if the two enumerations disagree. An empty set is refused on both sides.
+Fresh `--self-test` evidence (run line 221): in a scratch copy, adding a second
+`.lua` file under `modules/` takes the count from 1 to 2 with no edit to
+`run-tests.sh`, and a directory holding no `.lua` file is refused rather than
+swept. Verified.
+
+**AC3 — each of the twelve proven discriminating against the moving case.** The
+domain was enumerated by running AC1's grep against the merge base: 14 lines,
+the 12 reading filter source. Under `--self-test` (run line 222)
+`tests/movedefs.py` builds a scratch extension with 17 definitions relocated
+into `modules/moved.lua` — one covering each of the twelve — and for every scan
+the run asserts both halves: (a) it still finds what it reads there, and (b)
+with `tests/plantdefect.py` planting a defect of the kind that scan names in the
+moved definition, it exits non-zero AND prints the named failure marker, so a
+scan killed by a broken probe cannot pass for a scan catching the defect. The
+scan set is enumerated from `tests/scans/`, not listed, and pinned at exactly
+12. Verified.
+
+**AC4 — the merge-base render comparison is gone, the rejection recorded.**
+`tests/byte-diff.sh` no longer exists in the tree. `cairn/DECISIONS.md:35`
+carries D-004, which records why byte-level output-neutrality evidence was
+rejected as the refactor oracle. The domain grep `grep -rn 'byte-diff' tests/
+README.md _extensions/` reported three lines at the merge base (two inside
+`byte-diff.sh` itself, one comment in `run-tests.sh`) and reports none now; that
+comment was rewritten to cite D-004 and to state that the checks in that file
+are the whole oracle for output neutrality. Verified.
+
+**AC5 — no failure the merge base does not also report.** Both slots, run fresh
+in this working tree: branch exit 0 with 196 checks plain and 231 under
+`--self-test`, zero FAIL lines in either. The merge-base suite, its `tests/`
+checked out over the branch's in this same tree and then restored to a clean
+tree, also exits 0 in both slots: 195 plain, 228 self-test. Comparing the two
+self-test pass sets line for line, the branch's is a strict superset — three
+lines added (the enumeration-agreement check, the AC2 enumeration probe, the AC3
+moved-definition-and-planted-defect probe) and none lost. Verified.
+
+**Consistency gate.** `cairn_validate` exits 0 — every check PASS, every
+advisory OK. The active profile is `generic`, whose `consistency-gate` slot
+names no toolchain checks, so that half is a clean no-op. No `DESIGN.md`
+principle changed in this diff, so `cairn_impact` was not run.
+

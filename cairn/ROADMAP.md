@@ -1,19 +1,18 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-20 (M16 and M17 planned in one run; the `index.lua` split candidate row promoted to M17 and pruned. D-004 rejects byte-level output-neutrality evidence, so the `resolve_markers` row was corrected and the acceptance-suite hardening cluster widened with the oracle gap the deletion leaves. Caps and byte budgets clean: 57 lines, 13,213 bytes.)_
+_Last hygiene check: 2026-08-20 (M16 merged and archived; its four review follow-ups absorbed into the acceptance-suite hardening row rather than opening new ones. M11 pruned under terminal-row retention. LESSONS unchanged at 49 lines — M16's shape extended the standing discriminating-checks lesson instead of taking a line. Caps and byte budgets clean: 56 lines, ROADMAP under 13.9k bytes against a 24k budget, LESSONS under 12.7k against 20k.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M16 | The suite's source checks read the whole extension, not one file | review | — | normal | milestones/M16-source-set-evidence.md |
+| M16 | The suite's source checks read the whole extension, not one file | done | — | normal | milestones/archive/M16-source-set-evidence.md |
 | M17 | index.lua becomes a thin entry point over required modules | planned | M16 | normal | milestones/M17-module-split.md |
 | M15 | A term marked both plainly and with a cross-reference builds | done | — | normal | milestones/archive/M15-clash-free-emission.md |
 | M13 | Level reports name a depth the author can act on | done | — | normal | milestones/archive/M13-level-report-wording.md |
 | M14 | A cross-reference target that names no index entry is reported | done | — | normal | milestones/archive/M14-dangling-xref-target.md |
 | M12 | A marker that leaves nothing behind is reported without naming what held it | done | — | normal | milestones/archive/M12-emptied-place-report.md |
-| M11 | Empty index levels never lose the entry | done | — | normal | milestones/archive/M11-empty-levels.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

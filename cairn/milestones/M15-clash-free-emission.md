@@ -110,7 +110,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
       a sub-entry key, and place one contested term's marks across three pages
       so AC2's locator count discriminates. Record the failing PDF render's
       exit status and its two failure strings before changing any code.
-- [ ] T2 Split a warn-free index-key derivation out of `index_argument`
+- [x] T2 Split a warn-free index-key derivation out of `index_argument`
       (`index.lua`), which today warns from `clamp_levels` as a side effect, so
       the first Span pass can compute each mark's key and encap without
       emitting a mark's warnings twice.
@@ -147,6 +147,7 @@ candidate row; every criterion here is evidenced in a warmed tree.
 - 2026-08-19: T1 extended `examples/xref-conflict.qmd` with AC3's five pairings (plain against see=, plain against see-also=, see= against see-also=, see= against a different see=, a both-attributes mark against a plain mark), one of them on the sub-entry key `Deep!Level`, and one whose target carries all sixteen characters README pins as escaped. `kappa`'s two plain marks now sit on pages 1 and 2 with its cross-reference mark on page 3, so a printed locator count of 2 rather than 3 discriminates the no-locator semantics.
 - 2026-08-19: T1 baseline on the final fixture, before any code changed: `quarto render examples/xref-conflict.qmd --to pdf` exits 1 with `error generating index` and `Conflicting entries: multiple encaps for the same page under same key.`, and the latex render reports seven contested keys — `Deep!Level`, `chi`, `kappa`, `lambda`, `phi`, `tau`, `upsilon`.
 - 2026-08-19: T1 suite consequences, derived by hand from the fixture source before any render was read: the HTML index manifest and letter sweep for the fixture (both passed first time), the clash count 2 -> 7, and the dangling-target corpus count 6 -> 13. The first derivation said 13 against 14 emitted; the cause was a duplicated `kappa` cross-reference mark left in the fixture, which was removed rather than the number adjusted.
+- 2026-08-19: T2 gave `clamp_levels` and `index_argument` the `report` flag `derive_levels` and `drop_empty_levels` already carry, rather than inventing a second mechanism, so a pass that needs a mark's key before anything is emitted does not report its fold twice. Behaviour-neutral: the suite passes unchanged at 185 checks.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 12 findings. Two were fatal and are fixed above: AC5 tested a phrase no single literal carries, so it would have passed against the unmodified filter, and AC3's exhaustive manifest named four of the eight lines the index prints. AC4's two-fixture list was narrowed to a globbed domain, the verify-slot criterion was dropped as instrument-bound and became T9, an escaping criterion was added for the printed field (IP2), and a README/DESIGN criterion was added (GP1). GP2 and the locator question went to the gate.
 
 ## Decisions

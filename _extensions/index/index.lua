@@ -195,7 +195,10 @@ end
 local MAX_LEVELS = 3
 local OVERFLOW_JOIN = ", "
 
-local function clamp_levels(levels, context)
+-- `report` follows the convention derive_levels and drop_empty_levels already
+-- use: a mark's levels are derived by more than one pass, and only the pass
+-- that emits says so, or one stray `!` is reported once per pass that looked.
+local function clamp_levels(levels, context, report)
   if #levels <= MAX_LEVELS then
     return levels
   end
@@ -206,9 +209,11 @@ local function clamp_levels(levels, context)
   for i = MAX_LEVELS, #levels do
     tail[#tail + 1] = levels[i]
   end
-  warn(("index entry in %s is %d levels deep; the back-end stores %d, so "
-        .. "levels %d and deeper were folded into the third")
-       :format(context, #levels, MAX_LEVELS, MAX_LEVELS))
+  if report then
+    warn(("index entry in %s is %d levels deep; the back-end stores %d, so "
+          .. "levels %d and deeper were folded into the third")
+         :format(context, #levels, MAX_LEVELS, MAX_LEVELS))
+  end
   local clamped = {}
   for i = 1, MAX_LEVELS - 1 do
     clamped[i] = levels[i]
@@ -550,8 +555,11 @@ end
 -- The clamped levels are returned as well, for the self-target comparison the
 -- caller runs against them. They are returned rather than recomputed because
 -- clamp_levels warns about the fold, and a second call would report it twice.
-local function index_argument(levels, sort, context)
-  local clamped = clamp_levels(levels, context)
+-- `report` is passed through for the same reason: the pass that decides which
+-- keys are contested calls this before anything is emitted, and must not
+-- report a fold the emitting pass will report.
+local function index_argument(levels, sort, context, report)
+  local clamped = clamp_levels(levels, context, report)
   local keys = clamp_sort(sort)
   local parts, filing = {}, {}
   for i, level in ipairs(clamped) do
@@ -969,7 +977,7 @@ local function Span(span)
   end
 
   local source, printed_path, filing_path, clamped =
-    index_argument(levels, sort, context)
+    index_argument(levels, sort, context, true)
   -- Recorded for every mark whatever it emits: a cross-reference mark files
   -- under the same key a plain one does, so it contests a printed path just
   -- as a locator mark would.

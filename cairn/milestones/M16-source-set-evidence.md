@@ -122,4 +122,26 @@ records why. Making module-level state per-document → stays the standing
 
 ## Decisions
 
+- 2026-08-20 (T3 mechanism): the implement gate chose "extract the twelve
+  scanners into a scan block behind a `--source-scan-check <dir>` flag".
+  Mapping the blocks showed function-extraction is the wrong realization of
+  it: the twelve are interleaved with some thirty other `PY` heredocs, and
+  three of them (`STORE_VERSION`, `MAX_LEVELS`, `OVERFLOW_JOIN`) produce
+  values consumed hundreds of lines later, so moving them changes evaluation
+  order in ways a passing suite would not reveal.
+  Same decision, better mechanism: lift each scanner's BODY out of its
+  heredoc into `tests/scans/<name>.py`, invoked as `python3
+  tests/scans/<name>.py` with the env it already receives. The `<<'PY'` …
+  `PY` boundaries are unambiguous, so the transformation is mechanical and
+  reviewable; each scanner becomes independently runnable, which is precisely
+  what AC3's probes need; and nothing moves in evaluation order, so the three
+  value-producing sites keep their position. `--source-scan-check <dir>` then
+  runs every file under `tests/scans/` with `QI_EXT_DIR` pointed at the given
+  tree.
+  Rejected: re-running the whole suite with the root overridden (the gate's
+  option C — renders resolve the extension through the `examples/_extensions`
+  symlink rather than `QI_EXT_DIR`, so the scratch tree would be read by the
+  scanners while the renders still used the real filter, and each probe would
+  cost a full multi-minute run).
+
 ## Review

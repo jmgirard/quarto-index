@@ -132,7 +132,7 @@ the task that made it.
       (`:1774-2049`) — into `modules/marker.lua`.
 - [x] T8: Move book support — `as_href` through `html_book` (`:2050-2522`) —
       into `modules/book.lua`, leaving `Pandoc` and the returned pass list.
-- [ ] T9: Add the install-path probe of AC3 — package, `quarto add` into a
+- [x] T9: Add the install-path probe of AC3 — package, `quarto add` into a
       scratch project, render the four combinations, compare byte for byte.
 - [ ] T10: Rewrite `cairn/DESIGN.md`'s Architecture section for the module
       layout and the relative-`require` convention; confirm `_extension.yml`
@@ -158,6 +158,8 @@ the task that made it.
 - 2026-08-20: T5 — `modules/passes.lua`, the three Span passes, 4 sites. The walk-filter and return-table keys named `Span` stay bare; only the values are qualified. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(7 -> 8)`.
 - 2026-08-20: T6 — `modules/html.lua`, 23 definitions, 5 sites; only `html_index_blocks`, `taken_identifiers`, `relocate_heading_anchors` and `assign_anchors` are reached from outside it. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(8 -> 9)`.
 - 2026-08-20: T7 — `modules/marker.lua`, 9 definitions, 10 sites. T8 — `modules/book.lua`, 18 definitions, 3 sites, carrying the three `STORE_*` constants. `index.lua` is now 256 lines: the mark-syntax header, nine requires in dependency order, `Pandoc`, and the pass list. AC1's grep over the source set reports one definition line whose file is `index.lua`: `local function Pandoc(doc)`. Verify clean: 195 ok lines identical, 230 under `--self-test` with the exempted line reading `(10 -> 11)`.
+- 2026-08-20: T9 — the AC3 install-path probe, 131 added lines and zero deleted in `tests/run-tests.sh`. Two new checks: 32 require calls all at file top level above their file's first definition, and four byte-identical outputs (standalone and book, each to latex and html) between a `quarto add` install and the working tree. Run totals 195 -> 197 and 230 -> 232, every merge-base line verbatim and in order.
+- 2026-08-20: the AC3 probe discriminates, verified out of band rather than in the run: deleting `modules/marks.lua` from an installed copy fails the render at filter-load time (`inject_user_filters_at_entry_points`), which is the claim that makes fixture choice a non-axis; and moving `sortkeys.lua`'s `qi_levels` require below its first definition fails the position check naming both lines. Neither is a planted-defect check in the suite — that gap goes to the acceptance-suite hardening row.
 
 ## Decisions
 

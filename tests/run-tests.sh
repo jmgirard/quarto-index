@@ -6854,6 +6854,183 @@ check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING" 1 "M14 (corpus, ex
 pass "M14: every example's dangling-target report count matches its pinned expectation, in a format with no index back-end, and the book chapters' counts add up to what their books report"
 
 # ---------------------------------------------------------------------------
+# M15 — a term marked both plainly and with a cross-reference builds.
+#
+# The fixture holds every way two marks can contest one index key. Before this
+# milestone the render below exited 1: makeindex rejected the rival
+# encapsulations with "Conflicting entries: multiple encaps for the same page
+# under same key" and Quarto turned that into "error generating index". The
+# repair is not to detect a toolchain failure but to stop emitting output the
+# tool cannot process (D-003), so the evidence is the build itself.
+# ---------------------------------------------------------------------------
+CONFLICT_FAIL_A='Conflicting entries: multiple encaps for the same page under same key'
+CONFLICT_FAIL_B='error generating index'
+
+quarto render examples/xref-conflict.qmd --to pdf \
+  > "$WORK/conflict-pdf.log" 2>&1 \
+  || { tail -30 "$WORK/conflict-pdf.log" >&2; fail "M15-AC1: xref-conflict.qmd failed to render to PDF; a term marked both ways must build"; }
+[ -s examples/xref-conflict.pdf ] || fail "M15-AC1: examples/xref-conflict.pdf is empty"
+check_warning_count "$WORK/conflict-pdf.log" "$CONFLICT_FAIL_A" 0 "M15-AC1"
+check_warning_count "$WORK/conflict-pdf.log" "$CONFLICT_FAIL_B" 0 "M15-AC1"
+pass "M15-AC1: the fixture that could not build now renders to PDF, with neither the index tool's rejection nor Quarto's error"
+
+# M15-AC2/AC3 — the compiled index, every printed line of it. Quantified over
+# ALL entries rather than over the contested ones: an entry that keeps a
+# cross-reference prints the target too, so a check naming entries by their
+# printed term goes vacuous under exactly the regression it guards (the M10
+# lesson). Rows are `<level><TAB><term><TAB><locator count>`, derived by hand
+# from examples/xref-conflict.qmd and the documented semantics:
+#
+#   chi        plain mark + a cross-reference whose target carries all sixteen
+#              escaped characters. Contested WITH a plain mark, so the target
+#              folds into the printed text and the plain mark's page stands: 1.
+#              Its line wraps, and its locator lands alone on the continuation.
+#   Deep       a parent no mark writes as an entry of its own: 0.
+#   Level      the contested sub-entry, folded like chi, one plain mark: 1.
+#   kappa      two plain marks on two pages, cross-reference mark on a third.
+#              2, not 3, is what says the cross-reference contributed none.
+#   lambda     see= against see-also=, no plain mark: the targets stay in the
+#              encapsulation channel and the entry has no locator: 0.
+#   mu         two IDENTICAL cross-references, which the tool folds by itself.
+#              Uncontested, untouched, no locator: 0.
+#   Note       a parent, as Deep: 0.  on birds  its sub-entry, one mark: 1.
+#   nu         marked plainly twice on one page, which merges to one locator: 1.
+#   phi        a both-attributes mark against a plain mark, folded: 1.
+#   rho/sigma  single uncontested cross-references, untouched: 0 each.
+#   tau        plain against see-also=, folded: 1.
+#   upsilon    two DIFFERENT see= targets, no plain mark, as lambda: 0.
+#
+# Printed in collation order with each sub-entry under its parent, which is the
+# order pdfindex reconstructs, so a column break cannot reorder these rows.
+read -r -d '' CONFLICT_PDF_INDEX <<'MANIFEST' || true
+0	chi, see % & # _ { } \ ~ ^ $ @ | ! " < >	1
+0	Deep	0
+1	Level, see Shallow	1
+0	kappa, see Elsewhere	2
+0	lambda, see Here; see also There	0
+0	mu, see Same	0
+0	Note	0
+1	on birds	1
+0	nu	1
+0	phi, see Aye Two; see also Bee Two	1
+0	rho, see Note: on birds	0
+0	sigma, see Note: on birds	0
+0	tau, see also Elsewhere Again	1
+0	upsilon, see One Way; see Another Way	0
+MANIFEST
+
+printf '%s\n' "$CONFLICT_PDF_INDEX" > "$WORK/conflict-index.txt"
+python3 - examples/xref-conflict.pdf "$WORK/conflict-index.txt" <<'CONFLICTPDFPY'
+import re, sys
+sys.path.insert(0, 'tests')
+import pdfindex
+
+entries = pdfindex.read(sys.argv[1])
+if not pdfindex.columns_carry_top_level(entries):
+    print('FAIL: M15-AC2: a column holds no top-level entry, so its indent '
+          'reads a level too shallow', file=sys.stderr)
+    sys.exit(1)
+
+
+def locators(entry):
+    """How many locators the entry prints, from the tail `term` strips."""
+    tail = entry.text[len(entry.term):].lstrip(', ').strip()
+    return len([part for part in tail.split(',') if part.strip()])
+
+
+got = [f'{e.level}\t{e.term}\t{locators(e)}' for e in entries]
+want = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
+if got != want:
+    print('FAIL: M15-AC2/AC3: the compiled index does not match the manifest',
+          file=sys.stderr)
+    for i in range(max(len(got), len(want))):
+        g = got[i] if i < len(got) else '<no such row printed>'
+        w = want[i] if i < len(want) else '<not in the manifest>'
+        if g != w:
+            print(f'  row {i + 1}:\n    expected <<{w}>>\n    got      <<{g}>>',
+                  file=sys.stderr)
+    sys.exit(1)
+
+# M15-AC3: each contested term prints as ONE entry. The repair merges the marks
+# the index tool would otherwise have stored twice, and a count of entries
+# whose term begins with the contested term is what says they merged.
+CONTESTED = ('chi', 'Level', 'kappa', 'lambda', 'phi', 'tau', 'upsilon')
+errs = []
+for term in CONTESTED:
+    n = len([e for e in entries if e.term.split(',')[0] == term])
+    if n != 1:
+        errs.append(f'{term!r} prints as {n} entries, expected 1')
+if errs:
+    print('FAIL: M15-AC3: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+
+# M15-AC4: the folded target sits in the entry's PRINTED field, where the index
+# tool reads `!`, `@`, `|` and `"` as its own operators just as it does in the
+# encapsulation channel. Every character README pins as escaped must survive
+# into the typeset index — the bar examples/xref-escaping.qmd already holds the
+# encapsulation channel to (IP2).
+ESCAPED = '% & # _ { } \\ ~ ^ $ @ | ! " < >'
+folded = [e for e in entries if e.term.startswith('chi,')]
+if len(folded) != 1:
+    print(f'FAIL: M15-AC4: expected one folded escaping entry, found '
+          f'{len(folded)}', file=sys.stderr)
+    sys.exit(1)
+missing = [c for c in ESCAPED.split(' ') if c not in folded[0].term]
+if missing:
+    print(f'FAIL: M15-AC4: the folded cross-reference target is missing '
+          f'{missing} in the typeset index: <<{folded[0].term}>>',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M15-AC2/AC3/AC4: all {len(want)} printed index lines match the '
+      f'manifest, each of the {len(CONTESTED)} contested terms prints as one '
+      f'entry, and all {len(ESCAPED.split(" "))} escaped characters typeset in '
+      f'the folded target')
+CONFLICTPDFPY
+pass "M15-AC2/AC3/AC4: the compiled index matches the exhaustive manifest, every contested key prints once, and the folded target typesets whole"
+
+# M15-AC5 — no report claims a build can fail from rival encapsulations, since
+# the emission no longer risks one. Read over each warn() call's JOINED
+# message, never over a single literal: the old message was three concatenated
+# literals and no one of them carried the phrase, so a per-literal test would
+# have passed against the filter that still emitted it (the M13 lesson).
+python3 - _extensions/index/index.lua <<'M15AC5PY'
+import sys
+sys.path.insert(0, 'tests')
+GONE = 'the index tool rejects the pair and the render fails'
+src = open(sys.argv[1], encoding='utf-8').read()
+if GONE in src:
+    print(f'FAIL: M15-AC5: the filter still carries <<{GONE}>>, which the '
+          f'emission no longer risks', file=sys.stderr)
+    sys.exit(1)
+print('ok   M15-AC5: no filter message claims a render can fail from rival '
+      'encapsulations')
+M15AC5PY
+
+# The uncontested half: the folded form and the list command appear in the
+# emission of the ONE fixture that has a contested key and nowhere else. The
+# files are discovered by glob over what the run rendered, not named in a list
+# that a later fixture would silently fall off.
+python3 - <<'M15UNTOUCHEDPY'
+import glob, os, sys
+LIST_COMMAND = 'quartoindexxrefs'
+stray = []
+for path in sorted(glob.glob('examples/*.tex')):
+    src = open(path, encoding='utf-8').read()
+    if os.path.basename(path) == 'xref-conflict.tex':
+        continue
+    if LIST_COMMAND in src:
+        stray.append(path)
+if stray:
+    print(f'FAIL: M15: the contested-key emission reached {stray}, which have '
+          f'no contested key', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M15: of the {len(glob.glob("examples/*.tex"))} rendered LaTeX '
+      f'artifacts, only the contested-key fixture carries the contested-key '
+      f'emission')
+M15UNTOUCHEDPY
+pass "M15-AC5: the failed-render claim is gone from the filter, and the contested-key emission reaches only the fixture that has one"
+
+# ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--self-test" ]; then

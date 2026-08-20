@@ -120,12 +120,12 @@ candidate row; every criterion here is evidenced in a warmed tree.
       encap; an uncontested key is untouched.
 - [x] T4 Emit nothing for a cross-reference mark on a contested key that has a
       plain mark, so a cross-reference still carries no locator.
-- [ ] T5 Quote the folded printed field for what the index tool reads there —
+- [x] T5 Quote the folded printed field for what the index tool reads there —
       `!`, `@`, `|` and `"` are its operators in that field as in the encap
       channel — and probe it with README's escaped-character set.
 - [x] T6 Replace the clash report with one describing what was done; update the
       distinctness count and the three existing clash checks.
-- [ ] T7 Suite: AC2's exhaustive manifest, AC3's pairings, AC4's escaping
+- [x] T7 Suite: AC2's exhaustive manifest, AC3's pairings, AC4's escaping
       assertions, and a guard that no uncontested key's emission changed —
       quantified over every example the suite renders to latex, discovered by
       glob rather than by a list.
@@ -155,6 +155,8 @@ candidate row; every criterion here is evidenced in a warmed tree.
 - 2026-08-19: T6 report replacement, done here so no commit carries the old claim that a render can fail: the report now reads the map that decided the emission rather than the encaps that were emitted (which no longer differ), and says what the two marks print as. `key_marks` had no consumer left and was removed.
 - 2026-08-19: discovered sub-task (minor amendment): `tests/pdfindex.py` dropped every digits-only line as the page-number footer, on the stated assumption that no index line can look like one. False — LaTeX wraps a long entry and its locators can land alone on the continuation, which `chi`'s sixteen-character target produces, and the entry's locators vanished from the evidence silently. The footer is now the bottom-most such line and any other is folded back into the line above, which also keeps a third left edge out of the indent clustering.
 - 2026-08-19: T3/T4/T6 verified: `examples/xref-conflict.qmd` renders to PDF with exit 0, neither failure string, and makeindex reporting 0 warnings, where the recorded baseline exits 1. Suite clean at 185 checks.
+- 2026-08-19: T5 needed no code change, and the verification says why rather than asserting it: the folded field is rendered by the same `target_argument`/`escape_level` path the encapsulation channel uses, and the emitted argument for the sixteen-character target carries `\%`, `\textbraceleft{}`, `\textbackslash{}`, `\textbar{}`, `\textquotedbl{}`, `\textless{}`, `\textgreater{}` and makeindex's own `"@` and `"!` quoting. The assertion that each character typesets lives in the suite, not in a one-off probe.
+- 2026-08-19: T7 added the M15 suite section: the PDF render with both failure strings asserted absent (AC1); an exhaustive hand-derived manifest over every printed index line, level, term and locator count, quantified over all fourteen rather than over the contested seven (AC2/AC3, the M10 lesson); one printed entry per contested term; each of the sixteen escaped characters asserted present in the folded target (AC4); the old failed-render phrase asserted gone from the filter (AC5); and a glob over the rendered LaTeX artifacts asserting the contested-key emission reaches only the fixture that has one. The manifest matched on its first run. Suite 185 -> 191 checks.
 - 2026-08-19: criteria audit (full mode, fresh-context [O] reader) returned 12 findings. Two were fatal and are fixed above: AC5 tested a phrase no single literal carries, so it would have passed against the unmodified filter, and AC3's exhaustive manifest named four of the eight lines the index prints. AC4's two-fixture list was narrowed to a globbed domain, the verify-slot criterion was dropped as instrument-bound and became T9, an escaping criterion was added for the printed field (IP2), and a README/DESIGN criterion was added (GP1). GP2 and the locator question went to the gate.
 
 ## Decisions

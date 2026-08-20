@@ -1,11 +1,11 @@
 # M15: A term marked both plainly and with a cross-reference builds
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP1, GP2
-- **Branch/PR:** —
+- **Branch/PR:** `m15-clash-free-emission`
 
 ## Goal
 

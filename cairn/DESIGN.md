@@ -39,18 +39,28 @@ _None yet — populated as the codebase takes shape._
   numeric results, if any arise, are checked ad hoc. Revisit if scoring or
   statistical work enters the project.
 - **A module's definitions keep their plain form, and it exports through
-  brackets** (added M17). Every definition in `_extensions/index/modules/` is
-  written `local function NAME(` or `local NAME = <literal>` at column 0, never
-  `function M.NAME(`, and the module table is populated afterwards as
-  `M["NAME"] = NAME`. Both halves are load-bearing for the acceptance suite,
-  not style: the source scans take the FIRST `NAME =` match over the whole
-  source set, so a plain `M.NAME = NAME` line masks its own definition once
-  the moved-definition probe relocates it (M16 review F3), and
-  `tests/movedefs.py` and `tests/scans/warn-distinct.py` both read the
-  column-0 `local` forms.
+  brackets** (added M17). Every *top-level* definition in
+  `_extensions/index/modules/` is written `local function NAME(` or
+  `local NAME = <literal>` at column 0, never `function M.NAME(`, and the
+  module table is populated afterwards as
+  `M["NAME"] = NAME`. Each half is load-bearing for the acceptance suite, and
+  each for its own reason. The bracket export: the source scans take the FIRST
+  `NAME =` match over the whole source set, so a plain `M.NAME = NAME` line
+  masks its own definition once the moved-definition probe relocates it (M16
+  review F3). The plain definition form: `tests/movedefs.py` finds a
+  definition only by `local function NAME(` or `local NAME =` at column 0 and
+  demands exactly one set-wide, and `tests/scans/warn-distinct.py` excludes
+  `warn`'s own definition from its pinned message count by testing that the
+  text before the match ends in `function` — which a `function M.warn(` would
+  defeat, counting the definition as a call. Helpers nested inside a function
+  are outside the rule and stay where they are — `flush` in `html.lua`, the
+  `note` and `count_owner` walkers in `html.lua` and `marker.lua` — since they
+  close over the locals of the function that holds them.
 - **A module is required under `qi_<name>`** (added M17), never its bare name:
   `levels`, `marks` and `marker` are all ordinary local and parameter names in
-  this filter, and a bare alias is shadowed by the first one that shares it.
+  this filter, and a top-of-file alias is shadowed by any later inner local or
+  parameter that shares its name — `sortkeys.lua`'s `register_sort(levels, …)`
+  is the case that forced the rule.
 - **Collation is best-effort**: non-ASCII terms appearing correctly is an IP2
   commitment, but sort *order* beyond what the user's index processor
   provides is best-effort. Sort keys (`sort=`) are how an author overrides it,
@@ -149,8 +159,10 @@ per-document: they are still module-level, and each still lasts as long as the
 state that holds it. What holds them did change — a module table in
 `package.loaded` rather than the filter chunk's own locals — which is
 indistinguishable today only because Quarto runs one pandoc process per
-document. That is a second mechanism behind the standing `marks_seen`
-ROADMAP row, not a new behavior (added M17). What `quarto add` installs is
+document. Under the one scenario that row contemplates — a Lua state reused
+across documents — the two differ: the filter chunk re-initialized its locals
+per execution, while `require` returns the cached table and does not. That is
+a second mechanism behind the row, and a stronger one (added M17). What `quarto add` installs is
 unchanged in shape: `_extension.yml` contributes one filter, `index.lua`, and
 the install copies `modules/` along with it (GP3).
 

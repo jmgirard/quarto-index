@@ -233,7 +233,50 @@ profile is `generic`, whose `consistency-gate` slot names no toolchain checks.
 No IP or GP text changed — the branch's only DESIGN.md edit is the Architecture
 section, which cites GP3 without altering it — so `cairn_impact` does not apply.
 
-Independent review: three fresh-context reviewers, none having seen the
+Second-pass review: the three lenses re-run against the fix delta
+(`dfbd57b..HEAD`). The [O] lens confirmed both questions put to it — AC2's
+position clause now holds under either reading of "position", index-among-`ok`
+-lines and absolute log line alike, and the probe's relocation changed nothing
+any check asserts (every variable it uses is top-level and untouched by the
+self-test; the nested `--plant-wrapper-defect` run neither wipes `$WORK` nor
+reaches a render). It also verified the `tar` pipeline's failure is caught
+under `pipefail`, that the `_extensions` symlink is excluded (or the tree
+variant's `ln -s` would die), that all four guards fire on an indexless render,
+and swept the whole extension for the comment-corruption class with zero
+further hits. Ten findings; the [S] prior-review lens added one and the [S]
+blame lens one. Disposed:
+
+- Solo asset list (prior-review lens) — the first fix replaced a filename list
+  with a list of five front-matter keys, the same shape one layer down. Fixed
+  by removing the derivation entirely: the probe copies the fixture alone and
+  is held to this run's own in-place render of it under `examples/`, where
+  every asset is present. Shown discriminating — a one-mark edit to the copied
+  fixture makes the comparison fire, and the intact copy matches byte for byte.
+- DESIGN definition-form convention said "every definition" where five nested
+  helpers are written otherwise; narrowed to top-level definitions and the
+  nested ones named. Fixed.
+- `BOOK_CHAPTERS` counted `.qmd` under `.quarto/` that the copy side excludes.
+  Fixed.
+- The require check reported line numbers where AC3 asks for each require line;
+  it now prints the line text. Fixed.
+- The book latex guard grepped `\printindex` (the marker fired) where the
+  standalone one greps `\index{` (entries emitted); raised to the same bar.
+  Fixed.
+- DESIGN stated the shadowing direction backwards and softened the lifetime
+  claim it had just made. Both fixed; the `marks_seen` ROADMAP row widened to
+  record `package.loaded` as the second mechanism.
+- The blame lens read the Conventions entry as citing `warn-distinct.py` for
+  both halves of the rule; the two halves are now stated with their own
+  dependents. Fixed.
+- AC3 evidence is now conditional on the self-test passing in a `--self-test`
+  run, where it used to run first. Logged, no change: the profile's `verify`
+  slot is the plain run, where the probe runs unconditionally.
+- Two findings were moot on arrival — a dead `[ -n "$SOLO_FILES" ]` guard and a
+  `cp` loop without its own `fail` — both in the derivation the solo fix
+  removed.
+- No finding failed an acceptance criterion, so none was a floor return.
+
+First-pass review: three fresh-context reviewers, none having seen the
 implementation. The [O] diff-bug reviewer reconstructed the output-neutrality
 oracle D-004 deleted — 29 fixtures x 3 formats and all 6 book-project renders,
 at cb782df and at the split — and found every output, every render log and

@@ -7274,8 +7274,9 @@ if bad:
 # over a source set nobody can see the shape of.
 for path, info in sorted(per.items()):
     where = ('first definition at %d' % info['def']) if info['def'] else 'no definition'
-    reqs = ', '.join(str(n) for n, _t in info['req']) or 'none'
-    print('     %s: require at %s; %s' % (path, reqs, where))
+    print('     %s: %s' % (path, where))
+    for n, text in info['req']:
+        print('       %d: %s' % (n, text))
 print('ok   M17-AC3: all %d require() calls across the source set sit at file '
       'top level, above their file\'s first definition' % seen)
 REQPY
@@ -7298,32 +7299,17 @@ IP_ABS=$( cd "$IP" && pwd )
 # cannot end up comparing a tree nothing else in this run reads.
 EXT_PARENT=$( cd "$(dirname "$QI_EXT_DIR")" && pwd )
 
-# The standalone fixture's own file plus every local file it references, read
-# OUT of the fixture rather than written down here: a hand list becomes the
-# sweep, and an asset it gains later would silently go uncopied (review
-# finding C).
+# The standalone fixture, copied as itself. Nothing enumerates what it needs
+# beside it — not a list of filenames and not a list of front-matter keys,
+# which is the same shape one layer down. What catches an asset the copy did
+# not bring is the guard further below: this run has ALREADY rendered the
+# fixture in place under examples/, where every asset it has is present, and
+# the probe's working-tree render is required to match that byte for byte.
 SOLO_FIXTURE="examples/demo.qmd"
-cat > "$WORK/solo-files.py" <<'SOLOPY'
-import os, re, sys
-src = sys.argv[1]
-root = os.path.dirname(src)
-text = open(src, encoding='utf-8').read()
-found = [src]
-for cand in re.findall(r'\]\(([^)\s]+)\)', text) + re.findall(
-        r'^\s*(?:bibliography|css|include-in-header|image|logo):\s*(\S+)\s*$',
-        text, re.MULTILINE):
-    cand = cand.strip('<>"\'')
-    path = os.path.join(root, cand)
-    if os.path.isfile(path) and path not in found:
-        found.append(path)
-print('\n'.join(found))
-SOLOPY
-SOLO_FILES=$(python3 "$WORK/solo-files.py" "$SOLO_FIXTURE")
-[ -n "$SOLO_FILES" ] || fail "M17-AC3: no files derived for the standalone fixture $SOLO_FIXTURE"
-
+SOLO_NAME=$(basename "${SOLO_FIXTURE%.qmd}")
 for VARIANT in tree inst; do
   mkdir -p "$IP/$VARIANT/solo"
-  printf '%s\n' "$SOLO_FILES" | while read -r F; do cp "$F" "$IP/$VARIANT/solo/"; done
+  cp "$SOLO_FIXTURE" "$IP/$VARIANT/solo/"
   for FMT in latex html; do
     # One project per format: a book render clears its output directory, so a
     # shared project would leave only the last format's output to compare.
@@ -7353,7 +7339,7 @@ done
 # The book the probe renders must be the book the suite's own book checks use,
 # chapter for chapter — otherwise the parity claim is made about a smaller
 # project than the one that ships.
-BOOK_CHAPTERS=$(find examples/book -name '*.qmd' -not -path '*/_book/*' | wc -l | tr -d ' ')
+BOOK_CHAPTERS=$(find examples/book -name '*.qmd' -not -path '*/_book/*' -not -path '*/.quarto/*' | wc -l | tr -d ' ')
 COPIED_CHAPTERS=$(find "$IP/tree/book-html" -name '*.qmd' | wc -l | tr -d ' ')
 [ "$BOOK_CHAPTERS" -eq "$COPIED_CHAPTERS" ] \
   || fail "M17-AC3: examples/book has $BOOK_CHAPTERS chapter(s) but the probe copied $COPIED_CHAPTERS"
@@ -7367,7 +7353,7 @@ INSTALLED=$(find "$IP/inst/solo/_extensions/index" -name '*.lua' | wc -l | tr -d
 
 for VARIANT in tree inst; do
   for FMT in latex html; do
-    ( cd "$IP/$VARIANT/solo" && quarto render "$(basename "$SOLO_FIXTURE")" --to "$FMT" ) \
+    ( cd "$IP/$VARIANT/solo" && quarto render "$SOLO_NAME.qmd" --to "$FMT" ) \
       > "$WORK/parity-$VARIANT-solo-$FMT.log" 2>&1 \
       || { tail -30 "$WORK/parity-$VARIANT-solo-$FMT.log" >&2; fail "M17-AC3: the $VARIANT standalone render to $FMT failed"; }
     ( cd "$IP/$VARIANT/book-$FMT" && quarto render --to "$FMT" ) \
@@ -7376,21 +7362,30 @@ for VARIANT in tree inst; do
   done
 done
 
+SOLO_BASE="$IP/tree/solo/$SOLO_NAME"
+# The copy brought everything the fixture needs. Asserted against this run's
+# OWN in-place render of the same fixture under examples/, which has every
+# asset there is: an asset the scratch copy lacks moves that render's output
+# and is reported here, so no list of names has to be right (review, pass 2).
+cmp -s "$WORK/demo-latex.tex" "$SOLO_BASE.tex" \
+  || fail "M17-AC3: the probe's working-tree latex render of $SOLO_FIXTURE differs from this run's in-place render of the same fixture; the scratch copy is missing something the fixture needs"
+cmp -s "examples/$SOLO_NAME.html" "$SOLO_BASE.html" \
+  || fail "M17-AC3: the probe's working-tree html render of $SOLO_FIXTURE differs from this run's in-place render of the same fixture; the scratch copy is missing something the fixture needs"
+
 # The comparison is only worth making if each side actually built an index. A
 # pair of empty renders is byte-identical too, so all FOUR compared outputs
 # carry a guard, not just the two that had one (review finding D).
-SOLO_BASE="$IP/tree/solo/$(basename "${SOLO_FIXTURE%.qmd}")"
 grep -q '\\index{' "$SOLO_BASE.tex" \
   || fail "M17-AC3: the working-tree standalone latex render emitted no \\index command, so the parity diff below compares two documents with no index in them"
 grep -q 'qi-index' "$SOLO_BASE.html" \
   || fail "M17-AC3: the working-tree standalone html render built no index section, so its parity diff proves nothing"
 grep -q 'qi-index' "$IP/tree/book-html/_book/last.html" \
   || fail "M17-AC3: the working-tree book html render built no index section, so its parity diff proves nothing"
-grep -rq '\\printindex' "$IP/tree/book-latex/_book" \
-  || fail "M17-AC3: the working-tree book latex render emitted no \\printindex, so its parity diff proves nothing"
+grep -rq '\\index{' "$IP/tree/book-latex/_book" \
+  || fail "M17-AC3: the working-tree book latex render emitted no \\index command, so its parity diff compares two books with no index entries in them"
 
 PARITY=0
-for PAIR in "solo/$(basename "${SOLO_FIXTURE%.qmd}").tex" "solo/$(basename "${SOLO_FIXTURE%.qmd}").html" book-latex/_book book-html/_book; do
+for PAIR in "solo/$SOLO_NAME.tex" "solo/$SOLO_NAME.html" book-latex/_book book-html/_book; do
   [ -e "$IP/tree/$PAIR" ] || fail "M17-AC3: the working-tree render produced no $PAIR"
   [ -e "$IP/inst/$PAIR" ] || fail "M17-AC3: the installed render produced no $PAIR"
   PDIFF="$WORK/parity-$(printf '%s' "$PAIR" | tr '/' '-').diff"

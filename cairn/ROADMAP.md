@@ -8,7 +8,7 @@ _Last hygiene check: 2026-08-20 (M16 merged and archived; its four review follow
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M16 | The suite's source checks read the whole extension, not one file | done | — | normal | milestones/archive/M16-source-set-evidence.md |
-| M17 | index.lua becomes a thin entry point over required modules | planned | M16 | normal | milestones/M17-module-split.md |
+| M17 | index.lua becomes a thin entry point over required modules | in-progress | M16 | normal | milestones/M17-module-split.md |
 | M15 | A term marked both plainly and with a cross-reference builds | done | — | normal | milestones/archive/M15-clash-free-emission.md |
 | M13 | Level reports name a depth the author can act on | done | — | normal | milestones/archive/M13-level-report-wording.md |
 | M14 | A cross-reference target that names no index entry is reported | done | — | normal | milestones/archive/M14-dangling-xref-target.md |

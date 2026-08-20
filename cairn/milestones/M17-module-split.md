@@ -1,11 +1,11 @@
 # M17: index.lua becomes a thin entry point over required modules
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M16
 - **Driving RR:** —
 - **Principles touched:** GP3
-- **Branch/PR:** —
+- **Branch/PR:** `m17-module-split`
 
 ## Goal
 
@@ -54,12 +54,27 @@ Any behavior change → none; a rendered-output change is a defect here.
       which is why the pattern covers the nested and assigned forms and not
       just the top-level one. Afterwards it reports exactly one line whose file
       is `index.lua`: `Pandoc`.
-- [ ] AC2: The split changes no check. `tests/run-tests.sh` and
-      `tests/run-tests.sh --self-test` report the same check count and the same
-      pass/fail set as at the merge base, and `git diff <base> -- tests/` is
-      empty. A check that needs editing to accommodate the move is a defect in
-      that check (tracking-rules "What gets a test"), reported rather than
-      silently patched.
+- [ ] AC2: The split changes no check that existed at the merge base. Both
+      `tests/run-tests.sh` and `tests/run-tests.sh --self-test` exit 0, and
+      every `ok` line of the merge-base run — 195 and 230 of them, measured on
+      this machine this session — stands verbatim, and in the same position,
+      in the split run's log; the log's lines are the enumeration, since a
+      count cannot see one check swapped for another. One line is exempt and
+      named: `M16-AC2: the enumeration reaches modules/ (1 -> 2 …)`
+      interpolates the source-set size and must read `(N -> N+1 …)` for the N
+      `.lua` files the split extension holds, identical either side of the
+      parentheses — the growth M16 built it to report.
+      Against the merge base, `git status --porcelain` over `tests/`,
+      `examples/` and `README.md` names exactly two paths, both modified, none
+      untracked: `tests/movedefs.py`, the probe's hand, which relocates named
+      definitions and asserts nothing about them, edited only to take them
+      from the source set `tests/filtersrc.py` enumerates under the scratch
+      root it is passed, never the ambient `QI_EXT_DIR`, rather than from the
+      single file `index.lua`; and `tests/run-tests.sh`, where `git diff
+      --numstat <base>` reports zero deletions, so every merge-base line
+      survives and the additions are AC3's install-path probe. A merge-base
+      *check* that needs editing to accommodate the move is a defect in that
+      check (tracking-rules "What gets a test"), reported, never patched.
 - [ ] AC3: The split extension renders identically installed and from the
       working tree. Every `require` in the extension is at file top level,
       above that file's first definition — checked by a grep reporting each
@@ -130,7 +145,19 @@ the task that made it.
 - 2026-08-20: the globals criterion was dropped because its premise was wrong — `index.lua:1546` forward-declares `local entry_list`, so `:1561`'s `function entry_list` assigns to that local and the file defines no globals.
 - 2026-08-20: plan gate chose one milestone of ten move tasks over splitting core and back-ends across two because each move is verified by the task that makes it and the seam between core and back-ends is where module boundaries are least obvious; falsified by a move task that cannot be verified in isolation.
 - 2026-08-20: plan chose relative `require("./modules/<name>")` over `package.path` manipulation because Quarto patches `require` to resolve relative paths against the calling script (`share/pandoc/datadir/init.lua:260`), verified working from the working tree, through the symlink, and installed; falsified by a Quarto version dropping that patch.
+- 2026-08-20: implement start; branch `m17-module-split` cut from cb782df. Merge-base baseline measured on this machine: `tests/run-tests.sh` 195 ok lines, `--self-test` 230, both exit 0.
+- 2026-08-20: implementation-gate question — `tests/movedefs.py` reads one named file (`index.lua`) and refuses a name it cannot find there, so T1 alone reds the suite; demonstrated on a scratch tree with `LATEX_LITERAL` hand-moved (`FAIL: movedefs: 'LATEX_LITERAL' has 0 top-level definitions in index.lua, want exactly 1`). Gate chose to name the permitted test-file changes explicitly rather than freeze only run-tests.sh and tests/scans/.
+- 2026-08-20: amendment return: AC2 — "The split changes no check that existed at the merge base. Both `tests/run-tests.sh` and `tests/run-tests.sh --self-test` exit 0, and every `ok` line of the merge-base run — 195 and 230 of them, measured on this machine this session — stands verbatim, and in the same position, in the split run's log"
+- 2026-08-20: criteria audit ran in FULL mode on the amended AC2 (declared tier user-facing), two fresh-context [O] readers, neither the author. First pass returned seven findings, of which two blocking: AC2's tests/-freeze contradicted the milestone's own T9/AC3, and the "confined to" clause silently constrained the Lua import idiom. Second pass on the repaired wording returned finding 1 fatal — `run-tests.sh`'s `M16-AC2: the enumeration reaches modules/ (1 -> 2 …)` line interpolates the source-set size, so no correct split can leave it verbatim — plus three narrowings (untracked/`examples/`/README left outside the diff domain; "confined to AC3's probe" unmechanizable; movedefs must enumerate the scratch root, not the ambient QI_EXT_DIR). All disposed into the wording written above; the import-idiom finding went to the milestone-local decision instead of the criterion.
+- 2026-08-20: two module-level flags beyond the plan's seven accumulators found while mapping the seams — `xref_list_emitted` and `xref_both_emitted`, both written in the Span pass and read in `Pandoc`. Both are LaTeX-emission state, so both land in `modules/latex.lua`; `xref_both_emitted` therefore moves out of T4's line range. Task-range refinement only, no scope change.
+- 2026-08-20: T7/T8 boundary refined from the plan's `:2049`/`:2050` to `:2020`/`:2021` — the `STORE_DIR`/`STORE_SUFFIX`/`STORE_VERSION` constants at `:2041-2047` sit under the plan's marker range but belong to book support, and the book section's own banner opens at `:2021`.
 
 ## Decisions
+
+### 2026-08-20: modules bind imported names through the module table, and every definition keeps its merge-base form
+
+**Context:** `tests/movedefs.py` matches `local function NAME(` or `local NAME =` at column 0 and demands exactly one hit per name, and `tests/scans/warn-distinct.py` excludes `warn`'s own definition by testing that the text before the match rstrips to `function`. Both are merge-base checks AC2 forbids editing.
+**Decision:** A name a module imports is reached through the exporting module's table (`core.warn(...)`, `levels.MAX_LEVELS`) and is never re-bound as a same-named local. Every definition keeps its merge-base form — `local function NAME(` or `local NAME = <literal>` at column 0 — in whichever module it lands in; the module table is populated by assignment afterwards, never by `function M.NAME(`.
+**Consequences:** `movedefs.py` still finds exactly one definition per name after the split, and `warn-distinct`'s pinned count of 38 messages holds because call sites still match `\bwarn\(` while the sole definition still rstrips to `function`. The cost is that cross-module call sites gain a module prefix.
 
 ## Review

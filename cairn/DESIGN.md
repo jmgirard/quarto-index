@@ -202,8 +202,8 @@ that back-end, since no other format folds (added M10). Two more judgements
 moved there for the same reason: that fold rewrites a target exactly as it
 rewrites an entry, and the set a target resolves against is the set of paths
 entries print. Where a back-end imposes no ceiling the two sets are one list
-and nothing moves (added M18).
-then branches per format and records what that back-end will need.
+and nothing moves (added M18). The pass then branches per format and records
+what that back-end will need.
 
 The **Pandoc pass** runs once the whole document has been seen, and is where a
 back-end emits anything document-wide. It opens format-neutrally: the placement

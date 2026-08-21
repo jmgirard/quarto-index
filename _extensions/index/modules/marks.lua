@@ -73,11 +73,14 @@ local html_marks = {}
 
 -- Every level path this document's marks index, each mark's parent levels
 -- included, as `qi_levels.levels_key` strings. This is the set a cross-reference target
--- is resolved against, and it is format-neutral for the same reason the rest
--- of the mark's diagnosis is: whether a target names a term the document
--- indexes is a fact about what the author wrote (IP1), not about a back-end.
--- The HTML entry tree could answer the same question, but it exists in one
--- format only, so the answer would too.
+-- is resolved against. Whether a target names a term the document indexes is
+-- still a fact about what the author wrote (IP1) rather than about a back-end,
+-- and the report is still drawn once for every format — but the PATHS the fact
+-- is read off are the ones the running back-end prints, so where a level
+-- ceiling folds an entry it folds the target too and what is recorded here is
+-- the folded path (D-005, corrected M18). Where nothing folds, this is the
+-- written path exactly as before. The HTML entry tree could answer the same
+-- question, but it exists in one format only, so the answer would too.
 local marked_paths = {}
 -- Every surviving cross-reference target, in document order, carrying the
 -- mark it was written on. Held until the Pandoc pass, which is the first

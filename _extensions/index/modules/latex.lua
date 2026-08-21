@@ -139,9 +139,6 @@ local function latex_plan(levels, sort, xrefs, context, report, fold)
     -- unchanged, and `written` survives it.
     local written = xref.written or xref.levels
     local folded = qi_levels.clamp_levels(xref.levels, context, false)
-    if report and #xref.levels > qi_levels.MAX_LEVELS then
-      qi_core.warn(("%s= on %s names a path %d levels deep; the back-end stores %d, so the target is folded exactly as an entry is and points at \"%s\" here, the path a reader is sent to in this format"):format(xref.kind.attr, context, #xref.levels, qi_levels.MAX_LEVELS, qi_levels.levels_key(folded)))
-    end
     if qi_levels.levels_key(folded) == printed_key then
       if report then
         -- The folded path is quoted because the author never wrote it: it is
@@ -154,6 +151,18 @@ local function latex_plan(levels, sort, xrefs, context, report, fold)
              :format(xref.kind.attr, context, printed_path, qi_levels.MAX_LEVELS))
       end
     else
+      -- Reported only for a target that SURVIVES the fold. A target the fold
+      -- turns into a self-reference is dropped by the branch above and says so
+      -- there; announcing the path it now points at as well would hand the
+      -- author two reports contradicting each other about one target — the
+      -- defect this milestone exists to remove, in a new shape (review F1).
+      -- The path is quoted in the `!` spelling every other report uses, which
+      -- is what an author searches their source for; what the reader sees is
+      -- the same levels joined as a target, and the message does not claim
+      -- otherwise (review F8).
+      if report and #xref.levels > qi_levels.MAX_LEVELS then
+        qi_core.warn(("%s= on %s names a path %d levels deep; the back-end stores %d, so the target is folded exactly as an entry is and now names \"%s\", the path the entry it points at prints"):format(xref.kind.attr, context, #xref.levels, qi_levels.MAX_LEVELS, qi_levels.levels_key(folded)))
+      end
       kept[#kept + 1] = { kind = xref.kind, levels = folded, written = written }
     end
   end

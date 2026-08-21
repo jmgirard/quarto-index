@@ -47,6 +47,10 @@ A target needing no fold is untouched, and is what tells a rule that folds
 what has to be folded from one that rewrites every target:
 [wax]{.index entry="Wax" see="Elm"}.
 
+A target naming the contested key, so that the entry a target is compared
+against is one whose printed field carries a folded cross-reference of its own:
+[yak]{.index entry="Yak" see="Zinc"}.
+
 A target naming a PARENT level of a folded entry resolves, because the set a
 target is judged against holds every parent path as well as every whole one.
 This is the shape a printed-path set built from whole paths alone would report

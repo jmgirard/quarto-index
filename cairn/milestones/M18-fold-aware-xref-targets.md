@@ -157,6 +157,17 @@ print-convention wording → the see-also candidate row.
 - 2026-08-20: T8 — `tests/run-tests.sh --self-test` passes: 242 checks, 203 without the self-test.
 - 2026-08-20: every task done and the verify slot clean; status to review. Acceptance-criterion boxes left unticked for review's own fresh evidence.
 - 2026-08-20: review — draft PR #18 opened; fresh `--self-test` run (242 checks, exit 0) executed every criterion and each box was ticked against its own recorded evidence. Consistency gate clean: `cairn_validate` exits 0, `cairn_impact --changed` reports no changed principles, and the `generic` profile names no toolchain checks. No CI is configured on the repo, so the suite run is the whole check surface. Blame-history and prior-review lenses returned zero findings; the diff-bug lens is still running, so this is a pre-gate checkpoint and the findings section is not yet written.
+- 2026-08-20: defect return 1 — the [O] diff-bug lens found, and a hand render confirmed, that the fold-rewrite report fires before the fold-self drop, so a target the fold turns into a self-reference draws two contradictory reports: the milestone's own defect class in a new shape. Status back to in-progress. The maintainer directed fixing that and the nine other actioned findings; F11 rejected as intentional redundancy AC3 names.
+- 2026-08-20: F1 fixed — the report moved into the branch that keeps a target, so a target the fold drops as a self-reference says that and nothing else. `examples/fold-xref-self.qmd` is the regression fixture: an entry written at three levels whose third carries a comma, against a four-level target that folds onto it. It fails before the fix (two reports) and draws one after. Not a new acceptance criterion — the criteria set is not widened on a milestone carrying a defect return; the pin is a check.
+- 2026-08-20: F8 fixed with it — the message no longer calls the `!` spelling what a reader sees; it says the path the entry it points at prints.
+- 2026-08-20: F2 fixed — the `marked_paths` and `report_dangling` call-site comments said the resolution set is format-neutral, which D-005 reverses; both corrected in place, marked `corrected M18`.
+- 2026-08-20: F3 fixed — `tests/scans/mark-report-keys.py` read `sys.argv[1:4]`, so the new key was outside the scan that exists to keep these keys from going stale. It now takes every key the run passes and asserts it was given some.
+- 2026-08-20: F4 fixed — the `self-xref.html` block discarded the href, so AC2's unlinked clause had no check; it now asserts the target text AND that it carries no link.
+- 2026-08-20: F5 fixed — `examples/fold-xref-both.qmd` now builds to PDF and its printed row is asserted whitespace-collapsed (a wrap survives that, a wrong fold does not), with both unfolded spellings asserted absent.
+- 2026-08-20: F6 fixed — the AC1 level comparison read the manifest on both sides; it now reads the rendered list. F7 fixed with it: a target naming the contested key was added to the fixture, so the entry side's folded-cross-reference stripper is exercised rather than dead.
+- 2026-08-20: F10 fixed — the orphaned DESIGN sentence rejoined its subject.
+- 2026-08-20: F9 disposition changed from a criterion amendment to a candidate row, absorbed into the M13 report-wording cluster. AC5's promise is bounded to the marks its named procedure enumerates, and no target in either fixture carries an empty level, so on that domain the message does name the depth the author wrote; F9 is behaviour outside it and matches the entry-fold report's precedent. F11 rejected: AC3 names the `dangling-xref` clause explicitly, so the second pin is intentional.
+- 2026-08-20: re-review evidence — `tests/run-tests.sh --self-test` passes at 245 checks. One transient `quarto`/deno segfault on an unrelated M06 HTML render was seen once and did not reproduce (that fixture renders exit 0 in isolation, and the re-run was clean).
 - 2026-08-20: criteria audit ran in full mode (user-facing tier), fresh-context [O] reader; returned nine findings, all fixed in the drafted criteria before the gate — an unreachable count pin, two single-exemplar families, an instrument the evidence misnamed, a missing discrimination probe, a flat substring test behind a nesting claim, five stale counts reading as fresh verification, and an unrecorded reversal of the report's format-neutrality.
 - 2026-08-20: plan gate chose folding targets as entries are folded over patching the two cases separately, because the separate patch leaves an author told to correct a cross-reference that names a real entry; falsified by a fold rule that makes a target resolve onto an entry the author did not mean.
 - 2026-08-20: plan gate chose reporting each fold-rewritten target over staying silent when the folded target resolves, because otherwise the only notice of a rewritten target sits on a different mark; falsified by build logs where the per-target report drowns the reports that need action.
@@ -229,7 +240,7 @@ of the gate is a clean no-op.
 
 **Findings and triage.**
 
-- **F1 (defect, verified) — `latex.lua:143`: the fold-rewrite report fires
+- **F1 (verified) — `latex.lua:143`: the fold-rewrite report fires
   before the fold-self drop, so one target draws two contradictory reports.**
   Reproduced independently: `[x]{.index entry="A!B!C, D" see="A!B!C!D"}` to
   latex draws `... points at "A!B!C, D" here, the path a reader is sent to in
@@ -276,3 +287,22 @@ of the gate is a clean no-op.
 - **F11 — `tests/run-tests.sh` duplicates M14's existing per-format pin** of
   `dangling-xref` at 7. AC3 names that clause explicitly, so the redundancy is
   intentional; harmless.
+
+**Dispositions.** F1 returned the milestone to `in-progress` under the return
+floor — a load-bearing defect in what the deliverable does for its users, and
+the milestone's own defect class in a new shape. It and F2–F8 and F10 were
+fixed on the branch at the maintainer's direction; each fix has its own
+work-log line. F9 was reclassified from a criterion amendment to a candidate
+row (absorbed into the M13 report-wording cluster): AC5's promise is bounded to
+the marks its named procedure enumerates, no target in either fixture carries an
+empty level, so on that domain the message does name the depth the author
+wrote. F11 rejected — AC3 names that clause explicitly, so the second pin is
+intentional. Defect returns: 1. Amendment returns: 0.
+
+**Re-review.** `tests/run-tests.sh --self-test` passes at 245 checks after the
+fixes. Every criterion's counts re-read from that run's logs and unchanged:
+`fold-xref` latex 1 dangling / 5 fold-target, html and gfm 1 / 0;
+`fold-xref-both` 0 / 2 latex and 0 / 0 elsewhere; `self-xref` latex 0 / 3
+fold-self against 3 / 0 in html and gfm; `dangling-xref` latex 7. The new
+regression fixture `fold-xref-self` draws 1 fold-self and 0 of everything else
+in latex, and 1 format-neutral report in html and gfm.

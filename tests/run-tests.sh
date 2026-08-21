@@ -127,7 +127,8 @@ run_scan() {
       MARKER_CLASS="$MARKER_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
         python3 "$script" ;;
     mark-report-keys)
-      python3 "$script" "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" ;;
+      python3 "$script" "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" \
+        "$WARN_FOLD_TARGET" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -3014,8 +3015,9 @@ pass "M08-AC2/M10-AC4/M11-AC5: six self-referential targets each report once in 
 # separable. All three quote the same `entry="..."` context, so a count keyed
 # on context alone cannot come back as one; what keeps them apart is the key
 # each check greps for. Asserted as the operational claim: each key matches its
-# own filter warning and neither of the other two. The domain is the three
-# keys, enumerated here.
+# own filter warning and none of the others. The domain is every key the run
+# passes the scan, which is what makes adding a report to the run without
+# adding its key here a failure rather than a silent gap (M18 review F3).
 # ---------------------------------------------------------------------------
 run_scan mark-report-keys
 
@@ -3243,16 +3245,23 @@ for parent, depth, want in (('D', 4, 'A: B: C, D'),
     if rec is None:
         errs.append(f'the depth-{depth-1} entry {parent!r} is missing from the index')
         continue
-    targets = [t for _k, t, _l, _h in rec['xrefs']]
-    if targets != [want]:
-        errs.append(f'entry {parent!r} should keep its target [{want!r}], has {targets}')
+    # The href is read, not discarded: M18-AC2 says these three targets are
+    # left UNLINKED here, and a check that drops it asserts only that they
+    # survive (M18 review F4). They are unlinked because HTML folds nothing,
+    # so the folded path each names is a path no mark in this file indexes —
+    # the same fact the format-neutral report draws in this format.
+    targets = [(t, h) for _k, t, _l, h in rec['xrefs']]
+    if targets != [(want, None)]:
+        errs.append(f'entry {parent!r} should keep its target {want!r} as plain '
+                    f'text with no link, has {targets}')
 
 if errs:
     print('FAIL: M10-AC2/AC3: ' + '; '.join(errs), file=sys.stderr)
     sys.exit(1)
-print('ok   M10-AC2/AC3: both empty-level entries lost their self-targets, '
-      'index plainly at the levels that survived with nothing below them, and '
-      'all three folded entries keep theirs, HTML having no level ceiling')
+print('ok   M10-AC2/AC3 + M18-AC2: both empty-level entries lost their '
+      'self-targets, index plainly at the levels that survived with nothing '
+      'below them, and all three folded entries keep theirs as unlinked text, '
+      'HTML having no level ceiling')
 PY
 
 # ---------------------------------------------------------------------------
@@ -6549,6 +6558,10 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  parent of one; only `Sil!Tea!Urn!Vin` names nothing. 1.
 #   fold-xref-both 2 attributes on one mark, both naming entries the file
 #                  marks at overflow depth. 0.
+#   fold-xref-self 1 attribute, `Bri!Cal!Del!Emu`, against an entry written
+#                  `Bri!Cal!Del, Emu`. The two are one path only after the
+#                  LaTeX fold, and gfm folds nothing, so here it names
+#                  nothing. 1.
 #   self-xref      11 attributes. 6 name the entry they are written on and are
 #                  dropped as self-references; 2 name `Cats`, which the file
 #                  indexes; the remaining 3 name the path the LaTeX fold makes
@@ -6580,6 +6593,7 @@ examples/dangling-xref.qmd	7
 examples/demo.qmd	8
 examples/empty-levels.qmd	0
 examples/fold-xref-both.qmd	0
+examples/fold-xref-self.qmd	1
 examples/fold-xref.qmd	1
 examples/html-index.qmd	1
 examples/placement.qmd	0
@@ -6638,7 +6652,7 @@ pass "M14: every example's dangling-target report count matches its pinned expec
 # a contested key, so that sweep needs its artifact, and reading a copy taken
 # now is what keeps the sweep off whatever an earlier run happened to leave in
 # examples/. The PDF render further down removes the intermediate .tex (M15).
-for f in fold-xref fold-xref-both; do
+for f in fold-xref fold-xref-both fold-xref-self; do
   for fmt in latex html gfm; do
     quarto render "examples/$f.qmd" --to $fmt > "$WORK/$f-$fmt.log" 2>&1 \
       || { tail -20 "$WORK/$f-$fmt.log" >&2; fail "M18: examples/$f.qmd failed to render to $fmt"; }
@@ -7109,6 +7123,7 @@ EXPECTED = {
         r'Zinc@Zinc, \see{Ash: Bay: Cod, Dun}{}',
         r'Reed|seealso{Sil: Tea: Urn, Vin}',
         r'Wax|see{Elm}',
+        r'Yak|see{Zinc}',
         r'Yam|see{Ash: Bay}',
     ],
     'fold-xref-both': [
@@ -7124,7 +7139,11 @@ EXPECTED = {
 # different separators by construction, so equality of the ARGUMENTS is not
 # the claim and equality of the LEVELS is.
 PAIRS = {
-    'fold-xref': {1: [0], 3: [2], 5: [4], 6: [0]},
+    # Row 9 is `Yak|see{Zinc}` against row 6, the contested key: its target
+    # needs no fold, but the ENTRY it names prints a field carrying a folded
+    # cross-reference of its own, which is the only thing that exercises the
+    # stripper in entry_levels (review F7).
+    'fold-xref': {1: [0], 3: [2], 5: [4], 6: [0], 9: [6]},
     'fold-xref-both': {2: [0, 1]},
 }
 
@@ -7204,15 +7223,19 @@ for name, path in (('fold-xref', os.environ['FOLD_TEX_A']),
             print(f'  {line}', file=sys.stderr)
         ok = False
         continue
+    # Read out of `got`, never `want`: comparing the manifest against itself
+    # would make this clause an internal-consistency check on hand-written
+    # strings, sound only because the equality gate above returned first
+    # (review F6).
     for trow, erows in sorted(PAIRS[name].items()):
-        targets = target_args(want[trow])
+        targets = target_args(got[trow])
         if len(targets) != len(erows):
             print(f'FAIL: M18-AC1: {name} row {trow} renders {len(targets)} '
                   f'target(s), the pair map expects {len(erows)}', file=sys.stderr)
             ok = False
             continue
         for target, erow in zip(targets, erows):
-            printed = entry_levels(want[erow])
+            printed = entry_levels(got[erow])
             named = target.split(': ')
             if named != printed:
                 print(f'FAIL: M18-AC1: {name} row {trow} names {named}, but the '
@@ -7306,6 +7329,7 @@ MANIFEST = """\
 0\tPine\tsee|Lime: Moss: Nut: Orb|linked
 0\tReed\tsee also|Sil: Tea: Urn: Vin|plain
 0\tWax\tsee|Elm|linked
+0\tYak\tsee|Zinc|linked
 0\tYam\tsee|Ash: Bay|linked
 0\tZinc\tsee|Ash: Bay: Cod: Dun|linked
 0\tLime\t
@@ -7369,6 +7393,7 @@ MANIFEST = """\
 0\tPine, see Lime: Moss: Nut, Orb
 0\tReed, see also Sil: Tea: Urn, Vin
 0\tWax, see Elm
+0\tYak, see Zinc
 0\tYam, see Ash: Bay
 0\tZinc, see Ash: Bay: Cod, Dun
 0\tLime
@@ -7408,6 +7433,64 @@ print(f'ok   M18-AC4: the compiled index matches the manifest row for row, '
       f'folded path')
 M18PDFPY
 pass "M18-AC4: in the compiled PDF a folded entry and the cross-reference that names it print the same path, so a reader following the reference finds the entry"
+
+# M18 (review F1) — the regression pin for the defect this review returned on:
+# a target the fold turns into a self-reference must draw the fold's OWN report
+# and nothing else. Reachable only from a target written DEEPER than the
+# ceiling whose folded form equals the entry's printed path, which is why no
+# shape in the other two fixtures reaches it — theirs are written at exactly
+# three levels, so the report about a rewritten target never fires on them.
+# Before the fix the LaTeX render drew both: "now names X" and, next line,
+# "the fold made the target a cross-reference to itself, so it is dropped".
+check_warning_count "$WORK/fold-xref-self-latex.log" "$WARN_FOLD_SELF" 1 "M18 (F1)"
+check_warning_count "$WORK/fold-xref-self-latex.log" "$WARN_FOLD_TARGET" 0 "M18 (F1)"
+check_warning_count "$WORK/fold-xref-self-latex.log" "$WARN_DANGLING" 0 "M18 (F1)"
+for fmt in html gfm; do
+  # No ceiling, so nothing folds, nothing is a self-reference here, and the
+  # target names a four-level path this file does not index — one report, and
+  # it is the format-neutral one.
+  check_warning_count "$WORK/fold-xref-self-$fmt.log" "$WARN_FOLD_SELF" 0 "M18 (F1, $fmt)"
+  check_warning_count "$WORK/fold-xref-self-$fmt.log" "$WARN_FOLD_TARGET" 0 "M18 (F1, $fmt)"
+  check_warning_count "$WORK/fold-xref-self-$fmt.log" "$WARN_DANGLING" 1 "M18 (F1, $fmt)"
+done
+pass "M18 (F1): a target the fold turns into a self-reference draws exactly one report — the fold's own — and no second one announcing a path it no longer names"
+
+# M18 (review F5) — the both-attributes site followed to a compiled artifact
+# (GP6). Its printed row carries two whole folded paths and both labels, so it
+# wraps, which is why this fixture stays out of AC4's outline manifest: the
+# text is read whitespace-collapsed instead, which a wrap survives and a wrong
+# fold does not.
+quarto render examples/fold-xref-both.qmd --to pdf > "$WORK/fold-xref-both-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/fold-xref-both-pdf.log" >&2; fail "M18 (F5): fold-xref-both.qmd failed to render to PDF"; }
+[ -s examples/fold-xref-both.pdf ] || fail "M18 (F5): examples/fold-xref-both.pdf is empty"
+python3 - examples/fold-xref-both.pdf <<'M18BOTHPDFPY'
+import re, subprocess, sys
+
+text = subprocess.run(['pdftotext', sys.argv[1], '-'], check=True,
+                      capture_output=True, text=True).stdout
+flat = re.sub(r'\s+', ' ', text)
+# The whole row, both targets folded as their entries are. Asserted as one
+# string so a fold applied to the first argument and not the second cannot
+# pass, and counted so a row printed twice cannot either.
+ROW = ('Yuc, see Oat: Pea: Rye, Soy; '
+       'see also Tef: Urd: Vet, Wid, Xan')
+if flat.count(ROW) != 1:
+    print(f'FAIL: M18 (F5): the both-attributes row appears '
+          f'{flat.count(ROW)} times in the compiled index, want 1. Wanted '
+          f'<<{ROW}>>', file=sys.stderr)
+    sys.exit(1)
+# The unfolded spellings must be absent, or the check above would pass on a
+# build that printed both forms somewhere.
+for stale in ('Oat: Pea: Rye: Soy', 'Tef: Urd: Vet: Wid: Xan'):
+    if stale in flat:
+        print(f'FAIL: M18 (F5): the compiled index still carries the unfolded '
+              f'target <<{stale}>>', file=sys.stderr)
+        sys.exit(1)
+print('ok   M18 (F5): the both-attributes command compiles through makeindex '
+      'and prints one row carrying both targets folded to the paths their '
+      'entries print, with neither unfolded spelling anywhere in it')
+M18BOTHPDFPY
+pass "M18 (F5): the both-attributes site reaches a compiled artifact, where both of its folded targets print as the entries they name print"
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.

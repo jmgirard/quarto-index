@@ -71,10 +71,12 @@ local function Pandoc(doc)
     qi_core.warn("index placement marker in a document with no index marks; there is "
          .. "no index to place")
   end
-  -- Format-neutral, and before any back-end branch, like every other judgement
-  -- about what the author wrote (IP1): a target that names no indexed term is
-  -- broken wherever the mark is rendered, including in a format that builds no
-  -- index at all. A book chapter is not the document its targets are judged
+  -- Drawn for every format, and before any back-end branch: a target that names
+  -- no indexed term is broken wherever the mark is rendered, including in a
+  -- format that builds no index at all. What is NOT format-neutral any more is
+  -- the set it is judged against — a back-end with a level ceiling records the
+  -- paths it prints and folds targets to match, so the comparison runs in that
+  -- back-end's printed space (D-005, corrected M18). A book chapter is not the document its targets are judged
   -- against — the whole store is, and the last chapter in book order draws
   -- that report instead (qi_book.report_book_dangling).
   -- Not on the degraded book path (review F6): there Quarto called this page

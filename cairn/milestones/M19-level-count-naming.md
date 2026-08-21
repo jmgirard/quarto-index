@@ -1,6 +1,6 @@
 # M19: A reported level count says which levels it counts
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -129,7 +129,7 @@ work log.
       ceiling passage (`:96-115`), and replace the normative claim rows
       `report: counts are pre-drop` (`tests/run-tests.sh:212`) and, if its text
       moves, `depth after the drop` (`:248`).
-- [ ] T8. Prove each of the three changed messages discriminating: with the fix
+- [x] T8. Prove each of the three changed messages discriminating: with the fix
       committed, revert each message in turn and record which named check fails
       (M01/M14). Run `tests/run-tests.sh --self-test`; log the check count.
 
@@ -144,6 +144,8 @@ work log.
 - 2026-08-21: T2/T3 landed together — both fold reports take their written count through one `latex_plan` signature, so splitting them would have changed it twice; `depth_phrase` in `levels.lua` is the one place either report names a depth. The entry-side parameter is `entry_written`, not `written`, which `latex_plan`'s loop already binds to a target's pre-fold spelling.
 - 2026-08-21: T4 — the extra-sort report branches on `kept == nil`, not on `depth`, which `levels.lua:206` has already defaulted by the report site.
 - 2026-08-21: T5 — `examples/fold-xref-empty.qmd` added with seven marks; corpus row 0, derived roster agrees.
+- 2026-08-21: T8 — four reverts against the committed fix, each caught by a different named check: dropping the entry report's second count fails M19-AC4 (counts differ); dropping the target report's fails M19-AC2 (Teak); restoring the old sort clause fails the distinctness scan's single-literal needle and, with that needle reverted too, M13-AC3; and making the phrase always give two counts fails M19-AC2 (counts agree, one number).
+- 2026-08-21: `tests/run-tests.sh --self-test` green at 247 checks (208 -> 210 plain; the self-test adds 37). Every reported number is the number the baseline reported.
 - 2026-08-21: T6/T7 — two scan needles, two M13 pinned strings, one README claim row replaced and three added; the `names a path`, `levels deep` and `WARN_FOLD_TARGET` pins were unaffected, since every one of them keys on text outside the spliced depth. Suite 208 -> 210 checks, green.
 - 2026-08-21: criteria audit ran in full mode (user-facing tier), fresh-context [O] reader, twice — nine findings on the pre-gate draft and eleven on the post-gate wording, every one disposed by repair before the file was written; none deferred.
 

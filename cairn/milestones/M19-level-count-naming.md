@@ -1,11 +1,11 @@
 # M19: A reported level count says which levels it counts
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** m19-level-count-naming
 
 ## Goal
 
@@ -93,7 +93,7 @@ work log.
 
 ## Tasks
 
-- [ ] T1. Write the convention into `cairn/DESIGN.md` Conventions and append the
+- [x] T1. Write the convention into `cairn/DESIGN.md` Conventions and append the
       DECISIONS entry recording it and its relation to D-002.
 - [ ] T2. Carry the written entry depth to the entry-fold report:
       `drop_empty_levels` already returns `#parsed` (`modules/levels.lua:170`);
@@ -139,6 +139,8 @@ work log.
 - 2026-08-21: plan gate chose giving both counts where they differ over labelling only the count each report already holds, and over reporting the written count alone; labelling alone leaves the author to connect 4 to the 5 they typed, and the written count alone stops explaining why the fold fired, which keys on the post-drop count; falsified by an author report that the second count reads as noise on marks with no empty level.
 - 2026-08-21: plan gate chose a new fixture file over adding marks to `examples/fold-xref.qmd`, whose row-index map, pinned warning total, exact output-row list and HTML manifest would each need re-deriving by hand — the shape M12 got wrong twice; falsified by the new file's own manifest rows costing more than the eight it avoids.
 - 2026-08-21: plan gate chose pinning the three named reports over adding a scan and ledger over every warning message; the existing message scan cuts each message at `:format(` and so cannot see its numbers, making the sweep a new checker rather than an extension; falsified by a later report shipping an unlabelled count that no review catches.
+- 2026-08-21: T1 — convention written into DESIGN Conventions and appended as D-006; implement gate chose "of the N written" over spelling out the drop, "the N the entry is written with" over re-quoting the entry value, and keeping both reports' counts over cross-report suppression.
+- 2026-08-21: baseline `tests/run-tests.sh` green at 208 checks before any change.
 - 2026-08-21: criteria audit ran in full mode (user-facing tier), fresh-context [O] reader, twice — nine findings on the pre-gate draft and eleven on the post-gate wording, every one disposed by repair before the file was written; none deferred.
 
 ## Decisions

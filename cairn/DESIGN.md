@@ -69,6 +69,13 @@ _None yet — populated as the codebase takes shape._
   A–Z — before collating within a group; only ASCII letters make a letter
   group, which is honest about a collation that only folds ASCII (corrected
   M07).
+- **A reported level count names the levels it is over** (added M19). A warning
+  that reports a count of index levels says which levels the count is over —
+  those the author wrote, or those left after empty levels are dropped (D-002) —
+  and gives both counts where the two differ. The rule governs what a number is
+  called, never what it is: no count any report computes changes. A report whose
+  number has no drop to distinguish — a book's chapter count, a top-level block
+  position — is outside it.
 
 ## Design Principles
 

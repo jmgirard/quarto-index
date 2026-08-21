@@ -7,7 +7,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP2, GP6
-- **Branch/PR:** `m18-fold-aware-xref-targets`
+- **Branch/PR:** `m18-fold-aware-xref-targets` / https://github.com/jmgirard/quarto-index/pull/18
 
 ## Goal
 
@@ -41,7 +41,7 @@ print-convention wording → the see-also candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1 In the intermediate `.tex` copied to `$WORK` at each fold fixture's
+- [x] AC1 In the intermediate `.tex` copied to `$WORK` at each fold fixture's
       LaTeX render, the full list of emitted `\index{…}` commands, in emitted
       order, equals a manifest in that fixture's comment — one row per emitted
       command, so a command the manifest omits fails rather than passing
@@ -57,13 +57,13 @@ print-convention wording → the see-also candidate row.
       Evidence: the list equality, plus a check splitting the entry argument on
       unquoted `!` (one not preceded by `"`) and the target argument on `: `,
       and comparing the two level lists.
-- [ ] AC2 In the LaTeX log of `examples/self-xref.qmd` the dangling-target
+- [x] AC2 In the LaTeX log of `examples/self-xref.qmd` the dangling-target
       report is counted 0 times — the one count this milestone moves, from 3 —
       while five counts hold as regression pins: the fold-self-reference report
       at 3 in that log, and 3 dangling / 0 fold-self in each of the HTML and
       gfm logs. In the HTML render of that file the three fold-induced targets
       are left unlinked, as they are today.
-- [ ] AC3 In the LaTeX log of `examples/fold-xref.qmd` the dangling-target
+- [x] AC3 In the LaTeX log of `examples/fold-xref.qmd` the dangling-target
       report is counted exactly once over the whole log, and that one
       occurrence names the fixture's one target whose folded form still names
       no printed path; the fixture's target naming a parent level of a folded
@@ -72,14 +72,14 @@ print-convention wording → the see-also candidate row.
       report is likewise counted exactly once, naming the same mark, and in
       every log of `examples/fold-xref-both.qmd` it is counted 0 times. The
       LaTeX total for `examples/dangling-xref.qmd` is unchanged at 7.
-- [ ] AC4 In the compiled `examples/fold-xref.pdf` the printed index parsed by
+- [x] AC4 In the compiled `examples/fold-xref.pdf` the printed index parsed by
       `tests/pdfindex.py` equals, for full-list equality and in printed order, a
       depth-tagged outline manifest covering the fixture's entire index: each
       entry folded from four or five written levels sitting at level 2 in that
       instrument's numbering — the third printed level — beneath its parents at
       levels 0 and 1, and each referring entry's own printed text carrying
       `see`/`see also` followed by its target's levels joined with `: `.
-- [ ] AC5 The report for a target the fold rewrites is counted per mark by its
+- [x] AC5 The report for a target the fold rewrites is counted per mark by its
       context string: 1 on each of the five marks carrying a fold-rewritten
       target in `examples/fold-xref.qmd` and 2 on the both-attributes mark in
       `examples/fold-xref-both.qmd`, summing to 5 and 2 over those LaTeX logs,
@@ -90,7 +90,7 @@ print-convention wording → the see-also candidate row.
       `tests/scans/warn-distinct.py`'s `SINGLE_LITERAL` tuple with `EXPECTED`
       raised 38 → 39, and is proved discriminating by a `warn_discrimination`
       entry under `--self-test` (missing, duplicated, as-rendered).
-- [ ] AC6 The verify slot is clean: `tests/run-tests.sh --self-test` passes.
+- [x] AC6 The verify slot is clean: `tests/run-tests.sh --self-test` passes.
 
 ## Coverage
 
@@ -156,6 +156,7 @@ print-convention wording → the see-also candidate row.
 - 2026-08-20: the README's HTML half was a documented claim nothing tested, so the M18 section gained a whole-list manifest of `examples/fold-xref.html`'s index — entries nesting four and five deep, every target naming every written level, and the one unresolvable target rendered as text rather than a link. It is the evidence that the LaTeX behaviour is a property of that back-end and not of the mark.
 - 2026-08-20: T8 — `tests/run-tests.sh --self-test` passes: 242 checks, 203 without the self-test.
 - 2026-08-20: every task done and the verify slot clean; status to review. Acceptance-criterion boxes left unticked for review's own fresh evidence.
+- 2026-08-20: review — draft PR #18 opened; fresh `--self-test` run (242 checks, exit 0) executed every criterion and each box was ticked against its own recorded evidence. Consistency gate clean: `cairn_validate` exits 0, `cairn_impact --changed` reports no changed principles, and the `generic` profile names no toolchain checks. No CI is configured on the repo, so the suite run is the whole check surface. Blame-history and prior-review lenses returned zero findings; the diff-bug lens is still running, so this is a pre-gate checkpoint and the findings section is not yet written.
 - 2026-08-20: criteria audit ran in full mode (user-facing tier), fresh-context [O] reader; returned nine findings, all fixed in the drafted criteria before the gate — an unreachable count pin, two single-exemplar families, an instrument the evidence misnamed, a missing discrimination probe, a flat substring test behind a nesting claim, five stale counts reading as fresh verification, and an unrecorded reversal of the report's format-neutrality.
 - 2026-08-20: plan gate chose folding targets as entries are folded over patching the two cases separately, because the separate patch leaves an author told to correct a cross-reference that names a real entry; falsified by a fold rule that makes a target resolve onto an entry the author did not mean.
 - 2026-08-20: plan gate chose reporting each fold-rewritten target over staying silent when the folded target resolves, because otherwise the only notice of a rewritten target sits on a different mark; falsified by build logs where the per-target report drowns the reports that need action.
@@ -164,3 +165,49 @@ print-convention wording → the see-also candidate row.
 ## Decisions
 
 ## Review
+
+Evidence is a fresh `tests/run-tests.sh --self-test` run on cd34b7a (242 checks,
+all passing) and the per-format render logs that run produced under
+`tests/.work/`. Counts below are read out of those logs, not recalled.
+
+- AC1 — `M18-AC1` passes: both fold fixtures emit exactly the `\index` command
+  lists their manifests hold, compared for list equality, and every folded
+  target's levels equal the printed levels of the entry it names across all
+  three rendering sites — the single-attribute encapsulation (`Elm`, `Koa`,
+  `Pine`), a contested key's printed field (`Zinc`) and the both-attributes
+  command (`Yuc`, twice). The literal `!` stays makeindex-quoted on both sides
+  and the sort-key entry's target carries printed halves, not filing keys.
+- AC2 — `M14-AC4/M18-AC2` passes. `self-xref` logs: latex 0 dangling / 3
+  fold-self, html 3 / 0, gfm 3 / 0. The one count this milestone moves is the
+  LaTeX dangling, from 3; the other five held as regression pins. The HTML
+  index of that fixture leaves the three fold-induced targets unlinked, as
+  before.
+- AC3 — `M18-AC3` passes. `fold-xref` logs: dangling 1 in each of latex, html
+  and gfm, and in latex that one names `entry="Reed"`, quoted as
+  `points at "Sil!Tea!Urn!Vin"` — what the author wrote, not the folded path
+  the lookup ran on. `entry="Yam"`, whose target names a parent level of a
+  folded entry, draws 0, which is the prefix-closure probe. `fold-xref-both`
+  draws 0 in all three formats, and `dangling-xref` latex is unchanged at 7.
+- AC4 — `M18-AC4` passes: the compiled `examples/fold-xref.pdf` index matches a
+  16-row depth-tagged manifest through `tests/pdfindex.py`, row for row and in
+  printed order, with `columns_carry_top_level` asserted first. Each of the
+  three folded entries prints at level 2 under its two parents, and the
+  cross-reference naming it prints that same folded path — `Elm, see Ash: Bay:
+  Cod, Dun` against `Ash` / `Bay` / `Cod, Dun`.
+- AC5 — `M18-AC5` passes. Per mark in the `fold-xref` latex log: `Elm`, `Koa`,
+  `Pine`, `Zinc` and `Reed` at 1 each, total 5; `Yuc` at 2 in the
+  `fold-xref-both` latex log, total 2. The unfolded marks `Wax` and `Yam` draw
+  0, and both fixtures' html and gfm logs draw 0. The message is one Lua
+  literal in `SINGLE_LITERAL` with `EXPECTED` at 39, and `warn_discrimination`
+  proves the count fails when the message is missing and when it is doubled,
+  and passes as rendered, on both fixtures.
+- AC6 — the verify slot is clean: `tests/run-tests.sh --self-test` exits 0 at
+  242 checks.
+
+**Consistency gate.** `cairn_validate` exits 0 — sixteen PASS, seven advisory
+OK. `cairn_impact --changed` reports no changed principles: the milestone
+works under IP1, IP2, GP2 and GP6 and rewrites architecture prose, but no
+IP/GP text moved. The `generic` profile names no toolchain checks, so that half
+of the gate is a clean no-op.
+
+**Independent review.** Three fresh-context lenses, distinct evidence bases.

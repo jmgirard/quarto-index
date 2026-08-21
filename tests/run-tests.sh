@@ -6634,6 +6634,18 @@ check_warning_count "$WORK/book-html.log" "$WARN_DANGLING" 1 "M14 (corpus, examp
 check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING" 1 "M14 (corpus, examples/book-order)"
 pass "M14: every example's dangling-target report count matches its pinned expectation, in a format with no index back-end, and the book chapters' counts add up to what their books report"
 
+# The fold fixtures render here, ahead of M15's residue sweep: one of them has
+# a contested key, so that sweep needs its artifact, and reading a copy taken
+# now is what keeps the sweep off whatever an earlier run happened to leave in
+# examples/. The PDF render further down removes the intermediate .tex (M15).
+for f in fold-xref fold-xref-both; do
+  for fmt in latex html gfm; do
+    quarto render "examples/$f.qmd" --to $fmt > "$WORK/$f-$fmt.log" 2>&1 \
+      || { tail -20 "$WORK/$f-$fmt.log" >&2; fail "M18: examples/$f.qmd failed to render to $fmt"; }
+  done
+  cp "examples/$f.tex" "$WORK/$f-latex.tex"
+done
+
 # ---------------------------------------------------------------------------
 # M15 — a term marked both plainly and with a cross-reference builds.
 #
@@ -6962,7 +6974,8 @@ pass "M15-AC5: no joined filter message claims a failed render, and the report t
 # expected to carry is a mapping, and the comparison is EQUALITY per file, so
 # a fixture that silently stops carrying its shape fails exactly as one that
 # gains a shape it should not have (M16's vacuity mode).
-CONFLICT_TEX="$WORK/conflict-latex.tex" python3 - <<'M15UNTOUCHEDPY'
+CONFLICT_TEX="$WORK/conflict-latex.tex" FOLD_TEX="$WORK/fold-xref-latex.tex" \
+python3 - <<'M15UNTOUCHEDPY'
 import glob, os, re, sys
 # BOTH repairs, or the sweep fences only half of what the milestone changed:
 # the list command comes from the no-plain branch, and the folded printed field
@@ -6993,23 +7006,28 @@ if missing:
           f'emitted no {missing}, so the sweep below proves nothing',
           file=sys.stderr)
     sys.exit(1)
-# examples/xref-conflict.tex is not among these: the PDF render removed it,
-# which is why its own copy is read from $WORK above. fold-xref.qmd marks
-# `Zinc` both plainly and with a cross-reference, so it has a contested key of
-# the folded-printed-field shape and of that shape only — it writes no
-# no-plain contest, which is where the list command comes from (M18).
-EXPECTED = {
-    'examples/fold-xref.tex': {'a cross-reference folded into the printed field'},
-}
+# The second fixture with a contested key, read from its own copy for the same
+# reason — it writes the folded printed field and no no-plain contest, so it
+# carries one of the two shapes and must carry it (M18).
+FOLD_ONLY = 'a cross-reference folded into the printed field'
+if carried(os.environ['FOLD_TEX']) != [FOLD_ONLY]:
+    print(f'FAIL: M15: examples/fold-xref.qmd has a contested key of the '
+          f'folded-field shape and only that shape, but its emission carries '
+          f'{carried(os.environ["FOLD_TEX"])}', file=sys.stderr)
+    sys.exit(1)
+# The sweep proper. Neither fixture WITH a contested key is required to be
+# here — a PDF render removes the intermediate .tex, so whether one survives to
+# this point is not something the sweep should depend on; both are checked
+# above from copies taken at their own renders. What is required is that no
+# OTHER artifact carries either shape, and that fold-xref's, if it is still on
+# disk, carries only the shape it writes.
+ALLOWED = {'examples/fold-xref.tex': {FOLD_ONLY}}
 wrong = []
 for path in sorted(glob.glob('examples/*.tex')):
-    want = EXPECTED.get(path, set())
+    want = ALLOWED.get(path, set())
     got = set(carried(path))
     if got != want:
         wrong.append((path, sorted(want), sorted(got)))
-for path in EXPECTED:
-    if not os.path.exists(path):
-        wrong.append((path, sorted(EXPECTED[path]), 'artifact not rendered'))
 if wrong:
     print(f'FAIL: M15: the contested-key emission is not where it should be '
           f'(path, expected, found): {wrong}', file=sys.stderr)
@@ -7021,6 +7039,312 @@ print(f'ok   M15: the contested-key fixture carries both shapes of the '
       f'anything else')
 M15UNTOUCHEDPY
 pass "M15-AC5: the failed-render claim is gone from the filter, and the contested-key emission reaches only the fixture that has one"
+
+# ---------------------------------------------------------------------------
+# M18 — a cross-reference target is judged against the path the entry prints.
+#
+# The LaTeX back-end folds everything past the third level into the third, and
+# from this milestone it folds a TARGET by the same rule and resolves targets
+# against the paths entries print (D-005). Before it, one target could draw two
+# reports that contradicted each other — the fold saying it had made the target
+# a self-reference and dropped it, the format-neutral report saying it named
+# nothing indexed and telling the author to go correct it — and a target naming
+# a path the fold had rewritten drew nothing at all while pointing at a path no
+# printed entry carried.
+# ---------------------------------------------------------------------------
+
+# M18-AC1 — every emitted \index command of both fixtures, argument for
+# argument, and the level-by-level agreement between a folded target and the
+# entry it names.
+FOLD_TEX_A="$WORK/fold-xref-latex.tex" FOLD_TEX_B="$WORK/fold-xref-both-latex.tex" \
+python3 - <<'M18TEXPY'
+import os, re, sys
+
+# One row per EMITTED command, in emitted order. Compared as a whole list, so a
+# command the manifest omits fails rather than passing unseen. Derived by hand
+# from the fixtures and the documented semantics — the back-end stores three
+# levels and folds the rest into the third with ", ", a level with a sort key
+# is written `key@printed`, and a contested key's cross-reference travels in
+# the entry's printed field while its own mark emits nothing:
+#
+#   fold-xref.qmd, mark by mark
+#     ash   entry="Ash!Bay!Cod!Dun": 4 levels, so levels 3 and 4 fold into the
+#           third -> Ash!Bay!Cod, Dun.
+#     elm   see= names those same 4 levels, folded the same way and joined as a
+#           target with ": " -> Elm|see{Ash: Bay: Cod, Dun}.
+#     fir   entry="Fir!Gum!Ha!Iv!J!!t": `!!` is a literal `!`, so 5 levels
+#           (Fir, Gum, Ha, Iv, J!t); levels 3-5 fold -> Fir!Gum!Ha, Iv, J"!t,
+#           the `"` being makeindex's quote for a literal `!`.
+#     koa   see-also= over the same 5 -> Koa|seealso{Fir: Gum: Ha, Iv, J"!t}.
+#     lime  entry 4 levels with sort="zu!ya!xr!wh": the sort key clamps to three
+#           and each level whose key differs from the level is written
+#           `key@printed` -> zu@Lime!ya@Moss!xr@Nut, Orb.
+#     pine  see= names lime's 4 written levels; a target carries no sort field,
+#           so it folds to the PRINTED halves -> Pine|see{Lime: Moss: Nut, Orb}.
+#     zinc  `Zinc` marked plainly and, on the next mark, with a cross-reference:
+#           one contested key, so the target folds into the printed field and
+#           that field takes its own text as a sort key ->
+#           Zinc@Zinc, \see{Ash: Bay: Cod, Dun}{}. The cross-reference mark
+#           emits nothing, which is why these two marks are ONE row.
+#     reed  see-also= naming 4 levels nothing here marks: folded like any other
+#           -> Reed|seealso{Sil: Tea: Urn, Vin}.
+#     wax   see="Elm", one level, nothing to fold -> Wax|see{Elm}.
+#     yam   see="Ash!Bay", two levels, nothing to fold -> Yam|see{Ash: Bay}.
+#     10 marks, one of them emitting nothing, plus the plain zinc mark = 10 rows.
+#
+#   fold-xref-both.qmd, mark by mark
+#     oat   entry 4 levels -> Oat!Pea!Rye, Soy.
+#     tef   entry 5 levels -> Tef!Urd!Vet, Wid, Xan.
+#     yuc   both attributes, so one command over both targets, each folded ->
+#           Yuc|quartoindexseeboth{Oat: Pea: Rye, Soy}{Tef: Urd: Vet, Wid, Xan}.
+#     3 rows.
+EXPECTED = {
+    'fold-xref': [
+        r'Ash!Bay!Cod, Dun',
+        r'Elm|see{Ash: Bay: Cod, Dun}',
+        r'Fir!Gum!Ha, Iv, J"!t',
+        r'Koa|seealso{Fir: Gum: Ha, Iv, J"!t}',
+        r'zu@Lime!ya@Moss!xr@Nut, Orb',
+        r'Pine|see{Lime: Moss: Nut, Orb}',
+        r'Zinc@Zinc, \see{Ash: Bay: Cod, Dun}{}',
+        r'Reed|seealso{Sil: Tea: Urn, Vin}',
+        r'Wax|see{Elm}',
+        r'Yam|see{Ash: Bay}',
+    ],
+    'fold-xref-both': [
+        r'Oat!Pea!Rye, Soy',
+        r'Tef!Urd!Vet, Wid, Xan',
+        r'Yuc|quartoindexseeboth{Oat: Pea: Rye, Soy}{Tef: Urd: Vet, Wid, Xan}',
+    ],
+}
+# Which entry row each fold-rewritten target names, by row index. `reed` names
+# no entry either fixture marks and so has no pair; `wax` and `yam` carry
+# targets the fold does not reach and are not fold-rewritten at all. The
+# comparison below is what AC1's second clause asserts — the two forms use
+# different separators by construction, so equality of the ARGUMENTS is not
+# the claim and equality of the LEVELS is.
+PAIRS = {
+    'fold-xref': {1: [0], 3: [2], 5: [4], 6: [0]},
+    'fold-xref-both': {2: [0, 1]},
+}
+
+
+def balanced(src, start):
+    """The text of the group opened just before `start`, and the index past it."""
+    depth, k = 1, start
+    while k < len(src) and depth:
+        depth += {'{': 1, '}': -1}.get(src[k], 0)
+        k += 1
+    return src[start:k - 1], k
+
+
+def commands(src):
+    out, i = [], 0
+    while True:
+        j = src.find('\\index{', i)
+        if j < 0:
+            return out
+        arg, i = balanced(src, j + len('\\index{'))
+        out.append(arg)
+
+
+def split_unquoted(text, sep):
+    """Split on `sep`, except where makeindex's `"` quotes it into the level."""
+    parts, cur, prev = [], [], ''
+    for c in text:
+        if c == sep and prev != '"':
+            parts.append(''.join(cur))
+            cur = []
+        else:
+            cur.append(c)
+        prev = c
+    parts.append(''.join(cur))
+    return parts
+
+
+FOLDED = re.compile(r', \\see(?:also)?\{.*\}\{\}$')
+
+
+def entry_levels(arg):
+    """The levels an entry command PRINTS: sort fields and any folded
+    cross-reference stripped, since neither is part of the path a target has to
+    name."""
+    levels = []
+    for part in split_unquoted(arg, '!'):
+        halves = split_unquoted(part, '@')
+        printed = '@'.join(halves[1:]) if len(halves) > 1 else halves[0]
+        levels.append(FOLDED.sub('', printed))
+    return levels
+
+
+def target_args(arg):
+    """Every target rendered in one command, in order — the single-attribute
+    encapsulation, the both-attributes command's two, and the form folded into
+    a contested key's printed field."""
+    out = []
+    for m in re.finditer(r'(?:\||\\)(quartoindexseeboth|seealso|see)\{', arg):
+        first, k = balanced(arg, m.end())
+        out.append(first)
+        if m.group(1) == 'quartoindexseeboth':
+            second, k = balanced(arg, k + 1)
+            out.append(second)
+    return out
+
+
+ok = True
+for name, path in (('fold-xref', os.environ['FOLD_TEX_A']),
+                   ('fold-xref-both', os.environ['FOLD_TEX_B'])):
+    got = commands(open(path, encoding='utf-8').read())
+    want = EXPECTED[name]
+    if got != want:
+        print(f'FAIL: M18-AC1: {name} emitted a different list of \\index '
+              f'commands than the manifest holds', file=sys.stderr)
+        for line in __import__('difflib').unified_diff(
+                want, got, 'manifest', 'emitted', lineterm=''):
+            print(f'  {line}', file=sys.stderr)
+        ok = False
+        continue
+    for trow, erows in sorted(PAIRS[name].items()):
+        targets = target_args(want[trow])
+        if len(targets) != len(erows):
+            print(f'FAIL: M18-AC1: {name} row {trow} renders {len(targets)} '
+                  f'target(s), the pair map expects {len(erows)}', file=sys.stderr)
+            ok = False
+            continue
+        for target, erow in zip(targets, erows):
+            printed = entry_levels(want[erow])
+            named = target.split(': ')
+            if named != printed:
+                print(f'FAIL: M18-AC1: {name} row {trow} names {named}, but the '
+                      f'entry it points at (row {erow}) prints {printed}',
+                      file=sys.stderr)
+                ok = False
+if not ok:
+    sys.exit(1)
+print('ok   M18-AC1: both fixtures emit exactly the commands their manifests '
+      'hold, and every folded target names level for level what the entry it '
+      'points at prints — through the single-attribute encapsulation, the '
+      'both-attributes command and a contested key\'s printed field alike')
+M18TEXPY
+pass "M18-AC1: a target is folded as an entry is, at all three places a target is rendered, with a literal ! still quoted and a sort field still absent from what a target names"
+
+# M18-AC3 — the dangling-target report after the change: once, for the one
+# target whose FOLDED form still names no printed path, and not for the target
+# that names a parent level of a folded entry. That second clause is what tells
+# a prefix-closed printed-path set from one built out of whole paths alone,
+# which would report `Yam` and pass everything else here.
+for fmt in latex html gfm; do
+  check_warning_count "$WORK/fold-xref-$fmt.log" "$WARN_DANGLING" 1 "M18-AC3 (total, $fmt)"
+  check_warning_count "$WORK/fold-xref-$fmt.log" 'on entry="Reed" points at' 1 \
+    "M18-AC3 (the mark, $fmt)"
+  check_warning_count "$WORK/fold-xref-$fmt.log" 'on entry="Yam" points at' 0 \
+    "M18-AC3 (parent-level target, $fmt)"
+  check_warning_count "$WORK/fold-xref-both-$fmt.log" "$WARN_DANGLING" 0 \
+    "M18-AC3 (both-attributes fixture, $fmt)"
+done
+# The report quotes what the AUTHOR wrote, not the folded path the lookup ran
+# against: a derived string names nothing they can search their source for
+# (M09). This is the clause that fails if the two spellings are collapsed.
+check_warning_count "$WORK/fold-xref-latex.log" 'points at "Sil!Tea!Urn!Vin"' 1 \
+  "M18-AC3 (quoted as written, latex)"
+# Unchanged where nothing folds, which is the regression half of AC3.
+check_warning_count "$WORK/dangling-latex.log" "$WARN_DANGLING" 7 "M18-AC3 (dangling-xref, latex)"
+pass "M18-AC3: the one target that still names no printed path after folding is reported and quoted as the author wrote it, a target naming a parent level of a folded entry is not, and the fixture that folds nothing reports exactly what it did before"
+
+# M18-AC5 — the report for a target the fold rewrites, per mark, so that a
+# count of the right total distributed over the wrong marks cannot pass.
+for context in 'entry="Elm"' 'entry="Koa"' 'entry="Pine"' 'entry="Zinc"' 'entry="Reed"'; do
+  check_warning_count "$WORK/fold-xref-latex.log" "on $context names a path" 1 \
+    "M18-AC5 ($context)"
+done
+check_warning_count "$WORK/fold-xref-both-latex.log" 'on entry="Yuc" names a path' 2 \
+  "M18-AC5 (both attributes)"
+check_warning_count "$WORK/fold-xref-latex.log" "$WARN_FOLD_TARGET" 5 "M18-AC5 (total)"
+check_warning_count "$WORK/fold-xref-both-latex.log" "$WARN_FOLD_TARGET" 2 \
+  "M18-AC5 (total, both attributes)"
+# The marks whose targets the fold does not reach, and the formats that fold
+# nothing: without these the check would pass on a filter reporting every
+# target in every format.
+for context in 'entry="Wax"' 'entry="Yam"'; do
+  check_warning_count "$WORK/fold-xref-latex.log" "on $context names a path" 0 \
+    "M18-AC5 (unfolded target, $context)"
+done
+for fmt in html gfm; do
+  check_warning_count "$WORK/fold-xref-$fmt.log" "$WARN_FOLD_TARGET" 0 "M18-AC5 ($fmt)"
+  check_warning_count "$WORK/fold-xref-both-$fmt.log" "$WARN_FOLD_TARGET" 0 \
+    "M18-AC5 (both attributes, $fmt)"
+done
+pass "M18-AC5: every target the fold rewrites draws one report on its own mark, both of a both-attributes mark's do, the two targets the fold does not reach draw none, and no format without the ceiling draws any"
+
+# M18-AC4 — followed to the compiled artifact (GP6): a reader has to be able to
+# take the cross-reference in the printed index and find the entry it names.
+# Read with tests/pdfindex.py rather than out of pdftotext's text output,
+# because a two-column index interleaves when read as lines.
+quarto render examples/fold-xref.qmd --to pdf > "$WORK/fold-xref-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/fold-xref-pdf.log" >&2; fail "M18-AC4: fold-xref.qmd failed to render to PDF"; }
+[ -s examples/fold-xref.pdf ] || fail "M18-AC4: examples/fold-xref.pdf is empty"
+python3 - examples/fold-xref.pdf <<'M18PDFPY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+
+# The whole printed index, in printed order, as `level<TAB>term` — hand-derived
+# from the fixture and the documented semantics. Levels are pdfindex's own
+# 0-based indent bands, so a four- or five-level entry folded to three prints at
+# 0, 1 and 2. Collation is the index tool's: `Lime` files under `zu` and so
+# sorts last, which is the sort-key shape — what it FILES under and what it
+# PRINTS are different strings, and only the printed one is what a target names.
+MANIFEST = """\
+0\tAsh
+1\tBay
+2\tCod, Dun
+0\tElm, see Ash: Bay: Cod, Dun
+0\tFir
+1\tGum
+2\tHa, Iv, J!t
+0\tKoa, see also Fir: Gum: Ha, Iv, J!t
+0\tPine, see Lime: Moss: Nut, Orb
+0\tReed, see also Sil: Tea: Urn, Vin
+0\tWax, see Elm
+0\tYam, see Ash: Bay
+0\tZinc, see Ash: Bay: Cod, Dun
+0\tLime
+1\tMoss
+2\tNut, Orb"""
+
+entries = pdfindex.read(sys.argv[1])
+if not pdfindex.columns_carry_top_level(entries):
+    print('FAIL: M18-AC4: a column of the printed index holds no top-level '
+          'entry, so pdfindex cannot read its indent levels', file=sys.stderr)
+    sys.exit(1)
+want = [(int(lv), term) for lv, term in
+        (row.split('\t') for row in MANIFEST.split('\n'))]
+got = pdfindex.outline(entries)
+if got != want:
+    print('FAIL: M18-AC4: the printed index is not what the manifest holds',
+          file=sys.stderr)
+    import difflib
+    for line in difflib.unified_diff([f'{l}\t{t}' for l, t in want],
+                                     [f'{l}\t{t}' for l, t in got],
+                                     'manifest', 'printed', lineterm=''):
+        print(f'  {line}', file=sys.stderr)
+    sys.exit(1)
+# The claim AC4 is about, stated over the manifest that was just proved to be
+# the printed index: each folded entry prints at level 2 under two parents, and
+# the cross-reference naming it carries that same folded path.
+for parent_a, parent_b, third, ref in (
+        ('Ash', 'Bay', 'Cod, Dun', 'Elm, see Ash: Bay: Cod, Dun'),
+        ('Fir', 'Gum', 'Ha, Iv, J!t', 'Koa, see also Fir: Gum: Ha, Iv, J!t'),
+        ('Lime', 'Moss', 'Nut, Orb', 'Pine, see Lime: Moss: Nut, Orb')):
+    rows = {term: level for level, term in want}
+    assert rows[parent_a] == 0 and rows[parent_b] == 1 and rows[third] == 2, third
+    assert ref.endswith(f'{parent_a}: {parent_b}: {third}'), ref
+print(f'ok   M18-AC4: the compiled index matches the manifest row for row, '
+      f'each of the three folded entries prints at level 2 under its two '
+      f'parents, and the cross-reference that names it prints that same '
+      f'folded path')
+M18PDFPY
+pass "M18-AC4: in the compiled PDF a folded entry and the cross-reference that names it print the same path, so a reader following the reference finds the entry"
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
@@ -7254,6 +7578,11 @@ filtersrc.sources()" >/dev/null 2>&1; then
     1 "M09-AC1"
   warn_discrimination "$WORK/misuse-latex.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   warn_discrimination "$WORK/marker-nomarks-latex.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
+  # M18-AC5: the fold-rewritten-target report, held to the same bar as every
+  # other report the suite counts — the count must fail when the message is
+  # missing and when it is doubled, and pass on the log as rendered.
+  warn_discrimination "$WORK/fold-xref-latex.log" "$WARN_FOLD_TARGET" 5 "M18-AC5"
+  warn_discrimination "$WORK/fold-xref-both-latex.log" "$WARN_FOLD_TARGET" 2 "M18-AC5"
 fi
 
 

@@ -17,7 +17,18 @@ defect in the probe wearing the costume of a finding.
 """
 
 import os
+import re
 import sys
+
+# The count `tests/scans/warn-distinct.py` pins, read from that file rather
+# than copied here: the marker below has to name the number the scan will
+# print, and two files holding the same number is two files that must change
+# together and one that will not (M16 review F11).
+_WARN_DISTINCT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              'scans', 'warn-distinct.py')
+_WARN_EXPECTED = int(re.search(r'^EXPECTED = (\d+)$',
+                               open(_WARN_DISTINCT, encoding='utf-8').read(),
+                               re.M).group(1))
 
 # scan name -> (old text, new text, expected failure marker)
 #
@@ -42,7 +53,8 @@ DEFECTS = {
     'warn-distinct': (
         'warn((',
         'notwarn((',
-        'FAIL: M02-AC5: found 37 warn() messages, expected 38'),
+        f'FAIL: M02-AC5: found {_WARN_EXPECTED - 1} warn() messages, '
+        f'expected {_WARN_EXPECTED}'),
     'xref-both-definition': (
         '\\\\emph{\\\\seename}',
         '\\\\emph{see}',

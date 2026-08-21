@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M18: A cross-reference target is judged against the path the entry prints
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -131,11 +131,11 @@ print-convention wording → the see-also candidate row.
       LaTeX pin from 3 to 0, add both fold fixtures to `DANGLING_CORPUS` with
       their derivations, and add the `warn_discrimination` entry.
 - [x] T6 PDF render of `examples/fold-xref.qmd` and its outline manifest for AC4.
-- [ ] T7 Prose that asserts the superseded rule: DESIGN.md's Span-pass and
+- [x] T7 Prose that asserts the superseded rule: DESIGN.md's Span-pass and
       LaTeX back-end sections, README where it documents the ceiling, the
       `examples/dangling-xref.qmd` fixture prose, and the M14 comment block in
       `tests/run-tests.sh`.
-- [ ] T8 Run `tests/run-tests.sh --self-test`.
+- [x] T8 Run `tests/run-tests.sh --self-test`.
 
 ## Work log
 
@@ -152,6 +152,10 @@ print-convention wording → the see-also candidate row.
 - 2026-08-20: the M15 residue sweep needed a second repair — whether `examples/fold-xref.tex` survives to that point depends on whether a PDF render has removed it, so the sweep now reads both contested-key fixtures from `$WORK` copies taken at their own renders and requires no artifact to be present in `examples/`. The fold fixtures' renders moved ahead of that sweep for it.
 - 2026-08-20: `tests/plantdefect.py` hardcoded `found 37 warn() messages, expected 38`, so bumping the scan's own count broke the probe that proves the scan discriminates. Now read out of `tests/scans/warn-distinct.py` instead of copied — which closes the acceptance-suite-hardening row's M16 review F11 item.
 - 2026-08-20: suite green at 203 checks, 240 under `--self-test`.
+- 2026-08-20: T7 — README documents that a target meets the same ceiling an entry does, with the emitted spelling, and that the resolution runs after folding in PDF and on written levels in HTML. DESIGN.md's Span-pass and LaTeX back-end prose extended and its dangling-report paragraph corrected in place (marked `corrected M18`); `examples/dangling-xref.qmd`'s own prose now says which paths its judgements are read off and that nothing in it is deep enough to fold.
+- 2026-08-20: the README's HTML half was a documented claim nothing tested, so the M18 section gained a whole-list manifest of `examples/fold-xref.html`'s index — entries nesting four and five deep, every target naming every written level, and the one unresolvable target rendered as text rather than a link. It is the evidence that the LaTeX behaviour is a property of that back-end and not of the mark.
+- 2026-08-20: T8 — `tests/run-tests.sh --self-test` passes: 242 checks, 203 without the self-test.
+- 2026-08-20: every task done and the verify slot clean; status to review. Acceptance-criterion boxes left unticked for review's own fresh evidence.
 - 2026-08-20: criteria audit ran in full mode (user-facing tier), fresh-context [O] reader; returned nine findings, all fixed in the drafted criteria before the gate — an unreachable count pin, two single-exemplar families, an instrument the evidence misnamed, a missing discrimination probe, a flat substring test behind a nesting claim, five stale counts reading as fresh verification, and an unrecorded reversal of the report's format-neutrality.
 - 2026-08-20: plan gate chose folding targets as entries are folded over patching the two cases separately, because the separate patch leaves an author told to correct a cross-reference that names a real entry; falsified by a fold rule that makes a target resolve onto an entry the author did not mean.
 - 2026-08-20: plan gate chose reporting each fold-rewritten target over staying silent when the folded target resolves, because otherwise the only notice of a rewritten target sits on a different mark; falsified by build logs where the per-target report drowns the reports that need action.

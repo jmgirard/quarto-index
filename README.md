@@ -107,6 +107,14 @@ The folded level files under the third level's own sort key where you wrote
 one, and under its printed text where you did not. The HTML index has no
 ceiling, so it keeps both the level and the key written for it.
 
+**A cross-reference target meets the same ceiling.** In the LaTeX back-end a
+target is folded exactly as an entry is, and you get a warning naming the mark
+and the path the target now points at. With `entry="One!Two!Three!Four"` marked
+somewhere, `see="One!Two!Three!Four"` prints as `see One: Two: Three, Four` —
+the path that entry prints — rather than sending a reader to a four-level path
+the printed index does not contain. The HTML index has no ceiling, so there the
+target keeps every level you wrote.
+
 `!` and `!!` are the extension's own syntax, not LaTeX. They mean the same
 thing whatever format you render to.
 
@@ -193,7 +201,12 @@ not dropped — what you wrote is yours — but you get a warning naming the mar
 and the target, once per mark per target, whatever you render to. A target
 resolves when its levels name an entry the document indexes, including a level
 that exists only because a deeper entry hangs from it: with
-`entry="Trees!Oak!Acorn"` marked somewhere, `see-also="Trees!Oak"` resolves. In
+`entry="Trees!Oak!Acorn"` marked somewhere, `see-also="Trees!Oak"` resolves.
+Where the three-level ceiling applies the judgement runs after folding, on both
+sides: in PDF a target is compared against the paths entries print, and in HTML
+against the levels you wrote. That is why a target spelling a folded path —
+`see="One!Two!Three, Four"` against `entry="One!Two!Three!Four"` — is understood
+in PDF and reported in an HTML render. In
 a book the whole book's marks are what a target is judged against, so a target
 naming a term another chapter marks is fine. A PDF book is one document by the
 time the extension runs, so nothing special happens there. An HTML book renders

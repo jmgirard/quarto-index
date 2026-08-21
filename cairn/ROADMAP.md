@@ -12,7 +12,7 @@ _Last hygiene check: 2026-08-20 (M18 planned: the LaTeX fold divergence candidat
 | M15 | A term marked both plainly and with a cross-reference builds | done | — | normal | milestones/archive/M15-clash-free-emission.md |
 | M13 | Level reports name a depth the author can act on | done | — | normal | milestones/archive/M13-level-report-wording.md |
 | M14 | A cross-reference target that names no index entry is reported | done | — | normal | milestones/archive/M14-dangling-xref-target.md |
-| M18 | A cross-reference target is judged against the path the entry prints | in-progress | — | normal | milestones/M18-fold-aware-xref-targets.md |
+| M18 | A cross-reference target is judged against the path the entry prints | review | — | normal | milestones/M18-fold-aware-xref-targets.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

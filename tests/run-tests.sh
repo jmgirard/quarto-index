@@ -7276,6 +7276,69 @@ for fmt in html gfm; do
 done
 pass "M18-AC5: every target the fold rewrites draws one report on its own mark, both of a both-attributes mark's do, the two targets the fold does not reach draw none, and no format without the ceiling draws any"
 
+# M18 — the other side of the format split, which is what makes the LaTeX
+# behaviour a fold rather than a rewrite of the mark: HTML applies no ceiling,
+# so the same targets keep every level the author wrote and link to entries
+# four and five deep. Compared as a whole list, so an entry the manifest omits
+# fails rather than passing unseen.
+python3 - examples/fold-xref.html <<'M18HTMLPY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+
+# depth<TAB>term<TAB>targets, a target written `kind|text|linked`. Derived from
+# the fixture: every level the author wrote survives here — `Ash!Bay!Cod!Dun`
+# nests four deep and `Fir!Gum!Ha!Iv!J!!t` five — so a target naming either
+# names it in full, joined with `: `, and links to the deepest entry. `Sil…`
+# is the one target no mark here indexes, so it is text rather than a link.
+MANIFEST = """\
+0\tAsh\t
+1\tBay\t
+2\tCod\t
+3\tDun\t
+0\tElm\tsee|Ash: Bay: Cod: Dun|linked
+0\tFir\t
+1\tGum\t
+2\tHa\t
+3\tIv\t
+4\tJ!t\t
+0\tKoa\tsee also|Fir: Gum: Ha: Iv: J!t|linked
+0\tPine\tsee|Lime: Moss: Nut: Orb|linked
+0\tReed\tsee also|Sil: Tea: Urn: Vin|plain
+0\tWax\tsee|Elm|linked
+0\tYam\tsee|Ash: Bay|linked
+0\tZinc\tsee|Ash: Bay: Cod: Dun|linked
+0\tLime\t
+1\tMoss\t
+2\tNut\t
+3\tOrb\t"""
+
+want = []
+for row in MANIFEST.split('\n'):
+    depth, term, targets = row.split('\t')
+    want.append((int(depth), term,
+                 tuple(t for t in targets.split(';') if t)))
+got = []
+for rec in H.entry_records(H.index_section(H.parse(sys.argv[1]))):
+    got.append((rec['depth'], rec['term'],
+                tuple(f'{kind}|{text}|' + ('linked' if href else 'plain')
+                      for kind, text, resolved, href in rec['xrefs'])))
+if got != want:
+    print('FAIL: M18: the HTML index of fold-xref.qmd is not what the manifest '
+          'holds', file=sys.stderr)
+    import difflib
+    for line in difflib.unified_diff([repr(r) for r in want],
+                                     [repr(r) for r in got],
+                                     'manifest', 'rendered', lineterm=''):
+        print(f'  {line}', file=sys.stderr)
+    sys.exit(1)
+print('ok   M18: the HTML index folds nothing — entries nest four and five '
+      'deep and every target names every level the author wrote — which is '
+      'what makes the LaTeX behaviour this milestone adds a property of that '
+      'back-end rather than of the mark')
+M18HTMLPY
+pass "M18: HTML applies no ceiling, so the same targets the LaTeX back-end folds keep every level written and link to the deep entries they name"
+
 # M18-AC4 — followed to the compiled artifact (GP6): a reader has to be able to
 # take the cross-reference in the printed index and find the entry it names.
 # Read with tests/pdfindex.py rather than out of pdftotext's text output,

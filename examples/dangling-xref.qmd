@@ -10,7 +10,11 @@ filters:
 "Cats, see Felines" sends a reader to an entry the index does not have. The
 target is not dropped — what the author wrote is theirs (IP2) — but it is
 reported, in every format, because whether a target names a term the document
-indexes is a fact about the document rather than about a back-end.
+indexes is a fact about the document rather than about a back-end. What a
+back-end does change is the paths that fact is read off: where a level ceiling
+folds an entry it folds the target too, and the comparison then runs on what
+that back-end prints. Nothing in this file is deep enough to fold, so every
+judgement here is on the levels as written.
 
 The criterion shape: this document indexes `Cats`, and a mark points at
 `Felines`, which nothing here indexes. [cats]{.index entry="Cats"} is the

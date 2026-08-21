@@ -198,7 +198,11 @@ two spellings is gone — corrected M11) — and the warnings for a malformed ma
 emitted, so a misused mark is diagnosed in every output format, not only where
 a back-end exists. One report is the exception, and it is one by construction:
 a target that only the LaTeX level fold makes self-referential is judged inside
-that back-end, since no other format folds (added M10).
+that back-end, since no other format folds (added M10). Two more judgements
+moved there for the same reason: that fold rewrites a target exactly as it
+rewrites an entry, and the set a target resolves against is the set of paths
+entries print. Where a back-end imposes no ceiling the two sets are one list
+and nothing moves (added M18).
 then branches per format and records what that back-end will need.
 
 The **Pandoc pass** runs once the whole document has been seen, and is where a
@@ -239,7 +243,11 @@ Two back-ends ship:
   three-level ceiling. The self-target comparison is then run a second time
   against the clamped levels, because the fold can make an entry print a path
   the author never spelled and a target naming that path is a self-reference
-  only here (added M10). A key more than one mark describes differently is
+  only here (added M10). Every target is put through that same fold before
+  either comparison, so what a cross-reference names and what the entry it
+  names prints cannot diverge, and a target the fold rewrites is reported once,
+  on the mark that wrote it (added M18). A key more than one mark describes
+  differently is
   composed into ONE command every mark of it emits, since makeindex rejects
   rival encapsulations on one key and page and Quarto turns that into a failed
   render (M15; D-003 records why repairing this sits inside GP2). Where the key
@@ -322,7 +330,14 @@ indexed term depends on what the author wrote and what the document indexes,
 not on any back-end, so the report is drawn from the level paths the Pandoc
 pass collected rather than from the HTML entry tree — which exists in one
 format only. A target resolves against a marked path or any prefix of one,
-matching the HTML walk that turns a target into a link. In a book the set is
+matching the HTML walk that turns a target into a link — corrected M18: the
+report is still drawn in the shared layer and in every format, but the paths it
+is drawn from are the ones the running back-end prints, and a target is folded
+before it is compared, so where a level ceiling exists the comparison runs in
+printed space (D-005). Before that it ran on written paths in every format, and
+a LaTeX render of a target spelling a folded path drew this report and the
+fold's own self-reference report at once, each contradicting the other, while a
+target the fold had moved out from under drew neither. In a book the set is
 the whole store's, so a target another chapter indexes resolves; the report is
 drawn by the last chapter in book order, the only chapter that has seen every
 record, and a render stopping short of it draws none — while a render whose

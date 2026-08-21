@@ -128,7 +128,7 @@ local function store_write(ctx, marker)
       -- process, where the mark itself is long gone and only this record is
       -- left to name it.
       { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor,
-        context = mark.context }
+        context = mark.context, role = mark.role }
   end
   -- The chapter's DECLARED sort keys, one per printed level path, rather than
   -- a resolved key per mark. A mark's resolved key already has this chapter's
@@ -204,6 +204,13 @@ local function valid_record(data, file)
     -- terms until the whole book is rendered again, which is a real loss
     -- traded for a warning that reads slightly better.
     if mark.context ~= nil and type(mark.context) ~= "string" then
+      return false
+    end
+    -- Optional for the same reason and on the same terms (M20): a record
+    -- written before roles existed simply has no principal locator in it,
+    -- which is what such a chapter meant. Bumping the version for it would
+    -- drop every other chapter's terms until the whole book re-rendered.
+    if mark.role ~= nil and type(mark.role) ~= "string" then
       return false
     end
     -- Validated here rather than trusted (review F9): a record whose xref
@@ -358,6 +365,7 @@ local function book_marks(ctx, records)
         sort = book_sort_for(book_keys, mark.levels),
         xrefs = xrefs,
         anchor = mark.anchor,
+        role = mark.role,
         -- A mark in the chapter holding the index links within its own page,
         -- exactly as a single document's does.
         -- Written exactly as Quarto writes its own links to that page,

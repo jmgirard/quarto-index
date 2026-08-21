@@ -251,7 +251,7 @@ local function Span(span)
 
   if qi_core.is_html() then
     local record = { levels = levels, sort = sort, xrefs = xrefs,
-                     context = context }
+                     context = context, role = role }
     qi_marks.html_marks[#qi_marks.html_marks + 1] = record
     if #xrefs == 0 then
       -- Only a locator-contributing mark needs somewhere to link back to; a

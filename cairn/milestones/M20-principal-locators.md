@@ -104,7 +104,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       `latex.lua` count cross-reference encapsulations alone, and `seen.plain` comes to
       mean "some mark of this key contributes a locator" rather than "emits no
       encapsulation" — and the preamble injection flag read by the Pandoc pass.
-- [ ] T4: `html.lua`: the principal locator link and its class; the role on the HTML mark
+- [x] T4: `html.lua`: the principal locator link and its class; the role on the HTML mark
       record; `book.lua` carries it in the per-chapter record as an optional field with a
       named fallback, leaving the store version alone (the M14 lesson).
 - [ ] T5: The suite's principal section: copy `.ind`, `.ilg` and `.tex` to `$WORK` at the
@@ -138,6 +138,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: T3 — the role is applied at emission by `principal_encap` in `passes.lua`, on top of whichever shape contestation chose, and is deliberately absent from `mark_encap`, so a plain and a styled locator of one key are not rivals; `index.lua` injects `PRINCIPAL_DEFINITION` only where the flag is set. End-to-end evidence: the fixture's `.ind` reads `basilisk, \hyperpage{1}, \hyperxindexformat{\quartoindexprincipal}{2}, \hyperpage{3}` with 0 warnings in its `.ilg`, and `examples/content.tex` carries no definition.
 - 2026-08-21: T3 — `examples/principal.qmd` gained `latex-clean: false`, since Quarto deletes the `.ind` and `.ilg` on a successful PDF render and they are AC1's evidence; the LaTeX aux family is now gitignored under `examples/`, which also closes the unignored-artifact item on the acceptance-suite candidate row.
 - 2026-08-21: T3 — keeping the suite green required registering both fixtures in two existing rosters ahead of their own section: M14's dangling-target corpus (0 each, both targets naming a term the file marks) and M15's contested-key emission sweep (the folded-field shape, which the `gorgon` key writes). Suite 208 -> 211.
+- 2026-08-21: T4 — a locator is now `{ target, role }` rather than a bare string, so a reordering cannot separate a role from its destination; the principal link carries `class="qi-principal"` and a Pandoc `Strong`, which is what makes it read as principal with no stylesheet, since the extension ships none. `book.lua` carries `role` as an optional field validated like `context` and left out of the store version. Rendered: `basilisk` prints three locators, the second `<a href="#qi-mark-2" class="qi-principal"><strong>2</strong></a>` and the others plain. Suite still 211.
 
 ## Decisions
 

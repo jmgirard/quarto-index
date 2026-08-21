@@ -116,7 +116,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       wrong locator, an encapsulation on none, a warning whose text is right but whose
       mark is wrong, and a mark warning suppressed in the back-end-less format alone, so a
       report that stops being format-neutral is caught.
-- [ ] T7: README section for `mention="principal"`: what an author writes, what each
+- [x] T7: README section for `mention="principal"`: what an author writes, what each
       back-end prints, how to redefine the LaTeX command, and that an unusable or
       unrecognized value is reported. Add its authoring forms to the suite's normative
       supported-forms list and its sentences to a README claims array. Extend DESIGN.md's
@@ -141,6 +141,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: T4 — a locator is now `{ target, role }` rather than a bare string, so a reordering cannot separate a role from its destination; the principal link carries `class="qi-principal"` and a Pandoc `Strong`, which is what makes it read as principal with no stylesheet, since the extension ships none. `book.lua` carries `role` as an optional field validated like `context` and left out of the store version. Rendered: `basilisk` prints three locators, the second `<a href="#qi-mark-2" class="qi-principal"><strong>2</strong></a>` and the others plain. Suite still 211.
 - 2026-08-21: T5 — the M20 section: the `.ind`/`.ilg` reads (copied to `$WORK` at their own render), the structural HTML read, the per-mark log pins in all three formats with the twin as the zero-expectation control, a command-by-command comparison against the twin's own emission for the counterfactual, the gfm residue set stated exactly, and the preamble present/absent triple. Suite 211 -> 221.
 - 2026-08-21: T5 — the twin comparison first passed vacuously: a regex for `\index{...}` matched only to the first `}` inside a folded cross-reference, truncating both sides' `gorgon` command before the encapsulation being compared, so the two read equal. Replaced with a brace counter — the brace-aware scanner the acceptance-suite candidate row already asks for, now built for this one reader.
+- 2026-08-21: T7 — README gains a principal-mention section (what it prints in each back-end, how to redefine the LaTeX command, what an unusable or unrecognized value does), a seventh row in the supported-forms table, and a seventh point under where the back-ends differ; the form is in the suite's normative list and six documented claims are byte-pinned. DESIGN's pass-through residue enumeration now names `data-mention` and records why the attribute is not `role`. Suite 221 -> 223.
 
 ## Decisions
 

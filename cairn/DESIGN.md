@@ -296,8 +296,11 @@ Every other format — beamer, revealjs, epub, gfm — takes neither branch: no
 index, no anchors, no back-end tokens, and the visible text exactly as
 written. What such a format does carry is the mark's own attributes, which
 Pandoc passes through on the span as `data-entry`, `data-see`,
-`data-see-also` and `data-sort`; whether that residue should exist is open
-(ROADMAP). Corrected M06 — this paragraph previously said "untouched".
+`data-see-also`, `data-sort` and `data-mention`; whether that residue should
+exist is open (ROADMAP). The mention attribute is spelled `mention` rather than
+`role` for this reason and no other: Pandoc data-prefixes a name it does not
+know but emits `role` literally, so `role=` would ship an invalid ARIA role on
+every marked term (added M20). Corrected M06 — this paragraph previously said "untouched".
 
 **Book projects** split the HTML back-end in two, and leave the LaTeX one
 alone. A PDF book is rendered as one merged document, so its marks are already

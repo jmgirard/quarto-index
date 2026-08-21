@@ -30,7 +30,7 @@ side it uses `imakeidx`, which ships with mainstream TeX distributions.
 
 ## Syntax
 
-There are exactly six supported forms.
+There are exactly seven supported forms.
 
 | Form | Writes | Index entry |
 |---|---|---|
@@ -40,12 +40,14 @@ There are exactly six supported forms.
 | `[]{.index entry="Entry"}` | nothing | `Entry` |
 | `[term]{.index see="Other"}` | `term` | `term`, *see* `Other` |
 | `[term]{.index see-also="Other"}` | `term` | `term`, *see also* `Other` |
+| `[term]{.index mention="principal"}` | `term` | `term`, its locator emphasized |
 
 The visible text is always left exactly as written. The first form indexes a
 term under its own text; the second indexes it under something else; the
 third nests it under a parent heading; the fourth adds an entry with no
-visible mark on the page. The last two point the reader at a different entry
-instead of at a page.
+visible mark on the page. The next two point the reader at a different entry
+instead of at a page. The last says which of a term's mentions is its
+principal one.
 
 ### Sub-entry levels
 
@@ -338,6 +340,45 @@ digits order the same way in both back-ends; one built out of punctuation may
 not, and neither will a key written past the three-level ceiling, which HTML
 honors and LaTeX drops with the level it was written for.
 
+### The principal mention of a term
+
+A term is usually discussed properly in one place and mentioned in passing in
+others. `mention="principal"` says which occurrence is the proper one, and the
+index emphasizes that locator alone — the convention a printed index uses for
+what it calls a principal reference.
+
+```markdown
+Cats are mentioned here: [cats]{.index}.
+
+Cats are discussed here: [cats]{.index mention="principal"}.
+```
+
+In a PDF that prints as `cats, 3, **7**`; in HTML the numbered link for the
+principal mention is emphasized and carries the class `qi-principal`, and the
+others do not. Mark as many other mentions as you like — only the ones you
+give the role to are emphasized, and a term with no role anywhere is unchanged.
+
+**Redefining the emphasis.** The LaTeX back-end wraps the locator in
+`\quartoindexprincipal`, defined with `\providecommand` as `\textbf` and
+injected only into a document that uses it. Define your own in the document's
+preamble and yours is kept:
+
+```latex
+\newcommand*\quartoindexprincipal[1]{\textit{#1}}
+```
+
+In HTML the extension ships no stylesheet, so the link carries a `<strong>` as
+well as the class; style `.qi-principal` to change it.
+
+**A role needs a locator to apply to.** A cross-reference takes the place of a
+locator, so `mention="principal"` on a mark that also carries `see=` or
+`see-also=` has nothing to emphasize. The role is reported and dropped, and the
+mark indexes exactly as it would without it.
+
+**Only `principal` is recognized.** Any other value is reported and the mark
+indexes as though the attribute were absent — including an empty one, since
+`mention=""` is a value you wrote rather than an attribute you left off.
+
 ### Placing the index
 
 By default the index goes at the end of the document. To put it somewhere
@@ -500,6 +541,9 @@ differs, because the tools underneath them do:
    cannot link at all.
 6. **A cross-reference carries no locator in either back-end.** The `see also`
    limitation described above is the same in both.
+7. **The principal mention is emphasized in both**, but by different means: the
+   LaTeX back-end wraps the page number in a command you can redefine, and the
+   HTML back-end marks the link with a class and a `<strong>`.
 
 ### Letter groups in the HTML index
 

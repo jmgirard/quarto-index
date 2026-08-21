@@ -154,6 +154,7 @@ SUPPORTED_FORMS=(
   $'placement marker\t::: {.qi-index-here}'
   $'sort key span\t[The Hague]{.index sort="Hague"}'
   $'sub-level sort key\t[]{.index entry="mathematicians!von Neumann" sort="!Neumann"}'
+  $'principal mention\t[term]{.index mention="principal"}'
 )
 
 # ---------------------------------------------------------------------------
@@ -254,6 +255,20 @@ README_EMPTY_CLAIMS=(
 )
 
 # ---------------------------------------------------------------------------
+# README claims about the principal mention (NORMATIVE, M20). Same discipline
+# as the arrays around it: one row per behavior the extension documents, its
+# bytes compared rather than a count, so what README promises and what this
+# suite exercises cannot drift. Whitespace is flattened before the comparison,
+# so a claim README wraps across lines is still one row here.
+README_PRINCIPAL_CLAIMS=(
+  $'emphasis\tthe index emphasizes that locator alone'
+  $'html class\tcarries the class `qi-principal`'
+  $'control\ta term with no role anywhere is unchanged'
+  $'redefinable\tDefine your own in the document\'s preamble and yours is kept'
+  $'no locator\tThe role is reported and dropped, and the mark indexes exactly as it would without it'
+  $'empty value\tsince `mention=""` is a value you wrote rather than an attribute you left off'
+)
+
 # README claims about letter groups (NORMATIVE, M07-AC6). Same discipline as
 # README_HTML_CLAIMS: one row per behavior the extension documents, compared
 # as bytes, so the docs and what this suite exercises cannot drift apart.
@@ -8346,6 +8361,33 @@ grep -qF "$PRINCIPAL_CMD" examples/content.tex \
 grep -qF "$PRINCIPAL_CMD" "$WORK/principal-twin.tex" \
   && fail "M20-AC6: the role-free twin's preamble carries $PRINCIPAL_CMD"
 pass "M20-AC6: the principal encapsulation's command is defined with \\providecommand in the document that uses it and appears in neither of the two documents that declare no role"
+
+# The documentation half of T7, held to the same discipline as every other
+# README claim array: the bytes the extension documents are compared, so a
+# behavior that changes without its documentation fails here.
+printf '%s\n' "${README_PRINCIPAL_CLAIMS[@]}" > "$WORK/readme-principal.txt"
+python3 - "$WORK/readme-principal.txt" README.md <<'M20DOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M20: README.md does not document the principal mention as '
+          'this suite exercises it:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M20: all {len(rows)} documented claims about the principal '
+      f'mention appear verbatim in README.md')
+M20DOCPY
+pass "M20: every behavior the README documents for the principal mention is present verbatim, and its authoring form is in the suite's normative supported-forms list"
 
 }
 

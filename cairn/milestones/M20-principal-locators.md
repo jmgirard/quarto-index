@@ -111,11 +111,14 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       latex render before the pdf render removes them (the M15 lesson); the structural
       HTML check; the rendered-log pins passed through `warn-distinct`; the no-leak sweep;
       the preamble present/absent pair.
-- [ ] T6: `tests/plantdefect.py` entries for each check T5 adds, each planting a defect of
+- [x] T6: Planted-defect entries for each check T5 adds, each planting a defect of
       the kind that check names and varying form as well as site — an encapsulation on the
       wrong locator, an encapsulation on none, a warning whose text is right but whose
       mark is wrong, and a mark warning suppressed in the back-end-less format alone, so a
-      report that stops being format-neutral is caught.
+      report that stops being format-neutral is caught. The four readers move to
+      `tests/m20probes.py` so the self-test can re-run each against a mutated artifact;
+      `tests/plantdefect.py` is not their home, since it plants defects in a
+      moved-definition tree for the source-reading scans and these read rendered output.
 - [x] T7: README section for `mention="principal"`: what an author writes, what each
       back-end prints, how to redefine the LaTeX command, and that an unusable or
       unrecognized value is reported. Add its authoring forms to the suite's normative
@@ -142,6 +145,8 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: T5 — the M20 section: the `.ind`/`.ilg` reads (copied to `$WORK` at their own render), the structural HTML read, the per-mark log pins in all three formats with the twin as the zero-expectation control, a command-by-command comparison against the twin's own emission for the counterfactual, the gfm residue set stated exactly, and the preamble present/absent triple. Suite 211 -> 221.
 - 2026-08-21: T5 — the twin comparison first passed vacuously: a regex for `\index{...}` matched only to the first `}` inside a folded cross-reference, truncating both sides' `gorgon` command before the encapsulation being compared, so the two read equal. Replaced with a brace counter — the brace-aware scanner the acceptance-suite candidate row already asks for, now built for this one reader.
 - 2026-08-21: T7 — README gains a principal-mention section (what it prints in each back-end, how to redefine the LaTeX command, what an unusable or unrecognized value does), a seventh row in the supported-forms table, and a seventh point under where the back-ends differ; the form is in the suite's normative list and six documented claims are byte-pinned. DESIGN's pass-through residue enumeration now names `data-mention` and records why the attribute is not `role`. Suite 221 -> 223.
+- 2026-08-21: T6 — the four readers extracted to `tests/m20probes.py` (behaviour-neutral: 223 checks before and after) and re-run by the self-test against twelve planted defects: the emphasis on the wrong page, on every locator, on none, leaked onto the role-free control, a conflicting-encapsulation warning in the transcript, the HTML emphasis on the wrong mention, its class dropped, its emphasis node dropped, a literal ARIA role in gfm, plumbing residue in gfm, the role inert, and the role reaching the control mark; plus `warn_discrimination` over both reports in all three formats. Self-test 248 -> 279.
+- 2026-08-21: T6 — one plant was a no-op and the check was wrongly reported as failing to discriminate: gfm wraps a long line inside a tag, so a sed aimed at a whole `<span ...>text</span>` matched nothing. Every mutation now goes through `m20_plant`, which refuses a plant that changes no bytes.
 
 ## Decisions
 

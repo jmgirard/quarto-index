@@ -115,14 +115,14 @@ print-convention wording → the see-also candidate row.
       an index column without wrapping. Terms no other fixture indexes (M13);
       every row in the PDF fixture short enough not to wrap; the manifest
       comments show their arithmetic (M12).
-- [ ] T2 Fold target levels in `qi_latex.latex_plan`
+- [x] T2 Fold target levels in `qi_latex.latex_plan`
       (`_extensions/index/modules/latex.lua:116`) and resolve targets against
       printed paths in the LaTeX branch of the Span pass
       (`_extensions/index/modules/passes.lua:190-200`); keep the
       format-neutral self-target comparison and the format-neutral report for
       formats with no ceiling. Escaping still applies to a folded target
       (M02: makeindex parses `!` and `@` inside an encap argument).
-- [ ] T3 The report for a fold-rewritten target: one Lua literal, distinct,
+- [x] T3 The report for a fold-rewritten target: one Lua literal, distinct,
       added to `SINGLE_LITERAL` with `EXPECTED` raised.
 - [ ] T4 `.tex` command-list assertions for AC1 over both fixtures; copy each
       intermediate `.tex` to `$WORK` at its LaTeX render, since `--to pdf`
@@ -145,6 +145,9 @@ print-convention wording → the see-also candidate row.
 - 2026-08-20: T1 — `examples/fold-xref.qmd` (7 targets: depth-4 `see=`, depth-5 `see-also=` with a literal `!` in an overflow level, a `sort=`-carrying entry, a contested key, one dangling after the fold, a shallow control, and a parent-level target) and `examples/fold-xref-both.qmd` (a both-attributes mark, both targets folded). Both added to `DANGLING_CORPUS` with their derivations; suite green at 197 checks.
 - 2026-08-20: baseline recorded before any code change — all three target-rendering sites emit unfolded targets today: `\index{Elm|see{Ash: Bay: Cod: Dun}}` (single encap), `\index{Zinc@Zinc, \see{Ash: Bay: Cod: Dun}{}}` (contested key), `\index{Yuc|quartoindexseeboth{Oat: Pea: Rye: Soy}{Tef: Urd: Vet: Wid: Xan}}` (both attributes), against printed entry paths of `Ash!Bay!Cod, Dun`, `Oat!Pea!Rye, Soy` and `Tef!Urd!Vet, Wid, Xan`.
 - 2026-08-20: task-order adjustment — the new contested-key shape failed an M15 check asserting the contested-key emission reaches exactly one fixture. Repaired in place rather than excluded: the check now compares per-file carried shapes against an expected mapping for equality in both directions, so a fixture that silently stops carrying its shape fails as loudly as one that gains a shape it should not have.
+- 2026-08-20: T2 — `latex_plan` folds each target by the rule that folds an entry and returns the clamped levels; the Span pass builds the LaTeX plan before recording the resolution set, so `record_marked` records printed paths (prefix-closed as before) and a pending target carries two spellings, the written one for the report and the folded one for the lookup. All three target-rendering sites are covered because all three read `latex_plan`'s returned list. Verified on the fixtures: the single encap, the contested-key printed field and the both-attributes command now all emit the path the referenced entry prints, sort-key case included, and the literal `!` stays quoted.
+- 2026-08-20: T3 — the fold-rewritten-target report, one literal, added to `warn-distinct`'s `SINGLE_LITERAL` with `EXPECTED` 38 → 39. `WARN_FOLD_DEPTH` had to be narrowed from `levels deep; the back-end stores` to `and deeper were folded into the third`: the new message shares the ceiling clause, and the suite's distinctness scan caught the key matching two warnings.
+- 2026-08-20: M18-AC2 evidence — `examples/self-xref.qmd` now reports 0 dangling / 3 fold-self in LaTeX against 3 / 0 in HTML and gfm; before the change LaTeX drew 3 / 3, the contradictory pair. The M14-AC4 block is superseded for LaTeX alone and says so; suite green at 197 checks.
 - 2026-08-20: criteria audit ran in full mode (user-facing tier), fresh-context [O] reader; returned nine findings, all fixed in the drafted criteria before the gate — an unreachable count pin, two single-exemplar families, an instrument the evidence misnamed, a missing discrimination probe, a flat substring test behind a nesting claim, five stale counts reading as fresh verification, and an unrecorded reversal of the report's format-neutrality.
 - 2026-08-20: plan gate chose folding targets as entries are folded over patching the two cases separately, because the separate patch leaves an author told to correct a cross-reference that names a real entry; falsified by a fold rule that makes a target resolve onto an entry the author did not mean.
 - 2026-08-20: plan gate chose reporting each fold-rewritten target over staying silent when the folded target resolves, because otherwise the only notice of a rewritten target sits on a different mark; falsified by build logs where the per-target report drowns the reports that need action.

@@ -102,7 +102,12 @@ local function report_dangling(paths, xrefs, scope)
     -- string to search the source for. Its empty levels are already gone, and
     -- were already reported when they were dropped.
     local target = qi_levels.levels_key(xref.levels)
-    if not paths[target] then
+    -- Judged on `resolve` and quoted as `target`: where a back-end folds, the
+    -- two differ, and the author is told about the string they typed while the
+    -- lookup runs against the path that back-end actually prints (D-005). Every
+    -- other format, and the book store, carry no `resolve` and fall back to the
+    -- one spelling they have.
+    if not paths[qi_levels.levels_key(xref.resolve or xref.levels)] then
       qi_core.warn(('%s= on %s points at "%s", which no index mark in this %s indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'):format(xref.attr, xref.context, target, scope))
     end
   end

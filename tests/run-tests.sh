@@ -2970,7 +2970,11 @@ WARN_SELF_XREF='names the entry it is written on'
 # (M10-AC4). A single shared constant cannot express that, and a check that
 # cannot express the difference cannot detect losing it.
 WARN_FOLD_SELF='names the folded path this entry prints'
-WARN_FOLD_DEPTH='levels deep; the back-end stores'
+# Narrowed at M18, which added a second message about the same ceiling — the
+# one drawn when the fold rewrites a TARGET. A key both messages match counts
+# neither, which is what the distinctness scan below catches.
+WARN_FOLD_DEPTH='and deeper were folded into the third'
+WARN_FOLD_TARGET='so the target is folded exactly as an entry is'
 
 for fmt in html latex gfm; do
   quarto render examples/self-xref.qmd --to $fmt \
@@ -6459,14 +6463,28 @@ for fmt in latex html gfm; do
   # Their existing reports are still there — without this the clause above
   # would pass on a filter that had stopped reporting self-references at all.
   check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_SELF_XREF" 6 "M14-AC4 ($fmt)"
+  # M18-AC2 supersedes the last clause of M14-AC4, for the LaTeX back-end
+  # alone (D-005). These three targets name the path the fold makes the entry
+  # PRINT, so in LaTeX they now resolve — against printed paths — and the fold
+  # reports them as self-references and nothing else. HTML and gfm fold
+  # nothing, so there the same targets name a path no mark writes and the
+  # format-neutral report stands exactly as M14 pinned it. Before M18 the
+  # LaTeX render drew BOTH reports for each of the three: one saying the fold
+  # had made the target a self-reference and dropped it, the other telling the
+  # author to go mark the term or correct the target.
+  if [ "$fmt" = latex ]; then want_fold_dangling=0; else want_fold_dangling=1; fi
   for context in 'entry="A!B!C!D"' 'entry="F!G!H!I!J"' 'entry="M!N!O!P"'; do
     check_warning_count "$WORK/self-xref-$fmt.log" \
-      "on $context points at" 1 "M14-AC4 (fold shape, $fmt)"
+      "on $context points at" "$want_fold_dangling" "M14-AC4/M18-AC2 (fold shape, $fmt)"
   done
-  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_DANGLING" 3 \
-    "M14-AC4 (total, $fmt)"
+  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_DANGLING" \
+    "$((want_fold_dangling * 3))" "M14-AC4/M18-AC2 (total, $fmt)"
+  # The fold's own report is untouched in every format, which is what tells
+  # the repair from a filter that simply stopped judging folded targets.
+  check_warning_count "$WORK/self-xref-$fmt.log" "$WARN_FOLD_SELF" \
+    "$([ "$fmt" = latex ] && echo 3 || echo 0)" "M18-AC2 (fold self, $fmt)"
 done
-pass "M14-AC4: none of the six self-referential targets is also reported as dangling, all six keep their own report, and the three fold-induced targets — which name a path the author never indexed — are reported here in every format"
+pass "M14-AC4/M18-AC2: none of the six self-referential targets is also reported as dangling, all six keep their own report, and the three fold-induced targets draw one report in LaTeX where they now resolve against printed paths and the format-neutral one in HTML and gfm, which fold nothing"
 
 # M14-AC5, the ordering fixture's half. The marker sits in the FIRST chapter,
 # which is also where the index is built; `Early Reference` there points at

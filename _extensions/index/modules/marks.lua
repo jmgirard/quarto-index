@@ -65,6 +65,42 @@ local function describe(entry, visible)
   return "a mark with no source entry"
 end
 
+-- The role one mention of a term declares, from the value the author wrote.
+-- Derived before any back-end is chosen, like every other judgement about
+-- what the author wrote, so both reports below fire in every format — a
+-- misused mark is diagnosed where there is no index back-end at all.
+--
+-- Returns the role, or nil where there is none to apply. `xref_attr` is the
+-- attribute of the first cross-reference the mark declares, or nil; a mark
+-- carrying one has no locator to emphasize, because the cross-reference takes
+-- the locator's place. `report` follows the convention the rest of this file
+-- uses: only the emitting pass says anything.
+--
+-- An unrecognized value is reported BEFORE the cross-reference case, and the
+-- two never both fire: a value naming no role is the more basic mistake, and
+-- telling an author their unknown role was ignored for want of a locator
+-- would send them looking in the wrong place. An EMPTY value is unrecognized
+-- rather than absent — it is a value the author wrote, and reading it as
+-- absence would swallow a typo silently.
+local function mention_role(value, context, xref_attr, report)
+  if value == nil then
+    return nil
+  end
+  if not qi_core.MENTION_ROLES[value] then
+    if report then
+      qi_core.warn(('%s= on %s names no role this extension knows ("%s"); the mark indexes as though the attribute were absent'):format(qi_core.MENTION_ATTR, context, value))
+    end
+    return nil
+  end
+  if xref_attr ~= nil then
+    if report then
+      qi_core.warn(('%s="%s" on %s carries %s= as well, and a cross-reference takes the place of a locator, so this mark has no locator to emphasize; the role is dropped and the mark indexes as it would without it'):format(qi_core.MENTION_ATTR, value, context, xref_attr))
+    end
+    return nil
+  end
+  return value
+end
+
 -- Set by the Span pass, read by the Pandoc pass: the preamble and the index
 -- itself are emitted only when the document actually has marks. Counted before
 -- the back-end branch, so "this document has marks" means the same thing in
@@ -249,6 +285,7 @@ M["record_marked"] = record_marked
 M["report_dangling"] = report_dangling
 M["clamped_paths"] = clamped_paths
 M["record_clamped"] = record_clamped
+M["mention_role"] = mention_role
 M["derive_levels"] = derive_levels
 
 return M

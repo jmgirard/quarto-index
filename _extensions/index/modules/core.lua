@@ -60,6 +60,35 @@ local XREF_LIST_COMMAND = "quartoindexxrefs"
 local XREF_LIST_DEFINITION =
   "\\providecommand*\\" .. XREF_LIST_COMMAND .. "[2]{#1}"
 
+-- The attribute naming the role one mention of a term plays. It is `mention`
+-- and NOT `role`: Pandoc data-prefixes an attribute name it does not know but
+-- emits `role` literally, being a real HTML attribute, so `role="principal"`
+-- would reach every HTML-family output as an ARIA role — and `principal` is
+-- not a valid one, which is an artifact on every marked term (IP2).
+local MENTION_ATTR = "mention"
+
+-- The roles a mention may declare. One today; a further role is another value
+-- here rather than another attribute (GP5). Written as a set so an unknown
+-- value is one lookup, and so the report can quote what the author wrote.
+local MENTION_ROLES = {
+  ["principal"] = true,
+}
+
+-- The principal locator's encapsulation. `\providecommand*` so a document
+-- wanting different emphasis redefines it in its own preamble and this
+-- definition steps aside (GP4), and injected only into a document that uses
+-- it, exactly like the two cross-reference commands above. Bold is the
+-- convention a printed index uses for a principal reference.
+local PRINCIPAL_COMMAND = "quartoindexprincipal"
+local PRINCIPAL_DEFINITION =
+  "\\providecommand*\\" .. PRINCIPAL_COMMAND .. "[1]{\\textbf{#1}}"
+
+-- The class the HTML back-end puts on a principal locator link. Namespaced
+-- like the other pinned HTML identifiers, since an author's CSS may hold on
+-- to it. The link also carries Pandoc-level emphasis, so it reads as the
+-- principal reference with no stylesheet at all.
+local HTML_PRINCIPAL_CLASS = "qi-principal"
+
 -- Characters that are literal text on the way in and need help on the way
 -- out. Most LaTeX specials are escaped with a backslash. Three groups cannot
 -- be: `!` and `@` are makeindex operators, made literal with its quote
@@ -148,6 +177,11 @@ M["XREF_BOTH_COMMAND"] = XREF_BOTH_COMMAND
 M["XREF_BOTH_DEFINITION"] = XREF_BOTH_DEFINITION
 M["XREF_LIST_COMMAND"] = XREF_LIST_COMMAND
 M["XREF_LIST_DEFINITION"] = XREF_LIST_DEFINITION
+M["MENTION_ATTR"] = MENTION_ATTR
+M["MENTION_ROLES"] = MENTION_ROLES
+M["PRINCIPAL_COMMAND"] = PRINCIPAL_COMMAND
+M["PRINCIPAL_DEFINITION"] = PRINCIPAL_DEFINITION
+M["HTML_PRINCIPAL_CLASS"] = HTML_PRINCIPAL_CLASS
 M["LATEX_LITERAL"] = LATEX_LITERAL
 M["warn"] = warn
 M["is_latex_derived"] = is_latex_derived

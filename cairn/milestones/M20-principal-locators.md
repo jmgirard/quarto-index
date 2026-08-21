@@ -95,7 +95,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       lesson). Terms and pages are distinct per slot (the M02 lesson). The twin is the
       same document with every role attribute removed. Their expected manifests are
       written inline in the suite's principal section, where every other fixture's are.
-- [ ] T2: `core.lua` gains `mention` and its recognized values; `marks.lua` derives the
+- [x] T2: `core.lua` gains `mention` and its recognized values; `marks.lua` derives the
       role once, before the back-end branch, with the two warnings — a role on a mark
       contributing no locator, and an unrecognized value, the empty string among them — so
       both fire in every format as the other mark warnings do.
@@ -134,6 +134,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: implement gate chose narrowing contestation to cross-reference encapsulations over suppressing styling on shared keys, because a plain and a styled locator are makeindex's ordinary case; falsified by a makeindex version that rejects the pair rather than warning.
 - 2026-08-21: amended-criteria audit ran in full mode and returned findings on all three amended criteria; AC3 and AC4 gained named formats and dropped the twin fixture from their promises, AC4 settled the empty value, AC5 was repinned on the expected manifest, and T6 gained a format-axis planted defect.
 - 2026-08-21: T1 — `examples/principal.qmd` (three-page principal/plain spread, a role on a cross-reference mark, an unrecognized value, an empty value, a role-free control pair, and a principal locator on a key a cross-reference also marks) and its role-free twin; gfm render confirms Pandoc keeps `mention=""` as a present attribute, so the empty value is distinguishable from absence in the AST.
+- 2026-08-21: T2 — `core.lua` gains `MENTION_ATTR`, `MENTION_ROLES`, `PRINCIPAL_COMMAND`/`PRINCIPAL_DEFINITION` and `HTML_PRINCIPAL_CLASS`; `marks.lua` gains `mention_role`, drawing the unrecognized-value report before the no-locator one so the two never both fire. `warn-distinct` pinned count 39 -> 41, and the scan confirms both new messages distinct and non-prefix.
 
 ## Decisions
 

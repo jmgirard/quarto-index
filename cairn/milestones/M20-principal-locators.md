@@ -107,7 +107,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - [x] T4: `html.lua`: the principal locator link and its class; the role on the HTML mark
       record; `book.lua` carries it in the per-chapter record as an optional field with a
       named fallback, leaving the store version alone (the M14 lesson).
-- [ ] T5: The suite's principal section: copy `.ind`, `.ilg` and `.tex` to `$WORK` at the
+- [x] T5: The suite's principal section: copy `.ind`, `.ilg` and `.tex` to `$WORK` at the
       latex render before the pdf render removes them (the M15 lesson); the structural
       HTML check; the rendered-log pins passed through `warn-distinct`; the no-leak sweep;
       the preamble present/absent pair.
@@ -139,6 +139,8 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: T3 — `examples/principal.qmd` gained `latex-clean: false`, since Quarto deletes the `.ind` and `.ilg` on a successful PDF render and they are AC1's evidence; the LaTeX aux family is now gitignored under `examples/`, which also closes the unignored-artifact item on the acceptance-suite candidate row.
 - 2026-08-21: T3 — keeping the suite green required registering both fixtures in two existing rosters ahead of their own section: M14's dangling-target corpus (0 each, both targets naming a term the file marks) and M15's contested-key emission sweep (the folded-field shape, which the `gorgon` key writes). Suite 208 -> 211.
 - 2026-08-21: T4 — a locator is now `{ target, role }` rather than a bare string, so a reordering cannot separate a role from its destination; the principal link carries `class="qi-principal"` and a Pandoc `Strong`, which is what makes it read as principal with no stylesheet, since the extension ships none. `book.lua` carries `role` as an optional field validated like `context` and left out of the store version. Rendered: `basilisk` prints three locators, the second `<a href="#qi-mark-2" class="qi-principal"><strong>2</strong></a>` and the others plain. Suite still 211.
+- 2026-08-21: T5 — the M20 section: the `.ind`/`.ilg` reads (copied to `$WORK` at their own render), the structural HTML read, the per-mark log pins in all three formats with the twin as the zero-expectation control, a command-by-command comparison against the twin's own emission for the counterfactual, the gfm residue set stated exactly, and the preamble present/absent triple. Suite 211 -> 221.
+- 2026-08-21: T5 — the twin comparison first passed vacuously: a regex for `\index{...}` matched only to the first `}` inside a folded cross-reference, truncating both sides' `gorgon` command before the encapsulation being compared, so the two read equal. Replaced with a brace counter — the brace-aware scanner the acceptance-suite candidate row already asks for, now built for this one reader.
 
 ## Decisions
 

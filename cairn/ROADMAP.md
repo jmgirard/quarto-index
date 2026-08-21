@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-21 (M19 merged and archived; a warning that names a level count now says which levels it counted, and gives the written count too where a dropped level makes them differ. Its review returned no criterion failure; seven of eight diff-bug findings were fixed at the gate and two became rows here — the unprobed all-empty-`entry=` shape, and a second widening of the acceptance-suite row, since the distinctness scan now misses message text as well as numbers. M14 pruned under terminal-row retention. LESSONS extended in place at 49 lines rather than taking a new line. Caps and byte budgets clean.)_
+_Last hygiene check: 2026-08-21 (M20 and M21 planned from the page-range & styling candidate row, which they absorb: M20 gives a term's principal discussion an emphasized locator, M21 gives a discussion spanning pages one range locator and depends on it. A makeindex probe at the plan gate settled that every misuse here is a warning at exit 0, so neither carries a break-the-document risk, and that an ordinary mark inside a term's own range is folded in with no warning at all — documented rather than reported. Three Scope-Out items clustered into one candidate row. Caps and byte budgets clean.)_
 
 ## Milestones
 
@@ -12,6 +12,8 @@ _Last hygiene check: 2026-08-21 (M19 merged and archived; a warning that names a
 | M15 | A term marked both plainly and with a cross-reference builds | done | — | normal | milestones/archive/M15-clash-free-emission.md |
 | M18 | A cross-reference target is judged against the path the entry prints | done | — | normal | milestones/archive/M18-fold-aware-xref-targets.md |
 | M19 | A reported level count says which levels it counts | done | — | normal | milestones/archive/M19-level-count-naming.md |
+| M20 | A term's principal discussion prints as its principal locator | planned | — | normal | milestones/M20-principal-locators.md |
+| M21 | A discussion spanning pages prints as one page range | planned | M20 | normal | milestones/M21-page-ranges.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -23,7 +25,7 @@ _Last hygiene check: 2026-08-21 (M19 merged and archived; a warning that names a
 - Module-split follow-ups (clustered): the added `qi_` prefixes took lines over 80 columns from 14 at M17's merge base to 62, of which 47 are code lines whose rewrapping risks the single-literal warning messages `warn-distinct` pins; and every module exports its entire top-level surface (106 names — `html.lua` exports 23 where four are reached from outside), so no module boundary carries any information about what is API and what is internal — added 2026-08-20 — M17 review J/I
 - First tagged release (window user-declared, never agent-proposed) — added 2026-08-16
 - Chapter-based locator labels in the book HTML index (e.g. 2.1 instead of 1, 2, 3) — added 2026-08-17 — M05 gate kept numeric locators; promote on reader evidence that numeric locators fail in long books
-- Page-range & styling control (open/close marks, principal-mention locators) — added 2026-08-16 — suite target
+- Locator-control follow-ups (clustered): roles beyond `principal` for a locator (a defining passage, an illustration), which the attribute takes as further values — promote on evidence an author wants a second role; an author-written id pairing two overlapping ranges of one term, which pairing by entry cannot tell apart — promote on evidence that authors write them; and author control over the range dash — added 2026-08-21 — M20/M21 Scope Out
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN); the floor is an untested contract claim today and the matrix is what would fence it (M01 review R15)
 - Submit to Quarto extension listing at first release — added 2026-08-16 — window user-declared

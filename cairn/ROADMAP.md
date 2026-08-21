@@ -12,7 +12,7 @@ _Last hygiene check: 2026-08-20 (M18 merged and archived; a cross-reference targ
 | M15 | A term marked both plainly and with a cross-reference builds | done | — | normal | milestones/archive/M15-clash-free-emission.md |
 | M14 | A cross-reference target that names no index entry is reported | done | — | normal | milestones/archive/M14-dangling-xref-target.md |
 | M18 | A cross-reference target is judged against the path the entry prints | done | — | normal | milestones/archive/M18-fold-aware-xref-targets.md |
-| M19 | A reported level count says which levels it counts | planned | — | normal | milestones/M19-level-count-naming.md |
+| M19 | A reported level count says which levels it counts | review | — | normal | milestones/M19-level-count-naming.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

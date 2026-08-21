@@ -209,7 +209,12 @@ README_SORT_CLAIMS=(
   $'report: extra levels\ta `sort=` with more levels than there are to sort, whose extra levels are'
   # M13: the report's two counts are both taken before the empty-level drop,
   # so README must not let either be read as the depth the entry indexes at.
-  $'report: counts are pre-drop\tBoth counts in that report are taken before empty levels are'
+  # M19-AC6 replaced the wording: the report now says what each count is OVER
+  # rather than when it was taken, and README says the same (D-006).
+  $'report: counts are named\tThe report says what each count is over'
+  $'report: fallback count\tthe second count is the one level its visible text makes'
+  $'ceiling report names both\tnames the depth you wrote alongside it where a dropped level'
+  $'target report names both\tthe depth you wrote it at where a dropped level'
   $'report: two keys\tone entry given two different sort keys, which cannot file in two places'
   $'reaching past a level\ton the way to a deeper one declares nothing for that level'
   $'book adds a fourth report\tA book adds a fourth report, for a term two chapters sort differently'
@@ -6118,8 +6123,15 @@ pass 'M13-AC2: in HTML, LaTeX and gfm alike, the leading and trailing empty-leve
 # indexes at 1, and the emitted \index below is what says so. The second shape
 # carries no `entry=` at all: it reaches the report through the visible-text
 # fallback, so wording naming an entry value would be false about it.
-M13_SORT_EXTRA_ENTRY='sort= on entry="Moles!" writes 3 levels against the 2 it has to sort before empty levels are dropped; the extra sort levels were ignored'
-M13_SORT_EXTRA_NOENTRY='sort= on term "ferns" writes 3 levels against the 1 it has to sort before empty levels are dropped; the extra sort levels were ignored'
+#
+# M19-AC3 reworded both. The second number is now named for what it is measured
+# over rather than by a clause about a drop that touches neither of them
+# (D-006), and the two shapes read differently there for the first time: the
+# entry shape names the entry, the fallback shape names the level its visible
+# text makes. The NUMBERS are byte-for-byte the ones M13 pinned — 3 against 2,
+# and 3 against 1 — which is what M19-AC5 asks of this pair.
+M13_SORT_EXTRA_ENTRY='sort= on entry="Moles!" writes 3 levels against the 2 the entry is written with; the extra sort levels were ignored'
+M13_SORT_EXTRA_NOENTRY='sort= on term "ferns" writes 3 levels against the 1 level its visible text makes; the extra sort levels were ignored'
 for fmt in html latex gfm; do
   check_warning_count "$WORK/empty-levels-$fmt.log" "$M13_SORT_EXTRA_ENTRY" 1 "M13-AC3"
   check_warning_count "$WORK/empty-levels-$fmt.log" "$M13_SORT_EXTRA_NOENTRY" 1 "M13-AC3"
@@ -6577,6 +6589,9 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #   empty-levels   1 attribute: `entry="!Owls"` drops its empty level to
 #                  `Owls`, which `see="Owls"` then names, so it is dropped as a
 #                  self-reference. 0.
+#   fold-xref-empty  5 attributes. Every one names a path some mark in the
+#                  file indexes, judged as written in a format with no
+#                  ceiling, so none dangles anywhere. 0.
 #   placement      1 attribute: `see="widget"`, and `widget` is marked three
 #                  times in that file. 0.
 #   resolving-xref 3 attributes, all three resolving by construction. 0.
@@ -6593,6 +6608,7 @@ examples/dangling-xref.qmd	7
 examples/demo.qmd	8
 examples/empty-levels.qmd	0
 examples/fold-xref-both.qmd	0
+examples/fold-xref-empty.qmd	0
 examples/fold-xref-self.qmd	1
 examples/fold-xref.qmd	1
 examples/html-index.qmd	1
@@ -6652,7 +6668,7 @@ pass "M14: every example's dangling-target report count matches its pinned expec
 # a contested key, so that sweep needs its artifact, and reading a copy taken
 # now is what keeps the sweep off whatever an earlier run happened to leave in
 # examples/. The PDF render further down removes the intermediate .tex (M15).
-for f in fold-xref fold-xref-both fold-xref-self; do
+for f in fold-xref fold-xref-both fold-xref-self fold-xref-empty; do
   for fmt in latex html gfm; do
     quarto render "examples/$f.qmd" --to $fmt > "$WORK/$f-$fmt.log" 2>&1 \
       || { tail -20 "$WORK/$f-$fmt.log" >&2; fail "M18: examples/$f.qmd failed to render to $fmt"; }
@@ -7298,6 +7314,83 @@ for fmt in html gfm; do
     "M18-AC5 (both attributes, $fmt)"
 done
 pass "M18-AC5: every target the fold rewrites draws one report on its own mark, both of a both-attributes mark's do, the two targets the fold does not reach draw none, and no format without the ceiling draws any"
+
+# ---------------------------------------------------------------------------
+# M19 — a reported level count says which levels it counts (D-006).
+#
+# Three counts exist for one value: the levels written, the levels left after
+# an empty one is dropped, and the three the back-end stores. Every number
+# below is the number the filter reported before this milestone; only what it
+# is CALLED moved, which is what M19-AC5 asks of these marks.
+# ---------------------------------------------------------------------------
+M19_BOTH=', of the 5 written; the back-end stores 3'
+# The semicolon is the discriminator, not the digit: `4 levels deep;` cannot
+# also match `4 levels deep, of the 5 written;`, so the control below fails the
+# moment a report starts giving two counts where nothing was dropped.
+M19_ONE='names a path 4 levels deep; the back-end stores 3'
+# 5 written, first or last empty -> 4 left -> over the ceiling of 3, so the
+# fold fires and the two counts differ. Three marks, three contexts, because a
+# count of the right total spread over the wrong marks would pass a total
+# alone (M02).
+for context in 'see= on entry="Teak"' 'see= on entry="Willow"' \
+               'see-also= on entry="Yewtree"'; do
+  check_warning_count "$WORK/fold-xref-empty-latex.log" \
+    "$context names a path 4 levels deep, of the 5 written;" 1 "M19-AC2 ($context)"
+done
+check_warning_count "$WORK/fold-xref-empty-latex.log" "$M19_BOTH" 3 \
+  "M19-AC2 (total naming both counts)"
+# 4 written, none empty -> 4 left -> folded, but the two counts agree, so one
+# number is stated and no drop is implied.
+check_warning_count "$WORK/fold-xref-empty-latex.log" \
+  "see= on entry=\"Zircon\" $M19_ONE" 1 "M19-AC2 (counts agree, one number)"
+# 4 written, first empty -> 3 left -> AT the ceiling, so nothing is folded and
+# the fold report must stay silent even though the two counts differ. Its
+# empty level is still reported, by the warning that owns that subject: the
+# silence has to be the fold's alone, not the mark going unreported.
+check_warning_count "$WORK/fold-xref-empty-latex.log" \
+  'on entry="Sumac" names a path' 0 "M19-AC2 (drop without a fold is silent)"
+check_warning_count "$WORK/fold-xref-empty-latex.log" \
+  'empty level in see= on entry="Sumac"; dropped from the cross-reference target' \
+  1 "M19-AC2 (its empty level is still reported)"
+check_warning_count "$WORK/fold-xref-empty-latex.log" "$WARN_FOLD_TARGET" 4 \
+  "M19-AC2 (total)"
+# The ceiling is this back-end's alone, so no format without one names a depth.
+for fmt in html gfm; do
+  check_warning_count "$WORK/fold-xref-empty-$fmt.log" "$WARN_FOLD_TARGET" 0 \
+    "M19-AC2 ($fmt)"
+  check_warning_count "$WORK/fold-xref-empty-$fmt.log" "$M19_BOTH" 0 \
+    "M19-AC2 (both counts, $fmt)"
+done
+pass "M19-AC2: a folded target names the count left after the drop and the count written where they differ, one count where they agree, and nothing at all where the drop leaves the target at the ceiling"
+
+# The entry-fold report, same rule. demo.qmd's mark is written with 6 levels
+# and ends in an empty one, so 6 - 1 = 5 remain and both numbers are named;
+# fold-xref.qmd's is written with 4 and drops none, so one is.
+check_warning_count "$WORK/demo-latex.log" \
+  'index entry in entry="One!Two!Three!Four!Five!" is 5 levels deep, of the 6 written;' \
+  1 "M19-AC4 (counts differ)"
+check_warning_count "$WORK/fold-xref-latex.log" \
+  'index entry in entry="Ash!Bay!Cod!Dun" is 4 levels deep; the back-end stores 3' \
+  1 "M19-AC4 (counts agree)"
+# No mark in fold-xref.qmd has an empty level, so no report there may carry a
+# second count at all. Without this the check above passes on a filter that
+# names two counts everywhere and happens to be right about this one.
+check_warning_count "$WORK/fold-xref-latex.log" ', of the' 0 \
+  "M19-AC4 (no second count where nothing dropped)"
+# M19-AC3/AC6 negatives. Every pin above is a SUBSTRING count, so the retired
+# clause re-added as a trailing sentence would pass all of them; only a sweep
+# for the clause itself can fail on that. The filter source and README are read
+# rather than a render log, so the check holds for messages no fixture reaches.
+M19_RETIRED='before empty levels are dropped'
+# One recursive grep with its no-match exit absorbed, and the emptiness decided
+# by the comparison rather than by the pipeline's exit status: `grep ... && fail`
+# aborts a `set -e` run with no FAIL line when the grep finds nothing (M14).
+m19_retired_hits=$( { grep -rlF -- "$M19_RETIRED" _extensions README.md || true; } | tr '\n' ' ')
+[ -z "$(echo "$m19_retired_hits" | tr -d ' ')" ] \
+  || fail "M19-AC3: the retired clause <<$M19_RETIRED>> survives in: $m19_retired_hits — it names a drop that touches neither count"
+pass "M19-AC3: the clause naming a drop that touches neither count is gone from the filter source and from README, asserted by a sweep rather than by the substring pins above"
+
+pass "M19-AC4: the entry-fold report names both counts where a dropped level makes them differ and one where it does not, and the fixture with no empty level anywhere carries no second count at all"
 
 # M18 — the other side of the format split, which is what makes the LaTeX
 # behaviour a fold rather than a rewrite of the mark: HTML applies no ceiling,

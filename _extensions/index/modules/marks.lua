@@ -22,11 +22,17 @@ end
 -- An empty level is dropped rather than kept: a target is typeset prose, not
 -- an index key, so an empty one would leave a dangling separator mid-sentence
 -- in the printed index. It is warned about, never dropped silently (IP2).
+--
+-- Returns the surviving levels and the depth the author actually wrote, the
+-- second so the LaTeX fold report can name both counts where they differ
+-- (D-006) — the same pair `drop_empty_levels` returns for an entry, for the
+-- same reason.
 local function target_levels(value, attr, context, report)
   local kept = {}
+  local parsed = value == "" and {} or qi_levels.parse_levels(value)
   -- An entirely empty value has no levels to complain about individually; it
   -- falls straight through to the one warning that names the real problem.
-  for _, level in ipairs(value == "" and {} or qi_levels.parse_levels(value)) do
+  for _, level in ipairs(parsed) do
     if level == "" then
       if report then
         qi_core.warn(("empty level in %s= on %s; dropped from the cross-reference "
@@ -46,7 +52,7 @@ local function target_levels(value, attr, context, report)
     end
     return nil
   end
-  return kept
+  return kept, #parsed
 end
 
 -- Describe a mark for a warning message, by whichever of its parts names it.

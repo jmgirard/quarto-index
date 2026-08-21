@@ -99,7 +99,9 @@ folded into it, joined with `, `, and you get a warning naming the entry. So
 `entry="One!Two!Three!Four"` indexes as `One` → `Two` → `Three, Four`. Depth
 is counted after empty levels have gone, so a stray `!` cannot push an entry
 over the ceiling on its own: `entry="One!Two!Three!"` is three levels and
-folds nothing.
+folds nothing. The warning names that depth, and names the depth you wrote
+alongside it where a dropped level makes the two differ, so both numbers are
+ones you can find in the value you typed.
 
 A sort key written for a level past the third goes with that level in this
 back-end: the level is folded away here, so its key has nothing left to place.
@@ -108,9 +110,11 @@ one, and under its printed text where you did not. The HTML index has no
 ceiling, so it keeps both the level and the key written for it.
 
 **A cross-reference target meets the same ceiling.** In the LaTeX back-end a
-target is folded exactly as an entry is, and you get a warning naming the mark
-and the path the target now points at. With `entry="One!Two!Three!Four"` marked
-somewhere, `see="One!Two!Three!Four"` prints as `see One: Two: Three, Four` —
+target is folded exactly as an entry is, and you get a warning naming the mark,
+the depth the target is at, the depth you wrote it at where a dropped level
+makes the two differ, and the path the target now points at. With
+`entry="One!Two!Three!Four"` marked somewhere, `see="One!Two!Three!Four"`
+prints as `see One: Two: Three, Four` —
 the path that entry prints — rather than sending a reader to a four-level path
 the printed index does not contain. The HTML index has no ceiling, so there the
 target keeps every level you wrote.
@@ -298,10 +302,12 @@ about the mark rather than about any one back-end:
 
 - a `sort=` on a mark that indexes nothing, which has nothing to sort;
 - a `sort=` with more levels than there are to sort, whose extra levels are
-  ignored. Both counts in that report are taken before empty levels are
-  dropped, so neither is necessarily the depth the entry finally indexes at:
-  `entry="Moles!" sort="a!b!c"` is written with two levels, sorted with
-  three, and indexes at one;
+  ignored. The report says what each count is over — the levels written in
+  `sort=`, against the levels the entry is written with — because neither is
+  the depth the entry finally indexes at: `entry="Moles!" sort="a!b!c"` is
+  written with two levels, sorted with three, and indexes at one. On a mark
+  carrying no `entry=` at all the second count is the one level its visible
+  text makes, and the report says that instead;
 - one entry given two different sort keys, which cannot file in two places —
   the first one in the document wins, and in a book the first in book order.
 

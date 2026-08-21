@@ -1,11 +1,11 @@
 # M19: A reported level count says which levels it counts
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** m19-level-count-naming / https://github.com/jmgirard/quarto-index/pull/19
 
 ## Goal
 
@@ -45,13 +45,13 @@ work log.
 
 ## Acceptance criteria
 
-- [ ] AC1. `cairn/DESIGN.md`'s Conventions section carries a convention requiring
+- [x] AC1. `cairn/DESIGN.md`'s Conventions section carries a convention requiring
       a warning that reports a count of index levels to name which levels the
       count is over, and to give both counts where the count differs from the
       number of levels the author wrote; a `cairn/DECISIONS.md` entry records it
       and states that D-002's "depth is counted after the drop" arithmetic is
       unchanged by it.
-- [ ] AC2. In a LaTeX render of `examples/fold-xref-empty.qmd`, the
+- [x] AC2. In a LaTeX render of `examples/fold-xref-empty.qmd`, the
       folded-target report names both the count of levels the author wrote and
       the count left after empty levels are dropped for each of three marks — a
       `see=` target written with five levels whose first is empty, the same
@@ -61,25 +61,25 @@ work log.
       written with four levels whose first is empty draws no folded-target
       report at all, since nothing was folded, while the
       empty-level-in-target report for it still fires.
-- [ ] AC3. In a LaTeX render of `examples/empty-levels.qmd`, the
+- [x] AC3. In a LaTeX render of `examples/empty-levels.qmd`, the
       extra-sort-levels report for `entry="Moles!" sort="a!b!c"` names 3 sort
       levels against 2 and says the 2 is the count of levels the entry is
       written with; the report for its no-`entry=` twin
       `[ferns]{.index sort="a!b!c"}` names 3 against 1, says the 1 is the level
       the mark's visible text makes, and quotes no `entry=` value; and neither
       message contains the phrase "before empty levels are dropped".
-- [ ] AC4. In a LaTeX render of `examples/demo.qmd`, the entry-fold report for
+- [x] AC4. In a LaTeX render of `examples/demo.qmd`, the entry-fold report for
       `[deep]{.index entry="One!Two!Three!Four!Five!"}` names both 6 and 5; in a
       LaTeX render of `examples/fold-xref.qmd`, the entry-fold report for
       `[ash]{.index entry="Ash!Bay!Cod!Dun"}` names 4 and no second count.
-- [ ] AC5. For each mark named in AC2, AC3 and AC4, every number its
+- [x] AC5. For each mark named in AC2, AC3 and AC4, every number its
       reports name equals the count derived from that mark's own source line —
       so no number any of the three reports computes changes.
-- [ ] AC6. `README.md`'s account of the extra-sort-levels report and of the
+- [x] AC6. `README.md`'s account of the extra-sort-levels report and of the
       three-level ceiling names, for each count it mentions, which levels that
       count is over, in the same words the reports use, and asserts nothing
       about counts being "taken before empty levels are dropped".
-- [ ] AC7. `tests/run-tests.sh --self-test` passes (the profile's verify slot).
+- [x] AC7. `tests/run-tests.sh --self-test` passes (the profile's verify slot).
 
 ## Coverage
 
@@ -93,31 +93,31 @@ work log.
 
 ## Tasks
 
-- [ ] T1. Write the convention into `cairn/DESIGN.md` Conventions and append the
+- [x] T1. Write the convention into `cairn/DESIGN.md` Conventions and append the
       DECISIONS entry recording it and its relation to D-002.
-- [ ] T2. Carry the written entry depth to the entry-fold report:
+- [x] T2. Carry the written entry depth to the entry-fold report:
       `drop_empty_levels` already returns `#parsed` (`modules/levels.lua:170`);
       thread it from `derive_levels` (`modules/marks.lua:157`) through
       `passes.lua:94,146,158` into `latex_plan` (`modules/latex.lua:116`) →
       `index_argument` → `clamp_levels`. Splice the count phrase in as a `%s`,
       the shape `drop_empty_levels` already uses for `remain`
       (`modules/levels.lua:159-162`), so the message stays one literal.
-- [ ] T3. Carry the written target depth: `target_levels`
+- [x] T3. Carry the written target depth: `target_levels`
       (`modules/marks.lua:25`) returns `#parsed` alongside `kept`; both xref
       build sites (`passes.lua:73,128`) record it under a new field name —
       `written` (`modules/latex.lua:140`) already means the pre-fold spelling —
       and `latex_plan` splices it into the folded-target message the same way.
-- [ ] T4. Rewrite the extra-sort-levels message: drop the "before empty levels
+- [x] T4. Rewrite the extra-sort-levels message: drop the "before empty levels
       are dropped" clause and splice a `%s` phrase naming what the second count
       is over. Branch on `kept == nil`, not on `depth`, which
       `modules/levels.lua:206` has already defaulted by the report site;
       `sort_levels` already tests `kept` at `:196` and `:252`.
-- [ ] T5. Add `examples/fold-xref-empty.qmd` with five marks — leading-empty
+- [x] T5. Add `examples/fold-xref-empty.qmd` with seven marks — leading-empty
       `see=`, trailing-empty `see=`, leading-empty `see-also=`, a no-empty
       four-level control, and a written-4/kept-3 mark that must draw no fold
       report — each on terms no other mark in the file indexes (M13), with the
       entries their targets name.
-- [ ] T6. Move the suite pins the rewording and the new file touch:
+- [x] T6. Move the suite pins the rewording and the new file touch:
       `M13_SORT_EXTRA_ENTRY`/`_NOENTRY` (`tests/run-tests.sh:6121-6122`, reused
       at `:6124-6125`, `:7694-7696`), the `names a path` pins (`:7280,7283,7292`),
       `WARN_FOLD_TARGET` (`:2978` and its uses), the `levels deep` greps
@@ -125,11 +125,11 @@ work log.
       (`:139`, `:147`), and a `DANGLING_CORPUS` row for the new file
       (`:6588-6617`, which derives the roster by grep and fails on disagreement).
       Each pinned count's comment shows its arithmetic (M12).
-- [ ] T7. Update README's sort-report passage (`README.md:299-305`) and its
+- [x] T7. Update README's sort-report passage (`README.md:299-305`) and its
       ceiling passage (`:96-115`), and replace the normative claim rows
       `report: counts are pre-drop` (`tests/run-tests.sh:212`) and, if its text
       moves, `depth after the drop` (`:248`).
-- [ ] T8. Prove each of the three changed messages discriminating: with the fix
+- [x] T8. Prove each of the three changed messages discriminating: with the fix
       committed, revert each message in turn and record which named check fails
       (M01/M14). Run `tests/run-tests.sh --self-test`; log the check count.
 
@@ -139,8 +139,97 @@ work log.
 - 2026-08-21: plan gate chose giving both counts where they differ over labelling only the count each report already holds, and over reporting the written count alone; labelling alone leaves the author to connect 4 to the 5 they typed, and the written count alone stops explaining why the fold fired, which keys on the post-drop count; falsified by an author report that the second count reads as noise on marks with no empty level.
 - 2026-08-21: plan gate chose a new fixture file over adding marks to `examples/fold-xref.qmd`, whose row-index map, pinned warning total, exact output-row list and HTML manifest would each need re-deriving by hand — the shape M12 got wrong twice; falsified by the new file's own manifest rows costing more than the eight it avoids.
 - 2026-08-21: plan gate chose pinning the three named reports over adding a scan and ledger over every warning message; the existing message scan cuts each message at `:format(` and so cannot see its numbers, making the sweep a new checker rather than an extension; falsified by a later report shipping an unlabelled count that no review catches.
+- 2026-08-21: T1 — convention written into DESIGN Conventions and appended as D-006; implement gate chose "of the N written" over spelling out the drop, "the N the entry is written with" over re-quoting the entry value, and keeping both reports' counts over cross-report suppression.
+- 2026-08-21: baseline `tests/run-tests.sh` green at 208 checks before any change.
+- 2026-08-21: T2/T3 landed together — both fold reports take their written count through one `latex_plan` signature, so splitting them would have changed it twice; `depth_phrase` in `levels.lua` is the one place either report names a depth. The entry-side parameter is `entry_written`, not `written`, which `latex_plan`'s loop already binds to a target's pre-fold spelling.
+- 2026-08-21: T4 — the extra-sort report branches on `kept == nil`, not on `depth`, which `levels.lua:206` has already defaulted by the report site.
+- 2026-08-21: T5 — `examples/fold-xref-empty.qmd` added with seven marks; corpus row 0, derived roster agrees.
+- 2026-08-21: review gate — 8 findings from the diff-bug lens, 7 fixed on the branch, 1 rejected; no acceptance criterion failed, so no return. Two follow-ups to candidate rows at hygiene.
+- 2026-08-21: while probing the new AC3 sweep I ran `git checkout -- levels.lua` with the gate fixes still uncommitted and destroyed them — the exact hazard LESSONS already records. Reapplied and re-verified; no lesson added, since the line that warns about it is already there.
+- 2026-08-21: T8 — four reverts against the committed fix, each caught by a different named check: dropping the entry report's second count fails M19-AC4 (counts differ); dropping the target report's fails M19-AC2 (Teak); restoring the old sort clause fails the distinctness scan's single-literal needle and, with that needle reverted too, M13-AC3; and making the phrase always give two counts fails M19-AC2 (counts agree, one number).
+- 2026-08-21: `tests/run-tests.sh --self-test` green at 247 checks (208 -> 210 plain; the self-test adds 37). Every reported number is the number the baseline reported.
+- 2026-08-21: T6/T7 — two scan needles, two M13 pinned strings, one README claim row replaced and three added; the `names a path`, `levels deep` and `WARN_FOLD_TARGET` pins were unaffected, since every one of them keys on text outside the spliced depth. Suite 208 -> 210 checks, green.
 - 2026-08-21: criteria audit ran in full mode (user-facing tier), fresh-context [O] reader, twice — nine findings on the pre-gate draft and eleven on the post-gate wording, every one disposed by repair before the file was written; none deferred.
 
 ## Decisions
 
 ## Review
+
+Reviewed 2026-08-21 on m19-level-count-naming at a38cd51, PR #19. Profile `generic`,
+so the consistency gate is the universal cairn-file checks alone.
+
+**Evidence per criterion** (fresh; the render logs cited are `tests/.work/*.log`
+written by the reviewed run of `tests/run-tests.sh --self-test`, green at 247 checks).
+
+- AC1 — `cairn/DESIGN.md` Conventions carries "A reported level count names the
+  levels it is over" with the both-counts-where-they-differ clause; `D-006
+  (2026-08-21)` appended, its Decision naming D-002's after-the-drop arithmetic as
+  unchanged. Both read at HEAD.
+- AC2 — `fold-xref-empty-latex.log`: Teak, Willow (leading and trailing empty,
+  `see=`) and Yewtree (leading empty, `see-also=`) each report `names a path 4
+  levels deep, of the 5 written`; Zircon (no empty level) reports `4 levels deep`
+  with no second count; Sumac (4 written, 3 left, at the ceiling) draws no
+  folded-target report and does draw its empty-level report. Totals: 4 in latex,
+  0 in html and gfm.
+- AC3 — `empty-levels-latex.log`: `entry="Moles!"` reports `writes 3 levels against
+  the 2 the entry is written with`; the `[ferns]` twin reports `against the 1 level
+  its visible text makes` and quotes no `entry=`. Neither carries "before empty
+  levels are dropped"; a run-wide grep for that phrase returns nothing.
+- AC4 — `demo-latex.log`: `is 5 levels deep, of the 6 written`.
+  `fold-xref-latex.log`: `entry="Ash!Bay!Cod!Dun"` reports `is 4 levels deep` and
+  the file contains no occurrence of `, of the` at all.
+- AC5 — the three fixtures were re-rendered against the extension as it stands on
+  the default branch, in a scratch tree, and the twelve level-count reports
+  normalised against the reviewed run: identical, report for report. Every number
+  is the number the filter gave before the milestone.
+- AC6 — `README.md` describes the sort report as saying "what each count is over",
+  names the visible-text fallback count, and states that both ceiling reports name
+  the written depth where a dropped level makes the two differ; four normative
+  claim rows pin those sentences as bytes and pass.
+- AC7 — `tests/run-tests.sh --self-test` exit 0, 247 checks.
+
+**Consistency gate.** `cairn_validate` exit 0, all checks passed, no advisories.
+No IP/GP text changed — DESIGN's only edit is a new Conventions bullet — so
+`cairn_impact --changed` does not apply. The `generic` profile names no toolchain
+checks.
+
+**Discrimination.** Four reverts against the committed fix, recorded at T8, each
+caught by a different named check; re-verified as recorded, not re-run here.
+
+**Independent review.** Three-lens fan-out; 8 findings from the [O] diff-bug lens,
+0 from blame-history, 0 regressions from prior-review (which added one staleness
+note). No finding demonstrated an acceptance criterion failing, so no return.
+
+Fixed at the gate:
+- F1 (ranked 1) — `sort_levels`' branch comment claimed `kept` is nil "exactly
+  when there was no usable `entry=`"; it is an empty table, not nil, for an
+  all-empty `entry=`, and that mark is told the depth it wrote. Behaviour is
+  right and the number is findable in the source; the comment was false and is
+  rewritten. The shape itself (`entry="!" sort="a!b!c"`) is unprobed → candidate row.
+- F2 — `M19_ONE` was defined, commented and never read; the Zircon control now
+  uses it, so the constant and the check cannot drift apart.
+- F3 — `depth_phrase`'s clauses and the `against` clause sit outside the call
+  expression `warn-distinct.py` reads, so they are outside its literal count and
+  its needle. The comment asserting "the whole message is visible at its call
+  site" was false and now says what the splice costs; the scan gap → candidate row.
+- F4 — AC3's and AC6's negative clauses rested on substring pins, which the
+  retired clause re-added as a trailing sentence would pass. A recursive sweep of
+  `_extensions` and README for the clause now backs them; probed out of band by
+  re-adding the clause and watching the sweep name the file.
+- F6 — a README line left at 101 columns by the insertion, rewrapped; the four
+  normative claim rows still match.
+- F7 — `"the %d level its visible text makes"` hard-coded a singular that only
+  held because the branch has one level; the noun now agrees.
+- F8 — T5's task text said five marks where the fixture ships seven.
+
+Rejected, with reason:
+- F5 — book cross-reference records carry no written depth. Correct as it stands:
+  `store_write` copies xrefs field by field, so nothing new enters the store
+  format and no version bump is owed, and HTML imposes no ceiling. There is no
+  LaTeX book fold path for it to be wrong in today.
+
+From the prior-review lens: the two new long `warn()` lines land in the files the
+module-split candidate row tracks for over-80-column growth, and that row's count
+is not bumped. Logged; the row is a cluster with no per-line count to maintain.
+
+Re-run after the gate fixes: `tests/run-tests.sh --self-test` exit 0, 248 checks.

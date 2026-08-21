@@ -6524,6 +6524,13 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  nothing. 14.
 #   html-index     5 attributes: `see="A!B"` four times, which names the file's
 #                  one entry, and `see="A: B"` once, which does not. 1.
+#   fold-xref      7 attributes. Judged here on the levels the author wrote,
+#                  since gfm folds nothing: `Ash!Bay!Cod!Dun` twice and
+#                  `Fir!Gum!Ha!Iv!J!!t`, `Lime!Moss!Nut!Orb`, `Elm` and
+#                  `Ash!Bay` once each all name a path this file marks or a
+#                  parent of one; only `Sil!Tea!Urn!Vin` names nothing. 1.
+#   fold-xref-both 2 attributes on one mark, both naming entries the file
+#                  marks at overflow depth. 0.
 #   self-xref      11 attributes. 6 name the entry they are written on and are
 #                  dropped as self-references; 2 name `Cats`, which the file
 #                  indexes; the remaining 3 name the path the LaTeX fold makes
@@ -6554,6 +6561,8 @@ examples/content.qmd	0
 examples/dangling-xref.qmd	7
 examples/demo.qmd	8
 examples/empty-levels.qmd	0
+examples/fold-xref-both.qmd	0
+examples/fold-xref.qmd	1
 examples/html-index.qmd	1
 examples/placement.qmd	0
 examples/resolving-xref.qmd	0
@@ -6930,9 +6939,11 @@ M15REPORTPY
 pass "M15-AC5: no joined filter message claims a failed render, and the report that replaced it is drawn in full once per contested entry"
 
 # The uncontested half: the folded form and the list command appear in the
-# emission of the ONE fixture that has a contested key and nowhere else. The
-# files are discovered by glob over what the run rendered, not named in a list
-# that a later fixture would silently fall off.
+# emission of the fixtures that have a contested key and nowhere else. The
+# files are discovered by glob over what the run rendered; what each is
+# expected to carry is a mapping, and the comparison is EQUALITY per file, so
+# a fixture that silently stops carrying its shape fails exactly as one that
+# gains a shape it should not have (M16's vacuity mode).
 CONFLICT_TEX="$WORK/conflict-latex.tex" python3 - <<'M15UNTOUCHEDPY'
 import glob, os, re, sys
 # BOTH repairs, or the sweep fences only half of what the milestone changed:
@@ -6964,16 +6975,32 @@ if missing:
           f'emitted no {missing}, so the sweep below proves nothing',
           file=sys.stderr)
     sys.exit(1)
-stray = [(path, carried(path)) for path in sorted(glob.glob('examples/*.tex'))
-         if carried(path)]
-if stray:
-    print(f'FAIL: M15: the contested-key emission reached {stray}, which have '
-          f'no contested key', file=sys.stderr)
+# examples/xref-conflict.tex is not among these: the PDF render removed it,
+# which is why its own copy is read from $WORK above. fold-xref.qmd marks
+# `Zinc` both plainly and with a cross-reference, so it has a contested key of
+# the folded-printed-field shape and of that shape only — it writes no
+# no-plain contest, which is where the list command comes from (M18).
+EXPECTED = {
+    'examples/fold-xref.tex': {'a cross-reference folded into the printed field'},
+}
+wrong = []
+for path in sorted(glob.glob('examples/*.tex')):
+    want = EXPECTED.get(path, set())
+    got = set(carried(path))
+    if got != want:
+        wrong.append((path, sorted(want), sorted(got)))
+for path in EXPECTED:
+    if not os.path.exists(path):
+        wrong.append((path, sorted(EXPECTED[path]), 'artifact not rendered'))
+if wrong:
+    print(f'FAIL: M15: the contested-key emission is not where it should be '
+          f'(path, expected, found): {wrong}', file=sys.stderr)
     sys.exit(1)
 print(f'ok   M15: the contested-key fixture carries both shapes of the '
-      f'contested-key emission, and none of the '
-      f'{len(glob.glob("examples/*.tex"))} other rendered LaTeX artifacts '
-      f'carries either')
+      f'contested-key emission, the one other fixture with a contested key '
+      f'carries exactly the shape it writes, and none of the '
+      f'{len(glob.glob("examples/*.tex"))} rendered LaTeX artifacts carries '
+      f'anything else')
 M15UNTOUCHEDPY
 pass "M15-AC5: the failed-render claim is gone from the filter, and the contested-key emission reaches only the fixture that has one"
 

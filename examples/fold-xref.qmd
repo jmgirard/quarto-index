@@ -1,0 +1,56 @@
+---
+title: "quarto-index folded cross-reference target probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# A cross-reference target the level fold rewrites
+
+The LaTeX back-end stores three levels and folds everything deeper into the
+third, so a deep entry prints a path the author never spelled. A target naming
+that entry has to be folded the same way, or it names a path the printed index
+does not contain and a reader following it finds nothing. Judging targets
+against what entries PRINT is what makes the two agree; the fold is this
+back-end's alone, so HTML and the formats with no back-end keep judging
+against what the author wrote.
+
+Depth four, `see=`. The entry: [ash]{.index entry="Ash!Bay!Cod!Dun"}. The
+target naming it: [elm]{.index entry="Elm" see="Ash!Bay!Cod!Dun"}.
+
+Depth five, `see-also=`, where the printed third level joins two folded levels
+and one of them carries a literal `!` the argument has to quote — a character
+makeindex reads inside an encapsulation argument exactly as it reads it inside
+an entry key. The entry: [fir]{.index entry="Fir!Gum!Ha!Iv!J!!t"}. The target:
+[koa]{.index entry="Koa" see-also="Fir!Gum!Ha!Iv!J!!t"}.
+
+A folded entry carrying a sort key, where the path it FILES under and the path
+it PRINTS are different strings. The target must fold to the printed one: a
+sort key never appears in the index a reader reads. The entry:
+[lime]{.index entry="Lime!Moss!Nut!Orb" sort="zu!ya!xr!wh"}. The target:
+[pine]{.index entry="Pine" see="Lime!Moss!Nut!Orb"}.
+
+A target on a contested key — a term marked both plainly and with a
+cross-reference — where the surviving target is folded into the entry's own
+printed text rather than into an encapsulation. It is a second place a target
+is rendered, and a fold applied only at the first would leave it unfolded:
+[zinc]{.index entry="Zinc"} and [zed]{.index entry="Zinc"
+see="Ash!Bay!Cod!Dun"}.
+
+# What the fold does not change
+
+A target whose folded form still names no printed path is reported, exactly as
+one that dangles without any fold: [reed]{.index entry="Reed"
+see-also="Sil!Tea!Urn!Vin"}.
+
+A target needing no fold is untouched, and is what tells a rule that folds
+what has to be folded from one that rewrites every target:
+[wax]{.index entry="Wax" see="Elm"}.
+
+A target naming a PARENT level of a folded entry resolves, because the set a
+target is judged against holds every parent path as well as every whole one.
+This is the shape a printed-path set built from whole paths alone would report
+as dangling: [yam]{.index entry="Yam" see="Ash!Bay"}.
+
+::: {.qi-index-here}
+:::

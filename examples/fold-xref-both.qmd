@@ -1,0 +1,28 @@
+---
+title: "quarto-index folded target on a both-attributes mark"
+from: markdown-smart
+filters:
+  - index
+---
+
+# One mark, two targets, both folded
+
+A mark carrying both `see=` and `see-also=` renders its targets through a
+command of its own rather than through the single-target encapsulation, which
+is the third place a target is rendered and so the third place a fold has to
+reach. Both targets here name entries this file marks at overflow depth, so
+neither dangles and the only thing under test is whether each one prints the
+path its entry prints.
+
+It lives apart from `fold-xref.qmd` because its printed index row carries two
+whole folded paths and both labels, which no index column can hold without
+wrapping — and a wrapped row is not something the printed-index check can read.
+
+The entries: [oat]{.index entry="Oat!Pea!Rye!Soy"} and
+[tef]{.index entry="Tef!Urd!Vet!Wid!Xan"}.
+
+The mark naming both: [yuc]{.index entry="Yuc" see="Oat!Pea!Rye!Soy"
+see-also="Tef!Urd!Vet!Wid!Xan"}.
+
+::: {.qi-index-here}
+:::

@@ -103,7 +103,7 @@ print-convention wording → the see-also candidate row.
 
 ## Tasks
 
-- [ ] T1 Two fixtures. `examples/fold-xref.qmd`: `see=` at depth 4;
+- [x] T1 Two fixtures. `examples/fold-xref.qmd`: `see=` at depth 4;
       `see-also=` at depth 5 where the third printed level joins two overflow
       levels and one carries a literal `!`; one whose referenced entry carries
       `sort=` so filing and printed paths differ; one on a contested key,
@@ -142,6 +142,9 @@ print-convention wording → the see-also candidate row.
 - 2026-08-20: created by /milestone-plan.
 - 2026-08-20: in-progress on `m18-fold-aware-xref-targets`, cut from main at 222fa0e.
 - 2026-08-20: substantive amendment adopted at the mini gate — AC1, AC3, AC4, AC5 and T1 amended. AC1 as planned was unsatisfiable (an entry's levels join with `!`, a target's with `: `, so the two strings can never be equal); AC4's wrap clause was instrument-bound and unowned; AC5's total-only count admitted a mis-distributed seven; and no criterion probed prefix-closure of the printed-path set or the both-attributes and contested-key rendering sites. The amended wording was read by a fresh-context [O] auditor before it was written, which returned seven findings, all repaired in the adopted text; the criteria set is widened, not narrowed, at the user's selection.
+- 2026-08-20: T1 — `examples/fold-xref.qmd` (7 targets: depth-4 `see=`, depth-5 `see-also=` with a literal `!` in an overflow level, a `sort=`-carrying entry, a contested key, one dangling after the fold, a shallow control, and a parent-level target) and `examples/fold-xref-both.qmd` (a both-attributes mark, both targets folded). Both added to `DANGLING_CORPUS` with their derivations; suite green at 197 checks.
+- 2026-08-20: baseline recorded before any code change — all three target-rendering sites emit unfolded targets today: `\index{Elm|see{Ash: Bay: Cod: Dun}}` (single encap), `\index{Zinc@Zinc, \see{Ash: Bay: Cod: Dun}{}}` (contested key), `\index{Yuc|quartoindexseeboth{Oat: Pea: Rye: Soy}{Tef: Urd: Vet: Wid: Xan}}` (both attributes), against printed entry paths of `Ash!Bay!Cod, Dun`, `Oat!Pea!Rye, Soy` and `Tef!Urd!Vet, Wid, Xan`.
+- 2026-08-20: task-order adjustment — the new contested-key shape failed an M15 check asserting the contested-key emission reaches exactly one fixture. Repaired in place rather than excluded: the check now compares per-file carried shapes against an expected mapping for equality in both directions, so a fixture that silently stops carrying its shape fails as loudly as one that gains a shape it should not have.
 - 2026-08-20: criteria audit ran in full mode (user-facing tier), fresh-context [O] reader; returned nine findings, all fixed in the drafted criteria before the gate — an unreachable count pin, two single-exemplar families, an instrument the evidence misnamed, a missing discrimination probe, a flat substring test behind a nesting claim, five stale counts reading as fresh verification, and an unrecorded reversal of the report's format-neutrality.
 - 2026-08-20: plan gate chose folding targets as entries are folded over patching the two cases separately, because the separate patch leaves an author told to correct a cross-reference that names a real entry; falsified by a fold rule that makes a target resolve onto an entry the author did not mean.
 - 2026-08-20: plan gate chose reporting each fold-rewritten target over staying silent when the folded target resolves, because otherwise the only notice of a rewritten target sits on a different mark; falsified by build logs where the per-target report drowns the reports that need action.

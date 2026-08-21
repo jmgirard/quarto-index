@@ -211,3 +211,68 @@ IP/GP text moved. The `generic` profile names no toolchain checks, so that half
 of the gate is a clean no-op.
 
 **Independent review.** Three fresh-context lenses, distinct evidence bases.
+
+- **[S] blame-history — zero findings.** Traced each touched region to the
+  milestone that set its intent: the supersession of M14's format-neutral
+  resolution is recorded rather than silent, M10's self-target comparison is
+  untouched as D-005 states, and both rewritten checks are stronger than what
+  they replaced.
+- **[S] prior-review record — zero findings.** The GitHub inline-comment probe
+  returned empty, so that surface was skipped. Against the archived `## Review`
+  sections the diff closes two past findings rather than reopening any: M14's
+  F1 (the contradictory pair) and M16's F11 (the duplicated warn-count).
+- **[O] diff-bug — eleven findings**, listed below with their triage. It
+  confirmed the core change sound: all three rendering sites read one returned
+  list, the printed-path set stays prefix-closed, targets fold to the printed
+  levels rather than the filing ones, `report=false` callers stay silent, and
+  no caller's table is mutated.
+
+**Findings and triage.**
+
+- **F1 (defect, verified) — `latex.lua:143`: the fold-rewrite report fires
+  before the fold-self drop, so one target draws two contradictory reports.**
+  Reproduced independently: `[x]{.index entry="A!B!C, D" see="A!B!C!D"}` to
+  latex draws `... points at "A!B!C, D" here, the path a reader is sent to in
+  this format` and then `... the fold made the target a cross-reference to
+  itself, so it is dropped`. This is the milestone's own defect class in a new
+  shape. No fixture reaches it: `self-xref`'s fold-self targets are written at
+  exactly three levels, so the new report's `> MAX_LEVELS` guard never fires.
+- **F2 — `marks.lua:75-80` and `index.lua:74-79`: comments assert the opposite
+  of what the code now does.** Both still say the resolution set is
+  format-neutral because whether a target names an indexed term is a fact about
+  what the author wrote, which D-005 reverses. DESIGN.md was corrected; the
+  source comment a reader hits first was not.
+- **F3 (verified) — `tests/scans/mark-report-keys.py` reads `sys.argv[1:4]` and
+  `run_scan mark-report-keys` passes three keys, so `WARN_FOLD_TARGET` is not
+  held to matching exactly one filter warning.** `warn-distinct`'s
+  `SINGLE_LITERAL` pins a different needle, so rewording the message tail would
+  leave that scan green while every zero-expectation AC5 control passes
+  vacuously.
+- **F4 — AC2's HTML clause has no check.** The block reading `self-xref.html`
+  discards `resolved` and `href`, so it asserts the three targets survive but
+  never that they are unlinked. Behaviour is unchanged from main, so this is an
+  evidence gap rather than a defect.
+- **F5 — `examples/fold-xref-both.qmd` never reaches a compiled artifact**, so
+  the both-attributes site's folded rendering stops at `.tex`, short of GP6.
+  The reviewer compiled it by hand and it prints correctly, so the risk is real
+  but unrealized.
+- **F6 — the AC1 level comparison reads `want` on both sides**, so it is an
+  internal-consistency check on hand-written strings; it is sound only because
+  the list-equality gate `continue`s first.
+- **F7 — `entry_levels`'s folded-cross-reference stripper is dead**: the only
+  entry row carrying one is never an entry row in `PAIRS`, so the work-log
+  claim that the entry side is stripped of a folded cross-reference is
+  untested.
+- **F8 — `latex.lua:143` quotes `levels_key(folded)` (`One!Two!Three, Four`)
+  while calling it the path a reader is sent to**; the printed index shows
+  `One: Two: Three, Four`.
+- **F9 — AC5's wording.** The message's depth is the post-empty-level-drop
+  depth, not "the depth the author wrote": `see="!A!B!C!D"` reports four
+  against five written. Consistent with the entry-fold message's precedent, so
+  the criterion's wording is what is wrong.
+- **F10 — `cairn/DESIGN.md:206`: a pre-existing orphaned sentence** ("then
+  branches per format and records what that back-end will need.") now sits five
+  lines further from its subject.
+- **F11 — `tests/run-tests.sh` duplicates M14's existing per-format pin** of
+  `dangling-xref` at 7. AC3 names that clause explicitly, so the redundancy is
+  intentional; harmless.

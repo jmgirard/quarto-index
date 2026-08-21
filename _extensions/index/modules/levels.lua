@@ -258,17 +258,29 @@ local function sort_levels(value, levels, context, report, kept, depth)
       -- what the mark ends up sorting either. It was already a third number
       -- from the depth the entry indexes at — `entry="Moles!"` is written
       -- with 2, sorted with 3, and indexes at 1 — which is why it is named
-      -- against the entry rather than against the index.
+      -- against the entry rather than against the index. What the `%s` costs
+      -- is that its two clauses sit outside the call expression
+      -- tests/scans/warn-distinct.py reads, so they are outside that scan's
+      -- pinned literal count and its single-literal needle; the rendered-log
+      -- pins in the M13 and M19 suite sections are what hold them.
       --
-      -- Branching on `kept`, not on `depth`: `depth` has been defaulted to
-      -- `#levels` above, while `kept` is nil exactly when there was no usable
-      -- `entry=` and this mark reached here through the visible-text fallback
-      -- (qi_marks.derive_levels). Such an author was never told anything about
-      -- an entry value they did not write, and must not be now. One literal
-      -- (M10), so the whole message is visible at its call site.
+      -- Branching on `kept`, not on `depth`, which has been defaulted to
+      -- `#levels` above. `kept` is nil exactly when the author wrote no
+      -- `entry=` at all and the mark took qi_marks.derive_levels' plain
+      -- visible-text branch; it is an EMPTY table, not nil, when they wrote an
+      -- `entry=` whose every level was empty, and that mark IS told the depth
+      -- it wrote, which it can find in its own source. So the nil branch is
+      -- exactly the marks with no entry value to name, and naming one at them
+      -- would be false (M13).
+      --
+      -- The noun agrees rather than assuming one level: the nil branch has
+      -- exactly one today, since a visible term is one literal level, but
+      -- `sort_levels` is exported and a caller passing a deeper fallback would
+      -- otherwise print "the 3 level".
       local against = kept ~= nil
                       and ("the %d the entry is written with"):format(depth)
-                      or ("the %d level its visible text makes"):format(depth)
+                      or ("the %d level%s its visible text makes")
+                         :format(depth, depth == 1 and "" or "s")
       qi_core.warn(("sort= on %s writes %d levels against %s; the extra sort levels were ignored"):format(context, #written, against))
     end
     -- A key written for a level that prints nothing goes with that level. That

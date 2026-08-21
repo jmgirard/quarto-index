@@ -7342,8 +7342,7 @@ check_warning_count "$WORK/fold-xref-empty-latex.log" "$M19_BOTH" 3 \
 # 4 written, none empty -> 4 left -> folded, but the two counts agree, so one
 # number is stated and no drop is implied.
 check_warning_count "$WORK/fold-xref-empty-latex.log" \
-  'see= on entry="Zircon" names a path 4 levels deep; the back-end stores 3' 1 \
-  "M19-AC2 (counts agree, one number)"
+  "see= on entry=\"Zircon\" $M19_ONE" 1 "M19-AC2 (counts agree, one number)"
 # 4 written, first empty -> 3 left -> AT the ceiling, so nothing is folded and
 # the fold report must stay silent even though the two counts differ. Its
 # empty level is still reported, by the warning that owns that subject: the
@@ -7378,6 +7377,19 @@ check_warning_count "$WORK/fold-xref-latex.log" \
 # names two counts everywhere and happens to be right about this one.
 check_warning_count "$WORK/fold-xref-latex.log" ', of the' 0 \
   "M19-AC4 (no second count where nothing dropped)"
+# M19-AC3/AC6 negatives. Every pin above is a SUBSTRING count, so the retired
+# clause re-added as a trailing sentence would pass all of them; only a sweep
+# for the clause itself can fail on that. The filter source and README are read
+# rather than a render log, so the check holds for messages no fixture reaches.
+M19_RETIRED='before empty levels are dropped'
+# One recursive grep with its no-match exit absorbed, and the emptiness decided
+# by the comparison rather than by the pipeline's exit status: `grep ... && fail`
+# aborts a `set -e` run with no FAIL line when the grep finds nothing (M14).
+m19_retired_hits=$( { grep -rlF -- "$M19_RETIRED" _extensions README.md || true; } | tr '\n' ' ')
+[ -z "$(echo "$m19_retired_hits" | tr -d ' ')" ] \
+  || fail "M19-AC3: the retired clause <<$M19_RETIRED>> survives in: $m19_retired_hits — it names a drop that touches neither count"
+pass "M19-AC3: the clause naming a drop that touches neither count is gone from the filter source and from README, asserted by a sweep rather than by the substring pins above"
+
 pass "M19-AC4: the entry-fold report names both counts where a dropped level makes them differ and one where it does not, and the fixture with no empty level anywhere carries no second count at all"
 
 # M18 — the other side of the format split, which is what makes the LaTeX

@@ -112,8 +112,9 @@ ceiling, so it keeps both the level and the key written for it.
 **A cross-reference target meets the same ceiling.** In the LaTeX back-end a
 target is folded exactly as an entry is, and you get a warning naming the mark,
 the depth the target is at, the depth you wrote it at where a dropped level
-makes the two differ, and the path the target now points at. With `entry="One!Two!Three!Four"` marked
-somewhere, `see="One!Two!Three!Four"` prints as `see One: Two: Three, Four` —
+makes the two differ, and the path the target now points at. With
+`entry="One!Two!Three!Four"` marked somewhere, `see="One!Two!Three!Four"`
+prints as `see One: Two: Three, Four` —
 the path that entry prints — rather than sending a reader to a four-level path
 the printed index does not contain. The HTML index has no ceiling, so there the
 target keeps every level you wrote.

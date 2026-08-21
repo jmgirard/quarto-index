@@ -60,10 +60,25 @@ end
 local MAX_LEVELS = 3
 local OVERFLOW_JOIN = ", "
 
+-- How a report names a depth (D-006). `count` is the levels there are now, and
+-- `written` the number the author typed, before the empty-level drop; the
+-- written one is named too wherever the two differ, so the number a report
+-- gives can be found in the value as it was typed. Where they agree, or where
+-- the caller has no written count to offer, one number is stated and nothing is
+-- implied about a drop that took nothing away. Shared with the LaTeX back-end,
+-- whose folded-target report names a depth in the same words for the same
+-- reason.
+local function depth_phrase(count, written)
+  if written == nil or written == count then
+    return ("%d levels deep"):format(count)
+  end
+  return ("%d levels deep, of the %d written"):format(count, written)
+end
+
 -- `report` follows the convention derive_levels and drop_empty_levels already
 -- use: a mark's levels are derived by more than one pass, and only the pass
 -- that emits says so, or one stray `!` is reported once per pass that looked.
-local function clamp_levels(levels, context, report)
+local function clamp_levels(levels, context, report, written)
   if #levels <= MAX_LEVELS then
     return levels
   end
@@ -75,9 +90,10 @@ local function clamp_levels(levels, context, report)
     tail[#tail + 1] = levels[i]
   end
   if report then
-    qi_core.warn(("index entry in %s is %d levels deep; the back-end stores %d, so "
+    qi_core.warn(("index entry in %s is %s; the back-end stores %d, so "
           .. "levels %d and deeper were folded into the third")
-         :format(context, #levels, MAX_LEVELS, MAX_LEVELS))
+         :format(context, depth_phrase(#levels, written), MAX_LEVELS,
+                 MAX_LEVELS))
   end
   local clamped = {}
   for i = 1, MAX_LEVELS - 1 do
@@ -235,14 +251,25 @@ local function sort_levels(value, levels, context, report, kept, depth)
     if ignored > 0 then
       -- Both numbers are counts taken BEFORE the empty-level drop: `#written`
       -- is what the author wrote in `sort=`, and `depth` what the mark had to
-      -- sort at the time this comparison is made. Saying so is the point —
-      -- the old wording ("but the entry has %d") read as the depth the entry
-      -- indexes at, which is a third number again (`entry="Moles!"` is
-      -- written with 2, sorted with 3, and indexes at 1). It also has to hold
-      -- for a mark with no `entry=` at all, which reaches here through the
-      -- visible-text fallback above and was never told anything about an
-      -- entry value it did not write. One literal (M10).
-      qi_core.warn(("sort= on %s writes %d levels against the %d it has to sort before empty levels are dropped; the extra sort levels were ignored"):format(context, #written, depth))
+      -- sort at the time this comparison is made. What the second number is
+      -- measured over is now SAID rather than left to a clause about a drop
+      -- (D-006): the old wording named the drop on every mark, including the
+      -- ones no drop touched, and on the ones it did touch the number is not
+      -- what the mark ends up sorting either. It was already a third number
+      -- from the depth the entry indexes at — `entry="Moles!"` is written
+      -- with 2, sorted with 3, and indexes at 1 — which is why it is named
+      -- against the entry rather than against the index.
+      --
+      -- Branching on `kept`, not on `depth`: `depth` has been defaulted to
+      -- `#levels` above, while `kept` is nil exactly when there was no usable
+      -- `entry=` and this mark reached here through the visible-text fallback
+      -- (qi_marks.derive_levels). Such an author was never told anything about
+      -- an entry value they did not write, and must not be now. One literal
+      -- (M10), so the whole message is visible at its call site.
+      local against = kept ~= nil
+                      and ("the %d the entry is written with"):format(depth)
+                      or ("the %d level its visible text makes"):format(depth)
+      qi_core.warn(("sort= on %s writes %d levels against %s; the extra sort levels were ignored"):format(context, #written, against))
     end
     -- A key written for a level that prints nothing goes with that level. That
     -- is the rule, but it costs the author something they typed, so it is said
@@ -318,6 +345,7 @@ M["escape_level"] = escape_level
 M["MAX_LEVELS"] = MAX_LEVELS
 M["OVERFLOW_JOIN"] = OVERFLOW_JOIN
 M["clamp_levels"] = clamp_levels
+M["depth_phrase"] = depth_phrase
 M["TARGET_JOIN"] = TARGET_JOIN
 M["target_argument"] = target_argument
 M["drop_empty_levels"] = drop_empty_levels

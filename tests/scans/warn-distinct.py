@@ -136,7 +136,9 @@ if len(lits) != EXPECTED:
 # those two lines run past the file's usual width (review F9, F18).
 SINGLE_LITERAL = (
     'empty index level in %s at %s;',
-    'sort= on %s writes %d levels against the %d it has to sort',
+    # Reworded at M19-AC3; the needle moves with the message, and the
+    # single-literal requirement it stands for does not.
+    'sort= on %s writes %d levels against %s;',
     # M14-AC6: the dangling-target report, for the same reason — a message
     # split across `..` is read by this scan only to its first fragment, and a
     # scan that compares warnings on a prefix is the blindness M10 hit.
@@ -144,7 +146,9 @@ SINGLE_LITERAL = (
     # M18-AC5: the fold-rewritten-target report, for the same reason. It is
     # also the message whose own subject is a derived string, so a scan that
     # read it to its first fragment would not see which path it names.
-    '%s= on %s names a path %d levels deep; the back-end stores %d,',
+    # M19-AC2 spliced the depth in as a `%s` so the message can name the
+    # written count too where it differs; still one literal.
+    '%s= on %s names a path %s; the back-end stores %d,',
 )
 for needle in SINGLE_LITERAL:
     owner = [m for m in re.finditer(r'\bwarn\(', code)

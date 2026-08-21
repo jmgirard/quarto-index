@@ -1,0 +1,51 @@
+---
+title: "quarto-index folded target with an empty level probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# A target whose depth the empty-level drop and the fold both touch
+
+A cross-reference target has three level counts once both rules have run: the
+levels the author wrote, the levels left after an empty one is dropped, and the
+three the LaTeX back-end stores. The report about the fold names the second, so
+it names the first alongside it whenever they differ — a number the author
+cannot find in the value they typed is a number they cannot act on.
+
+The entry every target below points at, written four levels deep and printed as
+three: [larch]{.index entry="Larch!Maple!Nutmeg!Olive"}.
+
+A `see=` target written with five levels whose first is empty. Four survive the
+drop, which is one more than the ceiling, so the fold rewrites it and the report
+names four against the five written: [teak]{.index entry="Teak"
+see="!Larch!Maple!Nutmeg!Olive"}.
+
+The same shape with the empty level at the other end. makeindex treats the two
+ends in opposite ways, so neither is evidence about the other, and the count a
+report names must come out the same either way:
+[willow]{.index entry="Willow" see="Larch!Maple!Nutmeg!Olive!"}.
+
+The same shape again on `see-also=`, so the report is known to name both counts
+whichever attribute carries the target: [yewtree]{.index entry="Yewtree"
+see-also="!Larch!Maple!Nutmeg!Olive"}.
+
+# The two shapes that must read differently
+
+A target written with four levels, none of them empty. The fold rewrites it
+exactly as it rewrites the ones above, but nothing was dropped, so there is no
+second number to give and the report names four alone. This is the control that
+tells a report giving both counts where they differ from one that always gives
+two: [zircon]{.index entry="Zircon" see="Larch!Maple!Nutmeg!Olive"}.
+
+A target written with four levels whose first is empty, pointing at an entry
+three levels deep. Three survive the drop, which is exactly the ceiling, so
+nothing is folded and the fold report must not fire at all — the counts differ
+here, and a report that fired on that alone would tell an author their target
+was rewritten when it was not. The empty level itself is still reported, by the
+warning that owns that subject. The entry:
+[pecan]{.index entry="Pecan!Quince!Rowan"}. The target:
+[sumac]{.index entry="Sumac" see="!Pecan!Quince!Rowan"}.
+
+::: {.qi-index-here}
+:::

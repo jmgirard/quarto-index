@@ -95,29 +95,29 @@ work log.
 
 - [x] T1. Write the convention into `cairn/DESIGN.md` Conventions and append the
       DECISIONS entry recording it and its relation to D-002.
-- [ ] T2. Carry the written entry depth to the entry-fold report:
+- [x] T2. Carry the written entry depth to the entry-fold report:
       `drop_empty_levels` already returns `#parsed` (`modules/levels.lua:170`);
       thread it from `derive_levels` (`modules/marks.lua:157`) through
       `passes.lua:94,146,158` into `latex_plan` (`modules/latex.lua:116`) →
       `index_argument` → `clamp_levels`. Splice the count phrase in as a `%s`,
       the shape `drop_empty_levels` already uses for `remain`
       (`modules/levels.lua:159-162`), so the message stays one literal.
-- [ ] T3. Carry the written target depth: `target_levels`
+- [x] T3. Carry the written target depth: `target_levels`
       (`modules/marks.lua:25`) returns `#parsed` alongside `kept`; both xref
       build sites (`passes.lua:73,128`) record it under a new field name —
       `written` (`modules/latex.lua:140`) already means the pre-fold spelling —
       and `latex_plan` splices it into the folded-target message the same way.
-- [ ] T4. Rewrite the extra-sort-levels message: drop the "before empty levels
+- [x] T4. Rewrite the extra-sort-levels message: drop the "before empty levels
       are dropped" clause and splice a `%s` phrase naming what the second count
       is over. Branch on `kept == nil`, not on `depth`, which
       `modules/levels.lua:206` has already defaulted by the report site;
       `sort_levels` already tests `kept` at `:196` and `:252`.
-- [ ] T5. Add `examples/fold-xref-empty.qmd` with five marks — leading-empty
+- [x] T5. Add `examples/fold-xref-empty.qmd` with five marks — leading-empty
       `see=`, trailing-empty `see=`, leading-empty `see-also=`, a no-empty
       four-level control, and a written-4/kept-3 mark that must draw no fold
       report — each on terms no other mark in the file indexes (M13), with the
       entries their targets name.
-- [ ] T6. Move the suite pins the rewording and the new file touch:
+- [x] T6. Move the suite pins the rewording and the new file touch:
       `M13_SORT_EXTRA_ENTRY`/`_NOENTRY` (`tests/run-tests.sh:6121-6122`, reused
       at `:6124-6125`, `:7694-7696`), the `names a path` pins (`:7280,7283,7292`),
       `WARN_FOLD_TARGET` (`:2978` and its uses), the `levels deep` greps
@@ -125,7 +125,7 @@ work log.
       (`:139`, `:147`), and a `DANGLING_CORPUS` row for the new file
       (`:6588-6617`, which derives the roster by grep and fails on disagreement).
       Each pinned count's comment shows its arithmetic (M12).
-- [ ] T7. Update README's sort-report passage (`README.md:299-305`) and its
+- [x] T7. Update README's sort-report passage (`README.md:299-305`) and its
       ceiling passage (`:96-115`), and replace the normative claim rows
       `report: counts are pre-drop` (`tests/run-tests.sh:212`) and, if its text
       moves, `depth after the drop` (`:248`).
@@ -141,6 +141,10 @@ work log.
 - 2026-08-21: plan gate chose pinning the three named reports over adding a scan and ledger over every warning message; the existing message scan cuts each message at `:format(` and so cannot see its numbers, making the sweep a new checker rather than an extension; falsified by a later report shipping an unlabelled count that no review catches.
 - 2026-08-21: T1 — convention written into DESIGN Conventions and appended as D-006; implement gate chose "of the N written" over spelling out the drop, "the N the entry is written with" over re-quoting the entry value, and keeping both reports' counts over cross-report suppression.
 - 2026-08-21: baseline `tests/run-tests.sh` green at 208 checks before any change.
+- 2026-08-21: T2/T3 landed together — both fold reports take their written count through one `latex_plan` signature, so splitting them would have changed it twice; `depth_phrase` in `levels.lua` is the one place either report names a depth. The entry-side parameter is `entry_written`, not `written`, which `latex_plan`'s loop already binds to a target's pre-fold spelling.
+- 2026-08-21: T4 — the extra-sort report branches on `kept == nil`, not on `depth`, which `levels.lua:206` has already defaulted by the report site.
+- 2026-08-21: T5 — `examples/fold-xref-empty.qmd` added with seven marks; corpus row 0, derived roster agrees.
+- 2026-08-21: T6/T7 — two scan needles, two M13 pinned strings, one README claim row replaced and three added; the `names a path`, `levels deep` and `WARN_FOLD_TARGET` pins were unaffected, since every one of them keys on text outside the spliced depth. Suite 208 -> 210 checks, green.
 - 2026-08-21: criteria audit ran in full mode (user-facing tier), fresh-context [O] reader, twice — nine findings on the pre-gate draft and eleven on the post-gate wording, every one disposed by repair before the file was written; none deferred.
 
 ## Decisions

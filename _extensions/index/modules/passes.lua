@@ -70,14 +70,17 @@ local function CollectKeys(span)
     local value = span.attributes[kind.attr]
     if value ~= nil then
       declared = declared + 1
-      local target = qi_marks.target_levels(value, kind.attr, context, false)
+      local target, wrote = qi_marks.target_levels(value, kind.attr, context,
+                                                   false)
       if target then
-        xrefs[#xrefs + 1] = { kind = kind, levels = target }
+        xrefs[#xrefs + 1] = { kind = kind, levels = target,
+                              written_depth = wrote }
       end
     end
   end
-  local levels = qi_marks.derive_levels(entry, visible, declared, #span.content,
-                               context, span.attributes["sort"], false)
+  local levels, _, _, entry_written =
+    qi_marks.derive_levels(entry, visible, declared, #span.content,
+                           context, span.attributes["sort"], false)
   if levels == nil then
     return nil
   end
@@ -92,7 +95,8 @@ local function CollectKeys(span)
     end
   end
   local source, printed_path, _, kept =
-    qi_latex.latex_plan(levels, qi_sortkeys.sort_for(levels), surviving, context, false)
+    qi_latex.latex_plan(levels, qi_sortkeys.sort_for(levels), surviving, context,
+                        false, nil, entry_written)
   qi_latex.record_contest(source, printed_path, kept)
   return nil
 end
@@ -125,9 +129,11 @@ local function Span(span)
     local value = span.attributes[kind.attr]
     if value ~= nil then
       declared = declared + 1
-      local levels = qi_marks.target_levels(value, kind.attr, context, true)
+      local levels, wrote = qi_marks.target_levels(value, kind.attr, context,
+                                                   true)
       if levels then
-        xrefs[#xrefs + 1] = { kind = kind, levels = levels }
+        xrefs[#xrefs + 1] = { kind = kind, levels = levels,
+                              written_depth = wrote }
       end
     end
   end
@@ -143,9 +149,9 @@ local function Span(span)
   -- Derived once, and before the back-end branch: the levels are the author's
   -- text whatever format this is, and the empty-level warnings the derivation
   -- emits would otherwise fire twice for one mark.
-  local levels, disposition = qi_marks.derive_levels(entry, visible, declared,
-                                            #span.content, context,
-                                            sort_value, true)
+  local levels, disposition, _, entry_written =
+    qi_marks.derive_levels(entry, visible, declared, #span.content, context,
+                           sort_value, true)
   if levels == nil then
     return disposition == "drop" and {} or nil
   end
@@ -202,7 +208,8 @@ local function Span(span)
   local indexed = levels
   if qi_core.is_latex_derived() then
     source, printed_path, filing_path, xrefs, indexed =
-      qi_latex.latex_plan(levels, sort, xrefs, context, true)
+      qi_latex.latex_plan(levels, sort, xrefs, context, true, nil,
+                          entry_written)
   end
 
   -- Recorded after every drop: every path this mark indexes, each parent path

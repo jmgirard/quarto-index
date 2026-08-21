@@ -38,8 +38,8 @@ local M = {}
 -- here, from the levels, rather than by taking the built argument apart again:
 -- an author's own `@` is makeindex-quoted inside a level, so "the first `@`"
 -- is not something a pattern over the finished string can find.
-local function index_argument(levels, sort, context, report, fold)
-  local clamped = qi_levels.clamp_levels(levels, context, report)
+local function index_argument(levels, sort, context, report, fold, written)
+  local clamped = qi_levels.clamp_levels(levels, context, report, written)
   local keys = qi_sortkeys.clamp_sort(sort)
   local parts, filing = {}, {}
   for i, level in ipairs(clamped) do
@@ -113,9 +113,16 @@ M["xref_both_emitted"] = false
 -- One mark's LaTeX shape, from levels the caller has already derived. `report`
 -- follows the convention the rest of the file uses: only the emitting pass
 -- says anything, so a fold is reported once however many passes read the mark.
-local function latex_plan(levels, sort, xrefs, context, report, fold)
+-- `entry_written` (optional) is the depth the author wrote the ENTRY at, before
+-- the empty-level drop; each target carries its own in `written_depth`. Both
+-- exist only so the two fold reports can name the count the author can find in
+-- their source (D-006); neither changes a level, a key or a comparison. The
+-- entry one is NOT called `written`: that name is taken inside the loop below
+-- for a target's pre-fold spelling, which is a level list and not a count.
+local function latex_plan(levels, sort, xrefs, context, report, fold,
+                          entry_written)
   local source, printed_path, filing_path, clamped =
-    index_argument(levels, sort, context, report, fold)
+    index_argument(levels, sort, context, report, fold, entry_written)
   -- The self-target comparison against what THIS back-end prints. The
   -- format-neutral pass ran on the levels the author wrote; here the fold has
   -- already rewritten them, so an entry can print a path the author never
@@ -161,9 +168,10 @@ local function latex_plan(levels, sort, xrefs, context, report, fold)
       -- the same levels joined as a target, and the message does not claim
       -- otherwise (review F8).
       if report and #xref.levels > qi_levels.MAX_LEVELS then
-        qi_core.warn(("%s= on %s names a path %d levels deep; the back-end stores %d, so the target is folded exactly as an entry is and now names \"%s\", the path the entry it points at prints"):format(xref.kind.attr, context, #xref.levels, qi_levels.MAX_LEVELS, qi_levels.levels_key(folded)))
+        qi_core.warn(("%s= on %s names a path %s; the back-end stores %d, so the target is folded exactly as an entry is and now names \"%s\", the path the entry it points at prints"):format(xref.kind.attr, context, qi_levels.depth_phrase(#xref.levels, xref.written_depth), qi_levels.MAX_LEVELS, qi_levels.levels_key(folded)))
       end
-      kept[#kept + 1] = { kind = xref.kind, levels = folded, written = written }
+      kept[#kept + 1] = { kind = xref.kind, levels = folded, written = written,
+                          written_depth = xref.written_depth }
     end
   end
   return source, printed_path, filing_path, kept, clamped

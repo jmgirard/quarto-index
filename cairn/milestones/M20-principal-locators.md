@@ -1,11 +1,11 @@
 # M20: A term's principal discussion prints as its principal locator
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP5, GP6
-- **Branch/PR:** —
+- **Branch/PR:** m20-principal-locators
 
 ## Goal
 
@@ -17,7 +17,7 @@ back-ends print that occurrence's locator emphasized while its other locators st
 Surface tier: **user-facing** — it adds an authoring attribute, changes what both
 back-ends emit, and is documented in README.
 
-**In:** one new format-neutral mark attribute, `role="principal"`, naming the role a
+**In:** one new format-neutral mark attribute, `mention="principal"`, naming the role a
 mention plays rather than a rendering (IP1); the LaTeX encapsulation for it, carried by a
 `\providecommand` command injected only into a document that uses it, so an author can
 redefine the emphasis without the extension shipping a style; the emphasized locator link
@@ -27,7 +27,15 @@ unrecognized role value; fixtures, suite section, planted-defect entries, README
 
 Terminology: indexing practice calls the main discussion of a term its *principal
 reference* and conventionally sets it in bold; `main` is not used, a *main entry* being
-the top-level heading rather than a locator.
+the top-level heading rather than a locator. The attribute is `mention=` and not `role=`:
+Pandoc data-prefixes an unknown attribute name but emits `role` literally, so `role=`
+would put an invalid ARIA role on every marked term in every HTML-family output (IP2).
+
+Contestation — the bookkeeping M15 added, which folds a key's cross-references into its
+printed text when its marks would emit rival encapsulations — is narrowed to count
+cross-reference encapsulations alone. A styled locator and a plain one are not rivals:
+makeindex prints both, warning only when they share a page, and a term marked principally
+in one place and plainly elsewhere is the feature's ordinary case, not a clash.
 
 Evidence stops at the `.ind` makeindex writes rather than at the PDF's text, because
 `pdftotext` cannot see emphasis — a deliberate GP6 trade, recorded rather than left
@@ -51,17 +59,18 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       principal term carries exactly one locator link marked as principal, at the position
       of the principal mark, its other locator links unmarked — read structurally by
       `tests/htmlindex.py`.
-- [ ] AC3: A mark writing `role="principal"` that can contribute no locator, because it
-      carries `see=` or `see-also=`, draws exactly one warning naming the mark and saying
-      the role is ignored, and emits index output identical to that of the corresponding
-      mark in `examples/principal-twin.qmd`, which omits the role. The warning fires in the
-      LaTeX render, the HTML render, and a format with no index back-end.
-- [ ] AC4: A `role=` value the extension does not recognize draws exactly one warning
-      naming the mark and the value, and the mark indexes exactly as the corresponding
-      mark in `examples/principal-twin.qmd` does.
-- [ ] AC5: In gfm, a principal-marked term's visible text passes through with no artifacts
-      beyond the span attribute residue Pandoc passes through for the mark's own
-      attributes, `role=` included.
+- [ ] AC3: In the LaTeX, HTML and gfm renders of `examples/principal.qmd`, the mark
+      writing `mention="principal"` alongside `see=` or `see-also=` draws exactly one
+      warning naming the mark and the `mention=` value it ignored, and emits the index
+      output it would emit with the `mention=` attribute removed.
+- [ ] AC4: In the LaTeX, HTML and gfm renders of `examples/principal.qmd`, the mark
+      writing an unrecognized `mention=` value draws exactly one warning naming the mark
+      and the value, and indexes exactly as it would with the attribute removed. An empty
+      `mention=` is unrecognized, not absent.
+- [ ] AC5: The gfm render of `examples/principal.qmd` matches its expected manifest line
+      for line, and each principal-marked span in it carries its visible text and exactly
+      the `data-` attributes for the mark's own attributes, `data-mention="principal"`
+      included, and no other token.
 - [ ] AC6: The command the principal encapsulation names is defined with `\providecommand`
       in the preamble of the rendered `.tex` for `examples/principal.qmd`, and absent from
       the preamble of the rendered `.tex` for `examples/content.qmd`.
@@ -85,14 +94,15 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       and a plainly marked control term the new reports must stay silent on (the M11
       lesson). Terms and pages are distinct per slot (the M02 lesson). The twin is the
       same document with every `role=` removed.
-- [ ] T2: `core.lua` gains the attribute name and its recognized values; `marks.lua`
-      derives the role once, before the back-end branch, with the two warnings — a role on
-      a mark contributing no locator, and an unrecognized value — so both fire in every
-      format as the other mark warnings do.
+- [ ] T2: `core.lua` gains `mention` and its recognized values; `marks.lua` derives the
+      role once, before the back-end branch, with the two warnings — a role on a mark
+      contributing no locator, and an unrecognized value, the empty string among them — so
+      both fire in every format as the other mark warnings do.
 - [ ] T3: `latex.lua` and `passes.lua`: the principal encapsulation, its arbitration
-      against the contested-key bookkeeping (a principal mark and a cross-reference mark
-      of one key emit different encapsulations, which makeindex warns about only on a
-      shared page), and the preamble injection flag read by the Pandoc pass.
+      against the contested-key bookkeeping — `is_contested` and `record_contest` in
+      `latex.lua` count cross-reference encapsulations alone, and `seen.plain` comes to
+      mean "some mark of this key contributes a locator" rather than "emits no
+      encapsulation" — and the preamble injection flag read by the Pandoc pass.
 - [ ] T4: `html.lua`: the principal locator link and its class; the role on the HTML mark
       record; `book.lua` carries it in the per-chapter record as an optional field with a
       named fallback, leaving the store version alone (the M14 lesson).
@@ -102,12 +112,15 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       the preamble present/absent pair.
 - [ ] T6: `tests/plantdefect.py` entries for each check T5 adds, each planting a defect of
       the kind that check names and varying form as well as site — an encapsulation on the
-      wrong locator, an encapsulation on none, and a warning whose text is right but whose
-      mark is wrong.
-- [ ] T7: README section for `role="principal"`: what an author writes, what each back-end
-      prints, how to redefine the LaTeX command, and that an unusable role is reported.
-      Add its authoring forms to the suite's normative supported-forms list and its
-      sentences to a README claims array.
+      wrong locator, an encapsulation on none, a warning whose text is right but whose
+      mark is wrong, and a mark warning suppressed in the back-end-less format alone, so a
+      report that stops being format-neutral is caught.
+- [ ] T7: README section for `mention="principal"`: what an author writes, what each
+      back-end prints, how to redefine the LaTeX command, and that an unusable or
+      unrecognized value is reported. Add its authoring forms to the suite's normative
+      supported-forms list and its sentences to a README claims array. Extend DESIGN.md's
+      pass-through residue enumeration, which names `data-entry`, `data-see`,
+      `data-see-also` and `data-sort`, to include `data-mention`.
 
 ## Work log
 
@@ -116,7 +129,25 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: plan chose a redefinable `\providecommand` command over emitting `\textbf` directly because it gives an author styling control with no configuration (GP4) and matches the existing inject-only-where-used pattern; falsified by evidence that hyperref's encapsulation rewriting breaks an indirected command where a literal one survives.
 - 2026-08-21: plan chose `.ind`/`.ilg` evidence over PDF-text evidence for the emphasis itself because `pdftotext` cannot see it; falsified by a PDF reader in the suite that can distinguish a bold locator from a plain one.
 - 2026-08-21: criteria audit ran in full mode (user-facing tier) and returned findings on AC3, AC5 and the drafted README criterion; AC3 gained the named twin, AC5's residue clause was reworded to include the new attribute, and the README criterion was descoped to T7.
+- 2026-08-21: implement gate renamed the attribute `role=` -> `mention=` (superseding the plan's spelling in the two entries above) after a Pandoc probe showed `role` emitted literally as an HTML attribute; AC3, AC4, AC5, Scope, T2 and T7 amended.
+- 2026-08-21: implement gate chose narrowing contestation to cross-reference encapsulations over suppressing styling on shared keys, because a plain and a styled locator are makeindex's ordinary case; falsified by a makeindex version that rejects the pair rather than warning.
+- 2026-08-21: amended-criteria audit ran in full mode and returned findings on all three amended criteria; AC3 and AC4 gained named formats and dropped the twin fixture from their promises, AC4 settled the empty value, AC5 was repinned on the expected manifest, and T6 gained a format-axis planted defect.
 
 ## Decisions
+
+### 2026-08-21: `mention=`, not `role=`
+
+Pandoc data-prefixes an attribute name it does not know but emits `role` literally, so
+`role="principal"` reaches every HTML-family output as a real ARIA role, and `principal`
+is not a valid one — an artifact on every marked term, which IP2 forbids. `mention=`
+probes clean as `data-mention` and is the word indexing practice uses for the occurrence
+being marked. The twin fixture stays, as the instrument behind AC3 and AC4 rather than as
+their promise.
+
+### 2026-08-21: an empty `mention=` is unrecognized, not absent
+
+`mention=""` is a value the author wrote. Reading it as absence would swallow a typo
+silently, which is the class of thing every other report here refuses to do; it draws the
+unrecognized-value warning and the mark indexes as though the attribute were gone.
 
 ## Review

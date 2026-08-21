@@ -88,12 +88,13 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 
 ## Tasks
 
-- [ ] T1: Fixtures `examples/principal.qmd` and `examples/principal-twin.qmd` with their
+- [x] T1: Fixtures `examples/principal.qmd` and `examples/principal-twin.qmd` with their
       expected manifests. The first carries a term marked in three places, one of them
       principal; a principal mark carrying `see=`; a mark with an unrecognized `role=`;
       and a plainly marked control term the new reports must stay silent on (the M11
       lesson). Terms and pages are distinct per slot (the M02 lesson). The twin is the
-      same document with every `role=` removed.
+      same document with every role attribute removed. Their expected manifests are
+      written inline in the suite's principal section, where every other fixture's are.
 - [ ] T2: `core.lua` gains `mention` and its recognized values; `marks.lua` derives the
       role once, before the back-end branch, with the two warnings — a role on a mark
       contributing no locator, and an unrecognized value, the empty string among them — so
@@ -132,6 +133,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: implement gate renamed the attribute `role=` -> `mention=` (superseding the plan's spelling in the two entries above) after a Pandoc probe showed `role` emitted literally as an HTML attribute; AC3, AC4, AC5, Scope, T2 and T7 amended.
 - 2026-08-21: implement gate chose narrowing contestation to cross-reference encapsulations over suppressing styling on shared keys, because a plain and a styled locator are makeindex's ordinary case; falsified by a makeindex version that rejects the pair rather than warning.
 - 2026-08-21: amended-criteria audit ran in full mode and returned findings on all three amended criteria; AC3 and AC4 gained named formats and dropped the twin fixture from their promises, AC4 settled the empty value, AC5 was repinned on the expected manifest, and T6 gained a format-axis planted defect.
+- 2026-08-21: T1 — `examples/principal.qmd` (three-page principal/plain spread, a role on a cross-reference mark, an unrecognized value, an empty value, a role-free control pair, and a principal locator on a key a cross-reference also marks) and its role-free twin; gfm render confirms Pandoc keeps `mention=""` as a present attribute, so the empty value is distinguishable from absence in the AST.
 
 ## Decisions
 

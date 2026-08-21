@@ -1,0 +1,71 @@
+---
+title: "quarto-index principal-mention twin (no roles)"
+from: markdown-smart
+filters:
+  - index
+---
+
+# One mention among several is the principal one
+
+This is `examples/principal.qmd` with every role attribute removed and nothing
+else changed. It is the counterfactual two of that milestone's criteria are
+stated against: a mark whose role the extension reports and ignores must emit
+what the corresponding mark emits here. The page breaks are kept so the two
+documents paginate alike.
+
+The first passing mention: [basilisk]{.index}.
+
+{{< pagebreak >}}
+
+The principal discussion, a page later: [basilisk]{.index}.
+
+{{< pagebreak >}}
+
+A second passing mention, a page later still: [basilisk]{.index}.
+
+{{< pagebreak >}}
+
+# A role on a mark that can carry no locator
+
+A cross-reference takes the place of a locator, so a mark carrying one has no
+locator to emphasize. The role is reported and ignored, and the mark indexes
+exactly as it would with the attribute removed — which is what the twin fixture
+beside this one renders:
+[cockatrice]{.index see="basilisk"}.
+
+# Values the extension does not recognize
+
+A value that names no role the extension knows. It is reported and the mark
+indexes as though the attribute were absent: [dryad]{.index}.
+
+An empty value, which is a value the author wrote rather than an attribute they
+omitted, and so is reported the same way: [ettin]{.index}.
+
+{{< pagebreak >}}
+
+# The control this milestone must leave alone
+
+A term marked twice with no role anywhere. Every report this milestone adds must
+stay silent on it, and both its locators must stay plain: [faun]{.index} here,
+
+{{< pagebreak >}}
+
+and [faun]{.index} a page later.
+
+{{< pagebreak >}}
+
+# A principal locator on a key that also carries a cross-reference
+
+A styled locator is not a rival encapsulation — makeindex prints a plain and a
+styled page number side by side — so this key is contested only by its
+cross-reference, and the existing repair folds that into the entry's printed
+text because the key does have a locator mark. The locator mark, which is the
+principal one: [gorgon]{.index}.
+
+{{< pagebreak >}}
+
+The cross-reference mark on the same key, a page later, which contributes no
+locator of its own: [gorgon]{.index see="basilisk"}.
+
+::: {.qi-index-here}
+:::

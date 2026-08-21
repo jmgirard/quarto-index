@@ -1,0 +1,71 @@
+---
+title: "quarto-index principal-mention probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# One mention among several is the principal one
+
+A term is usually discussed properly in one place and mentioned in passing in
+others. `mention="principal"` says which occurrence is the proper one, and each
+back-end emphasizes that locator alone. The three marks below are deliberately
+on three different pages: a probe that put them on one page could not tell an
+emphasized locator from an emphasized entry.
+
+The first passing mention: [basilisk]{.index}.
+
+{{< pagebreak >}}
+
+The principal discussion, a page later: [basilisk]{.index mention="principal"}.
+
+{{< pagebreak >}}
+
+A second passing mention, a page later still: [basilisk]{.index}.
+
+{{< pagebreak >}}
+
+# A role on a mark that can carry no locator
+
+A cross-reference takes the place of a locator, so a mark carrying one has no
+locator to emphasize. The role is reported and ignored, and the mark indexes
+exactly as it would with the attribute removed — which is what the twin fixture
+beside this one renders:
+[cockatrice]{.index mention="principal" see="basilisk"}.
+
+# Values the extension does not recognize
+
+A value that names no role the extension knows. It is reported and the mark
+indexes as though the attribute were absent: [dryad]{.index mention="paramount"}.
+
+An empty value, which is a value the author wrote rather than an attribute they
+omitted, and so is reported the same way: [ettin]{.index mention=""}.
+
+{{< pagebreak >}}
+
+# The control this milestone must leave alone
+
+A term marked twice with no role anywhere. Every report this milestone adds must
+stay silent on it, and both its locators must stay plain: [faun]{.index} here,
+
+{{< pagebreak >}}
+
+and [faun]{.index} a page later.
+
+{{< pagebreak >}}
+
+# A principal locator on a key that also carries a cross-reference
+
+A styled locator is not a rival encapsulation — makeindex prints a plain and a
+styled page number side by side — so this key is contested only by its
+cross-reference, and the existing repair folds that into the entry's printed
+text because the key does have a locator mark. The locator mark, which is the
+principal one: [gorgon]{.index mention="principal"}.
+
+{{< pagebreak >}}
+
+The cross-reference mark on the same key, a page later, which contributes no
+locator of its own: [gorgon]{.index see="basilisk"}.
+
+::: {.qi-index-here}
+:::

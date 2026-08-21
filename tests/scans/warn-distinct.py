@@ -119,7 +119,7 @@ if blank:
     sys.exit(1)
 # An exact count, not a floor: a floor passes while a warning quietly stops
 # being read. This number changes when a warning is added or removed.
-EXPECTED = 38
+EXPECTED = 39
 if len(lits) != EXPECTED:
     print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
           f'{EXPECTED}. Either a warning was added or removed without updating '
@@ -141,6 +141,10 @@ SINGLE_LITERAL = (
     # split across `..` is read by this scan only to its first fragment, and a
     # scan that compares warnings on a prefix is the blindness M10 hit.
     '%s= on %s points at "%s", which no index mark in this %s indexes;',
+    # M18-AC5: the fold-rewritten-target report, for the same reason. It is
+    # also the message whose own subject is a derived string, so a scan that
+    # read it to its first fragment would not see which path it names.
+    '%s= on %s names a path %d levels deep; the back-end stores %d,',
 )
 for needle in SINGLE_LITERAL:
     owner = [m for m in re.finditer(r'\bwarn\(', code)

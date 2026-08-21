@@ -1,0 +1,26 @@
+---
+title: "quarto-index folded target that becomes a self-reference"
+from: markdown-smart
+filters:
+  - index
+---
+
+# A target the fold turns into a cross-reference to itself
+
+The entry is written at three levels, its third carrying a comma; the target is
+written at four, and folding it produces exactly that third level. So the fold
+makes the target name the entry it is written on, and the target is dropped —
+one report about that, and no report announcing a path the target now names,
+because there is no surviving target to announce. Two reports about one target,
+each contradicting the other, is the defect this whole milestone removes, and
+it is reachable from the fold's own report just as it was from the
+format-neutral one (M18 review F1).
+
+Nothing in the two fold fixtures reaches this: their fold-self shapes are
+written at three levels, so the report about a rewritten target never fires on
+them, and their rewritten targets all survive the fold.
+
+[bri]{.index entry="Bri!Cal!Del, Emu" see="Bri!Cal!Del!Emu"}.
+
+::: {.qi-index-here}
+:::

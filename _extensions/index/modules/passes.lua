@@ -188,15 +188,37 @@ local function Span(span)
   -- there is no back-end. The count is what the marker's no-marks warning and
   -- both back-ends read.
   qi_marks.marks_seen = qi_marks.marks_seen + 1
-  -- Recorded here, after every drop and before the back-end branch, so the
-  -- resolution set and the targets judged against it are the same in every
-  -- format. A target dropped as a self-reference above is not among these; one
-  -- the LaTeX fold will drop below still is, because format-neutrally it names
-  -- a path the author never indexed.
-  qi_marks.record_marked(levels)
+
+  -- The LaTeX plan is built BEFORE the resolution set is recorded, because in
+  -- that back-end the set is what entries PRINT rather than what the author
+  -- wrote: its fold rewrites an entry's path and a target's alike, and a
+  -- comparison run on one side's written form against the other's printed form
+  -- is the divergence D-005 settles — it reported a folded target as naming
+  -- nothing while the fold had just called the same target a self-reference,
+  -- and said nothing at all about a written target the fold had moved out from
+  -- under. No other format folds, so there the two lists are one and this runs
+  -- not at all.
+  local source, printed_path, filing_path
+  local indexed = levels
+  if qi_core.is_latex_derived() then
+    source, printed_path, filing_path, xrefs, indexed =
+      qi_latex.latex_plan(levels, sort, xrefs, context, true)
+  end
+
+  -- Recorded after every drop: every path this mark indexes, each parent path
+  -- included, in the space its own back-end resolves a target in. A target
+  -- dropped as a self-reference is not among the pending ones below — neither
+  -- the format-neutral drop above nor the fold's inside latex_plan.
+  qi_marks.record_marked(indexed)
   for _, xref in ipairs(xrefs) do
+    -- Two spellings, because they answer different questions. `levels` is what
+    -- the author wrote, which is what a report quotes: a derived string names
+    -- nothing they can search their source for (M09). `resolve` is the path
+    -- this back-end judges the target against, which is the folded one where
+    -- the fold moved it.
     qi_marks.pending_xrefs[#qi_marks.pending_xrefs + 1] =
-      { attr = xref.kind.attr, levels = xref.levels, context = context }
+      { attr = xref.kind.attr, levels = xref.written or xref.levels,
+        resolve = xref.levels, context = context }
   end
 
   if qi_core.is_html() then
@@ -220,9 +242,6 @@ local function Span(span)
     return nil
   end
 
-  local source, printed_path, filing_path
-  source, printed_path, filing_path, xrefs =
-    qi_latex.latex_plan(levels, sort, xrefs, context, true)
   -- Recorded for every mark whatever it emits: a cross-reference mark files
   -- under the same key a plain one does, so it contests a printed path just
   -- as a locator mark would.

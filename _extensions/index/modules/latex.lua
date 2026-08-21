@@ -128,7 +128,18 @@ local function latex_plan(levels, sort, xrefs, context, report, fold)
   local printed_key = qi_levels.levels_key(clamped)
   local kept = {}
   for _, xref in ipairs(xrefs) do
-    if qi_levels.levels_key(xref.levels) == printed_key then
+    -- The target is folded by the rule that folds an entry. This back-end's
+    -- ceiling is a property of the level path, not of the slot the author
+    -- wrote it in, and a target left unfolded names a path the printed index
+    -- does not contain — the cross-reference then answers to nothing a reader
+    -- can find (D-005). `clamp_levels` reports in an entry's words, so the
+    -- fold is announced here instead, once, in words that fit a target; the
+    -- clamp itself is asked to stay silent. Idempotent under the second call
+    -- a contested key makes: a list already at or under the ceiling comes back
+    -- unchanged, and `written` survives it.
+    local written = xref.written or xref.levels
+    local folded = qi_levels.clamp_levels(xref.levels, context, false)
+    if qi_levels.levels_key(folded) == printed_key then
       if report then
         -- The folded path is quoted because the author never wrote it: it is
         -- what their entry prints once the back-end has folded it, and a report
@@ -140,10 +151,22 @@ local function latex_plan(levels, sort, xrefs, context, report, fold)
              :format(xref.kind.attr, context, printed_path, qi_levels.MAX_LEVELS))
       end
     else
-      kept[#kept + 1] = xref
+      -- Reported only for a target that SURVIVES the fold. A target the fold
+      -- turns into a self-reference is dropped by the branch above and says so
+      -- there; announcing the path it now points at as well would hand the
+      -- author two reports contradicting each other about one target — the
+      -- defect this milestone exists to remove, in a new shape (review F1).
+      -- The path is quoted in the `!` spelling every other report uses, which
+      -- is what an author searches their source for; what the reader sees is
+      -- the same levels joined as a target, and the message does not claim
+      -- otherwise (review F8).
+      if report and #xref.levels > qi_levels.MAX_LEVELS then
+        qi_core.warn(("%s= on %s names a path %d levels deep; the back-end stores %d, so the target is folded exactly as an entry is and now names \"%s\", the path the entry it points at prints"):format(xref.kind.attr, context, #xref.levels, qi_levels.MAX_LEVELS, qi_levels.levels_key(folded)))
+      end
+      kept[#kept + 1] = { kind = xref.kind, levels = folded, written = written }
     end
   end
-  return source, printed_path, filing_path, kept
+  return source, printed_path, filing_path, kept, clamped
 end
 
 -- The encapsulation one mark would put on its key: the empty string for a

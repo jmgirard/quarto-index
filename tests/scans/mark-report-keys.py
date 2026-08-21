@@ -5,7 +5,12 @@
 import re, sys
 sys.path.insert(0, 'tests')
 import filtersrc
-keys = sys.argv[1:4]
+# Every key the run passes, not a fixed slice: a key added to the run and
+# not to the scan is a key nothing holds to matching one warning, and every
+# zero-expectation control resting on it then passes vacuously (M18 review
+# F3).
+keys = sys.argv[1:]
+assert keys, 'mark-report-keys was given no keys to check'
 src = filtersrc.text()
 # Each warn() call's message, with its concatenated fragments joined back
 # together: these messages are written as `("..." .. "..."):format(...)`, so a
@@ -25,7 +30,7 @@ for key in keys:
         errs.append(f'key <<{key}>> matches {len(owners)} filter warnings, want 1')
     else:
         owner[key] = owners[0]
-# ...and must match neither of the other two messages.
+# ...and must match no OTHER key's message either.
 for key in keys:
     for other in keys:
         if key != other and other in owner and key in owner[other]:
@@ -33,6 +38,5 @@ for key in keys:
 if errs:
     print('FAIL: M10-AC4: ' + '; '.join(errs), file=sys.stderr)
     sys.exit(1)
-print('ok   M10-AC4: the self-reference, fold-self-reference and fold-depth '
-      'grep keys each match exactly their own filter warning and neither of '
-      'the other two')
+print(f'ok   M10-AC4: each of the {len(keys)} report grep keys the run uses '
+      f'matches exactly its own filter warning and none of the others')

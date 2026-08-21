@@ -73,11 +73,14 @@ local html_marks = {}
 
 -- Every level path this document's marks index, each mark's parent levels
 -- included, as `qi_levels.levels_key` strings. This is the set a cross-reference target
--- is resolved against, and it is format-neutral for the same reason the rest
--- of the mark's diagnosis is: whether a target names a term the document
--- indexes is a fact about what the author wrote (IP1), not about a back-end.
--- The HTML entry tree could answer the same question, but it exists in one
--- format only, so the answer would too.
+-- is resolved against. Whether a target names a term the document indexes is
+-- still a fact about what the author wrote (IP1) rather than about a back-end,
+-- and the report is still drawn once for every format — but the PATHS the fact
+-- is read off are the ones the running back-end prints, so where a level
+-- ceiling folds an entry it folds the target too and what is recorded here is
+-- the folded path (D-005, corrected M18). Where nothing folds, this is the
+-- written path exactly as before. The HTML entry tree could answer the same
+-- question, but it exists in one format only, so the answer would too.
 local marked_paths = {}
 -- Every surviving cross-reference target, in document order, carrying the
 -- mark it was written on. Held until the Pandoc pass, which is the first
@@ -102,7 +105,12 @@ local function report_dangling(paths, xrefs, scope)
     -- string to search the source for. Its empty levels are already gone, and
     -- were already reported when they were dropped.
     local target = qi_levels.levels_key(xref.levels)
-    if not paths[target] then
+    -- Judged on `resolve` and quoted as `target`: where a back-end folds, the
+    -- two differ, and the author is told about the string they typed while the
+    -- lookup runs against the path that back-end actually prints (D-005). Every
+    -- other format, and the book store, carry no `resolve` and fall back to the
+    -- one spelling they have.
+    if not paths[qi_levels.levels_key(xref.resolve or xref.levels)] then
       qi_core.warn(('%s= on %s points at "%s", which no index mark in this %s indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'):format(xref.attr, xref.context, target, scope))
     end
   end

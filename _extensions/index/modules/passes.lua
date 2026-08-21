@@ -101,6 +101,19 @@ local function CollectKeys(span)
   return nil
 end
 
+-- The encapsulation a role adds to a mark's own `\index` command, or the
+-- empty string where there is none. Only a mark that CONTRIBUTES a locator
+-- ever reaches it: a mark carrying a cross-reference had its role dropped and
+-- reported before the back-end branch, and a cross-reference mark of a
+-- contested key emits no command at all.
+local function principal_encap(role)
+  if role ~= "principal" then
+    return ""
+  end
+  qi_latex.principal_emitted = true
+  return "|" .. qi_core.PRINCIPAL_COMMAND
+end
+
 local function Span(span)
   local forged = span.attributes[qi_core.HTML_PENDING_ATTR] ~= nil
   if forged then
@@ -145,6 +158,14 @@ local function Span(span)
     qi_core.warn("index mark carries both see= and see-also=; this is probably a "
          .. "mistake, and neither is dropped for being one of two")
   end
+
+  -- Derived before the back-end branch for the same reason the cross-references
+  -- are: a role is a fact about what the author wrote, so its two reports fire
+  -- in every format. `xrefs` is read for the attribute name rather than
+  -- `declared`, because a mark whose only cross-reference had no usable target
+  -- has no cross-reference left to take the locator's place.
+  local role = qi_marks.mention_role(span.attributes[qi_core.MENTION_ATTR], context,
+                                     #xrefs > 0 and xrefs[1].kind.attr or nil, true)
 
   -- Derived once, and before the back-end branch: the levels are the author's
   -- text whatever format this is, and the empty-level warnings the derivation
@@ -274,7 +295,8 @@ local function Span(span)
       if #xrefs == 0 then
         local folded = select(1, qi_latex.latex_plan(levels, sort, xrefs, context,
                                             false, qi_latex.fold_xrefs(seen)))
-        result:insert(pandoc.RawInline("latex", "\\index{" .. folded .. "}"))
+        result:insert(pandoc.RawInline("latex",
+          "\\index{" .. folded .. principal_encap(role) .. "}"))
       end
       return result
     end
@@ -301,7 +323,8 @@ local function Span(span)
   -- qi_core.XREF_BOTH_COMMAND, which is injected only in a document that uses it.
   local encap = qi_latex.mark_encap(xrefs)
   if encap == "" then
-    result:insert(pandoc.RawInline("latex", "\\index{" .. source .. "}"))
+    result:insert(pandoc.RawInline("latex",
+      "\\index{" .. source .. principal_encap(role) .. "}"))
   else
     if #xrefs > 1 then
       qi_latex.xref_both_emitted = true

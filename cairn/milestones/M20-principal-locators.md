@@ -99,7 +99,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       role once, before the back-end branch, with the two warnings — a role on a mark
       contributing no locator, and an unrecognized value, the empty string among them — so
       both fire in every format as the other mark warnings do.
-- [ ] T3: `latex.lua` and `passes.lua`: the principal encapsulation, its arbitration
+- [x] T3: `latex.lua` and `passes.lua`: the principal encapsulation, its arbitration
       against the contested-key bookkeeping — `is_contested` and `record_contest` in
       `latex.lua` count cross-reference encapsulations alone, and `seen.plain` comes to
       mean "some mark of this key contributes a locator" rather than "emits no
@@ -135,6 +135,9 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: amended-criteria audit ran in full mode and returned findings on all three amended criteria; AC3 and AC4 gained named formats and dropped the twin fixture from their promises, AC4 settled the empty value, AC5 was repinned on the expected manifest, and T6 gained a format-axis planted defect.
 - 2026-08-21: T1 — `examples/principal.qmd` (three-page principal/plain spread, a role on a cross-reference mark, an unrecognized value, an empty value, a role-free control pair, and a principal locator on a key a cross-reference also marks) and its role-free twin; gfm render confirms Pandoc keeps `mention=""` as a present attribute, so the empty value is distinguishable from absence in the AST.
 - 2026-08-21: T2 — `core.lua` gains `MENTION_ATTR`, `MENTION_ROLES`, `PRINCIPAL_COMMAND`/`PRINCIPAL_DEFINITION` and `HTML_PRINCIPAL_CLASS`; `marks.lua` gains `mention_role`, drawing the unrecognized-value report before the no-locator one so the two never both fire. `warn-distinct` pinned count 39 -> 41, and the scan confirms both new messages distinct and non-prefix.
+- 2026-08-21: T3 — the role is applied at emission by `principal_encap` in `passes.lua`, on top of whichever shape contestation chose, and is deliberately absent from `mark_encap`, so a plain and a styled locator of one key are not rivals; `index.lua` injects `PRINCIPAL_DEFINITION` only where the flag is set. End-to-end evidence: the fixture's `.ind` reads `basilisk, \hyperpage{1}, \hyperxindexformat{\quartoindexprincipal}{2}, \hyperpage{3}` with 0 warnings in its `.ilg`, and `examples/content.tex` carries no definition.
+- 2026-08-21: T3 — `examples/principal.qmd` gained `latex-clean: false`, since Quarto deletes the `.ind` and `.ilg` on a successful PDF render and they are AC1's evidence; the LaTeX aux family is now gitignored under `examples/`, which also closes the unignored-artifact item on the acceptance-suite candidate row.
+- 2026-08-21: T3 — keeping the suite green required registering both fixtures in two existing rosters ahead of their own section: M14's dangling-target corpus (0 each, both targets naming a term the file marks) and M15's contested-key emission sweep (the folded-field shape, which the `gorgon` key writes). Suite 208 -> 211.
 
 ## Decisions
 

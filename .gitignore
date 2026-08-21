@@ -9,6 +9,15 @@ examples/*.html
 examples/*.md
 examples/*.epub
 examples/*_files/
+# The LaTeX aux family. examples/principal.qmd deliberately keeps its `.ind`
+# and `.ilg` (latex-clean: false) because the suite reads them as evidence
+# that an encapsulation reached the right locator; and a FAILED pdf render
+# leaves this family behind for any fixture.
+examples/*.aux
+examples/*.idx
+examples/*.ilg
+examples/*.ind
+examples/*.log
 examples/.quarto/
 # The book fixtures render into their own project output directory, and their
 # per-chapter store lives in Quarto's own scratch directory.

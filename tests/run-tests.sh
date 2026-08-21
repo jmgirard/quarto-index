@@ -6594,6 +6594,12 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  ceiling, so none dangles anywhere. 0.
 #   placement      1 attribute: `see="widget"`, and `widget` is marked three
 #                  times in that file. 0.
+#   principal      2 attributes, both `see="basilisk"` — one on the mark whose
+#                  role is dropped for carrying a cross-reference, one on the
+#                  cross-reference mark of the contested `gorgon` key. The file
+#                  marks `basilisk` three times, so both resolve. 0.
+#   principal-twin the same two attributes: the twin removes role attributes
+#                  and nothing else, so its target set is identical. 0.
 #   resolving-xref 3 attributes, all three resolving by construction. 0.
 #
 # Reconciling xref-escaping's corpus so its targets resolve is its own piece of
@@ -6613,6 +6619,8 @@ examples/fold-xref-self.qmd	1
 examples/fold-xref.qmd	1
 examples/html-index.qmd	1
 examples/placement.qmd	0
+examples/principal-twin.qmd	0
+examples/principal.qmd	0
 examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
 examples/xref-conflict.qmd	14
@@ -7051,7 +7059,14 @@ if carried(os.environ['FOLD_TEX']) != [FOLD_ONLY]:
 # above from copies taken at their own renders. What is required is that no
 # OTHER artifact carries either shape, and that fold-xref's, if it is still on
 # disk, carries only the shape it writes.
-ALLOWED = {'examples/fold-xref.tex': {FOLD_ONLY}}
+# M20's two fixtures each mark `gorgon` with a plain locator mark and a
+# cross-reference mark, which is a contested key of the folded-field shape, so
+# each carries that shape and only it. Listed for the same reason fold-xref is
+# — the sweep tolerates their absence, since whichever render ran last decides
+# whether the intermediate .tex is still on disk.
+ALLOWED = {'examples/fold-xref.tex': {FOLD_ONLY},
+           'examples/principal.tex': {FOLD_ONLY},
+           'examples/principal-twin.tex': {FOLD_ONLY}}
 wrong = []
 for path in sorted(glob.glob('examples/*.tex')):
     want = ALLOWED.get(path, set())

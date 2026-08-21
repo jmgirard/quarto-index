@@ -1,6 +1,15 @@
 ---
 title: "quarto-index principal-mention probe"
 from: markdown-smart
+format:
+  pdf:
+    # The suite reads the `.ind` makeindex writes and the `.ilg` it logs to,
+    # which are this milestone's evidence that an encapsulation reached the
+    # right locator; Quarto deletes both on a successful render unless this
+    # says otherwise.
+    latex-clean: false
+  html: default
+  gfm: default
 filters:
   - index
 ---

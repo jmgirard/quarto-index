@@ -106,6 +106,8 @@ end
 -- written on it, in a fixed order. Module-level, like the other accumulators.
 local contested_keys = {}
 M["xref_list_emitted"] = false
+-- Likewise for the principal locator's command.
+M["principal_emitted"] = false
 -- Likewise: the both-targets command is defined only in a document that uses
 -- it, so a document without one gets nothing extra in its preamble.
 M["xref_both_emitted"] = false
@@ -179,7 +181,17 @@ end
 
 -- The encapsulation one mark would put on its key: the empty string for a
 -- plain locator mark, `\see`/`\seealso` for a single target, and the
--- both-targets command for a mark carrying two. Shared by the pass that
+-- both-targets command for a mark carrying two.
+--
+-- A mention's ROLE is deliberately absent from this. Contestation is the
+-- repair for encapsulations makeindex cannot reconcile, and a styled locator
+-- is not one: makeindex prints a plain and a styled page number side by side,
+-- warning only where the two share a page, and a term discussed properly in
+-- one place and mentioned in passing elsewhere is exactly what this feature
+-- is for. Routing the role through here would make that ordinary document a
+-- contested key, and with no cross-references to fold the repair would end
+-- its entry on a dangling comma. The role is applied at emission instead, on
+-- top of whichever shape contestation chose (M20). Shared by the pass that
 -- decides which keys are contested and by the pass that emits, because
 -- contestation is a fact about these exact strings — makeindex rejects two
 -- marks on one key and page whose encapsulations DIFFER, and folds together

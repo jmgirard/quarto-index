@@ -67,10 +67,16 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       writing an unrecognized `mention=` value draws exactly one warning naming the mark
       and the value, and indexes exactly as it would with the attribute removed. An empty
       `mention=` is unrecognized, not absent.
-- [ ] AC5: The gfm render of `examples/principal.qmd` matches its expected manifest line
-      for line, and each principal-marked span in it carries its visible text and exactly
-      the `data-` attributes for the mark's own attributes, `data-mention="principal"`
-      included, and no other token.
+- [ ] AC5: In the gfm render of `examples/principal.qmd`, a scan of the rendered
+      file for spans carrying the `index` class enumerates thirteen — one for
+      every index mark the fixture writes except the entry-less one, which
+      indexes nothing and is removed — and those spans are, in document order
+      and byte for byte, the rows of an expected manifest derived by hand from
+      the fixture source, each row being that mark's visible text plus exactly
+      the `data-` attributes for the mark's own attributes,
+      `data-mention="principal"` among them where the mark writes it. No `qi-`
+      token, `\index` command, principal-encapsulation command or literal
+      `role=` attribute appears anywhere in the file.
 - [x] AC6: The command the principal encapsulation names is defined with `\providecommand`
       in the preamble of the rendered `.tex` for `examples/principal.qmd`, and absent from
       the preamble of the rendered `.tex` for `examples/content.qmd`.
@@ -151,6 +157,8 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: review returned M20 to in-progress. Two floor-qualifying findings: a principal and a plain mark of one key on one page make `quarto render --to pdf` exit 1 with "error generating index" (verified at the gate by direct render), which is the IP2 break M15 exists to eliminate and which the plan gate's makeindex-in-isolation probe missed; and AC5's first clause, a line-for-line gfm manifest, was never implemented. AC5 unticked. Eleven further findings carried in the Review section for triage. Defect returns on this milestone: 1.
 - 2026-08-21: resumed after the review return. The break was reproduced, then probed further: makeindex conflicts on ANY encapsulation difference for one key on one page — a bare `\indexentry{cats}{1}` beside `\indexentry{cats|quartoindexprincipal}{1}` warns, while two identical encapsulations fold silently — so per-locator styling through its encap channel is impossible whatever the extension emits, and no emission-level repair exists. Implement gate routed the design question to /milestone-brief and chose the format-neutral findings for repair here.
 - 2026-08-21: review F2/F11/F12/F9 repaired. `mention_role` now takes a blocker naming every SURVIVING cross-reference attribute rather than the first declared one, so a target about to be dropped as a self-reference no longer displaces a role (verified against the pre-fix filter: `imp` drew the displacement report and the drop report together, and now draws only the drop), or `unindexed` for a mark that indexes nothing, whose role was dropped in silence. The HTML control now tells a missing entry from an entry with no locators. Fixtures gained `harpy` (both attributes), `imp` (self-referential target) and an entry-less mark; `warn-distinct` 41 -> 42. Suite 223, self-test 279 -> 282.
+- 2026-08-21: amendment, AC5 — the criterion promised the gfm render "matches its expected manifest line for line", which taken literally is a 72-line copy of Pandoc's own line-wrapping and is the snapshot the suite's ORACLE RULE and D-004 both refuse; the mini gate chose narrowing it to the render's index spans. Amended-criteria audit ran in full mode twice with two fresh readers (the second on wording revised from the first's findings) and returned seven then seven: "line for line" lost its referent, the reader sorted away the order it promised, the domain was ambiguous between source marks and rendered spans, the manifest defined rather than compared, the document-wide clause was dropped, and no plant covered completeness or order. All folded in, and the final wording went to the user rather than a third revision. The fixture now renders gfm with `wrap: none` so a span is never broken across lines.
+- 2026-08-21: T5/T6 — AC5 implemented: manifest 9 in the suite lists all thirteen spans in document order, hand-derived from the fixture; the reader compares byte for byte without sorting or normalizing, enumerates a span whose visible text carries nested inline markup, and pins the count to the fixture's own marks. The render is deleted before the run rewrites it, so no check reads a stale artifact. Four new plants: a dropped mark, an extra mark, two transposed, and the nested markup stripped. Fixtures gained `kraken`. Suite 223, self-test 282 -> 286.
 
 ## Decisions
 

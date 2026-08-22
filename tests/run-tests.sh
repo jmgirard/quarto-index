@@ -7633,9 +7633,17 @@ pass "M18 (F5): the both-attributes site reaches a compiled artifact, where both
 # the first passing mention are page 1, the principal mention page 2, the
 # second passing mention page 3.
 # ---------------------------------------------------------------------------
+# Removed before the render, not merely overwritten by it: AC5 is stated over
+# the gfm render of this run, and a stale committed .md left in place would
+# satisfy the check after the filter had regressed (the audit's F6).
+rm -f examples/principal.md examples/principal.html
 for fmt in latex html gfm; do
   quarto render examples/principal.qmd --to $fmt > "$WORK/principal-$fmt.log" 2>&1 \
     || { cat "$WORK/principal-$fmt.log" >&2; fail "M20: examples/principal.qmd failed to render to $fmt"; }
+done
+for artifact in examples/principal.md examples/principal.html; do
+  [ -s "$artifact" ] \
+    || fail "M20: the render produced no $artifact, so every check stated over it would read a file this run did not write"
 done
 # Copied before the PDF render below removes the intermediate .tex (M15).
 cp examples/principal.tex "$WORK/principal.tex"
@@ -7720,11 +7728,44 @@ pass "M20-AC3/AC4: the dropped-role report and the unrecognized-value report eac
 python3 tests/m20probes.py twin "$WORK/principal.tex" "$WORK/principal-twin.tex"
 pass "M20-AC3/AC4: a mark whose role is reported and ignored emits what the same mark emits in the role-free twin, compared command by command"
 
-# M20-AC5 — the format with no index back-end. The permitted residue is stated
-# as an exact set of spans rather than as an exemption, so a stray token
-# cannot be argued into it.
-python3 tests/m20probes.py gfm examples/principal.md
-pass "M20-AC5: in the format with no index back-end every role-carrying mark passes through as its visible text plus exactly its own attributes, data-prefixed, with no residue of either back-end"
+# ---------------------------------------------------------------------------
+# Manifest 9 — every index span examples/principal.qmd writes into gfm, in
+# document order, one per line (M20-AC5).
+# Same ORACLE RULE as manifest 1, with the pass-through layers derived by hand:
+#   4. gfm has no index back-end, so a mark reaches it as the `span` Pandoc read
+#      it as: its class, then its attributes in SOURCE order, each name
+#      data-prefixed because Pandoc data-prefixes an attribute it does not know
+#      (which is why the role attribute is `mention` and not `role` — the
+#      milestone's Decisions entry).
+#   5. Visible text passes through as written, nested inline markup included.
+#   6. A mark that indexes nothing is removed with its content, so the
+#      entry-less mark writes no row here; every other mark writes exactly one.
+# The fixture renders gfm with `wrap: none`, so no row is broken by the
+# writer's column limit and these are the bytes of the render.
+# ---------------------------------------------------------------------------
+read -r -d '' PRINCIPAL_GFM_SPANS <<'MANIFEST' || true
+<span class="index">basilisk</span>
+<span class="index" data-mention="principal">basilisk</span>
+<span class="index">basilisk</span>
+<span class="index" data-mention="principal" data-see="basilisk">cockatrice</span>
+<span class="index" data-mention="paramount">dryad</span>
+<span class="index" data-mention="">ettin</span>
+<span class="index">faun</span>
+<span class="index">faun</span>
+<span class="index" data-mention="principal">gorgon</span>
+<span class="index" data-see="basilisk">gorgon</span>
+<span class="index" data-mention="principal" data-see="basilisk" data-see-also="faun">harpy</span>
+<span class="index" data-mention="principal" data-see="imp">imp</span>
+<span class="index" data-mention="principal">**kraken**</span>
+MANIFEST
+printf '%s\n' "$PRINCIPAL_GFM_SPANS" > "$WORK/principal-gfm-spans.txt"
+
+# M20-AC5 — the format with no index back-end. Every index span the render
+# carries is compared against the manifest above, in document order and byte
+# for byte, and the permitted residue is stated as an exact set of tokens
+# rather than as an exemption, so a stray one cannot be argued into it.
+python3 tests/m20probes.py gfm examples/principal.md "$WORK/principal-gfm-spans.txt"
+pass "M20-AC5: in the format with no index back-end every index mark the fixture writes passes through as its visible text plus exactly its own attributes, data-prefixed, in document order and byte for byte against a hand-derived manifest, with no residue of either back-end"
 
 # M20-AC6 — the command is defined where it is used and nowhere else. Both
 # directions, or a filter that injected it into every document would pass.
@@ -7951,13 +7992,38 @@ filtersrc.sources()" >/dev/null 2>&1; then
   m20_plant examples/principal.md "$M20W/aria.md" \
     -e 's/data-mention="principal"/role="principal"/'
   m20_defect "a literal ARIA role attribute in the pass-through format" \
-    python3 tests/m20probes.py gfm "$M20W/aria.md"
+    python3 tests/m20probes.py gfm "$M20W/aria.md" "$WORK/principal-gfm-spans.txt"
   # Aimed at the attribute alone, not at the whole span: gfm wraps a long
   # line inside the tag, so a pattern spanning the element matches nothing.
   m20_plant examples/principal.md "$M20W/residue.md" \
     -e 's/data-mention="paramount"/data-mention="paramount" data-qi-pending="4"/'
   m20_defect "the filter's own plumbing attribute surviving into the pass-through format" \
-    python3 tests/m20probes.py gfm "$M20W/residue.md"
+    python3 tests/m20probes.py gfm "$M20W/residue.md" "$WORK/principal-gfm-spans.txt"
+  # The three axes the manifest comparison adds over the residue sweep, each
+  # planted on its own: a mark the render lost, one it gained, and two the
+  # filter emitted in the wrong order. The last is what a reader that sorted
+  # its spans before comparing could not catch at all.
+  m20_plant examples/principal.md "$M20W/dropped.md" \
+    -e 's|<span class="index" data-mention="paramount">dryad</span>|dryad|'
+  m20_defect "an index mark missing from the pass-through render" \
+    python3 tests/m20probes.py gfm "$M20W/dropped.md" "$WORK/principal-gfm-spans.txt"
+  m20_plant examples/principal.md "$M20W/extra.md" \
+    -e 's|<span class="index">faun</span>|<span class="index">faun</span> and <span class="index">faun</span>|'
+  m20_defect "an index mark the fixture never wrote appearing in the pass-through render" \
+    python3 tests/m20probes.py gfm "$M20W/extra.md" "$WORK/principal-gfm-spans.txt"
+  m20_plant examples/principal.md "$M20W/transposed.md" \
+    -e 's|<span class="index" data-mention="paramount">dryad</span>|@@QI@@|' \
+    -e 's|<span class="index" data-mention="">ettin</span>|<span class="index" data-mention="paramount">dryad</span>|' \
+    -e 's|@@QI@@|<span class="index" data-mention="">ettin</span>|'
+  m20_defect "two index marks emitted in the wrong order" \
+    python3 tests/m20probes.py gfm "$M20W/transposed.md" "$WORK/principal-gfm-spans.txt"
+  # The nested-markup mark, mangled: the span the widened scan exists to
+  # enumerate. A scan that could not see it would drop it from the domain
+  # rather than fail, so the defect has to be inside that span's own text.
+  m20_plant examples/principal.md "$M20W/nested.md" \
+    -e 's|<span class="index" data-mention="principal">\*\*kraken\*\*</span>|<span class="index" data-mention="principal">kraken</span>|'
+  m20_defect "the nested inline markup stripped from a mark's visible text" \
+    python3 tests/m20probes.py gfm "$M20W/nested.md" "$WORK/principal-gfm-spans.txt"
 
   # --- the counterfactual. Both directions: a role that stopped taking effect,
   #     and one that reached a mark it must not.

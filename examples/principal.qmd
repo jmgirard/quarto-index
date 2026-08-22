@@ -9,7 +9,10 @@ format:
     # says otherwise.
     latex-clean: false
   html: default
-  gfm: default
+  # Spans are compared byte for byte, so the writer must not break one
+  # across lines at its column limit (M20-AC5).
+  gfm:
+    wrap: none
 filters:
   - index
 ---
@@ -94,6 +97,9 @@ to emphasize and the role survives — a role reported as displaced by a
 cross-reference that is itself about to be dropped would contradict the drop's
 own report about the same mark:
 [imp]{.index mention="principal" see="imp"}.
+
+A mark whose visible text carries nested inline markup, which a scan reading a
+span as flat text cannot see at all: [**kraken**]{.index mention="principal"}.
 
 ::: {.qi-index-here}
 :::

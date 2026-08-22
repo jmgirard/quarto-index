@@ -86,5 +86,8 @@ cross-reference that is itself about to be dropped would contradict the drop's
 own report about the same mark:
 [imp]{.index see="imp"}.
 
+A mark whose visible text carries nested inline markup, which a scan reading a
+span as flat text cannot see at all: [**kraken**]{.index}.
+
 ::: {.qi-index-here}
 :::

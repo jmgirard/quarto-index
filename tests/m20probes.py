@@ -154,32 +154,56 @@ def _html(argv):
           f'entry carries neither on either of its locators')
 
 def _gfm(argv):
+    """AC5: every index span the render carries, against a hand-derived manifest.
+
+    `argv` is the rendered file and the manifest file, the latter one expected
+    span per line in document order. The manifest is derived from the `.qmd` by
+    hand (the suite's ORACLE RULE), never copied from this render, and it lives
+    in the suite's M20 section beside every other fixture's.
+
+    The span pattern is deliberately NOT `[^<]*` in the body: a mark whose
+    visible text carries nested inline markup — `[**kraken**]{.index}` — is an
+    index span the criterion quantifies over, and a scan that could not see one
+    would shrink the promised domain instead of failing (the audit's F2/F3). The
+    fixture writes one, so the widening is exercised rather than assumed.
+
+    The comparison is byte for byte and in document order, neither normalized
+    nor sorted: the fixture renders with `wrap: none`, so the writer never
+    breaks a span across lines, and an ordering the reader sorted away could be
+    transposed by the filter without any check noticing.
+    """
     src = open(argv[0], encoding='utf-8').read()
-    # gfm wraps long lines inside a tag, so every span is normalized before it is
-    # compared; nothing else about it is touched.
-    flat = re.sub(r'\s+', ' ', src)
-    spans = re.findall(r'<span class="index"[^>]*>[^<]*</span>', flat)
-    got = sorted(s for s in spans if 'data-mention' in s)
-    want = sorted([
-        '<span class="index" data-mention="principal">basilisk</span>',
-        '<span class="index" data-mention="principal" data-see="basilisk">cockatrice</span>',
-        '<span class="index" data-mention="paramount">dryad</span>',
-        '<span class="index" data-mention="">ettin</span>',
-        '<span class="index" data-mention="principal">gorgon</span>',
-        '<span class="index" data-mention="principal" data-see="basilisk" data-see-also="faun">harpy</span>',
-        '<span class="index" data-mention="principal" data-see="imp">imp</span>',
-    ])
-    if got != want:
-        print('FAIL: M20-AC5: the spans carrying the role attribute in the gfm '
-              'render are not the ones the fixture writes:', file=sys.stderr)
+    want = [l.rstrip('\n') for l in open(argv[1], encoding='utf-8') if l.strip()]
+    got = re.findall(r'<span class="index"[^>]*>.*?</span>', src)
+    # The count is pinned to the fixture's own marks, not merely to the manifest:
+    # thirteen index marks reach the render, the fourteenth being the entry-less
+    # mark, which indexes nothing and is removed. A scan that silently stopped
+    # enumerating some span would otherwise shrink the domain it is checked over.
+    EXPECTED_SPANS = 13
+    if len(got) != EXPECTED_SPANS:
+        print(f'FAIL: M20-AC5: the gfm render carries {len(got)} index spans; the '
+              f'fixture writes {EXPECTED_SPANS} marks that reach it (the '
+              f'entry-less mark indexes nothing and is removed)', file=sys.stderr)
         for line in got:
             print(f'  got  <<{line}>>', file=sys.stderr)
-        for line in want:
-            print(f'  want <<{line}>>', file=sys.stderr)
+        sys.exit(1)
+    if len(want) != EXPECTED_SPANS:
+        print(f'FAIL: M20-AC5: the expected manifest has {len(want)} rows, not '
+              f'{EXPECTED_SPANS}; the manifest and the fixture have drifted apart',
+              file=sys.stderr)
+        sys.exit(1)
+    if got != want:
+        print('FAIL: M20-AC5: the index spans in the gfm render are not, in '
+              'document order, the ones the manifest derives from the fixture:',
+              file=sys.stderr)
+        for i, (g, w) in enumerate(zip(got, want)):
+            if g != w:
+                print(f'  row {i + 1} got  <<{g}>>', file=sys.stderr)
+                print(f'  row {i + 1} want <<{w}>>', file=sys.stderr)
         sys.exit(1)
     # `role=` would be the ARIA attribute this milestone renamed the mark
     # attribute to avoid, and it must appear nowhere at all.
-    if re.search(r'<span[^>]*\srole=', flat):
+    if re.search(r'<span[^>]*\srole=', src):
         print('FAIL: M20-AC5: a span in the gfm render carries a literal role= '
               'attribute; the mark attribute is data-prefixed precisely so no '
               'marked term ships an ARIA role', file=sys.stderr)
@@ -190,10 +214,10 @@ def _gfm(argv):
                   f'back-end residue in a format with no index back-end',
                   file=sys.stderr)
             sys.exit(1)
-    print(f'ok   M20-AC5: all {len(got)} role-carrying spans in the gfm render '
-          f'carry their visible text and exactly the data- attributes for the '
-          f'mark\'s own attributes, and no anchor, index command or ARIA role '
-          f'reaches the format at all')
+    print(f'ok   M20-AC5: all {len(got)} index spans in the gfm render are, in '
+          f'document order and byte for byte, the manifest derived from the '
+          f'fixture, and no anchor, index command, encapsulation command or '
+          f'ARIA role reaches the format at all')
 
 def _twin(argv):
     def commands(path):
@@ -247,7 +271,8 @@ def _twin(argv):
     # and lose this row (review F2).
     want = sorted({r'\index{basilisk|quartoindexprincipal}',
                    r'\index{gorgon@gorgon, \see{basilisk}{}|quartoindexprincipal}',
-                   r'\index{imp|quartoindexprincipal}'})
+                   r'\index{imp|quartoindexprincipal}',
+                   r'\index{kraken|quartoindexprincipal}'})
     if differ != want:
         print(f'FAIL: M20-AC3/AC4: the commands that differ from the twin are\n'
               f'  {differ}\nexpected\n  {want}', file=sys.stderr)

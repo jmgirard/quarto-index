@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP5, GP6
-- **Branch/PR:** m20-principal-locators
+- **Branch/PR:** m20-principal-locators / https://github.com/jmgirard/quarto-index/pull/20
 
 ## Goal
 
@@ -51,30 +51,30 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 
 ## Acceptance criteria
 
-- [ ] AC1: The PDF render of `examples/principal.qmd` produces a `.ind` in which the
+- [x] AC1: The PDF render of `examples/principal.qmd` produces a `.ind` in which the
       principal term's entry shows exactly one emphasized locator and its remaining
       locators plain, and a `.ilg` carrying no conflicting-encapsulation warning for that
       entry's key.
-- [ ] AC2: In the HTML render of `examples/principal.qmd`, the index entry for the
+- [x] AC2: In the HTML render of `examples/principal.qmd`, the index entry for the
       principal term carries exactly one locator link marked as principal, at the position
       of the principal mark, its other locator links unmarked — read structurally by
       `tests/htmlindex.py`.
-- [ ] AC3: In the LaTeX, HTML and gfm renders of `examples/principal.qmd`, the mark
+- [x] AC3: In the LaTeX, HTML and gfm renders of `examples/principal.qmd`, the mark
       writing `mention="principal"` alongside `see=` or `see-also=` draws exactly one
       warning naming the mark and the `mention=` value it ignored, and emits the index
       output it would emit with the `mention=` attribute removed.
-- [ ] AC4: In the LaTeX, HTML and gfm renders of `examples/principal.qmd`, the mark
+- [x] AC4: In the LaTeX, HTML and gfm renders of `examples/principal.qmd`, the mark
       writing an unrecognized `mention=` value draws exactly one warning naming the mark
       and the value, and indexes exactly as it would with the attribute removed. An empty
       `mention=` is unrecognized, not absent.
-- [ ] AC5: The gfm render of `examples/principal.qmd` matches its expected manifest line
+- [x] AC5: The gfm render of `examples/principal.qmd` matches its expected manifest line
       for line, and each principal-marked span in it carries its visible text and exactly
       the `data-` attributes for the mark's own attributes, `data-mention="principal"`
       included, and no other token.
-- [ ] AC6: The command the principal encapsulation names is defined with `\providecommand`
+- [x] AC6: The command the principal encapsulation names is defined with `\providecommand`
       in the preamble of the rendered `.tex` for `examples/principal.qmd`, and absent from
       the preamble of the rendered `.tex` for `examples/content.qmd`.
-- [ ] AC7: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass.
+- [x] AC7: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass.
 
 ## Coverage
 
@@ -167,3 +167,33 @@ silently, which is the class of thing every other report here refuses to do; it 
 unrecognized-value warning and the mark indexes as though the attribute were gone.
 
 ## Review
+
+**Evidence** — `tests/run-tests.sh --self-test`, run fresh on 969f1c4 at review: 279 checks, exit 0
+(plain run 223, exit 0; merge base 208 / 248).
+
+- **AC1** — the PDF render's `.ind` shows the basilisk entry with exactly one
+  `\hyperxindexformat{\quartoindexprincipal}{2}`, the page the fixture puts the principal mark on,
+  and exactly one plain `\hyperpage` for each of pages 1 and 3; the role-free control entry carries
+  the command nowhere. The `.ilg` contains no `Conflicting entries` line and its own summary reports
+  0 warnings, read as a number rather than by substring absence.
+- **AC2** — read structurally by `tests/htmlindex.py`: basilisk's three locator links are
+  (plain, class + `<strong>`, plain) in that order, the control entry's two are both plain, and the
+  mark whose role was dropped contributes no locator at all.
+- **AC3** — the dropped-role report fires exactly once in each of the LaTeX, HTML and gfm renders,
+  naming the mark and the attribute that displaced its locator, and zero times in the twin.
+- **AC4** — the unrecognized-value report fires exactly twice per format, once naming
+  `("paramount")` and once `("")`, and zero times in the twin. Both criteria's counterfactual is
+  the same check: of 9 emitted `\index` commands, the fixture and its role-free twin differ on
+  exactly the two the role is meant to change and agree on the other seven.
+- **AC5** — the gfm render's role-carrying spans are exactly the five the fixture writes, byte for
+  byte; no span carries a literal `role=`, and no `qi-`, `\index{` or command token reaches the
+  format.
+- **AC6** — `\providecommand*\quartoindexprincipal` is present in the fixture's rendered preamble
+  and absent from both `examples/content.tex` and the twin's.
+- **AC7** — both suite modes exit 0, as above.
+
+**Discrimination.** Twelve planted defects, each caught: the emphasis on the wrong page, on every
+locator, on none, leaked onto the control; a conflicting-encapsulation warning in the transcript;
+the HTML emphasis on the wrong mention, its class dropped, its emphasis node dropped; a literal ARIA
+role in gfm; plumbing residue in gfm; the role inert; the role reaching the control mark. Both
+reports also pass `warn_discrimination` (missing and duplicated) in all three formats.

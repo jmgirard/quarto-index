@@ -405,3 +405,45 @@ user chose to NARROW the milestone rather than repair the book path a fourth tim
 cross-chapter book realization leaves M21's scope; the ten smaller findings are fixed on the
 way out, and R3-F3 is dispositioned by the narrowing itself, since it lives entirely in the
 book path.
+
+### Round 4 (2026-08-22)
+
+`cairn_validate` passes, `main` has not moved, no principle changed.
+`tests/run-tests.sh --self-test` exits 0 at 367 checks. The prior-review lens reported
+nothing and confirmed all 28 earlier findings still hold or are correctly superseded by the
+narrowing, R3-F9's candidate row included. The other two reported ten between them, one of
+which both found independently.
+
+- **R4-F1 (both lenses)** — `report_ranges(not book)` was left as it was when the pairing
+  scope narrowed to a chapter, so a book chapter still suppresses ALL five kind-specific
+  pairing reports and the book re-reports those marks with one message naming the wrong
+  cause. Reproduced: `examples/book-order/`'s `Unclosed` is an opening never closed
+  anywhere, a one-chapter fault, yet it is told the cause is chapter-crossing and that a
+  same-chapter range "would have been paired as usual". The diff-bug lens went further and
+  built a second opening of one term inside one chapter: no `already-open` warning fired at
+  all, so AC4's third shape goes unreported in a book while README's five refusals carry no
+  book exception. Under D-009 a chapter IS the pairing scope, so those findings are facts a
+  chapter is now entitled to state.
+- **R4-F6** — `_ind`'s registration check accepts `printed == composed` OR
+  `printed == opened[ordinal]`. For a multi-page range the first must hold, but for the
+  same-page range (`erlking`) the second always does, so `closed[ordinal]` is never
+  constrained — the AC2 chain is unfunded in exactly the slot the fixture added for it.
+- **R4-F2/F3/F4/F5/F8** — comment and fixture debris the narrowing left: `store_write`
+  carries two contradictory blocks stacked; three fixtures state cross-chapter behaviour
+  their own checks now assert the opposite of; five module comments still say a book pairs;
+  `pair_ranges`, `range_end` and `report_range` stay exported for a caller that no longer
+  exists, and `report_range`'s `scope` parameter has one live value; two test comments claim
+  discriminating power their rows no longer have.
+- **R4-F7** — the book-order attribution checks read only the first of that fixture's two
+  renders. **R4-F9** — `valid_record` accepts any string for `paired`, and `html.lua` drops
+  a locator on `"close"`; latent, since nothing else writes the field. **R4-F10** — no
+  LESSONS.md line for the repeated mistake that cost three returns.
+
+The LaTeX subsystem was independently exercised this round rather than read: two principal
+ranges of one key composed and registered both spans and printed `otters, [P:1–3], [P:5–7]`,
+and a stale `.aux` survived deleting every `range=` at exit 0 — R3-F8's clearing and F3's
+fold both hold. The two passes were traced in step on every path.
+
+R4-F1 is a real reporting defect and R4-F6 a real coverage gap; the remaining eight are
+consistency debris from the narrowing itself rather than new instances of the design fault
+the descope removed. Fourth defect return, above the thrash rule's threshold.

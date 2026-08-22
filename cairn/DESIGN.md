@@ -255,8 +255,10 @@ Two back-ends ship:
   names prints cannot diverge, and a target the fold rewrites is reported once,
   on the mark that wrote it (added M18). A key more than one mark describes
   differently is
-  composed into ONE command every mark of it emits, since makeindex refuses to
-  reconcile rival encapsulations on one key and page — it warns at exit 0 and
+  composed into ONE command every mark of it emits — and where any mark of a
+  key declares a mention role, that one command carries the per-key
+  encapsulation the typeset-time channel below rides on — since makeindex
+  refuses to reconcile rival encapsulations on one key and page — it warns at exit 0 and
   writes a correct `.ind`, and Quarto alone fails the render, on a regex over
   that transcript (M15, mechanism corrected M20; D-003 records why repairing
   this sits inside GP2). Where the key

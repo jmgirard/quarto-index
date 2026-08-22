@@ -465,6 +465,20 @@ def _cases(argv):
     # One expected printed line per compiled entry, derived rather than written
     # down. `\hyperpage` groups (a key with no principal mention) carry no
     # identifier and so can never be registered.
+    # Where each principal mark actually SITS, stated here and not read from the
+    # artifact under test. Without it this reader is self-referential: it derives
+    # the expected index from the same `.aux` the filter wrote, so a registration
+    # written from the wrong page moves the expectation and the artifact together
+    # and passes — which is how the four hand-written strings this replaced, for
+    # all their weakness, still caught a shape it would not (review round 3).
+    # Read off the fixture's own page structure: `wyvern`'s pair is on page 1
+    # with a plain mention on 2; `naga`'s note is on 2; `oni` runs 3-5 with the
+    # principal on 4; `sylph` runs 6-8 with the principal on its first page;
+    # `troll` is on 9 and 10 with the principal second; `undine` and the
+    # fold-self-target entry are both on 11.
+    WHERE = {'wyvern': '1', 'naga': '2', 'oni': '4', 'sylph': '6',
+             'troll': '10', 'undine': '11', 'folk, kin': '11'}
+
     entries, groups, marked, plain = [], [], [], []
     for chunk in re.split(r'\\(?:item|subitem|subsubitem)\s', ind)[1:]:
         line = ' '.join(chunk.split())
@@ -487,6 +501,34 @@ def _cases(argv):
                 items.append(printed(item))
         if items:
             entries.append((term, term + ', ' + ', '.join(items)))
+        for gid, gitems in mine:
+            for rid, rpage in registered:
+                if rid != gid:
+                    continue
+                # Every registration names a page of the entry that carries its
+                # own identifier, and the page the fixture puts that entry's
+                # principal mark on. The first clause is the general invariant
+                # `_ind` already holds for AC1; the second is what breaks the
+                # self-reference.
+                def covers(item):
+                    if item == rpage:
+                        return True
+                    if '--' not in item:
+                        return False
+                    lo, hi = item.split('--', 1)
+                    # A registered page may sit ANYWHERE inside a folded range —
+                    # that is the documented degradation, and the page is still
+                    # a page of this entry even though the lookup will miss it.
+                    return (lo.isdigit() and hi.isdigit() and rpage.isdigit()
+                            and int(lo) <= int(rpage) <= int(hi))
+                if not any(covers(i) for i in gitems):
+                    _fail('M20 T9: %s is registered from page %s, which is not '
+                          'among the pages its own entry (%r) lists: %r'
+                          % (rid, rpage, term, gitems))
+                if term in WHERE and rpage != WHERE[term]:
+                    _fail('M20 T9: the %r entry is registered from page %s; its '
+                          'principal mark sits on page %s'
+                          % (term, rpage, WHERE[term]))
     if not groups:
         _fail('M20 T9: the compiled index carries no %s group at all, so every '
               'clause below would be quantified over nothing' % locator_cmd)
@@ -505,6 +547,10 @@ def _cases(argv):
             _fail('M20 T9: the %r entry prints %r; derived from its own .ind group '
                   'and the .aux registry it must print %r'
                   % (term, near or sorted(printed_lines), want))
+    if len(registered) != len(WHERE):
+        _fail('M20 T9: the .aux carries %d registrations; the fixture writes '
+              'mention="principal" on %d marks that contribute a locator (%s)'
+              % (len(registered), len(WHERE), sorted(WHERE)))
     if index.count('[P:') != len(marked):
         _fail('M20 T9: the printed index marks %d locators; the .aux registers %d '
               'of the .ind\'s page items (%r)'
@@ -516,9 +562,8 @@ def _cases(argv):
     if not any(len(i) > 1 and '\u2013' not in i for i in marked):
         _fail('M20 T9: no marked locator has a page number of more than one '
               'character, which is the shape a per-token split gets wrong: %r' % marked)
-    if not any((gid, items[0]) not in registered
-               and any((gid, i) in registered for i in items[1:])
-               for gid, items in groups if len(items) > 1):
+    if not any((gid, i) in registered
+               for gid, items in groups for i in items[1:]):
         _fail('M20 T9: no entry registers a page that is not the first item of its '
               'own locator list, which is the other shape a per-token split gets '
               'wrong: %r' % (groups,))

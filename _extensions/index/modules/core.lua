@@ -135,17 +135,33 @@ local LOCATOR_ID_PREFIX = "qi"
 -- kernel's own `\@nil` is.
 local PRINCIPAL_SUBSYSTEM = table.concat({
   "\\makeatletter",
+  -- Both sides sanitize the page string before it reaches a `\csname`. A
+  -- document may redefine `\thepage` to something holding a non-expandable
+  -- token — `\thesection\,\arabic{page}` is an ordinary page style — and
+  -- `\protected@write` writes whatever it expands to. Unsanitized, that token
+  -- reaches `\csname` and raises `Missing \endcsname inserted` on every pass
+  -- after the first. makeindex already rejects such a page outright, so the
+  -- document has no index either way, but it must still BUILD: turning a clean
+  -- render into a LaTeX error is the IP2 break this subsystem exists to avoid,
+  -- not one it may add (review round 3). `\@onelevel@sanitize` is applied
+  -- identically here and at lookup, so the two agree on the key.
   "\\providecommand*\\" .. PRINCIPALPAGE_COMMAND ..
-    "[2]{\\expandafter\\gdef\\csname qi@p@#1@#2\\endcsname{}}",
+    "[2]{\\def\\qi@key{#2}\\@onelevel@sanitize\\qi@key" ..
+    "\\expandafter\\gdef\\csname qi@p@#1@\\qi@key\\endcsname{}}",
   "\\providecommand*\\" .. REGISTER_COMMAND ..
     "[1]{\\protected@write\\@auxout{}{\\string\\" .. PRINCIPALPAGE_COMMAND ..
     "{#1}{\\thepage}}}",
   -- The empty-list guard is not decoration: `\qi@sniff` reads its first token
-  -- as an undelimited argument, so an empty page list would let it swallow the
-  -- `\qi@stop` delimiter and run away — a hard render failure in the one
-  -- subsystem whose whole justification is that a marked term must never break
-  -- a document (IP2). No makeindex output shape reaching it is known; the
-  -- guard costs one comparison and removes the question (review round 2).
+  -- as an undelimited argument, so a page list with no token in it would let
+  -- it swallow the `\qi@stop` delimiter and run away — a hard render failure
+  -- in the one subsystem whose whole justification is that a marked term must
+  -- never break a document (IP2). The test is `\def` and not `\edef`: the page
+  -- list arrives already wrapped in the page-link command, and expanding it to
+  -- compare would expand that too — which fails outright. So the guard catches
+  -- a byte-empty list and not a space-only one, which runs away the same way;
+  -- both are unreachable from makeindex, and covering the second is not worth
+  -- expanding an argument this command must pass through untouched (review
+  -- round 3, which found the space case and the expansion hazard together).
   "\\providecommand*\\" .. LOCATOR_COMMAND ..
     "[2]{\\def\\qi@arg{#2}\\ifx\\qi@arg\\@empty\\else" ..
     "\\qi@sniff{#1}#2\\qi@stop\\fi}",
@@ -157,6 +173,7 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   "\\def\\qi@print#1{\\ifx\\qi@wrap\\@empty#1\\else\\qi@wrap{#1}\\fi}",
   "\\def\\qi@emit#1{\\qi@sep\\def\\qi@sep{, }" ..
     "\\edef\\qi@pg{\\qi@trim#1\\@empty\\qi@stop}" ..
+    "\\@onelevel@sanitize\\qi@pg" ..
     "\\expandafter\\ifx\\csname qi@p@\\qi@id @\\qi@pg\\endcsname\\relax" ..
     "\\qi@print{\\qi@pg}\\else\\" .. PRINCIPAL_COMMAND ..
     "{\\qi@print{\\qi@pg}}\\fi}",

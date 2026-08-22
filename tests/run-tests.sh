@@ -266,6 +266,10 @@ README_PRINCIPAL_CLAIMS=(
   $'control\ta term with no role anywhere is unchanged'
   $'redefinable\tDefine your own in the document\'s preamble and yours is kept'
   $'no locator\tThe role is reported and dropped, and the mark indexes exactly as it would without it'
+  # The exception the LaTeX level fold creates, which the blanket claim above
+  # contradicted once the fold-induced self-target began keeping its role
+  # (review round 3).
+  $'fold exception\tThe same mark can therefore be emphasized in the PDF and plain in HTML'
   $'empty value\tsince `mention=""` is a value you wrote rather than an attribute you left off'
   # The one silent degradation (RR01 recommendation 4). Pinned like every other
   # documented behavior, and exercised by the T9 fixture's `oni` entry rather
@@ -8281,6 +8285,26 @@ filtersrc.sources()" >/dev/null 2>&1; then
   m20_defect "a registration moved to the other locator of its own entry" \
     m20_cases "$WORK/principal-cases.txt" "$M20W/cases-clean.ilg" \
       "$M20W/cases-clean.ind" "$M20W/cases-moved.aux"
+  # The two shapes a reader deriving its expectation from the .aux CANNOT see
+  # unless it holds an independent statement of where each principal mark sits:
+  # here the registry and the printed page are mutated TOGETHER, which is what a
+  # real defect in the registration would do, and the previous derived-only
+  # reader passed both (review round 3). The first lands on a page the entry
+  # does not carry at all; the second on the entry's own other locator.
+  m20_plant "$WORK/principal-cases.aux" "$M20W/cases-offpage.aux" \
+    -e "s/{qi2}{2}/{qi2}{3}/"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/cases-offpage.txt" \
+    -e "s/^naga, \[P:2\]$/naga, 2/"
+  m20_defect "a registration on a page its own entry does not carry, with the printed index agreeing" \
+    m20_cases "$M20W/cases-offpage.txt" "$M20W/cases-clean.ilg" \
+      "$M20W/cases-clean.ind" "$M20W/cases-offpage.aux"
+  m20_plant "$WORK/principal-cases.aux" "$M20W/cases-otherloc.aux" \
+    -e "s/{qi1}{1}/{qi1}{2}/"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/cases-otherloc.txt" \
+    -e "s/^wyvern, \[P:1\], 2$/wyvern, 1, [P:2]/"
+  m20_defect "the same-page pair registered from its other locator, with the printed index agreeing" \
+    m20_cases "$M20W/cases-otherloc.txt" "$M20W/cases-clean.ilg" \
+      "$M20W/cases-clean.ind" "$M20W/cases-otherloc.aux"
   m20_plant "$WORK/principal-cases.ilg" "$M20W/cases-warned.ilg" \
     -e 's/0 warnings)/1 warning)/'
   m20_defect "a makeindex warning on the fixture carrying the same-page pair" \

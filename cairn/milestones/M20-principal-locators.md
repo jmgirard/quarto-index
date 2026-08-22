@@ -1,6 +1,6 @@
 # M20: A term's principal discussion prints as its principal locator
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -188,6 +188,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: T9 done. `examples/principal-cases.qmd` renders the four shapes IP2's forever clause earns, read out of the PDF text: `wyvern, [P:1], 2` (the same-page pair, folded and emphasized), `naga, [P:2]` (a principal mark in a footnote, registered from its own page), `oni, 3--5` (a registered page inside a makeindex range, printing unemphasized — the one documented degradation, asserted rather than tolerated) and `pixie, 6, 7` (the role-free control). Review F13 is settled by measurement rather than left open: Quarto puts a document's own `include-in-header` ABOVE what a filter injects, so `\providecommand` finds the author's definition already there and steps aside — README's "yours is kept" and its `\newcommand*` recipe are correct, and `\renewcommand*` in that position fails outright, which is how the ordering was established. README gained the silent-degradation paragraph and a seventh byte-pinned claim; `latex.lua`'s two comment blocks now state that makeindex warns at exit 0 and Quarto alone fails the render, and withdraw the claim that a styled and a plain locator are not rivals.
 - 2026-08-21: all nine tasks done. `tests/run-tests.sh` passes at 228 checks and `--self-test` at 310, both run clean on an untouched tree (merge base 208 / 248; the pre-T8 checkpoint 226 / unverified). Thirty-five M20 plants discriminate, among them the eleven that replaced the superseded `.ind` emphasis plants and the four AC6 plants review F4 recorded as missing. Status -> review. F1 from the return is repaired at the design level rather than patched; F4, F13 and the freshness half of F10 are closed in passing; F5, F6, F7, F8 and the rest of F10 stand for triage at the gate.
 - 2026-08-21: review round 2 — fresh evidence recorded for all seven criteria and every box ticked, each verified off the rendered artifacts by hand as well as through its reader. Suite 228 / self-test 310 on b150ef2, 35 plants caught; `cairn_validate` all-pass, no principle changed, the generic profile adds no toolchain checks; no CI is configured on the repo. Two of three fresh-context lenses reported: the prior-review lens found no PR-comment surface and three still-open carried findings (F5, F6, F8), and independently verified F7 and F10's remainder as genuinely repaired rather than merely claimed; the history lens found no regression of any past milestone's fix and two low tracking-row staleness items. The diff-bug lens is still running, so triage and the approval gate are not yet reached.
+- 2026-08-21: review round 2 returned M20 to in-progress. One floor-qualifying finding: `\qi@sniff`'s hyperref branch hands the page list to `\qi@split` unbraced, and because `#3` is a delimited argument TeX has already stripped its braces, so the split takes only the first token and the rest is typeset outside `\hyperpage`. Verified at the gate by direct render against the real call shape: a principal page of more than one token is never emphasized, a range whose FIRST page is registered is emphasized though README says otherwise, and the fixture's own `imp` and `kraken` on page 10 print plain. All seven criteria were verified and stay ticked — the defect falls outside every criterion's domain, which is itself finding R2-F2. Fifteen further findings carried in the Review section. Defect returns on this milestone: 2.
 
 ## Decisions
 
@@ -361,3 +362,68 @@ unemphasized (`oni, 3--5`), the one documented degradation, asserted rather than
 the role-free control is untouched (`pixie, 6, 7`). All of it legible only because the
 author's own redefinition of the emphasis command is the one that took effect.
 
+**Findings (three fresh-context reviewers).** The prior-review lens found no PR-comment
+surface (`pulls/comments` empty) and reported three carried findings still open; it also
+verified round 1's F7 and the size half of F10 as genuinely repaired. The history lens found
+no regression of any past milestone's fix — it traced the M15 narrowing and confirmed the new
+machinery is reachable only where a mark can legitimately be principal — and returned two low
+tracking-row items. The diff-bug lens returned sixteen, the first of them floor-qualifying.
+
+**R2-F1 (floor return, verified independently) — the emphasis is lost on every page number
+of more than one token, and the trailing characters leave the hyperlink.** In
+`core.lua`'s `\qi@sniff`, the hyperref branch passes the page list to `\qi@split` as `#3`
+unbraced. `#3` is a DELIMITED argument, so TeX has already stripped the braces from
+`{1, 2}`; `\qi@split`'s own `#3` is undelimited and takes only the first token, and the
+remainder is typeset raw, outside `\hyperpage`. Verified by direct render at the gate,
+against the real call shape hyperref produces: `{10}` with 10 registered prints `<HP:1>0`
+(no emphasis, `0` unlinked); `{1, 2}` with 2 registered prints `<HP:1>, 2`; `{1--3}` with 1
+registered prints `[P:<HP:1>]-3`, emphasizing a range README says prints plain; `{1, 3, 12}`
+with 3 registered emphasizes nothing. The feature works only where the principal page is the
+FIRST item of the list and a single token. `examples/principal.qmd`'s own `imp` and `kraken`
+are registered on page 10 and print unemphasized. Bracing it — `{\qi@split{#1}{#2}{#3}}` —
+makes all four cases correct, verified in the same probe.
+
+**R2-F2 — no criterion binds the typeset result, so all seven were green while R2-F1 was
+live.** AC1 stops at `.ind`/`.ilg`/`.aux` agreement and AC6 at what the preamble DEFINES,
+never at what it expands to; an inert `\providecommand*\quartoindexlocator[2]{#2}` passes
+both. The T9 reader is the only compensating control, and its four oracle strings are
+byte-identical under R2-F1 because every one of them registers a first-or-only page. The
+ROADMAP row recording that the last leg has no criterion binding it is the same gap; the
+cost landed immediately rather than later.
+
+**R2-F3 — three byte-pinned README claims are false as the code stands**: "the index
+emphasizes that locator alone"; "a principal mention whose page falls inside such a range
+prints plain, silently" (it prints emphasized when the registered page is the range's
+first); and the attribution of the degradation to ranges rather than to any multi-token page
+string, which changes what M21 inherits.
+
+**R2-F4 — `\quartoindexlocator` with an empty page list is a runaway argument**, an
+unguarded hard render failure in a subsystem whose whole justification is IP2. No makeindex
+output shape reaching it was found, so it is unreachable today.
+
+**R2-F5 — the fold-induced self-target reproduces the contradiction round 1's F2 was
+returned for.** A mark whose target differs from its entry before the three-level fold but
+matches after it is told its cross-reference took the locator's place — role dropped — and
+then told the target was dropped as a self-reference, after which it emits a plain locator
+anyway. Two consecutive reports contradicting each other about one mark, and a role
+unapplied though a locator exists. Reported by reading, not rendered.
+
+**R2-F6 — `DESIGN.md`'s architecture section still describes the LaTeX back-end as
+`\index` + imakeidx + `\printindex`**, saying nothing about the uniform per-key
+encapsulation, the `.aux` registry or typeset-time application; the book paragraph's
+enumeration of what a chapter writes to the sidecar omits the role.
+
+**R2-F7 to R2-F16, lower.** `\quartoindexregister` is unprotected and can reach a moving
+argument (uncertain, unprobed); `_ind`'s hardcoded `\hyperxindexformat` judged acceptable
+but its `.ind`-only focus is what left the hyperref branch unasserted; AC5's residue token
+set omits `quartoindexlocator`/`quartoindexregister`; `_gfm`'s span pattern cannot see a
+nested span; round 1's F6 unrepaired and its `awk` no-op dead code; round 1's F5 unrepaired
+(no book fixture for the sidecar `role`); round 1's F8 only cosmetically addressed; three
+more never-reset accumulators, one of whose values now reaches an on-disk artifact; README's
+`\newcommand*` recipe measured on one ordering only; `_ind` mis-keys a term containing a
+comma and raises an unhandled `ValueError` on a roman folio.
+
+**Disposition.** R2-F1 is a load-bearing defect in what the extension does for its authors —
+the feature does not work in any document whose principal mention lands on page 10 or later —
+so the milestone returns to `in-progress` under the return floor. Triage of the remaining
+fifteen goes to the next gate. Defect returns on this milestone: 2.

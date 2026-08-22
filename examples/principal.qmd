@@ -76,5 +76,24 @@ principal one: [gorgon]{.index mention="principal"}.
 The cross-reference mark on the same key, a page later, which contributes no
 locator of its own: [gorgon]{.index see="basilisk"}.
 
+# A role the mark leaves nothing to apply it to
+
+Two shapes whose role is unusable for reasons the cross-reference case above
+does not cover, and which were dropped in silence before this milestone read
+them. A mark carrying BOTH cross-reference attributes: the report names both,
+not merely the first it finds:
+[harpy]{.index mention="principal" see="basilisk" see-also="faun"}.
+
+A mark that indexes no entry at all — no `entry=` and no visible text — so
+there is no locator for a role to emphasize either:
+[]{.index mention="principal"}.
+
+A mark whose only cross-reference names its own entry: the target is dropped as
+a self-reference and the mark then indexes plainly, so it DOES have a locator
+to emphasize and the role survives — a role reported as displaced by a
+cross-reference that is itself about to be dropped would contradict the drop's
+own report about the same mark:
+[imp]{.index mention="principal" see="imp"}.
+
 ::: {.qi-index-here}
 :::

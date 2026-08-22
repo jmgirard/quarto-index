@@ -7672,12 +7672,30 @@ pass "M20-AC2: the HTML index marks exactly the principal mark's locator link, a
 # reported the right number of times about the wrong marks would pass a total.
 M20_UNKNOWN='names no role this extension knows'
 M20_NOLOCATOR='has no locator to emphasize'
+M20_UNINDEXED='the mark indexes nothing, so there is no locator to emphasize'
 for fmt in latex html gfm; do
+  # Two marks are told their cross-reference took the locator's place, and
+  # exactly two: `imp` writes a role beside a target naming its OWN entry, which
+  # is dropped as a self-reference so the mark does have a locator after all. A
+  # third here would be that mark being told otherwise a line before the drop's
+  # own report contradicts it (review F2).
   check_warning_count "$WORK/principal-$fmt.log" \
-    "$M20_NOLOCATOR" 1 "M20-AC3 ($fmt)"
+    "$M20_NOLOCATOR" 2 "M20-AC3 ($fmt)"
   check_warning_count "$WORK/principal-$fmt.log" \
     'mention="principal" on term "cockatrice" carries see= as well' 1 \
     "M20-AC3 (names the mark and the attribute, $fmt)"
+  # A mark writing both attributes is told about both: a report naming only the
+  # first one it found would describe half the mark (review F12).
+  check_warning_count "$WORK/principal-$fmt.log" \
+    'mention="principal" on term "harpy" carries see= and see-also= as well' 1 \
+    "M20-AC3 (names every cross-reference attribute, $fmt)"
+  # And a role on a mark that indexes nothing at all is reported rather than
+  # dropped in silence, which is the other way a mark can have no locator for a
+  # role to reach (review F11).
+  check_warning_count "$WORK/principal-$fmt.log" "$M20_UNINDEXED" 1 \
+    "M20-AC3 (a mark that indexes nothing, $fmt)"
+  check_warning_count "$WORK/principal-twin-$fmt.log" "$M20_UNINDEXED" 0 \
+    "M20-AC3 (twin, a mark that indexes nothing, $fmt)"
   check_warning_count "$WORK/principal-$fmt.log" "$M20_UNKNOWN" 2 \
     "M20-AC4 ($fmt, total)"
   check_warning_count "$WORK/principal-$fmt.log" \
@@ -7956,8 +7974,10 @@ filtersrc.sources()" >/dev/null 2>&1; then
   #     over all three formats, which is the axis a report that quietly stopped
   #     being format-neutral would slip through.
   for fmt in latex html gfm; do
-    warn_discrimination "$WORK/principal-$fmt.log" "$M20_NOLOCATOR" 1 \
+    warn_discrimination "$WORK/principal-$fmt.log" "$M20_NOLOCATOR" 2 \
       "M20-AC3 ($fmt)"
+    warn_discrimination "$WORK/principal-$fmt.log" "$M20_UNINDEXED" 1 \
+      "M20-AC3 (a mark that indexes nothing, $fmt)"
     warn_discrimination "$WORK/principal-$fmt.log" "$M20_UNKNOWN" 2 \
       "M20-AC4 ($fmt)"
   done

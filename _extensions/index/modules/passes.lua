@@ -159,13 +159,12 @@ local function Span(span)
          .. "mistake, and neither is dropped for being one of two")
   end
 
-  -- Derived before the back-end branch for the same reason the cross-references
-  -- are: a role is a fact about what the author wrote, so its two reports fire
-  -- in every format. `xrefs` is read for the attribute name rather than
-  -- `declared`, because a mark whose only cross-reference had no usable target
-  -- has no cross-reference left to take the locator's place.
-  local role = qi_marks.mention_role(span.attributes[qi_core.MENTION_ATTR], context,
-                                     #xrefs > 0 and xrefs[1].kind.attr or nil, true)
+  -- The role attribute, read once here and resolved further down. It is not
+  -- resolved yet because whether the mark has a locator to emphasize is not
+  -- settled until the entry is derived and the self-referential targets are
+  -- dropped, and a role reported against a cross-reference that is itself
+  -- about to be dropped contradicts the drop's own report (review F2).
+  local mention = span.attributes[qi_core.MENTION_ATTR]
 
   -- Derived once, and before the back-end branch: the levels are the author's
   -- text whatever format this is, and the empty-level warnings the derivation
@@ -174,6 +173,11 @@ local function Span(span)
     qi_marks.derive_levels(entry, visible, declared, #span.content, context,
                            sort_value, true)
   if levels == nil then
+    -- A mark that indexes nothing has no locator to emphasize either, and
+    -- derive_levels has just said why it indexes nothing; the role's own
+    -- report follows it in the same shape the dropped cross-reference uses
+    -- (review F11).
+    qi_marks.mention_role(mention, context, { unindexed = true }, true)
     return disposition == "drop" and {} or nil
   end
 
@@ -206,6 +210,19 @@ local function Span(span)
     end
   end
   xrefs = surviving
+  -- Now that the self-referential targets are gone, what the mark actually
+  -- contributes is settled: a mark with a surviving cross-reference emits one
+  -- in the locator's place, and any other mark emits a locator. Before the
+  -- back-end branch, like every other judgement about what the author wrote,
+  -- so both reports fire in every format. The blocker names EVERY surviving
+  -- attribute, in the fixed `see` before `see also` order xrefs are built in.
+  local blocker_attrs = {}
+  for _, xref in ipairs(xrefs) do
+    blocker_attrs[#blocker_attrs + 1] = xref.kind.attr
+  end
+  local role = qi_marks.mention_role(mention, context,
+                                     #blocker_attrs > 0 and
+                                       { attrs = blocker_attrs } or nil, true)
   -- Resolved by the collect pass, which has already seen every mark of this
   -- entry: whichever mark declared the sort key, every mark of the entry files
   -- under it.

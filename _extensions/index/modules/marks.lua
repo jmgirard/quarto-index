@@ -70,19 +70,30 @@ end
 -- what the author wrote, so both reports below fire in every format — a
 -- misused mark is diagnosed where there is no index back-end at all.
 --
--- Returns the role, or nil where there is none to apply. `xref_attr` is the
--- attribute of the first cross-reference the mark declares, or nil; a mark
--- carrying one has no locator to emphasize, because the cross-reference takes
--- the locator's place. `report` follows the convention the rest of this file
--- uses: only the emitting pass says anything.
+-- Returns the role, or nil where there is none to apply. `blocker` names what
+-- leaves the mark with no locator to emphasize, or is nil where the mark
+-- contributes one: `{ attrs = {...} }` for the cross-references that take the
+-- locator's place — EVERY one the mark still carries, because a mark writing
+-- both attributes is told about both and a message naming only the first
+-- describes half its own mark (review F12) — and `{ unindexed = true }` for a
+-- mark that indexes no entry at all, whose role is otherwise dropped in
+-- silence though it is as unusable as the other (review F11). `report` follows
+-- the convention the rest of this file uses: only the emitting pass says
+-- anything.
 --
--- An unrecognized value is reported BEFORE the cross-reference case, and the
--- two never both fire: a value naming no role is the more basic mistake, and
--- telling an author their unknown role was ignored for want of a locator
+-- An unrecognized value is reported BEFORE either blocker, and no two of the
+-- three ever fire together: a value naming no role is the more basic mistake,
+-- and telling an author their unknown role was ignored for want of a locator
 -- would send them looking in the wrong place. An EMPTY value is unrecognized
 -- rather than absent — it is a value the author wrote, and reading it as
 -- absence would swallow a typo silently.
-local function mention_role(value, context, xref_attr, report)
+--
+-- The caller derives `blocker` from the cross-references that SURVIVE the
+-- self-reference drop, never from the declared ones: a target naming its own
+-- entry is dropped and the mark then indexes plainly, so it takes no locator's
+-- place, and a role reported as displaced by it would contradict the drop's
+-- own report about the same mark one line later (review F2).
+local function mention_role(value, context, blocker, report)
   if value == nil then
     return nil
   end
@@ -92,9 +103,21 @@ local function mention_role(value, context, xref_attr, report)
     end
     return nil
   end
-  if xref_attr ~= nil then
+  if blocker ~= nil and blocker.unindexed then
     if report then
-      qi_core.warn(('%s="%s" on %s carries %s= as well, and a cross-reference takes the place of a locator, so this mark has no locator to emphasize; the role is dropped and the mark indexes as it would without it'):format(qi_core.MENTION_ATTR, value, context, xref_attr))
+      qi_core.warn(('%s="%s" on %s; the mark indexes nothing, so there is no locator to emphasize and the role is dropped too'):format(qi_core.MENTION_ATTR, value, context))
+    end
+    return nil
+  end
+  if blocker ~= nil and #blocker.attrs > 0 then
+    -- One attribute reads `see=`, two `see= and see-also=`, in the fixed order
+    -- the caller passes them.
+    local named = {}
+    for _, attr in ipairs(blocker.attrs) do
+      named[#named + 1] = attr .. "="
+    end
+    if report then
+      qi_core.warn(('%s="%s" on %s carries %s as well, and a cross-reference takes the place of a locator, so this mark has no locator to emphasize; the role is dropped and the mark indexes as it would without it'):format(qi_core.MENTION_ATTR, value, context, table.concat(named, " and ")))
     end
     return nil
   end

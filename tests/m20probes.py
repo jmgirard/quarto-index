@@ -134,10 +134,20 @@ def _html(argv):
               f'{got}, expected {want}', file=sys.stderr)
         sys.exit(1)
     # And a mark whose role was dropped contributes no locator at all, so there is
-    # nothing here to be principal.
-    if locators('cockatrice'):
-        print('FAIL: M20-AC2: cockatrice carries a locator; its only mark is a '
-              'cross-reference, which takes the locator\'s place', file=sys.stderr)
+    # nothing here to be principal. The entry's EXISTENCE is asserted first:
+    # `locators` returns None for a term with no entry and [] for an entry with
+    # no locator links, and testing the two alike would let this control pass on
+    # an index that had lost the entry entirely (review F9).
+    got = locators('cockatrice')
+    if got is None:
+        print('FAIL: M20-AC2: the index has no cockatrice entry at all, so the '
+              'control for a cross-reference mark\'s dropped role cannot fail',
+              file=sys.stderr)
+        sys.exit(1)
+    if got != []:
+        print(f'FAIL: M20-AC2: cockatrice carries {len(got)} locator link(s); its '
+              f'only mark is a cross-reference, which takes the locator\'s place',
+              file=sys.stderr)
         sys.exit(1)
     print(f'ok   M20-AC2: the index entry\'s second locator link carries {cls} and '
           f'a strong node, its other two carry neither, and the role-free control '
@@ -156,6 +166,8 @@ def _gfm(argv):
         '<span class="index" data-mention="paramount">dryad</span>',
         '<span class="index" data-mention="">ettin</span>',
         '<span class="index" data-mention="principal">gorgon</span>',
+        '<span class="index" data-mention="principal" data-see="basilisk" data-see-also="faun">harpy</span>',
+        '<span class="index" data-mention="principal" data-see="imp">imp</span>',
     ])
     if got != want:
         print('FAIL: M20-AC5: the spans carrying the role attribute in the gfm '
@@ -228,8 +240,14 @@ def _twin(argv):
     # exact set, so a role that stopped taking effect fails here just as one that
     # leaked into a mark it should not reach.
     differ = sorted({x for x, y in zip(a, b) if x != y})
+    # `imp` is here because its role SURVIVES: its only cross-reference names its
+    # own entry, so the target is dropped and the mark indexes plainly, leaving a
+    # locator for the role to emphasize. A filter that resolved the role against
+    # the declared cross-references rather than the surviving ones would drop it
+    # and lose this row (review F2).
     want = sorted({r'\index{basilisk|quartoindexprincipal}',
-                   r'\index{gorgon@gorgon, \see{basilisk}{}|quartoindexprincipal}'})
+                   r'\index{gorgon@gorgon, \see{basilisk}{}|quartoindexprincipal}',
+                   r'\index{imp|quartoindexprincipal}'})
     if differ != want:
         print(f'FAIL: M20-AC3/AC4: the commands that differ from the twin are\n'
               f'  {differ}\nexpected\n  {want}', file=sys.stderr)

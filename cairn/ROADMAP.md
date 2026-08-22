@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-21 (M20 and M21 planned from the page-range & styling candidate row, which they absorb: M20 gives a term's principal discussion an emphasized locator, M21 gives a discussion spanning pages one range locator and depends on it. A makeindex probe at the plan gate read every misuse here as a warning at exit 0 and concluded neither carries a break-the-document risk; that conclusion was wrong and is corrected M20 — makeindex does warn at exit 0, but Quarto fails the render on a regex over the transcript, so a warning here IS a break-the-document risk (D-007). The probe's other finding stands: an ordinary mark inside a term's own range is folded in with no warning at all. Three Scope-Out items clustered into one candidate row. Caps and byte budgets clean.)_
+_Last hygiene check: 2026-08-22 (M20 merged and archived — a term's principal discussion now prints emphasized in both back-ends, the LaTeX side on a typeset-time channel because makeindex's encapsulation channel cannot carry it (D-007). Three review rounds, two defect returns; RB01/RR01 already archived. M05's range-fold lesson retired under the enforcement exit, four checks now failing without it, and M20's oracle-independence lesson added in its place. M16's terminal row pruned to hold the 5-row retention. M21 is now workable. Caps and byte budgets clean.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M16 | The suite's source checks read the whole extension, not one file | done | — | normal | milestones/archive/M16-source-set-evidence.md |
 | M17 | index.lua becomes a thin entry point over required modules | done | M16 | normal | milestones/archive/M17-module-split.md |
 | M15 | A term marked both plainly and with a cross-reference builds | done | — | normal | milestones/archive/M15-clash-free-emission.md |
 | M18 | A cross-reference target is judged against the path the entry prints | done | — | normal | milestones/archive/M18-fold-aware-xref-targets.md |
 | M19 | A reported level count says which levels it counts | done | — | normal | milestones/archive/M19-level-count-naming.md |
-| M20 | A term's principal discussion prints as its principal locator | review | — | normal | milestones/M20-principal-locators.md |
+| M20 | A term's principal discussion prints as its principal locator | done | — | normal | milestones/archive/M20-principal-locators.md |
 | M21 | A discussion spanning pages prints as one page range | planned | M20 | normal | milestones/M21-page-ranges.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->

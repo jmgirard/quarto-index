@@ -196,6 +196,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: the deferred round-2 findings got candidate-row homes on existing rows rather than new ones (search-first): the moving-argument row takes R2-F7, the accumulator-state row takes R2-F14 — `principal_ordinals` is the first accumulator whose VALUE reaches an on-disk artifact, so a reused Lua state would offset the next document's registry keys rather than merely skew a count — and the acceptance-suite hardening cluster takes R2-F10, R2-F12, R2-F13 and R2-F15 with round 1's F5 and F8. R2-F8 was judged acceptable by the reviewer and takes no row. ROADMAP 59 lines / 18,631 bytes, inside both budgets.
 - 2026-08-21: T10 checkpoint 2 — plain suite verified green at 228 on this tree; the `--self-test` run is still in flight, so plant discrimination stays UNVERIFIED and T10 stays unticked.
 - 2026-08-21: T10 done and verified clean. `tests/run-tests.sh` 228 checks exit 0 and `--self-test` 317 exit 0, both on this tree; 42 M20 plants discriminate, seven of them new — a registered page that is not first in its list, a page of more than one character, a range registered at its own first page, a role dropped from a fold-induced self-target, a registration moved to the other locator of its own entry, and the two transcript clauses split apart. Merge base 208 / 248; round-2 entry 228 / 310. Status -> review.
+- 2026-08-21: review round 3 — fresh evidence recorded for all seven criteria on 78bcc77, each read off the artifacts by hand as well as through its reader; suite 228 / self-test 317, 42 plants caught. Consistency gate clean: `cairn_validate` all-pass, no principle changed (the one DESIGN diff line mentioning GP2 is a rewrap of an existing cross-reference), the generic profile adds no toolchain checks, and both byte budgets are inside. Two of three lenses reported zero findings — the history lens independently confirmed the role-derivation move leaves both reports firing in every format, since `xrefs` is reassigned only for LaTeX, and derived the new M14 roster count of 1 from the same reasoning the `fold-xref-self` row uses; the prior-review lens checked all 29 findings of rounds 1 and 2 against the code rather than the work log and verified each deferred finding's ROADMAP home says what the log claims. The diff-bug lens is still running, so triage and the approval gate are not reached.
 
 ## Decisions
 
@@ -434,3 +435,41 @@ comma and raises an unhandled `ValueError` on a roman folio.
 the feature does not work in any document whose principal mention lands on page 10 or later —
 so the milestone returns to `in-progress` under the return floor. Triage of the remaining
 fifteen goes to the next gate. Defect returns on this milestone: 2.
+
+### Round 3 — 2026-08-21
+
+**Evidence** — `tests/run-tests.sh` 228 checks exit 0 and `--self-test` 317 checks exit 0,
+both fresh on 78bcc77; 42 M20 planted defects each caught. Consistency gate: `cairn_validate`
+all-pass exit 0; the only principle mention in the DESIGN diff is a rewrap of an existing GP2
+cross-reference, so no principle changed and no impact report is owed; the `generic` profile
+names no toolchain checks; ROADMAP 18,626 bytes and LESSONS 14,470, both inside budget.
+Artifacts read by hand as well as through their readers.
+
+- **AC1** — `basilisk` is three `\hyperxindexformat{\quartoindexlocator{qi1}}` groups of one
+  page each at 1, 3 and 5, no two adjacent; `gorgon` one such group at 9 with `\see{basilisk}{}`
+  folded ahead of it; role-free `faun` is `\hyperpage{7, 8}` with no locator group. The `.aux`
+  carries exactly four registrations, identifiers matching the `.ind`'s groups, `basilisk`'s at
+  the middle of its three. `.ilg` reports 0 warnings.
+- **AC2** — unchanged this round and re-run: the three locator links are (plain, class +
+  `<strong>`, plain), the control's two are plain, the dropped-role mark contributes none.
+- **AC3/AC4** — both reports fire exactly once per mark in LaTeX, HTML and gfm and zero times
+  in the twin; of 12 emitted `\index` commands fixture and twin differ on exactly the six the
+  role changes, and the four registrations reach the fixture alone. The round-2 role-derivation
+  move does not gate either report behind the back-end branch — `xrefs` is reassigned only for
+  LaTeX, so every other format still judges the format-neutral set (confirmed independently by
+  the history lens).
+- **AC5** — the thirteen gfm spans match the hand-derived manifest in order and byte for byte;
+  the residue token set now names every command either back-end can emit.
+- **AC6** — the preamble defines exactly the four subsystem commands, once each with
+  `\providecommand*`, plus the pre-existing `\quartoindexseeboth`; no other defining form names
+  a `quartoindex` sequence, no `\csname quartoindex` occurs, and `examples/content.qmd` defines
+  none of the four.
+- **AC7** — both suite modes exit 0, as above.
+
+**T9, and what round 2 returned this milestone for.** The printed index now reads
+`wyvern, [P:1], 2` · `naga, [P:2]` · `oni, 3-5` · `sylph, 6-8` · `troll, 9, [P:10]` ·
+`undine, [P:11]` · `folk, kin, [P:11]` · `pixie, 12, 13`, at 0 makeindex warnings — and every
+one of those is derived from the render's own `.ind` and `.aux` rather than written down. The
+three shapes round 2 found unexercised now all discriminate: a registered page that is not
+first in its list, a page of more than one character, and a range registered at its own first
+page. The fold-induced self-target keeps its role and draws no contradicting report.

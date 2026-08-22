@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -153,6 +153,7 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: T7 — fourteen planted defects, each shown to fail its own reader: a lost pairing, a wrong extent, a registration composing the wrong string, one naming an ordinal no locator carries, a transcript warning, ends disagreeing on their encapsulator and (a different fault) on their key, an end emitted with no delimiter, a closing that registers nothing, a locator at the wrong end, a second locator, a wrongly emphasized range, a report naming the wrong mark, and a report naming the control. The three mutation helpers were renamed `probe_*` — they are the run's, not one milestone's, and M21 reuses all three rather than copying them. Self-test green, 349 checks.
 
 - 2026-08-22: T8 — README gains "A discussion that spans pages" (what an author writes, what each back-end prints, pairing by entry, the principal range, the cross-chapter case, the folded-in ordinary mark and why it cannot be warned about, and the five refusals); the syntax table goes from seven forms to nine; the principal section's degradation paragraph is narrowed in place to a range makeindex FOLDED, since a range the author wrote now prints emphasized whole; a ninth back-end-difference row; `index.lua`'s syntax header gains the attribute. Eighteen claims pinned in a new `README_RANGE_CLAIMS` array, both authoring forms added to the normative supported-forms list.
+- 2026-08-22: review returned the milestone to in-progress on nine findings from a three-lens fan-out. All seven criteria verified with fresh evidence and ticked; the return is taken on the load-bearing-defect limb, not a criterion failure. What failed: a book pairs a range on the raw attribute and silently drops a locator whose mark's range was refused (F1); `mention="principal"` on a closing mark alone is dropped in silence (F2); a stale `.aux` naming a range command the next run does not inject fails the render (F3); the book range report has no positive coverage (F4); the misuse fixture never reaches makeindex (F5); the five new report keys are not passed to `mark-report-keys` (F6); `'' in '()'` makes the tex reader treat an unencapsulated command as a range end (F7); DESIGN.md still describes three passes and omits `data-range` (F8); a stray comma in a comment (F9). First defect return.
 - 2026-08-22: all tasks done. `tests/run-tests.sh` passes at 245 checks and `--self-test` at 351 (merge base: 228 and 335). Status set to review.
 
 ## Decisions
@@ -229,4 +230,50 @@ blame-history lens reported one finding (F9 below) and cleared seven areas, amon
 store-version rule, the contested-key composition, the `probe_*` rename and the
 `warn-distinct` count. The diff-bug lens reported nine, ranked. Every finding below was
 re-verified against the implementation rather than accepted on its reporter's account.
+
+Triaged at the merge gate 2026-08-22. The user chose to return the milestone rather than
+fix at the gate, so every disposition below is *fix on return*.
+
+- **F1 (fix)** — a book pairs a range on the RAW `range=` attribute, so a mark whose range
+  was refused for carrying a cross-reference is still paired across chapters and the
+  closing's locator is suppressed. Reproduced: `see="Alpha"` on the book fixture's opening
+  makes the book index print `Ranged Term, see Alpha` with no locator at all, while the
+  report tells the author the mark "indexes as it would without it". The record's `range`
+  must be gated on the mark contributing a locator (`#xrefs == 0`), the same condition two
+  lines below it already gates the anchor on. `role` on the same record is the RESOLVED
+  role, which is the inconsistency that made this reachable.
+- **F2 (fix)** — `mention="principal"` on a range's CLOSING mark alone is dropped in
+  silence. Reproduced: both ends encapsulate with the key's ordinal, nothing registers, the
+  range prints plain and no report fires. Every other unusable role is reported (M20), so
+  the silence is the outlier. Repair is a report, or taking the role from either end.
+- **F3 (fix, plus a candidate row)** — a stale `.aux` naming a range command the next run
+  does not inject raises `Undefined control sequence` and fails the render (verified:
+  pdflatex exits 1 at `l.13 \quartoindexrangeat`). The class is M20's — the same holds for
+  `\quartoindexprincipalpage` — but M21 quadruples its members and the new preamble check
+  pins the narrow injection in place. Fold the range block back into `PRINCIPAL_SUBSYSTEM`,
+  which strictly reduces exposure, and record M20's remaining half as a candidate row.
+- **F4 (fix)** — `report_book_ranges` is asserted only NOT to fire; deleting the call leaves
+  the suite green, while Scope promises a range on a degraded book page is reported. Needs a
+  book fixture carrying an unpaired range and a count pinned at 1 in the last chapter.
+- **F5 (fix)** — `examples/range-misuse.qmd` never reaches makeindex, so the justification
+  for every refusal is untested. Assert the emitted `.tex` carries exactly one `|(` and one
+  `|)` (the well-formed control's), or render it to PDF and pin its `.ilg` at zero warnings.
+- **F6 (fix)** — the five new report keys are not passed to `tests/scans/mark-report-keys`,
+  the scan whose own comment says a key not passed to it leaves every zero-expectation
+  control resting on it vacuous (M18 review F3). Ten such controls rest on them. Verified
+  the five pass the scan as written, so this is a one-line change; M20's three keys are
+  missing on the same terms and go in with them.
+- **F7 (fix)** — `tests/m21probes.py:260` writes `channel[:1] in '()'`, and `'' in '()'` is
+  True in Python, so an unencapsulated `\index` counts as a range end; planted defect (viii)
+  currently fails by traceback rather than by its own diagnostic.
+- **F8 (fix)** — `DESIGN.md` was not touched: it still says three passes, omits `data-range`
+  from the pass-through residue list AC6's manifest pins, and still ends its D-007 paragraph
+  "Ranges are M21's". `passes.lua`'s own header says "The three Span passes".
+- **F9 (fix)** — a stray comma on a comment line in `core.lua:203`, found independently by
+  two lenses.
+
+No finding demonstrates an acceptance criterion failing: all seven are satisfied as written,
+and F1–F3 sit in the gaps between them. The return is taken under the load-bearing-defect
+limb of the return floor, on F1 and F2 — each a silent loss of something the author wrote.
+This is M21's first defect return.
 

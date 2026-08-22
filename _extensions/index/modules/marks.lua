@@ -204,6 +204,217 @@ local function record_clamped(path, filing)
   seen[filing] = true
 end
 
+-- ---------------------------------------------------------------------------
+-- Page ranges.
+--
+-- A range is two marks of one entry — an opening and a closing — that the
+-- index prints as one locator spanning both. Which mark is which end is a fact
+-- about what the author wrote, so it is judged here, before any back-end
+-- branch, and every back-end reads the same verdict.
+--
+-- Pairing takes a pass of its own, for the reason the contested keys do:
+-- whether an opening is ever closed takes the WHOLE document to know, and the
+-- LaTeX back-end cannot emit a range opening until it does. makeindex writes a
+-- transcript warning for an unmatched, extra or inconsistently encapsulated
+-- range, and Quarto fails a render on exactly that warning — so a range this
+-- extension cannot pair must never reach the index tool at all (IP2). Every
+-- refusal below therefore degrades the mark to an ordinary locator, which
+-- indexes the term at its own page and breaks nothing.
+--
+-- The two halves are separate because their SCOPES are. Whether a mark names
+-- an end at all, and whether it has a locator for a range to span, are facts
+-- about that one mark; whether an opening is closed is a fact about the
+-- document — and in a book, about the whole book, since a range opened in one
+-- chapter and closed in another is unmatched in both and neither chapter's
+-- render may say so. So `range_end` is drawn per mark wherever the mark is
+-- rendered, and `pair_ranges` is run once over whatever set is the right one:
+-- this document's marks here, every chapter's records in `qi_book`.
+-- ---------------------------------------------------------------------------
+
+-- One range finding, reported. Every message is written at its own `warn()`
+-- call rather than composed where the finding is made and handed in: the
+-- message-distinctness scan reads the string literals INSIDE a `warn()` call,
+-- and a message built elsewhere is text no such scan can see — the blindness
+-- M13 and M19 both hit, in the two shapes recorded on the acceptance-suite
+-- candidate row. So a finding travels as what was found, never as prose.
+--
+-- `scope` is the set an opening had to be closed within, which is the word the
+-- pairing messages use: an author told "this document" in a book would go
+-- looking in the wrong file.
+local function report_range(found, scope)
+  if found.kind == "unrecognized" then
+    qi_core.warn(('%s= on %s names neither end of a range ("%s"); the mark indexes as though the attribute were absent'):format(qi_core.RANGE_ATTR, found.context, found.value))
+  elseif found.kind == "displaced" then
+    qi_core.warn(('%s="%s" on %s carries %s as well, and a cross-reference takes the place of a locator, so there is no locator for a range to span; the range is dropped and the mark indexes as it would without it'):format(qi_core.RANGE_ATTR, found.value, found.context, found.named))
+  elseif found.kind == "already-open" then
+    qi_core.warn(('%s="open" on %s opens a range for a term whose range is already open; the earlier opening is the one the next closing pairs with, so this mark indexes as an ordinary page number instead'):format(qi_core.RANGE_ATTR, found.context))
+  elseif found.kind == "never-opened" then
+    qi_core.warn(('%s="close" on %s closes a range this %s never opens; the mark indexes as an ordinary page number instead'):format(qi_core.RANGE_ATTR, found.context, scope))
+  else
+    qi_core.warn(('%s="open" on %s is never closed in this %s; the mark indexes as an ordinary page number instead of opening a range'):format(qi_core.RANGE_ATTR, found.context, scope))
+  end
+end
+
+-- Which end one mark names, from the value the author wrote. Returns the end,
+-- or nil with the finding that says why there is none.
+--
+-- `blocked` is the cross-reference attributes that take the locator's place,
+-- in the fixed order the caller passes them, or nil where the mark contributes
+-- a locator — the same shape as `mention_role`'s blocker and derived the same
+-- way, from the targets that SURVIVE the self-reference drop, so a target that
+-- is itself about to be dropped never displaces a range.
+--
+-- The unrecognized value is judged first and the two never fire together: a
+-- value naming neither end is not a range yet, and telling an author their
+-- range was displaced by a cross-reference would send them looking in the
+-- wrong place. An EMPTY value is unrecognized rather than absent, exactly as
+-- it is for a mention role: it is a value the author wrote, and reading it as
+-- absence would swallow a typo silently.
+local function range_end(value, context, blocked)
+  if not qi_core.RANGE_ENDS[value] then
+    return nil, { kind = "unrecognized", context = context, value = value }
+  end
+  if blocked ~= nil then
+    -- One attribute reads `see=`, two `see= and see-also=`, in the fixed order
+    -- the caller passes them.
+    local named = {}
+    for _, attr in ipairs(blocked) do
+      named[#named + 1] = attr .. "="
+    end
+    return nil, { kind = "displaced", context = context, value = value,
+                  named = table.concat(named, " and ") }
+  end
+  return value, nil
+end
+
+-- Pair a set of range marks. `items` is every mark that named an end, in the
+-- order they are indexed, each `{ key, ending, principal, context }`. Returns
+-- a verdict per item — `{ ending, principal }` for a mark that keeps its end,
+-- `false` for one that is refused — and the pairing findings.
+--
+-- The closing carries the OPENING's role, never its own: makeindex warns when
+-- the two ends of a range differ by any byte of encapsulation, so which
+-- encapsulator the pair carries is settled once, by the end that declares it.
+local function pair_ranges(items)
+  local verdicts, found, pending, waiting = {}, {}, {}, {}
+  for i, item in ipairs(items) do
+    if item.ending == "open" then
+      if pending[item.key] ~= nil then
+        verdicts[i] = false
+        found[#found + 1] = { kind = "already-open", context = item.context }
+      else
+        verdicts[i] = { ending = "open", principal = item.principal }
+        pending[item.key] = i
+        waiting[#waiting + 1] = item.key
+      end
+    else
+      local at = pending[item.key]
+      if at == nil then
+        verdicts[i] = false
+        found[#found + 1] = { kind = "never-opened", context = item.context }
+      else
+        pending[item.key] = nil
+        verdicts[i] = { ending = "close", principal = verdicts[at].principal }
+      end
+    end
+  end
+  -- Whatever is still open was never closed. Walked in the order the openings
+  -- were written rather than by table iteration, so the findings do not depend
+  -- on Lua's hash order.
+  for _, key in ipairs(waiting) do
+    local at = pending[key]
+    if at ~= nil then
+      pending[key] = nil
+      verdicts[at] = false
+      found[#found + 1] = { kind = "never-closed", context = items[at].context }
+    end
+  end
+  return verdicts, found
+end
+
+-- The document's own range marks, in document order, and the findings held
+-- against them. The findings wait rather than being reported where they are
+-- made: the mark-local ones so they print after the per-mark reports the
+-- emitting pass draws, and the pairing ones because a book chapter is not the
+-- set a range is paired in.
+local range_items = {}
+local range_found = {}
+local range_pair_found = {}
+-- Entry key -> that key's verdicts in document order, and how many of them the
+-- emitting pass has read. A queue per key rather than one list in document
+-- order: the collecting pass and the emitting pass each walk the document
+-- once, in the same order, and taking the next verdict for THIS mark's key is
+-- what keeps the two in step.
+local range_plan = {}
+local range_cursor = {}
+
+-- Called by the collecting pass, once per range mark that indexes an entry.
+local function plan_range(value, key, context, blocked, principal)
+  local ending, found = range_end(value, context, blocked)
+  if ending == nil then
+    range_found[#range_found + 1] = found
+    -- Still an item for this key, so the emitting pass reading verdicts in
+    -- order does not hand this mark's refusal to the next mark of the key.
+    range_items[#range_items + 1] = { key = key, ending = false }
+    return
+  end
+  range_items[#range_items + 1] =
+    { key = key, ending = ending, principal = principal, context = context }
+end
+
+-- Called once the whole document has been read.
+local function finish_ranges()
+  local paired = {}
+  for _, item in ipairs(range_items) do
+    if item.ending then
+      paired[#paired + 1] = item
+    end
+  end
+  local verdicts
+  verdicts, range_pair_found = pair_ranges(paired)
+  local at = 0
+  for _, item in ipairs(range_items) do
+    local verdict = false
+    if item.ending then
+      at = at + 1
+      verdict = verdicts[at]
+    end
+    local queue = range_plan[item.key]
+    if queue == nil then
+      queue = {}
+      range_plan[item.key] = queue
+    end
+    queue[#queue + 1] = verdict
+  end
+end
+
+-- The next verdict for this key, read by the emitting pass. Nil for a mark
+-- whose end was refused, and nil for a mark whose key has no verdicts at all.
+local function next_range(key)
+  local n = (range_cursor[key] or 0) + 1
+  range_cursor[key] = n
+  local queue = range_plan[key]
+  local verdict = queue and queue[n]
+  if verdict then
+    return verdict
+  end
+  return nil
+end
+
+-- Draw the held findings. `pairing` says whether the pairing ones are this
+-- document's to draw: false in a book chapter, where the whole store is what
+-- a range is paired in.
+local function report_ranges(pairing)
+  for _, found in ipairs(range_found) do
+    report_range(found, "document")
+  end
+  if pairing then
+    for _, found in ipairs(range_pair_found) do
+      report_range(found, "document")
+    end
+  end
+end
+
 -- The one place a mark's index levels are derived from what the author wrote.
 -- Both Span passes call it, so they cannot drift on what an entry's levels
 -- are; only the emitting pass passes `report`, so a mark's warnings fire once
@@ -308,6 +519,13 @@ M["record_marked"] = record_marked
 M["report_dangling"] = report_dangling
 M["clamped_paths"] = clamped_paths
 M["record_clamped"] = record_clamped
+M["report_range"] = report_range
+M["range_end"] = range_end
+M["pair_ranges"] = pair_ranges
+M["plan_range"] = plan_range
+M["finish_ranges"] = finish_ranges
+M["next_range"] = next_range
+M["report_ranges"] = report_ranges
 M["mention_role"] = mention_role
 M["derive_levels"] = derive_levels
 

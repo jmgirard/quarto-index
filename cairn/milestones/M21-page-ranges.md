@@ -93,11 +93,11 @@ alone, and the range is reported as unpaired there rather than silently spanning
       registered in the suite's dangling-target corpus, which enumerates every example
       writing a cross-reference target. The book fixture's own range lands with T5, whose
       manifest it changes.
-- [ ] T2: `core.lua` gains the attribute and its two values; `marks.lua` derives the range
+- [x] T2: `core.lua` gains the attribute and its two values; `marks.lua` derives the range
       role before the back-end branch and holds the per-key pairing state, drawing the four
       shapes it can judge within one document plus the unrecognized-value one, so all five
       fire in every format.
-- [ ] T3: `latex.lua` and `passes.lua`: the opening and closing encapsulations, composed
+- [x] T3: `latex.lua` and `passes.lua`: the opening and closing encapsulations, composed
       with M20's role so both ends carry the same encapsulator; the range registration that
       records each end's page and registers the printed range string against the key's
       ordinal, so a principal range prints emphasized where a makeindex-folded one still
@@ -137,6 +137,10 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: amendment: AC2 reworded (attribute name and evidence locus), AC3 widened with the HTML principal-range clause, Scope In and T3 extended with the range registration. Criteria widened or added: AC3. D-008 records the channel extension.
 
 - 2026-08-22: T1 — `examples/range.qmd` (five slots: plain range, principal range, role-free control, range on a cross-referenced key, same-page range) and `examples/range-misuse.qmd` (one mark per AC4 shape, plus a well-formed range and an ordinary mark as controls); both registered in the dangling-target corpus. The book fixture's range moved to T5 (minor amendment: it changes the book manifest T5 owns). Suite green, 228 checks.
+
+- 2026-08-22: T2 — `range="open"`/`range="close"` in `core.lua`; a format-neutral `CollectRanges` pass with a document hook, since whether an opening is ever closed takes the whole document to know and makeindex warns (and Quarto fails the render) on an unmatched range; `marks.lua` splits the judgement in two, `range_end` per mark and `pair_ranges` over whatever set is the right one, so the book can reuse the pairing. All five reports fire once each in gfm.
+- 2026-08-22: T3 — landed with T2, which it cannot be verified apart from. Range delimiters compose into the encapsulation channel at the one place it is written; the registration channel gains four commands in a block of its own, injected only where a range registers. Composed rather than reported against a cross-referenced key, per the gate: `dybbuk` prints `dybbuk, \see{centaur}{}, 10--12`. Reports built as findings and worded at their own `warn()` call, because a message composed elsewhere is text the distinctness scan cannot read (the M13/M19 lesson); its pinned count moves 42 → 47.
+- 2026-08-22: T2/T3 evidence — `examples/range.pdf` prints `alicorn, 1–3`, `banshee, [P:4–6]`, `centaur, 7, 9`, `dybbuk, see centaur, 10–12`, `erlking, [P:14]`, and the `.ilg` logs 0 warnings. Suite green, 228 checks.
 
 ## Decisions
 

@@ -88,6 +88,15 @@ local function Pandoc(doc)
   if not book and not (qi_core.is_html() and doc.meta.book ~= nil) then
     qi_marks.report_dangling(qi_marks.marked_paths, qi_marks.pending_xrefs, "document")
   end
+  -- The range reports, held rather than emitted where they were found. The
+  -- mark-local ones are drawn wherever the mark is rendered; the PAIRING ones
+  -- only where this document is the set a range had to be paired within. In a
+  -- book that set is the whole store, and the chapter that reads it draws them
+  -- (qi_book) — a range opened in one chapter and closed in another is
+  -- unmatched in both, and neither chapter may say so. On the degraded book
+  -- path there is no store to pair in and the page was indexed on its own, so
+  -- an unpaired range there is reported rather than silently spanning nothing.
+  qi_marks.report_ranges(not book)
 
   if qi_core.is_html() then
     -- Anchors are assigned before either path decides what to place: they are
@@ -244,6 +253,13 @@ local function Pandoc(doc)
     -- redefines; the subsystem that applies it follows as one block.
     quarto.doc.include_text("in-header", qi_core.PRINCIPAL_DEFINITION)
     quarto.doc.include_text("in-header", qi_core.PRINCIPAL_SUBSYSTEM)
+    if qi_latex.principal_range_emitted then
+      -- The range half follows only where a range actually registers one: it
+      -- depends on the block above and is useless without it, so it is never
+      -- injected on its own, and a document with a principal mention and no
+      -- range gets exactly the four commands it had before this milestone.
+      quarto.doc.include_text("in-header", qi_core.PRINCIPAL_RANGE_SUBSYSTEM)
+    end
   end
   if qi_latex.xref_list_emitted then
     -- Same discipline: defined only in a document that has a contested key no
@@ -262,6 +278,10 @@ end
 return {
   { Span = qi_passes.CollectSort },
   { Span = qi_passes.CollectKeys },
+  -- The range pass carries a document hook as well as an element one: an
+  -- opening still waiting when the traversal ends was never closed, and
+  -- Pandoc runs a filter's `Pandoc` function after its element functions.
+  { Span = qi_passes.CollectRanges, Pandoc = qi_passes.FinishRanges },
   { Span = qi_passes.Span },
   { Pandoc = Pandoc },
 }

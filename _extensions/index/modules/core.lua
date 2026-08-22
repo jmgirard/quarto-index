@@ -85,6 +85,22 @@ local PRINCIPAL_COMMAND = "quartoindexprincipal"
 local PRINCIPAL_DEFINITION =
   "\\providecommand*\\" .. PRINCIPAL_COMMAND .. "[1]{\\textbf{#1}}"
 
+-- The attribute naming a mark as one end of a page range, and its two values.
+-- Format-neutral like every other mark attribute: which end a mark is is a
+-- fact about what the author wrote, so it is read and diagnosed in every
+-- format and only the realization differs. `range` is not an HTML attribute,
+-- so Pandoc data-prefixes it exactly as it does `see` — no `mention`-shaped
+-- collision to avoid here.
+--
+-- A further value is not a further attribute (GP5), and the ends are written
+-- as a set for the same reason the mention roles are: an unknown value is one
+-- lookup, and the report can quote what the author wrote.
+local RANGE_ATTR = "range"
+local RANGE_ENDS = {
+  ["open"] = true,
+  ["close"] = true,
+}
+
 -- ---------------------------------------------------------------------------
 -- The typeset-time channel (D-007).
 --
@@ -115,12 +131,35 @@ local PRINCIPAL_DEFINITION =
 --
 -- One known degradation, documented in README: makeindex folds three or more
 -- consecutive pages under one encapsulation into a range, and a lookup on the
--- string `1--3` matches no registered page, so a principal page inside a range
--- prints unemphasized. Ranges are M21's subject.
+-- string `1--3` matches no registered page, so a principal page inside a
+-- FOLDED range prints unemphasized. A range the AUTHOR wrote is a different
+-- case, and M21 closes it (D-008): the filter knows such a range exists, so
+-- its two ends register their own pages and the pair is composed into the
+-- same string the index prints. The folded case stays open, because no mark
+-- there says a range exists at all.
 -- ---------------------------------------------------------------------------
 local LOCATOR_COMMAND = "quartoindexlocator"
 local REGISTER_COMMAND = "quartoindexregister"
 local PRINCIPALPAGE_COMMAND = "quartoindexprincipalpage"
+
+-- The range half of the same channel (D-008). Two inline commands, emitted
+-- beside the two `\index` commands of a principal range, and the two `.aux`
+-- commands they write. `rangefrom` stands in for REGISTER_COMMAND on a range
+-- opening rather than joining it: it does everything that command does and
+-- remembers the page as the range's start as well, and a slot only a range
+-- opening ever writes cannot be moved by a second principal mark of the same
+-- key.
+local RANGEFROM_COMMAND = "quartoindexrangefrom"
+local RANGEEND_COMMAND = "quartoindexrangeend"
+local RANGEAT_COMMAND = "quartoindexrangeat"
+local RANGETO_COMMAND = "quartoindexrangeto"
+
+-- makeindex's own range delimiter, which it writes between the two pages of a
+-- range and which this file must spell identically to look the printed string
+-- up. It is makeindex's `delim_r`, whose default this is; the extension ships
+-- no style file that could change it, and author control over the dash is a
+-- ROADMAP candidate rather than something this constant anticipates.
+local RANGE_DELIM = "--"
 
 -- The ordinal prefix. Ordinals are opaque and csname-safe by construction, so
 -- no key text — which may hold any character an author can write — ever
@@ -161,7 +200,7 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   -- a byte-empty list and not a space-only one, which runs away the same way;
   -- both are unreachable from makeindex, and covering the second is not worth
   -- expanding an argument this command must pass through untouched (review
-  -- round 3, which found the space case and the expansion hazard together).
+  -- round 3, which found the space case and the expansion hazard together).,
   "\\providecommand*\\" .. LOCATOR_COMMAND ..
     "[2]{\\def\\qi@arg{#2}\\ifx\\qi@arg\\@empty\\else" ..
     "\\qi@sniff{#1}#2\\qi@stop\\fi}",
@@ -200,6 +239,45 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   "\\def\\qi@sniff#1#2#3\\qi@stop{\\ifcat\\noexpand#2\\relax" ..
     "\\expandafter\\@firstoftwo\\else\\expandafter\\@secondoftwo\\fi" ..
     "{\\qi@split{#1}{#2}{#3}}{\\qi@split{#1}{}{#2#3}}}",
+  "\\makeatother",
+}, "\n")
+
+-- The range half of the subsystem (D-008), a block of its own so it reaches
+-- only a document that actually registers a range: the block above is already
+-- injected only where a principal mention exists, and a principal mention is
+-- not a range. It depends on that block — `RANGEAT_COMMAND` calls the page
+-- registration and `RANGETO_COMMAND` reads the slot it leaves — and is emitted
+-- only alongside it, never on its own.
+local PRINCIPAL_RANGE_SUBSYSTEM = table.concat({
+  "\\makeatletter",
+  -- A range opening registers its page exactly as a lone principal mark does,
+  -- and remembers it as `\qi@f@<ordinal>` for the closing to compose with.
+  -- The page is sanitized here again rather than read out of the macro the
+  -- registration leaves behind: that macro is set by every principal mark of
+  -- every key, and depending on it would make this line's meaning depend on
+  -- what ran before it.
+  "\\providecommand*\\" .. RANGEAT_COMMAND ..
+    "[2]{\\" .. PRINCIPALPAGE_COMMAND .. "{#1}{#2}" ..
+    "\\def\\qi@key{#2}\\@onelevel@sanitize\\qi@key" ..
+    "\\expandafter\\xdef\\csname qi@f@#1\\endcsname{\\qi@key}}",
+  -- And the closing composes the two pages into the string makeindex prints
+  -- for the range and registers THAT, so the lookup at `\printindex` finds it.
+  -- Guarded on the opening's slot existing: an `.aux` from a run whose opening
+  -- has since been deleted still holds this line, and `\csname` on a name
+  -- nothing defined is `\relax`, which would otherwise compose a range
+  -- starting with `\relax`.
+  "\\providecommand*\\" .. RANGETO_COMMAND ..
+    "[2]{\\def\\qi@key{#2}\\@onelevel@sanitize\\qi@key" ..
+    "\\expandafter\\ifx\\csname qi@f@#1\\endcsname\\relax\\else" ..
+    "\\edef\\qi@key{\\csname qi@f@#1\\endcsname" .. RANGE_DELIM ..
+    "\\qi@key}" ..
+    "\\expandafter\\gdef\\csname qi@p@#1@\\qi@key\\endcsname{}\\fi}",
+  "\\providecommand*\\" .. RANGEFROM_COMMAND ..
+    "[1]{\\protected@write\\@auxout{}{\\string\\" .. RANGEAT_COMMAND ..
+    "{#1}{\\thepage}}}",
+  "\\providecommand*\\" .. RANGEEND_COMMAND ..
+    "[1]{\\protected@write\\@auxout{}{\\string\\" .. RANGETO_COMMAND ..
+    "{#1}{\\thepage}}}",
   "\\makeatother",
 }, "\n")
 
@@ -297,6 +375,13 @@ M["XREF_BOTH_COMMAND"] = XREF_BOTH_COMMAND
 M["XREF_BOTH_DEFINITION"] = XREF_BOTH_DEFINITION
 M["XREF_LIST_COMMAND"] = XREF_LIST_COMMAND
 M["XREF_LIST_DEFINITION"] = XREF_LIST_DEFINITION
+M["RANGE_ATTR"] = RANGE_ATTR
+M["RANGE_ENDS"] = RANGE_ENDS
+M["RANGE_DELIM"] = RANGE_DELIM
+M["RANGEFROM_COMMAND"] = RANGEFROM_COMMAND
+M["RANGEEND_COMMAND"] = RANGEEND_COMMAND
+M["RANGEAT_COMMAND"] = RANGEAT_COMMAND
+M["RANGETO_COMMAND"] = RANGETO_COMMAND
 M["MENTION_ATTR"] = MENTION_ATTR
 M["MENTION_ROLES"] = MENTION_ROLES
 M["PRINCIPAL_COMMAND"] = PRINCIPAL_COMMAND
@@ -306,6 +391,7 @@ M["REGISTER_COMMAND"] = REGISTER_COMMAND
 M["PRINCIPALPAGE_COMMAND"] = PRINCIPALPAGE_COMMAND
 M["LOCATOR_ID_PREFIX"] = LOCATOR_ID_PREFIX
 M["PRINCIPAL_SUBSYSTEM"] = PRINCIPAL_SUBSYSTEM
+M["PRINCIPAL_RANGE_SUBSYSTEM"] = PRINCIPAL_RANGE_SUBSYSTEM
 M["HTML_PRINCIPAL_CLASS"] = HTML_PRINCIPAL_CLASS
 M["LATEX_LITERAL"] = LATEX_LITERAL
 M["warn"] = warn

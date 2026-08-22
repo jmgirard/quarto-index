@@ -37,10 +37,11 @@ cross-reference encapsulations alone. A styled locator and a plain one are not r
 makeindex prints both, warning only when they share a page, and a term marked principally
 in one place and plainly elsewhere is the feature's ordinary case, not a clash.
 
-Evidence stops at the `.ind` makeindex writes rather than at the PDF's text, because
-`pdftotext` cannot see emphasis — a deliberate GP6 trade, recorded rather than left
-implicit, and the `.ind` is the artifact that settles whether the encapsulation reached
-the right locator at all.
+Evidence stops at the `.ind` and the `.aux`, which together settle that a key's locators
+carry one uniform encapsulation and that the role was registered from the page its mark
+sits on. That the registered page then prints emphasized is exercised under T9 and carried
+on a ROADMAP candidate row rather than by a criterion, because `pdftotext` cannot see
+emphasis — a deliberate GP6 trade, recorded rather than left implicit.
 
 **Out:** page ranges, and a range carrying this role on both its ends → M21. Roles beyond
 `principal` (a defining passage, an illustration) → ROADMAP candidate row; the attribute
@@ -51,10 +52,19 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 
 ## Acceptance criteria
 
-- [x] AC1: The PDF render of `examples/principal.qmd` produces a `.ind` in which the
-      principal term's entry shows exactly one emphasized locator and its remaining
-      locators plain, and a `.ilg` carrying no conflicting-encapsulation warning for that
-      entry's key.
+- [ ] AC1: The PDF render of `examples/principal.qmd`, begun with its `.ind`, `.ilg` and
+      `.aux` absent, produces: a `.ilg` whose own summary reports zero makeindex warnings;
+      a `.ind` — read with makeindex's line wrapping collapsed and every group argument
+      delimited by brace counting — in which the `basilisk` entry is exactly one
+      `\hyperxindexformat{\quartoindexlocator{...}}` group listing three pages, no two of
+      them consecutive, the `gorgon` entry is exactly one such group listing one page and
+      carrying `\see{basilisk}{}` folded into the entry's printed text ahead of it, and the
+      role-free `faun` entry carries no such group at all; and an `.aux` carrying exactly
+      four `\quartoindexprincipalpage` lines whose identifiers are exactly the four the
+      `.ind`'s `\quartoindexlocator` groups name — those of `basilisk`, `gorgon`, `imp` and
+      `kraken`, the four marks writing `mention="principal"` that contribute a locator —
+      each line's page being one its own group lists, and `basilisk`'s being the middle of
+      the three, where the fixture puts its principal mark.
 - [x] AC2: In the HTML render of `examples/principal.qmd`, the index entry for the
       principal term carries exactly one locator link marked as principal, at the position
       of the principal mark, its other locator links unmarked — read structurally by
@@ -77,75 +87,64 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       `data-mention="principal"` among them where the mark writes it. No `qi-`
       token, `\index` command, principal-encapsulation command or literal
       `role=` attribute appears anywhere in the file.
-- [x] AC6: The command the principal encapsulation names is defined with `\providecommand`
-      in the preamble of the rendered `.tex` for `examples/principal.qmd`, and absent from
-      the preamble of the rendered `.tex` for `examples/content.qmd`.
+- [ ] AC6: In the region before `\begin{document}` of the rendered `.tex` for
+      `examples/principal.qmd`, each of `\quartoindexprincipal`, `\quartoindexlocator`,
+      `\quartoindexregister` and `\quartoindexprincipalpage` is defined with
+      `\providecommand*`, and the string `quartoindex` occurs in that region only inside
+      those four definitions and the definition of `\quartoindexseeboth`, which the
+      fixture's both-targets mark already required before this milestone; in the same region
+      of the rendered `.tex` for `examples/content.qmd`, which carries the extension's
+      `\makeindex[intoc]` setup, the string does not occur at all. Both files are present and
+      each carries exactly one `\begin{document}`.
 - [x] AC7: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass.
 
 ## Coverage
 
-- AC1 → T1, T3, T5
+- AC1 → T1, T3, T5, T8
 - AC2 → T1, T4, T5
 - AC3 → T1, T2, T5
 - AC4 → T1, T2, T5
 - AC5 → T1, T5
-- AC6 → T3, T5
+- AC6 → T3, T5, T8
 - AC7 → T5, T6, T7
 
 ## Tasks
 
-- [x] T1: Fixtures `examples/principal.qmd` and `examples/principal-twin.qmd`. The
-      first carries a term marked in three places, one of them principal; a principal
-      mark carrying `see=`; an unrecognized value; and a plainly marked control term
-      the new reports must stay silent on (the M11 lesson). Terms and pages are
-      distinct per slot (the M02 lesson). The twin is the same document with every
-      role attribute removed; expected manifests go inline in the suite's section.
-- [x] T2: `core.lua` gains `mention` and its recognized values; `marks.lua` derives the
-      role once, before the back-end branch, with the two warnings — a role on a mark
-      contributing no locator, and an unrecognized value, the empty string among them.
-- [x] T3: `latex.lua` and `passes.lua`: the principal encapsulation, its arbitration
-      against the contested-key bookkeeping — `is_contested` and `record_contest` in
-      `latex.lua` count cross-reference encapsulations alone, and `seen.plain` comes to
-      mean "some mark of this key contributes a locator" rather than "emits no
-      encapsulation" — and the preamble injection flag read by the Pandoc pass.
-- [x] T4: `html.lua`: the principal locator link and its class; the role on the HTML mark
-      record; `book.lua` carries it in the per-chapter record as an optional field with a
-      named fallback, leaving the store version alone (the M14 lesson).
-- [x] T5: The suite's principal section: the `.ind`/`.ilg` and `.tex` copied to
-      `$WORK` at the latex render before the pdf render removes them (the M15
-      lesson); the structural HTML check; the rendered-log pins passed through
-      `warn-distinct`; the no-leak sweep; the preamble present/absent pair.
-- [x] T6: A planted-defect entry per check T5 adds, each varying form as well as
-      site, so a report that stops being format-neutral is caught. The four readers
-      move to `tests/m20probes.py` so the self-test can re-run each against a
-      mutated artifact; `tests/plantdefect.py` is not their home, since it plants
-      defects in a moved-definition tree for the source-reading scans and these
-      read rendered output.
-- [x] T7: README section for `mention="principal"`: what an author writes, what
-      each back-end prints, how to redefine the LaTeX command, and that an unusable
-      or unrecognized value is reported. Add its authoring forms to the suite's
-      normative supported-forms list and its sentences to a README claims array.
-      Extend DESIGN.md's pass-through residue enumeration to include `data-mention`.
-- [ ] T8: The typeset-time channel (D-007; mechanism and its validation in the
-      archived RR01). Every locator mark of a key carrying a principal mark emits
-      one uniform per-key encapsulation `\qiloc{<ordinal>}`, so two locators of a
-      key can never differ and the conflict is unreachable by construction rather
-      than unexercised; the ordinal is assigned in document order by the pass that
-      already collects keys. The principal mark writes its ordinal and `\thepage`
-      through `\protected@write\@auxout`, the mechanism `\@wrindex` itself uses, so
-      the two agree. At `\printindex` the injected code splits `\qiloc`'s page list,
-      wraps registered pages in `\quartoindexprincipal` and calls the real
-      `\hyperpage` per item, sniffing its argument's token class rather than naming
-      a hyperref internal. Keys with no principal mark emit as today.
-- [ ] T9: The regressions IP2's forever clause earns, and the record. A plain and a
-      principal mark of one key ON ONE PAGE — the shape the milestone died on, which
-      the fixture currently avoids only because page breaks hold its marks apart; a
-      principal mark in a footnote; a registered page folded inside a makeindex
-      range, which prints unemphasized; and the author redefinition, exercised by a
-      render whose `\quartoindexprincipal` prints a visible marker — which is also
-      what makes the emphasis readable to `pdftotext`. Correct `latex.lua`'s two
-      comment blocks and the ROADMAP premise they echo, and give README the one
-      silent degradation.
+- [x] T1: Fixtures `examples/principal.qmd` and its role-free twin (M02 and M11 lessons).
+- [x] T2: `core.lua` gains `mention`; `marks.lua` derives the role once, with two reports.
+- [x] T3: `latex.lua`/`passes.lua`: the encapsulation, its arbitration against contestation.
+- [x] T4: `html.lua`'s principal link and class; `book.lua`'s optional field (M14 lesson).
+- [x] T5: The suite's principal section — `.ind`/`.ilg`/`.tex`, HTML, log pins, gfm manifest.
+- [x] T6: A planted defect per T5 check, varying form and site; readers in `m20probes.py`.
+- [x] T7: README section and byte-pinned claims; DESIGN's pass-through residue enumeration.
+- [ ] T8: The typeset-time channel (D-007; mechanism and validation in the archived RR01).
+      Every locator mark of a key carrying a principal mark emits one uniform per-key
+      `\quartoindexlocator{<ordinal>}`, so two locators of a key can never differ and the
+      conflict is unreachable by construction; the ordinal is assigned in document order by
+      the pass that already collects keys. The principal mark also emits
+      `\quartoindexregister{<ordinal>}`, writing the ordinal and `\thepage` through
+      `\protected@write\@auxout` — the mechanism `\@wrindex` itself uses, so the two agree —
+      as a `\quartoindexprincipalpage` line. At `\printindex` the injected code splits the
+      page list, wraps registered pages in `\quartoindexprincipal` and calls the real
+      `\hyperpage` per item, sniffing its argument's token class rather than naming a
+      hyperref internal. Keys with no principal mark emit as today. `examples/principal.qmd`
+      gains a filler page between each `basilisk` mark so its locators are non-consecutive
+      and cannot fold into a range the registry could not match. The AC1/AC6 readers join
+      `tests/m20probes.py`: the `.ind` read with wrapping collapsed and groups brace-counted,
+      both `.tex` reads bounded to the preamble and guarded against a missing or empty file
+      (review F7, F10).
+- [ ] T9: The regressions IP2's forever clause earns, and the record. A new fixture
+      `examples/principal-cases.qmd` whose preamble redefines `\quartoindexprincipal` to a
+      marker `pdftotext` can read — both the author-redefinition regression and what makes
+      the emphasis legible — carrying a plain and a principal mark of one key ON ONE PAGE
+      (the shape the milestone died on), a principal mark in a footnote, a registered page
+      folded inside a range, and a role-free control; its PDF text and `.ilg` are read. It
+      is separate so AC5's hand-derived manifest is left alone. Plants, form as well as site
+      (T6's rule): two ordinals on one key; a registry line deleted, duplicated and moved,
+      one planted in the `\csname` form; an encapsulation leaked onto the role-free key; and
+      for AC6 a definition moved below `\begin{document}` and one emitted as `\def` — the
+      axis review F4 records as unplanted. Correct `latex.lua`'s two comment blocks and the
+      ROADMAP premise they echo, and give README the one silent degradation.
 
 ## Work log
 
@@ -178,6 +177,9 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: blocked on RB01 — whether the LaTeX back-end can realize a per-locator role at all, and what to do if it cannot.
 - 2026-08-21: RB01 raised and RR01 ingested. The review confirmed the impossibility (question 1) and then falsified the brief's own premise that no mechanism was affordable: it built the deferred-styling subsystem and validated it through Quarto's pipeline, same-page pair included, at exit 0 with zero makeindex warnings. Recommendations triaged — 1 apply (T8), 2 apply (T9 + the ROADMAP correction), 3 apply (recorded below), 4 consider (README line in T9; the whole-range question widened the locator-control candidate row), 5 consider (the fallback, not taken), 6 and 7 reject, matching the session's own reading. Promoted to D-007.
 - 2026-08-21: AC1 and AC6 are now stated over an artifact the chosen mechanism no longer produces — the emphasis leaves the `.ind` entirely and appears at typeset time — so both need the step-6 amendment gate at the next implement session, before T8 is worked. Flagged here rather than amended at ingest.
+- 2026-08-21: AC1 and AC6 amended at the step-6 mini gate; the user chose to hold the criteria set rather than widen it, so AC1 stays inside the render's own working files and the end-to-end typeset leg goes to T9 and a candidate row. Scope's evidence paragraph, falsified by D-007 (the `.ind` no longer carries any role information), was restated with it. Coverage gained T8 on both, and Tasks was compressed in one pass to hold the 150-line cap, T1-T7's detail staying in this log.
+- 2026-08-21: amended-criteria audit ran in full mode twice with two fresh readers and returned ten then thirteen. Round 1: AC1's three `basilisk` marks are on consecutive pages, so the uniform encapsulation folds them to `1--3` and the criterion would have passed green on a render printing no emphasis at all; "the principal term" named four candidates; the control clause was vacuous; there was no freshness pin; and AC6's "every command the subsystem defines" was an unenumerable domain whose blanket `\providecommand` the registry csnames cannot satisfy. Round 2: AC6 was outright unsatisfiable, since `harpy` makes the fixture inject `\quartoindexseeboth`, which the criterion forbade; the `.ind` group argument wraps across lines, the shape a reader has already been caught by once here; the `.aux` count needed its referents pinned, not just its cardinality; and Scope's GP6 trade was falsified. All folded in; the final wording went to the user rather than a third revision.
+- 2026-08-21: T8's commands are named `\quartoindexlocator`, `\quartoindexregister` and `\quartoindexprincipalpage`, following the extension's existing `\quartoindex` prefix rather than RR01's `\qiloc` sketch; internals stay `\qi@`-prefixed `\def`s inside `\makeatletter`. The mechanism was probed on this toolchain before the gate: a same-page plain+principal pair at zero makeindex warnings, correct footnote registration, and `cats, [P:1], 2` with the emphasis command redefined to a marker.
 
 ## Decisions
 

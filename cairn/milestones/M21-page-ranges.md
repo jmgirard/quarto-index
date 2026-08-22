@@ -1,11 +1,11 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP2, GP5, GP6
-- **Branch/PR:** —
+- **Branch/PR:** `m21-page-ranges`
 
 ## Goal
 
@@ -20,7 +20,10 @@ back-ends emit, and is documented in README.
 **In:** one new format-neutral mark attribute, `range="open"` / `range="close"`, paired by
 the entry the two marks index, so the common case needs nothing else written; the LaTeX
 range encapsulations, carrying on both ends whichever role M20's attribute puts on the
-opening mark, since makeindex warns when the two ends differ; the HTML realization, where
+opening mark, since makeindex warns when the two ends differ, and — where that role is
+principal — the registration that puts the range's own printed page string into M20's
+typeset-time registry, since a range prints as one string no per-page registration matches;
+the HTML realization, where
 the pair contributes one locator link pointing at the opening mark's anchor; pairing
 across chapters of an HTML book, judged by the chapter that has seen every record, as
 every other cross-chapter judgement here is; the reports for the five misuse shapes;
@@ -45,11 +48,14 @@ alone, and the range is reported as unpaired there rather than silently spanning
       term's entry shows one page range spanning the pages of its opening and closing
       marks, and a `.ilg` carrying no unmatched-, extra- or inconsistent-range warning for
       that entry's key.
-- [ ] AC2: A range whose opening mark carries `role="principal"` emits that same
-      encapsulator on its closing command, and the `.ind` for `examples/range.qmd` shows
-      that term's range emphasized.
+- [ ] AC2: A range whose opening mark carries `mention="principal"` emits the same
+      encapsulator on its closing `\index` command as on its opening one, and for
+      `examples/range.qmd` the page string that entry's locator carries in the `.ind` is
+      registered as principal in the `.aux` under that encapsulator's own ordinal — the
+      chain that prints the range emphasized, whose last link no `.ind` can show.
 - [ ] AC3: In the HTML render of `examples/range.qmd`, the ranged term's index entry
-      carries exactly one locator link, whose href is the opening mark's anchor; the
+      carries exactly one locator link, whose href is the opening mark's anchor; where the
+      opening mark is principal that one link carries the principal class and emphasis; the
       closing mark contributes no locator link and emits no text of its own beyond the
       author's visible text, read at its anchor by `tests/htmlindex.py`.
 - [ ] AC4: Each of the five misuse shapes exercised by `examples/range-misuse.qmd` — an
@@ -90,10 +96,13 @@ alone, and the range is reported as unpaired there rather than silently spanning
       shapes it can judge within one document plus the unrecognized-value one, so all five
       fire in every format.
 - [ ] T3: `latex.lua` and `passes.lua`: the opening and closing encapsulations, composed
-      with M20's role so both ends carry the same encapsulator, and arbitrated against the
-      contested-key bookkeeping — a range encapsulation cannot be folded into an entry's
-      printed text the way a cross-reference can, so a key carrying both is reported rather
-      than composed.
+      with M20's role so both ends carry the same encapsulator; the range registration that
+      records each end's page and registers the printed range string against the key's
+      ordinal, so a principal range prints emphasized where a makeindex-folded one still
+      does not; and arbitration against the contested-key bookkeeping — a range
+      encapsulation stays in the encapsulation channel, and a key carrying cross-references
+      too folds those into the entry's printed text exactly as it already does, so the two
+      compose rather than one being dropped.
 - [ ] T4: `html.lua`: pairing at index-build time, the single locator link at the opening
       mark's anchor, and the closing mark contributing no locator while keeping its own
       anchor and visible text.
@@ -120,6 +129,9 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-21: plan gate chose documenting the folded-in ordinary mark over warning about it because the extension knows no page numbers and the warning would fire on marks outside the range as well; falsified by evidence that authors hit the silent loss and cannot find it from the README.
 - 2026-08-21: plan gate chose shipping the principal role first (M20) over ranges first because the arbitration over makeindex's single encapsulation channel is shared and the smaller half builds it; falsified by evidence that the arbitration is range-shaped and had to be rewritten for M20's simpler case.
 - 2026-08-21: criteria audit ran in full mode (user-facing tier) and returned findings on the drafted AC2, AC3, AC5, AC6 and the README criterion; the role's end was named, the closing-mark promise was narrowed off the whole page body, the cross-chapter range was reconciled against the unmatched-opening report, the residue clause was reworded to include the new attribute, and the README criterion was descoped to T8.
+- 2026-08-22: implement gate settled three open choices: correct AC2's attribute name; emphasize a principal range by registering the composed printed range string rather than by matching either endpoint; and compose a range with a same-key cross-reference (the cross-reference folds into the printed text as it already does) rather than dropping the range.
+- 2026-08-22: criteria audit ran in full mode on the amended AC2 and returned three findings — the `.ind` can show no emphasis at all, D-007's consequences leave the emphasis promise unfunded by Scope and T3, and no criterion covered the HTML side of a principal range; bounded-promise, probe and instrument questions clean. All three disposed at the mini gate.
+- 2026-08-22: amendment: AC2 reworded (attribute name and evidence locus), AC3 widened with the HTML principal-range clause, Scope In and T3 extended with the range registration. Criteria widened or added: AC3. D-008 records the channel extension.
 
 ## Decisions
 

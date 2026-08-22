@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -184,6 +184,8 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: T10 (R2-F4/F5/F6/F7) — README's "Under the hood" sentence corrected and pinned in the claims array; `_index_commands`' docstring rewritten to state the rule its code implements; `pair_ranges` records the opening's position rather than its key, so the never-closed findings are ordered by the opening still pending; the book-report counts moved beside the render they read.
 - 2026-08-22: T10 — two ordering traps surfaced while fixing, both caught loudly rather than silently: the new book reader first read an artifact a later hardening step deliberately corrupts, and `HTML_PRINCIPAL_CLASS` was defined thousands of lines below its new first use, which `set -u` turned into an unbound-variable failure. The reader moved to the render it is about and the constant joined the other pinned HTML identifiers at the top.
 - 2026-08-22: round-2 fixes complete. `--self-test` 363 checks (before: 359).
+
+- 2026-08-22: review round 3 returned twelve findings; all seven criteria held and both runs were green. Two mattered: README's refusal lead-in is false for the cross-reference case and the claims array pins it (R3-F1), and the per-chapter record stores the RESOLVED role beside the RAW range end, so a book re-pairing from those records emphasizes locators the author never marked (R3-F3, reproduced in a three-chapter book). R3-F3 is the third instance of one mistake — a resolved value where the raw one belongs, repaired on one path and left on its sibling — and all three have been in the book realization. Third defect return; at the gate the user chose the thrash rule's descope over a fourth repair.
 
 ## Decisions
 
@@ -409,4 +411,8 @@ one belongs, repaired on one path and left on its sibling. F1 was the record's `
 field, R2-F1 the book's verdict, R3-F3 the record's `role`. All three live in the book
 realization, which is also the only part of the milestone that has needed a repair in every
 round; the LaTeX and single-document HTML sides have been stable throughout. Third defect
-return: the thrash rule's descope-or-park threshold.
+return: the thrash rule's descope-or-park threshold. Triaged at the gate 2026-08-22 — the
+user chose to NARROW the milestone rather than repair the book path a fourth time. The
+cross-chapter book realization leaves M21's scope; the ten smaller findings are fixed on the
+way out, and R3-F3 is dispositioned by the narrowing itself, since it lives entirely in the
+book path.

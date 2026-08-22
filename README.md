@@ -360,8 +360,10 @@ give the role to are emphasized, and a term with no role anywhere is unchanged.
 
 **Redefining the emphasis.** The LaTeX back-end wraps the locator in
 `\quartoindexprincipal`, defined with `\providecommand` as `\textbf` and
-injected only into a document that uses it. Define your own in the document's
-preamble and yours is kept:
+injected, with the machinery that applies it, only into a document that uses
+it. Define your own in the document's preamble and yours is kept — a document's
+own header text lands above what a filter injects, so the extension's
+definition steps aside:
 
 ```latex
 \newcommand*\quartoindexprincipal[1]{\textit{#1}}
@@ -369,6 +371,13 @@ preamble and yours is kept:
 
 In HTML the extension ships no stylesheet, so the link carries a `<strong>` as
 well as the class; style `.qi-principal` to change it.
+
+**One case prints unemphasized.** makeindex folds three or more consecutive
+pages under one entry into a range, and the emphasis is applied by looking a
+page up by the number the index prints — which a range like `3--5` is not. So a
+principal mention whose page falls inside such a range prints plain, silently.
+Nothing else about the entry changes, and no other locator is affected. Page
+ranges are not otherwise supported yet.
 
 **A role needs a locator to apply to.** A cross-reference takes the place of a
 locator, so `mention="principal"` on a mark that also carries `see=` or

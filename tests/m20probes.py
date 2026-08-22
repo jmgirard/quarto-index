@@ -406,6 +406,73 @@ def _gfm(argv):
           f'fixture, and no anchor, index command, encapsulation command or '
           f'ARIA role reaches the format at all')
 
+def _cases(argv):
+    """M20 T9 — the regressions IP2's forever clause earns, read from the PDF.
+
+    This fixture's preamble redefines the emphasis command to a bracketed
+    marker, which is the only way an emphasis claim can be read out of a PDF at
+    all: `\textbf` and plain text extract identically under `pdftotext`. That
+    redefinition is itself one of the regressions — it is the author-facing
+    promise README makes, and Quarto puts a document's own header text above
+    what a filter injects, so `\providecommand` finds the author's definition
+    already there and steps aside.
+    """
+    text = open(argv[0], encoding='utf-8').read()
+    ilg = open(argv[1], encoding='utf-8').read()
+    # Bounded to the generated index, which is the last section of the
+    # document: the prose above it discusses these very entries, and an
+    # unbounded scan reads its sentences as index rows.
+    lines = text.splitlines()
+    heads = [i for i, l in enumerate(lines) if l.strip() == 'Index']
+    if not heads:
+        _fail('M20 T9: the PDF text carries no Index heading, so the section every '
+              'clause below is stated over was never found')
+    lines = lines[heads[-1] + 1:]
+    # One line per entry of the printed index, normalized.
+    index = {}
+    for line in lines:
+        line = ' '.join(line.split())
+        m = re.match(r'^([a-z]+), (.+)$', line)
+        if m:
+            index[m.group(1)] = m.group(2)
+    want = {
+        # The shape the milestone died on: a plain and a principal mark of one
+        # key ON ONE PAGE. Under the emission this replaced, makeindex logged a
+        # conflict and Quarto failed the render. Now the two marks carry one
+        # encapsulation, fold into a single locator, and that locator is
+        # emphasized — which is also the book convention for the pair.
+        'wyvern': '[P:1], 2',
+        # A principal mark inside a footnote. The registration is written by the
+        # same shipout-deferred mechanism as the `\index` beside it, so the two
+        # name one page even though the mark is typeset in another box.
+        'naga': '[P:2]',
+        # The one silent degradation (README, and M21's subject): three
+        # consecutive pages fold into a range, and the registry looks a page up
+        # by the string the index prints, which `3--5` is not. The principal
+        # page is inside it and prints UNEMPHASIZED. Asserted rather than
+        # tolerated, so the day it changes this fixture says so.
+        'oni': '3–5',
+        # The control: no role anywhere, so no marker on either locator.
+        'pixie': '6, 7',
+    }
+    if index != want:
+        _fail('M20 T9: the printed index reads\n  %r\nexpected\n  %r' % (index, want))
+    if 'P:' in index['oni'] or 'P:' in index['pixie']:
+        _fail('M20 T9: a marker reached an entry that must carry none: %r' % index)
+    m = re.search(r'done \((\d+) lines written, (\d+) warnings?\)', ilg)
+    if not m or m.group(2) != '0':
+        _fail('M20 T9: makeindex did not report zero warnings for the fixture '
+              'carrying a same-page plain-and-principal pair, which is the whole '
+              'point of the uniform encapsulation:\n' + ilg)
+    print('ok   M20 T9: a plain and a principal mark of one key on one page render '
+          'at zero makeindex warnings and print as one emphasized locator; a '
+          'principal mark in a footnote is registered from its own page; a '
+          'registered page inside a makeindex range prints unemphasized, as '
+          'documented; the role-free control is untouched; and every one of these '
+          'is legible only because the author\'s own redefinition of the emphasis '
+          'command is the one that took effect')
+
+
 def _twin(argv):
     def commands(path):
         """Every `\index{...}` command, read with a brace COUNTER rather than a
@@ -485,7 +552,7 @@ def _twin(argv):
           % len(a))
 
 
-READERS = {'ind': _ind, 'tex': _tex, 'html': _html, 'gfm': _gfm, 'twin': _twin}
+READERS = {'ind': _ind, 'tex': _tex, 'cases': _cases, 'html': _html, 'gfm': _gfm, 'twin': _twin}
 
 if __name__ == '__main__':
     if len(sys.argv) < 2 or sys.argv[1] not in READERS:

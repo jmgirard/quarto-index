@@ -9,10 +9,11 @@ examples/*.html
 examples/*.md
 examples/*.epub
 examples/*_files/
-# The LaTeX aux family. examples/principal.qmd deliberately keeps its `.ind`
-# and `.ilg` (latex-clean: false) because the suite reads them as evidence
-# that an encapsulation reached the right locator; and a FAILED pdf render
-# leaves this family behind for any fixture.
+# The LaTeX aux family. examples/principal.qmd and examples/principal-cases.qmd
+# deliberately keep their `.ind`, `.ilg` and `.aux` (latex-clean: false),
+# because the suite reads the first two for the emitted encapsulation and the
+# `.aux` for the typeset-time registry that carries the principal role; and a
+# FAILED pdf render leaves this family behind for any fixture.
 examples/*.aux
 examples/*.idx
 examples/*.ilg

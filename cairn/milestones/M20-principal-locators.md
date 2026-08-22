@@ -1,6 +1,6 @@
 # M20: A term's principal discussion prints as its principal locator
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -120,7 +120,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - [x] T5: The suite's principal section — `.ind`/`.ilg`/`.tex`, HTML, log pins, gfm manifest.
 - [x] T6: A planted defect per T5 check, varying form and site; readers in `m20probes.py`.
 - [x] T7: README section and byte-pinned claims; DESIGN's pass-through residue enumeration.
-- [ ] T8: The typeset-time channel (D-007; mechanism and validation in the archived RR01).
+- [x] T8: The typeset-time channel (D-007; mechanism and validation in the archived RR01).
       Every locator mark of a key carrying a principal mark emits one uniform per-key
       `\quartoindexlocator{<ordinal>}`, so two locators of a key can never differ and the
       conflict is unreachable by construction; the ordinal is assigned in document order by
@@ -134,7 +134,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       range the registry could not match. The AC1/AC6 readers join `tests/m20probes.py`:
       the `.ind` read with wrapping collapsed and groups brace-counted, both `.tex` reads
       bounded to the preamble and guarded against a missing file (review F7, F10).
-- [ ] T9: The regressions IP2's forever clause earns, and the record. A new fixture
+- [x] T9: The regressions IP2's forever clause earns, and the record. A new fixture
       `examples/principal-cases.qmd` whose preamble redefines `\quartoindexprincipal` to a
       marker `pdftotext` can read — both the author-redefinition regression and what makes
       the emphasis legible — carrying a plain and a principal mark of one key ON ONE PAGE
@@ -184,6 +184,9 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: T8 checkpoint, half done and green on the plain suite. The typeset-time channel is built: `core.lua` carries the whole injected subsystem (the registry reader, the shipout-deferred registration, the locator command that splits a page list and wraps registered pages, and the `\qi@` helpers, which sniff their argument's token class rather than naming a hyperref internal); `latex.lua` assigns one ordinal per principal-carrying key in document order; `passes.lua` gives EVERY locator mark of such a key that same ordinal and emits the registration beside the principal mark's own `\index`. `examples/principal.qmd` gained filler pages so its three `basilisk` marks are non-adjacent. New AC1 and AC6 readers in `tests/m20probes.py`, the twin comparison strengthened from a set to a positional multiset (a set collapsed `basilisk`'s three commands into one row and would have passed a filter that encapsulated only the principal mark), and the `.ind` plant set replaced with eleven aimed at the two properties that succeeded the emphasis-in-the-`.ind`. Plain suite 223 -> 226; the self-test run is not yet finished, so `--self-test` is UNVERIFIED at this checkpoint.
 - 2026-08-21: two clauses of the just-amended criteria were disproved by the artifact and corrected against it. makeindex merges only a RUN of consecutive pages under one encapsulation, so `basilisk`'s non-adjacent locators print as three groups rather than one — which shows the uniform identifier three times over and is better evidence than the merged form both audit rounds assumed. And the subsystem's own `\qi@emit` helper names `\quartoindexprincipal` in its body, so AC6 binds DEFINING FORMS naming a `quartoindex` control sequence, plus the absence of `\csname quartoindex`, rather than occurrences of the string; its control clause dropped `\quartoindexseeboth`, which belongs to the cross-reference channel and which the role-free twin legitimately carries.
 - 2026-08-21: T9 in progress — `examples/principal-cases.qmd` written (same-page plain/principal pair, a principal mark in a footnote, a registered page inside a makeindex range, a role-free control, and a preamble redefining the emphasis to a marker `pdftotext` can read). `latex.lua`'s two comment blocks corrected: makeindex warns at exit 0 and writes a correct `.ind`, and Quarto alone fails the render on a regex over the transcript; and the claim that a styled and a plain locator are not rivals is withdrawn as false. The ROADMAP premise was already corrected at the RR01 ingest. README's degradation line, the redefinition recipe (whose `\newcommand*` may error where the extension's definition lands first — unmeasured) and the T9 suite section are not written yet.
+- 2026-08-21: T8 done and verified clean. The same-page plain-and-principal pair — the document this milestone died on, which made `quarto render` exit 1 — now renders at exit 0 with zero makeindex warnings and prints as one emphasized locator. `examples/principal.qmd`'s `.ind` carries `basilisk` as three groups all naming `qi1`, its `.aux` registers exactly four identifiers from pages their own entries list, and the preamble injects the four `\quartoindex` commands with `\providecommand*` into that document and no other.
+- 2026-08-21: T9 done. `examples/principal-cases.qmd` renders the four shapes IP2's forever clause earns, read out of the PDF text: `wyvern, [P:1], 2` (the same-page pair, folded and emphasized), `naga, [P:2]` (a principal mark in a footnote, registered from its own page), `oni, 3--5` (a registered page inside a makeindex range, printing unemphasized — the one documented degradation, asserted rather than tolerated) and `pixie, 6, 7` (the role-free control). Review F13 is settled by measurement rather than left open: Quarto puts a document's own `include-in-header` ABOVE what a filter injects, so `\providecommand` finds the author's definition already there and steps aside — README's "yours is kept" and its `\newcommand*` recipe are correct, and `\renewcommand*` in that position fails outright, which is how the ordering was established. README gained the silent-degradation paragraph and a seventh byte-pinned claim; `latex.lua`'s two comment blocks now state that makeindex warns at exit 0 and Quarto alone fails the render, and withdraw the claim that a styled and a plain locator are not rivals.
+- 2026-08-21: all nine tasks done. `tests/run-tests.sh` passes at 228 checks and `--self-test` at 310, both run clean on an untouched tree (merge base 208 / 248; the pre-T8 checkpoint 226 / unverified). Thirty-five M20 plants discriminate, among them the eleven that replaced the superseded `.ind` emphasis plants and the four AC6 plants review F4 recorded as missing. Status -> review. F1 from the return is repaired at the design level rather than patched; F4, F13 and the freshness half of F10 are closed in passing; F5, F6, F7, F8 and the rest of F10 stand for triage at the gate.
 
 ## Decisions
 

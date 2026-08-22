@@ -267,6 +267,10 @@ README_PRINCIPAL_CLAIMS=(
   $'redefinable\tDefine your own in the document\'s preamble and yours is kept'
   $'no locator\tThe role is reported and dropped, and the mark indexes exactly as it would without it'
   $'empty value\tsince `mention=""` is a value you wrote rather than an attribute you left off'
+  # The one silent degradation (RR01 recommendation 4). Pinned like every other
+  # documented behavior, and exercised by the T9 fixture's `oni` entry rather
+  # than merely asserted here.
+  $'range degradation\ta principal mention whose page falls inside such a range prints plain, silently'
 )
 
 # README claims about letter groups (NORMATIVE, M07-AC6). Same discipline as
@@ -7795,6 +7799,35 @@ python3 tests/m20probes.py tex "$WORK/principal.tex" "$WORK/principal-twin.tex" 
   "$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
 pass "M20-AC6: nor does any of them reach the role-free twin, which is the same document with every mention attribute removed"
 
+# ---------------------------------------------------------------------------
+# M20 T9 — the regressions IP2's forever clause earns, in a fixture of their
+# own. It is separate from examples/principal.qmd for two reasons: adding marks
+# there would move AC5's hand-derived thirteen-span manifest, and this document
+# redefines the emphasis command, which the fixture the other criteria are
+# stated over must not do.
+#
+# ORACLE NOTE. `pdftotext` cannot see `\textbf`: bold and plain text extract to
+# the same bytes. So every emphasis claim below is read through the fixture's
+# own redefinition of \quartoindexprincipal to a bracketed marker — which is
+# not a workaround but the second thing this section proves, since that
+# redefinition taking effect at all is the author-facing promise README makes.
+# ---------------------------------------------------------------------------
+rm -f examples/principal-cases.ind examples/principal-cases.ilg \
+      examples/principal-cases.aux examples/principal-cases.pdf
+quarto render examples/principal-cases.qmd --to pdf \
+  > "$WORK/principal-cases-pdf.log" 2>&1 \
+  || { cat "$WORK/principal-cases-pdf.log" >&2; fail "M20 T9: examples/principal-cases.qmd failed to render to PDF — a plain and a principal mark of one key on one page is the shape this milestone died on, and this render is what proves it no longer breaks the document"; }
+for aux in ind ilg aux; do
+  [ -f "examples/principal-cases.$aux" ] \
+    || fail "M20 T9: the PDF render left no examples/principal-cases.$aux"
+  cp "examples/principal-cases.$aux" "$WORK/principal-cases.$aux"
+done
+[ -s examples/principal-cases.pdf ] \
+  || fail "M20 T9: the render produced no PDF, so the printed index every clause below reads was never written"
+pdftotext examples/principal-cases.pdf "$WORK/principal-cases.txt"
+python3 tests/m20probes.py cases "$WORK/principal-cases.txt" "$WORK/principal-cases.ilg"
+pass "M20 T9: the same-page pair, the footnote, the folded range and the role-free control all print as documented, at zero makeindex warnings, through the author's own redefinition of the emphasis command"
+
 # The documentation half of T7, held to the same discipline as every other
 # README claim array: the bytes the extension documents are compared, so a
 # behavior that changes without its documentation fails here.
@@ -8162,6 +8195,48 @@ filtersrc.sources()" >/dev/null 2>&1; then
     warn_discrimination "$WORK/principal-$fmt.log" "$M20_UNKNOWN" 2 \
       "M20-AC4 ($fmt)"
   done
+  # --- the T9 regressions. One plant per shape the fixture exists to hold, so
+  #     a reader that stopped reading any one of them is caught rather than
+  #     silently carrying it.
+  cp "$WORK/principal-cases.ilg" "$M20W/cases-clean.ilg"
+  m20_cases() {
+    python3 tests/m20probes.py cases "$1" "$2"
+  }
+  m20_plant "$WORK/principal-cases.txt" "$M20W/samepage.txt" \
+    -e "s/^wyvern, \\[P:1\\], 2$/wyvern, 1, 2/"
+  m20_defect "the same-page pair printing with no emphasis at all" \
+    m20_cases "$M20W/samepage.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/bothpages.txt" \
+    -e "s/^wyvern, \\[P:1\\], 2$/wyvern, [P:1], [P:2]/"
+  m20_defect "the emphasis spreading from the registered page to its neighbour" \
+    m20_cases "$M20W/bothpages.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/footnote.txt" \
+    -e "s/^naga, \\[P:2\\]$/naga, 2/"
+  m20_defect "a principal mark in a footnote losing its registration" \
+    m20_cases "$M20W/footnote.txt" "$M20W/cases-clean.ilg"
+  # The degradation is ASSERTED, not tolerated: were a future makeindex or a
+  # future registry to start matching a range, this fixture is what says so,
+  # and README's claim about it would then be stale.
+  m20_plant "$WORK/principal-cases.txt" "$M20W/range.txt" \
+    -e "s/^oni, 3–5$/oni, [P:3–5]/"
+  m20_defect "a folded page range printing emphasized, which README says it does not" \
+    m20_cases "$M20W/range.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/cases-control.txt" \
+    -e "s/^pixie, 6, 7$/pixie, [P:6], 7/"
+  m20_defect "the emphasis reaching the role-free control in the regression fixture" \
+    m20_cases "$M20W/cases-control.txt" "$M20W/cases-clean.ilg"
+  # The redefinition itself: with the author's marker gone, every emphasis claim
+  # above becomes unreadable rather than false, which is what makes this fixture
+  # depend on the promise README makes.
+  m20_plant "$WORK/principal-cases.txt" "$M20W/nomarker.txt" \
+    -e "s/\\[P:\\([0-9–-]*\\)\\]/\\1/g"
+  m20_defect "the author's redefinition of the emphasis command not taking effect" \
+    m20_cases "$M20W/nomarker.txt" "$M20W/cases-clean.ilg"
+  awk '{ print }' "$WORK/principal-cases.ilg" | sed -e 's/0 warnings)/1 warning)/' \
+    > "$M20W/cases-warned.ilg"
+  m20_defect "a makeindex warning on the fixture carrying the same-page pair" \
+    m20_cases "$WORK/principal-cases.txt" "$M20W/cases-warned.ilg"
+
   pass "M20 self-test: every reader the milestone adds fails on a planted defect of each kind it names, and both reports are shown discriminating in all three formats"
 
   # -------------------------------------------------------------------------

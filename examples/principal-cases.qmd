@@ -12,8 +12,14 @@ format:
       # also the only way the emphasis becomes visible to `pdftotext` at all:
       # `\textbf` and plain text extract identically. Every emphasis claim this
       # fixture makes is read through this marker.
+      #
+      # `\newcommand*`, and not `\renewcommand*`: Quarto puts a document's own
+      # header text ABOVE what a filter injects, so this definition lands first
+      # and the extension's `\providecommand` steps aside — which is what
+      # README's "yours is kept" means, and what this render exercises.
+      # `\renewcommand*` here fails outright, the command not existing yet.
       text: |
-        \renewcommand*\quartoindexprincipal[1]{[P:#1]}
+        \newcommand*\quartoindexprincipal[1]{[P:#1]}
 filters:
   - index
 ---

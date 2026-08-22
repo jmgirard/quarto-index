@@ -270,7 +270,7 @@ README_PRINCIPAL_CLAIMS=(
   # The one silent degradation (RR01 recommendation 4). Pinned like every other
   # documented behavior, and exercised by the T9 fixture's `oni` entry rather
   # than merely asserted here.
-  $'range degradation\ta principal mention whose page falls inside such a range prints plain, silently'
+  $'range degradation\ta principal mention whose page is anywhere in such a range, its first page included, prints plain, silently'
 )
 
 # README claims about letter groups (NORMATIVE, M07-AC6). Same discipline as
@@ -7825,8 +7825,10 @@ done
 [ -s examples/principal-cases.pdf ] \
   || fail "M20 T9: the render produced no PDF, so the printed index every clause below reads was never written"
 pdftotext examples/principal-cases.pdf "$WORK/principal-cases.txt"
-python3 tests/m20probes.py cases "$WORK/principal-cases.txt" "$WORK/principal-cases.ilg"
-pass "M20 T9: the same-page pair, the footnote, the folded range and the role-free control all print as documented, at zero makeindex warnings, through the author's own redefinition of the emphasis command"
+python3 tests/m20probes.py cases "$WORK/principal-cases.txt" \
+  "$WORK/principal-cases.ilg" "$WORK/principal-cases.ind" \
+  "$WORK/principal-cases.aux" "$WORK/principal-cases-pdf.log"
+pass "M20 T9: every locator of the printed index is marked exactly when the registry names it — derived from the .ind and .aux rather than written down — across a same-page pair, a footnote, two page ranges, a registered page that is not first in its list, a page past nine, a fold-induced self-target and a role-free control, at zero makeindex warnings and through the author's own redefinition of the emphasis command"
 
 # The documentation half of T7, held to the same discipline as every other
 # README claim array: the bytes the extension documents are compared, so a
@@ -8067,11 +8069,18 @@ filtersrc.sources()" >/dev/null 2>&1; then
     m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/csname.aux"
   # (vii) the transcript half: makeindex reporting a conflict the check must not
   #       read past. Planted in the .ilg alone, with the .ind left correct.
-  awk '{ print } /Conflicting/ { next }' "$WORK/principal.ilg" \
-    | sed -e 's/0 warnings)/1 warning)/' > "$M20W/warned.ilg"
-  printf '## Warning: Conflicting entries: multiple encaps for the same page under same key.\n' \
-    >> "$M20W/warned.ilg"
-  m20_defect "a conflicting-encapsulation warning in the makeindex transcript" \
+  # Two clauses, two plants, each through the no-op guard — the reader asserts
+  # the absence of the conflict line AND a zero warning count, and a single
+  # mutation that broke both would show neither clause to be load-bearing
+  # (review round 2, R2-F11; the previous version also carried an `awk` line
+  # whose `print` ran before its `next`, so it filtered nothing at all).
+  m20_plant "$WORK/principal.ilg" "$M20W/counted.ilg" \
+    -e 's/0 warnings)/1 warning)/'
+  m20_defect "a nonzero warning count in the makeindex transcript" \
+    m20_ind "$M20W/clean.ind" "$M20W/counted.ilg" "$M20W/clean.aux"
+  m20_plant "$WORK/principal.ilg" "$M20W/warned.ilg" \
+    -e 's|^Output written|## Warning: Conflicting entries: multiple encaps for the same page under same key.\n&|'
+  m20_defect "a conflicting-encapsulation line in the makeindex transcript" \
     m20_ind "$M20W/clean.ind" "$M20W/warned.ilg" "$M20W/clean.aux"
 
   # --- the preamble. Review F4 records this criterion as having no planted
@@ -8199,43 +8208,83 @@ filtersrc.sources()" >/dev/null 2>&1; then
   #     a reader that stopped reading any one of them is caught rather than
   #     silently carrying it.
   cp "$WORK/principal-cases.ilg" "$M20W/cases-clean.ilg"
+  cp "$WORK/principal-cases.ind" "$M20W/cases-clean.ind"
+  cp "$WORK/principal-cases.aux" "$M20W/cases-clean.aux"
+  cp "$WORK/principal-cases-pdf.log" "$M20W/cases-clean.log"
   m20_cases() {
-    python3 tests/m20probes.py cases "$1" "$2"
+    python3 tests/m20probes.py cases "$1" "$2" "${3:-$M20W/cases-clean.ind}" \
+      "${4:-$M20W/cases-clean.aux}" "${5:-$M20W/cases-clean.log}"
   }
   m20_plant "$WORK/principal-cases.txt" "$M20W/samepage.txt" \
-    -e "s/^wyvern, \\[P:1\\], 2$/wyvern, 1, 2/"
+    -e "s/^wyvern, \[P:1\], 2$/wyvern, 1, 2/"
   m20_defect "the same-page pair printing with no emphasis at all" \
     m20_cases "$M20W/samepage.txt" "$M20W/cases-clean.ilg"
   m20_plant "$WORK/principal-cases.txt" "$M20W/bothpages.txt" \
-    -e "s/^wyvern, \\[P:1\\], 2$/wyvern, [P:1], [P:2]/"
+    -e "s/^wyvern, \[P:1\], 2$/wyvern, [P:1], [P:2]/"
   m20_defect "the emphasis spreading from the registered page to its neighbour" \
     m20_cases "$M20W/bothpages.txt" "$M20W/cases-clean.ilg"
   m20_plant "$WORK/principal-cases.txt" "$M20W/footnote.txt" \
-    -e "s/^naga, \\[P:2\\]$/naga, 2/"
+    -e "s/^naga, \[P:2\]$/naga, 2/"
   m20_defect "a principal mark in a footnote losing its registration" \
     m20_cases "$M20W/footnote.txt" "$M20W/cases-clean.ilg"
+  # --- the three shapes review round 2 found unexercised. Each is a page the
+  #     defect R2-F1 got wrong, and each plant is the printed form that defect
+  #     actually produced, not an invented one.
+  m20_plant "$WORK/principal-cases.txt" "$M20W/notfirst.txt" \
+    -e "s/^troll, 9, \[P:10\]$/troll, 9, 10/"
+  m20_defect "a registered page that is not first in its list printing plain" \
+    m20_cases "$M20W/notfirst.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/multichar.txt" \
+    -e "s/^undine, \[P:11\]$/undine, 11/"
+  m20_defect "a page number of more than one character printing plain" \
+    m20_cases "$M20W/multichar.txt" "$M20W/cases-clean.ilg"
   # The degradation is ASSERTED, not tolerated: were a future makeindex or a
   # future registry to start matching a range, this fixture is what says so,
-  # and README's claim about it would then be stale.
+  # and README's claim about it would then be stale. Both ranges are planted —
+  # the one registered at its middle page and the one registered at its first,
+  # which is the range a per-token split could still mark.
   m20_plant "$WORK/principal-cases.txt" "$M20W/range.txt" \
     -e "s/^oni, 3–5$/oni, [P:3–5]/"
   m20_defect "a folded page range printing emphasized, which README says it does not" \
     m20_cases "$M20W/range.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/rangehead.txt" \
+    -e "s/^sylph, 6–8$/sylph, [P:6]–8/"
+  m20_defect "a range whose first page is registered printing emphasized" \
+    m20_cases "$M20W/rangehead.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/foldrole.txt" \
+    -e "s/^folk, kin, \[P:11\]$/folk, kin, 11/"
+  m20_defect "a role dropped from a mark whose target only self-references after the fold" \
+    m20_cases "$M20W/foldrole.txt" "$M20W/cases-clean.ilg"
   m20_plant "$WORK/principal-cases.txt" "$M20W/cases-control.txt" \
-    -e "s/^pixie, 6, 7$/pixie, [P:6], 7/"
+    -e "s/^pixie, 12, 13$/pixie, [P:12], 13/"
   m20_defect "the emphasis reaching the role-free control in the regression fixture" \
     m20_cases "$M20W/cases-control.txt" "$M20W/cases-clean.ilg"
   # The redefinition itself: with the author's marker gone, every emphasis claim
   # above becomes unreadable rather than false, which is what makes this fixture
   # depend on the promise README makes.
   m20_plant "$WORK/principal-cases.txt" "$M20W/nomarker.txt" \
-    -e "s/\\[P:\\([0-9–-]*\\)\\]/\\1/g"
+    -e "s/\[P:\([0-9–-]*\)\]/\1/g"
   m20_defect "the author's redefinition of the emphasis command not taking effect" \
     m20_cases "$M20W/nomarker.txt" "$M20W/cases-clean.ilg"
-  awk '{ print }' "$WORK/principal-cases.ilg" | sed -e 's/0 warnings)/1 warning)/' \
-    > "$M20W/cases-warned.ilg"
+  # The registry half: the printed index is unchanged and the .aux moves under
+  # it, so the derivation and the page disagree — which is the direction a
+  # hand-written oracle cannot see at all.
+  m20_plant "$WORK/principal-cases.aux" "$M20W/cases-moved.aux" \
+    -e "s/{qi5}{10}/{qi5}{9}/"
+  m20_defect "a registration moved to the other locator of its own entry" \
+    m20_cases "$WORK/principal-cases.txt" "$M20W/cases-clean.ilg" \
+      "$M20W/cases-clean.ind" "$M20W/cases-moved.aux"
+  m20_plant "$WORK/principal-cases.ilg" "$M20W/cases-warned.ilg" \
+    -e 's/0 warnings)/1 warning)/'
   m20_defect "a makeindex warning on the fixture carrying the same-page pair" \
     m20_cases "$WORK/principal-cases.txt" "$M20W/cases-warned.ilg"
+  # The contradiction round 1 returned this milestone for, in the shape the
+  # earlier repair did not reach: the report that must NOT be drawn.
+  m20_plant "$WORK/principal-cases-pdf.log" "$M20W/cases-contradict.log" \
+    -e 's|^Output created|(W) mention="principal" on entry="deep!water!folk!kin" carries see= as well, and a cross-reference takes the place of a locator, so this mark has no locator to emphasize\n&|'
+  m20_defect "a mark told it has no locator to emphasize though the fold gave it one" \
+    m20_cases "$WORK/principal-cases.txt" "$M20W/cases-clean.ilg" \
+      "$M20W/cases-clean.ind" "$M20W/cases-clean.aux" "$M20W/cases-contradict.log"
 
   pass "M20 self-test: every reader the milestone adds fails on a planted defect of each kind it names, and both reports are shown discriminating in all three formats"
 

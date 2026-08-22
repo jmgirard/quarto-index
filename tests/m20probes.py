@@ -95,7 +95,16 @@ def _ind(argv):
     items = {}
     for chunk in re.split(r'\\item\s', ind)[1:]:
         line = ' '.join(chunk.split())
-        items[line.split(',')[0].strip()] = line
+        # The term is what precedes the first COMMAND, not the first comma: a
+        # term may contain a comma (the three-level fold joins with ", ", and an
+        # author may simply write one), and splitting there files the entry
+        # under a truncated name no clause below would ever find (review round
+        # 2, R2-F16). Cutting at the command also steps over a contested key's
+        # folded `\see{...}`, which prints between the term and its locator. A
+        # term carrying a literal backslash would cut short, but the filter
+        # emits one as `\textbackslash{}` and the miss would be loud, not silent.
+        cut = line.find('\\')
+        items[(line if cut < 0 else line[:cut]).strip().rstrip(',').strip()] = line
     missing = [t for t in ('basilisk', 'gorgon', 'faun') if t not in items]
     if missing:
         _fail('M20-AC1: the compiled index has no entry for %s; it has %s'
@@ -117,6 +126,14 @@ def _ind(argv):
               'per key is what makes a same-page pair impossible: <<%s>>'
               % (len(ids), sorted(ids), items['basilisk']))
     basilisk_id = groups[0][0]
+    # Named failure rather than a traceback: a document with roman front matter
+    # or a page compositor prints a folio that is not an integer, and this
+    # criterion is about the fixture's own arabic pages (review round 2, R2-F16).
+    for _, gpages in groups:
+        if not gpages[0].isdigit():
+            _fail('M20-AC1: basilisk\'s locator page %r is not a plain number; this '
+                  'criterion reads the fixture\'s own arabic folios and cannot '
+                  'order anything else' % gpages[0])
     pages = sorted(int(pages[0]) for _, pages in groups)
     if any(b - a < 2 for a, b in zip(pages, pages[1:])):
         _fail('M20-AC1: basilisk\'s locator pages %s include an adjacent pair; the '
@@ -395,7 +412,13 @@ def _gfm(argv):
               'attribute; the mark attribute is data-prefixed precisely so no '
               'marked term ships an ARIA role', file=sys.stderr)
         sys.exit(1)
-    for token in ('qi-', r'\index{', 'quartoindexprincipal'):
+    # Every command either back-end can emit, not only the emphasis one: the
+    # typeset-time channel added two more, and the ordinal is `qi1` rather
+    # than `qi-`, so a leaked registration matched no token here (review
+    # round 2, R2-F9).
+    for token in ('qi-', r'\index{', 'quartoindexprincipal',
+                  'quartoindexlocator', 'quartoindexregister',
+                  'quartoindexprincipalpage'):
         if token in src:
             print(f'FAIL: M20-AC5: the gfm render carries <<{token}>>, which is '
                   f'back-end residue in a format with no index back-end',
@@ -409,6 +432,17 @@ def _gfm(argv):
 def _cases(argv):
     """M20 T9 — the regressions IP2's forever clause earns, read from the PDF.
 
+    The expected printed index is DERIVED here from the `.ind` and the `.aux`
+    of the same render, never written down: for every page item of every
+    locator group, the item is emphasized exactly when the group's identifier
+    is registered against that item's own page string, and plain otherwise.
+    That derivation is the whole point of this reader. The previous version
+    compared four hand-written strings, and all four happened to be
+    byte-identical under a defect that emphasized only a page which was both
+    the first item of its list and a single character — so the reader certified
+    a build in which the feature did not work at all past page nine (review
+    round 2, R2-F1).
+
     This fixture's preamble redefines the emphasis command to a bracketed
     marker, which is the only way an emphasis claim can be read out of a PDF at
     all: `\textbf` and plain text extract identically under `pdftotext`. That
@@ -417,60 +451,117 @@ def _cases(argv):
     what a filter injects, so `\providecommand` finds the author's definition
     already there and steps aside.
     """
-    text = open(argv[0], encoding='utf-8').read()
-    ilg = open(argv[1], encoding='utf-8').read()
-    # Bounded to the generated index, which is the last section of the
-    # document: the prose above it discusses these very entries, and an
-    # unbounded scan reads its sentences as index rows.
-    lines = text.splitlines()
-    heads = [i for i, l in enumerate(lines) if l.strip() == 'Index']
+    text_path, ilg_path, ind_path, aux_path, log_path = argv[:5]
+    locator_cmd, page_cmd = 'quartoindexlocator', 'quartoindexprincipalpage'
+
+    ind = open(ind_path, encoding='utf-8').read()
+    registered = set(re.findall(r'\\%s\{([^{}]*)\}\{([^{}]*)\}' % re.escape(page_cmd),
+                                open(aux_path, encoding='utf-8').read()))
+
+    # makeindex writes a range with `--`; the typeset page prints an en dash.
+    def printed(item):
+        return item.replace('--', '\u2013')
+
+    # One expected printed line per compiled entry, derived rather than written
+    # down. `\hyperpage` groups (a key with no principal mention) carry no
+    # identifier and so can never be registered.
+    entries, groups, marked, plain = [], [], [], []
+    for chunk in re.split(r'\\(?:item|subitem|subsubitem)\s', ind)[1:]:
+        line = ' '.join(chunk.split())
+        # Cut at the first command, not the first locator — see the note in
+        # `_ind`: a term may carry a comma, and a contested key prints its
+        # folded cross-reference between the term and its locator.
+        cut = line.find('\\')
+        term = (line if cut < 0 else line[:cut]).strip().rstrip(',').strip()
+        mine = _locator_groups(line, locator_cmd)
+        groups.extend(mine)
+        items = []
+        for gid, gitems in mine:
+            for item in gitems:
+                hit = (gid, item) in registered
+                (marked if hit else plain).append(printed(item))
+                items.append(('[P:%s]' % printed(item)) if hit else printed(item))
+        for bare in re.findall(r'\\hyperpage\{([^{}]*)\}', line):
+            for item in (i.strip() for i in bare.split(',')):
+                plain.append(printed(item))
+                items.append(printed(item))
+        if items:
+            entries.append((term, term + ', ' + ', '.join(items)))
+    if not groups:
+        _fail('M20 T9: the compiled index carries no %s group at all, so every '
+              'clause below would be quantified over nothing' % locator_cmd)
+
+    body = open(text_path, encoding='utf-8').read().splitlines()
+    heads = [i for i, l in enumerate(body) if l.strip() == 'Index']
     if not heads:
         _fail('M20 T9: the PDF text carries no Index heading, so the section every '
               'clause below is stated over was never found')
-    lines = lines[heads[-1] + 1:]
-    # One line per entry of the printed index, normalized.
-    index = {}
-    for line in lines:
-        line = ' '.join(line.split())
-        m = re.match(r'^([a-z]+), (.+)$', line)
-        if m:
-            index[m.group(1)] = m.group(2)
-    want = {
-        # The shape the milestone died on: a plain and a principal mark of one
-        # key ON ONE PAGE. Under the emission this replaced, makeindex logged a
-        # conflict and Quarto failed the render. Now the two marks carry one
-        # encapsulation, fold into a single locator, and that locator is
-        # emphasized — which is also the book convention for the pair.
-        'wyvern': '[P:1], 2',
-        # A principal mark inside a footnote. The registration is written by the
-        # same shipout-deferred mechanism as the `\index` beside it, so the two
-        # name one page even though the mark is typeset in another box.
-        'naga': '[P:2]',
-        # The one silent degradation (README, and M21's subject): three
-        # consecutive pages fold into a range, and the registry looks a page up
-        # by the string the index prints, which `3--5` is not. The principal
-        # page is inside it and prints UNEMPHASIZED. Asserted rather than
-        # tolerated, so the day it changes this fixture says so.
-        'oni': '3–5',
-        # The control: no role anywhere, so no marker on either locator.
-        'pixie': '6, 7',
-    }
-    if index != want:
-        _fail('M20 T9: the printed index reads\n  %r\nexpected\n  %r' % (index, want))
-    if 'P:' in index['oni'] or 'P:' in index['pixie']:
-        _fail('M20 T9: a marker reached an entry that must carry none: %r' % index)
-    m = re.search(r'done \((\d+) lines written, (\d+) warnings?\)', ilg)
+    index = '\n'.join(body[heads[-1] + 1:])
+    printed_lines = {' '.join(l.split()) for l in index.splitlines() if l.strip()}
+
+    for term, want in entries:
+        if want not in printed_lines:
+            near = [l for l in printed_lines if l.startswith(term + ',')]
+            _fail('M20 T9: the %r entry prints %r; derived from its own .ind group '
+                  'and the .aux registry it must print %r'
+                  % (term, near or sorted(printed_lines), want))
+    if index.count('[P:') != len(marked):
+        _fail('M20 T9: the printed index marks %d locators; the .aux registers %d '
+              'of the .ind\'s page items (%r)'
+              % (index.count('[P:'), len(marked), marked))
+
+    # The fixture must keep holding the shapes it exists for; a later edit that
+    # flattened its pagination would leave every clause above true and prove
+    # nothing. Each of these is a shape R2-F1 got wrong.
+    if not any(len(i) > 1 and '\u2013' not in i for i in marked):
+        _fail('M20 T9: no marked locator has a page number of more than one '
+              'character, which is the shape a per-token split gets wrong: %r' % marked)
+    if not any((gid, items[0]) not in registered
+               and any((gid, i) in registered for i in items[1:])
+               for gid, items in groups if len(items) > 1):
+        _fail('M20 T9: no entry registers a page that is not the first item of its '
+              'own locator list, which is the other shape a per-token split gets '
+              'wrong: %r' % (groups,))
+    # A range's registry key is the page the mark sat on, never the range
+    # string makeindex folded it into — which is exactly why the lookup misses
+    # and the range prints plain. The shape worth holding is a range whose FIRST
+    # page is the registered one: a locator command that split its list wrongly
+    # could still mark that entry, since the range string opens with that page's
+    # own digits, while marking nothing else in the document.
+    if not any('--' in item and (gid, item.split('--')[0]) in registered
+               for gid, items in groups for item in items):
+        _fail('M20 T9: no entry has a page range whose registered page is the '
+              'range\'s own first page, so nothing here holds README\'s claim that '
+              'a range prints plain: %r' % (groups,))
+
+    # The fold-induced self-target: exactly the fold's two reports about that
+    # mark, and NOT a third telling it a cross-reference took its locator's
+    # place — which would contradict them and drop a role the mark can carry
+    # (review round 2, R2-F5).
+    log = open(log_path, encoding='utf-8').read()
+    if 'no locator to emphasize' in log:
+        _fail('M20 T9: a mark was told it has no locator to emphasize; the only '
+              'mention in this fixture whose target is dropped is dropped BY THE '
+              'FOLD, after which it does contribute a locator:\n' + log)
+    for needle in ('is 4 levels deep', 'the fold made the target a cross-reference '
+                                       'to itself'):
+        if log.count(needle) != 1:
+            _fail('M20 T9: expected exactly one report containing %r, found %d'
+                  % (needle, log.count(needle)))
+
+    m = re.search(r'done \((\d+) lines written, (\d+) warnings?\)',
+                  open(ilg_path, encoding='utf-8').read())
     if not m or m.group(2) != '0':
         _fail('M20 T9: makeindex did not report zero warnings for the fixture '
               'carrying a same-page plain-and-principal pair, which is the whole '
-              'point of the uniform encapsulation:\n' + ilg)
-    print('ok   M20 T9: a plain and a principal mark of one key on one page render '
-          'at zero makeindex warnings and print as one emphasized locator; a '
-          'principal mark in a footnote is registered from its own page; a '
-          'registered page inside a makeindex range prints unemphasized, as '
-          'documented; the role-free control is untouched; and every one of these '
-          'is legible only because the author\'s own redefinition of the emphasis '
-          'command is the one that took effect')
+              'point of the uniform encapsulation')
+    print('ok   M20 T9: every page item of the printed index is marked exactly when '
+          'the .aux registers it against that item\'s own group — %d marked, %d '
+          'plain, derived from the .ind and .aux rather than written down — the '
+          'fixture still carries a multi-character page, a registered page that is '
+          'not first in its list and a range registered at its own first page, the '
+          'fold-induced self-target keeps its role and draws no contradicting '
+          'report, and makeindex logs no warning' % (len(marked), len(plain)))
 
 
 def _twin(argv):

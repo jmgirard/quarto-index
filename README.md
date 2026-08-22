@@ -375,9 +375,9 @@ well as the class; style `.qi-principal` to change it.
 **One case prints unemphasized.** makeindex folds three or more consecutive
 pages under one entry into a range, and the emphasis is applied by looking a
 page up by the number the index prints — which a range like `3--5` is not. So a
-principal mention whose page falls inside such a range prints plain, silently.
-Nothing else about the entry changes, and no other locator is affected. Page
-ranges are not otherwise supported yet.
+principal mention whose page is anywhere in such a range, its first page
+included, prints plain, silently. Nothing else about the entry changes and no
+other locator is affected. Page ranges are not otherwise supported yet.
 
 **A role needs a locator to apply to.** A cross-reference takes the place of a
 locator, so `mention="principal"` on a mark that also carries `see=` or

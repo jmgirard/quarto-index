@@ -4,8 +4,9 @@ from: markdown-smart
 format:
   pdf:
     # The `.ilg` is this fixture's evidence that none of the shapes below draws
-    # a makeindex warning; Quarto deletes it on a successful render unless this
-    # says otherwise.
+    # a makeindex warning, and the `.ind`/`.aux` are what the expected printed
+    # index is derived FROM; Quarto deletes all three on a successful render
+    # unless this says otherwise.
     latex-clean: false
     include-in-header:
       # The author redefinition, which the extension documents, and which is
@@ -70,6 +71,64 @@ The principal discussion, on the next page: [oni]{.index mention="principal"}.
 {{< pagebreak >}}
 
 The last mention, on the page after that: [oni]{.index}.
+
+{{< pagebreak >}}
+
+# A range whose FIRST page is the registered one
+
+The same fold, with the principal mark at the head of the run rather than
+inside it. This one is here because a locator command that split its page list
+wrongly could still emphasize this entry — the range string begins with the
+registered page's own digits — while emphasizing nothing else. It must print
+exactly as plain as the entry above.
+
+The principal discussion first: [sylph]{.index mention="principal"}.
+
+{{< pagebreak >}}
+
+Then [sylph]{.index},
+
+{{< pagebreak >}}
+
+and [sylph]{.index} again.
+
+{{< pagebreak >}}
+
+# A registered page that is not the first item of its list
+
+Two mentions on non-adjacent pages, so makeindex writes two locators rather
+than one range, and the principal one is the SECOND. A locator command that
+read only the head of what it was handed would emphasize neither.
+
+A passing mention: [troll]{.index}.
+
+{{< pagebreak >}}
+
+The principal discussion, two pages on: [troll]{.index mention="principal"}.
+
+{{< pagebreak >}}
+
+# A page number of more than one character
+
+Everything above sits in single digits. This term's only mention is past page
+nine, so its page number is two tokens rather than one — the shape that read a
+page list one token at a time got wrong, printing the first digit inside the
+locator and the rest outside it, emphasized by nothing and linked to nothing.
+
+The principal and only discussion of [undine]{.index mention="principal"}.
+
+# A cross-reference that only becomes a self-reference after the fold
+
+The LaTeX back-end stores three levels and folds anything deeper into the
+third. This mark's target differs from its entry as the author wrote them, so
+nothing drops it before the back-end branch; the fold then rewrites the entry
+to exactly what the target names, and the target is dropped as a
+self-reference. The mark therefore DOES contribute a locator, and its role
+applies. Telling it otherwise first — that a cross-reference had taken its
+locator's place — would contradict the drop's own report a line later, which is
+the defect this milestone was returned for once already.
+
+[vodyanoy]{.index entry="deep!water!folk!kin" mention="principal" see="deep!water!folk, kin"}
 
 {{< pagebreak >}}
 

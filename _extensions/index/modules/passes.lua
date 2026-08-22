@@ -102,11 +102,11 @@ local function CollectKeys(span)
   -- too, and for the same reason: EVERY locator mark of such a key has to
   -- encapsulate with the key's ordinal, and one mark cannot know that another
   -- mark of its key is the principal one. Derived from the same blocker set
-  -- the emitting pass derives it from — the format-neutral surviving targets,
-  -- before the fold — so the two passes cannot disagree about which marks have
+  -- the emitting pass derives it from — this back-end's surviving targets,
+  -- AFTER the fold — so the two passes cannot disagree about which marks have
   -- a locator to emphasize; silently, because the emitting pass reports.
   local blockers = {}
-  for _, xref in ipairs(surviving) do
+  for _, xref in ipairs(kept) do
     blockers[#blockers + 1] = xref.kind.attr
   end
   local role = qi_marks.mention_role(span.attributes[qi_core.MENTION_ATTR],
@@ -248,19 +248,6 @@ local function Span(span)
     end
   end
   xrefs = surviving
-  -- Now that the self-referential targets are gone, what the mark actually
-  -- contributes is settled: a mark with a surviving cross-reference emits one
-  -- in the locator's place, and any other mark emits a locator. Before the
-  -- back-end branch, like every other judgement about what the author wrote,
-  -- so both reports fire in every format. The blocker names EVERY surviving
-  -- attribute, in the fixed `see` before `see also` order xrefs are built in.
-  local blocker_attrs = {}
-  for _, xref in ipairs(xrefs) do
-    blocker_attrs[#blocker_attrs + 1] = xref.kind.attr
-  end
-  local role = qi_marks.mention_role(mention, context,
-                                     #blocker_attrs > 0 and
-                                       { attrs = blocker_attrs } or nil, true)
   -- Resolved by the collect pass, which has already seen every mark of this
   -- entry: whichever mark declared the sort key, every mark of the entry files
   -- under it.
@@ -287,6 +274,29 @@ local function Span(span)
       qi_latex.latex_plan(levels, sort, xrefs, context, true, nil,
                           entry_written)
   end
+
+  -- What the mark actually CONTRIBUTES is settled once the drops are done: a
+  -- mark with a surviving cross-reference emits one in the locator's place, and
+  -- any other mark emits a locator. Read from this back-end's own surviving set
+  -- and therefore AFTER latex_plan, not before it: the three-level fold is a
+  -- property of the LaTeX back-end alone (D-005), and it drops a target that
+  -- names the folded path the entry prints. A role judged against the pre-fold
+  -- set is told its cross-reference took the locator's place, one line before
+  -- the fold's own report says that target was dropped and the term indexed as
+  -- usual — two reports contradicting each other about one mark, with the role
+  -- unapplied although a locator exists. That is the defect class the review
+  -- returned this milestone for once already, in the one shape the earlier
+  -- repair did not reach (review round 2, R2-F5). Where no fold runs — every
+  -- other format, and any entry at or under the ceiling — this set is the
+  -- format-neutral one and the report is unchanged. The blocker names EVERY
+  -- surviving attribute, in the fixed `see` before `see also` order.
+  local blocker_attrs = {}
+  for _, xref in ipairs(xrefs) do
+    blocker_attrs[#blocker_attrs + 1] = xref.kind.attr
+  end
+  local role = qi_marks.mention_role(mention, context,
+                                     #blocker_attrs > 0 and
+                                       { attrs = blocker_attrs } or nil, true)
 
   -- Recorded after every drop: every path this mark indexes, each parent path
   -- included, in the space its own back-end resolves a target in. A target

@@ -140,8 +140,15 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   "\\providecommand*\\" .. REGISTER_COMMAND ..
     "[1]{\\protected@write\\@auxout{}{\\string\\" .. PRINCIPALPAGE_COMMAND ..
     "{#1}{\\thepage}}}",
+  -- The empty-list guard is not decoration: `\qi@sniff` reads its first token
+  -- as an undelimited argument, so an empty page list would let it swallow the
+  -- `\qi@stop` delimiter and run away — a hard render failure in the one
+  -- subsystem whose whole justification is that a marked term must never break
+  -- a document (IP2). No makeindex output shape reaching it is known; the
+  -- guard costs one comparison and removes the question (review round 2).
   "\\providecommand*\\" .. LOCATOR_COMMAND ..
-    "[2]{\\qi@sniff{#1}#2\\qi@stop}",
+    "[2]{\\def\\qi@arg{#2}\\ifx\\qi@arg\\@empty\\else" ..
+    "\\qi@sniff{#1}#2\\qi@stop\\fi}",
   "\\def\\qi@nil{\\qi@nil}",
   -- The item arrives with makeindex's separator space still on it; grabbing
   -- the first token as an UNDELIMITED argument is what drops that space,
@@ -162,9 +169,20 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   -- against `\relax` asks the token's CLASS, so this holds whatever hyperref
   -- calls its own page-link command, and holds equally in a document with no
   -- hyperref at all, where the list arrives bare.
+  --
+  -- `#3` is BRACED on the way to `\qi@split`, and the brace is load-bearing.
+  -- `#3` here is DELIMITED (by `\qi@stop`), so TeX has already stripped the
+  -- braces off the `{1, 2}` hyperref handed us; `\qi@split`'s own `#3` is
+  -- undelimited and would then take just the first token, leaving the rest of
+  -- the page list to be typeset raw — outside the page-link command, and never
+  -- looked up in the registry at all. Unbraced, this emphasized only a page
+  -- that was both the first item of its list and a single character, so every
+  -- principal mention from page 10 on printed plain, and a range whose first
+  -- page was registered printed emphasized although README says it does not
+  -- (M20 review round 2). The other branch braces `{#2#3}` and always did.
   "\\def\\qi@sniff#1#2#3\\qi@stop{\\ifcat\\noexpand#2\\relax" ..
     "\\expandafter\\@firstoftwo\\else\\expandafter\\@secondoftwo\\fi" ..
-    "{\\qi@split{#1}{#2}#3}{\\qi@split{#1}{}{#2#3}}}",
+    "{\\qi@split{#1}{#2}{#3}}{\\qi@split{#1}{}{#2#3}}}",
   "\\makeatother",
 }, "\n")
 

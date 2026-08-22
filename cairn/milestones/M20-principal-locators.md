@@ -120,32 +120,30 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - [x] T5: The suite's principal section — `.ind`/`.ilg`/`.tex`, HTML, log pins, gfm manifest.
 - [x] T6: A planted defect per T5 check, varying form and site; readers in `m20probes.py`.
 - [x] T7: README section and byte-pinned claims; DESIGN's pass-through residue enumeration.
-- [x] T8: The typeset-time channel (D-007; mechanism and validation in the archived RR01).
-      Every locator mark of a key carrying a principal mark emits one uniform per-key
-      `\quartoindexlocator{<ordinal>}`, so two locators of a key can never differ and the
-      conflict is unreachable by construction; the ordinal is assigned in document order by
-      the pass that already collects keys. The principal mark also emits
-      `\quartoindexregister{<ordinal>}`, writing the ordinal and `\thepage` through
-      `\protected@write\@auxout` — the mechanism `\@wrindex` itself uses, so the two agree.
-      At `\printindex` the injected code splits the page list, wraps registered pages in
-      `\quartoindexprincipal` and calls the real `\hyperpage` per item, sniffing its
-      argument's token class rather than a hyperref internal. Other keys emit as today. `examples/principal.qmd`
-      gains a filler page between each `basilisk` mark so its locators cannot fold into a
-      range the registry could not match. The AC1/AC6 readers join `tests/m20probes.py`:
-      the `.ind` read with wrapping collapsed and groups brace-counted, both `.tex` reads
-      bounded to the preamble and guarded against a missing file (review F7, F10).
-- [x] T9: The regressions IP2's forever clause earns, and the record. A new fixture
-      `examples/principal-cases.qmd` whose preamble redefines `\quartoindexprincipal` to a
-      marker `pdftotext` can read — both the author-redefinition regression and what makes
-      the emphasis legible — carrying a plain and a principal mark of one key ON ONE PAGE
-      (the shape the milestone died on), a principal mark in a footnote, a registered page
-      folded inside a range, and a role-free control; its PDF text and `.ilg` are read. It
-      is separate so AC5's hand-derived manifest is left alone. Plants, form as well as site
-      (T6's rule): two ordinals on one key; a registry line deleted, duplicated and moved,
-      one in the `\csname` form; an encapsulation leaked onto the role-free key; and for AC6
-      a definition below `\begin{document}` and one emitted as `\def` — the axis review F4
-      records as unplanted. Correct `latex.lua`'s comments and the ROADMAP premise they
-      echo, and give README the one silent degradation.
+- [x] T8: The typeset-time channel — mechanism, validation and cost in D-007 and the
+      archived RR01, which this task implements rather than restates. Every locator mark of
+      a principal-carrying key emits one uniform `\quartoindexlocator{<ordinal>}`, assigned
+      in document order by the pass that already collects keys; the principal mark also
+      emits `\quartoindexregister`, writing its ordinal and `\thepage` through
+      `\protected@write\@auxout`; the injected preamble applies the emphasis at
+      `\printindex`, sniffing token class rather than naming a hyperref internal. Other
+      keys emit as today. `examples/principal.qmd` gains filler pages so its `basilisk`
+      locators cannot fold into a range. AC1/AC6 readers join `tests/m20probes.py`, the
+      `.ind` read with wrapping collapsed and groups brace-counted (review F7, F10).
+- [x] T9: The regressions IP2's forever clause earns, in `examples/principal-cases.qmd`,
+      whose preamble redefines the emphasis to a marker `pdftotext` can read — both the
+      author-redefinition regression and what makes the emphasis legible at all. Separate
+      from `principal.qmd` so AC5's manifest is left alone. Correct `latex.lua`'s comments
+      and the ROADMAP premise they echo; give README the one silent degradation.
+- [ ] T10: Review round 2 repairs. Brace `#3` on the way from `\qi@sniff` to `\qi@split`,
+      guard an empty page list, and derive the role from each back-end's own surviving
+      targets rather than the format-neutral set. Extend the T9 fixture with the shapes
+      those defects need — a registered page that is not first in its list, a page past
+      nine, a range registered at its own first page, and a target that only
+      self-references after the fold — and rewrite the T9 reader to DERIVE the expected
+      printed index from the `.ind` and `.aux` instead of comparing written-down strings.
+      README's range claim, DESIGN's architecture record, the gfm residue token set, the
+      transcript plants, and the `.ind` reader's term and page parsing.
 
 ## Work log
 
@@ -189,6 +187,11 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: all nine tasks done. `tests/run-tests.sh` passes at 228 checks and `--self-test` at 310, both run clean on an untouched tree (merge base 208 / 248; the pre-T8 checkpoint 226 / unverified). Thirty-five M20 plants discriminate, among them the eleven that replaced the superseded `.ind` emphasis plants and the four AC6 plants review F4 recorded as missing. Status -> review. F1 from the return is repaired at the design level rather than patched; F4, F13 and the freshness half of F10 are closed in passing; F5, F6, F7, F8 and the rest of F10 stand for triage at the gate.
 - 2026-08-21: review round 2 — fresh evidence recorded for all seven criteria and every box ticked, each verified off the rendered artifacts by hand as well as through its reader. Suite 228 / self-test 310 on b150ef2, 35 plants caught; `cairn_validate` all-pass, no principle changed, the generic profile adds no toolchain checks; no CI is configured on the repo. Two of three fresh-context lenses reported: the prior-review lens found no PR-comment surface and three still-open carried findings (F5, F6, F8), and independently verified F7 and F10's remainder as genuinely repaired rather than merely claimed; the history lens found no regression of any past milestone's fix and two low tracking-row staleness items. The diff-bug lens is still running, so triage and the approval gate are not yet reached.
 - 2026-08-21: review round 2 returned M20 to in-progress. One floor-qualifying finding: `\qi@sniff`'s hyperref branch hands the page list to `\qi@split` unbraced, and because `#3` is a delimited argument TeX has already stripped its braces, so the split takes only the first token and the rest is typeset outside `\hyperpage`. Verified at the gate by direct render against the real call shape: a principal page of more than one token is never emphasized, a range whose FIRST page is registered is emphasized though README says otherwise, and the fixture's own `imp` and `kraken` on page 10 print plain. All seven criteria were verified and stay ticked — the defect falls outside every criterion's domain, which is itself finding R2-F2. Fifteen further findings carried in the Review section. Defect returns on this milestone: 2.
+- 2026-08-21: review round 2 triage — the user held the criteria set (no new criterion; the typeset leg stays task work and a candidate row) and chose the defects-and-false-docs repair set. R2-F1 repaired: `\qi@sniff` handed its page list to `\qi@split` unbraced, and since `#3` is delimited TeX had already stripped the braces, so the split took one token and the rest was typeset outside the page-link command. Proven through the real pipeline by three shapes the old fixture could not distinguish — a registered page that is not first in its list (`troll, 9, [P:10]`), a page of more than one character (`undine, [P:11]`), and a range registered at its own first page (`sylph, 6-8`, correctly plain). Reverting the brace makes the new reader fail while the old fixture's four strings stay byte-identical, which is why it certified a broken build.
+- 2026-08-21: R2-F5 repaired — the role is derived from each back-end's surviving targets AFTER `latex_plan`, not from the format-neutral set before it, so a target that only becomes a self-reference under the three-level fold no longer draws a report contradicting the fold's own. Discriminating control run at the fix: the committed filter drew three reports for the new `vodyanoy` mark, the first claiming a cross-reference took its locator's place and the third saying the term is indexed as usual, and emitted a bare `\index` with the role lost; it now draws two consistent reports and prints `folk, kin, [P:11]`.
+- 2026-08-21: the T9 reader no longer compares hand-written strings. It derives the expected printed index from the `.ind` and `.aux` of the same render — every page item marked exactly when the registry names it against that item's own group — and asserts the fixture still carries all three shapes, so a later edit cannot flatten them away in silence. That is the compensating control R2-F2 asks for, since the held criteria set still binds no typeset result.
+- 2026-08-21: also repaired — R2-F4 (an empty page list ran `\qi@sniff` away; guarded and probed), R2-F3 (README claimed a range prints plain only when the registered page is inside it, where the first page behaves the same way), R2-F6 (DESIGN gained the typeset-time channel, the corrected makeindex mechanism and the sidecar's role field), R2-F9 (the gfm residue set named only the emphasis command), R2-F11 (both transcript plants now go through the no-op guard, one clause each, and an `awk` line whose `print` ran before its `next` is gone), R2-F16 (the `.ind` reader mis-keyed a term containing a comma and raised a traceback on a non-numeric folio).
+- 2026-08-21: T10 checkpoint — every repair is in and both readers pass by hand, but the full `run-tests.sh` and `--self-test` run had not finished when this was committed, so the suite totals and the plant discrimination are UNVERIFIED here. The deferred findings have no candidate rows yet.
 
 ## Decisions
 

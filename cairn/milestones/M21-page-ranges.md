@@ -5,7 +5,7 @@
 - **Depends on:** M20
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP2, GP5, GP6
-- **Branch/PR:** `m21-page-ranges`
+- **Branch/PR:** `m21-page-ranges` / [#21](https://github.com/jmgirard/quarto-index/pull/21)
 
 ## Goal
 
@@ -44,34 +44,34 @@ alone, and the range is reported as unpaired there rather than silently spanning
 
 ## Acceptance criteria
 
-- [ ] AC1: The PDF render of `examples/range.qmd` produces a `.ind` in which the ranged
+- [x] AC1: The PDF render of `examples/range.qmd` produces a `.ind` in which the ranged
       term's entry shows one page range spanning the pages of its opening and closing
       marks, and a `.ilg` carrying no unmatched-, extra- or inconsistent-range warning for
       that entry's key.
-- [ ] AC2: A range whose opening mark carries `mention="principal"` emits the same
+- [x] AC2: A range whose opening mark carries `mention="principal"` emits the same
       encapsulator on its closing `\index` command as on its opening one, and for
       `examples/range.qmd` the page string that entry's locator carries in the `.ind` is
       registered as principal in the `.aux` under that encapsulator's own ordinal — the
       chain that prints the range emphasized, whose last link no `.ind` can show.
-- [ ] AC3: In the HTML render of `examples/range.qmd`, the ranged term's index entry
+- [x] AC3: In the HTML render of `examples/range.qmd`, the ranged term's index entry
       carries exactly one locator link, whose href is the opening mark's anchor; where the
       opening mark is principal that one link carries the principal class and emphasis; the
       closing mark contributes no locator link and emits no text of its own beyond the
       author's visible text, read at its anchor by `tests/htmlindex.py`.
-- [ ] AC4: Each of the five misuse shapes exercised by `examples/range-misuse.qmd` — an
+- [x] AC4: Each of the five misuse shapes exercised by `examples/range-misuse.qmd` — an
       opening never closed, a closing with no opening, a second opening for a term whose
       range is still open, a range mark also carrying `see=` or `see-also=`, and a `range=`
       value that is neither an opening nor a closing — draws exactly one warning naming the
       mark and saying what the index will show instead, in the LaTeX render, the HTML
       render, and a format with no index back-end.
-- [ ] AC5: In the HTML book under `examples/book/`, a range whose opening mark is in one
+- [x] AC5: In the HTML book under `examples/book/`, a range whose opening mark is in one
       chapter and whose closing mark is in a later chapter contributes exactly one locator
       to the book index, whose href is the opening chapter's page and the opening mark's
       anchor, and neither chapter's own render warns about its half of the pair.
-- [ ] AC6: In gfm, an opening and a closing mark pass their visible text through with no
+- [x] AC6: In gfm, an opening and a closing mark pass their visible text through with no
       artifacts beyond the span attribute residue Pandoc passes through for the mark's own
       attributes, `range=` included.
-- [ ] AC7: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass.
+- [x] AC7: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass.
 
 ## Coverage
 
@@ -158,3 +158,75 @@ alone, and the range is reported as unpaired there rather than silently spanning
 ## Decisions
 
 ## Review
+
+Reviewed 2026-08-22 on `m21-page-ranges` at PR #21. Evidence is from renders and runs made
+in this review session, never from the implementation session's record.
+
+**Consistency gate.** `cairn_validate` passes all 16 checks, exit 0. No `DESIGN.md`
+principle changed in the diff, so `cairn_impact` is skipped. The `generic` profile names no
+toolchain checks, so that half is a clean no-op. This repo has no CI workflows; the local
+suite is the whole gate.
+
+**AC1** — verified. Fresh PDF render of `examples/range.qmd`. The `.ind` gives one locator
+per range: `alicorn, \hyperpage{1--3}`, `banshee, …{qi1}}{4--6}`, `dybbuk, \see{centaur}{},
+\hyperpage{10--12}`, `erlking, …{qi2}}{14}`, each spanning its own two marks; the range-free
+control prints `centaur, 7, 9`, two separate pages. The `.ilg` reads `done (21 lines
+written, 0 warnings)`, taken as a number rather than by substring, and carries none of the
+four range-fault phrases. Extent is asserted in pages-separated (3, 3, 3, 1 — the fixture's
+own structure), never in folios.
+
+**AC2** — verified. Emitted `.tex`: `\index{banshee|(quartoindexlocator{qi1}}` against
+`\index{banshee|)quartoindexlocator{qi1}}` — one key, byte-identical encapsulator on both
+ends; likewise `erlking`/`qi2`; the non-principal `alicorn` carries `|(`/`|)` with no
+encapsulator at all. The `.aux` holds `\quartoindexrangeat{qi1}{4}` and
+`\quartoindexrangeto{qi1}{6}`, composing `4--6` — which is exactly the page string `qi1`'s
+locator carries in the `.ind`; `qi2` registers `14`/`14` and its printed single page `14`
+matches the opening registration. Beyond what the criterion asks: the compiled PDF, read
+through the fixture's own `\quartoindexprincipal` redefinition, prints `banshee, [P:4–6]`
+and `erlking, [P:14]` with `alicorn`, `centaur` and `dybbuk` plain — two emphasized, which
+is the number of principal openings the fixture writes.
+
+**AC3** — verified. `examples/range.html`: `alicorn`, `banshee`, `dybbuk` and `erlking` each
+carry exactly one locator link, at `#qi-mark-1`, `#qi-mark-3`, `#qi-mark-7` and `#qi-mark-9`
+— their opening marks. `banshee`'s and `erlking`'s carry `class="qi-principal"` and a
+`<strong>`; `alicorn`'s and `dybbuk`'s carry neither. The four closing marks
+(`qi-mark-2/4/8/10`) each keep an anchor, render exactly their own visible text, and hold no
+link. The range-free control keeps both of its plain locators.
+
+**AC4** — verified. `examples/range-misuse.qmd` rendered to latex, html and gfm: exactly
+five range reports in each, one per shape, each naming its own mark — `"jinn"`, `"imp"`,
+`"hydra"`, `"golem"`, `"fenrir"` — and each saying what the index shows instead (three
+"indexes as an ordinary page number", one "as though the attribute were absent", one "the
+range is dropped and the mark indexes as it would without it"). The two controls in the same
+document, the well-formed `lamia` range and the ordinary `kelpie` mark, are named zero times
+in all three formats, and the well-formed fixture draws none of the five in any format.
+
+**AC5** — verified on a clean full render of `examples/book/`. `Ranged Term` carries exactly
+one locator, `<a href="one.html#qi-mark-4">` — the opening chapter's page and the opening
+mark's anchor — and the whole-book render log carries zero range reports, so neither
+`one.qmd` nor `sub/two.qmd` warned about its half. The merged book PDF prints
+`Ranged Term, 4–5`, one page range across the two chapters. Read on a clean render
+deliberately: later suite steps corrupt and re-plant `one.qmd`'s record and re-render
+`last.qmd` alone, so the artifact left in the working tree at the end of a run is not the
+state this criterion is about; the manifest check reads it at the render.
+
+**AC6** — verified. `examples/range.md` carries 11 index spans, in document order and byte
+for byte against the hand-derived manifest, each with only its own attributes data-prefixed
+(`data-range`, plus `data-mention`/`data-see` where written). No `|(`, `|)`, `\index{`,
+`qi-`, or any of the eight locator/registration command names appears anywhere in the file.
+
+**AC7** — verified by fresh runs on this branch: `tests/run-tests.sh` exits 0 at 245 checks
+and `tests/run-tests.sh --self-test` exits 0 at 351 (merge base 228 and 335). The self-test
+shows 58 planted defects discriminating, 14 of them this milestone's.
+
+### Findings
+
+Three fresh-context reviewers ran in parallel: an [O] diff-bug lens, an [S] blame-history
+lens, and an [S] prior-review-record lens. The prior-review lens reported no findings — the
+GitHub inline-comment probe returned empty, and it found no place where the diff
+reintroduces or contradicts a point archived reviews raised on the touched files. The
+blame-history lens reported one finding (F9 below) and cleared seven areas, among them the
+store-version rule, the contested-key composition, the `probe_*` rename and the
+`warn-distinct` count. The diff-bug lens reported nine, ranked. Every finding below was
+re-verified against the implementation rather than accepted on its reporter's account.
+

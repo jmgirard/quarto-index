@@ -6619,6 +6619,12 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  marks `basilisk` three times, so both resolve. 0.
 #   principal-twin the same two attributes: the twin removes role attributes
 #                  and nothing else, so its target set is identical. 0.
+#   principal-cases  1 attribute, on the mark whose entry the LaTeX three-level
+#                  fold rewrites to exactly what the target names. This corpus
+#                  renders to gfm, which has no ceiling and so no fold, and
+#                  there the target names a path nothing indexes and dangles —
+#                  the back-end asymmetry D-005 settles, and the reason that
+#                  mark is in the fixture at all. 1.
 #   resolving-xref 3 attributes, all three resolving by construction. 0.
 #
 # Reconciling xref-escaping's corpus so its targets resolve is its own piece of
@@ -6638,6 +6644,7 @@ examples/fold-xref-self.qmd	1
 examples/fold-xref.qmd	1
 examples/html-index.qmd	1
 examples/placement.qmd	0
+examples/principal-cases.qmd	1
 examples/principal-twin.qmd	0
 examples/principal.qmd	0
 examples/resolving-xref.qmd	0

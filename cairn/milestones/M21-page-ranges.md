@@ -24,10 +24,8 @@ opening mark, since makeindex warns when the two ends differ, and — where that
 principal — the registration that puts the range's own printed page string into M20's
 typeset-time registry, since a range prints as one string no per-page registration matches;
 the HTML realization, where
-the pair contributes one locator link pointing at the opening mark's anchor; pairing
-across chapters of an HTML book, judged by the chapter that has seen every record, as
-every other cross-chapter judgement here is; the reports for the five misuse shapes;
-fixtures, suite section, planted-defect entries, README.
+the pair contributes one locator link pointing at the opening mark's anchor; the reports for
+the five misuse shapes; fixtures, suite section, planted-defect entries, README.
 
 An ordinary mark of a term that falls inside that term's own range is folded into the
 range by makeindex, silently and with no warning even in its own transcript. The extension
@@ -35,7 +33,13 @@ cannot know page numbers, so it cannot tell which marks are affected — a warni
 fire on marks outside the range too. It is documented instead, which is what GP2 asks of a
 toolchain behavior the extension does not cause.
 
-**Out:** an author-written id disambiguating two overlapping ranges of one term → ROADMAP
+**Out:** a range spanning two chapters of an HTML book → M22 candidate row (D-009). A range
+pairs within one Pandoc process: a single document is one, and a PDF book is one merged
+document, but an HTML book renders each chapter in its own and the pairing has to be
+re-derived from a sidecar store. Three review rounds each found one defect in that
+re-derivation and each was the same mistake, so in an HTML book a `range=` mark indexes as
+though the attribute were absent and the book says so once. An author-written id
+disambiguating two overlapping ranges of one term → ROADMAP
 candidate row, promoted on evidence that authors write overlapping ranges of one term;
 until then the shape is reported. Author control over the range dash → candidate row; the
 back-end's own convention stands. A range on a page Quarto presents as a book chapter
@@ -64,10 +68,12 @@ alone, and the range is reported as unpaired there rather than silently spanning
       value that is neither an opening nor a closing — draws exactly one warning naming the
       mark and saying what the index will show instead, in the LaTeX render, the HTML
       render, and a format with no index back-end.
-- [x] AC5: In the HTML book under `examples/book/`, a range whose opening mark is in one
-      chapter and whose closing mark is in a later chapter contributes exactly one locator
-      to the book index, whose href is the opening chapter's page and the opening mark's
-      anchor, and neither chapter's own render warns about its half of the pair.
+- [ ] AC5: On a clean full render of the HTML book under `examples/book/`, the two marks of
+      `Ranged Term` each contribute their own locator to its entry — `one.qmd`'s at its own
+      anchor, and `sub/two.qmd`'s at its own, carrying the principal class and emphasis its
+      `mention=` asks for — and the book draws exactly one report, naming both marks, saying
+      that ranges are not paired across an HTML book's chapters; the PDF render of the same
+      book gives `Ranged Term` exactly one locator, since a PDF book is one merged document.
 - [x] AC6: In gfm, an opening and a closing mark pass their visible text through with no
       artifacts beyond the span attribute residue Pandoc passes through for the mark's own
       attributes, `range=` included.
@@ -79,68 +85,41 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - AC2 → T1, T3, T6
 - AC3 → T1, T4, T6
 - AC4 → T1, T2, T6
-- AC5 → T1, T5, T6
+- AC5 → T1, T5, T6, T11
 - AC6 → T1, T6
 - AC7 → T6, T7, T8
 
 ## Tasks
 
-- [x] T1: Fixtures. `examples/range.qmd` carries a plain range, a range whose opening mark
-      is principal, an ordinary mark of a third term the new reports must stay silent on
-      (the M11 lesson), and enough content between each opening and closing to put them on
-      different pages, with distinct terms per slot (the M02 lesson).
-      `examples/range-misuse.qmd` carries one mark per shape AC4 names. Both are
-      registered in the suite's dangling-target corpus, which enumerates every example
-      writing a cross-reference target. The book fixture's own range lands with T5, whose
-      manifest it changes.
-- [x] T2: `core.lua` gains the attribute and its two values; `marks.lua` derives the range
-      role before the back-end branch and holds the per-key pairing state, drawing the four
-      shapes it can judge within one document plus the unrecognized-value one, so all five
-      fire in every format.
-- [x] T3: `latex.lua` and `passes.lua`: the opening and closing encapsulations, composed
-      with M20's role so both ends carry the same encapsulator; the range registration that
-      records each end's page and registers the printed range string against the key's
-      ordinal, so a principal range prints emphasized where a makeindex-folded one still
-      does not; and arbitration against the contested-key bookkeeping — a range
-      encapsulation stays in the encapsulation channel, and a key carrying cross-references
-      too folds those into the entry's printed text exactly as it already does, so the two
-      compose rather than one being dropped.
-- [x] T4: `html.lua`: pairing at index-build time, the single locator link at the opening
-      mark's anchor, and the closing mark contributing no locator while keeping its own
-      anchor and visible text.
-- [x] T5: `book.lua` and the book fixture, which gains a range opened in one chapter and
-      closed in a later one: the range role travels in the per-chapter record as an optional field
-      with a named fallback, leaving the store version alone (the M14 lesson); pairing and
-      the unmatched reports are drawn by the chapter that reads the whole store, so a
-      chapter holding one half of a legitimate cross-chapter range warns about nothing.
-- [x] T6: The suite's range section: copy `.ind`, `.ilg` and `.tex` to `$WORK` at the latex
-      render before the pdf render removes them (the M15 lesson); the structural HTML
-      checks for the single locator and the silent closing mark; the book-index check; the
-      rendered-log pins passed through `warn-distinct`; the no-leak sweep.
-- [x] T7: A planted-defect entry for each check T6 adds, varying form as well as site — a
-      closing encapsulation that does not match its opening, a range whose two ends are
-      emitted under different keys, and a pairing report naming the wrong mark. They live
-      in the run's `--self-test` section beside M20's rather than in
-      `tests/plantdefect.py`, which plants in SOURCE for the moved-definition scans; these
-      readers read rendered output.
-- [x] T8: README section for `range=`: what an author writes, what each back-end prints,
-      what each of the five reports means, and that an ordinary mark falling inside a
-      term's own range is folded into that range. Add its authoring forms to the suite's
-      normative supported-forms list and its sentences to a README claims array.
+Completed tasks are one line each; what each did, and why, is in the work log below.
 
-- [x] T9: The review's nine findings (discovered work, added 2026-08-22). The three
-      behavior defects get a check each where none existed: a range refused for carrying a
-      cross-reference must not have its partner's locator suppressed in a book; a role
-      written on a range's closing mark must reach the registry and the HTML class; and
-      every command an `.aux` line can name must be defined wherever the subsystem lands.
-      The four coverage gaps get the checks they name, each with a planted defect.
-
-- [x] T10: Review round 2's seven findings (discovered work, added 2026-08-22). The book
-      path carries the whole pairing verdict rather than its ending alone, so a range's role
-      reaches the locator whichever chapter declared it; the cross-chapter range in
-      `examples/book/` is marked principal on its CLOSING mark, and a reader pins the class
-      and the emphasis on the locator the OTHER chapter contributes. The two plant readers
-      move into `tests/m21probes.py`, so the self-test proves the reader the run uses.
+- [x] T1: Fixtures — `examples/range.qmd` (six slots) and `examples/range-misuse.qmd` (one
+      mark per AC4 shape plus two controls), both registered in the dangling-target corpus.
+- [x] T2: `core.lua` gains the attribute and its two values; `marks.lua` judges each mark's
+      end and pairs a set, so the five reports fire in every format.
+- [x] T3: `latex.lua`/`passes.lua` — the range delimiters in the encapsulation channel,
+      composed with M20's role, the `.aux` registration that emphasizes a whole range, and
+      composition with the contested-key bookkeeping.
+- [x] T4: `html.lua` — a closing contributes no locator; the merged locator carries the
+      range's role.
+- [ ] T5: `book.lua`: the range end the author wrote travels in the per-chapter record as an
+      optional field with a named fallback, leaving the store version alone (the M14 lesson).
+      Nothing pairs on it — the last chapter in book order uses it only to report, once per
+      render, that ranges are not paired across an HTML book's chapters, naming the marks it
+      found. The book fixture keeps its two marks, which now index on their own.
+- [x] T6: The suite's range section and its readers in `tests/m21probes.py`.
+- [x] T7: Planted defects for every check T6 adds, varying form as well as site.
+- [x] T8: README's `range=` section, the normative supported-forms list, and a claims array.
+- [x] T9: Review round 1's nine findings, each with the check that would have caught it.
+- [x] T10: Review round 2's seven findings, the two plant readers moved into
+      `tests/m21probes.py` so the run and the self-test share one reader.
+- [ ] T11: The narrowing (D-009) and review round 3's twelve findings. Remove the
+      cross-chapter pairing and its checks, plants and manifest rows; add the book's
+      not-paired report and its key to `tests/scans/mark-report-keys`; fence the report by
+      form — fires twice, fires from the wrong chapter, names the wrong mark — using
+      `examples/book-order/`, whose marker sits in its first chapter, for the attribution.
+      README's cross-chapter paragraph becomes the stated limitation and its false
+      refusal lead-in is corrected, both pinned. Then the ten smaller round-3 findings.
 
 ## Work log
 
@@ -186,6 +165,10 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: round-2 fixes complete. `--self-test` 363 checks (before: 359).
 
 - 2026-08-22: review round 3 returned twelve findings; all seven criteria held and both runs were green. Two mattered: README's refusal lead-in is false for the cross-reference case and the claims array pins it (R3-F1), and the per-chapter record stores the RESOLVED role beside the RAW range end, so a book re-pairing from those records emphasizes locators the author never marked (R3-F3, reproduced in a three-chapter book). R3-F3 is the third instance of one mistake — a resolved value where the raw one belongs, repaired on one path and left on its sibling — and all three have been in the book realization. Third defect return; at the gate the user chose the thrash rule's descope over a fourth repair.
+
+- 2026-08-22: amendment (descope, chosen at review round 3's gate). Scope In loses the cross-chapter clause; Scope Out gains the HTML book case with its exit; AC5 narrows to what a book does without pairing; T5 rewritten and T11 added; Coverage maps AC5 to T11 as well. Criteria widened or added: AC5 — its new wording binds a `mention=` role in a book and binds the book PDF, neither of which any criterion bound before; both are disclosed here per the amendment convention, and both are funded by checks that already exist. D-009 records the decision and the ROADMAP carries the candidate row it promotes from.
+- 2026-08-22: the amended AC5 went to two fresh-context [O] criteria audits in full mode. The first returned six blocking findings (an unsatisfiable counterfactual baseline, an unanchored referent, an unbounded render domain, a missing plant plan, a README gap, and one undisclosed widening); the second, on the corrected draft, returned three more — the counterfactual was still instrument-built, "the last chapter in book order" cannot discriminate in a fixture whose marker IS its last chapter, and "one page range" pinned an extent pagination decides where the reader asserts one locator. The third draft applies every repair, and the wording decision went to the user, which is where the second re-entry sends it.
+- 2026-08-22: Tasks compressed in one pass to hold the 150-line cap; ROADMAP's three book-sidecar rows clustered to hold its 60-line cap.
 
 ## Decisions
 

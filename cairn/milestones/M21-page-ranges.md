@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -169,6 +169,8 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: T9 (F4/F5) — the book's unpaired-range report gains positive coverage in `examples/book-order/`, whose index is built in its FIRST chapter, so the report is proved drawn by the chapter that has seen every record rather than by the marker chapter; and the misuse fixture's emitted LaTeX is now read, since nothing held the claim that a refused range never reaches the index tool. That check caught a wrong premise of its own author on the first run: `hydra`'s first opening does pair, so the fixture has two well-formed ranges, not one.
 - 2026-08-22: T9 (F6/F7/F8/F9) — every mark-report key moves to one block above every section that uses one, with M20's three and M21's five added to the scan that sweeps them, and the scan now refuses an empty key (a key read before its assignment expanded to nothing and would have swept every message); `channel[:1] in ('(', ')')` in the tex reader, since `'' in '()'` is True in Python; DESIGN.md's pass count, module row, residue list and D-007 paragraph; a stray comma.
 - 2026-08-22: review fixes complete. `tests/run-tests.sh` 247 checks and `--self-test` 359 (before the fixes: 245 and 351). Three new planted defects, each shown to fail its own check.
+
+- 2026-08-22: review round 2 returned the milestone to in-progress on seven findings. All seven criteria re-verified on fresh artifacts and the self-test green at 359; two of three lenses reported nothing. What failed: the role-on-either-end repair does not reach the book path, so a cross-chapter range whose closing declares the role prints a plain locator (R2-F1, reproduced, the round-1 F2 defect on a sibling path); no book fixture marks a range principal, which is why it was reachable (R2-F2); two of the three plants added last round are proved against paraphrase readers rather than the checks that run (R2-F3); README's "Under the hood" still requires the role on the opening mark (R2-F4); `_index_commands`' docstring states a rule its code does not implement (R2-F5); `pair_ranges` orders its never-closed findings by each key's first opening (R2-F6); the book-report counts sit between an unrelated render and its assertion (R2-F7). Second defect return.
 
 ## Decisions
 
@@ -341,4 +343,6 @@ re-verified here, R2-F1 by reproduction.
   its own assertion, reading a log written earlier; a failure inside them leaves a stray
   store file behind.
 
-R2-F1 is the round-1 F2 defect left standing on a sibling code path. Second defect return.
+R2-F1 is the round-1 F2 defect left standing on a sibling code path. Triaged at the gate
+2026-08-22: the user chose to return rather than fix at the gate, so all seven are fixed on
+return. Second defect return; a third meets the thrash rule's descope-or-park threshold.

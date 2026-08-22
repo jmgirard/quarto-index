@@ -359,3 +359,54 @@ re-verified here, R2-F1 by reproduction.
 R2-F1 is the round-1 F2 defect left standing on a sibling code path. Triaged at the gate
 2026-08-22: the user chose to return rather than fix at the gate, so all seven are fixed on
 return. Second defect return; a third meets the thrash rule's descope-or-park threshold.
+
+### Round 3 (2026-08-22)
+
+`cairn_validate` passes, `main` has not moved, no principle changed. `tests/run-tests.sh`
+exits 0 at 249 checks and `--self-test` at 363. All seven criteria hold on fresh artifacts:
+the `.ind` carries six entries at `done (25 lines written, 0 warnings)`; the `.aux` registers
+three ranges and each composed string is the one its locator prints; the compiled PDF prints
+`alicorn, 1–3`, `banshee, [P:4–6]`, `centaur, 7, 9`, `dybbuk, see centaur, 10–12`,
+`erlking, [P:14]` and `firebird, [P:15–17]` — the last a range whose role was written on its
+CLOSING mark; the gfm render carries thirteen spans against the manifest (round 1's evidence
+line said eleven, which was true of the fixture then); the book prints one emphasized
+locator for its cross-chapter range and `Ranged Term, 4–5` in the merged PDF.
+
+The blame-history and prior-review-record lenses each confirmed all sixteen earlier repairs
+hold and reported nothing beyond one stale figure, noted above. The diff-bug lens reported
+twelve. Two matter.
+
+- **R3-F1** — README's lead-in to the five refusals says each mark "still indexes its term as
+  an ordinary page number", which is false for the one carrying a cross-reference: it
+  indexes as a cross-reference and contributes no page number. The filter's own warning says
+  something different, and the suite's own AC4 count expects that phrase three times, not
+  five — so the split is already encoded a few lines away. The claims array pins the false
+  sentence, so nothing can catch it.
+- **R3-F3** — the per-chapter record stores the RESOLVED role beside the RAW range end. This
+  is the F1 inconsistency on the sibling field: a chapter that pairs a range internally
+  writes `role="principal"` onto BOTH its records, and the book then re-pairs from them.
+  Reproduced in a three-chapter book: with a stray opening in the first chapter and a
+  complete range in the second whose closing declares the role, the printed index emphasizes
+  BOTH locators, though the author wrote the role on one mark that contributes no locator at
+  all. Repair: store the mark's own pre-range role, as `range` is already stored raw, and let
+  `book_ranges` do the OR.
+
+Ten are smaller and all real: `_bookhtml` — the reader the round-2 return was taken on — has
+no planted defect (R3-F2); D-008 and DESIGN.md miscount the `.aux`-borne commands as one
+where there are two (R3-F4); the `book-order` fixture puts both unpaired marks in the last
+chapter, so it does not discriminate everything its comment claims (R3-F5);
+`examples/range.tex` is neither removed before its render nor size-checked, unlike every
+other artifact in the section (R3-F6); `_ind` collapses duplicate `.aux` registrations
+through `dict()` (R3-F7); `\qi@f@<ordinal>` is never cleared, so the stale-`.aux` guard
+covers less than its comment claims (R3-F8); nested marks could desync the two passes
+through `span_text`, which round 2's lens cleared and round 3's did not (R3-F9); `range=""`
+is documented and pinned but exercised nowhere (R3-F10); a work-log line says "ninth"
+back-end-difference row where README numbers it eight (R3-F11); two dead guards in the
+readers (R3-F12).
+
+R3-F3 is the third instance of one pattern: a resolved value stored or read where the raw
+one belongs, repaired on one path and left on its sibling. F1 was the record's `range`
+field, R2-F1 the book's verdict, R3-F3 the record's `role`. All three live in the book
+realization, which is also the only part of the milestone that has needed a repair in every
+round; the LaTeX and single-document HTML sides have been stable throughout. Third defect
+return: the thrash rule's descope-or-park threshold.

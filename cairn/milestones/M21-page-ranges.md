@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** review
+- **Status:** blocked
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -175,6 +175,9 @@ Completed tasks are one line each; what each did, and why, is in the work log be
 - 2026-08-22: T5/T11 — the cross-chapter pairing is gone. `book_ranges` and every consumer of a book-level verdict are removed; what stays is the store's `range` field and this chapter's own `paired` verdict, both carried through, and one report from the last chapter in book order naming every range end no chapter could pair. A chapter IS one Pandoc process, so a range whose two marks share a chapter still pairs there — `examples/book/last.qmd` gains exactly that, and `Chapter Range` prints one locator while `Ranged Term`, split across two chapters, prints two, the closing's carrying the principal class its own mention= declares.
 - 2026-08-22: T11 — the ten smaller round-3 findings: `_bookhtml` gains three plants and the book report two more, so the reader the round-2 return was taken on is finally shown discriminating (R3-F2); D-009 supersedes D-008's count of the `.aux`-borne commands and DESIGN.md's inverted description is corrected (R3-F4); the report's attribution is proved in `examples/book-order/`, whose marker sits in its FIRST chapter (R3-F5); `examples/range.tex` is removed before its render and size-checked like its siblings (R3-F6); `_ind` reads the `.aux` as lists and refuses a repeated registration (R3-F7); the range-start slot is cleared once used, so the stale-`.aux` guard means what its comment says for a second range of one key (R3-F8); `range=""` is exercised (R3-F10); a work-log count is superseded (R3-F11); two dead guards removed (R3-F12). R3-F9 — nested marks desyncing the passes through `span_text` — is left: round 2's lens cleared it and round 3's flagged it as narrow, and it is a candidate row rather than a change made on a split verdict.
 - 2026-08-22: narrowing complete. `tests/run-tests.sh` 249 checks, `--self-test` 367. The book's warning count check now names both of the two warnings the fixture emits rather than pinning one.
+
+- 2026-08-22: review round 4 returned ten findings — a book chapter still suppresses all five kind-specific pairing reports while the book names the wrong cause, and AC4's third shape goes unreported in a book entirely (R4-F1, reproduced by two lenses); the same-page range's closing registration is unconstrained (R4-F6); and eight items of comment, fixture and export debris left by round 3's narrowing. Fourth defect return. At the gate the user chose to park the milestone as blocked rather than retry past the thrash threshold.
+- 2026-08-22: status blocked. Blocker: the milestone has needed a further review round every time, and round 4's findings do not yet show the rate falling. The branch, PR #21 and every finding stay on disk; the resume path is written into the Review section above.
 
 ## Decisions
 
@@ -446,4 +449,15 @@ fold both hold. The two passes were traced in step on every path.
 
 R4-F1 is a real reporting defect and R4-F6 a real coverage gap; the remaining eight are
 consistency debris from the narrowing itself rather than new instances of the design fault
-the descope removed. Fourth defect return, above the thrash rule's threshold.
+the descope removed. Fourth defect return, above the thrash rule's threshold. Triaged at the gate 2026-08-22:
+the user chose to PARK rather than retry. The blocker is the milestone itself — it has
+needed another round every time, and the fourth round's findings, though mostly debris from
+the third round's own narrowing, are evidence that the rate is not yet falling. Everything
+is on disk: the branch, PR #21, all 38 findings with their repairs, and the two lessons the
+milestone taught.
+
+**To resume:** R4-F1 has a stated repair (under D-009 a chapter IS the pairing scope, so
+each chapter draws its own kind-specific reports and the book message names only marks whose
+counterpart it can see in another chapter's record); R4-F6 needs `opened == closed` asserted
+for a span of one; R4-F2/F3/F4/F5/F8 are comment, fixture and export debris to delete;
+R4-F7, R4-F9 and R4-F10 are one line each, and R4-F10 is now done.

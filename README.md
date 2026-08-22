@@ -530,7 +530,7 @@ its translations. A document with neither gets nothing extra.
 
 A page range is written into that same channel, as `makeindex`'s own range
 operators — `\index{otters|(}` at the opening mark and `\index{otters|)}` at
-the closing one. Where the opening mark is also the principal mention, both
+the closing one. Where either mark of the range is the principal mention, both
 ends carry the same encapsulation command, which is what `makeindex` requires
 of a range's two ends, and the pages the two marks land on are recorded through
 the `.aux` so the span the index prints can be emphasized whole.

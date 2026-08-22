@@ -309,7 +309,11 @@ local function pair_ranges(items)
       else
         verdicts[i] = { ending = "open", principal = item.principal }
         pending[item.key] = i
-        waiting[#waiting + 1] = item.key
+        -- The OPENING's own position, not its key: a key opened, closed and
+        -- opened again appends twice, and walking by key below would then
+        -- report the second opening in the first one's place. Entries whose
+        -- key has since moved on are skipped there.
+        waiting[#waiting + 1] = i
       end
     else
       local at = pending[item.key]
@@ -330,10 +334,9 @@ local function pair_ranges(items)
   -- Whatever is still open was never closed. Walked in the order the openings
   -- were written rather than by table iteration, so the findings do not depend
   -- on Lua's hash order.
-  for _, key in ipairs(waiting) do
-    local at = pending[key]
-    if at ~= nil then
-      pending[key] = nil
+  for _, at in ipairs(waiting) do
+    if pending[items[at].key] == at then
+      pending[items[at].key] = nil
       verdicts[at] = false
       found[#found + 1] = { kind = "never-closed", context = items[at].context }
     end

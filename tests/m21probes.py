@@ -227,11 +227,11 @@ def _ind(argv):
 def _index_commands(tex):
     r"""Every `\index{...}` in a rendered `.tex`, as (key, channel) pairs.
 
-    Split at the LAST unescaped `|` outside braces rather than the first: the
-    encapsulation channel opens at `|`, and a key may hold one only as
-    `\textbar{}`, which carries no `|` character at all — so a plain scan for
-    the first `|` is exact here, and the brace counting is what keeps a folded
-    cross-reference's own braces from ending the argument early.
+    Split at the FIRST `|`, which is exact here: the encapsulation channel
+    opens at `|`, and a key can hold one only as `\textbar{}`, which carries no
+    `|` character at all. The brace counting is in `_group`, which reads the
+    whole argument — a folded cross-reference brings braces of its own, and a
+    pattern stopping at the first `}` would cut the argument short.
     """
     out, i = [], 0
     while True:
@@ -474,8 +474,149 @@ def _bookpdf(argv):
           'range the author opened in one chapter and closed in another')
 
 
+def _misuse(argv):
+    r"""M21-AC4's emission half — no refused range reaches the index tool.
+
+    Every refusal in `examples/range-misuse.qmd` exists because makeindex logs
+    a transcript warning for an unmatched, extra or inconsistently encapsulated
+    range and Quarto fails the whole render on that line. Nothing about the
+    reports holds that: five of them would still fire while the range operator
+    went out anyway. This reads the emitted LaTeX rather than rendering the
+    fixture to PDF, because the property is that the operator is not EMITTED —
+    a PDF render would prove it only for the pagination this run produced.
+    """
+    tex = open(argv[0], encoding='utf-8').read()
+    commands = re.findall(r'\\index\{([^|}]*)((?:\|[()])?)', tex)
+    if not commands:
+        _fail('M21-AC4: the misuse fixture emitted no \index command at all, so '
+              'a clause about which of them carry a range operator would be '
+              'quantified over nothing')
+    # Which of the fixture's ranges actually PAIR, derived from its source and
+    # not from this output: `lamia` is the well-formed control, and `hydra`'s
+    # FIRST opening pairs with its closing — the second opening is the refused
+    # one, which is what its own report says. Everything else is a refusal.
+    paired_terms = {'hydra', 'lamia'}
+    refused = {'fenrir', 'golem', 'imp', 'jinn'}
+    opens, closes = {}, {}
+    for term, op in commands:
+        if op == '|(':
+            opens[term] = opens.get(term, 0) + 1
+        elif op == '|)':
+            closes[term] = closes.get(term, 0) + 1
+    bad = []
+    if set(opens) != paired_terms or set(closes) != paired_terms:
+        bad.append('  terms emitting a range operator are %s, expected %s'
+                   % (sorted(set(opens) | set(closes)), sorted(paired_terms)))
+    for term in sorted(paired_terms):
+        if opens.get(term) != 1 or closes.get(term) != 1:
+            bad.append('  %s: %d opening(s), %d closing(s); a paired range is one '
+                       'of each' % (term, opens.get(term, 0), closes.get(term, 0)))
+    for term in sorted(refused):
+        if term in opens or term in closes:
+            bad.append('  %s: refused, yet emitted a range operator' % term)
+    if bad:
+        _fail('M21-AC4: the misuse fixture does not emit a range operator for '
+              'exactly its paired ranges:\n' + '\n'.join(bad))
+    print('ok   M21-AC4: of the %d index commands the misuse fixture emits, '
+          'exactly the %d ranges that pair carry a range operator — one opening '
+          'and one closing each — and all %d refused marks carry none'
+          % (len(commands), len(paired_terms), len(refused)))
+
+
+def _preamble(argv):
+    r"""M21's stale-`.aux` guard — every command an `.aux` line can name is
+    defined in EVERY document the subsystem reaches.
+
+    The `.aux` outlives the source that wrote it, so a command injected only
+    into a document that still writes a range becomes an `Undefined control
+    sequence` the moment that range is deleted — verified as pdflatex exit 1,
+    which is the IP2 break the subsystem exists to avoid. The document that
+    matters is one with a principal mention and NO range, which is the tree an
+    author lands in the moment they delete one.
+    """
+    path, wanted = argv[0], argv[1:]
+    text = open(path, encoding='utf-8').read()
+    if not text.strip():
+        _fail('M21: %s is empty, so every clause stated over its preamble would '
+              'pass on a file this run did not write' % path)
+    if text.count(r'\begin{document}') != 1:
+        _fail('M21: %s does not carry exactly one \begin{document}, so "the '
+              'region before it" names no one region' % path)
+    pre = text[:text.index(r'\begin{document}')]
+    if 'quartoindexregister' not in pre:
+        _fail('M21: %s has no principal subsystem in it at all, so this check '
+              'would pass on a document the subsystem never reached' % path)
+    bad = []
+    for cmd in wanted:
+        hits = re.findall(r'\\providecommand\*\\%s\[' % re.escape(cmd), pre)
+        if len(hits) != 1:
+            bad.append('  %s: defined %d time(s) with \providecommand*, not once'
+                       % (cmd, len(hits)))
+    if bad:
+        _fail('M21: an .aux line naming one of these after a range is deleted is '
+              'an undefined control sequence and the render is over:\n'
+              + '\n'.join(bad))
+    print('ok   M21: all %d .aux-borne range commands are defined exactly once in '
+          'a document that has a principal mention and no range of its own, so '
+          'deleting a range cannot leave an .aux line naming a command nothing '
+          'defines' % len(wanted))
+
+
+def _bookhtml(argv):
+    """M21-AC5's role half — a cross-chapter range carries its role too.
+
+    The role is the RANGE's, and a book is the one place where the end that
+    DECLARES it and the end that carries the locator can be in different
+    chapters: neither chapter's own render can resolve it, so the chapter that
+    reads every record has to. Kept as the pairing's ending alone, the role was
+    dropped here while the same input in one document printed emphasized
+    (review round 2, R2-F1).
+    """
+    path, term, href = argv[0], argv[1], argv[2]
+    cls = os.environ['HTML_PRINCIPAL_CLASS']
+    doc = H.parse(path)
+    section = H.find_id(doc, os.environ.get('HTML_SECTION_ID', 'qi-index'))
+    if section is None:
+        _fail('M21-AC5: %s has no generated index section' % path)
+    for item in H.find_all(section, 'li'):
+        own = list(H.own_nodes(item))
+        terms = [n for n in own if 'qi-term' in H.classes(n)]
+        if len(terms) != 1 or H.text(terms[0]).strip() != term:
+            continue
+        links = []
+        for node in own:
+            if 'qi-locators' in H.classes(node):
+                links.extend(H.find_all(node, 'a'))
+        if len(links) != 1:
+            _fail('M21-AC5: the %r entry carries %d locator link(s); a range '
+                  'opened in one chapter and closed in another is one'
+                  % (term, len(links)))
+        got = links[0].attrs.get('href', '')
+        if got != href:
+            _fail('M21-AC5: the %r entry\'s locator points at %r, not at the '
+                  'opening chapter\'s page and the opening mark\'s anchor (%r)'
+                  % (term, got, href))
+        if cls not in H.classes(links[0]) or not H.find_all(links[0], 'strong'):
+            _fail('M21-AC5: the %r entry\'s locator carries class=%r and %d '
+                  'strong node(s); its range declares the principal role, on its '
+                  'CLOSING mark in a different chapter from the locator, and the '
+                  'chapter that reads every record is the only one that can '
+                  'carry it across'
+                  % (term, sorted(H.classes(links[0])),
+                     len(H.find_all(links[0], 'strong'))))
+        print('ok   M21-AC5: the cross-chapter range contributes one locator, at '
+              'the opening chapter\'s page and the opening mark\'s anchor, '
+              'emphasized and classed from a role its author wrote on the '
+              'closing mark two chapters away')
+        return
+    _fail('M21-AC5: the book index has no %r entry at all, so every clause above '
+          'would pass by not matching' % term)
+
+
 READERS = {'ind': _ind, 'tex': _tex, 'html': _html, 'gfm': _gfm,
-           'bookpdf': _bookpdf}
+           'bookpdf': _bookpdf,
+           'misuse': _misuse, 'preamble': _preamble,
+           'bookhtml': _bookhtml}
 
 if __name__ == '__main__':
     if len(sys.argv) < 2 or sys.argv[1] not in READERS:

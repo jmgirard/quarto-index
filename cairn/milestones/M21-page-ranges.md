@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -135,6 +135,13 @@ alone, and the range is reported as unpaired there rather than silently spanning
       every command an `.aux` line can name must be defined wherever the subsystem lands.
       The four coverage gaps get the checks they name, each with a planted defect.
 
+- [x] T10: Review round 2's seven findings (discovered work, added 2026-08-22). The book
+      path carries the whole pairing verdict rather than its ending alone, so a range's role
+      reaches the locator whichever chapter declared it; the cross-chapter range in
+      `examples/book/` is marked principal on its CLOSING mark, and a reader pins the class
+      and the emphasis on the locator the OTHER chapter contributes. The two plant readers
+      move into `tests/m21probes.py`, so the self-test proves the reader the run uses.
+
 ## Work log
 
 - 2026-08-21: created by /milestone-plan.
@@ -171,6 +178,12 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: review fixes complete. `tests/run-tests.sh` 247 checks and `--self-test` 359 (before the fixes: 245 and 351). Three new planted defects, each shown to fail its own check.
 
 - 2026-08-22: review round 2 returned the milestone to in-progress on seven findings. All seven criteria re-verified on fresh artifacts and the self-test green at 359; two of three lenses reported nothing. What failed: the role-on-either-end repair does not reach the book path, so a cross-chapter range whose closing declares the role prints a plain locator (R2-F1, reproduced, the round-1 F2 defect on a sibling path); no book fixture marks a range principal, which is why it was reachable (R2-F2); two of the three plants added last round are proved against paraphrase readers rather than the checks that run (R2-F3); README's "Under the hood" still requires the role on the opening mark (R2-F4); `_index_commands`' docstring states a rule its code does not implement (R2-F5); `pair_ranges` orders its never-closed findings by each key's first opening (R2-F6); the book-report counts sit between an unrelated render and its assertion (R2-F7). Second defect return.
+
+- 2026-08-22: T10 (R2-F1/F2) — `book_ranges` returns each verdict whole and `book_marks` resolves `role` from it, mirroring the single-document path; a book is the one place where the end that declares the role and the end that carries the locator can be in different chapters, so neither chapter can resolve it alone. `examples/book/sub/two.qmd`'s closing now declares it, and a new `bookhtml` reader pins the class and emphasis on `one.html#qi-mark-4`. Reproduced plain before the fix, emphasized after.
+- 2026-08-22: T10 (R2-F3) — the misuse and preamble readers move into `tests/m21probes.py`; the run and the self-test now call the SAME reader, where before each plant was proved against a weaker stand-in that could not see the clauses the real check carries. Two further plants aimed at exactly those clauses — a refused mark emitting a CLOSING rather than an opening, and a command defined twice rather than absent — both discriminate.
+- 2026-08-22: T10 (R2-F4/F5/F6/F7) — README's "Under the hood" sentence corrected and pinned in the claims array; `_index_commands`' docstring rewritten to state the rule its code implements; `pair_ranges` records the opening's position rather than its key, so the never-closed findings are ordered by the opening still pending; the book-report counts moved beside the render they read.
+- 2026-08-22: T10 — two ordering traps surfaced while fixing, both caught loudly rather than silently: the new book reader first read an artifact a later hardening step deliberately corrupts, and `HTML_PRINCIPAL_CLASS` was defined thousands of lines below its new first use, which `set -u` turned into an unbound-variable failure. The reader moved to the render it is about and the constant joined the other pinned HTML identifiers at the top.
+- 2026-08-22: round-2 fixes complete. `--self-test` 363 checks (before: 359).
 
 ## Decisions
 

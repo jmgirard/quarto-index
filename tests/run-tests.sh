@@ -296,6 +296,7 @@ README_RANGE_CLAIMS=(
   $'pairing\tthe closing mark is the next `range="close"` on the same entry as an opening'
   $'principal range\tPut `mention="principal"` on either of its two marks and the whole range prints emphasized'
   $'role once\tThe role belongs to the span rather than to either mark, so write it once, on whichever end you like'
+  $'either end encapsulates\tWhere either mark of the range is the principal mention, both ends carry the same encapsulation command'
   $'across chapters\tAn opening in one chapter and a closing in a later one are paired when the book\'s index is built'
   $'book silence\tNeither chapter\'s own render complains about holding half of a pair'
   $'folded-in mark\t`makeindex` folds that locator into the range and prints nothing extra'
@@ -402,6 +403,11 @@ HTML_SECTION_ID='qi-index'
 HTML_ANCHOR_PREFIX='qi-mark-'
 HTML_ENTRY_PREFIX='qi-entry-'
 HTML_LETTER_CLASS='qi-letter'
+# Declared here with the other pinned HTML identifiers rather than in the M20
+# section that first needed it: a book check now reads it several thousand lines
+# earlier, and `set -u` turned that into a loud failure rather than an empty
+# needle — the same ordering trap the report keys were moved out of.
+HTML_PRINCIPAL_CLASS='qi-principal'
 
 # ---------------------------------------------------------------------------
 # Manifest 1e — the generated index in examples/demo.html (M03-AC2).
@@ -4215,6 +4221,15 @@ rm -rf "$BOOK_OUT" "$BOOK_DIR/.quarto"
 
 check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
   "M05-AC1/AC3" hrefs
+# M21-AC5's role half, read HERE and not in the M21 section below: later
+# hardening steps deliberately corrupt a chapter's record and re-render
+# `last.qmd` alone, so the copy left in the output directory at the end of a run
+# is not the state this criterion is about. Same discipline as the manifest
+# check above, which is why it sits beside it.
+HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
+  python3 tests/m21probes.py bookhtml "$BOOK_OUT/last.html" "Ranged Term" \
+  "one.html#qi-mark-4"
+pass "M21-AC5: the cross-chapter range's one locator is emphasized and classed from a role written on its closing mark, two chapters from the locator that carries it"
 # M07-AC4: the book's B group holds Beta, marked in one.qmd, and Beacon,
 # marked in sub/two.qmd — a group gathers what every chapter contributed.
 check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4" \
@@ -4703,6 +4718,24 @@ pass "M06-AC4: one entry sorted two ways in two chapters is reported once on the
 # is A. `Early`, `Early Reference`, `Late` and `Missing Reference` file under
 # their printed text, which puts M14's two cross-reference-only entries in the
 # E and M groups.
+# M21-AC5's positive half (review F4): the book's own unpaired-range report.
+# Drawn by the LAST chapter in book order, which in THIS fixture is not the
+# chapter that builds the index — so a report drawn by the marker chapter, or
+# by every chapter, fails here rather than passing on a fixture where the two
+# coincide. Counted over one full render: once for the book, not once per
+# chapter. Both pairing reports fire here, once each and about DIFFERENT marks:
+# `Unclosed` opens a range nothing closes, and `Spanned`'s closing is orphaned
+# because its own opening carried a cross-reference and was refused a chapter
+# earlier — which is the same fact the `Spanned` manifest row states from the
+# other side, that the closing kept its locator. Two counts of one rather than
+# one count of two: a report firing twice about one mark would pass a total.
+check_warning_count "$WORK/book-order-1.log" "$R_NOCLOSE" 1 \
+  "M21-AC5 (the book reports its never-closed opening exactly once)"
+check_warning_count "$WORK/book-order-1.log" "$R_NOOPEN" 1 \
+  "M21-AC5 (and the closing whose opening was refused, exactly once)"
+check_warning_count "$WORK/book-order-1.log" "$R_ALREADY" 0 \
+  "M21-AC5 (and no pairing report this book has no cause for)"
+
 check_letter_sweep "$ORDER_OUT/index.html" "M07-AC1 (book order)" $'A\nE\nL\nM\nS\nU'
 
 printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
@@ -4765,23 +4798,6 @@ printf 'not a directory\n' > "$ORDER_DIR/.quarto/$STORE_DIR"
 ( cd "$ORDER_DIR" && quarto render --to html ) > "$WORK/book-nostore.log" 2>&1 \
   || { tail -30 "$WORK/book-nostore.log" >&2; fail "M05 hardening: a store that cannot be written took the render down; IP2 forbids it"; }
 
-# M21-AC5's positive half (review F4): the book's own unpaired-range report.
-# Drawn by the LAST chapter in book order, which in THIS fixture is not the
-# chapter that builds the index — so a report drawn by the marker chapter, or
-# by every chapter, fails here rather than passing on a fixture where the two
-# coincide. Counted over one full render: once for the book, not once per
-# chapter. Both pairing reports fire here, once each and about DIFFERENT marks:
-# `Unclosed` opens a range nothing closes, and `Spanned`'s closing is orphaned
-# because its own opening carried a cross-reference and was refused a chapter
-# earlier — which is the same fact the `Spanned` manifest row states from the
-# other side, that the closing kept its locator. Two counts of one rather than
-# one count of two: a report firing twice about one mark would pass a total.
-check_warning_count "$WORK/book-order-1.log" "$R_NOCLOSE" 1 \
-  "M21-AC5 (the book reports its never-closed opening exactly once)"
-check_warning_count "$WORK/book-order-1.log" "$R_NOOPEN" 1 \
-  "M21-AC5 (and the closing whose opening was refused, exactly once)"
-check_warning_count "$WORK/book-order-1.log" "$R_ALREADY" 0 \
-  "M21-AC5 (and no pairing report this book has no cause for)"
 check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" \
   "$ORDER_CHAPTERS" "M05 hardening"
 rm -f "$ORDER_DIR/.quarto/$STORE_DIR"
@@ -7798,7 +7814,6 @@ RANGEFROM_CMD="quartoindexrangefrom"
 RANGEEND_CMD="quartoindexrangeend"
 RANGEAT_CMD="quartoindexrangeat"
 RANGETO_CMD="quartoindexrangeto"
-HTML_PRINCIPAL_CLASS="qi-principal"
 python3 tests/m20probes.py ind "$WORK/principal.ind" "$WORK/principal.ilg" \
   "$WORK/principal.aux" "$LOCATOR_CMD" "$PRINCIPALPAGE_CMD"
 pass "M20-AC1: every locator of a principal key carries one uniform encapsulation, the .aux registers exactly those identifiers from pages their own entries list, and makeindex logs no warning"
@@ -8065,42 +8080,8 @@ pass "M21-AC2: every range emits one opening and one closing under one key carry
 # a principal mention and no range is the case that matters — that is the tree
 # an author lands in the moment they delete a `range=` — so the principal
 # fixture is read here rather than the range one.
-python3 - "$WORK/principal.tex" "$RANGEAT_CMD" "$RANGETO_CMD" <<'M21PRE'
-import re, sys
-path, wanted = sys.argv[1], sys.argv[2:]
-text = open(path, encoding='utf-8').read()
-if not text.strip():
-    print(f'FAIL: M21: {path} is empty, so every clause stated over its '
-          f'preamble would pass on a file this run did not write',
-          file=sys.stderr)
-    sys.exit(1)
-if text.count(r'\begin{document}') != 1:
-    print(f'FAIL: M21: {path} does not carry exactly one \\begin{{document}}, so '
-          f'"the region before it" names no one region', file=sys.stderr)
-    sys.exit(1)
-pre = text[:text.index(r'\begin{document}')]
-if 'quartoindexregister' not in pre:
-    print(f'FAIL: M21: {path} has no principal subsystem in it at all, so this '
-          f'check would pass on a document the subsystem never reached',
-          file=sys.stderr)
-    sys.exit(1)
-if 'range=' in open('examples/principal.qmd', encoding='utf-8').read():
-    print('FAIL: M21: examples/principal.qmd now writes a range, so it is no '
-          'longer the principal-mention-without-a-range case this check needs',
-          file=sys.stderr)
-    sys.exit(1)
-missing = [c for c in wanted
-           if len(re.findall(r'\\providecommand\*\\%s\[' % re.escape(c), pre)) != 1]
-if missing:
-    print(f'FAIL: M21: {missing} are not defined exactly once in a document that '
-          f'has a principal mention and no range; an .aux line naming one of '
-          f'them after a range is deleted is then an undefined control '
-          f'sequence and the render is over', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M21: both .aux-borne range commands are defined in a document with '
-      f'a principal mention and no range of its own, so deleting a range cannot '
-      f'leave an .aux line naming a command nothing defines')
-M21PRE
+python3 tests/m21probes.py preamble "$WORK/principal.tex" \
+  "$RANGEAT_CMD" "$RANGETO_CMD"
 pass "M21: the range commands ride with the rest of the subsystem, so a document that loses its ranges but keeps a principal mention still defines every command its own .aux can name"
 
 # The printed index, through the fixture's own redefinition of the emphasis
@@ -8261,51 +8242,7 @@ pass "M21-AC4: each of the five misuse shapes draws exactly one warning naming i
 # F5). Read from the emitted LaTeX rather than by rendering the fixture to PDF:
 # the property is that the operator is not EMITTED, and a PDF render would
 # prove it only for the pagination this run happens to produce.
-python3 - "$WORK/range-misuse-latex.tex" <<'M21MISUSE'
-import re, sys
-tex = open(sys.argv[1], encoding='utf-8').read()
-commands = re.findall(r'\\index\{([^|}]*)((?:\|[()])?)', tex)
-if not commands:
-    print('FAIL: M21-AC4: the misuse fixture emitted no \\index command at all, '
-          'so a clause about which of them carry a range operator would be '
-          'quantified over nothing', file=sys.stderr)
-    sys.exit(1)
-# Which terms the fixture's ranges actually PAIR, derived from the fixture's
-# source rather than from this output: `lamia` is the well-formed control, and
-# `hydra`'s FIRST opening pairs with its closing — the second opening is the
-# refused one, which is what its own report says. Everything else is a refusal
-# and must carry no range operator at all, because makeindex logs a warning for
-# an unmatched, extra or inconsistently encapsulated range and Quarto fails the
-# whole render on that line.
-PAIRED = {'hydra', 'lamia'}
-REFUSED = {'fenrir', 'golem', 'imp', 'jinn'}
-opens, closes = {}, {}
-for term, op in commands:
-    if op == '|(':
-        opens[term] = opens.get(term, 0) + 1
-    elif op == '|)':
-        closes[term] = closes.get(term, 0) + 1
-bad = []
-if set(opens) != PAIRED or set(closes) != PAIRED:
-    bad.append(f'  terms emitting a range operator are {sorted(set(opens) | set(closes))}, '
-               f'expected {sorted(PAIRED)}')
-for term in PAIRED:
-    if opens.get(term) != 1 or closes.get(term) != 1:
-        bad.append(f'  {term}: {opens.get(term, 0)} opening(s), '
-                   f'{closes.get(term, 0)} closing(s); a paired range is one of each')
-for term in REFUSED:
-    if term in opens or term in closes:
-        bad.append(f'  {term}: refused, yet emitted a range operator')
-if bad:
-    print('FAIL: M21-AC4: the misuse fixture does not emit a range operator for '
-          'exactly its paired ranges:', file=sys.stderr)
-    print('\n'.join(bad), file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M21-AC4: of the {len(commands)} index commands the misuse fixture '
-      f'emits, exactly the {len(PAIRED)} ranges that pair carry a range '
-      f'operator — one opening and one closing each — and all '
-      f'{len(REFUSED)} refused marks carry none')
-M21MISUSE
+python3 tests/m21probes.py misuse "$WORK/range-misuse-latex.tex"
 pass "M21-AC4: no refused range reaches the index tool as a range — the emitted LaTeX carries exactly one opening and one closing, both the well-formed control's, which is what keeps an unpairable range from failing the render"
 
 # M21-AC5 — the cross-chapter range. The href and the locator count are the
@@ -8915,16 +8852,6 @@ filtersrc.sources()" >/dev/null 2>&1; then
   #       well-formed range being named at all.
   probe_defect "a report naming the well-formed range control" \
     m21_report "$M21W/wrongmark.log" 'lamia' 0
-  # Two one-expression readers, held in variables rather than written inline:
-  # `probe_defect` runs its argument list in a subshell, and a heredoc attached
-  # to the call would be read by the wrong command.
-  M21_LEAK_READER="import re, sys
-tex = open(sys.argv[1], encoding='utf-8').read()
-opens = {t for t, op in re.findall(r'\\\\index\\{([^|}]*)((?:\\|[()])?)', tex) if op == '|('}
-sys.exit(0 if opens == {'hydra', 'lamia'} else 1)"
-  M21_PREAMBLE_READER="import re, sys
-pre = open(sys.argv[1], encoding='utf-8').read().split(r'\\\\begin{document}')[0]
-sys.exit(0 if re.search(r'\\\\providecommand\\*\\\\%s\\[' % sys.argv[2], pre) else 1)"
   # --- the checks the review's own findings added. Each of these guards a
   #     defect that shipped once, so each is shown discriminating here rather
   #     than trusted (the M01 lesson: a green check is evidence about what it
@@ -8940,13 +8867,28 @@ sys.exit(0 if re.search(r'\\\\providecommand\\*\\\\%s\\[' % sys.argv[2], pre) el
   probe_plant "$WORK/range-misuse-latex.tex" "$M21W/leaked.tex" \
     -e 's/\\index{fenrir}/\\index{fenrir|(}/'
   probe_defect "a refused range emitting a range operator anyway" \
-    python3 -c "$M21_LEAK_READER" "$M21W/leaked.tex"
+    python3 tests/m21probes.py misuse "$M21W/leaked.tex"
   # (xvii) the stale-`.aux` guard: a preamble that defines the subsystem but
   #        not the two commands an `.aux` line can name (review F3).
   probe_plant "$WORK/principal.tex" "$M21W/norange.tex" \
     -e "s/\\\\providecommand\\*\\\\${RANGEAT_CMD}\\[/\\\\providecommand*\\\\qiGone[/"
   probe_defect "a subsystem preamble missing a command its own .aux can name" \
-    python3 -c "$M21_PREAMBLE_READER" "$M21W/norange.tex" "$RANGEAT_CMD"
+    python3 tests/m21probes.py preamble "$M21W/norange.tex" \
+      "$RANGEAT_CMD" "$RANGETO_CMD"
+  # (xviii)/(xix) two clauses the earlier stand-in readers could not reach: a
+  #         refused mark emitting a CLOSING rather than an opening, and a
+  #         command defined twice rather than absent. Both readers are the
+  #         run's own now (review round 2, R2-F3), so what is shown
+  #         discriminating here is exactly what runs.
+  probe_plant "$WORK/range-misuse-latex.tex" "$M21W/leakclose.tex" \
+    -e 's/\\index{golem}/\\index{golem|)}/'
+  probe_defect "a refused mark emitting a range CLOSING" \
+    python3 tests/m21probes.py misuse "$M21W/leakclose.tex"
+  probe_plantpl "$WORK/principal.tex" "$M21W/dupdef.tex" \
+    "s/(\\\\providecommand\\*\\\\${RANGEAT_CMD}\\[2\\]\\{)/\$1\$1/"
+  probe_defect "an .aux-borne command defined twice" \
+    python3 tests/m21probes.py preamble "$M21W/dupdef.tex" \
+      "$RANGEAT_CMD" "$RANGETO_CMD"
   pass "M21 self-test: the three checks the review's findings added — a closing-declared role reaching the registry, no refused range reaching the index tool, and every .aux-borne command defined wherever the subsystem lands — each fail on a planted defect of their own kind"
 
   pass "M21 self-test: every reader the milestone adds fails on a planted defect of each kind it names — a lost pairing, a wrong extent, a registration that composes the wrong string or names the wrong ordinal, a transcript warning, ends disagreeing on their encapsulator and ends disagreeing on their key, a locator at the wrong end, a second locator, a wrongly emphasized range, and a report naming the wrong mark"

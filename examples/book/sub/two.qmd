@@ -16,4 +16,6 @@ one: a group gathers what every chapter contributed, not what one chapter
 did. [Beacon]{.index}.
 
 The discussion opened in the previous chapter closes here, contributing no
-locator of its own: [Ranged Term]{.index range="close"}.
+locator of its own — and declaring the role from this end, which only the
+chapter that reads every record can carry back to the locator the OTHER chapter
+contributes: [Ranged Term]{.index range="close" mention="principal"}.

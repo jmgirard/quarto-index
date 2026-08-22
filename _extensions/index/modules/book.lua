@@ -386,7 +386,15 @@ local function book_ranges(records)
   local verdicts, found = qi_marks.pair_ranges(items)
   local paired = {}
   for i, where in ipairs(at) do
-    paired[where] = verdicts[i] and verdicts[i].ending or nil
+    -- The whole verdict, not just its ending: the role is the RANGE's, settled
+    -- by the pairing from whichever end declared it, and a book is the one
+    -- place where the end that declared it and the end that carries the
+    -- locator can be in different chapters — neither of which can resolve it
+    -- alone. Kept as the ending only, the closing's role was dropped and a
+    -- cross-chapter range whose closing declared it printed a plain locator,
+    -- while the same input in one document printed it emphasized (review
+    -- round 2, R2-F1).
+    paired[where] = verdicts[i] or nil
   end
   return paired, found
 end
@@ -415,6 +423,7 @@ local function book_marks(ctx, records)
           xrefs[#xrefs + 1] = { kind = kind, levels = xref.levels }
         end
       end
+      local verdict = paired[ri .. "\0" .. mi]
       marks[#marks + 1] = {
         levels = mark.levels,
         -- The book's keys for this mark's levels, not this chapter's own: a
@@ -425,8 +434,12 @@ local function book_marks(ctx, records)
         sort = book_sort_for(book_keys, mark.levels),
         xrefs = xrefs,
         anchor = mark.anchor,
-        role = mark.role,
-        paired = paired[ri .. "\0" .. mi],
+        -- Resolved from the book's verdict where there is one, exactly as the
+        -- single-document path resolves it from this document's (qi_passes):
+        -- a range's role belongs to the span, so the end that carries the
+        -- locator carries the role whichever end the author wrote it on.
+        role = (verdict and verdict.principal) and "principal" or mark.role,
+        paired = verdict and verdict.ending or nil,
         -- A mark in the chapter holding the index links within its own page,
         -- exactly as a single document's does.
         -- Written exactly as Quarto writes its own links to that page,

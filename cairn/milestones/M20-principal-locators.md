@@ -202,6 +202,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-22: an attempt to widen the empty-list guard to a space-only list was wrong and is reverted. `\edef ... \zap@space` expands the page list, which arrives already wrapped in hyperref's page-link command, and every render died with an undefined control sequence; the suite caught it at once. The guard stays `\def`-based and byte-empty only, its comment narrowed to that, since both spellings are unreachable from makeindex and neither is worth expanding an argument this command must pass through untouched.
 - 2026-08-22: correction to the 2026-08-21 T10 line, which said both suite modes "run clean on an untouched tree". The diff-bug lens ran the suite from a pristine `git archive` of HEAD and it fails there: a check reads `examples/control.tex` before anything renders it, and `examples/*.tex` is gitignored. Pre-existing, already on the acceptance-suite hardening candidate row, and not an M20 regression — but the evidence for every run in this milestone rests on a tree carrying leftover artifacts, which the earlier wording did not say.
 - 2026-08-22: gate-fix checkpoint. All three findings are repaired and each was verified by direct probe, but the full suite and self-test run was still in flight when this was committed, so totals and plant discrimination are UNVERIFIED here and no approval marker exists.
+- 2026-08-22: round-3 gate fixes verified — suite 228 exit 0 and self-test 319 exit 0 on bb66134, 44 M20 plants caught including the two evasions R3-F1 named. Every criterion re-read off the artifacts by hand at the gate. All eight round-3 findings triaged and logged: three fixed on the branch, three fixed or rejected as unreachable, one documentation fix, one rejected as pre-existing with its record corrected.
 
 ## Decisions
 
@@ -478,3 +479,44 @@ one of those is derived from the render's own `.ind` and `.aux` rather than writ
 three shapes round 2 found unexercised now all discriminate: a registered page that is not
 first in its list, a page of more than one character, and a range registered at its own first
 page. The fold-induced self-target keeps its role and draws no contradicting report.
+
+**Round 3 findings and their disposition.** The prior-review lens found no PR-comment surface
+and zero findings, having checked all 29 findings of rounds 1 and 2 against the code rather
+than the work log and verified each deferred finding's ROADMAP home. The history lens returned
+zero, confirming independently that the role-derivation move leaves both reports firing in
+every format and that the new M14 roster count is derived as the `fold-xref-self` row's is.
+The diff-bug lens confirmed the brace repair across 18 reconstructed input shapes and traced
+both passes as unable to desynchronize, and returned eight findings. Three were actioned and
+fixed on the branch before any approval; none was floor-qualifying.
+
+- **R3-F1 (fixed)** — the derived `_cases` oracle read its expectation from the same `.aux`
+  the filter wrote, so a registration written from the wrong page moved expectation and
+  artifact together and passed. Two evasions verified by execution. Repaired with an
+  independent statement of where each principal mark sits plus a membership invariant; both
+  evasions now fail and both are planted.
+- **R3-F2 (fixed)** — README's blanket "the role is reported and dropped" is false for the
+  fold-induced self-target, and the outcome differs between back-ends.
+- **R3-F3 (fixed)** — a `\thepage` holding a non-expandable token reached `\csname` and raised
+  `Missing \endcsname` on every pass after the first. Not floor-qualifying: no criterion fails,
+  and makeindex already rejects every entry of such a document, so it has no index either way —
+  but a clean build became a LaTeX error, which this subsystem may not add. Both sides now
+  sanitize identically.
+- **R3-F4, R3-F5, R3-F7 (fixed or rejected)** — the empty-list guard's comment narrowed to
+  what it covers after an attempted widening proved unsafe; the nested page-link note is
+  unreachable through makeindex and rejected as a robustness observation; the shape guard now
+  states the property it means.
+- **R3-F6 (fixed)** — DESIGN's LaTeX bullet now points at the subsystem paragraph.
+- **R3-F8 (rejected, pre-existing, recorded)** — the suite does not run from a pristine
+  checkout: a check reads `examples/control.tex` before anything renders it. Already on the
+  acceptance-suite hardening candidate row; not an M20 regression. It does mean every run in
+  this milestone rests on a tree carrying leftover artifacts, and the earlier work-log wording
+  claiming otherwise is corrected above.
+
+**Final evidence** — `tests/run-tests.sh` 228 exit 0 and `--self-test` 319 exit 0 on bb66134,
+44 M20 plants caught, the two new ones being the evasions R3-F1 named. Artifacts re-read by
+hand at the gate: `basilisk` three `qi1` groups at 1/3/5, `gorgon` one `qi2` group at 9 behind
+its folded `\see{basilisk}{}`, `faun` bare; four registrations, `basilisk`'s at the middle of
+its three; 0 makeindex warnings. The regression fixture prints `wyvern, [P:1], 2` ·
+`naga, [P:2]` · `oni, 3-5` · `sylph, 6-8` · `troll, 9, [P:10]` · `undine, [P:11]` ·
+`folk, kin, [P:11]` · `pixie, 12, 13` at 0 warnings. The preamble defines exactly the four
+subsystem commands with `\providecommand*`, plus the pre-existing `\quartoindexseeboth`.

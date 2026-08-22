@@ -117,9 +117,12 @@ alone, and the range is reported as unpaired there rather than silently spanning
       render before the pdf render removes them (the M15 lesson); the structural HTML
       checks for the single locator and the silent closing mark; the book-index check; the
       rendered-log pins passed through `warn-distinct`; the no-leak sweep.
-- [ ] T7: `tests/plantdefect.py` entries for each check T6 adds, varying form as well as
-      site — a closing encapsulation that does not match its opening, a range whose two
-      ends are emitted under different keys, and a pairing report naming the wrong mark.
+- [x] T7: A planted-defect entry for each check T6 adds, varying form as well as site — a
+      closing encapsulation that does not match its opening, a range whose two ends are
+      emitted under different keys, and a pairing report naming the wrong mark. They live
+      in the run's `--self-test` section beside M20's rather than in
+      `tests/plantdefect.py`, which plants in SOURCE for the moved-definition scans; these
+      readers read rendered output.
 - [ ] T8: README section for `range=`: what an author writes, what each back-end prints,
       what each of the five reports means, and that an ordinary mark falling inside a
       term's own range is folded into that range. Add its authoring forms to the suite's
@@ -146,6 +149,8 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: T5 — the per-chapter record gains an optional `range` holding the end the AUTHOR wrote (never the chapter's own verdict), no store-version bump (the M14 lesson); `book_ranges` pairs across every record in book order, the placing chapter reading its verdicts and the last chapter in book order drawing its reports, as the dangling-target report already is. Book fixture: a range opened in `one.qmd` and closed in `sub/two.qmd` contributes one locator at `one.html#qi-mark-4`, and neither chapter warns. Book HTML manifest, its derivation note and the three letter sweeps updated. Suite green, 228 checks.
 
 - 2026-08-22: T6 — `tests/m21probes.py` (five readers: `.ind`+`.ilg`+`.aux`, the emitted `.tex`, the HTML index, the gfm spans, the book PDF), reusing `m20probes`' brace and locator-group readers rather than writing a second reader of one artifact (the M16 lesson). Extent is asserted in PAGES SEPARATED, never in folios — the one fact the fixture's source states and no artifact can move. Also a preamble check that the four range commands reach only a document registering a range, and a compiled-PDF check reading emphasis through the fixture's own `[P:…]` redefinition, which is the AC2 link no `.ind` can carry. Suite green, 243 checks.
+
+- 2026-08-22: T7 — fourteen planted defects, each shown to fail its own reader: a lost pairing, a wrong extent, a registration composing the wrong string, one naming an ordinal no locator carries, a transcript warning, ends disagreeing on their encapsulator and (a different fault) on their key, an end emitted with no delimiter, a closing that registers nothing, a locator at the wrong end, a second locator, a wrongly emphasized range, a report naming the wrong mark, and a report naming the control. The three mutation helpers were renamed `probe_*` — they are the run's, not one milestone's, and M21 reuses all three rather than copying them. Self-test green, 349 checks.
 
 ## Decisions
 

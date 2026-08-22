@@ -8238,14 +8238,18 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # the wrong locator, on every locator, on none, and a warning suppressed in
   # one format alone are four different ways for this feature to be broken.
   # -------------------------------------------------------------------------
-  m20_defect() {
+  probe_defect() {
     local label="$1"; shift
     if ( "$@" ) >/dev/null 2>&1; then
-      fail "M20 self-test: the check passed on an artifact with <<$label>> planted in it"
+      fail "self-test: the check passed on an artifact with <<$label>> planted in it"
     fi
-    printf 'ok   M20 self-test: the check fails on <<%s>>\n' "$label"
+    printf 'ok   self-test: the check fails on <<%s>>\n' "$label"
   }
 
+  # Named for what they are rather than for the milestone that first needed
+  # them: M21 reuses all three, and a second copy would be the duplicated-reader
+  # shape M16 recorded.
+  #
   # A plant that changes nothing would be reported above as the CHECK failing
   # to discriminate, when the fault is the probe's — a defect wearing the
   # costume of a finding (the discipline tests/plantdefect.py states). Every
@@ -8253,22 +8257,22 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # once already: gfm wraps a long line inside a tag, so a sed aimed at a whole
   # `<span ...>text</span>` matched nothing and the check "passed" on an
   # unmutated file.
-  m20_plant() {
+  probe_plant() {
     local src="$1" dst="$2"; shift 2
     sed "$@" "$src" > "$dst"
     if cmp -s "$src" "$dst"; then
-      fail "M20 self-test: the defect aimed at $dst planted nothing — the check that follows would be reported as failing to discriminate when the fault is this mutation's"
+      fail "self-test: the defect aimed at $dst planted nothing — the check that follows would be reported as failing to discriminate when the fault is this mutation's"
     fi
   }
 
   # Some mutations below straddle makeindex's own line wrapping — the shape a
   # reader must collapse before it reads anything — so they cannot be aimed
-  # with a line-at-a-time sed. Same no-op refusal as m20_plant.
-  m20_plantpl() {
+  # with a line-at-a-time sed. Same no-op refusal as probe_plant.
+  probe_plantpl() {
     local src="$1" dst="$2" expr="$3"
     perl -0777 -pe "$expr" "$src" > "$dst"
     if cmp -s "$src" "$dst"; then
-      fail "M20 self-test: the defect aimed at $dst planted nothing — the check that follows would be reported as failing to discriminate when the fault is this mutation's"
+      fail "self-test: the defect aimed at $dst planted nothing — the check that follows would be reported as failing to discriminate when the fault is this mutation's"
     fi
   }
 
@@ -8291,62 +8295,62 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # (i) two locators of one key carrying different identifiers — the emission
   #     that makes a shared page a render-breaking conflict, and the one thing
   #     the uniform encapsulation exists to make unreachable.
-  m20_plant "$WORK/principal.ind" "$M20W/split.ind" \
+  probe_plant "$WORK/principal.ind" "$M20W/split.ind" \
     -e "s/{qi1}}{5}/{qi9}}{5}/"
-  m20_defect "two locators of one key carrying different identifiers" \
+  probe_defect "two locators of one key carrying different identifiers" \
     m20_ind "$M20W/split.ind" "$M20W/clean.ilg" "$M20W/clean.aux"
   # (ii) a key's locators on adjacent pages. Not cosmetic: makeindex folds a run
   #      of three into a `--` range, which is a page string the registry cannot
   #      match, so the entry would print with no emphasis while every other
   #      clause still passed. This is the trap the fixture's filler pages avoid.
-  m20_plant "$WORK/principal.ind" "$M20W/adjacent.ind" \
+  probe_plant "$WORK/principal.ind" "$M20W/adjacent.ind" \
     -e "s/{qi1}}{5}/{qi1}}{4}/"
-  m20_defect "a principal key's locators on adjacent pages" \
+  probe_defect "a principal key's locators on adjacent pages" \
     m20_ind "$M20W/adjacent.ind" "$M20W/clean.ilg" "$M20W/clean.aux"
   # (iii) the encapsulation leaking onto the role-free control, which no clause
   #       reading the principal entries would ever show.
-  m20_plant "$WORK/principal.ind" "$M20W/control.ind" \
+  probe_plant "$WORK/principal.ind" "$M20W/control.ind" \
     -e "s/faun, \\\\hyperpage{7, 8}/faun, \\\\hyperxindexformat{\\\\$LOCATOR_CMD{qi5}}{7, 8}/"
-  m20_defect "the locator encapsulation leaking onto the role-free control entry" \
+  probe_defect "the locator encapsulation leaking onto the role-free control entry" \
     m20_ind "$M20W/control.ind" "$M20W/clean.ilg" "$M20W/clean.aux"
   # (iv) a contested key that stopped folding its cross-reference into the
   #      printed text, and one that folds it after its locator rather than
   #      before. The second straddles the .ind's own line break.
-  m20_plant "$WORK/principal.ind" "$M20W/unfolded.ind" \
+  probe_plant "$WORK/principal.ind" "$M20W/unfolded.ind" \
     -e "s/gorgon, \\\\see{basilisk}{}, /gorgon, /"
-  m20_defect "a contested key no longer folding its cross-reference into its printed text" \
+  probe_defect "a contested key no longer folding its cross-reference into its printed text" \
     m20_ind "$M20W/unfolded.ind" "$M20W/clean.ilg" "$M20W/clean.aux"
-  m20_plantpl "$WORK/principal.ind" "$M20W/afterfold.ind" \
+  probe_plantpl "$WORK/principal.ind" "$M20W/afterfold.ind" \
     's/\\see\{basilisk\}\{\}, (\s*)(\\hyperxindexformat\{\\quartoindexlocator\{qi2\}\}\{9\})/$2, $1\\see{basilisk}{}/'
-  m20_defect "a contested key printing its cross-reference after its locator" \
+  probe_defect "a contested key printing its cross-reference after its locator" \
     m20_ind "$M20W/afterfold.ind" "$M20W/clean.ilg" "$M20W/clean.aux"
   # (v) the registry, four ways. A registration dropped; two collapsed onto one
   #     identifier; one moved to a page its entry does not list; and one moved
   #     to a page it DOES list, which only the principal mark's own position
   #     rules out.
-  m20_plant "$WORK/principal.aux" "$M20W/dropped.aux" \
+  probe_plant "$WORK/principal.aux" "$M20W/dropped.aux" \
     -e "/$PRINCIPALPAGE_CMD{qi1}/d"
-  m20_defect "a registration dropped from the .aux" \
+  probe_defect "a registration dropped from the .aux" \
     m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/dropped.aux"
-  m20_plant "$WORK/principal.aux" "$M20W/collapsed.aux" \
+  probe_plant "$WORK/principal.aux" "$M20W/collapsed.aux" \
     -e "s/$PRINCIPALPAGE_CMD{qi2}{9}/$PRINCIPALPAGE_CMD{qi1}{5}/"
-  m20_defect "two registrations collapsed onto one identifier" \
+  probe_defect "two registrations collapsed onto one identifier" \
     m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/collapsed.aux"
-  m20_plant "$WORK/principal.aux" "$M20W/offentry.aux" \
+  probe_plant "$WORK/principal.aux" "$M20W/offentry.aux" \
     -e "s/$PRINCIPALPAGE_CMD{qi1}{3}/$PRINCIPALPAGE_CMD{qi1}{4}/"
-  m20_defect "a registration naming a page its own entry does not list" \
+  probe_defect "a registration naming a page its own entry does not list" \
     m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/offentry.aux"
-  m20_plant "$WORK/principal.aux" "$M20W/wrongpage.aux" \
+  probe_plant "$WORK/principal.aux" "$M20W/wrongpage.aux" \
     -e "s/$PRINCIPALPAGE_CMD{qi1}{3}/$PRINCIPALPAGE_CMD{qi1}{1}/"
-  m20_defect "a registration on a page of its entry the principal mark is not on" \
+  probe_defect "a registration on a page of its entry the principal mark is not on" \
     m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/wrongpage.aux"
   # (vi) the same registration written the OTHER way it can be written — the
   #      expanded `\csname` form the injected reader itself uses. The effect on
   #      the render is identical; the reader must not be satisfied by it, since
   #      what it is checking is what the filter emitted, not what LaTeX did.
-  m20_plant "$WORK/principal.aux" "$M20W/csname.aux" \
+  probe_plant "$WORK/principal.aux" "$M20W/csname.aux" \
     -e "s/\\\\$PRINCIPALPAGE_CMD{qi1}{3}/\\\\expandafter\\\\gdef\\\\csname qi@p@qi1@3\\\\endcsname{}/"
-  m20_defect "a registration written in the expanded csname form" \
+  probe_defect "a registration written in the expanded csname form" \
     m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/csname.aux"
   # (vii) the transcript half: makeindex reporting a conflict the check must not
   #       read past. Planted in the .ilg alone, with the .ind left correct.
@@ -8355,13 +8359,13 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # mutation that broke both would show neither clause to be load-bearing
   # (review round 2, R2-F11; the previous version also carried an `awk` line
   # whose `print` ran before its `next`, so it filtered nothing at all).
-  m20_plant "$WORK/principal.ilg" "$M20W/counted.ilg" \
+  probe_plant "$WORK/principal.ilg" "$M20W/counted.ilg" \
     -e 's/0 warnings)/1 warning)/'
-  m20_defect "a nonzero warning count in the makeindex transcript" \
+  probe_defect "a nonzero warning count in the makeindex transcript" \
     m20_ind "$M20W/clean.ind" "$M20W/counted.ilg" "$M20W/clean.aux"
-  m20_plant "$WORK/principal.ilg" "$M20W/warned.ilg" \
+  probe_plant "$WORK/principal.ilg" "$M20W/warned.ilg" \
     -e 's|^Output written|## Warning: Conflicting entries: multiple encaps for the same page under same key.\n&|'
-  m20_defect "a conflicting-encapsulation line in the makeindex transcript" \
+  probe_defect "a conflicting-encapsulation line in the makeindex transcript" \
     m20_ind "$M20W/clean.ind" "$M20W/warned.ilg" "$M20W/clean.aux"
 
   # --- the preamble. Review F4 records this criterion as having no planted
@@ -8373,104 +8377,104 @@ filtersrc.sources()" >/dev/null 2>&1; then
     python3 tests/m20probes.py tex "$1" "$2" \
       "$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
   }
-  m20_plant "$WORK/principal.tex" "$M20W/notprovide.tex" \
+  probe_plant "$WORK/principal.tex" "$M20W/notprovide.tex" \
     -e "s/providecommand\\*\\\\$REGISTER_CMD\\[1\\]/gdef\\\\$REGISTER_CMD/"
-  m20_defect "a subsystem command defined with something other than \\providecommand" \
+  probe_defect "a subsystem command defined with something other than \\providecommand" \
     m20_tex "$M20W/notprovide.tex" examples/content.tex
-  m20_plantpl "$WORK/principal.tex" "$M20W/belowdoc.tex" \
+  probe_plantpl "$WORK/principal.tex" "$M20W/belowdoc.tex" \
     's/\\providecommand\*\\quartoindexprincipal\[1\]\{\\textbf\{\#1\}\}\n//; s/(\\begin\{document\})/$1\n\\providecommand*\\quartoindexprincipal[1]{\\textbf{\#1}}/'
-  m20_defect "a subsystem command defined below \\begin{document} rather than in the preamble" \
+  probe_defect "a subsystem command defined below \\begin{document} rather than in the preamble" \
     m20_tex "$M20W/belowdoc.tex" examples/content.tex
-  m20_plantpl "$WORK/principal.tex" "$M20W/csname.tex" \
+  probe_plantpl "$WORK/principal.tex" "$M20W/csname.tex" \
     's/(\\begin\{document\})/\\expandafter\\def\\csname quartoindexextra\\endcsname{}\n$1/'
-  m20_defect "a quartoindex command whose name is built with \\csname" \
+  probe_defect "a quartoindex command whose name is built with \\csname" \
     m20_tex "$M20W/csname.tex" examples/content.tex
-  m20_plantpl examples/content.tex "$M20W/leakedpre.tex" \
+  probe_plantpl examples/content.tex "$M20W/leakedpre.tex" \
     's/(\\begin\{document\})/\\providecommand*\\quartoindexlocator[2]{}\n$1/'
-  m20_defect "the subsystem injected into a document with no principal mention" \
+  probe_defect "the subsystem injected into a document with no principal mention" \
     m20_tex "$WORK/principal.tex" "$M20W/leakedpre.tex"
 
   # --- the HTML index. The class and the emphasis node are separable, so each
   #     is removed on its own: a check asserting only one of the two would pass
   #     on the artifact that lost the other.
-  m20_plant examples/principal.html "$M20W/wrongmark.html" \
+  probe_plant examples/principal.html "$M20W/wrongmark.html" \
     -e 's/<a href="#qi-mark-2" class="qi-principal"><strong>2<\/strong><\/a>/<a href="#qi-mark-2">2<\/a>/' \
     -e 's/<a href="#qi-mark-1">1<\/a>/<a href="#qi-mark-1" class="qi-principal"><strong>1<\/strong><\/a>/'
-  m20_defect "the HTML emphasis on the first mention instead of the principal one" \
+  probe_defect "the HTML emphasis on the first mention instead of the principal one" \
     env HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
     python3 tests/m20probes.py html "$M20W/wrongmark.html"
-  m20_plant examples/principal.html "$M20W/noclass.html" \
+  probe_plant examples/principal.html "$M20W/noclass.html" \
     -e 's/class="qi-principal"><strong>2<\/strong>/><strong>2<\/strong>/'
-  m20_defect "the class dropped from the HTML principal locator" \
+  probe_defect "the class dropped from the HTML principal locator" \
     env HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
     python3 tests/m20probes.py html "$M20W/noclass.html"
-  m20_plant examples/principal.html "$M20W/nostrong.html" \
+  probe_plant examples/principal.html "$M20W/nostrong.html" \
     -e 's/class="qi-principal"><strong>2<\/strong><\/a>/class="qi-principal">2<\/a>/'
-  m20_defect "the emphasis node dropped from the HTML principal locator" \
+  probe_defect "the emphasis node dropped from the HTML principal locator" \
     env HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
     python3 tests/m20probes.py html "$M20W/nostrong.html"
 
   # --- the back-end-less format. The ARIA-role defect the attribute was
   #     renamed to avoid is planted directly, since no filter change can
   #     produce it any more and it is the one this criterion exists for.
-  m20_plant examples/principal.md "$M20W/aria.md" \
+  probe_plant examples/principal.md "$M20W/aria.md" \
     -e 's/data-mention="principal"/role="principal"/'
-  m20_defect "a literal ARIA role attribute in the pass-through format" \
+  probe_defect "a literal ARIA role attribute in the pass-through format" \
     python3 tests/m20probes.py gfm "$M20W/aria.md" "$WORK/principal-gfm-spans.txt"
   # Aimed at the attribute alone, not at the whole span: gfm wraps a long
   # line inside the tag, so a pattern spanning the element matches nothing.
-  m20_plant examples/principal.md "$M20W/residue.md" \
+  probe_plant examples/principal.md "$M20W/residue.md" \
     -e 's/data-mention="paramount"/data-mention="paramount" data-qi-pending="4"/'
-  m20_defect "the filter's own plumbing attribute surviving into the pass-through format" \
+  probe_defect "the filter's own plumbing attribute surviving into the pass-through format" \
     python3 tests/m20probes.py gfm "$M20W/residue.md" "$WORK/principal-gfm-spans.txt"
   # The three axes the manifest comparison adds over the residue sweep, each
   # planted on its own: a mark the render lost, one it gained, and two the
   # filter emitted in the wrong order. The last is what a reader that sorted
   # its spans before comparing could not catch at all.
-  m20_plant examples/principal.md "$M20W/dropped.md" \
+  probe_plant examples/principal.md "$M20W/dropped.md" \
     -e 's|<span class="index" data-mention="paramount">dryad</span>|dryad|'
-  m20_defect "an index mark missing from the pass-through render" \
+  probe_defect "an index mark missing from the pass-through render" \
     python3 tests/m20probes.py gfm "$M20W/dropped.md" "$WORK/principal-gfm-spans.txt"
-  m20_plant examples/principal.md "$M20W/extra.md" \
+  probe_plant examples/principal.md "$M20W/extra.md" \
     -e 's|<span class="index">faun</span>|<span class="index">faun</span> and <span class="index">faun</span>|'
-  m20_defect "an index mark the fixture never wrote appearing in the pass-through render" \
+  probe_defect "an index mark the fixture never wrote appearing in the pass-through render" \
     python3 tests/m20probes.py gfm "$M20W/extra.md" "$WORK/principal-gfm-spans.txt"
-  m20_plant examples/principal.md "$M20W/transposed.md" \
+  probe_plant examples/principal.md "$M20W/transposed.md" \
     -e 's|<span class="index" data-mention="paramount">dryad</span>|@@QI@@|' \
     -e 's|<span class="index" data-mention="">ettin</span>|<span class="index" data-mention="paramount">dryad</span>|' \
     -e 's|@@QI@@|<span class="index" data-mention="">ettin</span>|'
-  m20_defect "two index marks emitted in the wrong order" \
+  probe_defect "two index marks emitted in the wrong order" \
     python3 tests/m20probes.py gfm "$M20W/transposed.md" "$WORK/principal-gfm-spans.txt"
   # The nested-markup mark, mangled: the span the widened scan exists to
   # enumerate. A scan that could not see it would drop it from the domain
   # rather than fail, so the defect has to be inside that span's own text.
-  m20_plant examples/principal.md "$M20W/nested.md" \
+  probe_plant examples/principal.md "$M20W/nested.md" \
     -e 's|<span class="index" data-mention="principal">\*\*kraken\*\*</span>|<span class="index" data-mention="principal">kraken</span>|'
-  m20_defect "the nested inline markup stripped from a mark's visible text" \
+  probe_defect "the nested inline markup stripped from a mark's visible text" \
     python3 tests/m20probes.py gfm "$M20W/nested.md" "$WORK/principal-gfm-spans.txt"
 
   # --- the counterfactual. Both directions: a role that stopped taking effect,
   #     and one that reached a mark it must not.
-  m20_plant "$WORK/principal.tex" "$M20W/inert.tex" \
+  probe_plant "$WORK/principal.tex" "$M20W/inert.tex" \
     -e "s/|$LOCATOR_CMD{qi[0-9]*}//g" -e "s/\\\\$REGISTER_CMD{qi[0-9]*}//g"
-  m20_defect "the role taking no effect at all" \
+  probe_defect "the role taking no effect at all" \
     python3 tests/m20probes.py twin "$M20W/inert.tex" "$WORK/principal-twin.tex"
-  m20_plant "$WORK/principal.tex" "$M20W/leaked.tex" \
+  probe_plant "$WORK/principal.tex" "$M20W/leaked.tex" \
     -e "s/\\\\index{faun}/\\\\index{faun|$LOCATOR_CMD{qi1}}/"
-  m20_defect "the role reaching the role-free control mark" \
+  probe_defect "the role reaching the role-free control mark" \
     python3 tests/m20probes.py twin "$M20W/leaked.tex" "$WORK/principal-twin.tex"
   # Only the PRINCIPAL mark's own command encapsulated, which is the emission
   # D-007 replaced: it reads correctly in every document whose marks happen to
   # sit on different pages, and breaks the render in the one where they do not.
-  m20_plant "$WORK/principal.tex" "$M20W/perlocator.tex" \
+  probe_plant "$WORK/principal.tex" "$M20W/perlocator.tex" \
     -e "s/{basilisk|$LOCATOR_CMD{qi1}}/{basilisk}/g"
-  m20_defect "only the principal mark of a key encapsulated, its plain locators bare" \
+  probe_defect "only the principal mark of a key encapsulated, its plain locators bare" \
     python3 tests/m20probes.py twin "$M20W/perlocator.tex" "$WORK/principal-twin.tex"
   # And the registration dropped while the encapsulation stays, which prints a
   # uniform, conflict-free, entirely unemphasized entry.
-  m20_plant "$WORK/principal.tex" "$M20W/unregistered.tex" \
+  probe_plant "$WORK/principal.tex" "$M20W/unregistered.tex" \
     -e "s/\\\\$REGISTER_CMD{qi1}//"
-  m20_defect "the principal mark emitting no registration" \
+  probe_defect "the principal mark emitting no registration" \
     python3 tests/m20probes.py twin "$M20W/unregistered.tex" "$WORK/principal-twin.tex"
 
   # --- the two reports, on both axes and in every format. `warn_discrimination`
@@ -8496,63 +8500,63 @@ filtersrc.sources()" >/dev/null 2>&1; then
     python3 tests/m20probes.py cases "$1" "$2" "${3:-$M20W/cases-clean.ind}" \
       "${4:-$M20W/cases-clean.aux}" "${5:-$M20W/cases-clean.log}"
   }
-  m20_plant "$WORK/principal-cases.txt" "$M20W/samepage.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/samepage.txt" \
     -e "s/^wyvern, \[P:1\], 2$/wyvern, 1, 2/"
-  m20_defect "the same-page pair printing with no emphasis at all" \
+  probe_defect "the same-page pair printing with no emphasis at all" \
     m20_cases "$M20W/samepage.txt" "$M20W/cases-clean.ilg"
-  m20_plant "$WORK/principal-cases.txt" "$M20W/bothpages.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/bothpages.txt" \
     -e "s/^wyvern, \[P:1\], 2$/wyvern, [P:1], [P:2]/"
-  m20_defect "the emphasis spreading from the registered page to its neighbour" \
+  probe_defect "the emphasis spreading from the registered page to its neighbour" \
     m20_cases "$M20W/bothpages.txt" "$M20W/cases-clean.ilg"
-  m20_plant "$WORK/principal-cases.txt" "$M20W/footnote.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/footnote.txt" \
     -e "s/^naga, \[P:2\]$/naga, 2/"
-  m20_defect "a principal mark in a footnote losing its registration" \
+  probe_defect "a principal mark in a footnote losing its registration" \
     m20_cases "$M20W/footnote.txt" "$M20W/cases-clean.ilg"
   # --- the three shapes review round 2 found unexercised. Each is a page the
   #     defect R2-F1 got wrong, and each plant is the printed form that defect
   #     actually produced, not an invented one.
-  m20_plant "$WORK/principal-cases.txt" "$M20W/notfirst.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/notfirst.txt" \
     -e "s/^troll, 9, \[P:10\]$/troll, 9, 10/"
-  m20_defect "a registered page that is not first in its list printing plain" \
+  probe_defect "a registered page that is not first in its list printing plain" \
     m20_cases "$M20W/notfirst.txt" "$M20W/cases-clean.ilg"
-  m20_plant "$WORK/principal-cases.txt" "$M20W/multichar.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/multichar.txt" \
     -e "s/^undine, \[P:11\]$/undine, 11/"
-  m20_defect "a page number of more than one character printing plain" \
+  probe_defect "a page number of more than one character printing plain" \
     m20_cases "$M20W/multichar.txt" "$M20W/cases-clean.ilg"
   # The degradation is ASSERTED, not tolerated: were a future makeindex or a
   # future registry to start matching a range, this fixture is what says so,
   # and README's claim about it would then be stale. Both ranges are planted —
   # the one registered at its middle page and the one registered at its first,
   # which is the range a per-token split could still mark.
-  m20_plant "$WORK/principal-cases.txt" "$M20W/range.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/range.txt" \
     -e "s/^oni, 3–5$/oni, [P:3–5]/"
-  m20_defect "a folded page range printing emphasized, which README says it does not" \
+  probe_defect "a folded page range printing emphasized, which README says it does not" \
     m20_cases "$M20W/range.txt" "$M20W/cases-clean.ilg"
-  m20_plant "$WORK/principal-cases.txt" "$M20W/rangehead.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/rangehead.txt" \
     -e "s/^sylph, 6–8$/sylph, [P:6]–8/"
-  m20_defect "a range whose first page is registered printing emphasized" \
+  probe_defect "a range whose first page is registered printing emphasized" \
     m20_cases "$M20W/rangehead.txt" "$M20W/cases-clean.ilg"
-  m20_plant "$WORK/principal-cases.txt" "$M20W/foldrole.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/foldrole.txt" \
     -e "s/^folk, kin, \[P:11\]$/folk, kin, 11/"
-  m20_defect "a role dropped from a mark whose target only self-references after the fold" \
+  probe_defect "a role dropped from a mark whose target only self-references after the fold" \
     m20_cases "$M20W/foldrole.txt" "$M20W/cases-clean.ilg"
-  m20_plant "$WORK/principal-cases.txt" "$M20W/cases-control.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/cases-control.txt" \
     -e "s/^pixie, 12, 13$/pixie, [P:12], 13/"
-  m20_defect "the emphasis reaching the role-free control in the regression fixture" \
+  probe_defect "the emphasis reaching the role-free control in the regression fixture" \
     m20_cases "$M20W/cases-control.txt" "$M20W/cases-clean.ilg"
   # The redefinition itself: with the author's marker gone, every emphasis claim
   # above becomes unreadable rather than false, which is what makes this fixture
   # depend on the promise README makes.
-  m20_plant "$WORK/principal-cases.txt" "$M20W/nomarker.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/nomarker.txt" \
     -e "s/\[P:\([0-9–-]*\)\]/\1/g"
-  m20_defect "the author's redefinition of the emphasis command not taking effect" \
+  probe_defect "the author's redefinition of the emphasis command not taking effect" \
     m20_cases "$M20W/nomarker.txt" "$M20W/cases-clean.ilg"
   # The registry half: the printed index is unchanged and the .aux moves under
   # it, so the derivation and the page disagree — which is the direction a
   # hand-written oracle cannot see at all.
-  m20_plant "$WORK/principal-cases.aux" "$M20W/cases-moved.aux" \
+  probe_plant "$WORK/principal-cases.aux" "$M20W/cases-moved.aux" \
     -e "s/{qi5}{10}/{qi5}{9}/"
-  m20_defect "a registration moved to the other locator of its own entry" \
+  probe_defect "a registration moved to the other locator of its own entry" \
     m20_cases "$WORK/principal-cases.txt" "$M20W/cases-clean.ilg" \
       "$M20W/cases-clean.ind" "$M20W/cases-moved.aux"
   # The two shapes a reader deriving its expectation from the .aux CANNOT see
@@ -8561,33 +8565,171 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # real defect in the registration would do, and the previous derived-only
   # reader passed both (review round 3). The first lands on a page the entry
   # does not carry at all; the second on the entry's own other locator.
-  m20_plant "$WORK/principal-cases.aux" "$M20W/cases-offpage.aux" \
+  probe_plant "$WORK/principal-cases.aux" "$M20W/cases-offpage.aux" \
     -e "s/{qi2}{2}/{qi2}{3}/"
-  m20_plant "$WORK/principal-cases.txt" "$M20W/cases-offpage.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/cases-offpage.txt" \
     -e "s/^naga, \[P:2\]$/naga, 2/"
-  m20_defect "a registration on a page its own entry does not carry, with the printed index agreeing" \
+  probe_defect "a registration on a page its own entry does not carry, with the printed index agreeing" \
     m20_cases "$M20W/cases-offpage.txt" "$M20W/cases-clean.ilg" \
       "$M20W/cases-clean.ind" "$M20W/cases-offpage.aux"
-  m20_plant "$WORK/principal-cases.aux" "$M20W/cases-otherloc.aux" \
+  probe_plant "$WORK/principal-cases.aux" "$M20W/cases-otherloc.aux" \
     -e "s/{qi1}{1}/{qi1}{2}/"
-  m20_plant "$WORK/principal-cases.txt" "$M20W/cases-otherloc.txt" \
+  probe_plant "$WORK/principal-cases.txt" "$M20W/cases-otherloc.txt" \
     -e "s/^wyvern, \[P:1\], 2$/wyvern, 1, [P:2]/"
-  m20_defect "the same-page pair registered from its other locator, with the printed index agreeing" \
+  probe_defect "the same-page pair registered from its other locator, with the printed index agreeing" \
     m20_cases "$M20W/cases-otherloc.txt" "$M20W/cases-clean.ilg" \
       "$M20W/cases-clean.ind" "$M20W/cases-otherloc.aux"
-  m20_plant "$WORK/principal-cases.ilg" "$M20W/cases-warned.ilg" \
+  probe_plant "$WORK/principal-cases.ilg" "$M20W/cases-warned.ilg" \
     -e 's/0 warnings)/1 warning)/'
-  m20_defect "a makeindex warning on the fixture carrying the same-page pair" \
+  probe_defect "a makeindex warning on the fixture carrying the same-page pair" \
     m20_cases "$WORK/principal-cases.txt" "$M20W/cases-warned.ilg"
   # The contradiction round 1 returned this milestone for, in the shape the
   # earlier repair did not reach: the report that must NOT be drawn.
-  m20_plant "$WORK/principal-cases-pdf.log" "$M20W/cases-contradict.log" \
+  probe_plant "$WORK/principal-cases-pdf.log" "$M20W/cases-contradict.log" \
     -e 's|^Output created|(W) mention="principal" on entry="deep!water!folk!kin" carries see= as well, and a cross-reference takes the place of a locator, so this mark has no locator to emphasize\n&|'
-  m20_defect "a mark told it has no locator to emphasize though the fold gave it one" \
+  probe_defect "a mark told it has no locator to emphasize though the fold gave it one" \
     m20_cases "$WORK/principal-cases.txt" "$M20W/cases-clean.ilg" \
       "$M20W/cases-clean.ind" "$M20W/cases-clean.aux" "$M20W/cases-contradict.log"
 
   pass "M20 self-test: every reader the milestone adds fails on a planted defect of each kind it names, and both reports are shown discriminating in all three formats"
+
+  # -------------------------------------------------------------------------
+  # M21 — every check the range milestone adds, shown discriminating.
+  #
+  # The plants vary FORM as well as site, so one exemplar cannot stand in for
+  # the family: a range's two ends can disagree in their ENCAPSULATOR or in
+  # their KEY (makeindex pairs on the key and reconciles on the encapsulator,
+  # and the two faults are different faults); a range can lose its pairing and
+  # print as two locators; a registration can name a page the printed range
+  # does not cover; the HTML locator can point at the closing mark instead of
+  # the opening one, or the closing mark can contribute one of its own; and a
+  # pairing report can name the wrong mark, which is the fault a count alone
+  # would pass (the M08 lesson).
+  #
+  # Reused rather than re-declared: `probe_defect`, `probe_plant` and `probe_plantpl`
+  # are the run's own no-op-refusing mutation helpers, and a second copy of
+  # them here would be the duplicated-reader shape M16 recorded.
+  # -------------------------------------------------------------------------
+  M21W="$WORK/m21-planted"
+  rm -rf "$M21W"; mkdir -p "$M21W"
+  cp "$WORK/range.ind" "$M21W/clean.ind"
+  cp "$WORK/range.ilg" "$M21W/clean.ilg"
+  cp "$WORK/range.aux" "$M21W/clean.aux"
+  m21_ind() {
+    python3 tests/m21probes.py ind "$1" "$2" "$3" \
+      "$LOCATOR_CMD" "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"
+  }
+  m21_tex() {
+    python3 tests/m21probes.py tex "$1" "$LOCATOR_CMD" \
+      "$RANGEFROM_CMD" "$RANGEEND_CMD"
+  }
+  m21_html() {
+    HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
+      HTML_SECTION_ID="$HTML_SECTION_ID" python3 tests/m21probes.py html "$1"
+  }
+  # The unmutated artifacts must pass, or every failure below would prove only
+  # that the readers always fail.
+  m21_ind "$M21W/clean.ind" "$M21W/clean.ilg" "$M21W/clean.aux" >/dev/null \
+    || fail "M21 self-test: the reader fails on the unplanted artifacts, so no failure below is evidence of anything"
+
+  # (i) a range that lost its pairing and printed as two locators — the whole
+  #     feature failing, in the shape it fails in when a verdict is dropped.
+  m21_plantpl_two='s/\\hyperpage\{1--3\}/\\hyperpage{1}, \\hyperpage{3}/'
+  probe_plantpl "$M21W/clean.ind" "$M21W/two.ind" "$m21_plantpl_two"
+  probe_defect "a range printed as two separate locators" \
+    m21_ind "$M21W/two.ind" "$M21W/clean.ilg" "$M21W/clean.aux"
+  # (ii) a range narrowed to the wrong extent: the printed span no longer
+  #      covers the pages the fixture separates its marks by, which is the one
+  #      thing this reader takes from the source rather than from the output.
+  probe_plant "$M21W/clean.ind" "$M21W/short.ind" -e 's/{1--3}/{1--2}/'
+  probe_defect "a range covering fewer pages than the fixture separates its marks by" \
+    m21_ind "$M21W/short.ind" "$M21W/clean.ilg" "$M21W/clean.aux"
+  # (iii) a registration composing a string the printed range is not — the
+  #       lookup then finds nothing and the range prints unemphasized, which
+  #       is exactly the degradation D-008 exists to close.
+  probe_plant "$M21W/clean.aux" "$M21W/offpage.aux" \
+    -e "s/${RANGETO_CMD}{qi1}{6}/${RANGETO_CMD}{qi1}{9}/"
+  probe_defect "a range registered under a string it does not print" \
+    m21_ind "$M21W/clean.ind" "$M21W/clean.ilg" "$M21W/offpage.aux"
+  # (iv) a registration under a different ordinal from the one its own locator
+  #      carries: the two artifacts stop being about the same entry.
+  probe_plant "$M21W/clean.aux" "$M21W/otherid.aux" \
+    -e "s/${RANGEAT_CMD}{qi1}/${RANGEAT_CMD}{qi7}/"
+  probe_defect "a range opening registered under an ordinal no locator carries" \
+    m21_ind "$M21W/clean.ind" "$M21W/clean.ilg" "$M21W/otherid.aux"
+  # (v) a makeindex transcript carrying a range warning — the line Quarto fails
+  #     a render on, and the one the emission discipline exists to avoid.
+  probe_plant "$M21W/clean.ilg" "$M21W/warned.ilg" \
+    -e 's/0 warnings/1 warning/' \
+    -e 's/^Output written/## Warning: -- Unmatched range opening operator (.\nOutput written/'
+  probe_defect "a makeindex transcript reporting an unmatched range" \
+    m21_ind "$M21W/clean.ind" "$M21W/warned.ilg" "$M21W/clean.aux"
+
+  # --- the emitted LaTeX, where the two ends are written.
+  m21_tex "$WORK/range.tex" >/dev/null \
+    || fail "M21 self-test: the tex reader fails on the unplanted render"
+  # (vi) the two ends disagreeing on their ENCAPSULATOR — makeindex logs an
+  #      inconsistent-encapsulator warning and Quarto fails the render.
+  probe_plant "$WORK/range.tex" "$M21W/encap.tex" \
+    -e "s/|)${LOCATOR_CMD}{qi1}/|)${LOCATOR_CMD}{qi5}/"
+  probe_defect "a closing encapsulation that does not match its opening" \
+    m21_tex "$M21W/encap.tex"
+  # (vii) the two ends emitted under different KEYS — a different fault from
+  #       (vi): makeindex pairs on the key, so this one leaves an unmatched
+  #       opening and an unmatched closing rather than a mismatched pair.
+  probe_plant "$WORK/range.tex" "$M21W/keys.tex" \
+    -e 's/\\index{alicorn|)}/\\index{alicorne|)}/'
+  probe_defect "a range whose two ends are emitted under different keys" \
+    m21_tex "$M21W/keys.tex"
+  # (viii) a range end emitted with no delimiter at all — the pre-milestone
+  #        emission, which prints two locators rather than one.
+  probe_plant "$WORK/range.tex" "$M21W/nodelim.tex" \
+    -e 's/\\index{alicorn|(}/\\index{alicorn}/'
+  probe_defect "a range opening emitted as an ordinary locator" \
+    m21_tex "$M21W/nodelim.tex"
+  # (ix) a principal range whose closing never registers its page: the range
+  #      string is then never composed and the entry prints unemphasized.
+  probe_plant "$WORK/range.tex" "$M21W/noreg.tex" \
+    -e "s/\\\\${RANGEEND_CMD}{qi1}//"
+  probe_defect "a principal range whose closing registers nothing" \
+    m21_tex "$M21W/noreg.tex"
+
+  # --- the HTML index.
+  m21_html examples/range.html >/dev/null \
+    || fail "M21 self-test: the html reader fails on the unplanted render"
+  # (x) the locator pointing at the CLOSING mark rather than the opening one —
+  #     a link that works, to the wrong end of the discussion.
+  probe_plantpl examples/range.html "$M21W/closeanchor.html" \
+    's/href="#qi-mark-1"/href="#qi-mark-2"/'
+  probe_defect "a range locator pointing at its closing mark" \
+    m21_html "$M21W/closeanchor.html"
+  # (xi) the closing mark contributing a locator of its own, which is the
+  #      pre-milestone behavior: two locators where a reader wants one.
+  probe_plantpl examples/range.html "$M21W/twolinks.html" \
+    's{(<span class="qi-locators"><a href="#qi-mark-1"[^>]*>1</a>)}{$1, <a href="#qi-mark-2">2</a>}'
+  probe_defect "a closing mark contributing a locator of its own" \
+    m21_html "$M21W/twolinks.html"
+  # (xii) the emphasis on a range whose opening is not principal.
+  probe_plantpl examples/range.html "$M21W/wrongmark.html" \
+    's{<a href="#qi-mark-1">1</a>}{<a href="#qi-mark-1" class="qi-principal"><strong>1</strong></a>}'
+  probe_defect "a plain range printed as the principal one" \
+    m21_html "$M21W/wrongmark.html"
+
+  # --- the reports, which a count alone cannot fence.
+  m21_report() {
+    check_warning_count "$1" "$2" "$3" "M21 self-test"
+  }
+  # (xiii) a pairing report naming the wrong mark: the counts are all still
+  #        right, and only the identity clause can catch it.
+  probe_plant "$WORK/range-misuse-gfm.log" "$M21W/wrongmark.log" \
+    -e 's/term "fenrir" is never closed/term "lamia" is never closed/'
+  probe_defect "a pairing report naming the wrong mark" \
+    m21_report "$M21W/wrongmark.log" 'range="open" on term "fenrir" is never closed' 1
+  # (xiv) and the same log read by the control clause, which must catch the
+  #       well-formed range being named at all.
+  probe_defect "a report naming the well-formed range control" \
+    m21_report "$M21W/wrongmark.log" 'lamia' 0
+  pass "M21 self-test: every reader the milestone adds fails on a planted defect of each kind it names — a lost pairing, a wrong extent, a registration that composes the wrong string or names the wrong ordinal, a transcript warning, ends disagreeing on their encapsulator and ends disagreeing on their key, a locator at the wrong end, a second locator, a wrongly emphasized range, and a report naming the wrong mark"
 
   # -------------------------------------------------------------------------
   # M16-AC3 — every source-reading check keeps finding its definition once the

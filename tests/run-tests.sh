@@ -155,6 +155,8 @@ SUPPORTED_FORMS=(
   $'sort key span\t[The Hague]{.index sort="Hague"}'
   $'sub-level sort key\t[]{.index entry="mathematicians!von Neumann" sort="!Neumann"}'
   $'principal mention\t[term]{.index mention="principal"}'
+  $'range opening\t[term]{.index range="open"}'
+  $'range closing\t[term]{.index range="close"}'
 )
 
 # ---------------------------------------------------------------------------
@@ -274,7 +276,32 @@ README_PRINCIPAL_CLAIMS=(
   # The one silent degradation (RR01 recommendation 4). Pinned like every other
   # documented behavior, and exercised by the T9 fixture's `oni` entry rather
   # than merely asserted here.
-  $'range degradation\ta principal mention whose page is anywhere in such a range, its first page included, prints plain, silently'
+  $'range degradation\ta principal mention whose page is anywhere in such a folded range, its first page included, prints plain, silently'
+)
+
+# README claims about the page range (NORMATIVE, M21). Same discipline: the
+# bytes the extension documents are compared, so a behavior that changes
+# without its documentation fails here.
+README_RANGE_CLAIMS=(
+  $'one locator\tthe index prints one locator spanning the two rather than a locator at each end'
+  $'pdf shape\tIn a PDF that prints as `otters, 12--15`'
+  $'html shape\tthe entry carries a single numbered link, pointing at the opening mark, and the closing mark contributes no link of its own'
+  $'pairing\tthe closing mark is the next `range="close"` on the same entry as an opening'
+  $'principal range\tPut `mention="principal"` on the opening mark and the whole range prints emphasized'
+  $'role once\tThe closing mark takes its emphasis from the opening one; you do not write the role twice'
+  $'across chapters\tAn opening in one chapter and a closing in a later one are paired when the book\'s index is built'
+  $'book silence\tNeither chapter\'s own render complains about holding half of a pair'
+  $'folded-in mark\t`makeindex` folds that locator into the range and prints nothing extra'
+  $'folded-in silence\tsilently, and without a line in its own transcript'
+  $'why not warned\tit does not know page numbers, so it cannot tell which marks fall inside a range and which do not'
+  $'refusal outcome\tthe mark still indexes its term as an ordinary page number rather than as part of a range'
+  $'never closed\tan opening that is never closed'
+  $'no opening\ta closing with no opening before it'
+  $'second opening\ta second opening for a term whose range is still open'
+  $'cross-reference\ta range mark that also carries `see=` or `see-also=`'
+  $'unknown value\ta `range=` value that is neither `open` nor `close`'
+  $'empty value\tsince `range=""` is a value you wrote rather than an attribute you left off'
+  $'overlapping\tTwo overlapping ranges of one term cannot be told apart, since pairing is by entry'
 )
 
 # README claims about letter groups (NORMATIVE, M07-AC6). Same discipline as
@@ -7883,6 +7910,30 @@ print(f'ok   M20: all {len(rows)} documented claims about the principal '
       f'mention appear verbatim in README.md')
 M20DOCPY
 pass "M20: every behavior the README documents for the principal mention is present verbatim, and its authoring form is in the suite's normative supported-forms list"
+
+printf '%s\n' "${README_RANGE_CLAIMS[@]}" > "$WORK/readme-range.txt"
+python3 - "$WORK/readme-range.txt" README.md <<'M21DOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M21: README.md does not document the page range as this suite '
+          'exercises it:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M21: all {len(rows)} documented claims about the page range appear '
+      f'verbatim in README.md')
+M21DOCPY
+pass "M21: every behavior the README documents for a page range is present verbatim, and both of its authoring forms are in the suite's normative supported-forms list"
 
 # ---------------------------------------------------------------------------
 # M21 — a discussion spanning pages prints as one page range.

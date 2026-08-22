@@ -8,6 +8,9 @@
 --   [term]{.index see="..."}        cross-reference: "see <target>"
 --   [term]{.index see-also="..."}   cross-reference: "see also <target>"
 --   [term]{.index sort="..."}       file the entry under different text
+--   [term]{.index mention="..."}    the role this mention of the term plays
+--   [term]{.index range="open"}     where a discussion of the term begins
+--   [term]{.index range="close"}    and where it ends: one locator, not two
 --
 -- In `entry=`, a single `!` separates sub-entry levels and `!!` is a literal
 -- `!`, scanned left-to-right longest-match. Each level is literal text: the
@@ -26,6 +29,13 @@
 -- mark value (IP1) — the back-end alone writes whatever syntax its index
 -- tool needs. `sort=` is not accepted on a cross-reference target: a target
 -- is prose naming another entry, and that entry carries its own sort key.
+--
+-- A range's two marks are paired by the entry they index, so nothing extra is
+-- written; the pairing takes the whole document (and, in a book, the whole
+-- book) to settle, which is why it has a pass of its own. A range this filter
+-- cannot pair is never emitted as one: the index tool logs a warning for an
+-- unmatched range and Quarto fails the render on it, so the mark degrades to
+-- an ordinary locator and the author is told.
 
 -- The filter itself. Everything below the requires is the Pandoc pass and the
 -- list of passes handed back to Pandoc; every other definition lives in a

@@ -30,7 +30,7 @@ side it uses `imakeidx`, which ships with mainstream TeX distributions.
 
 ## Syntax
 
-There are exactly seven supported forms.
+There are exactly nine supported forms.
 
 | Form | Writes | Index entry |
 |---|---|---|
@@ -41,13 +41,16 @@ There are exactly seven supported forms.
 | `[term]{.index see="Other"}` | `term` | `term`, *see* `Other` |
 | `[term]{.index see-also="Other"}` | `term` | `term`, *see also* `Other` |
 | `[term]{.index mention="principal"}` | `term` | `term`, its locator emphasized |
+| `[term]{.index range="open"}` | `term` | `term`, one locator spanning to its closing mark |
+| `[term]{.index range="close"}` | `term` | nothing of its own; it closes the range |
 
 The visible text is always left exactly as written. The first form indexes a
 term under its own text; the second indexes it under something else; the
 third nests it under a parent heading; the fourth adds an entry with no
 visible mark on the page. The next two point the reader at a different entry
-instead of at a page. The last says which of a term's mentions is its
-principal one.
+instead of at a page. The seventh says which of a term's mentions is its
+principal one. The last two mark where a discussion begins and where it ends,
+so the index prints one locator spanning them rather than a locator at each.
 
 ### Sub-entry levels
 
@@ -373,11 +376,14 @@ In HTML the extension ships no stylesheet, so the link carries a `<strong>` as
 well as the class; style `.qi-principal` to change it.
 
 **One case prints unemphasized.** makeindex folds three or more consecutive
-pages under one entry into a range, and the emphasis is applied by looking a
-page up by the number the index prints — which a range like `3--5` is not. So a
-principal mention whose page is anywhere in such a range, its first page
-included, prints plain, silently. Nothing else about the entry changes and no
-other locator is affected. Page ranges are not otherwise supported yet.
+pages under one entry into a range of its own, and the emphasis is applied by
+looking a page up by the number the index prints — which a range like `3--5` is
+not. So a principal mention whose page is anywhere in such a folded range, its
+first page included, prints plain, silently. Nothing else about the entry
+changes and no other locator is affected. This is only about a range the tool
+folded for itself: a range you wrote with `range=` is one the extension knows
+about, and it prints emphasized whole (see [A discussion that spans
+pages](#a-discussion-that-spans-pages)).
 
 **A role needs a locator to apply to.** A cross-reference takes the place of a
 locator, so `mention="principal"` on a mark that also carries `see=` or
@@ -396,6 +402,65 @@ which happened in each render.
 **Only `principal` is recognized.** Any other value is reported and the mark
 indexes as though the attribute were absent — including an empty one, since
 `mention=""` is a value you wrote rather than an attribute you left off.
+
+### A discussion that spans pages
+
+A term is often discussed across several pages rather than mentioned at one.
+`range="open"` and `range="close"` say where such a discussion begins and where
+it ends, and the index prints one locator spanning the two rather than a
+locator at each end.
+
+```markdown
+The discussion of [otters]{.index range="open"} begins here.
+
+...several pages of it...
+
+And the discussion of [otters]{.index range="close"} ends here.
+```
+
+In a PDF that prints as `otters, 12--15`; in HTML the entry carries a single
+numbered link, pointing at the opening mark, and the closing mark contributes
+no link of its own. Both marks keep their visible text exactly as written.
+
+**The two marks are paired by the entry they index.** Nothing else has to be
+written: the closing mark is the next `range="close"` on the same entry as an
+opening. Write the same `entry=` (or the same visible term) on both.
+
+**A range can be the principal discussion.** Put `mention="principal"` on the
+opening mark and the whole range prints emphasized — `otters, **12--15**` — and
+in HTML the single link carries `qi-principal` and a `<strong>`, exactly as a
+lone principal mention does. The closing mark takes its emphasis from the
+opening one; you do not write the role twice.
+
+**In a book, a range may span chapters.** An opening in one chapter and a
+closing in a later one are paired when the book's index is built, and the one
+locator points at the opening chapter's page. Neither chapter's own render
+complains about holding half of a pair.
+
+**An ordinary mark inside a range disappears into it.** If you also write a
+plain `[otters]{.index}` on a page inside the range, `makeindex` folds that
+locator into the range and prints nothing extra — silently, and without a line
+in its own transcript. The extension cannot warn about this: it does not know
+page numbers, so it cannot tell which marks fall inside a range and which do
+not, and a warning would fire on every mark of the term. Mark the term outside
+its own range, or accept that the range covers it.
+
+**Five things the extension refuses.** Each is reported, and in each the mark
+still indexes its term as an ordinary page number rather than as part of a
+range, because `makeindex` writes a transcript warning for a range it cannot
+pair and Quarto fails the whole render on that warning:
+
+- an opening that is never closed;
+- a closing with no opening before it;
+- a second opening for a term whose range is still open — the first opening is
+  the one the next closing pairs with;
+- a range mark that also carries `see=` or `see-also=`, since a cross-reference
+  takes the place of a locator and a range is a locator;
+- a `range=` value that is neither `open` nor `close` — including an empty one,
+  since `range=""` is a value you wrote rather than an attribute you left off.
+
+Two overlapping ranges of one term cannot be told apart, since pairing is by
+entry; that is the third case above, and it is reported rather than guessed at.
 
 ### Placing the index
 
@@ -462,6 +527,13 @@ attributes on one mark, or that composes such an entry, also gets one small
 `\providecommand` in its preamble, which prints cross-references through
 LaTeX's own `\seename` and `\alsoname`, so a document loading `babel` keeps
 its translations. A document with neither gets nothing extra.
+
+A page range is written into that same channel, as `makeindex`'s own range
+operators — `\index{otters|(}` at the opening mark and `\index{otters|)}` at
+the closing one. Where the opening mark is also the principal mention, both
+ends carry the same encapsulation command, which is what `makeindex` requires
+of a range's two ends, and the pages the two marks land on are recorded through
+the `.aux` so the span the index prints can be emphasized whole.
 
 Placement is automatic unless you write a marker; see [Placing the
 index](#placing-the-index).
@@ -562,6 +634,10 @@ differs, because the tools underneath them do:
 7. **The principal mention is emphasized in both**, but by different means: the
    LaTeX back-end wraps the page number in a command you can redefine, and the
    HTML back-end marks the link with a class and a `<strong>`.
+8. **A page range is a page range only in LaTeX.** `makeindex` prints one span
+   of pages, `12--15`; HTML has no pages, so a range there is one numbered link
+   at the opening mark. Both are one locator where you wrote two marks, which
+   is what the syntax means.
 
 ### Letter groups in the HTML index
 

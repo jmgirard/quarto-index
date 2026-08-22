@@ -12,7 +12,7 @@ _Last hygiene check: 2026-08-22 (M20 merged and archived — a term's principal 
 | M18 | A cross-reference target is judged against the path the entry prints | done | — | normal | milestones/archive/M18-fold-aware-xref-targets.md |
 | M19 | A reported level count says which levels it counts | done | — | normal | milestones/archive/M19-level-count-naming.md |
 | M20 | A term's principal discussion prints as its principal locator | done | — | normal | milestones/archive/M20-principal-locators.md |
-| M21 | A discussion spanning pages prints as one page range | in-progress | M20 | normal | milestones/M21-page-ranges.md |
+| M21 | A discussion spanning pages prints as one page range | review | M20 | normal | milestones/M21-page-ranges.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

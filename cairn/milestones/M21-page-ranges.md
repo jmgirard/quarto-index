@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -123,7 +123,7 @@ alone, and the range is reported as unpaired there rather than silently spanning
       in the run's `--self-test` section beside M20's rather than in
       `tests/plantdefect.py`, which plants in SOURCE for the moved-definition scans; these
       readers read rendered output.
-- [ ] T8: README section for `range=`: what an author writes, what each back-end prints,
+- [x] T8: README section for `range=`: what an author writes, what each back-end prints,
       what each of the five reports means, and that an ordinary mark falling inside a
       term's own range is folded into that range. Add its authoring forms to the suite's
       normative supported-forms list and its sentences to a README claims array.
@@ -151,6 +151,9 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: T6 — `tests/m21probes.py` (five readers: `.ind`+`.ilg`+`.aux`, the emitted `.tex`, the HTML index, the gfm spans, the book PDF), reusing `m20probes`' brace and locator-group readers rather than writing a second reader of one artifact (the M16 lesson). Extent is asserted in PAGES SEPARATED, never in folios — the one fact the fixture's source states and no artifact can move. Also a preamble check that the four range commands reach only a document registering a range, and a compiled-PDF check reading emphasis through the fixture's own `[P:…]` redefinition, which is the AC2 link no `.ind` can carry. Suite green, 243 checks.
 
 - 2026-08-22: T7 — fourteen planted defects, each shown to fail its own reader: a lost pairing, a wrong extent, a registration composing the wrong string, one naming an ordinal no locator carries, a transcript warning, ends disagreeing on their encapsulator and (a different fault) on their key, an end emitted with no delimiter, a closing that registers nothing, a locator at the wrong end, a second locator, a wrongly emphasized range, a report naming the wrong mark, and a report naming the control. The three mutation helpers were renamed `probe_*` — they are the run's, not one milestone's, and M21 reuses all three rather than copying them. Self-test green, 349 checks.
+
+- 2026-08-22: T8 — README gains "A discussion that spans pages" (what an author writes, what each back-end prints, pairing by entry, the principal range, the cross-chapter case, the folded-in ordinary mark and why it cannot be warned about, and the five refusals); the syntax table goes from seven forms to nine; the principal section's degradation paragraph is narrowed in place to a range makeindex FOLDED, since a range the author wrote now prints emphasized whole; a ninth back-end-difference row; `index.lua`'s syntax header gains the attribute. Eighteen claims pinned in a new `README_RANGE_CLAIMS` array, both authoring forms added to the normative supported-forms list.
+- 2026-08-22: all tasks done. `tests/run-tests.sh` passes at 245 checks and `--self-test` at 351 (merge base: 228 and 335). Status set to review.
 
 ## Decisions
 

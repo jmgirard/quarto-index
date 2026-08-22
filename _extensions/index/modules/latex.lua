@@ -86,10 +86,18 @@ end
 -- ---------------------------------------------------------------------------
 -- Contested keys.
 --
--- makeindex rejects two marks that share a key and a printed page but carry
--- different encapsulations, and Quarto turns that rejection into a failed
--- render — a marked term breaking the document, which IP2 forbids. Page
--- numbers do not exist here, so the pair cannot be kept apart; what CAN be
+-- makeindex refuses to reconcile two marks that share a key and a printed page
+-- but carry different encapsulations. It does not reject them: it logs
+-- `Conflicting entries` to the `.ilg`, exits 0, and writes a correct `.ind`.
+-- QUARTO is what fails the render, on a regex over that transcript
+-- (`findIndexError`, matching any warning continuation line, whatever the exit
+-- code) — so the warning is not benign here however benign makeindex finds it,
+-- and a marked term still breaks the document, which IP2 forbids. This
+-- mechanism is stated exactly rather than as "makeindex rejects it" because
+-- the next design decision in this file would otherwise inherit the wrong one:
+-- M20 planned against a makeindex-in-isolation probe, read its exit 0 as
+-- safety, and shipped a render-breaking emission (D-007, RR01).
+-- Page numbers do not exist here, so the pair cannot be kept apart; what CAN be
 -- done is to stop emitting rival encapsulations at all for such a key, by
 -- folding its cross-references into the entry's printed text, where the index
 -- tool reads them as part of the term rather than as a rival encapsulation.
@@ -106,6 +114,45 @@ end
 -- written on it, in a fixed order. Module-level, like the other accumulators.
 local contested_keys = {}
 M["xref_list_emitted"] = false
+-- Likewise for the typeset-time channel's commands.
+M["principal_emitted"] = false
+
+-- Keys some mark of which carries a principal mention, each mapped to the
+-- ordinal EVERY locator mark of that key encapsulates with. Keyed on the same
+-- emitted argument `contested_keys` is, so the pass that assigns an ordinal
+-- and the pass that emits it cannot drift on what a mark's key is; a contested
+-- key's marks emit a folded argument, but they look their ordinal up under the
+-- unfolded one, exactly as they look their contestation up under it.
+--
+-- The ordinal is what makes per-locator styling possible at all: makeindex
+-- rejects two locators of one key on one page whose encapsulations differ by
+-- any byte, so the ONE conflict-free discipline is an encapsulation identical
+-- across a key's locators — which then carries no per-locator information, and
+-- the role has to travel on the second channel qi_core describes (D-007).
+-- Assigned in document order by the pass that already collects keys, so the
+-- ordinal is a property of the document rather than of a traversal order.
+-- Module-level, like the other accumulators.
+local principal_keys = {}
+local principal_ordinals = 0
+
+-- Called once per principal mark; idempotent per key, so a term discussed
+-- principally in two places (which the author is told about nowhere, since it
+-- is not an error — the later registration simply adds a second emphasized
+-- page) still has one ordinal.
+local function record_principal(source)
+  if principal_keys[source] == nil then
+    principal_ordinals = principal_ordinals + 1
+    principal_keys[source] = qi_core.LOCATOR_ID_PREFIX .. principal_ordinals
+  end
+  return principal_keys[source]
+end
+
+-- The ordinal a key's locator marks encapsulate with, or nil for a key no mark
+-- of which is principal — which emits exactly what it emitted before this
+-- milestone, so a document with no principal mention is byte-identical.
+local function principal_ordinal(source)
+  return principal_keys[source]
+end
 -- Likewise: the both-targets command is defined only in a document that uses
 -- it, so a document without one gets nothing extra in its preamble.
 M["xref_both_emitted"] = false
@@ -179,7 +226,19 @@ end
 
 -- The encapsulation one mark would put on its key: the empty string for a
 -- plain locator mark, `\see`/`\seealso` for a single target, and the
--- both-targets command for a mark carrying two. Shared by the pass that
+-- both-targets command for a mark carrying two.
+--
+-- A mention's ROLE is deliberately absent from this, and so is the locator
+-- encapsulation that now travels for it. Not because a styled locator is no
+-- rival — it is exactly a rival, and a plain one beside it on one page is the
+-- render-breaking pair above; an earlier version of this comment said
+-- otherwise and was wrong (D-007). It is absent because there is nothing left
+-- for contestation to arbitrate: a key carrying a principal mention gives
+-- EVERY one of its locators the same encapsulation, so its marks cannot differ
+-- from each other whatever contestation decides, and a key carrying none emits
+-- what it always did. Routing the role through here would instead make an
+-- ordinary document a contested key, and with no cross-references to fold the
+-- repair would end its entry on a dangling comma. Shared by the pass that
 -- decides which keys are contested and by the pass that emits, because
 -- contestation is a fact about these exact strings — makeindex rejects two
 -- marks on one key and page whose encapsulations DIFFER, and folds together
@@ -275,6 +334,9 @@ M["latex_plan"] = latex_plan
 M["mark_encap"] = mark_encap
 M["record_contest"] = record_contest
 M["is_contested"] = is_contested
+M["record_principal"] = record_principal
+M["principal_ordinal"] = principal_ordinal
+M["principal_keys"] = principal_keys
 M["fold_xrefs"] = fold_xrefs
 
 return M

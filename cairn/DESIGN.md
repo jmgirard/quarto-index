@@ -255,9 +255,13 @@ Two back-ends ship:
   names prints cannot diverge, and a target the fold rewrites is reported once,
   on the mark that wrote it (added M18). A key more than one mark describes
   differently is
-  composed into ONE command every mark of it emits, since makeindex rejects
-  rival encapsulations on one key and page and Quarto turns that into a failed
-  render (M15; D-003 records why repairing this sits inside GP2). Where the key
+  composed into ONE command every mark of it emits — and where any mark of a
+  key declares a mention role, that one command carries the per-key
+  encapsulation the typeset-time channel below rides on — since makeindex
+  refuses to reconcile rival encapsulations on one key and page — it warns at exit 0 and
+  writes a correct `.ind`, and Quarto alone fails the render, on a regex over
+  that transcript (M15, mechanism corrected M20; D-003 records why repairing
+  this sits inside GP2). Where the key
   has a plain locator mark the cross-references go into the entry's printed
   text and the cross-reference marks emit nothing, so a cross-reference still
   carries no locator; where it has none they stay in the encapsulation channel,
@@ -296,14 +300,39 @@ Every other format — beamer, revealjs, epub, gfm — takes neither branch: no
 index, no anchors, no back-end tokens, and the visible text exactly as
 written. What such a format does carry is the mark's own attributes, which
 Pandoc passes through on the span as `data-entry`, `data-see`,
-`data-see-also` and `data-sort`; whether that residue should exist is open
-(ROADMAP). Corrected M06 — this paragraph previously said "untouched".
+`data-see-also`, `data-sort` and `data-mention`; whether that residue should
+exist is open (ROADMAP). The mention attribute is spelled `mention` rather than
+`role` for this reason and no other: Pandoc data-prefixes a name it does not
+know but emits `role` literally, so `role=` would ship an invalid ARIA role on
+every marked term (added M20). Corrected M06 — this paragraph previously said "untouched".
+
+
+**Per-locator styling leaves the encapsulation channel** (added M20, D-007).
+An `\index` command cannot say that one of a term's locators is its principal
+one: makeindex's conflict predicate is same key, same page, any byte difference
+in the encapsulation string, and a filter that runs before typesetting cannot
+know which marks will share a page. So the LaTeX back-end gives every locator
+mark of a key carrying a principal mention the SAME encapsulation — one per-key
+ordinal — which makes the conflict unreachable by construction rather than
+merely unexercised, and carries the role on a second channel instead. The
+principal mark writes its ordinal and `\thepage` into the `.aux` through
+`\protected@write\@auxout`, the mechanism `\@wrindex` uses for the `.idx`, so
+the page the registration names and the page the locator names are decided by
+one shipout. At `\printindex` the injected preamble splits the entry's page
+list and wraps the registered pages, re-applying whatever page-link command it
+was handed rather than naming a hyperref internal. Four `\providecommand`
+commands are injected, and only into a document that uses them; the emphasis
+itself is one of the four, so an author redefines it exactly as before. One
+degradation is accepted and documented: makeindex folds three or more
+consecutive pages into a range, and a registry lookup on that string misses, so
+a principal page anywhere inside a range prints plain. Ranges are M21's.
 
 **Book projects** split the HTML back-end in two, and leave the LaTeX one
 alone. A PDF book is rendered as one merged document, so its marks are already
 in one process; an HTML book renders each chapter separately, so no chapter can
 see another's. Each chapter therefore writes what it found — levels,
-cross-reference targets, anchor ids, its own output page — to a sidecar store
+cross-reference targets, the mention role where a mark declares one, anchor
+ids, its own output page — to a sidecar store
 under the project's `.quarto/` scratch directory, keyed by chapter source path,
 and the chapter carrying the placement marker reads the whole store back in
 book order and builds the one index the book gets. Every chapter still assigns

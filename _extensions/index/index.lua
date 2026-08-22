@@ -236,6 +236,15 @@ local function Pandoc(doc)
     -- this landing after imakeidx.
     quarto.doc.include_text("in-header", qi_core.XREF_BOTH_DEFINITION)
   end
+  if qi_latex.principal_emitted then
+    -- Same discipline again: defined only in a document some mark of which
+    -- declares the principal role, and with `\providecommand` so a document
+    -- wanting different emphasis defines its own and keeps it. The emphasis
+    -- command goes in first and on its own, because it is the one an author
+    -- redefines; the subsystem that applies it follows as one block.
+    quarto.doc.include_text("in-header", qi_core.PRINCIPAL_DEFINITION)
+    quarto.doc.include_text("in-header", qi_core.PRINCIPAL_SUBSYSTEM)
+  end
   if qi_latex.xref_list_emitted then
     -- Same discipline: defined only in a document that has a contested key no
     -- plain mark contributes to, and with `\providecommand` so a document

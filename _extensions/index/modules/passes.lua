@@ -98,7 +98,58 @@ local function CollectKeys(span)
     qi_latex.latex_plan(levels, qi_sortkeys.sort_for(levels), surviving, context,
                         false, nil, entry_written)
   qi_latex.record_contest(source, printed_path, kept)
+  -- Which keys carry a principal mention is a fact about the whole document
+  -- too, and for the same reason: EVERY locator mark of such a key has to
+  -- encapsulate with the key's ordinal, and one mark cannot know that another
+  -- mark of its key is the principal one. Derived from the same blocker set
+  -- the emitting pass derives it from — this back-end's surviving targets,
+  -- AFTER the fold — so the two passes cannot disagree about which marks have
+  -- a locator to emphasize; silently, because the emitting pass reports.
+  local blockers = {}
+  for _, xref in ipairs(kept) do
+    blockers[#blockers + 1] = xref.kind.attr
+  end
+  local role = qi_marks.mention_role(span.attributes[qi_core.MENTION_ATTR],
+                                     context,
+                                     #blockers > 0 and { attrs = blockers } or nil,
+                                     false)
+  if role == "principal" then
+    qi_latex.record_principal(source)
+  end
   return nil
+end
+
+-- The encapsulation a mark's own `\index` command carries when SOME mark of
+-- its key is principal, or the empty string otherwise. It does not depend on
+-- whether THIS mark is the principal one: two locators of a key whose
+-- encapsulations differ by any byte are what makeindex rejects on a shared
+-- page, so the key's every locator carries one ordinal and the conflict is
+-- unreachable by construction (D-007). Only a mark that CONTRIBUTES a locator
+-- reaches this: a mark carrying a cross-reference had its role dropped and
+-- reported before the back-end branch, and a cross-reference mark of a
+-- contested key emits no command at all.
+local function locator_encap(source)
+  local id = qi_latex.principal_ordinal(source)
+  if id == nil then
+    return ""
+  end
+  qi_latex.principal_emitted = true
+  return "|" .. qi_core.LOCATOR_COMMAND .. "{" .. id .. "}"
+end
+
+-- The principal mark's own registration, which is where the role actually
+-- travels: emitted beside the `\index` command so both whatsits ship on one
+-- page and the page they name cannot disagree. Nil for every other mark.
+local function register_inline(role, source)
+  if role ~= "principal" then
+    return nil
+  end
+  local id = qi_latex.principal_ordinal(source)
+  if id == nil then
+    return nil
+  end
+  return pandoc.RawInline("latex",
+    "\\" .. qi_core.REGISTER_COMMAND .. "{" .. id .. "}")
 end
 
 local function Span(span)
@@ -146,6 +197,13 @@ local function Span(span)
          .. "mistake, and neither is dropped for being one of two")
   end
 
+  -- The role attribute, read once here and resolved further down. It is not
+  -- resolved yet because whether the mark has a locator to emphasize is not
+  -- settled until the entry is derived and the self-referential targets are
+  -- dropped, and a role reported against a cross-reference that is itself
+  -- about to be dropped contradicts the drop's own report (review F2).
+  local mention = span.attributes[qi_core.MENTION_ATTR]
+
   -- Derived once, and before the back-end branch: the levels are the author's
   -- text whatever format this is, and the empty-level warnings the derivation
   -- emits would otherwise fire twice for one mark.
@@ -153,6 +211,11 @@ local function Span(span)
     qi_marks.derive_levels(entry, visible, declared, #span.content, context,
                            sort_value, true)
   if levels == nil then
+    -- A mark that indexes nothing has no locator to emphasize either, and
+    -- derive_levels has just said why it indexes nothing; the role's own
+    -- report follows it in the same shape the dropped cross-reference uses
+    -- (review F11).
+    qi_marks.mention_role(mention, context, { unindexed = true }, true)
     return disposition == "drop" and {} or nil
   end
 
@@ -212,6 +275,29 @@ local function Span(span)
                           entry_written)
   end
 
+  -- What the mark actually CONTRIBUTES is settled once the drops are done: a
+  -- mark with a surviving cross-reference emits one in the locator's place, and
+  -- any other mark emits a locator. Read from this back-end's own surviving set
+  -- and therefore AFTER latex_plan, not before it: the three-level fold is a
+  -- property of the LaTeX back-end alone (D-005), and it drops a target that
+  -- names the folded path the entry prints. A role judged against the pre-fold
+  -- set is told its cross-reference took the locator's place, one line before
+  -- the fold's own report says that target was dropped and the term indexed as
+  -- usual — two reports contradicting each other about one mark, with the role
+  -- unapplied although a locator exists. That is the defect class the review
+  -- returned this milestone for once already, in the one shape the earlier
+  -- repair did not reach (review round 2, R2-F5). Where no fold runs — every
+  -- other format, and any entry at or under the ceiling — this set is the
+  -- format-neutral one and the report is unchanged. The blocker names EVERY
+  -- surviving attribute, in the fixed `see` before `see also` order.
+  local blocker_attrs = {}
+  for _, xref in ipairs(xrefs) do
+    blocker_attrs[#blocker_attrs + 1] = xref.kind.attr
+  end
+  local role = qi_marks.mention_role(mention, context,
+                                     #blocker_attrs > 0 and
+                                       { attrs = blocker_attrs } or nil, true)
+
   -- Recorded after every drop: every path this mark indexes, each parent path
   -- included, in the space its own back-end resolves a target in. A target
   -- dropped as a self-reference is not among the pending ones below — neither
@@ -230,7 +316,7 @@ local function Span(span)
 
   if qi_core.is_html() then
     local record = { levels = levels, sort = sort, xrefs = xrefs,
-                     context = context }
+                     context = context, role = role }
     qi_marks.html_marks[#qi_marks.html_marks + 1] = record
     if #xrefs == 0 then
       -- Only a locator-contributing mark needs somewhere to link back to; a
@@ -274,7 +360,12 @@ local function Span(span)
       if #xrefs == 0 then
         local folded = select(1, qi_latex.latex_plan(levels, sort, xrefs, context,
                                             false, qi_latex.fold_xrefs(seen)))
-        result:insert(pandoc.RawInline("latex", "\\index{" .. folded .. "}"))
+        result:insert(pandoc.RawInline("latex",
+          "\\index{" .. folded .. locator_encap(source) .. "}"))
+        local register = register_inline(role, source)
+        if register then
+          result:insert(register)
+        end
       end
       return result
     end
@@ -301,7 +392,12 @@ local function Span(span)
   -- qi_core.XREF_BOTH_COMMAND, which is injected only in a document that uses it.
   local encap = qi_latex.mark_encap(xrefs)
   if encap == "" then
-    result:insert(pandoc.RawInline("latex", "\\index{" .. source .. "}"))
+    result:insert(pandoc.RawInline("latex",
+      "\\index{" .. source .. locator_encap(source) .. "}"))
+    local register = register_inline(role, source)
+    if register then
+      result:insert(register)
+    end
   else
     if #xrefs > 1 then
       qi_latex.xref_both_emitted = true

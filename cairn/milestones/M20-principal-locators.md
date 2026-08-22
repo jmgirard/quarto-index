@@ -1,11 +1,11 @@
 # M20: A term's principal discussion prints as its principal locator
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP5, GP6
-- **Branch/PR:** —
+- **Branch/PR:** m20-principal-locators / https://github.com/jmgirard/quarto-index/pull/20
 
 ## Goal
 
@@ -17,7 +17,7 @@ back-ends print that occurrence's locator emphasized while its other locators st
 Surface tier: **user-facing** — it adds an authoring attribute, changes what both
 back-ends emit, and is documented in README.
 
-**In:** one new format-neutral mark attribute, `role="principal"`, naming the role a
+**In:** one new format-neutral mark attribute, `mention="principal"`, naming the role a
 mention plays rather than a rendering (IP1); the LaTeX encapsulation for it, carried by a
 `\providecommand` command injected only into a document that uses it, so an author can
 redefine the emphasis without the extension shipping a style; the emphasized locator link
@@ -27,12 +27,21 @@ unrecognized role value; fixtures, suite section, planted-defect entries, README
 
 Terminology: indexing practice calls the main discussion of a term its *principal
 reference* and conventionally sets it in bold; `main` is not used, a *main entry* being
-the top-level heading rather than a locator.
+the top-level heading rather than a locator. The attribute is `mention=` and not `role=`:
+Pandoc data-prefixes an unknown attribute name but emits `role` literally, so `role=`
+would put an invalid ARIA role on every marked term in every HTML-family output (IP2).
 
-Evidence stops at the `.ind` makeindex writes rather than at the PDF's text, because
-`pdftotext` cannot see emphasis — a deliberate GP6 trade, recorded rather than left
-implicit, and the `.ind` is the artifact that settles whether the encapsulation reached
-the right locator at all.
+Contestation — the bookkeeping M15 added, which folds a key's cross-references into its
+printed text when its marks would emit rival encapsulations — is narrowed to count
+cross-reference encapsulations alone. A styled locator and a plain one are not rivals:
+makeindex prints both, warning only when they share a page, and a term marked principally
+in one place and plainly elsewhere is the feature's ordinary case, not a clash.
+
+Evidence stops at the `.ind` and the `.aux`, which together settle that a key's locators
+carry one uniform encapsulation and that the role was registered from the page its mark
+sits on. That the registered page then prints emphasized is exercised under T9 and carried
+on a ROADMAP candidate row rather than by a criterion, because `pdftotext` cannot see
+emphasis — a deliberate GP6 trade, recorded rather than left implicit.
 
 **Out:** page ranges, and a range carrying this role on both its ends → M21. Roles beyond
 `principal` (a defining passage, an illustration) → ROADMAP candidate row; the attribute
@@ -43,71 +52,98 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 
 ## Acceptance criteria
 
-- [ ] AC1: The PDF render of `examples/principal.qmd` produces a `.ind` in which the
-      principal term's entry shows exactly one emphasized locator and its remaining
-      locators plain, and a `.ilg` carrying no conflicting-encapsulation warning for that
-      entry's key.
-- [ ] AC2: In the HTML render of `examples/principal.qmd`, the index entry for the
+- [x] AC1: The PDF render of `examples/principal.qmd`, begun with its `.ind`, `.ilg` and
+      `.aux` absent, produces: a `.ilg` whose own summary reports zero makeindex warnings;
+      a `.ind` — read with makeindex's line wrapping collapsed and every group argument
+      delimited by brace counting — in which the `basilisk` entry is exactly three
+      `\hyperxindexformat{\quartoindexlocator{...}}` groups of one page each, naming one
+      identifier between them, no two of those pages consecutive; the `gorgon` entry is
+      exactly one such group of one page, carrying `\see{basilisk}{}` folded into the
+      entry's printed text ahead of it; and the role-free `faun` entry carries no such
+      group at all; and an `.aux` carrying exactly
+      four `\quartoindexprincipalpage` lines whose identifiers are exactly the four the
+      `.ind`'s `\quartoindexlocator` groups name — those of `basilisk`, `gorgon`, `imp` and
+      `kraken`, the four marks writing `mention="principal"` that contribute a locator —
+      each line's page being one its own group lists, and `basilisk`'s being the middle of
+      the three, where the fixture puts its principal mark.
+- [x] AC2: In the HTML render of `examples/principal.qmd`, the index entry for the
       principal term carries exactly one locator link marked as principal, at the position
       of the principal mark, its other locator links unmarked — read structurally by
       `tests/htmlindex.py`.
-- [ ] AC3: A mark writing `role="principal"` that can contribute no locator, because it
-      carries `see=` or `see-also=`, draws exactly one warning naming the mark and saying
-      the role is ignored, and emits index output identical to that of the corresponding
-      mark in `examples/principal-twin.qmd`, which omits the role. The warning fires in the
-      LaTeX render, the HTML render, and a format with no index back-end.
-- [ ] AC4: A `role=` value the extension does not recognize draws exactly one warning
-      naming the mark and the value, and the mark indexes exactly as the corresponding
-      mark in `examples/principal-twin.qmd` does.
-- [ ] AC5: In gfm, a principal-marked term's visible text passes through with no artifacts
-      beyond the span attribute residue Pandoc passes through for the mark's own
-      attributes, `role=` included.
-- [ ] AC6: The command the principal encapsulation names is defined with `\providecommand`
-      in the preamble of the rendered `.tex` for `examples/principal.qmd`, and absent from
-      the preamble of the rendered `.tex` for `examples/content.qmd`.
-- [ ] AC7: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass.
+- [x] AC3: In the LaTeX, HTML and gfm renders of `examples/principal.qmd`, the mark
+      writing `mention="principal"` alongside `see=` or `see-also=` draws exactly one
+      warning naming the mark and the `mention=` value it ignored, and emits the index
+      output it would emit with the `mention=` attribute removed.
+- [x] AC4: In the LaTeX, HTML and gfm renders of `examples/principal.qmd`, the mark
+      writing an unrecognized `mention=` value draws exactly one warning naming the mark
+      and the value, and indexes exactly as it would with the attribute removed. An empty
+      `mention=` is unrecognized, not absent.
+- [x] AC5: In the gfm render of `examples/principal.qmd`, a scan of the rendered
+      file for spans carrying the `index` class enumerates thirteen — one for
+      every index mark the fixture writes except the entry-less one, which
+      indexes nothing and is removed — and those spans are, in document order
+      and byte for byte, the rows of an expected manifest derived by hand from
+      the fixture source, each row being that mark's visible text plus exactly
+      the `data-` attributes for the mark's own attributes,
+      `data-mention="principal"` among them where the mark writes it. No `qi-`
+      token, `\index` command, principal-encapsulation command or literal
+      `role=` attribute appears anywhere in the file.
+- [x] AC6: In the region before `\begin{document}` of the rendered `.tex` for
+      `examples/principal.qmd`, each of `\quartoindexprincipal`, `\quartoindexlocator`,
+      `\quartoindexregister` and `\quartoindexprincipalpage` is defined exactly once, with
+      `\providecommand*`; the only further control sequence whose name begins `quartoindex`
+      defined there is `\quartoindexseeboth`, which the fixture's both-targets mark already
+      required before this milestone; and no `\csname quartoindex` occurs in the region at
+      all, so a definition cannot hide behind a name built at expansion time. In the same
+      region of the rendered `.tex` for `examples/content.qmd`, which carries the extension's
+      `\makeindex[intoc]` setup, none of the four is defined — `\quartoindexseeboth` belongs
+      to the cross-reference channel and is no part of this subsystem. Both files are present
+      and each carries exactly one `\begin{document}`.
+- [x] AC7: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass.
 
 ## Coverage
 
-- AC1 → T1, T3, T5
+- AC1 → T1, T3, T5, T8
 - AC2 → T1, T4, T5
 - AC3 → T1, T2, T5
 - AC4 → T1, T2, T5
 - AC5 → T1, T5
-- AC6 → T3, T5
+- AC6 → T3, T5, T8
 - AC7 → T5, T6, T7
 
 ## Tasks
 
-- [ ] T1: Fixtures `examples/principal.qmd` and `examples/principal-twin.qmd` with their
-      expected manifests. The first carries a term marked in three places, one of them
-      principal; a principal mark carrying `see=`; a mark with an unrecognized `role=`;
-      and a plainly marked control term the new reports must stay silent on (the M11
-      lesson). Terms and pages are distinct per slot (the M02 lesson). The twin is the
-      same document with every `role=` removed.
-- [ ] T2: `core.lua` gains the attribute name and its recognized values; `marks.lua`
-      derives the role once, before the back-end branch, with the two warnings — a role on
-      a mark contributing no locator, and an unrecognized value — so both fire in every
-      format as the other mark warnings do.
-- [ ] T3: `latex.lua` and `passes.lua`: the principal encapsulation, its arbitration
-      against the contested-key bookkeeping (a principal mark and a cross-reference mark
-      of one key emit different encapsulations, which makeindex warns about only on a
-      shared page), and the preamble injection flag read by the Pandoc pass.
-- [ ] T4: `html.lua`: the principal locator link and its class; the role on the HTML mark
-      record; `book.lua` carries it in the per-chapter record as an optional field with a
-      named fallback, leaving the store version alone (the M14 lesson).
-- [ ] T5: The suite's principal section: copy `.ind`, `.ilg` and `.tex` to `$WORK` at the
-      latex render before the pdf render removes them (the M15 lesson); the structural
-      HTML check; the rendered-log pins passed through `warn-distinct`; the no-leak sweep;
-      the preamble present/absent pair.
-- [ ] T6: `tests/plantdefect.py` entries for each check T5 adds, each planting a defect of
-      the kind that check names and varying form as well as site — an encapsulation on the
-      wrong locator, an encapsulation on none, and a warning whose text is right but whose
-      mark is wrong.
-- [ ] T7: README section for `role="principal"`: what an author writes, what each back-end
-      prints, how to redefine the LaTeX command, and that an unusable role is reported.
-      Add its authoring forms to the suite's normative supported-forms list and its
-      sentences to a README claims array.
+- [x] T1: Fixtures `examples/principal.qmd` and its role-free twin (M02 and M11 lessons).
+- [x] T2: `core.lua` gains `mention`; `marks.lua` derives the role once, with two reports.
+- [x] T3: `latex.lua`/`passes.lua`: the encapsulation, its arbitration against contestation.
+- [x] T4: `html.lua`'s principal link and class; `book.lua`'s optional field (M14 lesson).
+- [x] T5: The suite's principal section — `.ind`/`.ilg`/`.tex`, HTML, log pins, gfm manifest.
+- [x] T6: A planted defect per T5 check, varying form and site; readers in `m20probes.py`.
+- [x] T7: README section and byte-pinned claims; DESIGN's pass-through residue enumeration.
+- [x] T8: The typeset-time channel — mechanism, validation and cost in D-007 and the
+      archived RR01, which this task implements rather than restates. Every locator mark of
+      a principal-carrying key emits one uniform `\quartoindexlocator{<ordinal>}`, assigned
+      in document order by the pass that already collects keys; the principal mark also
+      emits `\quartoindexregister`, writing its ordinal and `\thepage` through
+      `\protected@write\@auxout`; the injected preamble applies the emphasis at
+      `\printindex`, sniffing token class rather than naming a hyperref internal. Other
+      keys emit as today. `examples/principal.qmd` gains filler pages so its `basilisk`
+      locators cannot fold into a range. AC1/AC6 readers join `tests/m20probes.py`, the
+      `.ind` read with wrapping collapsed and groups brace-counted (review F7, F10).
+- [x] T9: The regressions IP2's forever clause earns, in `examples/principal-cases.qmd`,
+      whose preamble redefines the emphasis to a marker `pdftotext` can read — both the
+      author-redefinition regression and what makes the emphasis legible at all. Separate
+      from `principal.qmd` so AC5's manifest is left alone. Correct `latex.lua`'s comments
+      and the ROADMAP premise they echo; give README the one silent degradation.
+- [x] T10: Review round 2 repairs. Brace `#3` on the way from `\qi@sniff` to `\qi@split`,
+      guard an empty page list, and derive the role from each back-end's own surviving
+      targets rather than the format-neutral set. Extend the T9 fixture with the shapes
+      those defects need — a registered page that is not first in its list, a page past
+      nine, a range registered at its own first page, and a target that only
+      self-references after the fold — and rewrite the T9 reader to DERIVE the expected
+      printed index from the `.ind` and `.aux` instead of comparing written-down strings.
+      README's range claim, DESIGN's architecture record, the gfm residue token set, the
+      transcript plants, and the `.ind` reader's term and page parsing.
 
 ## Work log
 
@@ -116,7 +152,371 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: plan chose a redefinable `\providecommand` command over emitting `\textbf` directly because it gives an author styling control with no configuration (GP4) and matches the existing inject-only-where-used pattern; falsified by evidence that hyperref's encapsulation rewriting breaks an indirected command where a literal one survives.
 - 2026-08-21: plan chose `.ind`/`.ilg` evidence over PDF-text evidence for the emphasis itself because `pdftotext` cannot see it; falsified by a PDF reader in the suite that can distinguish a bold locator from a plain one.
 - 2026-08-21: criteria audit ran in full mode (user-facing tier) and returned findings on AC3, AC5 and the drafted README criterion; AC3 gained the named twin, AC5's residue clause was reworded to include the new attribute, and the README criterion was descoped to T7.
+- 2026-08-21: implement gate renamed the attribute `role=` -> `mention=` (superseding the plan's spelling in the two entries above) after a Pandoc probe showed `role` emitted literally as an HTML attribute; AC3, AC4, AC5, Scope, T2 and T7 amended.
+- 2026-08-21: implement gate chose narrowing contestation to cross-reference encapsulations over suppressing styling on shared keys, because a plain and a styled locator are makeindex's ordinary case; falsified by a makeindex version that rejects the pair rather than warning.
+- 2026-08-21: amended-criteria audit ran in full mode and returned findings on all three amended criteria; AC3 and AC4 gained named formats and dropped the twin fixture from their promises, AC4 settled the empty value, AC5 was repinned on the expected manifest, and T6 gained a format-axis planted defect.
+- 2026-08-21: T1 — `examples/principal.qmd` (three-page principal/plain spread, a role on a cross-reference mark, an unrecognized value, an empty value, a role-free control pair, and a principal locator on a key a cross-reference also marks) and its role-free twin; gfm render confirms Pandoc keeps `mention=""` as a present attribute, so the empty value is distinguishable from absence in the AST.
+- 2026-08-21: T2 — `core.lua` gains `MENTION_ATTR`, `MENTION_ROLES`, `PRINCIPAL_COMMAND`/`PRINCIPAL_DEFINITION` and `HTML_PRINCIPAL_CLASS`; `marks.lua` gains `mention_role`, drawing the unrecognized-value report before the no-locator one so the two never both fire. `warn-distinct` pinned count 39 -> 41, and the scan confirms both new messages distinct and non-prefix.
+- 2026-08-21: T3 — the role is applied at emission by `principal_encap` in `passes.lua`, on top of whichever shape contestation chose, and is deliberately absent from `mark_encap`, so a plain and a styled locator of one key are not rivals; `index.lua` injects `PRINCIPAL_DEFINITION` only where the flag is set. End-to-end evidence: the fixture's `.ind` reads `basilisk, \hyperpage{1}, \hyperxindexformat{\quartoindexprincipal}{2}, \hyperpage{3}` with 0 warnings in its `.ilg`, and `examples/content.tex` carries no definition.
+- 2026-08-21: T3 — `examples/principal.qmd` gained `latex-clean: false`, since Quarto deletes the `.ind` and `.ilg` on a successful PDF render and they are AC1's evidence; the LaTeX aux family is now gitignored under `examples/`, which also closes the unignored-artifact item on the acceptance-suite candidate row.
+- 2026-08-21: T3 — keeping the suite green required registering both fixtures in two existing rosters ahead of their own section: M14's dangling-target corpus (0 each, both targets naming a term the file marks) and M15's contested-key emission sweep (the folded-field shape, which the `gorgon` key writes). Suite 208 -> 211.
+- 2026-08-21: T4 — a locator is now `{ target, role }` rather than a bare string, so a reordering cannot separate a role from its destination; the principal link carries `class="qi-principal"` and a Pandoc `Strong`, which is what makes it read as principal with no stylesheet, since the extension ships none. `book.lua` carries `role` as an optional field validated like `context` and left out of the store version. Rendered: `basilisk` prints three locators, the second `<a href="#qi-mark-2" class="qi-principal"><strong>2</strong></a>` and the others plain. Suite still 211.
+- 2026-08-21: T5 — the M20 section: the `.ind`/`.ilg` reads (copied to `$WORK` at their own render), the structural HTML read, the per-mark log pins in all three formats with the twin as the zero-expectation control, a command-by-command comparison against the twin's own emission for the counterfactual, the gfm residue set stated exactly, and the preamble present/absent triple. Suite 211 -> 221.
+- 2026-08-21: T5 — the twin comparison first passed vacuously: a regex for `\index{...}` matched only to the first `}` inside a folded cross-reference, truncating both sides' `gorgon` command before the encapsulation being compared, so the two read equal. Replaced with a brace counter — the brace-aware scanner the acceptance-suite candidate row already asks for, now built for this one reader.
+- 2026-08-21: T7 — README gains a principal-mention section (what it prints in each back-end, how to redefine the LaTeX command, what an unusable or unrecognized value does), a seventh row in the supported-forms table, and a seventh point under where the back-ends differ; the form is in the suite's normative list and six documented claims are byte-pinned. DESIGN's pass-through residue enumeration now names `data-mention` and records why the attribute is not `role`. Suite 221 -> 223.
+- 2026-08-21: T6 — the four readers extracted to `tests/m20probes.py` (behaviour-neutral: 223 checks before and after) and re-run by the self-test against twelve planted defects: the emphasis on the wrong page, on every locator, on none, leaked onto the role-free control, a conflicting-encapsulation warning in the transcript, the HTML emphasis on the wrong mention, its class dropped, its emphasis node dropped, a literal ARIA role in gfm, plumbing residue in gfm, the role inert, and the role reaching the control mark; plus `warn_discrimination` over both reports in all three formats. Self-test 248 -> 279.
+- 2026-08-21: T6 — one plant was a no-op and the check was wrongly reported as failing to discriminate: gfm wraps a long line inside a tag, so a sed aimed at a whole `<span ...>text</span>` matched nothing. Every mutation now goes through `m20_plant`, which refuses a plant that changes no bytes.
+- 2026-08-21: all seven tasks done; `tests/run-tests.sh` passes at 223 checks and `--self-test` at 279 (merge base 208 / 248). Status -> review.
+- 2026-08-21: review returned M20 to in-progress. Two floor-qualifying findings: a principal and a plain mark of one key on one page make `quarto render --to pdf` exit 1 with "error generating index" (verified at the gate by direct render), which is the IP2 break M15 exists to eliminate and which the plan gate's makeindex-in-isolation probe missed; and AC5's first clause, a line-for-line gfm manifest, was never implemented. AC5 unticked. Eleven further findings carried in the Review section for triage. Defect returns on this milestone: 1.
+- 2026-08-21: resumed after the review return. The break was reproduced, then probed further: makeindex conflicts on ANY encapsulation difference for one key on one page — a bare `\indexentry{cats}{1}` beside `\indexentry{cats|quartoindexprincipal}{1}` warns, while two identical encapsulations fold silently — so per-locator styling through its encap channel is impossible whatever the extension emits, and no emission-level repair exists. Implement gate routed the design question to /milestone-brief and chose the format-neutral findings for repair here.
+- 2026-08-21: review F2/F11/F12/F9 repaired. `mention_role` now takes a blocker naming every SURVIVING cross-reference attribute rather than the first declared one, so a target about to be dropped as a self-reference no longer displaces a role (verified against the pre-fix filter: `imp` drew the displacement report and the drop report together, and now draws only the drop), or `unindexed` for a mark that indexes nothing, whose role was dropped in silence. The HTML control now tells a missing entry from an entry with no locators. Fixtures gained `harpy` (both attributes), `imp` (self-referential target) and an entry-less mark; `warn-distinct` 41 -> 42. Suite 223, self-test 279 -> 282.
+- 2026-08-21: amendment, AC5 — the criterion promised the gfm render "matches its expected manifest line for line", which taken literally is a 72-line copy of Pandoc's own line-wrapping and is the snapshot the suite's ORACLE RULE and D-004 both refuse; the mini gate chose narrowing it to the render's index spans. Amended-criteria audit ran in full mode twice with two fresh readers (the second on wording revised from the first's findings) and returned seven then seven: "line for line" lost its referent, the reader sorted away the order it promised, the domain was ambiguous between source marks and rendered spans, the manifest defined rather than compared, the document-wide clause was dropped, and no plant covered completeness or order. All folded in, and the final wording went to the user rather than a third revision. The fixture now renders gfm with `wrap: none` so a span is never broken across lines.
+- 2026-08-21: T5/T6 — AC5 implemented: manifest 9 in the suite lists all thirteen spans in document order, hand-derived from the fixture; the reader compares byte for byte without sorting or normalizing, enumerates a span whose visible text carries nested inline markup, and pins the count to the fixture's own marks. The render is deleted before the run rewrites it, so no check reads a stale artifact. Four new plants: a dropped mark, an extra mark, two transposed, and the nested markup stripped. Fixtures gained `kraken`. Suite 223, self-test 282 -> 286.
+- 2026-08-21: session close. Three of the return's floor findings are settled: F2, F11, F12 and F9 repaired, and AC5 implemented as amended. F1 is not repairable at the emission layer — the probe above settles that makeindex rejects ANY encapsulation difference for one key on one page — so it goes to /milestone-brief as an ip-touching escalation. F4-F8, F10 and F13 stand for triage at the next review gate; most of them are LaTeX-side and their fate depends on the escalated answer. Status stays in-progress.
+- 2026-08-21: blocked on RB01 — whether the LaTeX back-end can realize a per-locator role at all, and what to do if it cannot.
+- 2026-08-21: RB01 raised and RR01 ingested. The review confirmed the impossibility (question 1) and then falsified the brief's own premise that no mechanism was affordable: it built the deferred-styling subsystem and validated it through Quarto's pipeline, same-page pair included, at exit 0 with zero makeindex warnings. Recommendations triaged — 1 apply (T8), 2 apply (T9 + the ROADMAP correction), 3 apply (recorded below), 4 consider (README line in T9; the whole-range question widened the locator-control candidate row), 5 consider (the fallback, not taken), 6 and 7 reject, matching the session's own reading. Promoted to D-007.
+- 2026-08-21: AC1 and AC6 are now stated over an artifact the chosen mechanism no longer produces — the emphasis leaves the `.ind` entirely and appears at typeset time — so both need the step-6 amendment gate at the next implement session, before T8 is worked. Flagged here rather than amended at ingest.
+- 2026-08-21: AC1 and AC6 amended at the step-6 mini gate; the user chose to hold the criteria set rather than widen it, so AC1 stays inside the render's own working files and the end-to-end typeset leg goes to T9 and a candidate row. Scope's evidence paragraph, falsified by D-007 (the `.ind` no longer carries any role information), was restated with it. Coverage gained T8 on both, and Tasks was compressed in one pass to hold the 150-line cap, T1-T7's detail staying in this log.
+- 2026-08-21: amended-criteria audit ran in full mode twice with two fresh readers and returned ten then thirteen. Round 1: AC1's three `basilisk` marks are on consecutive pages, so the uniform encapsulation folds them to `1--3` and the criterion would have passed green on a render printing no emphasis at all; "the principal term" named four candidates; the control clause was vacuous; there was no freshness pin; and AC6's "every command the subsystem defines" was an unenumerable domain whose blanket `\providecommand` the registry csnames cannot satisfy. Round 2: AC6 was outright unsatisfiable, since `harpy` makes the fixture inject `\quartoindexseeboth`, which the criterion forbade; the `.ind` group argument wraps across lines, the shape a reader has already been caught by once here; the `.aux` count needed its referents pinned, not just its cardinality; and Scope's GP6 trade was falsified. All folded in; the final wording went to the user rather than a third revision.
+- 2026-08-21: T8's commands are named `\quartoindexlocator`, `\quartoindexregister` and `\quartoindexprincipalpage`, following the extension's existing `\quartoindex` prefix rather than RR01's `\qiloc` sketch; internals stay `\qi@`-prefixed `\def`s inside `\makeatletter`. The mechanism was probed on this toolchain before the gate: a same-page plain+principal pair at zero makeindex warnings, correct footnote registration, and `cats, [P:1], 2` with the emphasis command redefined to a marker.
+- 2026-08-21: T8 checkpoint, half done and green on the plain suite. The typeset-time channel is built: `core.lua` carries the whole injected subsystem (the registry reader, the shipout-deferred registration, the locator command that splits a page list and wraps registered pages, and the `\qi@` helpers, which sniff their argument's token class rather than naming a hyperref internal); `latex.lua` assigns one ordinal per principal-carrying key in document order; `passes.lua` gives EVERY locator mark of such a key that same ordinal and emits the registration beside the principal mark's own `\index`. `examples/principal.qmd` gained filler pages so its three `basilisk` marks are non-adjacent. New AC1 and AC6 readers in `tests/m20probes.py`, the twin comparison strengthened from a set to a positional multiset (a set collapsed `basilisk`'s three commands into one row and would have passed a filter that encapsulated only the principal mark), and the `.ind` plant set replaced with eleven aimed at the two properties that succeeded the emphasis-in-the-`.ind`. Plain suite 223 -> 226; the self-test run is not yet finished, so `--self-test` is UNVERIFIED at this checkpoint.
+- 2026-08-21: two clauses of the just-amended criteria were disproved by the artifact and corrected against it. makeindex merges only a RUN of consecutive pages under one encapsulation, so `basilisk`'s non-adjacent locators print as three groups rather than one — which shows the uniform identifier three times over and is better evidence than the merged form both audit rounds assumed. And the subsystem's own `\qi@emit` helper names `\quartoindexprincipal` in its body, so AC6 binds DEFINING FORMS naming a `quartoindex` control sequence, plus the absence of `\csname quartoindex`, rather than occurrences of the string; its control clause dropped `\quartoindexseeboth`, which belongs to the cross-reference channel and which the role-free twin legitimately carries.
+- 2026-08-21: T9 in progress — `examples/principal-cases.qmd` written (same-page plain/principal pair, a principal mark in a footnote, a registered page inside a makeindex range, a role-free control, and a preamble redefining the emphasis to a marker `pdftotext` can read). `latex.lua`'s two comment blocks corrected: makeindex warns at exit 0 and writes a correct `.ind`, and Quarto alone fails the render on a regex over the transcript; and the claim that a styled and a plain locator are not rivals is withdrawn as false. The ROADMAP premise was already corrected at the RR01 ingest. README's degradation line, the redefinition recipe (whose `\newcommand*` may error where the extension's definition lands first — unmeasured) and the T9 suite section are not written yet.
+- 2026-08-21: T8 done and verified clean. The same-page plain-and-principal pair — the document this milestone died on, which made `quarto render` exit 1 — now renders at exit 0 with zero makeindex warnings and prints as one emphasized locator. `examples/principal.qmd`'s `.ind` carries `basilisk` as three groups all naming `qi1`, its `.aux` registers exactly four identifiers from pages their own entries list, and the preamble injects the four `\quartoindex` commands with `\providecommand*` into that document and no other.
+- 2026-08-21: T9 done. `examples/principal-cases.qmd` renders the four shapes IP2's forever clause earns, read out of the PDF text: `wyvern, [P:1], 2` (the same-page pair, folded and emphasized), `naga, [P:2]` (a principal mark in a footnote, registered from its own page), `oni, 3--5` (a registered page inside a makeindex range, printing unemphasized — the one documented degradation, asserted rather than tolerated) and `pixie, 6, 7` (the role-free control). Review F13 is settled by measurement rather than left open: Quarto puts a document's own `include-in-header` ABOVE what a filter injects, so `\providecommand` finds the author's definition already there and steps aside — README's "yours is kept" and its `\newcommand*` recipe are correct, and `\renewcommand*` in that position fails outright, which is how the ordering was established. README gained the silent-degradation paragraph and a seventh byte-pinned claim; `latex.lua`'s two comment blocks now state that makeindex warns at exit 0 and Quarto alone fails the render, and withdraw the claim that a styled and a plain locator are not rivals.
+- 2026-08-21: all nine tasks done. `tests/run-tests.sh` passes at 228 checks and `--self-test` at 310, both run clean on an untouched tree (merge base 208 / 248; the pre-T8 checkpoint 226 / unverified). Thirty-five M20 plants discriminate, among them the eleven that replaced the superseded `.ind` emphasis plants and the four AC6 plants review F4 recorded as missing. Status -> review. F1 from the return is repaired at the design level rather than patched; F4, F13 and the freshness half of F10 are closed in passing; F5, F6, F7, F8 and the rest of F10 stand for triage at the gate.
+- 2026-08-21: review round 2 — fresh evidence recorded for all seven criteria and every box ticked, each verified off the rendered artifacts by hand as well as through its reader. Suite 228 / self-test 310 on b150ef2, 35 plants caught; `cairn_validate` all-pass, no principle changed, the generic profile adds no toolchain checks; no CI is configured on the repo. Two of three fresh-context lenses reported: the prior-review lens found no PR-comment surface and three still-open carried findings (F5, F6, F8), and independently verified F7 and F10's remainder as genuinely repaired rather than merely claimed; the history lens found no regression of any past milestone's fix and two low tracking-row staleness items. The diff-bug lens is still running, so triage and the approval gate are not yet reached.
+- 2026-08-21: review round 2 returned M20 to in-progress. One floor-qualifying finding: `\qi@sniff`'s hyperref branch hands the page list to `\qi@split` unbraced, and because `#3` is a delimited argument TeX has already stripped its braces, so the split takes only the first token and the rest is typeset outside `\hyperpage`. Verified at the gate by direct render against the real call shape: a principal page of more than one token is never emphasized, a range whose FIRST page is registered is emphasized though README says otherwise, and the fixture's own `imp` and `kraken` on page 10 print plain. All seven criteria were verified and stay ticked — the defect falls outside every criterion's domain, which is itself finding R2-F2. Fifteen further findings carried in the Review section. Defect returns on this milestone: 2.
+- 2026-08-21: review round 2 triage — the user held the criteria set (no new criterion; the typeset leg stays task work and a candidate row) and chose the defects-and-false-docs repair set. R2-F1 repaired: `\qi@sniff` handed its page list to `\qi@split` unbraced, and since `#3` is delimited TeX had already stripped the braces, so the split took one token and the rest was typeset outside the page-link command. Proven through the real pipeline by three shapes the old fixture could not distinguish — a registered page that is not first in its list (`troll, 9, [P:10]`), a page of more than one character (`undine, [P:11]`), and a range registered at its own first page (`sylph, 6-8`, correctly plain). Reverting the brace makes the new reader fail while the old fixture's four strings stay byte-identical, which is why it certified a broken build.
+- 2026-08-21: R2-F5 repaired — the role is derived from each back-end's surviving targets AFTER `latex_plan`, not from the format-neutral set before it, so a target that only becomes a self-reference under the three-level fold no longer draws a report contradicting the fold's own. Discriminating control run at the fix: the committed filter drew three reports for the new `vodyanoy` mark, the first claiming a cross-reference took its locator's place and the third saying the term is indexed as usual, and emitted a bare `\index` with the role lost; it now draws two consistent reports and prints `folk, kin, [P:11]`.
+- 2026-08-21: the T9 reader no longer compares hand-written strings. It derives the expected printed index from the `.ind` and `.aux` of the same render — every page item marked exactly when the registry names it against that item's own group — and asserts the fixture still carries all three shapes, so a later edit cannot flatten them away in silence. That is the compensating control R2-F2 asks for, since the held criteria set still binds no typeset result.
+- 2026-08-21: also repaired — R2-F4 (an empty page list ran `\qi@sniff` away; guarded and probed), R2-F3 (README claimed a range prints plain only when the registered page is inside it, where the first page behaves the same way), R2-F6 (DESIGN gained the typeset-time channel, the corrected makeindex mechanism and the sidecar's role field), R2-F9 (the gfm residue set named only the emphasis command), R2-F11 (both transcript plants now go through the no-op guard, one clause each, and an `awk` line whose `print` ran before its `next` is gone), R2-F16 (the `.ind` reader mis-keyed a term containing a comma and raised a traceback on a non-numeric folio).
+- 2026-08-21: T10 checkpoint — every repair is in and both readers pass by hand, but the full `run-tests.sh` and `--self-test` run had not finished when this was committed, so the suite totals and the plant discrimination are UNVERIFIED here. The deferred findings have no candidate rows yet.
+- 2026-08-21: the new fixture's `see=` put it on M14's cross-reference roster, which expects a count per file. Registered at 1, not 0: that corpus renders to gfm, which has no three-level ceiling and so no fold, and there the target names a path nothing indexes and dangles — the back-end asymmetry D-005 settles, and the reason the mark is in the fixture at all. Plain suite green at 228 with it.
+- 2026-08-21: the deferred round-2 findings got candidate-row homes on existing rows rather than new ones (search-first): the moving-argument row takes R2-F7, the accumulator-state row takes R2-F14 — `principal_ordinals` is the first accumulator whose VALUE reaches an on-disk artifact, so a reused Lua state would offset the next document's registry keys rather than merely skew a count — and the acceptance-suite hardening cluster takes R2-F10, R2-F12, R2-F13 and R2-F15 with round 1's F5 and F8. R2-F8 was judged acceptable by the reviewer and takes no row. ROADMAP 59 lines / 18,631 bytes, inside both budgets.
+- 2026-08-21: T10 checkpoint 2 — plain suite verified green at 228 on this tree; the `--self-test` run is still in flight, so plant discrimination stays UNVERIFIED and T10 stays unticked.
+- 2026-08-21: T10 done and verified clean. `tests/run-tests.sh` 228 checks exit 0 and `--self-test` 317 exit 0, both on this tree; 42 M20 plants discriminate, seven of them new — a registered page that is not first in its list, a page of more than one character, a range registered at its own first page, a role dropped from a fold-induced self-target, a registration moved to the other locator of its own entry, and the two transcript clauses split apart. Merge base 208 / 248; round-2 entry 228 / 310. Status -> review.
+- 2026-08-21: review round 3 — fresh evidence recorded for all seven criteria on 78bcc77, each read off the artifacts by hand as well as through its reader; suite 228 / self-test 317, 42 plants caught. Consistency gate clean: `cairn_validate` all-pass, no principle changed (the one DESIGN diff line mentioning GP2 is a rewrap of an existing cross-reference), the generic profile adds no toolchain checks, and both byte budgets are inside. Two of three lenses reported zero findings — the history lens independently confirmed the role-derivation move leaves both reports firing in every format, since `xrefs` is reassigned only for LaTeX, and derived the new M14 roster count of 1 from the same reasoning the `fold-xref-self` row uses; the prior-review lens checked all 29 findings of rounds 1 and 2 against the code rather than the work log and verified each deferred finding's ROADMAP home says what the log claims. The diff-bug lens is still running, so triage and the approval gate are not reached.
+- 2026-08-22: review round 3 gate fixes, committed before any approval. The diff-bug lens confirmed the brace repair across 18 reconstructed input shapes and traced both passes as unable to desynchronize, and returned three findings worth acting on. R3-F1, the most serious and introduced by the round-2 repair itself: the derived `_cases` oracle read its expectation from the same `.aux` the filter wrote, so a registration written from the wrong page moved expectation and artifact together and passed. Two evasions were verified by execution — the footnote registered from page 3 rather than its own page 2, and the same-page pair registered from its other locator. The reader now carries an independent statement of where each principal mark sits, plus the membership invariant `_ind` already held; both evasions now fail and both are planted. Replacing weak hand-written strings with a derivation introduced a blind spot the strings did not have, which is the lesson.
+- 2026-08-22: R3-F3 — a `\thepage` holding a non-expandable token reached `\csname` and raised `Missing \endcsname` on every pass after the first. Measured whether it was ours: with such a page style plain `\index` ALREADY fails, makeindex rejecting every entry, so the document has no index either way — but M20 turned a clean build into a LaTeX error, which is a worsening it may not add. Both sides now `\@onelevel@sanitize` the page string identically; errors go 2 -> 0 on the probe. Judged not floor-qualifying: no criterion fails, and the affected document class has no working index regardless. R3-F2 — README's blanket "the role is reported and dropped" is false for the fold-induced self-target and the behaviour differs between back-ends, so the same mark is emphasized in PDF and plain in HTML; documented with a new byte-pinned claim. Also fixed: DESIGN's LaTeX bullet now points at the subsystem paragraph (R3-F6), and the `_cases` shape guard states the property it means (R3-F7).
+- 2026-08-22: an attempt to widen the empty-list guard to a space-only list was wrong and is reverted. `\edef ... \zap@space` expands the page list, which arrives already wrapped in hyperref's page-link command, and every render died with an undefined control sequence; the suite caught it at once. The guard stays `\def`-based and byte-empty only, its comment narrowed to that, since both spellings are unreachable from makeindex and neither is worth expanding an argument this command must pass through untouched.
+- 2026-08-22: correction to the 2026-08-21 T10 line, which said both suite modes "run clean on an untouched tree". The diff-bug lens ran the suite from a pristine `git archive` of HEAD and it fails there: a check reads `examples/control.tex` before anything renders it, and `examples/*.tex` is gitignored. Pre-existing, already on the acceptance-suite hardening candidate row, and not an M20 regression — but the evidence for every run in this milestone rests on a tree carrying leftover artifacts, which the earlier wording did not say.
+- 2026-08-22: gate-fix checkpoint. All three findings are repaired and each was verified by direct probe, but the full suite and self-test run was still in flight when this was committed, so totals and plant discrimination are UNVERIFIED here and no approval marker exists.
+- 2026-08-22: round-3 gate fixes verified — suite 228 exit 0 and self-test 319 exit 0 on bb66134, 44 M20 plants caught including the two evasions R3-F1 named. Every criterion re-read off the artifacts by hand at the gate. All eight round-3 findings triaged and logged: three fixed on the branch, three fixed or rejected as unreachable, one documentation fix, one rejected as pre-existing with its record corrected.
 
 ## Decisions
 
+### 2026-08-21: `mention=`, not `role=`
+
+Pandoc data-prefixes an attribute name it does not know but emits `role` literally, so
+`role="principal"` reaches every HTML-family output as a real ARIA role, and `principal`
+is not a valid one — an artifact on every marked term, which IP2 forbids. `mention=`
+probes clean as `data-mention` and is the word indexing practice uses for the occurrence
+being marked. The twin fixture stays, as the instrument behind AC3 and AC4 rather than as
+their promise.
+
+### 2026-08-21: an empty `mention=` is unrecognized, not absent
+
+`mention=""` is a value the author wrote. Reading it as absence would swallow a typo
+silently, which is the class of thing every other report here refuses to do; it draws the
+unrecognized-value warning and the mark indexes as though the attribute were gone.
+
+### 2026-08-21: the `.ilg` warning count is the stable oracle, not Quarto's exit code
+
+RR01 pinned Quarto's escalation to `findIndexError`, which fails a render when
+the regex `/^\s\s\s--\s/` matches the makeindex transcript — an implementation
+detail, not documented API, and one a future Quarto could widen or drop.
+AC1 already reads the `.ilg`'s own warning count as a number rather than
+searching for a substring or trusting the exit status, and that is the evidence
+base this class of check keeps (RR01 recommendation 3).
+
+### 2026-08-21: the fallback if the subsystem is refused
+
+If the typeset-time channel is ever judged too much LaTeX for this extension to
+carry, the one remaining disposition is that the LaTeX back-end reports the role
+as unrealized and indexes the mark plainly, which IP1 licenses in so many words
+and which leaves the HTML realization whole. Removing `mention=` altogether is
+strictly worse: it discards a working back-end to keep the two symmetric, which
+IP1 says they need not be. Shipping the colliding emission with the failure
+documented is not eligible at all — D-003 classifies the pair as the extension's
+own incorrect output, so IP2 governs and documentation cannot discharge it.
+
 ## Review
+
+### Round 1 — 2026-08-21, returned to in-progress
+
+**Findings (three fresh-context reviewers).** The prior-review lens reported no prior-review
+evidence bearing on this diff, having checked every archived `## Review` section and `LESSONS.md`;
+a probe found the repo has no PR-comment surface. The history lens returned one finding. The
+diff-bug lens returned thirteen. Two qualify under the return floor, so the gate returns the
+milestone rather than triaging the rest here; every finding is carried below for triage at the
+next gate.
+
+**F1 (floor return, and the history lens's one finding independently) — a principal mark and a
+plain mark of one key on one page break the render.** `mark_encap` in `latex.lua` excludes the
+role, so contestation never sees the pair and `passes.lua` emits `\index{cats}` beside
+`\index{cats|quartoindexprincipal}`. Verified directly at the gate, not inferred: a Quarto PDF
+render of two marks of one term in one sentence, one principal, gives
+`ERROR: compilation failed- error generating index` and `quarto render` exits 1, with
+`Conflicting entries: multiple encaps for the same page under same key` in the `.ilg`. hyperref
+encapsulates the plain locator as `|hyperpage` too, so the collision is intrinsic once a styled
+locator shares a page with any other. This is the IP2 break M15 existed to eliminate and D-003
+assigns to the extension. The plan gate's premise — recorded on the ROADMAP as "every misuse here
+is a warning at exit 0, so neither carries a break-the-document risk" — was measured on makeindex
+in isolation and is wrong about Quarto. The milestone's own recorded falsifier for the clash-rule
+choice is therefore already spent. No emission-level repair is obvious: every locator carries an
+encapsulation under hyperref, so a key cannot mix a styled and an unstyled locator on one page at
+all, which makes this a design question rather than a patch.
+
+**F2 (floor-adjacent, real defect) — a mark whose only cross-reference is dropped as a
+self-reference loses its role and draws a false report.** `mention_role` is called before the
+self-reference drop, so `[basilisk]{.index mention="principal" see="basilisk"}` emits a real plain
+locator while printing "this mark has no locator to emphasize" immediately followed by the
+self-reference drop's own report — two consecutive reports contradicting each other about one mark,
+the defect class M18 exists to remove.
+
+**F3 (floor return) — AC5's first clause is not implemented.** See the AC5 line above.
+
+**F4–F13, carried for triage at the next gate** (not floor-qualifying):
+F4 T6's promised "warning text right but mark wrong" axis is never planted, and the AC6 and
+README checks have no planted defect at all. F5 the book sidecar's new optional `role` field has
+no fixture, so its round-trip is untested. F6 the `.ilg` mutation bypasses `m20_plant`, contra its
+own comment, and fails the reader for two reasons at once. F7 the AC6 negative grep has no
+existence guard, so it passes vacuously if `content.tex` is absent, and both AC6 greps read the
+whole file rather than the preamble. F8 the M15 emission sweep's new `ALLOWED` rows are inert —
+the sweep runs before M20 renders either fixture, so on a clean tree M20's emission is never
+swept. F9 the HTML probe's cockatrice control returns None when no entry is found, so it cannot
+fail if its domain empties. F10 the PDF is checked by exit status alone, with no size check and no
+removal of a stale `.ind`/`.ilg` before the render, so AC1's evidence has no freshness pin. F11
+`mention="principal"` on a mark with no source entry drops the role silently, though Scope
+describes the report as covering any mark that can contribute no locator. F12 the no-locator
+warning names only the first cross-reference attribute. F13 README's redefinition recipe
+("yours is kept") is byte-pinned as a normative claim but never exercised by a render.
+
+**Evidence** — `tests/run-tests.sh --self-test`, run fresh on 969f1c4 at review: 279 checks, exit 0
+(plain run 223, exit 0; merge base 208 / 248).
+
+- **AC1** — the PDF render's `.ind` shows the basilisk entry with exactly one
+  `\hyperxindexformat{\quartoindexprincipal}{2}`, the page the fixture puts the principal mark on,
+  and exactly one plain `\hyperpage` for each of pages 1 and 3; the role-free control entry carries
+  the command nowhere. The `.ilg` contains no `Conflicting entries` line and its own summary reports
+  0 warnings, read as a number rather than by substring absence.
+- **AC2** — read structurally by `tests/htmlindex.py`: basilisk's three locator links are
+  (plain, class + `<strong>`, plain) in that order, the control entry's two are both plain, and the
+  mark whose role was dropped contributes no locator at all.
+- **AC3** — the dropped-role report fires exactly once in each of the LaTeX, HTML and gfm renders,
+  naming the mark and the attribute that displaced its locator, and zero times in the twin.
+- **AC4** — the unrecognized-value report fires exactly twice per format, once naming
+  `("paramount")` and once `("")`, and zero times in the twin. Both criteria's counterfactual is
+  the same check: of 9 emitted `\index` commands, the fixture and its role-free twin differ on
+  exactly the two the role is meant to change and agree on the other seven.
+- **AC5** — FAILS as written. Its second clause is verified (the role-carrying spans are exactly
+  the five the fixture writes, byte for byte; no span carries a literal `role=`, and no `qi-`,
+  `\index{` or command token reaches the format), but its FIRST clause — "matches its expected
+  manifest line for line" — is not implemented: no gfm manifest exists for either fixture anywhere
+  in the suite, and T1's claim that they are "written inline in the suite's principal section" is
+  inaccurate. Unticked.
+- **AC6** — `\providecommand*\quartoindexprincipal` is present in the fixture's rendered preamble
+  and absent from both `examples/content.tex` and the twin's.
+- **AC7** — both suite modes exit 0, as above.
+
+**Discrimination.** Twelve planted defects, each caught: the emphasis on the wrong page, on every
+locator, on none, leaked onto the control; a conflicting-encapsulation warning in the transcript;
+the HTML emphasis on the wrong mention, its class dropped, its emphasis node dropped; a literal ARIA
+role in gfm; plumbing residue in gfm; the role inert; the role reaching the control mark. Both
+reports also pass `warn_discrimination` (missing and duplicated) in all three formats.
+
+### Round 2 — 2026-08-21
+
+**Evidence** — `tests/run-tests.sh` 228 checks exit 0 and `tests/run-tests.sh --self-test`
+310 checks exit 0, both run fresh on b150ef2 (merge base 208 / 248; pre-T8 checkpoint 226).
+35 M20 planted defects each caught. Consistency gate: `cairn_validate` all-pass exit 0; no
+`DESIGN.md` principle changed, so no impact report is owed; the `generic` profile names no
+toolchain checks. Every criterion below was additionally read off the rendered artifacts by
+hand, not only through its reader.
+
+- **AC1** — the PDF render's `.ind`, begun with the three artifacts absent, carries
+  `basilisk` as exactly three `\hyperxindexformat{\quartoindexlocator{qi1}}` groups of one
+  page each, pages 1, 3 and 5, no two adjacent; `gorgon` as exactly one such group of one
+  page with `\see{basilisk}{}` folded into the printed text ahead of it; and the role-free
+  `faun` as `\hyperpage{7, 8}` with no locator group at all. The `.aux` carries exactly four
+  `\quartoindexprincipalpage` lines with four distinct identifiers — qi1 qi2 qi3 qi4, which
+  are exactly the identifiers the `.ind`'s groups name — each naming a page its own entry
+  lists, and `basilisk`'s naming 3, the middle of its three. The `.ilg` summary reports 0
+  warnings, read as a number.
+- **AC2** — read structurally by `tests/htmlindex.py`: basilisk's three locator links are
+  (plain, class + `<strong>`, plain) in that order, the control entry's two are both plain,
+  and the mark whose role was dropped contributes no locator. The control now distinguishes a
+  missing entry from an entry with no locators (round 1 F9).
+- **AC3** — the dropped-role report fires exactly once per mark in each of the LaTeX, HTML
+  and gfm renders, naming the mark and every surviving cross-reference attribute that
+  displaced it, and zero times in the twin.
+- **AC4** — the unrecognized-value report fires exactly twice per format, once naming
+  `("paramount")` and once `("")`, and zero times in the twin. The counterfactual for both:
+  of 12 emitted `\index` commands the fixture and its role-free twin differ on exactly six —
+  every locator of each of the four principal keys — and agree on the rest; the four
+  registrations reach the fixture alone.
+- **AC5** — the gfm render's thirteen index spans are, in document order and byte for byte,
+  the hand-derived manifest, one per mark except the entry-less one; no `qi-` token, `\index`
+  command, encapsulation command or literal `role=` reaches the file.
+- **AC6** — the region before `\begin{document}` of the rendered `.tex` defines exactly
+  `\quartoindexprincipal`, `\quartoindexlocator`, `\quartoindexregister` and
+  `\quartoindexprincipalpage`, each once and each with `\providecommand*`, plus the
+  pre-existing `\quartoindexseeboth`; no other defining form names a `quartoindex` control
+  sequence and no `\csname quartoindex` occurs. `examples/content.qmd`'s own region carries
+  the extension's `\makeindex[intoc]` setup and defines none of the four. Both files exist and
+  each carries exactly one `\begin{document}`.
+- **AC7** — both suite modes exit 0, as above.
+
+**T9, beyond the criteria.** The document this milestone died on — a plain and a principal
+mark of one key on one page, which made `quarto render` exit 1 — renders at exit 0 with 0
+makeindex warnings and prints `wyvern, [P:1], 2`. A principal mark in a footnote registers
+from its own page (`naga, [P:2]`); a registered page inside a folded range prints
+unemphasized (`oni, 3--5`), the one documented degradation, asserted rather than tolerated;
+the role-free control is untouched (`pixie, 6, 7`). All of it legible only because the
+author's own redefinition of the emphasis command is the one that took effect.
+
+**Findings (three fresh-context reviewers).** The prior-review lens found no PR-comment
+surface (`pulls/comments` empty) and reported three carried findings still open; it also
+verified round 1's F7 and the size half of F10 as genuinely repaired. The history lens found
+no regression of any past milestone's fix — it traced the M15 narrowing and confirmed the new
+machinery is reachable only where a mark can legitimately be principal — and returned two low
+tracking-row items. The diff-bug lens returned sixteen, the first of them floor-qualifying.
+
+**R2-F1 (floor return, verified independently) — the emphasis is lost on every page number
+of more than one token, and the trailing characters leave the hyperlink.** In
+`core.lua`'s `\qi@sniff`, the hyperref branch passes the page list to `\qi@split` as `#3`
+unbraced. `#3` is a DELIMITED argument, so TeX has already stripped the braces from
+`{1, 2}`; `\qi@split`'s own `#3` is undelimited and takes only the first token, and the
+remainder is typeset raw, outside `\hyperpage`. Verified by direct render at the gate,
+against the real call shape hyperref produces: `{10}` with 10 registered prints `<HP:1>0`
+(no emphasis, `0` unlinked); `{1, 2}` with 2 registered prints `<HP:1>, 2`; `{1--3}` with 1
+registered prints `[P:<HP:1>]-3`, emphasizing a range README says prints plain; `{1, 3, 12}`
+with 3 registered emphasizes nothing. The feature works only where the principal page is the
+FIRST item of the list and a single token. `examples/principal.qmd`'s own `imp` and `kraken`
+are registered on page 10 and print unemphasized. Bracing it — `{\qi@split{#1}{#2}{#3}}` —
+makes all four cases correct, verified in the same probe.
+
+**R2-F2 — no criterion binds the typeset result, so all seven were green while R2-F1 was
+live.** AC1 stops at `.ind`/`.ilg`/`.aux` agreement and AC6 at what the preamble DEFINES,
+never at what it expands to; an inert `\providecommand*\quartoindexlocator[2]{#2}` passes
+both. The T9 reader is the only compensating control, and its four oracle strings are
+byte-identical under R2-F1 because every one of them registers a first-or-only page. The
+ROADMAP row recording that the last leg has no criterion binding it is the same gap; the
+cost landed immediately rather than later.
+
+**R2-F3 — three byte-pinned README claims are false as the code stands**: "the index
+emphasizes that locator alone"; "a principal mention whose page falls inside such a range
+prints plain, silently" (it prints emphasized when the registered page is the range's
+first); and the attribution of the degradation to ranges rather than to any multi-token page
+string, which changes what M21 inherits.
+
+**R2-F4 — `\quartoindexlocator` with an empty page list is a runaway argument**, an
+unguarded hard render failure in a subsystem whose whole justification is IP2. No makeindex
+output shape reaching it was found, so it is unreachable today.
+
+**R2-F5 — the fold-induced self-target reproduces the contradiction round 1's F2 was
+returned for.** A mark whose target differs from its entry before the three-level fold but
+matches after it is told its cross-reference took the locator's place — role dropped — and
+then told the target was dropped as a self-reference, after which it emits a plain locator
+anyway. Two consecutive reports contradicting each other about one mark, and a role
+unapplied though a locator exists. Reported by reading, not rendered.
+
+**R2-F6 — `DESIGN.md`'s architecture section still describes the LaTeX back-end as
+`\index` + imakeidx + `\printindex`**, saying nothing about the uniform per-key
+encapsulation, the `.aux` registry or typeset-time application; the book paragraph's
+enumeration of what a chapter writes to the sidecar omits the role.
+
+**R2-F7 to R2-F16, lower.** `\quartoindexregister` is unprotected and can reach a moving
+argument (uncertain, unprobed); `_ind`'s hardcoded `\hyperxindexformat` judged acceptable
+but its `.ind`-only focus is what left the hyperref branch unasserted; AC5's residue token
+set omits `quartoindexlocator`/`quartoindexregister`; `_gfm`'s span pattern cannot see a
+nested span; round 1's F6 unrepaired and its `awk` no-op dead code; round 1's F5 unrepaired
+(no book fixture for the sidecar `role`); round 1's F8 only cosmetically addressed; three
+more never-reset accumulators, one of whose values now reaches an on-disk artifact; README's
+`\newcommand*` recipe measured on one ordering only; `_ind` mis-keys a term containing a
+comma and raises an unhandled `ValueError` on a roman folio.
+
+**Disposition.** R2-F1 is a load-bearing defect in what the extension does for its authors —
+the feature does not work in any document whose principal mention lands on page 10 or later —
+so the milestone returns to `in-progress` under the return floor. Triage of the remaining
+fifteen goes to the next gate. Defect returns on this milestone: 2.
+
+### Round 3 — 2026-08-21
+
+**Evidence** — `tests/run-tests.sh` 228 checks exit 0 and `--self-test` 317 checks exit 0,
+both fresh on 78bcc77; 42 M20 planted defects each caught. Consistency gate: `cairn_validate`
+all-pass exit 0; the only principle mention in the DESIGN diff is a rewrap of an existing GP2
+cross-reference, so no principle changed and no impact report is owed; the `generic` profile
+names no toolchain checks; ROADMAP 18,626 bytes and LESSONS 14,470, both inside budget.
+Artifacts read by hand as well as through their readers.
+
+- **AC1** — `basilisk` is three `\hyperxindexformat{\quartoindexlocator{qi1}}` groups of one
+  page each at 1, 3 and 5, no two adjacent; `gorgon` one such group at 9 with `\see{basilisk}{}`
+  folded ahead of it; role-free `faun` is `\hyperpage{7, 8}` with no locator group. The `.aux`
+  carries exactly four registrations, identifiers matching the `.ind`'s groups, `basilisk`'s at
+  the middle of its three. `.ilg` reports 0 warnings.
+- **AC2** — unchanged this round and re-run: the three locator links are (plain, class +
+  `<strong>`, plain), the control's two are plain, the dropped-role mark contributes none.
+- **AC3/AC4** — both reports fire exactly once per mark in LaTeX, HTML and gfm and zero times
+  in the twin; of 12 emitted `\index` commands fixture and twin differ on exactly the six the
+  role changes, and the four registrations reach the fixture alone. The round-2 role-derivation
+  move does not gate either report behind the back-end branch — `xrefs` is reassigned only for
+  LaTeX, so every other format still judges the format-neutral set (confirmed independently by
+  the history lens).
+- **AC5** — the thirteen gfm spans match the hand-derived manifest in order and byte for byte;
+  the residue token set now names every command either back-end can emit.
+- **AC6** — the preamble defines exactly the four subsystem commands, once each with
+  `\providecommand*`, plus the pre-existing `\quartoindexseeboth`; no other defining form names
+  a `quartoindex` sequence, no `\csname quartoindex` occurs, and `examples/content.qmd` defines
+  none of the four.
+- **AC7** — both suite modes exit 0, as above.
+
+**T9, and what round 2 returned this milestone for.** The printed index now reads
+`wyvern, [P:1], 2` · `naga, [P:2]` · `oni, 3-5` · `sylph, 6-8` · `troll, 9, [P:10]` ·
+`undine, [P:11]` · `folk, kin, [P:11]` · `pixie, 12, 13`, at 0 makeindex warnings — and every
+one of those is derived from the render's own `.ind` and `.aux` rather than written down. The
+three shapes round 2 found unexercised now all discriminate: a registered page that is not
+first in its list, a page of more than one character, and a range registered at its own first
+page. The fold-induced self-target keeps its role and draws no contradicting report.
+
+**Round 3 findings and their disposition.** The prior-review lens found no PR-comment surface
+and zero findings, having checked all 29 findings of rounds 1 and 2 against the code rather
+than the work log and verified each deferred finding's ROADMAP home. The history lens returned
+zero, confirming independently that the role-derivation move leaves both reports firing in
+every format and that the new M14 roster count is derived as the `fold-xref-self` row's is.
+The diff-bug lens confirmed the brace repair across 18 reconstructed input shapes and traced
+both passes as unable to desynchronize, and returned eight findings. Three were actioned and
+fixed on the branch before any approval; none was floor-qualifying.
+
+- **R3-F1 (fixed)** — the derived `_cases` oracle read its expectation from the same `.aux`
+  the filter wrote, so a registration written from the wrong page moved expectation and
+  artifact together and passed. Two evasions verified by execution. Repaired with an
+  independent statement of where each principal mark sits plus a membership invariant; both
+  evasions now fail and both are planted.
+- **R3-F2 (fixed)** — README's blanket "the role is reported and dropped" is false for the
+  fold-induced self-target, and the outcome differs between back-ends.
+- **R3-F3 (fixed)** — a `\thepage` holding a non-expandable token reached `\csname` and raised
+  `Missing \endcsname` on every pass after the first. Not floor-qualifying: no criterion fails,
+  and makeindex already rejects every entry of such a document, so it has no index either way —
+  but a clean build became a LaTeX error, which this subsystem may not add. Both sides now
+  sanitize identically.
+- **R3-F4, R3-F5, R3-F7 (fixed or rejected)** — the empty-list guard's comment narrowed to
+  what it covers after an attempted widening proved unsafe; the nested page-link note is
+  unreachable through makeindex and rejected as a robustness observation; the shape guard now
+  states the property it means.
+- **R3-F6 (fixed)** — DESIGN's LaTeX bullet now points at the subsystem paragraph.
+- **R3-F8 (rejected, pre-existing, recorded)** — the suite does not run from a pristine
+  checkout: a check reads `examples/control.tex` before anything renders it. Already on the
+  acceptance-suite hardening candidate row; not an M20 regression. It does mean every run in
+  this milestone rests on a tree carrying leftover artifacts, and the earlier work-log wording
+  claiming otherwise is corrected above.
+
+**Final evidence** — `tests/run-tests.sh` 228 exit 0 and `--self-test` 319 exit 0 on bb66134,
+44 M20 plants caught, the two new ones being the evasions R3-F1 named. Artifacts re-read by
+hand at the gate: `basilisk` three `qi1` groups at 1/3/5, `gorgon` one `qi2` group at 9 behind
+its folded `\see{basilisk}{}`, `faun` bare; four registrations, `basilisk`'s at the middle of
+its three; 0 makeindex warnings. The regression fixture prints `wyvern, [P:1], 2` ·
+`naga, [P:2]` · `oni, 3-5` · `sylph, 6-8` · `troll, 9, [P:10]` · `undine, [P:11]` ·
+`folk, kin, [P:11]` · `pixie, 12, 13` at 0 warnings. The preamble defines exactly the four
+subsystem commands with `\providecommand*`, plus the pre-existing `\quartoindexseeboth`.

@@ -150,7 +150,11 @@ local function build_entry_tree(marks)
       node = child
     end
     if mark.anchor then
-      node.locators[#node.locators + 1] = mark_target(mark)
+      -- A table rather than the bare target string: a locator now has a role
+      -- as well as a destination, and the two travel together so a reordering
+      -- cannot separate them (M20).
+      node.locators[#node.locators + 1] =
+        { target = mark_target(mark), role = mark.role }
     end
     for _, xref in ipairs(mark.xrefs) do
       -- Two marks carrying the same target on the same key are one
@@ -258,12 +262,22 @@ local function entry_inlines(root, node)
   local tail = pandoc.List()
   if #node.locators > 0 then
     local locators = pandoc.List()
-    for i, target in ipairs(node.locators) do
+    for i, locator in ipairs(node.locators) do
       if i > 1 then
         locators:insert(pandoc.Str(","))
         locators:insert(pandoc.Space())
       end
-      locators:insert(pandoc.Link({ pandoc.Str(tostring(i)) }, target))
+      -- The principal locator is emphasized with a Pandoc node and marked
+      -- with a class. The class alone would need a stylesheet, and this
+      -- extension ships none (GP3); the Strong is what makes the principal
+      -- reference read as one in a page with no CSS at all, exactly as bold
+      -- does in the printed index the LaTeX back-end produces.
+      local principal = locator.role == "principal"
+      local label = pandoc.Str(tostring(i))
+      locators:insert(pandoc.Link(
+        { principal and pandoc.Strong({ label }) or label },
+        locator.target, "",
+        pandoc.Attr("", principal and { qi_core.HTML_PRINCIPAL_CLASS } or {})))
     end
     tail:insert({ xref = false,
                   span = pandoc.Span(locators,

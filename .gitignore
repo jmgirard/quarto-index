@@ -9,6 +9,16 @@ examples/*.html
 examples/*.md
 examples/*.epub
 examples/*_files/
+# The LaTeX aux family. examples/principal.qmd and examples/principal-cases.qmd
+# deliberately keep their `.ind`, `.ilg` and `.aux` (latex-clean: false),
+# because the suite reads the first two for the emitted encapsulation and the
+# `.aux` for the typeset-time registry that carries the principal role; and a
+# FAILED pdf render leaves this family behind for any fixture.
+examples/*.aux
+examples/*.idx
+examples/*.ilg
+examples/*.ind
+examples/*.log
 examples/.quarto/
 # The book fixtures render into their own project output directory, and their
 # per-chapter store lives in Quarto's own scratch directory.

@@ -154,6 +154,7 @@ SUPPORTED_FORMS=(
   $'placement marker\t::: {.qi-index-here}'
   $'sort key span\t[The Hague]{.index sort="Hague"}'
   $'sub-level sort key\t[]{.index entry="mathematicians!von Neumann" sort="!Neumann"}'
+  $'principal mention\t[term]{.index mention="principal"}'
 )
 
 # ---------------------------------------------------------------------------
@@ -254,6 +255,28 @@ README_EMPTY_CLAIMS=(
 )
 
 # ---------------------------------------------------------------------------
+# README claims about the principal mention (NORMATIVE, M20). Same discipline
+# as the arrays around it: one row per behavior the extension documents, its
+# bytes compared rather than a count, so what README promises and what this
+# suite exercises cannot drift. Whitespace is flattened before the comparison,
+# so a claim README wraps across lines is still one row here.
+README_PRINCIPAL_CLAIMS=(
+  $'emphasis\tthe index emphasizes that locator alone'
+  $'html class\tcarries the class `qi-principal`'
+  $'control\ta term with no role anywhere is unchanged'
+  $'redefinable\tDefine your own in the document\'s preamble and yours is kept'
+  $'no locator\tThe role is reported and dropped, and the mark indexes exactly as it would without it'
+  # The exception the LaTeX level fold creates, which the blanket claim above
+  # contradicted once the fold-induced self-target began keeping its role
+  # (review round 3).
+  $'fold exception\tThe same mark can therefore be emphasized in the PDF and plain in HTML'
+  $'empty value\tsince `mention=""` is a value you wrote rather than an attribute you left off'
+  # The one silent degradation (RR01 recommendation 4). Pinned like every other
+  # documented behavior, and exercised by the T9 fixture's `oni` entry rather
+  # than merely asserted here.
+  $'range degradation\ta principal mention whose page is anywhere in such a range, its first page included, prints plain, silently'
+)
+
 # README claims about letter groups (NORMATIVE, M07-AC6). Same discipline as
 # README_HTML_CLAIMS: one row per behavior the extension documents, compared
 # as bytes, so the docs and what this suite exercises cannot drift apart.
@@ -6594,6 +6617,18 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  ceiling, so none dangles anywhere. 0.
 #   placement      1 attribute: `see="widget"`, and `widget` is marked three
 #                  times in that file. 0.
+#   principal      2 attributes, both `see="basilisk"` — one on the mark whose
+#                  role is dropped for carrying a cross-reference, one on the
+#                  cross-reference mark of the contested `gorgon` key. The file
+#                  marks `basilisk` three times, so both resolve. 0.
+#   principal-twin the same two attributes: the twin removes role attributes
+#                  and nothing else, so its target set is identical. 0.
+#   principal-cases  1 attribute, on the mark whose entry the LaTeX three-level
+#                  fold rewrites to exactly what the target names. This corpus
+#                  renders to gfm, which has no ceiling and so no fold, and
+#                  there the target names a path nothing indexes and dangles —
+#                  the back-end asymmetry D-005 settles, and the reason that
+#                  mark is in the fixture at all. 1.
 #   resolving-xref 3 attributes, all three resolving by construction. 0.
 #
 # Reconciling xref-escaping's corpus so its targets resolve is its own piece of
@@ -6613,6 +6648,9 @@ examples/fold-xref-self.qmd	1
 examples/fold-xref.qmd	1
 examples/html-index.qmd	1
 examples/placement.qmd	0
+examples/principal-cases.qmd	1
+examples/principal-twin.qmd	0
+examples/principal.qmd	0
 examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
 examples/xref-conflict.qmd	14
@@ -7051,7 +7089,14 @@ if carried(os.environ['FOLD_TEX']) != [FOLD_ONLY]:
 # above from copies taken at their own renders. What is required is that no
 # OTHER artifact carries either shape, and that fold-xref's, if it is still on
 # disk, carries only the shape it writes.
-ALLOWED = {'examples/fold-xref.tex': {FOLD_ONLY}}
+# M20's two fixtures each mark `gorgon` with a plain locator mark and a
+# cross-reference mark, which is a contested key of the folded-field shape, so
+# each carries that shape and only it. Listed for the same reason fold-xref is
+# — the sweep tolerates their absence, since whichever render ran last decides
+# whether the intermediate .tex is still on disk.
+ALLOWED = {'examples/fold-xref.tex': {FOLD_ONLY},
+           'examples/principal.tex': {FOLD_ONLY},
+           'examples/principal-twin.tex': {FOLD_ONLY}}
 wrong = []
 for path in sorted(glob.glob('examples/*.tex')):
     want = ALLOWED.get(path, set())
@@ -7586,6 +7631,244 @@ M18BOTHPDFPY
 pass "M18 (F5): the both-attributes site reaches a compiled artifact, where both of its folded targets print as the entries they name print"
 
 # ---------------------------------------------------------------------------
+# M20 — a term's principal discussion prints as its principal locator.
+#
+# ORACLE NOTE. Two toolchain layers sit between what the filter emits and what
+# is checked here, and both are read from their own documented behavior rather
+# than from this run's output:
+#   1. hyperref rewrites an encapsulation before makeindex runs. A plain
+#      locator becomes `\hyperpage{N}`; one carrying `|CMD` becomes
+#      `\hyperxindexformat{\CMD}{N}`. That is the same rewriting the
+#      cross-reference channel has always been subject to (see passes.lua).
+#   2. makeindex writes the `.ind` and logs to the `.ilg`. Its conflict
+#      predicate is same key, same page, ANY byte difference in the
+#      encapsulation string — bare against encapsulated included — and it
+#      reports a conflict as a WARNING at exit 0; Quarto alone fails the render,
+#      on a regex over that transcript. So the `.ilg`'s own warning count, and
+#      not the exit status, is what this section reads (D-007).
+#   3. makeindex folds a RUN of consecutive pages under one encapsulation into
+#      a single group, and three or more of them into a `--` range. The fixture
+#      separates its three basilisk marks by filler pages for that reason: a
+#      range is a page string the typeset-time registry cannot match, so three
+#      adjacent pages would print no emphasis while every check still passed.
+# Page numbers are not hardcoded here — the reader takes them from the .ind
+# groups themselves and cross-links them against the .aux registrations, since
+# the fixture's pagination is not what these criteria are about.
+# ---------------------------------------------------------------------------
+# Removed before the render, not merely overwritten by it: AC5 is stated over
+# the gfm render of this run, and a stale committed .md left in place would
+# satisfy the check after the filter had regressed (the audit's F6).
+rm -f examples/principal.md examples/principal.html
+for fmt in latex html gfm; do
+  quarto render examples/principal.qmd --to $fmt > "$WORK/principal-$fmt.log" 2>&1 \
+    || { cat "$WORK/principal-$fmt.log" >&2; fail "M20: examples/principal.qmd failed to render to $fmt"; }
+done
+for artifact in examples/principal.md examples/principal.html; do
+  [ -s "$artifact" ] \
+    || fail "M20: the render produced no $artifact, so every check stated over it would read a file this run did not write"
+done
+# Copied before the PDF render below removes the intermediate .tex (M15).
+cp examples/principal.tex "$WORK/principal.tex"
+for fmt in latex html gfm; do
+  quarto render examples/principal-twin.qmd --to $fmt \
+    > "$WORK/principal-twin-$fmt.log" 2>&1 \
+    || { cat "$WORK/principal-twin-$fmt.log" >&2; fail "M20: examples/principal-twin.qmd failed to render to $fmt"; }
+done
+cp examples/principal-twin.tex "$WORK/principal-twin.tex"
+# Removed, not merely overwritten: AC1 is stated over the artifacts of THIS
+# render, and its whole content is a cross-artifact agreement — the identifiers
+# the .ind carries against the ones the .aux registers. A stale .aux left in
+# place from a tree where the ordinals were assigned differently would satisfy
+# the check while this run's filter emitted something else entirely.
+rm -f examples/principal.ind examples/principal.ilg examples/principal.aux
+quarto render examples/principal.qmd --to pdf > "$WORK/principal-pdf.log" 2>&1 \
+  || { cat "$WORK/principal-pdf.log" >&2; fail "M20-AC1: examples/principal.qmd failed to render to PDF"; }
+# The fixture sets `latex-clean: false` precisely so these survive; their
+# absence means the fixture lost that option, not that the render was clean.
+for aux in ind ilg aux; do
+  [ -f "examples/principal.$aux" ] \
+    || fail "M20-AC1: the PDF render left no examples/principal.$aux — the fixture's latex-clean option is what keeps it, and without it this criterion has no evidence at all"
+  cp "examples/principal.$aux" "$WORK/principal.$aux"
+done
+
+PRINCIPAL_CMD="quartoindexprincipal"
+LOCATOR_CMD="quartoindexlocator"
+REGISTER_CMD="quartoindexregister"
+PRINCIPALPAGE_CMD="quartoindexprincipalpage"
+HTML_PRINCIPAL_CLASS="qi-principal"
+python3 tests/m20probes.py ind "$WORK/principal.ind" "$WORK/principal.ilg" \
+  "$WORK/principal.aux" "$LOCATOR_CMD" "$PRINCIPALPAGE_CMD"
+pass "M20-AC1: every locator of a principal key carries one uniform encapsulation, the .aux registers exactly those identifiers from pages their own entries list, and makeindex logs no warning"
+
+# M20-AC2 — the same fact in the HTML back-end, read structurally. The class
+# AND the emphasis node are both asserted: the class alone needs a stylesheet
+# this extension does not ship, and the emphasis alone would leave an author's
+# CSS nothing to hold on to.
+HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" python3 tests/m20probes.py html examples/principal.html
+pass "M20-AC2: the HTML index marks exactly the principal mark's locator link, at its own position, and leaves every other locator plain"
+
+# M20-AC3/AC4 — the two reports, in all three formats, and the counterfactual
+# each of them promises. The counts are per MARK, not a total: a filter that
+# reported the right number of times about the wrong marks would pass a total.
+M20_UNKNOWN='names no role this extension knows'
+M20_NOLOCATOR='has no locator to emphasize'
+M20_UNINDEXED='the mark indexes nothing, so there is no locator to emphasize'
+for fmt in latex html gfm; do
+  # Two marks are told their cross-reference took the locator's place, and
+  # exactly two: `imp` writes a role beside a target naming its OWN entry, which
+  # is dropped as a self-reference so the mark does have a locator after all. A
+  # third here would be that mark being told otherwise a line before the drop's
+  # own report contradicts it (review F2).
+  check_warning_count "$WORK/principal-$fmt.log" \
+    "$M20_NOLOCATOR" 2 "M20-AC3 ($fmt)"
+  check_warning_count "$WORK/principal-$fmt.log" \
+    'mention="principal" on term "cockatrice" carries see= as well' 1 \
+    "M20-AC3 (names the mark and the attribute, $fmt)"
+  # A mark writing both attributes is told about both: a report naming only the
+  # first one it found would describe half the mark (review F12).
+  check_warning_count "$WORK/principal-$fmt.log" \
+    'mention="principal" on term "harpy" carries see= and see-also= as well' 1 \
+    "M20-AC3 (names every cross-reference attribute, $fmt)"
+  # And a role on a mark that indexes nothing at all is reported rather than
+  # dropped in silence, which is the other way a mark can have no locator for a
+  # role to reach (review F11).
+  check_warning_count "$WORK/principal-$fmt.log" "$M20_UNINDEXED" 1 \
+    "M20-AC3 (a mark that indexes nothing, $fmt)"
+  check_warning_count "$WORK/principal-twin-$fmt.log" "$M20_UNINDEXED" 0 \
+    "M20-AC3 (twin, a mark that indexes nothing, $fmt)"
+  check_warning_count "$WORK/principal-$fmt.log" "$M20_UNKNOWN" 2 \
+    "M20-AC4 ($fmt, total)"
+  check_warning_count "$WORK/principal-$fmt.log" \
+    'on term "dryad" names no role this extension knows ("paramount")' 1 \
+    "M20-AC4 (names the mark and the value, $fmt)"
+  check_warning_count "$WORK/principal-$fmt.log" \
+    'on term "ettin" names no role this extension knows ("")' 1 \
+    "M20-AC4 (an empty value is a value, $fmt)"
+  # The twin writes no role at all, so neither report may fire for it. Without
+  # this the counts above would pass on a filter reporting on every mark.
+  check_warning_count "$WORK/principal-twin-$fmt.log" "$M20_UNKNOWN" 0 \
+    "M20-AC4 (twin, $fmt)"
+  check_warning_count "$WORK/principal-twin-$fmt.log" "$M20_NOLOCATOR" 0 \
+    "M20-AC3 (twin, $fmt)"
+done
+pass "M20-AC3/AC4: the dropped-role report and the unrecognized-value report each name their own mark and fire exactly once per mark in LaTeX, HTML and gfm — the empty value among them — and neither fires anywhere in the role-free twin"
+
+# The counterfactual both criteria state: a mark whose role is reported and
+# ignored emits what it emits with the attribute removed. Compared against the
+# twin's own emission rather than against a written-down string, so the claim
+# is about the filter's behavior and not about what someone typed here.
+python3 tests/m20probes.py twin "$WORK/principal.tex" "$WORK/principal-twin.tex"
+pass "M20-AC3/AC4: a mark whose role is reported and ignored emits what the same mark emits in the role-free twin, compared command by command"
+
+# ---------------------------------------------------------------------------
+# Manifest 9 — every index span examples/principal.qmd writes into gfm, in
+# document order, one per line (M20-AC5).
+# Same ORACLE RULE as manifest 1, with the pass-through layers derived by hand:
+#   4. gfm has no index back-end, so a mark reaches it as the `span` Pandoc read
+#      it as: its class, then its attributes in SOURCE order, each name
+#      data-prefixed because Pandoc data-prefixes an attribute it does not know
+#      (which is why the role attribute is `mention` and not `role` — the
+#      milestone's Decisions entry).
+#   5. Visible text passes through as written, nested inline markup included.
+#   6. A mark that indexes nothing is removed with its content, so the
+#      entry-less mark writes no row here; every other mark writes exactly one.
+# The fixture renders gfm with `wrap: none`, so no row is broken by the
+# writer's column limit and these are the bytes of the render.
+# ---------------------------------------------------------------------------
+read -r -d '' PRINCIPAL_GFM_SPANS <<'MANIFEST' || true
+<span class="index">basilisk</span>
+<span class="index" data-mention="principal">basilisk</span>
+<span class="index">basilisk</span>
+<span class="index" data-mention="principal" data-see="basilisk">cockatrice</span>
+<span class="index" data-mention="paramount">dryad</span>
+<span class="index" data-mention="">ettin</span>
+<span class="index">faun</span>
+<span class="index">faun</span>
+<span class="index" data-mention="principal">gorgon</span>
+<span class="index" data-see="basilisk">gorgon</span>
+<span class="index" data-mention="principal" data-see="basilisk" data-see-also="faun">harpy</span>
+<span class="index" data-mention="principal" data-see="imp">imp</span>
+<span class="index" data-mention="principal">**kraken**</span>
+MANIFEST
+printf '%s\n' "$PRINCIPAL_GFM_SPANS" > "$WORK/principal-gfm-spans.txt"
+
+# M20-AC5 — the format with no index back-end. Every index span the render
+# carries is compared against the manifest above, in document order and byte
+# for byte, and the permitted residue is stated as an exact set of tokens
+# rather than as an exemption, so a stray one cannot be argued into it.
+python3 tests/m20probes.py gfm examples/principal.md "$WORK/principal-gfm-spans.txt"
+pass "M20-AC5: in the format with no index back-end every index mark the fixture writes passes through as its visible text plus exactly its own attributes, data-prefixed, in document order and byte for byte against a hand-derived manifest, with no residue of either back-end"
+
+# M20-AC6 — the subsystem is injected where it is used and nowhere else. Both
+# directions, or a filter that injected it into every document would pass. The
+# reader bounds both reads to the region before `\begin{document}` and refuses
+# an absent or empty file, so the negative half cannot pass vacuously.
+python3 tests/m20probes.py tex "$WORK/principal.tex" examples/content.tex \
+  "$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
+pass "M20-AC6: the four subsystem commands are defined once each with \\providecommand* in the fixture that uses them, nothing else naming quartoindex is defined there, and none of them reaches a document with no principal mention"
+python3 tests/m20probes.py tex "$WORK/principal.tex" "$WORK/principal-twin.tex" \
+  "$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
+pass "M20-AC6: nor does any of them reach the role-free twin, which is the same document with every mention attribute removed"
+
+# ---------------------------------------------------------------------------
+# M20 T9 — the regressions IP2's forever clause earns, in a fixture of their
+# own. It is separate from examples/principal.qmd for two reasons: adding marks
+# there would move AC5's hand-derived thirteen-span manifest, and this document
+# redefines the emphasis command, which the fixture the other criteria are
+# stated over must not do.
+#
+# ORACLE NOTE. `pdftotext` cannot see `\textbf`: bold and plain text extract to
+# the same bytes. So every emphasis claim below is read through the fixture's
+# own redefinition of \quartoindexprincipal to a bracketed marker — which is
+# not a workaround but the second thing this section proves, since that
+# redefinition taking effect at all is the author-facing promise README makes.
+# ---------------------------------------------------------------------------
+rm -f examples/principal-cases.ind examples/principal-cases.ilg \
+      examples/principal-cases.aux examples/principal-cases.pdf
+quarto render examples/principal-cases.qmd --to pdf \
+  > "$WORK/principal-cases-pdf.log" 2>&1 \
+  || { cat "$WORK/principal-cases-pdf.log" >&2; fail "M20 T9: examples/principal-cases.qmd failed to render to PDF — a plain and a principal mark of one key on one page is the shape this milestone died on, and this render is what proves it no longer breaks the document"; }
+for aux in ind ilg aux; do
+  [ -f "examples/principal-cases.$aux" ] \
+    || fail "M20 T9: the PDF render left no examples/principal-cases.$aux"
+  cp "examples/principal-cases.$aux" "$WORK/principal-cases.$aux"
+done
+[ -s examples/principal-cases.pdf ] \
+  || fail "M20 T9: the render produced no PDF, so the printed index every clause below reads was never written"
+pdftotext examples/principal-cases.pdf "$WORK/principal-cases.txt"
+python3 tests/m20probes.py cases "$WORK/principal-cases.txt" \
+  "$WORK/principal-cases.ilg" "$WORK/principal-cases.ind" \
+  "$WORK/principal-cases.aux" "$WORK/principal-cases-pdf.log"
+pass "M20 T9: every locator of the printed index is marked exactly when the registry names it — derived from the .ind and .aux rather than written down — across a same-page pair, a footnote, two page ranges, a registered page that is not first in its list, a page past nine, a fold-induced self-target and a role-free control, at zero makeindex warnings and through the author's own redefinition of the emphasis command"
+
+# The documentation half of T7, held to the same discipline as every other
+# README claim array: the bytes the extension documents are compared, so a
+# behavior that changes without its documentation fails here.
+printf '%s\n' "${README_PRINCIPAL_CLAIMS[@]}" > "$WORK/readme-principal.txt"
+python3 - "$WORK/readme-principal.txt" README.md <<'M20DOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M20: README.md does not document the principal mention as '
+          'this suite exercises it:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M20: all {len(rows)} documented claims about the principal '
+      f'mention appear verbatim in README.md')
+M20DOCPY
+pass "M20: every behavior the README documents for the principal mention is present verbatim, and its authoring form is in the suite's normative supported-forms list"
+
+# ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--self-test" ]; then
@@ -7673,6 +7956,368 @@ filtersrc.sources()" >/dev/null 2>&1; then
     fail "M16-AC2: filtersrc.sources() returned successfully with no .lua files; every source-reading check would sweep nothing and pass"
   fi
   pass "M16-AC2: the enumeration reaches modules/ ($BEFORE -> $AFTER with no edit here) and refuses an empty source set"
+
+  # -------------------------------------------------------------------------
+  # M20 — every check the milestone adds, shown discriminating.
+  #
+  # A green check is evidence about what it covers, not about the code, and a
+  # check that cannot fail covers nothing (the M01 lesson, extended four times
+  # since). Each reader is re-run against a copy of its own artifact with a
+  # defect planted in it, and must FAIL — and the defects vary FORM as well as
+  # site, so that one exemplar cannot stand in for the family: the emphasis on
+  # the wrong locator, on every locator, on none, and a warning suppressed in
+  # one format alone are four different ways for this feature to be broken.
+  # -------------------------------------------------------------------------
+  m20_defect() {
+    local label="$1"; shift
+    if ( "$@" ) >/dev/null 2>&1; then
+      fail "M20 self-test: the check passed on an artifact with <<$label>> planted in it"
+    fi
+    printf 'ok   M20 self-test: the check fails on <<%s>>\n' "$label"
+  }
+
+  # A plant that changes nothing would be reported above as the CHECK failing
+  # to discriminate, when the fault is the probe's — a defect wearing the
+  # costume of a finding (the discipline tests/plantdefect.py states). Every
+  # mutation below therefore goes through here, which refuses a no-op. It bit
+  # once already: gfm wraps a long line inside a tag, so a sed aimed at a whole
+  # `<span ...>text</span>` matched nothing and the check "passed" on an
+  # unmutated file.
+  m20_plant() {
+    local src="$1" dst="$2"; shift 2
+    sed "$@" "$src" > "$dst"
+    if cmp -s "$src" "$dst"; then
+      fail "M20 self-test: the defect aimed at $dst planted nothing — the check that follows would be reported as failing to discriminate when the fault is this mutation's"
+    fi
+  }
+
+  # Some mutations below straddle makeindex's own line wrapping — the shape a
+  # reader must collapse before it reads anything — so they cannot be aimed
+  # with a line-at-a-time sed. Same no-op refusal as m20_plant.
+  m20_plantpl() {
+    local src="$1" dst="$2" expr="$3"
+    perl -0777 -pe "$expr" "$src" > "$dst"
+    if cmp -s "$src" "$dst"; then
+      fail "M20 self-test: the defect aimed at $dst planted nothing — the check that follows would be reported as failing to discriminate when the fault is this mutation's"
+    fi
+  }
+
+  M20W="$WORK/m20-planted"
+  rm -rf "$M20W"; mkdir -p "$M20W"
+
+  # --- the compiled index and the registry it is read against. The emphasis is
+  #     no longer IN the .ind (D-007), so these plants are aimed at the two
+  #     properties that replaced it: that a key's every locator carries one
+  #     identifier, and that the .aux registers exactly those identifiers from
+  #     pages their own entries list. Both artifacts are planted in, and one
+  #     registration is planted in the `\csname` form as well as the ordinary
+  #     one, so the reader is shown to depend on the form it claims to read.
+  cp "$WORK/principal.ilg" "$M20W/clean.ilg"
+  cp "$WORK/principal.ind" "$M20W/clean.ind"
+  cp "$WORK/principal.aux" "$M20W/clean.aux"
+  m20_ind() {
+    python3 tests/m20probes.py ind "$1" "$2" "$3" "$LOCATOR_CMD" "$PRINCIPALPAGE_CMD"
+  }
+  # (i) two locators of one key carrying different identifiers — the emission
+  #     that makes a shared page a render-breaking conflict, and the one thing
+  #     the uniform encapsulation exists to make unreachable.
+  m20_plant "$WORK/principal.ind" "$M20W/split.ind" \
+    -e "s/{qi1}}{5}/{qi9}}{5}/"
+  m20_defect "two locators of one key carrying different identifiers" \
+    m20_ind "$M20W/split.ind" "$M20W/clean.ilg" "$M20W/clean.aux"
+  # (ii) a key's locators on adjacent pages. Not cosmetic: makeindex folds a run
+  #      of three into a `--` range, which is a page string the registry cannot
+  #      match, so the entry would print with no emphasis while every other
+  #      clause still passed. This is the trap the fixture's filler pages avoid.
+  m20_plant "$WORK/principal.ind" "$M20W/adjacent.ind" \
+    -e "s/{qi1}}{5}/{qi1}}{4}/"
+  m20_defect "a principal key's locators on adjacent pages" \
+    m20_ind "$M20W/adjacent.ind" "$M20W/clean.ilg" "$M20W/clean.aux"
+  # (iii) the encapsulation leaking onto the role-free control, which no clause
+  #       reading the principal entries would ever show.
+  m20_plant "$WORK/principal.ind" "$M20W/control.ind" \
+    -e "s/faun, \\\\hyperpage{7, 8}/faun, \\\\hyperxindexformat{\\\\$LOCATOR_CMD{qi5}}{7, 8}/"
+  m20_defect "the locator encapsulation leaking onto the role-free control entry" \
+    m20_ind "$M20W/control.ind" "$M20W/clean.ilg" "$M20W/clean.aux"
+  # (iv) a contested key that stopped folding its cross-reference into the
+  #      printed text, and one that folds it after its locator rather than
+  #      before. The second straddles the .ind's own line break.
+  m20_plant "$WORK/principal.ind" "$M20W/unfolded.ind" \
+    -e "s/gorgon, \\\\see{basilisk}{}, /gorgon, /"
+  m20_defect "a contested key no longer folding its cross-reference into its printed text" \
+    m20_ind "$M20W/unfolded.ind" "$M20W/clean.ilg" "$M20W/clean.aux"
+  m20_plantpl "$WORK/principal.ind" "$M20W/afterfold.ind" \
+    's/\\see\{basilisk\}\{\}, (\s*)(\\hyperxindexformat\{\\quartoindexlocator\{qi2\}\}\{9\})/$2, $1\\see{basilisk}{}/'
+  m20_defect "a contested key printing its cross-reference after its locator" \
+    m20_ind "$M20W/afterfold.ind" "$M20W/clean.ilg" "$M20W/clean.aux"
+  # (v) the registry, four ways. A registration dropped; two collapsed onto one
+  #     identifier; one moved to a page its entry does not list; and one moved
+  #     to a page it DOES list, which only the principal mark's own position
+  #     rules out.
+  m20_plant "$WORK/principal.aux" "$M20W/dropped.aux" \
+    -e "/$PRINCIPALPAGE_CMD{qi1}/d"
+  m20_defect "a registration dropped from the .aux" \
+    m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/dropped.aux"
+  m20_plant "$WORK/principal.aux" "$M20W/collapsed.aux" \
+    -e "s/$PRINCIPALPAGE_CMD{qi2}{9}/$PRINCIPALPAGE_CMD{qi1}{5}/"
+  m20_defect "two registrations collapsed onto one identifier" \
+    m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/collapsed.aux"
+  m20_plant "$WORK/principal.aux" "$M20W/offentry.aux" \
+    -e "s/$PRINCIPALPAGE_CMD{qi1}{3}/$PRINCIPALPAGE_CMD{qi1}{4}/"
+  m20_defect "a registration naming a page its own entry does not list" \
+    m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/offentry.aux"
+  m20_plant "$WORK/principal.aux" "$M20W/wrongpage.aux" \
+    -e "s/$PRINCIPALPAGE_CMD{qi1}{3}/$PRINCIPALPAGE_CMD{qi1}{1}/"
+  m20_defect "a registration on a page of its entry the principal mark is not on" \
+    m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/wrongpage.aux"
+  # (vi) the same registration written the OTHER way it can be written — the
+  #      expanded `\csname` form the injected reader itself uses. The effect on
+  #      the render is identical; the reader must not be satisfied by it, since
+  #      what it is checking is what the filter emitted, not what LaTeX did.
+  m20_plant "$WORK/principal.aux" "$M20W/csname.aux" \
+    -e "s/\\\\$PRINCIPALPAGE_CMD{qi1}{3}/\\\\expandafter\\\\gdef\\\\csname qi@p@qi1@3\\\\endcsname{}/"
+  m20_defect "a registration written in the expanded csname form" \
+    m20_ind "$M20W/clean.ind" "$M20W/clean.ilg" "$M20W/csname.aux"
+  # (vii) the transcript half: makeindex reporting a conflict the check must not
+  #       read past. Planted in the .ilg alone, with the .ind left correct.
+  # Two clauses, two plants, each through the no-op guard — the reader asserts
+  # the absence of the conflict line AND a zero warning count, and a single
+  # mutation that broke both would show neither clause to be load-bearing
+  # (review round 2, R2-F11; the previous version also carried an `awk` line
+  # whose `print` ran before its `next`, so it filtered nothing at all).
+  m20_plant "$WORK/principal.ilg" "$M20W/counted.ilg" \
+    -e 's/0 warnings)/1 warning)/'
+  m20_defect "a nonzero warning count in the makeindex transcript" \
+    m20_ind "$M20W/clean.ind" "$M20W/counted.ilg" "$M20W/clean.aux"
+  m20_plant "$WORK/principal.ilg" "$M20W/warned.ilg" \
+    -e 's|^Output written|## Warning: Conflicting entries: multiple encaps for the same page under same key.\n&|'
+  m20_defect "a conflicting-encapsulation line in the makeindex transcript" \
+    m20_ind "$M20W/clean.ind" "$M20W/warned.ilg" "$M20W/clean.aux"
+
+  # --- the preamble. Review F4 records this criterion as having no planted
+  #     defect at all; here are four, on both halves and in two forms — a
+  #     definition that is not a \providecommand, one that is not in the
+  #     preamble, one hidden behind a name built at expansion time, and one
+  #     injected into a document with no principal mention.
+  m20_tex() {
+    python3 tests/m20probes.py tex "$1" "$2" \
+      "$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
+  }
+  m20_plant "$WORK/principal.tex" "$M20W/notprovide.tex" \
+    -e "s/providecommand\\*\\\\$REGISTER_CMD\\[1\\]/gdef\\\\$REGISTER_CMD/"
+  m20_defect "a subsystem command defined with something other than \\providecommand" \
+    m20_tex "$M20W/notprovide.tex" examples/content.tex
+  m20_plantpl "$WORK/principal.tex" "$M20W/belowdoc.tex" \
+    's/\\providecommand\*\\quartoindexprincipal\[1\]\{\\textbf\{\#1\}\}\n//; s/(\\begin\{document\})/$1\n\\providecommand*\\quartoindexprincipal[1]{\\textbf{\#1}}/'
+  m20_defect "a subsystem command defined below \\begin{document} rather than in the preamble" \
+    m20_tex "$M20W/belowdoc.tex" examples/content.tex
+  m20_plantpl "$WORK/principal.tex" "$M20W/csname.tex" \
+    's/(\\begin\{document\})/\\expandafter\\def\\csname quartoindexextra\\endcsname{}\n$1/'
+  m20_defect "a quartoindex command whose name is built with \\csname" \
+    m20_tex "$M20W/csname.tex" examples/content.tex
+  m20_plantpl examples/content.tex "$M20W/leakedpre.tex" \
+    's/(\\begin\{document\})/\\providecommand*\\quartoindexlocator[2]{}\n$1/'
+  m20_defect "the subsystem injected into a document with no principal mention" \
+    m20_tex "$WORK/principal.tex" "$M20W/leakedpre.tex"
+
+  # --- the HTML index. The class and the emphasis node are separable, so each
+  #     is removed on its own: a check asserting only one of the two would pass
+  #     on the artifact that lost the other.
+  m20_plant examples/principal.html "$M20W/wrongmark.html" \
+    -e 's/<a href="#qi-mark-2" class="qi-principal"><strong>2<\/strong><\/a>/<a href="#qi-mark-2">2<\/a>/' \
+    -e 's/<a href="#qi-mark-1">1<\/a>/<a href="#qi-mark-1" class="qi-principal"><strong>1<\/strong><\/a>/'
+  m20_defect "the HTML emphasis on the first mention instead of the principal one" \
+    env HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
+    python3 tests/m20probes.py html "$M20W/wrongmark.html"
+  m20_plant examples/principal.html "$M20W/noclass.html" \
+    -e 's/class="qi-principal"><strong>2<\/strong>/><strong>2<\/strong>/'
+  m20_defect "the class dropped from the HTML principal locator" \
+    env HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
+    python3 tests/m20probes.py html "$M20W/noclass.html"
+  m20_plant examples/principal.html "$M20W/nostrong.html" \
+    -e 's/class="qi-principal"><strong>2<\/strong><\/a>/class="qi-principal">2<\/a>/'
+  m20_defect "the emphasis node dropped from the HTML principal locator" \
+    env HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
+    python3 tests/m20probes.py html "$M20W/nostrong.html"
+
+  # --- the back-end-less format. The ARIA-role defect the attribute was
+  #     renamed to avoid is planted directly, since no filter change can
+  #     produce it any more and it is the one this criterion exists for.
+  m20_plant examples/principal.md "$M20W/aria.md" \
+    -e 's/data-mention="principal"/role="principal"/'
+  m20_defect "a literal ARIA role attribute in the pass-through format" \
+    python3 tests/m20probes.py gfm "$M20W/aria.md" "$WORK/principal-gfm-spans.txt"
+  # Aimed at the attribute alone, not at the whole span: gfm wraps a long
+  # line inside the tag, so a pattern spanning the element matches nothing.
+  m20_plant examples/principal.md "$M20W/residue.md" \
+    -e 's/data-mention="paramount"/data-mention="paramount" data-qi-pending="4"/'
+  m20_defect "the filter's own plumbing attribute surviving into the pass-through format" \
+    python3 tests/m20probes.py gfm "$M20W/residue.md" "$WORK/principal-gfm-spans.txt"
+  # The three axes the manifest comparison adds over the residue sweep, each
+  # planted on its own: a mark the render lost, one it gained, and two the
+  # filter emitted in the wrong order. The last is what a reader that sorted
+  # its spans before comparing could not catch at all.
+  m20_plant examples/principal.md "$M20W/dropped.md" \
+    -e 's|<span class="index" data-mention="paramount">dryad</span>|dryad|'
+  m20_defect "an index mark missing from the pass-through render" \
+    python3 tests/m20probes.py gfm "$M20W/dropped.md" "$WORK/principal-gfm-spans.txt"
+  m20_plant examples/principal.md "$M20W/extra.md" \
+    -e 's|<span class="index">faun</span>|<span class="index">faun</span> and <span class="index">faun</span>|'
+  m20_defect "an index mark the fixture never wrote appearing in the pass-through render" \
+    python3 tests/m20probes.py gfm "$M20W/extra.md" "$WORK/principal-gfm-spans.txt"
+  m20_plant examples/principal.md "$M20W/transposed.md" \
+    -e 's|<span class="index" data-mention="paramount">dryad</span>|@@QI@@|' \
+    -e 's|<span class="index" data-mention="">ettin</span>|<span class="index" data-mention="paramount">dryad</span>|' \
+    -e 's|@@QI@@|<span class="index" data-mention="">ettin</span>|'
+  m20_defect "two index marks emitted in the wrong order" \
+    python3 tests/m20probes.py gfm "$M20W/transposed.md" "$WORK/principal-gfm-spans.txt"
+  # The nested-markup mark, mangled: the span the widened scan exists to
+  # enumerate. A scan that could not see it would drop it from the domain
+  # rather than fail, so the defect has to be inside that span's own text.
+  m20_plant examples/principal.md "$M20W/nested.md" \
+    -e 's|<span class="index" data-mention="principal">\*\*kraken\*\*</span>|<span class="index" data-mention="principal">kraken</span>|'
+  m20_defect "the nested inline markup stripped from a mark's visible text" \
+    python3 tests/m20probes.py gfm "$M20W/nested.md" "$WORK/principal-gfm-spans.txt"
+
+  # --- the counterfactual. Both directions: a role that stopped taking effect,
+  #     and one that reached a mark it must not.
+  m20_plant "$WORK/principal.tex" "$M20W/inert.tex" \
+    -e "s/|$LOCATOR_CMD{qi[0-9]*}//g" -e "s/\\\\$REGISTER_CMD{qi[0-9]*}//g"
+  m20_defect "the role taking no effect at all" \
+    python3 tests/m20probes.py twin "$M20W/inert.tex" "$WORK/principal-twin.tex"
+  m20_plant "$WORK/principal.tex" "$M20W/leaked.tex" \
+    -e "s/\\\\index{faun}/\\\\index{faun|$LOCATOR_CMD{qi1}}/"
+  m20_defect "the role reaching the role-free control mark" \
+    python3 tests/m20probes.py twin "$M20W/leaked.tex" "$WORK/principal-twin.tex"
+  # Only the PRINCIPAL mark's own command encapsulated, which is the emission
+  # D-007 replaced: it reads correctly in every document whose marks happen to
+  # sit on different pages, and breaks the render in the one where they do not.
+  m20_plant "$WORK/principal.tex" "$M20W/perlocator.tex" \
+    -e "s/{basilisk|$LOCATOR_CMD{qi1}}/{basilisk}/g"
+  m20_defect "only the principal mark of a key encapsulated, its plain locators bare" \
+    python3 tests/m20probes.py twin "$M20W/perlocator.tex" "$WORK/principal-twin.tex"
+  # And the registration dropped while the encapsulation stays, which prints a
+  # uniform, conflict-free, entirely unemphasized entry.
+  m20_plant "$WORK/principal.tex" "$M20W/unregistered.tex" \
+    -e "s/\\\\$REGISTER_CMD{qi1}//"
+  m20_defect "the principal mark emitting no registration" \
+    python3 tests/m20probes.py twin "$M20W/unregistered.tex" "$WORK/principal-twin.tex"
+
+  # --- the two reports, on both axes and in every format. `warn_discrimination`
+  #     is the existing tool for the missing/duplicated axis; the loop puts it
+  #     over all three formats, which is the axis a report that quietly stopped
+  #     being format-neutral would slip through.
+  for fmt in latex html gfm; do
+    warn_discrimination "$WORK/principal-$fmt.log" "$M20_NOLOCATOR" 2 \
+      "M20-AC3 ($fmt)"
+    warn_discrimination "$WORK/principal-$fmt.log" "$M20_UNINDEXED" 1 \
+      "M20-AC3 (a mark that indexes nothing, $fmt)"
+    warn_discrimination "$WORK/principal-$fmt.log" "$M20_UNKNOWN" 2 \
+      "M20-AC4 ($fmt)"
+  done
+  # --- the T9 regressions. One plant per shape the fixture exists to hold, so
+  #     a reader that stopped reading any one of them is caught rather than
+  #     silently carrying it.
+  cp "$WORK/principal-cases.ilg" "$M20W/cases-clean.ilg"
+  cp "$WORK/principal-cases.ind" "$M20W/cases-clean.ind"
+  cp "$WORK/principal-cases.aux" "$M20W/cases-clean.aux"
+  cp "$WORK/principal-cases-pdf.log" "$M20W/cases-clean.log"
+  m20_cases() {
+    python3 tests/m20probes.py cases "$1" "$2" "${3:-$M20W/cases-clean.ind}" \
+      "${4:-$M20W/cases-clean.aux}" "${5:-$M20W/cases-clean.log}"
+  }
+  m20_plant "$WORK/principal-cases.txt" "$M20W/samepage.txt" \
+    -e "s/^wyvern, \[P:1\], 2$/wyvern, 1, 2/"
+  m20_defect "the same-page pair printing with no emphasis at all" \
+    m20_cases "$M20W/samepage.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/bothpages.txt" \
+    -e "s/^wyvern, \[P:1\], 2$/wyvern, [P:1], [P:2]/"
+  m20_defect "the emphasis spreading from the registered page to its neighbour" \
+    m20_cases "$M20W/bothpages.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/footnote.txt" \
+    -e "s/^naga, \[P:2\]$/naga, 2/"
+  m20_defect "a principal mark in a footnote losing its registration" \
+    m20_cases "$M20W/footnote.txt" "$M20W/cases-clean.ilg"
+  # --- the three shapes review round 2 found unexercised. Each is a page the
+  #     defect R2-F1 got wrong, and each plant is the printed form that defect
+  #     actually produced, not an invented one.
+  m20_plant "$WORK/principal-cases.txt" "$M20W/notfirst.txt" \
+    -e "s/^troll, 9, \[P:10\]$/troll, 9, 10/"
+  m20_defect "a registered page that is not first in its list printing plain" \
+    m20_cases "$M20W/notfirst.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/multichar.txt" \
+    -e "s/^undine, \[P:11\]$/undine, 11/"
+  m20_defect "a page number of more than one character printing plain" \
+    m20_cases "$M20W/multichar.txt" "$M20W/cases-clean.ilg"
+  # The degradation is ASSERTED, not tolerated: were a future makeindex or a
+  # future registry to start matching a range, this fixture is what says so,
+  # and README's claim about it would then be stale. Both ranges are planted —
+  # the one registered at its middle page and the one registered at its first,
+  # which is the range a per-token split could still mark.
+  m20_plant "$WORK/principal-cases.txt" "$M20W/range.txt" \
+    -e "s/^oni, 3–5$/oni, [P:3–5]/"
+  m20_defect "a folded page range printing emphasized, which README says it does not" \
+    m20_cases "$M20W/range.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/rangehead.txt" \
+    -e "s/^sylph, 6–8$/sylph, [P:6]–8/"
+  m20_defect "a range whose first page is registered printing emphasized" \
+    m20_cases "$M20W/rangehead.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/foldrole.txt" \
+    -e "s/^folk, kin, \[P:11\]$/folk, kin, 11/"
+  m20_defect "a role dropped from a mark whose target only self-references after the fold" \
+    m20_cases "$M20W/foldrole.txt" "$M20W/cases-clean.ilg"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/cases-control.txt" \
+    -e "s/^pixie, 12, 13$/pixie, [P:12], 13/"
+  m20_defect "the emphasis reaching the role-free control in the regression fixture" \
+    m20_cases "$M20W/cases-control.txt" "$M20W/cases-clean.ilg"
+  # The redefinition itself: with the author's marker gone, every emphasis claim
+  # above becomes unreadable rather than false, which is what makes this fixture
+  # depend on the promise README makes.
+  m20_plant "$WORK/principal-cases.txt" "$M20W/nomarker.txt" \
+    -e "s/\[P:\([0-9–-]*\)\]/\1/g"
+  m20_defect "the author's redefinition of the emphasis command not taking effect" \
+    m20_cases "$M20W/nomarker.txt" "$M20W/cases-clean.ilg"
+  # The registry half: the printed index is unchanged and the .aux moves under
+  # it, so the derivation and the page disagree — which is the direction a
+  # hand-written oracle cannot see at all.
+  m20_plant "$WORK/principal-cases.aux" "$M20W/cases-moved.aux" \
+    -e "s/{qi5}{10}/{qi5}{9}/"
+  m20_defect "a registration moved to the other locator of its own entry" \
+    m20_cases "$WORK/principal-cases.txt" "$M20W/cases-clean.ilg" \
+      "$M20W/cases-clean.ind" "$M20W/cases-moved.aux"
+  # The two shapes a reader deriving its expectation from the .aux CANNOT see
+  # unless it holds an independent statement of where each principal mark sits:
+  # here the registry and the printed page are mutated TOGETHER, which is what a
+  # real defect in the registration would do, and the previous derived-only
+  # reader passed both (review round 3). The first lands on a page the entry
+  # does not carry at all; the second on the entry's own other locator.
+  m20_plant "$WORK/principal-cases.aux" "$M20W/cases-offpage.aux" \
+    -e "s/{qi2}{2}/{qi2}{3}/"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/cases-offpage.txt" \
+    -e "s/^naga, \[P:2\]$/naga, 2/"
+  m20_defect "a registration on a page its own entry does not carry, with the printed index agreeing" \
+    m20_cases "$M20W/cases-offpage.txt" "$M20W/cases-clean.ilg" \
+      "$M20W/cases-clean.ind" "$M20W/cases-offpage.aux"
+  m20_plant "$WORK/principal-cases.aux" "$M20W/cases-otherloc.aux" \
+    -e "s/{qi1}{1}/{qi1}{2}/"
+  m20_plant "$WORK/principal-cases.txt" "$M20W/cases-otherloc.txt" \
+    -e "s/^wyvern, \[P:1\], 2$/wyvern, 1, [P:2]/"
+  m20_defect "the same-page pair registered from its other locator, with the printed index agreeing" \
+    m20_cases "$M20W/cases-otherloc.txt" "$M20W/cases-clean.ilg" \
+      "$M20W/cases-clean.ind" "$M20W/cases-otherloc.aux"
+  m20_plant "$WORK/principal-cases.ilg" "$M20W/cases-warned.ilg" \
+    -e 's/0 warnings)/1 warning)/'
+  m20_defect "a makeindex warning on the fixture carrying the same-page pair" \
+    m20_cases "$WORK/principal-cases.txt" "$M20W/cases-warned.ilg"
+  # The contradiction round 1 returned this milestone for, in the shape the
+  # earlier repair did not reach: the report that must NOT be drawn.
+  m20_plant "$WORK/principal-cases-pdf.log" "$M20W/cases-contradict.log" \
+    -e 's|^Output created|(W) mention="principal" on entry="deep!water!folk!kin" carries see= as well, and a cross-reference takes the place of a locator, so this mark has no locator to emphasize\n&|'
+  m20_defect "a mark told it has no locator to emphasize though the fold gave it one" \
+    m20_cases "$WORK/principal-cases.txt" "$M20W/cases-clean.ilg" \
+      "$M20W/cases-clean.ind" "$M20W/cases-clean.aux" "$M20W/cases-contradict.log"
+
+  pass "M20 self-test: every reader the milestone adds fails on a planted defect of each kind it names, and both reports are shown discriminating in all three formats"
 
   # -------------------------------------------------------------------------
   # M16-AC3 — every source-reading check keeps finding its definition once the

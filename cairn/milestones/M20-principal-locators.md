@@ -52,7 +52,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 
 ## Acceptance criteria
 
-- [ ] AC1: The PDF render of `examples/principal.qmd`, begun with its `.ind`, `.ilg` and
+- [x] AC1: The PDF render of `examples/principal.qmd`, begun with its `.ind`, `.ilg` and
       `.aux` absent, produces: a `.ilg` whose own summary reports zero makeindex warnings;
       a `.ind` — read with makeindex's line wrapping collapsed and every group argument
       delimited by brace counting — in which the `basilisk` entry is exactly three
@@ -78,7 +78,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       writing an unrecognized `mention=` value draws exactly one warning naming the mark
       and the value, and indexes exactly as it would with the attribute removed. An empty
       `mention=` is unrecognized, not absent.
-- [ ] AC5: In the gfm render of `examples/principal.qmd`, a scan of the rendered
+- [x] AC5: In the gfm render of `examples/principal.qmd`, a scan of the rendered
       file for spans carrying the `index` class enumerates thirteen — one for
       every index mark the fixture writes except the entry-less one, which
       indexes nothing and is removed — and those spans are, in document order
@@ -88,7 +88,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       `data-mention="principal"` among them where the mark writes it. No `qi-`
       token, `\index` command, principal-encapsulation command or literal
       `role=` attribute appears anywhere in the file.
-- [ ] AC6: In the region before `\begin{document}` of the rendered `.tex` for
+- [x] AC6: In the region before `\begin{document}` of the rendered `.tex` for
       `examples/principal.qmd`, each of `\quartoindexprincipal`, `\quartoindexlocator`,
       `\quartoindexregister` and `\quartoindexprincipalpage` is defined exactly once, with
       `\providecommand*`; the only further control sequence whose name begins `quartoindex`
@@ -187,6 +187,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: T8 done and verified clean. The same-page plain-and-principal pair — the document this milestone died on, which made `quarto render` exit 1 — now renders at exit 0 with zero makeindex warnings and prints as one emphasized locator. `examples/principal.qmd`'s `.ind` carries `basilisk` as three groups all naming `qi1`, its `.aux` registers exactly four identifiers from pages their own entries list, and the preamble injects the four `\quartoindex` commands with `\providecommand*` into that document and no other.
 - 2026-08-21: T9 done. `examples/principal-cases.qmd` renders the four shapes IP2's forever clause earns, read out of the PDF text: `wyvern, [P:1], 2` (the same-page pair, folded and emphasized), `naga, [P:2]` (a principal mark in a footnote, registered from its own page), `oni, 3--5` (a registered page inside a makeindex range, printing unemphasized — the one documented degradation, asserted rather than tolerated) and `pixie, 6, 7` (the role-free control). Review F13 is settled by measurement rather than left open: Quarto puts a document's own `include-in-header` ABOVE what a filter injects, so `\providecommand` finds the author's definition already there and steps aside — README's "yours is kept" and its `\newcommand*` recipe are correct, and `\renewcommand*` in that position fails outright, which is how the ordering was established. README gained the silent-degradation paragraph and a seventh byte-pinned claim; `latex.lua`'s two comment blocks now state that makeindex warns at exit 0 and Quarto alone fails the render, and withdraw the claim that a styled and a plain locator are not rivals.
 - 2026-08-21: all nine tasks done. `tests/run-tests.sh` passes at 228 checks and `--self-test` at 310, both run clean on an untouched tree (merge base 208 / 248; the pre-T8 checkpoint 226 / unverified). Thirty-five M20 plants discriminate, among them the eleven that replaced the superseded `.ind` emphasis plants and the four AC6 plants review F4 recorded as missing. Status -> review. F1 from the return is repaired at the design level rather than patched; F4, F13 and the freshness half of F10 are closed in passing; F5, F6, F7, F8 and the rest of F10 stand for triage at the gate.
+- 2026-08-21: review round 2 — fresh evidence recorded for all seven criteria and every box ticked, each verified off the rendered artifacts by hand as well as through its reader. Suite 228 / self-test 310 on b150ef2, 35 plants caught; `cairn_validate` all-pass, no principle changed, the generic profile adds no toolchain checks; no CI is configured on the repo. Two of three fresh-context lenses reported: the prior-review lens found no PR-comment surface and three still-open carried findings (F5, F6, F8), and independently verified F7 and F10's remainder as genuinely repaired rather than merely claimed; the history lens found no regression of any past milestone's fix and two low tracking-row staleness items. The diff-bug lens is still running, so triage and the approval gate are not yet reached.
 
 ## Decisions
 
@@ -226,6 +227,8 @@ documented is not eligible at all — D-003 classifies the pair as the extension
 own incorrect output, so IP2 governs and documentation cannot discharge it.
 
 ## Review
+
+### Round 1 — 2026-08-21, returned to in-progress
 
 **Findings (three fresh-context reviewers).** The prior-review lens reported no prior-review
 evidence bearing on this diff, having checked every archived `## Review` section and `LESSONS.md`;
@@ -307,3 +310,54 @@ locator, on none, leaked onto the control; a conflicting-encapsulation warning i
 the HTML emphasis on the wrong mention, its class dropped, its emphasis node dropped; a literal ARIA
 role in gfm; plumbing residue in gfm; the role inert; the role reaching the control mark. Both
 reports also pass `warn_discrimination` (missing and duplicated) in all three formats.
+
+### Round 2 — 2026-08-21
+
+**Evidence** — `tests/run-tests.sh` 228 checks exit 0 and `tests/run-tests.sh --self-test`
+310 checks exit 0, both run fresh on b150ef2 (merge base 208 / 248; pre-T8 checkpoint 226).
+35 M20 planted defects each caught. Consistency gate: `cairn_validate` all-pass exit 0; no
+`DESIGN.md` principle changed, so no impact report is owed; the `generic` profile names no
+toolchain checks. Every criterion below was additionally read off the rendered artifacts by
+hand, not only through its reader.
+
+- **AC1** — the PDF render's `.ind`, begun with the three artifacts absent, carries
+  `basilisk` as exactly three `\hyperxindexformat{\quartoindexlocator{qi1}}` groups of one
+  page each, pages 1, 3 and 5, no two adjacent; `gorgon` as exactly one such group of one
+  page with `\see{basilisk}{}` folded into the printed text ahead of it; and the role-free
+  `faun` as `\hyperpage{7, 8}` with no locator group at all. The `.aux` carries exactly four
+  `\quartoindexprincipalpage` lines with four distinct identifiers — qi1 qi2 qi3 qi4, which
+  are exactly the identifiers the `.ind`'s groups name — each naming a page its own entry
+  lists, and `basilisk`'s naming 3, the middle of its three. The `.ilg` summary reports 0
+  warnings, read as a number.
+- **AC2** — read structurally by `tests/htmlindex.py`: basilisk's three locator links are
+  (plain, class + `<strong>`, plain) in that order, the control entry's two are both plain,
+  and the mark whose role was dropped contributes no locator. The control now distinguishes a
+  missing entry from an entry with no locators (round 1 F9).
+- **AC3** — the dropped-role report fires exactly once per mark in each of the LaTeX, HTML
+  and gfm renders, naming the mark and every surviving cross-reference attribute that
+  displaced it, and zero times in the twin.
+- **AC4** — the unrecognized-value report fires exactly twice per format, once naming
+  `("paramount")` and once `("")`, and zero times in the twin. The counterfactual for both:
+  of 12 emitted `\index` commands the fixture and its role-free twin differ on exactly six —
+  every locator of each of the four principal keys — and agree on the rest; the four
+  registrations reach the fixture alone.
+- **AC5** — the gfm render's thirteen index spans are, in document order and byte for byte,
+  the hand-derived manifest, one per mark except the entry-less one; no `qi-` token, `\index`
+  command, encapsulation command or literal `role=` reaches the file.
+- **AC6** — the region before `\begin{document}` of the rendered `.tex` defines exactly
+  `\quartoindexprincipal`, `\quartoindexlocator`, `\quartoindexregister` and
+  `\quartoindexprincipalpage`, each once and each with `\providecommand*`, plus the
+  pre-existing `\quartoindexseeboth`; no other defining form names a `quartoindex` control
+  sequence and no `\csname quartoindex` occurs. `examples/content.qmd`'s own region carries
+  the extension's `\makeindex[intoc]` setup and defines none of the four. Both files exist and
+  each carries exactly one `\begin{document}`.
+- **AC7** — both suite modes exit 0, as above.
+
+**T9, beyond the criteria.** The document this milestone died on — a plain and a principal
+mark of one key on one page, which made `quarto render` exit 1 — renders at exit 0 with 0
+makeindex warnings and prints `wyvern, [P:1], 2`. A principal mark in a footnote registers
+from its own page (`naga, [P:2]`); a registered page inside a folded range prints
+unemphasized (`oni, 3--5`), the one documented degradation, asserted rather than tolerated;
+the role-free control is untouched (`pixie, 6, 7`). All of it legible only because the
+author's own redefinition of the emphasis command is the one that took effect.
+

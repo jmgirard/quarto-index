@@ -6629,6 +6629,13 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  there the target names a path nothing indexes and dangles —
 #                  the back-end asymmetry D-005 settles, and the reason that
 #                  mark is in the fixture at all. 1.
+#   range          1 attribute: `see="centaur"` on the cross-reference mark of the
+#                  contested `dybbuk` key. The file marks `centaur` twice, so it
+#                  resolves. 0.
+#   range-misuse   1 attribute: `see="golem"` on the mark whose range is dropped
+#                  for carrying it. `golem` is marked in that file — as a closing
+#                  with no opening, which indexes as an ordinary locator — so the
+#                  target resolves. 0.
 #   resolving-xref 3 attributes, all three resolving by construction. 0.
 #
 # Reconciling xref-escaping's corpus so its targets resolve is its own piece of
@@ -6651,6 +6658,8 @@ examples/placement.qmd	0
 examples/principal-cases.qmd	1
 examples/principal-twin.qmd	0
 examples/principal.qmd	0
+examples/range-misuse.qmd	0
+examples/range.qmd	0
 examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
 examples/xref-conflict.qmd	14

@@ -85,12 +85,14 @@ alone, and the range is reported as unpaired there rather than silently spanning
 
 ## Tasks
 
-- [ ] T1: Fixtures. `examples/range.qmd` carries a plain range, a range whose opening mark
+- [x] T1: Fixtures. `examples/range.qmd` carries a plain range, a range whose opening mark
       is principal, an ordinary mark of a third term the new reports must stay silent on
       (the M11 lesson), and enough content between each opening and closing to put them on
       different pages, with distinct terms per slot (the M02 lesson).
-      `examples/range-misuse.qmd` carries one mark per shape AC4 names. The book fixture
-      gains a range opened in one chapter and closed in a later one.
+      `examples/range-misuse.qmd` carries one mark per shape AC4 names. Both are
+      registered in the suite's dangling-target corpus, which enumerates every example
+      writing a cross-reference target. The book fixture's own range lands with T5, whose
+      manifest it changes.
 - [ ] T2: `core.lua` gains the attribute and its two values; `marks.lua` derives the range
       role before the back-end branch and holds the per-key pairing state, drawing the four
       shapes it can judge within one document plus the unrecognized-value one, so all five
@@ -106,7 +108,8 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - [ ] T4: `html.lua`: pairing at index-build time, the single locator link at the opening
       mark's anchor, and the closing mark contributing no locator while keeping its own
       anchor and visible text.
-- [ ] T5: `book.lua`: the range role travels in the per-chapter record as an optional field
+- [ ] T5: `book.lua` and the book fixture, which gains a range opened in one chapter and
+      closed in a later one: the range role travels in the per-chapter record as an optional field
       with a named fallback, leaving the store version alone (the M14 lesson); pairing and
       the unmatched reports are drawn by the chapter that reads the whole store, so a
       chapter holding one half of a legitimate cross-chapter range warns about nothing.
@@ -132,6 +135,8 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: implement gate settled three open choices: correct AC2's attribute name; emphasize a principal range by registering the composed printed range string rather than by matching either endpoint; and compose a range with a same-key cross-reference (the cross-reference folds into the printed text as it already does) rather than dropping the range.
 - 2026-08-22: criteria audit ran in full mode on the amended AC2 and returned three findings — the `.ind` can show no emphasis at all, D-007's consequences leave the emphasis promise unfunded by Scope and T3, and no criterion covered the HTML side of a principal range; bounded-promise, probe and instrument questions clean. All three disposed at the mini gate.
 - 2026-08-22: amendment: AC2 reworded (attribute name and evidence locus), AC3 widened with the HTML principal-range clause, Scope In and T3 extended with the range registration. Criteria widened or added: AC3. D-008 records the channel extension.
+
+- 2026-08-22: T1 — `examples/range.qmd` (five slots: plain range, principal range, role-free control, range on a cross-referenced key, same-page range) and `examples/range-misuse.qmd` (one mark per AC4 shape, plus a well-formed range and an ordinary mark as controls); both registered in the dangling-target corpus. The book fixture's range moved to T5 (minor amendment: it changes the book manifest T5 owns). Suite green, 228 checks.
 
 ## Decisions
 

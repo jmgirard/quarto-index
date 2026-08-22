@@ -1,0 +1,134 @@
+---
+title: "quarto-index page-range probe"
+from: markdown-smart
+format:
+  pdf:
+    # The suite reads the `.ind` makeindex writes, the `.ilg` it logs to, and
+    # the `.aux` the typeset-time registry is fed from; Quarto deletes all
+    # three on a successful render unless this says otherwise.
+    latex-clean: false
+    include-in-header:
+      # The author redefinition the extension documents, which is also the
+      # only way emphasis becomes visible to `pdftotext` at all: `\textbf` and
+      # plain text extract identically. Every emphasis claim this fixture
+      # makes in the compiled PDF is read through this marker.
+      #
+      # `\newcommand*`, not `\renewcommand*`: Quarto puts a document's own
+      # header text ABOVE what a filter injects, so this definition lands
+      # first and the extension's `\providecommand` steps aside.
+      text: |
+        \newcommand*\quartoindexprincipal[1]{[P:#1]}
+  html: default
+  # Spans are compared byte for byte, so the writer must not break one across
+  # lines at its column limit.
+  gfm:
+    wrap: none
+filters:
+  - index
+---
+
+# A discussion that spans pages
+
+A term is often discussed across several pages rather than mentioned at one.
+`range="open"` and `range="close"` say where such a discussion begins and ends,
+and the index prints one locator spanning the two rather than a locator at
+each end.
+
+Every range below is separated from its own closing mark by exactly ONE page
+holding no mark at all. That separation is what the suite's expectations are
+stated over: it makes each range span exactly three pages, so a check can read
+the printed range and know what it should be without hard-coding a folio, and
+a defect that paired the wrong two marks would print a span of some other
+width. Each slot uses a term no other slot uses, so a check reading one entry
+cannot be satisfied by another's marks.
+
+The discussion of [alicorn]{.index range="open"} begins here.
+
+{{< pagebreak >}}
+
+A page with no mark on it, inside the alicorn range and holding its two ends
+one page apart.
+
+{{< pagebreak >}}
+
+And the discussion of [alicorn]{.index range="close"} ends here.
+
+{{< pagebreak >}}
+
+# A range that is the term's principal discussion
+
+`mention="principal"` on the opening mark says the whole span is the term's
+principal discussion, and both ends then carry the same encapsulator —
+makeindex warns when they differ, and Quarto fails a render on that warning.
+The range prints as one string rather than as a page, so the opening and
+closing marks each register their own page and the pair is composed into that
+same string in the typeset-time registry.
+
+The principal discussion of [banshee]{.index range="open" mention="principal"}
+begins here.
+
+{{< pagebreak >}}
+
+A page with no mark on it, inside the banshee range.
+
+{{< pagebreak >}}
+
+And the principal discussion of [banshee]{.index range="close"} ends here.
+
+{{< pagebreak >}}
+
+# The control this milestone must leave alone
+
+A term marked twice with no `range=` anywhere. Every report this milestone adds
+must stay silent on it, both its locators must stay plain and separate, and its
+entry must carry no range at all: [centaur]{.index} here,
+
+{{< pagebreak >}}
+
+a page with no mark on it, so makeindex cannot fold the two locators into a
+range of its own,
+
+{{< pagebreak >}}
+
+and [centaur]{.index} again here.
+
+{{< pagebreak >}}
+
+# A range on a key that also carries a cross-reference
+
+A range lives in the index tool's encapsulation channel and cannot be moved out
+of it. A cross-reference can: where a key carries both, the existing repair
+folds the cross-reference into the entry's printed text, exactly as it does for
+a plain locator, and the range is left where it is. Both ends emit the same
+folded text, so the index tool still sees one key and one range.
+
+The discussion of [dybbuk]{.index range="open"} begins here.
+
+{{< pagebreak >}}
+
+A page with no mark on it, inside the dybbuk range.
+
+{{< pagebreak >}}
+
+And the discussion of [dybbuk]{.index range="close"} ends here.
+
+{{< pagebreak >}}
+
+The cross-reference mark on the same key, which contributes no locator of its
+own: [dybbuk]{.index see="centaur"}.
+
+{{< pagebreak >}}
+
+# A range whose two ends are on one page
+
+makeindex prints a range that opens and closes on one page as that single page,
+not as a span of it to itself. The registry is fed both spellings for that
+reason — the composed span and the opening page on its own — so a principal
+range prints emphasized whichever of the two the index tool chooses.
+
+The principal discussion of [erlking]{.index range="open" mention="principal"}
+begins and, in this same sentence and on this same page, ends:
+[erlking]{.index range="close"}.
+
+::: {.qi-index-here}
+:::

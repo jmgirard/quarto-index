@@ -1,6 +1,6 @@
 # M20: A term's principal discussion prints as its principal locator
 
-- **Status:** in-progress
+- **Status:** blocked
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -160,6 +160,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: amendment, AC5 — the criterion promised the gfm render "matches its expected manifest line for line", which taken literally is a 72-line copy of Pandoc's own line-wrapping and is the snapshot the suite's ORACLE RULE and D-004 both refuse; the mini gate chose narrowing it to the render's index spans. Amended-criteria audit ran in full mode twice with two fresh readers (the second on wording revised from the first's findings) and returned seven then seven: "line for line" lost its referent, the reader sorted away the order it promised, the domain was ambiguous between source marks and rendered spans, the manifest defined rather than compared, the document-wide clause was dropped, and no plant covered completeness or order. All folded in, and the final wording went to the user rather than a third revision. The fixture now renders gfm with `wrap: none` so a span is never broken across lines.
 - 2026-08-21: T5/T6 — AC5 implemented: manifest 9 in the suite lists all thirteen spans in document order, hand-derived from the fixture; the reader compares byte for byte without sorting or normalizing, enumerates a span whose visible text carries nested inline markup, and pins the count to the fixture's own marks. The render is deleted before the run rewrites it, so no check reads a stale artifact. Four new plants: a dropped mark, an extra mark, two transposed, and the nested markup stripped. Fixtures gained `kraken`. Suite 223, self-test 282 -> 286.
 - 2026-08-21: session close. Three of the return's floor findings are settled: F2, F11, F12 and F9 repaired, and AC5 implemented as amended. F1 is not repairable at the emission layer — the probe above settles that makeindex rejects ANY encapsulation difference for one key on one page — so it goes to /milestone-brief as an ip-touching escalation. F4-F8, F10 and F13 stand for triage at the next review gate; most of them are LaTeX-side and their fate depends on the escalated answer. Status stays in-progress.
+- 2026-08-21: blocked on RB01 — whether the LaTeX back-end can realize a per-locator role at all, and what to do if it cannot.
 
 ## Decisions
 

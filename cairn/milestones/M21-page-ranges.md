@@ -113,7 +113,7 @@ alone, and the range is reported as unpaired there rather than silently spanning
       with a named fallback, leaving the store version alone (the M14 lesson); pairing and
       the unmatched reports are drawn by the chapter that reads the whole store, so a
       chapter holding one half of a legitimate cross-chapter range warns about nothing.
-- [ ] T6: The suite's range section: copy `.ind`, `.ilg` and `.tex` to `$WORK` at the latex
+- [x] T6: The suite's range section: copy `.ind`, `.ilg` and `.tex` to `$WORK` at the latex
       render before the pdf render removes them (the M15 lesson); the structural HTML
       checks for the single locator and the silent closing mark; the book-index check; the
       rendered-log pins passed through `warn-distinct`; the no-leak sweep.
@@ -144,6 +144,8 @@ alone, and the range is reported as unpaired there rather than silently spanning
 
 - 2026-08-22: T4 — one condition in `build_entry_tree`: a mark whose verdict is a closing contributes no locator. The merged locator carries the opening mark's own role with no further work, since the closing contributes nothing to carry one. `examples/range.html` shows one locator per ranged entry, `banshee` and `erlking` emphasized and classed, `centaur` untouched with two.
 - 2026-08-22: T5 — the per-chapter record gains an optional `range` holding the end the AUTHOR wrote (never the chapter's own verdict), no store-version bump (the M14 lesson); `book_ranges` pairs across every record in book order, the placing chapter reading its verdicts and the last chapter in book order drawing its reports, as the dangling-target report already is. Book fixture: a range opened in `one.qmd` and closed in `sub/two.qmd` contributes one locator at `one.html#qi-mark-4`, and neither chapter warns. Book HTML manifest, its derivation note and the three letter sweeps updated. Suite green, 228 checks.
+
+- 2026-08-22: T6 — `tests/m21probes.py` (five readers: `.ind`+`.ilg`+`.aux`, the emitted `.tex`, the HTML index, the gfm spans, the book PDF), reusing `m20probes`' brace and locator-group readers rather than writing a second reader of one artifact (the M16 lesson). Extent is asserted in PAGES SEPARATED, never in folios — the one fact the fixture's source states and no artifact can move. Also a preamble check that the four range commands reach only a document registering a range, and a compiled-PDF check reading emphasis through the fixture's own `[P:…]` redefinition, which is the AC2 link no `.ind` can carry. Suite green, 243 checks.
 
 ## Decisions
 

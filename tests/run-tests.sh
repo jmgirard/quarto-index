@@ -7885,6 +7885,260 @@ M20DOCPY
 pass "M20: every behavior the README documents for the principal mention is present verbatim, and its authoring form is in the suite's normative supported-forms list"
 
 # ---------------------------------------------------------------------------
+# M21 — a discussion spanning pages prints as one page range.
+#
+# ORACLE NOTE. Everything asserted here about a range's extent is stated in
+# PAGES SEPARATED, never in folios: `examples/range.qmd` puts exactly one
+# mark-free page between each range's two ends but the last, whose ends share a
+# sentence. That is a fact about the source the author wrote, and it is the one
+# fact this section does not read out of the artifacts under test — the printed
+# range, the `.aux` registration and the emphasis are all written by one run, so
+# an expectation derived from any of them moves with a defect in the others
+# (the M20 lesson, in the shape ranges take).
+#
+# Two toolchain layers sit in between, read from their own documented behavior:
+#   1. hyperref rewrites an encapsulation before makeindex runs, exactly as it
+#      does for the cross-reference channel.
+#   2. makeindex pairs `|(` with `|)` by KEY, requires the two ends to carry
+#      byte-identical encapsulators, prints a same-page pair as one page rather
+#      than as a range, and logs every range fault as a WARNING at exit 0.
+#      Quarto alone fails the render, on a regex over that transcript — so the
+#      `.ilg`'s own warning count, and not the exit status, is the oracle here
+#      (D-007), and a range this filter cannot pair must never be emitted.
+# ---------------------------------------------------------------------------
+RANGEFROM_CMD="quartoindexrangefrom"
+RANGEEND_CMD="quartoindexrangeend"
+RANGEAT_CMD="quartoindexrangeat"
+RANGETO_CMD="quartoindexrangeto"
+
+# Removed before the render, not merely overwritten: AC6 is stated over the gfm
+# render of THIS run, and a stale committed .md would satisfy it after the
+# filter had regressed.
+rm -f examples/range.md examples/range.html
+for fmt in latex html gfm; do
+  quarto render examples/range.qmd --to $fmt > "$WORK/range-$fmt.log" 2>&1 \
+    || { cat "$WORK/range-$fmt.log" >&2; fail "M21: examples/range.qmd failed to render to $fmt"; }
+done
+for artifact in examples/range.md examples/range.html; do
+  [ -s "$artifact" ] \
+    || fail "M21: the render produced no $artifact, so every check stated over it would read a file this run did not write"
+done
+# Copied before the PDF render below removes the intermediate .tex (M15).
+cp examples/range.tex "$WORK/range.tex"
+# Removed, not overwritten: AC2 is a cross-artifact agreement between the .ind
+# and the .aux of one render, and a stale .aux from a tree where the ordinals
+# were assigned differently would satisfy it while this run emitted something
+# else entirely.
+rm -f examples/range.ind examples/range.ilg examples/range.aux
+quarto render examples/range.qmd --to pdf > "$WORK/range-pdf.log" 2>&1 \
+  || { cat "$WORK/range-pdf.log" >&2; fail "M21-AC1: examples/range.qmd failed to render to PDF"; }
+for aux in ind ilg aux; do
+  [ -f "examples/range.$aux" ] \
+    || fail "M21-AC1: the PDF render left no examples/range.$aux — the fixture's latex-clean option is what keeps it, and without it this criterion has no evidence at all"
+  cp "examples/range.$aux" "$WORK/range.$aux"
+done
+
+python3 tests/m21probes.py ind "$WORK/range.ind" "$WORK/range.ilg" \
+  "$WORK/range.aux" "$LOCATOR_CMD" "$PRINCIPALPAGE_CMD" \
+  "$RANGEAT_CMD" "$RANGETO_CMD"
+pass "M21-AC1/AC2: every range prints as one locator covering the pages the fixture separates its marks by, a principal range carries one ordinal on both ends and is registered under the very string it prints, the range-free control keeps its two separate pages, and makeindex logs no warning at all"
+
+python3 tests/m21probes.py tex "$WORK/range.tex" "$LOCATOR_CMD" \
+  "$RANGEFROM_CMD" "$RANGEEND_CMD"
+pass "M21-AC2: every range emits one opening and one closing under one key carrying byte-identical encapsulators, and each principal range registers both of its ends"
+
+# The four range commands are injected only where a range registers one. Both
+# directions, and the negative half is the principal fixture — which uses the
+# channel these four extend and still must not receive them.
+python3 - "$WORK/range.tex" "$WORK/principal.tex" \
+  "$RANGEFROM_CMD" "$RANGEEND_CMD" "$RANGEAT_CMD" "$RANGETO_CMD" <<'M21PRE'
+import re, sys
+paths, wanted = sys.argv[1:3], sys.argv[3:]
+regions = []
+for path in paths:
+    text = open(path, encoding='utf-8').read()
+    if not text.strip():
+        print(f'FAIL: M21: {path} is empty, so every clause stated over its '
+              f'preamble would pass on a file this run did not write',
+              file=sys.stderr)
+        sys.exit(1)
+    if text.count(r'\begin{document}') != 1:
+        print(f'FAIL: M21: {path} carries {text.count(chr(92) + "begin{document}")} '
+              f'occurrences of \\begin{{document}}, so "the region before it" '
+              f'names no one region', file=sys.stderr)
+        sys.exit(1)
+    regions.append(text[:text.index(r'\begin{document}')])
+for cmd in wanted:
+    hits = re.findall(r'\\providecommand\*\\%s\[' % re.escape(cmd), regions[0])
+    if len(hits) != 1:
+        print(f'FAIL: M21: the range fixture defines \\{cmd} with '
+              f'\\providecommand* {len(hits)} times; exactly one is what makes '
+              f"an author's own definition win", file=sys.stderr)
+        sys.exit(1)
+    if re.search(r'\\%s\[' % re.escape(cmd), regions[1]):
+        print(f'FAIL: M21: \\{cmd} is defined in the principal fixture, which '
+              f'has a principal mention but no range at all', file=sys.stderr)
+        sys.exit(1)
+print(f'ok   M21: the {len(wanted)} range commands are each defined once with '
+      f'\\providecommand* where a range registers, and none of them reaches a '
+      f'document that has a principal mention and no range')
+M21PRE
+pass "M21: the range half of the registration channel is injected only into a document that registers a range, and the principal fixture — which uses the channel it extends — gets none of it"
+
+# The printed index, through the fixture's own redefinition of the emphasis
+# command: `\textbf` and plain text extract identically under pdftotext, so the
+# bracketed marker is the only way an emphasis claim can be read out of a PDF.
+# Which ranges are principal is read from the fixture's source, not the output.
+require_pdf_tools
+pdftotext "examples/range.pdf" "$WORK/range.txt" \
+  || fail "M21-AC2: could not extract text from examples/range.pdf"
+python3 - "$WORK/range.txt" <<'M21PDF'
+import re, sys
+text = open(sys.argv[1], encoding='utf-8').read()
+body = text.splitlines()
+heads = [i for i, l in enumerate(body) if l.strip() == 'Index']
+if not heads:
+    print('FAIL: M21-AC2: the PDF text carries no Index heading', file=sys.stderr)
+    sys.exit(1)
+index = '\n'.join(body[heads[-1] + 1:])
+lines = {' '.join(l.split()) for l in index.splitlines() if l.strip()}
+# The fixture's own structure: which openings carry mention="principal".
+PRINCIPAL = ('banshee', 'erlking')
+PLAIN = ('alicorn', 'dybbuk', 'centaur')
+LOC = r'\d+(?:\u2013\d+)?'
+bad = []
+for term in PRINCIPAL:
+    if not any(re.fullmatch(re.escape(term) + r', \[P:' + LOC + r'\]', l)
+               for l in lines):
+        bad.append(f'  {term}: no line printing its whole locator emphasized; '
+                   f'lines starting with it: '
+                   f'{[l for l in lines if l.startswith(term)]}')
+for term in PLAIN:
+    hit = [l for l in lines if l.startswith(term + ',')]
+    if not hit:
+        bad.append(f'  {term}: no entry in the printed index at all')
+    elif any('[P:' in l for l in hit):
+        bad.append(f'  {term}: printed emphasized ({hit}), and no mark of it is '
+                   f'principal')
+if index.count('[P:') != len(PRINCIPAL):
+    bad.append(f'  the printed index emphasizes {index.count("[P:")} locator(s); '
+               f'the fixture writes mention="principal" on {len(PRINCIPAL)} '
+               f'range openings')
+if bad:
+    print('FAIL: M21-AC2: the compiled index does not print the ranges the '
+          'fixture marks as principal, and only those, emphasized:',
+          file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M21-AC2: the compiled PDF prints each of the {len(PRINCIPAL)} '
+      f'principal ranges emphasized as a whole range, and every other entry '
+      f'plain')
+M21PDF
+pass "M21-AC2: in the compiled PDF the principal ranges print emphasized whole — the last link of the chain the .ind cannot carry — and no other entry does"
+
+HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
+  python3 tests/m21probes.py html examples/range.html
+pass "M21-AC3: every range contributes exactly one locator link, at its opening mark's anchor and never at its closing one, emphasized exactly where the opening is principal, while each closing mark keeps an anchor and adds nothing to its own text"
+
+# M21-AC6 — the format with no index back-end. Derived by hand from the .qmd
+# (the ORACLE RULE), in document order, attributes in the order the author
+# wrote them.
+read -r -d '' RANGE_GFM_SPANS <<'MANIFEST' || true
+<span class="index" data-range="open">alicorn</span>
+<span class="index" data-range="close">alicorn</span>
+<span class="index" data-range="open" data-mention="principal">banshee</span>
+<span class="index" data-range="close">banshee</span>
+<span class="index">centaur</span>
+<span class="index">centaur</span>
+<span class="index" data-range="open">dybbuk</span>
+<span class="index" data-range="close">dybbuk</span>
+<span class="index" data-see="centaur">dybbuk</span>
+<span class="index" data-range="open" data-mention="principal">erlking</span>
+<span class="index" data-range="close">erlking</span>
+MANIFEST
+printf '%s\n' "$RANGE_GFM_SPANS" > "$WORK/range-gfm-spans.txt"
+python3 tests/m21probes.py gfm examples/range.md "$WORK/range-gfm-spans.txt"
+pass "M21-AC6: in the format with no index back-end an opening and a closing mark pass their visible text through with exactly their own attributes data-prefixed, range= included, and no range delimiter or registration command reaches the format"
+
+# M21-AC4 — the five misuse shapes, in all three formats. The needles are per
+# SHAPE and the identity checks are per MARK: a filter that reported the right
+# number of times about the wrong marks would pass a count alone (the M08
+# lesson).
+R_UNKNOWN='names neither end of a range'
+R_DISPLACED='there is no locator for a range to span'
+R_ALREADY='opens a range for a term whose range is already open'
+R_NOOPEN='closes a range this'
+R_NOCLOSE='is never closed in this'
+for fmt in latex html gfm; do
+  quarto render examples/range-misuse.qmd --to $fmt \
+    > "$WORK/range-misuse-$fmt.log" 2>&1 \
+    || { cat "$WORK/range-misuse-$fmt.log" >&2; fail "M21-AC4: examples/range-misuse.qmd failed to render to $fmt"; }
+  check_warning_count "$WORK/range-misuse-$fmt.log" "$R_UNKNOWN" 1 \
+    "M21-AC4 (a value that is neither end, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" "$R_DISPLACED" 1 \
+    "M21-AC4 (a range mark carrying a cross-reference, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" "$R_ALREADY" 1 \
+    "M21-AC4 (a second opening while a range is open, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" "$R_NOOPEN" 1 \
+    "M21-AC4 (a closing with no opening, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" "$R_NOCLOSE" 1 \
+    "M21-AC4 (an opening never closed, $fmt)"
+  # Which mark each report is about, and what it says the index will show.
+  check_warning_count "$WORK/range-misuse-$fmt.log" \
+    'range= on term "jinn" names neither end of a range ("middle")' 1 \
+    "M21-AC4 (names the mark and the value, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" \
+    'range="open" on term "imp" carries see= as well' 1 \
+    "M21-AC4 (names the mark and the attribute in the way, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" \
+    'range="open" on term "hydra" opens a range' 1 \
+    "M21-AC4 (names the mark, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" \
+    'range="close" on term "golem" closes a range' 1 \
+    "M21-AC4 (names the mark, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" \
+    'range="open" on term "fenrir" is never closed' 1 \
+    "M21-AC4 (names the mark, $fmt)"
+  # What the index will show instead, in the two shapes the five take: the
+  # three pairing faults degrade the mark to an ordinary locator, and the two
+  # mark-local ones leave the mark indexing as though the attribute were not
+  # there. Matched without the leading noun, since one of the three says "this
+  # mark" to tell it apart from the earlier opening it names.
+  check_warning_count "$WORK/range-misuse-$fmt.log" \
+    'indexes as an ordinary page number' 3 \
+    "M21-AC4 (says what the index will show instead, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" \
+    'indexes as though the attribute were absent' 1 \
+    "M21-AC4 (says what the index will show instead, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" \
+    'the range is dropped and the mark indexes as it would without it' 1 \
+    "M21-AC4 (says what the index will show instead, $fmt)"
+  # The controls, which no report may name: a well-formed range and an
+  # ordinary mark, in the same document as all five faults.
+  check_warning_count "$WORK/range-misuse-$fmt.log" 'lamia' 0 \
+    "M21-AC4 (the well-formed range control, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" 'kelpie' 0 \
+    "M21-AC4 (the range-free control, $fmt)"
+  # And the fixture that gets everything right draws none of the five at all.
+  for needle in "$R_UNKNOWN" "$R_DISPLACED" "$R_ALREADY" "$R_NOOPEN" "$R_NOCLOSE"; do
+    check_warning_count "$WORK/range-$fmt.log" "$needle" 0 \
+      "M21-AC4 (the well-formed fixture, $fmt)"
+  done
+done
+pass "M21-AC4: each of the five misuse shapes draws exactly one warning naming its own mark and saying the term is indexed as an ordinary page number instead, in the LaTeX render, the HTML render and a format with no index back-end, while the well-formed range and the range-free mark beside them draw none"
+
+# M21-AC5 — the cross-chapter range. The href and the locator count are the
+# BOOK_HTML_INDEX manifest's `Ranged Term` row, checked above; what is left is
+# that neither chapter's own render said anything about its half of the pair,
+# which is what makes the book the set a range is paired within.
+for needle in "$R_NOOPEN" "$R_NOCLOSE" "$R_ALREADY" "$R_DISPLACED" "$R_UNKNOWN"; do
+  check_warning_count "$WORK/book-html.log" "$needle" 0 \
+    "M21-AC5 (a whole-book render)"
+done
+python3 tests/m21probes.py bookpdf "$WORK/book.txt" "Ranged Term"
+pass "M21-AC5: a range opened in one chapter and closed in a later one contributes one locator at the opening chapter's page and the opening mark's anchor, prints as one page range in the book PDF, and draws no report from either chapter"
+
+# ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--self-test" ]; then

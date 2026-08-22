@@ -1,6 +1,6 @@
 # M20: A term's principal discussion prints as its principal locator
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -67,7 +67,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       writing an unrecognized `mention=` value draws exactly one warning naming the mark
       and the value, and indexes exactly as it would with the attribute removed. An empty
       `mention=` is unrecognized, not absent.
-- [x] AC5: The gfm render of `examples/principal.qmd` matches its expected manifest line
+- [ ] AC5: The gfm render of `examples/principal.qmd` matches its expected manifest line
       for line, and each principal-marked span in it carries its visible text and exactly
       the `data-` attributes for the mark's own attributes, `data-mention="principal"`
       included, and no other token.
@@ -148,6 +148,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: T6 — the four readers extracted to `tests/m20probes.py` (behaviour-neutral: 223 checks before and after) and re-run by the self-test against twelve planted defects: the emphasis on the wrong page, on every locator, on none, leaked onto the role-free control, a conflicting-encapsulation warning in the transcript, the HTML emphasis on the wrong mention, its class dropped, its emphasis node dropped, a literal ARIA role in gfm, plumbing residue in gfm, the role inert, and the role reaching the control mark; plus `warn_discrimination` over both reports in all three formats. Self-test 248 -> 279.
 - 2026-08-21: T6 — one plant was a no-op and the check was wrongly reported as failing to discriminate: gfm wraps a long line inside a tag, so a sed aimed at a whole `<span ...>text</span>` matched nothing. Every mutation now goes through `m20_plant`, which refuses a plant that changes no bytes.
 - 2026-08-21: all seven tasks done; `tests/run-tests.sh` passes at 223 checks and `--self-test` at 279 (merge base 208 / 248). Status -> review.
+- 2026-08-21: review returned M20 to in-progress. Two floor-qualifying findings: a principal and a plain mark of one key on one page make `quarto render --to pdf` exit 1 with "error generating index" (verified at the gate by direct render), which is the IP2 break M15 exists to eliminate and which the plan gate's makeindex-in-isolation probe missed; and AC5's first clause, a line-for-line gfm manifest, was never implemented. AC5 unticked. Eleven further findings carried in the Review section for triage. Defect returns on this milestone: 1.
 
 ## Decisions
 
@@ -168,6 +169,54 @@ unrecognized-value warning and the mark indexes as though the attribute were gon
 
 ## Review
 
+**Findings (three fresh-context reviewers).** The prior-review lens reported no prior-review
+evidence bearing on this diff, having checked every archived `## Review` section and `LESSONS.md`;
+a probe found the repo has no PR-comment surface. The history lens returned one finding. The
+diff-bug lens returned thirteen. Two qualify under the return floor, so the gate returns the
+milestone rather than triaging the rest here; every finding is carried below for triage at the
+next gate.
+
+**F1 (floor return, and the history lens's one finding independently) — a principal mark and a
+plain mark of one key on one page break the render.** `mark_encap` in `latex.lua` excludes the
+role, so contestation never sees the pair and `passes.lua` emits `\index{cats}` beside
+`\index{cats|quartoindexprincipal}`. Verified directly at the gate, not inferred: a Quarto PDF
+render of two marks of one term in one sentence, one principal, gives
+`ERROR: compilation failed- error generating index` and `quarto render` exits 1, with
+`Conflicting entries: multiple encaps for the same page under same key` in the `.ilg`. hyperref
+encapsulates the plain locator as `|hyperpage` too, so the collision is intrinsic once a styled
+locator shares a page with any other. This is the IP2 break M15 existed to eliminate and D-003
+assigns to the extension. The plan gate's premise — recorded on the ROADMAP as "every misuse here
+is a warning at exit 0, so neither carries a break-the-document risk" — was measured on makeindex
+in isolation and is wrong about Quarto. The milestone's own recorded falsifier for the clash-rule
+choice is therefore already spent. No emission-level repair is obvious: every locator carries an
+encapsulation under hyperref, so a key cannot mix a styled and an unstyled locator on one page at
+all, which makes this a design question rather than a patch.
+
+**F2 (floor-adjacent, real defect) — a mark whose only cross-reference is dropped as a
+self-reference loses its role and draws a false report.** `mention_role` is called before the
+self-reference drop, so `[basilisk]{.index mention="principal" see="basilisk"}` emits a real plain
+locator while printing "this mark has no locator to emphasize" immediately followed by the
+self-reference drop's own report — two consecutive reports contradicting each other about one mark,
+the defect class M18 exists to remove.
+
+**F3 (floor return) — AC5's first clause is not implemented.** See the AC5 line above.
+
+**F4–F13, carried for triage at the next gate** (not floor-qualifying):
+F4 T6's promised "warning text right but mark wrong" axis is never planted, and the AC6 and
+README checks have no planted defect at all. F5 the book sidecar's new optional `role` field has
+no fixture, so its round-trip is untested. F6 the `.ilg` mutation bypasses `m20_plant`, contra its
+own comment, and fails the reader for two reasons at once. F7 the AC6 negative grep has no
+existence guard, so it passes vacuously if `content.tex` is absent, and both AC6 greps read the
+whole file rather than the preamble. F8 the M15 emission sweep's new `ALLOWED` rows are inert —
+the sweep runs before M20 renders either fixture, so on a clean tree M20's emission is never
+swept. F9 the HTML probe's cockatrice control returns None when no entry is found, so it cannot
+fail if its domain empties. F10 the PDF is checked by exit status alone, with no size check and no
+removal of a stale `.ind`/`.ilg` before the render, so AC1's evidence has no freshness pin. F11
+`mention="principal"` on a mark with no source entry drops the role silently, though Scope
+describes the report as covering any mark that can contribute no locator. F12 the no-locator
+warning names only the first cross-reference attribute. F13 README's redefinition recipe
+("yours is kept") is byte-pinned as a normative claim but never exercised by a render.
+
 **Evidence** — `tests/run-tests.sh --self-test`, run fresh on 969f1c4 at review: 279 checks, exit 0
 (plain run 223, exit 0; merge base 208 / 248).
 
@@ -185,9 +234,12 @@ unrecognized-value warning and the mark indexes as though the attribute were gon
   `("paramount")` and once `("")`, and zero times in the twin. Both criteria's counterfactual is
   the same check: of 9 emitted `\index` commands, the fixture and its role-free twin differ on
   exactly the two the role is meant to change and agree on the other seven.
-- **AC5** — the gfm render's role-carrying spans are exactly the five the fixture writes, byte for
-  byte; no span carries a literal `role=`, and no `qi-`, `\index{` or command token reaches the
-  format.
+- **AC5** — FAILS as written. Its second clause is verified (the role-carrying spans are exactly
+  the five the fixture writes, byte for byte; no span carries a literal `role=`, and no `qi-`,
+  `\index{` or command token reaches the format), but its FIRST clause — "matches its expected
+  manifest line for line" — is not implemented: no gfm manifest exists for either fixture anywhere
+  in the suite, and T1's claim that they are "written inline in the suite's principal section" is
+  inaccurate. Unticked.
 - **AC6** — `\providecommand*\quartoindexprincipal` is present in the fixture's rendered preamble
   and absent from both `examples/content.tex` and the twin's.
 - **AC7** — both suite modes exit 0, as above.

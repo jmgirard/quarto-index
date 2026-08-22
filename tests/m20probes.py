@@ -11,6 +11,7 @@ source-reading scans, which these are not — these read rendered output).
 Usage:  python3 tests/m20probes.py <ind|html|gfm|twin> <args...>
 """
 
+import collections
 import os
 import re
 import sys
@@ -19,72 +20,258 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import htmlindex as H  # noqa: E402  (needs the path line above)
 
 
+def _fail(msg):
+    print('FAIL: ' + msg, file=sys.stderr)
+    sys.exit(1)
+
+
+def _group(text, at):
+    """The balanced `{...}` starting at `text[at]`, and the index just past it.
+
+    Brace counting, not a regex: every argument read here may hold braces of
+    its own — a folded cross-reference does, and so does the wrapped page list
+    hyperref hands the locator command — and a pattern stopping at the first
+    `}` reads a truncated argument and compares it happily. The suite has been
+    caught by exactly that once already (M20 work log, T5).
+    """
+    assert text[at] == '{'
+    depth, i = 0, at
+    while i < len(text):
+        if text[i] == '{':
+            depth += 1
+        elif text[i] == '}':
+            depth -= 1
+            if depth == 0:
+                return text[at + 1:i], i + 1
+        i += 1
+    _fail('unbalanced braces reading a group from <<%s>>' % text[at:at + 60])
+
+
+def _locator_groups(entry, locator_cmd):
+    """Every `\hyperxindexformat{\<locator_cmd>{id}}{pages}` in one entry.
+
+    Returns (id, [page, ...]) per group, in the order they print. Only groups
+    whose FIRST argument is the locator command count: the same wrapper carries
+    `\see` and the both-targets command, which are not locators.
+    """
+    out, i, wrapper = [], 0, r'\hyperxindexformat'
+    while True:
+        i = entry.find(wrapper, i)
+        if i < 0:
+            return out
+        j = i + len(wrapper)
+        if j >= len(entry) or entry[j] != '{':
+            i = j
+            continue
+        first, j = _group(entry, j)
+        if j >= len(entry) or entry[j] != '{':
+            i = j
+            continue
+        second, j = _group(entry, j)
+        i = j
+        m = re.fullmatch(r'\\%s\{([^{}]*)\}' % re.escape(locator_cmd), first.strip())
+        if m:
+            out.append((m.group(1), [p.strip() for p in second.split(',')]))
+
+
 def _ind(argv):
-    ind_path, ilg_path, cmd = argv[0], argv[1], argv[2]
+    """M20-AC1 — the `.ind`, the `.ilg` and the `.aux` of one PDF render.
+
+    The emphasis itself is NOT in the `.ind` any more: D-007 moves per-locator
+    styling off makeindex's encapsulation channel entirely, because two
+    locators of one key whose encapsulations differ by any byte are what
+    makeindex rejects on a shared page. What the `.ind` shows instead is that
+    a key's locators all carry ONE identifier — the property that makes the
+    conflict unreachable — and what the `.aux` shows is which page each
+    identifier was registered from. That the registered page then prints
+    emphasized is exercised by the T9 fixture, whose own render redefines the
+    emphasis command to something `pdftotext` can read.
+    """
+    ind_path, ilg_path, aux_path = argv[0], argv[1], argv[2]
+    locator_cmd, page_cmd = argv[3], argv[4]
     ind = open(ind_path, encoding='utf-8').read()
-    # One `\item` per entry; makeindex breaks a long locator list across lines, so
-    # each item is normalized to one line before anything is read off it.
+    # One `\item` per entry; makeindex breaks a long locator list across lines,
+    # so each item is normalized to one line before anything is read off it.
     items = {}
     for chunk in re.split(r'\\item\s', ind)[1:]:
         line = ' '.join(chunk.split())
-        term = line.split(',')[0].strip()
-        items[term] = line
-    missing = [t for t in ('basilisk', 'faun') if t not in items]
+        items[line.split(',')[0].strip()] = line
+    missing = [t for t in ('basilisk', 'gorgon', 'faun') if t not in items]
     if missing:
-        print(f'FAIL: M20-AC1: the compiled index has no entry for {missing}; '
-              f'it has {sorted(items)}', file=sys.stderr)
-        sys.exit(1)
-    b = items['basilisk']
-    # The encapsulated locator, as hyperref rewrites it, on the page the fixture
-    # puts the principal mark on. Both halves are asserted: a check for the
-    # command alone would pass with the emphasis on the wrong locator, which is
-    # the defect that matters here.
-    want = r'\hyperxindexformat{\%s}{2}' % cmd
-    if b.count(want) != 1:
-        print(f'FAIL: M20-AC1: expected exactly one <<{want}>> in the basilisk '
-              f'entry, found {b.count(want)}: <<{b}>>', file=sys.stderr)
-        sys.exit(1)
-    # And the other two locators are plain. Counted, not merely present: a filter
-    # that emphasized all three would still carry these two strings.
-    for page in ('1', '3'):
-        plain = r'\hyperpage{%s}' % page
-        if b.count(plain) != 1:
-            print(f'FAIL: M20-AC1: expected exactly one plain <<{plain}>> in the '
-                  f'basilisk entry, found {b.count(plain)}: <<{b}>>',
-                  file=sys.stderr)
-            sys.exit(1)
-    if b.count(cmd) != 1:
-        print(f'FAIL: M20-AC1: the basilisk entry names {cmd} {b.count(cmd)} '
-              f'times; exactly one of its three locators is principal: <<{b}>>',
-              file=sys.stderr)
-        sys.exit(1)
-    # The control: a term with no role anywhere must reach the compiled index with
-    # no emphasis at all. Without it this check would pass on a back-end that
-    # emphasized every locator it wrote.
-    if cmd in items['faun']:
-        print(f'FAIL: M20-AC1: the role-free control entry carries {cmd}: '
-              f'<<{items["faun"]}>>', file=sys.stderr)
-        sys.exit(1)
+        _fail('M20-AC1: the compiled index has no entry for %s; it has %s'
+              % (missing, sorted(items)))
+
+    # basilisk: three locators, one identifier between them, one page each, and
+    # no two of those pages adjacent. The last is not decoration — makeindex
+    # folds a run of three consecutive pages under one encapsulation into a
+    # range, and the typeset-time registry looks a page up by its printed
+    # string, so `1--3` matches nothing and the entry would print with no
+    # emphasis at all while every other clause here still passed.
+    groups = _locator_groups(items['basilisk'], locator_cmd)
+    if len(groups) != 3 or any(len(pages) != 1 for _, pages in groups):
+        _fail('M20-AC1: expected three one-page %s groups in the basilisk entry, '
+              'found %r: <<%s>>' % (locator_cmd, groups, items['basilisk']))
+    ids = {gid for gid, _ in groups}
+    if len(ids) != 1:
+        _fail('M20-AC1: basilisk\'s three locators name %d identifiers (%s); one '
+              'per key is what makes a same-page pair impossible: <<%s>>'
+              % (len(ids), sorted(ids), items['basilisk']))
+    basilisk_id = groups[0][0]
+    pages = sorted(int(pages[0]) for _, pages in groups)
+    if any(b - a < 2 for a, b in zip(pages, pages[1:])):
+        _fail('M20-AC1: basilisk\'s locator pages %s include an adjacent pair; the '
+              'fixture separates them precisely so makeindex cannot fold them into '
+              'a range the registry could not match' % pages)
+
+    # gorgon: a key a cross-reference also marks. Its locator carries the same
+    # single encapsulation, and M15's fold has put the cross-reference into the
+    # entry's printed text ahead of it rather than into a rival encapsulation.
+    gorgon = _locator_groups(items['gorgon'], locator_cmd)
+    if len(gorgon) != 1 or len(gorgon[0][1]) != 1:
+        _fail('M20-AC1: expected one one-page %s group in the gorgon entry, found '
+              '%r: <<%s>>' % (locator_cmd, gorgon, items['gorgon']))
+    fold = r'\see{basilisk}{}'
+    if fold not in items['gorgon']:
+        _fail('M20-AC1: the gorgon entry does not carry <<%s>> in its printed text; '
+              'a contested key folds its cross-reference there: <<%s>>'
+              % (fold, items['gorgon']))
+    if items['gorgon'].index(fold) > items['gorgon'].index(r'\hyperxindexformat'):
+        _fail('M20-AC1: the gorgon entry prints its cross-reference after its '
+              'locator: <<%s>>' % items['gorgon'])
+
+    # The control: a key no mark of which is principal emits exactly what it
+    # emitted before this milestone — no locator command anywhere.
+    if _locator_groups(items['faun'], locator_cmd) or locator_cmd in items['faun']:
+        _fail('M20-AC1: the role-free control entry carries %s: <<%s>>'
+              % (locator_cmd, items['faun']))
+
+    # The two artifacts cross-linked. Neither settles anything alone: an `.aux`
+    # of well-formed lines naming identifiers no `.ind` group carries prints
+    # nothing, and a `.ind` whose identifiers were never registered prints
+    # nothing either.
+    every = {}
+    for entry in items.values():
+        for gid, gpages in _locator_groups(entry, locator_cmd):
+            every.setdefault(gid, []).extend(gpages)
+    aux = open(aux_path, encoding='utf-8').read()
+    lines = re.findall(r'\\%s\{([^{}]*)\}\{([^{}]*)\}' % re.escape(page_cmd), aux)
+    if len(lines) != 4:
+        _fail('M20-AC1: the .aux carries %d %s lines; the fixture writes '
+              'mention="principal" on four marks that contribute a locator: %r'
+              % (len(lines), page_cmd, lines))
+    if len({gid for gid, _ in lines}) != 4:
+        _fail('M20-AC1: the .aux\'s four registrations name %d distinct '
+              'identifiers: %r' % (len({g for g, _ in lines}), lines))
+    if {gid for gid, _ in lines} != set(every):
+        _fail('M20-AC1: the registered identifiers %s are not the ones the .ind\'s '
+              '%s groups name (%s), so a registration and a locator disagree about '
+              'which entry they are about'
+              % (sorted({g for g, _ in lines}), locator_cmd, sorted(every)))
+    for gid, page in lines:
+        if page not in every[gid]:
+            _fail('M20-AC1: %s is registered from page %s, which is not among the '
+                  'pages its own entry lists (%s)' % (gid, page, every[gid]))
+    registered = dict(lines)
+    if int(registered[basilisk_id]) != pages[1]:
+        _fail('M20-AC1: basilisk is registered from page %s; the fixture puts its '
+              'principal mark on the middle of its three pages %s'
+              % (registered[basilisk_id], pages))
+
+    # The .ilg's own warning count, read as a number. It, and not Quarto's exit
+    # status, is the stable oracle for this class: Quarto fails a render on a
+    # regex over this transcript, which is an implementation detail (D-007 and
+    # the milestone's own Decisions entry).
     ilg = open(ilg_path, encoding='utf-8').read()
     if 'Conflicting entries' in ilg:
-        print('FAIL: M20-AC1: makeindex reported conflicting entries for this '
-              'fixture; a styled and a plain locator of one key are rivals only '
-              'where they share a page, and these are three pages apart:\n' + ilg,
-              file=sys.stderr)
-        sys.exit(1)
+        _fail('M20-AC1: makeindex reported conflicting entries for this fixture, '
+              'which the uniform per-key encapsulation is supposed to make '
+              'unreachable:\n' + ilg)
     m = re.search(r'done \((\d+) lines written, (\d+) warnings?\)', ilg)
     if not m:
-        print('FAIL: M20-AC1: could not read a warning count out of the makeindex '
-              'transcript, so "no conflicting-encapsulation warning" rests on a '
-              'substring search alone:\n' + ilg, file=sys.stderr)
-        sys.exit(1)
+        _fail('M20-AC1: could not read a warning count out of the makeindex '
+              'transcript, so "no warnings" would rest on a substring search '
+              'alone:\n' + ilg)
     if m.group(2) != '0':
-        print(f'FAIL: M20-AC1: makeindex reported {m.group(2)} warning(s) for this '
-              f'fixture:\n{ilg}', file=sys.stderr)
-        sys.exit(1)
-    print('ok   M20-AC1: the compiled index emphasizes exactly one of the three '
-          'locators, the one on the principal mark\'s page, leaves the other two '
-          'and the role-free control plain, and makeindex logs no warning at all')
+        _fail('M20-AC1: makeindex reported %s warning(s) for this fixture:\n%s'
+              % (m.group(2), ilg))
+    print('ok   M20-AC1: every locator of a principal key carries one identifier, '
+          'the .aux registers exactly those four identifiers from pages their own '
+          'entries list, and makeindex logs no warning at all')
+
+
+_DEFINERS = (r'providecommand\*?', r'newcommand\*?', r'renewcommand\*?',
+             r'def', r'gdef', r'xdef', r'edef', r'let')
+
+
+def _preamble(path, which):
+    text = open(path, encoding='utf-8').read()
+    if not text.strip():
+        _fail('M20-AC6: %s (%s) is empty, so every clause stated over its '
+              'preamble would pass on a file this run did not write' % (path, which))
+    marker = r'\begin{document}'
+    if text.count(marker) != 1:
+        _fail('M20-AC6: %s (%s) carries %d occurrences of %s, so "the region before '
+              'it" names no one region' % (path, which, text.count(marker), marker))
+    return text[:text.index(marker)]
+
+
+def _defined(preamble):
+    """Control sequences whose name begins `quartoindex` that this region DEFINES.
+
+    Defining forms, not mere occurrences: the subsystem's own `\qi@` helpers
+    name the emphasis command inside their bodies, which is a use and not a
+    definition. `\csname` is checked separately by the caller, since a name
+    built at expansion time is invisible to this pattern by construction.
+    """
+    return re.findall(r'\\(?:%s)\s*\\(quartoindex[a-zA-Z]*)' % '|'.join(_DEFINERS),
+                      preamble)
+
+
+def _tex(argv):
+    """M20-AC6 — the subsystem is injected, with `\providecommand`, only where used."""
+    principal_path, content_path = argv[0], argv[1]
+    wanted = argv[2:]
+    for path in (principal_path, content_path):
+        if not os.path.isfile(path):
+            _fail('M20-AC6: %s does not exist; the negative half of this criterion '
+                  'would otherwise pass on an absent file' % path)
+    pre = _preamble(principal_path, 'the principal fixture')
+    for cmd in wanted:
+        hits = re.findall(r'\\providecommand\*\\%s\[' % re.escape(cmd), pre)
+        if len(hits) != 1:
+            _fail('M20-AC6: the principal fixture\'s preamble defines \\%s with '
+                  '\\providecommand* %d times; exactly one is what makes an author\'s '
+                  'own definition win and a second injection impossible'
+                  % (cmd, len(hits)))
+    # `quartoindexseeboth` is the fixture's own pre-existing cross-reference
+    # command: the both-targets mark it carries required it before this
+    # milestone, so it is named here rather than left to a wildcard.
+    allowed = set(wanted) | {'quartoindexseeboth'}
+    extra = sorted(set(_defined(pre)) - allowed)
+    if extra:
+        _fail('M20-AC6: the principal fixture\'s preamble also defines %s; the '
+              'subsystem is exactly %s plus the pre-existing %s'
+              % (extra, sorted(wanted), 'quartoindexseeboth'))
+    if r'\csname quartoindex' in pre:
+        _fail('M20-AC6: the principal fixture\'s preamble builds a quartoindex name '
+              'with \\csname, which the definition scan above cannot see')
+    content = _preamble(content_path, 'the role-free control fixture')
+    if r'\makeindex' not in content:
+        _fail('M20-AC6: the control fixture\'s preamble carries no \\makeindex, so it '
+              'is not the extension-processed preamble the negative half is about')
+    # The four SUBSYSTEM commands, not `allowed`: `quartoindexseeboth` belongs to
+    # the cross-reference channel, and a control carrying a both-targets mark is
+    # entitled to it. Forbidding it here would make this check about the wrong
+    # feature and fail on the role-free twin, which carries exactly that mark.
+    leaked = sorted(set(_defined(content)) & set(wanted))
+    if leaked or r'\csname quartoindex' in content:
+        _fail('M20-AC6: the control fixture, which has no principal mention, has %s '
+              'injected into its preamble anyway' % (leaked or '\\csname quartoindex'))
+    print('ok   M20-AC6: the four subsystem commands are defined once each with '
+          '\\providecommand* in the fixture that uses them, nothing else naming '
+          'quartoindex is defined there, and none of them reaches a document '
+          'without a principal mention')
+
 
 def _html(argv):
     path = argv[0]
@@ -221,13 +408,13 @@ def _gfm(argv):
 
 def _twin(argv):
     def commands(path):
-        """Every `\\index{...}` command, read with a brace COUNTER rather than a
+        """Every `\index{...}` command, read with a brace COUNTER rather than a
         regular expression. A pattern cannot do this: the shortest match for
-        `\\index{gorgon@gorgon, \\see{basilisk}{}|quartoindexprincipal}` ends at
+        `\index{gorgon@gorgon, \see{basilisk}{}|quartoindexlocator{qi2}}` ends at
         the first `}` inside the folded cross-reference, which silently truncates
         the encapsulation this check exists to compare — two commands differing
         only past that point then compare equal. The filter emits a literal brace
-        in a level as `\\textbraceleft{}`, so the braces it writes are balanced.
+        in a level as `\textbraceleft{}`, so the braces it writes are balanced.
         """
         src = open(path, encoding='utf-8').read()
         out, i, needle = [], 0, '\\index{'
@@ -243,46 +430,62 @@ def _twin(argv):
                     depth -= 1
                 j += 1
             if depth:
-                print(f'FAIL: M20-AC3/AC4: an \\index command in {path} never '
-                      f'closes its brace', file=sys.stderr)
-                sys.exit(1)
+                _fail('M20-AC3/AC4: an \\index command in %s never closes its '
+                      'brace' % path)
             out.append(src[i:j])
             i = j
+
     a, b = commands(argv[0]), commands(argv[1])
     if not a or not b:
-        print(f'FAIL: M20-AC3/AC4: one of the two renders emitted no \\index '
-              f'command at all ({len(a)} and {len(b)}), so this comparison would '
-              f'pass on two empty documents', file=sys.stderr)
-        sys.exit(1)
+        _fail('M20-AC3/AC4: one of the two renders emitted no \\index command at '
+              'all (%d and %d), so this comparison would pass on two empty '
+              'documents' % (len(a), len(b)))
     if len(a) != len(b):
-        print(f'FAIL: M20-AC3/AC4: the fixture emits {len(a)} \\index commands and '
-              f'its twin {len(b)}; a dropped role must change no command COUNT',
-              file=sys.stderr)
-        sys.exit(1)
-    # Every command must agree EXCEPT the two the role legitimately changes: the
-    # principal basilisk mention and the principal gorgon locator. Stated as an
-    # exact set, so a role that stopped taking effect fails here just as one that
-    # leaked into a mark it should not reach.
-    differ = sorted({x for x, y in zip(a, b) if x != y})
+        _fail('M20-AC3/AC4: the fixture emits %d \\index commands and its twin %d; '
+              'a dropped role must change no command COUNT' % (len(a), len(b)))
+    # Positionally, and as a MULTISET rather than a set. The distinction is the
+    # whole point under D-007: a key carrying a principal mention encapsulates
+    # EVERY one of its locators with one ordinal, so `basilisk` differs from the
+    # twin three times over — and a set would collapse those three into one row
+    # and pass a filter that encapsulated only the principal mark, which is the
+    # emission that breaks the render on a shared page.
+    differ = collections.Counter(x for x, y in zip(a, b) if x != y)
     # `imp` is here because its role SURVIVES: its only cross-reference names its
     # own entry, so the target is dropped and the mark indexes plainly, leaving a
     # locator for the role to emphasize. A filter that resolved the role against
     # the declared cross-references rather than the surviving ones would drop it
     # and lose this row (review F2).
-    want = sorted({r'\index{basilisk|quartoindexprincipal}',
-                   r'\index{gorgon@gorgon, \see{basilisk}{}|quartoindexprincipal}',
-                   r'\index{imp|quartoindexprincipal}',
-                   r'\index{kraken|quartoindexprincipal}'})
+    want = collections.Counter({
+        r'\index{basilisk|quartoindexlocator{qi1}}': 3,
+        r'\index{gorgon@gorgon, \see{basilisk}{}|quartoindexlocator{qi2}}': 1,
+        r'\index{imp|quartoindexlocator{qi3}}': 1,
+        r'\index{kraken|quartoindexlocator{qi4}}': 1,
+    })
     if differ != want:
-        print(f'FAIL: M20-AC3/AC4: the commands that differ from the twin are\n'
-              f'  {differ}\nexpected\n  {want}', file=sys.stderr)
-        sys.exit(1)
-    print(f'ok   M20-AC3/AC4: of {len(a)} emitted \\index commands the fixture and '
-          f'its role-free twin agree on all but the two the role is meant to '
-          f'change, so every mark whose role was reported and dropped emits '
-          f'exactly what it emits without the attribute')
+        _fail('M20-AC3/AC4: the commands that differ from the twin are\n  %r\n'
+              'expected\n  %r' % (dict(differ), dict(want)))
+    # The other half of the emission: the role itself travels in a registration
+    # beside the principal mark, not in the encapsulation. One per principal
+    # mark that contributes a locator, and none at all in the twin.
+    def registrations(path):
+        return re.findall(r'\\quartoindexregister\{([^{}]*)\}',
+                          open(path, encoding='utf-8').read())
+    marks = registrations(argv[0])
+    if sorted(marks) != ['qi1', 'qi2', 'qi3', 'qi4']:
+        _fail('M20-AC3/AC4: the fixture registers %r; one per principal mark that '
+              'contributes a locator, each under its own key\'s ordinal' % (marks,))
+    if registrations(argv[1]):
+        _fail('M20-AC3/AC4: the role-free twin registers %r, though it declares no '
+              'mention anywhere' % (registrations(argv[1]),))
+    print('ok   M20-AC3/AC4: of %d emitted \\index commands the fixture and its '
+          'role-free twin agree on all but the six the role changes — every '
+          'locator of each of the four principal keys — and the four '
+          'registrations reach the fixture alone, so every mark whose role was '
+          'reported and dropped emits exactly what it emits without the attribute'
+          % len(a))
 
-READERS = {'ind': _ind, 'html': _html, 'gfm': _gfm, 'twin': _twin}
+
+READERS = {'ind': _ind, 'tex': _tex, 'html': _html, 'gfm': _gfm, 'twin': _twin}
 
 if __name__ == '__main__':
     if len(sys.argv) < 2 or sys.argv[1] not in READERS:

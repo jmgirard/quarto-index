@@ -74,14 +74,99 @@ local MENTION_ROLES = {
   ["principal"] = true,
 }
 
--- The principal locator's encapsulation. `\providecommand*` so a document
--- wanting different emphasis redefines it in its own preamble and this
--- definition steps aside (GP4), and injected only into a document that uses
--- it, exactly like the two cross-reference commands above. Bold is the
--- convention a printed index uses for a principal reference.
+-- The emphasis a principal locator is printed in. `\providecommand*` so a
+-- document wanting different emphasis redefines it in its own preamble and
+-- this definition steps aside (GP4), and injected only into a document that
+-- uses it, exactly like the two cross-reference commands above. Bold is the
+-- convention a printed index uses for a principal reference. It is applied by
+-- the subsystem below at `\printindex` time, not by makeindex's encapsulation
+-- channel, so hyperref never rewrites it.
 local PRINCIPAL_COMMAND = "quartoindexprincipal"
 local PRINCIPAL_DEFINITION =
   "\\providecommand*\\" .. PRINCIPAL_COMMAND .. "[1]{\\textbf{#1}}"
+
+-- ---------------------------------------------------------------------------
+-- The typeset-time channel (D-007).
+--
+-- Per-locator styling cannot be expressed through what `\index` commands say:
+-- makeindex's conflict predicate is same key, same page, ANY byte difference
+-- in the encapsulation string, and a Pandoc filter cannot know page numbers,
+-- so a key whose locators carry different encapsulations always has a document
+-- that puts two of them on one page — and Quarto fails that render. So every
+-- locator mark of a key carrying a principal mention emits the SAME
+-- encapsulation, `LOCATOR_COMMAND{<ordinal>}`, which makes the conflict
+-- unreachable by construction rather than merely unexercised, and the role
+-- travels on a second channel instead.
+--
+-- That channel is the `.aux`. The principal mark emits REGISTER_COMMAND, which
+-- writes its ordinal and `\thepage` through `\protected@write\@auxout` — the
+-- same deferred-to-shipout mechanism `\@wrindex` uses for the `.idx`, so the
+-- page the registration names and the page the locator names are decided by
+-- one shipout and cannot disagree. The next pass reads those lines back as
+-- PRINCIPALPAGE_COMMAND calls, which set one flag per (ordinal, page) pair.
+--
+-- At `\printindex` the locator command receives the key's whole page list and
+-- prints it one page at a time, wrapping a registered page in PRINCIPAL_COMMAND
+-- and leaving the rest plain. hyperref, where it is loaded, hands that list
+-- already wrapped in its own page-link command; the dispatch below detects that
+-- by asking whether its argument STARTS WITH a control sequence, and re-applies
+-- whatever it found per page, so every locator stays a working hyperlink
+-- without this file naming a hyperref internal.
+--
+-- One known degradation, documented in README: makeindex folds three or more
+-- consecutive pages under one encapsulation into a range, and a lookup on the
+-- string `1--3` matches no registered page, so a principal page inside a range
+-- prints unemphasized. Ranges are M21's subject.
+-- ---------------------------------------------------------------------------
+local LOCATOR_COMMAND = "quartoindexlocator"
+local REGISTER_COMMAND = "quartoindexregister"
+local PRINCIPALPAGE_COMMAND = "quartoindexprincipalpage"
+
+-- The ordinal prefix. Ordinals are opaque and csname-safe by construction, so
+-- no key text — which may hold any character an author can write — ever
+-- reaches a `\csname`.
+local LOCATOR_ID_PREFIX = "qi"
+
+-- Written as one block because every line of it is `@`-sensitive: the internal
+-- helpers are `\qi@`-prefixed so nothing an author writes can collide with
+-- them, and `\protected@write`, `\@auxout`, `\@empty`, `\@firstofone`,
+-- `\@gobbletwo`, `\@firstoftwo` and `\@secondoftwo` are all kernel names.
+-- `\qi@stop` is a delimiter and deliberately never defined, exactly as the
+-- kernel's own `\@nil` is.
+local PRINCIPAL_SUBSYSTEM = table.concat({
+  "\\makeatletter",
+  "\\providecommand*\\" .. PRINCIPALPAGE_COMMAND ..
+    "[2]{\\expandafter\\gdef\\csname qi@p@#1@#2\\endcsname{}}",
+  "\\providecommand*\\" .. REGISTER_COMMAND ..
+    "[1]{\\protected@write\\@auxout{}{\\string\\" .. PRINCIPALPAGE_COMMAND ..
+    "{#1}{\\thepage}}}",
+  "\\providecommand*\\" .. LOCATOR_COMMAND ..
+    "[2]{\\qi@sniff{#1}#2\\qi@stop}",
+  "\\def\\qi@nil{\\qi@nil}",
+  -- The item arrives with makeindex's separator space still on it; grabbing
+  -- the first token as an UNDELIMITED argument is what drops that space,
+  -- since TeX skips spaces there. `\@empty` fills the slot for an empty item.
+  "\\def\\qi@trim#1#2\\qi@stop{#1#2}",
+  "\\def\\qi@print#1{\\ifx\\qi@wrap\\@empty#1\\else\\qi@wrap{#1}\\fi}",
+  "\\def\\qi@emit#1{\\qi@sep\\def\\qi@sep{, }" ..
+    "\\edef\\qi@pg{\\qi@trim#1\\@empty\\qi@stop}" ..
+    "\\expandafter\\ifx\\csname qi@p@\\qi@id @\\qi@pg\\endcsname\\relax" ..
+    "\\qi@print{\\qi@pg}\\else\\" .. PRINCIPAL_COMMAND ..
+    "{\\qi@print{\\qi@pg}}\\fi}",
+  "\\def\\qi@scan#1,{\\def\\qi@tmp{#1}\\ifx\\qi@tmp\\qi@nil" ..
+    "\\expandafter\\@gobbletwo\\else\\expandafter\\@firstofone\\fi" ..
+    "{\\qi@emit{#1}\\qi@scan}}",
+  "\\def\\qi@split#1#2#3{\\def\\qi@id{#1}\\def\\qi@wrap{#2}" ..
+    "\\let\\qi@sep\\@empty\\qi@scan#3,\\qi@nil,\\relax}",
+  -- Is the page list already wrapped in someone else's command? `\ifcat`
+  -- against `\relax` asks the token's CLASS, so this holds whatever hyperref
+  -- calls its own page-link command, and holds equally in a document with no
+  -- hyperref at all, where the list arrives bare.
+  "\\def\\qi@sniff#1#2#3\\qi@stop{\\ifcat\\noexpand#2\\relax" ..
+    "\\expandafter\\@firstoftwo\\else\\expandafter\\@secondoftwo\\fi" ..
+    "{\\qi@split{#1}{#2}#3}{\\qi@split{#1}{}{#2#3}}}",
+  "\\makeatother",
+}, "\n")
 
 -- The class the HTML back-end puts on a principal locator link. Namespaced
 -- like the other pinned HTML identifiers, since an author's CSS may hold on
@@ -181,6 +266,11 @@ M["MENTION_ATTR"] = MENTION_ATTR
 M["MENTION_ROLES"] = MENTION_ROLES
 M["PRINCIPAL_COMMAND"] = PRINCIPAL_COMMAND
 M["PRINCIPAL_DEFINITION"] = PRINCIPAL_DEFINITION
+M["LOCATOR_COMMAND"] = LOCATOR_COMMAND
+M["REGISTER_COMMAND"] = REGISTER_COMMAND
+M["PRINCIPALPAGE_COMMAND"] = PRINCIPALPAGE_COMMAND
+M["LOCATOR_ID_PREFIX"] = LOCATOR_ID_PREFIX
+M["PRINCIPAL_SUBSYSTEM"] = PRINCIPAL_SUBSYSTEM
 M["HTML_PRINCIPAL_CLASS"] = HTML_PRINCIPAL_CLASS
 M["LATEX_LITERAL"] = LATEX_LITERAL
 M["warn"] = warn

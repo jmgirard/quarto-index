@@ -98,20 +98,58 @@ local function CollectKeys(span)
     qi_latex.latex_plan(levels, qi_sortkeys.sort_for(levels), surviving, context,
                         false, nil, entry_written)
   qi_latex.record_contest(source, printed_path, kept)
+  -- Which keys carry a principal mention is a fact about the whole document
+  -- too, and for the same reason: EVERY locator mark of such a key has to
+  -- encapsulate with the key's ordinal, and one mark cannot know that another
+  -- mark of its key is the principal one. Derived from the same blocker set
+  -- the emitting pass derives it from — the format-neutral surviving targets,
+  -- before the fold — so the two passes cannot disagree about which marks have
+  -- a locator to emphasize; silently, because the emitting pass reports.
+  local blockers = {}
+  for _, xref in ipairs(surviving) do
+    blockers[#blockers + 1] = xref.kind.attr
+  end
+  local role = qi_marks.mention_role(span.attributes[qi_core.MENTION_ATTR],
+                                     context,
+                                     #blockers > 0 and { attrs = blockers } or nil,
+                                     false)
+  if role == "principal" then
+    qi_latex.record_principal(source)
+  end
   return nil
 end
 
--- The encapsulation a role adds to a mark's own `\index` command, or the
--- empty string where there is none. Only a mark that CONTRIBUTES a locator
--- ever reaches it: a mark carrying a cross-reference had its role dropped and
+-- The encapsulation a mark's own `\index` command carries when SOME mark of
+-- its key is principal, or the empty string otherwise. It does not depend on
+-- whether THIS mark is the principal one: two locators of a key whose
+-- encapsulations differ by any byte are what makeindex rejects on a shared
+-- page, so the key's every locator carries one ordinal and the conflict is
+-- unreachable by construction (D-007). Only a mark that CONTRIBUTES a locator
+-- reaches this: a mark carrying a cross-reference had its role dropped and
 -- reported before the back-end branch, and a cross-reference mark of a
 -- contested key emits no command at all.
-local function principal_encap(role)
-  if role ~= "principal" then
+local function locator_encap(source)
+  local id = qi_latex.principal_ordinal(source)
+  if id == nil then
     return ""
   end
   qi_latex.principal_emitted = true
-  return "|" .. qi_core.PRINCIPAL_COMMAND
+  return "|" .. qi_core.LOCATOR_COMMAND .. "{" .. id .. "}"
+end
+
+-- The principal mark's own registration, which is where the role actually
+-- travels: emitted beside the `\index` command so both whatsits ship on one
+-- page and the page they name cannot disagree. Nil for every other mark.
+local function register_inline(role, source)
+  if role ~= "principal" then
+    return nil
+  end
+  local id = qi_latex.principal_ordinal(source)
+  if id == nil then
+    return nil
+  end
+  return pandoc.RawInline("latex",
+    "\\" .. qi_core.REGISTER_COMMAND .. "{" .. id .. "}")
 end
 
 local function Span(span)
@@ -313,7 +351,11 @@ local function Span(span)
         local folded = select(1, qi_latex.latex_plan(levels, sort, xrefs, context,
                                             false, qi_latex.fold_xrefs(seen)))
         result:insert(pandoc.RawInline("latex",
-          "\\index{" .. folded .. principal_encap(role) .. "}"))
+          "\\index{" .. folded .. locator_encap(source) .. "}"))
+        local register = register_inline(role, source)
+        if register then
+          result:insert(register)
+        end
       end
       return result
     end
@@ -341,7 +383,11 @@ local function Span(span)
   local encap = qi_latex.mark_encap(xrefs)
   if encap == "" then
     result:insert(pandoc.RawInline("latex",
-      "\\index{" .. source .. principal_encap(role) .. "}"))
+      "\\index{" .. source .. locator_encap(source) .. "}"))
+    local register = register_inline(role, source)
+    if register then
+      result:insert(register)
+    end
   else
     if #xrefs > 1 then
       qi_latex.xref_both_emitted = true

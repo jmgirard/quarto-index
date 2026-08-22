@@ -1,6 +1,6 @@
 # M20: A term's principal discussion prints as its principal locator
 
-- **Status:** blocked
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -94,17 +94,15 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 
 ## Tasks
 
-- [x] T1: Fixtures `examples/principal.qmd` and `examples/principal-twin.qmd` with their
-      expected manifests. The first carries a term marked in three places, one of them
-      principal; a principal mark carrying `see=`; a mark with an unrecognized `role=`;
-      and a plainly marked control term the new reports must stay silent on (the M11
-      lesson). Terms and pages are distinct per slot (the M02 lesson). The twin is the
-      same document with every role attribute removed. Their expected manifests are
-      written inline in the suite's principal section, where every other fixture's are.
+- [x] T1: Fixtures `examples/principal.qmd` and `examples/principal-twin.qmd`. The
+      first carries a term marked in three places, one of them principal; a principal
+      mark carrying `see=`; an unrecognized value; and a plainly marked control term
+      the new reports must stay silent on (the M11 lesson). Terms and pages are
+      distinct per slot (the M02 lesson). The twin is the same document with every
+      role attribute removed; expected manifests go inline in the suite's section.
 - [x] T2: `core.lua` gains `mention` and its recognized values; `marks.lua` derives the
       role once, before the back-end branch, with the two warnings — a role on a mark
-      contributing no locator, and an unrecognized value, the empty string among them — so
-      both fire in every format as the other mark warnings do.
+      contributing no locator, and an unrecognized value, the empty string among them.
 - [x] T3: `latex.lua` and `passes.lua`: the principal encapsulation, its arbitration
       against the contested-key bookkeeping — `is_contested` and `record_contest` in
       `latex.lua` count cross-reference encapsulations alone, and `seen.plain` comes to
@@ -113,24 +111,41 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - [x] T4: `html.lua`: the principal locator link and its class; the role on the HTML mark
       record; `book.lua` carries it in the per-chapter record as an optional field with a
       named fallback, leaving the store version alone (the M14 lesson).
-- [x] T5: The suite's principal section: copy `.ind`, `.ilg` and `.tex` to `$WORK` at the
-      latex render before the pdf render removes them (the M15 lesson); the structural
-      HTML check; the rendered-log pins passed through `warn-distinct`; the no-leak sweep;
-      the preamble present/absent pair.
-- [x] T6: Planted-defect entries for each check T5 adds, each planting a defect of
-      the kind that check names and varying form as well as site — an encapsulation on the
-      wrong locator, an encapsulation on none, a warning whose text is right but whose
-      mark is wrong, and a mark warning suppressed in the back-end-less format alone, so a
-      report that stops being format-neutral is caught. The four readers move to
-      `tests/m20probes.py` so the self-test can re-run each against a mutated artifact;
-      `tests/plantdefect.py` is not their home, since it plants defects in a
-      moved-definition tree for the source-reading scans and these read rendered output.
-- [x] T7: README section for `mention="principal"`: what an author writes, what each
-      back-end prints, how to redefine the LaTeX command, and that an unusable or
-      unrecognized value is reported. Add its authoring forms to the suite's normative
-      supported-forms list and its sentences to a README claims array. Extend DESIGN.md's
-      pass-through residue enumeration, which names `data-entry`, `data-see`,
-      `data-see-also` and `data-sort`, to include `data-mention`.
+- [x] T5: The suite's principal section: the `.ind`/`.ilg` and `.tex` copied to
+      `$WORK` at the latex render before the pdf render removes them (the M15
+      lesson); the structural HTML check; the rendered-log pins passed through
+      `warn-distinct`; the no-leak sweep; the preamble present/absent pair.
+- [x] T6: A planted-defect entry per check T5 adds, each varying form as well as
+      site, so a report that stops being format-neutral is caught. The four readers
+      move to `tests/m20probes.py` so the self-test can re-run each against a
+      mutated artifact; `tests/plantdefect.py` is not their home, since it plants
+      defects in a moved-definition tree for the source-reading scans and these
+      read rendered output.
+- [x] T7: README section for `mention="principal"`: what an author writes, what
+      each back-end prints, how to redefine the LaTeX command, and that an unusable
+      or unrecognized value is reported. Add its authoring forms to the suite's
+      normative supported-forms list and its sentences to a README claims array.
+      Extend DESIGN.md's pass-through residue enumeration to include `data-mention`.
+- [ ] T8: The typeset-time channel (D-007; mechanism and its validation in the
+      archived RR01). Every locator mark of a key carrying a principal mark emits
+      one uniform per-key encapsulation `\qiloc{<ordinal>}`, so two locators of a
+      key can never differ and the conflict is unreachable by construction rather
+      than unexercised; the ordinal is assigned in document order by the pass that
+      already collects keys. The principal mark writes its ordinal and `\thepage`
+      through `\protected@write\@auxout`, the mechanism `\@wrindex` itself uses, so
+      the two agree. At `\printindex` the injected code splits `\qiloc`'s page list,
+      wraps registered pages in `\quartoindexprincipal` and calls the real
+      `\hyperpage` per item, sniffing its argument's token class rather than naming
+      a hyperref internal. Keys with no principal mark emit as today.
+- [ ] T9: The regressions IP2's forever clause earns, and the record. A plain and a
+      principal mark of one key ON ONE PAGE — the shape the milestone died on, which
+      the fixture currently avoids only because page breaks hold its marks apart; a
+      principal mark in a footnote; a registered page folded inside a makeindex
+      range, which prints unemphasized; and the author redefinition, exercised by a
+      render whose `\quartoindexprincipal` prints a visible marker — which is also
+      what makes the emphasis readable to `pdftotext`. Correct `latex.lua`'s two
+      comment blocks and the ROADMAP premise they echo, and give README the one
+      silent degradation.
 
 ## Work log
 
@@ -161,6 +176,8 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: T5/T6 — AC5 implemented: manifest 9 in the suite lists all thirteen spans in document order, hand-derived from the fixture; the reader compares byte for byte without sorting or normalizing, enumerates a span whose visible text carries nested inline markup, and pins the count to the fixture's own marks. The render is deleted before the run rewrites it, so no check reads a stale artifact. Four new plants: a dropped mark, an extra mark, two transposed, and the nested markup stripped. Fixtures gained `kraken`. Suite 223, self-test 282 -> 286.
 - 2026-08-21: session close. Three of the return's floor findings are settled: F2, F11, F12 and F9 repaired, and AC5 implemented as amended. F1 is not repairable at the emission layer — the probe above settles that makeindex rejects ANY encapsulation difference for one key on one page — so it goes to /milestone-brief as an ip-touching escalation. F4-F8, F10 and F13 stand for triage at the next review gate; most of them are LaTeX-side and their fate depends on the escalated answer. Status stays in-progress.
 - 2026-08-21: blocked on RB01 — whether the LaTeX back-end can realize a per-locator role at all, and what to do if it cannot.
+- 2026-08-21: RB01 raised and RR01 ingested. The review confirmed the impossibility (question 1) and then falsified the brief's own premise that no mechanism was affordable: it built the deferred-styling subsystem and validated it through Quarto's pipeline, same-page pair included, at exit 0 with zero makeindex warnings. Recommendations triaged — 1 apply (T8), 2 apply (T9 + the ROADMAP correction), 3 apply (recorded below), 4 consider (README line in T9; the whole-range question widened the locator-control candidate row), 5 consider (the fallback, not taken), 6 and 7 reject, matching the session's own reading. Promoted to D-007.
+- 2026-08-21: AC1 and AC6 are now stated over an artifact the chosen mechanism no longer produces — the emphasis leaves the `.ind` entirely and appears at typeset time — so both need the step-6 amendment gate at the next implement session, before T8 is worked. Flagged here rather than amended at ingest.
 
 ## Decisions
 
@@ -178,6 +195,26 @@ their promise.
 `mention=""` is a value the author wrote. Reading it as absence would swallow a typo
 silently, which is the class of thing every other report here refuses to do; it draws the
 unrecognized-value warning and the mark indexes as though the attribute were gone.
+
+### 2026-08-21: the `.ilg` warning count is the stable oracle, not Quarto's exit code
+
+RR01 pinned Quarto's escalation to `findIndexError`, which fails a render when
+the regex `/^\s\s\s--\s/` matches the makeindex transcript — an implementation
+detail, not documented API, and one a future Quarto could widen or drop.
+AC1 already reads the `.ilg`'s own warning count as a number rather than
+searching for a substring or trusting the exit status, and that is the evidence
+base this class of check keeps (RR01 recommendation 3).
+
+### 2026-08-21: the fallback if the subsystem is refused
+
+If the typeset-time channel is ever judged too much LaTeX for this extension to
+carry, the one remaining disposition is that the LaTeX back-end reports the role
+as unrealized and indexes the mark plainly, which IP1 licenses in so many words
+and which leaves the HTML realization whole. Removing `mention=` altogether is
+strictly worse: it discards a working back-end to keep the two symmetric, which
+IP1 says they need not be. Shipping the colliding emission with the failure
+documented is not eligible at all — D-003 classifies the pair as the extension's
+own incorrect output, so IP2 governs and documentation cannot discharge it.
 
 ## Review
 

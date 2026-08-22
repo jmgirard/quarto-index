@@ -291,3 +291,54 @@ and F1–F3 sit in the gaps between them. The return is taken under the load-bea
 limb of the return floor, on F1 and F2 — each a silent loss of something the author wrote.
 This is M21's first defect return.
 
+### Round 2 (2026-08-22)
+
+Re-verified after the nine repairs. `cairn_validate` passes, `main` has not moved, no
+`DESIGN.md` principle changed. `tests/run-tests.sh --self-test` exits 0 at 359 checks.
+
+All seven criteria hold on fresh artifacts. AC1/AC2: the `.ind` now carries six entries —
+`alicorn, 1--3`, `banshee …{qi1}}{4--6}`, `centaur, 7, 9`, `dybbuk, \see{centaur}{}, 10--12`,
+`erlking …{qi2}}{14}` and `firebird …{qi3}}{15--17}` — at `done (25 lines written, 0
+warnings)`; every principal range registers both ends (`rangeat`/`rangeto` for qi1, qi2,
+qi3) and each composed string is the one its locator prints. AC3: six entries, one locator
+each for the five ranges, at `#qi-mark-1/3/7/9/11`, with `banshee`, `erlking` and `firebird`
+classed and emphasized; all five closings keep an anchor and their own text. AC4, AC5, AC6,
+AC7 as recorded above, with the book's two pairing reports now positively pinned.
+
+Three fresh reviewers ran again over the whole branch. The blame-history and
+prior-review-record lenses each reported no findings, both confirming the nine repairs hold
+and that the deliberate weakening of M20's "injected only where used" is disclosed in
+D-008, the ROADMAP row and the code. The diff-bug lens reported seven, ranked; each was
+re-verified here, R2-F1 by reproduction.
+
+- **R2-F1 (fix)** — the F2 repair is unfixed on the BOOK path. `book_ranges` returns only
+  each verdict's `ending`, and `book_marks` then takes `role` from the chapter's own record
+  — a chapter that could not see the other end. Reproduced: `mention="principal"` on the
+  closing of the cross-chapter range prints a plain locator with no class and no emphasis,
+  where the same input in one document prints it emphasized, and README promises the
+  opposite twice. Repair: return the verdict rather than its ending, and resolve `role` from
+  it exactly as `passes.lua` does.
+- **R2-F2 (fix)** — no fixture puts `mention=` on a range in either book, which is why
+  R2-F1 was reachable: the role-on-either-end repair was exercised in the single-document
+  slot alone. Repair: mark the cross-chapter range principal and pin the class.
+- **R2-F3 (fix)** — two of the three plants the review's own repairs rest on are proved
+  against paraphrase readers rather than the checks that run: the leak plant asserts only
+  the opening set where the real check also reads closings, per-term counts and the refused
+  set, and the preamble plant uses `re.search` where the real check demands exactly one
+  definition. So a defect those checks would catch and their stand-ins would not is not
+  fenced. Repair: move both bodies into `tests/m21probes.py` and call the same reader from
+  the run and from the self-test.
+- **R2-F4 (fix)** — README's "Under the hood" still says "Where the opening mark is also the
+  principal mention", contradicting the corrected authoring claim sixty lines above and the
+  code; nothing pins it, which is how it survived the F2 repair.
+- **R2-F5 (fix)** — `_index_commands`' docstring claims it splits at the LAST `|` by brace
+  counting; it splits at the first, which is correct here. A reader stating a rule it does
+  not implement is the class the M01 and M16 lessons are about.
+- **R2-F6 (fix)** — `pair_ranges` appends to `waiting` at every opening, so its never-closed
+  findings are ordered by each key's first opening rather than by the opening still pending;
+  the comment asserts otherwise. Message ordering only.
+- **R2-F7 (fix)** — the three book-report counts sit between the `book-nostore` render and
+  its own assertion, reading a log written earlier; a failure inside them leaves a stray
+  store file behind.
+
+R2-F1 is the round-1 F2 defect left standing on a sibling code path. Second defect return.

@@ -12,7 +12,7 @@ _Last hygiene check: 2026-08-21 (M20 and M21 planned from the page-range & styli
 | M15 | A term marked both plainly and with a cross-reference builds | done | — | normal | milestones/archive/M15-clash-free-emission.md |
 | M18 | A cross-reference target is judged against the path the entry prints | done | — | normal | milestones/archive/M18-fold-aware-xref-targets.md |
 | M19 | A reported level count says which levels it counts | done | — | normal | milestones/archive/M19-level-count-naming.md |
-| M20 | A term's principal discussion prints as its principal locator | in-progress | — | normal | milestones/M20-principal-locators.md |
+| M20 | A term's principal discussion prints as its principal locator | review | — | normal | milestones/M20-principal-locators.md |
 | M21 | A discussion spanning pages prints as one page range | planned | M20 | normal | milestones/M21-page-ranges.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->

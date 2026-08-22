@@ -1,6 +1,6 @@
 # M20: A term's principal discussion prints as its principal locator
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -135,7 +135,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
       author-redefinition regression and what makes the emphasis legible at all. Separate
       from `principal.qmd` so AC5's manifest is left alone. Correct `latex.lua`'s comments
       and the ROADMAP premise they echo; give README the one silent degradation.
-- [ ] T10: Review round 2 repairs. Brace `#3` on the way from `\qi@sniff` to `\qi@split`,
+- [x] T10: Review round 2 repairs. Brace `#3` on the way from `\qi@sniff` to `\qi@split`,
       guard an empty page list, and derive the role from each back-end's own surviving
       targets rather than the format-neutral set. Extend the T9 fixture with the shapes
       those defects need — a registered page that is not first in its list, a page past
@@ -195,6 +195,7 @@ pass-through formats at all → the standing ROADMAP row, unchanged by the new a
 - 2026-08-21: the new fixture's `see=` put it on M14's cross-reference roster, which expects a count per file. Registered at 1, not 0: that corpus renders to gfm, which has no three-level ceiling and so no fold, and there the target names a path nothing indexes and dangles — the back-end asymmetry D-005 settles, and the reason the mark is in the fixture at all. Plain suite green at 228 with it.
 - 2026-08-21: the deferred round-2 findings got candidate-row homes on existing rows rather than new ones (search-first): the moving-argument row takes R2-F7, the accumulator-state row takes R2-F14 — `principal_ordinals` is the first accumulator whose VALUE reaches an on-disk artifact, so a reused Lua state would offset the next document's registry keys rather than merely skew a count — and the acceptance-suite hardening cluster takes R2-F10, R2-F12, R2-F13 and R2-F15 with round 1's F5 and F8. R2-F8 was judged acceptable by the reviewer and takes no row. ROADMAP 59 lines / 18,631 bytes, inside both budgets.
 - 2026-08-21: T10 checkpoint 2 — plain suite verified green at 228 on this tree; the `--self-test` run is still in flight, so plant discrimination stays UNVERIFIED and T10 stays unticked.
+- 2026-08-21: T10 done and verified clean. `tests/run-tests.sh` 228 checks exit 0 and `--self-test` 317 exit 0, both on this tree; 42 M20 plants discriminate, seven of them new — a registered page that is not first in its list, a page of more than one character, a range registered at its own first page, a role dropped from a fold-induced self-target, a registration moved to the other locator of its own entry, and the two transcript clauses split apart. Merge base 208 / 248; round-2 entry 228 / 310. Status -> review.
 
 ## Decisions
 

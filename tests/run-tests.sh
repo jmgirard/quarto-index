@@ -135,7 +135,8 @@ run_scan() {
       python3 "$script" "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" \
         "$WARN_FOLD_TARGET" \
         "$M20_UNKNOWN" "$M20_NOLOCATOR" "$M20_UNINDEXED" \
-        "$R_UNKNOWN" "$R_DISPLACED" "$R_ALREADY" "$R_NOOPEN" "$R_NOCLOSE" ;;
+        "$R_UNKNOWN" "$R_DISPLACED" "$R_ALREADY" "$R_NOOPEN" "$R_NOCLOSE" \
+        "$R_BOOKUNPAIRED" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -297,12 +298,15 @@ README_RANGE_CLAIMS=(
   $'principal range\tPut `mention="principal"` on either of its two marks and the whole range prints emphasized'
   $'role once\tThe role belongs to the span rather than to either mark, so write it once, on whichever end you like'
   $'either end encapsulates\tWhere either mark of the range is the principal mention, both ends carry the same encapsulation command'
-  $'across chapters\tAn opening in one chapter and a closing in a later one are paired when the book\'s index is built'
-  $'book silence\tNeither chapter\'s own render complains about holding half of a pair'
+  $'chapter scope\ta range whose two marks are in one chapter is paired there and prints as one locator'
+  $'across chapters\tA range whose marks are in *different* chapters is not paired: each mark indexes on its own'
+  $'book report\tthe book tells you so once, naming the marks'
+  $'pdf book\tQuarto renders it as one merged document, so its ranges span chapters as you would expect'
   $'folded-in mark\t`makeindex` folds that locator into the range and prints nothing extra'
   $'folded-in silence\tsilently, and without a line in its own transcript'
   $'why not warned\tit does not know page numbers, so it cannot tell which marks fall inside a range and which do not'
-  $'refusal outcome\tthe mark still indexes its term as an ordinary page number rather than as part of a range'
+  $'refusal outcome\tthe mark indexes exactly as it would with no `range=` written'
+  $'refusal split\tfor the mark carrying a cross-reference means the cross-reference, which takes a locator\'s place either way'
   $'never closed\tan opening that is never closed'
   $'no opening\ta closing with no opening before it'
   $'second opening\ta second opening for a term whose range is still open'
@@ -718,11 +722,13 @@ MANIFEST
 #  10. A cross-reference is linked exactly when some chapter contributes its
 #      target entry: `Alpha` is contributed by index.qmd, `No Such Entry` by
 #      no chapter at all.
-#  11. A range contributes ONE locator, at its opening mark's anchor on its
-#      opening chapter's page: `Ranged Term` opens in one.qmd (its fourth
-#      mark) and closes in sub/two.qmd, and the closing contributes none.
-#      Neither chapter can see both halves, so this row is also what says the
-#      pairing happened where every record is read.
+#  11. A range pairs within one Pandoc process and nowhere else (D-009). A
+#      chapter is one process, so `Chapter Range` — both marks in last.qmd —
+#      pairs there and contributes ONE locator, at its opening mark's anchor.
+#      `Ranged Term` opens in one.qmd (its fourth mark) and closes in
+#      sub/two.qmd: no chapter sees both halves, so neither is paired and each
+#      indexes on its own, the closing carrying the principal class its own
+#      `mention=` asks for. The book reports that pair once.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_HTML_INDEX <<'MANIFEST' || true
 letter	A
@@ -731,6 +737,7 @@ letter	B
 0	Beacon	sub/two.html#qi-mark-2
 0	Beta	one.html#qi-mark-1
 letter	C
+0	Chapter Range	#qi-mark-2
 0	Shared Term	index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html#qi-mark-1
 letter	D
 0	Delta		see-link Alpha
@@ -744,7 +751,7 @@ letter	K
 0	Kappa	
 1	Sub Level	one.html#qi-mark-3
 letter	R
-0	Ranged Term	one.html#qi-mark-4
+0	Ranged Term	one.html#qi-mark-4 sub/two.html#qi-mark-3
 letter	Z
 0	Zeta	#qi-mark-1
 MANIFEST
@@ -3069,6 +3076,9 @@ R_DISPLACED='there is no locator for a range to span'
 R_ALREADY='opens a range for a term whose range is already open'
 R_NOOPEN='closes a range this'
 R_NOCLOSE='is never closed in this'
+# The book's own range report (D-009): an HTML book pairs no range across its
+# chapters, and says so once rather than leaving an author to find out.
+R_BOOKUNPAIRED='is not paired across the chapters of an HTML book'
 WARN_SELF_XREF='names the entry it is written on'
 
 # M10 replaces one shared constant with a count per format. The counts must be
@@ -4226,10 +4236,14 @@ check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
 # `last.qmd` alone, so the copy left in the output directory at the end of a run
 # is not the state this criterion is about. Same discipline as the manifest
 # check above, which is why it sits beside it.
+# Copied at the render, so the self-test's plants below mutate THIS run's
+# artifact rather than whatever the output directory holds by the end of a run —
+# later hardening steps deliberately corrupt a record and re-render last.qmd
+# alone (M15's lesson, in the shape a book takes).
+cp "$BOOK_OUT/last.html" "$WORK/book-last.html"
 HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
-  python3 tests/m21probes.py bookhtml "$BOOK_OUT/last.html" "Ranged Term" \
-  "one.html#qi-mark-4"
-pass "M21-AC5: the cross-chapter range's one locator is emphasized and classed from a role written on its closing mark, two chapters from the locator that carries it"
+  python3 tests/m21probes.py bookhtml "$WORK/book-last.html"
+pass "M21-AC5: a range paired inside one chapter gives one locator; a range spanning chapters pairs nowhere and each mark indexes on its own, the closing keeping the role it declares"
 # M07-AC4: the book's B group holds Beta, marked in one.qmd, and Beacon,
 # marked in sub/two.qmd — a group gathers what every chapter contributed.
 check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4" \
@@ -4412,17 +4426,20 @@ PY
 # which is the criterion's "renders as unlinked text". M14 replaces AC4's
 # other half — "the book renders with nothing to report at all" — because that
 # target names a term no chapter indexes and M14-AC5 requires the book to say
-# so, once. What AC4 was really asserting survives as the stronger claim: the
-# ONLY warning the whole book emits is that one report, so `see="Alpha"`,
-# whose entry another chapter contributes, draws none. Counted across the
-# whole four-chapter render, which is what says a single chapter drew it.
+# so, once. What AC4 was really asserting survives as the stronger claim: every
+# warning the whole book emits is one this suite can NAME, so `see="Alpha"`,
+# whose entry another chapter contributes, draws none. Counted across the whole
+# four-chapter render, which is what says a single chapter drew each. M21 adds
+# the second nameable one: the book carries a range whose marks are in different
+# chapters, which no chapter can pair, and the book says so once (D-009).
 BOOK_DANGLING='see= on term "Epsilon" in sub/two.qmd points at "No Such Entry", which no index mark in this book indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'
 check_warning_count "$WORK/book-html.log" "$BOOK_DANGLING" 1 "M14-AC5"
-if [ "$( { grep -c '^(W)' "$WORK/book-html.log" || true; } )" != "1" ]; then
+BOOK_WARNINGS=2
+if [ "$( { grep -c '^(W)' "$WORK/book-html.log" || true; } )" != "$BOOK_WARNINGS" ]; then
   grep '^(W)' "$WORK/book-html.log" >&2
-  fail "M05-AC4/M14-AC5: the book fixture emitted warning(s) beyond the single dangling-target report; a resolvable cross-file target must draw none"
+  fail "M05-AC4/M14-AC5: the book fixture emitted warning(s) this suite cannot name; its $BOOK_WARNINGS are the dangling-target report and the unpaired-range report, and a resolvable cross-file target must draw none"
 fi
-pass "M05-AC4/M14-AC5: the book's one warning is the single report naming the target no chapter indexes; the resolvable cross-file target draws none"
+pass "M05-AC4/M14-AC5: both of the book's warnings are ones this suite names — the target no chapter indexes, and the range no chapter can pair — and the resolvable cross-file target draws neither"
 
 # ---------------------------------------------------------------------------
 # M05-AC6 — a book with marks and no marker chapter.
@@ -4718,23 +4735,29 @@ pass "M06-AC4: one entry sorted two ways in two chapters is reported once on the
 # is A. `Early`, `Early Reference`, `Late` and `Missing Reference` file under
 # their printed text, which puts M14's two cross-reference-only entries in the
 # E and M groups.
-# M21-AC5's positive half (review F4): the book's own unpaired-range report.
-# Drawn by the LAST chapter in book order, which in THIS fixture is not the
-# chapter that builds the index — so a report drawn by the marker chapter, or
-# by every chapter, fails here rather than passing on a fixture where the two
-# coincide. Counted over one full render: once for the book, not once per
-# chapter. Both pairing reports fire here, once each and about DIFFERENT marks:
-# `Unclosed` opens a range nothing closes, and `Spanned`'s closing is orphaned
-# because its own opening carried a cross-reference and was refused a chapter
-# earlier — which is the same fact the `Spanned` manifest row states from the
-# other side, that the closing kept its locator. Two counts of one rather than
-# one count of two: a report firing twice about one mark would pass a total.
-check_warning_count "$WORK/book-order-1.log" "$R_NOCLOSE" 1 \
-  "M21-AC5 (the book reports its never-closed opening exactly once)"
-check_warning_count "$WORK/book-order-1.log" "$R_NOOPEN" 1 \
-  "M21-AC5 (and the closing whose opening was refused, exactly once)"
-check_warning_count "$WORK/book-order-1.log" "$R_ALREADY" 0 \
-  "M21-AC5 (and no pairing report this book has no cause for)"
+# Where the book's range report is DRAWN. This fixture builds its index in its
+# FIRST chapter, so the chapter that reads every record is not the chapter that
+# places the index — a report drawn by the marker chapter, or by every chapter,
+# fails here rather than passing on a fixture where the two coincide. One report
+# per render, naming both of this book's unpaired range ends — `Unclosed`'s
+# opening, which nothing closes, and `Spanned`'s closing in the same chapter.
+# `Spanned`'s OPENING is not among them: it carries a cross-reference, so it
+# names no range end at all and is refused by its own chapter, which is a
+# different report and fires once. No PAIRING report fires in a book at all.
+check_warning_count "$WORK/book-order-1.log" "$R_BOOKUNPAIRED" 1 \
+  "M21-AC5 (drawn by the chapter that has seen every record, not the marker chapter)"
+for mark in 'term "Unclosed" in third.qmd' 'term "Spanned" in third.qmd'; do
+  check_warning_count "$WORK/book-order-1.log" "$mark" 1 \
+    "M21-AC5 (naming each mark no chapter could pair)"
+done
+check_warning_count "$WORK/book-order-1.log" 'term "Spanned" in later chapter.qmd' 0 \
+  "M21-AC5 (and not the opening whose range a cross-reference already displaced)"
+check_warning_count "$WORK/book-order-1.log" "$R_DISPLACED" 1 \
+  "M21-AC5 (which draws its own report instead, once)"
+for needle in "$R_NOCLOSE" "$R_NOOPEN" "$R_ALREADY"; do
+  check_warning_count "$WORK/book-order-1.log" "$needle" 0 \
+    "M21-AC5 (no chapter pairs, so no chapter draws a pairing report)"
+done
 
 check_letter_sweep "$ORDER_OUT/index.html" "M07-AC1 (book order)" $'A\nE\nL\nM\nS\nU'
 
@@ -8041,7 +8064,7 @@ pass "M21: every behavior the README documents for a page range is present verba
 # Removed before the render, not merely overwritten: AC6 is stated over the gfm
 # render of THIS run, and a stale committed .md would satisfy it after the
 # filter had regressed.
-rm -f examples/range.md examples/range.html
+rm -f examples/range.md examples/range.html examples/range.tex
 for fmt in latex html gfm; do
   quarto render examples/range.qmd --to $fmt > "$WORK/range-$fmt.log" 2>&1 \
     || { cat "$WORK/range-$fmt.log" >&2; fail "M21: examples/range.qmd failed to render to $fmt"; }
@@ -8050,7 +8073,12 @@ for artifact in examples/range.md examples/range.html; do
   [ -s "$artifact" ] \
     || fail "M21: the render produced no $artifact, so every check stated over it would read a file this run did not write"
 done
-# Copied before the PDF render below removes the intermediate .tex (M15).
+# Copied before the PDF render below removes the intermediate .tex (M15), and
+# size-checked first like every other artifact here: a render that exits 0 and
+# writes nothing would otherwise leave every AC2 clause reading a file this run
+# did not produce (review round 3, R3-F6).
+[ -s examples/range.tex ] \
+  || fail "M21-AC2: the latex render produced no examples/range.tex"
 cp examples/range.tex "$WORK/range.tex"
 # Removed, not overwritten: AC2 is a cross-artifact agreement between the .ind
 # and the .aux of one render, and a stale .aux from a tree where the ordinals
@@ -8180,8 +8208,14 @@ for fmt in latex html gfm; do
       || fail "M21-AC4: the latex render produced no examples/range-misuse.tex"
     cp examples/range-misuse.tex "$WORK/range-misuse-latex.tex"
   fi
-  check_warning_count "$WORK/range-misuse-$fmt.log" "$R_UNKNOWN" 1 \
+  # Two marks of this shape: a value naming neither end, and an EMPTY value,
+  # which README singles out as a value the author wrote rather than an
+  # attribute they left off and which nothing exercised until round 3 (R3-F10).
+  check_warning_count "$WORK/range-misuse-$fmt.log" "$R_UNKNOWN" 2 \
     "M21-AC4 (a value that is neither end, $fmt)"
+  check_warning_count "$WORK/range-misuse-$fmt.log" \
+    'range= on term "kobold" names neither end of a range ("")' 1 \
+    "M21-AC4 (an empty value is a value, $fmt)"
   check_warning_count "$WORK/range-misuse-$fmt.log" "$R_DISPLACED" 1 \
     "M21-AC4 (a range mark carrying a cross-reference, $fmt)"
   check_warning_count "$WORK/range-misuse-$fmt.log" "$R_ALREADY" 1 \
@@ -8215,7 +8249,7 @@ for fmt in latex html gfm; do
     'indexes as an ordinary page number' 3 \
     "M21-AC4 (says what the index will show instead, $fmt)"
   check_warning_count "$WORK/range-misuse-$fmt.log" \
-    'indexes as though the attribute were absent' 1 \
+    'indexes as though the attribute were absent' 2 \
     "M21-AC4 (says what the index will show instead, $fmt)"
   check_warning_count "$WORK/range-misuse-$fmt.log" \
     'the range is dropped and the mark indexes as it would without it' 1 \
@@ -8249,12 +8283,25 @@ pass "M21-AC4: no refused range reaches the index tool as a range — the emitte
 # BOOK_HTML_INDEX manifest's `Ranged Term` row, checked above; what is left is
 # that neither chapter's own render said anything about its half of the pair,
 # which is what makes the book the set a range is paired within.
+# No chapter draws a PAIRING report about its own half — that judgement is not a
+# chapter's to make — and the book draws exactly one report of its own instead,
+# naming both marks of the pair no chapter can see whole.
 for needle in "$R_NOOPEN" "$R_NOCLOSE" "$R_ALREADY" "$R_DISPLACED" "$R_UNKNOWN"; do
   check_warning_count "$WORK/book-html.log" "$needle" 0 \
     "M21-AC5 (a whole-book render)"
 done
+check_warning_count "$WORK/book-html.log" "$R_BOOKUNPAIRED" 1 \
+  "M21-AC5 (the book says once that it pairs no range across chapters)"
+for mark in 'term "Ranged Term" in one.qmd' 'term "Ranged Term" in sub/two.qmd'; do
+  check_warning_count "$WORK/book-html.log" "$mark" 1 \
+    "M21-AC5 (and names both marks of the pair)"
+done
+# The same-chapter range is paired, so it is NOT among them — a report naming
+# every range mark it found would pass the count above and be wrong.
+check_warning_count "$WORK/book-html.log" 'term "Chapter Range"' 0 \
+  "M21-AC5 (and names no mark its own chapter paired)"
 python3 tests/m21probes.py bookpdf "$WORK/book.txt" "Ranged Term"
-pass "M21-AC5: a range opened in one chapter and closed in a later one contributes one locator at the opening chapter's page and the opening mark's anchor, prints as one page range in the book PDF, and draws no report from either chapter"
+pass "M21-AC5: no chapter of an HTML book draws a pairing report about its own half, the book draws exactly one report naming both marks of the pair it cannot see whole, and the same book's PDF — one merged document — still prints that term as a single ranged locator"
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
@@ -8314,11 +8361,6 @@ PY
   # Not named by a criterion, but the same discipline: a clash report nothing
   # proves discriminating is a report that can quietly stop firing.
   warn_discrimination "$WORK/conflict-latex.log" "$WARN_CLASH" 8 "M02-AC5"
-  # The book's two pairing reports (M21 review F4): each was a zero-expectation
-  # control until this milestone's review, so each is shown here to fail when
-  # it is missing and when it is duplicated.
-  warn_discrimination "$WORK/book-order-1.log" "$R_NOCLOSE" 1 "M21-AC5"
-  warn_discrimination "$WORK/book-order-1.log" "$R_NOOPEN" 1 "M21-AC5"
 
   # M16-AC2 — the source-set enumeration is recursive, and it grows when the
   # filter does. Proved on a scratch copy rather than by reading the `find`
@@ -8837,6 +8879,37 @@ filtersrc.sources()" >/dev/null 2>&1; then
     's{<a href="#qi-mark-1">1</a>}{<a href="#qi-mark-1" class="qi-principal"><strong>1</strong></a>}'
   probe_defect "a plain range printed as the principal one" \
     m21_html "$M21W/wrongmark.html"
+
+  # --- the book index, whose reader the round-2 return was taken on and which
+  #     had no plant of its own until round 3 said so (R3-F2). Three forms: the
+  #     removed cross-chapter pairing coming back, the in-chapter pairing being
+  #     lost, and the role dropped from the mark that declares it.
+  m21_bookhtml() {
+    HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
+      python3 tests/m21probes.py bookhtml "$1"
+  }
+  m21_bookhtml "$WORK/book-last.html" >/dev/null \
+    || fail "M21 self-test: the book reader fails on the unplanted render"
+  probe_plantpl "$WORK/book-last.html" "$M21W/bookmerged.html" \
+    's{, <a href="sub/two\.html\#qi-mark-3"[^>]*><strong>2</strong></a>}{}'
+  probe_defect "a cross-chapter range merged into one locator again" \
+    m21_bookhtml "$M21W/bookmerged.html"
+  probe_plantpl "$WORK/book-last.html" "$M21W/booknorole.html" \
+    's{<a href="sub/two\.html\#qi-mark-3" class="qi-principal"><strong>2</strong></a>}{<a href="sub/two.html\#qi-mark-3">2</a>}'
+  probe_defect "a book mark losing the role its own mention= declares" \
+    m21_bookhtml "$M21W/booknorole.html"
+  probe_plantpl "$WORK/book-last.html" "$M21W/booksplit.html" \
+    's{(<a href="\#qi-mark-2">1</a>)}{$1, <a href="\#qi-mark-3">2</a>}'
+  probe_defect "a range paired inside one chapter split into two locators" \
+    m21_bookhtml "$M21W/booksplit.html"
+  # And the book's report, by form: missing, duplicated, and naming a mark its
+  # own chapter paired.
+  warn_discrimination "$WORK/book-html.log" "$R_BOOKUNPAIRED" 1 "M21-AC5"
+  warn_discrimination "$WORK/book-order-1.log" "$R_BOOKUNPAIRED" 1 "M21-AC5 (attribution)"
+  probe_plant "$WORK/book-html.log" "$M21W/bookwrongmark.log" \
+    -e 's/term "Ranged Term" in one\.qmd/term "Chapter Range" in last.qmd/'
+  probe_defect "the book report naming a mark its own chapter paired" \
+    check_warning_count "$M21W/bookwrongmark.log" 'term "Chapter Range"' 0 "M21 self-test"
 
   # --- the reports, which a count alone cannot fence.
   m21_report() {

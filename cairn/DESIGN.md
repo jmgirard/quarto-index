@@ -329,8 +329,9 @@ list and wraps the registered pages, re-applying whatever page-link command it
 was handed rather than naming a hyperref internal. Four `\providecommand`
 commands are injected, and only into a document that uses them; the emphasis
 itself is one of them, so an author redefines it exactly as before. M21 adds
-four more to the same block — two written into the `.aux` by a range's ends and
-two that read them back — and they ride with the rest rather than being
+four more to the same block — two emitted beside the `\index` commands, which
+write the `.aux` lines, and two the `.aux` itself names, which record the
+range's pages — and they ride with the rest rather than being
 conditional on a range, because an `.aux` outlives the source that wrote it and
 a command it names that is no longer injected fails the render. One
 degradation is accepted and documented: makeindex folds three or more

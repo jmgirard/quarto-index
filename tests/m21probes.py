@@ -175,8 +175,23 @@ def _ind(argv):
     # entry prints emphasizes nothing, and a printed range nothing registered
     # prints plain.
     aux = open(aux_path, encoding='utf-8').read()
-    opened = dict(re.findall(r'\\%s\{([^{}]*)\}\{([^{}]*)\}' % re.escape(rangeat_cmd), aux))
-    closed = dict(re.findall(r'\\%s\{([^{}]*)\}\{([^{}]*)\}' % re.escape(rangeto_cmd), aux))
+    # Read as LISTS first: a `dict` keeps one value per ordinal, so a defect
+    # emitting a registration twice for one range would be invisible, and if the
+    # surviving line happened to name the true page the check would pass on an
+    # `.aux` that also registers a wrong one (review round 3, R3-F7).
+    opened_pairs = re.findall(r'\\%s\{([^{}]*)\}\{([^{}]*)\}' % re.escape(rangeat_cmd), aux)
+    closed_pairs = re.findall(r'\\%s\{([^{}]*)\}\{([^{}]*)\}' % re.escape(rangeto_cmd), aux)
+    for which, pairs in (('opening', opened_pairs), ('closing', closed_pairs)):
+        seen = {}
+        for ordinal, page in pairs:
+            seen.setdefault(ordinal, []).append(page)
+        repeated = {k: v for k, v in seen.items() if len(v) > 1}
+        if repeated:
+            _fail('M21-AC2: the .aux registers a range %s more than once per '
+                  'ordinal (%r); each end of a range registers exactly once, and '
+                  'a second line under a live ordinal would be read as the first'
+                  % (which, repeated))
+    opened, closed = dict(opened_pairs), dict(closed_pairs)
     want_ids = set(ordinals.values())
     if set(opened) != want_ids or set(closed) != want_ids:
         _fail('M21-AC2: the .aux registers range openings for %s and closings for '
@@ -196,8 +211,10 @@ def _ind(argv):
     # this fixture writes none: a registration arriving by that route would mean
     # a range opening emitted the wrong command and its start page was never
     # remembered.
-    lone = re.findall(r'\\%s\{([^{}]*)\}\{([^{}]*)\}' % re.escape(page_cmd),
-                      re.sub(r'\\%s' % re.escape(rangeat_cmd), '', aux))
+    # `rangeat` CALLS the page command, but only in the preamble's definition —
+    # an `.aux` line never carries both names, so the two patterns cannot
+    # overlap and no stripping is needed (review round 3, R3-F12).
+    lone = re.findall(r'\\%s\{([^{}]*)\}\{([^{}]*)\}' % re.escape(page_cmd), aux)
     if lone:
         _fail('M21-AC2: the .aux carries %d lone principal-page registration(s) '
               '(%r); every principal mark in this fixture opens a range, so each '
@@ -300,9 +317,9 @@ def _tex(argv):
     # The registrations, and their ordinals, at the marks themselves — the
     # other half of what the `.aux` is later read for.
     for command, which in ((rangefrom_cmd, 'opening'), (rangeend_cmd, 'closing')):
+        # The `(?!\{)` is what excludes the preamble's own definition, whose
+        # `{#1}` is followed by `{`; nothing further is needed.
         ids = re.findall(r'\\%s\{([^{}]*)\}(?!\{)' % re.escape(command), tex)
-        # The preamble defines the command with `#1`, which is not a call.
-        ids = [i for i in ids if i != '#1']
         if sorted(ids) != sorted(ordinals.values()):
             _fail('M21-AC2: the %s registrations name %s; the principal ranges '
                   'this document emits are %r' % (which, sorted(ids), ordinals))
@@ -563,54 +580,72 @@ def _preamble(argv):
 
 
 def _bookhtml(argv):
-    """M21-AC5's role half — a cross-chapter range carries its role too.
+    """M21-AC5 — what an HTML book does now that it pairs no range across chapters.
 
-    The role is the RANGE's, and a book is the one place where the end that
-    DECLARES it and the end that carries the locator can be in different
-    chapters: neither chapter's own render can resolve it, so the chapter that
-    reads every record has to. Kept as the pairing's ending alone, the role was
-    dropped here while the same input in one document printed emphasized
-    (review round 2, R2-F1).
+    Three claims, read off one render. A range whose two marks are in ONE
+    chapter pairs there, because a chapter is one Pandoc process and that is
+    the scope a range pairs in (D-009): it contributes one locator, at its
+    opening mark's anchor. A range whose marks are in DIFFERENT chapters pairs
+    nowhere: each mark indexes as though `range=` were absent, its own
+    `mention=` role included — which is why the closing's locator here is the
+    emphasized one, the author having written the role on it. And the book says
+    so once.
+
+    The marks are named rather than quantified over: "every range mark
+    contributes its own locator" would be false for one also carrying `see=`,
+    which contributes a cross-reference and no locator at all.
     """
-    path, term, href = argv[0], argv[1], argv[2]
+    path = argv[0]
     cls = os.environ['HTML_PRINCIPAL_CLASS']
     doc = H.parse(path)
     section = H.find_id(doc, os.environ.get('HTML_SECTION_ID', 'qi-index'))
     if section is None:
         _fail('M21-AC5: %s has no generated index section' % path)
-    for item in H.find_all(section, 'li'):
-        own = list(H.own_nodes(item))
-        terms = [n for n in own if 'qi-term' in H.classes(n)]
-        if len(terms) != 1 or H.text(terms[0]).strip() != term:
-            continue
-        links = []
-        for node in own:
-            if 'qi-locators' in H.classes(node):
-                links.extend(H.find_all(node, 'a'))
-        if len(links) != 1:
-            _fail('M21-AC5: the %r entry carries %d locator link(s); a range '
-                  'opened in one chapter and closed in another is one'
-                  % (term, len(links)))
-        got = links[0].attrs.get('href', '')
-        if got != href:
-            _fail('M21-AC5: the %r entry\'s locator points at %r, not at the '
-                  'opening chapter\'s page and the opening mark\'s anchor (%r)'
-                  % (term, got, href))
-        if cls not in H.classes(links[0]) or not H.find_all(links[0], 'strong'):
-            _fail('M21-AC5: the %r entry\'s locator carries class=%r and %d '
-                  'strong node(s); its range declares the principal role, on its '
-                  'CLOSING mark in a different chapter from the locator, and the '
-                  'chapter that reads every record is the only one that can '
-                  'carry it across'
-                  % (term, sorted(H.classes(links[0])),
-                     len(H.find_all(links[0], 'strong'))))
-        print('ok   M21-AC5: the cross-chapter range contributes one locator, at '
-              'the opening chapter\'s page and the opening mark\'s anchor, '
-              'emphasized and classed from a role its author wrote on the '
-              'closing mark two chapters away')
-        return
-    _fail('M21-AC5: the book index has no %r entry at all, so every clause above '
-          'would pass by not matching' % term)
+
+    def locators(term):
+        for item in H.find_all(section, 'li'):
+            own = list(H.own_nodes(item))
+            terms = [n for n in own if 'qi-term' in H.classes(n)]
+            if len(terms) != 1 or H.text(terms[0]).strip() != term:
+                continue
+            out = []
+            for node in own:
+                if 'qi-locators' in H.classes(node):
+                    out.extend((a.attrs.get('href', ''), cls in H.classes(a),
+                                bool(H.find_all(a, 'strong')))
+                               for a in H.find_all(node, 'a'))
+            return out
+        return None
+
+    # The same-chapter range: paired, so one locator at the opening's anchor.
+    got = locators('Chapter Range')
+    if got is None:
+        _fail('M21-AC5: the book index has no "Chapter Range" entry, so every '
+              'clause about a range paired inside one chapter would pass by not '
+              'matching')
+    if got != [('#qi-mark-2', False, False)]:
+        _fail('M21-AC5: "Chapter Range" carries %r; both its marks are in the '
+              'marker chapter, so it pairs there and contributes one plain '
+              'locator at its opening mark\'s own-page anchor' % (got,))
+
+    # The cross-chapter range: paired nowhere, so a locator per mark, and the
+    # closing's carries the role its own mark declares.
+    got = locators('Ranged Term')
+    if got is None:
+        _fail('M21-AC5: the book index has no "Ranged Term" entry')
+    want = [('one.html#qi-mark-4', False, False),
+            ('sub/two.html#qi-mark-3', True, True)]
+    if got != want:
+        _fail('M21-AC5: "Ranged Term" carries %r, expected %r as (href, carries '
+              '%s, carries strong): its two marks are in different chapters, so '
+              'neither is paired and each indexes as it would with no range= at '
+              'all — the closing carrying the principal role IT declares'
+              % (got, want, cls))
+    print('ok   M21-AC5: a range whose marks share a chapter pairs there and '
+          'gives one locator at its opening anchor, while a range spanning two '
+          'chapters pairs nowhere and each of its marks indexes on its own, the '
+          'closing keeping the principal class and emphasis its own mention= '
+          'asks for')
 
 
 READERS = {'ind': _ind, 'tex': _tex, 'html': _html, 'gfm': _gfm,

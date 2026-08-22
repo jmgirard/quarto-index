@@ -3,5 +3,12 @@
 The marker chapter carries a mark of its own, so the index has to link within
 its own page as well as across the book: [Zeta]{.index}.
 
+A range whose two marks are both in this chapter. A chapter is one Pandoc
+process, which is the scope a range pairs in, so this one pairs here and
+contributes a single locator — unlike the one opened two chapters back, which
+no chapter can see both ends of: the discussion of
+[Chapter Range]{.index range="open"} begins here and
+[Chapter Range]{.index range="close"} ends here.
+
 ::: {.qi-index-here}
 :::

@@ -46,6 +46,9 @@ slot: [imp]{.index range="open" see="golem"}.
 
 A `range=` value naming neither end: [jinn]{.index range="middle"}.
 
+And an EMPTY value, which is a value the author wrote rather than an attribute
+they left off, and is reported the same way: [kobold]{.index range=""}.
+
 # The controls these reports must leave alone
 
 A well-formed range, whose two marks must draw no report at all. The discussion

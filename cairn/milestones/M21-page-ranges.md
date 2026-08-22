@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -102,7 +102,7 @@ Completed tasks are one line each; what each did, and why, is in the work log be
       composition with the contested-key bookkeeping.
 - [x] T4: `html.lua` — a closing contributes no locator; the merged locator carries the
       range's role.
-- [ ] T5: `book.lua`: the range end the author wrote travels in the per-chapter record as an
+- [x] T5: `book.lua`: the range end the author wrote travels in the per-chapter record as an
       optional field with a named fallback, leaving the store version alone (the M14 lesson).
       Nothing pairs on it — the last chapter in book order uses it only to report, once per
       render, that ranges are not paired across an HTML book's chapters, naming the marks it
@@ -113,7 +113,7 @@ Completed tasks are one line each; what each did, and why, is in the work log be
 - [x] T9: Review round 1's nine findings, each with the check that would have caught it.
 - [x] T10: Review round 2's seven findings, the two plant readers moved into
       `tests/m21probes.py` so the run and the self-test share one reader.
-- [ ] T11: The narrowing (D-009) and review round 3's twelve findings. Remove the
+- [x] T11: The narrowing (D-009) and review round 3's twelve findings. Remove the
       cross-chapter pairing and its checks, plants and manifest rows; add the book's
       not-paired report and its key to `tests/scans/mark-report-keys`; fence the report by
       form — fires twice, fires from the wrong chapter, names the wrong mark — using
@@ -169,6 +169,12 @@ Completed tasks are one line each; what each did, and why, is in the work log be
 - 2026-08-22: amendment (descope, chosen at review round 3's gate). Scope In loses the cross-chapter clause; Scope Out gains the HTML book case with its exit; AC5 narrows to what a book does without pairing; T5 rewritten and T11 added; Coverage maps AC5 to T11 as well. Criteria widened or added: AC5 — its new wording binds a `mention=` role in a book and binds the book PDF, neither of which any criterion bound before; both are disclosed here per the amendment convention, and both are funded by checks that already exist. D-009 records the decision and the ROADMAP carries the candidate row it promotes from.
 - 2026-08-22: the amended AC5 went to two fresh-context [O] criteria audits in full mode. The first returned six blocking findings (an unsatisfiable counterfactual baseline, an unanchored referent, an unbounded render domain, a missing plant plan, a README gap, and one undisclosed widening); the second, on the corrected draft, returned three more — the counterfactual was still instrument-built, "the last chapter in book order" cannot discriminate in a fixture whose marker IS its last chapter, and "one page range" pinned an extent pagination decides where the reader asserts one locator. The third draft applies every repair, and the wording decision went to the user, which is where the second re-entry sends it.
 - 2026-08-22: Tasks compressed in one pass to hold the 150-line cap; ROADMAP's three book-sidecar rows clustered to hold its 60-line cap.
+
+- 2026-08-22: correction — T8's work-log line above says "a ninth back-end-difference row"; README numbers it eight. The line stands (IP4) and this supersedes its count.
+
+- 2026-08-22: T5/T11 — the cross-chapter pairing is gone. `book_ranges` and every consumer of a book-level verdict are removed; what stays is the store's `range` field and this chapter's own `paired` verdict, both carried through, and one report from the last chapter in book order naming every range end no chapter could pair. A chapter IS one Pandoc process, so a range whose two marks share a chapter still pairs there — `examples/book/last.qmd` gains exactly that, and `Chapter Range` prints one locator while `Ranged Term`, split across two chapters, prints two, the closing's carrying the principal class its own mention= declares.
+- 2026-08-22: T11 — the ten smaller round-3 findings: `_bookhtml` gains three plants and the book report two more, so the reader the round-2 return was taken on is finally shown discriminating (R3-F2); D-009 supersedes D-008's count of the `.aux`-borne commands and DESIGN.md's inverted description is corrected (R3-F4); the report's attribution is proved in `examples/book-order/`, whose marker sits in its FIRST chapter (R3-F5); `examples/range.tex` is removed before its render and size-checked like its siblings (R3-F6); `_ind` reads the `.aux` as lists and refuses a repeated registration (R3-F7); the range-start slot is cleared once used, so the stale-`.aux` guard means what its comment says for a second range of one key (R3-F8); `range=""` is exercised (R3-F10); a work-log count is superseded (R3-F11); two dead guards removed (R3-F12). R3-F9 — nested marks desyncing the passes through `span_text` — is left: round 2's lens cleared it and round 3's flagged it as narrow, and it is a candidate row rather than a change made on a split verdict.
+- 2026-08-22: narrowing complete. `tests/run-tests.sh` 249 checks, `--self-test` 367. The book's warning count check now names both of the two warnings the fixture emits rather than pinning one.
 
 ## Decisions
 

@@ -266,13 +266,17 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   -- Guarded on the opening's slot existing: an `.aux` from a run whose opening
   -- has since been deleted still holds this line, and `\csname` on a name
   -- nothing defined is `\relax`, which would otherwise compose a range
-  -- starting with `\relax`.
+  -- starting with `\relax`. The slot is cleared once used, so the guard means
+  -- what it says for a SECOND range of the same key too: without that, an
+  -- orphaned closing composed the previous range's start with its own page and
+  -- registered a span nothing prints (review round 3, R3-F8).
   "\\providecommand*\\" .. RANGETO_COMMAND ..
     "[2]{\\def\\qi@key{#2}\\@onelevel@sanitize\\qi@key" ..
     "\\expandafter\\ifx\\csname qi@f@#1\\endcsname\\relax\\else" ..
     "\\edef\\qi@key{\\csname qi@f@#1\\endcsname" .. RANGE_DELIM ..
     "\\qi@key}" ..
-    "\\expandafter\\gdef\\csname qi@p@#1@\\qi@key\\endcsname{}\\fi}",
+    "\\expandafter\\gdef\\csname qi@p@#1@\\qi@key\\endcsname{}" ..
+    "\\expandafter\\global\\expandafter\\let\\csname qi@f@#1\\endcsname\\relax\\fi}",
   "\\providecommand*\\" .. RANGEFROM_COMMAND ..
     "[1]{\\protected@write\\@auxout{}{\\string\\" .. RANGEAT_COMMAND ..
     "{#1}{\\thepage}}}",

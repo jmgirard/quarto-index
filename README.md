@@ -432,10 +432,13 @@ either of its two marks and the whole range prints emphasized —
 `<strong>`, exactly as a lone principal mention does. The role belongs to the
 span rather than to either mark, so write it once, on whichever end you like.
 
-**In a book, a range may span chapters.** An opening in one chapter and a
-closing in a later one are paired when the book's index is built, and the one
-locator points at the opening chapter's page. Neither chapter's own render
-complains about holding half of a pair.
+**A range pairs within one chapter.** Quarto renders each chapter of an HTML
+book in its own process, so a range whose two marks are in one chapter is paired
+there and prints as one locator, exactly as it does in a single document. A
+range whose marks are in *different* chapters is not paired: each mark indexes
+on its own, as though you had not written `range=` at all, and the book tells
+you so once, naming the marks. A PDF book is unaffected — Quarto renders it as
+one merged document, so its ranges span chapters as you would expect.
 
 **An ordinary mark inside a range disappears into it.** If you also write a
 plain `[otters]{.index}` on a page inside the range, `makeindex` folds that
@@ -446,9 +449,12 @@ not, and a warning would fire on every mark of the term. Mark the term outside
 its own range, or accept that the range covers it.
 
 **Five things the extension refuses.** Each is reported, and in each the mark
-still indexes its term as an ordinary page number rather than as part of a
-range, because `makeindex` writes a transcript warning for a range it cannot
-pair and Quarto fails the whole render on that warning:
+indexes exactly as it would with no `range=` written — which for the first three
+means an ordinary page number, and for the mark carrying a cross-reference means
+the cross-reference, which takes a locator's place either way. The reason a
+refused range never reaches the index tool is that `makeindex` writes a
+transcript warning for a range it cannot pair, and Quarto fails the whole render
+on that warning:
 
 - an opening that is never closed;
 - a closing with no opening before it;

@@ -149,7 +149,14 @@ local function build_entry_tree(marks)
       end
       node = child
     end
-    if mark.anchor then
+    -- A range's CLOSING contributes no locator: the pair is one locator, at
+    -- the opening's anchor, which is where a reader starts reading. It keeps
+    -- its anchor all the same — nothing links to it, but the mark is still a
+    -- place in the text and removing its anchor would make the two ends of one
+    -- range differently shaped for no reason a reader could see. `paired` is
+    -- the verdict for the set this index is built over: this document's own
+    -- marks, or, in a book, every chapter's records paired together.
+    if mark.anchor and mark.paired ~= "close" then
       -- A table rather than the bare target string: a locator now has a role
       -- as well as a destination, and the two travel together so a reordering
       -- cannot separate them (M20).

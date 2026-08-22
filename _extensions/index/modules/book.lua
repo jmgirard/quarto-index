@@ -127,8 +127,12 @@ local function store_write(ctx, marker)
       -- because the book's dangling-target report runs in another chapter's
       -- process, where the mark itself is long gone and only this record is
       -- left to name it.
+      -- `range` is the end the AUTHOR wrote, never this chapter's verdict
+      -- about it: a range opened here and closed two chapters on is unmatched
+      -- in both, and only the record that says which end was written lets the
+      -- chapter reading every record pair the two.
       { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor,
-        context = mark.context, role = mark.role }
+        context = mark.context, role = mark.role, range = mark.range }
   end
   -- The chapter's DECLARED sort keys, one per printed level path, rather than
   -- a resolved key per mark. A mark's resolved key already has this chapter's
@@ -211,6 +215,13 @@ local function valid_record(data, file)
     -- which is what such a chapter meant. Bumping the version for it would
     -- drop every other chapter's terms until the whole book re-rendered.
     if mark.role ~= nil and type(mark.role) ~= "string" then
+      return false
+    end
+    -- And once more on the same terms (M21): a record written before ranges
+    -- existed carries no range end, which is what such a chapter meant. An
+    -- end this version does not recognize simply never pairs, exactly as it
+    -- would inside one document.
+    if mark.range ~= nil and type(mark.range) ~= "string" then
       return false
     end
     -- Validated here rather than trusted (review F9): a record whose xref
@@ -343,11 +354,60 @@ local function book_sort_for(keys, levels)
   return resolved
 end
 
+-- Pair the book's ranges across every chapter's record. The set a range has to
+-- be closed within is the BOOK, not a chapter: a range opened in one chapter
+-- and closed in a later one is unmatched in both, and each chapter's own
+-- render is silent about its half for exactly that reason (qi_marks). Records
+-- arrive in book order and marks within a record in document order, so this
+-- reads the book the way a reader does.
+--
+-- Returns the verdicts, keyed by where the mark sits, and the findings — the
+-- two having different owners: the chapter that builds the index needs the
+-- verdicts, and the last chapter in book order draws the reports, exactly as
+-- the dangling-target report is drawn.
+local function book_ranges(records)
+  local items, at = {}, {}
+  for ri, record in ipairs(records) do
+    for mi, mark in ipairs(record.marks or {}) do
+      if qi_core.RANGE_ENDS[mark.range or ""] then
+        items[#items + 1] = {
+          key = qi_levels.levels_key(mark.levels),
+          ending = mark.range,
+          principal = mark.role == "principal",
+          -- Named with its chapter, for the reason the book's dangling-target
+          -- report names one: the reader of this warning has a book open, not
+          -- a file.
+          context = (mark.context or "a mark") .. " in " .. record.file,
+        }
+        at[#items] = ri .. "\0" .. mi
+      end
+    end
+  end
+  local verdicts, found = qi_marks.pair_ranges(items)
+  local paired = {}
+  for i, where in ipairs(at) do
+    paired[where] = verdicts[i] and verdicts[i].ending or nil
+  end
+  return paired, found
+end
+
+-- The book's counterpart of the in-document range reports, drawn by the last
+-- chapter in book order alone (its caller decides), for the same reason the
+-- dangling-target report is: it is the only chapter that has seen every
+-- other one's record.
+local function report_book_ranges(records)
+  local _, found = book_ranges(records)
+  for _, one in ipairs(found) do
+    qi_marks.report_range(one, "book")
+  end
+end
+
 local function book_marks(ctx, records)
   local book_keys = book_sort_keys(records)
+  local paired = book_ranges(records)
   local marks = {}
-  for _, record in ipairs(records) do
-    for _, mark in ipairs(record.marks or {}) do
+  for ri, record in ipairs(records) do
+    for mi, mark in ipairs(record.marks or {}) do
       local xrefs = {}
       for _, xref in ipairs(mark.xrefs or {}) do
         local kind = qi_core.XREF_KIND_BY_ATTR[xref.attr]
@@ -366,6 +426,7 @@ local function book_marks(ctx, records)
         xrefs = xrefs,
         anchor = mark.anchor,
         role = mark.role,
+        paired = paired[ri .. "\0" .. mi],
         -- A mark in the chapter holding the index links within its own page,
         -- exactly as a single document's does.
         -- Written exactly as Quarto writes its own links to that page,
@@ -459,6 +520,7 @@ local function html_book(doc, ctx, marker, taken)
   -- limit every cross-chapter judgement here already carries.
   if ctx.position == #ctx.chapters then
     report_book_dangling(records)
+    report_book_ranges(records)
   end
   -- Whether THIS chapter carries the marker is known here, and is never read
   -- back from the store: a chapter whose own record failed to write would
@@ -519,6 +581,8 @@ end
 -- scans take the FIRST match for `NAME =` over the whole source set, and
 -- the M16-AC3 probe relocates a definition into another file — a plain
 -- `NAME =` line left behind here would then mask it (M16 review F3).
+M["book_ranges"] = book_ranges
+M["report_book_ranges"] = report_book_ranges
 M["STORE_DIR"] = STORE_DIR
 M["STORE_SUFFIX"] = STORE_SUFFIX
 M["STORE_VERSION"] = STORE_VERSION

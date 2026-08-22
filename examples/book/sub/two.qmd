@@ -14,3 +14,6 @@ The shared term picks up its third locator here: [Shared Term]{.index}.
 One more term for the letter group `Beta` opens in the chapter before this
 one: a group gathers what every chapter contributed, not what one chapter
 did. [Beacon]{.index}.
+
+The discussion opened in the previous chapter closes here, contributing no
+locator of its own: [Ranged Term]{.index range="close"}.

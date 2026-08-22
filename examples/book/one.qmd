@@ -12,3 +12,7 @@ A mark carrying an id of the author's own keeps it as the link target:
 
 A two-level entry, so the level structure is exercised across the store:
 [Kappa]{.index entry="Kappa!Sub Level"}.
+
+A discussion that spans chapters opens here and closes in the next chapter, so
+neither chapter's own render can see both halves and only the chapter that
+reads every record can pair them: [Ranged Term]{.index range="open"}.

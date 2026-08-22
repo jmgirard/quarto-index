@@ -678,6 +678,11 @@ MANIFEST
 #  10. A cross-reference is linked exactly when some chapter contributes its
 #      target entry: `Alpha` is contributed by index.qmd, `No Such Entry` by
 #      no chapter at all.
+#  11. A range contributes ONE locator, at its opening mark's anchor on its
+#      opening chapter's page: `Ranged Term` opens in one.qmd (its fourth
+#      mark) and closes in sub/two.qmd, and the closing contributes none.
+#      Neither chapter can see both halves, so this row is also what says the
+#      pairing happened where every record is read.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_HTML_INDEX <<'MANIFEST' || true
 letter	A
@@ -698,6 +703,8 @@ letter	I
 letter	K
 0	Kappa	
 1	Sub Level	one.html#qi-mark-3
+letter	R
+0	Ranged Term	one.html#qi-mark-4
 letter	Z
 0	Zeta	#qi-mark-1
 MANIFEST
@@ -4146,7 +4153,7 @@ check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
 # M07-AC4: the book's B group holds Beta, marked in one.qmd, and Beacon,
 # marked in sub/two.qmd — a group gathers what every chapter contributed.
 check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4" \
-  $'A\nB\nC\nD\nE\nG\nI\nK\nZ'
+  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ'
 
 # The manifest above is the positive half: it says the marker chapter's index
 # is the whole book's. This is the negative half, and the questions only a
@@ -4478,7 +4485,7 @@ PY
 check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (second render)" hrefs
 check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4 (second render)" \
-  $'A\nB\nC\nD\nE\nG\nI\nK\nZ'
+  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ'
 
 # A record for a chapter the book does not list must not reach the index. The
 # planted record is well-formed and names a chapter absent from _quarto.yml,
@@ -4502,7 +4509,7 @@ check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE" 0 \
 check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (stale chapter ignored)" hrefs
 check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4 (stale chapter)" \
-  $'A\nB\nC\nD\nE\nG\nI\nK\nZ'
+  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ'
 rm -f "$GHOST"
 
 # A record this filter cannot read must cost that chapter's entries and say

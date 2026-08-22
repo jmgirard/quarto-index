@@ -105,10 +105,10 @@ alone, and the range is reported as unpaired there rather than silently spanning
       encapsulation stays in the encapsulation channel, and a key carrying cross-references
       too folds those into the entry's printed text exactly as it already does, so the two
       compose rather than one being dropped.
-- [ ] T4: `html.lua`: pairing at index-build time, the single locator link at the opening
+- [x] T4: `html.lua`: pairing at index-build time, the single locator link at the opening
       mark's anchor, and the closing mark contributing no locator while keeping its own
       anchor and visible text.
-- [ ] T5: `book.lua` and the book fixture, which gains a range opened in one chapter and
+- [x] T5: `book.lua` and the book fixture, which gains a range opened in one chapter and
       closed in a later one: the range role travels in the per-chapter record as an optional field
       with a named fallback, leaving the store version alone (the M14 lesson); pairing and
       the unmatched reports are drawn by the chapter that reads the whole store, so a
@@ -141,6 +141,9 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: T2 — `range="open"`/`range="close"` in `core.lua`; a format-neutral `CollectRanges` pass with a document hook, since whether an opening is ever closed takes the whole document to know and makeindex warns (and Quarto fails the render) on an unmatched range; `marks.lua` splits the judgement in two, `range_end` per mark and `pair_ranges` over whatever set is the right one, so the book can reuse the pairing. All five reports fire once each in gfm.
 - 2026-08-22: T3 — landed with T2, which it cannot be verified apart from. Range delimiters compose into the encapsulation channel at the one place it is written; the registration channel gains four commands in a block of its own, injected only where a range registers. Composed rather than reported against a cross-referenced key, per the gate: `dybbuk` prints `dybbuk, \see{centaur}{}, 10--12`. Reports built as findings and worded at their own `warn()` call, because a message composed elsewhere is text the distinctness scan cannot read (the M13/M19 lesson); its pinned count moves 42 → 47.
 - 2026-08-22: T2/T3 evidence — `examples/range.pdf` prints `alicorn, 1–3`, `banshee, [P:4–6]`, `centaur, 7, 9`, `dybbuk, see centaur, 10–12`, `erlking, [P:14]`, and the `.ilg` logs 0 warnings. Suite green, 228 checks.
+
+- 2026-08-22: T4 — one condition in `build_entry_tree`: a mark whose verdict is a closing contributes no locator. The merged locator carries the opening mark's own role with no further work, since the closing contributes nothing to carry one. `examples/range.html` shows one locator per ranged entry, `banshee` and `erlking` emphasized and classed, `centaur` untouched with two.
+- 2026-08-22: T5 — the per-chapter record gains an optional `range` holding the end the AUTHOR wrote (never the chapter's own verdict), no store-version bump (the M14 lesson); `book_ranges` pairs across every record in book order, the placing chapter reading its verdicts and the last chapter in book order drawing its reports, as the dangling-target report already is. Book fixture: a range opened in `one.qmd` and closed in `sub/two.qmd` contributes one locator at `one.html#qi-mark-4`, and neither chapter warns. Book HTML manifest, its derivation note and the three letter sweeps updated. Suite green, 228 checks.
 
 ## Decisions
 

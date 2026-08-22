@@ -127,8 +127,15 @@ run_scan() {
       MARKER_CLASS="$MARKER_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
         python3 "$script" ;;
     mark-report-keys)
+      # EVERY key the run greps a mark report by, never a fixed slice: a key
+      # the run uses and the scan never sees is a key nothing holds to matching
+      # one warning, and every zero-expectation control resting on it passes
+      # vacuously (M18 review F3). M20's three and M21's five were both added
+      # to the run without reaching here (M21 review F6).
       python3 "$script" "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" \
-        "$WARN_FOLD_TARGET" ;;
+        "$WARN_FOLD_TARGET" \
+        "$M20_UNKNOWN" "$M20_NOLOCATOR" "$M20_UNINDEXED" \
+        "$R_UNKNOWN" "$R_DISPLACED" "$R_ALREADY" "$R_NOOPEN" "$R_NOCLOSE" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -287,8 +294,8 @@ README_RANGE_CLAIMS=(
   $'pdf shape\tIn a PDF that prints as `otters, 12--15`'
   $'html shape\tthe entry carries a single numbered link, pointing at the opening mark, and the closing mark contributes no link of its own'
   $'pairing\tthe closing mark is the next `range="close"` on the same entry as an opening'
-  $'principal range\tPut `mention="principal"` on the opening mark and the whole range prints emphasized'
-  $'role once\tThe closing mark takes its emphasis from the opening one; you do not write the role twice'
+  $'principal range\tPut `mention="principal"` on either of its two marks and the whole range prints emphasized'
+  $'role once\tThe role belongs to the span rather than to either mark, so write it once, on whichever end you like'
   $'across chapters\tAn opening in one chapter and a closing in a later one are paired when the book\'s index is built'
   $'book silence\tNeither chapter\'s own render complains about holding half of a pair'
   $'folded-in mark\t`makeindex` folds that locator into the range and prints nothing extra'
@@ -821,7 +828,22 @@ WARN_BOOK_SORT_CONFLICT='one entry cannot file in two places, so the first in bo
 # is marked in the FIRST chapter and points at `Late`, which the SECOND
 # contributes: after two renders the store holds that record, so the target is
 # a link. `Missing Reference` points at a term no chapter marks, so it stays
-# plain text — and is the one thing the whole book reports.
+# plain text — and is one of the two things the whole book reports.
+# `Unclosed` is a range opening in the LAST chapter that no chapter closes: it
+# degrades to an ordinary locator, so it takes that chapter's second
+# `qi-mark-<n>`, and the report it draws is the book's other one. It sits in
+# THIS fixture rather than the four-chapter one because this book builds its
+# index in its FIRST chapter, so an unpaired range here proves the report is
+# drawn by the chapter that has seen every record and not by the one holding
+# the marker (M21 review F4). `Spanned`'s closing is written after it in that
+# chapter, so the two take `qi-mark-2` and `qi-mark-3` in that order.
+# `Spanned` is the other half of that pairing question: its opening carries a
+# cross-reference, so the range is refused where it is written, and the closing
+# a chapter later must keep the locator it would have had if no `range=` had
+# been written at all. Paired on the raw attribute instead, the book suppressed
+# that locator and the entry printed its cross-reference alone — while the
+# report told the author the mark indexes as it would without the range (M21
+# review F1). The row below is what says the locator survived.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_ORDER_INDEX <<'MANIFEST' || true
 0	Contested	#qi-mark-2 later chapter.html#qi-mark-2 later chapter.html#qi-mark-3 third.html#qi-mark-1
@@ -829,6 +851,8 @@ read -r -d '' BOOK_ORDER_INDEX <<'MANIFEST' || true
 0	Early Reference		see-link Late
 0	Late	later chapter.html#qi-mark-1
 0	Missing Reference		see-plain Nowhere At All
+0	Spanned	third.html#qi-mark-3	see-link Late
+0	Unclosed	third.html#qi-mark-2
 MANIFEST
 
 # The missing-marker report, named once (M05-AC6). The class name is part of
@@ -3025,6 +3049,20 @@ PY
 # mark cross-references a DIFFERENT entry and must be untouched, which is what
 # tells this check from one that drops every target.
 # ---------------------------------------------------------------------------
+# Every key the run greps a mark report by, declared in ONE place above every
+# section that uses one. They used to sit in the sections that grep them, which
+# put two of them below the scan that sweeps them — a shell variable read before
+# its assignment expands to nothing, so the scan would have swept an empty
+# needle and reported perfect distinctness over nothing (M21 review F6). The
+# scan now refuses an empty key as well, so the two guards are independent.
+M20_UNKNOWN='names no role this extension knows'
+M20_NOLOCATOR='has no locator to emphasize'
+M20_UNINDEXED='the mark indexes nothing, so there is no locator to emphasize'
+R_UNKNOWN='names neither end of a range'
+R_DISPLACED='there is no locator for a range to span'
+R_ALREADY='opens a range for a term whose range is already open'
+R_NOOPEN='closes a range this'
+R_NOCLOSE='is never closed in this'
 WARN_SELF_XREF='names the entry it is written on'
 
 # M10 replaces one shared constant with a count per format. The counts must be
@@ -4665,7 +4703,7 @@ pass "M06-AC4: one entry sorted two ways in two chapters is reported once on the
 # is A. `Early`, `Early Reference`, `Late` and `Missing Reference` file under
 # their printed text, which puts M14's two cross-reference-only entries in the
 # E and M groups.
-check_letter_sweep "$ORDER_OUT/index.html" "M07-AC1 (book order)" $'A\nE\nL\nM'
+check_letter_sweep "$ORDER_OUT/index.html" "M07-AC1 (book order)" $'A\nE\nL\nM\nS\nU'
 
 printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
 HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$ORDER_OUT" \
@@ -4726,6 +4764,24 @@ mkdir -p "$ORDER_DIR/.quarto"
 printf 'not a directory\n' > "$ORDER_DIR/.quarto/$STORE_DIR"
 ( cd "$ORDER_DIR" && quarto render --to html ) > "$WORK/book-nostore.log" 2>&1 \
   || { tail -30 "$WORK/book-nostore.log" >&2; fail "M05 hardening: a store that cannot be written took the render down; IP2 forbids it"; }
+
+# M21-AC5's positive half (review F4): the book's own unpaired-range report.
+# Drawn by the LAST chapter in book order, which in THIS fixture is not the
+# chapter that builds the index — so a report drawn by the marker chapter, or
+# by every chapter, fails here rather than passing on a fixture where the two
+# coincide. Counted over one full render: once for the book, not once per
+# chapter. Both pairing reports fire here, once each and about DIFFERENT marks:
+# `Unclosed` opens a range nothing closes, and `Spanned`'s closing is orphaned
+# because its own opening carried a cross-reference and was refused a chapter
+# earlier — which is the same fact the `Spanned` manifest row states from the
+# other side, that the closing kept its locator. Two counts of one rather than
+# one count of two: a report firing twice about one mark would pass a total.
+check_warning_count "$WORK/book-order-1.log" "$R_NOCLOSE" 1 \
+  "M21-AC5 (the book reports its never-closed opening exactly once)"
+check_warning_count "$WORK/book-order-1.log" "$R_NOOPEN" 1 \
+  "M21-AC5 (and the closing whose opening was refused, exactly once)"
+check_warning_count "$WORK/book-order-1.log" "$R_ALREADY" 0 \
+  "M21-AC5 (and no pairing report this book has no cause for)"
 check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" \
   "$ORDER_CHAPTERS" "M05 hardening"
 rm -f "$ORDER_DIR/.quarto/$STORE_DIR"
@@ -7738,6 +7794,10 @@ PRINCIPAL_CMD="quartoindexprincipal"
 LOCATOR_CMD="quartoindexlocator"
 REGISTER_CMD="quartoindexregister"
 PRINCIPALPAGE_CMD="quartoindexprincipalpage"
+RANGEFROM_CMD="quartoindexrangefrom"
+RANGEEND_CMD="quartoindexrangeend"
+RANGEAT_CMD="quartoindexrangeat"
+RANGETO_CMD="quartoindexrangeto"
 HTML_PRINCIPAL_CLASS="qi-principal"
 python3 tests/m20probes.py ind "$WORK/principal.ind" "$WORK/principal.ilg" \
   "$WORK/principal.aux" "$LOCATOR_CMD" "$PRINCIPALPAGE_CMD"
@@ -7753,9 +7813,6 @@ pass "M20-AC2: the HTML index marks exactly the principal mark's locator link, a
 # M20-AC3/AC4 — the two reports, in all three formats, and the counterfactual
 # each of them promises. The counts are per MARK, not a total: a filter that
 # reported the right number of times about the wrong marks would pass a total.
-M20_UNKNOWN='names no role this extension knows'
-M20_NOLOCATOR='has no locator to emphasize'
-M20_UNINDEXED='the mark indexes nothing, so there is no locator to emphasize'
 for fmt in latex html gfm; do
   # Two marks are told their cross-reference took the locator's place, and
   # exactly two: `imp` writes a role beside a target naming its OWN entry, which
@@ -7846,11 +7903,20 @@ pass "M20-AC5: in the format with no index back-end every index mark the fixture
 # directions, or a filter that injected it into every document would pass. The
 # reader bounds both reads to the region before `\begin{document}` and refuses
 # an absent or empty file, so the negative half cannot pass vacuously.
+# The whole subsystem, the four range commands included: M21 folded them back
+# into the one block, because the `.aux` lines they are defined FOR outlive the
+# source that produced them and a command that is no longer injected is an
+# `Undefined control sequence` on the next pass (M21 review F3). So a document
+# with a principal mention and no range carries all eight, and the criterion's
+# real claim — none of them reaches a document with no principal mention — is
+# unchanged and still both-directional.
+SUBSYSTEM_CMDS=("$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
+                "$RANGEFROM_CMD" "$RANGEEND_CMD" "$RANGEAT_CMD" "$RANGETO_CMD")
 python3 tests/m20probes.py tex "$WORK/principal.tex" examples/content.tex \
-  "$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
-pass "M20-AC6: the four subsystem commands are defined once each with \\providecommand* in the fixture that uses them, nothing else naming quartoindex is defined there, and none of them reaches a document with no principal mention"
+  "${SUBSYSTEM_CMDS[@]}"
+pass "M20-AC6: the ${#SUBSYSTEM_CMDS[@]} subsystem commands are defined once each with \\providecommand* in the fixture that uses them, nothing else naming quartoindex is defined there, and none of them reaches a document with no principal mention"
 python3 tests/m20probes.py tex "$WORK/principal.tex" "$WORK/principal-twin.tex" \
-  "$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
+  "${SUBSYSTEM_CMDS[@]}"
 pass "M20-AC6: nor does any of them reach the role-free twin, which is the same document with every mention attribute removed"
 
 # ---------------------------------------------------------------------------
@@ -7957,11 +8023,6 @@ pass "M21: every behavior the README documents for a page range is present verba
 #      `.ilg`'s own warning count, and not the exit status, is the oracle here
 #      (D-007), and a range this filter cannot pair must never be emitted.
 # ---------------------------------------------------------------------------
-RANGEFROM_CMD="quartoindexrangefrom"
-RANGEEND_CMD="quartoindexrangeend"
-RANGEAT_CMD="quartoindexrangeat"
-RANGETO_CMD="quartoindexrangeto"
-
 # Removed before the render, not merely overwritten: AC6 is stated over the gfm
 # render of THIS run, and a stale committed .md would satisfy it after the
 # filter had regressed.
@@ -7998,43 +8059,49 @@ python3 tests/m21probes.py tex "$WORK/range.tex" "$LOCATOR_CMD" \
   "$RANGEFROM_CMD" "$RANGEEND_CMD"
 pass "M21-AC2: every range emits one opening and one closing under one key carrying byte-identical encapsulators, and each principal range registers both of its ends"
 
-# The four range commands are injected only where a range registers one. Both
-# directions, and the negative half is the principal fixture — which uses the
-# channel these four extend and still must not receive them.
-python3 - "$WORK/range.tex" "$WORK/principal.tex" \
-  "$RANGEFROM_CMD" "$RANGEEND_CMD" "$RANGEAT_CMD" "$RANGETO_CMD" <<'M21PRE'
+# The stale-`.aux` guard (review F3), stated as the property that closes it:
+# every command an `.aux` line can name is defined in EVERY document the
+# subsystem reaches, not only in one that still writes a range. A document with
+# a principal mention and no range is the case that matters — that is the tree
+# an author lands in the moment they delete a `range=` — so the principal
+# fixture is read here rather than the range one.
+python3 - "$WORK/principal.tex" "$RANGEAT_CMD" "$RANGETO_CMD" <<'M21PRE'
 import re, sys
-paths, wanted = sys.argv[1:3], sys.argv[3:]
-regions = []
-for path in paths:
-    text = open(path, encoding='utf-8').read()
-    if not text.strip():
-        print(f'FAIL: M21: {path} is empty, so every clause stated over its '
-              f'preamble would pass on a file this run did not write',
-              file=sys.stderr)
-        sys.exit(1)
-    if text.count(r'\begin{document}') != 1:
-        print(f'FAIL: M21: {path} carries {text.count(chr(92) + "begin{document}")} '
-              f'occurrences of \\begin{{document}}, so "the region before it" '
-              f'names no one region', file=sys.stderr)
-        sys.exit(1)
-    regions.append(text[:text.index(r'\begin{document}')])
-for cmd in wanted:
-    hits = re.findall(r'\\providecommand\*\\%s\[' % re.escape(cmd), regions[0])
-    if len(hits) != 1:
-        print(f'FAIL: M21: the range fixture defines \\{cmd} with '
-              f'\\providecommand* {len(hits)} times; exactly one is what makes '
-              f"an author's own definition win", file=sys.stderr)
-        sys.exit(1)
-    if re.search(r'\\%s\[' % re.escape(cmd), regions[1]):
-        print(f'FAIL: M21: \\{cmd} is defined in the principal fixture, which '
-              f'has a principal mention but no range at all', file=sys.stderr)
-        sys.exit(1)
-print(f'ok   M21: the {len(wanted)} range commands are each defined once with '
-      f'\\providecommand* where a range registers, and none of them reaches a '
-      f'document that has a principal mention and no range')
+path, wanted = sys.argv[1], sys.argv[2:]
+text = open(path, encoding='utf-8').read()
+if not text.strip():
+    print(f'FAIL: M21: {path} is empty, so every clause stated over its '
+          f'preamble would pass on a file this run did not write',
+          file=sys.stderr)
+    sys.exit(1)
+if text.count(r'\begin{document}') != 1:
+    print(f'FAIL: M21: {path} does not carry exactly one \\begin{{document}}, so '
+          f'"the region before it" names no one region', file=sys.stderr)
+    sys.exit(1)
+pre = text[:text.index(r'\begin{document}')]
+if 'quartoindexregister' not in pre:
+    print(f'FAIL: M21: {path} has no principal subsystem in it at all, so this '
+          f'check would pass on a document the subsystem never reached',
+          file=sys.stderr)
+    sys.exit(1)
+if 'range=' in open('examples/principal.qmd', encoding='utf-8').read():
+    print('FAIL: M21: examples/principal.qmd now writes a range, so it is no '
+          'longer the principal-mention-without-a-range case this check needs',
+          file=sys.stderr)
+    sys.exit(1)
+missing = [c for c in wanted
+           if len(re.findall(r'\\providecommand\*\\%s\[' % re.escape(c), pre)) != 1]
+if missing:
+    print(f'FAIL: M21: {missing} are not defined exactly once in a document that '
+          f'has a principal mention and no range; an .aux line naming one of '
+          f'them after a range is deleted is then an undefined control '
+          f'sequence and the render is over', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M21: both .aux-borne range commands are defined in a document with '
+      f'a principal mention and no range of its own, so deleting a range cannot '
+      f'leave an .aux line naming a command nothing defines')
 M21PRE
-pass "M21: the range half of the registration channel is injected only into a document that registers a range, and the principal fixture — which uses the channel it extends — gets none of it"
+pass "M21: the range commands ride with the rest of the subsystem, so a document that loses its ranges but keeps a principal mention still defines every command its own .aux can name"
 
 # The printed index, through the fixture's own redefinition of the emphasis
 # command: `\textbf` and plain text extract identically under pdftotext, so the
@@ -8054,7 +8121,11 @@ if not heads:
 index = '\n'.join(body[heads[-1] + 1:])
 lines = {' '.join(l.split()) for l in index.splitlines() if l.strip()}
 # The fixture's own structure: which openings carry mention="principal".
-PRINCIPAL = ('banshee', 'erlking')
+# Which ranges the fixture marks principal, and on WHICH end — read from the
+# fixture's source, never from the output. `firebird` declares it on its
+# closing mark, and must print exactly as emphasized as the two that declare it
+# on their opening (review F2).
+PRINCIPAL = ('banshee', 'erlking', 'firebird')
 PLAIN = ('alicorn', 'dybbuk', 'centaur')
 LOC = r'\d+(?:\u2013\d+)?'
 bad = []
@@ -8106,6 +8177,8 @@ read -r -d '' RANGE_GFM_SPANS <<'MANIFEST' || true
 <span class="index" data-see="centaur">dybbuk</span>
 <span class="index" data-range="open" data-mention="principal">erlking</span>
 <span class="index" data-range="close">erlking</span>
+<span class="index" data-range="open">firebird</span>
+<span class="index" data-range="close" data-mention="principal">firebird</span>
 MANIFEST
 printf '%s\n' "$RANGE_GFM_SPANS" > "$WORK/range-gfm-spans.txt"
 python3 tests/m21probes.py gfm examples/range.md "$WORK/range-gfm-spans.txt"
@@ -8115,15 +8188,17 @@ pass "M21-AC6: in the format with no index back-end an opening and a closing mar
 # SHAPE and the identity checks are per MARK: a filter that reported the right
 # number of times about the wrong marks would pass a count alone (the M08
 # lesson).
-R_UNKNOWN='names neither end of a range'
-R_DISPLACED='there is no locator for a range to span'
-R_ALREADY='opens a range for a term whose range is already open'
-R_NOOPEN='closes a range this'
-R_NOCLOSE='is never closed in this'
 for fmt in latex html gfm; do
   quarto render examples/range-misuse.qmd --to $fmt \
     > "$WORK/range-misuse-$fmt.log" 2>&1 \
     || { cat "$WORK/range-misuse-$fmt.log" >&2; fail "M21-AC4: examples/range-misuse.qmd failed to render to $fmt"; }
+  # Copied at the render, so the emitted-LaTeX check below reads this run's
+  # artifact and not whatever the working tree happens to hold (M15).
+  if [ "$fmt" = "latex" ]; then
+    [ -s examples/range-misuse.tex ] \
+      || fail "M21-AC4: the latex render produced no examples/range-misuse.tex"
+    cp examples/range-misuse.tex "$WORK/range-misuse-latex.tex"
+  fi
   check_warning_count "$WORK/range-misuse-$fmt.log" "$R_UNKNOWN" 1 \
     "M21-AC4 (a value that is neither end, $fmt)"
   check_warning_count "$WORK/range-misuse-$fmt.log" "$R_DISPLACED" 1 \
@@ -8177,6 +8252,61 @@ for fmt in latex html gfm; do
   done
 done
 pass "M21-AC4: each of the five misuse shapes draws exactly one warning naming its own mark and saying the term is indexed as an ordinary page number instead, in the LaTeX render, the HTML render and a format with no index back-end, while the well-formed range and the range-free mark beside them draw none"
+
+# What every one of those refusals is FOR: a range the extension cannot pair
+# must never reach the index tool at all, because makeindex logs a transcript
+# warning for an unmatched, extra or inconsistently encapsulated range and
+# Quarto fails the whole render on that line. Nothing above holds it — five
+# reports would still fire while the range operator went out anyway (review
+# F5). Read from the emitted LaTeX rather than by rendering the fixture to PDF:
+# the property is that the operator is not EMITTED, and a PDF render would
+# prove it only for the pagination this run happens to produce.
+python3 - "$WORK/range-misuse-latex.tex" <<'M21MISUSE'
+import re, sys
+tex = open(sys.argv[1], encoding='utf-8').read()
+commands = re.findall(r'\\index\{([^|}]*)((?:\|[()])?)', tex)
+if not commands:
+    print('FAIL: M21-AC4: the misuse fixture emitted no \\index command at all, '
+          'so a clause about which of them carry a range operator would be '
+          'quantified over nothing', file=sys.stderr)
+    sys.exit(1)
+# Which terms the fixture's ranges actually PAIR, derived from the fixture's
+# source rather than from this output: `lamia` is the well-formed control, and
+# `hydra`'s FIRST opening pairs with its closing — the second opening is the
+# refused one, which is what its own report says. Everything else is a refusal
+# and must carry no range operator at all, because makeindex logs a warning for
+# an unmatched, extra or inconsistently encapsulated range and Quarto fails the
+# whole render on that line.
+PAIRED = {'hydra', 'lamia'}
+REFUSED = {'fenrir', 'golem', 'imp', 'jinn'}
+opens, closes = {}, {}
+for term, op in commands:
+    if op == '|(':
+        opens[term] = opens.get(term, 0) + 1
+    elif op == '|)':
+        closes[term] = closes.get(term, 0) + 1
+bad = []
+if set(opens) != PAIRED or set(closes) != PAIRED:
+    bad.append(f'  terms emitting a range operator are {sorted(set(opens) | set(closes))}, '
+               f'expected {sorted(PAIRED)}')
+for term in PAIRED:
+    if opens.get(term) != 1 or closes.get(term) != 1:
+        bad.append(f'  {term}: {opens.get(term, 0)} opening(s), '
+                   f'{closes.get(term, 0)} closing(s); a paired range is one of each')
+for term in REFUSED:
+    if term in opens or term in closes:
+        bad.append(f'  {term}: refused, yet emitted a range operator')
+if bad:
+    print('FAIL: M21-AC4: the misuse fixture does not emit a range operator for '
+          'exactly its paired ranges:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M21-AC4: of the {len(commands)} index commands the misuse fixture '
+      f'emits, exactly the {len(PAIRED)} ranges that pair carry a range '
+      f'operator — one opening and one closing each — and all '
+      f'{len(REFUSED)} refused marks carry none')
+M21MISUSE
+pass "M21-AC4: no refused range reaches the index tool as a range — the emitted LaTeX carries exactly one opening and one closing, both the well-formed control's, which is what keeps an unpairable range from failing the render"
 
 # M21-AC5 — the cross-chapter range. The href and the locator count are the
 # BOOK_HTML_INDEX manifest's `Ranged Term` row, checked above; what is left is
@@ -8247,6 +8377,11 @@ PY
   # Not named by a criterion, but the same discipline: a clash report nothing
   # proves discriminating is a report that can quietly stop firing.
   warn_discrimination "$WORK/conflict-latex.log" "$WARN_CLASH" 8 "M02-AC5"
+  # The book's two pairing reports (M21 review F4): each was a zero-expectation
+  # control until this milestone's review, so each is shown here to fail when
+  # it is missing and when it is duplicated.
+  warn_discrimination "$WORK/book-order-1.log" "$R_NOCLOSE" 1 "M21-AC5"
+  warn_discrimination "$WORK/book-order-1.log" "$R_NOOPEN" 1 "M21-AC5"
 
   # M16-AC2 — the source-set enumeration is recursive, and it grows when the
   # filter does. Proved on a scratch copy rather than by reading the `find`
@@ -8780,6 +8915,40 @@ filtersrc.sources()" >/dev/null 2>&1; then
   #       well-formed range being named at all.
   probe_defect "a report naming the well-formed range control" \
     m21_report "$M21W/wrongmark.log" 'lamia' 0
+  # Two one-expression readers, held in variables rather than written inline:
+  # `probe_defect` runs its argument list in a subshell, and a heredoc attached
+  # to the call would be read by the wrong command.
+  M21_LEAK_READER="import re, sys
+tex = open(sys.argv[1], encoding='utf-8').read()
+opens = {t for t, op in re.findall(r'\\\\index\\{([^|}]*)((?:\\|[()])?)', tex) if op == '|('}
+sys.exit(0 if opens == {'hydra', 'lamia'} else 1)"
+  M21_PREAMBLE_READER="import re, sys
+pre = open(sys.argv[1], encoding='utf-8').read().split(r'\\\\begin{document}')[0]
+sys.exit(0 if re.search(r'\\\\providecommand\\*\\\\%s\\[' % sys.argv[2], pre) else 1)"
+  # --- the checks the review's own findings added. Each of these guards a
+  #     defect that shipped once, so each is shown discriminating here rather
+  #     than trusted (the M01 lesson: a green check is evidence about what it
+  #     covers, not about the code).
+  # (xv) a range whose CLOSING declared the role failing to register: the
+  #      silent role loss review F2 found, in the artifact that would carry it.
+  probe_plant "$WORK/range.tex" "$M21W/closerole.tex" \
+    -e "s/\\\\${RANGEFROM_CMD}{qi3}//"
+  probe_defect "a range whose closing declared the role registering only one end" \
+    m21_tex "$M21W/closerole.tex"
+  # (xvi) a refused range reaching the index tool anyway — the emission that
+  #       makes makeindex warn and Quarto fail the whole render (review F5).
+  probe_plant "$WORK/range-misuse-latex.tex" "$M21W/leaked.tex" \
+    -e 's/\\index{fenrir}/\\index{fenrir|(}/'
+  probe_defect "a refused range emitting a range operator anyway" \
+    python3 -c "$M21_LEAK_READER" "$M21W/leaked.tex"
+  # (xvii) the stale-`.aux` guard: a preamble that defines the subsystem but
+  #        not the two commands an `.aux` line can name (review F3).
+  probe_plant "$WORK/principal.tex" "$M21W/norange.tex" \
+    -e "s/\\\\providecommand\\*\\\\${RANGEAT_CMD}\\[/\\\\providecommand*\\\\qiGone[/"
+  probe_defect "a subsystem preamble missing a command its own .aux can name" \
+    python3 -c "$M21_PREAMBLE_READER" "$M21W/norange.tex" "$RANGEAT_CMD"
+  pass "M21 self-test: the three checks the review's findings added — a closing-declared role reaching the registry, no refused range reaching the index tool, and every .aux-borne command defined wherever the subsystem lands — each fail on a planted defect of their own kind"
+
   pass "M21 self-test: every reader the milestone adds fails on a planted defect of each kind it names — a lost pairing, a wrong extent, a registration that composes the wrong string or names the wrong ordinal, a transcript warning, ends disagreeing on their encapsulator and ends disagreeing on their key, a locator at the wrong end, a second locator, a wrongly emphasized range, and a report naming the wrong mark"
 
   # -------------------------------------------------------------------------

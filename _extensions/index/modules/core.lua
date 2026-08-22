@@ -137,6 +137,18 @@ local RANGE_ENDS = {
 -- its two ends register their own pages and the pair is composed into the
 -- same string the index prints. The folded case stays open, because no mark
 -- there says a range exists at all.
+--
+-- The range commands are part of THIS block rather than a block of their own,
+-- and the difference is a render. Everything here is injected only into a
+-- document that carries a principal mention, but the `.aux` lines these
+-- commands are defined for outlive the source that produced them: delete a
+-- `range=` from a document whose `.aux` survives (`latex-clean: false`, or a
+-- failed render) and the next pass reads a `\quartoindexrangeat` nothing
+-- defines — `Undefined control sequence`, and the render is over. Four
+-- `\providecommand`s cost an unused document nothing, and a marked term must
+-- never break a document (IP2), so they ride along (review F3). The same
+-- hazard at one remove — a document losing its LAST principal mention — is
+-- M20's and is a ROADMAP candidate row.
 -- ---------------------------------------------------------------------------
 local LOCATOR_COMMAND = "quartoindexlocator"
 local REGISTER_COMMAND = "quartoindexregister"
@@ -200,7 +212,7 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   -- a byte-empty list and not a space-only one, which runs away the same way;
   -- both are unreachable from makeindex, and covering the second is not worth
   -- expanding an argument this command must pass through untouched (review
-  -- round 3, which found the space case and the expansion hazard together).,
+  -- round 3, which found the space case and the expansion hazard together).
   "\\providecommand*\\" .. LOCATOR_COMMAND ..
     "[2]{\\def\\qi@arg{#2}\\ifx\\qi@arg\\@empty\\else" ..
     "\\qi@sniff{#1}#2\\qi@stop\\fi}",
@@ -239,17 +251,6 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   "\\def\\qi@sniff#1#2#3\\qi@stop{\\ifcat\\noexpand#2\\relax" ..
     "\\expandafter\\@firstoftwo\\else\\expandafter\\@secondoftwo\\fi" ..
     "{\\qi@split{#1}{#2}{#3}}{\\qi@split{#1}{}{#2#3}}}",
-  "\\makeatother",
-}, "\n")
-
--- The range half of the subsystem (D-008), a block of its own so it reaches
--- only a document that actually registers a range: the block above is already
--- injected only where a principal mention exists, and a principal mention is
--- not a range. It depends on that block — `RANGEAT_COMMAND` calls the page
--- registration and `RANGETO_COMMAND` reads the slot it leaves — and is emitted
--- only alongside it, never on its own.
-local PRINCIPAL_RANGE_SUBSYSTEM = table.concat({
-  "\\makeatletter",
   -- A range opening registers its page exactly as a lone principal mark does,
   -- and remembers it as `\qi@f@<ordinal>` for the closing to compose with.
   -- The page is sanitized here again rather than read out of the macro the
@@ -391,7 +392,6 @@ M["REGISTER_COMMAND"] = REGISTER_COMMAND
 M["PRINCIPALPAGE_COMMAND"] = PRINCIPALPAGE_COMMAND
 M["LOCATOR_ID_PREFIX"] = LOCATOR_ID_PREFIX
 M["PRINCIPAL_SUBSYSTEM"] = PRINCIPAL_SUBSYSTEM
-M["PRINCIPAL_RANGE_SUBSYSTEM"] = PRINCIPAL_RANGE_SUBSYSTEM
 M["HTML_PRINCIPAL_CLASS"] = HTML_PRINCIPAL_CLASS
 M["LATEX_LITERAL"] = LATEX_LITERAL
 M["warn"] = warn

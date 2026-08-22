@@ -130,5 +130,28 @@ The principal discussion of [erlking]{.index range="open" mention="principal"}
 begins and, in this same sentence and on this same page, ends:
 [erlking]{.index range="close"}.
 
+{{< pagebreak >}}
+
+# A range whose CLOSING mark declares the role
+
+Two marks of one span are one discussion, so a role written on either end is a
+role on the span. An author who writes it on the closing mark means what an
+author who writes it on the opening mark means, and gets the same emphasized
+range — the extension does not make them find out which end it wanted. This
+slot is here because reading each end's own attribute instead dropped the role
+in silence while still encapsulating both ends, so the range printed plain and
+nothing said why.
+
+The principal discussion of [firebird]{.index range="open"} begins here.
+
+{{< pagebreak >}}
+
+A page with no mark on it, inside the firebird range.
+
+{{< pagebreak >}}
+
+And it ends here, which is where the role is written:
+[firebird]{.index range="close" mention="principal"}.
+
 ::: {.qi-index-here}
 :::

@@ -292,9 +292,13 @@ end
 -- a verdict per item — `{ ending, principal }` for a mark that keeps its end,
 -- `false` for one that is refused — and the pairing findings.
 --
--- The closing carries the OPENING's role, never its own: makeindex warns when
--- the two ends of a range differ by any byte of encapsulation, so which
--- encapsulator the pair carries is settled once, by the end that declares it.
+-- The role is the RANGE's, not either end's: two marks of one span are one
+-- discussion, so a role written on either end is a role on the span, and both
+-- verdicts carry it. Settled once here so that makeindex's requirement — the
+-- two ends of a range must not differ by any byte of encapsulation — is met by
+-- construction rather than by both ends happening to agree. Reading each end's
+-- own attribute instead dropped a role written on the closing mark in silence
+-- (review F2).
 local function pair_ranges(items)
   local verdicts, found, pending, waiting = {}, {}, {}, {}
   for i, item in ipairs(items) do
@@ -314,7 +318,12 @@ local function pair_ranges(items)
         found[#found + 1] = { kind = "never-opened", context = item.context }
       else
         pending[item.key] = nil
-        verdicts[i] = { ending = "close", principal = verdicts[at].principal }
+        local principal = verdicts[at].principal or item.principal
+        -- Written back onto the OPENING's verdict too, which is what makes a
+        -- role declared on the closing reach the end that registers the
+        -- range's start page and, in HTML, the end that carries the locator.
+        verdicts[at].principal = principal
+        verdicts[i] = { ending = "close", principal = principal }
       end
     end
   end

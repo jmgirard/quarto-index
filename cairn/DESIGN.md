@@ -132,7 +132,8 @@ ordinary plan-gate choice.
 
 ## Architecture
 
-One Pandoc-Lua filter, run as three passes over each document (corrected M06).
+One Pandoc-Lua filter, run as four passes over each document (corrected M06,
+M21).
 Its entry point is `_extensions/index/index.lua`, which defines the Pandoc pass
 and nothing else; every other definition lives in a module beside it under
 `_extensions/index/modules/`, loaded with a relative `require("./modules/<name>")`
@@ -152,7 +153,11 @@ The modules, in dependency order:
   that decides which shape a key gets.
 - `marks.lua` — what every back-end needs from one mark, derived once, and the
   document-wide accumulators the passes share.
-- `passes.lua` — the three Span passes, in the order the filter returns them.
+- `passes.lua` — the four Span passes, in the order the filter returns them:
+  three that only read — one registering sort keys, one deciding which keys are
+  contested, one pairing page ranges — and the emitting pass that rewrites the
+  mark. The range pass carries a document hook as well, since whether an
+  opening is ever closed is known only once the whole document has been read.
 - `html.lua` — the HTML back-end: the entry tree, its ordering and grouping,
   the anchors that link an entry back to its mark, and the index section built
   out of them.
@@ -300,7 +305,8 @@ Every other format — beamer, revealjs, epub, gfm — takes neither branch: no
 index, no anchors, no back-end tokens, and the visible text exactly as
 written. What such a format does carry is the mark's own attributes, which
 Pandoc passes through on the span as `data-entry`, `data-see`,
-`data-see-also`, `data-sort` and `data-mention`; whether that residue should
+`data-see-also`, `data-sort`, `data-mention` and `data-range`; whether that
+residue should
 exist is open (ROADMAP). The mention attribute is spelled `mention` rather than
 `role` for this reason and no other: Pandoc data-prefixes a name it does not
 know but emits `role` literally, so `role=` would ship an invalid ARIA role on
@@ -322,10 +328,16 @@ one shipout. At `\printindex` the injected preamble splits the entry's page
 list and wraps the registered pages, re-applying whatever page-link command it
 was handed rather than naming a hyperref internal. Four `\providecommand`
 commands are injected, and only into a document that uses them; the emphasis
-itself is one of the four, so an author redefines it exactly as before. One
+itself is one of them, so an author redefines it exactly as before. M21 adds
+four more to the same block — two written into the `.aux` by a range's ends and
+two that read them back — and they ride with the rest rather than being
+conditional on a range, because an `.aux` outlives the source that wrote it and
+a command it names that is no longer injected fails the render. One
 degradation is accepted and documented: makeindex folds three or more
-consecutive pages into a range, and a registry lookup on that string misses, so
-a principal page anywhere inside a range prints plain. Ranges are M21's.
+consecutive pages into a range of its own, and a registry lookup on that string
+misses, so a principal page anywhere inside a FOLDED range prints plain. A
+range the author wrote is not that case — M21 registers its two ends and
+composes the very string the index prints, so it is emphasized whole (D-008).
 
 **Book projects** split the HTML back-end in two, and leave the LaTeX one
 alone. A PDF book is rendered as one merged document, so its marks are already

@@ -426,11 +426,11 @@ no link of its own. Both marks keep their visible text exactly as written.
 written: the closing mark is the next `range="close"` on the same entry as an
 opening. Write the same `entry=` (or the same visible term) on both.
 
-**A range can be the principal discussion.** Put `mention="principal"` on the
-opening mark and the whole range prints emphasized — `otters, **12--15**` — and
-in HTML the single link carries `qi-principal` and a `<strong>`, exactly as a
-lone principal mention does. The closing mark takes its emphasis from the
-opening one; you do not write the role twice.
+**A range can be the principal discussion.** Put `mention="principal"` on
+either of its two marks and the whole range prints emphasized —
+`otters, **12--15**` — and in HTML the single link carries `qi-principal` and a
+`<strong>`, exactly as a lone principal mention does. The role belongs to the
+span rather than to either mark, so write it once, on whichever end you like.
 
 **In a book, a range may span chapters.** An opening in one chapter and a
 closing in a later one are paired when the book's index is built, and the one

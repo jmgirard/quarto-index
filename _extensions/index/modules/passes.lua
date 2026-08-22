@@ -1,6 +1,8 @@
--- The three Span passes, in the order the filter returns them: two that only
--- read — one registering sort keys, one deciding which keys are contested —
--- and the emitting pass that rewrites the mark.
+-- The four Span passes, in the order the filter returns them: three that only
+-- read — one registering sort keys, one deciding which keys are contested, one
+-- pairing page ranges — and the emitting pass that rewrites the mark. The range
+-- pass carries a document hook as well, since whether an opening is ever closed
+-- is a fact only the whole document settles.
 --
 -- They share the accumulators in `qi_marks` and `qi_latex` rather than passing
 -- state between themselves: Pandoc runs each as a separate traversal.
@@ -235,12 +237,14 @@ end
 -- travels: emitted beside the `\index` command so both whatsits ship on one
 -- page and the page they name cannot disagree. Nil for every other mark.
 local function register_inline(role, source, range)
-  -- A range's CLOSING registers on its opening's behalf, never on its own: it
-  -- carries no role of its own, and what the registry needs from it is the
-  -- page that completes the range string the index prints (D-008). Which is
-  -- why `range.principal` is read here and `role` is not — the closing of a
-  -- range whose opening was not principal registers nothing.
-  if range ~= nil and range.ending == "close" then
+  -- A range registers BOTH of its ends, and the role it registers under is the
+  -- RANGE's — `range.principal`, settled once by the pairing from whichever
+  -- end the author wrote it on — never the end's own `role`. Two ends of one
+  -- span are one discussion, so a role on either of them is a role on the
+  -- span; reading each end's own attribute instead dropped a role written on
+  -- the closing mark in silence, while still encapsulating both ends, so the
+  -- range printed plain and nothing said why (review F2).
+  if range ~= nil then
     if not range.principal then
       return nil
     end
@@ -248,9 +252,13 @@ local function register_inline(role, source, range)
     if id == nil then
       return nil
     end
-    qi_latex.principal_range_emitted = true
-    return pandoc.RawInline("latex",
-      "\\" .. qi_core.RANGEEND_COMMAND .. "{" .. id .. "}")
+    -- The opening registers its page as a lone principal mark does AND
+    -- remembers it as the range's start, which is one command rather than
+    -- two; the closing supplies the page that completes the range string the
+    -- index prints (D-008).
+    local command = range.ending == "open"
+      and qi_core.RANGEFROM_COMMAND or qi_core.RANGEEND_COMMAND
+    return pandoc.RawInline("latex", "\\" .. command .. "{" .. id .. "}")
   end
   if role ~= "principal" then
     return nil
@@ -259,14 +267,8 @@ local function register_inline(role, source, range)
   if id == nil then
     return nil
   end
-  -- A range's opening registers its page as a lone principal mark does AND
-  -- remembers it as the range's start, which is one command rather than two.
-  local command = qi_core.REGISTER_COMMAND
-  if range ~= nil and range.ending == "open" then
-    command = qi_core.RANGEFROM_COMMAND
-    qi_latex.principal_range_emitted = true
-  end
-  return pandoc.RawInline("latex", "\\" .. command .. "{" .. id .. "}")
+  return pandoc.RawInline("latex",
+    "\\" .. qi_core.REGISTER_COMMAND .. "{" .. id .. "}")
 end
 
 local function Span(span)
@@ -449,9 +451,27 @@ local function Span(span)
     -- them itself and needs what was written, not what this chapter made of
     -- it. `paired` is this document's verdict, which is what decides whether
     -- the mark contributes a locator here.
+    --
+    -- `range` is written only for a mark that CONTRIBUTES a locator — the
+    -- same `#xrefs == 0` the anchor below is gated on, which is also what
+    -- `range_end` refuses a displaced range by. Recorded from the raw
+    -- attribute instead, a book paired an end this chapter had already
+    -- refused, and suppressed the other end's locator on the strength of it:
+    -- the entry then printed its cross-reference and no locator at all, while
+    -- the report told the author the mark indexes as it would without the
+    -- range (review F1). The resolved `role` beside it was always written
+    -- this way; the two fields disagreeing about one judgement is what made
+    -- the defect reachable.
     local record = { levels = levels, sort = sort, xrefs = xrefs,
-                     context = context, role = role,
-                     range = qi_core.RANGE_ENDS[span.attributes[qi_core.RANGE_ATTR] or ""]
+                     context = context,
+                     -- Likewise resolved rather than raw: a range's role is
+                     -- the RANGE's, so an opening whose closing declared it
+                     -- carries it here too and the HTML locator is emphasized
+                     -- exactly where the PDF range is (review F2).
+                     role = (range ~= nil and range.principal) and "principal"
+                       or role,
+                     range = #xrefs == 0
+                       and qi_core.RANGE_ENDS[span.attributes[qi_core.RANGE_ATTR] or ""]
                        and span.attributes[qi_core.RANGE_ATTR] or nil,
                      paired = range ~= nil and range.ending or nil }
     qi_marks.html_marks[#qi_marks.html_marks + 1] = record

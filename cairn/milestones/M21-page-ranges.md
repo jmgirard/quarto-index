@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -128,6 +128,13 @@ alone, and the range is reported as unpaired there rather than silently spanning
       term's own range is folded into that range. Add its authoring forms to the suite's
       normative supported-forms list and its sentences to a README claims array.
 
+- [x] T9: The review's nine findings (discovered work, added 2026-08-22). The three
+      behavior defects get a check each where none existed: a range refused for carrying a
+      cross-reference must not have its partner's locator suppressed in a book; a role
+      written on a range's closing mark must reach the registry and the HTML class; and
+      every command an `.aux` line can name must be defined wherever the subsystem lands.
+      The four coverage gaps get the checks they name, each with a planted defect.
+
 ## Work log
 
 - 2026-08-21: created by /milestone-plan.
@@ -155,6 +162,13 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-22: T8 — README gains "A discussion that spans pages" (what an author writes, what each back-end prints, pairing by entry, the principal range, the cross-chapter case, the folded-in ordinary mark and why it cannot be warned about, and the five refusals); the syntax table goes from seven forms to nine; the principal section's degradation paragraph is narrowed in place to a range makeindex FOLDED, since a range the author wrote now prints emphasized whole; a ninth back-end-difference row; `index.lua`'s syntax header gains the attribute. Eighteen claims pinned in a new `README_RANGE_CLAIMS` array, both authoring forms added to the normative supported-forms list.
 - 2026-08-22: review returned the milestone to in-progress on nine findings from a three-lens fan-out. All seven criteria verified with fresh evidence and ticked; the return is taken on the load-bearing-defect limb, not a criterion failure. What failed: a book pairs a range on the raw attribute and silently drops a locator whose mark's range was refused (F1); `mention="principal"` on a closing mark alone is dropped in silence (F2); a stale `.aux` naming a range command the next run does not inject fails the render (F3); the book range report has no positive coverage (F4); the misuse fixture never reaches makeindex (F5); the five new report keys are not passed to `mark-report-keys` (F6); `'' in '()'` makes the tex reader treat an unencapsulated command as a range end (F7); DESIGN.md still describes three passes and omits `data-range` (F8); a stray comma in a comment (F9). First defect return.
 - 2026-08-22: all tasks done. `tests/run-tests.sh` passes at 245 checks and `--self-test` at 351 (merge base: 228 and 335). Status set to review.
+
+- 2026-08-22: T9 (F1) — the HTML record's `range` is now written only for a mark that contributes a locator, the same `#xrefs == 0` the anchor is gated on; recorded raw, a book paired an end the chapter had already refused and suppressed the other end's locator, so the entry printed its cross-reference alone while the report said the mark indexes as it would without the range. Reproduced before and after on the book fixture. Checked by a `Spanned` row in the book-order manifest, whose closing keeps its locator a chapter after its opening was refused.
+- 2026-08-22: T9 (F2) — the implement gate chose to honour a role written on either end, so `pair_ranges` ORs the two and writes the result back onto the opening's verdict, `register_inline` reads `range.principal` for both ends rather than each end's own `role`, and the HTML record's role is the resolved one. Reproduced before and after. Checked by a sixth slot in `examples/range.qmd` whose closing declares the role, which every existing range clause then reads. README's "you do not write the role twice" was false after this and is corrected in place, its claim pin with it.
+- 2026-08-22: T9 (F3) — the four range commands fold back into `PRINCIPAL_SUBSYSTEM`. Verified the hazard first: a stale `.aux` naming a command the next run does not inject gives `! Undefined control sequence` and pdflatex exit 1, which is the IP2 break the subsystem exists to avoid. The M20-level half — a document losing its last principal mention — is unchanged and is now a candidate row.
+- 2026-08-22: T9 (F4/F5) — the book's unpaired-range report gains positive coverage in `examples/book-order/`, whose index is built in its FIRST chapter, so the report is proved drawn by the chapter that has seen every record rather than by the marker chapter; and the misuse fixture's emitted LaTeX is now read, since nothing held the claim that a refused range never reaches the index tool. That check caught a wrong premise of its own author on the first run: `hydra`'s first opening does pair, so the fixture has two well-formed ranges, not one.
+- 2026-08-22: T9 (F6/F7/F8/F9) — every mark-report key moves to one block above every section that uses one, with M20's three and M21's five added to the scan that sweeps them, and the scan now refuses an empty key (a key read before its assignment expanded to nothing and would have swept every message); `channel[:1] in ('(', ')')` in the tex reader, since `'' in '()'` is True in Python; DESIGN.md's pass count, module row, residue list and D-007 paragraph; a stray comma.
+- 2026-08-22: review fixes complete. `tests/run-tests.sh` 247 checks and `--self-test` 359 (before the fixes: 245 and 351). Three new planted defects, each shown to fail its own check.
 
 ## Decisions
 

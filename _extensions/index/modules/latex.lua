@@ -114,11 +114,10 @@ end
 -- written on it, in a fixed order. Module-level, like the other accumulators.
 local contested_keys = {}
 M["xref_list_emitted"] = false
--- Likewise for the typeset-time channel's commands, and separately for its
--- range half: a principal mention is not a range, so a document with one and
--- not the other gets only the block it uses.
+-- Likewise for the typeset-time channel's commands, the range half included:
+-- one flag, because the whole subsystem is injected together (qi_core explains
+-- why the range commands cannot be conditional on a range).
 M["principal_emitted"] = false
-M["principal_range_emitted"] = false
 
 -- Keys some mark of which carries a principal mention, each mapped to the
 -- ordinal EVERY locator mark of that key encapsulates with. Keyed on the same

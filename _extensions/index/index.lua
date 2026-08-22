@@ -263,13 +263,6 @@ local function Pandoc(doc)
     -- redefines; the subsystem that applies it follows as one block.
     quarto.doc.include_text("in-header", qi_core.PRINCIPAL_DEFINITION)
     quarto.doc.include_text("in-header", qi_core.PRINCIPAL_SUBSYSTEM)
-    if qi_latex.principal_range_emitted then
-      -- The range half follows only where a range actually registers one: it
-      -- depends on the block above and is useless without it, so it is never
-      -- injected on its own, and a document with a principal mention and no
-      -- range gets exactly the four commands it had before this milestone.
-      quarto.doc.include_text("in-header", qi_core.PRINCIPAL_RANGE_SUBSYSTEM)
-    end
   end
   if qi_latex.xref_list_emitted then
     -- Same discipline: defined only in a document that has a contested key no

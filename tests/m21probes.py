@@ -43,6 +43,11 @@ RANGES = {
     'banshee': {'span': 3, 'principal': True},
     'dybbuk': {'span': 3, 'principal': False},
     'erlking': {'span': 1, 'principal': True},
+    # The role written on the CLOSING mark rather than the opening one. A range
+    # is one discussion, so either end declares it for the span; this slot is
+    # what holds that, and every clause below reads it exactly as it reads a
+    # range whose opening declared it (review F2).
+    'firebird': {'span': 3, 'principal': True},
 }
 # The control: two ordinary marks, one filler page apart, and no `range=` at
 # all. It is here so a report or an encapsulation that fired on every mark
@@ -257,7 +262,13 @@ def _tex(argv):
     for term, want in RANGES.items():
         ends = [(key, channel) for key, channel in commands
                 if re.match(r'^%s(?:@|$)' % re.escape(term), key)
-                and channel[:1] in '()']
+                # A tuple, never the string `'()'`: `'' in '()'` is True in
+                # Python, so an \index with no encapsulation channel at all
+                # counted as a range end — which made the no-delimiter plant
+                # fail by IndexError below rather than by the diagnostic this
+                # reader exists to print, and would miscount the moment an
+                # ordinary mark of a ranged term joined the fixture (review F7).
+                and channel[:1] in ('(', ')')]
         if len(ends) != 2:
             _fail('M21-AC2: %r has %d range end(s) in the emitted LaTeX (%r); a '
                   'range is exactly one opening and one closing'

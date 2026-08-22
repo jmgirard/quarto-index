@@ -4,3 +4,12 @@ The contested term once more, sorted the way the chapter before it sorted it.
 A rival key repeated in a further chapter is not a further thing for the
 author to fix, so it must draw no report of its own:
 [Contested]{.index sort="Zzz"}.
+
+A range opened here and never closed. This book's marker is in its FIRST
+chapter, so the chapter that builds the index is not the chapter that has seen
+every record — and an unpaired range is a fact about the whole book, so the
+report must be drawn by the last chapter in book order rather than by the one
+holding the marker: [Unclosed]{.index range="open"}.
+
+The closing whose opening was refused a chapter earlier. It keeps its own
+locator: [Spanned]{.index range="close"}.

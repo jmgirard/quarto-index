@@ -11,6 +11,17 @@ import filtersrc
 # F3).
 keys = sys.argv[1:]
 assert keys, 'mark-report-keys was given no keys to check'
+# An EMPTY key is refused rather than swept: the run passes these as shell
+# variables, and a variable referenced before its section has run expands to
+# nothing — which would match every message and report perfect distinctness
+# over a domain that had silently gone empty (M21 review F6, found while
+# repairing it).
+empty = [i + 1 for i, k in enumerate(keys) if not k]
+if empty:
+    print(f'FAIL: M10-AC4: key(s) {empty} passed to mark-report-keys are empty; '
+          f'an empty needle matches every message, so the distinctness this '
+          f'scan reports would be over nothing', file=sys.stderr)
+    sys.exit(1)
 src = filtersrc.text()
 # Each warn() call's message, with its concatenated fragments joined back
 # together: these messages are written as `("..." .. "..."):format(...)`, so a

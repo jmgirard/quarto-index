@@ -1,0 +1,61 @@
+---
+title: "quarto-index page-range misuse probe"
+from: markdown-smart
+filters:
+  - index
+---
+
+# Ranges the extension cannot honour
+
+Every shape below is a range mark the extension has to refuse. It refuses each
+one the same way: the mark still indexes its term, as an ordinary locator at
+its own page, and the author is told what the index will show instead. The
+refusal is not politeness — makeindex writes a transcript warning for an
+unmatched, extra or inconsistently encapsulated range, and Quarto fails a
+render on exactly that warning, so a range this extension cannot pair must
+never reach the index tool at all.
+
+Each shape uses a term no other shape uses, so a report reading one cannot be
+satisfied by another's mark.
+
+## An opening that is never closed
+
+The discussion of [fenrir]{.index range="open"} begins here and the document
+never says where it ends.
+
+## A closing with no opening
+
+A closing mark whose term was never opened: [golem]{.index range="close"}.
+
+## A second opening while a range is still open
+
+The discussion of [hydra]{.index range="open"} begins here, and a second
+opening arrives for the same term before the first is closed:
+[hydra]{.index range="open"}. The first opening is the one that pairs with the
+closing below; the second is the mark that is reported.
+
+The discussion of [hydra]{.index range="close"} ends here.
+
+## A range mark that also carries a cross-reference
+
+A cross-reference takes the place of a locator, and a range IS a locator — a
+span of one — so a mark carrying both is asking for two things that occupy one
+slot: [imp]{.index range="open" see="golem"}.
+
+## A value that is neither an opening nor a closing
+
+A `range=` value naming neither end: [jinn]{.index range="middle"}.
+
+And an EMPTY value, which is a value the author wrote rather than an attribute
+they left off, and is reported the same way: [kobold]{.index range=""}.
+
+# The controls these reports must leave alone
+
+A well-formed range, whose two marks must draw no report at all. The discussion
+of [lamia]{.index range="open"} begins here and the discussion of
+[lamia]{.index range="close"} ends here.
+
+And an ordinary mark carrying no `range=` at all: [kelpie]{.index}.
+
+::: {.qi-index-here}
+:::

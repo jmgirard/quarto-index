@@ -8,6 +8,9 @@
 --   [term]{.index see="..."}        cross-reference: "see <target>"
 --   [term]{.index see-also="..."}   cross-reference: "see also <target>"
 --   [term]{.index sort="..."}       file the entry under different text
+--   [term]{.index mention="..."}    the role this mention of the term plays
+--   [term]{.index range="open"}     where a discussion of the term begins
+--   [term]{.index range="close"}    and where it ends: one locator, not two
 --
 -- In `entry=`, a single `!` separates sub-entry levels and `!!` is a literal
 -- `!`, scanned left-to-right longest-match. Each level is literal text: the
@@ -26,6 +29,13 @@
 -- mark value (IP1) — the back-end alone writes whatever syntax its index
 -- tool needs. `sort=` is not accepted on a cross-reference target: a target
 -- is prose naming another entry, and that entry carries its own sort key.
+--
+-- A range's two marks are paired by the entry they index, so nothing extra is
+-- written; the pairing takes the whole document (and, in a book, the whole
+-- book) to settle, which is why it has a pass of its own. A range this filter
+-- cannot pair is never emitted as one: the index tool logs a warning for an
+-- unmatched range and Quarto fails the render on it, so the mark degrades to
+-- an ordinary locator and the author is told.
 
 -- The filter itself. Everything below the requires is the Pandoc pass and the
 -- list of passes handed back to Pandoc; every other definition lives in a
@@ -88,6 +98,23 @@ local function Pandoc(doc)
   if not book and not (qi_core.is_html() and doc.meta.book ~= nil) then
     qi_marks.report_dangling(qi_marks.marked_paths, qi_marks.pending_xrefs, "document")
   end
+  -- The range reports, held rather than emitted where they were found so they
+  -- print after the per-mark reports. Under D-009 every Pandoc process is its
+  -- own pairing scope — a single document, or one chapter of an HTML book —
+  -- so the pairing reports are always this process's to draw; only the WORD
+  -- naming the scope differs, so an author is sent looking in the right set.
+  -- The book's cross-chapter report is a separate message qi_book owns.
+  -- A merged (non-HTML) book render is one process spanning every chapter, so
+  -- its scope word is "book" — "document" would send an author looking inside
+  -- the one chapter file they are editing. The degraded HTML book path keeps
+  -- "document": that page was indexed on its own, and its own text is the set.
+  local range_scope = "document"
+  if book then
+    range_scope = "chapter"
+  elseif doc.meta.book ~= nil and not qi_core.is_html() then
+    range_scope = "book"
+  end
+  qi_marks.report_ranges(range_scope)
 
   if qi_core.is_html() then
     -- Anchors are assigned before either path decides what to place: they are
@@ -262,6 +289,10 @@ end
 return {
   { Span = qi_passes.CollectSort },
   { Span = qi_passes.CollectKeys },
+  -- The range pass carries a document hook as well as an element one: an
+  -- opening still waiting when the traversal ends was never closed, and
+  -- Pandoc runs a filter's `Pandoc` function after its element functions.
+  { Span = qi_passes.CollectRanges, Pandoc = qi_passes.FinishRanges },
   { Span = qi_passes.Span },
   { Pandoc = Pandoc },
 }

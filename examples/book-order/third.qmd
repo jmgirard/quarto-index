@@ -4,3 +4,26 @@ The contested term once more, sorted the way the chapter before it sorted it.
 A rival key repeated in a further chapter is not a further thing for the
 author to fix, so it must draw no report of its own:
 [Contested]{.index sort="Zzz"}.
+
+A range opened here and never closed anywhere in the book: a one-chapter
+fault this chapter's own never-closed report states, which the book's
+cross-chapter report must NOT name — it has no counterpart in any other
+chapter's record: [Unclosed]{.index range="open"}.
+
+The closing whose opening was refused a chapter earlier. It keeps its own
+locator, and the book must not name it either: the displaced opening named no
+range end, so no counterpart is visible: [Spanned]{.index range="close"}.
+
+The closing of the would-be pair opened a chapter earlier. Both halves are
+unpaired — each chapter refuses its own — and this is the one shape the book's
+report names, both marks of it. This book's marker is in its FIRST chapter, so
+the report being drawn at all proves it is drawn by the last chapter in book
+order — the one that has seen every record — rather than by the marker
+chapter: [Bridged]{.index range="close"}.
+
+A second opening for a term whose range is still open, inside ONE chapter of a
+book: the chapter is the pairing scope, so its own already-open report must
+fire here exactly as it does in a single document, and the first opening is
+the one the closing pairs with: [Twice Opened]{.index range="open"} then
+[Twice Opened]{.index range="open"}, closed by
+[Twice Opened]{.index range="close"}.

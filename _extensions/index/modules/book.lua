@@ -127,8 +127,15 @@ local function store_write(ctx, marker)
       -- because the book's dangling-target report runs in another chapter's
       -- process, where the mark itself is long gone and only this record is
       -- left to name it.
+      -- `range` is the end the AUTHOR wrote and `paired` this chapter's own
+      -- verdict about it. Both travel, and they are not the conflation D-009
+      -- is about: that verdict is a chapter's conclusion about marks wholly
+      -- inside itself, which is exactly the scope a range pairs in. What no
+      -- longer happens is the BOOK re-deriving a pairing across chapters from
+      -- these fields, which produced one defect in each of three review rounds.
       { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor,
-        context = mark.context, role = mark.role }
+        context = mark.context, role = mark.role, range = mark.range,
+        paired = mark.paired }
   end
   -- The chapter's DECLARED sort keys, one per printed level path, rather than
   -- a resolved key per mark. A mark's resolved key already has this chapter's
@@ -211,6 +218,21 @@ local function valid_record(data, file)
     -- which is what such a chapter meant. Bumping the version for it would
     -- drop every other chapter's terms until the whole book re-rendered.
     if mark.role ~= nil and type(mark.role) ~= "string" then
+      return false
+    end
+    -- And once more on the same terms (M21): a record written before ranges
+    -- existed carries no range end, which is what such a chapter meant. An
+    -- end this version does not recognize simply never pairs, exactly as it
+    -- would inside one document.
+    if mark.range ~= nil and type(mark.range) ~= "string" then
+      return false
+    end
+    -- And its verdict, on the same terms: a record written before ranges
+    -- existed has neither, which is what such a chapter meant. Held to the
+    -- two ends this version knows rather than to any string (review R4-F9):
+    -- `build_entry_tree` DROPS a locator on "close", so an unrecognized
+    -- verdict must refuse the record, not ride through to it.
+    if mark.paired ~= nil and qi_core.RANGE_ENDS[mark.paired] ~= true then
       return false
     end
     -- Validated here rather than trusted (review F9): a record whose xref
@@ -343,6 +365,61 @@ local function book_sort_for(keys, levels)
   return resolved
 end
 
+-- The book's range report (D-009). A range pairs within one Pandoc process and nowhere
+-- else: a single document is one process, and a PDF book is one merged document, but an
+-- HTML book renders each chapter in its own, so the pairing would have to be re-derived
+-- here from records whose fields mix what the author wrote with what that chapter
+-- concluded. Three review rounds each produced one defect from that conflation, so this
+-- does not pair at all — each such mark indexes as though the attribute were absent.
+--
+-- What the book names is only the marks whose COUNTERPART it can see in another
+-- chapter's record (review R4-F1): an opening one chapter refused as never
+-- closed, whose closing a later chapter refused as never opened — the one
+-- shape whose cause is chapter-crossing. A mark with no counterpart anywhere
+-- is a one-chapter fault its own chapter's pairing reports already state, and
+-- re-reporting it here named the wrong cause. Matched in book order, first
+-- open to first close per key, over the UNPAIRED ends alone — deliberately
+-- not what one merged process would pair, since a merged process would see
+-- the in-chapter pairs too and pair across them; under D-009 the chapter
+-- verdicts are primary, and this walk only asks which leftovers face each
+-- other across a chapter boundary.
+--
+-- Drawn by the last chapter in book order alone (its caller decides), for the same reason
+-- the dangling-target report is: it is the only chapter that has seen every other one's
+-- record. One report for the book, naming every mark it found, rather than one per mark —
+-- the author's fix is a single decision about the book, not a decision per mark.
+local function report_book_ranges(records)
+  local named, pending = {}, {}
+  for at, record in ipairs(records) do
+    for _, mark in ipairs(record.marks or {}) do
+      if qi_core.RANGE_ENDS[mark.range or ""] and mark.paired == nil then
+        local key = qi_levels.levels_key(mark.levels)
+        -- Named with its chapter, for the reason the book's dangling-target report names
+        -- one: the reader of this warning has a book open, not a file.
+        local name = (mark.context or "a mark") .. " in " .. record.file
+        if mark.range == "open" then
+          if pending[key] == nil then
+            pending[key] = { chapter = at, name = name }
+          end
+        elseif pending[key] ~= nil then
+          -- A counterpart in the SAME chapter cannot arise — the chapter
+          -- would have paired the two itself — but the guard keeps this
+          -- report's promise independent of that.
+          if pending[key].chapter ~= at then
+            named[#named + 1] = pending[key].name
+            named[#named + 1] = name
+          end
+          pending[key] = nil
+        end
+      end
+    end
+  end
+  if #named == 0 then
+    return
+  end
+  qi_core.warn(('%s= is not paired across the chapters of an HTML book, so each of these marks indexes on its own rather than as one end of a range: %s. A range whose two marks are in one chapter, and a range in a PDF book, are both paired as usual'):format(qi_core.RANGE_ATTR, table.concat(named, "; ")))
+end
+
 local function book_marks(ctx, records)
   local book_keys = book_sort_keys(records)
   local marks = {}
@@ -365,7 +442,14 @@ local function book_marks(ctx, records)
         sort = book_sort_for(book_keys, mark.levels),
         xrefs = xrefs,
         anchor = mark.anchor,
+        -- The chapter's own resolved role, which is all a book needs now that
+        -- nothing pairs here: a mark carries whatever role its own chapter
+        -- concluded for it.
         role = mark.role,
+        -- This chapter's own verdict, carried through untouched: a range whose
+        -- two marks are in one chapter pairs there, and its closing
+        -- contributes no locator here either.
+        paired = mark.paired,
         -- A mark in the chapter holding the index links within its own page,
         -- exactly as a single document's does.
         -- Written exactly as Quarto writes its own links to that page,
@@ -459,6 +543,7 @@ local function html_book(doc, ctx, marker, taken)
   -- limit every cross-chapter judgement here already carries.
   if ctx.position == #ctx.chapters then
     report_book_dangling(records)
+    report_book_ranges(records)
   end
   -- Whether THIS chapter carries the marker is known here, and is never read
   -- back from the store: a chapter whose own record failed to write would
@@ -519,6 +604,7 @@ end
 -- scans take the FIRST match for `NAME =` over the whole source set, and
 -- the M16-AC3 probe relocates a definition into another file — a plain
 -- `NAME =` line left behind here would then mask it (M16 review F3).
+M["report_book_ranges"] = report_book_ranges
 M["STORE_DIR"] = STORE_DIR
 M["STORE_SUFFIX"] = STORE_SUFFIX
 M["STORE_VERSION"] = STORE_VERSION

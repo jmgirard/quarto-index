@@ -1,6 +1,8 @@
--- The three Span passes, in the order the filter returns them: two that only
--- read — one registering sort keys, one deciding which keys are contested —
--- and the emitting pass that rewrites the mark.
+-- The four Span passes, in the order the filter returns them: three that only
+-- read — one registering sort keys, one deciding which keys are contested, one
+-- pairing page ranges — and the emitting pass that rewrites the mark. The range
+-- pass carries a document hook as well, since whether an opening is ever closed
+-- is a fact only the whole document settles.
 --
 -- They share the accumulators in `qi_marks` and `qi_latex` rather than passing
 -- state between themselves: Pandoc runs each as a separate traversal.
@@ -119,6 +121,91 @@ local function CollectKeys(span)
   return nil
 end
 
+-- The range pass: a third full traversal that only reads, running after the
+-- keys are settled and before anything is emitted. It exists because whether
+-- an opening is ever closed is a fact about the whole document, and the LaTeX
+-- back-end must not emit a range opening it cannot pair — makeindex warns
+-- about an unmatched one and Quarto fails the render on that warning.
+--
+-- Format-neutral, unlike CollectKeys: which end a mark names is a fact about
+-- what the author wrote, so the reports fire where there is no index back-end
+-- at all. What IS back-end-specific is the surviving cross-reference set the
+-- displacement judgement reads, for the reason the emitting pass reads it
+-- there too: the LaTeX fold drops a target that names the folded path the
+-- entry prints, and a range reported as displaced by a target the fold is
+-- about to drop would contradict the drop's own report about the same mark.
+local function CollectRanges(span)
+  if not span.classes:includes(qi_core.INDEX_CLASS) then
+    return nil
+  end
+  local value = span.attributes[qi_core.RANGE_ATTR]
+  if value == nil then
+    return nil
+  end
+  local entry = span.attributes["entry"]
+  local visible = qi_marks.span_text(span)
+  local context = qi_marks.describe(entry, visible)
+  local xrefs, declared = {}, 0
+  for _, kind in ipairs(qi_core.XREF_KINDS) do
+    local raw = span.attributes[kind.attr]
+    if raw ~= nil then
+      declared = declared + 1
+      local target, wrote = qi_marks.target_levels(raw, kind.attr, context, false)
+      if target then
+        xrefs[#xrefs + 1] = { kind = kind, levels = target,
+                              written_depth = wrote }
+      end
+    end
+  end
+  local levels, _, _, entry_written =
+    qi_marks.derive_levels(entry, visible, declared, #span.content, context,
+                           span.attributes["sort"], false)
+  if levels == nil then
+    -- The mark indexes no entry at all, so there is no key to plan a range
+    -- under and no locator for one to span. The emitting pass reports why the
+    -- mark indexes nothing, which is the fact the author acts on; a second
+    -- report that the range went with it would name the same mistake twice.
+    -- It plans nothing, and the emitting pass takes no verdict for this mark
+    -- either — it returns at the same point, on the same derivation.
+    return nil
+  end
+  local own_key = qi_levels.levels_key(levels)
+  local surviving = {}
+  for _, xref in ipairs(xrefs) do
+    if qi_levels.levels_key(xref.levels) ~= own_key then
+      surviving[#surviving + 1] = xref
+    end
+  end
+  if qi_core.is_latex_derived() then
+    local _, _, _, kept =
+      qi_latex.latex_plan(levels, qi_sortkeys.sort_for(levels), surviving,
+                          context, false, nil, entry_written)
+    surviving = kept
+  end
+  local blocked = nil
+  if #surviving > 0 then
+    blocked = {}
+    for _, xref in ipairs(surviving) do
+      blocked[#blocked + 1] = xref.kind.attr
+    end
+  end
+  local role = qi_marks.mention_role(span.attributes[qi_core.MENTION_ATTR],
+                                     context,
+                                     blocked ~= nil and { attrs = blocked } or nil,
+                                     false)
+  qi_marks.plan_range(value, own_key, context, blocked, role == "principal")
+  return nil
+end
+
+-- The same pass's document hook: an opening still waiting when the traversal
+-- ends was never closed. Pandoc runs a filter's `Pandoc` function after its
+-- element functions, which is what makes "the whole document has been read"
+-- expressible without a fourth traversal.
+local function FinishRanges()
+  qi_marks.finish_ranges()
+  return nil
+end
+
 -- The encapsulation a mark's own `\index` command carries when SOME mark of
 -- its key is principal, or the empty string otherwise. It does not depend on
 -- whether THIS mark is the principal one: two locators of a key whose
@@ -128,19 +215,51 @@ end
 -- reaches this: a mark carrying a cross-reference had its role dropped and
 -- reported before the back-end branch, and a cross-reference mark of a
 -- contested key emits no command at all.
-local function locator_encap(source)
+local function locator_encap(source, range)
+  -- makeindex's range delimiters live at the head of the encapsulation
+  -- channel, before whatever encapsulator follows, and the two ends must agree
+  -- on everything after the delimiter or the tool logs an inconsistent-range
+  -- warning. Composing them here, in the one place the channel is written, is
+  -- what makes that agreement structural rather than remembered.
+  local delim = ""
+  if range ~= nil then
+    delim = range.ending == "open" and "(" or ")"
+  end
   local id = qi_latex.principal_ordinal(source)
   if id == nil then
-    return ""
+    return delim == "" and "" or ("|" .. delim)
   end
   qi_latex.principal_emitted = true
-  return "|" .. qi_core.LOCATOR_COMMAND .. "{" .. id .. "}"
+  return "|" .. delim .. qi_core.LOCATOR_COMMAND .. "{" .. id .. "}"
 end
 
 -- The principal mark's own registration, which is where the role actually
 -- travels: emitted beside the `\index` command so both whatsits ship on one
 -- page and the page they name cannot disagree. Nil for every other mark.
-local function register_inline(role, source)
+local function register_inline(role, source, range)
+  -- A range registers BOTH of its ends, and the role it registers under is the
+  -- RANGE's — `range.principal`, settled once by the pairing from whichever
+  -- end the author wrote it on — never the end's own `role`. Two ends of one
+  -- span are one discussion, so a role on either of them is a role on the
+  -- span; reading each end's own attribute instead dropped a role written on
+  -- the closing mark in silence, while still encapsulating both ends, so the
+  -- range printed plain and nothing said why (review F2).
+  if range ~= nil then
+    if not range.principal then
+      return nil
+    end
+    local id = qi_latex.principal_ordinal(source)
+    if id == nil then
+      return nil
+    end
+    -- The opening registers its page as a lone principal mark does AND
+    -- remembers it as the range's start, which is one command rather than
+    -- two; the closing supplies the page that completes the range string the
+    -- index prints (D-008).
+    local command = range.ending == "open"
+      and qi_core.RANGEFROM_COMMAND or qi_core.RANGEEND_COMMAND
+    return pandoc.RawInline("latex", "\\" .. command .. "{" .. id .. "}")
+  end
   if role ~= "principal" then
     return nil
   end
@@ -237,6 +356,16 @@ local function Span(span)
   -- about emptiness. M10 reconciled the two spellings here instead, because
   -- the entry side kept what it was written with.
   local own_key = qi_levels.levels_key(levels)
+  -- The range verdict for this mark, taken here so the two passes stay in step
+  -- on the same key: CollectRanges planned one verdict per range mark that
+  -- derived an entry, and this pass returned at the same point on the same
+  -- derivation for every mark that did not. Nil for a mark carrying no
+  -- `range=` at all, and nil for one whose end was refused — both of which
+  -- index as an ordinary locator.
+  local range = nil
+  if span.attributes[qi_core.RANGE_ATTR] ~= nil then
+    range = qi_marks.next_range(own_key)
+  end
   local surviving = {}
   for _, xref in ipairs(xrefs) do
     if qi_levels.levels_key(xref.levels) == own_key then
@@ -315,8 +444,34 @@ local function Span(span)
   end
 
   if qi_core.is_html() then
+    -- Two range fields, because they answer different questions. `range` is
+    -- the end the AUTHOR wrote, which is what lets the book's report name a
+    -- would-be pair split across two chapters — nothing pairs on it (D-009).
+    -- `paired` is this chapter's own verdict, which is what decides whether
+    -- the mark contributes a locator here.
+    --
+    -- `range` is written only for a mark that CONTRIBUTES a locator — the
+    -- same `#xrefs == 0` the anchor below is gated on, which is also what
+    -- `range_end` refuses a displaced range by. Recorded from the raw
+    -- attribute instead, a book paired an end this chapter had already
+    -- refused, and suppressed the other end's locator on the strength of it:
+    -- the entry then printed its cross-reference and no locator at all, while
+    -- the report told the author the mark indexes as it would without the
+    -- range (review F1). The resolved `role` beside it was always written
+    -- this way; the two fields disagreeing about one judgement is what made
+    -- the defect reachable.
     local record = { levels = levels, sort = sort, xrefs = xrefs,
-                     context = context, role = role }
+                     context = context,
+                     -- Likewise resolved rather than raw: a range's role is
+                     -- the RANGE's, so an opening whose closing declared it
+                     -- carries it here too and the HTML locator is emphasized
+                     -- exactly where the PDF range is (review F2).
+                     role = (range ~= nil and range.principal) and "principal"
+                       or role,
+                     range = #xrefs == 0
+                       and qi_core.RANGE_ENDS[span.attributes[qi_core.RANGE_ATTR] or ""]
+                       and span.attributes[qi_core.RANGE_ATTR] or nil,
+                     paired = range ~= nil and range.ending or nil }
     qi_marks.html_marks[#qi_marks.html_marks + 1] = record
     if #xrefs == 0 then
       -- Only a locator-contributing mark needs somewhere to link back to; a
@@ -361,8 +516,8 @@ local function Span(span)
         local folded = select(1, qi_latex.latex_plan(levels, sort, xrefs, context,
                                             false, qi_latex.fold_xrefs(seen)))
         result:insert(pandoc.RawInline("latex",
-          "\\index{" .. folded .. locator_encap(source) .. "}"))
-        local register = register_inline(role, source)
+          "\\index{" .. folded .. locator_encap(source, range) .. "}"))
+        local register = register_inline(role, source, range)
         if register then
           result:insert(register)
         end
@@ -393,8 +548,8 @@ local function Span(span)
   local encap = qi_latex.mark_encap(xrefs)
   if encap == "" then
     result:insert(pandoc.RawInline("latex",
-      "\\index{" .. source .. locator_encap(source) .. "}"))
-    local register = register_inline(role, source)
+      "\\index{" .. source .. locator_encap(source, range) .. "}"))
+    local register = register_inline(role, source, range)
     if register then
       result:insert(register)
     end
@@ -414,6 +569,8 @@ end
 -- `NAME =` line left behind here would then mask it (M16 review F3).
 M["CollectSort"] = CollectSort
 M["CollectKeys"] = CollectKeys
+M["CollectRanges"] = CollectRanges
+M["FinishRanges"] = FinishRanges
 M["Span"] = Span
 
 return M

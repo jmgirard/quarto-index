@@ -85,6 +85,22 @@ local PRINCIPAL_COMMAND = "quartoindexprincipal"
 local PRINCIPAL_DEFINITION =
   "\\providecommand*\\" .. PRINCIPAL_COMMAND .. "[1]{\\textbf{#1}}"
 
+-- The attribute naming a mark as one end of a page range, and its two values.
+-- Format-neutral like every other mark attribute: which end a mark is is a
+-- fact about what the author wrote, so it is read and diagnosed in every
+-- format and only the realization differs. `range` is not an HTML attribute,
+-- so Pandoc data-prefixes it exactly as it does `see` — no `mention`-shaped
+-- collision to avoid here.
+--
+-- A further value is not a further attribute (GP5), and the ends are written
+-- as a set for the same reason the mention roles are: an unknown value is one
+-- lookup, and the report can quote what the author wrote.
+local RANGE_ATTR = "range"
+local RANGE_ENDS = {
+  ["open"] = true,
+  ["close"] = true,
+}
+
 -- ---------------------------------------------------------------------------
 -- The typeset-time channel (D-007).
 --
@@ -115,12 +131,47 @@ local PRINCIPAL_DEFINITION =
 --
 -- One known degradation, documented in README: makeindex folds three or more
 -- consecutive pages under one encapsulation into a range, and a lookup on the
--- string `1--3` matches no registered page, so a principal page inside a range
--- prints unemphasized. Ranges are M21's subject.
+-- string `1--3` matches no registered page, so a principal page inside a
+-- FOLDED range prints unemphasized. A range the AUTHOR wrote is a different
+-- case, and M21 closes it (D-008): the filter knows such a range exists, so
+-- its two ends register their own pages and the pair is composed into the
+-- same string the index prints. The folded case stays open, because no mark
+-- there says a range exists at all.
+--
+-- The range commands are part of THIS block rather than a block of their own,
+-- and the difference is a render. Everything here is injected only into a
+-- document that carries a principal mention, but the `.aux` lines these
+-- commands are defined for outlive the source that produced them: delete a
+-- `range=` from a document whose `.aux` survives (`latex-clean: false`, or a
+-- failed render) and the next pass reads a `\quartoindexrangeat` nothing
+-- defines — `Undefined control sequence`, and the render is over. Four
+-- `\providecommand`s cost an unused document nothing, and a marked term must
+-- never break a document (IP2), so they ride along (review F3). The same
+-- hazard at one remove — a document losing its LAST principal mention — is
+-- M20's and is a ROADMAP candidate row.
 -- ---------------------------------------------------------------------------
 local LOCATOR_COMMAND = "quartoindexlocator"
 local REGISTER_COMMAND = "quartoindexregister"
 local PRINCIPALPAGE_COMMAND = "quartoindexprincipalpage"
+
+-- The range half of the same channel (D-008). Two inline commands, emitted
+-- beside the two `\index` commands of a principal range, and the two `.aux`
+-- commands they write. `rangefrom` stands in for REGISTER_COMMAND on a range
+-- opening rather than joining it: it does everything that command does and
+-- remembers the page as the range's start as well, and a slot only a range
+-- opening ever writes cannot be moved by a second principal mark of the same
+-- key.
+local RANGEFROM_COMMAND = "quartoindexrangefrom"
+local RANGEEND_COMMAND = "quartoindexrangeend"
+local RANGEAT_COMMAND = "quartoindexrangeat"
+local RANGETO_COMMAND = "quartoindexrangeto"
+
+-- makeindex's own range delimiter, which it writes between the two pages of a
+-- range and which this file must spell identically to look the printed string
+-- up. It is makeindex's `delim_r`, whose default this is; the extension ships
+-- no style file that could change it, and author control over the dash is a
+-- ROADMAP candidate rather than something this constant anticipates.
+local RANGE_DELIM = "--"
 
 -- The ordinal prefix. Ordinals are opaque and csname-safe by construction, so
 -- no key text — which may hold any character an author can write — ever
@@ -200,6 +251,44 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   "\\def\\qi@sniff#1#2#3\\qi@stop{\\ifcat\\noexpand#2\\relax" ..
     "\\expandafter\\@firstoftwo\\else\\expandafter\\@secondoftwo\\fi" ..
     "{\\qi@split{#1}{#2}{#3}}{\\qi@split{#1}{}{#2#3}}}",
+  -- A range opening registers its page exactly as a lone principal mark does,
+  -- and remembers it as `\qi@f@<ordinal>` for the closing to compose with.
+  -- The page is sanitized here again rather than read out of the macro the
+  -- registration leaves behind: that macro is set by every principal mark of
+  -- every key, and depending on it would make this line's meaning depend on
+  -- what ran before it.
+  -- The bare-page registration this line ALSO leaves (via the page command)
+  -- is live for the whole run; it is what makes a same-page range print
+  -- emphasized, because makeindex folds a same-page, same-encapsulator pair
+  -- into the single page rather than a `4--4`. Nothing else may print that
+  -- key as a bare locator on this page — makeindex's fold is what upholds
+  -- that today, and this comment is where the assumption is recorded.
+  "\\providecommand*\\" .. RANGEAT_COMMAND ..
+    "[2]{\\" .. PRINCIPALPAGE_COMMAND .. "{#1}{#2}" ..
+    "\\def\\qi@key{#2}\\@onelevel@sanitize\\qi@key" ..
+    "\\expandafter\\xdef\\csname qi@f@#1\\endcsname{\\qi@key}}",
+  -- And the closing composes the two pages into the string makeindex prints
+  -- for the range and registers THAT, so the lookup at `\printindex` finds it.
+  -- Guarded on the opening's slot existing: an `.aux` from a run whose opening
+  -- has since been deleted still holds this line, and `\csname` on a name
+  -- nothing defined is `\relax`, which would otherwise compose a range
+  -- starting with `\relax`. The slot is cleared once used, so the guard means
+  -- what it says for a SECOND range of the same key too: without that, an
+  -- orphaned closing composed the previous range's start with its own page and
+  -- registered a span nothing prints (review round 3, R3-F8).
+  "\\providecommand*\\" .. RANGETO_COMMAND ..
+    "[2]{\\def\\qi@key{#2}\\@onelevel@sanitize\\qi@key" ..
+    "\\expandafter\\ifx\\csname qi@f@#1\\endcsname\\relax\\else" ..
+    "\\edef\\qi@key{\\csname qi@f@#1\\endcsname" .. RANGE_DELIM ..
+    "\\qi@key}" ..
+    "\\expandafter\\gdef\\csname qi@p@#1@\\qi@key\\endcsname{}" ..
+    "\\expandafter\\global\\expandafter\\let\\csname qi@f@#1\\endcsname\\relax\\fi}",
+  "\\providecommand*\\" .. RANGEFROM_COMMAND ..
+    "[1]{\\protected@write\\@auxout{}{\\string\\" .. RANGEAT_COMMAND ..
+    "{#1}{\\thepage}}}",
+  "\\providecommand*\\" .. RANGEEND_COMMAND ..
+    "[1]{\\protected@write\\@auxout{}{\\string\\" .. RANGETO_COMMAND ..
+    "{#1}{\\thepage}}}",
   "\\makeatother",
 }, "\n")
 
@@ -297,6 +386,13 @@ M["XREF_BOTH_COMMAND"] = XREF_BOTH_COMMAND
 M["XREF_BOTH_DEFINITION"] = XREF_BOTH_DEFINITION
 M["XREF_LIST_COMMAND"] = XREF_LIST_COMMAND
 M["XREF_LIST_DEFINITION"] = XREF_LIST_DEFINITION
+M["RANGE_ATTR"] = RANGE_ATTR
+M["RANGE_ENDS"] = RANGE_ENDS
+M["RANGE_DELIM"] = RANGE_DELIM
+M["RANGEFROM_COMMAND"] = RANGEFROM_COMMAND
+M["RANGEEND_COMMAND"] = RANGEEND_COMMAND
+M["RANGEAT_COMMAND"] = RANGEAT_COMMAND
+M["RANGETO_COMMAND"] = RANGETO_COMMAND
 M["MENTION_ATTR"] = MENTION_ATTR
 M["MENTION_ROLES"] = MENTION_ROLES
 M["PRINCIPAL_COMMAND"] = PRINCIPAL_COMMAND

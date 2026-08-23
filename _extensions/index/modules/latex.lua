@@ -114,7 +114,9 @@ end
 -- written on it, in a fixed order. Module-level, like the other accumulators.
 local contested_keys = {}
 M["xref_list_emitted"] = false
--- Likewise for the typeset-time channel's commands.
+-- Likewise for the typeset-time channel's commands, the range half included:
+-- one flag, because the whole subsystem is injected together (qi_core explains
+-- why the range commands cannot be conditional on a range).
 M["principal_emitted"] = false
 
 -- Keys some mark of which carries a principal mention, each mapped to the

@@ -122,6 +122,7 @@ checker-regress shape D-004 refused.
 - 2026-08-23: AC1 amended at a mini gate (substantive), executing that return: the criterion now promises only what its grep settles — lines spelling the fixture directory literally — and states that a read reaching that directory through a shell variable is outside the claim. Narrowing was recommended and taken; widening the pattern to one further spelling was offered as the non-recommended alternative and declined. The amended wording was audited in-session against the reduced audit's bounded-promise, proportionality and instrument questions rather than by a fresh reader — this session is configured not to spawn subagents — and that was disclosed at the gate. The amendment-return track stays at 1.
 - 2026-08-23: chosen at the same gate alongside the amendment, and code work rather than a criteria change: the 14 book-family reads spelling the fixture directory through `$BOOK_OUT`, `$ORDER_OUT` or `$NOMARKER_DIR` now read the captures already taken at their renders (book-html, book-html2, book-ghost, book-nocontext, book-nomarker, book-pdf, book-order-2), so the Goal holds for the book fixtures although AC1's grep does not reach them. The check's blindness to a variable-spelled fixture directory is absorbed into the acceptance-suite-hardening candidate row beside the `.$var` gap already there; ROADMAP is at 23,488 of its 24,000-byte budget and 58 of its 60 lines.
 - 2026-08-23: re-review round 2 — fresh evidence for all five criteria from one 396-check `--self-test` on a cleaned tree (exit 0), AC1 for the first time against its amended wording; consistency gate clean. Round 1's deferred findings triaged: D1 repaired by the amendment, D4, D6, D10, D13 and B1 fixed on the branch, eight homed on the acceptance-suite-hardening row, D12 and D16 rejected. No finding meets the return floor. Verifying re-run green: 396 checks, exit 0, the emission sweep now reading 47 captured LaTeX artifacts. All five criteria ticked against round-2 evidence.
+- 2026-08-23: merge gate held at the maintainer's decision to run the fresh-context fan-out before merging. Three lenses, distinct evidence bases: prior-review record clean, blame-history one item settled by the runs already taken plus four confirmations, diff-bug ten findings. R3 (three more comments of D4's class) fixed on the branch; R6 rejected in part; the other nine homed on the acceptance-suite-hardening row, which was compressed to hold them inside the 24,000-byte budget (23,800). No return-floor finding.
 
 ## Review
 
@@ -383,3 +384,91 @@ Amendment-return track 1 (round 1's, executed). Defect-return track 0: no
 finding this round demonstrates an acceptance criterion failing inside its
 named procedure's domain, and none is a load-bearing defect in what the suite
 does for its users.
+
+#### Fresh-context review — round 2's fan-out
+
+Held at the merge gate on the maintainer's decision: the round-2 reading had
+been done in session, and the maintainer chose the fan-out before merging. All
+three lenses spawned with distinct evidence bases, none having seen the
+implementation.
+
+**[S] prior-review record: no regressions.** It read every archived `## Review`
+section across M01-M23 and `LESSONS.md`; the GitHub inline-comment probe
+returned empty, so that surface was skipped per the gate. It checked the diff
+against each lesson bearing on this shape of change — proving a scan
+discriminating by a planted violation, refusing an empty domain, the `set -e`
+guard shape, counts rather than presence, reading constants from source,
+enumerating rather than hand-listing — and found the diff following each. It
+independently confirmed the nine deleted `rm -f` lines are covered, checking
+every extension they named against `.gitignore`.
+
+**[S] blame-history: one open item, four confirmations.** The open item asked
+whether the widened sweep domains now cover self-test and defect-injection
+captures with no matching `ALLOWED` or `KEPT_MARKERS` entry, and said it could
+find none by inspection but had not run the suite. Settled by evidence: three
+full runs, all exit 0. Of its confirmations, one is worth recording — moving
+the AC3 control-token block repaired a latent read-before-write bug on the
+default branch, where the M02 check read `examples/control.tex` before
+anything in the run rendered it.
+
+**[O] diff-bug: ten findings, ranked as the lens ranked them.** It first
+verified independently that AC1's own grep returns nothing, that no read
+reaches the fixture directory through the three variables round 1 named, and
+that every resolvable capture slug — including the ambiguous stems — names a
+capture taken at or before its read.
+
+- R1: `git clean -X` removes and reports only IGNORED files, so an artifact a
+  render leaves under `examples/` that no ignore rule matches is neither
+  deleted nor visible to AC2's assertion. Latent today; the trigger would be
+  Quarto emitting one more extension or a fixture directory renamed off the
+  `book*` prefix.
+- R2: the M15 emission sweep now quantifies over `.tex` produced by
+  deliberately-broken filters (`m22-noinj-*`, the nine `m23-*` rows) and
+  scratch parity fixtures, so a future splice that made a spliced filter emit
+  a contested-key shape would fail M15's acceptance sweep for a reason that is
+  M22/M23's plant; and `ALLOWED` is a written-down slug map.
+- R3: three more comments of D4's class still standing — 7028, 7917 and 8189
+  each said a later PDF render removes the intermediate LaTeX, which `capture`
+  now does at the render itself.
+- R4: `capture` is called from inside a command substitution at 9550
+  (`m23_render`, invoked as `$(...)`), where its `fail` ends only the subshell,
+  so the caller's own diagnostic never prints.
+- R5: the parity comparison at 10004 hardcodes the `demo-html` slug while
+  spelling the stem through `$SOLO_NAME`, so repointing `SOLO_FIXTURE` fails
+  with the wrong cause.
+- R6: the capture-helper exemption in the AC1 read check is never exercised —
+  the helper builds paths from variables and spells no literal artifact path.
+- R7: `check_reads` does not follow backslash line continuations the way
+  `check_pairs` does, so a render written across two lines would be reported
+  as a working-tree read.
+- R8: each residue sweep prints an `ok` line from the Python and another from
+  the shell `pass`, so `CHECK_COUNT` counts those assertions twice.
+- R9: the HTML residue plants target the first `<body` / `</body>` textually
+  rather than the document's body element, so a page with either inside a
+  script would place the plant where the structural reader cannot see it.
+- R10: `CAPTURE_CALL` (`^\s*capture\b`) also matches the helper's own
+  definition line, so a render placed immediately above it would count as
+  paired.
+
+**Triage.** R3 fixed on the branch — the three comments now state what is
+true, completing D4's repair, which had been incomplete. R6 rejected in part:
+its off-by claim does not hold, since `helper_body` returns exactly the
+`capture() {` line through its closing `}`, and the two brace lines it adds
+over the body proper cannot match the artifact pattern; its substantive half —
+that the exemption is dead code today — is recorded. R1, R2, R4, R5, R6's
+remainder, R7, R8, R9 and R10 go to the acceptance-suite-hardening row.
+
+R1 is the one worth the maintainer's eye, since it is round 1's D1 shape
+again: a criterion satisfied while the Goal is not fully fenced. It is not
+taken as an amendment return, on two grounds. It is not live — no artifact
+escapes today, and it would need an extension outside both `CAPTURE_EXTS` and
+`.gitignore` to do so. And its failure scenario does not close even then:
+`capture` removes originals under `examples/` for every extension it captures
+regardless of ignore status, and every check now reads a capture, so an
+unignored residue would be inert litter rather than a file some check reads.
+Round 1's D1 differed in exactly that respect — eleven reads actually stood,
+reading the working tree.
+
+**Returns.** Amendment-return track 1 (round 1's, executed). Defect-return
+track 0: no finding across the three lenses demonstrates an acceptance
+criterion failing inside its named procedure's domain.

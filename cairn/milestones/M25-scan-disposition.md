@@ -119,6 +119,7 @@ checks' file-reading is settled there first.
 - 2026-08-23: review — PR #25 opened as a draft; all six criteria executed with fresh evidence and ticked; `cairn_validate` exits 0 and the `generic` profile names no toolchain checks. Review section open, findings triage pending the diff-bug lens.
 - 2026-08-23: review — three-lens fan-out returned fifteen findings, none demonstrating a criterion failing. Maintainer directed fix-eleven at the gate: F1 F2 F4 F5 F6 F10 in the suite, F3 F11 F12 F13 F14 in prose and records; F7 F9 to the acceptance-suite-hardening row; F8 F15 rejected as satisfied readings of AC4 and AC5. Full suite re-running against the fixed tree.
 - 2026-08-23: review — fixed tree green, 397 checks, with nine duplicate probes running inside M16-AC3. One intermediate AC1 failure of my own making (the F5 comment quoted the old control's spelling, which AC1's grep matches on any line) repaired by rewording the comment; a final confirmation run is in flight.
+- 2026-08-23: review — confirmation run green, 397 checks. All six criteria verified against the final tree; thirteen findings actioned, two rejected. To the merge gate.
 
 ## Review
 
@@ -343,3 +344,9 @@ Every criterion re-executed against the fixed tree, 2026-08-23.
 
 `cairn_validate` exits 0 on the fixed tree. `wc -c cairn/ROADMAP.md` is 23,891
 bytes against the 24,000 budget, and `cairn/LESSONS.md` 17,325 against 20,000.
+
+Confirmation run after the comment reword: `tests/run-tests.sh --self-test`
+exits 0, "All checks passed (397 checks)." No CI is configured on this repo —
+`gh pr checks 25` reports no checks on the branch — so the suite run above is
+the whole check evidence. Diffstat against `main`: 19 files, 847 insertions,
+143 deletions.

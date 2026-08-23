@@ -153,7 +153,9 @@ end
 -- of which is principal — which emits exactly what it emitted before M20, so
 -- a document with no principal mention indexes byte-identically. Its PREAMBLE
 -- no longer does: M22 puts three gobbling `\providecommand*` stand-ins in
--- every LaTeX-derived document this subsystem is not injected into.
+-- every LaTeX-derived document this subsystem is not injected into and that
+-- Quarto gives a preamble channel — under plain pandoc there is none, and
+-- neither block is injected.
 local function principal_ordinal(source)
   return principal_keys[source]
 end

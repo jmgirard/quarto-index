@@ -541,10 +541,10 @@ position. When a document has at least one mark, it also adds
 document has one — so the index is built and listed in the table of contents
 with no configuration. In a document with a bibliography the index currently
 prints before the references. A document with no marks gets none of this,
-except the three one-line `\providecommand*` stand-ins every LaTeX-derived
-render carries against a leftover `.aux` (see [Deleting marks never breaks the
-next render on a leftover
-`.aux`](#deleting-marks-never-breaks-the-next-render-on-a-leftover-aux)).
+except three one-line `\providecommand*` definitions: every LaTeX-derived
+render that does *not* emphasize a principal mention carries them, against a
+leftover `.aux` from one that did. They are described under the principal
+mention, below.
 
 A cross-reference is written into the same `\index{…}` command, through
 `makeindex`'s encapsulation channel — `\index{cats|see{Felines}}` — except

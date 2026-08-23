@@ -132,8 +132,8 @@ local function Pandoc(doc)
     if book then
       return qi_book.html_book(doc, book, marker, taken)
     end
-    -- A document with no marks gets no section. (The LaTeX path keeps one
-    -- preamble line even then — the gobbling stand-ins, whose reason is a
+    -- A document with no marks gets no section. (The LaTeX path keeps three
+    -- preamble lines even then — the gobbling stand-ins, whose reason is a
     -- surviving `.aux` no HTML render has.)
     if qi_marks.marks_seen == 0 then
       return qi_marker.place_index(doc, nil)

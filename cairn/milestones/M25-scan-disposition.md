@@ -1,0 +1,101 @@
+# M25: A check that cannot hold its promise is retired, not widened
+
+- **Status:** planned
+- **Priority:** normal
+- **Depends on:** M24
+- **Driving RR:** —
+- **Principles touched:** GP1
+- **Branch/PR:** —
+
+## Goal
+
+The suite's zero-warning controls tell this extension's warnings from any other
+filter's, and the source-shape scans are cut back to the properties they
+actually assert — deleted where they assert none.
+
+## Scope
+
+Surface tier: **internal** — the deliverable is the repo's acceptance suite,
+dev tooling over repo-internal artifacts, with no external consumer relying on
+it.
+
+**In:** The bare-`(W)` warning patterns replaced by the extension's own message
+set, which `tests/scans/warn-distinct.py` already enumerates from the `warn()`
+call sites; and the source-shape scans disposed under D-011 — the twelve-scan
+count pin removed, the four FIRST-match scans given exactly-one pins or
+deleted, `filtersrc.py`'s consumerless `lines()` resolved, and each surviving
+scan's header comment narrowed to what it reads. Depends on M24 because these
+checks' file-reading is settled there first.
+
+**Out:**
+- Widening any scan's promise — refused as the checker-regress shape (D-011,
+  following D-004).
+- The `examples/`→`$WORK` repair itself → M24.
+- `warn-distinct` learning to read `:format(` arguments — that is the widening
+  D-011 refuses; the scan's promise narrows instead, and the numbers and text
+  built outside the `warn()` call stay held by the rendered-log pins.
+- Every remaining item on the acceptance-suite-hardening candidate row → stays
+  on that row.
+
+## Acceptance criteria
+
+- [ ] AC1: Over the file set `git ls-files tests` enumerates, no check asserts
+      a warning count or a warning absence with a pattern that matches every
+      `(W)` line: greps for `check_warning_count` calls whose pattern argument
+      is `(W)`, and for `grep -q '^(W)'`, both return nothing.
+- [ ] AC2: A zero-warning control in the suite fails when this extension emits
+      a warning during that render, and passes when a warning emitted by
+      another filter is the only one present.
+- [ ] AC3: Nothing under the file set `git ls-files tests` enumerates asserts a
+      count of the files under `tests/scans/`; the grep for `tests/scans` in
+      that set returns only `run_scan`'s own path construction and the scan
+      invocations.
+- [ ] AC4: Over `git ls-files tests`, every scan in `tests/scans/` that
+      searches the filter source set asserts an exact match count for what it
+      finds, or no longer exists — enumerated by grepping those files for
+      `re.search`, `re.match` and `re.findall` over `filtersrc`'s source set.
+- [ ] AC5: `tests/filtersrc.py` exports no function without a caller in the set
+      `git ls-files tests` enumerates.
+- [ ] AC6: `tests/run-tests.sh --self-test` exits 0 and prints its
+      "All checks passed" line.
+
+## Coverage
+
+- AC1 → T1, T2
+- AC2 → T2, T3
+- AC3 → T4
+- AC4 → T5
+- AC5 → T6
+- AC6 → T8
+
+## Tasks
+
+- [ ] T1: Give `warn-distinct.py` a mode that emits the extension's warning
+      literals as a list the shell can read, and load it once near the suite's
+      other pinned constants.
+- [ ] T2: Replace the five bare-`(W)` sites — `tests/run-tests.sh:8406`, `8470`
+      and their PDF twins, plus the three `grep -q '^(W)'` controls at `4929`,
+      `5005` and `5131` — with assertions over that literal set.
+- [ ] T3: Prove the replacement discriminating both ways: plant an
+      extension warning into a captured log copy and require the control to
+      fail; plant a foreign filter's `(W)` line and require it to pass.
+- [ ] T4: Delete the twelve-scan count pin (`tests/run-tests.sh:9649-9658`).
+      Its stated job — noticing a scan that left the probed set — is what
+      `run_scan`'s missing-script `fail` already does at every invocation.
+- [ ] T5: Take the four FIRST-match scans (`html-identifiers`, `marker-class`,
+      `xref-manifest`, `xref-both-definition`) one at a time: exactly-one pin
+      where the property is real, deletion where the scan asserts a name or an
+      indentation rather than a property a tree can break. Record each
+      disposition in the Decisions section.
+- [ ] T6: Resolve `tests/filtersrc.py`'s `lines()` — give it its intended
+      consumer or delete it with its only current caller's use inlined.
+- [ ] T7: Narrow each surviving scan's header comment to what it reads, and the
+      moved-definition probe's to the one-module case it exercises.
+- [ ] T8: Full `tests/run-tests.sh --self-test`; capture evidence per criterion.
+
+## Work log
+
+- 2026-08-23: created by /milestone-plan alongside M24, from the acceptance-suite-hardening candidate row.
+- 2026-08-23: plan gate ran the REDUCED criteria audit (internal tier) on M24's criteria; M25's were written against the same three questions and the five findings that audit returned. Two were caught in drafting here: a criterion promising that each scan's disposition is "recorded in the Decisions section" bound a recording act (D-120) and became T5; a criterion promising each scan's header comment states what it asserts bound a checker's own prose (D-118) and became T7.
+- 2026-08-23: plan gate chose retiring the source-shape scans over hardening them, because D-004 already refused the same widening for `byte-diff.sh` and M23 found six such gaps by hand that the scans exited 0 on; falsified by a tree-breaking defect that a widened scan catches and no render does.
+- 2026-08-23: plan gate chose matching the extension's own message set over prefixing every warning with an identifying token, because the prefix rewrites user-visible text across 20+ messages and collides with the README claim pins and `warn-distinct`'s single-literal needles; falsified by evidence that the literal set cannot be enumerated from source completely enough for a zero-control to rest on.

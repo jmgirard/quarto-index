@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-22 (M21 merged and archived — a discussion spanni
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M22 | A stale `.aux` outliving its marks still builds | review | — | normal | milestones/M22-stale-aux-builds.md |
+| M22 | A stale `.aux` outliving its marks still builds | in-progress | — | normal | milestones/M22-stale-aux-builds.md |
 | M23 | A range verdict follows its mark's position, not its text | planned | — | normal | milestones/M23-positional-range-verdicts.md |
 | M15 | A term marked both plainly and with a cross-reference builds | done | — | normal | milestones/archive/M15-clash-free-emission.md |
 | M18 | A cross-reference target is judged against the path the entry prints | done | — | normal | milestones/archive/M18-fold-aware-xref-targets.md |

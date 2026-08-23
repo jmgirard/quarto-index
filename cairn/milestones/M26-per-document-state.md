@@ -49,24 +49,24 @@ mutable state and are untouched.
 
 ## Acceptance criteria
 
-- [ ] AC1: Each of `examples/state-reuse.qmd`, `examples/state-reuse-plain.qmd`
+- [x] AC1: Each of `examples/state-reuse.qmd`, `examples/state-reuse-plain.qmd`
       and `examples/state-reuse-empty.qmd`, rendered to LaTeX with the
       test-only pollution filter listed in its filter list and that filter's
       switch set, produces a captured `.tex` byte-identical (`cmp -s`) to the
       captured `.tex` from the same fixture rendered off the same tree with
       that switch unset, and a captured warning stream byte-identical to that
       render's.
-- [ ] AC2: The same three fixtures rendered to HTML each produce a captured
+- [x] AC2: The same three fixtures rendered to HTML each produce a captured
       page byte-identical (`cmp -s`) between the two renders, the emitted
       preamble and index section included, and a captured warning stream
       byte-identical between them.
-- [ ] AC3: The AC1 comparison fails, for at least one of the three fixtures,
+- [x] AC3: The AC1 comparison fails, for at least one of the three fixtures,
       under each of four planted defects, one at a time and each reverted
       after: `marks.lua`'s `reset` removed, `latex.lua`'s removed,
       `sortkeys.lua`'s removed, and — varying form rather than location —
       `latex.lua`'s `reset` left in place but with `principal_ordinals` alone
       dropped from what it restores.
-- [ ] AC4: Sixteen of the 17 cells are load-bearing: for each, its own removal
+- [x] AC4: Sixteen of the 17 cells are load-bearing: for each, its own removal
       from its module's `reset`, that cell alone and reverted after, fails the
       AC1 or the AC2 comparison for at least one of the three fixtures —
       sixteen one-cell probes, reported per cell with the fixture, format and
@@ -333,3 +333,129 @@ follows.
 
 **Outcome.** Amendment return on AC1. Status to `in-progress` for that
 amendment alone; no other work is convened, and re-review follows it.
+
+### Round 2, 2026-08-23, branch `m26-per-document-state` at `b896252`, PR #26 (draft)
+
+Re-review after the AC1 amendment. The amendment was the only work convened;
+the code is unchanged since round 1's `66b98de`.
+
+**Sync.** `origin/main` is still `ee152af` and has not moved since the branch
+was cut. `origin/m26-per-document-state` matches local `HEAD` at `b896252`.
+Working tree clean before any evidence was gathered.
+
+**Arrangement — weaker than round 1's, and the weakest on this milestone.**
+This session executed the amendment and then reviewed it, and the three lenses
+again ran inside it rather than in spawned subagents, this session being
+instructed not to spawn agents. Round 1 at least read the branch cold. Here the
+author of the amended AC1 text is also its reviewer.
+
+### Evidence
+
+Three fresh runs, all at `b896252` with nothing planted:
+
+- `tests/run-tests.sh --self-test` — exit 0, final line
+  `All checks passed (409 checks).`
+- `tests/run-tests.sh` — the twelve M26 checks all `ok`: for each of the three
+  fixtures in each of latex and html, one `cmp` over the captured artifact and
+  one over the captured warning stream, with the clean render's own report
+  count pinned per fixture (4 and 2 for `state-reuse`, 0 and 0 for
+  `state-reuse-plain`, 1 and 1 for `state-reuse-empty`).
+- `python3 tests/stateprobe.py` — exit 0. Control passes first; four
+  whole-or-partial reset removals each move `state-reuse`/latex/output; sixteen
+  one-cell removals each move a comparison; `range_pair_found` moves nothing.
+  The per-cell table in this file's Decisions section is reproduced line for
+  line by this run.
+
+Criterion by criterion:
+
+- **[x] AC1 — verified.** The amended criterion names a LaTeX render pair, and
+  that is what the suite runs: `tests/run-tests.sh:10190` renders each fixture
+  `--to latex` twice under `QI_STATE_POLLUTE=1` then `=0`, with
+  `../tests/state-pollute.lua` in the fixture's own filter list both times
+  (`examples/state-reuse.qmd:8-10`), captures each render per M24's rule, and
+  compares the captured `.tex` and the extracted warning stream with `cmp -s`
+  (`tests/run-tests.sh:10205-10215`). Six of the twelve `ok` lines above are
+  these three pairs. The comparison is the one D-012 licenses: both sides off
+  one tree, differing only in the injected condition.
+- **[x] AC2 — verified.** The three html pairs and their warning pairs are
+  byte-identical — the other six `ok` lines. The captured artifact is the
+  rendered page whole (`tests/run-tests.sh:150-190` copies the file), so the
+  index section is inside the compared bytes; verified directly by rendering
+  `examples/state-reuse.qmd` to html at this commit and reading the emitted
+  `<section id="qi-index">` back. Finding G1 records what the criterion's
+  "emitted preamble" clause binds on this back-end.
+- **[x] AC3 — verified.** All four planted defects move the AC1 comparison,
+  which is now a coherent thing to name: `reset:marks`, `reset:latex`,
+  `reset:sortkeys` and the form-varying `reset:latex-one-cell`
+  (`principal_ordinals` alone dropped from a reset left in place), each on
+  `state-reuse`/latex/output. Each is planted alone and reverted after, and the
+  unplanted tree is required to pass all six pairs first.
+- **[x] AC4 — verified.** Sixteen cells load-bearing, each reported with the
+  fixture, format and artifact that moved: eleven the rich fixture's latex
+  output, four its latex warnings, one its html output, one
+  `state-reuse-empty`'s latex output, one `state-reuse-plain`'s latex output.
+  `range_pair_found` moves nothing and stays in the reset, which is what the
+  criterion's exemption says to record.
+- **[x] AC5 — verified.** `tests/run-tests.sh --self-test` exits 0 and prints
+  `All checks passed (409 checks).`
+
+**Consistency gate.** `cairn_validate.py` exits 0, every check PASS and every
+advisory OK. The diff touches no IP/GP line in `DESIGN.md`
+(`git diff origin/main...HEAD -- cairn/DESIGN.md` shows no principle line
+added or removed), so `cairn_impact.py` does not apply. The active profile is
+`generic`, whose `consistency-gate` slot names no toolchain checks.
+
+**Returns.** One amendment return (AC1, round 1), on its own track; no second
+return naming AC1. Zero defect returns, so the thrash rule does not fire.
+
+**Diffstat.** 15 files, +932 / -62 against `origin/main`.
+
+### Findings
+
+Ranked. All five lenses ran as one reader — see Arrangement.
+
+- **G1 [O], logged, no action — AC2's "emitted preamble" clause binds nothing
+  on this back-end.** The HTML back-end deliberately emits no stylesheet or
+  head content (`modules/html.lua:18`, GP4: a hook, not a stylesheet), so
+  unlike the LaTeX side there is no emitted preamble for the comparison to
+  include. This is not the criterion failing: the compared bytes are the whole
+  rendered page, so the comparison is strictly wider than the clause requires,
+  and anything the back-end later emits into the head falls inside it
+  automatically. No amendment convened.
+- **G2 [S] blame, logged, no action — `reset` is the first name in this source
+  set with more than one top-level definition.** Three modules now define
+  `local function reset()`. `tests/movedefs.py:54-74` requires exactly one
+  definition set-wide for any name it is asked to move, and fails loudly rather
+  than silently taking the first — the M16 F3 shape. `reset` is not among
+  `MOVED_DEFINITIONS` (`tests/run-tests.sh:9807`), so nothing trips today, and
+  adding it would fail with a message naming all three sites.
+- **G3 [O], checked and clear — the 17-cell enumeration is still exhaustive.**
+  Re-derived mechanically at this commit: the only other module-level table in
+  the source set is `core.lua`'s `XREF_KIND_BY_ATTR`, built once at load from
+  the constant `XREF_KINDS` and only read afterward (`core.lua:31-34`), so it
+  is a derived constant rather than an accumulator.
+- **G4 [S] blame, checked and clear — each cell's reset form matches its
+  reach.** `principal_ordinals` and `range_at` are restored by plain local
+  assignment; both are pure locals, read and written only inside their own
+  module. `marks_seen` is restored through `M` because it is read as
+  `qi_marks.marks_seen` at five sites in `index.lua` and written at
+  `passes.lua:414` — the reason its declaration comment already gives. The
+  fourteen tables are emptied in place through `qi_core.empty`, because every
+  one is exported by reference.
+- **G5 [S] blame, checked and clear — the reset does not cut a book's index.**
+  `book.lua:147` reads `qi_sortkeys.sort_keys` inside the per-chapter store
+  write, which runs in the emitting pass of the same chapter — after Reset and
+  after `CollectSort` refilled the registry in that same process. The suite's
+  book renders are among the 409 passing checks.
+- **G6 [S] prior review — one archived record, still upheld; the GitHub
+  surface no-ops.** M17's export conventions hold in this diff:
+  `M["reset"] = reset` in the bracket form, imported names reached through the
+  module table (`qi_core.empty`, `qi_marks.reset`). The probe
+  `gh api repos/jmgirard/quarto-index/pulls/comments?per_page=1` returns `[]`,
+  so there are no inline review threads to walk. Round 1's F5 noted M17's own
+  review returned that milestone on AC2 rather than rereading the criterion;
+  round 1's F1 took the other disposition on the same shape, which is what this
+  round verifies.
+
+**Outcome.** All five criteria verified with fresh evidence. Round 1's F1 is
+closed by the amendment. No finding meets the return floor.

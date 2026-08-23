@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M22: A stale `.aux` outliving its marks still builds
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
@@ -84,7 +84,7 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
       spliced in ahead of the subsystem.
 - [x] T4: README note on stale-`.aux` behavior; remove the absorbed
       candidate row from the ROADMAP; work log.
-- [ ] T5: Round-1 review fixes in the probe and the criteria's evidence:
+- [x] T5: Round-1 review fixes in the probe and the criteria's evidence:
       drop AC1's dropped emphasis clause and the fragile
       `\newcommand*\quartoindexprincipal` header it needed (F3, F12);
       grep the log for `Undefined control sequence` after the SECOND pdflatex
@@ -94,11 +94,11 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
       definition of a trio name planted in the control, to show the leak scan
       still trips after the `--standins` subtraction (F9); `grep -qE` for the
       GNU BRE alternation (F11).
-- [ ] T6: `examples/control.tex` — the zero-mark negative control — carries
+- [x] T6: `examples/control.tex` — the zero-mark negative control — carries
       the three stand-ins with no check reading them (F8): assert them there
       and name them in AC3's forbidden-token loop as the one permitted
       addition.
-- [ ] T7: Prose the change made false: narrow README's stale-`.aux` paragraph
+- [x] T7: Prose the change made false: narrow README's stale-`.aux` paragraph
       to the `.aux` and say what a surviving `.ind` still does (F1); state the
       three preamble lines in README's own "What it emits" section (F7); fix
       `modules/latex.lua`'s byte-identical comment (F6) and the new zero-marks
@@ -124,6 +124,7 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
 - 2026-08-22: amendment return: AC1 — "asserted over two variants of a document whose surviving `.aux` carries all three of those names: one with every `mention=` and `range=` attribute removed, and one with every index mark removed" — and the unfalsifiable "no emphasized locator" clause dropped; a fresh-context [O] criteria audit ran in full mode over the amended wording before it was written and cleared AC1 on every axis.
 - 2026-08-22: amendment return: AC2 — "each of AC1's two variants instead holds all three `.aux`-borne names, every one defined as the empty-bodied `\providecommand*\<name>[2]{}` stand-in and none with a body" — replacing the unsatisfiable "passing unmodified" clause; the same full audit found the first draft of this clause vacuously true of `origin/main` (a form restriction on appearances, satisfied by no appearance at all) and it was rewritten to require presence before the gate.
 - 2026-08-22: amendment gate held the criteria set at three rather than widening AC2 to the suite's zero-mark control, the audit's uncovered-domain finding routed to T6 instead; the gate also directed all nine round-1 fix-now findings into this pass (T5-T7). Coverage extended to the new tasks; AC3 unticked, its round-1 evidence stale under these changes.
+- 2026-08-22: T5-T7 done — the emphasis clause and the fragile `\newcommand*` fixture header removed with the criterion that needed them, both pdflatex passes read for the undefined control sequence, `m22_nogobblers` guarded against a missing file, the splice-out plant extended to the zero-marks branch, a bodied plant added showing the leak scan still trips after the `--standins` subtraction, the committed zero-mark control asserted to carry the three stand-ins and nothing else naming quartoindex, `grep -qE` for the BRE alternation, README's promise scoped to the `.aux` with the surviving-`.ind` hole stated and rowed, and the two comments the change made false corrected. Full suite `--self-test`: exit 0, 373 checks, 0 FAIL. Status review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

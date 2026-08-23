@@ -8352,6 +8352,132 @@ python3 tests/m21probes.py bookpdf "$WORK/book.txt" "Ranged Term"
 pass "M21-AC5: each chapter of an HTML book reports its own half of a split range over the chapter, the book draws exactly one report naming both marks of the pair it alone can see split, and the same book's PDF — one merged document — still prints that term as a single ranged locator"
 
 # ---------------------------------------------------------------------------
+# M23 — a range verdict follows its mark's POSITION, not its text.
+#
+# `examples/range-nested.qmd` writes an index mark inside a `range=` mark's own
+# content, on both ends of one range, and overlaps that range with a plain one
+# of another term. The outer mark carries no `entry=`, so its key is derived
+# from its stringified visible text — and the emitting pass rewrites the inner
+# mark before it reaches the outer one, so that text is not the same object in
+# the two passes that read it.
+#
+# This is the REGRESSION GUARD half of the milestone: every clause here is true
+# before the re-key and must stay true after it (the M11 untouched-shape
+# lesson, applied to the shape the milestone is about rather than beside it).
+# The two ranges overlap and cover different numbers of pages, so a verdict
+# handed to the wrong mark prints a span of the wrong width rather than merely
+# moving an entry.
+#
+# ORACLE NOTE. Every extent asserted here is stated in PAGES SEPARATED and
+# never in folios: the nested range opens on the fixture's first page and
+# closes on its fourth, the plain one opens on the second and closes on the
+# third. That is a fact about the source the author wrote, and it is the one
+# fact this section does not read out of the artifacts under test (M20).
+# ---------------------------------------------------------------------------
+rm -f examples/range-nested.html
+quarto render examples/range-nested.qmd --to html \
+  > "$WORK/range-nested-html.log" 2>&1 \
+  || { cat "$WORK/range-nested-html.log" >&2; fail "M23-AC1: examples/range-nested.qmd failed to render to html"; }
+[ -s examples/range-nested.html ] \
+  || fail "M23-AC1: the html render produced no examples/range-nested.html, so every clause stated over it would read a file this run did not write"
+# Removed, not overwritten: a stale `.ind` from a tree where the marks paired
+# differently would satisfy every clause below while this run emitted something
+# else entirely (the M15 destroyed-artifact lesson, in its stale-artifact half).
+# The `.aux` goes with them because it is an INPUT to the render that follows
+# and not merely its leavings: it carries the principal-locator registry the
+# preamble reads back at `\begin{document}` (the M22 auxiliary-file lesson).
+# The `.idx` is removed as residue rather than as an input — pdflatex truncates
+# it at `\makeindex`, verified 2026-08-22 by planting `\indexentry{Ghostterm}{99}`
+# and finding it gone after one run — so that a FAILED render cannot leave one
+# behind to be read as this run's.
+rm -f examples/range-nested.ind examples/range-nested.ilg \
+      examples/range-nested.idx examples/range-nested.aux
+quarto render examples/range-nested.qmd --to pdf \
+  > "$WORK/range-nested-pdf.log" 2>&1 \
+  || { cat "$WORK/range-nested-pdf.log" >&2; fail "M23-AC1: examples/range-nested.qmd failed to render to PDF"; }
+for aux in ind ilg; do
+  [ -f "examples/range-nested.$aux" ] \
+    || fail "M23-AC1: the PDF render left no examples/range-nested.$aux — the fixture's latex-clean option is what keeps it, and without it this criterion has no evidence at all"
+  cp "examples/range-nested.$aux" "$WORK/range-nested.$aux"
+done
+# The fixture is a well-formed document with no misuse in it, so it must draw
+# no report at all — a range machinery that reported on the nested shape would
+# be telling the author about a mark they wrote correctly.
+check_warning_count "$WORK/range-nested-html.log" '(W)' 0 \
+  "M23-AC1 (the nested fixture is well-formed and draws no report in html)"
+check_warning_count "$WORK/range-nested-pdf.log" '(W)' 0 \
+  "M23-AC1 (nor in the PDF render)"
+
+python3 tests/m23probes.py ind "$WORK/range-nested.ind" "$WORK/range-nested.ilg"
+HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
+  python3 tests/m23probes.py html examples/range-nested.html
+pass "M23-AC1: a range mark whose own content carries another mark pairs with its closing mark in both back-ends — one page range in the PDF index, one locator at the opening mark's anchor in the HTML one — while the plain range beside it keeps its own narrower span and the nested inner mark keeps its two separate locators"
+
+# ---------------------------------------------------------------------------
+# M23-AC2 — a verdict is bound to its mark by POSITION.
+#
+# `examples/range-position.qmd` carries AC1's two ranges plus the two shapes
+# AC1's fixture must not have: a span with `range=` and no index class, and a
+# range mark that derives no entry. Both are places where the two traversals
+# stop at DIFFERENT points, which is where a verdict bound by anything other
+# than position goes to the wrong mark. The second draws a report, which is
+# why these shapes cannot live in a fixture whose own criterion is that it
+# reports nothing.
+#
+# AC2 was a source scan through review round 2. It is a render now: the scan
+# certified three properties it did not assert in round 1 and three more in
+# round 2, and a criterion that promises what a checker asserts binds the
+# checker rather than the filter. What certifies the SHIPPED tree is this
+# render; what shows the property is load-bearing is the injection battery
+# under --self-test, which is task work and not this criterion's promise.
+#
+# ORACLE NOTE. The two widths are read out of the fixture's page breaks and
+# out of nothing this run wrote: the nested range opens on the first page and
+# closes on the fourth, the plain one opens on the second and closes on the
+# third (M20).
+# ---------------------------------------------------------------------------
+rm -f examples/range-position.html
+quarto render examples/range-position.qmd --to html \
+  > "$WORK/range-position-html.log" 2>&1 \
+  || { cat "$WORK/range-position-html.log" >&2; fail "M23-AC2: examples/range-position.qmd failed to render to html"; }
+[ -s examples/range-position.html ] \
+  || fail "M23-AC2: the html render produced no examples/range-position.html, so every clause stated over it would read a file this run did not write"
+# The `.aux` goes with the `.ind`/`.ilg`: it carries the principal-locator
+# registry the preamble reads back at \begin{document}, so a surviving one is
+# an INPUT to the render that follows (the M22 auxiliary-file lesson). The
+# `.idx` is removed as residue rather than as an input — pdflatex truncates it
+# at \makeindex, verified 2026-08-22 by planting an entry and watching it go —
+# so that a FAILED render cannot leave one behind to be read as this run's.
+rm -f examples/range-position.ind examples/range-position.ilg \
+      examples/range-position.idx examples/range-position.aux
+quarto render examples/range-position.qmd --to pdf \
+  > "$WORK/range-position-pdf.log" 2>&1 \
+  || { cat "$WORK/range-position-pdf.log" >&2; fail "M23-AC2: examples/range-position.qmd failed to render to PDF"; }
+for aux in ind ilg; do
+  [ -f "examples/range-position.$aux" ] \
+    || fail "M23-AC2: the PDF render left no examples/range-position.$aux — the fixture's latex-clean option is what keeps it, and without it this criterion has no evidence at all"
+  cp "examples/range-position.$aux" "$WORK/range-position.$aux"
+done
+# Exactly the one report the no-entry mark calls for, and no other. Pinned on
+# the message rather than on a bare count, so a run in which this fixture drew
+# some DIFFERENT single report would fail rather than pass at one.
+check_warning_count "$WORK/range-position-html.log" \
+  'index mark with no visible term and no entry=; nothing to index' 1 \
+  "M23-AC2 (the no-entry range mark reports once in html)"
+check_warning_count "$WORK/range-position-pdf.log" \
+  'index mark with no visible term and no entry=; nothing to index' 1 \
+  "M23-AC2 (and once in the PDF render)"
+check_warning_count "$WORK/range-position-html.log" '(W)' 1 \
+  "M23-AC2 (and it is the only report the fixture draws in html)"
+check_warning_count "$WORK/range-position-pdf.log" '(W)' 1 \
+  "M23-AC2 (nor any other in the PDF render)"
+
+python3 tests/m23probes.py posind "$WORK/range-position.ind" "$WORK/range-position.ilg"
+HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
+  python3 tests/m23probes.py poshtml examples/range-position.html
+pass "M23-AC2: a range verdict is bound to its mark by document position — in a document carrying a span with range= and no index class, a range mark deriving no entry, a nested entry=-less range and a plain range overlapping it, both back-ends render clean, each range prints the page range its own marks sit at, and the only report drawn is the one the no-entry mark calls for"
+
+# ---------------------------------------------------------------------------
 # M22 — a stale `.aux` outliving its marks still builds.
 #
 # The typeset-time subsystem is injected only where a mark declares the
@@ -9232,6 +9358,199 @@ filtersrc.sources()" >/dev/null 2>&1; then
 
   pass "M21 self-test: every reader the milestone adds fails on a planted defect of each kind it names — a lost pairing, a wrong extent, a registration that composes the wrong string or names the wrong ordinal, a transcript warning, ends disagreeing on their encapsulator and ends disagreeing on their key, a locator at the wrong end, a second locator, a wrongly emphasized range, and a report naming the wrong mark"
 
+  # --- M23: the nested-mark readers, shown discriminating.
+  #
+  # The plants vary FORM as well as site: a range can lose its pairing, be
+  # narrowed, or — the shape this milestone is actually about — take the
+  # verdict planned for the OTHER range in the document, which the two
+  # different span widths are in the fixture to make visible. The mark that
+  # names no end at all can be folded into a range it never asked for. And the
+  # HTML locator can point somewhere other than its opening mark, or be
+  # doubled. Nothing here is aimed by anchor id: the ids are minted per render,
+  # so a plant keyed on one would silently stop planting anything.
+  M23W="$WORK/m23-planted"
+  rm -rf "$M23W"; mkdir -p "$M23W"
+  cp "$WORK/range-nested.ind" "$M23W/clean.ind"
+  cp "$WORK/range-nested.ilg" "$M23W/clean.ilg"
+  cp examples/range-nested.html "$M23W/clean.html"
+  m23_ind() { python3 tests/m23probes.py ind "$1" "$2"; }
+  m23_html() {
+    HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
+      HTML_SECTION_ID="$HTML_SECTION_ID" python3 tests/m23probes.py html "$1"
+  }
+  # The unmutated artifacts must pass, or every failure below would prove only
+  # that the readers always fail.
+  m23_ind "$M23W/clean.ind" "$M23W/clean.ilg" >/dev/null \
+    || fail "M23 self-test: the .ind reader fails on the unplanted artifacts, so no failure below is evidence of anything"
+  m23_html "$M23W/clean.html" >/dev/null \
+    || fail "M23 self-test: the html reader fails on the unplanted render, so no failure below is evidence of anything"
+
+  # (i) the nested range's pairing lost, so it prints its two ends as two
+  #     locators — the whole feature failing on the shape the fixture is for.
+  probe_plantpl "$M23W/clean.ind" "$M23W/unpaired.ind" \
+    's/\\hyperpage\{1--4\}/\\hyperpage{1}, \\hyperpage{4}/'
+  probe_defect "the nested range printed as two separate locators" \
+    m23_ind "$M23W/unpaired.ind" "$M23W/clean.ilg"
+  # (ii) THE DESYNC ITSELF: the two ranges swap the extents they print, which
+  #      is what a verdict handed to the wrong mark looks like in the .ind.
+  #      Neither entry goes missing and neither range comes unpaired, so a
+  #      reader checking only that each entry prints one range would pass it.
+  probe_plantpl "$M23W/clean.ind" "$M23W/swapped.ind" \
+    's/\{1--4\}/{QISWAP}/; s/\{2--3\}/{1--4}/; s/\{QISWAP\}/{2--3}/'
+  probe_defect "the nested and the plain range each printing the other's extent" \
+    m23_ind "$M23W/swapped.ind" "$M23W/clean.ilg"
+  # (iii) the nested range narrowed: the printed span no longer covers the
+  #       pages the fixture separates its marks by.
+  probe_plant "$M23W/clean.ind" "$M23W/short.ind" -e 's/{1--4}/{1--3}/'
+  probe_defect "the nested range covering fewer pages than the fixture separates its ends by" \
+    m23_ind "$M23W/short.ind" "$M23W/clean.ilg"
+  # (iv) the untouched shape moved: the inner mark, which names no end at all,
+  #      folded into a range. A guard that watched only the range entries would
+  #      pass this (the M11 lesson).
+  probe_plantpl "$M23W/clean.ind" "$M23W/innerrange.ind" \
+    's/\\hyperpage\{1\}, \\hyperpage\{4\}/\\hyperpage{1--4}/'
+  probe_defect "the nested inner mark's two pages folded into one range" \
+    m23_ind "$M23W/innerrange.ind" "$M23W/clean.ilg"
+  # (v) a makeindex warning on the transcript: Quarto fails a render on exactly
+  #     that line, so a reader blind to it would call a failing build clean.
+  probe_plant "$M23W/clean.ilg" "$M23W/warned.ilg" -e 's/0 warnings)/1 warning)/'
+  probe_defect "a makeindex warning on the nested fixture" \
+    m23_ind "$M23W/clean.ind" "$M23W/warned.ilg"
+  # (vi) the HTML locator pointing somewhere other than its opening mark — the
+  #      shape a verdict read at the wrong position takes in this back-end.
+  probe_plantpl "$M23W/clean.html" "$M23W/elsewhere.html" \
+    's{(nixie ogopogo</span>, <span class="qi-locators"><a href=")#[^"]*}{$1#qi-nowhere}'
+  probe_defect "the nested range's HTML locator pointing at neither of its marks" \
+    m23_html "$M23W/elsewhere.html"
+  # (vii) a second locator on the nested entry: an unpaired range contributes
+  #       one at each end, which is what the pairing exists to prevent.
+  probe_plantpl "$M23W/clean.html" "$M23W/twoloc.html" \
+    's{(nixie ogopogo</span>, <span class="qi-locators">)(<a [^<]*</a>)}{$1$2$2}'
+  probe_defect "a second HTML locator on the nested range's entry" \
+    m23_html "$M23W/twoloc.html"
+  pass "M23 self-test: the nested-mark readers each fail on a planted defect of their own kind — a lost pairing, the two ranges swapping extents, a narrowed range, the range-free inner mark folded into one, a transcript warning, an HTML locator at neither mark, and a doubled one"
+
+  # --- M23: the defect-injection battery. Task work, not AC2's promise.
+  #
+  #     AC2 says a range verdict is bound to its mark by document position.
+  #     The AC2 render above shows the SHIPPED tree printing what that
+  #     property makes it print; it cannot show the property is load-bearing,
+  #     because this change is behaviour-preserving — the AC2 fixture renders
+  #     byte-for-byte the same index against the pre-M23 filter (measured at
+  #     review round 2). So the property is exercised the only way left: break
+  #     it, and require the render to notice.
+  #
+  #     Each row plants ONE way the binding breaks, renders the AC2 fixture
+  #     against the broken copy, and requires the observed triple — render
+  #     exit, printed page ranges, report count — to differ from the control's.
+  #     Any of the three differing is enough, and no row names WHICH: rows that
+  #     kill the render and rows that quietly mis-pair are both defects, and a
+  #     harness demanding a particular channel would fail on the wrong thing
+  #     when a defect moved between them. Measured 2026-08-23 against a control
+  #     of `0|hyperpage{1--4} hyperpage{1} hyperpage{4} hyperpage{2--3} |1`:
+  #     `advance`, `guardclass`, `lateemit`, `resetmoved` and `exportgone` fail
+  #     the render; `guardattr` renders the same index and differs by report
+  #     count, the dropped clause putting non-range marks through `plan_range`;
+  #     `resetgone`, `constant` and `keyback` render clean and mis-pair. Two of
+  #     those channels are a CONSEQUENCE of the break rather than a mis-bound
+  #     verdict — `guardattr`'s spurious reports and `exportgone`'s nil call —
+  #     which is what a row asserts: that the fixture can see the break at all.
+  #
+  #     This replaces the source scan M23 carried through two review rounds.
+  #     The scan pinned names and shapes in the source; twice it certified a
+  #     property it did not assert, and both times a tree breaking that
+  #     property passed it. A render cannot pass a tree whose render fails.
+  M23B="$WORK/m23-inject"
+  rm -rf "$M23B"; mkdir -p "$M23B"
+
+  # The control: the unspliced extension, rendered here rather than reusing
+  # the acceptance render above, so the comparison is between two runs of this
+  # same function and not between a run and a memory of one.
+  m23_render() {   # <dir> -> prints "<exit> <ranges> <reports>"
+    local dir="$1" rc ranges reports
+    cp examples/range-position.qmd "$dir/"
+    # `|| rc=$?` rather than a bare subshell followed by `$?`: five of the nine
+    # rows below render at a non-zero exit and one leaves no `.ind` at all, so
+    # both lines here sit on a failing path BY DESIGN. Bash 3.2 happens not to
+    # inherit `-e` into a command substitution, but that is the shell's accident
+    # and not this script's guarantee; without the guards a newer shell would
+    # abort the whole run here with no `FAIL:` line — the silent-abort mode this
+    # file defends against in `check_warning_count`, in the same shape.
+    rc=0
+    ( cd "$dir" && quarto render range-position.qmd --to pdf > render.log 2>&1 ) || rc=$?
+    ranges=$({ grep -o 'hyperpage{[^}]*}' "$dir/range-position.ind" 2>/dev/null || true; } | tr '\n' ' ')
+    reports=$({ grep -c '(W)' "$dir/render.log" || true; } | tr -d ' ')
+    printf '%s|%s|%s' "$rc" "$ranges" "$reports"
+  }
+  mkdir -p "$M23B/control/_extensions"
+  cp -R "$QI_EXT_DIR" "$M23B/control/_extensions/index"
+  M23_CONTROL=$(m23_render "$M23B/control")
+  case "$M23_CONTROL" in
+    0\|*hyperpage\{1--4\}*hyperpage\{2--3\}*\|1) : ;;
+    *) fail "M23 self-test: the unspliced control rendered <<$M23_CONTROL>>, and the battery below compares against it — expected exit 0, the fixture's two ranges, and its one report. No row's failure would be evidence of anything." ;;
+  esac
+
+  # perl rather than sed for the reason probe_plantpl exists: several splices
+  # below insert whole lines. Same no-op refusal per file, so a splice aimed
+  # at text the tree does not carry is reported as the splice's fault.
+  m23_inject() {   # <name> <what it breaks> then pairs of <relative file> <perl expr>
+    local name="$1" what="$2"; shift 2
+    local P="$M23B/$name"
+    rm -rf "$P"; mkdir -p "$P/_extensions"
+    cp -R "$QI_EXT_DIR" "$P/_extensions/index"
+    while [ "$#" -gt 0 ]; do
+      local rel="$1" expr="$2"; shift 2
+      perl -0777 -pe "$expr" "$P/_extensions/index/$rel" > "$P/spliced"
+      if cmp -s "$P/_extensions/index/$rel" "$P/spliced"; then
+        fail "M23 self-test: the splice aimed at $name/$rel planted nothing — the render that follows would be reported as failing to discriminate when the fault is this mutation's"
+      fi
+      mv "$P/spliced" "$P/_extensions/index/$rel"
+    done
+    local got; got=$(m23_render "$P")
+    if [ "$got" = "$M23_CONTROL" ]; then
+      fail "M23 self-test: with $what, the AC2 fixture rendered exactly what the unbroken extension renders (<<$got>>) — that break is invisible to this fixture, so nothing here certifies the position binding against it"
+    fi
+  }
+
+  m23_inject advance "the counter advanced outside the one guard" \
+    modules/marks.lua \
+      's{  range_at = range_at \+ 1\n  return range_at\n}{  return range_at\n}' \
+    modules/marks.lua \
+      's{^local function plan_range\(pos, value, key, context, blocked, principal\)$}{local function plan_range(pos, value, key, context, blocked, principal)\n  range_at = range_at + 1}m'
+  m23_inject guardclass "the guard's index-class clause dropped" \
+    modules/marks.lua \
+      's{  if not span\.classes:includes\(qi_core\.INDEX_CLASS\) then\n    return nil\n  end\n}{}'
+  m23_inject guardattr "the guard's range= clause dropped" \
+    modules/marks.lua \
+      's{  if span\.attributes\[qi_core\.RANGE_ATTR\] == nil then\n    return nil\n  end\n}{}'
+  m23_inject resetmoved "the counter's reset fired per mark instead of between the traversals" \
+    modules/marks.lua \
+      's{  -- Back to the origin for the emitting pass, which numbers positions with\n  -- this same counter\.\n  range_at = 0\n}{}' \
+    modules/marks.lua \
+      's{^local function plan_range\(pos, value, key, context, blocked, principal\)$}{local function plan_range(pos, value, key, context, blocked, principal)\n  range_at = 0}m'
+  m23_inject resetgone "the counter never returned to the origin at all" \
+    modules/marks.lua \
+      's{  -- Back to the origin for the emitting pass, which numbers positions with\n  -- this same counter\.\n  range_at = 0\n}{}'
+  m23_inject lateemit "the emitting traversal taking its position after it derives an entry" \
+    modules/passes.lua \
+      's{  local range_pos = qi_marks\.range_position\(span\)\n}{}' \
+    modules/passes.lua \
+      's{^  local own_key = qi_levels\.levels_key\(levels\)\n  -- The verdict CollectRanges planned}{  local range_pos = qi_marks.range_position(span)\n  local own_key = qi_levels.levels_key(levels)\n  -- The verdict CollectRanges planned}m'
+  m23_inject constant "the guard's position never reaching the store" \
+    modules/passes.lua \
+      's{qi_marks\.plan_range\(pos, }{qi_marks.plan_range(1, }'
+  m23_inject keyback "the entry key back on the verdict-reading path" \
+    modules/marks.lua \
+      's{^local function next_range\(pos\)$}{local function next_range(key)}m' \
+    modules/marks.lua \
+      's{  local verdict = range_verdicts\[pos\]}{  local verdict = range_verdicts[key]}' \
+    modules/passes.lua \
+      's{qi_marks\.next_range\(range_pos\)}{qi_marks.next_range(own_key)}'
+  m23_inject exportgone "range_position dropped from the module's exports" \
+    modules/marks.lua \
+      's{^M\["range_position"\] = range_position\n}{}m'
+  pass "M23 self-test: each of nine ways the position binding breaks changes what the AC2 fixture renders — the counter advanced outside the guard, either guard clause dropped, the reset fired per mark or gone entirely, the emitting traversal positioning after it derives, the position never reaching the store, the entry key back on the reading path, and the guard dropped from the module's exports"
+
   # --- M22: the stale-.aux probe and the no-gobblers-beside-the-subsystem
   #     reader, each shown failing on a defect of its own kind.
   M22SW="$WORK/m22-planted"
@@ -9329,9 +9648,12 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # fails there rather than going unprobed.
   SCAN_NAMES=$(find tests/scans -name '*.py' | sed 's|.*/||; s|\.py$||' | sort)
   SCAN_COUNT=$(printf '%s\n' "$SCAN_NAMES" | wc -l | tr -d ' ')
-  # An exact count, not a floor: AC3's domain is the twelve source-reading
-  # sites the merge-base run reported, and a floor would pass while one of them
-  # quietly stopped being probed.
+  # An exact count, not a floor: AC3's domain is the source-reading sites the
+  # merge-base run reported, and a floor would pass while one of them quietly
+  # stopped being probed. Twelve at M16; thirteen while M23 carried a
+  # range-position scan, and twelve again since M23 retired it — a criterion
+  # that promised what a scan asserts bound the scan rather than the filter,
+  # and the injection battery below certifies the same property by rendering.
   [ "$SCAN_COUNT" -eq 12 ] \
     || fail "M16-AC3: found $SCAN_COUNT source scans under tests/scans, expected 12; either a source-reading check left the probed set or one was added without extending this proof"
 

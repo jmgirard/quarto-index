@@ -345,40 +345,52 @@ def _tex(argv):
           'not — and each principal range registers both of its ends')
 
 
-def _html(argv):
-    """M21-AC3 — one locator per range, at the opening mark's anchor."""
-    path = argv[0]
-    cls = os.environ['HTML_PRINCIPAL_CLASS']
-    doc = H.parse(path)
-    section = H.find_id(doc, os.environ.get('HTML_SECTION_ID', 'qi-index'))
+def index_section(path, criterion):
+    """The generated index section of one rendered page, or a failure."""
+    section = H.find_id(H.parse(path),
+                        os.environ.get('HTML_SECTION_ID', 'qi-index'))
     if section is None:
-        _fail('M21-AC3: %s has no generated index section' % path)
+        _fail('%s: %s has no generated index section' % (criterion, path))
+    return section
 
-    def locators(term):
-        """One entry's locator links as (href, carries the class, is strong).
 
-        Read off the `<li>` itself rather than through `index_entries`, whose
-        records carry an href and not the element: the class and the emphasis
-        node are half the question here. Returns None for a term with no entry
-        at all and [] for an entry with no locator, which are different
-        failures and must not be tested alike.
-        """
-        for item in H.find_all(section, 'li'):
-            own = list(H.own_nodes(item))
-            terms = [n for n in own if 'qi-term' in H.classes(n)]
-            if len(terms) != 1 or H.text(terms[0]).strip() != term:
-                continue
-            out = []
-            for node in own:
-                if 'qi-locators' in H.classes(node):
-                    out.extend((a.attrs.get('href', ''), cls in H.classes(a),
-                                bool(H.find_all(a, 'strong')))
-                               for a in H.find_all(node, 'a'))
-            return out
-        return None
+def locator_links(section, term, cls):
+    """One entry's locator links as (href, carries the class, is strong).
 
-    # The marks, read from the body with the index section removed, so a
-    # locator link inside the index can never be mistaken for a mark.
+    Read off the `<li>` itself rather than through `index_entries`, whose
+    records carry an href and not the element: the class and the emphasis
+    node are half the question here. Returns None for a term with no entry
+    at all and [] for an entry with no locator, which are different
+    failures and must not be tested alike.
+
+    Module-level rather than a closure of `_html` so that M23's nested-mark
+    reader calls THIS one: two independent readers of one artifact drift, and
+    the emphasis and class clauses are the half a second copy would drop
+    (M16, in the shape m21probes itself takes from m20probes).
+    """
+    for item in H.find_all(section, 'li'):
+        own = list(H.own_nodes(item))
+        terms = [n for n in own if 'qi-term' in H.classes(n)]
+        if len(terms) != 1 or H.text(terms[0]).strip() != term:
+            continue
+        out = []
+        for node in own:
+            if 'qi-locators' in H.classes(node):
+                out.extend((a.attrs.get('href', ''), cls in H.classes(a),
+                            bool(H.find_all(a, 'strong')))
+                           for a in H.find_all(node, 'a'))
+        return out
+    return None
+
+
+def body_marks(path):
+    """Every index mark in the page BODY, keyed by (visible text, range end).
+
+    The index section is stripped first, so a locator link inside it can never
+    be mistaken for a mark. `H.text` gathers a span's descendant text, so a
+    mark written inside another mark's content is read under the outer mark's
+    whole visible text — which is what M23's fixture is built out of.
+    """
     body = H.parse(path)
     H.strip_subtree(body, H.find_id(body, os.environ.get('HTML_SECTION_ID',
                                                          'qi-index')))
@@ -386,6 +398,19 @@ def _html(argv):
     for node in H.find_all(body, 'span', 'index'):
         marks.setdefault((H.text(node).strip(), node.attrs.get('data-range')),
                          []).append(node)
+    return marks
+
+
+def _html(argv):
+    """M21-AC3 — one locator per range, at the opening mark's anchor."""
+    path = argv[0]
+    cls = os.environ['HTML_PRINCIPAL_CLASS']
+    section = index_section(path, 'M21-AC3')
+
+    def locators(term):
+        return locator_links(section, term, cls)
+
+    marks = body_marks(path)
 
     for term, want in RANGES.items():
         opens = marks.get((term, 'open'), [])

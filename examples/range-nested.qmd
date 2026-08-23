@@ -1,0 +1,49 @@
+---
+title: "quarto-index nested-mark range probe"
+from: markdown-smart
+format:
+  pdf:
+    # The suite reads the `.ind` makeindex writes and the `.ilg` it logs to;
+    # Quarto deletes both on a successful render unless this says otherwise.
+    latex-clean: false
+  html: default
+filters:
+  - index
+---
+
+# A range mark whose own content carries another mark
+
+An index mark with no `entry=` indexes under its visible text, and a mark may
+sit inside another mark's content. The two are unremarkable apart; together
+they are the shape this fixture exists for. The emitting pass rewrites the
+inner mark before it reaches the outer one, so the outer mark's visible text
+is not the same object in the two passes that read it — and the range verdict
+the outer mark takes must not depend on that.
+
+Both ends of this range carry the nested shape, so the outer entry is one term
+in both passes or in neither.
+
+The discussion of [nixie [ogopogo]{.index}]{.index range="open"} begins here.
+
+{{< pagebreak >}}
+
+# A plain range of another term, opening inside the nested one
+
+The untouched shape: a range written with no nesting anywhere near it. It
+opens and closes inside the nested range above, so the two ranges overlap and
+a verdict handed to the wrong mark would show as a span of the wrong width
+rather than as a missing entry.
+
+The discussion of [pooka]{.index range="open"} begins here.
+
+{{< pagebreak >}}
+
+And the discussion of [pooka]{.index range="close"} ends here.
+
+{{< pagebreak >}}
+
+And the discussion of [nixie [ogopogo]{.index}]{.index range="close"} ends
+here.
+
+::: {.qi-index-here}
+:::

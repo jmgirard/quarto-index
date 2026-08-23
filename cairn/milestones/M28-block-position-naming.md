@@ -75,9 +75,9 @@ to that residue rather than struck, and the residue stays a Known issue.
 - [x] T2: write the naming clause once and splice it into `marker.lua`'s two
       reports (`marker.lua:189`, `marker.lua:222`), giving the duplicate
       report a clause for each of its two numbers.
-- [ ] T3: splice a naming clause into `book.lua`'s chapter-count report
+- [x] T3: splice a naming clause into `book.lua`'s chapter-count report
       (`book.lua:575`), naming what its chapter count is over.
-- [ ] T4: correct the `resolve_markers` comment (`marker.lua:210`) and the
+- [x] T4: correct the `resolve_markers` comment (`marker.lua:210`) and the
       `examples/marker-shapes.qmd` manifest comment.
 - [ ] T5: suite — update the M12 partition template
       (`tests/run-tests.sh:2998`); add the divergence check reading both
@@ -99,6 +99,9 @@ to that residue rather than struck, and the residue stays a Known issue.
 - 2026-08-23: T1 — added `examples/marker-position.qmd` and `examples/_marker-position-part.qmd`; a gfm render reports block 5 for a marker written as the host file's third top-level block, and the manifest states both numbers.
 
 - 2026-08-23: T2 — `POSITION_BASIS` written once in `marker.lua` and spliced into the emptied-place and duplicate-marker reports; the duplicate report's first number now reads "marker N in document order". Suite constants moved with it (`WARN_MARKER_DUP`, the M12 partition template); T4's `resolve_markers` comment rode in this commit. Suite green, 275 checks.
+
+- 2026-08-23: T3 — `book.lua`'s chapter-count report now says the count is over the files the book renders, in render-list order.
+- 2026-08-23: T4 — the `marker-shapes.qmd` manifest comment now says its numbers hold only because that file has no include or cell, and points at the fixture where the two positions diverge; the `resolve_markers` comment landed in T2's commit.
 
 ## Decisions
 

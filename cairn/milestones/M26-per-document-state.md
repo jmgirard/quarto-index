@@ -1,11 +1,11 @@
 # M26: A document's accumulators start empty, whoever ran before it
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
-- **Branch/PR:** —
+- **Branch/PR:** `m26-per-document-state`
 
 ## Goal
 
@@ -24,10 +24,15 @@ filter, which every consumer of the repo runs.
 `xref_list_emitted`, `xref_both_emitted`, `principal_emitted`) and
 `sortkeys.lua`'s `sort_keys` — each returned to its initial value by a `reset`
 its own module owns, wired as a leading `{ Pandoc = ... }` pass. The oracle is
-a purpose-built fixture rendered twice off one tree, once behind a test-only
-filter that first drives a synthetic document through the extension's pass
-list. `html.lua`, `book.lua`, `marker.lua`, `passes.lua`, `levels.lua` and
-`core.lua` hold no mutable state and are untouched.
+three purpose-built fixtures, each rendered twice off one tree, once behind a
+test-only filter that first drives a synthetic document through the
+extension's pass list: a rich fixture reaching the fourteen value-carrying
+cells, a one-mark fixture for `principal_emitted` and a mark-free one for
+`marks_seen` — two cells a leak moves only in a document that does not set
+them itself. Each render's warning stream is captured and compared alongside
+its output, five cells being read by nothing but a report. `html.lua`,
+`book.lua`, `marker.lua`, `passes.lua`, `levels.lua` and `core.lua` hold no
+mutable state and are untouched.
 
 **Out:**
 - Moving the cells into a `state.lua`, or making each module a per-document
@@ -44,21 +49,31 @@ list. `html.lua`, `book.lua`, `marker.lua`, `passes.lua`, `levels.lua` and
 
 ## Acceptance criteria
 
-- [ ] AC1: `examples/state-reuse.qmd` rendered to PDF behind the test-only
-      pollution filter produces a captured `.tex` byte-identical (`cmp -s`) to
-      the captured `.tex` from the same fixture rendered without that filter,
-      off the same tree.
-- [ ] AC2: The same fixture rendered to HTML produces a captured page
-      byte-identical (`cmp -s`) between the two renders, the emitted preamble
-      and index section included.
-- [ ] AC3: The AC1 comparison fails under each of four planted defects, one at
-      a time and each reverted after: `marks.lua`'s `reset` removed,
-      `latex.lua`'s removed, `sortkeys.lua`'s removed, and — varying form
-      rather than location — `latex.lua`'s `reset` left in place but with
-      `principal_ordinals` alone dropped from what it restores.
-- [ ] AC4: Every one of the 17 cells is load-bearing in AC1: for each, its own
-      removal from its module's `reset`, that cell alone and reverted after,
-      fails the AC1 comparison — seventeen one-cell probes, reported per cell.
+- [ ] AC1: Each of `examples/state-reuse.qmd`, `examples/state-reuse-plain.qmd`
+      and `examples/state-reuse-empty.qmd`, rendered to PDF behind the
+      test-only pollution filter, produces a captured `.tex` byte-identical
+      (`cmp -s`) to the captured `.tex` from the same fixture rendered without
+      that filter off the same tree, and a captured warning stream
+      byte-identical to that render's.
+- [ ] AC2: The same three fixtures rendered to HTML each produce a captured
+      page byte-identical (`cmp -s`) between the two renders, the emitted
+      preamble and index section included, and a captured warning stream
+      byte-identical between them.
+- [ ] AC3: The AC1 comparison fails, for at least one of the three fixtures,
+      under each of four planted defects, one at a time and each reverted
+      after: `marks.lua`'s `reset` removed, `latex.lua`'s removed,
+      `sortkeys.lua`'s removed, and — varying form rather than location —
+      `latex.lua`'s `reset` left in place but with `principal_ordinals` alone
+      dropped from what it restores.
+- [ ] AC4: Sixteen of the 17 cells are load-bearing: for each, its own removal
+      from its module's `reset`, that cell alone and reverted after, fails the
+      AC1 or the AC2 comparison for at least one of the three fixtures —
+      sixteen one-cell probes, reported per cell with the fixture, format and
+      artifact (`.tex`, HTML page or warning stream) that moved. The
+      seventeenth, `range_pair_found`, is exempt and stays in the `reset`:
+      `finish_ranges` assigns it wholesale on every document, so no earlier
+      document's value can survive into it; its probe is run and its passing
+      every comparison recorded as that.
 - [ ] AC5: `tests/run-tests.sh --self-test` exits 0 and prints its
       "All checks passed" line.
 
@@ -78,19 +93,26 @@ list. `html.lua`, `book.lua`, `marker.lua`, `passes.lua`, `levels.lua` and
       `FinishRanges` and `Span`, confirming it runs under Quarto's Lua and
       that state survives into the real document. If it does not, stop and
       return to plan rather than reaching for a source scan.
-- [ ] T2: Write `examples/state-reuse.qmd` — a fixture whose output consumes
-      every accumulator: a declared `sort=`, a key contested between a locator
-      mark and a cross-reference, a `mention="principal"` mark, a `see=`
-      naming nothing indexed, a four-level `entry=` that the LaTeX fold
-      clamps, and a paired `range=`.
+- [ ] T2: Write the three fixtures. `examples/state-reuse.qmd` — output
+      consuming every value-carrying accumulator: a declared `sort=`, a key
+      contested between a locator mark and a cross-reference, a
+      `mention="principal"` mark, a `see=` naming nothing indexed, a
+      four-level `entry=` that the LaTeX fold clamps, a paired `range=`, and a
+      `range=` value the filter refuses, which leaves a document position
+      nothing is planned at. `examples/state-reuse-plain.qmd` — one ordinary
+      mark and nothing else. `examples/state-reuse-empty.qmd` — an index
+      placement marker and no marks at all.
 - [ ] T3: Write the pollution filter as a test-only file under `tests/`,
       walking a synthetic document built to fill all 17 cells with values that
-      would collide with the fixture's (same sort keys, same contested key,
-      an earlier principal ordinal, an unclosed range).
-- [ ] T4: Add the two paired renders and the `cmp` comparisons to
-      `tests/run-tests.sh`, capturing each render's artifacts per M24's rule.
-      Both comparisons must DIFFER at this point — record that failing state
-      as the tests-first evidence before T5.
+      would collide with the fixtures' (same sort keys, same contested key,
+      an earlier principal ordinal, an unclosed range), silencing the
+      extension's own `warn` for the length of that drive so the compared
+      stream holds the fixture's warnings alone. It pollutes only when its
+      environment switch is set, so one fixture source serves both renders.
+- [ ] T4: Add the six paired renders and the `cmp` comparisons to
+      `tests/run-tests.sh`, capturing each render's artifacts and its warning
+      stream per M24's rule. Every comparison must DIFFER at this point —
+      record that failing state as the tests-first evidence before T5.
 - [ ] T5: Give `marks.lua`, `latex.lua` and `sortkeys.lua` a `reset` each,
       exported like their other entry points, restoring every cell that module
       owns to the value its declaration gives.
@@ -111,6 +133,9 @@ list. `html.lua`, `book.lua`, `marker.lua`, `passes.lua`, `levels.lua` and
 - 2026-08-23: plan gate ran the FULL criteria audit (user-facing tier) and it returned two findings. Fixed in drafting: the planted-defect criterion varied location only (which module's reset is removed), so AC3 gained a form axis — a reset left in place with one cell dropped from it. Taken to the gate: whether D-004 bars the byte comparison AC1 and AC2 rest on. The audit ran in-context rather than as a fresh-context [O] reader, this session being instructed not to spawn agents — so the reader that authored the criteria also audited them, which is the weaker arrangement.
 - 2026-08-23: plan gate chose a per-module `reset` over moving the 17 cells into one `state.lua` and over making each module a per-document factory, because M17 deliberately placed each cell in the module that owns it and both alternatives re-split that at every call site; falsified by a cell whose correctness needs construction rather than restoration — `range_at` is the near miss, already needing a mid-document reset.
 - 2026-08-23: plan gate chose a same-tree pollution-versus-clean byte comparison over extracting and comparing only the `\index` arguments and the HTML index section, because a leak reaching the preamble (`principal_emitted`) or the `.aux` registry (`principal_ordinals`) escapes the extraction entirely; falsified by the comparison proving brittle to something neither render's state differs in.
+- 2026-08-23: amendment (Substantive, user delegated the choice at the implement gate): AC1 and AC2 now compare each render's captured warning stream as well as its captured output, AC3 reads over the fixture set, AC4 binds sixteen cells and names `range_pair_found` exempt, Scope names three fixtures, and T2/T3/T4 follow. Cause: reading the cells' consumers showed `marked_paths`, `pending_xrefs`, `clamped_paths` and `range_found` are read by nothing but a `warn()`; `html_marks` only by the HTML path; `range_pair_found` is assigned wholesale by `finish_ranges` on every document; and a leaked `principal_emitted` or `marks_seen` moves nothing in a fixture that sets it itself.
+- 2026-08-23: amendment criteria audit ran the FULL mode (user-facing tier) over the amended AC1-AC4 and returned one finding: the warning-stream comparison is unsatisfiable while the pollution drive itself warns, fixed in T3 by silencing `warn` for that drive rather than in the criterion. Run in-context rather than by a fresh-context [O] reader, this session being instructed not to spawn agents — the same weaker arrangement the plan gate's audit recorded.
+- 2026-08-23: implement gate chose one fixture source with an environment switch on the pollution filter over sibling copies and over Quarto profiles, because two copies must be kept identical by hand and a later edit to one silently weakens the proof; falsified by an environment the harness cannot pass a variable through.
 - 2026-08-23: plan gate chose shipping the fix over holding the row and over a reachability-probe-only milestone, because Quarto runs one process per document so no probe would find a path, while DESIGN.md:169-176 records M17 having weakened the guarantee and one cell's value reaches an on-disk artifact; falsified by the harness of T1 proving unbuildable, which returns this to plan.
 
 ## Decisions

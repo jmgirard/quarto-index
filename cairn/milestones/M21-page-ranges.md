@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -187,6 +187,7 @@ Completed tasks are one line each; what each did, and why, is in the work log be
 - 2026-08-22: T12 (R4-F6/F7/F9) — the `.ind` reader splits on the printed shape, so a one-page span requires its two registrations to agree and match what prints where the disjunction let the closing go unread (a new plant discriminates); the book-order attribution checks read both renders; `valid_record` holds `paired` to the two ends this version knows, since `build_entry_tree` drops a locator on one of them.
 - 2026-08-22: T12 (R4-F2/F3/F4/F5/F8) — the stacked `store_write` comment, four fixtures' cross-chapter prose, six module comments and two suite comment blocks corrected to D-009-as-repaired; `pair_ranges`, `range_end` and `report_range` unexported (no consumer); `report_range`'s `scope` regains a second live value, "chapter". R4-F8 named no specific comments, so every test comment the narrowing falsified was swept rather than two picked.
 - 2026-08-22: T12 done. `tests/run-tests.sh` 249 checks, `--self-test` 368 (before: 249 and 367).
+- 2026-08-22: all tasks done again. Status set to review for round 5.
 
 ## Decisions
 

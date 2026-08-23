@@ -8383,7 +8383,14 @@ quarto render examples/range-nested.qmd --to html \
 # Removed, not overwritten: a stale `.ind` from a tree where the marks paired
 # differently would satisfy every clause below while this run emitted something
 # else entirely (the M15 destroyed-artifact lesson, in its stale-artifact half).
-rm -f examples/range-nested.ind examples/range-nested.ilg
+# The `.idx` and the `.aux` go with them, because both are INPUTS to the render
+# that follows and not merely its leavings: LaTeX appends to the `.idx` this
+# run writes, so a surviving one from a tree whose marks paired differently
+# would be compiled into this run's `.ind` beside the entries this tree emits;
+# and the `.aux` carries the principal-locator registry the preamble reads back
+# at `\begin{document}` (the M22 auxiliary-file lesson).
+rm -f examples/range-nested.ind examples/range-nested.ilg \
+      examples/range-nested.idx examples/range-nested.aux
 quarto render examples/range-nested.qmd --to pdf \
   > "$WORK/range-nested-pdf.log" 2>&1 \
   || { cat "$WORK/range-nested-pdf.log" >&2; fail "M23-AC1: examples/range-nested.qmd failed to render to PDF"; }
@@ -8403,8 +8410,15 @@ check_warning_count "$WORK/range-nested-pdf.log" '(W)' 0 \
 python3 tests/m23probes.py ind "$WORK/range-nested.ind" "$WORK/range-nested.ilg"
 HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
   python3 tests/m23probes.py html examples/range-nested.html
-run_scan range-position
 pass "M23-AC1: a range mark whose own content carries another mark pairs with its closing mark in both back-ends — one page range in the PDF index, one locator at the opening mark's anchor in the HTML one — while the plain range beside it keeps its own narrower span and the nested inner mark keeps its two separate locators"
+
+# AC2 is a fact about the SOURCE, not about either render, so it draws a pass
+# line of its own rather than printing under AC1's: run beneath that line, its
+# evidence would be reported as part of a criterion about what the artifacts
+# show, and a reader auditing which criterion each check belongs to would find
+# AC2 named by nothing.
+run_scan range-position
+pass "M23-AC2: the range-verdict store keys on document position — a source scan over the extension's whole Lua set holds finish_ranges and next_range free of any entry-key argument, puts the counter's one reset inside finish_ranges and each traversal's position call inside its own body with the two registered in order, and pins the guard's own two clauses"
 
 # ---------------------------------------------------------------------------
 # M22 — a stale `.aux` outliving its marks still builds.
@@ -9421,7 +9435,43 @@ filtersrc.sources()" >/dev/null 2>&1; then
       's{local range_pos = qi_marks\.range_position\(span\)}{local range_pos = qi_marks.range_position_close(span)}'
   probe_defect "the two traversals advancing the counter on conditions of their own" \
     m23_scan "$M23S/divergent"
-  pass "M23 self-test: the range-position scan fails on each kind of defect it names — the entry key back on the reading path, a pinned name renamed away, and the two traversals numbering range marks on guards of their own"
+  # (iv) the counter's reset relocated: out of `finish_ranges`, where it sits
+  #      BETWEEN the two traversals, and into `plan_range`, where it fires per
+  #      mark. Every name is still present and the source set still holds
+  #      exactly one reset — this is the defect a count over the whole set
+  #      cannot see, and the tree it passed at review round 1 plans every mark
+  #      at position 1 while the emitting pass numbers 1, 2, 3.
+  m23_splice reset \
+    modules/marks.lua \
+      's{  -- Back to the origin for the emitting pass, which numbers positions with\n  -- this same counter\.\n  range_at = 0\n}{}' \
+    modules/marks.lua \
+      's{^local function plan_range\(pos, value, key, context, blocked, principal\)$}{local function plan_range(pos, value, key, context, blocked, principal)\n  range_at = 0}m'
+  probe_defect "the counter's reset moved out of finish_ranges and fired per mark" \
+    m23_scan "$M23S/reset"
+  # (v) the collecting traversal's call moved into an earlier one. The source
+  #     set still holds exactly two calls to the guard, so the call-site COUNT
+  #     is unchanged; what changed is which traversal takes the position, and
+  #     the tree that passed at review round 1 files every verdict offset by
+  #     the whole mark count, so the emitting pass reads nil at all of them and
+  #     the render fails on an unmatched range opening.
+  m23_splice earlier \
+    modules/passes.lua \
+      's{^local function CollectSort\(span\)$}{local qi_spliced_pos = nil\n\nlocal function CollectSort(span)\n  qi_spliced_pos = qi_marks.range_position(span)}m' \
+    modules/passes.lua \
+      's{^  local pos = qi_marks\.range_position\(span\)$}{  local pos = qi_spliced_pos}m'
+  probe_defect "the collecting traversal's position taken in an earlier pass" \
+    m23_scan "$M23S/earlier"
+  # (vi) the position never reaching the store: `plan_range`'s SIGNATURE still
+  #      takes a position first, and its call site hands it a constant. The
+  #      reading side was pinned at both ends and the planning side at one,
+  #      which is what let this tree pass at review round 1 while every verdict
+  #      is filed at position 1.
+  m23_splice constant \
+    modules/passes.lua \
+      's{qi_marks\.plan_range\(pos, }{qi_marks.plan_range(1, }'
+  probe_defect "a constant handed to plan_range in the guard's position's place" \
+    m23_scan "$M23S/constant"
+  pass "M23 self-test: the range-position scan fails on each kind of defect it names — the entry key back on the reading path, a pinned name renamed away, the two traversals numbering range marks on guards of their own, the counter's reset fired per mark instead of between the traversals, the collecting position taken in an earlier traversal, and a constant handed to the store in that position's place"
 
   # --- M22: the stale-.aux probe and the no-gobblers-beside-the-subsystem
   #     reader, each shown failing on a defect of its own kind.

@@ -84,6 +84,18 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
       must fail it.
 - [x] T4: Comment and README touch-ups; remove the absorbed candidate row
       from the ROADMAP; work log.
+- [x] T5 (review round 1, F1-F3): the AC2 scan asserts WHERE, not only how
+      many — the reset inside `finish_ranges`'s own body, each traversal's
+      `range_position` call inside its own body and the two registered in
+      order, and `plan_range`'s call site handed the guard's position. Each of
+      the three trees review round 1 built and the scan exited 0 on becomes a
+      planted splice.
+- [x] T6 (review round 1, F4, F5, F10, F11): the `pair_ranges` and
+      `range_items` contract comments say what the branch made true; the
+      nested fixture's PDF render clears `.idx`/`.aux` as well as
+      `.ind`/`.ilg`; AC2's evidence prints under a `pass "M23-AC2"` of its own.
+- [x] T7 (review round 1, F7-F9, F12): the four follow-up findings land as
+      ROADMAP candidate rows or widenings of existing ones.
 
 ## Work log
 <!-- owner: any skill · append-only; one line per entry; absolute dates. -->
@@ -99,6 +111,9 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: T4 — the range-machinery header comment now says a verdict belongs to a mark by position; the `marks_seen` module-state candidate row widened for `range_verdicts`/`range_at`. Nothing to remove from the ROADMAP: the R3-F9 row was already absorbed into this milestone at plan time (9b9bf91). README and DESIGN checked and unchanged — the change is behavior-preserving and neither describes the keying. Verify run in flight; result on the next line.
 - 2026-08-22: T4 verify run landed — full suite `--self-test`, 391 checks, exit 0. Status to review.
 - 2026-08-22: review opened — draft PR #23; consistency gate green (`cairn_validate` all checks passed; no principle change, so no impact report; the `generic` profile names no toolchain checks). No CI configured on this repo. Three fresh-context reviewers running; acceptance evidence to follow.
+- 2026-08-22: T5 — the AC2 scan now reads a named function's own body, not only the concatenated set: `pin_in` holds the counter's one reset inside `finish_ranges`, each traversal's `range_position` call inside `CollectRanges` and `Span`, and `plan_range(pos, ` at its call site; a positional read of `index.lua` holds the two passes registered in that order with `FinishRanges` on the collecting one, and `plan_range`/`next_range` each gain a source-wide one-call-site pin. The three trees round 1 built and the scan exited 0 on are now planted splices (iv)-(vi), each failing on its own pin and no other.
+- 2026-08-22: T6 — `pair_ranges`'s contract comment names the `pos` field and says pairing never reads it; the `range_items` comment says what the list holds now that the refused-end placeholder went with the per-key queues; the nested fixture's PDF render clears `.idx` and `.aux` as well as `.ind`/`.ilg`, both being inputs to the render that follows; AC2's scan moved out from under AC1's pass line onto a `pass "M23-AC2"` of its own. One verify run covers T5 and T6 together — the suite reads the working tree, so editing `run-tests.sh` under a run in flight was not safe; full suite `--self-test` 395 checks, exit 0.
+- 2026-08-22: T7 — F7 is a new candidate row (the two passes number identically but can still derive differently; M23 changed the failure shape from a wrong page span to a failed render); F8 widened the `marks_seen` module-state row (`finish_ranges` resets the counter and leaves the four range tables); F9 and F12 widened the acceptance-suite-hardening row (the pending-attribute sweep runs before the M23 fixture renders; the bare `(W)` pin counts any filter's warnings). ROADMAP at 59 of 60 lines, 21,520 of 24,000 bytes.
 - 2026-08-22: review round 1 returned to in-progress — AC2 fails: `tests/scans/range-position.py` does not assert three parts of the property AC2 says it asserts (the reset's location in `finish_ranges`, which traversals hold the two call sites, and that `plan_range` is handed the guard's own position), each reproduced against a built tree that the scan exits 0 on. Twelve findings logged in the Review section; seven fix-now, four follow-up, one rejected. Defect returns on this milestone: 1.
 
 ## Decisions

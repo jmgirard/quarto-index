@@ -39,20 +39,20 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
 ## Acceptance criteria
 <!-- owner: plan · create/amend-via-gate; review reads, never reinterprets. -->
 
-- [ ] AC1: A LaTeX document without a principal mention builds at pdflatex
+- [x] AC1: A LaTeX document without a principal mention builds at pdflatex
       exit 0 against a surviving `.aux` carrying `\quartoindexprincipalpage`,
       `\quartoindexrangeat` and `\quartoindexrangeto` lines left by a
       previous render, with no `Undefined control sequence` in its log —
       asserted over two variants of a document whose surviving `.aux` carries
       all three of those names: one with every `mention=` and `range=`
       attribute removed, and one with every index mark removed.
-- [ ] AC2 (regression guard: true today; must stay true under this change): A
+- [x] AC2 (regression guard: true today; must stay true under this change): A
       document that carries a principal mention keeps the live subsystem — its
       rendered `.tex` header holds the subsystem's defining block and none of
       the gobbling definitions — and each of AC1's two variants instead holds
       all three `.aux`-borne names, every one defined as the empty-bodied
       `\providecommand*\<name>[2]{}` stand-in and none with a body.
-- [ ] AC3: The active profile's verify slot (`tests/run-tests.sh`) passes.
+- [x] AC3: The active profile's verify slot (`tests/run-tests.sh`) passes.
 
 ## Coverage
 <!-- owner: plan · create/amend-via-gate; review reads to fence evidence -->
@@ -125,6 +125,7 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
 - 2026-08-22: amendment return: AC2 — "each of AC1's two variants instead holds all three `.aux`-borne names, every one defined as the empty-bodied `\providecommand*\<name>[2]{}` stand-in and none with a body" — replacing the unsatisfiable "passing unmodified" clause; the same full audit found the first draft of this clause vacuously true of `origin/main` (a form restriction on appearances, satisfied by no appearance at all) and it was rewritten to require presence before the gate.
 - 2026-08-22: amendment gate held the criteria set at three rather than widening AC2 to the suite's zero-mark control, the audit's uncovered-domain finding routed to T6 instead; the gate also directed all nine round-1 fix-now findings into this pass (T5-T7). Coverage extended to the new tasks; AC3 unticked, its round-1 evidence stale under these changes.
 - 2026-08-22: T5-T7 done — the emphasis clause and the fragile `\newcommand*` fixture header removed with the criterion that needed them, both pdflatex passes read for the undefined control sequence, `m22_nogobblers` guarded against a missing file, the splice-out plant extended to the zero-marks branch, a bodied plant added showing the leak scan still trips after the `--standins` subtraction, the committed zero-mark control asserted to carry the three stand-ins and nothing else naming quartoindex, `grep -qE` for the BRE alternation, README's promise scoped to the `.aux` with the surviving-`.ind` hole stated and rowed, and the two comments the change made false corrected. Full suite `--self-test`: exit 0, 373 checks, 0 FAIL. Status review.
+- 2026-08-22: review round 2 — AC1, AC2 and AC3 all verified with fresh evidence (suite exit 0, 375 checks, 0 FAIL); consistency gate clean; the fan-out returned 14 findings from the diff lens and none from the other two, every one actioned at the gate and recorded in the Review section.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->
@@ -256,3 +257,110 @@ declares; the three names are exactly the set written through
 marks check; the two definition blocks are genuinely mutually exclusive; and
 no `DECISIONS.md` entry or `DESIGN.md` convention is contradicted, with
 `PRINCIPAL_GOBBLERS` exported in the bracket form M17 review F3 mandated.
+
+**Round 2 — 2026-08-22. Outcome: all three criteria verified; 14 findings, all
+actioned at the gate.**
+
+Default branch had not moved since round 1; tree clean; PR #22 still open as a
+draft. Evidence below is review's own run, not the implement phase's.
+
+### Acceptance-criterion evidence (amended AC1 and AC2)
+
+- **AC1 — verified.** Both variants of the parent whose surviving `.aux`
+  carries all three names build at pdflatex exit 0 beside it, and neither pass
+  of either render logs an undefined control sequence. Each pass is read
+  separately now, and the still-marked variant is required to produce an
+  `.idx` (and the mark-free one required not to), so the second pass cannot go
+  vacuous. The self-test shows the probe failing with the injection spliced
+  out, through both injection branches, and failing specifically on
+  `\quartoindexprincipalpage` rather than on any undefined control sequence.
+- **AC2 — verified.** The principal document's header holds the subsystem's
+  defining block and none of the stand-ins, the shared absence reader fails on
+  a stand-in planted ahead of it, and all three no-subsystem documents — the
+  two variants and the zero-mark control — carry exactly the three empty
+  stand-ins in their **preambles**, naming `quartoindex` nowhere else there.
+  The count pin is what evidences the criterion's "none with a body" clause.
+- **AC3 — verified.** `tests/run-tests.sh --self-test`: exit 0, 375 checks,
+  0 FAIL.
+
+### Consistency gate
+
+`cairn_validate` exit 0, 16 PASS, 7 advisories OK. No `DESIGN.md` principle
+changed, so no Sync Impact Report. The `generic` profile's `consistency-gate`
+slot names no toolchain checks.
+
+### Independent review — three fresh-context lenses
+
+[S] blame-history: no finding — it checked each of round 2's four removals
+against the commit that established what it touched (M20's `f76b586e`, M01's
+`22faf8e`, M02's `704d769`) and found each justified, including the
+`--standins` narrowing of M20-AC6. [S] prior-review: no finding — the GitHub
+probe again found no inline review comments in the repo, and it confirmed all
+thirteen round-1 findings fixed with none reintroduced or half-applied.
+
+[O] diff-bug returned 14 findings and confirmed all nine round-1 fixes correct
+by reading them. Every finding was actioned at this gate — none rejected, none
+deferred:
+
+- **R2-F1 (fixed).** README's new cross-reference pointed at
+  `#deleting-marks-never-breaks-the-next-render-on-a-leftover-aux`, which is a
+  bold lead-in inside a paragraph, not a heading — a dead anchor. Replaced
+  with a plain textual reference.
+- **R2-F2 (fixed).** The same sentence said the stand-ins are what "every
+  LaTeX-derived render carries", which is false and contradicts AC2's first
+  clause: a document with a principal mention carries the subsystem instead.
+  Narrowed to a render that does not emphasize a principal mention.
+- **R2-F3 (fixed).** AC2's "and none with a body" was evidenced for the zero-mark
+  control alone; the two variants were checked for presence only, so a
+  regression injecting a stand-in *and* a bodied definition of the same name
+  would have passed. One reader now applies presence and an exact count to all
+  three documents.
+- **R2-F4 (fixed).** Those greps read the whole file where AC2 says "header".
+  The `.aux` is read at `\begin{document}`, so a stand-in below it would
+  satisfy the grep and fail AC1's probe — the two checks could disagree about
+  one artifact. The reader now scopes to the preamble.
+- **R2-F5 (fixed).** The round-2 comment fix in `index.lua` said the LaTeX path
+  keeps "one preamble line"; it is three.
+- **R2-F6 (fixed).** The splice-in plant hardcoded `quartoindexprincipalpage`
+  where the reader it feeds uses `$PRINCIPALPAGE_CMD`; a rename would have made
+  the plant miss and be reported as the check failing to discriminate — the
+  exact costume-wearing defect `probe_plant` exists to prevent. Now the
+  constant.
+- **R2-F7 (fixed).** The self-test proved *an* undefined control sequence, not
+  one of the three names, so a spliced render broken for an unrelated reason
+  would have read as discriminating. The grep now reads pdflatex's following
+  line for the name.
+- **R2-F8 (fixed).** `[ -s probe.idx ]` would silently skip if the still-marked
+  variant ever stopped indexing, leaving the second-pass check passing over
+  nothing. The expectation is stated per variant instead of sniffed.
+- **R2-F9 (fixed).** Both self-test variants shared one run directory, so an
+  iteration that died before writing a log would have been judged on the
+  previous iteration's log, and its `.idx` carried over. One directory per
+  variant now.
+- **R2-F10 (fixed).** The two README pins were ad-hoc greps beside an
+  established normative claims-manifest convention, and the one sentence
+  round 2 added had no pin at all. Both moved into a `README_STALEAUX_CLAIMS`
+  array with the emissions sentence as a third row.
+- **R2-F11 (fixed).** `grep -cF` counts lines, not occurrences, so three
+  stand-ins on one line would have failed with a message reading "too many"
+  when the fault was the opposite. Now `grep -coF`.
+- **R2-F12 (fixed).** `examples/control.tex` was described as committed in a
+  comment and a pass message; `examples/*.tex` is gitignored and the AC3 render
+  writes it. Both corrected.
+- **R2-F13 (logged, substance covered elsewhere).** T6's text said the three
+  names would be named in AC3's forbidden-token loop; the check landed in the
+  M22 section instead, where the command constants and the shared reader are in
+  scope. The task text overstates what was done at the placement it names — the
+  substance is covered, and better placed, but recorded here rather than left
+  to read as done as written.
+- **R2-F14 (fixed).** `latex.lua`'s rewritten comment said "every LaTeX-derived
+  document this subsystem is not injected into"; under plain pandoc there is no
+  preamble channel and neither block is injected. Qualified.
+
+An extra `set -e` defect was caught while fixing R2-F8 and repaired before the
+run: a `[ … ] && fail` list makes the passing case the script's own non-zero
+exit status. Written as an `if`, with the reason in a comment.
+
+Post-fix re-verification is the 375-check run recorded under AC3 above; the two
+new checks it adds over round 2's 373 are the README claims manifest and the
+mark-free variant's no-`.idx` assertion.

@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-23 (at M26's merge: the filter's 17 shared accumulators now reset per document, so the `marks_seen` candidate row narrows to what no reset can guard — a cell added later that joins none. M21's row pruned to hold the five-terminal-row cap. LESSONS took M26's audit shape into M10's existing criteria-audit line rather than growing; no lesson retired. ROADMAP is at 23.4k of its 24k byte budget — the next pass compresses the widest candidate rows.)_
+_Last hygiene check: 2026-08-23 (status audit after M26's merge: all 16 mechanical checks pass, no advisory fired, both inboxes empty, tree clean, nothing in flight. Nothing changed since the merge stamp git now holds. ROADMAP is at 23.4k of its 24k byte budget and LESSONS at 18.4k of 20k; the next pass compresses the widest candidate rows.)_
 
 ## Milestones
 

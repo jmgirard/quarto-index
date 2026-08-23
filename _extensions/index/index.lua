@@ -132,15 +132,31 @@ local function Pandoc(doc)
     if book then
       return qi_book.html_book(doc, book, marker, taken)
     end
-    -- A document with no marks gets no section, exactly as one with no marks
-    -- gets no LaTeX preamble.
+    -- A document with no marks gets no section. (The LaTeX path keeps three
+    -- preamble lines even then — the gobbling stand-ins, whose reason is a
+    -- surviving `.aux` no HTML render has.)
     if qi_marks.marks_seen == 0 then
       return qi_marker.place_index(doc, nil)
     end
     return qi_marker.place_index(doc, qi_html.html_index_blocks(qi_marks.html_marks, taken))
   end
 
-  if qi_marks.marks_seen == 0 or not qi_core.is_latex_derived() then
+  if not qi_core.is_latex_derived() then
+    return qi_marker.place_index(doc, nil)
+  end
+  if qi_marks.marks_seen == 0 then
+    -- A document with no marks gets no preamble — except the gobbling
+    -- stand-ins (M22): its `.aux` may still carry the typeset-time
+    -- subsystem's lines from a render whose marks have since been deleted,
+    -- and reading those against no definition fails the render, which is
+    -- the IP2 break the subsystem exists to avoid. Injection needs Quarto;
+    -- plain pandoc has no preamble channel. Silent where the marked path
+    -- below warns about the same missing channel, and deliberately: that
+    -- warning is about marks whose index setup is being skipped, and this
+    -- document has no marks to report anything about.
+    if quarto and quarto.doc and quarto.doc.include_text then
+      quarto.doc.include_text("in-header", qi_core.PRINCIPAL_GOBBLERS)
+    end
     return qi_marker.place_index(doc, nil)
   end
 
@@ -271,6 +287,14 @@ local function Pandoc(doc)
     -- redefines; the subsystem that applies it follows as one block.
     quarto.doc.include_text("in-header", qi_core.PRINCIPAL_DEFINITION)
     quarto.doc.include_text("in-header", qi_core.PRINCIPAL_SUBSYSTEM)
+  else
+    -- Where the subsystem is not defined, its gobbling stand-ins are (M22):
+    -- this document's `.aux` may still carry the subsystem's lines from a
+    -- render whose principal marks have since been deleted. Exactly one of
+    -- the two blocks per document, never both — each defines with
+    -- `\providecommand*`, so whichever landed first would win, and a
+    -- gobbled subsystem emphasizes nothing while looking installed.
+    quarto.doc.include_text("in-header", qi_core.PRINCIPAL_GOBBLERS)
   end
   if qi_latex.xref_list_emitted then
     -- Same discipline: defined only in a document that has a contested key no

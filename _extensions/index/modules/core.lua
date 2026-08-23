@@ -146,9 +146,11 @@ local RANGE_ENDS = {
 -- failed render) and the next pass reads a `\quartoindexrangeat` nothing
 -- defines — `Undefined control sequence`, and the render is over. Four
 -- `\providecommand`s cost an unused document nothing, and a marked term must
--- never break a document (IP2), so they ride along (review F3). The same
+-- never break a document (IP2), so they ride along (M21 review F3). The same
 -- hazard at one remove — a document losing its LAST principal mention — is
--- M20's and is a ROADMAP candidate row.
+-- closed by PRINCIPAL_GOBBLERS below (M22): every LaTeX document that does
+-- not define this subsystem defines gobbling stand-ins for the three
+-- commands an `.aux` line can name.
 -- ---------------------------------------------------------------------------
 local LOCATOR_COMMAND = "quartoindexlocator"
 local REGISTER_COMMAND = "quartoindexregister"
@@ -292,6 +294,24 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   "\\makeatother",
 }, "\n")
 
+-- The stand-ins for the subsystem, in every LaTeX document the subsystem is
+-- NOT injected into. These are the three names a surviving `.aux` line can
+-- carry — the page command REGISTER_COMMAND writes, and the two range
+-- commands RANGEFROM_COMMAND and RANGEEND_COMMAND write — and a document
+-- that has just lost its last principal mention still reads such lines on
+-- its next pass. Undefined, each is `Undefined control sequence` and the
+-- render is over, which is the IP2 break the subsystem exists to avoid;
+-- gobbling both arguments, the line expands to nothing and the page prints
+-- as the ordinary locator it now is. `\providecommand*` like the subsystem's
+-- own definitions, and exactly one of the two blocks is injected per
+-- document, never both — injected together, whichever landed first would
+-- win, and a gobbled subsystem emphasizes nothing while looking installed.
+local PRINCIPAL_GOBBLERS = table.concat({
+  "\\providecommand*\\" .. PRINCIPALPAGE_COMMAND .. "[2]{}",
+  "\\providecommand*\\" .. RANGEAT_COMMAND .. "[2]{}",
+  "\\providecommand*\\" .. RANGETO_COMMAND .. "[2]{}",
+}, "\n")
+
 -- The class the HTML back-end puts on a principal locator link. Namespaced
 -- like the other pinned HTML identifiers, since an author's CSS may hold on
 -- to it. The link also carries Pandoc-level emphasis, so it reads as the
@@ -402,6 +422,7 @@ M["REGISTER_COMMAND"] = REGISTER_COMMAND
 M["PRINCIPALPAGE_COMMAND"] = PRINCIPALPAGE_COMMAND
 M["LOCATOR_ID_PREFIX"] = LOCATOR_ID_PREFIX
 M["PRINCIPAL_SUBSYSTEM"] = PRINCIPAL_SUBSYSTEM
+M["PRINCIPAL_GOBBLERS"] = PRINCIPAL_GOBBLERS
 M["HTML_PRINCIPAL_CLASS"] = HTML_PRINCIPAL_CLASS
 M["LATEX_LITERAL"] = LATEX_LITERAL
 M["warn"] = warn

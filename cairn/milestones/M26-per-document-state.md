@@ -119,7 +119,7 @@ mutable state and are untouched.
 - [x] T6: Wire the resets: `index.lua`'s returned pass list gains a leading
       `{ Pandoc = ... }` table, which Pandoc runs before any element function
       because that table has none. Confirm both comparisons now pass.
-- [ ] T7: The planted-defect run — AC3's four probes, then AC4's seventeen
+- [x] T7: The planted-defect run — AC3's four probes, then AC4's seventeen
       one-cell probes. Record each cell's verdict in the Decisions section.
 - [ ] T8: Rewrite DESIGN.md's Architecture paragraph at :169-176, which says
       the accumulators are "still module-level" and not per-document; add the
@@ -134,6 +134,7 @@ mutable state and are untouched.
 - 2026-08-23: plan gate chose a per-module `reset` over moving the 17 cells into one `state.lua` and over making each module a per-document factory, because M17 deliberately placed each cell in the module that owns it and both alternatives re-split that at every call site; falsified by a cell whose correctness needs construction rather than restoration — `range_at` is the near miss, already needing a mid-document reset.
 - 2026-08-23: plan gate chose a same-tree pollution-versus-clean byte comparison over extracting and comparing only the `\index` arguments and the HTML index section, because a leak reaching the preamble (`principal_emitted`) or the `.aux` registry (`principal_ordinals`) escapes the extraction entirely; falsified by the comparison proving brittle to something neither render's state differs in.
 - 2026-08-23: T1 — the harness holds. A test-only filter listed AFTER `index` finds all nine extension modules in `package.loaded` at its own chunk-load time, which Quarto runs before any pass executes, so a value written there reaches the fixture's own marks: the same fixture emitted `\index{ZZZ@synthetic|quartoindexlocator{qi1}` polluted against `\index{synthetic}` clean. A synthetic `pandoc.Pandoc` drives through CollectSort, CollectKeys, CollectRanges/FinishRanges and Span without error. `require` from `tests/` was the wrong door and is not used: its cache key differs from the extension's absolute one, so it returns a SECOND copy of each module. The first reading of that probe as a success was a stale `.tex` left by an earlier render, found by removing the artifact and checking the exit code.
+- 2026-08-23: T7 — `tests/stateprobe.py` runs the AC3 and AC4 probes; all four AC3 probes and all sixteen non-exempt cells move a comparison, `range_pair_found` moves none as its exemption predicts, and the per-cell verdicts are in the Decisions section. The driver is committed rather than run out of band so a fresh review session can reproduce it. Suite after the run: 275 checks, all passing.
 - 2026-08-23: T5/T6 — `marks.lua`, `latex.lua` and `sortkeys.lua` each own a `reset`, called by a new `passes.Reset` that `index.lua` returns as the pass list's leading `{ Pandoc = ... }`. Tables are emptied in place through a new `qi_core.empty`, because every accumulator is exported by reference and a rebound local would restore this module's view alone. Suite: 275 checks, all passing, all twelve M26 comparisons among them.
 - 2026-08-23: T2/T3/T4 — the three fixtures, `tests/state-pollute.lua` and the six paired renders are in the suite, and the suite now FAILS as it must before the fix: `run-tests.sh` reaches M26's first comparison after 255 passing checks and reports `the latex output of state-reuse depends on what ran before it in the same Lua state`. Out of band, all six comparisons differ (output and warnings, three fixtures x two formats); the leaks the rich fixture's `.tex` shows are `Held` contested, `Deep` filed under `dsort`, `Pivot` at ordinal qi2 rather than qi1, and the paired range emitted as two plain locators. `examples/state-reuse.qmd` joined M14's dangling-count manifest (one report) and the rich fixture's two LaTeX captures joined M15's contested-key map.
 - 2026-08-23: the first draft of the M26 comparison printed its diff through `diff | head`, whose non-zero exit under `set -e` killed the run before its own FAIL line — found by there being no FAIL line in the log. Both failure branches now absorb the diff's exit.
@@ -143,5 +144,59 @@ mutable state and are untouched.
 - 2026-08-23: plan gate chose shipping the fix over holding the row and over a reachability-probe-only milestone, because Quarto runs one process per document so no probe would find a path, while DESIGN.md:169-176 records M17 having weakened the guarantee and one cell's value reaches an on-disk artifact; falsified by the harness of T1 proving unbuildable, which returns this to plan.
 
 ## Decisions
+
+### 2026-08-23: what each probe moved (T7, AC3 and AC4)
+
+`python3 tests/stateprobe.py` removes one reset, or one cell from one reset,
+and requires the paired-render comparison to fail. It stops at the first
+fixture and format that moves, and the unplanted tree is required to pass all
+six pairs first. Run at commit-time on this branch; every probe below is one
+line of that run.
+
+The four AC3 probes, three varying location and the fourth varying form:
+`marks.lua`'s whole reset, `latex.lua`'s and `sortkeys.lua`'s each move the
+rich fixture's LaTeX output, and so does `latex.lua`'s reset left in place with
+`principal_ordinals` alone dropped from it.
+
+The seventeen AC4 probes, cell by cell, naming the fixture, format and artifact
+that moved:
+
+| Cell | Moved |
+|---|---|
+| `marks_seen` | state-reuse-empty / latex / output |
+| `html_marks` | state-reuse / html / output |
+| `marked_paths` | state-reuse / latex / warnings |
+| `pending_xrefs` | state-reuse / latex / warnings |
+| `clamped_paths` | state-reuse / latex / warnings |
+| `range_items` | state-reuse / latex / output |
+| `range_found` | state-reuse / latex / warnings |
+| `range_pair_found` | nothing — exempt, see below |
+| `range_verdicts` | state-reuse / latex / output |
+| `range_at` | state-reuse / latex / output |
+| `contested_keys` | state-reuse / latex / output |
+| `principal_keys` | state-reuse / latex / output |
+| `principal_ordinals` | state-reuse / latex / output |
+| `xref_list_emitted` | state-reuse / latex / output |
+| `xref_both_emitted` | state-reuse / latex / output |
+| `principal_emitted` | state-reuse-plain / latex / output |
+| `sort_keys` | state-reuse / latex / output |
+
+`range_pair_found` moves nothing, which is the criterion's own expectation:
+`finish_ranges` assigns it wholesale on every document, so no earlier
+document's findings can survive into one. It stays in the reset all the same —
+a rule with an exception nothing enforces is not a rule — and the probe runs on
+it, its passing being the recorded evidence for the claim.
+
+Three cells needed the fixture set to be what it is. `marks_seen` and
+`principal_emitted` move nothing in a document that sets them itself, which is
+why the one-mark and mark-free fixtures exist; `html_marks` is read on the HTML
+path alone. Five more — `marked_paths`, `pending_xrefs`, `clamped_paths`,
+`range_found` and `range_pair_found` — are read by nothing but a report, which
+is why the warning stream is compared alongside the output.
+
+`range_verdicts` needed one further correction found here: the synthetic
+document's first range mark was an opening nothing closed, which plans the
+verdict `false`, and the emitting pass reads `false` as no verdict at all. A
+range that actually pairs now holds that position.
 
 ## Review

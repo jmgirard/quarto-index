@@ -42,8 +42,15 @@ end
 -- which cell its value is aimed at; a mark whose value matched the fixture's
 -- would leave that cell's probe unable to tell a reset from its absence.
 local marks = {
-  -- range_verdicts: plants a verdict at the document's FIRST range position,
-  -- which the rich fixture's refused range mark occupies with nothing planned.
+  -- range_verdicts: a range that PAIRS, so that the verdict left at the
+  -- document's first range position is one the emitting pass will act on. The
+  -- rich fixture's refused range mark holds that position with nothing planned
+  -- at it, and reads whatever is there. An unpaired opening would not do: it
+  -- plans the verdict `false`, which the emitting pass reads as no verdict.
+  mark("Paired", { range = "open" }),
+  mark("Paired", { range = "close" }),
+  -- range_items: an opening nothing closes, so the pairing the next document
+  -- runs has a synthetic mark in it and reports on one.
   mark("Refused", { range = "open" }),
   -- range_found: an end the filter refuses, held as a finding and reported by
   -- whichever document draws the range reports next.

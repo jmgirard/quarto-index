@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-23 (at M25's merge: the suite's zero-warning controls now read this extension's own 48 warn() messages, anchored to the warning prefix, instead of any `(W)` line, and twelve source-reading scans require exactly one match where four took the first — with a duplicate-definition plant proving that clause discriminates, which the review found nothing else did. The acceptance-suite-hardening row was corrected: three items it listed as absorbed by M25 were not, and the clauses M25 did close (M16 F3, M16 F8, M23 F12) are struck; two new items from this review's fan-out are on it. M20's row pruned to hold the five-terminal-row cap. LESSONS folded three M25 lessons into its consolidated discrimination line rather than growing; no lesson retired.)_
+_Last hygiene check: 2026-08-23 (at M26's merge: the filter's 17 shared accumulators now reset per document, so the `marks_seen` candidate row narrows to what no reset can guard — a cell added later that joins none. M21's row pruned to hold the five-terminal-row cap. LESSONS took M26's audit shape into M10's existing criteria-audit line rather than growing; no lesson retired. ROADMAP is at 23.4k of its 24k byte budget — the next pass compresses the widest candidate rows.)_
 
 ## Milestones
 
@@ -9,10 +9,9 @@ _Last hygiene check: 2026-08-23 (at M25's merge: the suite's zero-warning contro
 |---|---|---|---|---|---|
 | M25 | A check that cannot hold its promise is retired, not widened | done | M24 | normal | milestones/archive/M25-scan-disposition.md |
 | M24 | Every check reads the copy, never the working tree | done | — | normal | milestones/archive/M24-captured-artifacts.md |
-| M26 | A document's accumulators start empty, whoever ran before it | review | — | normal | milestones/M26-per-document-state.md |
+| M26 | A document's accumulators start empty, whoever ran before it | done | — | normal | milestones/archive/M26-per-document-state.md |
 | M23 | A range verdict follows its mark's position, not its text | done | — | normal | milestones/archive/M23-positional-range-verdicts.md |
 | M22 | A stale `.aux` outliving its marks still builds | done | — | normal | milestones/archive/M22-stale-aux-builds.md |
-| M21 | A discussion spanning pages prints as one page range | done | M20 | normal | milestones/archive/M21-page-ranges.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

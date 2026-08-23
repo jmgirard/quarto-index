@@ -9,7 +9,7 @@
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Principles touched:** IP2   <!-- owner: plan · create/amend-via-gate -->
-- **Branch/PR:** m22-stale-aux-builds   <!-- owner: implement (branch) / review (PR URL) · create -->
+- **Branch/PR:** m22-stale-aux-builds · https://github.com/jmgirard/quarto-index/pull/22   <!-- owner: implement (branch) / review (PR URL) · create -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -96,6 +96,7 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
 - 2026-08-22: T1 probe verified red on exactly the three undefined `.aux`-borne commands; T2 gobblers landed and turned it green standalone; T3 discrimination checks and T4 README paragraph written; full-suite `--self-test` verify in flight, tasks unticked until it is clean (checkpoint, half-done). T1 refinement: the probe authors its own parent fixture in `$WORK` because no committed fixture's `.aux` carries all three names in one file.
 - 2026-08-22: first full run caught M20-AC6's leak check firing on the stand-ins — its bare-name needle was a proxy for "the subsystem leaked"; the check now subtracts exactly the empty-bodied stand-in form of the three named `.aux`-borne commands (`--standins`) before the leak scan, and its planted leak (an empty-bodied `\quartoindexlocator`, outside the trio) still trips it.
 - 2026-08-22: full suite `--self-test` green — 372 checks, 0 FAIL — with the M22 section's probe, absence reader and both discrimination plants passing; T1–T4 ticked, status review.
+- 2026-08-22: review opened — merged the default branch's status-mirror commit into the branch, pushed, draft PR #22; consistency gate clean (cairn_validate all-pass, no DESIGN principle touched, generic profile names no toolchain checks); full-suite `--self-test` verify and the three-lens fan-out in flight (checkpoint, review half-done).
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

@@ -120,8 +120,8 @@ FILTER_SOURCE_COUNT=$(printf '%s\n' "$FILTER_SOURCES" | wc -l | tr -d ' ')
 # Capturing a render's artifacts (M24). Quarto writes beside the source, so a
 # `.tex` under examples/ is whatever the LAST render of that document left
 # there — including one from a previous run, on a branch since changed, or of a
-# different format entirely. A check reading "$CAPTURE_ROOT/demo-latex/demo.tex" is therefore
-# asserting nothing about the render it sits under. This helper is called at
+# different format entirely. A check reading that path is therefore asserting
+# nothing about the render it sits under. This helper is called at
 # every render site and copies that render's artifacts into a directory of
 # their own under $WORK; every check then reads the copy, named by the render
 # that produced it.
@@ -150,7 +150,7 @@ CAPTURE_EXTS="html tex md pdf epub aux idx ilg ind log"
 capture() {
   local project=0
   if [ "${1:-}" = "--project" ]; then project=1; shift; fi
-  local src="$1" fmt="$2" slug base stem srcdir dir f found=0
+  local src="$1" fmt="$2" slug base stem srcdir dir f ext found=0
   base=$(basename "$src")
   stem="${base%.qmd}"
   if [ "$project" = "1" ]; then srcdir="$src"; else srcdir=$(dirname "$src"); fi
@@ -1527,8 +1527,8 @@ quarto render examples/demo.qmd --to latex > "$WORK/demo-latex.log" 2>&1 \
 capture examples/demo.qmd latex "demo-latex"
 [ -s "$CAPTURE_ROOT/demo-latex/demo.tex" ] || fail "AC1: $CAPTURE_ROOT/demo-latex/demo.tex is empty"
 check_entry_manifest "$CAPTURE_ROOT/demo-latex/demo.tex" "$ALL_DEMO_ENTRIES" "AC1/AC4"
-# Keep a copy: the later PDF render consumes "$CAPTURE_ROOT/demo-latex/demo.tex," and the AC5
-# self-test plants its defects in this snapshot.
+# Keep a copy: the AC5 self-test plants its defects in this snapshot, so the
+# capture every other check reads is never mutated under them.
 cp "$CAPTURE_ROOT/demo-latex/demo.tex" "$WORK/demo-latex.tex"
 
 # Folding deeper levels is defensible under IP2 only because it warns; assert
@@ -1952,9 +1952,9 @@ for fmt in latex html; do
     || { tail -20 "$WORK/conflict-$fmt.log" >&2; fail "M02-AC5: xref-conflict.qmd failed to render to $fmt"; }
   capture examples/xref-conflict.qmd $fmt "conflict-$fmt"
 done
-# The emitted LaTeX, kept: the PDF render in the M15 section below removes
-# "$CAPTURE_ROOT/conflict-latex/xref-conflict.tex," and two checks there read the argument this
-# fixture emits rather than the index it prints.
+# The emitted LaTeX, kept as a snapshot: two checks in the M15 section below
+# read the argument this fixture emits rather than the index it prints, and
+# read it here rather than from the capture the emission sweep also reads.
 cp "$CAPTURE_ROOT/conflict-latex/xref-conflict.tex" "$WORK/conflict-latex.tex"
 # M15 replaced this report's text: the emission no longer risks the failed
 # render the old wording warned of, so the report now says what the author's
@@ -10105,7 +10105,11 @@ ALLOWED = {'fold-xref-latex/fold-xref.tex': {FOLD_ONLY},
            'range-latex/range.tex': {FOLD_ONLY},
            'conflict-latex/xref-conflict.tex': set(MARKS)}
 cap = os.environ['CAP']
-found = sorted(glob.glob(os.path.join(cap, '*', '*.tex')))
+# At ANY depth, not one directory down: a project render's capture holds its
+# output tree, and the `.tex` a book emits sits inside it. The pass line below
+# says "none of the captured LaTeX artifacts", so the domain has to be all of
+# them or the sentence claims a set it never opened.
+found = sorted(glob.glob(os.path.join(cap, '**', '*.tex'), recursive=True))
 rel = {os.path.relpath(p, cap): p for p in found}
 absent = sorted(set(ALLOWED) - set(rel))
 if absent:

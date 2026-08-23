@@ -257,6 +257,12 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   -- registration leaves behind: that macro is set by every principal mark of
   -- every key, and depending on it would make this line's meaning depend on
   -- what ran before it.
+  -- The bare-page registration this line ALSO leaves (via the page command)
+  -- is live for the whole run; it is what makes a same-page range print
+  -- emphasized, because makeindex folds a same-page, same-encapsulator pair
+  -- into the single page rather than a `4--4`. Nothing else may print that
+  -- key as a bare locator on this page — makeindex's fold is what upholds
+  -- that today, and this comment is where the assumption is recorded.
   "\\providecommand*\\" .. RANGEAT_COMMAND ..
     "[2]{\\" .. PRINCIPALPAGE_COMMAND .. "{#1}{#2}" ..
     "\\def\\qi@key{#2}\\@onelevel@sanitize\\qi@key" ..

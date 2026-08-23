@@ -104,7 +104,17 @@ local function Pandoc(doc)
   -- so the pairing reports are always this process's to draw; only the WORD
   -- naming the scope differs, so an author is sent looking in the right set.
   -- The book's cross-chapter report is a separate message qi_book owns.
-  qi_marks.report_ranges(book and "chapter" or "document")
+  -- A merged (non-HTML) book render is one process spanning every chapter, so
+  -- its scope word is "book" — "document" would send an author looking inside
+  -- the one chapter file they are editing. The degraded HTML book path keeps
+  -- "document": that page was indexed on its own, and its own text is the set.
+  local range_scope = "document"
+  if book then
+    range_scope = "chapter"
+  elseif doc.meta.book ~= nil and not qi_core.is_html() then
+    range_scope = "book"
+  end
+  qi_marks.report_ranges(range_scope)
 
   if qi_core.is_html() then
     -- Anchors are assigned before either path decides what to place: they are

@@ -377,9 +377,12 @@ end
 -- closed, whose closing a later chapter refused as never opened — the one
 -- shape whose cause is chapter-crossing. A mark with no counterpart anywhere
 -- is a one-chapter fault its own chapter's pairing reports already state, and
--- re-reporting it here named the wrong cause. Matched exactly as
--- `pair_ranges` matches — in book order, first open to first close per key —
--- so what the book calls a would-be pair is what one process would have paired.
+-- re-reporting it here named the wrong cause. Matched in book order, first
+-- open to first close per key, over the UNPAIRED ends alone — deliberately
+-- not what one merged process would pair, since a merged process would see
+-- the in-chapter pairs too and pair across them; under D-009 the chapter
+-- verdicts are primary, and this walk only asks which leftovers face each
+-- other across a chapter boundary.
 --
 -- Drawn by the last chapter in book order alone (its caller decides), for the same reason
 -- the dangling-target report is: it is the only chapter that has seen every other one's

@@ -8308,7 +8308,7 @@ pass "M21-AC4: each of the five misuse shapes draws exactly one warning naming i
 # the property is that the operator is not EMITTED, and a PDF render would
 # prove it only for the pagination this run happens to produce.
 python3 tests/m21probes.py misuse "$WORK/range-misuse-latex.tex"
-pass "M21-AC4: no refused range reaches the index tool as a range — the emitted LaTeX carries exactly one opening and one closing, both the well-formed control's, which is what keeps an unpairable range from failing the render"
+pass "M21-AC4: no refused range reaches the index tool as a range — the emitted LaTeX carries exactly the two pairs that pair, the well-formed control's and hydra's first opening with its closing, which is what keeps an unpairable range from failing the render"
 
 # M21-AC5 — the cross-chapter range. The href and the locator count are the
 # BOOK_HTML_INDEX manifest's `Ranged Term` row, checked above. A chapter is the

@@ -508,3 +508,42 @@ clearing) stands, and the GitHub comment probe found no threads. The blame-histo
 reported no findings: every behavior change traces to round 4's findings and D-009,
 each paired with a test assertion; the tightened `paired` validation accepts every value
 the code can write and the removed exports had no external caller.
+
+The diff-bug lens reported nine ranked findings. Triage:
+
+- F1 (book matcher comment) — fixed: `report_book_ranges`' comment claimed the walk
+  matches "exactly as `pair_ranges` matches" one merged process; it matches over the
+  UNPAIRED ends alone, which diverges from merged-process semantics when a chapter-internal
+  pair sits between two leftovers of one key. The behavior stands — the report's message is
+  true of every mark it names, and under D-009 the chapter verdicts are primary — the
+  comment now says so instead of overclaiming.
+- F4 (pass message) — fixed: the AC4 `pass` line claimed the misuse fixture emits one
+  range pair where the check holds two (`hydra`'s first opening pairs; the T9 F5 log
+  records the same correction the message missed).
+- F5 (README refusal lead-in) — fixed: "the first three" left the unrecognized-value
+  shape with no stated outcome; now "the first three and the last".
+- F6 (PDF-book scope word) — fixed: a merged book render told an author "never closed in
+  this document"; it now says "book" (the degraded HTML book path keeps "document" —
+  that page indexed on its own). No fixture exercises the word — every book fixture's PDF
+  pairs its ranges — recorded on the acceptance-suite hardening candidate row.
+- F8 (unstated invariant) — fixed as the reviewer proposed: the same-page emphasis rests
+  on makeindex folding a same-page same-encapsulator pair into one page; the assumption
+  is now recorded beside the registration command in `core.lua`.
+- F9 (D-009 sentence) — fixed by supersession: D-010 annotates D-009, narrowing "indexes
+  as though the attribute were absent" to marks in different chapters.
+- F2 (nested-mark pass desync) — rejected here: R3-F9's standing candidate row, parked at
+  round 3 on a split verdict; nothing new this round.
+- F3 (no store-version bump) — rejected: T5's recorded plan choice (the M14 lesson); a
+  stale record degrades to pre-range behavior until its chapter re-renders, the trade the
+  lesson chose.
+- F7 (stale-`.aux` after losing the last principal) — rejected as already recorded: the
+  existing candidate row states exactly this case, the block-as-a-whole exposure included.
+
+None of the nine demonstrates an acceptance criterion failing or a load-bearing defect in
+what the extension does for its users — F1's behavior is correct with a wrong comment, and
+the rest are prose, a message, a scope word, and two standing candidate rows — so no
+return; the six fixes landed at the gate and the suite was re-run fresh below.
+
+Post-fix run: `tests/run-tests.sh` 249 checks and `--self-test` 368, both exit 0, on the
+tree carrying the six gate fixes.
+

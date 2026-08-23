@@ -452,7 +452,7 @@ its own range, or accept that the range covers it.
 
 **Five things the extension refuses.** Each is reported, and in each the mark
 indexes exactly as it would with no `range=` written — which for the first three
-means an ordinary page number, and for the mark carrying a cross-reference means
+and the last means an ordinary page number, and for the mark carrying a cross-reference means
 the cross-reference, which takes a locator's place either way. The reason a
 refused range never reaches the index tool is that `makeindex` writes a
 transcript warning for a range it cannot pair, and Quarto fails the whole render

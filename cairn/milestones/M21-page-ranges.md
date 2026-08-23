@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** planned
+- **Status:** blocked
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -120,6 +120,7 @@ alone, and the range is reported as unpaired there rather than silently spanning
 - 2026-08-21: plan gate chose documenting the folded-in ordinary mark over warning about it because the extension knows no page numbers and the warning would fire on marks outside the range as well; falsified by evidence that authors hit the silent loss and cannot find it from the README.
 - 2026-08-21: plan gate chose shipping the principal role first (M20) over ranges first because the arbitration over makeindex's single encapsulation channel is shared and the smaller half builds it; falsified by evidence that the arbitration is range-shaped and had to be rewritten for M20's simpler case.
 - 2026-08-21: criteria audit ran in full mode (user-facing tier) and returned findings on the drafted AC2, AC3, AC5, AC6 and the README criterion; the role's end was named, the closing-mark promise was narrowed off the whole page body, the cross-chapter range was reconciled against the unmatched-opening report, the residue clause was reworded to include the new attribute, and the README criterion was descoped to T8.
+- 2026-08-22: status blocked on branch `m21-page-ranges` after four review rounds; the blocker, the full work log and the resume path live on that branch and reach the default branch at merge. Mirrored here so the default branch does not read the milestone as workable.
 
 ## Decisions
 

@@ -229,6 +229,10 @@ end
 -- per mark and `pair_ranges` once over the process's marks; what a book adds
 -- is only `qi_book`'s report naming the cross-chapter would-be pairs no
 -- chapter can see whole.
+--
+-- WHICH mark a verdict belongs to is settled by document position and never by
+-- the entry key, because the collecting pass and the emitting pass do not read
+-- the same text — see `range_position` and the store below.
 -- ---------------------------------------------------------------------------
 
 -- One range finding, reported. Every message is written at its own `warn()`

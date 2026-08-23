@@ -96,9 +96,23 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: T1 — `examples/range-nested.qmd` (an `entry=`-less range mark carrying another mark on both ends, overlapping a plain range of another term with a different span width), `tests/m23probes.py` reading the `.ind`/`.ilg` and the HTML index, and seven self-test plants. Green today: the nested range prints `1--4`, the plain one `2--3`, the inner mark two pages, makeindex 0 warnings. Full suite `--self-test` 386 checks, exit 0. Two helpers factored out of `m21probes._html` rather than copied (M16).
 - 2026-08-22: T2 — the per-key `range_plan`/`range_cursor` queues are gone; `finish_ranges` files each verdict under its mark's document position and `next_range(pos)` reads it back. Both traversals take that position through one function, `marks.range_position(span)`, which is the only advance of the counter and holds the guard (index class + `range=`) as one piece of code rather than one condition written twice; `finish_ranges` resets the counter between the passes. Full suite `--self-test` 386 checks, exit 0 — the same count as before the change.
 - 2026-08-22: T3 — `tests/scans/range-position.py`, over the whole Lua source set through `filtersrc` (a superset of the two files AC2 names, so a pinned name that leaves them is an absence it fails on). Registered in `run_scan`, in `tests/plantdefect.py`, and in the M16-AC3 count, now 13. Three splices show it discriminating: the entry key back on `next_range` and its call site, `finish_ranges` renamed away, and the emitting pass given a second guard advancing the same counter on its own condition. Full suite `--self-test` 391 checks, exit 0.
+- 2026-08-22: T4 — the range-machinery header comment now says a verdict belongs to a mark by position; the `marks_seen` module-state candidate row widened for `range_verdicts`/`range_at`. Nothing to remove from the ROADMAP: the R3-F9 row was already absorbed into this milestone at plan time (9b9bf91). README and DESIGN checked and unchanged — the change is behavior-preserving and neither describes the keying. Verify run in flight; result on the next line.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->
+
+### The two functions M23-AC2 names (2026-08-22)
+
+AC2 requires "the verdict-planning and verdict-reading functions" to take no
+entry-key argument. Three functions were candidates: `plan_range`, which
+records one mark; `finish_ranges`, which pairs the marks and builds the verdict
+store; and `next_range`, which reads one verdict back. This milestone reads the
+two as `finish_ranges` and `next_range` — verdicts are planned where they are
+computed, not where a mark is recorded — and `plan_range` keeps the entry key.
+It has to: an opening pairs with the next closing of the SAME entry, which
+README states normatively and the suite pins, and no other value expresses it.
+What the key stopped doing is standing in for a mark's identity between the two
+passes, which is the position's job now and is what AC2 is about.
 
 ## Review
 <!-- owner: review · exclusive -->

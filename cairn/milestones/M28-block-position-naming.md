@@ -109,6 +109,7 @@ to that residue rather than struck, and the residue stays a Known issue.
 - 2026-08-23: T6 — D-014 appended annotating D-006; KI21 narrowed to the un-probed injection kinds and marked narrowed M28; KI25 struck. No candidate row pointed at either label — the block-position row was narrowed to its KI23 remainder at plan time — so no row needed rewriting. cairn_validate clean.
 
 - 2026-08-23: all tasks done; `tests/run-tests.sh` passes (286 checks) and `tests/run-tests.sh --self-test` passes (420 checks). Status set to review.
+- 2026-08-23: review — three fresh-context lenses ran; blame-history and prior-review record returned no findings, diff-bug returned thirteen. Six triaged fix-now, three to a follow-up row, three rejected with reason, one (F1) already carried by KI22/M29. No finding meets the return floor.
 - 2026-08-23: review — PR #28 opened as a draft; all five criteria executed with fresh evidence and ticked; consistency gate clean (cairn_validate exit 0, no principle change, generic profile names no toolchain checks). Fresh-context review fan-out spawned; findings pending.
 
 ## Decisions
@@ -166,6 +167,116 @@ this branch, plus reads of the two comment sites.
 
 ### Findings
 
-_Pending: the three fresh-context reviewers ([O] diff-bug, [S] blame-history,
-[S] prior-review record) are still running; their ranked findings and triage
-land here before the approval gate._
+Three fresh-context reviewers ran against distinct evidence bases.
+
+- **[S] blame-history — no findings.** Judged the modified lines against the
+  intent of the code they touch. Reports the diff changes only string literals
+  and comments; `#later`, `resolve_markers` and `strip_nested_markers` control
+  flow untouched; `WARN_MARKER_DUP` and the M12 partition template moved with
+  the text they key off; the M10-era one-literal `warn` form preserved.
+- **[S] prior-review record — no findings.** Archived `## Review` sections are
+  the primary surface here; the GitHub inline-comment probe found no real
+  threads, so PR threads were not walked. Reports the diff is the on-topic
+  resolution of M12 review F6 (KI21) and M19 review F1 (KI25), with no
+  regression of a point M12/M17/M20/M21 review raised on these files.
+- **[O] diff-bug — thirteen findings**, ranked below with their disposition.
+
+**F1 (rejected — already recorded as KI22, and M29 is the milestone for it).**
+"`_extensions/index/modules/marker.lua:31` — the new clause asserts a sequence
+that is wrong in a book. `POSITION_BASIS` says the position is 'counted over the
+document as this filter received it', but in a book render the filter receives
+one *chapter*, and the emptied-place report names no file (that is KI22,
+deferred to M29)." Verified: the clause is literally true of a book chapter —
+the filter did receive that chapter as its document — and the reader's inability
+to tell WHICH file is exactly KI22, which this milestone's Scope Out routes to
+M29. No new row; the existing Known issue and planned milestone carry it.
+
+**F2 (follow-up — suite-hardening candidate row).** "`tests/m28pos.py:35-40` —
+the 'author position' number is pinned to nothing. Only `reported` is matched
+against the render; `author` is checked solely for `!= reported` and `!= got`.
+Edit the manifest to say `author position: 2` and the whole suite still passes,
+while AC1's claim is evidenced by nothing but a comment. Counting the host
+file's own top-level blocks is mechanically checkable and is not done."
+Confirmed by reading `tests/m28pos.py`. AC1 itself holds — the host file's three
+top-level blocks and the reported 5 were read directly at review — but the
+check is weaker than the claim it certifies.
+
+**F3 (fix now).** "`tests/run-tests.sh:239-247` — the distinctness scan does not
+get the one key M28 actually reworded. `WARN_MARKER_DUP` (reworded by this
+milestone to embed 'in document order') is still not passed to
+`mark-report-keys`, while `WARN_MARKER_NOT_LAST` — which M28 did not touch — is."
+Confirmed: `origin/main` has `WARN_MARKER_DUP='index placement marker 2
+(top-level block 8) is ignored'`; this branch has `... 2 in document order
+(top-level block 8) ...`, and the key is absent from the scan's argument list.
+The comment above the list also claims both new keys are for text the milestone
+reworded, which is false of `WARN_MARKER_NOT_LAST`.
+
+**F4 (fix now).** "`tests/run-tests.sh:10393-10397` — the 'Both numbers are'
+check has no vacuity guard and no discrimination plant. If `$WARN_MARKER_DUP`
+stops matching, the first `grep -F` emits nothing, `grep -qF` returns 1, and the
+run reports 'names a sequence for only one of its two numbers' — a misdiagnosis
+of a missing report." Confirmed by reading the loop.
+
+**F5 (fix now).** "`tests/run-tests.sh:10367-10369` — the vacuity guard is a
+string compare that an absent file slips through. If `$logfile` does not exist,
+`grep -c` prints nothing, `hits` is the empty string, and `[ "$hits" != "0" ]`
+is true, so the guard passes." Confirmed by reading `check_report_clause`.
+
+**F6 (fix now).** "`cairn/DESIGN.md:74-80` — the Conventions section still
+excludes exactly what D-014 now governs. The D-006 bullet ends 'A report whose
+number has no drop to distinguish — a book's chapter count, a top-level block
+position — is outside it', and no sibling bullet was added for D-014." Confirmed:
+DESIGN's current-knowledge text now contradicts DECISIONS.
+
+**F7 (follow-up — suite-hardening candidate row).** "`marker.lua:246-248` — the
+duplicate report's shared clause overstates for its first number. 'Both numbers
+are counted over the document as this filter received it … so they can differ
+from the positions in your source file': the first number is a marker ordinal,
+not a position, so the trailing half of the sentence describes only the second."
+Confirmed. The leading half is accurate for both; only the source-file clause is
+position-specific. Rewording shipped warning text also moves a suite key, so it
+is filed rather than taken at the gate.
+
+**F8 (fix now).** "`cairn/DESIGN.md:238-239` — the architecture description of
+the emptied-place report is now stale. It still says the report carries 'the
+marker's top-level block position and naming nothing else'." Confirmed.
+
+**F9 (fix now).** "`cairn/DESIGN.md:551-556` — KI21's rewrite overclaims
+coverage. 'the include member is covered by `examples/marker-position.qmd`' is
+true only for the emptied-place report; the duplicate-marker report and the book
+chapter count have no include fixture." Confirmed.
+
+**F10 (follow-up — suite-hardening candidate row).** "`tests/run-tests.sh:3008-3012`,
+`tests/run-tests.sh:10357`, `tests/m28pos.py:19-21` — the clause is written out
+three times in the suite against one shared string in the filter. Not a hole
+(any drift fails loudly in all three), but a reword now takes three coordinated
+suite edits where the filter takes one." Confirmed; the triplication is the
+price of D-011's refusal to read the expectation out of the filter's source.
+
+**F11 (rejected — the criterion is met on its plain reading).** "AC2 wording vs.
+what is checked. AC2 reads 'the emptied-place report and the duplicate-marker
+report over `examples/marker-shapes.qmd` and `examples/marker-misuse.qmd`'. The
+suite checks emptied-place only over shapes and duplicate only over misuse. The
+cross terms are in fact unsatisfiable." Confirmed that the cross terms are
+unsatisfiable: `misuse-gfm.log` holds 0 emptied-place reports and
+`shapes-gfm.log` 0 duplicate reports. AC2 names a pair of reports and a pair of
+fixtures; the collective reading is the plain one and is what the evidence
+records. No reinterpretation was needed to tick it, so this is not a criterion
+amendment.
+
+**F12 (rejected — consistent with what the report counts and with the repo's
+framing).** "`examples/marker-position.qmd:8-10` — 'the marker's position' is
+really its container's. The marker div is nested inside `::: {.surrounding}`, so
+the fixture's `author position: 3` is the position of the container." The report
+says "top-level block N" throughout, meaning the top-level block the marker is
+written under; the fixture manifest already says the marker's container is the
+third block.
+
+**F13 (fix now).** "`tests/run-tests.sh:10412` — capture slug `marker-position`
+breaks the local `<name>-<fmt>` idiom. A later html/latex render of this fixture
+would find the unsuffixed slug taken and hit `capture`'s duplicate-slug `fail`."
+
+**Return floor.** No finding demonstrates an acceptance criterion failing, and
+none is a load-bearing defect in what the filter does for an author: F1 is an
+already-recorded Known issue, F11 and F12 are readings rather than defects, and
+the rest are suite strength and record staleness. Status stays `review`.

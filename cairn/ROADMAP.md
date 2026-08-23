@@ -9,7 +9,7 @@ _Last hygiene check: 2026-08-23 (at M25's merge: the suite's zero-warning contro
 |---|---|---|---|---|---|
 | M25 | A check that cannot hold its promise is retired, not widened | done | M24 | normal | milestones/archive/M25-scan-disposition.md |
 | M24 | Every check reads the copy, never the working tree | done | — | normal | milestones/archive/M24-captured-artifacts.md |
-| M26 | A document's accumulators start empty, whoever ran before it | in-progress | — | normal | milestones/M26-per-document-state.md |
+| M26 | A document's accumulators start empty, whoever ran before it | review | — | normal | milestones/M26-per-document-state.md |
 | M23 | A range verdict follows its mark's position, not its text | done | — | normal | milestones/archive/M23-positional-range-verdicts.md |
 | M22 | A stale `.aux` outliving its marks still builds | done | — | normal | milestones/archive/M22-stale-aux-builds.md |
 | M21 | A discussion spanning pages prints as one page range | done | M20 | normal | milestones/archive/M21-page-ranges.md |

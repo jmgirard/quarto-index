@@ -1,6 +1,6 @@
 # M26: A document's accumulators start empty, whoever ran before it
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -124,7 +124,7 @@ mutable state and are untouched.
 - [x] T8: Rewrite DESIGN.md's Architecture paragraph at :169-176, which says
       the accumulators are "still module-level" and not per-document; add the
       convention that a new accumulator joins its module's `reset`.
-- [ ] T9: Full `tests/run-tests.sh --self-test`; capture evidence per
+- [x] T9: Full `tests/run-tests.sh --self-test`; capture evidence per
       criterion.
 
 ## Work log
@@ -134,6 +134,7 @@ mutable state and are untouched.
 - 2026-08-23: plan gate chose a per-module `reset` over moving the 17 cells into one `state.lua` and over making each module a per-document factory, because M17 deliberately placed each cell in the module that owns it and both alternatives re-split that at every call site; falsified by a cell whose correctness needs construction rather than restoration — `range_at` is the near miss, already needing a mid-document reset.
 - 2026-08-23: plan gate chose a same-tree pollution-versus-clean byte comparison over extracting and comparing only the `\index` arguments and the HTML index section, because a leak reaching the preamble (`principal_emitted`) or the `.aux` registry (`principal_ordinals`) escapes the extraction entirely; falsified by the comparison proving brittle to something neither render's state differs in.
 - 2026-08-23: T1 — the harness holds. A test-only filter listed AFTER `index` finds all nine extension modules in `package.loaded` at its own chunk-load time, which Quarto runs before any pass executes, so a value written there reaches the fixture's own marks: the same fixture emitted `\index{ZZZ@synthetic|quartoindexlocator{qi1}` polluted against `\index{synthetic}` clean. A synthetic `pandoc.Pandoc` drives through CollectSort, CollectKeys, CollectRanges/FinishRanges and Span without error. `require` from `tests/` was the wrong door and is not used: its cache key differs from the extension's absolute one, so it returns a SECOND copy of each module. The first reading of that probe as a success was a stale `.tex` left by an earlier render, found by removing the artifact and checking the exit code.
+- 2026-08-23: T9 — `tests/run-tests.sh --self-test` exits 0 and prints "All checks passed (409 checks)."; the plain run is 275. Status to review.
 - 2026-08-23: T8 — DESIGN.md's architecture paragraph now says the accumulators are returned to their initial values once per document and states the convention that a new one joins its module's `reset` in the commit that adds it; the `passes.lua` bullet and that file's own header were corrected alongside, both having said "the four Span passes" where there are now five entry points. Suite: 275 checks, all passing.
 - 2026-08-23: T7 — `tests/stateprobe.py` runs the AC3 and AC4 probes; all four AC3 probes and all sixteen non-exempt cells move a comparison, `range_pair_found` moves none as its exemption predicts, and the per-cell verdicts are in the Decisions section. The driver is committed rather than run out of band so a fresh review session can reproduce it. Suite after the run: 275 checks, all passing.
 - 2026-08-23: T5/T6 — `marks.lua`, `latex.lua` and `sortkeys.lua` each own a `reset`, called by a new `passes.Reset` that `index.lua` returns as the pass list's leading `{ Pandoc = ... }`. Tables are emptied in place through a new `qi_core.empty`, because every accumulator is exported by reference and a rebound local would restore this module's view alone. Suite: 275 checks, all passing, all twelve M26 comparisons among them.

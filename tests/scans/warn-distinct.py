@@ -93,8 +93,8 @@ def as_pattern(literal):
 
 
 # The prefix every Quarto warning line carries, as an extended regular
-# expression. The controls this file feeds used to be spelled `grep -q '^(W)'`,
-# which is where the prefix is known from.
+# expression. The controls this file feeds used to grep for that prefix
+# anchored and alone, which is where it is known from.
 WARN_PREFIX = '^\\(W\\) '
 
 

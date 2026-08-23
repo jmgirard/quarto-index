@@ -118,6 +118,7 @@ checks' file-reading is settled there first.
 - 2026-08-23: T8. `tests/run-tests.sh --self-test` exits 0, "All checks passed (397 checks)." AC1 both greps return nothing; AC3's grep returns one line, `SCAN_DIR="tests/scans"` at run-tests.sh:212; AC4's eleven enumerated sites each assert an exact count, two of them over `examples/demo.qmd` rather than the source set; AC5's five `filtersrc` exports each have a caller. Status to review.
 - 2026-08-23: review — PR #25 opened as a draft; all six criteria executed with fresh evidence and ticked; `cairn_validate` exits 0 and the `generic` profile names no toolchain checks. Review section open, findings triage pending the diff-bug lens.
 - 2026-08-23: review — three-lens fan-out returned fifteen findings, none demonstrating a criterion failing. Maintainer directed fix-eleven at the gate: F1 F2 F4 F5 F6 F10 in the suite, F3 F11 F12 F13 F14 in prose and records; F7 F9 to the acceptance-suite-hardening row; F8 F15 rejected as satisfied readings of AC4 and AC5. Full suite re-running against the fixed tree.
+- 2026-08-23: review — fixed tree green, 397 checks, with nine duplicate probes running inside M16-AC3. One intermediate AC1 failure of my own making (the F5 comment quoted the old control's spelling, which AC1's grep matches on any line) repaired by rewording the comment; a final confirmation run is in flight.
 
 ## Review
 
@@ -315,3 +316,30 @@ candidate row, two rejected.
 - **F15 — rejected.** AC5 asks for a caller in the set `git ls-files tests`
   enumerates; `tests/filtersrc.py` is in that set and `sources()` calls
   `ext_dir()` at line 33. Recorded in the AC5 evidence line above.
+
+### Re-verification after the fix round
+
+Every criterion re-executed against the fixed tree, 2026-08-23.
+
+- **AC1 — PASS (re-run).** Both greps return nothing. One intermediate failure
+  here, caught and repaired rather than read charitably: the F5 comment added
+  to `warn-distinct.py` quoted the old control's spelling verbatim, which
+  AC1's second grep matches on any line, comment or not. The comment was
+  reworded; the criterion was not.
+- **AC2 — PASS (re-run).** `ok M25-AC2: … discriminates both ways … a
+  formatted message's emitted line is counted too, and the same line with a
+  word where its count goes is not.`
+- **AC3 — PASS (re-run).** One line, `SCAN_DIR="tests/scans"` at
+  `tests/run-tests.sh:212`.
+- **AC4 — PASS (re-run).** Same eleven sites in nine scans, each still
+  exact-count pinned; no scan gained or lost a source-set read.
+- **AC5 — PASS (re-run).** The same five exports, each with a caller.
+- **AC6 — PASS (re-run).** `tests/run-tests.sh --self-test` exits 0, "All
+  checks passed (397 checks)." The check count is unchanged because the two new
+  probes ride inside existing `pass` lines rather than adding their own. The
+  M16-AC3 line now reads "all 12 source-reading checks … the 9 of them that pin
+  a definition to exactly one also fail, naming the duplicate, when a second
+  copy of it is planted."
+
+`cairn_validate` exits 0 on the fixed tree. `wc -c cairn/ROADMAP.md` is 23,891
+bytes against the 24,000 budget, and `cairn/LESSONS.md` 17,325 against 20,000.

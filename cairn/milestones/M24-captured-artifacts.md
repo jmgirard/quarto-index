@@ -1,11 +1,11 @@
 # M24: Every check reads the copy, never the working tree
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP6
-- **Branch/PR:** —
+- **Branch/PR:** `m24-captured-artifacts`
 
 ## Goal
 
@@ -70,11 +70,11 @@ checker-regress shape D-004 refused.
 
 ## Tasks
 
-- [ ] T1: Add the pre-render clean step near `tests/run-tests.sh:50` (beside
+- [x] T1: Add the pre-render clean step near `tests/run-tests.sh:50` (beside
       the existing `rm -rf "$WORK"`), exempted in `--fixture-check` and
       `--plant-wrapper-defect` mode like the `$WORK` wipe already is. Assert
       `git clean -Xdn examples/` empty immediately after it.
-- [ ] T2: Add the capture helper beside `run_scan` (`tests/run-tests.sh:110`):
+- [x] T2: Add the capture helper beside `run_scan` (`tests/run-tests.sh:110`):
       given a render's source path and format, copy the artifacts that render
       produced into a per-render directory under `$WORK`. One definition, the
       way `run_scan` is the one place an invocation is written down.
@@ -100,3 +100,6 @@ checker-regress shape D-004 refused.
 - 2026-08-23: created by /milestone-plan. Promoted from the acceptance-suite-hardening candidate row; the row keeps its remaining items.
 - 2026-08-23: plan gate ran the REDUCED criteria audit (internal tier) and it returned five findings, all fixed before the criteria were written: AC1's file set was a three-glob hand list (now `git ls-files tests`); AC1's pattern could not match the `examples/*.html` and `examples/$f.tex` forms the suite actually uses (now widened); AC2 named no enumerating procedure (now `git clean -Xdn`); AC3 quantified over 85 renders' emitted artifact sets, a per-rendering enumeration barred at internal tier (now the syntactic pairing a grep settles); AC4's planted-residue clause bound a plant matrix rather than the sweeps (moved to T6 and to review evidence).
 - 2026-08-23: plan gate chose capturing artifacts into `$WORK` over pinning the suite's render ORDER so each read follows its producing render, because an order pin is a fresh invariant no procedure enumerates and it leaves the clean-checkout failure standing; falsified by evidence that Quarto's output location for some fixture cannot be captured at its render.
+- 2026-08-23: implement gate chose: a capture copies then DELETES the originals when they sit under examples/, so a later render of the same document cannot leave an older artifact in the newer capture and a check aimed at the wrong capture fails on a missing file; checks spell the capture path in full rather than reading a variable the helper sets; and the 232 read sites are rewritten by one scripted pass whose diff is then read by hand.
+- 2026-08-23: T1 — pre-render clean (`git clean -Xdf examples/`) added beside the $WORK wipe, exempted in both self-test modes, with the `git clean -Xdn` empty assertion immediately after it.
+- 2026-08-23: T2 — `capture` added beside `run_scan`; called at all 85 render sites with a slug taken from each render's own log name. It copies the render's artifacts into $WORK/cap/<slug>/, removes the originals only from under examples/, refuses a reused slug, and copies (never moves) a project render's _book tree, which the book fixtures re-render into.

@@ -58,6 +58,28 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 pass() { printf 'ok   %s\n' "$*"; }
 
 # ---------------------------------------------------------------------------
+# The pre-render clean (M24). Every run starts from the state a fresh checkout
+# is in: no rendered artifact under examples/ outlives the run that made it.
+# Without this, a check could read a file some EARLIER run left behind and
+# pass on a tree where the render it names never happened — the clean-checkout
+# failure this milestone closes. `git clean -X` removes exactly the ignored
+# set, which is the render artifacts and Quarto's scratch directories; a
+# tracked fixture is never in its domain, so a dirty working tree survives it.
+#
+# Exempted in both self-test modes for the same reason the $WORK wipe is: the
+# fixture check reads what the parent wrote, and the wrapper probe is spawned
+# from inside a parent run whose artifacts are still being read.
+# ---------------------------------------------------------------------------
+if [ "$FIXTURE_MODE" != "1" ] && [ "$PLANT_WRAPPER_DEFECT" != "1" ]; then
+  git clean -Xdfq examples/ \
+    || fail "M24-AC2: could not clean the ignored set under examples/; the run would start on artifacts an earlier run left behind"
+  RESIDUE=$(git clean -Xdn examples/)
+  [ -z "$RESIDUE" ] \
+    || fail "M24-AC2: the pre-render clean left ignored files under examples/: $(printf '%s' "$RESIDUE" | tr '\n' ' ')"
+  pass "M24-AC2: the run starts from a clean examples/ — git clean -Xdn prints nothing"
+fi
+
+# ---------------------------------------------------------------------------
 # The filter's source set (M16). Every check that reads filter source reads
 # THIS set, never a named file: a definition moving into a new module has to
 # stay inside the domain a check sweeps, or the check goes on passing while it
@@ -94,6 +116,83 @@ import sys; sys.path.insert(0,'tests'); import filtersrc
 print('\n'.join(filtersrc.sources()))") \
   || fail "M16-AC2: tests/filtersrc.py refused to enumerate a source set under $QI_EXT_DIR; every source-reading check would sweep nothing and pass vacuously"
 FILTER_SOURCE_COUNT=$(printf '%s\n' "$FILTER_SOURCES" | wc -l | tr -d ' ')
+# ---------------------------------------------------------------------------
+# Capturing a render's artifacts (M24). Quarto writes beside the source, so a
+# `.tex` under examples/ is whatever the LAST render of that document left
+# there — including one from a previous run, on a branch since changed, or of a
+# different format entirely. A check reading examples/demo.tex is therefore
+# asserting nothing about the render it sits under. This helper is called at
+# every render site and copies that render's artifacts into a directory of
+# their own under $WORK; every check then reads the copy, named by the render
+# that produced it.
+#
+# The originals are REMOVED when, and only when, they were under examples/:
+# that tree is the one a fresh checkout has clean, so nothing a render writes
+# there may outlive its capture. A later render of the same document then
+# cannot leave an older artifact sitting in the newer capture, and a check
+# pointed at the wrong capture fails on a missing file instead of quietly
+# reading the file some other render produced. Renders into scratch trees under
+# $WORK keep their originals — the probes there read them in place, and $WORK
+# is wiped whole at the top of every run anyway.
+#
+# A slug is used at most once. Two renders capturing under one name would leave
+# whichever ran first unreadable and its checks reading the second's output, so
+# a site that renders the same document and format twice names its own slug.
+#
+# --project captures a project render (a book): its output tree is copied
+# rather than moved, because the book fixtures deliberately re-render a single
+# chapter into an existing output directory and the next render reads what the
+# last one left. The pre-render clean above is what makes that tree this run's.
+# ---------------------------------------------------------------------------
+CAPTURE_ROOT="$WORK/cap"
+CAPTURE_EXTS="html tex md pdf epub aux idx ilg ind log"
+
+capture() {
+  local project=0
+  if [ "${1:-}" = "--project" ]; then project=1; shift; fi
+  local src="$1" fmt="$2" slug base stem srcdir dir f found=0
+  base=$(basename "$src")
+  stem="${base%.qmd}"
+  if [ "$project" = "1" ]; then srcdir="$src"; else srcdir=$(dirname "$src"); fi
+  slug="${3:-$stem-$fmt}"
+  dir="$CAPTURE_ROOT/$slug"
+  if [ -e "$dir" ]; then
+    fail "M24: two renders capture under the slug <<$slug>>; the first's artifacts would be unreadable and every check naming that slug would read the second's. Give one of them an explicit third argument."
+  fi
+  mkdir -p "$dir"
+  # Under examples/ an empty capture is a failure: the artifacts are gone from
+  # the working tree by design, so a check naming this slug would read nothing
+  # and its FAIL would name a missing file rather than this render. Elsewhere
+  # the artifacts stay where the render put them and the capture is a record,
+  # so a render that deliberately produces nothing (the defect batteries below
+  # render broken trees and read the wreckage in place) is not an error here.
+  local under_examples=0
+  case "$srcdir" in examples|examples/*) under_examples=1 ;; esac
+  if [ "$project" = "1" ]; then
+    if [ -d "$src/_book" ]; then
+      cp -R "$src/_book" "$dir/_book"
+    elif [ "$under_examples" = "1" ]; then
+      fail "M24: the project render of $src to $fmt produced no _book directory, so every check naming the slug <<$slug>> would read a capture holding nothing"
+    fi
+    return 0
+  fi
+  for ext in $CAPTURE_EXTS; do
+    f="$srcdir/$stem.$ext"
+    [ -f "$f" ] || continue
+    cp "$f" "$dir/$stem.$ext"
+    found=1
+    [ "$under_examples" = "0" ] || rm -f "$f"
+  done
+  if [ -d "$srcdir/${stem}_files" ]; then
+    cp -R "$srcdir/${stem}_files" "$dir/${stem}_files"
+    found=1
+    [ "$under_examples" = "0" ] || rm -rf "$srcdir/${stem}_files"
+  fi
+  if [ "$found" = "0" ] && [ "$under_examples" = "1" ]; then
+    fail "M24: the render of $src to $fmt left no artifact under $srcdir to capture; every check naming the slug <<$slug>> would read nothing"
+  fi
+}
+
 
 # ---------------------------------------------------------------------------
 # The source-reading checks (M16). Each one's body lives in tests/scans/<name>.py
@@ -1424,6 +1523,7 @@ run_scan html-identifiers
 
 quarto render examples/demo.qmd --to latex > "$WORK/demo-latex.log" 2>&1 \
   || { cat "$WORK/demo-latex.log" >&2; fail "AC1: demo.qmd failed to render to LaTeX"; }
+capture examples/demo.qmd latex "demo-latex"
 [ -s examples/demo.tex ] || fail "AC1: examples/demo.tex is empty"
 check_entry_manifest examples/demo.tex "$ALL_DEMO_ENTRIES" "AC1/AC4"
 # Keep a copy: the later PDF render consumes examples/demo.tex, and the AC5
@@ -1639,6 +1739,7 @@ PY
 # ---------------------------------------------------------------------------
 quarto render examples/control.qmd --to latex > "$WORK/control-latex.log" 2>&1 \
   || { cat "$WORK/control-latex.log" >&2; fail "AC3: control.qmd failed to render to LaTeX"; }
+capture examples/control.qmd latex "control-latex"
 [ -s examples/control.tex ] || fail "AC3: examples/control.tex is empty"
 for tok in '\index{' 'imakeidx' '\makeindex' '\printindex'; do
   if grep -qF -- "$tok" examples/control.tex; then
@@ -1652,6 +1753,7 @@ check_token_manifest examples/control.tex "$CONTROL_TOKENS" "AC3"
 # ---------------------------------------------------------------------------
 quarto render examples/demo.qmd --to html > "$WORK/demo-html.log" 2>&1 \
   || { cat "$WORK/demo-html.log" >&2; fail "AC7: demo.qmd failed to render to HTML"; }
+capture examples/demo.qmd html "demo-html"
 [ -s examples/demo.html ] || fail "AC7: examples/demo.html is empty"
 for tok in '\index' 'imakeidx' '\makeindex' '\printindex'; do
   if grep -qF -- "$tok" examples/demo.html; then
@@ -1802,6 +1904,7 @@ PY
 for fmt in html latex; do
   quarto render examples/content.qmd --to $fmt > "$WORK/content-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/content-$fmt.log" >&2; fail "AC7: content.qmd failed to render to $fmt"; }
+  capture examples/content.qmd $fmt "content-$fmt"
 done
 # content.qmd holds three marked images: the plain one, the entry= one, and
 # the cross-reference one added for M02-AC5 case (a). An exact count, not a
@@ -1845,6 +1948,7 @@ pass "M02-AC5: case (a) warned exactly twice in each format, emitted no entry, d
 for fmt in latex html; do
   quarto render examples/xref-conflict.qmd --to $fmt > "$WORK/conflict-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/conflict-$fmt.log" >&2; fail "M02-AC5: xref-conflict.qmd failed to render to $fmt"; }
+  capture examples/xref-conflict.qmd $fmt "conflict-$fmt"
 done
 # The emitted LaTeX, kept: the PDF render in the M15 section below removes
 # examples/xref-conflict.tex, and two checks there read the argument this
@@ -1994,6 +2098,7 @@ MANIFEST
 
 quarto render examples/html-index.qmd --to html > "$WORK/html-index.log" 2>&1 \
   || { tail -20 "$WORK/html-index.log" >&2; fail "M03-AC4: html-index.qmd failed to render to HTML"; }
+capture examples/html-index.qmd html "html-index"
 check_html_index_manifest examples/html-index.html "$HTML_INDEX_MANIFEST" "M03-AC4"
 check_letter_sweep examples/html-index.html "M07-AC3 (no Symbols group)" \
   $'A\nB\nE\nI\nK\nL\nN\nT\nZ'
@@ -2081,6 +2186,7 @@ MANIFEST
 
 quarto render examples/placement.qmd --to html > "$WORK/placement-html.log" 2>&1 \
   || { tail -20 "$WORK/placement-html.log" >&2; fail "M03-AC2: placement.qmd failed to render to HTML"; }
+capture examples/placement.qmd html "placement-html"
 check_html_index_manifest examples/placement.html "$PLACEMENT_HTML_INDEX" "M03-AC2"
 check_letter_sweep examples/placement.html "M07-AC3 (placement)" \
   $'C\nD\nF\nG\nS\nT\nW'
@@ -2500,6 +2606,7 @@ PY
 # ---------------------------------------------------------------------------
 quarto render examples/marker.qmd --to html > "$WORK/marker-html.log" 2>&1 \
   || { tail -20 "$WORK/marker-html.log" >&2; fail "M04-AC1: marker.qmd failed to render to HTML"; }
+capture examples/marker.qmd html "marker-html"
 check_html_index_manifest examples/marker.html "$MARKER_HTML_INDEX" "M04-AC1"
 check_letter_sweep examples/marker.html "M07-AC3 (marker)" \
   $'A\nB\nG'
@@ -2566,6 +2673,7 @@ PY
 # ---------------------------------------------------------------------------
 quarto render examples/marker.qmd --to latex > "$WORK/marker-latex.log" 2>&1 \
   || { cat "$WORK/marker-latex.log" >&2; fail "M04-AC2: marker.qmd failed to render to LaTeX"; }
+capture examples/marker.qmd latex "marker-latex"
 [ -s examples/marker.tex ] || fail "M04-AC2: examples/marker.tex is empty"
 check_entry_manifest examples/marker.tex "$MARKER_ENTRIES" "M04-AC2"
 
@@ -2620,6 +2728,7 @@ for fmt in html latex gfm; do
   quarto render examples/marker-misuse.qmd --to $fmt \
     > "$WORK/misuse-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/misuse-$fmt.log" >&2; fail "M04-AC4: marker-misuse.qmd failed to render to $fmt"; }
+  capture examples/marker-misuse.qmd $fmt "misuse-$fmt"
   check_warning_count "$WORK/misuse-$fmt.log" "$WARN_MARKER_NESTED" 1 "M04-AC4"
   check_warning_count "$WORK/misuse-$fmt.log" "$WARN_MARKER_DUP" 1 "M04-AC4"
   check_warning_count "$WORK/misuse-$fmt.log" "$WARN_MARKER_CONTENT" 1 "M04-AC4"
@@ -2723,6 +2832,7 @@ for fmt in html latex gfm; do
   quarto render examples/marker-sites.qmd --to $fmt \
     > "$WORK/sites-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/sites-$fmt.log" >&2; fail "M08-AC3: marker-sites.qmd failed to render to $fmt"; }
+  capture examples/marker-sites.qmd $fmt "sites-$fmt"
   check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_HEADING" 1 "M08-AC3"
   check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_SPAN" 1 "M08-AC3"
   check_warning_count "$WORK/sites-$fmt.log" "$WARN_SITE_CODE" 1 "M08-AC3"
@@ -2840,6 +2950,7 @@ for fmt in html latex gfm; do
   quarto render examples/marker-shapes.qmd --to $fmt \
     > "$WORK/shapes-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/shapes-$fmt.log" >&2; fail "M08-AC3: marker-shapes.qmd failed to render to $fmt"; }
+  capture examples/marker-shapes.qmd $fmt "shapes-$fmt"
   check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_SITE" 0 "M08-AC3 (F4)"
   # The nested markers still report, and the one carrying content still reports
   # as non-empty — neither message is disturbed by the metadata exclusion.
@@ -3009,6 +3120,7 @@ PY
 quarto render examples/id-collision.qmd --to html \
   > "$WORK/id-collision-html.log" 2>&1 \
   || { tail -20 "$WORK/id-collision-html.log" >&2; fail "M08-AC1: id-collision.qmd failed to render to HTML"; }
+capture examples/id-collision.qmd html "id-collision-html"
 
 python3 - examples/id-collision.html <<'PY'
 import sys
@@ -3120,6 +3232,7 @@ for fmt in html latex gfm; do
   quarto render examples/self-xref.qmd --to $fmt \
     > "$WORK/self-xref-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/self-xref-$fmt.log" >&2; fail "M08-AC2: self-xref.qmd failed to render to $fmt"; }
+  capture examples/self-xref.qmd $fmt "self-xref-$fmt"
   # M08's four shapes plus M10's two empty-level shapes. The empty-level case
   # is format-neutral — an empty level prints nothing in every back-end and in
   # none — so the count is the same in all three, and M11 does not move it:
@@ -3438,6 +3551,7 @@ for fmt in html latex gfm; do
   for f in marker-nomarks marker-nomarks-twin; do
     quarto render examples/$f.qmd --to $fmt > "$WORK/$f-$fmt.log" 2>&1 \
       || { tail -20 "$WORK/$f-$fmt.log" >&2; fail "M04-AC4: $f.qmd failed to render to $fmt"; }
+    capture examples/$f.qmd $fmt "$f-$fmt"
   done
   check_warning_count "$WORK/marker-nomarks-$fmt.log" "$WARN_MARKER_NOMARKS" 1 "M04-AC4"
   check_warning_count "$WORK/marker-nomarks-twin-$fmt.log" "$WARN_MARKER_NOMARKS" 0 "M04-AC4"
@@ -3495,6 +3609,7 @@ check_no_html_residue examples/marker-nomarks.html "M04-AC4"
 quarto render examples/marker-preloaded.qmd --to latex \
   > "$WORK/preloaded-latex.log" 2>&1 \
   || { tail -20 "$WORK/preloaded-latex.log" >&2; fail "M04-AC4: marker-preloaded.qmd failed to render to LaTeX"; }
+capture examples/marker-preloaded.qmd latex "preloaded-latex"
 grep -qF 'ifpackagewith{imakeidx}{noautomatic}' examples/marker-preloaded.tex \
   || fail "M04-AC4: the marker document carries no begin-document check for a preloaded imakeidx"
 if grep -qF 'ifpackagewith{imakeidx}' examples/demo.tex; then
@@ -3516,6 +3631,7 @@ pass "M04-AC4: a marker document carries the preloaded-imakeidx check, a marker-
 # ---------------------------------------------------------------------------
 quarto render examples/marker.qmd --to gfm > "$WORK/marker-gfm.log" 2>&1 \
   || { tail -20 "$WORK/marker-gfm.log" >&2; fail "M04-AC5: marker.qmd failed to render to gfm"; }
+capture examples/marker.qmd gfm "marker-gfm"
 [ -s examples/marker.md ] || fail "M04-AC5: examples/marker.md is empty"
 
 MARKER_CLASS="$MARKER_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
@@ -3561,6 +3677,7 @@ pass "M04-AC5: the marker leaves no token in gfm output, and the visible text is
 # ---------------------------------------------------------------------------
 quarto render examples/escaping.qmd --to html > "$WORK/esc-html.log" 2>&1 \
   || { tail -20 "$WORK/esc-html.log" >&2; fail "M03-AC5: escaping.qmd failed to render to HTML"; }
+capture examples/escaping.qmd html "esc-html"
 
 HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/escaping.html <<'PY'
 import os, sys
@@ -3609,6 +3726,7 @@ pass "M03-AC3: the pending attribute reaches no rendered HTML, forged author cop
 # ---------------------------------------------------------------------------
 quarto render examples/control.qmd --to html > "$WORK/control-html.log" 2>&1 \
   || { tail -20 "$WORK/control-html.log" >&2; fail "M03-AC6: control.qmd failed to render to HTML"; }
+capture examples/control.qmd html "control-html"
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
 HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - examples/control.html <<'PY'
@@ -3636,6 +3754,7 @@ pass "M07-AC5: a document with no marks gets no letter-group heading"
 
 quarto render examples/demo.qmd --to gfm > "$WORK/demo-gfm.log" 2>&1 \
   || { tail -20 "$WORK/demo-gfm.log" >&2; fail "M03-AC6: demo.qmd failed to render to gfm"; }
+capture examples/demo.qmd gfm "demo-gfm"
 [ -s examples/demo.md ] || fail "M03-AC6: examples/demo.md is empty"
 for tok in 'qi-index' 'qi-mark-' 'qi-entry-' '\index' '\printindex'; do
   if grep -qF -- "$tok" examples/demo.md; then
@@ -3814,6 +3933,7 @@ require_pdf_tools
 quarto render examples/demo.qmd --to beamer -M keep-tex:true \
   > "$WORK/demo-beamer.log" 2>&1 \
   || { tail -20 "$WORK/demo-beamer.log" >&2; fail "AC7: beamer render failed (IP2: a marked term must never break a render)"; }
+capture examples/demo.qmd beamer "demo-beamer"
 [ -s examples/demo.tex ] || fail "AC7: beamer render kept no .tex to inspect"
 for tok in '\index' 'imakeidx' '\makeindex' '\printindex'; do
   if grep -qF -- "$tok" examples/demo.tex; then
@@ -3829,6 +3949,7 @@ pass "AC7: beamer renders clean, no index tokens, visible text kept"
 quarto render examples/marker.qmd --to beamer -M keep-tex:true \
   > "$WORK/marker-beamer.log" 2>&1 \
   || { tail -20 "$WORK/marker-beamer.log" >&2; fail "M04-AC5: the marker fixture failed to render to beamer (IP2: a marker must never break a render)"; }
+capture examples/marker.qmd beamer "marker-beamer"
 [ -s examples/marker.tex ] || fail "M04-AC5: the beamer render kept no .tex to inspect"
 for tok in '\index' 'imakeidx' '\makeindex' '\printindex' 'qi-index-here'; do
   if grep -qF -- "$tok" examples/marker.tex; then
@@ -3848,6 +3969,7 @@ pass "M04-AC5: the marker fixture compiles clean in beamer, no index tokens, no 
 # ---------------------------------------------------------------------------
 quarto render examples/marker.qmd --to pdf > "$WORK/marker-pdf.log" 2>&1 \
   || { tail -40 "$WORK/marker-pdf.log" >&2; fail "M04-AC2: marker.qmd failed to render to PDF"; }
+capture examples/marker.qmd pdf "marker-pdf"
 [ -s examples/marker.pdf ] || fail "M04-AC2: examples/marker.pdf is empty"
 pdftotext -layout examples/marker.pdf "$WORK/marker.txt"
 
@@ -3904,6 +4026,7 @@ fi
 # must compile silent, or the check above proves only that it always fires.
 mkdir -p "$WORK/markertex" && quarto render examples/marker.qmd --to latex > "$WORK/marker-latex2.log" 2>&1 \
   || { cat "$WORK/marker-latex2.log" >&2; fail "M04-AC4: marker.qmd failed to re-render to LaTeX"; }
+capture examples/marker.qmd latex "marker-latex2"
 cp examples/marker.tex "$WORK/markertex/"
 ( cd "$WORK/markertex" && pdflatex -interaction=nonstopmode marker.tex ) \
   > "$WORK/markertex-tex.log" 2>&1 \
@@ -3920,6 +4043,7 @@ pass "M04-AC4: the preloaded-imakeidx document compiles, warns, and demonstrably
 # typeset — so all three are checked here.
 quarto render examples/escaping.qmd --to latex > "$WORK/esc-latex.log" 2>&1 \
   || { tail -20 "$WORK/esc-latex.log" >&2; fail "AC4: escaping.qmd failed to render to LaTeX"; }
+capture examples/escaping.qmd latex "esc-latex"
 
 PROBE_CHARS="$PROBE_CHARS" python3 - examples/escaping.qmd <<'PY'
 import os, re, string, sys
@@ -3947,6 +4071,7 @@ PY
 mkdir -p "$WORK/esc" && cp examples/escaping.tex "$WORK/esc/"
 quarto render examples/escaping.qmd --to pdf > "$WORK/esc-pdf.log" 2>&1 \
   || { tail -20 "$WORK/esc-pdf.log" >&2; fail "AC4: escaping probe failed to compile through Quarto's own PDF engine — a character in the range breaks the build"; }
+capture examples/escaping.qmd pdf "esc-pdf"
 ( cd "$WORK/esc" && pdflatex -interaction=nonstopmode escaping.tex ) \
   > "$WORK/esc-tex1.log" 2>&1 \
   || { grep -E '^! ' "$WORK/esc-tex1.log" | head -5 >&2; fail "AC4: escaping probe failed to compile"; }
@@ -3984,6 +4109,7 @@ PY
 # ---------------------------------------------------------------------------
 quarto render examples/xref-escaping.qmd --to latex > "$WORK/xref-latex.log" 2>&1 \
   || { tail -20 "$WORK/xref-latex.log" >&2; fail "M02-AC3: xref-escaping.qmd failed to render to LaTeX"; }
+capture examples/xref-escaping.qmd latex "xref-latex"
 
 XREF_BOTH_COMMAND="$XREF_BOTH_COMMAND" PROBE_CHARS="$PROBE_CHARS" python3 - \
   examples/xref-escaping.qmd examples/xref-escaping.tex <<'PY'
@@ -4129,6 +4255,7 @@ pass "M02-AC3: an empty target level and an unusable target each warn once"
 mkdir -p "$WORK/xref" && cp examples/xref-escaping.tex "$WORK/xref/"
 quarto render examples/xref-escaping.qmd --to pdf > "$WORK/xref-pdf.log" 2>&1 \
   || { tail -20 "$WORK/xref-pdf.log" >&2; fail "M02-AC3: the cross-reference probe failed to compile through Quarto's own PDF engine"; }
+capture examples/xref-escaping.qmd pdf "xref-pdf"
 ( cd "$WORK/xref" && pdflatex -interaction=nonstopmode xref-escaping.tex ) \
   > "$WORK/xref-tex1.log" 2>&1 \
   || { grep -E '^! ' "$WORK/xref-tex1.log" | head -5 >&2; fail "M02-AC3: the cross-reference probe failed to compile"; }
@@ -4170,6 +4297,7 @@ PY
 
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
   || { tail -40 "$WORK/demo-pdf.log" >&2; fail "AC6: demo.qmd failed to render to PDF"; }
+capture examples/demo.qmd pdf "demo-pdf"
 [ -s examples/demo.pdf ] || fail "AC6: examples/demo.pdf is empty"
 pdftotext -layout examples/demo.pdf "$WORK/demo.txt"
 
@@ -4251,6 +4379,7 @@ run_scan store-names
 rm -rf "$BOOK_OUT" "$BOOK_DIR/.quarto"
 ( cd "$BOOK_DIR" && quarto render --to html ) > "$WORK/book-html.log" 2>&1 \
   || { tail -30 "$WORK/book-html.log" >&2; fail "M05-AC1: the book fixture failed to render to HTML"; }
+capture --project "$BOOK_DIR" html "book-html"
 
 check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
   "M05-AC1/AC3" hrefs
@@ -4473,6 +4602,7 @@ rm -rf "$NOMARKER_DIR/_book" "$NOMARKER_DIR/.quarto"
 ( cd "$NOMARKER_DIR" && quarto render --to html ) \
   > "$WORK/book-nomarker.log" 2>&1 \
   || { tail -30 "$WORK/book-nomarker.log" >&2; fail "M05-AC6: the no-marker book failed to render to HTML"; }
+capture --project "$NOMARKER_DIR" html "book-nomarker"
 
 printf '%s\n' "$BOOK_NOMARKER_TERMS" > "$WORK/nomarker-terms.txt"
 HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$NOMARKER_DIR/_book" \
@@ -4517,6 +4647,7 @@ pass "M05-AC6: the missing-marker report fires exactly once in a full render, na
 # ---------------------------------------------------------------------------
 ( cd "$BOOK_DIR" && quarto render --to pdf ) > "$WORK/book-pdf.log" 2>&1 \
   || { tail -40 "$WORK/book-pdf.log" >&2; fail "M05-AC5: the book fixture failed to render to PDF"; }
+capture --project "$BOOK_DIR" pdf "book-pdf"
 BOOK_PDF=$(find "$BOOK_OUT" -maxdepth 1 -name '*.pdf' | head -1)
 [ -s "$BOOK_PDF" ] || fail "M05-AC5: the book render produced no PDF"
 pdftotext -layout "$BOOK_PDF" "$WORK/book.txt"
@@ -4603,6 +4734,7 @@ PY
 # marker chapter reads a store that already holds its own previous record.
 ( cd "$BOOK_DIR" && quarto render --to html ) > "$WORK/book-html2.log" 2>&1 \
   || { tail -30 "$WORK/book-html2.log" >&2; fail "M05 hardening: the second book render failed"; }
+capture --project "$BOOK_DIR" html "book-html2"
 check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (second render)" hrefs
 check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4 (second render)" \
@@ -4623,6 +4755,7 @@ JSON
 ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
   > "$WORK/book-ghost.log" 2>&1 \
   || { tail -30 "$WORK/book-ghost.log" >&2; fail "M05 hardening: the marker chapter failed to re-render"; }
+capture "$BOOK_DIR/last.qmd" html "book-ghost"
 check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_UNREADABLE" 0 \
   "M05 hardening (ghost record)"
 check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE" 0 \
@@ -4641,6 +4774,7 @@ printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":false,"marks":
 ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
   > "$WORK/book-corrupt.log" 2>&1 \
   || { tail -30 "$WORK/book-corrupt.log" >&2; fail "M05 hardening: a wrongly shaped store record took the render down; IP2 forbids it"; }
+capture "$BOOK_DIR/last.qmd" html "book-corrupt"
 check_warning_count "$WORK/book-corrupt.log" "$WARN_STORE_UNREADABLE" 1 \
   "M05 hardening"
 cp "$WORK/one-record.json" "$CORRUPT"
@@ -4654,6 +4788,7 @@ printf '{"version":0,"file":"one.qmd","href":"one.html","marker":false,"marks":[
 ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
   > "$WORK/book-stale.log" 2>&1 \
   || { tail -30 "$WORK/book-stale.log" >&2; fail "M05 hardening: a record from an older version took the render down; IP2 forbids it"; }
+capture "$BOOK_DIR/last.qmd" html "book-stale"
 check_warning_count "$WORK/book-stale.log" "$WARN_STORE_STALE" 1 \
   "M06 (stale store record)"
 check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE" 0 \
@@ -4669,6 +4804,7 @@ printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":false,"marks":
 ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
   > "$WORK/book-badxref.log" 2>&1 \
   || { tail -30 "$WORK/book-badxref.log" >&2; fail "M14 (review F9): a record whose cross-reference lost its levels took the render down; IP2 forbids it"; }
+capture "$BOOK_DIR/last.qmd" html "book-badxref"
 check_warning_count "$WORK/book-badxref.log" "$WARN_STORE_UNREADABLE" 1 \
   "M14 (review F9)"
 cp "$WORK/one-record.json" "$CORRUPT"
@@ -4684,6 +4820,7 @@ printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":false,"marks":
 ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
   > "$WORK/book-nocontext.log" 2>&1 \
   || { tail -30 "$WORK/book-nocontext.log" >&2; fail "M14 (review F4): a record with no per-mark naming string took the render down"; }
+capture "$BOOK_DIR/last.qmd" html "book-nocontext"
 check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_UNREADABLE" 0 \
   "M14 (review F4)"
 check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_STALE" 0 \
@@ -4718,9 +4855,11 @@ rm -rf "$ORDER_OUT" "$ORDER_DIR/.quarto"
 ( cd "$ORDER_DIR" && quarto render --to html ) \
   > "$WORK/book-order-1.log" 2>&1 \
   || { tail -30 "$WORK/book-order-1.log" >&2; fail "M05 hardening: the ordering fixture failed to render"; }
+capture --project "$ORDER_DIR" html "book-order-1"
 ( cd "$ORDER_DIR" && quarto render --to html ) \
   > "$WORK/book-order-2.log" 2>&1 \
   || { tail -30 "$WORK/book-order-2.log" >&2; fail "M05 hardening: the ordering fixture failed to render (second pass)"; }
+capture --project "$ORDER_DIR" html "book-order-2"
 cat "$WORK/book-order-1.log" "$WORK/book-order-2.log" > "$WORK/book-order.log"
 
 check_warning_count "$WORK/book-order.log" "$WARN_MARKER_NOT_LAST" 2 \
@@ -4861,6 +5000,7 @@ mkdir -p "$ORDER_DIR/.quarto"
 printf 'not a directory\n' > "$ORDER_DIR/.quarto/$STORE_DIR"
 ( cd "$ORDER_DIR" && quarto render --to html ) > "$WORK/book-nostore.log" 2>&1 \
   || { tail -30 "$WORK/book-nostore.log" >&2; fail "M05 hardening: a store that cannot be written took the render down; IP2 forbids it"; }
+capture --project "$ORDER_DIR" html "book-nostore"
 
 check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" \
   "$ORDER_CHAPTERS" "M05 hardening"
@@ -4923,6 +5063,7 @@ TWINPY
 
 quarto render examples/sortkey.qmd --to pdf > "$WORK/sortkey-pdf.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-pdf.log" >&2; fail "M06-AC1: sortkey.qmd failed to render to PDF"; }
+capture examples/sortkey.qmd pdf "sortkey-pdf"
 [ -s examples/sortkey.pdf ] || fail "M06-AC1: examples/sortkey.pdf is empty"
 # A sort key must not cost the author a warning: every mark in this fixture is
 # well formed, so a clean render is part of the criterion.
@@ -4967,6 +5108,7 @@ OUTLINEPY
 # order that must differ at every top-level position.
 quarto render examples/sortkey-twin.qmd --to pdf > "$WORK/sortkey-twin-pdf.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-twin-pdf.log" >&2; fail "M06-AC1: sortkey-twin.qmd failed to render to PDF"; }
+capture examples/sortkey-twin.qmd pdf "sortkey-twin-pdf"
 python3 - examples/sortkey.pdf examples/sortkey-twin.pdf <<'DIFFPY'
 import sys
 sys.path.insert(0, 'tests')
@@ -5002,6 +5144,7 @@ DIFFPY
 # ---------------------------------------------------------------------------
 quarto render examples/sortkey.qmd --to html > "$WORK/sortkey-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-html.log" >&2; fail "M06-AC2: sortkey.qmd failed to render to HTML"; }
+capture examples/sortkey.qmd html "sortkey-html"
 if grep -q '^(W)' "$WORK/sortkey-html.log"; then
   grep '^(W)' "$WORK/sortkey-html.log" >&2
   fail "M06-AC2: examples/sortkey.qmd warned in HTML; every mark in it is well formed"
@@ -5013,6 +5156,7 @@ check_html_index_links examples/sortkey.html "M06-AC2"
 
 quarto render examples/sortkey-twin.qmd --to html > "$WORK/sortkey-twin-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-twin-html.log" >&2; fail "M06-AC2: sortkey-twin.qmd failed to render to HTML"; }
+capture examples/sortkey-twin.qmd html "sortkey-twin-html"
 check_html_index_manifest examples/sortkey-twin.html "$SORTKEY_TWIN_HTML_INDEX" "M06-AC2 (twin)"
 check_letter_sweep examples/sortkey-twin.html "M07-AC3 (sort-key twin)" \
   $'Symbols\nM\nT\nU\nV'
@@ -5128,6 +5272,7 @@ AGREEPY
 quarto render examples/sortkey-paths.qmd --to latex \
   > "$WORK/sortkey-paths-latex.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-paths-latex.log" >&2; fail "M06-AC1: sortkey-paths.qmd failed to render to LaTeX"; }
+capture examples/sortkey-paths.qmd latex "sortkey-paths-latex"
 if grep -q '^(W)' "$WORK/sortkey-paths-latex.log"; then
   grep '^(W)' "$WORK/sortkey-paths-latex.log" >&2
   fail "M06-AC1: examples/sortkey-paths.qmd warned; every mark in it is well formed"
@@ -5220,6 +5365,7 @@ PATHSPY
 quarto render examples/sortkey-paths.qmd --to html \
   > "$WORK/sortkey-paths-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-paths-html.log" >&2; fail "M06-AC2: sortkey-paths.qmd failed to render to HTML"; }
+capture examples/sortkey-paths.qmd html "sortkey-paths-html"
 check_html_index_manifest examples/sortkey-paths.html \
   "$SORTKEY_PATHS_HTML_INDEX" "M06-AC2 (level paths)"
 check_letter_sweep examples/sortkey-paths.html "M07-AC3 (level paths)" \
@@ -5238,6 +5384,7 @@ for fmt in latex gfm; do
   quarto render examples/sortkey-misuse.qmd --to "$fmt" \
     > "$WORK/sortkey-misuse-$fmt.log" 2>&1 \
     || { tail -40 "$WORK/sortkey-misuse-$fmt.log" >&2; fail "M06-AC4: sortkey-misuse.qmd failed to render to $fmt"; }
+  capture examples/sortkey-misuse.qmd "$fmt" "sortkey-misuse-$fmt"
   check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_ORPHAN" 1 \
     "M06-AC4 ($fmt)"
   check_warning_count "$WORK/sortkey-misuse-$fmt.log" "$WARN_SORT_EXTRA" 1 \
@@ -5390,9 +5537,11 @@ mkdir -p "$WORK/sortesc"
 # below needs the argument text the filter actually emitted.
 quarto render examples/sort-escaping.qmd --to latex > "$WORK/sortesc-latex.log" 2>&1 \
   || { tail -20 "$WORK/sortesc-latex.log" >&2; fail "M06-AC3: sort-escaping.qmd failed to render to LaTeX"; }
+capture examples/sort-escaping.qmd latex "sortesc-latex"
 cp examples/sort-escaping.tex "$WORK/sortesc/"
 quarto render examples/sort-escaping.qmd --to pdf > "$WORK/sortesc-pdf.log" 2>&1 \
   || { tail -20 "$WORK/sortesc-pdf.log" >&2; fail "M06-AC3: the sort-key escaping probe failed to compile through Quarto's own PDF engine"; }
+capture examples/sort-escaping.qmd pdf "sortesc-pdf"
 ( cd "$WORK/sortesc" && pdflatex -interaction=nonstopmode sort-escaping.tex ) \
   > "$WORK/sortesc-tex.log" 2>&1 \
   || { grep -E '^! ' "$WORK/sortesc-tex.log" | head -5 >&2; fail "M06-AC3: the sort-key escaping probe failed to compile"; }
@@ -5496,6 +5645,7 @@ SORTFIELDPY
 # Leg 2 — HTML: the same characters reach the generated section as entries.
 quarto render examples/sort-escaping.qmd --to html > "$WORK/sortesc-html.log" 2>&1 \
   || { tail -20 "$WORK/sortesc-html.log" >&2; fail "M06-AC3: sort-escaping.qmd failed to render to HTML"; }
+capture examples/sort-escaping.qmd html "sortesc-html"
 HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/sort-escaping.html \
   examples/sort-escaping.qmd <<'SORTESCHTMLPY'
 import os, re, sys
@@ -5534,6 +5684,7 @@ check_letter_sweep examples/sort-escaping.html "M07-AC1 (sort-escaping)" \
 for f in sort-escaping sort-escaping-twin; do
   quarto render "examples/$f.qmd" --to gfm > "$WORK/$f-gfm.log" 2>&1 \
     || { tail -20 "$WORK/$f-gfm.log" >&2; fail "M06-AC3: $f.qmd failed to render to gfm"; }
+  capture "examples/$f.qmd" gfm "$f-gfm"
 done
 python3 - examples/sort-escaping.qmd examples/sort-escaping-twin.qmd \
   examples/sort-escaping.md examples/sort-escaping-twin.md <<'SORTESCGFMPY'
@@ -5615,6 +5766,7 @@ MANIFEST
 quarto render examples/letter-groups.qmd --to html \
   > "$WORK/letter-groups-html.log" 2>&1 \
   || { tail -40 "$WORK/letter-groups-html.log" >&2; fail "M07-AC2: letter-groups.qmd failed to render to HTML"; }
+capture examples/letter-groups.qmd html "letter-groups-html"
 check_html_index_manifest examples/letter-groups.html "$LETTER_GROUPS_INDEX" \
   "M07-AC2"
 check_html_index_links examples/letter-groups.html "M07-AC2"
@@ -5781,6 +5933,7 @@ CLAMPTWINPY
 quarto render examples/sortkey-clamp.qmd --to latex \
   > "$WORK/sortkey-clamp-latex.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-clamp-latex.log" >&2; fail "M09-AC1: sortkey-clamp.qmd failed to render to LaTeX"; }
+capture examples/sortkey-clamp.qmd latex "sortkey-clamp-latex"
 # Exactly one report per PAIR, naming that pair's two keys and the printed
 # path they contest. The whole-message checks are what make the count mean
 # what it says: two reports about one pair, or one naming the wrong keys,
@@ -5839,6 +5992,7 @@ MANIFEST
 quarto render examples/sortkey-clamp.qmd --to html \
   > "$WORK/sortkey-clamp-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-clamp-html.log" >&2; fail "M09-AC2: sortkey-clamp.qmd failed to render to HTML"; }
+capture examples/sortkey-clamp.qmd html "sortkey-clamp-html"
 # The report is the LaTeX back-end's alone: the fold is the index tool's
 # ceiling, not an index's, and the entries it collides are four distinct ones
 # here. A report that fired in every format would be telling an HTML author to
@@ -5857,6 +6011,7 @@ for fmt in latex html; do
   quarto render examples/sortkey-clamp-twin.qmd --to "$fmt" \
     > "$WORK/sortkey-clamp-twin-$fmt.log" 2>&1 \
     || { tail -40 "$WORK/sortkey-clamp-twin-$fmt.log" >&2; fail "M09-AC3: sortkey-clamp-twin.qmd failed to render to $fmt"; }
+  capture examples/sortkey-clamp-twin.qmd "$fmt" "sortkey-clamp-twin-$fmt"
   check_warning_count "$WORK/sortkey-clamp-twin-$fmt.log" "$WARN_CLAMP_SPLIT" \
     0 "M09-AC3 ($fmt)"
 done
@@ -5892,6 +6047,7 @@ CLAMPTWINTEXPY
 quarto render examples/sortkey-clamp-twin.qmd --to pdf \
   > "$WORK/sortkey-clamp-twin-pdf.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-clamp-twin-pdf.log" >&2; fail "M09-AC3: sortkey-clamp-twin.qmd failed to render to PDF"; }
+capture examples/sortkey-clamp-twin.qmd pdf "sortkey-clamp-twin-pdf"
 [ -s examples/sortkey-clamp-twin.pdf ] \
   || fail "M09-AC3: examples/sortkey-clamp-twin.pdf is empty"
 check_warning_count "$WORK/sortkey-clamp-twin-pdf.log" "$WARN_CLAMP_SPLIT" 0 \
@@ -5967,6 +6123,7 @@ pass "M09-AC3: two entries sharing one sort key per pair are reported not at all
 quarto render examples/self-xref.qmd --to pdf \
   > "$WORK/self-xref-pdf.log" 2>&1 \
   || { tail -40 "$WORK/self-xref-pdf.log" >&2; fail "M10-AC6: self-xref.qmd failed to render to PDF"; }
+capture examples/self-xref.qmd pdf "self-xref-pdf"
 [ -s examples/self-xref.pdf ] || fail "M10-AC6: examples/self-xref.pdf is empty"
 check_warning_count "$WORK/self-xref-pdf.log" "$WARN_FOLD_SELF" 3 "M10-AC6"
 python3 - examples/self-xref.pdf <<'SELFXREFPDFPY'
@@ -6212,6 +6369,7 @@ for fmt in html latex gfm; do
   quarto render examples/empty-levels.qmd --to $fmt \
     > "$WORK/empty-levels-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/empty-levels-$fmt.log" >&2; fail "M11-AC5: empty-levels.qmd failed to render to $fmt"; }
+  capture examples/empty-levels.qmd $fmt "empty-levels-$fmt"
   # One report per MARK carrying an empty level, not one per empty level
   # (M13): `!Cats`, `Dogs!`, `!Sub!`, `!Owls`, `!Zebra` and `Moles!` are six
   # such marks, and `!Sub!` — which carries two empty levels — draws one of the
@@ -6424,6 +6582,7 @@ pass "M11-AC1/AC4: the emitted LaTeX indexes every mark with anything left to in
 quarto render examples/empty-levels.qmd --to html \
   > "$WORK/empty-levels-html.log" 2>&1 \
   || { tail -40 "$WORK/empty-levels-html.log" >&2; fail "M11-AC3: empty-levels.qmd failed to render to HTML"; }
+capture examples/empty-levels.qmd html "empty-levels-html"
 check_html_index_manifest examples/empty-levels.html "$EMPTY_LEVELS_HTML" \
   "M11-AC3"
 check_html_index_links examples/empty-levels.html "M11-AC3"
@@ -6481,6 +6640,7 @@ pass "M11-AC3: the two back-ends agree on every printed level path, compared aga
 quarto render examples/empty-levels.qmd --to pdf \
   > "$WORK/empty-levels-pdf.log" 2>&1 \
   || { tail -40 "$WORK/empty-levels-pdf.log" >&2; fail "M11-AC1: empty-levels.qmd failed to render to PDF"; }
+capture examples/empty-levels.qmd pdf "empty-levels-pdf"
 [ -s examples/empty-levels.pdf ] || fail "M11-AC1: examples/empty-levels.pdf is empty"
 python3 - examples/empty-levels.pdf "$EMPTY_LEVELS_PDF" <<'EMPTYPDFPY'
 import sys
@@ -6536,9 +6696,11 @@ for fmt in latex html gfm; do
   quarto render examples/dangling-xref.qmd --to $fmt \
     > "$WORK/dangling-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/dangling-$fmt.log" >&2; fail "M14-AC1: dangling-xref.qmd failed to render to $fmt"; }
+  capture examples/dangling-xref.qmd $fmt "dangling-$fmt"
   quarto render examples/resolving-xref.qmd --to $fmt \
     > "$WORK/resolving-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/resolving-$fmt.log" >&2; fail "M14-AC2: resolving-xref.qmd failed to render to $fmt"; }
+  capture examples/resolving-xref.qmd $fmt "resolving-$fmt"
 done
 
 # M14-AC1 — the criterion shape: the document indexes `Cats`, a mark points at
@@ -6868,6 +7030,7 @@ while IFS=$'\t' read -r file want; do
   esac
   quarto render "$file" --to gfm > "$WORK/corpus-$(basename "$file" .qmd).log" 2>&1 \
     || { tail -20 "$WORK/corpus-$(basename "$file" .qmd).log" >&2; fail "M14: $file failed to render to gfm"; }
+  capture "$file" gfm "corpus-$(basename "$file" .qmd)"
   check_warning_count "$WORK/corpus-$(basename "$file" .qmd).log" \
     "$WARN_DANGLING" "$want" "M14 (corpus, $file)"
 done <<< "$DANGLING_CORPUS"
@@ -6889,6 +7052,7 @@ for f in fold-xref fold-xref-both fold-xref-self fold-xref-empty; do
   for fmt in latex html gfm; do
     quarto render "examples/$f.qmd" --to $fmt > "$WORK/$f-$fmt.log" 2>&1 \
       || { tail -20 "$WORK/$f-$fmt.log" >&2; fail "M18: examples/$f.qmd failed to render to $fmt"; }
+    capture "examples/$f.qmd" $fmt "$f-$fmt"
   done
   cp "examples/$f.tex" "$WORK/$f-latex.tex"
 done
@@ -6909,6 +7073,7 @@ CONFLICT_FAIL_B='error generating index'
 quarto render examples/xref-conflict.qmd --to pdf \
   > "$WORK/conflict-pdf.log" 2>&1 \
   || { tail -30 "$WORK/conflict-pdf.log" >&2; fail "M15-AC1: xref-conflict.qmd failed to render to PDF; a term marked both ways must build"; }
+capture examples/xref-conflict.qmd pdf "conflict-pdf"
 [ -s examples/xref-conflict.pdf ] || fail "M15-AC1: examples/xref-conflict.pdf is empty"
 check_warning_count "$WORK/conflict-pdf.log" "$CONFLICT_FAIL_A" 0 "M15-AC1"
 check_warning_count "$WORK/conflict-pdf.log" "$CONFLICT_FAIL_B" 0 "M15-AC1"
@@ -7686,6 +7851,7 @@ pass "M18: HTML applies no ceiling, so the same targets the LaTeX back-end folds
 # because a two-column index interleaves when read as lines.
 quarto render examples/fold-xref.qmd --to pdf > "$WORK/fold-xref-pdf.log" 2>&1 \
   || { tail -40 "$WORK/fold-xref-pdf.log" >&2; fail "M18-AC4: fold-xref.qmd failed to render to PDF"; }
+capture examples/fold-xref.qmd pdf "fold-xref-pdf"
 [ -s examples/fold-xref.pdf ] || fail "M18-AC4: examples/fold-xref.pdf is empty"
 python3 - examples/fold-xref.pdf <<'M18PDFPY'
 import sys
@@ -7779,6 +7945,7 @@ pass "M18 (F1): a target the fold turns into a self-reference draws exactly one 
 # fold does not.
 quarto render examples/fold-xref-both.qmd --to pdf > "$WORK/fold-xref-both-pdf.log" 2>&1 \
   || { tail -40 "$WORK/fold-xref-both-pdf.log" >&2; fail "M18 (F5): fold-xref-both.qmd failed to render to PDF"; }
+capture examples/fold-xref-both.qmd pdf "fold-xref-both-pdf"
 [ -s examples/fold-xref-both.pdf ] || fail "M18 (F5): examples/fold-xref-both.pdf is empty"
 python3 - examples/fold-xref-both.pdf <<'M18BOTHPDFPY'
 import re, subprocess, sys
@@ -7841,6 +8008,7 @@ rm -f examples/principal.md examples/principal.html
 for fmt in latex html gfm; do
   quarto render examples/principal.qmd --to $fmt > "$WORK/principal-$fmt.log" 2>&1 \
     || { cat "$WORK/principal-$fmt.log" >&2; fail "M20: examples/principal.qmd failed to render to $fmt"; }
+  capture examples/principal.qmd $fmt "principal-$fmt"
 done
 for artifact in examples/principal.md examples/principal.html; do
   [ -s "$artifact" ] \
@@ -7852,6 +8020,7 @@ for fmt in latex html gfm; do
   quarto render examples/principal-twin.qmd --to $fmt \
     > "$WORK/principal-twin-$fmt.log" 2>&1 \
     || { cat "$WORK/principal-twin-$fmt.log" >&2; fail "M20: examples/principal-twin.qmd failed to render to $fmt"; }
+  capture examples/principal-twin.qmd $fmt "principal-twin-$fmt"
 done
 cp examples/principal-twin.tex "$WORK/principal-twin.tex"
 # Removed, not merely overwritten: AC1 is stated over the artifacts of THIS
@@ -7862,6 +8031,7 @@ cp examples/principal-twin.tex "$WORK/principal-twin.tex"
 rm -f examples/principal.ind examples/principal.ilg examples/principal.aux
 quarto render examples/principal.qmd --to pdf > "$WORK/principal-pdf.log" 2>&1 \
   || { cat "$WORK/principal-pdf.log" >&2; fail "M20-AC1: examples/principal.qmd failed to render to PDF"; }
+capture examples/principal.qmd pdf "principal-pdf"
 # The fixture sets `latex-clean: false` precisely so these survive; their
 # absence means the fixture lost that option, not that the render was clean.
 for aux in ind ilg aux; do
@@ -8020,6 +8190,7 @@ rm -f examples/principal-cases.ind examples/principal-cases.ilg \
 quarto render examples/principal-cases.qmd --to pdf \
   > "$WORK/principal-cases-pdf.log" 2>&1 \
   || { cat "$WORK/principal-cases-pdf.log" >&2; fail "M20 T9: examples/principal-cases.qmd failed to render to PDF — a plain and a principal mark of one key on one page is the shape this milestone died on, and this render is what proves it no longer breaks the document"; }
+capture examples/principal-cases.qmd pdf "principal-cases-pdf"
 for aux in ind ilg aux; do
   [ -f "examples/principal-cases.$aux" ] \
     || fail "M20 T9: the PDF render left no examples/principal-cases.$aux"
@@ -8113,6 +8284,7 @@ rm -f examples/range.md examples/range.html examples/range.tex
 for fmt in latex html gfm; do
   quarto render examples/range.qmd --to $fmt > "$WORK/range-$fmt.log" 2>&1 \
     || { cat "$WORK/range-$fmt.log" >&2; fail "M21: examples/range.qmd failed to render to $fmt"; }
+  capture examples/range.qmd $fmt "range-$fmt"
 done
 for artifact in examples/range.md examples/range.html; do
   [ -s "$artifact" ] \
@@ -8132,6 +8304,7 @@ cp examples/range.tex "$WORK/range.tex"
 rm -f examples/range.ind examples/range.ilg examples/range.aux
 quarto render examples/range.qmd --to pdf > "$WORK/range-pdf.log" 2>&1 \
   || { cat "$WORK/range-pdf.log" >&2; fail "M21-AC1: examples/range.qmd failed to render to PDF"; }
+capture examples/range.qmd pdf "range-pdf"
 for aux in ind ilg aux; do
   [ -f "examples/range.$aux" ] \
     || fail "M21-AC1: the PDF render left no examples/range.$aux — the fixture's latex-clean option is what keeps it, and without it this criterion has no evidence at all"
@@ -8246,6 +8419,7 @@ for fmt in latex html gfm; do
   quarto render examples/range-misuse.qmd --to $fmt \
     > "$WORK/range-misuse-$fmt.log" 2>&1 \
     || { cat "$WORK/range-misuse-$fmt.log" >&2; fail "M21-AC4: examples/range-misuse.qmd failed to render to $fmt"; }
+  capture examples/range-misuse.qmd $fmt "range-misuse-$fmt"
   # Copied at the render, so the emitted-LaTeX check below reads this run's
   # artifact and not whatever the working tree happens to hold (M15).
   if [ "$fmt" = "latex" ]; then
@@ -8378,6 +8552,7 @@ rm -f examples/range-nested.html
 quarto render examples/range-nested.qmd --to html \
   > "$WORK/range-nested-html.log" 2>&1 \
   || { cat "$WORK/range-nested-html.log" >&2; fail "M23-AC1: examples/range-nested.qmd failed to render to html"; }
+capture examples/range-nested.qmd html "range-nested-html"
 [ -s examples/range-nested.html ] \
   || fail "M23-AC1: the html render produced no examples/range-nested.html, so every clause stated over it would read a file this run did not write"
 # Removed, not overwritten: a stale `.ind` from a tree where the marks paired
@@ -8395,6 +8570,7 @@ rm -f examples/range-nested.ind examples/range-nested.ilg \
 quarto render examples/range-nested.qmd --to pdf \
   > "$WORK/range-nested-pdf.log" 2>&1 \
   || { cat "$WORK/range-nested-pdf.log" >&2; fail "M23-AC1: examples/range-nested.qmd failed to render to PDF"; }
+capture examples/range-nested.qmd pdf "range-nested-pdf"
 for aux in ind ilg; do
   [ -f "examples/range-nested.$aux" ] \
     || fail "M23-AC1: the PDF render left no examples/range-nested.$aux — the fixture's latex-clean option is what keeps it, and without it this criterion has no evidence at all"
@@ -8440,6 +8616,7 @@ rm -f examples/range-position.html
 quarto render examples/range-position.qmd --to html \
   > "$WORK/range-position-html.log" 2>&1 \
   || { cat "$WORK/range-position-html.log" >&2; fail "M23-AC2: examples/range-position.qmd failed to render to html"; }
+capture examples/range-position.qmd html "range-position-html"
 [ -s examples/range-position.html ] \
   || fail "M23-AC2: the html render produced no examples/range-position.html, so every clause stated over it would read a file this run did not write"
 # The `.aux` goes with the `.ind`/`.ilg`: it carries the principal-locator
@@ -8453,6 +8630,7 @@ rm -f examples/range-position.ind examples/range-position.ilg \
 quarto render examples/range-position.qmd --to pdf \
   > "$WORK/range-position-pdf.log" 2>&1 \
   || { cat "$WORK/range-position-pdf.log" >&2; fail "M23-AC2: examples/range-position.qmd failed to render to PDF"; }
+capture examples/range-position.qmd pdf "range-position-pdf"
 for aux in ind ilg; do
   [ -f "examples/range-position.$aux" ] \
     || fail "M23-AC2: the PDF render left no examples/range-position.$aux — the fixture's latex-clean option is what keeps it, and without it this criterion has no evidence at all"
@@ -8527,6 +8705,7 @@ And the discussion of [cockatrice]{.index range="close"} ends here.
 EOF
 ( cd "$M22W" && quarto render stale.qmd --to pdf ) > "$WORK/m22-parent.log" 2>&1 \
   || { cat "$WORK/m22-parent.log" >&2; fail "M22: the stale-aux parent fixture failed to render to PDF"; }
+capture "$M22W/stale.qmd" pdf "m22-parent"
 [ -s "$M22W/stale.aux" ] \
   || fail "M22: the parent render left no stale.aux — the fixture's latex-clean option is what keeps it"
 # The probe's own premise, asserted rather than assumed: the surviving `.aux`
@@ -8554,6 +8733,7 @@ for variant in noattrs nomarks; do
   ( cd "$M22W" && quarto render "$variant.qmd" --to latex ) \
       > "$WORK/m22-$variant-latex.log" 2>&1 \
     || { cat "$WORK/m22-$variant-latex.log" >&2; fail "M22: the $variant variant failed to render to latex"; }
+  capture "$M22W/$variant.qmd" latex "m22-$variant-latex"
   [ -s "$M22W/$variant.tex" ] \
     || fail "M22: the latex render produced no $variant.tex"
   VDIR="$M22W/$variant-run"
@@ -9478,6 +9658,7 @@ filtersrc.sources()" >/dev/null 2>&1; then
     # file defends against in `check_warning_count`, in the same shape.
     rc=0
     ( cd "$dir" && quarto render range-position.qmd --to pdf > render.log 2>&1 ) || rc=$?
+    capture "$dir/range-position.qmd" pdf "m23-$(basename "$dir")"
     ranges=$({ grep -o 'hyperpage{[^}]*}' "$dir/range-position.ind" 2>/dev/null || true; } | tr '\n' ' ')
     reports=$({ grep -c '(W)' "$dir/render.log" || true; } | tr -d ' ')
     printf '%s|%s|%s' "$rc" "$ranges" "$reports"
@@ -9579,6 +9760,7 @@ filtersrc.sources()" >/dev/null 2>&1; then
     ( cd "$M22SW/noinj" && quarto render "$variant.qmd" --to latex ) \
         > "$M22SW/noinj-$variant-render.log" 2>&1 \
       || { cat "$M22SW/noinj-$variant-render.log" >&2; fail "M22 self-test: the spliced filter failed to render $variant at all, so the probe below would fail for the wrong reason"; }
+    capture "$M22SW/noinj/$variant.qmd" latex "m22-noinj-$variant"
     m22_nogobblers "$M22SW/noinj/$variant.tex" \
       || fail "M22 self-test: the splice left a gobbling stand-in in the $variant header, so the pdflatex leg below would not be testing the injection's absence"
     cp "$M22SW/noinj/$variant.tex" "$NDIR/probe.tex"
@@ -9915,9 +10097,11 @@ for VARIANT in tree inst; do
     ( cd "$IP/$VARIANT/solo" && quarto render "$SOLO_NAME.qmd" --to "$FMT" ) \
       > "$WORK/parity-$VARIANT-solo-$FMT.log" 2>&1 \
       || { tail -30 "$WORK/parity-$VARIANT-solo-$FMT.log" >&2; fail "M17-AC3: the $VARIANT standalone render to $FMT failed"; }
+    capture "$IP/$VARIANT/solo/$SOLO_NAME.qmd" "$FMT" "parity-$VARIANT-solo-$FMT"
     ( cd "$IP/$VARIANT/book-$FMT" && quarto render --to "$FMT" ) \
       > "$WORK/parity-$VARIANT-book-$FMT.log" 2>&1 \
       || { tail -30 "$WORK/parity-$VARIANT-book-$FMT.log" >&2; fail "M17-AC3: the $VARIANT book render to $FMT failed"; }
+    capture --project "$IP/$VARIANT/book-$FMT" "$FMT" "parity-$VARIANT-book-$FMT"
   done
 done
 

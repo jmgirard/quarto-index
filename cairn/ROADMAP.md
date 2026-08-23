@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-23 (status audit after M26's merge: all 16 mechanical checks pass, no advisory fired, both inboxes empty, tree clean, nothing in flight. Nothing changed since the merge stamp git now holds. ROADMAP is at 23.4k of its 24k byte budget and LESSONS at 18.4k of 20k; the next pass compresses the widest candidate rows.)_
+_Last hygiene check: 2026-08-23 (M27 merged: findings refiled from candidate rows and lesson lines into `cairn/DESIGN.md`'s Known issues, 79 entries; ROADMAP is 7.0k of its 24k byte budget and 48 lines, LESSONS 7.9k of 20k and 36 lines, and the new `cairn/check-design.md` 12.1k of the 18k and 33 of the 40 lines its own header sets. All 16 mechanical checks pass, no advisory fired, tree clean, nothing in flight. M22's row pruned under terminal-row retention.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M27 | A finding about today's behavior is a known issue, not a candidate row | review | — | normal | milestones/M27-record-ownership.md |
+| M27 | A finding about today's behavior is a known issue, not a candidate row | done | — | normal | milestones/archive/M27-record-ownership.md |
 | M25 | A check that cannot hold its promise is retired, not widened | done | M24 | normal | milestones/archive/M25-scan-disposition.md |
 | M24 | Every check reads the copy, never the working tree | done | — | normal | milestones/archive/M24-captured-artifacts.md |
 | M26 | A document's accumulators start empty, whoever ran before it | done | — | normal | milestones/archive/M26-per-document-state.md |
 | M23 | A range verdict follows its mark's position, not its text | done | — | normal | milestones/archive/M23-positional-range-verdicts.md |
-| M22 | A stale `.aux` outliving its marks still builds | done | — | normal | milestones/archive/M22-stale-aux-builds.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

@@ -8352,6 +8352,60 @@ python3 tests/m21probes.py bookpdf "$WORK/book.txt" "Ranged Term"
 pass "M21-AC5: each chapter of an HTML book reports its own half of a split range over the chapter, the book draws exactly one report naming both marks of the pair it alone can see split, and the same book's PDF — one merged document — still prints that term as a single ranged locator"
 
 # ---------------------------------------------------------------------------
+# M23 — a range verdict follows its mark's POSITION, not its text.
+#
+# `examples/range-nested.qmd` writes an index mark inside a `range=` mark's own
+# content, on both ends of one range, and overlaps that range with a plain one
+# of another term. The outer mark carries no `entry=`, so its key is derived
+# from its stringified visible text — and the emitting pass rewrites the inner
+# mark before it reaches the outer one, so that text is not the same object in
+# the two passes that read it.
+#
+# This is the REGRESSION GUARD half of the milestone: every clause here is true
+# before the re-key and must stay true after it (the M11 untouched-shape
+# lesson, applied to the shape the milestone is about rather than beside it).
+# The two ranges overlap and cover different numbers of pages, so a verdict
+# handed to the wrong mark prints a span of the wrong width rather than merely
+# moving an entry.
+#
+# ORACLE NOTE. Every extent asserted here is stated in PAGES SEPARATED and
+# never in folios: the nested range opens on the fixture's first page and
+# closes on its fourth, the plain one opens on the second and closes on the
+# third. That is a fact about the source the author wrote, and it is the one
+# fact this section does not read out of the artifacts under test (M20).
+# ---------------------------------------------------------------------------
+rm -f examples/range-nested.html
+quarto render examples/range-nested.qmd --to html \
+  > "$WORK/range-nested-html.log" 2>&1 \
+  || { cat "$WORK/range-nested-html.log" >&2; fail "M23-AC1: examples/range-nested.qmd failed to render to html"; }
+[ -s examples/range-nested.html ] \
+  || fail "M23-AC1: the html render produced no examples/range-nested.html, so every clause stated over it would read a file this run did not write"
+# Removed, not overwritten: a stale `.ind` from a tree where the marks paired
+# differently would satisfy every clause below while this run emitted something
+# else entirely (the M15 destroyed-artifact lesson, in its stale-artifact half).
+rm -f examples/range-nested.ind examples/range-nested.ilg
+quarto render examples/range-nested.qmd --to pdf \
+  > "$WORK/range-nested-pdf.log" 2>&1 \
+  || { cat "$WORK/range-nested-pdf.log" >&2; fail "M23-AC1: examples/range-nested.qmd failed to render to PDF"; }
+for aux in ind ilg; do
+  [ -f "examples/range-nested.$aux" ] \
+    || fail "M23-AC1: the PDF render left no examples/range-nested.$aux — the fixture's latex-clean option is what keeps it, and without it this criterion has no evidence at all"
+  cp "examples/range-nested.$aux" "$WORK/range-nested.$aux"
+done
+# The fixture is a well-formed document with no misuse in it, so it must draw
+# no report at all — a range machinery that reported on the nested shape would
+# be telling the author about a mark they wrote correctly.
+check_warning_count "$WORK/range-nested-html.log" '(W)' 0 \
+  "M23-AC1 (the nested fixture is well-formed and draws no report in html)"
+check_warning_count "$WORK/range-nested-pdf.log" '(W)' 0 \
+  "M23-AC1 (nor in the PDF render)"
+
+python3 tests/m23probes.py ind "$WORK/range-nested.ind" "$WORK/range-nested.ilg"
+HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
+  python3 tests/m23probes.py html examples/range-nested.html
+pass "M23-AC1: a range mark whose own content carries another mark pairs with its closing mark in both back-ends — one page range in the PDF index, one locator at the opening mark's anchor in the HTML one — while the plain range beside it keeps its own narrower span and the nested inner mark keeps its two separate locators"
+
+# ---------------------------------------------------------------------------
 # M22 — a stale `.aux` outliving its marks still builds.
 #
 # The typeset-time subsystem is injected only where a mark declares the
@@ -9231,6 +9285,78 @@ filtersrc.sources()" >/dev/null 2>&1; then
   pass "M21 self-test: the three checks the review's findings added — a closing-declared role reaching the registry, no refused range reaching the index tool, and every .aux-borne command defined wherever the subsystem lands — each fail on a planted defect of their own kind"
 
   pass "M21 self-test: every reader the milestone adds fails on a planted defect of each kind it names — a lost pairing, a wrong extent, a registration that composes the wrong string or names the wrong ordinal, a transcript warning, ends disagreeing on their encapsulator and ends disagreeing on their key, a locator at the wrong end, a second locator, a wrongly emphasized range, and a report naming the wrong mark"
+
+  # --- M23: the nested-mark readers, shown discriminating.
+  #
+  # The plants vary FORM as well as site: a range can lose its pairing, be
+  # narrowed, or — the shape this milestone is actually about — take the
+  # verdict planned for the OTHER range in the document, which the two
+  # different span widths are in the fixture to make visible. The mark that
+  # names no end at all can be folded into a range it never asked for. And the
+  # HTML locator can point somewhere other than its opening mark, or be
+  # doubled. Nothing here is aimed by anchor id: the ids are minted per render,
+  # so a plant keyed on one would silently stop planting anything.
+  M23W="$WORK/m23-planted"
+  rm -rf "$M23W"; mkdir -p "$M23W"
+  cp "$WORK/range-nested.ind" "$M23W/clean.ind"
+  cp "$WORK/range-nested.ilg" "$M23W/clean.ilg"
+  cp examples/range-nested.html "$M23W/clean.html"
+  m23_ind() { python3 tests/m23probes.py ind "$1" "$2"; }
+  m23_html() {
+    HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
+      HTML_SECTION_ID="$HTML_SECTION_ID" python3 tests/m23probes.py html "$1"
+  }
+  # The unmutated artifacts must pass, or every failure below would prove only
+  # that the readers always fail.
+  m23_ind "$M23W/clean.ind" "$M23W/clean.ilg" >/dev/null \
+    || fail "M23 self-test: the .ind reader fails on the unplanted artifacts, so no failure below is evidence of anything"
+  m23_html "$M23W/clean.html" >/dev/null \
+    || fail "M23 self-test: the html reader fails on the unplanted render, so no failure below is evidence of anything"
+
+  # (i) the nested range's pairing lost, so it prints its two ends as two
+  #     locators — the whole feature failing on the shape the fixture is for.
+  probe_plantpl "$M23W/clean.ind" "$M23W/unpaired.ind" \
+    's/\\hyperpage\{1--4\}/\\hyperpage{1}, \\hyperpage{4}/'
+  probe_defect "the nested range printed as two separate locators" \
+    m23_ind "$M23W/unpaired.ind" "$M23W/clean.ilg"
+  # (ii) THE DESYNC ITSELF: the two ranges swap the extents they print, which
+  #      is what a verdict handed to the wrong mark looks like in the .ind.
+  #      Neither entry goes missing and neither range comes unpaired, so a
+  #      reader checking only that each entry prints one range would pass it.
+  probe_plantpl "$M23W/clean.ind" "$M23W/swapped.ind" \
+    's/\{1--4\}/{QISWAP}/; s/\{2--3\}/{1--4}/; s/\{QISWAP\}/{2--3}/'
+  probe_defect "the nested and the plain range each printing the other's extent" \
+    m23_ind "$M23W/swapped.ind" "$M23W/clean.ilg"
+  # (iii) the nested range narrowed: the printed span no longer covers the
+  #       pages the fixture separates its marks by.
+  probe_plant "$M23W/clean.ind" "$M23W/short.ind" -e 's/{1--4}/{1--3}/'
+  probe_defect "the nested range covering fewer pages than the fixture separates its ends by" \
+    m23_ind "$M23W/short.ind" "$M23W/clean.ilg"
+  # (iv) the untouched shape moved: the inner mark, which names no end at all,
+  #      folded into a range. A guard that watched only the range entries would
+  #      pass this (the M11 lesson).
+  probe_plantpl "$M23W/clean.ind" "$M23W/innerrange.ind" \
+    's/\\hyperpage\{1\}, \\hyperpage\{4\}/\\hyperpage{1--4}/'
+  probe_defect "the nested inner mark's two pages folded into one range" \
+    m23_ind "$M23W/innerrange.ind" "$M23W/clean.ilg"
+  # (v) a makeindex warning on the transcript: Quarto fails a render on exactly
+  #     that line, so a reader blind to it would call a failing build clean.
+  probe_plant "$M23W/clean.ilg" "$M23W/warned.ilg" -e 's/0 warnings)/1 warning)/'
+  probe_defect "a makeindex warning on the nested fixture" \
+    m23_ind "$M23W/clean.ind" "$M23W/warned.ilg"
+  # (vi) the HTML locator pointing somewhere other than its opening mark — the
+  #      shape a verdict read at the wrong position takes in this back-end.
+  probe_plantpl "$M23W/clean.html" "$M23W/elsewhere.html" \
+    's{(nixie ogopogo</span>, <span class="qi-locators"><a href=")#[^"]*}{$1#qi-nowhere}'
+  probe_defect "the nested range's HTML locator pointing at neither of its marks" \
+    m23_html "$M23W/elsewhere.html"
+  # (vii) a second locator on the nested entry: an unpaired range contributes
+  #       one at each end, which is what the pairing exists to prevent.
+  probe_plantpl "$M23W/clean.html" "$M23W/twoloc.html" \
+    's{(nixie ogopogo</span>, <span class="qi-locators">)(<a [^<]*</a>)}{$1$2$2}'
+  probe_defect "a second HTML locator on the nested range's entry" \
+    m23_html "$M23W/twoloc.html"
+  pass "M23 self-test: the nested-mark readers each fail on a planted defect of their own kind — a lost pairing, the two ranges swapping extents, a narrowed range, the range-free inner mark folded into one, a transcript warning, an HTML locator at neither mark, and a doubled one"
 
   # --- M22: the stale-.aux probe and the no-gobblers-beside-the-subsystem
   #     reader, each shown failing on a defect of its own kind.

@@ -65,7 +65,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 ## Tasks
 <!-- owner: plan (create) / implement (check-off, minor edits) -->
 
-- [ ] T1: Nested fixture: an outer `entry=`-less range mark containing an
+- [x] T1: Nested fixture: an outer `entry=`-less range mark containing an
       inner index mark, plus a plain non-nested range of a different term in
       the same document; give each new mark a term no other mark in the file
       indexes (M13 lesson). Checks in both back-ends, reading the nested
@@ -93,6 +93,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: plan gate chose position-ordinal keying over keeping the per-key queues (with a guarantee that span text never differs between traversals) because the key path depends on what the emitting pass's rewrites stringify to — a property of Pandoc and future emitters, not of this filter; falsified by a document where the two traversals visit range marks in different orders.
 - 2026-08-22: plan gate chose the source-scan certifier over behavior-only criteria because no current rendering reaches the latent desync, so behavior alone certifies nothing about the change; falsified by a constructible rendering that fails pre-fix, which would supersede the scan with a behavioral criterion.
 - 2026-08-22: implementation started on `m23-positional-range-verdicts`.
+- 2026-08-22: T1 — `examples/range-nested.qmd` (an `entry=`-less range mark carrying another mark on both ends, overlapping a plain range of another term with a different span width), `tests/m23probes.py` reading the `.ind`/`.ilg` and the HTML index, and seven self-test plants. Green today: the nested range prints `1--4`, the plain one `2--3`, the inner mark two pages, makeindex 0 warnings. Full suite `--self-test` 386 checks, exit 0. Two helpers factored out of `m21probes._html` rather than copied (M16).
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

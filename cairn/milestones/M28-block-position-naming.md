@@ -1,6 +1,6 @@
 # M28: A reported block position names the sequence it counts
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -107,6 +107,8 @@ to that residue rather than struck, and the residue stays a Known issue.
 - 2026-08-23: minor amendment — T5 gained the four discrimination plants as a discovered sub-task; the check-discrimination rule requires a new check be shown able to fail, and the repo's idiom is to commit the plant beside it.
 
 - 2026-08-23: T6 — D-014 appended annotating D-006; KI21 narrowed to the un-probed injection kinds and marked narrowed M28; KI25 struck. No candidate row pointed at either label — the block-position row was narrowed to its KI23 remainder at plan time — so no row needed rewriting. cairn_validate clean.
+
+- 2026-08-23: all tasks done; `tests/run-tests.sh` passes (286 checks) and `tests/run-tests.sh --self-test` passes (420 checks). Status set to review.
 
 ## Decisions
 

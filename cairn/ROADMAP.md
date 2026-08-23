@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-22 (M20 merged and archived — a term's principal discussion now prints emphasized in both back-ends, the LaTeX side on a typeset-time channel because makeindex's encapsulation channel cannot carry it (D-007). Three review rounds, two defect returns; RB01/RR01 already archived. M05's range-fold lesson retired under the enforcement exit, four checks now failing without it, and M20's oracle-independence lesson added in its place. M16's terminal row pruned to hold the 5-row retention. M21 is now workable. Caps and byte budgets clean.)_
+_Last hygiene check: 2026-08-22 (M21 worked through four review rounds — nine, seven, twelve then ten findings — and was parked as blocked at the fourth gate, the branch and PR #21 left intact with the resume path in its Review section. Cross-chapter ranges left scope on the way (D-009), and two candidate rows came out of the rounds: the stale-`.aux` block and the nested-mark pass desync. No open issues; the only open PR is M21's own. Caps, byte budgets and every mechanical check clean; one advisory — M21 carries 11 tasks against the 10-task split tripwire.)_
 
 ## Milestones
 

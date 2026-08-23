@@ -9,7 +9,7 @@
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Principles touched:** —   <!-- owner: plan · create/amend-via-gate -->
-- **Branch/PR:** `m23-positional-range-verdicts`   <!-- owner: implement (branch) / review (PR URL) · create -->
+- **Branch/PR:** `m23-positional-range-verdicts` · https://github.com/jmgirard/quarto-index/pull/23   <!-- owner: implement (branch) / review (PR URL) · create -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -98,6 +98,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: T3 — `tests/scans/range-position.py`, over the whole Lua source set through `filtersrc` (a superset of the two files AC2 names, so a pinned name that leaves them is an absence it fails on). Registered in `run_scan`, in `tests/plantdefect.py`, and in the M16-AC3 count, now 13. Three splices show it discriminating: the entry key back on `next_range` and its call site, `finish_ranges` renamed away, and the emitting pass given a second guard advancing the same counter on its own condition. Full suite `--self-test` 391 checks, exit 0.
 - 2026-08-22: T4 — the range-machinery header comment now says a verdict belongs to a mark by position; the `marks_seen` module-state candidate row widened for `range_verdicts`/`range_at`. Nothing to remove from the ROADMAP: the R3-F9 row was already absorbed into this milestone at plan time (9b9bf91). README and DESIGN checked and unchanged — the change is behavior-preserving and neither describes the keying. Verify run in flight; result on the next line.
 - 2026-08-22: T4 verify run landed — full suite `--self-test`, 391 checks, exit 0. Status to review.
+- 2026-08-22: review opened — draft PR #23; consistency gate green (`cairn_validate` all checks passed; no principle change, so no impact report; the `generic` profile names no toolchain checks). No CI configured on this repo. Three fresh-context reviewers running; acceptance evidence to follow.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

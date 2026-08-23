@@ -70,13 +70,13 @@ checks' file-reading is settled there first.
 
 ## Tasks
 
-- [ ] T1: Give `warn-distinct.py` a mode that emits the extension's warning
+- [x] T1: Give `warn-distinct.py` a mode that emits the extension's warning
       literals as a list the shell can read, and load it once near the suite's
       other pinned constants.
-- [ ] T2: Replace the five bare-`(W)` sites — `tests/run-tests.sh:8406`, `8470`
+- [x] T2: Replace the five bare-`(W)` sites — `tests/run-tests.sh:8406`, `8470`
       and their PDF twins, plus the three `grep -q '^(W)'` controls at `4929`,
       `5005` and `5131` — with assertions over that literal set.
-- [ ] T3: Prove the replacement discriminating both ways: plant an
+- [x] T3: Prove the replacement discriminating both ways: plant an
       extension warning into a captured log copy and require the control to
       fail; plant a foreign filter's `(W)` line and require it to pass.
 - [ ] T4: Delete the twelve-scan count pin (`tests/run-tests.sh:9649-9658`).
@@ -99,3 +99,6 @@ checks' file-reading is settled there first.
 - 2026-08-23: plan gate ran the REDUCED criteria audit (internal tier) on M24's criteria; M25's were written against the same three questions and the five findings that audit returned. Two were caught in drafting here: a criterion promising that each scan's disposition is "recorded in the Decisions section" bound a recording act (D-120) and became T5; a criterion promising each scan's header comment states what it asserts bound a checker's own prose (D-118) and became T7.
 - 2026-08-23: plan gate chose retiring the source-shape scans over hardening them, because D-004 already refused the same widening for `byte-diff.sh` and M23 found six such gaps by hand that the scans exited 0 on; falsified by a tree-breaking defect that a widened scan catches and no render does.
 - 2026-08-23: plan gate chose matching the extension's own message set over prefixing every warning with an identifying token, because the prefix rewrites user-visible text across 20+ messages and collides with the README claim pins and `warn-distinct`'s single-literal needles; falsified by evidence that the literal set cannot be enumerated from source completely enough for a zero-control to rest on.
+- 2026-08-23: gate chose (a) narrowing `xref-both-definition` rather than deleting it, (b) converting the two further bare-`(W)` sites the plan's list missed — the book's four-warning total and the range self-test's per-row report count, both spelled `grep -c` — and (c) repairing two more scans AC4's promise reaches, `m15-joined-messages` (presence, not an exact count) and `latex-escape-table` (its table taken at the first `split`), and (d) having `warn-distinct.py` emit ready-made search patterns rather than raw texts the shell would have to widen.
+- 2026-08-23: T1-T3. `warn-distinct.py --patterns` writes one extended regular expression per warn() message, placeholders widened (`%d` to digits, others to a wildcard) and everything else quoted for the platform's grep, emitted only after the scan's own assertions pass. `run-tests.sh` generates the set once beside the message constants and adds `check_extension_warning_count`. Nine bare-`(W)` sites converted: the four `check_warning_count … '(W)'` (M23-AC1 x2, M23-AC2 x2), the three `grep -q '^(W)'` controls (M06-AC1 x2, M06-AC2), the book's four-warning total (M05-AC4/M14-AC5) and the M23 self-test's per-row report count. Both AC1 greps return nothing. The AC2 probe plants `$WARN_BOTH` into a copy of the range-nested html log and requires the control to fail naming its count, then plants a foreign filter's `(W)` line and requires it to pass. Suite green, 263 checks.
+- 2026-08-23: minor amendment — T2's site list said five and named line numbers M24 had since moved; nine sites in today's tree, enumerated in the line above.

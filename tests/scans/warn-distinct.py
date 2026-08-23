@@ -7,6 +7,71 @@ sys.path.insert(0, 'tests')
 import filtersrc
 src = filtersrc.text()
 
+# `--patterns` prints the messages read below as one POSIX extended regular
+# expression per line, for `grep -E -f`. It runs only after every assertion in
+# this file has passed, so a run can never grep a log against a message set the
+# distinctness checks rejected.
+PATTERNS_MODE = '--patterns' in sys.argv[1:]
+
+LUA_ESCAPES = {'a': '\a', 'b': '\b', 'f': '\f', 'n': '\n', 'r': '\r',
+               't': '\t', 'v': '\v'}
+
+
+def unescaped(literal):
+    """The characters a Lua literal stands for, not the source between quotes.
+
+    `\\index` in the source is one backslash in the emitted message, and a
+    pattern built from the source spelling would look for two.
+    """
+    out, i = [], 0
+    while i < len(literal):
+        c = literal[i]
+        if c == '\\' and i + 1 < len(literal):
+            nxt = literal[i + 1]
+            out.append(LUA_ESCAPES.get(nxt, nxt))
+            i += 2
+        else:
+            out.append(c)
+            i += 1
+    return ''.join(out)
+
+
+# Deliberately not `re.escape`: that quotes characters (`-`, `&`, `~`, `#`,
+# space) whose backslashed form is undefined in a POSIX extended regular
+# expression, and the greps that read this file are the platform's, not
+# Python's.
+ERE_SPECIAL = set('.[]\\()*+?{}|^$')
+FORMAT_SPEC = re.compile(r'%[-+ #0]*[0-9]*(?:\.[0-9]+)?([%a-zA-Z])')
+
+
+def as_pattern(literal):
+    """One message as a pattern matching the line the render actually emits.
+
+    A message is a `:format()` template, so its placeholders stand for values
+    this scan cannot know: `%d` widens to a run of digits and every other
+    conversion to a wildcard, and the text around them is matched literally.
+    """
+    text = unescaped(literal)
+    if '\n' in text:
+        print(f'FAIL: M25: warning message <<{text}>> contains a newline, so a '
+              f'line-oriented grep could never match the line it is emitted on',
+              file=sys.stderr)
+        sys.exit(1)
+    out, last = [], 0
+    for m in FORMAT_SPEC.finditer(text):
+        out.append(quoted(text[last:m.start()]))
+        conv = m.group(1)
+        out.append('%' if conv == '%'
+                   else '[0-9]+' if conv in 'di'
+                   else '.*')
+        last = m.end()
+    out.append(quoted(text[last:]))
+    return ''.join(out)
+
+
+def quoted(text):
+    return ''.join('\\' + c if c in ERE_SPECIAL else c for c in text)
+
 
 # Line comments removed before anything is read: `\bwarn\(` otherwise matches
 # the function's own definition and every mention of `warn()` in a comment,
@@ -179,5 +244,11 @@ for a in lits:
             print(f'FAIL: M02-AC5: warning <<{a}>> is a prefix of <<{b}>>',
                   file=sys.stderr)
             sys.exit(1)
+if PATTERNS_MODE:
+    # After every assertion above, never before: the run greps its logs against
+    # this set to tell this extension's warnings from any other filter's, and a
+    # set this scan had just rejected would be the wrong thing to ask.
+    print('\n'.join(as_pattern(l) for l in lits))
+    sys.exit(0)
 print(f'ok   M02-AC5: all {len(lits)} filter warnings are mutually distinct, '
       f'compared as whole messages')

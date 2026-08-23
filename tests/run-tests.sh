@@ -1631,6 +1631,37 @@ check_warning_count() {
     || fail "$label: expected $want occurrence(s) of <<$pattern>> in $logfile, got $got"
 }
 
+# This extension's own warnings, as search patterns. Quarto runs several filters
+# over a document and every one of them logs through the same `(W)` prefix, so a
+# check that counts `(W)` lines counts warnings this extension never emitted —
+# and a zero-expectation control resting on that pattern passes on a run where
+# this extension warned and something else did not (M23 review F12).
+#
+# The set is the filter's own warn() messages, read out of the source set by the
+# same scan that already holds them distinct, with each `:format()` placeholder
+# widened to a wildcard. Generated ONCE, here, beside the message constants
+# below: a scan run per control would read the source twenty times over, and a
+# written-down copy would be a second hand-maintained list of the same strings.
+QI_WARN_PATTERNS="$WORK/warn-patterns.txt"
+python3 tests/scans/warn-distinct.py --patterns > "$QI_WARN_PATTERNS" \
+  || fail "M25: could not read this extension's warning messages out of the filter source set (the scan's own FAIL line is above); every control below would then be asserted over an empty message set"
+[ -s "$QI_WARN_PATTERNS" ] \
+  || fail "M25: tests/scans/warn-distinct.py --patterns wrote no pattern, so every control below would match nothing and pass vacuously"
+
+# Assert THIS EXTENSION warned an exact number of times during a render.
+# Matching LINES rather than occurrences, unlike check_warning_count above: a
+# message whose wildcard can span another message's text matches the same line
+# twice, and Quarto writes one warning per line, so the line is the unit that
+# counts each warning once.
+check_extension_warning_count() {
+  local logfile="$1" want="$2" label="$3" got
+  got=$( { grep -E -c -f "$QI_WARN_PATTERNS" "$logfile" || true; } | tr -d ' ')
+  if [ "$got" != "$want" ]; then
+    { grep -E -f "$QI_WARN_PATTERNS" "$logfile" || true; } >&2
+    fail "$label: expected $want warning(s) from this extension in $logfile, got $got"
+  fi
+}
+
 # The whole message, not its prefix: the tail was reworded in M08 when a
 # self-referential target became droppable, and README now pins the matching
 # sentence — a prefix-only pattern would let the two drift apart.
@@ -4567,10 +4598,8 @@ PY
 BOOK_DANGLING='see= on term "Epsilon" in sub/two.qmd points at "No Such Entry", which no index mark in this book indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'
 check_warning_count "$WORK/book-html.log" "$BOOK_DANGLING" 1 "M14-AC5"
 BOOK_WARNINGS=4
-if [ "$( { grep -c '^(W)' "$WORK/book-html.log" || true; } )" != "$BOOK_WARNINGS" ]; then
-  grep '^(W)' "$WORK/book-html.log" >&2
-  fail "M05-AC4/M14-AC5: the book fixture emitted warning(s) this suite cannot name; its $BOOK_WARNINGS are the dangling-target report, the two chapter halves of the split range, and the book's own unpaired-range report — and a resolvable cross-file target must draw none"
-fi
+check_extension_warning_count "$WORK/book-html.log" "$BOOK_WARNINGS" \
+  "M05-AC4/M14-AC5 (the book fixture emitted warning(s) this suite cannot name; its $BOOK_WARNINGS are the dangling-target report, the two chapter halves of the split range, and the book's own unpaired-range report — and a resolvable cross-file target must draw none)"
 pass "M05-AC4/M14-AC5: all four of the book's warnings are ones this suite names — the target no chapter indexes, each chapter's half of the split range, and the book's report naming the pair — and the resolvable cross-file target draws neither"
 
 # ---------------------------------------------------------------------------
@@ -5046,10 +5075,8 @@ capture examples/sortkey.qmd pdf "sortkey-pdf"
 [ -s "$CAPTURE_ROOT/sortkey-pdf/sortkey.pdf" ] || fail "M06-AC1: $CAPTURE_ROOT/sortkey-pdf/sortkey.pdf is empty"
 # A sort key must not cost the author a warning: every mark in this fixture is
 # well formed, so a clean render is part of the criterion.
-if grep -q '^(W)' "$WORK/sortkey-pdf.log"; then
-  grep '^(W)' "$WORK/sortkey-pdf.log" >&2
-  fail "M06-AC1: examples/sortkey.qmd warned; every mark in it is well formed"
-fi
+check_extension_warning_count "$WORK/sortkey-pdf.log" 0 \
+  "M06-AC1 (examples/sortkey.qmd warned; every mark in it is well formed)"
 
 printf '%s\n' "$SORTKEY_PDF_OUTLINE" > "$WORK/sortkey-outline.txt"
 python3 - "$CAPTURE_ROOT/sortkey-pdf/sortkey.pdf" "$WORK/sortkey-outline.txt" <<'OUTLINEPY'
@@ -5124,10 +5151,8 @@ DIFFPY
 quarto render examples/sortkey.qmd --to html > "$WORK/sortkey-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-html.log" >&2; fail "M06-AC2: sortkey.qmd failed to render to HTML"; }
 capture examples/sortkey.qmd html "sortkey-html"
-if grep -q '^(W)' "$WORK/sortkey-html.log"; then
-  grep '^(W)' "$WORK/sortkey-html.log" >&2
-  fail "M06-AC2: examples/sortkey.qmd warned in HTML; every mark in it is well formed"
-fi
+check_extension_warning_count "$WORK/sortkey-html.log" 0 \
+  "M06-AC2 (examples/sortkey.qmd warned in HTML; every mark in it is well formed)"
 check_html_index_manifest "$CAPTURE_ROOT/sortkey-html/sortkey.html" "$SORTKEY_HTML_INDEX" "M06-AC2"
 check_letter_sweep "$CAPTURE_ROOT/sortkey-html/sortkey.html" "M07-AC3 (sort keys)" \
   $'A\nH\nL\nM\nN\nT'
@@ -5252,10 +5277,8 @@ quarto render examples/sortkey-paths.qmd --to latex \
   > "$WORK/sortkey-paths-latex.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-paths-latex.log" >&2; fail "M06-AC1: sortkey-paths.qmd failed to render to LaTeX"; }
 capture examples/sortkey-paths.qmd latex "sortkey-paths-latex"
-if grep -q '^(W)' "$WORK/sortkey-paths-latex.log"; then
-  grep '^(W)' "$WORK/sortkey-paths-latex.log" >&2
-  fail "M06-AC1: examples/sortkey-paths.qmd warned; every mark in it is well formed"
-fi
+check_extension_warning_count "$WORK/sortkey-paths-latex.log" 0 \
+  "M06-AC1 (examples/sortkey-paths.qmd warned; every mark in it is well formed)"
 printf '%s\n' "$SORTKEY_PATHS_ENTRIES" > "$WORK/sk-paths-entries.txt"
 python3 - examples/sortkey-paths.qmd "$CAPTURE_ROOT/sortkey-paths-latex/sortkey-paths.tex" \
   "$WORK/sk-paths-entries.txt" <<'PATHSPY'
@@ -8474,10 +8497,44 @@ done
 # The fixture is a well-formed document with no misuse in it, so it must draw
 # no report at all — a range machinery that reported on the nested shape would
 # be telling the author about a mark they wrote correctly.
-check_warning_count "$WORK/range-nested-html.log" '(W)' 0 \
+check_extension_warning_count "$WORK/range-nested-html.log" 0 \
   "M23-AC1 (the nested fixture is well-formed and draws no report in html)"
-check_warning_count "$WORK/range-nested-pdf.log" '(W)' 0 \
+check_extension_warning_count "$WORK/range-nested-pdf.log" 0 \
   "M23-AC1 (nor in the PDF render)"
+
+# A zero-EXPECTATION control is evidence only if it discriminates, and this one
+# replaced a bare `(W)` pattern that could not: every filter Quarto runs logs
+# through the same prefix, so the old control passed on a run where this
+# extension warned and another filter did not (M23 review F12). Both directions
+# are shown against COPIES of the log this render just wrote, so the planting
+# sits on a real render's output rather than on a hand-built file.
+#
+# (a) One of this extension's own warnings makes the control fail — and fail
+#     BY COUNTING IT: a control that died of a missing file also exits
+#     non-zero, and would otherwise be read as the control catching the plant.
+cp "$WORK/range-nested-html.log" "$WORK/m25-ext-warned.log"
+printf '(W) %s\n' "$WARN_BOTH" >> "$WORK/m25-ext-warned.log"
+if M25_OUT=$( ( check_extension_warning_count "$WORK/m25-ext-warned.log" 0 \
+                  "M25-AC2 probe" ) 2>&1 ); then
+  fail "M25-AC2: the zero-warning control passed on a copy of this render's log carrying one of this extension's own warnings, so no control resting on it is evidence of anything"
+fi
+case "$M25_OUT" in
+  *"M25-AC2 probe: expected 0 warning(s) from this extension"*"got 1"*) : ;;
+  *) fail "M25-AC2: the zero-warning control failed on the planted extension warning, but not by counting it (<<$M25_OUT>>), so its failure is not evidence that it reads this extension's message set" ;;
+esac
+
+# (b) ...and another filter's warning leaves it passing. The planted line
+#     carries the same prefix, which is the whole difference between the two
+#     patterns; it is checked back by its own full text rather than by that
+#     prefix, so this control is not itself one that matches every warning.
+M25_FOREIGN='(W) some other filter reports something this extension never emits'
+cp "$WORK/range-nested-html.log" "$WORK/m25-foreign-warned.log"
+printf '%s\n' "$M25_FOREIGN" >> "$WORK/m25-foreign-warned.log"
+grep -qF -- "$M25_FOREIGN" "$WORK/m25-foreign-warned.log" \
+  || fail "M25-AC2: the foreign-warning plant landed nothing, so the control passing below would be passing over an unplanted log"
+check_extension_warning_count "$WORK/m25-foreign-warned.log" 0 \
+  "M25-AC2 (a warning from another filter is not one of this extension's)"
+pass "M25-AC2: the zero-warning control discriminates both ways — on a copy of this render's log it fails, by counting it, when one of this extension's own warnings is planted, and passes when another filter's warning line is the only one present"
 
 python3 tests/m23probes.py ind "$WORK/range-nested.ind" "$WORK/range-nested.ilg"
 HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
@@ -8537,9 +8594,9 @@ check_warning_count "$WORK/range-position-html.log" \
 check_warning_count "$WORK/range-position-pdf.log" \
   'index mark with no visible term and no entry=; nothing to index' 1 \
   "M23-AC2 (and once in the PDF render)"
-check_warning_count "$WORK/range-position-html.log" '(W)' 1 \
+check_extension_warning_count "$WORK/range-position-html.log" 1 \
   "M23-AC2 (and it is the only report the fixture draws in html)"
-check_warning_count "$WORK/range-position-pdf.log" '(W)' 1 \
+check_extension_warning_count "$WORK/range-position-pdf.log" 1 \
   "M23-AC2 (nor any other in the PDF render)"
 
 python3 tests/m23probes.py posind "$WORK/range-position.ind" "$WORK/range-position.ilg"
@@ -9552,7 +9609,7 @@ filtersrc.sources()" >/dev/null 2>&1; then
     ( cd "$dir" && quarto render range-position.qmd --to pdf > render.log 2>&1 ) || rc=$?
     capture "$dir/range-position.qmd" pdf "m23-$(basename "$dir")"
     ranges=$({ grep -o 'hyperpage{[^}]*}' "$dir/range-position.ind" 2>/dev/null || true; } | tr '\n' ' ')
-    reports=$({ grep -c '(W)' "$dir/render.log" || true; } | tr -d ' ')
+    reports=$({ grep -E -c -f "$QI_WARN_PATTERNS" "$dir/render.log" || true; } | tr -d ' ')
     printf '%s|%s|%s' "$rc" "$ranges" "$reports"
   }
   mkdir -p "$M23B/control/_extensions"

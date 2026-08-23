@@ -1,11 +1,14 @@
--- The four Span passes, in the order the filter returns them: three that only
--- read — one registering sort keys, one deciding which keys are contested, one
--- pairing page ranges — and the emitting pass that rewrites the mark. The range
--- pass carries a document hook as well, since whether an opening is ever closed
--- is a fact only the whole document settles.
+-- The per-document reset and the four Span passes, in the order the filter
+-- returns them: the reset, then three passes that only read — one registering
+-- sort keys, one deciding which keys are contested, one pairing page ranges —
+-- and the emitting pass that rewrites the mark. The range pass carries a
+-- document hook as well, since whether an opening is ever closed is a fact only
+-- the whole document settles.
 --
--- They share the accumulators in `qi_marks` and `qi_latex` rather than passing
--- state between themselves: Pandoc runs each as a separate traversal.
+-- They share the accumulators in `qi_marks`, `qi_latex` and `qi_sortkeys`
+-- rather than passing state between themselves: Pandoc runs each as a separate
+-- traversal. Those accumulators outlive a document — `require` caches a module
+-- for the life of the Lua state — which is what the reset above them is for.
 
 local qi_core = require("./core")
 local qi_latex = require("./latex")
@@ -14,6 +17,19 @@ local qi_marks = require("./marks")
 local qi_sortkeys = require("./sortkeys")
 
 local M = {}
+
+-- The per-document reset, run before any other pass. Each stateful module owns
+-- its own `reset`; this pass is the one place they are called, so a module that
+-- gains a cell has one place to join. A document hook rather than an element
+-- one because it has to run before the first mark is seen, and Pandoc runs a
+-- filter table with no element function over the document before the next
+-- table's element functions (M26).
+local function Reset()
+  qi_marks.reset()
+  qi_latex.reset()
+  qi_sortkeys.reset()
+  return nil
+end
 
 -- The collect pass: a full traversal that only reads. It runs before the
 -- emitting pass so that a sort key written on ANY mark of an entry is known
@@ -577,6 +593,7 @@ end
 -- scans take the FIRST match for `NAME =` over the whole source set, and
 -- the M16-AC3 probe relocates a definition into another file — a plain
 -- `NAME =` line left behind here would then mask it (M16 review F3).
+M["Reset"] = Reset
 M["CollectSort"] = CollectSort
 M["CollectKeys"] = CollectKeys
 M["CollectRanges"] = CollectRanges

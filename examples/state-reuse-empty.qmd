@@ -1,0 +1,21 @@
+---
+title: "quarto-index per-document state, no marks at all"
+from: markdown-smart
+filters:
+  - index
+  - ../tests/state-pollute.lua
+---
+
+# A marker with nothing to place
+
+This fixture carries an index placement marker and no index marks whatever.
+That is its whole job: the count of marks seen is zero here, so a leaked count
+from an earlier document makes this document emit the index setup and the
+index itself, and silences the report saying there is nothing to place. In
+either fixture beside this one the count is already non-zero, and a leak moves
+nothing.
+
+::: {.qi-index-here}
+:::
+
+Prose after the marker, so its removal is visible as an absence.

@@ -553,10 +553,38 @@ local function derive_levels(entry, visible, declared, content_count, context,
   return nil, "keep"
 end
 
+-- Every mutable cell this module owns, back to the value its declaration
+-- gives. `require` caches a module for the life of the Lua state, so nothing
+-- else returns these to their initial values: a state reused across documents
+-- would hand the second document whatever the first left here (M26). The
+-- filter runs this before any pass of every document, so the guarantee holds
+-- whether or not a toolchain ever reuses a state.
+--
+-- Tables are emptied in place. They are exported by reference, so a fresh
+-- table here would restore this module's own view and leave every reader
+-- holding the old one.
+local function reset()
+  M["marks_seen"] = 0
+  qi_core.empty(html_marks)
+  qi_core.empty(marked_paths)
+  qi_core.empty(pending_xrefs)
+  qi_core.empty(clamped_paths)
+  qi_core.empty(range_items)
+  qi_core.empty(range_found)
+  -- Assigned wholesale by `finish_ranges` on every document, so no earlier
+  -- document's findings can survive into one. Emptied here anyway: it is a
+  -- cell of this module's, and a reset that skipped it would be a rule with an
+  -- exception nothing enforces.
+  qi_core.empty(range_pair_found)
+  qi_core.empty(range_verdicts)
+  range_at = 0
+end
+
 -- Exported through the bracket form, never `M.NAME = NAME`: the source
 -- scans take the FIRST match for `NAME =` over the whole source set, and
 -- the M16-AC3 probe relocates a definition into another file — a plain
 -- `NAME =` line left behind here would then mask it (M16 review F3).
+M["reset"] = reset
 M["span_text"] = span_text
 M["target_levels"] = target_levels
 M["describe"] = describe

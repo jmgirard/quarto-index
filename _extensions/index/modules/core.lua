@@ -353,6 +353,19 @@ local LATEX_LITERAL = {
   ['"'] = "\\textquotedbl{}",
 }
 
+-- Empty a table in place, returning it. The per-document `reset` each stateful
+-- module owns calls this rather than assigning a fresh table: an accumulator is
+-- exported by reference — `M["marked_paths"] = marked_paths` hands the filter
+-- the table itself — so a rebound local would restore nothing the filter reads
+-- (M26). Setting an existing key to nil during a `pairs` traversal is the one
+-- mutation Lua allows there.
+local function empty(t)
+  for k in pairs(t) do
+    t[k] = nil
+  end
+  return t
+end
+
 local function warn(msg)
   if quarto and quarto.log and quarto.log.warning then
     quarto.log.warning(msg)
@@ -425,6 +438,7 @@ M["PRINCIPAL_SUBSYSTEM"] = PRINCIPAL_SUBSYSTEM
 M["PRINCIPAL_GOBBLERS"] = PRINCIPAL_GOBBLERS
 M["HTML_PRINCIPAL_CLASS"] = HTML_PRINCIPAL_CLASS
 M["LATEX_LITERAL"] = LATEX_LITERAL
+M["empty"] = empty
 M["warn"] = warn
 M["is_latex_derived"] = is_latex_derived
 M["is_html"] = is_html

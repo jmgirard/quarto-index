@@ -104,10 +104,18 @@ local function clamp_sort(sort)
   return clamped
 end
 
+-- The one cell this module owns, back to the value its declaration gives, for
+-- the reason marks.lua's own `reset` states. Emptied in place: the registry is
+-- exported by reference and qi_book reads it through that export.
+local function reset()
+  qi_core.empty(sort_keys)
+end
+
 -- Exported through the bracket form, never `M.NAME = NAME`: the source
 -- scans take the FIRST match for `NAME =` over the whole source set, and
 -- the M16-AC3 probe relocates a definition into another file — a plain
 -- `NAME =` line left behind here would then mask it (M16 review F3).
+M["reset"] = reset
 M["sort_keys"] = sort_keys
 M["register_sort"] = register_sort
 M["sort_for"] = sort_for

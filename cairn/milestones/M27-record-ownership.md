@@ -20,14 +20,17 @@ external consumer of the repo relies.
 
 **In:** classifying every candidate row and lesson line by what it actually
 holds; moving findings about current behavior into `cairn/DESIGN.md`'s
-`## Known issues`; retiring lesson content the acceptance suite's self-test
-already enforces; writing the boundary rule as a `cairn/DECISIONS.md` entry and
-pointing both files' header comments at it.
+`## Known issues`; graduating the sixteen `cairn/LESSONS.md` lines that teach
+how to build a check, an oracle or a criterion into `cairn/check-design.md`, a
+repo doctrine module carrying its own line and byte budget in its header;
+writing the boundary rule as a `cairn/DECISIONS.md` entry and pointing both
+files' header comments at it.
 
 **Out:** dropping any candidate row outright — the plan gate kept everything,
 so a row either shrinks to its proposal or its content moves. Mechanizing the
 byte budgets — `cairn_validate` is the plugin's, not this repo's, so the
-budgets stay hand-checked at hygiene passes. Any change under `tests/` or
+budgets stay hand-checked at hygiene passes. Rewriting any graduated line —
+the module carries the sixteen as they stand. Any change under `tests/` or
 `_extensions/` — this milestone touches records only.
 
 ## Acceptance criteria
@@ -53,10 +56,11 @@ budgets stay hand-checked at hygiene passes. Any change under `tests/` or
       a finding about current behavior and which holds proposed work, and the
       `## Candidates` comment in `cairn/ROADMAP.md` and the header comment in
       `cairn/LESSONS.md` each name that entry by its id.
-- [ ] AC6: Every variation this milestone removes from the "prove a check
-      discriminating" lesson is one the acceptance suite's self-test covers,
-      with the covering check named beside it in this file's `## Decisions`
-      section. Domain: every clause the diff of that line removes.
+- [ ] AC6: The sixteen `cairn/LESSONS.md` lines about how to build a check, an
+      oracle or a criterion are absent from that file and present verbatim in
+      `cairn/check-design.md`. Domain: every line the diff of
+      `cairn/LESSONS.md` removes, compared byte for byte against the module's
+      own lines.
 
 ## Coverage
 
@@ -85,10 +89,11 @@ budgets stay hand-checked at hygiene passes. Any change under `tests/` or
       a pointer to its `## Known issues` entry. Bound the pass with a command,
       not by eye (M17's lesson): require every clause the diff removes to
       appear in `cairn/DESIGN.md` or the T1 ledger before committing.
-- [ ] T5: Trim the "prove a check discriminating" lesson to the variations the
-      self-test does not cover, confirming each removal by running
-      `tests/run-tests.sh --self-test` and naming the covering check. Retire
-      any other lesson meeting the enforcement or ownership exit.
+- [x] T5: Move the sixteen check-, oracle- and criterion-design lines out of
+      `cairn/LESSONS.md` into `cairn/check-design.md` verbatim, giving the
+      module a header that states its scope and its own line and byte budget.
+      Confirm the move byte for byte, and run `tests/run-tests.sh --self-test`
+      once to confirm no code moved.
 - [ ] T6: Re-measure `wc -c -l` on both files against AC1, run
       `cairn_validate.py`, and run `tests/run-tests.sh --self-test` once to
       confirm no code moved.
@@ -100,6 +105,10 @@ budgets stay hand-checked at hygiene passes. Any change under `tests/` or
 - 2026-08-23: T2 wrote D-013 in `cairn/DECISIONS.md`; the `## Candidates` comment in `cairn/ROADMAP.md` and the header comment in `cairn/LESSONS.md` each name it. Verify slot green (275 checks).
 - 2026-08-23: T3 wrote `cairn/DESIGN.md`'s `## Known issues` — 79 entries, KI1-KI79, grouped by area, each naming its review. Verify slot green (275 checks).
 - 2026-08-23: T4 rewrote the candidate list to 28 rows, each stating work and pointing at its KI labels; six single-item suite rows folded into the acceptance-suite row. The pass was bounded by a vocabulary command over the removed lines, which found four real losses (KI10's accumulator names, two split hyphenated words, two dropped promotion conditions), all repaired; it now reports zero. ROADMAP is 7,064 bytes / 49 lines. Verify slot green (275 checks).
+- 2026-08-23: T5 found the plan's retirement lever absent. `tests/run-tests.sh --self-test` passes 409 checks, and all 84 of its self-test assertions target a specific milestone's own readers (M20-M23), the fixture-check, and the warning-count discrimination helper; for six of the "prove a check discriminating" lesson's eight shapes it holds no assertion whose subject is the mistake, so there is nothing to plant into. Retiring only what it covers frees about 260 of the ~2,500 bytes AC1 needs — the falsifier the plan gate named for that route.
+- 2026-08-23: amendment (substantive, taken at a mini gate): Scope In loses "retiring lesson content the acceptance suite's self-test already enforces" and gains graduating the sixteen check-, oracle- and criterion-design lines into `cairn/check-design.md` under the maturation exit; Scope Out gains "Rewriting any graduated line — the module carries the sixteen as they stand"; AC6 is replaced. The criteria set stays at six. Amended AC6: "The sixteen `cairn/LESSONS.md` lines about how to build a check, an oracle or a criterion are absent from that file and present verbatim in `cairn/check-design.md`. Domain: every line the diff of `cairn/LESSONS.md` removes, compared byte for byte against the module's own lines."
+- 2026-08-23: the amended AC6 wording was audited in reduced mode (internal tier), in-session rather than by a spawned fresh-context reader, because this session is instructed not to spawn agents — the same weaker arrangement M26 and this milestone's plan recorded. The audit changed the instrument: the first draft bound the move with T4's word-level check, but Scope Out now fixes the lines as verbatim, so a byte-for-byte line comparison is available and strictly stronger; the draft's reliance on a scratch script review could not run was what the "read a criterion's named procedure against what the repo can actually run" lesson asks about, and the byte comparison removes it.
+- 2026-08-23: T5 graduated the sixteen lines into `cairn/check-design.md` with a header stating its scope and a budget of under 40 lines and under 18,000 bytes. `cairn/LESSONS.md` is 7,796 bytes / 34 lines (AC1 wants <= 16,000 / <= 44); the module is 11,752 / 33. The byte-for-byte check reports 16 lines removed, 0 absent from the module, 0 still in LESSONS. Verify slot green with the self-test (409 checks).
 - 2026-08-23: plan gate chose refiling findings into `cairn/DESIGN.md`'s `## Known issues` with a recorded boundary rule over compressing row prose in place, because compression leaves the append-a-finding-to-a-work-row mechanism intact and both files return to their caps in roughly five milestones at the observed ~500 bytes per milestone; falsified by the files climbing back toward their caps after this milestone without any row gaining a finding clause.
 - 2026-08-23: T1 classified all 37 candidate rows and framed the lesson exits; the ledger is in `## Decisions`. Findings take labels KI1-KI79 in `cairn/DESIGN.md`; six single-item suite rows fold into the acceptance-suite-hardening row. Verify slot green (275 checks).
 - 2026-08-23: plan gate chose retiring the enforced variations of the "prove a check discriminating" lesson over keeping the line whole and cutting mid-sized lessons instead, because the line is 2,995 bytes of 18,439 and the repo now runs a planted-defect self-test; falsified by a self-test run that passes with a variation's defect planted.
@@ -212,5 +221,25 @@ land, in different grammar: `mirrors` (KI69 writes "the approach mirrors M02's
 own AC6"), `etc.` (KI15 writes "`data-see` and its siblings in gfm"), and
 `author-terms` (the M07 row's cross-reference to the non-Latin-1 row, which KI26
 carries as "Distinct from KI6, which is about what an author writes").
+
+### T5 disposition of the lesson family (2026-08-23)
+
+The T1 ledger left the lesson exits to be settled here against a self-test run.
+The run settles them against the plan's expectation: the enforcement exit does
+not reach the family, because the self-test's subject is a past milestone's own
+readers rather than the mistakes the lines warn about, and the ownership exit
+reaches only fragments. The exit the family does meet is maturation — it teaches
+transferable craft, it had been extended or consolidated many times over, and
+neither other exit applies — so all sixteen lines graduate whole into
+`cairn/check-design.md`, verbatim, with their dates and milestone attributions
+intact. Nothing is retired and nothing is rewritten. The two shapes the
+self-test does cover are named here for the record: the "a grep matching any
+instance of a warning fences nothing" clause is enforced by the
+`warn_discrimination` helper in `tests/run-tests.sh`, which fails a warning
+check that still passes on a log with its pattern removed or duplicated; and
+the "where the property is positional, assert it by breaking it and rendering"
+prescription is enacted by the M23 self-test, which renders nine broken trees
+and requires each break to change what the fixture renders. Both stay in the
+module rather than being cut, since the module carries the family whole.
 
 ## Review

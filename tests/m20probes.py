@@ -247,7 +247,18 @@ def _defined(preamble):
 def _tex(argv):
     """M20-AC6 — the subsystem is injected, with `\providecommand`, only where used."""
     principal_path, content_path = argv[0], argv[1]
-    wanted = argv[2:]
+    rest = argv[2:]
+    # Names after `--standins` are the `.aux`-borne commands whose EMPTY-BODIED
+    # gobbling stand-in (M22) is required in every document the subsystem does
+    # not reach — a surviving `.aux` still names them, and undefined they fail
+    # the render. Only that exact form is subtracted from the leak scan below;
+    # an empty-bodied definition of any other subsystem name, or one with any
+    # body at all, is still the leak this check is about.
+    if '--standins' in rest:
+        cut = rest.index('--standins')
+        wanted, standins = rest[:cut], rest[cut + 1:]
+    else:
+        wanted, standins = rest, []
     for path in (principal_path, content_path):
         if not os.path.isfile(path):
             _fail('M20-AC6: %s does not exist; the negative half of this criterion '
@@ -280,14 +291,21 @@ def _tex(argv):
     # the cross-reference channel, and a control carrying a both-targets mark is
     # entitled to it. Forbidding it here would make this check about the wrong
     # feature and fail on the role-free twin, which carries exactly that mark.
-    leaked = sorted(set(_defined(content)) & set(wanted))
-    if leaked or r'\csname quartoindex' in content:
+    content_live = content
+    if standins:
+        content_live = re.sub(
+            r'\\providecommand\*\\(?:%s)\[2\]\{\}'
+            % '|'.join(re.escape(s) for s in standins), '', content)
+    leaked = sorted(set(_defined(content_live)) & set(wanted))
+    if leaked or r'\csname quartoindex' in content_live:
         _fail('M20-AC6: the control fixture, which has no principal mention, has %s '
-              'injected into its preamble anyway' % (leaked or '\\csname quartoindex'))
-    print('ok   M20-AC6: the four subsystem commands are defined once each with '
+              'injected into its preamble anyway — the empty gobbling stand-ins '
+              'for the .aux-borne names are the one allowed shape there'
+              % (leaked or '\\csname quartoindex'))
+    print('ok   M20-AC6: the subsystem commands are defined once each with '
           '\\providecommand* in the fixture that uses them, nothing else naming '
-          'quartoindex is defined there, and none of them reaches a document '
-          'without a principal mention')
+          'quartoindex is defined there, and no live definition of any of them '
+          'reaches a document without a principal mention')
 
 
 def _html(argv):

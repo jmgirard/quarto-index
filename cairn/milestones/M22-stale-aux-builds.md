@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M22: A stale `.aux` outliving its marks still builds
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
@@ -64,25 +64,25 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
 ## Tasks
 <!-- owner: plan (create) / implement (check-off, minor edits) -->
 
-- [ ] T1: Build the stale-`.aux` probe red: render the principal-range
+- [x] T1: Build the stale-`.aux` probe red: render the principal-range
       fixture, copy its `.tex` and `.aux` into `$WORK` at the render that
       produces them (M05/M21 lesson: later steps destroy artifacts), author
       the two variants (every `mention=`/`range=` attribute removed; every
       index mark removed), run pdflatex on each variant's `.tex` beside the
       preserved `.aux`, assert exit 0 + clean log + no emphasized locator.
       Both variants fail today with `Undefined control sequence`.
-- [ ] T2: Inject the three gobbling `\providecommand*…[2]{}` definitions into
+- [x] T2: Inject the three gobbling `\providecommand*…[2]{}` definitions into
       every LaTeX-derived render that does not emit the live subsystem: move
       `index.lua:143`'s early return after the injection, keeping its format
       guard; rewrite `core.lua:141-151`'s block comment, whose "the same
       hazard at one remove … is a ROADMAP candidate row" sentence this
       milestone retires. Probe green.
-- [ ] T3: Prove the checks discriminate: splice the gobbler injection out
+- [x] T3: Prove the checks discriminate: splice the gobbler injection out
       (never `git checkout` — consolidated lesson) and watch T1's probe
       fail; assert the principal fixture's `.tex` carries no gobbling
       definition (AC2's clause) and that this check fails when one is
       spliced in ahead of the subsystem.
-- [ ] T4: README note on stale-`.aux` behavior; remove the absorbed
+- [x] T4: README note on stale-`.aux` behavior; remove the absorbed
       candidate row from the ROADMAP; work log.
 
 ## Work log
@@ -94,6 +94,8 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
 - 2026-08-22: plan (step 2) chose gobblers over always injecting the full subsystem because the subsystem is `@`-sensitive kernel-name code a no-principal document never exercises; falsified by a stale `.aux` line the gobblers fail to absorb cleanly.
 - 2026-08-22: plan gate rejected the candidate row's alternative — a stale `.aux` is the author's to delete — because it accepts the render failure IP2 forbids; falsified by a render the gobbler injection itself breaks.
 - 2026-08-22: T1 probe verified red on exactly the three undefined `.aux`-borne commands; T2 gobblers landed and turned it green standalone; T3 discrimination checks and T4 README paragraph written; full-suite `--self-test` verify in flight, tasks unticked until it is clean (checkpoint, half-done). T1 refinement: the probe authors its own parent fixture in `$WORK` because no committed fixture's `.aux` carries all three names in one file.
+- 2026-08-22: first full run caught M20-AC6's leak check firing on the stand-ins — its bare-name needle was a proxy for "the subsystem leaked"; the check now subtracts exactly the empty-bodied stand-in form of the three named `.aux`-borne commands (`--standins`) before the leak scan, and its planted leak (an empty-bodied `\quartoindexlocator`, outside the trio) still trips it.
+- 2026-08-22: full suite `--self-test` green — 372 checks, 0 FAIL — with the M22 section's probe, absence reader and both discrimination plants passing; T1–T4 ticked, status review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

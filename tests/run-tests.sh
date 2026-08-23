@@ -7981,12 +7981,16 @@ pass "M20-AC5: in the format with no index back-end every index mark the fixture
 # unchanged and still both-directional.
 SUBSYSTEM_CMDS=("$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
                 "$RANGEFROM_CMD" "$RANGEEND_CMD" "$RANGEAT_CMD" "$RANGETO_CMD")
+# The `--standins` trio is M22's carve-out: every document the subsystem does
+# not reach must define the three `.aux`-borne names as empty gobbling
+# stand-ins, so the leak scan subtracts exactly that form — and nothing else —
+# before asking what reached the control.
 python3 tests/m20probes.py tex "$WORK/principal.tex" examples/content.tex \
-  "${SUBSYSTEM_CMDS[@]}"
-pass "M20-AC6: the ${#SUBSYSTEM_CMDS[@]} subsystem commands are defined once each with \\providecommand* in the fixture that uses them, nothing else naming quartoindex is defined there, and none of them reaches a document with no principal mention"
+  "${SUBSYSTEM_CMDS[@]}" --standins "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"
+pass "M20-AC6: the ${#SUBSYSTEM_CMDS[@]} subsystem commands are defined once each with \\providecommand* in the fixture that uses them, nothing else naming quartoindex is defined there, and no live definition of any of them reaches a document with no principal mention (the three .aux-borne names ride there only as M22's empty gobbling stand-ins)"
 python3 tests/m20probes.py tex "$WORK/principal.tex" "$WORK/principal-twin.tex" \
-  "${SUBSYSTEM_CMDS[@]}"
-pass "M20-AC6: nor does any of them reach the role-free twin, which is the same document with every mention attribute removed"
+  "${SUBSYSTEM_CMDS[@]}" --standins "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"
+pass "M20-AC6: nor does any live definition reach the role-free twin, which is the same document with every mention attribute removed"
 
 # ---------------------------------------------------------------------------
 # M20 T9 — the regressions IP2's forever clause earns, in a fixture of their
@@ -8721,7 +8725,8 @@ filtersrc.sources()" >/dev/null 2>&1; then
   #     injected into a document with no principal mention.
   m20_tex() {
     python3 tests/m20probes.py tex "$1" "$2" \
-      "$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
+      "$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD" \
+      --standins "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"
   }
   probe_plant "$WORK/principal.tex" "$M20W/notprovide.tex" \
     -e "s/providecommand\\*\\\\$REGISTER_CMD\\[1\\]/gdef\\\\$REGISTER_CMD/"

@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
-- **Branch/PR:** `m027-record-ownership`
+- **Branch/PR:** `m027-record-ownership` — https://github.com/jmgirard/quarto-index/pull/27
 
 ## Goal
 
@@ -35,28 +35,28 @@ the module carries the sixteen as they stand. Any change under `tests/` or
 
 ## Acceptance criteria
 
-- [ ] AC1: `wc -c -l cairn/ROADMAP.md cairn/LESSONS.md` at the branch head
+- [x] AC1: `wc -c -l cairn/ROADMAP.md cairn/LESSONS.md` at the branch head
       reports `ROADMAP.md` at or under 18,000 bytes and 52 lines, and
       `LESSONS.md` at or under 16,000 bytes and 44 lines. (Arithmetic:
       ROADMAP is 23,276 bytes / 56 lines and LESSONS 18,439 / 49 at the merge
       base, so ≥ 5,276 bytes and 4 rows leave the first, ≥ 2,439 bytes and 5
       lines the second.)
-- [ ] AC2: `python3 ~/.claude/skills/cairn/scripts/cairn_validate.py` reports
+- [x] AC2: `python3 ~/.claude/skills/cairn/scripts/cairn_validate.py` reports
       every check passing and no advisory firing.
-- [ ] AC3: No text this milestone removes from `cairn/ROADMAP.md` or
+- [x] AC3: No text this milestone removes from `cairn/ROADMAP.md` or
       `cairn/LESSONS.md` is absent from all of `cairn/DESIGN.md`,
       `cairn/check-design.md`, and this file's `## Decisions` section. Domain:
       every removed line in `git diff <merge-base>..HEAD -- cairn/ROADMAP.md
       cairn/LESSONS.md`, read whole.
-- [ ] AC4: Every `- ` row under `## Candidates` in the committed
+- [x] AC4: Every `- ` row under `## Candidates` in the committed
       `cairn/ROADMAP.md` states work this repo might do and carries no finding
       about how the extension behaves today. Domain: every such row in the
       committed file, read in order.
-- [ ] AC5: `cairn/DECISIONS.md` carries a new entry stating which record holds
+- [x] AC5: `cairn/DECISIONS.md` carries a new entry stating which record holds
       a finding about current behavior and which holds proposed work, and the
       `## Candidates` comment in `cairn/ROADMAP.md` and the header comment in
       `cairn/LESSONS.md` each name that entry by its id.
-- [ ] AC6: The sixteen `cairn/LESSONS.md` lines about how to build a check, an
+- [x] AC6: The sixteen `cairn/LESSONS.md` lines about how to build a check, an
       oracle or a criterion are absent from that file and present verbatim in
       `cairn/check-design.md`. Domain: every line the diff of
       `cairn/LESSONS.md` removes, compared byte for byte against the module's
@@ -114,6 +114,7 @@ the module carries the sixteen as they stand. Any change under `tests/` or
 - 2026-08-23: T6 measured `cairn/ROADMAP.md` at 7,064 bytes / 49 lines and `cairn/LESSONS.md` at 7,928 / 36, against AC1's 18,000 / 52 and 16,000 / 44. `cairn_validate.py` passes all 16 checks with all 7 advisories OK. `tests/run-tests.sh --self-test` passes 409 checks, unchanged from the merge base, so no code moved. The removed-text bound over both files reports 54 removed lines and zero uncovered words.
 - 2026-08-23: plan gate chose refiling findings into `cairn/DESIGN.md`'s `## Known issues` with a recorded boundary rule over compressing row prose in place, because compression leaves the append-a-finding-to-a-work-row mechanism intact and both files return to their caps in roughly five milestones at the observed ~500 bytes per milestone; falsified by the files climbing back toward their caps after this milestone without any row gaining a finding clause.
 - 2026-08-23: T1 classified all 37 candidate rows and framed the lesson exits; the ledger is in `## Decisions`. Findings take labels KI1-KI79 in `cairn/DESIGN.md`; six single-item suite rows fold into the acceptance-suite-hardening row. Verify slot green (275 checks).
+- 2026-08-23: review ran the gate on PR #27: all six criteria carry fresh evidence, cairn_validate passes 16/16 with 7 advisories OK, the generic profile names no toolchain check, and the self-test passes 409 checks unchanged. The diff-bug lens ran reduced (internal tier, markdown-only diff) and in-session rather than in a spawned reader, for the reason the earlier audit lines give; three findings, all ranked and logged in the Review section.
 - 2026-08-23: plan gate chose retiring the enforced variations of the "prove a check discriminating" lesson over keeping the line whole and cutting mid-sized lessons instead, because the line is 2,995 bytes of 18,439 and the repo now runs a planted-defect self-test; falsified by a self-test run that passes with a variation's defect planted.
 
 ## Decisions
@@ -246,3 +247,83 @@ and requires each break to change what the fixture renders. Both stay in the
 module rather than being cut, since the module carries the family whole.
 
 ## Review
+
+Reviewed 2026-08-23 on `m027-record-ownership` at PR #27, against merge base
+`3a9ca92`. The diff touches six markdown files under `cairn/` and nothing else
+(550 insertions, 80 deletions); `main` had not moved since the branch was cut.
+
+### Acceptance criteria
+
+- AC1 — `wc -c -l cairn/ROADMAP.md cairn/LESSONS.md` at the branch head reports
+  ROADMAP at 7,059 bytes / 49 lines (limits 18,000 / 52) and LESSONS at 7,928 /
+  36 (limits 16,000 / 44). Both under both figures.
+- AC2 — `python3 ~/.claude/skills/cairn/scripts/cairn_validate.py` exits 0 with
+  all 16 checks PASS and all 7 advisories OK; no advisory fired.
+- AC3 — the 56 lines `git diff 3a9ca92..HEAD -- cairn/ROADMAP.md
+  cairn/LESSONS.md` removes were read whole, and each word of four or more
+  characters in them was searched across `cairn/DESIGN.md`,
+  `cairn/check-design.md` and this file. Five word types resolve only outside
+  that set, each read back in its own line: `planned` is M27's own ROADMAP
+  status cell, changed to `review` by the status mirror; `unnumbered` and
+  `ideas` are the old `## Candidates` comment that AC5's replacement rewrote;
+  `replace` appears in KI10 as `replaced`; and `cluster` is the
+  acceptance-suite row's reference to itself, and the row still stands. No
+  removed content is unaccounted for.
+- AC4 — all 28 `- ` rows under `## Candidates` in the committed
+  `cairn/ROADMAP.md` were read in order. Each opens on work this repo might do;
+  25 carry `KI<n>` pointers and the other three (the release bundle, chapter-
+  based locator labels, multiple named indexes) had no finding to move. What
+  remains beside the work is a promotion condition or a constraint a recorded
+  decision imposes, never a finding about the extension's behavior. One clause
+  was weighed and kept: the release row's "which README omits a claim for want
+  of one" states the repo's present packaging rather than the extension's
+  behavior, it is unchanged from the merge base, and it is the reason the
+  LICENSE item exists.
+- AC5 — `cairn/DECISIONS.md` carries D-013, whose Decision paragraph assigns
+  `cairn/DESIGN.md`'s `## Known issues` a statement about how the extension or
+  its acceptance suite behaves today, `cairn/ROADMAP.md`'s `## Candidates` the
+  work this repo might do, and `cairn/LESSONS.md` transferable craft. The
+  `## Candidates` comment (`ROADMAP.md:21`) and the LESSONS header comment
+  (`LESSONS.md:5`) each name `D-013`.
+- AC6 — the diff of `cairn/LESSONS.md` removes 16 `- ` lines. Compared byte for
+  byte against `cairn/check-design.md`'s own lines, 0 are absent from the
+  module; searched against the committed `cairn/LESSONS.md`, 0 remain there.
+  The module's header states its scope and a budget of under 40 lines and under
+  18,000 bytes; it stands at 33 lines / 11,752 bytes.
+
+### Consistency gate
+
+- `cairn_validate.py` — all 16 checks PASS, all 7 advisories OK, exit 0.
+  `coverage complete` and `weight caps` are among the passing checks.
+- `cairn_impact.py --changed` — skipped: the header's `Principles touched` is
+  `—`, and the diff of `cairn/DESIGN.md` adds and removes no `IP<n>`/`GP<n>`
+  line.
+- Toolchain half — the active profile is `generic`, whose `consistency-gate`
+  slot names no toolchain checks, so this half is a clean no-op.
+- Beyond the gate, `tests/run-tests.sh --self-test` passes 409 checks,
+  unchanged from the merge base, confirming no code moved.
+
+### Review findings
+
+The routing is the reduced one: the Scope declares the internal tier and
+`git diff main..HEAD --name-only` lists six markdown files under `cairn/` and
+nothing else, so the diff-bug lens alone applies. It ran in-session rather than
+in a spawned fresh-context reader, because this session is instructed not to
+spawn agents — the same weaker arrangement the plan and implement audits
+recorded, and a real reduction in independence: the reader had authored none of
+the diff but shares this session's context. Three findings, ranked:
+
+- F1 — `## Known issues` promises "each with the review it came from", but
+  KI5, KI19 and KI52 name `RR01`, `D-009` and `D-004`/`D-011` instead. Ranked
+  first because it is the only place a section's own stated invariant does not
+  hold of its entries. Each of the three carries the attribution its source row
+  carried, so nothing was lost in the move.
+- F2 — the release-bundle candidate row keeps "which README omits a claim for
+  want of one (M01)", a statement about the repo's present packaging with no
+  `KI<n>` label. Ranked second because it is the nearest thing in the diff to
+  the mechanism D-013 exists to stop. It falls outside `## Known issues`'s
+  stated domain (the extension and its acceptance suite), and the clause is
+  unchanged from the merge base.
+- F3 — AC3's word-level residue, enumerated in the AC3 evidence line above.
+  Ranked last because every item resolves to a deliberate change or an
+  inflection, and none is lost content.

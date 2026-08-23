@@ -5,7 +5,7 @@
 - **Depends on:** M24
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** `m25-scan-disposition`
+- **Branch/PR:** `m25-scan-disposition` / https://github.com/jmgirard/quarto-index/pull/25
 
 ## Goal
 
@@ -39,24 +39,24 @@ checks' file-reading is settled there first.
 
 ## Acceptance criteria
 
-- [ ] AC1: Over the file set `git ls-files tests` enumerates, no check asserts
+- [x] AC1: Over the file set `git ls-files tests` enumerates, no check asserts
       a warning count or a warning absence with a pattern that matches every
       `(W)` line: greps for `check_warning_count` calls whose pattern argument
       is `(W)`, and for `grep -q '^(W)'`, both return nothing.
-- [ ] AC2: A zero-warning control in the suite fails when this extension emits
+- [x] AC2: A zero-warning control in the suite fails when this extension emits
       a warning during that render, and passes when a warning emitted by
       another filter is the only one present.
-- [ ] AC3: Nothing under the file set `git ls-files tests` enumerates asserts a
+- [x] AC3: Nothing under the file set `git ls-files tests` enumerates asserts a
       count of the files under `tests/scans/`; the grep for `tests/scans` in
       that set returns only `run_scan`'s own path construction and the scan
       invocations.
-- [ ] AC4: Over `git ls-files tests`, every scan in `tests/scans/` that
+- [x] AC4: Over `git ls-files tests`, every scan in `tests/scans/` that
       searches the filter source set asserts an exact match count for what it
       finds, or no longer exists — enumerated by grepping those files for
       `re.search`, `re.match` and `re.findall` over `filtersrc`'s source set.
-- [ ] AC5: `tests/filtersrc.py` exports no function without a caller in the set
+- [x] AC5: `tests/filtersrc.py` exports no function without a caller in the set
       `git ls-files tests` enumerates.
-- [ ] AC6: `tests/run-tests.sh --self-test` exits 0 and prints its
+- [x] AC6: `tests/run-tests.sh --self-test` exits 0 and prints its
       "All checks passed" line.
 
 ## Coverage
@@ -116,3 +116,72 @@ checks' file-reading is settled there first.
 - 2026-08-23: full `--self-test` green, 397 checks. Two earlier runs failed on the environment, not the tree: one Quarto segfault mid-render, one `quarto list tools` network timeout in the TinyTeX probe.
 - 2026-08-23: T7. Each of the nine scans carrying the shared four-line header now states what it READS, what it ASSERTS, and what it does not — `warn-distinct` naming the values and out-of-call text it cannot see, `xref-both-definition` naming why no render distinguishes its property, `latex-escape-table` and `xref-manifest` naming the checks that carry what they do not. The three value-readers say they assert one definition and nothing about the value. `movedefs.py` and the M16-AC3 comment now say the probe builds one member of the moved-into-a-module family, every definition into a single `modules/moved.lua`.
 - 2026-08-23: T8. `tests/run-tests.sh --self-test` exits 0, "All checks passed (397 checks)." AC1 both greps return nothing; AC3's grep returns one line, `SCAN_DIR="tests/scans"` at run-tests.sh:212; AC4's eleven enumerated sites each assert an exact count, two of them over `examples/demo.qmd` rather than the source set; AC5's five `filtersrc` exports each have a caller. Status to review.
+- 2026-08-23: review — PR #25 opened as a draft; all six criteria executed with fresh evidence and ticked; `cairn_validate` exits 0 and the `generic` profile names no toolchain checks. Review section open, findings triage pending the diff-bug lens.
+
+## Review
+
+Fresh evidence, 2026-08-23, on `m25-scan-disposition` at 85e1880, against
+`main` at the same merge base (no divergence to merge).
+
+### Acceptance-criterion evidence
+
+- **AC1 — PASS.** Over `git ls-files tests`, `grep -n "check_warning_count[^"']*['"](W)['"]"`
+  returns nothing (exit 1), and `grep -n "grep -q '\^(W)'"` returns nothing (exit 1).
+  A third, wider grep — every `check_warning_count` line filtered for the string
+  `(W)` — also returns nothing, so no call site reaches the helper with that
+  pattern by any spelling.
+- **AC2 — PASS.** The full `--self-test` run printed, at line 273 of its output,
+  `ok M25-AC2: the zero-warning control discriminates both ways`. Both
+  directions run against copies of the range-nested HTML render's own log
+  (`tests/run-tests.sh:8519-8542`): with one of this extension's own warnings
+  appended the control fails *and its message is matched* for "expected 0
+  warning(s) from this extension … got 1", so the failure is the count and not
+  a missing file; with a foreign filter's `(W)` line appended — checked back by
+  its full text first, so the plant is proved to have landed — the control
+  passes.
+- **AC3 — PASS.** `git ls-files tests | xargs grep -n "tests/scans"` returns one
+  line: `tests/run-tests.sh:212: SCAN_DIR="tests/scans"`, which is `run_scan`'s
+  own path construction (`local script="$SCAN_DIR/$name.py"`, line 216). Read
+  back through the variable, the only other uses are that construction, the
+  one-off `warn-distinct.py --patterns` generation at 1651, and the M16-AC3
+  `find` at 9794 — which counts nothing: `SCANS_PROBED` is incremented by the
+  loop that ran the scans and is reported in the `pass` line, never compared to
+  a pinned number.
+- **AC4 — PASS.** Grepping `git ls-files tests | grep '^tests/scans/'` for
+  `re.search`, `re.match` and `re.findall` enumerates eleven sites in nine
+  scans. Nine read the filter source set and each is guarded by an exact count:
+  `html-identifiers.py:23-26` (4 constants, `len(found) != 1`),
+  `marker-class.py:20-24`, `store-names.py:23-27` (2 constants),
+  `max-levels.py:23-27`, `overflow-join.py:23-27`, `store-version.py:23-27`,
+  `xref-manifest.py:27-31`, `mark-report-keys.py:45-48` (each key must own
+  exactly 1 warning), and `xref-both-definition.py:38`, whose enclosing
+  definition is pinned to exactly one at lines 21-25 before it runs. The
+  remaining two — `latex-escape-table.py:44` and `:46` — read
+  `examples/demo.qmd`, not the source set, so they fall outside the criterion's
+  domain; that scan's own source-set read is `src.count(OPENING) != 1` at
+  lines 22-25. No scan in the directory searches the source set without an
+  exact-count pin, and none was deleted.
+- **AC5 — PASS.** `tests/filtersrc.py` exports five functions. `sources()` is
+  called from `tests/movedefs.py:119` and `tests/run-tests.sh:116, 8892, 8897,
+  8906`; `read()` from `tests/movedefs.py:120`; `text()` from twelve scans under
+  `tests/scans/`; `lines()` from `tests/run-tests.sh:9944`; `ext_dir()` from
+  `sources()` itself at `tests/filtersrc.py:33`, a caller inside the same file
+  set. `defining_lines()`, which had none, is gone with the `re` import it
+  alone needed.
+- **AC6 — PASS.** `tests/run-tests.sh --self-test` exits 0 and its last line is
+  `All checks passed (397 checks).` Run in full at review time, not carried
+  over from implementation.
+
+No `Driving RR:` on this milestone, so no projection-versus-outcome pairs.
+
+### Consistency gate
+
+`cairn_validate` exits 0, all 16 checks PASS and all 7 advisories OK. No
+`DESIGN.md` principle changed on this branch, so `cairn_impact --changed` is
+skipped. The active profile is `generic`, whose `consistency-gate` slot names
+no toolchain checks.
+
+### Findings
+
+_In progress: two of the three review lenses have reported; the diff-bug lens
+is still running. Triage is recorded below once all three are in._

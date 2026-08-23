@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** blocked
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —
@@ -113,6 +113,10 @@ Completed tasks are one line each; what each did, and why, is in the work log be
 - [x] T9: Review round 1's nine findings, each with the check that would have caught it.
 - [x] T10: Review round 2's seven findings, the two plant readers moved into
       `tests/m21probes.py` so the run and the self-test share one reader.
+- [ ] T12: Review round 4's ten findings — each chapter draws its own kind-specific pairing
+      reports under D-009 (R4-F1), the same-page registration constrained (R4-F6), the
+      narrowing's comment/fixture/export debris removed (R4-F2/F3/F4/F5/F8), and the two
+      one-liners (R4-F7/F9); R4-F10 (the LESSONS line) landed at the park.
 - [x] T11: The narrowing (D-009) and review round 3's twelve findings. Remove the
       cross-chapter pairing and its checks, plants and manifest rows; add the book's
       not-paired report and its key to `tests/scans/mark-report-keys`; fence the report by
@@ -178,6 +182,7 @@ Completed tasks are one line each; what each did, and why, is in the work log be
 
 - 2026-08-22: review round 4 returned ten findings — a book chapter still suppresses all five kind-specific pairing reports while the book names the wrong cause, and AC4's third shape goes unreported in a book entirely (R4-F1, reproduced by two lenses); the same-page range's closing registration is unconstrained (R4-F6); and eight items of comment, fixture and export debris left by round 3's narrowing. Fourth defect return. At the gate the user chose to park the milestone as blocked rather than retry past the thrash threshold.
 - 2026-08-22: status blocked. Blocker: the milestone has needed a further review round every time, and round 4's findings do not yet show the rate falling. The branch, PR #21 and every finding stay on disk; the resume path is written into the Review section above.
+- 2026-08-22: resumed — the user chose to unpark at the /milestone status chip, which resolves the park (its blocker was the user's own stop decision). Status in-progress; T12 added for round 4's ten findings, all dispositioned in the resume path.
 
 ## Decisions
 

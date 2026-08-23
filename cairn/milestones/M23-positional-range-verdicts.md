@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M23: A range verdict follows its mark's position, not its text
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
@@ -115,6 +115,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: T6 — `pair_ranges`'s contract comment names the `pos` field and says pairing never reads it; the `range_items` comment says what the list holds now that the refused-end placeholder went with the per-key queues; the nested fixture's PDF render clears `.idx` and `.aux` as well as `.ind`/`.ilg`, both being inputs to the render that follows; AC2's scan moved out from under AC1's pass line onto a `pass "M23-AC2"` of its own. One verify run covers T5 and T6 together — the suite reads the working tree, so editing `run-tests.sh` under a run in flight was not safe; full suite `--self-test` 395 checks, exit 0.
 - 2026-08-22: T7 — F7 is a new candidate row (the two passes number identically but can still derive differently; M23 changed the failure shape from a wrong page span to a failed render); F8 widened the `marks_seen` module-state row (`finish_ranges` resets the counter and leaves the four range tables); F9 and F12 widened the acceptance-suite-hardening row (the pending-attribute sweep runs before the M23 fixture renders; the bare `(W)` pin counts any filter's warnings). ROADMAP at 59 of 60 lines, 21,520 of 24,000 bytes.
 - 2026-08-22: review round 1 returned to in-progress — AC2 fails: `tests/scans/range-position.py` does not assert three parts of the property AC2 says it asserts (the reset's location in `finish_ranges`, which traversals hold the two call sites, and that `plan_range` is handed the guard's own position), each reproduced against a built tree that the scan exits 0 on. Twelve findings logged in the Review section; seven fix-now, four follow-up, one rejected. Defect returns on this milestone: 1.
+- 2026-08-22: round-1 return closed — the three AC2 gaps repaired and each reproduced tree now a planted splice, four fix-now findings actioned, four follow-ups homed on ROADMAP rows; full suite `--self-test` 395 checks, exit 0. Status back to review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

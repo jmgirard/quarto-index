@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP6
-- **Branch/PR:** `m24-captured-artifacts`
+- **Branch/PR:** `m24-captured-artifacts` / https://github.com/jmgirard/quarto-index/pull/24
 
 ## Goal
 

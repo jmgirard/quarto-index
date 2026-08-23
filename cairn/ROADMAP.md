@@ -1,15 +1,14 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-22 (M22 merged and archived — deleting index marks no longer breaks the next PDF build against a leftover `.aux`; every LaTeX render without the emphasis subsystem now carries three empty `\providecommand*` stand-ins. Two review rounds: round 1 an amendment return on AC1 and AC2, both unsatisfiable as written, plus 13 findings; round 2 fourteen more, all actioned at the gate. A surviving `.ind` is a new candidate row. LESSONS gained M22's auxiliary-file line and the M04 errexit line an appended shape; M07's ordering-layer line pruned to hold the 50-line cap. Caps and byte budgets clean.)_
+_Last hygiene check: 2026-08-23 (M23 merged and archived — a range mark's pairing verdict is now handed to it by document position, so a rewritten inner mark can no longer move another mark's page span; behaviour-preserving, since nothing an author writes today reached the desync. Three review rounds: rounds 1 and 2 each returned on AC2, which was then amended at a gate to a deliverable property and its source scan retired in favour of a nine-row defect-injection battery. Round 3 found seven, three fixed on the branch and two homed on the acceptance-suite-hardening row. M18's terminal row pruned to hold the five-row retention. LESSONS's discriminating-check line gained a seventh shape; 49 lines. Caps and byte budgets clean.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M23 | A range verdict follows its mark's position, not its text | review | — | normal | milestones/M23-positional-range-verdicts.md |
+| M23 | A range verdict follows its mark's position, not its text | done | — | normal | milestones/archive/M23-positional-range-verdicts.md |
 | M22 | A stale `.aux` outliving its marks still builds | done | — | normal | milestones/archive/M22-stale-aux-builds.md |
-| M18 | A cross-reference target is judged against the path the entry prints | done | — | normal | milestones/archive/M18-fold-aware-xref-targets.md |
 | M19 | A reported level count says which levels it counts | done | — | normal | milestones/archive/M19-level-count-naming.md |
 | M20 | A term's principal discussion prints as its principal locator | done | — | normal | milestones/archive/M20-principal-locators.md |
 | M21 | A discussion spanning pages prints as one page range | done | M20 | normal | milestones/archive/M21-page-ranges.md |

@@ -1,11 +1,11 @@
 # M25: A check that cannot hold its promise is retired, not widened
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M24
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** `m25-scan-disposition`
 
 ## Goal
 

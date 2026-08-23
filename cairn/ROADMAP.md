@@ -8,7 +8,7 @@ _Last hygiene check: 2026-08-23 (M26 planned from the `marks_seen` module-level-
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M24 | Every check reads the copy, never the working tree | done | — | normal | milestones/archive/M24-captured-artifacts.md |
-| M25 | A check that cannot hold its promise is retired, not widened | planned | M24 | normal | milestones/M25-scan-disposition.md |
+| M25 | A check that cannot hold its promise is retired, not widened | in-progress | M24 | normal | milestones/M25-scan-disposition.md |
 | M26 | A document's accumulators start empty, whoever ran before it | planned | — | normal | milestones/M26-per-document-state.md |
 | M23 | A range verdict follows its mark's position, not its text | done | — | normal | milestones/archive/M23-positional-range-verdicts.md |
 | M22 | A stale `.aux` outliving its marks still builds | done | — | normal | milestones/archive/M22-stale-aux-builds.md |

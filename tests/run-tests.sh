@@ -2727,7 +2727,7 @@ PY
 # second top-level marker, and content inside that second marker.
 # ---------------------------------------------------------------------------
 WARN_MARKER_NESTED='index placement marker below the top level'
-WARN_MARKER_DUP='index placement marker 2 (top-level block 8) is ignored'
+WARN_MARKER_DUP='index placement marker 2 in document order (top-level block 8) is ignored'
 WARN_MARKER_CONTENT='index placement marker is not empty'
 # The three sort-key reports (M06-AC4). Each is a report about the MARK, so
 # each is asserted in a format with an index back-end and in one without.
@@ -2997,7 +2997,10 @@ import re, sys
 log, fixture, fmt = sys.argv[1], sys.argv[2], sys.argv[3]
 TEMPLATE = ('index placement marker in top-level block {} was the only thing '
             'written where it stood; the marker is removed, so nothing you '
-            'wrote remains there')
+            'wrote remains there. Block positions are counted over the '
+            'document as this filter received it, after Quarto expanded any '
+            'includes and executable cells, so they can differ from the '
+            'positions in your source file')
 # The other two warnings this fixture draws, whose counts are pinned above.
 OTHER = {
     'index placement marker below the top level of the document places '

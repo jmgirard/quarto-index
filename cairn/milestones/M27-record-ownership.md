@@ -81,7 +81,7 @@ budgets stay hand-checked at hygiene passes. Any change under `tests/` or
       `## Known issues` (currently `_None._`), one entry per finding, each
       naming the review it came from. Start with the two heaviest rows —
       acceptance-suite hardening (7,601 bytes) and `marks_seen` (2,412).
-- [ ] T4: Rewrite each affected ROADMAP row down to the work it proposes, with
+- [x] T4: Rewrite each affected ROADMAP row down to the work it proposes, with
       a pointer to its `## Known issues` entry. Bound the pass with a command,
       not by eye (M17's lesson): require every clause the diff removes to
       appear in `cairn/DESIGN.md` or the T1 ledger before committing.
@@ -99,6 +99,7 @@ budgets stay hand-checked at hygiene passes. Any change under `tests/` or
 - 2026-08-23: criteria audit ran in reduced mode (internal tier), in-session rather than in a spawned fresh-context reader, because this session is instructed not to spawn agents — the weaker arrangement M26 also hit. One finding: a draft AC3 promised removed text would appear "in the archive summary", which binds a record of verification rather than the records themselves; narrowed to `cairn/DESIGN.md` and this file's `## Decisions`. A draft AC6 promised `tests/plantdefect.py` fails on each planted defect, a test-harness property; narrowed to the lesson content, with the self-test run moved to T5.
 - 2026-08-23: T2 wrote D-013 in `cairn/DECISIONS.md`; the `## Candidates` comment in `cairn/ROADMAP.md` and the header comment in `cairn/LESSONS.md` each name it. Verify slot green (275 checks).
 - 2026-08-23: T3 wrote `cairn/DESIGN.md`'s `## Known issues` — 79 entries, KI1-KI79, grouped by area, each naming its review. Verify slot green (275 checks).
+- 2026-08-23: T4 rewrote the candidate list to 28 rows, each stating work and pointing at its KI labels; six single-item suite rows folded into the acceptance-suite row. The pass was bounded by a vocabulary command over the removed lines, which found four real losses (KI10's accumulator names, two split hyphenated words, two dropped promotion conditions), all repaired; it now reports zero. ROADMAP is 7,064 bytes / 49 lines. Verify slot green (275 checks).
 - 2026-08-23: plan gate chose refiling findings into `cairn/DESIGN.md`'s `## Known issues` with a recorded boundary rule over compressing row prose in place, because compression leaves the append-a-finding-to-a-work-row mechanism intact and both files return to their caps in roughly five milestones at the observed ~500 bytes per milestone; falsified by the files climbing back toward their caps after this milestone without any row gaining a finding clause.
 - 2026-08-23: T1 classified all 37 candidate rows and framed the lesson exits; the ledger is in `## Decisions`. Findings take labels KI1-KI79 in `cairn/DESIGN.md`; six single-item suite rows fold into the acceptance-suite-hardening row. Verify slot green (275 checks).
 - 2026-08-23: plan gate chose retiring the enforced variations of the "prove a check discriminating" lesson over keeping the line whole and cutting mid-sized lessons instead, because the line is 2,995 bytes of 18,439 and the repo now runs a planted-defect self-test; falsified by a self-test run that passes with a variation's defect planted.
@@ -166,5 +167,50 @@ under the boundary entry T2 writes; or **enforcement**, where a named check in
 those are is settled at T5 against a `tests/run-tests.sh --self-test` run, and
 recorded there with the covering check named; nothing is retired on this
 ledger's authority alone.
+
+### T4 bound, and what it left (2026-08-23)
+
+The rewrite was bounded by a command, not by eye (M17's lesson): for every line
+this milestone removes from `cairn/ROADMAP.md`, every word of four or more
+characters in it must appear in `cairn/DESIGN.md`, this file, the rewritten row
+that replaced it, or a lesson line that stayed. A substring bound was tried
+first and rejected — the move rewrapped and reworded the prose, so it flagged
+reflow as loss and could not distinguish the two. The vocabulary bound found
+four real ones: `KI10` had summarized the accumulator row as "17 accumulators"
+and dropped every name and mechanism (restored in full); `KI7` and `KI25` had
+each split a hyphenated word across a line (rewrapped); and two promotion
+conditions had been dropped from their rewritten rows — that pairing by entry
+cannot tell two overlapping ranges of one term apart, and that the two-chapter
+range promotes on a derivation path reading the mark's rewritten content (both
+restored). What the bound still reports is accounted for here.
+
+**Two rows' own narrowing history.** Neither a finding nor proposed work, so
+D-013 sends it to git rather than to `## Known issues`; it is recorded here so
+nothing removed is unaccounted for.
+
+- The M13 row read: "added 2026-08-19, widened 2026-08-20, narrowed 2026-08-21
+  (M19 absorbed both depth-versus-drop wording items, the extra-sort report's
+  and M18's fold-rewritten-target report's)". Its `claim check asserting a
+  string is in README` clause survives as KI73.
+- The acceptance-suite row read, as of M25's correction: "NARROWED 2026-08-23:
+  M24 absorbed every item whose cause is a check reading a working-tree
+  `examples/` artifact (members in the milestone file, in git), and M25 absorbed
+  the bare-`(W)` controls and the source-shape scans (the twelve-scan pin; the
+  four FIRST-match scans, plus `store-names`, `latex-escape-table` and
+  `m15-joined-messages`) under D-011 — corrected M25 review, which struck the
+  clauses M25 closed and restored three this row wrongly listed as absorbed
+  (`:format(` blindness, out by M25's Scope; the one-of-nine probe and M17-AC1
+  unguarded, neither given a check), all three open below; what follows is the
+  remainder, plus the residual risk D-004 and D-011 each record here." The three
+  restored items are KI58, KI55 and KI57; the residual risks are KI52. Also
+  removed from that row: "the script-exit-code item shipped in M01 and
+  `\printindex` ordering has its own row", and "and again by that review's
+  three-lens fan-out (full text in M24's Review section)".
+
+**Accepted word-level residue.** Three words the bound reports whose content did
+land, in different grammar: `mirrors` (KI69 writes "the approach mirrors M02's
+own AC6"), `etc.` (KI15 writes "`data-see` and its siblings in gfm"), and
+`author-terms` (the M07 row's cross-reference to the non-Latin-1 row, which KI26
+carries as "Distinct from KI6, which is about what an author writes").
 
 ## Review

@@ -461,8 +461,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 - **KI7.** Sort-key level paths are keyed on unclamped levels while the LaTeX
   back-end prints clamped ones, so a 4-level entry and a 3-level entry spelling
-  the folded form collide under two makeindex keys with no report. The printed-
-  text collision itself predates sort keys. — M06 review pass 2 F9
+  the folded form collide under two makeindex keys with no report. The
+  printed-text collision itself predates sort keys. — M06 review pass 2 F9
 - **KI8.** An empty entry tree would render the index as a bare `Index` heading
   with no list and no warning. Unreachable today: every path that builds the
   section is gated on a mark with at least one level. — M07 review F3
@@ -474,10 +474,36 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 ### The HTML back-end and books
 
-- **KI10.** The filter's 17 per-document accumulators are module-level state.
-  M26 resets all 17 per document; a cell added after it that joins no `reset` is
-  unguarded, and D-011 refuses to pin that with a source scan. — M01 review R16,
-  widened through M03 P1, M04, M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8
+- **KI10.** The filter's 17 per-document accumulators are module-level state,
+  latent if Lua state is ever reused across documents. `marks_seen` was the
+  first (it was `marks_emitted` until M04 made it format-neutral); the HTML
+  back-end's `html_marks` was a second until the M03 F1/F2 fix refactored it
+  away. The rest arrived one review at a time: `sort_keys`, the sort-key
+  registry (M06 F-a); `clamped_paths`, the level-fold collision accumulator
+  (M09 F6); `marked_paths` and `pending_xrefs`, the dangling-target report's
+  path set and deferred target list (M14) — a leaked `pending_xrefs` emits
+  reports naming marks in a different file, so the blast radius is worse than a
+  skewed count, reading as a filter bug rather than a stale number;
+  `principal_keys`, `principal_ordinals` and `principal_emitted` (M20 R2-F14),
+  of which `principal_ordinals` is the first whose value reaches an on-disk
+  artifact, the `.aux` registry keys, so a reused state would offset the next
+  document's ordinals rather than merely skew a count; and `range_verdicts`
+  and `range_at` (M23 F8), which replaced the `range_plan`/`range_cursor` pair.
+  `range_at` is the first whose correctness depends on being reset mid-document
+  — `finish_ranges` returns it to the origin between the two traversals, so a
+  state carried into a second document would number that document's range marks
+  from where the first one stopped and hand every one of them another mark's
+  verdict; and `finish_ranges` returns that counter to the origin while leaving
+  `range_items`, `range_found`, `range_pair_found` and `range_verdicts` as the
+  first document filled them, so a reused state would pair the second document's
+  marks against the first's and report the first's findings again. M17 made the
+  mechanism stronger: the module split moved every one of these out of the
+  filter chunk's own locals and into module tables `require` caches in
+  `package.loaded`, so a reused state no longer re-initializes them on the next
+  execution the way re-running the chunk did. M26 resets all 17 per document; a
+  cell added after it that joins no `reset` is unguarded, and D-011 refuses to
+  pin that with a source scan. — M01 review R16, widened through M03 P1, M04,
+  M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8
 - **KI11.** A marker written in YAML `abstract:` survives verbatim into the HTML
   header — filter residue of the IP2 class, since `resolve_markers` reads
   `doc.blocks` alone; the misplaced-class report is silent there for the same
@@ -538,8 +564,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   visible text. The number is one the author wrote, so D-006 holds, but no
   fixture carries the shape (`entry="!" sort="a!b!c"`) and no check covers it.
   — M19 review F1
-- **KI25.** The chapter-count report in `book.lua` and the two top-level-block-
-  position reports in `marker.lua` name numbers no convention covers: M19's
+- **KI25.** The chapter-count report in `book.lua` and the two reports in
+  `marker.lua` that name a top-level-block-position name numbers no
+  convention covers: M19's
   level-count rule excludes them because their numbers have no empty-level drop
   to distinguish, leaving open what a block position is measured over. — M19
   Scope Out
@@ -623,8 +650,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   of. — M16 review F7, M17
 - **KI56.** M17's AC3 install-parity probe has no planted-defect proof in the
   run: it was shown discriminating out of band at M17 T9, not by a check. — M17
-- **KI57.** No check in the suite guards M17-AC1's one-definition-per-entry-
-  point rule, so a later hotfix that puts a helper back into `index.lua` leaves
+- **KI57.** No check in the suite guards the rule M17-AC1 states, one
+  definition per entry point (`one-definition-per-entry-point`), so a later
+  hotfix that puts a helper back into `index.lua` leaves
   the run green while the milestone's premise silently reverts.
   `tests/filtersrc.py`'s `lines()` exists for exactly this question and has no
   consumer but the AC3 require-position check. — M17 review F-A
@@ -670,8 +698,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI68.** The demo's own makeindex acceptance is never asserted. — M01 review
   P11
 - **KI69.** The PDF cross-reference checks assert substring presence, not
-  counts, so a cross-reference printed twice would pass. M15 asserts counts for
-  its contested keys and leaves the rest. — M02 review, M15
+  counts, so a cross-reference printed twice would pass; the approach mirrors
+  M02's own AC6. M15 asserts counts for its contested keys and leaves the rest.
+  — M02 review, M15
 - **KI70.** Bare (unquoted) `entry=`, `see=` and `see-also=` values escape both
   the no-leak sweep and the probe-coverage pin; for no-leak this is a false
   pass, not a false failure. The suite's `sort=` extraction is double-quote-only

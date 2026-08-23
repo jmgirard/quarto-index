@@ -46,20 +46,22 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
       paired range in the HTML index — asserted over a fixture carrying the
       nested shape and a plain non-nested range of a different term in the
       same document, in both back-ends.
-- [ ] AC2: The range-verdict store keys on document position: the
-      verdict-planning and verdict-reading functions take no entry-key
-      argument and advance one shared position counter at the same span
-      guard (a span carrying the index class and a `range=` attribute) —
-      asserted by a source scan over `modules/marks.lua` and
-      `modules/passes.lua` pinned to those functions by name, which fails
-      when a pinned name is absent.
+- [ ] AC2: A range mark's pairing verdict is bound to the mark by its
+      document position, not by an entry key standing in for the mark's
+      identity between the two traversals. Asserted over a fixture carrying
+      a nested `entry=`-less range whose inner mark the emitting pass
+      rewrites, a plain range of another term overlapping it, a `range=`
+      span carrying no index class, and a range mark that derives no entry:
+      in both back-ends the document renders clean, each range prints the
+      page range its own marks sit at, and the only report drawn is the one
+      the no-entry mark calls for.
 - [ ] AC3: The active profile's verify slot (`tests/run-tests.sh`) passes.
 
 ## Coverage
 <!-- owner: plan · create/amend-via-gate; review reads to fence evidence -->
 
 - AC1 → T1, T2
-- AC2 → T2, T3
+- AC2 → T8, T9
 - AC3 → T1, T2, T3, T4
 
 ## Tasks
@@ -96,6 +98,21 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
       `.ind`/`.ilg`; AC2's evidence prints under a `pass "M23-AC2"` of its own.
 - [x] T7 (review round 1, F7-F9, F12): the four follow-up findings land as
       ROADMAP candidate rows or widenings of existing ones.
+- [ ] T8 (AC2 after the amendment): `examples/range-position.qmd` — the
+      nested `entry=`-less range and the overlapping plain range, plus the
+      two shapes AC1's fixture must not carry because they draw a report: a
+      `range=` span with no index class, and a range mark deriving no entry.
+      A reader over both back-ends asserting the criterion's three clauses.
+- [ ] T9: the defect-injection battery, under `--self-test`: eight ways the
+      position binding breaks, each planted in a scratch copy of the
+      extension, the T8 fixture rendered against it, and the observed
+      (render exit, printed ranges, report count) required to differ from
+      the unplanted control's. Task work, not a criterion's promise.
+- [ ] T10: retire `tests/scans/range-position.py` — no criterion names it
+      now, and it certifies more than it asserts (round 2's R2-F1/F2/F3);
+      the battery covers its ground behaviorally. Deregister it from
+      `run_scan`, `tests/plantdefect.py` and the M16-AC3 count. Fix the
+      round-2 prose findings that outlive it: R2-F4, R2-F5 and R2-F10.
 
 ## Work log
 <!-- owner: any skill · append-only; one line per entry; absolute dates. -->
@@ -117,6 +134,8 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: review round 1 returned to in-progress — AC2 fails: `tests/scans/range-position.py` does not assert three parts of the property AC2 says it asserts (the reset's location in `finish_ranges`, which traversals hold the two call sites, and that `plan_range` is handed the guard's own position), each reproduced against a built tree that the scan exits 0 on. Twelve findings logged in the Review section; seven fix-now, four follow-up, one rejected. Defect returns on this milestone: 1.
 - 2026-08-22: round-1 return closed — the three AC2 gaps repaired and each reproduced tree now a planted splice, four fix-now findings actioned, four follow-ups homed on ROADMAP rows; full suite `--self-test` 395 checks, exit 0. Status back to review.
 - 2026-08-22: review round 2 returned to in-progress — AC2 fails again: `tests/scans/range-position.py` does not assert three further parts of the property AC2 says it asserts (the counter's advance located in `range_position`, each traversal's position call taken above its own derivation return, and the guard's clauses read as code rather than as text), each reproduced against a built tree the scan exits 0 on. Eleven findings logged; three are the return, six fix on return, one surfaced at the gate, one rejected. Defect returns on this milestone: 2 — thrash trigger (b) fires, and the plan gate's recorded falsifier was tested and not met (the fixture renders identically pre-M23), while a planted defect was shown to fail the fixture's render.
+- 2026-08-22: criteria audit (full mode, fresh-context [O] reader that authored none of the wording) ran on the proposed AC2 replacement and returned nine findings — the draft's headline clause false of the deliverable (pairing still keys on the entry key, as this milestone's own Decisions entry says it must), the clause after the colon still binding an instrument (D-118's named plant-matrix case), an unbounded universal over documents, an enumeration fixed by author recall and missing four break-modes, the quantification domain delegated to an implement-editable section, and the back-end axis unstated. All disposed at the amendment gate: the wording adopted is the audit's own narrowing.
+- 2026-08-22: AC2 amended (substantive, at the gate; a defect return's chosen repair, not an amendment return, so not on that track). The plan gate's recorded falsifier was tested a second time and failed a second time: the extended fixture — the two shapes nobody had rendered against pre-M23 code — prints an identical index and an identical report count against `origin/main`'s filter. No criterion can be both deliverable-bound and discriminating on this change, so AC2 narrows to the deliverable property the fixture shows and gives up discrimination; the injection battery moves to T9 as task work. Narrowing, so D-118's direction rule is satisfied rather than traded against.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

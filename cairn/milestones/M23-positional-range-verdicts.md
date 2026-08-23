@@ -140,6 +140,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: T9 — the nine-row injection battery under `--self-test`: each row plants one way the position binding breaks, renders the AC2 fixture against the broken copy, and requires the observed (render exit, printed ranges, report count) to differ from a control rendered in the same function. A tenth row was drafted and dropped: the splice labelled "a counter per pass" rendered identically to the control, so it planted nothing the fixture can see and would have claimed a break it does not make. Forms covered: relocation, deletion, in-body reordering, argument substitution, and a signature-plus-call-site pair.
 - 2026-08-22: T10 — `tests/scans/range-position.py` retired and deregistered from `run_scan`, `tests/plantdefect.py` and the M16-AC3 count (13 back to 12); the battery covers its ground by rendering rather than by pattern. Round-2 prose findings fixed: `range_items`'s and `pair_ranges`'s contract comments now say marks that KEPT an end, since `range_end` also refuses a displaced mark that did name one (R2-F4, R2-F5), and the `.idx` clearing comment no longer claims LaTeX appends to it (R2-F10). Full suite `--self-test` 390 checks, exit 0. Status to review.
 - 2026-08-22: review round 3 — consistency gate green (`cairn_validate` 16 PASS / 7 OK, exit 0; no principle change; `generic` names no toolchain checks); `origin/main` an ancestor of HEAD, nothing to merge. Acceptance run `tests/run-tests.sh --self-test` 390 checks exit 0; AC1, AC2 and AC3 each executed and ticked against evidence recorded in the Review section. Blame-history and prior-review lenses returned no findings; the diff-bug lens is still running — this is a checkpoint, not the gate.
+- 2026-08-23: review round 3 findings — seven, all from the diff-bug lens; three fixed on the branch (the battery's unguarded exit capture and `.ind` grep, its false per-row channel claim, and the oracle header naming one fixture for two), two homed on the acceptance-suite-hardening row, and two carried to the gate as wording questions (stale Scope/Coverage/T9 references, and AC2's "in both back-ends" scoping a page-range clause HTML cannot have). Suite re-run after the fixes: 390 checks, exit 0. No finding meets the return floor; defect returns stay at 2.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->
@@ -211,6 +212,52 @@ from a control rendered in the same function — all nine differ.
 
 **AC3 — MET.** The active profile's verify slot is `tests/run-tests.sh`. Run
 here as `tests/run-tests.sh --self-test`: 390 checks, exit 0.
+
+**Findings and dispositions.** Three fresh-context reviewers; seven findings,
+all from the diff-bug lens. The blame-history lens returned none (it confirmed
+the removed M21 per-key queues protected nothing the position store does not,
+that `pair_ranges` still pairs by entry key so D-009 holds, and that the
+`m21probes.py` split is behaviour-preserving). The prior-review lens returned
+none, having checked every round-1 and round-2 disposition and found each
+either fixed or standing where it was recorded.
+
+| # | Finding | Disposition |
+|---|---|---|
+| R3-F1 | `m23_render` takes the render's exit through a bare subshell and greps a possibly-absent `.ind`, both unguarded under `set -euo pipefail`, on paths five of the nine rows take by design; bash 3.2 not inheriting `-e` into a command substitution is what keeps the run alive | fix now |
+| R3-F2 | The battery's comment says each row states which of the three channels differed; no row does, and two rows differ through a consequence of the break (`guardattr`'s spurious reports, `exportgone`'s nil call) rather than a mis-bound verdict | fix now |
+| R3-F5 | The oracle constants are headed as `range-nested.qmd`'s and serve `range-position.qmd` unlabelled, where the opening mark's page 1 is a pagination fact — the prose above it fitting one page — and not a source one | fix now (the comment) + follow-up row |
+| R3-F6 | The `data-qi-pending` residue sweep gap round 1's F9 recorded applies to `examples/range-position.html` too; the widened ROADMAP row names only the other fixture | follow-up — widen the row |
+| R3-F7 | `m23probes._ind` tests only that its three expected terms are present and pins no entry total, so a defect indexing the class-less `range=` span or the no-entry mark would pass every AC2 check untouched | follow-up — widen the row |
+| R3-F3 | Scope **In:** still lists "the AC2 source scan" as a deliverable, Coverage still maps `AC3 → T1, T2, T3, T4` where T3 is the retired scan's task, and T9's text says "eight ways" where nine rows ship | surfaced to the user at the gate |
+| R3-F4 | AC2's "in both back-ends" scopes all three clauses, and HTML has no page ranges for "each range prints the page range its own marks sit at" to be about; the reader asserts the HTML analogue (one locator at the opening mark's anchor), which is the substitution AC1 makes in its own text and AC2 does not | surfaced to the user at the gate |
+
+**Fix-now work.** `m23_render` now takes `|| rc=$?` and guards the `.ind` grep
+with `|| true` inside the substitution, in the shape `check_warning_count`
+already uses, with a comment saying why both lines sit on a failing path. The
+battery's contract comment drops the false per-row claim and records the
+measured control triple and each row's channel, dated and pinned to
+`m23_render`; the control was re-measured here first-hand rather than taken
+from the reviewer's account —
+`0|hyperpage{1--4} hyperpage{1} hyperpage{4} hyperpage{2--3} |1`, matching.
+`m23probes.py`'s oracle header names both fixtures and states which of its
+numbers is pagination rather than source. Re-run after the fixes:
+`tests/run-tests.sh --self-test`, 390 checks, exit 0.
+
+**Return floor.** No actioned finding demonstrates an acceptance criterion
+failing, and none is a load-bearing defect in what the extension does for its
+users — all three lenses independently cleared the Lua on the read path.
+R3-F3 and R3-F4 are about the milestone's own wording rather than the
+deliverable, which is why they go to the maintainer rather than back to
+implement. Defect returns on this milestone stay at 2; amendment returns stay
+at 0.
+
+**What the reviewers cleared.** Both fixtures re-rendered out of tree and all
+nine injection rows re-run independently: every row plants a real, distinct
+defect and every one differs from the control. T10's deregistration is
+complete — 12 files under `tests/scans/`, 12 `plantdefect.py` rows, the
+M16-AC3 count at 12, and no dangling `run_scan` reference. No correctness bug
+in `marks.lua` or `passes.lua`; `index.lua` is unchanged on this branch.
+Nothing contradicts D-001 through D-010 or any IP/GP.
 
 ### Round 2 — 2026-08-22 — returned to `in-progress`
 

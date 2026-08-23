@@ -25,15 +25,20 @@ import m21probes as M21  # noqa: E402
 
 _fail = M20._fail
 
-# What `examples/range-nested.qmd` writes, stated HERE and never read off the
-# artifact under test — the M20 oracle lesson, in the shape M21 gives it: the
+# What `examples/range-nested.qmd` and `examples/range-position.qmd` both
+# write — one set of constants for the one reader that serves both fixtures —
+# stated HERE and never read off the artifact under test — the M20 oracle lesson, in the shape M21 gives it: the
 # printed range and the mark that carries it are written by one run, so an
 # expectation derived from either moves with a defect in the other. What
 # cannot move is where the fixture puts its page breaks.
 #
 # The nested range opens on the fixture's first page and closes on its fourth,
 # so it covers four; the plain range opens on the second and closes on the
-# third, so it covers two. The two widths differ, and the two ranges overlap,
+# third, so it covers two. Every page but the first is reached by an explicit
+# `{{< pagebreak >}}`; the FIRST is where the opening mark falls because the
+# prose above it fits one page, which is a pagination fact rather than a source
+# one, and is the one number here a longer preamble in either fixture would
+# move (a standing acceptance-suite-hardening row). The two widths differ, and the two ranges overlap,
 # so a verdict handed to the wrong mark prints a span of the wrong width
 # rather than merely moving an entry.
 NESTED = 'nixie ogopogo'

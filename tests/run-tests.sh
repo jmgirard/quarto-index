@@ -9443,11 +9443,18 @@ filtersrc.sources()" >/dev/null 2>&1; then
   #     Each row plants ONE way the binding breaks, renders the AC2 fixture
   #     against the broken copy, and requires the observed triple — render
   #     exit, printed page ranges, report count — to differ from the control's.
-  #     Any of the three differing is enough, and which one differs is stated
-  #     per row from what was measured rather than asserted per row: rows that
+  #     Any of the three differing is enough, and no row names WHICH: rows that
   #     kill the render and rows that quietly mis-pair are both defects, and a
   #     harness demanding a particular channel would fail on the wrong thing
-  #     when a defect moved between them.
+  #     when a defect moved between them. Measured 2026-08-23 against a control
+  #     of `0|hyperpage{1--4} hyperpage{1} hyperpage{4} hyperpage{2--3} |1`:
+  #     `advance`, `guardclass`, `lateemit`, `resetmoved` and `exportgone` fail
+  #     the render; `guardattr` renders the same index and differs by report
+  #     count, the dropped clause putting non-range marks through `plan_range`;
+  #     `resetgone`, `constant` and `keyback` render clean and mis-pair. Two of
+  #     those channels are a CONSEQUENCE of the break rather than a mis-bound
+  #     verdict — `guardattr`'s spurious reports and `exportgone`'s nil call —
+  #     which is what a row asserts: that the fixture can see the break at all.
   #
   #     This replaces the source scan M23 carried through two review rounds.
   #     The scan pinned names and shapes in the source; twice it certified a
@@ -9462,9 +9469,16 @@ filtersrc.sources()" >/dev/null 2>&1; then
   m23_render() {   # <dir> -> prints "<exit> <ranges> <reports>"
     local dir="$1" rc ranges reports
     cp examples/range-position.qmd "$dir/"
-    ( cd "$dir" && quarto render range-position.qmd --to pdf > render.log 2>&1 )
-    rc=$?
-    ranges=$(grep -o 'hyperpage{[^}]*}' "$dir/range-position.ind" 2>/dev/null | tr '\n' ' ')
+    # `|| rc=$?` rather than a bare subshell followed by `$?`: five of the nine
+    # rows below render at a non-zero exit and one leaves no `.ind` at all, so
+    # both lines here sit on a failing path BY DESIGN. Bash 3.2 happens not to
+    # inherit `-e` into a command substitution, but that is the shell's accident
+    # and not this script's guarantee; without the guards a newer shell would
+    # abort the whole run here with no `FAIL:` line — the silent-abort mode this
+    # file defends against in `check_warning_count`, in the same shape.
+    rc=0
+    ( cd "$dir" && quarto render range-position.qmd --to pdf > render.log 2>&1 ) || rc=$?
+    ranges=$({ grep -o 'hyperpage{[^}]*}' "$dir/range-position.ind" 2>/dev/null || true; } | tr '\n' ' ')
     reports=$({ grep -c '(W)' "$dir/render.log" || true; } | tr -d ' ')
     printf '%s|%s|%s' "$rc" "$ranges" "$reports"
   }

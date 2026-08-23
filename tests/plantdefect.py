@@ -9,6 +9,7 @@ printed here is the text the run greps the check's output for, so a scan that
 died for some other reason cannot be read as the scan catching this.
 
 Usage:  python3 tests/plantdefect.py <scratch-ext-dir> <scan-name>
+        python3 tests/plantdefect.py --html <captured-page> <residue-kind>
 
 Prints the expected failure marker. An aimed-at text the module does not carry
 is an error rather than a no-op: a defect that planted nothing would leave the
@@ -92,7 +93,52 @@ DEFECTS = {
 }
 
 
+# The three residue plants (M24). Each is the defect its sweep in
+# tests/htmlsweep.py exists to catch, planted into one captured page so the
+# sweep is shown to READ that page and not merely to walk past it: a sweep over
+# a set is satisfied by a set it never opens, which is the vacuous pass the
+# per-file checks it replaced could not have.
+#
+# The marker class is read from the environment, not written down here, for the
+# reason the warn-distinct count above is read from its scan: the run pins it to
+# the filter's own constant, and a second copy is one more thing that must
+# change with it and will not.
+#
+# Each plant names the text its sweep prints, WITHOUT the page's name — the
+# caller knows which page it planted into and requires that name in the output
+# too, which is what says the sweep caught this page rather than some other.
+HTML_DEFECTS = {
+    'pending': ('<body', '<body data-qi-pending="planted"',
+                'data-qi-pending survived into rendered HTML'),
+    'marker': ('</body>', '<div class="%s">planted</div></body>',
+               'marker residue in rendered HTML'),
+    'emptydiv': ('</body>', '<div class="qi-planted-empty"></div></body>',
+                 'empty div(s) left where a marker was removed'),
+}
+
+
+def plant_html(path, kind):
+    """Plant one residue defect in a captured HTML page; print its marker."""
+    if kind not in HTML_DEFECTS:
+        raise SystemExit('FAIL: plantdefect: no HTML residue defect named %r'
+                         % kind)
+    old, new, marker = HTML_DEFECTS[kind]
+    if kind == 'marker':
+        new = new % os.environ['MARKER_CLASS']
+    src = open(path, encoding='utf-8').read()
+    if old not in src:
+        raise SystemExit(
+            'FAIL: plantdefect: %s carries no <<%s>>, so the %r defect plants '
+            'nothing and the sweep that follows would be reported as failing '
+            'to discriminate when the fault is this mutation\'s'
+            % (path, old, kind))
+    open(path, 'w', encoding='utf-8').write(src.replace(old, new, 1))
+    print(marker)
+
+
 def main(argv):
+    if len(argv) == 4 and argv[1] == '--html':
+        return plant_html(argv[2], argv[3])
     if len(argv) != 3:
         raise SystemExit(__doc__)
     root, name = argv[1], argv[2]

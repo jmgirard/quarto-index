@@ -1,6 +1,6 @@
 # M24: Every check reads the copy, never the working tree
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -96,7 +96,7 @@ checker-regress shape D-004 refused.
       that into `tests/plantdefect.py`'s self-test.
 - [x] T7: Add the AC1 self-grep and the AC3 pairing check to the suite, over
       `git ls-files tests`.
-- [ ] T8: Full `tests/run-tests.sh --self-test` from a cleaned tree; capture
+- [x] T8: Full `tests/run-tests.sh --self-test` from a cleaned tree; capture
       evidence for each criterion.
 
 ## Work log
@@ -112,3 +112,5 @@ checker-regress shape D-004 refused.
 - 2026-08-23: T6 (part) — both residue sweeps moved into `tests/htmlsweep.py` and run last, after the parity probe, so nothing the run renders sits outside the domain they claim. The pending sweep now reads 85 captured pages where it globbed `examples/*.html`; the marker-class sweep reads the same 85 where it was three hand-written call sites.
 - 2026-08-23: T6 — both sweeps proved discriminating: the residue each names is planted into a mirror of the captured set, once per captured page, and the sweep is required to fail naming that page; the empty-div reader likewise on each of its three. `tests/plantdefect.py` gained the three residue plants beside its source-scan ones, reading the marker class from the environment rather than holding a second copy of it.
 - 2026-08-23: T7 — `tests/suitescan.py` adds the AC1 read check and the AC3 pairing check over `git ls-files tests`, and the suite runs both on itself: 23 tracked files, 85 render lines, all paired. Both are scans over source, the shape M23's lesson says can certify a property it never asserts, so each takes an overlay directory whose bytes replace a tracked file's and each is proved on a planted violation — a working-tree read added, a capture call removed — with the unplanted overlay required to pass first. Neither the checker nor the probe may itself carry the shape being forbidden, so both assemble the forbidden text from pieces rather than spelling it out.
+- 2026-08-23: T8 — full `tests/run-tests.sh --self-test` from a tree cleaned with `git clean -Xdfq examples/` and `rm -rf tests/.work`: exit 0, 396 checks. Per-criterion evidence in the run log — AC1 "none of the 23 tracked suite source file(s) reads a rendered artifact out of the fixture directory"; AC2 "the run starts from a clean examples/ — git clean -Xdn prints nothing"; AC3 "all 85 render command line(s) ... immediately followed by a call to the capture helper"; AC4 the pending and marker sweeps each over 85 captured pages plus the empty-div reader over its 3; AC5 the run's own "All checks passed (396 checks)".
+- 2026-08-23: the acceptance-suite-hardening candidate row absorbs one gap found here: the AC1 read check's pattern reaches only a token ending in a literal extension, so a read spelled `examples/<stem>.$var` passes it unseen. Five such reads existed and are repaired on this branch. ROADMAP is at 23,287 of its 24,000-byte budget and 58 of its 60 lines after the absorption.

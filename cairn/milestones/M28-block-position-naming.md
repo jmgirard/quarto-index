@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** `m028-block-position-naming`
+- **Branch/PR:** `m028-block-position-naming` / https://github.com/jmgirard/quarto-index/pull/28
 
 ## Goal
 
@@ -36,26 +36,26 @@ to that residue rather than struck, and the residue stays a Known issue.
 
 ## Acceptance criteria
 
-- [ ] Rendering `examples/marker-position.qmd` to gfm emits an emptied-place
+- [x] Rendering `examples/marker-position.qmd` to gfm emits an emptied-place
       report whose block number differs from the marker's position among the
       top-level blocks of the file the marker is written in, and that report
       carries the sequence-naming clause. The fixture's manifest comment states
       both numbers.
-- [ ] In captured render logs, each number the three reports name says which
+- [x] In captured render logs, each number the three reports name says which
       sequence it indexes into: the emptied-place report and the duplicate-
       marker report over `examples/marker-shapes.qmd` and
       `examples/marker-misuse.qmd`, and the chapter-count report over
       `examples/book-order`. The duplicate-marker report names a sequence for
       both of its numbers — the marker ordinal and the block position.
       Asserted against the reports' full emitted text, never against source.
-- [ ] Every warning `examples/marker-shapes.qmd` emits in html, latex and gfm
+- [x] Every warning `examples/marker-shapes.qmd` emits in html, latex and gfm
       is either one of that fixture's two known other warnings or the reworded
       emptied-place template with only its block number varying.
-- [ ] The `resolve_markers` comment (`marker.lua:210`) and the
+- [x] The `resolve_markers` comment (`marker.lua:210`) and the
       `marker-shapes.qmd` manifest comment each state that a reported position
       is counted over the blocks the filter is handed, after Quarto's own
       processing, and neither states that it is the author's.
-- [ ] `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test` passes.
+- [x] `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test` passes.
 
 ## Coverage
 
@@ -109,7 +109,63 @@ to that residue rather than struck, and the residue stays a Known issue.
 - 2026-08-23: T6 — D-014 appended annotating D-006; KI21 narrowed to the un-probed injection kinds and marked narrowed M28; KI25 struck. No candidate row pointed at either label — the block-position row was narrowed to its KI23 remainder at plan time — so no row needed rewriting. cairn_validate clean.
 
 - 2026-08-23: all tasks done; `tests/run-tests.sh` passes (286 checks) and `tests/run-tests.sh --self-test` passes (420 checks). Status set to review.
+- 2026-08-23: review — PR #28 opened as a draft; all five criteria executed with fresh evidence and ticked; consistency gate clean (cairn_validate exit 0, no principle change, generic profile names no toolchain checks). Fresh-context review fan-out spawned; findings pending.
 
 ## Decisions
 
 ## Review
+
+Reviewed 2026-08-23 on `m028-block-position-naming`, PR #28. Evidence is a
+fresh full run of `tests/run-tests.sh` and `tests/run-tests.sh --self-test` on
+this branch, plus reads of the two comment sites.
+
+- **AC1 — met.** The suite's M28-AC1 check reads both manifest numbers off
+  `examples/marker-position.qmd` (author position 3, reported position 5) and
+  matches them against the gfm render's own log: the emitted report names
+  top-level block 5 for a marker written as the host file's third top-level
+  block, and carries the sequence-naming clause. Its two discrimination plants
+  (manifest numbers equalized; the log's report renamed to the author's
+  position) both go red.
+- **AC2 — met.** Eight clause checks pass over captured render logs, each
+  asserting the reports' full emitted text: the emptied-place report (13
+  reports each in html, latex, gfm) and the duplicate-marker report (1 each) over
+  `marker-shapes.qmd`/`marker-misuse.qmd`, and the chapter-count report (2
+  reports) over `book-order`. A separate check holds that the duplicate report's
+  clause covers both of its numbers — its first number now reads "index
+  placement marker 2 in document order (top-level block 8)", with a trailing
+  "Both numbers are counted over the document as this filter received it …".
+  The chapter-count report ends "The chapter count is over the files this book
+  renders, in the order the book's render list gives them". Two discrimination
+  plants go red: the clause cut out of every report, and the report removed
+  entirely (which fails by finding no report).
+- **AC3 — met.** The M12 partition check passes in all three formats: of 34
+  warnings per format, the 13 that are not the fixture's two known ones are
+  exactly the manifest's emptied-place reports, each the reworded template with
+  only its block position varying. A fourth check holds the same over the three
+  renders together, matching the manifest whole.
+- **AC4 — met.** Read both sites on this branch. The `resolve_markers` comment
+  (`_extensions/index/modules/marker.lua:225`) says a reported position "is
+  counted over the blocks this filter is handed, after Quarto's own processing"
+  and "is not the author's own source position", pointing at
+  `examples/marker-position.qmd`. The `marker-shapes.qmd` manifest comment says
+  its own numbering works there only because that file holds no include and no
+  executable cell, that "The report's number is counted over what the filter is
+  handed, after Quarto's own processing — not over the author's source file",
+  and points at the same fixture. Neither calls the position the author's.
+- **AC5 — met.** `tests/run-tests.sh` exits 0, 286 checks.
+  `tests/run-tests.sh --self-test` exits 0, 420 checks. Both run fresh on this
+  branch at review time.
+
+### Consistency gate
+
+- `cairn_validate` exits 0 — every check PASS, every advisory OK.
+- No `DESIGN.md` principle changed on this branch (the DESIGN diff is Known
+  issues only: KI21 narrowed, KI25 struck), so `cairn_impact` is skipped.
+- Toolchain checks: the active profile is `generic`, whose `consistency-gate`
+  slot names none. Clean no-op.
+
+### Findings
+
+_Pending: the three fresh-context reviewers ([O] diff-bug, [S] blame-history,
+[S] prior-review record) are still running; their ranked findings and triage
+land here before the approval gate._

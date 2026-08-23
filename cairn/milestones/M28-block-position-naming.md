@@ -79,7 +79,7 @@ to that residue rather than struck, and the residue stays a Known issue.
       (`book.lua:575`), naming what its chapter count is over.
 - [x] T4: correct the `resolve_markers` comment (`marker.lua:210`) and the
       `examples/marker-shapes.qmd` manifest comment.
-- [ ] T5: suite — update the M12 partition template
+- [x] T5: suite — update the M12 partition template
       (`tests/run-tests.sh:2998`); add the divergence check reading both
       manifest numbers off the new fixture; assert the naming clause in the
       three reports' full emitted text in captured logs; pass every new grep
@@ -102,6 +102,9 @@ to that residue rather than struck, and the residue stays a Known issue.
 
 - 2026-08-23: T3 — `book.lua`'s chapter-count report now says the count is over the files the book renders, in render-list order.
 - 2026-08-23: T4 — the `marker-shapes.qmd` manifest comment now says its numbers hold only because that file has no include or cell, and points at the fixture where the two positions diverge; the `resolve_markers` comment landed in T2's commit.
+
+- 2026-08-23: T5 — suite gained the clause checks over the three reports' emitted text, `tests/m28pos.py` reading both manifest numbers off the new fixture, and four discrimination plants (clause cut out, report removed, manifest numbers equalized, log report renamed to the author's position); `WARN_MARKER_EMPTIED` and `WARN_MARKER_NOT_LAST` now reach the key-distinctness scan. 286 checks, 420 under `--self-test`.
+- 2026-08-23: minor amendment — T5 gained the four discrimination plants as a discovered sub-task; the check-discrimination rule requires a new check be shown able to fail, and the repo's idiom is to commit the plant beside it.
 
 ## Decisions
 

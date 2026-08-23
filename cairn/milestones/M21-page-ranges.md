@@ -1,6 +1,6 @@
 # M21: A discussion spanning pages prints as one page range
 
-- **Status:** blocked
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M20
 - **Driving RR:** —

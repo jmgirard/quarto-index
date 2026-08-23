@@ -1,6 +1,6 @@
 # M24: Every check reads the copy, never the working tree
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -43,7 +43,7 @@ checker-regress shape D-004 refused.
 
 ## Acceptance criteria
 
-- [x] AC1: Over the file set `git ls-files tests` enumerates, every line
+- [ ] AC1: Over the file set `git ls-files tests` enumerates, every line
       matching `examples/` followed by a token ending in `.html`, `.tex`,
       `.md`, `.pdf`, `.aux`, `.idx`, `.ilg`, `.ind` or `.log` — glob and
       shell-variable forms included — is either a `quarto render` command line
@@ -115,6 +115,7 @@ checker-regress shape D-004 refused.
 - 2026-08-23: T8 — full `tests/run-tests.sh --self-test` from a tree cleaned with `git clean -Xdfq examples/` and `rm -rf tests/.work`: exit 0, 396 checks. Per-criterion evidence in the run log — AC1 "none of the 23 tracked suite source file(s) reads a rendered artifact out of the fixture directory"; AC2 "the run starts from a clean examples/ — git clean -Xdn prints nothing"; AC3 "all 85 render command line(s) ... immediately followed by a call to the capture helper"; AC4 the pending and marker sweeps each over 85 captured pages plus the empty-div reader over its 3; AC5 the run's own "All checks passed (396 checks)".
 - 2026-08-23: the acceptance-suite-hardening candidate row absorbs one gap found here: the AC1 read check's pattern reaches only a token ending in a literal extension, so a read spelled `examples/<stem>.$var` passes it unseen. Five such reads existed and are repaired on this branch. ROADMAP is at 23,287 of its 24,000-byte budget and 58 of its 60 lines after the absorption.
 - 2026-08-23: review — fresh evidence recorded for all five criteria from one 396-check `--self-test` run (exit 0) on a cleaned tree; consistency gate clean (`cairn_validate` exit 0, `generic` profile names no toolchain checks). Three fresh-context lenses spawned.
+- 2026-08-23: amendment return: AC1 — "every line matching `examples/` followed by a token ending in `.html`, `.tex`, `.md`, `.pdf`, `.aux`, `.idx`, `.ilg`, `.ind` or `.log` — glob and shell-variable forms included — is either a `quarto render` command line or a line inside the capture helper's body". Eleven book-family reads spell the fixture directory through `$BOOK_OUT` (= `examples/book/_book`) and so fall outside that domain; AC1 passes while the Goal is unmet for the book fixtures. Review stopped before the merge gate; D2-D16 and B1 logged in the Review section for triage at re-review.
 
 ## Review
 
@@ -155,3 +156,87 @@ examples/` printed nothing before the run started): exit 0, 396 checks.
 `generic`, whose consistency-gate slot names no toolchain checks, so that half
 is a clean no-op. No `DESIGN.md` principle changed, so `cairn_impact` does not
 apply.
+
+### Fresh-context review — findings
+
+Three lenses, distinct evidence bases. [S] prior-PR-comments: no
+prior-review regressions; the GitHub inline-comment probe returned empty, so
+`milestones/archive/`'s `## Review` sections were the whole surface, and the
+four past lessons bearing on this diff (the `set -e` wrapper guard, reading
+constants from source, proving a source scan by a planted violation, sweep
+ordering) are each respected. [S] blame-history: one finding, B1 below; its
+other four items verified the riskiest changes and found no defect. [O]
+diff-bug: sixteen, D1-D16 below, ranked as the lens ranked them.
+
+Findings are recorded here in full. Triage of D2-D16 and B1 is deferred to
+the re-review gate, since D1 returns the milestone before a gate is reached.
+
+- D1 (verified): the book half of the suite still reads the working tree.
+  `BOOK_OUT="$BOOK_DIR/_book"` (= `examples/book/_book`) backs ten
+  un-rewritten reads, plus `$ORDER_OUT/index.html` and `$NOMARKER_DIR/_book`.
+  AC1's scan cannot see them because they spell the fixture directory through
+  a variable, so the run prints its "none of the 23 tracked suite source
+  file(s) reads a rendered artifact out of the fixture directory" line while
+  eleven such reads stand, and the twelve `capture --project` calls are
+  write-only. Amendment return; see below.
+- D2 (verified): the implement gate's safety argument — "a check aimed at the
+  wrong capture fails on a missing file" — is false where two captures hold
+  the same stem. `demo.qmd` yields `demo-latex/demo.tex` and
+  `demo-beamer/demo.tex`; `marker.qmd` yields three `marker.tex`. A read
+  aimed at the wrong one reads another render's output with nothing to trip.
+  Neither AC1 nor AC3 asserts the read-to-render correspondence.
+- D3 (verified): the M24-AC2 check sits at script top level, outside
+  `run_all_checks`, so its `pass` reaches neither `CHECK_COUNT` nor the
+  tee'd run log. AC2's own promise still holds — the assertion runs and was
+  confirmed independently — but the T8 work-log claim that its evidence is
+  "in the run log" is wrong.
+- D4: the scripted rewrite ran over comments and inverted `capture`'s own
+  header comment, which now says a check reading a capture path "is
+  therefore asserting nothing about the render it sits under". Two more
+  comments became false (a PDF render cannot consume or remove a file under
+  `$WORK/cap`), and about sixteen manifest headers carry quoted
+  shell-variable text mid-prose.
+- D5: the AC1 scan exempts only render lines and the helper body, so no
+  tracked suite file can name a fixture artifact path in prose — the root
+  cause of D4.
+- D6: the M15 contested-key sweep globs one directory deep, so `.tex` files
+  inside a captured `_book` tree are outside a domain its pass line calls
+  "none of the N captured LaTeX artifacts".
+- D7: five book captures copy a whole `_book` tree most of whose pages an
+  earlier render wrote, relocating staleness from `examples/` into `$WORK`.
+- D8: the sweep self-test is O(n^2) in captured pages (~14,000 HTML parses).
+- D9: `capture` captures by stem across all extensions rather than by what
+  the render produced; `fmt` only names the slug.
+- D10: `ext` is not declared `local` in `capture`.
+- D11: `check_pairs` matches `quarto render` in prose, so a docstring
+  mentioning it becomes a hard run failure.
+- D12: the AC3 planted-defect proof verifies a capture line was deleted, not
+  that the deletion broke a pairing.
+- D13: the ROADMAP row's "Remainder:" sentence still lists three items its
+  own NARROWED preamble says M24 absorbs.
+- D14: the suite now hard-depends on git (`git clean`, `git ls-files`), a
+  precondition recorded nowhere.
+- D15: the pre-render clean silently deletes ignored-but-wanted developer
+  files parked under `examples/`.
+- D16: `KEPT_MARKERS` is a written-down list in a module arguing against
+  them; drift fails loudly, but a fixture legitimately keeping a marker must
+  be remembered here.
+- B1: the ROADMAP candidate row still records M20 review R2-F13 (the M15
+  emission sweep's M20 rows inert on a clean tree) as open, which moving the
+  sweep to the end of the run incidentally fixed. Tracking divergence, not a
+  code defect.
+
+### Disposition
+
+**Amendment return on AC1.** D1 falsifies the milestone's Goal only outside
+the domain AC1's procedure quantifies over: AC1 asks after lines matching
+`examples/`, and the eleven standing working-tree reads spell that directory
+through a variable, so AC1 passes as written while the property it exists to
+fence does not hold. That is evidence about the promise, not about the work,
+so it routes to the gated criterion-amendment protocol
+(`/milestone-implement` step 6) and re-review, with the amendment the only
+work convened. AC1's tick is removed: its recorded evidence was taken against
+wording that is being amended.
+
+Returns on this milestone: amendment-return track 1 (this one); defect-return
+track 0.

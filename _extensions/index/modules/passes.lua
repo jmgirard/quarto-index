@@ -135,13 +135,16 @@ end
 -- entry prints, and a range reported as displaced by a target the fold is
 -- about to drop would contradict the drop's own report about the same mark.
 local function CollectRanges(span)
-  if not span.classes:includes(qi_core.INDEX_CLASS) then
+  -- This mark's document position, taken at the guard both passes share and
+  -- before either derives anything, because that is what the emitting pass
+  -- reads its verdict by. Taken here rather than at the `plan_range` call
+  -- below: a mark that derives no entry plans nothing, and it must still hold
+  -- a position of its own so the mark after it does not inherit one.
+  local pos = qi_marks.range_position(span)
+  if pos == nil then
     return nil
   end
   local value = span.attributes[qi_core.RANGE_ATTR]
-  if value == nil then
-    return nil
-  end
   local entry = span.attributes["entry"]
   local visible = qi_marks.span_text(span)
   local context = qi_marks.describe(entry, visible)
@@ -165,8 +168,9 @@ local function CollectRanges(span)
     -- under and no locator for one to span. The emitting pass reports why the
     -- mark indexes nothing, which is the fact the author acts on; a second
     -- report that the range went with it would name the same mistake twice.
-    -- It plans nothing, and the emitting pass takes no verdict for this mark
-    -- either — it returns at the same point, on the same derivation.
+    -- It plans nothing, and the emitting pass finds nothing planned at this
+    -- mark's position — which no longer depends on the two passes returning at
+    -- the same point, since the position was taken before either derived.
     return nil
   end
   local own_key = qi_levels.levels_key(levels)
@@ -193,7 +197,8 @@ local function CollectRanges(span)
                                      context,
                                      blocked ~= nil and { attrs = blocked } or nil,
                                      false)
-  qi_marks.plan_range(value, own_key, context, blocked, role == "principal")
+  qi_marks.plan_range(pos, value, own_key, context, blocked,
+                      role == "principal")
   return nil
 end
 
@@ -287,6 +292,13 @@ local function Span(span)
     return nil
   end
 
+  -- This mark's document position, taken through the same guard the
+  -- collecting pass takes it through and before either pass derives an entry.
+  -- Read by KEY instead, the two passes agreed only while the marks THIS pass
+  -- has already rewritten happened to stringify to the text the other one saw
+  -- — an accident of Pandoc's, not a property of this filter (M23).
+  local range_pos = qi_marks.range_position(span)
+
   local entry = span.attributes["entry"]
   local visible = qi_marks.span_text(span)
   local context = qi_marks.describe(entry, visible)
@@ -356,15 +368,13 @@ local function Span(span)
   -- about emptiness. M10 reconciled the two spellings here instead, because
   -- the entry side kept what it was written with.
   local own_key = qi_levels.levels_key(levels)
-  -- The range verdict for this mark, taken here so the two passes stay in step
-  -- on the same key: CollectRanges planned one verdict per range mark that
-  -- derived an entry, and this pass returned at the same point on the same
-  -- derivation for every mark that did not. Nil for a mark carrying no
-  -- `range=` at all, and nil for one whose end was refused — both of which
-  -- index as an ordinary locator.
+  -- The verdict CollectRanges planned at this mark's own position. Nil for a
+  -- mark carrying no `range=` at all, nil for one whose end was refused, and
+  -- nil for one that derived no entry there — all three index as an ordinary
+  -- locator.
   local range = nil
-  if span.attributes[qi_core.RANGE_ATTR] ~= nil then
-    range = qi_marks.next_range(own_key)
+  if range_pos ~= nil then
+    range = qi_marks.next_range(range_pos)
   end
   local surviving = {}
   for _, xref in ipairs(xrefs) do

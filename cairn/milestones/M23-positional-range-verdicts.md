@@ -72,7 +72,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
       span through something other than the gfm reader (its first-`</span>`
       truncation is a standing candidate row). Green today — the
       untouched-shape guard (M11 lesson).
-- [ ] T2: Re-key: replace the per-key `range_plan`/`range_cursor` queues
+- [x] T2: Re-key: replace the per-key `range_plan`/`range_cursor` queues
       with a position-ordinal store; both traversals advance the ordinal at
       the same guard (span has the index class and `range=`), before
       derivation, so alignment is independent of key and derivation alike.
@@ -94,6 +94,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: plan gate chose the source-scan certifier over behavior-only criteria because no current rendering reaches the latent desync, so behavior alone certifies nothing about the change; falsified by a constructible rendering that fails pre-fix, which would supersede the scan with a behavioral criterion.
 - 2026-08-22: implementation started on `m23-positional-range-verdicts`.
 - 2026-08-22: T1 — `examples/range-nested.qmd` (an `entry=`-less range mark carrying another mark on both ends, overlapping a plain range of another term with a different span width), `tests/m23probes.py` reading the `.ind`/`.ilg` and the HTML index, and seven self-test plants. Green today: the nested range prints `1--4`, the plain one `2--3`, the inner mark two pages, makeindex 0 warnings. Full suite `--self-test` 386 checks, exit 0. Two helpers factored out of `m21probes._html` rather than copied (M16).
+- 2026-08-22: T2 — the per-key `range_plan`/`range_cursor` queues are gone; `finish_ranges` files each verdict under its mark's document position and `next_range(pos)` reads it back. Both traversals take that position through one function, `marks.range_position(span)`, which is the only advance of the counter and holds the guard (index class + `range=`) as one piece of code rather than one condition written twice; `finish_ranges` resets the counter between the passes. Full suite `--self-test` 386 checks, exit 0 — the same count as before the change.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

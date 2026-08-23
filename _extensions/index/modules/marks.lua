@@ -351,61 +351,74 @@ end
 local range_items = {}
 local range_found = {}
 local range_pair_found = {}
--- Entry key -> that key's verdicts in document order, and how many of them the
--- emitting pass has read. A queue per key rather than one list in document
--- order: the collecting pass and the emitting pass each walk the document
--- once, in the same order, and taking the next verdict for THIS mark's key is
--- what keeps the two in step.
-local range_plan = {}
-local range_cursor = {}
+-- Document position -> the verdict planned at that position, and the counter
+-- both traversals number positions with.
+--
+-- A POSITION, not an entry key. The collecting pass and the emitting pass each
+-- walk the document once in the same order, but they do not read the same
+-- text: Pandoc rewrites a mark before it reaches an enclosing one, so a
+-- `range=` mark with no `entry=` around another mark derives its key from a
+-- string only one of the two passes ever sees. Keyed on that, the emitting
+-- pass took whichever verdict the key it happened to derive had left in its
+-- queue; keyed on position, the two agree before either derives anything.
+--
+-- One counter rather than one per pass, reset in `finish_ranges` between the
+-- two traversals: both then number from the same origin by construction,
+-- rather than by two initializations agreeing.
+local range_verdicts = {}
+local range_at = 0
 
--- Called by the collecting pass, once per range mark that indexes an entry.
-local function plan_range(value, key, context, blocked, principal)
+-- This mark's document position, or nil where the mark is not a range mark at
+-- all. BOTH traversals call this and nothing else advances the counter, so
+-- the guard deciding which spans have positions is one piece of code rather
+-- than one condition written twice — the two passes cannot come to disagree
+-- about it. Called before either pass derives an entry, so a mark that
+-- derives none still holds a position of its own.
+local function range_position(span)
+  if not span.classes:includes(qi_core.INDEX_CLASS) then
+    return nil
+  end
+  if span.attributes[qi_core.RANGE_ATTR] == nil then
+    return nil
+  end
+  range_at = range_at + 1
+  return range_at
+end
+
+-- Called by the collecting pass, once per range mark that indexes an entry,
+-- with the position `range_position` gave that mark. The entry key stays: an
+-- opening pairs with the next closing of the SAME entry, which is what the
+-- extension documents. What left is the key's second job — standing in for
+-- the mark's identity between the two passes, which is the position's now.
+local function plan_range(pos, value, key, context, blocked, principal)
   local ending, found = range_end(value, context, blocked)
   if ending == nil then
     range_found[#range_found + 1] = found
-    -- Still an item for this key, so the emitting pass reading verdicts in
-    -- order does not hand this mark's refusal to the next mark of the key.
-    range_items[#range_items + 1] = { key = key, ending = false }
     return
   end
   range_items[#range_items + 1] =
-    { key = key, ending = ending, principal = principal, context = context }
+    { pos = pos, key = key, ending = ending, principal = principal,
+      context = context }
 end
 
 -- Called once the whole document has been read.
 local function finish_ranges()
-  local paired = {}
-  for _, item in ipairs(range_items) do
-    if item.ending then
-      paired[#paired + 1] = item
-    end
-  end
   local verdicts
-  verdicts, range_pair_found = pair_ranges(paired)
-  local at = 0
-  for _, item in ipairs(range_items) do
-    local verdict = false
-    if item.ending then
-      at = at + 1
-      verdict = verdicts[at]
-    end
-    local queue = range_plan[item.key]
-    if queue == nil then
-      queue = {}
-      range_plan[item.key] = queue
-    end
-    queue[#queue + 1] = verdict
+  verdicts, range_pair_found = pair_ranges(range_items)
+  for i, item in ipairs(range_items) do
+    range_verdicts[item.pos] = verdicts[i]
   end
+  -- Back to the origin for the emitting pass, which numbers positions with
+  -- this same counter.
+  range_at = 0
 end
 
--- The next verdict for this key, read by the emitting pass. Nil for a mark
--- whose end was refused, and nil for a mark whose key has no verdicts at all.
-local function next_range(key)
-  local n = (range_cursor[key] or 0) + 1
-  range_cursor[key] = n
-  local queue = range_plan[key]
-  local verdict = queue and queue[n]
+-- The verdict planned at this document position, read by the emitting pass.
+-- Nil for a mark whose end was refused, and nil for a position nothing was
+-- planned at — a mark that derived no entry, which the collecting pass
+-- returned on before it planned anything.
+local function next_range(pos)
+  local verdict = range_verdicts[pos]
   if verdict then
     return verdict
   end
@@ -530,6 +543,7 @@ M["record_marked"] = record_marked
 M["report_dangling"] = report_dangling
 M["clamped_paths"] = clamped_paths
 M["record_clamped"] = record_clamped
+M["range_position"] = range_position
 M["plan_range"] = plan_range
 M["finish_ranges"] = finish_ranges
 M["next_range"] = next_range

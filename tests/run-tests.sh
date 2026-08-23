@@ -121,7 +121,7 @@ run_scan() {
     xref-manifest)
       XREF_BOTH_COMMAND="$XREF_BOTH_COMMAND" \
         python3 "$script" examples/demo.qmd "$WORK/xref-manifest.txt" ;;
-    warn-distinct|xref-both-definition|store-version|max-levels|overflow-join|m15-joined-messages)
+    warn-distinct|xref-both-definition|store-version|max-levels|overflow-join|m15-joined-messages|range-position)
       python3 "$script" ;;
     marker-class)
       MARKER_CLASS="$MARKER_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
@@ -8403,6 +8403,7 @@ check_warning_count "$WORK/range-nested-pdf.log" '(W)' 0 \
 python3 tests/m23probes.py ind "$WORK/range-nested.ind" "$WORK/range-nested.ilg"
 HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
   python3 tests/m23probes.py html examples/range-nested.html
+run_scan range-position
 pass "M23-AC1: a range mark whose own content carries another mark pairs with its closing mark in both back-ends — one page range in the PDF index, one locator at the opening mark's anchor in the HTML one — while the plain range beside it keeps its own narrower span and the nested inner mark keeps its two separate locators"
 
 # ---------------------------------------------------------------------------
@@ -9358,6 +9359,70 @@ filtersrc.sources()" >/dev/null 2>&1; then
     m23_html "$M23W/twoloc.html"
   pass "M23 self-test: the nested-mark readers each fail on a planted defect of their own kind — a lost pairing, the two ranges swapping extents, a narrowed range, the range-free inner mark folded into one, a transcript warning, an HTML locator at neither mark, and a doubled one"
 
+  # --- M23-AC2: the source scan, shown discriminating on each kind of defect
+  #     it names. It is registered in `run_scan` and in `tests/plantdefect.py`
+  #     like every other member of the probed set, so the M16-AC3 loop above
+  #     already proves it survives its definitions moving and still asserts
+  #     something afterwards. What it does NOT prove is which defects this
+  #     scan is about, which is what the three splices below are for: a key
+  #     back on the reading path, a pinned name renamed away, and the two
+  #     traversals numbering marks on conditions of their own.
+  M23S="$WORK/m23-scan"
+  rm -rf "$M23S"; mkdir -p "$M23S"
+  cp -R "$QI_EXT_DIR" "$M23S/ext"
+  m23_scan() { ( export QI_EXT_DIR="$1"; python3 tests/scans/range-position.py ); }
+  # perl rather than sed for the reason probe_plantpl exists: one splice below
+  # inserts whole lines, which a line-at-a-time editor cannot express. Same
+  # no-op refusal, per file, so a splice that aimed at text the tree does not
+  # carry is reported as the splice's fault and not as the scan's.
+  m23_splice() {   # <name> then pairs of <relative file> <perl expr>
+    local name="$1"; shift
+    rm -rf "$M23S/$name"; cp -R "$M23S/ext" "$M23S/$name"
+    while [ "$#" -gt 0 ]; do
+      local rel="$1" expr="$2"; shift 2
+      perl -0777 -pe "$expr" "$M23S/$name/$rel" > "$M23S/$name/$rel.spliced"
+      if cmp -s "$M23S/$name/$rel" "$M23S/$name/$rel.spliced"; then
+        fail "M23 self-test: the splice aimed at $name/$rel planted nothing — the scan that follows would be reported as failing to discriminate when the fault is this mutation's"
+      fi
+      mv "$M23S/$name/$rel.spliced" "$M23S/$name/$rel"
+    done
+  }
+  # The unspliced tree must pass, or every failure below would prove only that
+  # the scan always fails.
+  m23_scan "$M23S/ext" >/dev/null \
+    || fail "M23 self-test: the scan fails on the unspliced source set, so no failure below is evidence of anything"
+
+  # (i) the entry key back on the reading path, in both places it would have to
+  #     go — the regression the whole milestone is against.
+  m23_splice keyparam \
+    modules/marks.lua \
+      's{^local function next_range\(pos\)$}{local function next_range(key)}m' \
+    modules/passes.lua \
+      's{qi_marks\.next_range\(range_pos\)}{qi_marks.next_range(own_key)}'
+  probe_defect "the entry key back on the verdict-reading path" \
+    m23_scan "$M23S/keyparam"
+  # (ii) a pinned name renamed away. The scan's domain is the whole source set,
+  #      so a definition that MOVED is still found; one that was renamed is
+  #      absent, and absence is what M23-AC2 asks it to fail on.
+  m23_splice renamed \
+    modules/marks.lua \
+      's{^local function finish_ranges\(\)$}{local function finish_range_verdicts()}m'
+  probe_defect "a pinned function renamed out of the source set" \
+    m23_scan "$M23S/renamed"
+  # (iii) the two traversals numbering marks on conditions of their own: the
+  #       emitting pass is given its own guard, which advances the same
+  #       counter on a narrower condition. Both passes still take positions and
+  #       every pinned name is still present — this is the defect no name pin
+  #       can see, and the one the shared guard exists to make unreachable.
+  m23_splice divergent \
+    modules/marks.lua \
+      's{^local function range_position\(span\)$}{local function range_position_close(span)\n  if span.attributes[qi_core.RANGE_ATTR] ~= "close" then\n    return nil\n  end\n  range_at = range_at + 1\n  return range_at\nend\n\nlocal function range_position(span)}m' \
+    modules/passes.lua \
+      's{local range_pos = qi_marks\.range_position\(span\)}{local range_pos = qi_marks.range_position_close(span)}'
+  probe_defect "the two traversals advancing the counter on conditions of their own" \
+    m23_scan "$M23S/divergent"
+  pass "M23 self-test: the range-position scan fails on each kind of defect it names — the entry key back on the reading path, a pinned name renamed away, and the two traversals numbering range marks on guards of their own"
+
   # --- M22: the stale-.aux probe and the no-gobblers-beside-the-subsystem
   #     reader, each shown failing on a defect of its own kind.
   M22SW="$WORK/m22-planted"
@@ -9455,11 +9520,13 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # fails there rather than going unprobed.
   SCAN_NAMES=$(find tests/scans -name '*.py' | sed 's|.*/||; s|\.py$||' | sort)
   SCAN_COUNT=$(printf '%s\n' "$SCAN_NAMES" | wc -l | tr -d ' ')
-  # An exact count, not a floor: AC3's domain is the twelve source-reading
-  # sites the merge-base run reported, and a floor would pass while one of them
-  # quietly stopped being probed.
-  [ "$SCAN_COUNT" -eq 12 ] \
-    || fail "M16-AC3: found $SCAN_COUNT source scans under tests/scans, expected 12; either a source-reading check left the probed set or one was added without extending this proof"
+  # An exact count, not a floor: AC3's domain is the source-reading sites the
+  # merge-base run reported, and a floor would pass while one of them quietly
+  # stopped being probed. Twelve at M16; thirteen since M23 added the
+  # range-position scan, which is registered in run_scan and in
+  # tests/plantdefect.py like every other member.
+  [ "$SCAN_COUNT" -eq 13 ] \
+    || fail "M16-AC3: found $SCAN_COUNT source scans under tests/scans, expected 13; either a source-reading check left the probed set or one was added without extending this proof"
 
   for SCAN_NAME in $SCAN_NAMES; do
     # (a) It still finds what it reads. The passing control: without it, the

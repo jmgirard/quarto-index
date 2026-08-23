@@ -1,0 +1,32 @@
+---
+title: "quarto-index include-shifted block-position probe"
+from: markdown-smart
+filters:
+  - index
+# MANIFEST — the two numbers the emptied-place report is about.
+#
+# This file holds THREE top-level blocks of its own: the heading below, the
+# include shortcode, and the container that holds nothing but a marker. The
+# marker's container is the third of them.
+#
+#   author position: 3
+#
+# Quarto expands the include before any filter runs, replacing the one
+# shortcode block with the part file's three, so the filter is handed a
+# document whose blocks are shifted two places down from where they were
+# written. The report names the position in THAT document.
+#
+#   reported position: 5
+#
+# The two numbers differ, which is the whole point of this fixture: a report
+# that called its number the author's own block position would be wrong here.
+---
+
+# One include, then a marker
+
+{{< include _marker-position-part.qmd >}}
+
+::: {.surrounding}
+::: {.qi-index-here}
+:::
+:::

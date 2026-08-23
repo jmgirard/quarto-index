@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-23 (M28 and M29 planned from the block-position can
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M28 | A reported block position names the sequence it counts | planned | — | normal | milestones/M28-block-position-naming.md |
+| M28 | A reported block position names the sequence it counts | in-progress | — | normal | milestones/M28-block-position-naming.md |
 | M29 | A marker report in a book names its chapter | planned | M28 | normal | milestones/M29-book-chapter-in-report.md |
 | M27 | A finding about today's behavior is a known issue, not a candidate row | done | — | normal | milestones/archive/M27-record-ownership.md |
 | M25 | A check that cannot hold its promise is retired, not widened | done | M24 | normal | milestones/archive/M25-scan-disposition.md |

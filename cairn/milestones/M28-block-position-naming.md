@@ -1,11 +1,11 @@
 # M28: A reported block position names the sequence it counts
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** `m028-block-position-naming`
 
 ## Goal
 
@@ -67,7 +67,7 @@ to that residue rather than struck, and the residue stays a Known issue.
 
 ## Tasks
 
-- [ ] T1: add `examples/marker-position.qmd` and the part file it includes.
+- [x] T1: add `examples/marker-position.qmd` and the part file it includes.
       The marker goes in the host file, after the `{{< include >}}`; the
       manifest comment states the marker's position among the host file's own
       top-level blocks and the position the render reports. A probe run on
@@ -94,6 +94,8 @@ to that residue rather than struck, and the residue stays a Known issue.
 - 2026-08-23: plan gate chose qualifying the reported count over reporting the author's source position alongside it because the include has expanded before the filter runs and the source count is not recoverable; falsified by a Quarto-supplied provenance record mapping a filter-visible block back to the source file and position it came from.
 - 2026-08-23: plan gate chose asserting the naming clause in captured render logs over a scan joining the `warn` calls' string literals because D-011 refuses widening a source-shape scan and M25 records that such a grep is matched by comments and dead calls; falsified by a report whose text cannot be reached by any render the suite runs.
 - 2026-08-23: plan gate chose narrowing KI21 to its un-probed residue over striking it because AC1's fixture exercises only the include member of the injection family it names; falsified by a fixture covering the executable-cell and shortcode members without an engine dependency (GP3).
+- 2026-08-23: T1 — added `examples/marker-position.qmd` and `examples/_marker-position-part.qmd`; a gfm render reports block 5 for a marker written as the host file's third top-level block, and the manifest states both numbers.
+- 2026-08-23: implement gate chose the full trailing sentence for the naming clause, labelling the duplicate report's marker ordinal in its own sentence, and naming the book's render list as what the chapter count is over.
 - 2026-08-23: criteria audit ran in FULL mode ([O] fresh-context reader, user-facing tier) and returned twelve findings; ten fixed at the gate, one (M29-AC5) dropped as a consequence of another fix, and one (M29-AC4's unreachable state) posed as a gate question and narrowed to the reachable render.
 
 ## Decisions

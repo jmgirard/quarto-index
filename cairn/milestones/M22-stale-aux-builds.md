@@ -9,7 +9,7 @@
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Principles touched:** IP2   <!-- owner: plan · create/amend-via-gate -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create -->
+- **Branch/PR:** m22-stale-aux-builds   <!-- owner: implement (branch) / review (PR URL) · create -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -93,6 +93,7 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
 - 2026-08-22: plan gate chose unconditional gobbling definitions (every LaTeX render without the live subsystem, zero-marks included) over marked-documents-only injection because IP2 covers any document using the extension and `index.lua:143` leaves exactly the zero-marks one crashing; falsified by a LaTeX-derived render reaching pdflatex with neither definition set in its header.
 - 2026-08-22: plan (step 2) chose gobblers over always injecting the full subsystem because the subsystem is `@`-sensitive kernel-name code a no-principal document never exercises; falsified by a stale `.aux` line the gobblers fail to absorb cleanly.
 - 2026-08-22: plan gate rejected the candidate row's alternative — a stale `.aux` is the author's to delete — because it accepts the render failure IP2 forbids; falsified by a render the gobbler injection itself breaks.
+- 2026-08-22: T1 probe verified red on exactly the three undefined `.aux`-borne commands; T2 gobblers landed and turned it green standalone; T3 discrimination checks and T4 README paragraph written; full-suite `--self-test` verify in flight, tasks unticked until it is clean (checkpoint, half-done). T1 refinement: the probe authors its own parent fixture in `$WORK` because no committed fixture's `.aux` carries all three names in one file.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

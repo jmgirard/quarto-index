@@ -385,6 +385,15 @@ folded for itself: a range you wrote with `range=` is one the extension knows
 about, and it prints emphasized whole (see [A discussion that spans
 pages](#a-discussion-that-spans-pages)).
 
+**Deleting marks never breaks the next render.** The emphasis machinery writes
+its page registrations into the document's `.aux`, and that file can outlive
+the marks that wrote it — `latex-clean: false`, or a failed render, leaves it
+in place. A document whose principal or range marks have since been deleted —
+every mark included — still defines stand-ins that read those leftover lines
+and do nothing, so the next render builds cleanly and the pages they name
+print as the ordinary locators they now are. The leftover lines are gone as
+soon as that render rewrites the `.aux`.
+
 **A role needs a locator to apply to.** A cross-reference takes the place of a
 locator, so `mention="principal"` on a mark that also carries `see=` or
 `see-also=` has nothing to emphasize. The role is reported and dropped, and the

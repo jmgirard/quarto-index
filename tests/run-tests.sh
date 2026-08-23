@@ -8338,6 +8338,153 @@ python3 tests/m21probes.py bookpdf "$WORK/book.txt" "Ranged Term"
 pass "M21-AC5: each chapter of an HTML book reports its own half of a split range over the chapter, the book draws exactly one report naming both marks of the pair it alone can see split, and the same book's PDF — one merged document — still prints that term as a single ranged locator"
 
 # ---------------------------------------------------------------------------
+# M22 — a stale `.aux` outliving its marks still builds.
+#
+# The typeset-time subsystem is injected only where a mark declares the
+# principal role, but the `.aux` lines naming its commands outlive the source
+# that wrote them (`latex-clean: false`, or a failed render). This section
+# renders a parent fixture whose `.aux` carries all three `.aux`-borne names,
+# then re-renders the document in the two shapes an author's deletion leaves —
+# every `mention=`/`range=` attribute removed, and every index mark removed —
+# and runs pdflatex on each beside the surviving `.aux`. A term that WAS
+# marked must no more break the document than one that is (IP2): each variant
+# must build at exit 0, log no undefined control sequence, and emphasize
+# nothing in whatever index it typesets.
+#
+# The parent is authored here rather than borrowing examples/range.qmd: no
+# committed fixture's `.aux` carries all three names in one file —
+# examples/range.aux holds only the two range commands and
+# examples/principal.aux only the page command — and the criterion is stated
+# over one surviving `.aux` carrying all three.
+# ---------------------------------------------------------------------------
+M22W="$WORK/m22"
+mkdir -p "$M22W"
+cp -R _extensions "$M22W/_extensions"
+cat > "$M22W/stale.qmd" <<'EOF'
+---
+title: "quarto-index stale-aux parent"
+from: markdown-smart
+format:
+  pdf:
+    latex-clean: false
+    include-in-header:
+      text: |
+        \newcommand*\quartoindexprincipal[1]{[P:#1]}
+filters:
+  - index
+---
+
+The principal discussion of [basilisk]{.index mention="principal"} is here.
+
+{{< pagebreak >}}
+
+The discussion of [cockatrice]{.index range="open" mention="principal"} begins here.
+
+{{< pagebreak >}}
+
+A page with no mark on it, inside the cockatrice range.
+
+{{< pagebreak >}}
+
+And the discussion of [cockatrice]{.index range="close"} ends here.
+EOF
+( cd "$M22W" && quarto render stale.qmd --to pdf ) > "$WORK/m22-parent.log" 2>&1 \
+  || { cat "$WORK/m22-parent.log" >&2; fail "M22: the stale-aux parent fixture failed to render to PDF"; }
+[ -s "$M22W/stale.aux" ] \
+  || fail "M22: the parent render left no stale.aux — the fixture's latex-clean option is what keeps it"
+# The probe's own premise, asserted rather than assumed: the surviving `.aux`
+# names all three `.aux`-borne commands, so a pass below covers all of them.
+for cmd in "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"; do
+  grep -q "\\\\$cmd{" "$M22W/stale.aux" \
+    || fail "M22: the parent .aux carries no \\$cmd line, so the probe below would not exercise that command at all"
+done
+
+# The two deletion shapes. Each sed pass is asserted to have landed — a
+# pattern gone silent would probe the parent document twice (M16 lesson: a
+# check's domain silently emptying looks no different from a pass).
+sed -E 's/ (mention|range)="[^"]*"//g' "$M22W/stale.qmd" > "$M22W/noattrs.qmd"
+if grep -q 'mention=\|range=' "$M22W/noattrs.qmd"; then
+  fail "M22: the attribute-stripping pass left a mention=/range= attribute behind"
+fi
+grep -q '{\.index}' "$M22W/noattrs.qmd" \
+  || fail "M22: the attribute-stripping pass left no bare index mark, so the variant is not the still-marked document the criterion names"
+sed -E 's/\[([^]]*)\]\{\.index[^}]*\}/\1/g' "$M22W/stale.qmd" > "$M22W/nomarks.qmd"
+if grep -q '\.index' "$M22W/nomarks.qmd"; then
+  fail "M22: the mark-stripping pass left an index mark behind"
+fi
+
+for variant in noattrs nomarks; do
+  ( cd "$M22W" && quarto render "$variant.qmd" --to latex ) \
+      > "$WORK/m22-$variant-latex.log" 2>&1 \
+    || { cat "$WORK/m22-$variant-latex.log" >&2; fail "M22: the $variant variant failed to render to latex"; }
+  [ -s "$M22W/$variant.tex" ] \
+    || fail "M22: the latex render produced no $variant.tex"
+  VDIR="$M22W/$variant-run"
+  mkdir -p "$VDIR"
+  cp "$M22W/$variant.tex" "$VDIR/probe.tex"
+  cp "$M22W/stale.aux" "$VDIR/probe.aux"
+  ( cd "$VDIR" && pdflatex -interaction=nonstopmode probe.tex ) \
+      > "$WORK/m22-$variant-pdflatex.log" 2>&1 \
+    || { tail -30 "$VDIR/probe.log" >&2; fail "M22-AC1: pdflatex on the $variant variant beside the surviving .aux exited non-zero — deleting marks broke the next render (IP2)"; }
+  if grep -q 'Undefined control sequence' "$VDIR/probe.log"; then
+    fail "M22-AC1: the $variant variant's log reports an undefined control sequence against the surviving .aux"
+  fi
+  # Whatever index the variant typesets must emphasize nothing: the stale
+  # registrations were gobbled, not honored. The still-marked variant has an
+  # .idx to run makeindex over; the mark-free one typesets no index and its
+  # first-pass PDF is the one read.
+  if [ -s "$VDIR/probe.idx" ]; then
+    ( cd "$VDIR" && makeindex probe.idx ) >> "$WORK/m22-$variant-pdflatex.log" 2>&1 \
+      || fail "M22-AC1: makeindex failed on the $variant variant's .idx"
+    ( cd "$VDIR" && pdflatex -interaction=nonstopmode probe.tex ) \
+        >> "$WORK/m22-$variant-pdflatex.log" 2>&1 \
+      || { tail -30 "$VDIR/probe.log" >&2; fail "M22-AC1: the $variant variant's second pdflatex pass exited non-zero"; }
+  fi
+  pdftotext "$VDIR/probe.pdf" "$VDIR/probe.txt" 2>/dev/null \
+    || fail "M22-AC1: pdftotext failed on the $variant variant's PDF"
+  if grep -qF '[P:' "$VDIR/probe.txt"; then
+    fail "M22-AC1: the $variant variant's typeset output emphasizes a locator, so a stale registration was honored rather than gobbled"
+  fi
+done
+pass "M22-AC1: a document that lost its mention=/range= attributes and one that lost its marks entirely both build at pdflatex exit 0 beside the surviving .aux, log no undefined control sequence, and emphasize nothing"
+
+# M22-AC2's header clause: the principal document carries none of the gobbling
+# stand-ins — both definition sets are `\providecommand*`, so a stand-in
+# landing first would win and the subsystem would emphasize nothing while
+# looking installed. Each absence needle is first shown MATCHING in the two
+# variant headers, where the stand-ins must be — an absence read through a
+# pattern gone silent is no evidence at all (M16 lesson). The subsystem's own
+# presence in the same header is what the M20/M21 preamble checks above read.
+# One reader for the absence clause, reused verbatim by the self-test's
+# splice-in probe — a second copy would be the duplicated-reader drift the
+# suite already carries two instances of (M15 review). Returns non-zero on
+# the first stand-in found, naming it on stderr.
+m22_nogobblers() {
+  local tex="$1" cmd
+  for cmd in "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"; do
+    if grep -qF -- "\\providecommand*\\$cmd[2]{}" "$tex"; then
+      printf 'gobbling stand-in for \\%s found in %s\n' "$cmd" "$tex" >&2
+      return 1
+    fi
+  done
+}
+for cmd in "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"; do
+  for tex in noattrs nomarks; do
+    grep -qF -- "\\providecommand*\\$cmd[2]{}" "$M22W/$tex.tex" \
+      || fail "M22-AC2: the gobbling stand-in for \\$cmd is missing from the $tex variant's header, where every no-subsystem LaTeX document must carry it"
+  done
+done
+m22_nogobblers "$WORK/principal.tex" \
+  || fail "M22-AC2: the principal document's header carries a gobbling stand-in alongside the live subsystem, and both define with \\providecommand* — whichever landed first wins"
+pass "M22-AC2: both no-subsystem variants define all three gobbling stand-ins and the principal document defines none of them beside its live subsystem"
+
+# The README paragraph documenting this behavior is normative: a documented
+# claim with no check beside it drifts (M13), and this one's enforcement is
+# the AC1 probe above.
+grep -qF '**Deleting marks never breaks the next render.**' README.md \
+  || fail "M22: README no longer carries the stale-.aux paragraph whose claim the probe above enforces"
+
+# ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--self-test" ]; then
@@ -9008,6 +9155,40 @@ filtersrc.sources()" >/dev/null 2>&1; then
   pass "M21 self-test: the three checks the review's findings added — a closing-declared role reaching the registry, no refused range reaching the index tool, and every .aux-borne command defined wherever the subsystem lands — each fail on a planted defect of their own kind"
 
   pass "M21 self-test: every reader the milestone adds fails on a planted defect of each kind it names — a lost pairing, a wrong extent, a registration that composes the wrong string or names the wrong ordinal, a transcript warning, ends disagreeing on their encapsulator and ends disagreeing on their key, a locator at the wrong end, a second locator, a wrongly emphasized range, and a report naming the wrong mark"
+
+  # --- M22: the stale-.aux probe and the no-gobblers-beside-the-subsystem
+  #     reader, each shown failing on a defect of its own kind.
+  M22SW="$WORK/m22-planted"
+  rm -rf "$M22SW"; mkdir -p "$M22SW/noinj"
+  # (i) the injection spliced out of the filter: the still-marked variant then
+  #     renders with neither definition set, and the main run's pdflatex leg
+  #     must fail — on the undefined control sequence the probe is about, not
+  #     on something else wearing its exit status.
+  cp -R _extensions "$M22SW/noinj/_extensions"
+  sed '/PRINCIPAL_GOBBLERS)/d' _extensions/index/index.lua \
+    > "$M22SW/noinj/_extensions/index/index.lua"
+  if cmp -s _extensions/index/index.lua "$M22SW/noinj/_extensions/index/index.lua"; then
+    fail "M22 self-test: the gobbler-injection splice planted nothing — the probe below would be reported as failing to discriminate when the fault is this mutation's"
+  fi
+  cp "$WORK/m22/noattrs.qmd" "$M22SW/noinj/"
+  ( cd "$M22SW/noinj" && quarto render noattrs.qmd --to latex ) \
+      > "$M22SW/noinj-render.log" 2>&1 \
+    || { cat "$M22SW/noinj-render.log" >&2; fail "M22 self-test: the spliced filter failed to render at all, so the probe below would fail for the wrong reason"; }
+  cp "$M22SW/noinj/noattrs.tex" "$M22SW/noinj/probe.tex"
+  cp "$WORK/m22/stale.aux" "$M22SW/noinj/probe.aux"
+  if ( cd "$M22SW/noinj" && pdflatex -interaction=nonstopmode probe.tex ) \
+       > "$M22SW/noinj-pdflatex.log" 2>&1; then
+    fail "M22 self-test: pdflatex exited 0 with the gobbler injection spliced out — the stale-.aux probe cannot discriminate"
+  fi
+  grep -q 'Undefined control sequence' "$M22SW/noinj/probe.log" \
+    || fail "M22 self-test: the spliced-out render failed, but not on the undefined control sequence the probe is about"
+  # (ii) a stand-in planted beside the live subsystem: the shared reader the
+  #      main run's absence clause uses must find it.
+  probe_plantpl "$WORK/principal.tex" "$M22SW/gobbled.tex" \
+    's/\\makeatletter/\\providecommand*\\quartoindexprincipalpage[2]{}\n\\makeatletter/'
+  probe_defect "a gobbling stand-in landing beside the live subsystem" \
+    m22_nogobblers "$M22SW/gobbled.tex"
+  pass "M22 self-test: the stale-.aux probe fails on the injection spliced out — on the undefined control sequence itself — and the absence reader fails on a stand-in planted beside the subsystem"
 
   # -------------------------------------------------------------------------
   # M16-AC3 — every source-reading check keeps finding its definition once the

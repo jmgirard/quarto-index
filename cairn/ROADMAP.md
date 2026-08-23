@@ -1,12 +1,14 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-23 (M27 merged: findings refiled from candidate rows and lesson lines into `cairn/DESIGN.md`'s Known issues, 79 entries; ROADMAP is 7.0k of its 24k byte budget and 48 lines, LESSONS 7.9k of 20k and 36 lines, and the new `cairn/check-design.md` 12.1k of the 18k and 33 of the 40 lines its own header sets. All 16 mechanical checks pass, no advisory fired, tree clean, nothing in flight. M22's row pruned under terminal-row retention.)_
+_Last hygiene check: 2026-08-23 (M28 and M29 planned from the block-position candidate row; that row narrowed to its KI23 remainder. ROADMAP 7.2k of its 24k byte budget and 50 lines.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M28 | A reported block position names the sequence it counts | planned | — | normal | milestones/M28-block-position-naming.md |
+| M29 | A marker report in a book names its chapter | planned | M28 | normal | milestones/M29-book-chapter-in-report.md |
 | M27 | A finding about today's behavior is a known issue, not a candidate row | done | — | normal | milestones/archive/M27-record-ownership.md |
 | M25 | A check that cannot hold its promise is retired, not widened | done | M24 | normal | milestones/archive/M25-scan-disposition.md |
 | M24 | Every check reads the copy, never the working tree | done | — | normal | milestones/archive/M24-captured-artifacts.md |
@@ -20,7 +22,7 @@ _Last hygiene check: 2026-08-23 (M27 merged: findings refiled from candidate row
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
 - Dedupe `examples/.gitignore` against the root ignore, and make the README claim check assert that the filter emits each pinned string — added 2026-08-19 — M13 review F16/F20 — KI75, KI73
 - Reconcile the example corpus so its probe `see=`/`see-also=` targets name terms the fixture indexes — added 2026-08-19 — M14 plan gate — KI72
-- Settle what a reported block position is measured over, and make the emptied-place, duplicate-marker and chapter-count reports name it — added 2026-08-19 — M12 review F6/F7/F12, M19 Scope Out — KI21, KI22, KI23, KI25
+- Settle whether the emptied-place reports for a callout, a tabset and a captioned figure should keep depending on Quarto's scaffold wrapping; promote on an upstream change surfacing as a manifest mismatch — added 2026-08-19, narrowed 2026-08-23 when M28/M29 took the naming half — M12 review F12 — KI23
 - Rewrap the filter source under 80 columns, and narrow each module's exports to what is reached from outside — added 2026-08-20 — M17 review J/I — KI76, KI77
 - Release bundle (clustered 2026-08-23), all three gated on one user-declared window and never agent-proposed: the first tagged release; choosing and adding a LICENSE file, which README omits a claim for want of one (M01); and submitting to the Quarto extension listing at that release — added 2026-08-16
 - Chapter-based locator labels in the book HTML index (e.g. 2.1 instead of 1, 2, 3) — added 2026-08-17 — M05 gate kept numeric locators; promote on reader evidence that numeric locators fail in long books

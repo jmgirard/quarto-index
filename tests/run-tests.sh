@@ -195,7 +195,7 @@ capture() {
 
 
 # ---------------------------------------------------------------------------
-# The source-reading checks (M16). Each one's body lives in tests/scans/<name>.py
+# The source-reading checks (M16). Each one's body lives in $SCAN_DIR/<name>.py
 # and reads the source set through tests/filtersrc.py; this function is the one
 # place that says how each is invoked — which environment it gets and which
 # arguments. The run calls it at the site, and the M16-AC3 probe calls it again
@@ -206,9 +206,14 @@ capture() {
 # The globals below are read when run_scan is CALLED, not when it is defined,
 # so a scan whose pinned constant is set further down the file still gets it.
 # ---------------------------------------------------------------------------
+# The scan directory, named here once and read everywhere else through this
+# variable: it is where run_scan builds a scan's path from, and nothing else in
+# this file has business spelling it out.
+SCAN_DIR="tests/scans"
+
 run_scan() {
   local name="$1"
-  local script="tests/scans/$name.py"
+  local script="$SCAN_DIR/$name.py"
   [ -f "$script" ] || fail "M16: no source scan named $name (looked for $script)"
   case "$name" in
     latex-escape-table)
@@ -239,7 +244,7 @@ run_scan() {
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
-      fail "M16: tests/scans/$name.py has no invocation in run_scan; the M16-AC3 probe would run it with the wrong environment and report a defect that is its own" ;;
+      fail "M16: $script has no invocation in run_scan; the M16-AC3 probe would run it with the wrong environment and report a defect that is its own" ;;
   esac
 }
 
@@ -1629,6 +1634,37 @@ check_warning_count() {
   got=$( { grep -oF -- "$pattern" "$logfile" || true; } | wc -l | tr -d ' ')
   [ "$got" = "$want" ] \
     || fail "$label: expected $want occurrence(s) of <<$pattern>> in $logfile, got $got"
+}
+
+# This extension's own warnings, as search patterns. Quarto runs several filters
+# over a document and every one of them logs through the same `(W)` prefix, so a
+# check that counts `(W)` lines counts warnings this extension never emitted —
+# and a zero-expectation control resting on that pattern passes on a run where
+# this extension warned and something else did not (M23 review F12).
+#
+# The set is the filter's own warn() messages, read out of the source set by the
+# same scan that already holds them distinct, with each `:format()` placeholder
+# widened to a wildcard. Generated ONCE, here, beside the message constants
+# below: a scan run per control would read the source twenty times over, and a
+# written-down copy would be a second hand-maintained list of the same strings.
+QI_WARN_PATTERNS="$WORK/warn-patterns.txt"
+python3 "$SCAN_DIR/warn-distinct.py" --patterns > "$QI_WARN_PATTERNS" \
+  || fail "M25: could not read this extension's warning messages out of the filter source set (the scan's own FAIL line is above); every control below would then be asserted over an empty message set"
+[ -s "$QI_WARN_PATTERNS" ] \
+  || fail "M25: the warn-distinct scan's --patterns mode wrote no pattern, so every control below would match nothing and pass vacuously"
+
+# Assert THIS EXTENSION warned an exact number of times during a render.
+# Matching LINES rather than occurrences, unlike check_warning_count above: a
+# message whose wildcard can span another message's text matches the same line
+# twice, and Quarto writes one warning per line, so the line is the unit that
+# counts each warning once.
+check_extension_warning_count() {
+  local logfile="$1" want="$2" label="$3" got
+  got=$( { grep -E -c -f "$QI_WARN_PATTERNS" "$logfile" || true; } | tr -d ' ')
+  if [ "$got" != "$want" ]; then
+    { grep -E -f "$QI_WARN_PATTERNS" "$logfile" || true; } >&2
+    fail "$label: expected $want warning(s) from this extension in $logfile, got $got"
+  fi
 }
 
 # The whole message, not its prefix: the tail was reworded in M08 when a
@@ -4567,10 +4603,8 @@ PY
 BOOK_DANGLING='see= on term "Epsilon" in sub/two.qmd points at "No Such Entry", which no index mark in this book indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'
 check_warning_count "$WORK/book-html.log" "$BOOK_DANGLING" 1 "M14-AC5"
 BOOK_WARNINGS=4
-if [ "$( { grep -c '^(W)' "$WORK/book-html.log" || true; } )" != "$BOOK_WARNINGS" ]; then
-  grep '^(W)' "$WORK/book-html.log" >&2
-  fail "M05-AC4/M14-AC5: the book fixture emitted warning(s) this suite cannot name; its $BOOK_WARNINGS are the dangling-target report, the two chapter halves of the split range, and the book's own unpaired-range report — and a resolvable cross-file target must draw none"
-fi
+check_extension_warning_count "$WORK/book-html.log" "$BOOK_WARNINGS" \
+  "M05-AC4/M14-AC5 (the book fixture emitted warning(s) this suite cannot name; its $BOOK_WARNINGS are the dangling-target report, the two chapter halves of the split range, and the book's own unpaired-range report — and a resolvable cross-file target must draw none)"
 pass "M05-AC4/M14-AC5: all four of the book's warnings are ones this suite names — the target no chapter indexes, each chapter's half of the split range, and the book's report naming the pair — and the resolvable cross-file target draws neither"
 
 # ---------------------------------------------------------------------------
@@ -5046,10 +5080,8 @@ capture examples/sortkey.qmd pdf "sortkey-pdf"
 [ -s "$CAPTURE_ROOT/sortkey-pdf/sortkey.pdf" ] || fail "M06-AC1: $CAPTURE_ROOT/sortkey-pdf/sortkey.pdf is empty"
 # A sort key must not cost the author a warning: every mark in this fixture is
 # well formed, so a clean render is part of the criterion.
-if grep -q '^(W)' "$WORK/sortkey-pdf.log"; then
-  grep '^(W)' "$WORK/sortkey-pdf.log" >&2
-  fail "M06-AC1: examples/sortkey.qmd warned; every mark in it is well formed"
-fi
+check_extension_warning_count "$WORK/sortkey-pdf.log" 0 \
+  "M06-AC1 (examples/sortkey.qmd warned; every mark in it is well formed)"
 
 printf '%s\n' "$SORTKEY_PDF_OUTLINE" > "$WORK/sortkey-outline.txt"
 python3 - "$CAPTURE_ROOT/sortkey-pdf/sortkey.pdf" "$WORK/sortkey-outline.txt" <<'OUTLINEPY'
@@ -5124,10 +5156,8 @@ DIFFPY
 quarto render examples/sortkey.qmd --to html > "$WORK/sortkey-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-html.log" >&2; fail "M06-AC2: sortkey.qmd failed to render to HTML"; }
 capture examples/sortkey.qmd html "sortkey-html"
-if grep -q '^(W)' "$WORK/sortkey-html.log"; then
-  grep '^(W)' "$WORK/sortkey-html.log" >&2
-  fail "M06-AC2: examples/sortkey.qmd warned in HTML; every mark in it is well formed"
-fi
+check_extension_warning_count "$WORK/sortkey-html.log" 0 \
+  "M06-AC2 (examples/sortkey.qmd warned in HTML; every mark in it is well formed)"
 check_html_index_manifest "$CAPTURE_ROOT/sortkey-html/sortkey.html" "$SORTKEY_HTML_INDEX" "M06-AC2"
 check_letter_sweep "$CAPTURE_ROOT/sortkey-html/sortkey.html" "M07-AC3 (sort keys)" \
   $'A\nH\nL\nM\nN\nT'
@@ -5252,10 +5282,8 @@ quarto render examples/sortkey-paths.qmd --to latex \
   > "$WORK/sortkey-paths-latex.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-paths-latex.log" >&2; fail "M06-AC1: sortkey-paths.qmd failed to render to LaTeX"; }
 capture examples/sortkey-paths.qmd latex "sortkey-paths-latex"
-if grep -q '^(W)' "$WORK/sortkey-paths-latex.log"; then
-  grep '^(W)' "$WORK/sortkey-paths-latex.log" >&2
-  fail "M06-AC1: examples/sortkey-paths.qmd warned; every mark in it is well formed"
-fi
+check_extension_warning_count "$WORK/sortkey-paths-latex.log" 0 \
+  "M06-AC1 (examples/sortkey-paths.qmd warned; every mark in it is well formed)"
 printf '%s\n' "$SORTKEY_PATHS_ENTRIES" > "$WORK/sk-paths-entries.txt"
 python3 - examples/sortkey-paths.qmd "$CAPTURE_ROOT/sortkey-paths-latex/sortkey-paths.tex" \
   "$WORK/sk-paths-entries.txt" <<'PATHSPY'
@@ -6482,8 +6510,10 @@ pass "M13-AC3: the extra-sort report states both counts as taken before the empt
 # warning-free above (M06-AC1/AC2); this is the per-line half — no report line
 # anywhere names it, or names the no-empty-level control of empty-levels.qmd.
 # Not a grep for the report text in those logs: M06-AC1 and M06-AC2 already
-# abort on ANY `^(W)` line there, so such a grep is a tautology by the time it
-# runs (review F11). What AC5 actually says is that no report line NAMES a
+# abort on any warning FROM THIS EXTENSION there, so such a grep is a tautology
+# by the time it runs (review F11; those two controls read `^(W)` until M25
+# narrowed them to this extension's own message set, which is the set a report
+# text would be in anyway). What AC5 actually says is that no report line NAMES a
 # well-formed mark, so the marks are read out of the fixture and looked for on
 # every warning line the suite produced anywhere.
 python3 - "$WORK" examples/sortkey.qmd <<'M13AC5PY'
@@ -8474,10 +8504,67 @@ done
 # The fixture is a well-formed document with no misuse in it, so it must draw
 # no report at all — a range machinery that reported on the nested shape would
 # be telling the author about a mark they wrote correctly.
-check_warning_count "$WORK/range-nested-html.log" '(W)' 0 \
+check_extension_warning_count "$WORK/range-nested-html.log" 0 \
   "M23-AC1 (the nested fixture is well-formed and draws no report in html)"
-check_warning_count "$WORK/range-nested-pdf.log" '(W)' 0 \
+check_extension_warning_count "$WORK/range-nested-pdf.log" 0 \
   "M23-AC1 (nor in the PDF render)"
+
+# A zero-EXPECTATION control is evidence only if it discriminates, and this one
+# replaced a bare `(W)` pattern that could not: every filter Quarto runs logs
+# through the same prefix, so the old control passed on a run where this
+# extension warned and another filter did not (M23 review F12). Both directions
+# are shown against COPIES of the log this render just wrote, so the planting
+# sits on a real render's output rather than on a hand-built file.
+#
+# (a) One of this extension's own warnings makes the control fail — and fail
+#     BY COUNTING IT: a control that died of a missing file also exits
+#     non-zero, and would otherwise be read as the control catching the plant.
+cp "$WORK/range-nested-html.log" "$WORK/m25-ext-warned.log"
+printf '(W) %s\n' "$WARN_BOTH" >> "$WORK/m25-ext-warned.log"
+if M25_OUT=$( ( check_extension_warning_count "$WORK/m25-ext-warned.log" 0 \
+                  "M25-AC2 probe" ) 2>&1 ); then
+  fail "M25-AC2: the zero-warning control passed on a copy of this render's log carrying one of this extension's own warnings, so no control resting on it is evidence of anything"
+fi
+case "$M25_OUT" in
+  *"M25-AC2 probe: expected 0 warning(s) from this extension"*"got 1"*) : ;;
+  *) fail "M25-AC2: the zero-warning control failed on the planted extension warning, but not by counting it (<<$M25_OUT>>), so its failure is not evidence that it reads this extension's message set" ;;
+esac
+
+# (b) ...and another filter's warning leaves it passing. The planted line
+#     carries the same prefix, which is the whole difference between the two
+#     patterns; it is checked back by its own full text rather than by that
+#     prefix, so this control is not itself one that matches every warning.
+M25_FOREIGN='(W) some other filter reports something this extension never emits'
+cp "$WORK/range-nested-html.log" "$WORK/m25-foreign-warned.log"
+printf '%s\n' "$M25_FOREIGN" >> "$WORK/m25-foreign-warned.log"
+grep -qF -- "$M25_FOREIGN" "$WORK/m25-foreign-warned.log" \
+  || fail "M25-AC2: the foreign-warning plant landed nothing, so the control passing below would be passing over an unplanted log"
+check_extension_warning_count "$WORK/m25-foreign-warned.log" 0 \
+  "M25-AC2 (a warning from another filter is not one of this extension's)"
+# (c) Both plants above use $WARN_BOTH, the one message carrying no
+#     placeholder, so neither says anything about the WIDENING — the only part
+#     of a generated pattern that can over- or under-match. So plant a
+#     formatted message's emitted line, and beside it a near-miss whose count
+#     slot holds a word: the first must be counted, the second must not, which
+#     is what says a %d widened to digits rather than to a wildcard (review
+#     F10).
+M25_FORMATTED='sort= on the index mark for Cats writes 3 levels against 2; the extra sort levels were ignored'
+cp "$WORK/range-nested-html.log" "$WORK/m25-formatted.log"
+printf '(W) %s\n' "$M25_FORMATTED" >> "$WORK/m25-formatted.log"
+if M25_OUT=$( ( check_extension_warning_count "$WORK/m25-formatted.log" 0 \
+                  "M25-AC2 widened probe" ) 2>&1 ); then
+  fail "M25-AC2: the zero-warning control passed on a copy of this render's log carrying the emitted line of one of this extension's FORMATTED messages, so the widening reads nothing this extension actually writes"
+fi
+case "$M25_OUT" in
+  *"M25-AC2 widened probe: expected 0 warning(s) from this extension"*"got 1"*) : ;;
+  *) fail "M25-AC2: the control failed on the planted formatted warning, but not by counting it (<<$M25_OUT>>)" ;;
+esac
+M25_NEARMISS='sort= on the index mark for Cats writes many levels against 2; the extra sort levels were ignored'
+cp "$WORK/range-nested-html.log" "$WORK/m25-nearmiss.log"
+printf '(W) %s\n' "$M25_NEARMISS" >> "$WORK/m25-nearmiss.log"
+check_extension_warning_count "$WORK/m25-nearmiss.log" 0 \
+  "M25-AC2 (a count slot filled with a word is not this extension's message)"
+pass "M25-AC2: the zero-warning control discriminates both ways — on a copy of this render's log it fails, by counting it, when one of this extension's own warnings is planted, and passes when another filter's warning line is the only one present; a formatted message's emitted line is counted too, and the same line with a word where its count goes is not"
 
 python3 tests/m23probes.py ind "$WORK/range-nested.ind" "$WORK/range-nested.ilg"
 HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
@@ -8537,9 +8624,9 @@ check_warning_count "$WORK/range-position-html.log" \
 check_warning_count "$WORK/range-position-pdf.log" \
   'index mark with no visible term and no entry=; nothing to index' 1 \
   "M23-AC2 (and once in the PDF render)"
-check_warning_count "$WORK/range-position-html.log" '(W)' 1 \
+check_extension_warning_count "$WORK/range-position-html.log" 1 \
   "M23-AC2 (and it is the only report the fixture draws in html)"
-check_warning_count "$WORK/range-position-pdf.log" '(W)' 1 \
+check_extension_warning_count "$WORK/range-position-pdf.log" 1 \
   "M23-AC2 (nor any other in the PDF render)"
 
 python3 tests/m23probes.py posind "$WORK/range-position.ind" "$WORK/range-position.ilg"
@@ -9552,7 +9639,7 @@ filtersrc.sources()" >/dev/null 2>&1; then
     ( cd "$dir" && quarto render range-position.qmd --to pdf > render.log 2>&1 ) || rc=$?
     capture "$dir/range-position.qmd" pdf "m23-$(basename "$dir")"
     ranges=$({ grep -o 'hyperpage{[^}]*}' "$dir/range-position.ind" 2>/dev/null || true; } | tr '\n' ' ')
-    reports=$({ grep -c '(W)' "$dir/render.log" || true; } | tr -d ' ')
+    reports=$({ grep -E -c -f "$QI_WARN_PATTERNS" "$dir/render.log" || true; } | tr -d ' ')
     printf '%s|%s|%s' "$rc" "$ranges" "$reports"
   }
   mkdir -p "$M23B/control/_extensions"
@@ -9699,6 +9786,11 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # still there. So build a tree where it is NOT, and run the same checks
   # against it through the same run_scan invocations the run itself uses.
   #
+  # ONE SHAPE of move, not every shape: movedefs.py writes every relocated
+  # definition into a single modules/moved.lua, so what is evidenced below is
+  # that the checks survive THAT relocation. A definition moved beside an
+  # existing one, or split across two modules, is not built here (M17).
+  #
   # The list below is the probe's INPUT — which definitions to relocate — not a
   # domain any check sweeps: one name per source-reading check, so no check is
   # left reading a definition that never moved. movedefs.py fails on a name it
@@ -9719,19 +9811,24 @@ filtersrc.sources()" >/dev/null 2>&1; then
 
   # Enumerated from the directory, never listed here — the same rule the source
   # set itself follows. A scan file added without an invocation in run_scan
-  # fails there rather than going unprobed.
-  SCAN_NAMES=$(find tests/scans -name '*.py' | sed 's|.*/||; s|\.py$||' | sort)
-  SCAN_COUNT=$(printf '%s\n' "$SCAN_NAMES" | wc -l | tr -d ' ')
-  # An exact count, not a floor: AC3's domain is the source-reading sites the
-  # merge-base run reported, and a floor would pass while one of them quietly
-  # stopped being probed. Twelve at M16; thirteen while M23 carried a
-  # range-position scan, and twelve again since M23 retired it — a criterion
-  # that promised what a scan asserts bound the scan rather than the filter,
-  # and the injection battery below certifies the same property by rendering.
-  [ "$SCAN_COUNT" -eq 12 ] \
-    || fail "M16-AC3: found $SCAN_COUNT source scans under tests/scans, expected 12; either a source-reading check left the probed set or one was added without extending this proof"
+  # fails there rather than going unprobed, and one that LEAVES the directory
+  # fails at run_scan's own missing-script check the moment the run calls it.
+  # A pinned file count used to stand here as well; it counted files rather than
+  # the source-reading sites it claimed to hold, so a one-for-one swap passed it
+  # (M16 review F8), and what it noticed is what those two failures already say.
+  SCAN_NAMES=$(find "$SCAN_DIR" -name '*.py' | sed 's|.*/||; s|\.py$||' | sort)
+  # A floor, because the loop below is the whole probe: an empty scan directory
+  # makes `find` exit 0, the loop body never run, and the pass line report "all
+  # 0 source-reading checks" as though it had proved something. The two
+  # failures the deleted count pin's rationale rests on both need an INVOCATION
+  # to fire, and an empty directory leaves none (review F2).
+  [ -n "$SCAN_NAMES" ] \
+    || fail "M16-AC3: no scan scripts under $SCAN_DIR, so the probe below would report success over an empty set"
 
+  SCANS_PROBED=0
+  SCANS_DUPED=0
   for SCAN_NAME in $SCAN_NAMES; do
+    SCANS_PROBED=$((SCANS_PROBED + 1))
     # (a) It still finds what it reads. The passing control: without it, the
     # failure below would be evidence only that the check always fails.
     ( export QI_EXT_DIR="$SCAN_PROBE/ext"; run_scan "$SCAN_NAME" ) >/dev/null \
@@ -9754,8 +9851,30 @@ filtersrc.sources()" >/dev/null 2>&1; then
       || fail "M16-AC3: $SCAN_NAME passed with a defect planted in the moved definition; it finds the definition and asserts nothing about it"
     printf '%s' "$SCAN_OUT" | grep -qF -- "$SCAN_EXPECT" \
       || { printf '%s\n' "$SCAN_OUT" >&2; fail "M16-AC3: $SCAN_NAME exited $SCAN_RC on the planted defect but did not report it; expected <<$SCAN_EXPECT>>"; }
+
+    # (c) ...and where the scan pins a definition to exactly one — the clause
+    # M25 gave six of them — that clause is proved too. The value plant above
+    # cannot show it: a first-match reader fails on a changed value exactly as
+    # an exactly-one reader does, so reverting the pin would leave (b) green
+    # and reopen the duplicate-masking hole M16 review F3 named. The defect of
+    # THIS kind is a second definition, so plant one and require the scan to
+    # fail naming the duplicate (review F1).
+    rm -rf "$SCAN_PROBE/dup"
+    cp -R "$SCAN_PROBE/ext" "$SCAN_PROBE/dup"
+    SCAN_DUP=$(python3 tests/plantdefect.py --duplicate "$SCAN_PROBE/dup" "$SCAN_NAME")
+    if [ "$SCAN_DUP" != "SKIP" ]; then
+      set +e
+      SCAN_OUT=$( export QI_EXT_DIR="$SCAN_PROBE/dup"; run_scan "$SCAN_NAME" 2>&1 )
+      SCAN_RC=$?
+      set -e
+      [ "$SCAN_RC" -ne 0 ] \
+        || fail "M16-AC3: $SCAN_NAME passed with its definition present TWICE in the moved module; it reads the first match and a stale duplicate left by a split would mask the live definition"
+      printf '%s' "$SCAN_OUT" | grep -qF -- "$SCAN_DUP" \
+        || { printf '%s\n' "$SCAN_OUT" >&2; fail "M16-AC3: $SCAN_NAME exited $SCAN_RC on the planted duplicate but did not report it as a duplicate; expected <<$SCAN_DUP>>"; }
+      SCANS_DUPED=$((SCANS_DUPED + 1))
+    fi
   done
-  pass "M16-AC3: all $SCAN_COUNT source-reading checks still find what they read with their definitions moved into modules/moved.lua, and each one fails, naming the defect, when one of the kind it checks for is planted there"
+  pass "M16-AC3: all $SCANS_PROBED source-reading checks still find what they read with their definitions moved into modules/moved.lua, and each one fails, naming the defect, when one of the kind it checks for is planted there; the $SCANS_DUPED of them that pin a definition to exactly one also fail, naming the duplicate, when a second copy of it is planted"
   # Same discipline for the marker's warnings: a report of a misused marker
   # that quietly stopped firing would leave every misuse check passing on a
   # log that says nothing.

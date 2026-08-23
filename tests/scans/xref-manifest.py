@@ -1,7 +1,15 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan xref-manifest`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: the dual-target command constant out of the source set, and the
+# hand-derived manifest and examples/demo.qmd as text.
+# ASSERTS: the command is defined exactly once and is the one the manifest names,
+# and that the manifest's single- and dual-target rows account for every quoted
+# see=/see-also= occurrence in demo.qmd.
+# DOES NOT ASSERT: anything about what the render emits — the manifest checks
+# over the emitted LaTeX do that. An unquoted attribute value is outside the
+# count, a known hole recorded on the acceptance-suite-hardening candidate row.
 import os, re, sys
 sys.path.insert(0, 'tests')
 import filtersrc
@@ -11,14 +19,19 @@ both = os.environ['XREF_BOTH_COMMAND']
 # The manifest names the dual-target command; the filter defines it. If they
 # ever disagree, every dual row silently reclassifies as single-target and the
 # arithmetic below stops meaning anything.
+# Every definition, not the first one found: the source set became multi-file
+# at M17, so a stale duplicate left behind by a split would mask the live one
+# and the arithmetic below would be run against a command the filter no longer
+# emits (M16 review F3).
 lua = filtersrc.text()
-m = re.search(r'XREF_BOTH_COMMAND\s*=\s*"([^"]+)"', lua)
-if not m:
-    print('FAIL: M02-AC1: no XREF_BOTH_COMMAND in the filter', file=sys.stderr)
+found = re.findall(r'^local XREF_BOTH_COMMAND = "([^"]+)"$', lua, re.MULTILINE)
+if len(found) != 1:
+    print(f'FAIL: M02-AC1: expected exactly one XREF_BOTH_COMMAND definition in '
+          f'the filter source set, found {len(found)}', file=sys.stderr)
     sys.exit(1)
-if m.group(1) != both:
+if found[0] != both:
     print(f'FAIL: M02-AC1: manifest names {both!r}, filter defines '
-          f'{m.group(1)!r}', file=sys.stderr)
+          f'{found[0]!r}', file=sys.stderr)
     sys.exit(1)
 
 single = dual = 0

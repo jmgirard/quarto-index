@@ -1,16 +1,35 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan xref-both-definition`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: the two-target command's own definition, taken as the source from its
+# `local` line to the next blank line.
+# ASSERTS: the definition exists exactly once, and takes both its labels from
+# \seename and \alsoname rather than from hard-coded words, so a document
+# loading babel keeps babel's translations.
+# DOES NOT ASSERT: how those labels print. No render here distinguishes the two,
+# because a hard-coded English label prints the same words \seename prints in an
+# English document — which is why the property is read out of source at all.
 import re, sys
 sys.path.insert(0, 'tests')
 import filtersrc
 src = filtersrc.text()
-m = re.search(r'XREF_BOTH_DEFINITION\s*=\s*(.*?)\n\n', src, re.DOTALL)
-if not m:
-    print('FAIL: M02-AC5: no XREF_BOTH_DEFINITION in the filter', file=sys.stderr)
+# Every definition, not the first one found: the source set became multi-file at
+# M17, so a stale duplicate left behind by a split would mask the live one and
+# this scan would be reading a definition the filter no longer injects (M16
+# review F3).
+starts = list(re.finditer(r'^local XREF_BOTH_DEFINITION =$', src, re.MULTILINE))
+if len(starts) != 1:
+    print(f'FAIL: M02-AC5: expected exactly one XREF_BOTH_DEFINITION definition '
+          f'in the filter source set, found {len(starts)}', file=sys.stderr)
     sys.exit(1)
-defn = m.group(1)
+# The statement's extent is the source's own paragraph break. Lua ends a
+# statement by grammar and not by punctuation, so this is the definition as the
+# file LAYS IT OUT, which is all this scan reads and all it claims: a definition
+# rewrapped to run into the next one would be read short, and the check below
+# would then report a missing label rather than a layout change.
+rest = src[starts[0].end():]
+defn = rest.split('\n\n', 1)[0]
 for needed in ('seename', 'alsoname'):
     if needed not in defn:
         print(f'FAIL: M02-AC5: the dual-target definition does not use '

@@ -16,7 +16,6 @@ asks which file a definition sits in, and cannot ask it of `text()`.
 """
 
 import os
-import re
 
 DEFAULT_EXT_DIR = '_extensions/index'
 
@@ -75,13 +74,3 @@ def lines():
         for n, line in enumerate(body.split('\n'), start=1):
             out.append((path, n, line))
     return out
-
-
-def defining_lines(pattern):
-    """Every (path, lineno, line) whose line matches `pattern`.
-
-    Used by the definition-site checks, which care where a definition lives,
-    not merely that the source set contains it.
-    """
-    rx = re.compile(pattern)
-    return [(p, n, ln) for p, n, ln in lines() if rx.search(ln)]

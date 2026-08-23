@@ -1,11 +1,105 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan warn-distinct`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: every warn() call's message expression, comments stripped, its string
+# literals joined, cut at the `:format(` that fills the template in.
+# ASSERTS: the source set holds exactly the pinned number of warn() messages,
+# each built from at least one literal, all mutually distinct, and none a prefix
+# of another; and that four named reports are each one literal, so the whole
+# message is visible at its call site.
+# DOES NOT ASSERT: anything about the values a message formats in, or about text
+# built outside the call — a helper's return handed in as an argument sits
+# outside both the literal count and the single-literal needles, and is held by
+# the rendered-log pins instead.
+#
+# With `--patterns` it prints the same messages as one search pattern per line,
+# which is how the run's zero-warning controls tell this extension's warnings
+# from any other filter's.
 import re, sys
 sys.path.insert(0, 'tests')
 import filtersrc
 src = filtersrc.text()
+
+# `--patterns` prints the messages read below as one POSIX extended regular
+# expression per line, for `grep -E -f`. It runs only after every assertion in
+# this file has passed, so a run can never grep a log against a message set the
+# distinctness checks rejected.
+PATTERNS_MODE = '--patterns' in sys.argv[1:]
+
+LUA_ESCAPES = {'a': '\a', 'b': '\b', 'f': '\f', 'n': '\n', 'r': '\r',
+               't': '\t', 'v': '\v'}
+
+
+def unescaped(literal):
+    """The characters a Lua literal stands for, not the source between quotes.
+
+    `\\index` in the source is one backslash in the emitted message, and a
+    pattern built from the source spelling would look for two.
+    """
+    out, i = [], 0
+    while i < len(literal):
+        c = literal[i]
+        if c == '\\' and i + 1 < len(literal):
+            nxt = literal[i + 1]
+            out.append(LUA_ESCAPES.get(nxt, nxt))
+            i += 2
+        else:
+            out.append(c)
+            i += 1
+    return ''.join(out)
+
+
+# Deliberately not `re.escape`: that quotes characters (`-`, `&`, `~`, `#`,
+# space) whose backslashed form is undefined in a POSIX extended regular
+# expression, and the greps that read this file are the platform's, not
+# Python's.
+ERE_SPECIAL = set('.[]\\()*+?{}|^$')
+# No space in the flag class: with one, `% o` in a sentence like "50% of
+# entries" reads as a conversion and widens to `.*`, a wildcard that can
+# swallow another message's text (review F6). Lua's own `string.format`
+# accepts the space flag, so a message that ever needs it will fail the
+# emitted-line pins rather than pass on a wildcard.
+FORMAT_SPEC = re.compile(r'%[-+#0]*[0-9]*(?:\.[0-9]+)?([%a-zA-Z])')
+
+
+def as_pattern(literal):
+    """One message as a pattern matching the line the render actually emits.
+
+    A message is a `:format()` template, so its placeholders stand for values
+    this scan cannot know: `%d` widens to a run of digits and every other
+    conversion to a wildcard, and the text around them is matched literally.
+    """
+    text = unescaped(literal)
+    if '\n' in text:
+        print(f'FAIL: M25: warning message <<{text}>> contains a newline, so a '
+              f'line-oriented grep could never match the line it is emitted on',
+              file=sys.stderr)
+        sys.exit(1)
+    out, last = [], 0
+    for m in FORMAT_SPEC.finditer(text):
+        out.append(quoted(text[last:m.start()]))
+        conv = m.group(1)
+        out.append('%' if conv == '%'
+                   else '[0-9]+' if conv in 'di'
+                   else '.*')
+        last = m.end()
+    out.append(quoted(text[last:]))
+    # Anchored to the warning prefix Quarto writes, not merely contained in the
+    # line: unanchored, any log line quoting a message — a traceback echoing
+    # it, a diagnostic the suite itself writes — counts as a warning this
+    # extension emitted (review F5).
+    return WARN_PREFIX + ''.join(out)
+
+
+# The prefix every Quarto warning line carries, as an extended regular
+# expression. The controls this file feeds used to grep for that prefix
+# anchored and alone, which is where it is known from.
+WARN_PREFIX = '^\\(W\\) '
+
+
+def quoted(text):
+    return ''.join('\\' + c if c in ERE_SPECIAL else c for c in text)
 
 
 # Line comments removed before anything is read: `\bwarn\(` otherwise matches
@@ -101,13 +195,43 @@ def message_at(text, open_paren):
                 break
         i += 1
     call = text[open_paren + 1:cut if cut != -1 else i]
-    return ''.join(m.group(2) for m in LITERAL.finditer(call))
+    pieces, gap, last = [], [], 0
+    for m in LITERAL.finditer(call):
+        gap.append(call[last:m.start()])
+        pieces.append(m.group(2))
+        last = m.end()
+    gap.append(call[last:])
+    return ''.join(pieces), ''.join(gap)
 
 
 code = uncommented(strip_block_comments(src))
 calls = [m for m in re.finditer(r'\bwarn\(', code)
          if not code[:m.start()].rstrip().endswith('function')]
-lits = [message_at(code, m.end() - 1) for m in calls]
+parsed = [message_at(code, m.end() - 1) for m in calls]
+lits = [message for message, _gap in parsed]
+# What sits BETWEEN the literals, joined. Every message here is written as
+# literals concatenated with `..` and nothing else, so joining the literals is
+# the emitted text. A message built around a runtime value --
+# `warn("term " .. name .. " is bad")` -- joins to `term  is bad`, a pattern
+# matching no line the render ever writes, and every zero-warning control
+# resting on it goes quietly blind. That is the vacuous pass this scan's own
+# patterns exist to close, so it is refused here rather than emitted (review
+# F4). The `blank` check below does not reach it: the literals are present.
+# Concatenation and grouping only. These messages are written
+# `("..." .. "..."):format(...)`, so the wrapping parenthesis is inside the
+# slice read here; an identifier or a call between two literals is not, and is
+# what this refuses.
+CONCATENATION = re.compile(r'^[\s.()]*$')
+spliced = [(l, g) for l, g in parsed if not CONCATENATION.match(g)]
+if spliced:
+    print(f'FAIL: M02-AC5: {len(spliced)} warn() message(s) splice a value '
+          f'BETWEEN their literals, so joining the literals is not the text '
+          f'the render emits and a pattern built from it would match no line:',
+          file=sys.stderr)
+    for l, g in spliced:
+        print(f'  <<{l}>> with <<{g.strip()}>> between its literals',
+              file=sys.stderr)
+    sys.exit(1)
 
 # A call whose message is not built from literals at all -- a variable, a
 # helper's return -- is text this check never sees, so it is named rather than
@@ -179,5 +303,11 @@ for a in lits:
             print(f'FAIL: M02-AC5: warning <<{a}>> is a prefix of <<{b}>>',
                   file=sys.stderr)
             sys.exit(1)
+if PATTERNS_MODE:
+    # After every assertion above, never before: the run greps its logs against
+    # this set to tell this extension's warnings from any other filter's, and a
+    # set this scan had just rejected would be the wrong thing to ask.
+    print('\n'.join(as_pattern(l) for l in lits))
+    sys.exit(0)
 print(f'ok   M02-AC5: all {len(lits)} filter warnings are mutually distinct, '
       f'compared as whole messages')

@@ -9,6 +9,7 @@ printed here is the text the run greps the check's output for, so a scan that
 died for some other reason cannot be read as the scan catching this.
 
 Usage:  python3 tests/plantdefect.py <scratch-ext-dir> <scan-name>
+        python3 tests/plantdefect.py --duplicate <scratch-ext-dir> <scan-name>
         python3 tests/plantdefect.py --html <captured-page> <residue-kind>
 
 Prints the expected failure marker. An aimed-at text the module does not carry
@@ -21,7 +22,7 @@ import os
 import re
 import sys
 
-# The count `tests/scans/warn-distinct.py` pins, read from that file rather
+# The count the `warn-distinct` source scan pins, read from that file rather
 # than copied here: the marker below has to name the number the scan will
 # print, and two files holding the same number is two files that must change
 # together and one that will not (M16 review F11).
@@ -93,6 +94,93 @@ DEFECTS = {
 }
 
 
+# The DUPLICATE plant (M25). The plants above all change a VALUE, and a
+# value-changing plant passes a first-match reader exactly as it passes an
+# exactly-one one: it cannot show that the narrowed scans gained anything.
+# What M25 actually added is the count clause, so its own defect is a second
+# definition — the stale duplicate left behind by a split that M16 review F3
+# named. Each entry is the anchor text whose WHOLE LINE is appended a second
+# time to the moved module, and the marker the scan must print for it.
+#
+# Every key of DEFECTS appears here, `None` where the scan pins no single
+# definition to duplicate, so a scan added later cannot slip through this
+# probe by simply not being listed.
+DUPLICATES = {
+    'latex-escape-table': (
+        'local LATEX_LITERAL = {',
+        'FAIL: AC4: expected exactly one LATEX_LITERAL table in the filter '
+        'source set, found 2'),
+    'html-identifiers': (
+        'local HTML_ANCHOR_PREFIX = "qi-mark-"',
+        'HTML_ANCHOR_PREFIX has 2 definition(s) in the filter source set, '
+        'want exactly 1'),
+    'xref-manifest': (
+        'local XREF_BOTH_COMMAND = "quartoindexseeboth"',
+        'FAIL: M02-AC1: expected exactly one XREF_BOTH_COMMAND definition in '
+        'the filter source set, found 2'),
+    'warn-distinct': None,
+    'xref-both-definition': (
+        'local XREF_BOTH_DEFINITION =',
+        'FAIL: M02-AC5: expected exactly one XREF_BOTH_DEFINITION definition '
+        'in the filter source set, found 2'),
+    'marker-class': (
+        'local MARKER_CLASS = "qi-index-here"',
+        'FAIL: M04-AC1: expected exactly one MARKER_CLASS definition in the '
+        'filter source set, found 2'),
+    'mark-report-keys': None,
+    'store-version': (
+        'local STORE_VERSION = ',
+        'FAIL: M05-AC1: expected exactly one STORE_VERSION definition in the '
+        'filter source set, found 2'),
+    'store-names': (
+        'local STORE_SUFFIX = ".qi.json"',
+        'FAIL: M05-AC1: expected exactly one STORE_SUFFIX definition in the '
+        'filter source set, found 2'),
+    'max-levels': (
+        'local MAX_LEVELS = ',
+        'FAIL: M09: expected exactly one MAX_LEVELS definition in the filter '
+        'source set, found 2'),
+    'overflow-join': (
+        'local OVERFLOW_JOIN = ',
+        'FAIL: M09: expected exactly one OVERFLOW_JOIN definition in the '
+        'filter source set, found 2'),
+    'm15-joined-messages': None,
+}
+_UNLISTED = sorted(set(DEFECTS) - set(DUPLICATES))
+if _UNLISTED:
+    raise SystemExit(
+        'FAIL: plantdefect: %s has a value plant and no duplicate-plant '
+        'decision; add an entry (or None) to DUPLICATES rather than leaving '
+        'the count clause unprobed' % ', '.join(_UNLISTED))
+
+
+def plant_duplicate(root, name):
+    """Append a second copy of a scan's pinned definition line; print its marker.
+
+    Prints `SKIP` for a scan that pins no single definition, so the caller can
+    tell "nothing to duplicate here" from "the plant landed".
+    """
+    if name not in DUPLICATES:
+        raise SystemExit(
+            'FAIL: plantdefect: no duplicate-plant decision for the source '
+            'scan %r' % name)
+    if DUPLICATES[name] is None:
+        print('SKIP')
+        return
+    anchor, marker = DUPLICATES[name]
+    path = os.path.join(root, 'modules', 'moved.lua')
+    src = open(path, encoding='utf-8').read()
+    hits = [l for l in src.split('\n') if l.startswith(anchor)]
+    if len(hits) != 1:
+        raise SystemExit(
+            'FAIL: plantdefect: %s carries %d line(s) starting <<%s>>, want 1, '
+            'so the duplicate plant for %r would plant nothing or start from a '
+            'tree that is already wrong' % (path, len(hits), anchor, name))
+    with open(path, 'a', encoding='utf-8') as handle:
+        handle.write('\n' + hits[0] + '\n')
+    print(marker)
+
+
 # The three residue plants (M24). Each is the defect its sweep in
 # tests/htmlsweep.py exists to catch, planted into one captured page so the
 # sweep is shown to READ that page and not merely to walk past it: a sweep over
@@ -139,6 +227,8 @@ def plant_html(path, kind):
 def main(argv):
     if len(argv) == 4 and argv[1] == '--html':
         return plant_html(argv[2], argv[3])
+    if len(argv) == 4 and argv[1] == '--duplicate':
+        return plant_duplicate(argv[2], argv[3])
     if len(argv) != 3:
         raise SystemExit(__doc__)
     root, name = argv[1], argv[2]

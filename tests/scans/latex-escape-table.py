@@ -1,12 +1,29 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan latex-escape-table`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: the LaTeX escape table's keys out of the source set, and
+# examples/demo.qmd as text.
+# ASSERTS: the table is opened exactly once in the source set, its key set is
+# exactly the suite's probe set, and each probed character appears in demo.qmd
+# both as visible term text and inside an entry= level.
+# DOES NOT ASSERT: that any character is escaped correctly. The emitted-LaTeX
+# manifest checks derive that by hand and are what say it; this scan only keeps
+# the probe set and the table from drifting apart.
 import os, re, sys
 sys.path.insert(0, 'tests')
 import filtersrc
 src = filtersrc.text()
-table = src.split('local LATEX_LITERAL = {', 1)[1].split('\n}', 1)[0]
+# The opening pinned to exactly one, not taken at the first split: the source
+# set became multi-file at M17, so a stale duplicate left behind by a split
+# would give this scan a table the filter no longer escapes with (M16 review
+# F3, whose four named scans share this shape).
+OPENING = 'local LATEX_LITERAL = {'
+if src.count(OPENING) != 1:
+    print(f'FAIL: AC4: expected exactly one LATEX_LITERAL table in the filter '
+          f'source set, found {src.count(OPENING)}', file=sys.stderr)
+    sys.exit(1)
+table = src.split(OPENING, 1)[1].split('\n}', 1)[0]
 keys = set()
 for m in re.finditer(r'^\s*\[(".*?"|\'"\')\]\s*=', table, re.MULTILINE):
     raw = m.group(1)

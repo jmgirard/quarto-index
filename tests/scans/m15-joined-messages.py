@@ -1,7 +1,15 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan m15-joined-messages`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: every warn() call's message text, with the fragments a message is
+# concatenated from joined back together.
+# ASSERTS: exactly one message carries each of the two shapes of the replacement
+# report, and no message tells an author a render can fail from rival
+# encapsulations — the claim M15 made untrue.
+# DOES NOT ASSERT: that either report ever fires, or that its numbers are right.
+# The rendered-log pins are what say that. Text built outside the warn() call —
+# a helper's return handed in as a format argument — is outside what it reads.
 import re, sys
 sys.path.insert(0, 'tests')
 import filtersrc
@@ -61,15 +69,20 @@ if not messages:
           'absence below is the scanner finding nothing, not the filter '
           'saying nothing', file=sys.stderr)
     sys.exit(1)
-unseen = [r for r in REPLACEMENT
-          if not any(r in message for message in messages)]
-if unseen:
-    print(f'FAIL: M15-AC5: {len(unseen)} of the {len(REPLACEMENT)} shapes of '
-          f'the replacement report are not among the {len(messages)} joined '
-          f'warn() messages this scanner read, so it is reading the file '
+# Exactly one message each, not merely one somewhere: a shape found in two
+# messages is a report the filter draws twice, and a presence test reads that as
+# the passing control it is not.
+miscounted = [(r, sum(1 for message in messages if r in message))
+              for r in REPLACEMENT]
+wrong = [(r, n) for r, n in miscounted if n != 1]
+if wrong:
+    print(f'FAIL: M15-AC5: {len(wrong)} of the {len(REPLACEMENT)} shapes of the '
+          f'replacement report is carried by other than exactly one of the '
+          f'{len(messages)} joined warn() messages this scanner read, so either '
+          f'the filter draws it twice or this scanner is reading the file '
           f'wrongly:', file=sys.stderr)
-    for r in unseen:
-        print(f'  <<{r}>>', file=sys.stderr)
+    for r, n in wrong:
+        print(f'  {n} message(s) carry <<{r}>>', file=sys.stderr)
     sys.exit(1)
 guilty = [message for message in messages if GONE in message]
 if guilty:
@@ -81,4 +94,5 @@ if guilty:
     sys.exit(1)
 print(f'ok   M15-AC5: none of the {len(messages)} joined warn() messages in '
       f'the filter claims a render can fail from rival encapsulations, and '
-      f'both shapes of the replacement report are among them')
+      f'each of the {len(REPLACEMENT)} shapes of the replacement report is '
+      f'carried by exactly one of them')

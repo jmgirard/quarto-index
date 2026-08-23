@@ -1,7 +1,14 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan mark-report-keys`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: every warn() call's message text, joined across its fragments, and the
+# report grep keys the run passes as arguments.
+# ASSERTS: each key it is given matches exactly one filter warning, and matches
+# no other key's warning — so a count greped by that key counts one report.
+# DOES NOT ASSERT: that the run passes every key it uses. run_scan's own
+# invocation is where that is kept true, and an empty key is refused here rather
+# than swept, since an empty needle would match every message.
 import re, sys
 sys.path.insert(0, 'tests')
 import filtersrc

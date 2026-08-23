@@ -1,11 +1,11 @@
 # M26: A document's accumulators start empty, whoever ran before it
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
-- **Branch/PR:** `m26-per-document-state`
+- **Branch/PR:** `m26-per-document-state` — https://github.com/jmgirard/quarto-index/pull/26
 
 ## Goal
 
@@ -74,7 +74,7 @@ mutable state and are untouched.
       `finish_ranges` assigns it wholesale on every document, so no earlier
       document's value can survive into it; its probe is run and its passing
       every comparison recorded as that.
-- [ ] AC5: `tests/run-tests.sh --self-test` exits 0 and prints its
+- [x] AC5: `tests/run-tests.sh --self-test` exits 0 and prints its
       "All checks passed" line.
 
 ## Coverage
@@ -145,6 +145,8 @@ mutable state and are untouched.
 - 2026-08-23: implement gate chose one fixture source with an environment switch on the pollution filter over sibling copies and over Quarto profiles, because two copies must be kept identical by hand and a later edit to one silently weakens the proof; falsified by an environment the harness cannot pass a variable through.
 - 2026-08-23: plan gate chose shipping the fix over holding the row and over a reachability-probe-only milestone, because Quarto runs one process per document so no probe would find a path, while DESIGN.md:169-176 records M17 having weakened the guarantee and one cell's value reaches an on-disk artifact; falsified by the harness of T1 proving unbuildable, which returns this to plan.
 
+- 2026-08-23: amendment return: AC1 — "Each of `examples/state-reuse.qmd`, `examples/state-reuse-plain.qmd` and `examples/state-reuse-empty.qmd`, rendered to LaTeX with the test-only pollution filter listed in its filter list and that filter's switch set, produces a captured `.tex` byte-identical (`cmp -s`) to the captured `.tex` from the same fixture rendered off the same tree with that switch unset, and a captured warning stream byte-identical to that render's."
+
 ## Decisions
 
 ### 2026-08-23: what each probe moved (T7, AC3 and AC4)
@@ -202,3 +204,129 @@ verdict `false`, and the emitting pass reads `false` as no verdict at all. A
 range that actually pairs now holds that position.
 
 ## Review
+
+2026-08-23, branch `m26-per-document-state` at `66b98de`, PR #26 (draft).
+
+**Sync.** `origin/main` is `ee152af` and has not moved since the branch was
+cut; local `main` matches it, and the working tree was clean before any
+evidence was gathered.
+
+**Arrangement.** This session did not implement M26 — it read the branch
+cold — but the three review lenses were run inside it rather than in spawned
+subagents, this session being instructed not to spawn agents. That is the same
+weaker arrangement the plan gate's and the amendment gate's criteria audits
+already recorded here: the diff reader, the history reader and the prior-review
+reader are one reader.
+
+### Evidence
+
+Two fresh runs, both at `66b98de` with nothing planted:
+
+- `tests/run-tests.sh --self-test` — exit 0, final line
+  `All checks passed (409 checks).` Twelve of those checks are M26's: for each
+  of the three fixtures in each of latex and html, one `cmp` over the captured
+  artifact and one over the captured warning stream, with the clean render's
+  own report count pinned per fixture (4 and 2 for `state-reuse`, 0 and 0 for
+  `state-reuse-plain`, 1 and 1 for `state-reuse-empty`).
+- `python3 tests/stateprobe.py` — exit 0. Its control (every fixture identical
+  in both formats and in its warnings with nothing planted) passes first; then
+  four whole-or-partial reset removals each move `state-reuse`'s latex output,
+  and sixteen one-cell removals each move a comparison — eleven the rich
+  fixture's latex output, four its latex warnings, one its html output, one
+  `state-reuse-empty`'s latex output, one `state-reuse-plain`'s latex output.
+  `range_pair_found` moves nothing, as its exemption predicts.
+
+Criterion by criterion:
+
+- **AC1 — not verified. The criterion, not the work, is what fails.** It asks
+  for fixtures "rendered to PDF" whose "captured `.tex`" is compared; in this
+  repo those two cannot both hold — `tests/run-tests.sh:5542` records that
+  `--to pdf` leaves no `.tex` behind, which is why every other check needing
+  emitted LaTeX renders `--to latex` first. The suite renders these three
+  `--to latex` (`tests/run-tests.sh:10188`). It also asks that the second
+  render be the fixture "rendered without that filter", where the implement
+  gate deliberately chose one fixture source listing the filter in both
+  renders, switched by `QI_STATE_POLLUTE`. Finding F1 below; this is an
+  amendment return.
+- **AC2 — evidence recorded, not ticked.** The three html pairs and their
+  warning pairs are byte-identical (six of the twelve checks above), and the
+  captured artifact is the whole page, so the emitted preamble and the index
+  section are inside the comparison. Not ticked because the criterion's "the
+  two renders" names AC1's pair, which the F1 amendment redefines.
+- **AC3 — evidence recorded, not ticked.** All four probes move a comparison:
+  `reset:marks`, `reset:latex`, `reset:sortkeys` and the form-varying
+  `reset:latex-one-cell` (`principal_ordinals` alone dropped from a reset left
+  in place), each on `state-reuse`/latex/output. Not ticked: the criterion
+  names "the AC1 comparison".
+- **AC4 — evidence recorded, not ticked.** Sixteen cells load-bearing, one
+  exempt, each named with the fixture, format and artifact that moved — the
+  table in this file's Decisions section is reproduced exactly by this run.
+  Not ticked: the criterion names the AC1 and AC2 comparisons.
+- **[x] AC5 — verified.** `tests/run-tests.sh --self-test` exits 0 and prints
+  `All checks passed (409 checks).`
+
+**Consistency gate.** `cairn_validate.py` exits 0 with every check PASS and
+every advisory OK. No `DESIGN.md` principle changed — the diff rewrites the
+Architecture prose only and touches no IP/GP line — so `cairn_impact.py` does
+not apply. The active profile is `generic`, whose `consistency-gate` slot names
+no toolchain checks, so that half of the gate is a clean no-op.
+
+**Diffstat.** 15 files, +800 / -61: six source files under `_extensions/`, the
+three fixtures, `tests/state-pollute.lua`, `tests/stateprobe.py`, 77 lines of
+`tests/run-tests.sh`, and DESIGN/ROADMAP/this file.
+
+### Findings
+
+Ranked, with disposition. The three lenses ran as one reader (see Arrangement).
+
+- **F1 [O], amendment return — AC1 names a render this repo cannot pair with
+  the artifact it demands, and a second render the implement gate replaced.**
+  "Rendered to PDF … produces a captured `.tex`" is internally inconsistent
+  here, and "rendered without that filter" describes the sibling-copy design
+  the implement gate rejected in favour of one source and an environment
+  switch. The work is right on both counts: the `.tex` is where a leak shows
+  and a PDF render would compare a PDF, and one source cannot drift from its
+  twin. The criterion is wrong. Routed to the gated criterion-amendment
+  protocol; the amended clause is in the work log.
+- **F2 [O], no defect found in the reset itself.** The 17 cells the Scope
+  names are exactly the module-level mutable cells in the source: `marks.lua`
+  ten, `latex.lua` six, `sortkeys.lua` one, and `html.lua`, `book.lua`,
+  `marker.lua`, `levels.lua`, `core.lua` and `passes.lua` declare only
+  constants. Each reset restores the value its declaration gives, tables in
+  place through `qi_core.empty` because every accumulator is exported by
+  reference. `{ Pandoc = qi_passes.Reset }` leads the pass list and carries no
+  element function, so it is one traversal before any `Span` pass.
+- **F3 [S] blame, checked and clear — the reset does not cut a book's index.**
+  `book.lua:147` reads `qi_sortkeys.sort_keys` and the reset now empties it per
+  document, which in a book means per chapter. M05 recorded that Quarto renders
+  each chapter in its own Pandoc process and that cross-chapter data goes
+  through the on-disk sidecar, so the read happens inside the chapter that
+  filled the registry. The suite's book renders (latex and html, project and
+  `quarto add` install) are among the 409 passing checks.
+- **F4 [S] blame, checked and clear — no recorded decision is contradicted.**
+  M17's export conventions hold (`M["reset"] = reset` in the bracket form,
+  imported names reached through the module table, requires unchanged). D-009
+  and D-010 are about pairing within one process and are untouched by a reset
+  that runs at the start of one. D-011 is not engaged: `tests/stateprobe.py`
+  plants a defect and requires a render to differ, which is the positional
+  evidence D-011 prefers, not a source-shape scan.
+- **F5 [S] prior review — the primary surface returned one relevant record,
+  the secondary none.** `cairn/milestones/archive/` holds one `## Review`
+  finding touching these files that bears on this diff: M17's review returned
+  the milestone on AC2 rather than rereading the criterion, when the probe's
+  `ok` lines shifted a count the criterion pinned. F1 above is the same
+  disposition on the same kind of mismatch. The GitHub surface no-ops: the
+  probe `gh api repos/jmgirard/quarto-index/pulls/comments?per_page=1` returns
+  `[]`, so there are no inline review threads to walk.
+- **F6 [O], out of scope, rejected — `examples/state-reuse*.qmd` name
+  `../tests/state-pollute.lua` in their own front matter**, so they are suite
+  fixtures rather than standalone demonstrations. That is the design T3 and the
+  implement gate chose, and each fixture's prose says so.
+
+M10's lesson names the shape F1 belongs to — a criterion whose promise two
+audit rounds read without running. Both audits on this milestone were the
+in-context kind. Worth a LESSONS line at the hygiene pass that eventually
+follows.
+
+**Outcome.** Amendment return on AC1. Status to `in-progress` for that
+amendment alone; no other work is convened, and re-review follows it.

@@ -4360,7 +4360,7 @@ rm -rf "$BOOK_OUT" "$BOOK_DIR/.quarto"
   || { tail -30 "$WORK/book-html.log" >&2; fail "M05-AC1: the book fixture failed to render to HTML"; }
 capture --project "$BOOK_DIR" html "book-html"
 
-check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
+check_html_index_manifest "$CAPTURE_ROOT/book-html/_book/last.html" "$BOOK_HTML_INDEX" \
   "M05-AC1/AC3" hrefs
 # M21-AC5's role half, read HERE and not in the M21 section below: later
 # hardening steps deliberately corrupt a chapter's record and re-render
@@ -4371,20 +4371,20 @@ check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
 # artifact rather than whatever the output directory holds by the end of a run —
 # later hardening steps deliberately corrupt a record and re-render last.qmd
 # alone (M15's lesson, in the shape a book takes).
-cp "$BOOK_OUT/last.html" "$WORK/book-last.html"
+cp "$CAPTURE_ROOT/book-html/_book/last.html" "$WORK/book-last.html"
 HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
   python3 tests/m21probes.py bookhtml "$WORK/book-last.html"
 pass "M21-AC5: a range paired inside one chapter gives one locator; a range spanning chapters pairs nowhere and each mark indexes on its own, the closing keeping the role it declares"
 # M07-AC4: the book's B group holds Beta, marked in one.qmd, and Beacon,
 # marked in sub/two.qmd — a group gathers what every chapter contributed.
-check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4" \
+check_letter_sweep "$CAPTURE_ROOT/book-html/_book/last.html" "M07-AC4" \
   $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ'
 
 # The manifest above is the positive half: it says the marker chapter's index
 # is the whole book's. This is the negative half, and the questions only a
 # recursive walk of the rendered site can answer.
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-STORE_SUFFIX="$STORE_SUFFIX" python3 - "$BOOK_OUT" "$BOOK_DIR" <<'PY'
+STORE_SUFFIX="$STORE_SUFFIX" python3 - "$CAPTURE_ROOT/book-html/_book" "$BOOK_DIR" <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -4524,7 +4524,7 @@ PY
 # id is minted at render time, so a manifest cannot state it, but which entry
 # the link must reach is derived by hand.
 printf '%s\n' "$BOOK_XREF_LINKS" > "$WORK/book-xrefs.txt"
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$BOOK_OUT/last.html" \
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$CAPTURE_ROOT/book-html/_book/last.html" \
   "$WORK/book-xrefs.txt" <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
@@ -4584,7 +4584,7 @@ rm -rf "$NOMARKER_DIR/_book" "$NOMARKER_DIR/.quarto"
 capture --project "$NOMARKER_DIR" html "book-nomarker"
 
 printf '%s\n' "$BOOK_NOMARKER_TERMS" > "$WORK/nomarker-terms.txt"
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$NOMARKER_DIR/_book" \
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$CAPTURE_ROOT/book-nomarker/_book" \
   "$WORK/nomarker-terms.txt" <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
@@ -4627,7 +4627,7 @@ pass "M05-AC6: the missing-marker report fires exactly once in a full render, na
 ( cd "$BOOK_DIR" && quarto render --to pdf ) > "$WORK/book-pdf.log" 2>&1 \
   || { tail -40 "$WORK/book-pdf.log" >&2; fail "M05-AC5: the book fixture failed to render to PDF"; }
 capture --project "$BOOK_DIR" pdf "book-pdf"
-BOOK_PDF=$(find "$BOOK_OUT" -maxdepth 1 -name '*.pdf' | head -1)
+BOOK_PDF=$(find "$CAPTURE_ROOT/book-pdf/_book" -maxdepth 1 -name '*.pdf' | head -1)
 [ -s "$BOOK_PDF" ] || fail "M05-AC5: the book render produced no PDF"
 pdftotext -layout "$BOOK_PDF" "$WORK/book.txt"
 
@@ -4714,9 +4714,9 @@ PY
 ( cd "$BOOK_DIR" && quarto render --to html ) > "$WORK/book-html2.log" 2>&1 \
   || { tail -30 "$WORK/book-html2.log" >&2; fail "M05 hardening: the second book render failed"; }
 capture --project "$BOOK_DIR" html "book-html2"
-check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
+check_html_index_manifest "$CAPTURE_ROOT/book-html2/_book/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (second render)" hrefs
-check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4 (second render)" \
+check_letter_sweep "$CAPTURE_ROOT/book-html2/_book/last.html" "M07-AC4 (second render)" \
   $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ'
 
 # A record for a chapter the book does not list must not reach the index. The
@@ -4739,9 +4739,9 @@ check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_UNREADABLE" 0 \
   "M05 hardening (ghost record)"
 check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE" 0 \
   "M05 hardening (ghost record)"
-check_html_index_manifest "$BOOK_OUT/last.html" "$BOOK_HTML_INDEX" \
+check_html_index_manifest "$CAPTURE_ROOT/book-ghost/_book/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (stale chapter ignored)" hrefs
-check_letter_sweep "$BOOK_OUT/last.html" "M07-AC4 (stale chapter)" \
+check_letter_sweep "$CAPTURE_ROOT/book-ghost/_book/last.html" "M07-AC4 (stale chapter)" \
   $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ'
 rm -f "$GHOST"
 
@@ -4807,7 +4807,7 @@ check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_STALE" 0 \
 check_warning_count "$WORK/book-nocontext.log" \
   "$(dangling_report see 'a mark in one.qmd' 'Nothing Indexed Here' book)" 1 \
   "M14 (review F4)"
-grep -qF 'Legacy Term' "$BOOK_OUT/last.html" \
+grep -qF 'Legacy Term' "$CAPTURE_ROOT/book-nocontext/_book/last.html" \
   || fail "M14 (review F4): the chapter's term is missing from the index, so the record was rejected after all"
 cp "$WORK/one-record.json" "$CORRUPT"
 pass "M14: a record predating the per-mark naming string is accepted, keeps its chapter's terms in the index, and its report names the chapter it came from"
@@ -4918,10 +4918,10 @@ check_warning_count "$WORK/book-order-1.log" "$R_ALREADY" 1 \
 check_warning_count "$WORK/book-order-1.log" "$R_DISPLACED" 1 \
   "M21-AC5 (the displaced opening draws its own report instead, once)"
 
-check_letter_sweep "$ORDER_OUT/index.html" "M07-AC1 (book order)" $'A\nB\nE\nL\nM\nS\nT\nU'
+check_letter_sweep "$CAPTURE_ROOT/book-order-2/_book/index.html" "M07-AC1 (book order)" $'A\nB\nE\nL\nM\nS\nT\nU'
 
 printf '%s\n' "$BOOK_ORDER_INDEX" > "$WORK/order-index.txt"
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$ORDER_OUT" \
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$CAPTURE_ROOT/book-order-2/_book" \
   "$WORK/order-index.txt" <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')

@@ -44,11 +44,14 @@ checker-regress shape D-004 refused.
 ## Acceptance criteria
 
 - [ ] AC1: Over the file set `git ls-files tests` enumerates, every line
-      matching `examples/` followed by a token ending in `.html`, `.tex`,
-      `.md`, `.pdf`, `.aux`, `.idx`, `.ilg`, `.ind` or `.log` — glob and
-      shell-variable forms included — is either a `quarto render` command line
-      or a line inside the capture helper's body. That grep over that file set
-      is the procedure enumerating the domain, and the suite runs it on itself.
+      matching the literal `examples/` followed by a token ending in `.html`,
+      `.tex`, `.md`, `.pdf`, `.aux`, `.idx`, `.ilg`, `.ind` or `.log` — glob
+      and shell-variable-in-the-stem forms included — is either a `quarto
+      render` command line or a line inside the capture helper's body. That
+      grep over that file set is the procedure enumerating the domain, and the
+      suite runs it on itself. A read that spells the fixture directory itself
+      through a shell variable is outside what that grep settles, and outside
+      what this criterion claims.
 - [x] AC2: After the run's pre-render clean step, `git clean -Xdn examples/`
       prints nothing.
 - [x] AC3: Over the same `git ls-files tests` set, every line matching
@@ -116,6 +119,8 @@ checker-regress shape D-004 refused.
 - 2026-08-23: the acceptance-suite-hardening candidate row absorbs one gap found here: the AC1 read check's pattern reaches only a token ending in a literal extension, so a read spelled `examples/<stem>.$var` passes it unseen. Five such reads existed and are repaired on this branch. ROADMAP is at 23,287 of its 24,000-byte budget and 58 of its 60 lines after the absorption.
 - 2026-08-23: review — fresh evidence recorded for all five criteria from one 396-check `--self-test` run (exit 0) on a cleaned tree; consistency gate clean (`cairn_validate` exit 0, `generic` profile names no toolchain checks). Three fresh-context lenses spawned.
 - 2026-08-23: amendment return: AC1 — "every line matching `examples/` followed by a token ending in `.html`, `.tex`, `.md`, `.pdf`, `.aux`, `.idx`, `.ilg`, `.ind` or `.log` — glob and shell-variable forms included — is either a `quarto render` command line or a line inside the capture helper's body". Eleven book-family reads spell the fixture directory through `$BOOK_OUT` (= `examples/book/_book`) and so fall outside that domain; AC1 passes while the Goal is unmet for the book fixtures. Review stopped before the merge gate; D2-D16 and B1 logged in the Review section for triage at re-review.
+- 2026-08-23: AC1 amended at a mini gate (substantive), executing that return: the criterion now promises only what its grep settles — lines spelling the fixture directory literally — and states that a read reaching that directory through a shell variable is outside the claim. Narrowing was recommended and taken; widening the pattern to one further spelling was offered as the non-recommended alternative and declined. The amended wording was audited in-session against the reduced audit's bounded-promise, proportionality and instrument questions rather than by a fresh reader — this session is configured not to spawn subagents — and that was disclosed at the gate. The amendment-return track stays at 1.
+- 2026-08-23: chosen at the same gate alongside the amendment, and code work rather than a criteria change: the 14 book-family reads spelling the fixture directory through `$BOOK_OUT`, `$ORDER_OUT` or `$NOMARKER_DIR` now read the captures already taken at their renders (book-html, book-html2, book-ghost, book-nocontext, book-nomarker, book-pdf, book-order-2), so the Goal holds for the book fixtures although AC1's grep does not reach them. The check's blindness to a variable-spelled fixture directory is absorbed into the acceptance-suite-hardening candidate row beside the `.$var` gap already there; ROADMAP is at 23,488 of its 24,000-byte budget and 58 of its 60 lines.
 
 ## Review
 

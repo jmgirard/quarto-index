@@ -7026,7 +7026,8 @@ pass "M14: every example's dangling-target report count matches its pinned expec
 # The fold fixtures render here, ahead of M15's residue sweep: one of them has
 # a contested key, so that sweep needs its artifact, and reading a copy taken
 # now is what keeps the sweep off whatever an earlier run happened to leave in
-# examples/. The PDF render further down removes the intermediate .tex (M15).
+# examples/. The capture at each render is what takes the intermediate LaTeX
+# out of the working tree; the sweep reads the copy (M15).
 for f in fold-xref fold-xref-both fold-xref-self fold-xref-empty; do
   for fmt in latex html gfm; do
     quarto render "examples/$f.qmd" --to $fmt > "$WORK/$f-$fmt.log" 2>&1 \
@@ -7914,7 +7915,8 @@ for artifact in "$CAPTURE_ROOT/principal-gfm/principal.md" "$CAPTURE_ROOT/princi
   [ -s "$artifact" ] \
     || fail "M20: the render produced no $artifact, so every check stated over it would read a file this run did not write"
 done
-# Copied before the PDF render below removes the intermediate .tex (M15).
+# A snapshot of the captured LaTeX, kept under its own name for the checks
+# below that read it there rather than by capture slug (M15).
 cp "$CAPTURE_ROOT/principal-latex/principal.tex" "$WORK/principal.tex"
 for fmt in latex html gfm; do
   quarto render examples/principal-twin.qmd --to $fmt \
@@ -8186,8 +8188,9 @@ for artifact in "$CAPTURE_ROOT/range-gfm/range.md" "$CAPTURE_ROOT/range-html/ran
   [ -s "$artifact" ] \
     || fail "M21: the render produced no $artifact, so every check stated over it would read a file this run did not write"
 done
-# Copied before the PDF render below removes the intermediate .tex (M15), and
-# size-checked first like every other artifact here: a render that exits 0 and
+# A snapshot of the captured LaTeX, kept under its own name for the checks
+# below that read it there rather than by capture slug (M15), and size-checked
+# first like every other artifact here: a render that exits 0 and
 # writes nothing would otherwise leave every AC2 clause reading a file this run
 # did not produce (review round 3, R3-F6).
 [ -s "$CAPTURE_ROOT/range-latex/range.tex" ] \

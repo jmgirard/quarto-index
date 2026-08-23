@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M23: A range verdict follows its mark's position, not its text
 
-- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
@@ -99,6 +99,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: T4 — the range-machinery header comment now says a verdict belongs to a mark by position; the `marks_seen` module-state candidate row widened for `range_verdicts`/`range_at`. Nothing to remove from the ROADMAP: the R3-F9 row was already absorbed into this milestone at plan time (9b9bf91). README and DESIGN checked and unchanged — the change is behavior-preserving and neither describes the keying. Verify run in flight; result on the next line.
 - 2026-08-22: T4 verify run landed — full suite `--self-test`, 391 checks, exit 0. Status to review.
 - 2026-08-22: review opened — draft PR #23; consistency gate green (`cairn_validate` all checks passed; no principle change, so no impact report; the `generic` profile names no toolchain checks). No CI configured on this repo. Three fresh-context reviewers running; acceptance evidence to follow.
+- 2026-08-22: review round 1 returned to in-progress — AC2 fails: `tests/scans/range-position.py` does not assert three parts of the property AC2 says it asserts (the reset's location in `finish_ranges`, which traversals hold the two call sites, and that `plan_range` is handed the guard's own position), each reproduced against a built tree that the scan exits 0 on. Twelve findings logged in the Review section; seven fix-now, four follow-up, one rejected. Defect returns on this milestone: 1.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->
@@ -118,3 +119,61 @@ passes, which is the position's job now and is what AC2 is about.
 
 ## Review
 <!-- owner: review · exclusive -->
+
+### Round 1 — 2026-08-22 — returned to `in-progress`
+
+**Gate.** `cairn_validate` all checks passed (exit 0). No principle change, so no
+impact report. The `generic` profile names no toolchain checks. No CI on the
+repo. Draft PR #23.
+
+**Criteria.** AC1 and AC3 were not executed: AC2 failed at the review fan-out
+before the evidence run, and every artifact re-renders at re-review anyway.
+None ticked.
+
+**AC2 — FAILS.** The criterion promises the positional keying is "asserted by a
+source scan ... pinned to those functions by name". The property holds in the
+shipped tree, but `tests/scans/range-position.py` does not assert three parts of
+it. Each was reproduced here against a built tree, and each broken tree exits 0:
+
+- The reset is pinned as `^  range_at = 0$` — an indentation-anchored match
+  anywhere in the concatenated source set, not a match inside `finish_ranges`.
+  Reset deleted from `finish_ranges` and made `plan_range`'s first statement:
+  every mark plans at position 1 while the emitting pass numbers 1, 2, 3…, so
+  every range but the first loses its verdict. Scan exits 0.
+- The two `range_position` call sites are counted, never located. Collecting
+  pass's call moved into `CollectSort` (which runs earlier) with an inline guard
+  left behind: count still 2, guard body still tests both clauses, scan exits 0
+  — while `finish_ranges` files verdicts offset by the whole mark count and the
+  emitting pass reads nil at every one. That tree emits an unmatched range
+  opening, makeindex logs it, and Quarto fails the render.
+- `plan_range`'s signature is pinned, its call site is not. `plan_range(1, …)`
+  files every verdict at position 1; scan exits 0. The `next_range` side is
+  pinned at both ends, the planning side at one.
+
+**Findings and dispositions.** Three fresh-context reviewers; twelve findings.
+
+| # | Finding | Disposition |
+|---|---|---|
+| F1 | Scan does not locate the counter reset in `finish_ranges` | fix now — the return |
+| F2 | Scan counts the two call sites without locating their traversals | fix now — the return |
+| F3 | `plan_range`'s call site unpinned, so the position need never reach the store | fix now — the return |
+| F4 | `pair_ranges` contract comment omits the `pos` field `finish_ranges` depends on | fix now |
+| F5 | `range_items` comment no longer describes what the list holds since the placeholder went | fix now |
+| F11 | AC2's evidence prints under an AC1 `pass` line; no `pass "M23-AC2"` exists | fix now |
+| F10 | The nested fixture's PDF render clears `.ind`/`.ilg` but not `.idx`/`.aux` | fix now |
+| F6 | `next_range` no longer advances anything yet keeps the name, now pinned | rejected — deliberate, and the milestone's Decisions entry names it as one of AC2's two functions |
+| F7 | The two passes can still *derive* differently though they now *number* identically; unreachable today, but the failure shape changed from a mis-assigned verdict to an unconsumed one (failed render) | follow-up candidate row |
+| F8 | `finish_ranges` clears the counter but not `range_items`/`range_found`/`range_pair_found`/`range_verdicts` | follow-up — widen the module-state row |
+| F9 | The `data-qi-pending` sweep reads `examples/range-nested.html` before the M23 section renders it | follow-up — widen the acceptance-suite hardening row |
+| F12 | The bare `(W)` warning pin counts any filter's warnings, not this extension's | follow-up — widen the acceptance-suite hardening row |
+
+**What the reviewers cleared.** The Lua change itself: positional alignment
+holds across traversal order, nested spans, filter-created spans, the HTML
+pending-attribute path, book chapters, the degraded book path and the
+no-back-end formats; the reset runs exactly once per process; the dropped
+placeholder is safe because `range_items` and `verdicts` stay 1:1 by
+construction; nothing contradicts D-007, D-008, D-009, D-010 or any IP/GP. The
+`m21probes.py` extraction is behavior-preserving. No new check passes
+vacuously. The new scan's M16-AC3 registration is complete and its
+moved-definition plant works. The blame-history and prior-review lenses each
+returned no findings.

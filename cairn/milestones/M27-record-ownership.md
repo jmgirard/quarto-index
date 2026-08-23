@@ -115,6 +115,7 @@ the module carries the sixteen as they stand. Any change under `tests/` or
 - 2026-08-23: plan gate chose refiling findings into `cairn/DESIGN.md`'s `## Known issues` with a recorded boundary rule over compressing row prose in place, because compression leaves the append-a-finding-to-a-work-row mechanism intact and both files return to their caps in roughly five milestones at the observed ~500 bytes per milestone; falsified by the files climbing back toward their caps after this milestone without any row gaining a finding clause.
 - 2026-08-23: T1 classified all 37 candidate rows and framed the lesson exits; the ledger is in `## Decisions`. Findings take labels KI1-KI79 in `cairn/DESIGN.md`; six single-item suite rows fold into the acceptance-suite-hardening row. Verify slot green (275 checks).
 - 2026-08-23: review ran the gate on PR #27: all six criteria carry fresh evidence, cairn_validate passes 16/16 with 7 advisories OK, the generic profile names no toolchain check, and the self-test passes 409 checks unchanged. The diff-bug lens ran reduced (internal tier, markdown-only diff) and in-session rather than in a spawned reader, for the reason the earlier audit lines give; three findings, all ranked and logged in the Review section.
+- 2026-08-23: approval gate: F1 fixed on the branch (the Known issues intro now covers an entry sourced from a decision or a review report); F2 and F3 rejected with reasons recorded. User approved the merge of PR #27.
 - 2026-08-23: plan gate chose retiring the enforced variations of the "prove a check discriminating" lesson over keeping the line whole and cutting mid-sized lessons instead, because the line is 2,995 bytes of 18,439 and the repo now runs a planted-defect self-test; falsified by a self-test run that passes with a variation's defect planted.
 
 ## Decisions
@@ -317,13 +318,18 @@ the diff but shares this session's context. Three findings, ranked:
   KI5, KI19 and KI52 name `RR01`, `D-009` and `D-004`/`D-011` instead. Ranked
   first because it is the only place a section's own stated invariant does not
   hold of its entries. Each of the three carries the attribution its source row
-  carried, so nothing was lost in the move.
+  carried, so nothing was lost in the move. **Fixed at the gate:** the section's
+  opening sentence now reads "each naming where it came from — the review that
+  found it, or the decision or review report that recorded it", which covers all
+  79 entries.
 - F2 — the release-bundle candidate row keeps "which README omits a claim for
   want of one (M01)", a statement about the repo's present packaging with no
   `KI<n>` label. Ranked second because it is the nearest thing in the diff to
   the mechanism D-013 exists to stop. It falls outside `## Known issues`'s
   stated domain (the extension and its acceptance suite), and the clause is
-  unchanged from the merge base.
+  unchanged from the merge base. **Rejected at the gate:** pre-existing, and
+  outside the section's stated domain.
 - F3 — AC3's word-level residue, enumerated in the AC3 evidence line above.
   Ranked last because every item resolves to a deliberate change or an
-  inflection, and none is lost content.
+  inflection, and none is lost content. **Rejected at the gate:** no defect to
+  fix.

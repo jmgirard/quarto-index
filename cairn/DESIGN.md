@@ -427,8 +427,10 @@ of the kind each check names, which the check must fail on, naming it.
 ## Known issues
 
 What the extension and its acceptance suite do today that a reader should know
-about, each with the review it came from. Labels are assigned in order and never
-reused, so a `cairn/ROADMAP.md` row can point at one and survive a rewording;
+about, each naming where it came from — the review that found it, or the
+decision or review report that recorded it. Labels are assigned in order and
+never reused, so a `cairn/ROADMAP.md` row can point at one and survive a
+rewording;
 the milestone that closes an issue strikes its entry and rewrites the rows
 pointing at it (D-013). A candidate row states the work; the finding lives here.
 

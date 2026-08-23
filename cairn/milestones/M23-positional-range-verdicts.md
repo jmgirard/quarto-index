@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M23: A range verdict follows its mark's position, not its text
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
@@ -98,17 +98,17 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
       `.ind`/`.ilg`; AC2's evidence prints under a `pass "M23-AC2"` of its own.
 - [x] T7 (review round 1, F7-F9, F12): the four follow-up findings land as
       ROADMAP candidate rows or widenings of existing ones.
-- [ ] T8 (AC2 after the amendment): `examples/range-position.qmd` — the
+- [x] T8 (AC2 after the amendment): `examples/range-position.qmd` — the
       nested `entry=`-less range and the overlapping plain range, plus the
       two shapes AC1's fixture must not carry because they draw a report: a
       `range=` span with no index class, and a range mark deriving no entry.
       A reader over both back-ends asserting the criterion's three clauses.
-- [ ] T9: the defect-injection battery, under `--self-test`: eight ways the
+- [x] T9: the defect-injection battery, under `--self-test`: eight ways the
       position binding breaks, each planted in a scratch copy of the
       extension, the T8 fixture rendered against it, and the observed
       (render exit, printed ranges, report count) required to differ from
       the unplanted control's. Task work, not a criterion's promise.
-- [ ] T10: retire `tests/scans/range-position.py` — no criterion names it
+- [x] T10: retire `tests/scans/range-position.py` — no criterion names it
       now, and it certifies more than it asserts (round 2's R2-F1/F2/F3);
       the battery covers its ground behaviorally. Deregister it from
       `run_scan`, `tests/plantdefect.py` and the M16-AC3 count. Fix the
@@ -136,6 +136,9 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: review round 2 returned to in-progress — AC2 fails again: `tests/scans/range-position.py` does not assert three further parts of the property AC2 says it asserts (the counter's advance located in `range_position`, each traversal's position call taken above its own derivation return, and the guard's clauses read as code rather than as text), each reproduced against a built tree the scan exits 0 on. Eleven findings logged; three are the return, six fix on return, one surfaced at the gate, one rejected. Defect returns on this milestone: 2 — thrash trigger (b) fires, and the plan gate's recorded falsifier was tested and not met (the fixture renders identically pre-M23), while a planted defect was shown to fail the fixture's render.
 - 2026-08-22: criteria audit (full mode, fresh-context [O] reader that authored none of the wording) ran on the proposed AC2 replacement and returned nine findings — the draft's headline clause false of the deliverable (pairing still keys on the entry key, as this milestone's own Decisions entry says it must), the clause after the colon still binding an instrument (D-118's named plant-matrix case), an unbounded universal over documents, an enumeration fixed by author recall and missing four break-modes, the quantification domain delegated to an implement-editable section, and the back-end axis unstated. All disposed at the amendment gate: the wording adopted is the audit's own narrowing.
 - 2026-08-22: AC2 amended (substantive, at the gate; a defect return's chosen repair, not an amendment return, so not on that track). The plan gate's recorded falsifier was tested a second time and failed a second time: the extended fixture — the two shapes nobody had rendered against pre-M23 code — prints an identical index and an identical report count against `origin/main`'s filter. No criterion can be both deliverable-bound and discriminating on this change, so AC2 narrows to the deliverable property the fixture shows and gives up discrimination; the injection battery moves to T9 as task work. Narrowing, so D-118's direction rule is satisfied rather than traded against.
+- 2026-08-22: T8 — `examples/range-position.qmd`, carrying AC1's two ranges plus a `range=` span with no index class and a range mark deriving no entry. The two M23 readers are one reader under two labels now (`posind`/`poshtml` set the criterion the messages name) rather than a second pair that could drift from the first (M16). Measured: both back-ends exit 0, the index prints `1--4` and `2--3` against page breaks the fixture states independently, and each render draws exactly one report — the no-entry mark's — pinned on that message and on the total, so a different single report would fail rather than pass at one.
+- 2026-08-22: T9 — the nine-row injection battery under `--self-test`: each row plants one way the position binding breaks, renders the AC2 fixture against the broken copy, and requires the observed (render exit, printed ranges, report count) to differ from a control rendered in the same function. A tenth row was drafted and dropped: the splice labelled "a counter per pass" rendered identically to the control, so it planted nothing the fixture can see and would have claimed a break it does not make. Forms covered: relocation, deletion, in-body reordering, argument substitution, and a signature-plus-call-site pair.
+- 2026-08-22: T10 — `tests/scans/range-position.py` retired and deregistered from `run_scan`, `tests/plantdefect.py` and the M16-AC3 count (13 back to 12); the battery covers its ground by rendering rather than by pattern. Round-2 prose findings fixed: `range_items`'s and `pair_ranges`'s contract comments now say marks that KEPT an end, since `range_end` also refuses a displaced mark that did name one (R2-F4, R2-F5), and the `.idx` clearing comment no longer claims LaTeX appends to it (R2-F10). Full suite `--self-test` 390 checks, exit 0. Status to review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

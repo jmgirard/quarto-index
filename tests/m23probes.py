@@ -46,6 +46,23 @@ INNER = 'ogopogo'
 INNER_LOCATORS = 2
 
 
+# The criterion these readers are speaking for. Both fixtures assert the same
+# clauses — one paired range per term, the widths their page breaks put them
+# at, the inner mark unmoved — so they are read by ONE reader under two
+# labels rather than by two readers that could drift (M16). `AC` is set by
+# `main` from the mode it was called in, and every message below takes its
+# label from here rather than carrying one of its own.
+AC = 'M23-AC1'
+
+
+def _afail(msg):
+    _fail('%s: %s' % (AC, msg))
+
+
+def _aok(msg):
+    print('ok   %s: %s' % (AC, msg))
+
+
 def _hyperpages(line):
     """Every page string one compiled entry prints, in order."""
     return [p.strip()
@@ -54,7 +71,7 @@ def _hyperpages(line):
 
 
 def _ind(argv):
-    r"""M23-AC1, the LaTeX back-end — the `.ind` and the `.ilg` of one render.
+    r"""The LaTeX back-end — the `.ind` and the `.ilg` of one render.
 
     A range that lost its pairing prints its two ends as two locators, and a
     range paired with the wrong counterpart prints a span of the wrong width.
@@ -68,23 +85,23 @@ def _ind(argv):
 
     missing = [t for t in list(RANGES) + [INNER] if t not in items]
     if missing:
-        _fail('M23-AC1: the compiled index has no entry for %s; it has %s'
+        _afail('the compiled index has no entry for %s; it has %s'
               % (missing, sorted(items)))
 
     for term, span in RANGES.items():
         line = items[term]
         printed = _hyperpages(line)
         if len(printed) != 1:
-            _fail('M23-AC1: the %r entry prints %d locators (%r); a paired range '
+            _afail('the %r entry prints %d locators (%r); a paired range '
                   'is one locator spanning its two marks: <<%s>>'
                   % (term, len(printed), printed, line))
         covered, is_range = M21._pages(printed[0])
         if not is_range:
-            _fail('M23-AC1: the %r entry prints %r, which is not a range; the '
+            _afail('the %r entry prints %r, which is not a range; the '
                   'fixture separates its two marks by %d pages: <<%s>>'
                   % (term, printed[0], span, line))
         if covered != span:
-            _fail('M23-AC1: the %r entry\'s locator %r covers %d page(s); the '
+            _afail('the %r entry\'s locator %r covers %d page(s); the '
                   'fixture separates its two marks by %d page(s): <<%s>>'
                   % (term, printed[0], covered, span, line))
 
@@ -93,7 +110,7 @@ def _ind(argv):
     # by anything the range machinery does (the M11 lesson).
     inner = _hyperpages(items[INNER])
     if len(inner) != INNER_LOCATORS or any('--' in p for p in inner):
-        _fail('M23-AC1: the %r entry prints %r; the fixture writes it once inside '
+        _afail('the %r entry prints %r; the fixture writes it once inside '
               'each end of the nested range, with no range= of its own, so it '
               'must print %d separate pages: <<%s>>'
               % (INNER, inner, INNER_LOCATORS, items[INNER]))
@@ -102,17 +119,17 @@ def _ind(argv):
     for phrase in ('Unmatched range', 'Extra range', 'inconsistent encapsulator',
                    'Inconsistent page encapsulator'):
         if phrase in ilg:
-            _fail('M23-AC1: makeindex logged <<%s>> for this fixture; Quarto fails '
+            _afail('makeindex logged <<%s>> for this fixture; Quarto fails '
                   'a render on exactly that line:\n%s' % (phrase, ilg))
     m = re.search(r'done \((\d+) lines written, (\d+) warnings?\)', ilg)
     if not m:
-        _fail('M23-AC1: could not read a warning count out of the makeindex '
+        _afail('could not read a warning count out of the makeindex '
               'transcript, so "no warnings" would rest on a substring search '
               'alone:\n' + ilg)
     if m.group(2) != '0':
-        _fail('M23-AC1: makeindex reported %s warning(s) for this fixture:\n%s'
+        _afail('makeindex reported %s warning(s) for this fixture:\n%s'
               % (m.group(2), ilg))
-    print('ok   M23-AC1: a range mark whose own content carries another mark '
+    _aok('a range mark whose own content carries another mark '
           'prints one page range covering the pages the fixture separates its '
           'ends by, the plain range beside it keeps its own narrower span, the '
           'nested inner mark keeps its two separate pages, and makeindex logs '
@@ -120,7 +137,7 @@ def _ind(argv):
 
 
 def _html(argv):
-    """M23-AC1, the HTML back-end — one locator per range, at its opening mark.
+    """The HTML back-end — one locator per range, at its opening mark.
 
     Read through the HTML parser rather than through the gfm span reader: that
     reader stops at the first `</span>`, so a mark whose visible text carries a
@@ -130,57 +147,69 @@ def _html(argv):
     """
     path = argv[0]
     cls = os.environ['HTML_PRINCIPAL_CLASS']
-    section = M21.index_section(path, 'M23-AC1')
+    section = M21.index_section(path, AC)
     marks = M21.body_marks(path)
 
     for term, span in RANGES.items():
         opens = marks.get((term, 'open'), [])
         closes = marks.get((term, 'close'), [])
         if len(opens) != 1 or len(closes) != 1:
-            _fail('M23-AC1: %r has %d opening and %d closing mark(s) in the body; '
+            _afail('%r has %d opening and %d closing mark(s) in the body; '
                   'the fixture writes one of each'
                   % (term, len(opens), len(closes)))
         anchor = opens[0].attrs.get('id')
         closing = closes[0].attrs.get('id')
         if not anchor:
-            _fail('M23-AC1: the opening mark of %r carries no id, so its locator '
+            _afail('the opening mark of %r carries no id, so its locator '
                   'has nothing to point at' % term)
         got = M21.locator_links(section, term, cls)
         if got is None:
-            _fail('M23-AC1: the generated index has no %r entry at all, so every '
+            _afail('the generated index has no %r entry at all, so every '
                   'clause about its locator would pass by not matching' % term)
         if len(got) != 1:
-            _fail('M23-AC1: the %r entry carries %d locator link(s) (%r); a paired '
+            _afail('the %r entry carries %d locator link(s) (%r); a paired '
                   'range contributes one' % (term, len(got), got))
         href = got[0][0]
         if href != '#' + anchor:
-            _fail('M23-AC1: the %r entry\'s locator points at %r; its opening '
+            _afail('the %r entry\'s locator points at %r; its opening '
                   'mark\'s anchor is %r and its closing mark\'s is %r'
                   % (term, href, '#' + anchor, '#' + closing))
 
     got = M21.locator_links(section, INNER, cls)
     if got is None:
-        _fail('M23-AC1: the generated index has no %r entry, so the nested inner '
+        _afail('the generated index has no %r entry, so the nested inner '
               'mark cannot fail' % INNER)
     if len(got) != INNER_LOCATORS:
-        _fail('M23-AC1: the %r entry carries %r; the fixture writes it once inside '
+        _afail('the %r entry carries %r; the fixture writes it once inside '
               'each end of the nested range, with no range= of its own, so it '
               'contributes %d separate locators' % (INNER, got, INNER_LOCATORS))
-    print('ok   M23-AC1: in the HTML index a range mark whose own content carries '
+    _aok('in the HTML index a range mark whose own content carries '
           'another mark contributes one locator at its opening mark\'s anchor, '
           'the plain range beside it does the same, and the nested inner mark '
           'contributes its own two')
 
 
+# Mode -> (reader, the criterion it speaks for). `posind`/`poshtml` read
+# `examples/range-position.qmd`, which carries AC1's two ranges plus the two
+# shapes AC1's fixture must not have; the clauses asserted are the same ones,
+# which is why they share a reader.
+MODES = {
+    'ind': (lambda rest: _ind(rest), 'M23-AC1'),
+    'html': (lambda rest: _html(rest), 'M23-AC1'),
+    'posind': (lambda rest: _ind(rest), 'M23-AC2'),
+    'poshtml': (lambda rest: _html(rest), 'M23-AC2'),
+}
+
+
 def main(argv):
+    global AC
     if not argv:
-        _fail('usage: m23probes.py <ind|html> <args...>')
+        _fail('usage: m23probes.py <%s> <args...>' % '|'.join(MODES))
     which, rest = argv[0], argv[1:]
-    if which == 'ind':
-        return _ind(rest)
-    if which == 'html':
-        return _html(rest)
-    _fail('m23probes.py: unknown reader %r' % which)
+    if which not in MODES:
+        _fail('m23probes.py: unknown reader %r' % which)
+    reader, AC = MODES[which]
+    return reader(rest)
 
 
 if __name__ == '__main__':

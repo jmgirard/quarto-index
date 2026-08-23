@@ -1,0 +1,60 @@
+---
+title: "quarto-index range-verdict position probe"
+from: markdown-smart
+format:
+  pdf:
+    # The suite reads the `.ind` makeindex writes and the `.ilg` it logs to;
+    # Quarto deletes both on a successful render unless this says otherwise.
+    latex-clean: false
+  html: default
+filters:
+  - index
+---
+
+# Why this fixture is not `range-nested.qmd`
+
+Both fixtures carry the nested shape and a plain range beside it. This one
+also carries two shapes that fixture must not: a span that looks like a range
+mark and is not one, and a range mark that indexes nothing. Each draws a
+different answer out of the guard that hands a mark its position, and the
+second of them draws a report — which is why they cannot live in a fixture
+whose criterion is that it reports nothing at all.
+
+A span carrying `range=` but no index class [quokka]{range="open"} is no mark,
+so the guard gives it no position and neither traversal counts it.
+
+A range mark that indexes nothing []{.index range="open"} takes a position all
+the same, and plans no verdict at it. It is the shape where the two traversals
+stop at different points: the collecting one derives no entry and plans
+nothing, the emitting one reports why the mark indexes nothing. Both have
+already taken the position by then.
+
+# A range mark whose own content carries another mark
+
+The emitting pass rewrites the inner mark before it reaches the outer one, so
+the outer mark's visible text is not the same object in the two passes that
+read it.
+
+The discussion of [nixie [ogopogo]{.index}]{.index range="open"} begins here.
+
+{{< pagebreak >}}
+
+# A plain range of another term, opening inside the nested one
+
+It opens and closes inside the nested range above, so the two overlap and a
+verdict handed to the wrong mark shows as a span of the wrong width rather
+than as a missing entry.
+
+The discussion of [pooka]{.index range="open"} begins here.
+
+{{< pagebreak >}}
+
+And the discussion of [pooka]{.index range="close"} ends here.
+
+{{< pagebreak >}}
+
+And the discussion of [nixie [ogopogo]{.index}]{.index range="close"} ends
+here.
+
+::: {.qi-index-here}
+:::

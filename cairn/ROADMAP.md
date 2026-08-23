@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-22 (M22 merged and archived — deleting index mark
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M23 | A range verdict follows its mark's position, not its text | in-progress | — | normal | milestones/M23-positional-range-verdicts.md |
+| M23 | A range verdict follows its mark's position, not its text | review | — | normal | milestones/M23-positional-range-verdicts.md |
 | M22 | A stale `.aux` outliving its marks still builds | done | — | normal | milestones/archive/M22-stale-aux-builds.md |
 | M18 | A cross-reference target is judged against the path the entry prints | done | — | normal | milestones/archive/M18-fold-aware-xref-targets.md |
 | M19 | A reported level count says which levels it counts | done | — | normal | milestones/archive/M19-level-count-naming.md |

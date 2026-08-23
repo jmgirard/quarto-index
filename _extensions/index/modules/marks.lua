@@ -292,8 +292,10 @@ local function range_end(value, context, blocked)
   return value, nil
 end
 
--- Pair a set of range marks. `items` is every mark that named an end, in the
--- order they are indexed, each `{ pos, key, ending, principal, context }`.
+-- Pair a set of range marks. `items` is every mark that KEPT an end — the
+-- caller has already refused the marks whose end was unrecognized or
+-- displaced — in the order they are indexed, each
+-- `{ pos, key, ending, principal, context }`.
 -- Returns a verdict per item — `{ ending, principal }` for a mark that keeps
 -- its end, `false` for one that is refused — and the pairing findings.
 --
@@ -355,15 +357,21 @@ local function pair_ranges(items)
   return verdicts, found
 end
 
--- Every range mark that named an end, in document order, and the findings
--- held against the marks that did not. A mark whose `range=` value names no
--- end leaves a finding here and no item at all: the per-key queues needed a
--- placeholder for it, so that a refusal was not handed to the next mark of
--- the same key, and the placeholder went with them — a verdict is filed under
--- its own mark's position now, and the emitting pass finds nothing planted at
--- a position nothing was planned at. The findings wait rather than being
--- reported where they are made, so they print after the per-mark reports the
--- emitting pass draws.
+-- The range marks this document will pair, in document order, and the
+-- findings held against the ones it will not. A mark reaches this list only
+-- by keeping its end through `range_end`, which refuses two kinds: a value
+-- naming no end at all, and a value that names one on a mark whose surviving
+-- cross-reference has taken the locator a range would span. Both leave a
+-- finding and no item, so "named an end" is not the membership test — kept
+-- one is. A mark that derives no entry reaches neither list: the collecting
+-- traversal returns before it plans anything.
+--
+-- The per-key queues needed a placeholder for a refused mark, so that its
+-- refusal was not handed to the next mark of the same key; the placeholder
+-- went with them. A verdict is filed under its own mark's position now, and
+-- the emitting pass finds nothing planned at a position nothing was planned
+-- at. The findings wait rather than being reported where they are made, so
+-- they print after the per-mark reports the emitting pass draws.
 local range_items = {}
 local range_found = {}
 local range_pair_found = {}

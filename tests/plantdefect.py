@@ -84,14 +84,6 @@ DEFECTS = {
         'local OVERFLOW_JOIN = ',
         'local OVERFLOW_JOIN_PLANTED = ',
         'FAIL: M09: expected exactly one OVERFLOW_JOIN definition'),
-    # The call site, not the definition: M23-AC2 is about BOTH traversals
-    # taking their position through the one guard, and `Span` is the traversal
-    # whose body this probe relocates. A call renamed out of reach is the
-    # disappearance the scan's exact call-site count exists to catch.
-    'range-position': (
-        'qi_marks.range_position(span)',
-        'qi_marks.range_planted(span)',
-        'FAIL: M23-AC2: a range verdict is no longer planned and read by'),
     'm15-joined-messages': (
         'so check that is the entry you meant',
         'so check that is the entry you meant, and note that the index tool '

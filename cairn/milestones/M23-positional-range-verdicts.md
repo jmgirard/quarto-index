@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M23: A range verdict follows its mark's position, not its text
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Principles touched:** —   <!-- owner: plan · create/amend-via-gate -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create -->
+- **Branch/PR:** `m23-positional-range-verdicts`   <!-- owner: implement (branch) / review (PR URL) · create -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -92,6 +92,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: criteria audit (full mode, fresh-context reader) ran twice — pre-gate it returned two load-bearing findings here (AC1 satisfiable at the outset with no acknowledged certifier, AC2 a proxy universal whose scan could pass vacuously on a rename), both repaired; the post-gate re-audit returned one mild finding (AC2 verified counter sharing but not guard agreement), repaired in the wording above.
 - 2026-08-22: plan gate chose position-ordinal keying over keeping the per-key queues (with a guarantee that span text never differs between traversals) because the key path depends on what the emitting pass's rewrites stringify to — a property of Pandoc and future emitters, not of this filter; falsified by a document where the two traversals visit range marks in different orders.
 - 2026-08-22: plan gate chose the source-scan certifier over behavior-only criteria because no current rendering reaches the latent desync, so behavior alone certifies nothing about the change; falsified by a constructible rendering that fails pre-fix, which would supersede the scan with a behavioral criterion.
+- 2026-08-22: implementation started on `m23-positional-range-verdicts`.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

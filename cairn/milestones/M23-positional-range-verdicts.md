@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M23: A range verdict follows its mark's position, not its text
 
-- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate -->
@@ -116,6 +116,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: T7 — F7 is a new candidate row (the two passes number identically but can still derive differently; M23 changed the failure shape from a wrong page span to a failed render); F8 widened the `marks_seen` module-state row (`finish_ranges` resets the counter and leaves the four range tables); F9 and F12 widened the acceptance-suite-hardening row (the pending-attribute sweep runs before the M23 fixture renders; the bare `(W)` pin counts any filter's warnings). ROADMAP at 59 of 60 lines, 21,520 of 24,000 bytes.
 - 2026-08-22: review round 1 returned to in-progress — AC2 fails: `tests/scans/range-position.py` does not assert three parts of the property AC2 says it asserts (the reset's location in `finish_ranges`, which traversals hold the two call sites, and that `plan_range` is handed the guard's own position), each reproduced against a built tree that the scan exits 0 on. Twelve findings logged in the Review section; seven fix-now, four follow-up, one rejected. Defect returns on this milestone: 1.
 - 2026-08-22: round-1 return closed — the three AC2 gaps repaired and each reproduced tree now a planted splice, four fix-now findings actioned, four follow-ups homed on ROADMAP rows; full suite `--self-test` 395 checks, exit 0. Status back to review.
+- 2026-08-22: review round 2 returned to in-progress — AC2 fails again: `tests/scans/range-position.py` does not assert three further parts of the property AC2 says it asserts (the counter's advance located in `range_position`, each traversal's position call taken above its own derivation return, and the guard's clauses read as code rather than as text), each reproduced against a built tree the scan exits 0 on. Eleven findings logged; three are the return, six fix on return, one surfaced at the gate, one rejected. Defect returns on this milestone: 2 — thrash trigger (b) fires, and the plan gate's recorded falsifier was tested and not met (the fixture renders identically pre-M23), while a planted defect was shown to fail the fixture's render.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->
@@ -135,6 +136,82 @@ passes, which is the position's job now and is what AC2 is about.
 
 ## Review
 <!-- owner: review · exclusive -->
+
+### Round 2 — 2026-08-22 — returned to `in-progress`
+
+**Gate.** `cairn_validate` all checks passed (exit 0). No principle change, so no
+impact report. The `generic` profile names no toolchain checks. No CI on the
+repo. PR #23 (draft). Branch synced: `origin/main` is an ancestor of HEAD.
+
+**Acceptance run.** `tests/run-tests.sh --self-test` — 395 checks, exit 0, with
+AC1 carrying three pass lines and AC2 its own. That run is not evidence AC2 is
+met: what failed below is what the scan does not assert, which a passing scan
+cannot show.
+
+**Criteria.** None ticked. AC2 fails again; AC1 and AC3 were not fenced,
+since every artifact re-renders at re-review.
+
+**AC2 — FAILS (second time).** Round 1 returned three properties the scan
+certified without asserting. Those three are repaired and each is now a planted
+splice. Three more remain, each reproduced here against a built tree the scan
+exits 0 on, and two of them are round 1's shape exactly — a pin whose stated
+reason claims a location while the pin itself only counts:
+
+- The counter's ADVANCE is counted source-set-wide, never located. Deleted from
+  `range_position` and made `plan_range`'s first statement: the collecting pass
+  numbers from 0 and only for marks that reach `plan_range`, the reset then
+  returns the counter to 0, and the emitting pass numbers every mark 0. Every
+  range reads the first mark's verdict. Scan exits 0.
+- The two `range_position` calls are located by body but not by position within
+  it. Moved below its own `levels == nil` return in either traversal, one pass
+  numbers a mark the other does not, and every later range mark reads its
+  predecessor's verdict. Scan exits 0.
+- The guard's two clauses are matched against the body's raw text, comments
+  included. The index-class clause commented out leaves the substring in place;
+  a span carrying `range=` without the index class is then numbered by one pass
+  and not the other. Scan exits 0.
+
+**Findings and dispositions.** Three fresh-context reviewers; eleven findings.
+
+| # | Finding | Disposition |
+|---|---|---|
+| R2-F1 | The counter's advance is counted, never located in `range_position` | the return |
+| R2-F2 | Each traversal's position call is located in its body but not above that body's derivation return | the return |
+| R2-F3 | The guard-clause check matches commented-out text | the return |
+| R2-F4 | The `range_items` comment is false for a displaced mark (`range_end` returns nil for a mark that DID name an end) and for one deriving no entry | fix on return |
+| R2-F5 | `pair_ranges`'s "every mark that named an end" is false for the same reason; round 2 rewrote that comment block and left the clause standing | fix on return |
+| R2-F10 | The `.idx` clearing comment says LaTeX appends to the `.idx`; it truncates (probed: a planted `\indexentry{Ghostterm}{99}` was gone after one pdflatex run) | fix on return |
+| R2-F7 | Three pins break under a behavior-preserving refactor: renaming the local `pos`, and swapping the key order in `{ Span = ..., Pandoc = ... }` | fix on return |
+| R2-F8 | Two pins read `index.lua`, which AC2 does not name, through the flat concatenation rather than `filtersrc.lines()` | fix on return |
+| R2-F9 | `range_position`'s export line is unpinned; dropping it satisfies every pin and fails at runtime (caught by AC1/AC3) | fix on return |
+| R2-F6 | AC2's literal text has "the verdict-planning and verdict-reading functions ... advance one shared position counter", and neither `finish_ranges` nor `next_range` advances it — `range_position` does | surfaced to the user at the gate |
+| R2-F11 | The new M23-AC1 zero-expectation checks use the bare `(W)` pin round 1's F12 named as weak | rejected — F12's disposition was a follow-up row, which is where it stands; this diff extends a known-weak pattern rather than reintroducing a fixed one |
+
+**Thrash.** Defect returns on this milestone: 2. Trigger (b) fires — AC2 has
+now failed twice, each time by a new mechanism of one shape. The alternative
+the plan gate recorded against was behavior-only criteria, with the falsifier
+"a constructible rendering that fails pre-fix". Tested here: the nested fixture
+renders identically against `origin/main`'s pre-M23 filter (exit 0, `1--4` and
+`2--3`, makeindex 0 warnings), so that falsifier is not met and behavior alone
+still certifies nothing. What the round-2 reproductions did show is a third
+instrument neither the plan gate nor round 1 considered: each broken tree fails
+the fixture's RENDER. The advance-relocated tree rendered at exit 1, makeindex
+logging "Unmatched range opening operator", where the shipped tree renders
+clean — so the property is certifiable by planting each defect and requiring
+the render to fail, without needing any pre-fix failing document.
+
+**What the reviewers cleared.** The three round-1 repairs, each splice planting
+a real defect and failing on exactly the pin it names. `body()`'s column-0 `end`
+bound, sound for all five functions it is used on, with no long-bracket strings
+in the source set. The Lua change itself on the read path, the traversal order,
+`plan_range` keeping the entry key, and the dropped refused-end placeholder
+(`range_items` and `verdicts` stay 1:1, and a nil verdict is equivalent to the
+old `false`). The `m21probes.py` extraction as behavior-preserving. The
+`m23probes.py` oracle as stated from the fixture rather than read off the
+artifact. The fixture's term uniqueness (M13). The M16-AC3 count and the
+`plantdefect.py` registration. Nothing contradicts D-007 through D-010 or any
+IP/GP. The blame-history lens found no defect beyond R2-F10; the prior-review
+lens found no reintroduction beyond R2-F11.
 
 ### Round 1 — 2026-08-22 — returned to `in-progress`
 

@@ -17,7 +17,8 @@ _Last hygiene check: 2026-08-23 (status audit after M26's merge: all 16 mechanic
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
-<!-- unnumbered ideas; one line each: idea — added YYYY-MM-DD — links -->
+<!-- proposed work only; one line each: idea — added YYYY-MM-DD — links.
+     A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
 - M13 review follow-ups (clustered): `examples/.gitignore` duplicates the root ignore's `examples/.quarto/` and adds an unrelated `**/*.quarto_ipynb` rule; and the README claim pins and the filter's warning literals are two hand-maintained copies of the same strings, the claim check asserting a string is in README and never that the filter emits it — added 2026-08-19, widened 2026-08-20, narrowed 2026-08-21 (M19 absorbed both depth-versus-drop wording items, the extra-sort report's and M18's fold-rewritten-target report's) — M13 review F16/F20
 - Reconcile the example corpus so its ~250 probe `see=`/`see-also=` targets name terms the fixture indexes; M14 pins the expected report counts instead — added 2026-08-19 — M14 plan gate
 - Emptied-place report follow-ups (clustered): its position is a post-Quarto AST index, not the author's source block count, and is unverified where Quarto injects top-level blocks (executable cells, shortcodes) — M04's duplicate-marker message shares the convention M12 makes load-bearing; in a book the position is chapter-local and the message names no file, unlike the book-aware marker warnings which carry `ctx.file`; and the reports for a callout, a tabset and a captioned figure exist only because Quarto's scaffold wrapping happens to leave the marker alone in an inner block list — the private structure M12's gate refused to model — so an upstream change would surface as a manifest mismatch reading like a regression here — added 2026-08-19 — M12 review F6/F7/F12

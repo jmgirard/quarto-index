@@ -1,10 +1,11 @@
 # Lessons
 
 <!-- Durable, capped repo lessons (max 50 lines) — captured at milestone end,
-     surfaced at plan time. Current knowledge: corrected in place when proven
-     false (marked, e.g. "corrected M75"), retired when a test enforces it,
-     another file owns it, or a stabilized family graduates. One lesson per
-     line. Not for status, decisions, or per-milestone task notes. -->
+     surfaced at plan time. Transferable craft only: a fact about this repo's
+     present state is a DESIGN.md Known-issues entry (D-013). Current
+     knowledge: corrected in place when proven false (marked, e.g. "corrected
+     M75"), retired when a test enforces it, another file owns it, or a
+     stabilized family graduates. One per line; not status or task notes. -->
 
 - 2026-08-16 (M01): Reviewing an escape table character by character cannot establish that a character survives — the failure depends on how the consumer *reads* the argument. Only compiling each one settles survival; only typesetting the result settles that it prints.
 - 2026-08-16 (M01): Pandoc consumes one backslash level in a quoted span-attribute value (`\!`→`!`, `\\`→`\`, `\"`→`"`), so an escape defined at the filter layer is not what the author types.

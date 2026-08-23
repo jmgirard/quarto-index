@@ -469,6 +469,11 @@ unignored residue would be inert litter rather than a file some check reads.
 Round 1's D1 differed in exactly that respect — eleven reads actually stood,
 reading the working tree.
 
+**Confirming run.** Full `--self-test` after R3's fix: exit 0, 396 checks,
+the emission sweep reading 47 captured LaTeX artifacts. Four full runs were
+taken this round; three passed and the fourth died on a Quarto segfault that
+did not reproduce.
+
 **Returns.** Amendment-return track 1 (round 1's, executed). Defect-return
 track 0: no finding across the three lenses demonstrates an acceptance
 criterion failing inside its named procedure's domain.

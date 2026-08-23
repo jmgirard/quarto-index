@@ -1,0 +1,18 @@
+---
+title: "quarto-index per-document state, one plain mark"
+from: markdown-smart
+filters:
+  - index
+  - ../tests/state-pollute.lua
+---
+
+# One mark and nothing else
+
+This fixture carries a single ordinary mark, [Plain]{.index}, and none of the
+shapes that make the filter define an extra preamble command. That is its
+whole job: the flags saying "this document used the principal subsystem",
+"this document emitted a cross-reference list" and "this document emitted a
+both-targets cross-reference" are all false here, so a leaked `true` for any
+of them changes this document's preamble and the comparison sees it. In the
+rich fixture beside this one those flags are already true, and a leak moves
+nothing.

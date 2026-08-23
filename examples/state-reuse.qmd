@@ -1,0 +1,62 @@
+---
+title: "quarto-index per-document state, rich fixture"
+# Smart typography is off for the same reason every other probe turns it off:
+# the marks below are compared byte for byte between two renders, and a
+# rendered curly quote would be one more thing standing between the emitted
+# output and the state that produced it.
+from: markdown-smart
+filters:
+  - index
+  - ../tests/state-pollute.lua
+---
+
+# What this fixture is for
+
+Every mutable module-level cell the filter's passes share is meant to start
+each document empty. This fixture is one half of the evidence: it is rendered
+twice off one tree, once with the pollution filter above switched on and once
+with it off, and the two renders' output and warnings must agree byte for
+byte. Each mark below exists so that one cell's leak, and only that cell's,
+moves something the comparison can see.
+
+The pollution filter is listed after the extension in both renders, so its
+presence is not what differs between them — only its environment switch is.
+
+# The marks
+
+**A range end the filter refuses**, written first so that it holds the
+document's first range position with nothing planned at it:
+[Refused]{.index range="middle"}. A leaked verdict planted at that position is
+read by the emitting pass and turns this into a range opening.
+
+**A declared sort key.** [Alpha]{.index sort="alpha-key"} files under a key
+the author wrote.
+
+**A term with no sort key of its own.** [Solo]{.index} files under its own
+printed text, so a leaked key for that path changes what this mark emits.
+
+**A key this document contests itself**, a locator mark and a cross-reference
+on one entry: [Gamma]{.index} discussed here, and [Gamma]{.index see="Alpha"}
+pointing elsewhere.
+
+**A key this document does not contest.** [Held]{.index} is marked one way
+only, so a leaked contest for it changes the shape this mark emits.
+
+**A cross-reference target nothing indexes.**
+[Beta]{.index see="Nowhere"} draws the dangling-target report, which a leaked
+path set silences.
+
+**A four-level entry the LaTeX fold clamps.**
+[Deep]{.index entry="L1!L2!L3!L4"} prints three levels and files under the
+path this back-end prints.
+
+**A principal mention.** [Pivot]{.index mention="principal"} registers an
+ordinal, which a leaked registry or a leaked counter both move.
+
+**A paired range**, from [Span]{.index range="open"} here through to
+[Span]{.index range="close"} here, which a leaked position counter unpairs.
+
+::: {.qi-index-here}
+:::
+
+Prose after the marker, so the index has something to sit in front of.

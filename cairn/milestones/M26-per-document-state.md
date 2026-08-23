@@ -93,7 +93,7 @@ mutable state and are untouched.
       `FinishRanges` and `Span`, confirming it runs under Quarto's Lua and
       that state survives into the real document. If it does not, stop and
       return to plan rather than reaching for a source scan.
-- [ ] T2: Write the three fixtures. `examples/state-reuse.qmd` — output
+- [x] T2: Write the three fixtures. `examples/state-reuse.qmd` — output
       consuming every value-carrying accumulator: a declared `sort=`, a key
       contested between a locator mark and a cross-reference, a
       `mention="principal"` mark, a `see=` naming nothing indexed, a
@@ -102,14 +102,14 @@ mutable state and are untouched.
       nothing is planned at. `examples/state-reuse-plain.qmd` — one ordinary
       mark and nothing else. `examples/state-reuse-empty.qmd` — an index
       placement marker and no marks at all.
-- [ ] T3: Write the pollution filter as a test-only file under `tests/`,
+- [x] T3: Write the pollution filter as a test-only file under `tests/`,
       walking a synthetic document built to fill all 17 cells with values that
       would collide with the fixtures' (same sort keys, same contested key,
       an earlier principal ordinal, an unclosed range), silencing the
       extension's own `warn` for the length of that drive so the compared
       stream holds the fixture's warnings alone. It pollutes only when its
       environment switch is set, so one fixture source serves both renders.
-- [ ] T4: Add the six paired renders and the `cmp` comparisons to
+- [x] T4: Add the six paired renders and the `cmp` comparisons to
       `tests/run-tests.sh`, capturing each render's artifacts and its warning
       stream per M24's rule. Every comparison must DIFFER at this point —
       record that failing state as the tests-first evidence before T5.
@@ -134,6 +134,8 @@ mutable state and are untouched.
 - 2026-08-23: plan gate chose a per-module `reset` over moving the 17 cells into one `state.lua` and over making each module a per-document factory, because M17 deliberately placed each cell in the module that owns it and both alternatives re-split that at every call site; falsified by a cell whose correctness needs construction rather than restoration — `range_at` is the near miss, already needing a mid-document reset.
 - 2026-08-23: plan gate chose a same-tree pollution-versus-clean byte comparison over extracting and comparing only the `\index` arguments and the HTML index section, because a leak reaching the preamble (`principal_emitted`) or the `.aux` registry (`principal_ordinals`) escapes the extraction entirely; falsified by the comparison proving brittle to something neither render's state differs in.
 - 2026-08-23: T1 — the harness holds. A test-only filter listed AFTER `index` finds all nine extension modules in `package.loaded` at its own chunk-load time, which Quarto runs before any pass executes, so a value written there reaches the fixture's own marks: the same fixture emitted `\index{ZZZ@synthetic|quartoindexlocator{qi1}` polluted against `\index{synthetic}` clean. A synthetic `pandoc.Pandoc` drives through CollectSort, CollectKeys, CollectRanges/FinishRanges and Span without error. `require` from `tests/` was the wrong door and is not used: its cache key differs from the extension's absolute one, so it returns a SECOND copy of each module. The first reading of that probe as a success was a stale `.tex` left by an earlier render, found by removing the artifact and checking the exit code.
+- 2026-08-23: T2/T3/T4 — the three fixtures, `tests/state-pollute.lua` and the six paired renders are in the suite, and the suite now FAILS as it must before the fix: `run-tests.sh` reaches M26's first comparison after 255 passing checks and reports `the latex output of state-reuse depends on what ran before it in the same Lua state`. Out of band, all six comparisons differ (output and warnings, three fixtures x two formats); the leaks the rich fixture's `.tex` shows are `Held` contested, `Deep` filed under `dsort`, `Pivot` at ordinal qi2 rather than qi1, and the paired range emitted as two plain locators. `examples/state-reuse.qmd` joined M14's dangling-count manifest (one report) and the rich fixture's two LaTeX captures joined M15's contested-key map.
+- 2026-08-23: the first draft of the M26 comparison printed its diff through `diff | head`, whose non-zero exit under `set -e` killed the run before its own FAIL line — found by there being no FAIL line in the log. Both failure branches now absorb the diff's exit.
 - 2026-08-23: amendment (Substantive, user delegated the choice at the implement gate): AC1 and AC2 now compare each render's captured warning stream as well as its captured output, AC3 reads over the fixture set, AC4 binds sixteen cells and names `range_pair_found` exempt, Scope names three fixtures, and T2/T3/T4 follow. Cause: reading the cells' consumers showed `marked_paths`, `pending_xrefs`, `clamped_paths` and `range_found` are read by nothing but a `warn()`; `html_marks` only by the HTML path; `range_pair_found` is assigned wholesale by `finish_ranges` on every document; and a leaked `principal_emitted` or `marks_seen` moves nothing in a fixture that sets it itself.
 - 2026-08-23: amendment criteria audit ran the FULL mode (user-facing tier) over the amended AC1-AC4 and returned one finding: the warning-stream comparison is unsatisfiable while the pollution drive itself warns, fixed in T3 by silencing `warn` for that drive rather than in the criterion. Run in-context rather than by a fresh-context [O] reader, this session being instructed not to spawn agents — the same weaker arrangement the plan gate's audit recorded.
 - 2026-08-23: implement gate chose one fixture source with an environment switch on the pollution filter over sibling copies and over Quarto profiles, because two copies must be kept identical by hand and a later edit to one silently weakens the proof; falsified by an environment the harness cannot pass a variable through.

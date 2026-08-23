@@ -6978,6 +6978,12 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  with no opening, which indexes as an ordinary locator — so the
 #                  target resolves. 0.
 #   resolving-xref 3 attributes, all three resolving by construction. 0.
+#   state-reuse    2 attributes: `see="Alpha"` on the cross-reference mark of
+#                  the contested `Gamma` key, which resolves because the file
+#                  marks `Alpha`, and `see="Nowhere"`, which names a term
+#                  nothing in the file marks and is there to be reported — it
+#                  is the report M26's pollution filter silences by leaving
+#                  that path in the set the next document resolves against. 1.
 #
 # Reconciling xref-escaping's corpus so its targets resolve is its own piece of
 # work and is a ROADMAP candidate; this milestone pins what it reports.
@@ -7003,6 +7009,7 @@ examples/range-misuse.qmd	0
 examples/range.qmd	0
 examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
+examples/state-reuse.qmd	1
 examples/xref-conflict.qmd	14
 examples/xref-escaping.qmd	271
 MANIFEST
@@ -10149,6 +10156,71 @@ for PAIR in "solo/$SOLO_NAME.tex" "solo/$SOLO_NAME.html" book-latex/_book book-h
 done
 pass "M17-AC3: all $PARITY outputs — a standalone fixture and a book project, each to latex and html — are byte-identical rendered from an extension installed by quarto add and from the working tree"
 
+# ---------------------------------------------------------------------------
+# M26: a document's accumulators start empty, whoever ran before it.
+#
+# The filter's passes share mutable module-level cells, and `require` caches a
+# module for the life of the Lua state. Nothing in Quarto's own pipeline reuses
+# one today — it runs a process per document — so no fixture can reach the
+# defect by being rendered. What CAN reach it is a test-only filter that drives
+# a synthetic document through the extension's own passes before the fixture
+# gets there, which is precisely what a reused state would have done, and that
+# is what tests/state-pollute.lua does.
+#
+# Each fixture is rendered twice with that filter in its list both times; the
+# environment switch is the only thing that differs between the two renders,
+# so a refactor moves both sides identically and the byte comparison cannot
+# break on anything but what it is about (D-012 records why this is not the
+# merge-base oracle D-004 refused).
+#
+# Warnings are compared as well as output. Five of the seventeen cells are read
+# by nothing but a report, so a comparison over emitted bytes alone would leave
+# them unbound; the extension's own warnings are cut out of each render's log
+# with the pattern set the zero-warning controls above already use.
+#
+# Three fixtures rather than one, because a leaked value moves nothing in a
+# document that sets the same cell itself: the rich fixture reaches the
+# fourteen cells that carry values, the one-mark fixture is the only place a
+# leaked "this document used the principal subsystem" flag shows, and the
+# mark-free fixture is the only place a leaked count of marks seen shows.
+# ---------------------------------------------------------------------------
+state_reuse_pair() {
+  local stem="$1" fmt="$2" ext="$3" want="$4" v
+  for v in 1 0; do
+    QI_STATE_POLLUTE="$v" quarto render "examples/$stem.qmd" --to "$fmt" \
+      > "$WORK/$stem-$fmt-$v.log" 2>&1 \
+      || { cat "$WORK/$stem-$fmt-$v.log" >&2; fail "M26: the $fmt render of $stem with the pollution filter switched to $v failed, so neither comparison below has anything to read"; }
+    capture "examples/$stem.qmd" "$fmt" "$stem-$fmt-$v"
+    # The extension's OWN warnings, on the pattern set generated once above:
+    # a render log carries Quarto's chrome as well, and a comparison over the
+    # whole log would report a difference this milestone is not about.
+    { grep -E -f "$QI_WARN_PATTERNS" "$WORK/$stem-$fmt-$v.log" || true; } \
+      > "$WORK/$stem-$fmt-$v.warn"
+  done
+  # The clean render's own report count, pinned per fixture. Without it a
+  # comparison of two empty streams would pass on a pattern set that matched
+  # nothing at all, and the fixture's reports are what the leak is read off.
+  check_extension_warning_count "$WORK/$stem-$fmt-0.log" "$want" \
+    "M26: the clean $fmt render of $stem"
+  cmp -s "$CAPTURE_ROOT/$stem-$fmt-1/$stem.$ext" \
+         "$CAPTURE_ROOT/$stem-$fmt-0/$stem.$ext" \
+    || { { diff "$CAPTURE_ROOT/$stem-$fmt-0/$stem.$ext" \
+                "$CAPTURE_ROOT/$stem-$fmt-1/$stem.$ext" || true; } | head -40 >&2 || true; \
+         fail "M26-AC1/M26-AC2: the $fmt output of $stem depends on what ran before it in the same Lua state"; }
+  pass "M26-AC1/M26-AC2: $stem renders to $fmt byte-identically whether or not a synthetic document went through the filter's passes first"
+  cmp -s "$WORK/$stem-$fmt-1.warn" "$WORK/$stem-$fmt-0.warn" \
+    || { diff "$WORK/$stem-$fmt-0.warn" "$WORK/$stem-$fmt-1.warn" >&2 || true; \
+         fail "M26-AC1/M26-AC2: the warnings the $fmt render of $stem draws depend on what ran before it in the same Lua state"; }
+  pass "M26-AC1/M26-AC2: the $want warning(s) $stem draws in $fmt are the same either way"
+}
+
+state_reuse_pair state-reuse latex tex 4
+state_reuse_pair state-reuse html html 2
+state_reuse_pair state-reuse-plain latex tex 0
+state_reuse_pair state-reuse-plain html html 0
+state_reuse_pair state-reuse-empty latex tex 1
+state_reuse_pair state-reuse-empty html html 1
+
 # The uncontested half: the folded form and the list command appear in the
 # emission of the fixtures that have a contested key and nowhere else. The
 # files are discovered by glob over the CAPTURED LaTeX artifacts of this run —
@@ -10225,6 +10297,11 @@ ALLOWED = {'fold-xref-latex/fold-xref.tex': {FOLD_ONLY},
            'principal-latex/principal.tex': {FOLD_ONLY},
            'principal-twin-latex/principal-twin.tex': {FOLD_ONLY},
            'range-latex/range.tex': {FOLD_ONLY},
+           # M26's rich fixture contests `Gamma`, and does so in both of its
+           # renders: the pollution filter changes what the passes have SEEN
+           # before the fixture arrives, never what the fixture writes.
+           'state-reuse-latex-0/state-reuse.tex': {FOLD_ONLY},
+           'state-reuse-latex-1/state-reuse.tex': {FOLD_ONLY},
            'conflict-latex/xref-conflict.tex': set(MARKS)}
 cap = os.environ['CAP']
 # At ANY depth, not one directory down: a project render's capture holds its

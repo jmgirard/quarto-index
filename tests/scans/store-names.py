@@ -26,12 +26,13 @@ for name, value in (('STORE_SUFFIX', os.environ['STORE_SUFFIX']),
               f'filter source set, found {len(found)}', file=sys.stderr)
         sys.exit(1)
     if found[0] != value:
-        missing.append(f'{name} = {value!r}, filter writes {found[0]!r}')
+        missing.append(f'  the suite expects {name} = {value!r}, the filter '
+                       f'writes {found[0]!r}')
 if missing:
     print('FAIL: M05-AC1: the suite and the filter disagree on the store\'s '
-          'name; the suite expects:', file=sys.stderr)
+          'name:', file=sys.stderr)
     for m in missing:
-        print(f'  {m}', file=sys.stderr)
+        print(m, file=sys.stderr)
     sys.exit(1)
 print('ok   M05-AC1: the store name the footprint sweep looks for is the one '
       'the filter writes')

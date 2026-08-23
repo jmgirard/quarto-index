@@ -94,4 +94,5 @@ if guilty:
     sys.exit(1)
 print(f'ok   M15-AC5: none of the {len(messages)} joined warn() messages in '
       f'the filter claims a render can fail from rival encapsulations, and '
-      f'both shapes of the replacement report are among them')
+      f'each of the {len(REPLACEMENT)} shapes of the replacement report is '
+      f'carried by exactly one of them')

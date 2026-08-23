@@ -117,6 +117,7 @@ checks' file-reading is settled there first.
 - 2026-08-23: T7. Each of the nine scans carrying the shared four-line header now states what it READS, what it ASSERTS, and what it does not — `warn-distinct` naming the values and out-of-call text it cannot see, `xref-both-definition` naming why no render distinguishes its property, `latex-escape-table` and `xref-manifest` naming the checks that carry what they do not. The three value-readers say they assert one definition and nothing about the value. `movedefs.py` and the M16-AC3 comment now say the probe builds one member of the moved-into-a-module family, every definition into a single `modules/moved.lua`.
 - 2026-08-23: T8. `tests/run-tests.sh --self-test` exits 0, "All checks passed (397 checks)." AC1 both greps return nothing; AC3's grep returns one line, `SCAN_DIR="tests/scans"` at run-tests.sh:212; AC4's eleven enumerated sites each assert an exact count, two of them over `examples/demo.qmd` rather than the source set; AC5's five `filtersrc` exports each have a caller. Status to review.
 - 2026-08-23: review — PR #25 opened as a draft; all six criteria executed with fresh evidence and ticked; `cairn_validate` exits 0 and the `generic` profile names no toolchain checks. Review section open, findings triage pending the diff-bug lens.
+- 2026-08-23: review — three-lens fan-out returned fifteen findings, none demonstrating a criterion failing. Maintainer directed fix-eleven at the gate: F1 F2 F4 F5 F6 F10 in the suite, F3 F11 F12 F13 F14 in prose and records; F7 F9 to the acceptance-suite-hardening row; F8 F15 rejected as satisfied readings of AC4 and AC5. Full suite re-running against the fixed tree.
 
 ## Review
 
@@ -261,3 +262,56 @@ criterion failing, so the return floor is not met.
 - **F15 — AC5's evidence rests on an intra-module caller.**
   `filtersrc.ext_dir()` is called only by `sources()` at
   `tests/filtersrc.py:33`.
+
+### Triage and disposition
+
+Directed by the maintainer at the gate: fix eleven on the branch, two to the
+candidate row, two rejected.
+
+- **F1 — fixed.** `tests/plantdefect.py` gains a `--duplicate` mode and a
+  `DUPLICATES` table with an entry for every key of `DEFECTS` (`None` where the
+  scan pins no single definition, so a scan added later cannot go unprobed by
+  omission). The M16-AC3 loop gains a third clause (c): a second copy of the
+  scan's pinned definition line is appended to the moved module, and the scan
+  must fail naming the duplicate. Nine of the twelve scans are duplicate-probed;
+  `warn-distinct`, `mark-report-keys` and `m15-joined-messages` pin no single
+  definition and are listed as `None`.
+- **F2 — fixed.** `[ -n "$SCAN_NAMES" ]` floor immediately after the `find`,
+  with the reason stated: the two failures the deleted pin's rationale rests on
+  both need an invocation, and an empty directory leaves none.
+- **F3 — fixed.** `cairn/DESIGN.md` now states the rule as it is — anchored
+  `local NAME = <literal>`, exactly one set-wide — and why `M.NAME = NAME`
+  would fail it, marked `corrected M25`.
+- **F4 — fixed.** `warn-distinct.py` now reads what sits *between* a call's
+  literals as well as the literals, and refuses a message that splices a value
+  there. Shown discriminating out of band: a scratch tree carrying
+  `warn("term " .. name .. " is bad")` makes the scan exit 1 naming the splice,
+  where the same tree without it exits 0.
+- **F5 — fixed.** Every generated pattern is prefixed `^\(W\) `.
+- **F6 — fixed.** The space is out of `FORMAT_SPEC`'s flag class.
+- **F7 — candidate row.** Recorded on the acceptance-suite-hardening row: a
+  criterion enumerating scans by `re.search`/`re.match`/`re.findall` reaches
+  neither `re.finditer` nor `.count(`/`.split(`. Both sites the lens named as
+  uncovered were checked and are exact-count pinned, so nothing in the tree is
+  wrong today.
+- **F8 — rejected.** AC4's subject is the scan, and `mark-report-keys` does
+  assert an exact match count for what it finds: exactly one owning warning per
+  key, at lines 45-48. The `re.findall` at line 37 is the read, not the finding,
+  and the lens grants its failure direction is safe.
+- **F9 — candidate row.** Recorded on the same row.
+- **F10 — fixed.** The AC2 probe gains a third clause: a formatted message's
+  emitted line must be counted, and the same line with a word where its count
+  goes must not — which is what says a `%d` widened to digits rather than to a
+  wildcard.
+- **F11 — fixed.** The rationale at `tests/run-tests.sh:6511-6513` now says
+  those two controls abort on a warning from this extension, and names M25 as
+  what narrowed them.
+- **F12 — fixed.** `m15-joined-messages.py`'s `ok` line now states the
+  exactly-one promise the check makes.
+- **F13 — fixed.** `cairn/ROADMAP.md`'s row is corrected in place: the three
+  items it wrongly listed as absorbed are named and left open, and the clauses
+  M25 did close (M16 F3, M16 F8, M23 F12) are struck.
+- **F14 — fixed.** `store-names.py`'s header and items read as one sentence.
+- **F15 — rejected.** AC5 asks for a caller in the set `git ls-files tests`
+  enumerates; `tests/filtersrc.py` is in that set and `sources()` calls
+  `ext_dir()` at line 33. Recorded in the AC5 evidence line above.

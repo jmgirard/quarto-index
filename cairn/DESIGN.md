@@ -44,10 +44,12 @@ _None yet — populated as the codebase takes shape._
   `local NAME = <literal>` at column 0, never `function M.NAME(`, and the
   module table is populated afterwards as
   `M["NAME"] = NAME`. Each half is load-bearing for the acceptance suite, and
-  each for its own reason. The bracket export: the source scans take the FIRST
-  `NAME =` match over the whole source set, so a plain `M.NAME = NAME` line
-  masks its own definition once the moved-definition probe relocates it (M16
-  review F3). The plain definition form: `tests/movedefs.py` finds a
+  each for its own reason. The bracket export: the source scans match a
+  definition as an anchored `local NAME = <literal>` line and require exactly
+  one of it set-wide (narrowed from first-match at M25, corrected M25), so a
+  plain `M.NAME = NAME` line would read as a second definition and fail the
+  scan as a stale duplicate — which is what a duplicate left behind by a split
+  is (M16 review F3). The plain definition form: `tests/movedefs.py` finds a
   definition only by `local function NAME(` or `local NAME =` at column 0 and
   demands exactly one set-wide, and `tests/scans/warn-distinct.py` excludes
   `warn`'s own definition from its pinned message count by testing that the

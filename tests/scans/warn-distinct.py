@@ -55,7 +55,12 @@ def unescaped(literal):
 # expression, and the greps that read this file are the platform's, not
 # Python's.
 ERE_SPECIAL = set('.[]\\()*+?{}|^$')
-FORMAT_SPEC = re.compile(r'%[-+ #0]*[0-9]*(?:\.[0-9]+)?([%a-zA-Z])')
+# No space in the flag class: with one, `% o` in a sentence like "50% of
+# entries" reads as a conversion and widens to `.*`, a wildcard that can
+# swallow another message's text (review F6). Lua's own `string.format`
+# accepts the space flag, so a message that ever needs it will fail the
+# emitted-line pins rather than pass on a wildcard.
+FORMAT_SPEC = re.compile(r'%[-+#0]*[0-9]*(?:\.[0-9]+)?([%a-zA-Z])')
 
 
 def as_pattern(literal):
@@ -80,7 +85,17 @@ def as_pattern(literal):
                    else '.*')
         last = m.end()
     out.append(quoted(text[last:]))
-    return ''.join(out)
+    # Anchored to the warning prefix Quarto writes, not merely contained in the
+    # line: unanchored, any log line quoting a message — a traceback echoing
+    # it, a diagnostic the suite itself writes — counts as a warning this
+    # extension emitted (review F5).
+    return WARN_PREFIX + ''.join(out)
+
+
+# The prefix every Quarto warning line carries, as an extended regular
+# expression. The controls this file feeds used to be spelled `grep -q '^(W)'`,
+# which is where the prefix is known from.
+WARN_PREFIX = '^\\(W\\) '
 
 
 def quoted(text):
@@ -180,13 +195,43 @@ def message_at(text, open_paren):
                 break
         i += 1
     call = text[open_paren + 1:cut if cut != -1 else i]
-    return ''.join(m.group(2) for m in LITERAL.finditer(call))
+    pieces, gap, last = [], [], 0
+    for m in LITERAL.finditer(call):
+        gap.append(call[last:m.start()])
+        pieces.append(m.group(2))
+        last = m.end()
+    gap.append(call[last:])
+    return ''.join(pieces), ''.join(gap)
 
 
 code = uncommented(strip_block_comments(src))
 calls = [m for m in re.finditer(r'\bwarn\(', code)
          if not code[:m.start()].rstrip().endswith('function')]
-lits = [message_at(code, m.end() - 1) for m in calls]
+parsed = [message_at(code, m.end() - 1) for m in calls]
+lits = [message for message, _gap in parsed]
+# What sits BETWEEN the literals, joined. Every message here is written as
+# literals concatenated with `..` and nothing else, so joining the literals is
+# the emitted text. A message built around a runtime value --
+# `warn("term " .. name .. " is bad")` -- joins to `term  is bad`, a pattern
+# matching no line the render ever writes, and every zero-warning control
+# resting on it goes quietly blind. That is the vacuous pass this scan's own
+# patterns exist to close, so it is refused here rather than emitted (review
+# F4). The `blank` check below does not reach it: the literals are present.
+# Concatenation and grouping only. These messages are written
+# `("..." .. "..."):format(...)`, so the wrapping parenthesis is inside the
+# slice read here; an identifier or a call between two literals is not, and is
+# what this refuses.
+CONCATENATION = re.compile(r'^[\s.()]*$')
+spliced = [(l, g) for l, g in parsed if not CONCATENATION.match(g)]
+if spliced:
+    print(f'FAIL: M02-AC5: {len(spliced)} warn() message(s) splice a value '
+          f'BETWEEN their literals, so joining the literals is not the text '
+          f'the render emits and a pattern built from it would match no line:',
+          file=sys.stderr)
+    for l, g in spliced:
+        print(f'  <<{l}>> with <<{g.strip()}>> between its literals',
+              file=sys.stderr)
+    sys.exit(1)
 
 # A call whose message is not built from literals at all -- a variable, a
 # helper's return -- is text this check never sees, so it is named rather than

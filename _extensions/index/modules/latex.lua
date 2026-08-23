@@ -330,10 +330,26 @@ local function fold_xrefs(seen)
   return table.concat(parts, "; ")
 end
 
+-- Every mutable cell this module owns, back to the value its declaration
+-- gives, for the reason marks.lua's own `reset` states: `require` caches a
+-- module for the life of the Lua state, so nothing else returns these to their
+-- initial values. The two tables are emptied in place because they are
+-- exported by reference; the counter and the three flags are plain assignments,
+-- the flags through `M` because that is where they live.
+local function reset()
+  qi_core.empty(contested_keys)
+  qi_core.empty(principal_keys)
+  principal_ordinals = 0
+  M["xref_list_emitted"] = false
+  M["xref_both_emitted"] = false
+  M["principal_emitted"] = false
+end
+
 -- Exported through the bracket form, never `M.NAME = NAME`: the source
 -- scans take the FIRST match for `NAME =` over the whole source set, and
 -- the M16-AC3 probe relocates a definition into another file — a plain
 -- `NAME =` line left behind here would then mask it (M16 review F3).
+M["reset"] = reset
 M["index_argument"] = index_argument
 M["contested_keys"] = contested_keys
 M["latex_plan"] = latex_plan

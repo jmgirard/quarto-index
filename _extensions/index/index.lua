@@ -310,7 +310,17 @@ end
 -- The Span pass records the marks; every anchor decision that needs the
 -- whole document — which ids are taken, which marks sit inside headings —
 -- waits for the Pandoc pass.
+--
+-- The reset comes first, and is a document hook rather than an element one so
+-- that it runs before the first mark of the document is seen: Pandoc applies
+-- each table in this list in turn, and a table with no element function is one
+-- traversal of the document alone. The modules' accumulators are cached by
+-- `require` for the life of the Lua state, so a state reused across documents
+-- would otherwise hand the second document whatever the first left behind
+-- (M26). Nothing in Quarto reuses one today — it runs a process per document —
+-- which is why this is written as a guarantee rather than as a fix.
 return {
+  { Pandoc = qi_passes.Reset },
   { Span = qi_passes.CollectSort },
   { Span = qi_passes.CollectKeys },
   -- The range pass carries a document hook as well as an element one: an

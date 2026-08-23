@@ -15,6 +15,19 @@ local qi_sortkeys = require("./sortkeys")
 
 local M = {}
 
+-- The per-document reset, run before any other pass. Each stateful module owns
+-- its own `reset`; this pass is the one place they are called, so a module that
+-- gains a cell has one place to join. A document hook rather than an element
+-- one because it has to run before the first mark is seen, and Pandoc runs a
+-- filter table with no element function over the document before the next
+-- table's element functions (M26).
+local function Reset()
+  qi_marks.reset()
+  qi_latex.reset()
+  qi_sortkeys.reset()
+  return nil
+end
+
 -- The collect pass: a full traversal that only reads. It runs before the
 -- emitting pass so that a sort key written on ANY mark of an entry is known
 -- before the first mark of that entry is emitted — a mark emitted under a key
@@ -577,6 +590,7 @@ end
 -- scans take the FIRST match for `NAME =` over the whole source set, and
 -- the M16-AC3 probe relocates a definition into another file — a plain
 -- `NAME =` line left behind here would then mask it (M16 review F3).
+M["Reset"] = Reset
 M["CollectSort"] = CollectSort
 M["CollectKeys"] = CollectKeys
 M["CollectRanges"] = CollectRanges

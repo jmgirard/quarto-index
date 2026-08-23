@@ -43,24 +43,24 @@ checker-regress shape D-004 refused.
 
 ## Acceptance criteria
 
-- [ ] AC1: Over the file set `git ls-files tests` enumerates, every line
+- [x] AC1: Over the file set `git ls-files tests` enumerates, every line
       matching `examples/` followed by a token ending in `.html`, `.tex`,
       `.md`, `.pdf`, `.aux`, `.idx`, `.ilg`, `.ind` or `.log` — glob and
       shell-variable forms included — is either a `quarto render` command line
       or a line inside the capture helper's body. That grep over that file set
       is the procedure enumerating the domain, and the suite runs it on itself.
-- [ ] AC2: After the run's pre-render clean step, `git clean -Xdn examples/`
+- [x] AC2: After the run's pre-render clean step, `git clean -Xdn examples/`
       prints nothing.
-- [ ] AC3: Over the same `git ls-files tests` set, every line matching
+- [x] AC3: Over the same `git ls-files tests` set, every line matching
       `quarto render` is immediately followed by a call to the capture helper.
-- [ ] AC4: The `data-qi-pending` residue sweep and the marker-class half of
+- [x] AC4: The `data-qi-pending` residue sweep and the marker-class half of
       the M12 structural-residue check read the captured set under `$WORK` and
       iterate it, judging every captured page and naming no fixed list of
       artifacts to visit. The empty-div half instead reads the captured copies
       of the three fixtures a marker was removed from: an empty div is residue
       only where a marker was removed, and every rendered page carries empty
       divs Quarto itself wrote.
-- [ ] AC5: `tests/run-tests.sh --self-test` exits 0 and prints its
+- [x] AC5: `tests/run-tests.sh --self-test` exits 0 and prints its
       "All checks passed" line on a tree with no untracked `examples/`
       artifacts present before the run.
 
@@ -114,3 +114,45 @@ checker-regress shape D-004 refused.
 - 2026-08-23: T7 — `tests/suitescan.py` adds the AC1 read check and the AC3 pairing check over `git ls-files tests`, and the suite runs both on itself: 23 tracked files, 85 render lines, all paired. Both are scans over source, the shape M23's lesson says can certify a property it never asserts, so each takes an overlay directory whose bytes replace a tracked file's and each is proved on a planted violation — a working-tree read added, a capture call removed — with the unplanted overlay required to pass first. Neither the checker nor the probe may itself carry the shape being forbidden, so both assemble the forbidden text from pieces rather than spelling it out.
 - 2026-08-23: T8 — full `tests/run-tests.sh --self-test` from a tree cleaned with `git clean -Xdfq examples/` and `rm -rf tests/.work`: exit 0, 396 checks. Per-criterion evidence in the run log — AC1 "none of the 23 tracked suite source file(s) reads a rendered artifact out of the fixture directory"; AC2 "the run starts from a clean examples/ — git clean -Xdn prints nothing"; AC3 "all 85 render command line(s) ... immediately followed by a call to the capture helper"; AC4 the pending and marker sweeps each over 85 captured pages plus the empty-div reader over its 3; AC5 the run's own "All checks passed (396 checks)".
 - 2026-08-23: the acceptance-suite-hardening candidate row absorbs one gap found here: the AC1 read check's pattern reaches only a token ending in a literal extension, so a read spelled `examples/<stem>.$var` passes it unseen. Five such reads existed and are repaired on this branch. ROADMAP is at 23,287 of its 24,000-byte budget and 58 of its 60 lines after the absorption.
+
+- 2026-08-23: review — fresh evidence recorded for all five criteria from one 396-check `--self-test` run (exit 0) on a cleaned tree; consistency gate clean (`cairn_validate` exit 0, `generic` profile names no toolchain checks). Three fresh-context lenses spawned.
+
+## Review
+
+PR #24. Reviewed 2026-08-23 against `origin/main` at 2e8ae87; the default
+branch had not moved since the branch was cut, so no merge was needed.
+
+### Acceptance-criteria evidence
+
+All five run from one full `tests/run-tests.sh --self-test` on a tree cleaned
+with `git clean -Xdfq examples/` and `rm -rf tests/.work` (`git clean -Xdn
+examples/` printed nothing before the run started): exit 0, 396 checks.
+
+- AC1: the run's own read check reports "none of the 23 tracked suite source
+  file(s) reads a rendered artifact out of the fixture directory; every read
+  names the copy captured at its render". The check is a scan over source, so
+  it is proved discriminating in the same run — it fails on an overlay adding
+  one working-tree read, the unplanted overlay having passed first.
+- AC2: the run's first line reports "the run starts from a clean examples/ —
+  git clean -Xdn prints nothing", asserted immediately after the pre-render
+  clean step. Confirmed independently before the run: `git clean -Xdn
+  examples/` printed nothing.
+- AC3: the run's pairing check reports "all 85 render command line(s) across
+  the 23 tracked suite source file(s) are immediately followed by a call to
+  the capture helper", likewise proved discriminating on an overlay with one
+  capture call removed.
+- AC4: the pending sweep and the marker-class sweep each "read 85 captured
+  page(s)" — the whole captured set, iterated, naming no fixed list. The
+  empty-div half reads the 3 pages a marker was removed from. All three are
+  proved discriminating: the residue is planted into each of the 85 captured
+  pages in turn and into each of the 3, and each sweep is required to fail
+  naming that page.
+- AC5: the run exits 0 and prints "All checks passed (396 checks)" from the
+  cleaned tree described above.
+
+### Consistency gate
+
+`cairn_validate` exits 0 — 16 PASS, 7 advisory OK. The active profile is
+`generic`, whose consistency-gate slot names no toolchain checks, so that half
+is a clean no-op. No `DESIGN.md` principle changed, so `cairn_impact` does not
+apply.

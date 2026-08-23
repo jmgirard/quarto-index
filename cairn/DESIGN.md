@@ -548,10 +548,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 ### Reports and messages
 
-- **KI21.** The emptied-place report's position is a post-Quarto AST index, not
-  the author's source block count, and is unverified where Quarto injects
-  top-level blocks (executable cells, shortcodes). M04's duplicate-marker
-  message shares the convention M12 makes load-bearing. — M12 review F6
+- **KI21.** No fixture exercises a reported block position where Quarto injects
+  a top-level block from an executable cell or from a shortcode other than
+  `{{< include >}}`; the include member is covered by
+  `examples/marker-position.qmd`. What the position is counted over is no
+  longer open — the reports say so themselves — so only the un-probed injection
+  kinds remain. — M12 review F6, narrowed M28
 - **KI22.** In a book the emptied-place position is chapter-local and the
   message names no file, unlike the book-aware marker warnings, which carry
   `ctx.file`. — M12 review F7
@@ -566,12 +568,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   visible text. The number is one the author wrote, so D-006 holds, but no
   fixture carries the shape (`entry="!" sort="a!b!c"`) and no check covers it.
   — M19 review F1
-- **KI25.** The chapter-count report in `book.lua` and the two reports in
-  `marker.lua` that name a top-level-block-position name numbers no
-  convention covers: M19's
-  level-count rule excludes them because their numbers have no empty-level drop
-  to distinguish, leaving open what a block position is measured over. — M19
-  Scope Out
 - **KI26.** Reader-facing strings the filter emits are hard-coded English
   (`Index`, and the `Symbols` group label) with no `lang` policy in this
   document. Distinct from KI6, which is about what an author writes. — M07

@@ -1,11 +1,14 @@
--- The four Span passes, in the order the filter returns them: three that only
--- read — one registering sort keys, one deciding which keys are contested, one
--- pairing page ranges — and the emitting pass that rewrites the mark. The range
--- pass carries a document hook as well, since whether an opening is ever closed
--- is a fact only the whole document settles.
+-- The per-document reset and the four Span passes, in the order the filter
+-- returns them: the reset, then three passes that only read — one registering
+-- sort keys, one deciding which keys are contested, one pairing page ranges —
+-- and the emitting pass that rewrites the mark. The range pass carries a
+-- document hook as well, since whether an opening is ever closed is a fact only
+-- the whole document settles.
 --
--- They share the accumulators in `qi_marks` and `qi_latex` rather than passing
--- state between themselves: Pandoc runs each as a separate traversal.
+-- They share the accumulators in `qi_marks`, `qi_latex` and `qi_sortkeys`
+-- rather than passing state between themselves: Pandoc runs each as a separate
+-- traversal. Those accumulators outlive a document — `require` caches a module
+-- for the life of the Lua state — which is what the reset above them is for.
 
 local qi_core = require("./core")
 local qi_latex = require("./latex")

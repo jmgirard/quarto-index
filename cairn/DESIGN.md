@@ -155,11 +155,12 @@ The modules, in dependency order:
   that decides which shape a key gets.
 - `marks.lua` — what every back-end needs from one mark, derived once, and the
   document-wide accumulators the passes share.
-- `passes.lua` — the four Span passes, in the order the filter returns them:
-  three that only read — one registering sort keys, one deciding which keys are
-  contested, one pairing page ranges — and the emitting pass that rewrites the
-  mark. The range pass carries a document hook as well, since whether an
-  opening is ever closed is known only once the whole document has been read.
+- `passes.lua` — the per-document reset and the four Span passes, in the order
+  the filter returns them: the reset, then three that only read — one
+  registering sort keys, one deciding which keys are contested, one pairing
+  page ranges — and the emitting pass that rewrites the mark. The range pass
+  carries a document hook as well, since whether an opening is ever closed is
+  known only once the whole document has been read.
 - `html.lua` — the HTML back-end: the entry tree, its ordering and grouping,
   the anchors that link an entry back to its mark, and the index section built
   out of them.
@@ -168,15 +169,24 @@ The modules, in dependency order:
 - `book.lua` — the per-chapter sidecar store, and the one index the chapter
   carrying the marker builds out of it.
 
-The split relocates the document-wide accumulators without making them
-per-document: they are still module-level, and each still lasts as long as the
-state that holds it. What holds them did change — a module table in
-`package.loaded` rather than the filter chunk's own locals — which is
-indistinguishable today only because Quarto runs one pandoc process per
-document. Under the one scenario that row contemplates — a Lua state reused
-across documents — the two differ: the filter chunk re-initialized its locals
-per execution, while `require` returns the cached table and does not. That is
-a second mechanism behind the row, and a stronger one (added M17). What `quarto add` installs is
+The document-wide accumulators are module-level and are returned to their
+initial values once per document. Each of `marks.lua`, `latex.lua` and
+`sortkeys.lua` owns a `reset` restoring every cell it declares; `passes.Reset`
+calls the three, and `index.lua` returns it as the pass list's leading
+`{ Pandoc = ... }` table, which Pandoc runs over the document before any later
+table's element functions. **A new accumulator joins its module's `reset` in
+the commit that adds it** — that is the convention, and `tests/stateprobe.py`
+is what holds the existing ones to it, removing each in turn and requiring a
+paired render to differ (corrected M26).
+
+Without that, an accumulator lasts as long as the Lua state holding it. Nothing
+in Quarto reuses one today — it runs one pandoc process per document — so the
+reset is a guarantee rather than a fix, and a probe of the toolchain would find
+no path to the defect. M17 made the guarantee worth writing down: it moved
+every cell out of the filter chunk's own locals, which re-initialized per
+execution, and into module tables `require` caches and does not. Tables are
+emptied in place, because each is exported by reference and a rebound local
+would restore its own module's view alone. What `quarto add` installs is
 unchanged in shape: `_extension.yml` contributes one filter, `index.lua`, and
 the install copies `modules/` along with it (GP3).
 

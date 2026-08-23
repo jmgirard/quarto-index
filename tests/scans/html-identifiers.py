@@ -1,7 +1,14 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan html-identifiers`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: the four HTML identifier constants, each as an anchored top-level
+# `local NAME = "..."` line.
+# ASSERTS: each is defined exactly once in the source set, and its value is the
+# string the suite's HTML checks grep the rendered pages by.
+# DOES NOT ASSERT: that any rendered page carries these strings. The HTML index
+# checks that grep by them are what say that, and they are the reason a
+# disagreement here matters at all.
 import os, re, sys
 sys.path.insert(0, 'tests')
 import filtersrc

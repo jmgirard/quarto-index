@@ -1,6 +1,6 @@
 # M25: A check that cannot hold its promise is retired, not widened
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M24
 - **Driving RR:** —
@@ -89,9 +89,9 @@ checks' file-reading is settled there first.
       disposition in the Decisions section.
 - [x] T6: Resolve `tests/filtersrc.py`'s `lines()` — give it its intended
       consumer or delete it with its only current caller's use inlined.
-- [ ] T7: Narrow each surviving scan's header comment to what it reads, and the
+- [x] T7: Narrow each surviving scan's header comment to what it reads, and the
       moved-definition probe's to the one-module case it exercises.
-- [ ] T8: Full `tests/run-tests.sh --self-test`; capture evidence per criterion.
+- [x] T8: Full `tests/run-tests.sh --self-test`; capture evidence per criterion.
 
 ## Decisions
 
@@ -114,3 +114,5 @@ checks' file-reading is settled there first.
 - 2026-08-23: T5. Six scans narrowed to exactly-one pins — `html-identifiers` (4 constants), `marker-class`, `xref-manifest`, `store-names` (2 constants), `xref-both-definition`, `latex-escape-table` — and `m15-joined-messages`'s presence test made exactly-one. No scan deleted; dispositions in Decisions above.
 - 2026-08-23: T6. `defining_lines()` deleted from `tests/filtersrc.py` (no caller anywhere) with its `re` import; `lines()` kept, its caller being the M17-AC3 require-position check. Every remaining export has a caller in `git ls-files tests`.
 - 2026-08-23: full `--self-test` green, 397 checks. Two earlier runs failed on the environment, not the tree: one Quarto segfault mid-render, one `quarto list tools` network timeout in the TinyTeX probe.
+- 2026-08-23: T7. Each of the nine scans carrying the shared four-line header now states what it READS, what it ASSERTS, and what it does not — `warn-distinct` naming the values and out-of-call text it cannot see, `xref-both-definition` naming why no render distinguishes its property, `latex-escape-table` and `xref-manifest` naming the checks that carry what they do not. The three value-readers say they assert one definition and nothing about the value. `movedefs.py` and the M16-AC3 comment now say the probe builds one member of the moved-into-a-module family, every definition into a single `modules/moved.lua`.
+- 2026-08-23: T8. `tests/run-tests.sh --self-test` exits 0, "All checks passed (397 checks)." AC1 both greps return nothing; AC3's grep returns one line, `SCAN_DIR="tests/scans"` at run-tests.sh:212; AC4's eleven enumerated sites each assert an exact count, two of them over `examples/demo.qmd` rather than the source set; AC5's five `filtersrc` exports each have a caller. Status to review.

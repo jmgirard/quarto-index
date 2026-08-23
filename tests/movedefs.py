@@ -19,6 +19,13 @@ its enclosing pass is no longer valid Lua, and nothing here renders with it.
 The source scans read source as text, which is exactly the reading this probe
 is about.
 
+ONE MEMBER of the family, not the family. Every relocated definition is written
+into a single `modules/moved.lua`, so what the checks are shown to survive is
+that relocation and no other: a definition moved beside an existing one, into a
+module that requires another, or split across two files, is a move this probe
+never builds. The gap is recorded on the acceptance-suite-hardening candidate
+row.
+
 Usage:  python3 tests/movedefs.py <scratch-ext-dir> <NAME> [<NAME> ...]
 
 A name is a top-level `local` definition — a function, a table, a

@@ -1,7 +1,21 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan warn-distinct`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: every warn() call's message expression, comments stripped, its string
+# literals joined, cut at the `:format(` that fills the template in.
+# ASSERTS: the source set holds exactly the pinned number of warn() messages,
+# each built from at least one literal, all mutually distinct, and none a prefix
+# of another; and that four named reports are each one literal, so the whole
+# message is visible at its call site.
+# DOES NOT ASSERT: anything about the values a message formats in, or about text
+# built outside the call — a helper's return handed in as an argument sits
+# outside both the literal count and the single-literal needles, and is held by
+# the rendered-log pins instead.
+#
+# With `--patterns` it prints the same messages as one search pattern per line,
+# which is how the run's zero-warning controls tell this extension's warnings
+# from any other filter's.
 import re, sys
 sys.path.insert(0, 'tests')
 import filtersrc

@@ -1,7 +1,14 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan marker-class`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: the marker-class constant as an anchored top-level `local` line, and
+# the generated section id from the environment.
+# ASSERTS: the class is defined exactly once, equals the string the suite writes
+# into its fixtures, and is not the same string as the section id — one string
+# with two meanings is the collision the marker token exists to avoid.
+# DOES NOT ASSERT: that a marker written with that class is recognized, removed,
+# or replaced. The marker fixtures' renders are what say that.
 import os, re, sys
 sys.path.insert(0, 'tests')
 import filtersrc

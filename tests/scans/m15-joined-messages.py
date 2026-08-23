@@ -1,7 +1,15 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan m15-joined-messages`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: every warn() call's message text, with the fragments a message is
+# concatenated from joined back together.
+# ASSERTS: exactly one message carries each of the two shapes of the replacement
+# report, and no message tells an author a render can fail from rival
+# encapsulations — the claim M15 made untrue.
+# DOES NOT ASSERT: that either report ever fires, or that its numbers are right.
+# The rendered-log pins are what say that. Text built outside the warn() call —
+# a helper's return handed in as a format argument — is outside what it reads.
 import re, sys
 sys.path.insert(0, 'tests')
 import filtersrc

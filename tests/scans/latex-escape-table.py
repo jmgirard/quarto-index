@@ -1,7 +1,15 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan latex-escape-table`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: the LaTeX escape table's keys out of the source set, and
+# examples/demo.qmd as text.
+# ASSERTS: the table is opened exactly once in the source set, its key set is
+# exactly the suite's probe set, and each probed character appears in demo.qmd
+# both as visible term text and inside an entry= level.
+# DOES NOT ASSERT: that any character is escaped correctly. The emitted-LaTeX
+# manifest checks derive that by hand and are what say it; this scan only keeps
+# the probe set and the table from drifting apart.
 import os, re, sys
 sys.path.insert(0, 'tests')
 import filtersrc

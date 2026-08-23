@@ -9761,6 +9761,11 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # still there. So build a tree where it is NOT, and run the same checks
   # against it through the same run_scan invocations the run itself uses.
   #
+  # ONE SHAPE of move, not every shape: movedefs.py writes every relocated
+  # definition into a single modules/moved.lua, so what is evidenced below is
+  # that the checks survive THAT relocation. A definition moved beside an
+  # existing one, or split across two modules, is not built here (M17).
+  #
   # The list below is the probe's INPUT — which definitions to relocate — not a
   # domain any check sweeps: one name per source-reading check, so no check is
   # left reading a definition that never moved. movedefs.py fails on a name it

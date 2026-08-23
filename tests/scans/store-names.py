@@ -1,7 +1,13 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan store-names`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: the book store's directory and filename-suffix constants, each as an
+# anchored top-level `local` line.
+# ASSERTS: each is defined exactly once, and its value is the one the suite's
+# footprint sweep looks for on disk.
+# DOES NOT ASSERT: that a store is written, read back, or cleaned up. The book
+# fixtures' renders are what say that.
 import os, re, sys
 sys.path.insert(0, 'tests')
 import filtersrc

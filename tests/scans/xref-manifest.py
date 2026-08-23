@@ -1,7 +1,15 @@
 # Source-set scan, run from tests/run-tests.sh as `run_scan xref-manifest`.
-# Reads the extension's whole Lua source set through tests/filtersrc.py,
-# never one named file, so a definition moving into a module stays inside
-# the domain this scan sweeps (M16).
+# It reads the whole Lua source set through tests/filtersrc.py rather than one
+# named file, so a definition moving into a module stays inside its domain (M16).
+#
+# READS: the dual-target command constant out of the source set, and the
+# hand-derived manifest and examples/demo.qmd as text.
+# ASSERTS: the command is defined exactly once and is the one the manifest names,
+# and that the manifest's single- and dual-target rows account for every quoted
+# see=/see-also= occurrence in demo.qmd.
+# DOES NOT ASSERT: anything about what the render emits — the manifest checks
+# over the emitted LaTeX do that. An unquoted attribute value is outside the
+# count, a known hole recorded on the acceptance-suite-hardening candidate row.
 import os, re, sys
 sys.path.insert(0, 'tests')
 import filtersrc

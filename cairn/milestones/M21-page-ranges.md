@@ -68,7 +68,7 @@ alone, and the range is reported as unpaired there rather than silently spanning
       value that is neither an opening nor a closing — draws exactly one warning naming the
       mark and saying what the index will show instead, in the LaTeX render, the HTML
       render, and a format with no index back-end.
-- [ ] AC5: On a clean full render of the HTML book under `examples/book/`, the two marks of
+- [x] AC5: On a clean full render of the HTML book under `examples/book/`, the two marks of
       `Ranged Term` each contribute their own locator to its entry — `one.qmd`'s at its own
       anchor, and `sub/two.qmd`'s at its own, carrying the principal class and emphasis its
       `mention=` asks for — and the book draws exactly one report, naming both marks, saying
@@ -471,3 +471,40 @@ each chapter draws its own kind-specific reports and the book message names only
 counterpart it can see in another chapter's record); R4-F6 needs `opened == closed` asserted
 for a span of one; R4-F2/F3/F4/F5/F8 are comment, fixture and export debris to delete;
 R4-F7, R4-F9 and R4-F10 are one line each, and R4-F10 is now done.
+
+
+### Round 5 (2026-08-22)
+
+`cairn_validate` passes (the sizing WARN is advisory); no principle changed, so no impact
+report; the generic profile names no toolchain checks. Branch synced with `main` (two
+status-mirror commits merged clean) and pushed; PR #21 open as draft. Evidence below is
+from a fresh full run made this round (artifacts timestamped this run).
+
+- AC1 — `tests/.work/range.ind` prints `alicorn, \hyperpage{1--3}` and
+  `banshee, \hyperxindexformat{\quartoindexlocator{qi1}}{4--6}`; `range.ilg` logs
+  0 warnings and no unmatched/extra/inconsistent line. Ticked.
+- AC2 — `range.tex` carries three `|(`/`|)` pairs each with the same
+  `quartoindexlocator{qiN}` on both ends; `range.aux` registers qi1 4/6, qi2 14/14,
+  qi3 15/17; the `ind` probe confirms each printed string matches its registration
+  (the same-page pair now constrained both ends, R4-F6). Ticked.
+- AC3 — the `html` probe on a fresh `examples/range.html`: one locator per range at the
+  opening anchor, principal class and emphasis where declared, closings anchor-only.
+  Ticked.
+- AC4 — `range-misuse-{latex,html,gfm}.log` each carry the five reports at 2/1/1/1/1
+  (two unrecognized-value marks), naming the mark and the fallback. Ticked.
+- AC5 — `book-html.log` carries exactly four warnings: the two chapter halves of
+  `Ranged Term` (never-closed in one.qmd's chapter, never-opened in sub/two.qmd's), the
+  dangling target, and the book's one report naming both `Ranged Term` marks; the
+  `bookhtml` probe shows each mark's own locator, the closing emphasized and classed;
+  the `bookpdf` probe shows one merged-locator range in the PDF book. Ticked.
+- AC6 — the `gfm` probe: all 13 spans byte-identical to the derived manifest, no range
+  delimiter or registration command in the format. Ticked.
+- AC7 — `tests/run-tests.sh` exits 0 at 249 checks; `--self-test` exits 0 at 368. Ticked.
+
+No Driving RR, so projection-vs-outcome no-ops. Review fan-out: three lenses.
+The prior-review lens reported no regressions — every round-1–4 repair it re-checked
+(record-range-gated-on-locator, role-on-either-end, aux-read-as-lists, range-slot
+clearing) stands, and the GitHub comment probe found no threads. The blame-history lens
+reported no findings: every behavior change traces to round 4's findings and D-009,
+each paired with a test assertion; the tightened `paired` validation accepts every value
+the code can write and the removed exports had no external caller.

@@ -39,14 +39,14 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 ## Acceptance criteria
 <!-- owner: plan · create/amend-via-gate; review reads, never reinterprets. -->
 
-- [ ] AC1 (regression guard: true before this milestone; must stay true): A
+- [x] AC1 (regression guard: true before this milestone; must stay true): A
       `range=` mark whose span content itself contains another index mark,
       the outer mark carrying no `entry=`, pairs with its closing mark — the
       outer entry prints one page range in the PDF index and records a
       paired range in the HTML index — asserted over a fixture carrying the
       nested shape and a plain non-nested range of a different term in the
       same document, in both back-ends.
-- [ ] AC2: A range mark's pairing verdict is bound to the mark by its
+- [x] AC2: A range mark's pairing verdict is bound to the mark by its
       document position, not by an entry key standing in for the mark's
       identity between the two traversals. Asserted over a fixture carrying
       a nested `entry=`-less range whose inner mark the emitting pass
@@ -55,7 +55,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
       in both back-ends the document renders clean, each range prints the
       page range its own marks sit at, and the only report drawn is the one
       the no-entry mark calls for.
-- [ ] AC3: The active profile's verify slot (`tests/run-tests.sh`) passes.
+- [x] AC3: The active profile's verify slot (`tests/run-tests.sh`) passes.
 
 ## Coverage
 <!-- owner: plan · create/amend-via-gate; review reads to fence evidence -->
@@ -139,6 +139,7 @@ hardening row (R2-F10); T1 avoids that reader rather than fixing it here.
 - 2026-08-22: T8 — `examples/range-position.qmd`, carrying AC1's two ranges plus a `range=` span with no index class and a range mark deriving no entry. The two M23 readers are one reader under two labels now (`posind`/`poshtml` set the criterion the messages name) rather than a second pair that could drift from the first (M16). Measured: both back-ends exit 0, the index prints `1--4` and `2--3` against page breaks the fixture states independently, and each render draws exactly one report — the no-entry mark's — pinned on that message and on the total, so a different single report would fail rather than pass at one.
 - 2026-08-22: T9 — the nine-row injection battery under `--self-test`: each row plants one way the position binding breaks, renders the AC2 fixture against the broken copy, and requires the observed (render exit, printed ranges, report count) to differ from a control rendered in the same function. A tenth row was drafted and dropped: the splice labelled "a counter per pass" rendered identically to the control, so it planted nothing the fixture can see and would have claimed a break it does not make. Forms covered: relocation, deletion, in-body reordering, argument substitution, and a signature-plus-call-site pair.
 - 2026-08-22: T10 — `tests/scans/range-position.py` retired and deregistered from `run_scan`, `tests/plantdefect.py` and the M16-AC3 count (13 back to 12); the battery covers its ground by rendering rather than by pattern. Round-2 prose findings fixed: `range_items`'s and `pair_ranges`'s contract comments now say marks that KEPT an end, since `range_end` also refuses a displaced mark that did name one (R2-F4, R2-F5), and the `.idx` clearing comment no longer claims LaTeX appends to it (R2-F10). Full suite `--self-test` 390 checks, exit 0. Status to review.
+- 2026-08-22: review round 3 — consistency gate green (`cairn_validate` 16 PASS / 7 OK, exit 0; no principle change; `generic` names no toolchain checks); `origin/main` an ancestor of HEAD, nothing to merge. Acceptance run `tests/run-tests.sh --self-test` 390 checks exit 0; AC1, AC2 and AC3 each executed and ticked against evidence recorded in the Review section. Blame-history and prior-review lenses returned no findings; the diff-bug lens is still running — this is a checkpoint, not the gate.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->
@@ -158,6 +159,58 @@ passes, which is the position's job now and is what AC2 is about.
 
 ## Review
 <!-- owner: review · exclusive -->
+
+### Round 3 — 2026-08-22
+
+**Gate.** `cairn_validate` all 16 checks PASS, 7 advisories OK, exit 0. No
+principle change (`Principles touched: —`), so no impact report. The `generic`
+profile names no toolchain checks. No CI configured on the repo. PR #23
+(draft). Branch synced: `git fetch` then `git merge-base --is-ancestor
+origin/main HEAD` — `origin/main` (3769e58) is an ancestor of HEAD, nothing to
+merge, and the branch is level with its remote.
+
+**Acceptance run.** `tests/run-tests.sh --self-test` — 390 checks, exit 0.
+
+**AC1 — MET.** The nested fixture `examples/range-nested.qmd` renders in both
+back-ends and three checks read it: in the PDF index the outer `entry=`-less
+range prints one page range spanning the pages the fixture separates its ends
+by, the plain non-nested range of a different term beside it keeps its own
+narrower span, the nested inner mark keeps its two separate pages, and
+makeindex logs no warning; in the HTML index the outer range contributes one
+locator at its opening mark's anchor, the plain range does the same, and the
+inner mark contributes its own two. A fourth check runs the nested-mark
+readers against seven planted defects of their own kind — a lost pairing, the
+two ranges swapping extents, a narrowed range, the range-free inner mark
+folded into one, a transcript warning, an HTML locator at neither mark, and a
+doubled one — and requires each to fail, so the three pass lines are not
+vacuous.
+
+**AC2 — MET.** The fixture `examples/range-position.qmd` was read fresh and
+carries all four shapes the criterion names: a nested `entry=`-less range
+(`nixie` wrapping an inner `ogopogo` mark, so the emitting pass rewrites the
+inner mark before it reaches the outer one), a plain range of another term
+(`pooka`) opening and closing inside it so the two overlap, a `range=` span
+carrying no index class (`quokka`), and a range mark deriving no entry (an
+empty `[]{.index range="open"}`). Three checks read it. In the PDF back-end
+the render exits 0, the nested range prints one page range spanning its own
+two page breaks and the plain range beside it its own narrower span, and
+makeindex logs no warning; in the HTML back-end each range contributes one
+locator at its opening mark's anchor and the inner mark its own two; the third
+check states the criterion whole — both back-ends render clean, each range
+prints the page range its own marks sit at, and exactly one report is drawn,
+the no-entry mark's, pinned on that message and on the total so a different
+single report fails rather than passes at one. Discrimination: the nine-row
+injection battery under `--self-test` plants each of nine ways the position
+binding breaks (the counter advanced outside the guard, either guard clause
+dropped, the reset fired per mark or gone entirely, the emitting traversal
+positioning after it derives, the position never reaching the store, the entry
+key back on the reading path, and the guard dropped from the module's exports)
+into a scratch copy of the extension, renders this fixture against it, and
+requires the observed render exit, printed ranges and report count to differ
+from a control rendered in the same function — all nine differ.
+
+**AC3 — MET.** The active profile's verify slot is `tests/run-tests.sh`. Run
+here as `tests/run-tests.sh --self-test`: 390 checks, exit 0.
 
 ### Round 2 — 2026-08-22 — returned to `in-progress`
 

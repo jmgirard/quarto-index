@@ -43,7 +43,7 @@ checker-regress shape D-004 refused.
 
 ## Acceptance criteria
 
-- [ ] AC1: Over the file set `git ls-files tests` enumerates, every line
+- [x] AC1: Over the file set `git ls-files tests` enumerates, every line
       matching the literal `examples/` followed by a token ending in `.html`,
       `.tex`, `.md`, `.pdf`, `.aux`, `.idx`, `.ilg`, `.ind` or `.log` — glob
       and shell-variable-in-the-stem forms included — is either a `quarto
@@ -121,7 +121,7 @@ checker-regress shape D-004 refused.
 - 2026-08-23: amendment return: AC1 — "every line matching `examples/` followed by a token ending in `.html`, `.tex`, `.md`, `.pdf`, `.aux`, `.idx`, `.ilg`, `.ind` or `.log` — glob and shell-variable forms included — is either a `quarto render` command line or a line inside the capture helper's body". Eleven book-family reads spell the fixture directory through `$BOOK_OUT` (= `examples/book/_book`) and so fall outside that domain; AC1 passes while the Goal is unmet for the book fixtures. Review stopped before the merge gate; D2-D16 and B1 logged in the Review section for triage at re-review.
 - 2026-08-23: AC1 amended at a mini gate (substantive), executing that return: the criterion now promises only what its grep settles — lines spelling the fixture directory literally — and states that a read reaching that directory through a shell variable is outside the claim. Narrowing was recommended and taken; widening the pattern to one further spelling was offered as the non-recommended alternative and declined. The amended wording was audited in-session against the reduced audit's bounded-promise, proportionality and instrument questions rather than by a fresh reader — this session is configured not to spawn subagents — and that was disclosed at the gate. The amendment-return track stays at 1.
 - 2026-08-23: chosen at the same gate alongside the amendment, and code work rather than a criteria change: the 14 book-family reads spelling the fixture directory through `$BOOK_OUT`, `$ORDER_OUT` or `$NOMARKER_DIR` now read the captures already taken at their renders (book-html, book-html2, book-ghost, book-nocontext, book-nomarker, book-pdf, book-order-2), so the Goal holds for the book fixtures although AC1's grep does not reach them. The check's blindness to a variable-spelled fixture directory is absorbed into the acceptance-suite-hardening candidate row beside the `.$var` gap already there; ROADMAP is at 23,488 of its 24,000-byte budget and 58 of its 60 lines.
-- 2026-08-23: re-review round 2 — fresh evidence for all five criteria from one 396-check `--self-test` on a cleaned tree (exit 0), AC1 for the first time against its amended wording; consistency gate clean. Round 1's deferred findings triaged: D1 repaired by the amendment, D4, D6, D10, D13 and B1 fixed on the branch, eight homed on the acceptance-suite-hardening row, D12 and D16 rejected. No finding meets the return floor. Checkpoint committed with the verifying re-run still in flight; the Review section lands with its result.
+- 2026-08-23: re-review round 2 — fresh evidence for all five criteria from one 396-check `--self-test` on a cleaned tree (exit 0), AC1 for the first time against its amended wording; consistency gate clean. Round 1's deferred findings triaged: D1 repaired by the amendment, D4, D6, D10, D13 and B1 fixed on the branch, eight homed on the acceptance-suite-hardening row, D12 and D16 rejected. No finding meets the return floor. Verifying re-run green: 396 checks, exit 0, the emission sweep now reading 47 captured LaTeX artifacts. All five criteria ticked against round-2 evidence.
 
 ## Review
 
@@ -246,3 +246,140 @@ wording that is being amended.
 
 Returns on this milestone: amendment-return track 1 (this one); defect-return
 track 0.
+
+### Round 2 (2026-08-23) — after the AC1 amendment
+
+Re-reviewed against `origin/main` at 2e8ae87, which has still not moved since
+the branch was cut, so no merge was needed. PR #24.
+
+#### Acceptance-criteria evidence
+
+All five re-run from one full `tests/run-tests.sh --self-test` on a tree
+cleaned with `git clean -Xdfq examples/` and `rm -rf tests/.work`: exit 0,
+396 checks. Re-run in full after the fix-now work below: exit 0, 396 checks
+again, the M15 emission sweep reading 47 captured LaTeX artifacts where it
+read 45. One intervening run died at M20 T9 on a `Segmentation fault: 11` in
+Quarto's own Deno binary during a render; it did not reproduce, no fix-now
+edit can reach a render, and the same check passed in the runs either side of
+it.
+
+- AC1, first evidence against the amended wording: the run's read check
+  reports "none of the 23 tracked suite source file(s) reads a rendered
+  artifact out of the fixture directory; every read names the copy captured at
+  its render", and is proved discriminating in the same run — it fails on an
+  overlay adding one working-tree read, the unplanted overlay having passed
+  first. The amendment narrows AC1 to what that grep settles, so the repair it
+  convened is verified separately from the check that cannot see it:
+  `grep -nE '\$(BOOK_OUT|ORDER_OUT)/'` over the suite returns nothing, so no
+  read reaches the fixture directory through those variables either — both now
+  survive only as `rm -rf` targets and render working directories. Each of the
+  14 rewritten reads names the capture of the render it sits under, checked by
+  hand: `book-html2`, `book-ghost` and `book-order-2` each read their own
+  render's tree, and the two `last.qmd`-only renders read only `last.html`, so
+  the partial-render staleness D7 names does not reach them.
+- AC2: the run's first line reports "the run starts from a clean examples/ —
+  git clean -Xdn prints nothing", asserted immediately after the pre-render
+  clean. Confirmed independently before the run: `git clean -Xdn examples/`
+  printed nothing.
+- AC3: the pairing check reports "all 85 render command line(s) across the 23
+  tracked suite source file(s) are immediately followed by a call to the
+  capture helper", likewise proved discriminating on an overlay with one
+  capture call removed.
+- AC4: the pending sweep and the marker-class sweep each "read 85 captured
+  page(s)"; the empty-div half reads the 3 pages a marker was removed from.
+  All three proved discriminating — the residue planted into each of the 85
+  pages in turn and into each of the 3, each sweep required to fail naming
+  that page.
+- AC5: the run exits 0 and prints "All checks passed" from the cleaned tree
+  described above.
+
+#### Consistency gate
+
+`cairn_validate` exits 0 — 16 PASS, 7 advisory OK. The active profile is
+`generic`, whose consistency-gate slot names no toolchain checks, so that half
+is a clean no-op. No `DESIGN.md` principle changed, so `cairn_impact` does not
+apply.
+
+#### Review method, disclosed
+
+This round's reading of the diff was done in session rather than by
+fresh-context lenses: this session is configured not to spawn subagents, the
+same constraint disclosed at both amendment gates. Round 1's three-lens
+fan-out covered the whole diff and its findings are triaged below; the only
+code this round adds over what that fan-out read is the 28-line read repair in
+f0cb1d3, read here by hand.
+
+#### Triage — round 1's deferred findings
+
+Fixed on the branch this round:
+
+- D1 — repaired by the amendment commit and verified under AC1 above.
+- D4 — confirmed, and narrower than reported: three comments the scripted
+  rewrite made false, not sixteen. `capture`'s own header said a check reading
+  a *capture* path "is therefore asserting nothing about the render it sits
+  under", inverting the helper's rationale; two more claimed a later render
+  "consumes" or "removes" a file that now lives under `$WORK`. All three
+  rewritten to state what is true, without spelling a fixture artifact path,
+  which the AC1 check forbids in prose. The ~17 manifest headers that quote a
+  capture path mid-sentence are accurate and left alone.
+- D6 — confirmed with an instance: `parity-tree-book-latex/_book/book-latex/`
+  and `parity-inst-book-latex/_book/book-latex/` each hold an
+  `Index-Book-Fixture.tex` two levels down, outside the M15 emission sweep's
+  one-deep glob, while its pass line says "none of the N captured LaTeX
+  artifacts carries anything else". Neither file carries either contested-key
+  shape, so no verdict was wrong; the claim was wider than the domain. The
+  glob is now recursive — the sweep reads 47 artifacts where it read 45, and
+  passes.
+- D10 — confirmed: `ext` was not declared `local` in `capture`. Now local. No
+  other site reads `$ext`, so the leak was unobserved.
+- D13 — confirmed: the acceptance-suite-hardening row's `Remainder:` listed
+  three items its own NARROWED preamble says M24 absorbs, and two more
+  clauses later in the row named the M12 residue-check pair and the M23
+  `data-qi-pending` empty domain, likewise absorbed. All five struck.
+- B1 — confirmed: the M15 emission sweep now runs at the end of the run with
+  both M20 fixtures required present in `ALLOWED`, so M20 review R2-F13 is
+  closed. Its clause struck from the row.
+
+Follow-up, homed on the acceptance-suite-hardening candidate row:
+
+- D2 — nothing asserts which capture a read belongs to, and two captures can
+  hold one stem, so a read aimed at the wrong slug reads another render's
+  output with nothing to trip. Neither AC1 nor AC3 claims the correspondence.
+- D3 — the M24-AC2 assertion sits at script top level, outside
+  `run_all_checks`, so its `pass` reaches neither `CHECK_COUNT` nor the tee'd
+  run log. AC2's promise still holds — the assertion runs, fails loudly, and
+  was confirmed independently — but the T8 work-log line and round 1's AC2
+  evidence both said that evidence is in the run log, and it is not. Corrected
+  here rather than in those records (IP4).
+- D5 with D11 — the read check exempts any line matching `quarto render`, and
+  the pairing check treats that phrase in prose as a render needing a capture
+  call, so a comment can silence the first or hard-fail the second. Nothing
+  today does either.
+- D7 — five book captures copy a whole `_book` tree most of whose pages an
+  earlier render wrote, relocating staleness from `examples/` into `$WORK`.
+  No read this branch adds is affected (see AC1 above).
+- D8 — the sweep self-test is quadratic in captured pages, ~14,000 HTML
+  parses, and is most of the run's wall time. The per-page plant is what T6
+  planned; the cost is not.
+- D9 — `capture` copies every extension for the render's stem rather than what
+  the render produced, and `fmt` only names the slug.
+- D14 with D15 — the suite now hard-depends on git and deletes any ignored
+  file parked under `examples/`; neither is recorded as a precondition.
+
+Rejected:
+
+- D12 — refuted against the implementation. The AC3 planted-defect proof does
+  assert the pairing failure identity: after deleting a capture call it greps
+  the output for "not followed by a call to the capture", not merely for a
+  non-zero exit.
+- D16 — `KEPT_MARKERS` is a written-down map, but drift fails loudly in both
+  directions (a page that gains the class and a listed page that goes
+  missing), which is the equality pin the module's own docstring argues for.
+  Intentional.
+
+#### Returns
+
+Amendment-return track 1 (round 1's, executed). Defect-return track 0: no
+finding this round demonstrates an acceptance criterion failing inside its
+named procedure's domain, and none is a load-bearing defect in what the suite
+does for its users.

@@ -183,5 +183,81 @@ no toolchain checks.
 
 ### Findings
 
-_In progress: two of the three review lenses have reported; the diff-bug lens
-is still running. Triage is recorded below once all three are in._
+Three fresh-context lenses (diff-bug [O], blame-history [S], prior-review [S]);
+the diff touches executable surface, so the full fan-out ran. The prior-review
+lens probed GitHub inline comments (`pulls/comments?per_page=1` returned `[]`)
+and fell back to archived `## Review` sections; it reports no prior finding
+reintroduced or contradicted, and identifies this branch as the remediation of
+M16 F3, M16 F8 and M23 F12. Findings below are the diff-bug lens's ranked list,
+with the blame-history lens's one substantive finding folded in as F2 (both
+lenses reached it independently). No finding demonstrates an acceptance
+criterion failing, so the return floor is not met.
+
+- **F1 — the new exactly-one clause has no discrimination evidence.**
+  `tests/plantdefect.py:41-92` plants a changed *value* for every narrowed scan
+  and never a *duplicate definition*. Reverting `marker-class.py:20` to
+  `re.search` leaves the full `--self-test` green, so the duplicate-masking hole
+  M16 F3 named could be reopened unnoticed. Three scans (`store-version`,
+  `max-levels`, `overflow-join`) exercise the count clause in the *zero*
+  direction via a rename; none exercises the *two* direction.
+- **F2 — the M16-AC3 probe can pass over zero scans.**
+  `tests/run-tests.sh:9794-9822`: `SCANS_PROBED` is derived from the loop with
+  no floor. Empty `tests/scans/` and the run prints `ok M16-AC3: all 0
+  source-reading checks…`. The Decisions rationale ("`run_scan` fails on a
+  missing script at every invocation") does not reach this, because no
+  invocation is left to fail. The suite's own idiom elsewhere is exactly such a
+  floor (`[ -s "$QI_WARN_PATTERNS" ]`, `filtersrc.sources()`'s raise,
+  `m15-joined-messages`'s `if not messages`).
+- **F3 — `cairn/DESIGN.md:47-49` now states something false.** The M17 bracket
+  export's stated reason is "the source scans take the FIRST `NAME =` match over
+  the whole source set". M25 replaced first-match with anchored exactly-one,
+  which `M.NAME = NAME` cannot match at all.
+- **F4 — `as_pattern` cannot represent a message concatenated around a runtime
+  value.** `tests/scans/warn-distinct.py:182-183` joins a call's literals with
+  nothing between them. All 48 current messages concatenate literal-to-literal,
+  so today's patterns are right; the first `warn("term " .. name .. " is bad")`
+  yields `term  is bad`, matching nothing, and every zero control stops seeing
+  that warning. The `blank` guard at line 194 does not catch it.
+- **F5 — the generated patterns are not anchored to the `(W) ` prefix.**
+  `tests/run-tests.sh:1663` counts any log line containing a message, warning or
+  not. Nothing in the repo matches today; the anchor is free.
+- **F6 — `FORMAT_SPEC`'s flag class includes a space.**
+  `tests/scans/warn-distinct.py:58`: `% o` in "50% of entries" would be read as
+  a conversion and widened to `.*`, a wildcard that can swallow another
+  message's text. No current message carries a non-format `%`.
+- **F7 — AC4's enumeration grep is narrower than the constructs M25 repaired.**
+  It reaches `re.search`/`re.match`/`re.findall` but not `re.finditer`,
+  `.count(` or `.split(` — so `latex-escape-table`'s `.split` bug (fixed here)
+  and `xref-both-definition`'s new `re.finditer` are invisible to it. The two
+  live sites the lens named as uncovered were checked and are both exact-count
+  pinned: `m15-joined-messages.py:75-86` (exactly one message per shape) and
+  `warn-distinct.py:233-238` (`len(owner) != 1`).
+- **F8 — AC4 read call-by-call rather than scan-by-scan.**
+  `tests/scans/mark-report-keys.py:37` is a `re.findall` over
+  `filtersrc.text()` with no count on `calls`. The lens grants the failure
+  direction is safe (a shrunken read makes every key match 0 and the scan fails
+  loudly) and calls it a conformance gap, not a vacuous pass.
+- **F9 — the `--patterns` call bypasses `run_scan`.**
+  `tests/run-tests.sh:1651` invokes the scan directly, while `run_scan`'s header
+  (199-201) says it is "the one place that says how each is invoked".
+- **F10 — the AC2 probe plants the one message with no placeholder.**
+  `$WARN_BOTH` carries no `%`, so the widening logic — the only part that can
+  over- or under-match — is not what the probe proves. It is exercised
+  incidentally by the book's four-warning total.
+- **F11 — stale rationale at `tests/run-tests.sh:6511-6513`.** "M06-AC1 and
+  M06-AC2 already abort on ANY `^(W)` line there, so such a grep is a tautology"
+  — after M25 those two abort only on this extension's messages.
+- **F12 — `m15-joined-messages.py:95-97`'s `ok` line states the old, weaker
+  promise** ("both shapes … are among them") where the check now requires
+  exactly one message to carry each. T7 narrowed the header, not the run log.
+- **F13 — the candidate row reads as closing two items M25 did not close.**
+  `cairn/ROADMAP.md:16` says M25 absorbs "`warn-distinct`'s `:format(`
+  blindness, the one-of-nine moved-definition probe, M17-AC1 unguarded". The
+  first is explicitly Out of scope here; the second got a comment only; the
+  third got nothing — and none appears in the row's Remainder.
+- **F14 — cosmetic.** `tests/scans/store-names.py:31-34` prints "the suite
+  expects:" above items formatted `NAME = 'x', filter writes 'y'`; header and
+  item no longer read as one sentence.
+- **F15 — AC5's evidence rests on an intra-module caller.**
+  `filtersrc.ext_dir()` is called only by `sources()` at
+  `tests/filtersrc.py:33`.

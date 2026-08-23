@@ -42,24 +42,24 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
 - [ ] AC1: A LaTeX document without a principal mention builds at pdflatex
       exit 0 against a surviving `.aux` carrying `\quartoindexprincipalpage`,
       `\quartoindexrangeat` and `\quartoindexrangeto` lines left by a
-      previous render, with no `Undefined control sequence` in its log and no
-      emphasized locator in its typeset index — asserted over two variants of
-      the principal-range fixture: one with every `mention=` and `range=`
+      previous render, with no `Undefined control sequence` in its log —
+      asserted over two variants of a document whose surviving `.aux` carries
+      all three of those names: one with every `mention=` and `range=`
       attribute removed, and one with every index mark removed.
 - [ ] AC2 (regression guard: true today; must stay true under this change): A
-      document that carries a principal mention keeps the live subsystem: its
+      document that carries a principal mention keeps the live subsystem — its
       rendered `.tex` header holds the subsystem's defining block and none of
-      the gobbling definitions, and the behaviors the M20 and M21 suite
-      sections certify still hold, evidenced by those sections passing
-      unmodified.
-- [x] AC3: The active profile's verify slot (`tests/run-tests.sh`) passes.
+      the gobbling definitions — and each of AC1's two variants instead holds
+      all three `.aux`-borne names, every one defined as the empty-bodied
+      `\providecommand*\<name>[2]{}` stand-in and none with a body.
+- [ ] AC3: The active profile's verify slot (`tests/run-tests.sh`) passes.
 
 ## Coverage
 <!-- owner: plan · create/amend-via-gate; review reads to fence evidence -->
 
-- AC1 → T1, T2
-- AC2 → T2, T3
-- AC3 → T1, T2, T3, T4
+- AC1 → T1, T2, T5
+- AC2 → T2, T3, T5
+- AC3 → T1, T2, T3, T4, T5, T6
 
 ## Tasks
 <!-- owner: plan (create) / implement (check-off, minor edits) -->
@@ -84,6 +84,26 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
       spliced in ahead of the subsystem.
 - [x] T4: README note on stale-`.aux` behavior; remove the absorbed
       candidate row from the ROADMAP; work log.
+- [ ] T5: Round-1 review fixes in the probe and the criteria's evidence:
+      drop AC1's dropped emphasis clause and the fragile
+      `\newcommand*\quartoindexprincipal` header it needed (F3, F12);
+      grep the log for `Undefined control sequence` after the SECOND pdflatex
+      pass too, not the first alone (audit F7); `[ -f ]` guard in
+      `m22_nogobblers`, which returns success on a missing file today (F4);
+      splice-out plant extended to the zero-marks branch (F5); a bodied
+      definition of a trio name planted in the control, to show the leak scan
+      still trips after the `--standins` subtraction (F9); `grep -qE` for the
+      GNU BRE alternation (F11).
+- [ ] T6: `examples/control.tex` — the zero-mark negative control — carries
+      the three stand-ins with no check reading them (F8): assert them there
+      and name them in AC3's forbidden-token loop as the one permitted
+      addition.
+- [ ] T7: Prose the change made false: narrow README's stale-`.aux` paragraph
+      to the `.aux` and say what a surviving `.ind` still does (F1); state the
+      three preamble lines in README's own "What it emits" section (F7); fix
+      `modules/latex.lua`'s byte-identical comment (F6) and the new zero-marks
+      branch's "exactly as below" comment, which points at a path that warns
+      where it is silent (H1). Candidate row for the surviving-`.ind` hole.
 
 ## Work log
 <!-- owner: any skill · append-only; one line per entry; absolute dates. -->
@@ -101,6 +121,9 @@ half). Cross-chapter range pairing → standing candidate row (D-009).
 - 2026-08-22: amendment return: AC1 — "asserted over two variants of the principal-range fixture" — no committed fixture's `.aux` carries all three `.aux`-borne names, so the probe authors its own parent and the evidence does not answer the criterion as written.
 - 2026-08-22: amendment return: AC2 — "evidenced by those sections passing unmodified" — AC1's stand-ins define exactly the three names M20-AC6's leak needle scans for, in exactly the documents it scans, so no correct implementation of AC1 leaves the M20 section unmodified; the criterion is unsatisfiable alongside AC1.
 - 2026-08-22: status back to in-progress for those two amendments; the review-round findings F1 (README's stale-.aux claim is false — a surviving `.ind` still breaks the render, reproduced at review), F3, F4, F5, F6, F7, F8, F9 and H1 are triaged fix-now and F11, F12 follow-up, all recorded in the Review section.
+- 2026-08-22: amendment return: AC1 — "asserted over two variants of a document whose surviving `.aux` carries all three of those names: one with every `mention=` and `range=` attribute removed, and one with every index mark removed" — and the unfalsifiable "no emphasized locator" clause dropped; a fresh-context [O] criteria audit ran in full mode over the amended wording before it was written and cleared AC1 on every axis.
+- 2026-08-22: amendment return: AC2 — "each of AC1's two variants instead holds all three `.aux`-borne names, every one defined as the empty-bodied `\providecommand*\<name>[2]{}` stand-in and none with a body" — replacing the unsatisfiable "passing unmodified" clause; the same full audit found the first draft of this clause vacuously true of `origin/main` (a form restriction on appearances, satisfied by no appearance at all) and it was rewritten to require presence before the gate.
+- 2026-08-22: amendment gate held the criteria set at three rather than widening AC2 to the suite's zero-mark control, the audit's uncovered-domain finding routed to T6 instead; the gate also directed all nine round-1 fix-now findings into this pass (T5-T7). Coverage extended to the new tasks; AC3 unticked, its round-1 evidence stale under these changes.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

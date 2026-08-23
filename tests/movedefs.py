@@ -16,8 +16,8 @@ what it reads, and the ambient value names the shipped extension.
 
 The scratch tree is text, not a filter that runs: a `warn()` call lifted out of
 its enclosing pass is no longer valid Lua, and nothing here renders with it.
-The scans under `tests/scans/` read source as text, which is exactly the reading
-this probe is about.
+The source scans read source as text, which is exactly the reading this probe
+is about.
 
 Usage:  python3 tests/movedefs.py <scratch-ext-dir> <NAME> [<NAME> ...]
 

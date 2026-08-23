@@ -6,18 +6,23 @@ import os, re, sys
 sys.path.insert(0, 'tests')
 import filtersrc
 src = filtersrc.text()
-m = re.search(r'MARKER_CLASS\s*=\s*"([^"]*)"', src)
-if not m:
-    print('FAIL: M04-AC1: MARKER_CLASS is not defined in the filter',
-          file=sys.stderr)
+# Every definition, not the first one found: the source set became multi-file
+# at M17, so a stale duplicate left behind by a split would mask the live one
+# and this scan would report agreement with a constant the filter no longer uses
+# (M16 review F3).
+found = re.findall(r'^local MARKER_CLASS = "([^"]*)"$', src, re.MULTILINE)
+if len(found) != 1:
+    print(f'FAIL: M04-AC1: expected exactly one MARKER_CLASS definition in the '
+          f'filter source set, found {len(found)}', file=sys.stderr)
     sys.exit(1)
-if m.group(1) != os.environ['MARKER_CLASS']:
+defined = found[0]
+if defined != os.environ['MARKER_CLASS']:
     print(f"FAIL: M04-AC1: suite says {os.environ['MARKER_CLASS']!r}, filter "
-          f"defines {m.group(1)!r}", file=sys.stderr)
+          f"defines {defined!r}", file=sys.stderr)
     sys.exit(1)
-if m.group(1) == os.environ['HTML_SECTION_ID']:
+if defined == os.environ['HTML_SECTION_ID']:
     print(f'FAIL: M04-AC1: the marker class and the generated section id are '
-          f'the same string ({m.group(1)!r}); one string with two meanings is '
+          f'the same string ({defined!r}); one string with two meanings is '
           f'exactly the collision the marker token avoids', file=sys.stderr)
     sys.exit(1)
 print('ok   M04-AC1: the marker class is pinned to the filter constant and '

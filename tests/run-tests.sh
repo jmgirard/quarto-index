@@ -195,7 +195,7 @@ capture() {
 
 
 # ---------------------------------------------------------------------------
-# The source-reading checks (M16). Each one's body lives in tests/scans/<name>.py
+# The source-reading checks (M16). Each one's body lives in $SCAN_DIR/<name>.py
 # and reads the source set through tests/filtersrc.py; this function is the one
 # place that says how each is invoked — which environment it gets and which
 # arguments. The run calls it at the site, and the M16-AC3 probe calls it again
@@ -206,9 +206,14 @@ capture() {
 # The globals below are read when run_scan is CALLED, not when it is defined,
 # so a scan whose pinned constant is set further down the file still gets it.
 # ---------------------------------------------------------------------------
+# The scan directory, named here once and read everywhere else through this
+# variable: it is where run_scan builds a scan's path from, and nothing else in
+# this file has business spelling it out.
+SCAN_DIR="tests/scans"
+
 run_scan() {
   local name="$1"
-  local script="tests/scans/$name.py"
+  local script="$SCAN_DIR/$name.py"
   [ -f "$script" ] || fail "M16: no source scan named $name (looked for $script)"
   case "$name" in
     latex-escape-table)
@@ -239,7 +244,7 @@ run_scan() {
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
-      fail "M16: tests/scans/$name.py has no invocation in run_scan; the M16-AC3 probe would run it with the wrong environment and report a defect that is its own" ;;
+      fail "M16: $script has no invocation in run_scan; the M16-AC3 probe would run it with the wrong environment and report a defect that is its own" ;;
   esac
 }
 
@@ -1643,10 +1648,10 @@ check_warning_count() {
 # below: a scan run per control would read the source twenty times over, and a
 # written-down copy would be a second hand-maintained list of the same strings.
 QI_WARN_PATTERNS="$WORK/warn-patterns.txt"
-python3 tests/scans/warn-distinct.py --patterns > "$QI_WARN_PATTERNS" \
+python3 "$SCAN_DIR/warn-distinct.py" --patterns > "$QI_WARN_PATTERNS" \
   || fail "M25: could not read this extension's warning messages out of the filter source set (the scan's own FAIL line is above); every control below would then be asserted over an empty message set"
 [ -s "$QI_WARN_PATTERNS" ] \
-  || fail "M25: tests/scans/warn-distinct.py --patterns wrote no pattern, so every control below would match nothing and pass vacuously"
+  || fail "M25: the warn-distinct scan's --patterns mode wrote no pattern, so every control below would match nothing and pass vacuously"
 
 # Assert THIS EXTENSION warned an exact number of times during a render.
 # Matching LINES rather than occurrences, unlike check_warning_count above: a
@@ -9776,19 +9781,16 @@ filtersrc.sources()" >/dev/null 2>&1; then
 
   # Enumerated from the directory, never listed here — the same rule the source
   # set itself follows. A scan file added without an invocation in run_scan
-  # fails there rather than going unprobed.
-  SCAN_NAMES=$(find tests/scans -name '*.py' | sed 's|.*/||; s|\.py$||' | sort)
-  SCAN_COUNT=$(printf '%s\n' "$SCAN_NAMES" | wc -l | tr -d ' ')
-  # An exact count, not a floor: AC3's domain is the source-reading sites the
-  # merge-base run reported, and a floor would pass while one of them quietly
-  # stopped being probed. Twelve at M16; thirteen while M23 carried a
-  # range-position scan, and twelve again since M23 retired it — a criterion
-  # that promised what a scan asserts bound the scan rather than the filter,
-  # and the injection battery below certifies the same property by rendering.
-  [ "$SCAN_COUNT" -eq 12 ] \
-    || fail "M16-AC3: found $SCAN_COUNT source scans under tests/scans, expected 12; either a source-reading check left the probed set or one was added without extending this proof"
+  # fails there rather than going unprobed, and one that LEAVES the directory
+  # fails at run_scan's own missing-script check the moment the run calls it.
+  # A pinned file count used to stand here as well; it counted files rather than
+  # the source-reading sites it claimed to hold, so a one-for-one swap passed it
+  # (M16 review F8), and what it noticed is what those two failures already say.
+  SCAN_NAMES=$(find "$SCAN_DIR" -name '*.py' | sed 's|.*/||; s|\.py$||' | sort)
 
+  SCANS_PROBED=0
   for SCAN_NAME in $SCAN_NAMES; do
+    SCANS_PROBED=$((SCANS_PROBED + 1))
     # (a) It still finds what it reads. The passing control: without it, the
     # failure below would be evidence only that the check always fails.
     ( export QI_EXT_DIR="$SCAN_PROBE/ext"; run_scan "$SCAN_NAME" ) >/dev/null \
@@ -9812,7 +9814,7 @@ filtersrc.sources()" >/dev/null 2>&1; then
     printf '%s' "$SCAN_OUT" | grep -qF -- "$SCAN_EXPECT" \
       || { printf '%s\n' "$SCAN_OUT" >&2; fail "M16-AC3: $SCAN_NAME exited $SCAN_RC on the planted defect but did not report it; expected <<$SCAN_EXPECT>>"; }
   done
-  pass "M16-AC3: all $SCAN_COUNT source-reading checks still find what they read with their definitions moved into modules/moved.lua, and each one fails, naming the defect, when one of the kind it checks for is planted there"
+  pass "M16-AC3: all $SCANS_PROBED source-reading checks still find what they read with their definitions moved into modules/moved.lua, and each one fails, naming the defect, when one of the kind it checks for is planted there"
   # Same discipline for the marker's warnings: a report of a misused marker
   # that quietly stopped firing would leave every misuse check passing on a
   # log that says nothing.

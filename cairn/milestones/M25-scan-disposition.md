@@ -79,19 +79,27 @@ checks' file-reading is settled there first.
 - [x] T3: Prove the replacement discriminating both ways: plant an
       extension warning into a captured log copy and require the control to
       fail; plant a foreign filter's `(W)` line and require it to pass.
-- [ ] T4: Delete the twelve-scan count pin (`tests/run-tests.sh:9649-9658`).
+- [x] T4: Delete the twelve-scan count pin (`tests/run-tests.sh:9649-9658`).
       Its stated job — noticing a scan that left the probed set — is what
       `run_scan`'s missing-script `fail` already does at every invocation.
-- [ ] T5: Take the four FIRST-match scans (`html-identifiers`, `marker-class`,
+- [x] T5: Take the four FIRST-match scans (`html-identifiers`, `marker-class`,
       `xref-manifest`, `xref-both-definition`) one at a time: exactly-one pin
       where the property is real, deletion where the scan asserts a name or an
       indentation rather than a property a tree can break. Record each
       disposition in the Decisions section.
-- [ ] T6: Resolve `tests/filtersrc.py`'s `lines()` — give it its intended
+- [x] T6: Resolve `tests/filtersrc.py`'s `lines()` — give it its intended
       consumer or delete it with its only current caller's use inlined.
 - [ ] T7: Narrow each surviving scan's header comment to what it reads, and the
       moved-definition probe's to the one-module case it exercises.
 - [ ] T8: Full `tests/run-tests.sh --self-test`; capture evidence per criterion.
+
+## Decisions
+
+- 2026-08-23 (T4) — the twelve-scan count pin is deleted, not narrowed. It counted files under the scan directory while claiming to hold the source-reading sites, so a one-for-one swap passed it (M16 review F8). What it noticed is already said twice over: `run_scan` fails on a missing script at every invocation, and a scan file added without an invocation there fails in its `case`. The probe's loop now reports the number of scans it actually ran, derived from the run rather than pinned.
+- 2026-08-23 (T5) — `html-identifiers`, `marker-class`, `xref-manifest` and `store-names` are narrowed, not deleted: each pins a filter constant the suite also spells out, which is a disagreement a tree can really produce. Each now counts every anchored `local NAME = "…"` definition in the source set and requires exactly one before comparing the value, so a stale duplicate left behind by a split is reported as a duplicate instead of masking the live definition.
+- 2026-08-23 (T5) — `xref-both-definition` is narrowed rather than deleted, at the gate's choice. Its property — the two-target command takes its labels from `\seename`/`\alsoname` rather than hard-coded English — is real and no render distinguishes it, since a hard-coded label prints the same words in an English document. The first-match hole is closed by an exactly-one pin on the assignment; the extent stays the source's own paragraph break, and the header comment now says that is what the scan reads and all it claims.
+- 2026-08-23 (T5) — two scans outside the plan's four were disposed on the same rule, at the gate's choice: `latex-escape-table` took its table at the first `split` and now pins that opening to exactly one, and `m15-joined-messages` asked only that each shape of the replacement report exist somewhere and now requires exactly one message to carry each.
+- 2026-08-23 (T6) — `filtersrc.py`'s consumerless export is `defining_lines()`, not `lines()`: `lines()` has one caller, the M17-AC3 require-position check. `defining_lines()` is deleted, with the `re` import it alone needed.
 
 ## Work log
 
@@ -102,3 +110,7 @@ checks' file-reading is settled there first.
 - 2026-08-23: gate chose (a) narrowing `xref-both-definition` rather than deleting it, (b) converting the two further bare-`(W)` sites the plan's list missed — the book's four-warning total and the range self-test's per-row report count, both spelled `grep -c` — and (c) repairing two more scans AC4's promise reaches, `m15-joined-messages` (presence, not an exact count) and `latex-escape-table` (its table taken at the first `split`), and (d) having `warn-distinct.py` emit ready-made search patterns rather than raw texts the shell would have to widen.
 - 2026-08-23: T1-T3. `warn-distinct.py --patterns` writes one extended regular expression per warn() message, placeholders widened (`%d` to digits, others to a wildcard) and everything else quoted for the platform's grep, emitted only after the scan's own assertions pass. `run-tests.sh` generates the set once beside the message constants and adds `check_extension_warning_count`. Nine bare-`(W)` sites converted: the four `check_warning_count … '(W)'` (M23-AC1 x2, M23-AC2 x2), the three `grep -q '^(W)'` controls (M06-AC1 x2, M06-AC2), the book's four-warning total (M05-AC4/M14-AC5) and the M23 self-test's per-row report count. Both AC1 greps return nothing. The AC2 probe plants `$WARN_BOTH` into a copy of the range-nested html log and requires the control to fail naming its count, then plants a foreign filter's `(W)` line and requires it to pass. Suite green, 263 checks.
 - 2026-08-23: minor amendment — T2's site list said five and named line numbers M24 had since moved; nine sites in today's tree, enumerated in the line above.
+- 2026-08-23: T4. Scan-count pin removed; `SCAN_DIR` named once above `run_scan` and read everywhere else through the variable, so the grep AC3 names returns that one path-construction line. The M16-AC3 loop counts what it probed (12 this run) instead of asserting a pinned 12.
+- 2026-08-23: T5. Six scans narrowed to exactly-one pins — `html-identifiers` (4 constants), `marker-class`, `xref-manifest`, `store-names` (2 constants), `xref-both-definition`, `latex-escape-table` — and `m15-joined-messages`'s presence test made exactly-one. No scan deleted; dispositions in Decisions above.
+- 2026-08-23: T6. `defining_lines()` deleted from `tests/filtersrc.py` (no caller anywhere) with its `re` import; `lines()` kept, its caller being the M17-AC3 require-position check. Every remaining export has a caller in `git ls-files tests`.
+- 2026-08-23: full `--self-test` green, 397 checks. Two earlier runs failed on the environment, not the tree: one Quarto segfault mid-render, one `quarto list tools` network timeout in the TinyTeX probe.

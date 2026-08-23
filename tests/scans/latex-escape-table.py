@@ -6,7 +6,16 @@ import os, re, sys
 sys.path.insert(0, 'tests')
 import filtersrc
 src = filtersrc.text()
-table = src.split('local LATEX_LITERAL = {', 1)[1].split('\n}', 1)[0]
+# The opening pinned to exactly one, not taken at the first split: the source
+# set became multi-file at M17, so a stale duplicate left behind by a split
+# would give this scan a table the filter no longer escapes with (M16 review
+# F3, whose four named scans share this shape).
+OPENING = 'local LATEX_LITERAL = {'
+if src.count(OPENING) != 1:
+    print(f'FAIL: AC4: expected exactly one LATEX_LITERAL table in the filter '
+          f'source set, found {src.count(OPENING)}', file=sys.stderr)
+    sys.exit(1)
+table = src.split(OPENING, 1)[1].split('\n}', 1)[0]
 keys = set()
 for m in re.finditer(r'^\s*\[(".*?"|\'"\')\]\s*=', table, re.MULTILINE):
     raw = m.group(1)

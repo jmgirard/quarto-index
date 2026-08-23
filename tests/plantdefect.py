@@ -21,7 +21,7 @@ import os
 import re
 import sys
 
-# The count `tests/scans/warn-distinct.py` pins, read from that file rather
+# The count the `warn-distinct` source scan pins, read from that file rather
 # than copied here: the marker below has to name the number the scan will
 # print, and two files holding the same number is two files that must change
 # together and one that will not (M16 review F11).

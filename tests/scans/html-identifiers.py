@@ -7,14 +7,19 @@ sys.path.insert(0, 'tests')
 import filtersrc
 src = filtersrc.text()
 bad = []
+# Every definition, not the first one found: the source set became multi-file
+# at M17, so a stale duplicate left behind by a split would mask the live one
+# and this scan would report agreement with a constant the filter no longer uses
+# (M16 review F3).
 for name in ('HTML_SECTION_ID', 'HTML_ANCHOR_PREFIX', 'HTML_ENTRY_PREFIX',
              'HTML_LETTER_CLASS'):
-    m = re.search(rf'{name}\s*=\s*"([^"]*)"', src)
-    if not m:
-        bad.append(f'  {name} is not defined in the filter')
-    elif m.group(1) != os.environ[name]:
+    found = re.findall(rf'^local {name} = "([^"]*)"$', src, re.MULTILINE)
+    if len(found) != 1:
+        bad.append(f'  {name} has {len(found)} definition(s) in the filter '
+                   f'source set, want exactly 1')
+    elif found[0] != os.environ[name]:
         bad.append(f'  {name}: suite says {os.environ[name]!r}, filter '
-                   f'defines {m.group(1)!r}')
+                   f'defines {found[0]!r}')
 if bad:
     print('FAIL: M03-AC3: the suite and the filter disagree on the HTML '
           'identifiers:', file=sys.stderr)

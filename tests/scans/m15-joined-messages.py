@@ -61,15 +61,20 @@ if not messages:
           'absence below is the scanner finding nothing, not the filter '
           'saying nothing', file=sys.stderr)
     sys.exit(1)
-unseen = [r for r in REPLACEMENT
-          if not any(r in message for message in messages)]
-if unseen:
-    print(f'FAIL: M15-AC5: {len(unseen)} of the {len(REPLACEMENT)} shapes of '
-          f'the replacement report are not among the {len(messages)} joined '
-          f'warn() messages this scanner read, so it is reading the file '
+# Exactly one message each, not merely one somewhere: a shape found in two
+# messages is a report the filter draws twice, and a presence test reads that as
+# the passing control it is not.
+miscounted = [(r, sum(1 for message in messages if r in message))
+              for r in REPLACEMENT]
+wrong = [(r, n) for r, n in miscounted if n != 1]
+if wrong:
+    print(f'FAIL: M15-AC5: {len(wrong)} of the {len(REPLACEMENT)} shapes of the '
+          f'replacement report is carried by other than exactly one of the '
+          f'{len(messages)} joined warn() messages this scanner read, so either '
+          f'the filter draws it twice or this scanner is reading the file '
           f'wrongly:', file=sys.stderr)
-    for r in unseen:
-        print(f'  <<{r}>>', file=sys.stderr)
+    for r, n in wrong:
+        print(f'  {n} message(s) carry <<{r}>>', file=sys.stderr)
     sys.exit(1)
 guilty = [message for message in messages if GONE in message]
 if guilty:

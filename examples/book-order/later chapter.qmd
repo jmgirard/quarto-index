@@ -24,3 +24,8 @@ one must NOT be paired with it. Were it paired, that closing's locator would be
 suppressed on the strength of an opening this chapter had already refused, and
 the entry would print its cross-reference with no locator at all:
 [Spanned]{.index range="open" see="Late"}.
+
+A range opened here and closed in the NEXT chapter. This chapter refuses it as
+never closed within itself; the closing's chapter refuses the other half; and
+the book, which alone sees both records, reports the split pair once:
+[Bridged]{.index range="open"}.

@@ -445,11 +445,9 @@ local function Span(span)
 
   if qi_core.is_html() then
     -- Two range fields, because they answer different questions. `range` is
-    -- the end the AUTHOR wrote, which is what a book's per-chapter record
-    -- carries: a range opened in one chapter and closed in another is
-    -- unmatched in both, so the chapter that reads every record has to pair
-    -- them itself and needs what was written, not what this chapter made of
-    -- it. `paired` is this document's verdict, which is what decides whether
+    -- the end the AUTHOR wrote, which is what lets the book's report name a
+    -- would-be pair split across two chapters — nothing pairs on it (D-009).
+    -- `paired` is this chapter's own verdict, which is what decides whether
     -- the mark contributes a locator here.
     --
     -- `range` is written only for a mark that CONTRIBUTES a locator — the

@@ -436,8 +436,10 @@ span rather than to either mark, so write it once, on whichever end you like.
 book in its own process, so a range whose two marks are in one chapter is paired
 there and prints as one locator, exactly as it does in a single document. A
 range whose marks are in *different* chapters is not paired: each mark indexes
-on its own, as though you had not written `range=` at all, and the book tells
-you so once, naming the marks. A PDF book is unaffected — Quarto renders it as
+on its own, as though you had not written `range=` at all. Each chapter reports
+its own half — the opening as never closed in that chapter, the closing as
+never opened there — and the book adds one report naming the pairs it can see
+split across its chapters. A PDF book is unaffected — Quarto renders it as
 one merged document, so its ranges span chapters as you would expect.
 
 **An ordinary mark inside a range disappears into it.** If you also write a

@@ -223,12 +223,12 @@ end
 --
 -- The two halves are separate because their SCOPES are. Whether a mark names
 -- an end at all, and whether it has a locator for a range to span, are facts
--- about that one mark; whether an opening is closed is a fact about the
--- document — and in a book, about the whole book, since a range opened in one
--- chapter and closed in another is unmatched in both and neither chapter's
--- render may say so. So `range_end` is drawn per mark wherever the mark is
--- rendered, and `pair_ranges` is run once over whatever set is the right one:
--- this document's marks here, every chapter's records in `qi_book`.
+-- about that one mark; whether an opening is closed is a fact about the whole
+-- Pandoc process the mark renders in — one document, or one chapter of an
+-- HTML book, which is its own pairing scope (D-009). So `range_end` is drawn
+-- per mark and `pair_ranges` once over the process's marks; what a book adds
+-- is only `qi_book`'s report naming the cross-chapter would-be pairs no
+-- chapter can see whole.
 -- ---------------------------------------------------------------------------
 
 -- One range finding, reported. Every message is written at its own `warn()`
@@ -239,8 +239,9 @@ end
 -- candidate row. So a finding travels as what was found, never as prose.
 --
 -- `scope` is the set an opening had to be closed within, which is the word the
--- pairing messages use: an author told "this document" in a book would go
--- looking in the wrong file.
+-- pairing messages use: "document" for a single document, "chapter" in an HTML
+-- book, where an author told "this document" would go looking in the wrong
+-- file.
 local function report_range(found, scope)
   if found.kind == "unrecognized" then
     qi_core.warn(('%s= on %s names neither end of a range ("%s"); the mark indexes as though the attribute were absent'):format(qi_core.RANGE_ATTR, found.context, found.value))
@@ -346,9 +347,7 @@ end
 
 -- The document's own range marks, in document order, and the findings held
 -- against them. The findings wait rather than being reported where they are
--- made: the mark-local ones so they print after the per-mark reports the
--- emitting pass draws, and the pairing ones because a book chapter is not the
--- set a range is paired in.
+-- made, so they print after the per-mark reports the emitting pass draws.
 local range_items = {}
 local range_found = {}
 local range_pair_found = {}
@@ -413,17 +412,17 @@ local function next_range(key)
   return nil
 end
 
--- Draw the held findings. `pairing` says whether the pairing ones are this
--- document's to draw: false in a book chapter, where the whole store is what
--- a range is paired in.
-local function report_ranges(pairing)
+-- Draw the held findings. `scope` is the word the pairing messages name the
+-- set an opening had to be closed within — "document", or "chapter" in an
+-- HTML book, where under D-009 each chapter is its own pairing scope and so
+-- draws its own pairing reports; the book's cross-chapter report is a
+-- separate message `qi_book` owns.
+local function report_ranges(scope)
   for _, found in ipairs(range_found) do
-    report_range(found, "document")
+    report_range(found, scope)
   end
-  if pairing then
-    for _, found in ipairs(range_pair_found) do
-      report_range(found, "document")
-    end
+  for _, found in ipairs(range_pair_found) do
+    report_range(found, scope)
   end
 end
 
@@ -531,9 +530,6 @@ M["record_marked"] = record_marked
 M["report_dangling"] = report_dangling
 M["clamped_paths"] = clamped_paths
 M["record_clamped"] = record_clamped
-M["report_range"] = report_range
-M["range_end"] = range_end
-M["pair_ranges"] = pair_ranges
 M["plan_range"] = plan_range
 M["finish_ranges"] = finish_ranges
 M["next_range"] = next_range

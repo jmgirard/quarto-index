@@ -200,13 +200,29 @@ def _ind(argv):
     for term, ordinal in ordinals.items():
         printed = M20._locator_groups(items[term], locator_cmd)[0][1][0].strip()
         composed = opened[ordinal] + '--' + closed[ordinal]
-        if printed != composed and printed != opened[ordinal]:
-            _fail('M21-AC2: the %r range prints %r, and its ordinal %s is '
-                  'registered from pages %s and %s — neither the composed range '
-                  '%r nor the opening page alone matches what is printed, so the '
-                  'lookup that emphasizes it finds nothing'
-                  % (term, printed, ordinal, opened[ordinal], closed[ordinal],
-                     composed))
+        # Which equality is required depends on the SHAPE printed, so each
+        # registered page is constrained in every shape: a disjunction over the
+        # two let a same-page range pass on its opening alone, with the closing
+        # registration never read at all (review R4-F6).
+        if '--' in printed:
+            if printed != composed:
+                _fail('M21-AC2: the %r range prints %r, but its ordinal %s is '
+                      'registered from pages %s and %s, composing %r — the '
+                      'lookup that emphasizes it finds nothing'
+                      % (term, printed, ordinal, opened[ordinal],
+                         closed[ordinal], composed))
+        else:
+            if opened[ordinal] != closed[ordinal]:
+                _fail('M21-AC2: the %r range prints the single page %r, so its '
+                      'two ends must register the same page, but ordinal %s is '
+                      'registered from %s and %s'
+                      % (term, printed, ordinal, opened[ordinal],
+                         closed[ordinal]))
+            if printed != opened[ordinal]:
+                _fail('M21-AC2: the %r range prints the single page %r, but its '
+                      'ordinal %s is registered from page %s — the lookup that '
+                      'emphasizes it finds nothing'
+                      % (term, printed, ordinal, opened[ordinal]))
     # A lone principal mention registers through the page command instead, and
     # this fixture writes none: a registration arriving by that route would mean
     # a range opening emitted the wrong command and its start page was never

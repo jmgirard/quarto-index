@@ -98,15 +98,13 @@ local function Pandoc(doc)
   if not book and not (qi_core.is_html() and doc.meta.book ~= nil) then
     qi_marks.report_dangling(qi_marks.marked_paths, qi_marks.pending_xrefs, "document")
   end
-  -- The range reports, held rather than emitted where they were found. The
-  -- mark-local ones are drawn wherever the mark is rendered; the PAIRING ones
-  -- only where this document is the set a range had to be paired within. In a
-  -- book that set is the whole store, and the chapter that reads it draws them
-  -- (qi_book) — a range opened in one chapter and closed in another is
-  -- unmatched in both, and neither chapter may say so. On the degraded book
-  -- path there is no store to pair in and the page was indexed on its own, so
-  -- an unpaired range there is reported rather than silently spanning nothing.
-  qi_marks.report_ranges(not book)
+  -- The range reports, held rather than emitted where they were found so they
+  -- print after the per-mark reports. Under D-009 every Pandoc process is its
+  -- own pairing scope — a single document, or one chapter of an HTML book —
+  -- so the pairing reports are always this process's to draw; only the WORD
+  -- naming the scope differs, so an author is sent looking in the right set.
+  -- The book's cross-chapter report is a separate message qi_book owns.
+  qi_marks.report_ranges(book and "chapter" or "document")
 
   if qi_core.is_html() then
     -- Anchors are assigned before either path decides what to place: they are

@@ -15,7 +15,8 @@ One more term for the letter group `Beta` opens in the chapter before this
 one: a group gathers what every chapter contributed, not what one chapter
 did. [Beacon]{.index}.
 
-The discussion opened in the previous chapter closes here, contributing no
-locator of its own — and declaring the role from this end, which only the
-chapter that reads every record can carry back to the locator the OTHER chapter
-contributes: [Ranged Term]{.index range="close" mention="principal"}.
+The discussion opened in the previous chapter closes here. Nothing pairs
+across chapters, so this closing indexes on its own — refused as closing a
+range this chapter never opens — and the role it declares emphasizes its own
+locator, not the other chapter's:
+[Ranged Term]{.index range="close" mention="principal"}.

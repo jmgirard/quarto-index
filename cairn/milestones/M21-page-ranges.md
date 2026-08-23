@@ -113,7 +113,7 @@ Completed tasks are one line each; what each did, and why, is in the work log be
 - [x] T9: Review round 1's nine findings, each with the check that would have caught it.
 - [x] T10: Review round 2's seven findings, the two plant readers moved into
       `tests/m21probes.py` so the run and the self-test share one reader.
-- [ ] T12: Review round 4's ten findings — each chapter draws its own kind-specific pairing
+- [x] T12: Review round 4's ten findings — each chapter draws its own kind-specific pairing
       reports under D-009 (R4-F1), the same-page registration constrained (R4-F6), the
       narrowing's comment/fixture/export debris removed (R4-F2/F3/F4/F5/F8), and the two
       one-liners (R4-F7/F9); R4-F10 (the LESSONS line) landed at the park.
@@ -183,6 +183,10 @@ Completed tasks are one line each; what each did, and why, is in the work log be
 - 2026-08-22: review round 4 returned ten findings — a book chapter still suppresses all five kind-specific pairing reports while the book names the wrong cause, and AC4's third shape goes unreported in a book entirely (R4-F1, reproduced by two lenses); the same-page range's closing registration is unconstrained (R4-F6); and eight items of comment, fixture and export debris left by round 3's narrowing. Fourth defect return. At the gate the user chose to park the milestone as blocked rather than retry past the thrash threshold.
 - 2026-08-22: status blocked. Blocker: the milestone has needed a further review round every time, and round 4's findings do not yet show the rate falling. The branch, PR #21 and every finding stay on disk; the resume path is written into the Review section above.
 - 2026-08-22: resumed — the user chose to unpark at the /milestone status chip, which resolves the park (its blocker was the user's own stop decision). Status in-progress; T12 added for round 4's ten findings, all dispositioned in the resume path.
+- 2026-08-22: T12 (R4-F1) — a chapter draws its own five pairing reports, worded over the chapter (`report_ranges` now takes the scope word; index.lua passes "chapter" in a book), and the book's report names only marks whose counterpart it can see in another chapter's record, matched in book order exactly as `pair_ranges` matches. `examples/book-order` gains the shapes: a genuine cross-chapter pair (`Bridged`, the one thing the book now names, proving the attribution on both renders) and a same-chapter already-open (`Twice Opened`, AC4's third shape firing in a book); `Unclosed` and `Spanned`'s closing leave the book report — one-chapter faults their own chapters state. README's cross-chapter paragraph rewritten and its pins with it; the whole-book nameable-warnings count moves 2 → 4.
+- 2026-08-22: T12 (R4-F6/F7/F9) — the `.ind` reader splits on the printed shape, so a one-page span requires its two registrations to agree and match what prints where the disjunction let the closing go unread (a new plant discriminates); the book-order attribution checks read both renders; `valid_record` holds `paired` to the two ends this version knows, since `build_entry_tree` drops a locator on one of them.
+- 2026-08-22: T12 (R4-F2/F3/F4/F5/F8) — the stacked `store_write` comment, four fixtures' cross-chapter prose, six module comments and two suite comment blocks corrected to D-009-as-repaired; `pair_ranges`, `range_end` and `report_range` unexported (no consumer); `report_range`'s `scope` regains a second live value, "chapter". R4-F8 named no specific comments, so every test comment the narrowing falsified was swept rather than two picked.
+- 2026-08-22: T12 done. `tests/run-tests.sh` 249 checks, `--self-test` 368 (before: 249 and 367).
 
 ## Decisions
 

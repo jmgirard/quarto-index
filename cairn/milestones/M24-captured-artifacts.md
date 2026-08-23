@@ -53,9 +53,13 @@ checker-regress shape D-004 refused.
       prints nothing.
 - [ ] AC3: Over the same `git ls-files tests` set, every line matching
       `quarto render` is immediately followed by a call to the capture helper.
-- [ ] AC4: The `data-qi-pending` residue sweep (`tests/run-tests.sh:3600`) and
+- [ ] AC4: The `data-qi-pending` residue sweep and the marker-class half of
       the M12 structural-residue check read the captured set under `$WORK` and
-      iterate that set, rather than naming a fixed list of artifacts.
+      iterate it, judging every captured page and naming no fixed list of
+      artifacts to visit. The empty-div half instead reads the captured copies
+      of the three fixtures a marker was removed from: an empty div is residue
+      only where a marker was removed, and every rendered page carries empty
+      divs Quarto itself wrote.
 - [ ] AC5: `tests/run-tests.sh --self-test` exits 0 and prints its
       "All checks passed" line on a tree with no untracked `examples/`
       artifacts present before the run.
@@ -78,12 +82,12 @@ checker-regress shape D-004 refused.
       given a render's source path and format, copy the artifacts that render
       produced into a per-render directory under `$WORK`. One definition, the
       way `run_scan` is the one place an invocation is written down.
-- [ ] T3: Rewrite the single-document `.tex`/`.md` read sites to the captured
+- [x] T3: Rewrite the single-document `.tex`/`.md` read sites to the captured
       copy. Start at the AC3 control-token block
       (`tests/run-tests.sh:1615-1648`), which is the clean-checkout failure.
-- [ ] T4: Rewrite the `.html` read sites, including `tests/htmlindex.py`'s
+- [x] T4: Rewrite the `.html` read sites, including `tests/htmlindex.py`'s
       callers, to the captured copy.
-- [ ] T5: Rewrite the LaTeX aux-family read sites (`.aux`, `.idx`, `.ilg`,
+- [x] T5: Rewrite the LaTeX aux-family read sites (`.aux`, `.idx`, `.ilg`,
       `.ind`, `.log`), including the M22 block at `tests/run-tests.sh:8653` and
       the M20 principal-registry reads.
 - [ ] T6: Re-point the two residue sweeps at the captured set and make each
@@ -103,3 +107,6 @@ checker-regress shape D-004 refused.
 - 2026-08-23: implement gate chose: a capture copies then DELETES the originals when they sit under examples/, so a later render of the same document cannot leave an older artifact in the newer capture and a check aimed at the wrong capture fails on a missing file; checks spell the capture path in full rather than reading a variable the helper sets; and the 232 read sites are rewritten by one scripted pass whose diff is then read by hand.
 - 2026-08-23: T1 — pre-render clean (`git clean -Xdf examples/`) added beside the $WORK wipe, exempted in both self-test modes, with the `git clean -Xdn` empty assertion immediately after it.
 - 2026-08-23: T2 — `capture` added beside `run_scan`; called at all 85 render sites with a slug taken from each render's own log name. It copies the render's artifacts into $WORK/cap/<slug>/, removes the originals only from under examples/, refuses a reused slug, and copies (never moves) a project render's _book tree, which the book fixtures re-render into.
+- 2026-08-23: T3-T5 done in one scripted pass rather than three (minor amendment): the tasks split the read sites by artifact family, but the rewrite rule is one rule — the capture of the last render that produces that extension for that fixture — so splitting it would have been three runs of one script. 238 sites rewritten, then audited; the nine hand-written `rm -f examples/...` pre-render cleans deleted as the per-fixture form of what `capture` now does everywhere; the AC3 control-token comparison moved below the render it reads, which is the clean-checkout failure the plan named; the M15 contested-key sweep re-pointed from `examples/*.tex` to the captured LaTeX set and moved to the end of the run so its domain is complete, which brought `xref-conflict.tex` and `range.tex` into it — both derived from their fixtures as carrying a contested key, and both invisible to the old glob because a later PDF render removed them.
+- 2026-08-23: AC4 amended at a mini gate (substantive): the marker-residue check has two halves that generalize differently. The marker-class half iterates the captured set with an equality-per-page map naming the two fixtures that keep a marker on purpose; the empty-div half cannot, because every rendered page carries empty divs Quarto wrote, so it reads the three fixtures a marker was removed from. The criterion narrows to say so; nothing was added. The amended wording was audited in-session rather than by a fresh reader — this session is configured not to spawn subagents — and that was disclosed at the gate.
+- 2026-08-23: T6 (part) — both residue sweeps moved into `tests/htmlsweep.py` and run last, after the parity probe, so nothing the run renders sits outside the domain they claim. The pending sweep now reads 85 captured pages where it globbed `examples/*.html`; the marker-class sweep reads the same 85 where it was three hand-written call sites.

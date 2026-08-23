@@ -385,14 +385,20 @@ folded for itself: a range you wrote with `range=` is one the extension knows
 about, and it prints emphasized whole (see [A discussion that spans
 pages](#a-discussion-that-spans-pages)).
 
-**Deleting marks never breaks the next render.** The emphasis machinery writes
-its page registrations into the document's `.aux`, and that file can outlive
-the marks that wrote it — `latex-clean: false`, or a failed render, leaves it
-in place. A document whose principal or range marks have since been deleted —
-every mark included — still defines stand-ins that read those leftover lines
-and do nothing, so the next render builds cleanly and the pages they name
-print as the ordinary locators they now are. The leftover lines are gone as
-soon as that render rewrites the `.aux`.
+**Deleting marks never breaks the next render on a leftover `.aux`.** The
+emphasis machinery writes its page registrations into the document's `.aux`,
+and that file can outlive the marks that wrote it — `latex-clean: false`, or a
+failed render, leaves it in place. A document whose principal or range marks
+have since been deleted — every mark included — still defines stand-ins that
+read those leftover lines and do nothing, so the next render builds cleanly
+and the pages they name print as the ordinary locators they now are. The
+leftover lines are gone as soon as that render rewrites the `.aux`.
+
+A leftover `.ind` is a different matter, and this does not cover it. The
+compiled index carries `\quartoindexlocator`, which is defined only where a
+principal mention is, so a `.ind` from an earlier render that `makeindex` has
+not since rewritten will stop a document that no longer has one. Delete it, or
+let the render rebuild it.
 
 **A role needs a locator to apply to.** A cross-reference takes the place of a
 locator, so `mention="principal"` on a mark that also carries `see=` or
@@ -534,7 +540,11 @@ position. When a document has at least one mark, it also adds
 `\printindex` after the document body — or at your placement marker, if the
 document has one — so the index is built and listed in the table of contents
 with no configuration. In a document with a bibliography the index currently
-prints before the references. A document with no marks gets none of this.
+prints before the references. A document with no marks gets none of this,
+except the three one-line `\providecommand*` stand-ins every LaTeX-derived
+render carries against a leftover `.aux` (see [Deleting marks never breaks the
+next render on a leftover
+`.aux`](#deleting-marks-never-breaks-the-next-render-on-a-leftover-aux)).
 
 A cross-reference is written into the same `\index{…}` command, through
 `makeindex`'s encapsulation channel — `\index{cats|see{Felines}}` — except
@@ -543,7 +553,7 @@ the cross-reference in its printed text instead. A document that puts both
 attributes on one mark, or that composes such an entry, also gets one small
 `\providecommand` in its preamble, which prints cross-references through
 LaTeX's own `\seename` and `\alsoname`, so a document loading `babel` keeps
-its translations. A document with neither gets nothing extra.
+its translations. A document with neither gets nothing extra on this account.
 
 A page range is written into that same channel, as `makeindex`'s own range
 operators — `\index{otters|(}` at the opening mark and `\index{otters|)}` at

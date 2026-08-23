@@ -8371,9 +8371,6 @@ from: markdown-smart
 format:
   pdf:
     latex-clean: false
-    include-in-header:
-      text: |
-        \newcommand*\quartoindexprincipal[1]{[P:#1]}
 filters:
   - index
 ---
@@ -8407,7 +8404,7 @@ done
 # pattern gone silent would probe the parent document twice (M16 lesson: a
 # check's domain silently emptying looks no different from a pass).
 sed -E 's/ (mention|range)="[^"]*"//g' "$M22W/stale.qmd" > "$M22W/noattrs.qmd"
-if grep -q 'mention=\|range=' "$M22W/noattrs.qmd"; then
+if grep -qE 'mention=|range=' "$M22W/noattrs.qmd"; then
   fail "M22: the attribute-stripping pass left a mention=/range= attribute behind"
 fi
 grep -q '{\.index}' "$M22W/noattrs.qmd" \
@@ -8431,26 +8428,26 @@ for variant in noattrs nomarks; do
       > "$WORK/m22-$variant-pdflatex.log" 2>&1 \
     || { tail -30 "$VDIR/probe.log" >&2; fail "M22-AC1: pdflatex on the $variant variant beside the surviving .aux exited non-zero — deleting marks broke the next render (IP2)"; }
   if grep -q 'Undefined control sequence' "$VDIR/probe.log"; then
-    fail "M22-AC1: the $variant variant's log reports an undefined control sequence against the surviving .aux"
+    fail "M22-AC1: the $variant variant's first-pass log reports an undefined control sequence against the surviving .aux"
   fi
-  # Whatever index the variant typesets must emphasize nothing: the stale
-  # registrations were gobbled, not honored. The still-marked variant has an
-  # .idx to run makeindex over; the mark-free one typesets no index and its
-  # first-pass PDF is the one read.
+  # The FIRST pass is the one that reads the surviving .aux, at
+  # `\begin{document}`, and it rewrites the file as it goes. The second pass
+  # typesets the index this render's own .idx produced, and is read for the
+  # undefined control sequence separately: it overwrites the first pass's log,
+  # so checking its exit status alone would leave everything it reports
+  # covered only by pdflatex's own tolerance for an undefined command.
   if [ -s "$VDIR/probe.idx" ]; then
     ( cd "$VDIR" && makeindex probe.idx ) >> "$WORK/m22-$variant-pdflatex.log" 2>&1 \
       || fail "M22-AC1: makeindex failed on the $variant variant's .idx"
-    ( cd "$VDIR" && pdflatex -interaction=nonstopmode probe.tex ) \
-        >> "$WORK/m22-$variant-pdflatex.log" 2>&1 \
-      || { tail -30 "$VDIR/probe.log" >&2; fail "M22-AC1: the $variant variant's second pdflatex pass exited non-zero"; }
   fi
-  pdftotext "$VDIR/probe.pdf" "$VDIR/probe.txt" 2>/dev/null \
-    || fail "M22-AC1: pdftotext failed on the $variant variant's PDF"
-  if grep -qF '[P:' "$VDIR/probe.txt"; then
-    fail "M22-AC1: the $variant variant's typeset output emphasizes a locator, so a stale registration was honored rather than gobbled"
+  ( cd "$VDIR" && pdflatex -interaction=nonstopmode probe.tex ) \
+      >> "$WORK/m22-$variant-pdflatex.log" 2>&1 \
+    || { tail -30 "$VDIR/probe.log" >&2; fail "M22-AC1: the $variant variant's second pdflatex pass exited non-zero beside the surviving .aux"; }
+  if grep -q 'Undefined control sequence' "$VDIR/probe.log"; then
+    fail "M22-AC1: the $variant variant's second-pass log reports an undefined control sequence"
   fi
 done
-pass "M22-AC1: a document that lost its mention=/range= attributes and one that lost its marks entirely both build at pdflatex exit 0 beside the surviving .aux, log no undefined control sequence, and emphasize nothing"
+pass "M22-AC1: a document that lost its mention=/range= attributes and one that lost its marks entirely both build at pdflatex exit 0 beside the surviving .aux, and neither pass of either render logs an undefined control sequence"
 
 # M22-AC2's header clause: the principal document carries none of the gobbling
 # stand-ins — both definition sets are `\providecommand*`, so a stand-in
@@ -8465,6 +8462,10 @@ pass "M22-AC1: a document that lost its mention=/range= attributes and one that 
 # the first stand-in found, naming it on stderr.
 m22_nogobblers() {
   local tex="$1" cmd
+  # `grep -qF` exits 2 on a missing path, so without this the loop would find
+  # nothing three times and the function would report a clean absence over a
+  # file that was never produced — the hole m20probes._tex guards explicitly.
+  [ -f "$tex" ] || { printf 'no such file: %s\n' "$tex" >&2; return 1; }
   for cmd in "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"; do
     if grep -qF -- "\\providecommand*\\$cmd[2]{}" "$tex"; then
       printf 'gobbling stand-in for \\%s found in %s\n' "$cmd" "$tex" >&2
@@ -8478,15 +8479,37 @@ for cmd in "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"; do
       || fail "M22-AC2: the gobbling stand-in for \\$cmd is missing from the $tex variant's header, where every no-subsystem LaTeX document must carry it"
   done
 done
+# The same three, in the committed zero-mark negative control AC3 renders. The
+# variants above are documents this section authors; control.tex is a document
+# the suite already had, and it is the only place the zero-marks branch — the
+# one this milestone moved the early return past — is read outside this
+# section. Without this, a regression that dropped that branch for real
+# documents would leave the two authored variants passing.
+for cmd in "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"; do
+  grep -qF -- "\\providecommand*\\$cmd[2]{}" examples/control.tex \
+    || fail "M22-AC2: the gobbling stand-in for \\$cmd is missing from examples/control.tex, the zero-mark control every LaTeX render's stand-ins must reach"
+done
+# And nothing else there names the subsystem: the stand-ins are the ONE
+# addition this milestone makes to a document with no marks, which is what
+# AC3's forbidden-token loop above would otherwise have to spell out.
+if [ "$(grep -cF -- 'quartoindex' examples/control.tex)" -ne 3 ]; then
+  fail "M22-AC2: examples/control.tex names quartoindex on $(grep -cF -- 'quartoindex' examples/control.tex) line(s); the three gobbling stand-ins are the only ones a zero-mark document may carry"
+fi
 m22_nogobblers "$WORK/principal.tex" \
   || fail "M22-AC2: the principal document's header carries a gobbling stand-in alongside the live subsystem, and both define with \\providecommand* — whichever landed first wins"
-pass "M22-AC2: both no-subsystem variants define all three gobbling stand-ins and the principal document defines none of them beside its live subsystem"
+pass "M22-AC2: both no-subsystem variants and the committed zero-mark control define all three gobbling stand-ins and name quartoindex nowhere else, and the principal document defines none of them beside its live subsystem"
 
 # The README paragraph documenting this behavior is normative: a documented
 # claim with no check beside it drifts (M13), and this one's enforcement is
 # the AC1 probe above.
-grep -qF '**Deleting marks never breaks the next render.**' README.md \
+grep -qF '**Deleting marks never breaks the next render on a leftover `.aux`.**' README.md \
   || fail "M22: README no longer carries the stale-.aux paragraph whose claim the probe above enforces"
+# The claim is scoped to the `.aux` on purpose: a leftover `.ind` still carries
+# \quartoindexlocator, which no stand-in covers, so an unqualified promise
+# would be a documented claim the probe cannot enforce and the render does not
+# keep. This pins the qualification itself, not just the paragraph.
+grep -qF 'A leftover `.ind` is a different matter, and this does not cover it.' README.md \
+  || fail "M22: README's stale-.aux paragraph no longer scopes its promise to the .aux, but nothing here covers a surviving .ind"
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
@@ -9175,25 +9198,46 @@ filtersrc.sources()" >/dev/null 2>&1; then
   if cmp -s _extensions/index/index.lua "$M22SW/noinj/_extensions/index/index.lua"; then
     fail "M22 self-test: the gobbler-injection splice planted nothing — the probe below would be reported as failing to discriminate when the fault is this mutation's"
   fi
-  cp "$WORK/m22/noattrs.qmd" "$M22SW/noinj/"
-  ( cd "$M22SW/noinj" && quarto render noattrs.qmd --to latex ) \
-      > "$M22SW/noinj-render.log" 2>&1 \
-    || { cat "$M22SW/noinj-render.log" >&2; fail "M22 self-test: the spliced filter failed to render at all, so the probe below would fail for the wrong reason"; }
-  cp "$M22SW/noinj/noattrs.tex" "$M22SW/noinj/probe.tex"
-  cp "$WORK/m22/stale.aux" "$M22SW/noinj/probe.aux"
-  if ( cd "$M22SW/noinj" && pdflatex -interaction=nonstopmode probe.tex ) \
-       > "$M22SW/noinj-pdflatex.log" 2>&1; then
-    fail "M22 self-test: pdflatex exited 0 with the gobbler injection spliced out — the stale-.aux probe cannot discriminate"
-  fi
-  grep -q 'Undefined control sequence' "$M22SW/noinj/probe.log" \
-    || fail "M22 self-test: the spliced-out render failed, but not on the undefined control sequence the probe is about"
+  # BOTH variants, because they reach the injection through different branches:
+  # noattrs still has marks and takes the `else` beside the subsystem, while
+  # nomarks takes the zero-marks branch this milestone moved the early return
+  # past. One exemplar would leave the other branch's loss invisible here.
+  for variant in noattrs nomarks; do
+    cp "$WORK/m22/$variant.qmd" "$M22SW/noinj/"
+    ( cd "$M22SW/noinj" && quarto render "$variant.qmd" --to latex ) \
+        > "$M22SW/noinj-$variant-render.log" 2>&1 \
+      || { cat "$M22SW/noinj-$variant-render.log" >&2; fail "M22 self-test: the spliced filter failed to render $variant at all, so the probe below would fail for the wrong reason"; }
+    m22_nogobblers "$M22SW/noinj/$variant.tex" \
+      || fail "M22 self-test: the splice left a gobbling stand-in in the $variant header, so the pdflatex leg below would not be testing the injection's absence"
+    cp "$M22SW/noinj/$variant.tex" "$M22SW/noinj/probe.tex"
+    cp "$WORK/m22/stale.aux" "$M22SW/noinj/probe.aux"
+    if ( cd "$M22SW/noinj" && pdflatex -interaction=nonstopmode probe.tex ) \
+         > "$M22SW/noinj-$variant-pdflatex.log" 2>&1; then
+      fail "M22 self-test: pdflatex exited 0 on $variant with the gobbler injection spliced out — the stale-.aux probe cannot discriminate on that branch"
+    fi
+    grep -q 'Undefined control sequence' "$M22SW/noinj/probe.log" \
+      || fail "M22 self-test: the spliced-out $variant render failed, but not on the undefined control sequence the probe is about"
+  done
   # (ii) a stand-in planted beside the live subsystem: the shared reader the
   #      main run's absence clause uses must find it.
   probe_plantpl "$WORK/principal.tex" "$M22SW/gobbled.tex" \
     's/\\makeatletter/\\providecommand*\\quartoindexprincipalpage[2]{}\n\\makeatletter/'
   probe_defect "a gobbling stand-in landing beside the live subsystem" \
     m22_nogobblers "$M22SW/gobbled.tex"
-  pass "M22 self-test: the stale-.aux probe fails on the injection spliced out — on the undefined control sequence itself — and the absence reader fails on a stand-in planted beside the subsystem"
+  # (iii) a BODIED definition of one of the three subtracted names, planted in
+  #       the control: the `--standins` subtraction removes exactly the empty
+  #       form, so this must still trip M20-AC6's leak scan. Without this the
+  #       subtraction's bound is asserted in a comment and proven nowhere —
+  #       the run's only other planted leak is \quartoindexlocator, which the
+  #       subtraction never touches. The page command is the name to plant:
+  #       m20_tex's four wanted names and the three subtracted ones meet in
+  #       it alone, so a plant on either range name would sit outside the
+  #       leak scan's own list and prove nothing about the subtraction.
+  probe_plant "examples/content.tex" "$M22SW/bodied.tex" \
+    -e 's|^\\providecommand\*\\'"$PRINCIPALPAGE_CMD"'\[2\]{}$|\\providecommand*\\'"$PRINCIPALPAGE_CMD"'[2]{\\relax}|'
+  probe_defect "a bodied definition of a subtracted name in a document with no principal mention" \
+    m20_tex "$WORK/principal.tex" "$M22SW/bodied.tex"
+  pass "M22 self-test: the stale-.aux probe fails on the injection spliced out — on the undefined control sequence itself, through each of the two branches that inject — the absence reader fails on a stand-in planted beside the subsystem, and the leak scan still fails on a bodied definition of one of the three names its --standins subtraction removes the empty form of"
 
   # -------------------------------------------------------------------------
   # M16-AC3 — every source-reading check keeps finding its definition once the

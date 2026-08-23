@@ -150,8 +150,10 @@ local function record_principal(source)
 end
 
 -- The ordinal a key's locator marks encapsulate with, or nil for a key no mark
--- of which is principal — which emits exactly what it emitted before this
--- milestone, so a document with no principal mention is byte-identical.
+-- of which is principal — which emits exactly what it emitted before M20, so
+-- a document with no principal mention indexes byte-identically. Its PREAMBLE
+-- no longer does: M22 puts three gobbling `\providecommand*` stand-ins in
+-- every LaTeX-derived document this subsystem is not injected into.
 local function principal_ordinal(source)
   return principal_keys[source]
 end

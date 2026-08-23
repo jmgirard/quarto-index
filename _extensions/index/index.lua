@@ -150,7 +150,10 @@ local function Pandoc(doc)
     -- subsystem's lines from a render whose marks have since been deleted,
     -- and reading those against no definition fails the render, which is
     -- the IP2 break the subsystem exists to avoid. Injection needs Quarto;
-    -- plain pandoc has no preamble channel, exactly as below.
+    -- plain pandoc has no preamble channel. Silent where the marked path
+    -- below warns about the same missing channel, and deliberately: that
+    -- warning is about marks whose index setup is being skipped, and this
+    -- document has no marks to report anything about.
     if quarto and quarto.doc and quarto.doc.include_text then
       quarto.doc.include_text("in-header", qi_core.PRINCIPAL_GOBBLERS)
     end

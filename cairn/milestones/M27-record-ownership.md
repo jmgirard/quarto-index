@@ -1,11 +1,11 @@
 # M27: A finding about today's behavior is a known issue, not a candidate row
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
-- **Branch/PR:** —
+- **Branch/PR:** `m027-record-ownership`
 
 ## Goal
 
@@ -69,7 +69,7 @@ budgets stay hand-checked at hygiene passes. Any change under `tests/` or
 
 ## Tasks
 
-- [ ] T1: Read every `- ` row under `## Candidates` in `cairn/ROADMAP.md` (37
+- [x] T1: Read every `- ` row under `## Candidates` in `cairn/ROADMAP.md` (37
       at the merge base) and every `- ` line in `cairn/LESSONS.md` (41).
       Classify each clause as proposed work (stays), a finding about current
       behavior (moves to `## Known issues`), or lesson content a named check
@@ -98,8 +98,71 @@ budgets stay hand-checked at hygiene passes. Any change under `tests/` or
 - 2026-08-23: created by /milestone-plan.
 - 2026-08-23: criteria audit ran in reduced mode (internal tier), in-session rather than in a spawned fresh-context reader, because this session is instructed not to spawn agents — the weaker arrangement M26 also hit. One finding: a draft AC3 promised removed text would appear "in the archive summary", which binds a record of verification rather than the records themselves; narrowed to `cairn/DESIGN.md` and this file's `## Decisions`. A draft AC6 promised `tests/plantdefect.py` fails on each planted defect, a test-harness property; narrowed to the lesson content, with the self-test run moved to T5.
 - 2026-08-23: plan gate chose refiling findings into `cairn/DESIGN.md`'s `## Known issues` with a recorded boundary rule over compressing row prose in place, because compression leaves the append-a-finding-to-a-work-row mechanism intact and both files return to their caps in roughly five milestones at the observed ~500 bytes per milestone; falsified by the files climbing back toward their caps after this milestone without any row gaining a finding clause.
+- 2026-08-23: T1 classified all 37 candidate rows and framed the lesson exits; the ledger is in `## Decisions`. Findings take labels KI1-KI79 in `cairn/DESIGN.md`; six single-item suite rows fold into the acceptance-suite-hardening row. Verify slot green (275 checks).
 - 2026-08-23: plan gate chose retiring the enforced variations of the "prove a check discriminating" lesson over keeping the line whole and cutting mid-sized lessons instead, because the line is 2,995 bytes of 18,439 and the repo now runs a planted-defect self-test; falsified by a self-test run that passes with a variation's defect planted.
 
 ## Decisions
+
+### T1 classification ledger (2026-08-23)
+
+Every `- ` row under `## Candidates` (37 at the merge base) and every `- ` line
+in `cairn/LESSONS.md` (41), classified as proposed work (stays in ROADMAP), a
+finding about current behavior (moves to `cairn/DESIGN.md`'s `## Known issues`
+as `KI<n>`), or content a named check already enforces (retires). Findings are
+carried into `## Known issues` in full; this ledger is the map from each source
+row to the labels its content became, so no removed clause is unaccounted for.
+
+**Candidate rows → dispositions.** Left column is the row's opening words at
+the merge base.
+
+| Row | Findings moved | Proposal kept |
+|---|---|---|
+| M13 review follow-ups | KI75, KI73 | dedupe `examples/.gitignore`; make the claim check assert emission |
+| Reconcile the example corpus | KI72 | reconcile the corpus |
+| Emptied-place report follow-ups | KI21, KI22, KI23 | settle what a block position is measured over |
+| Module-split follow-ups | KI76, KI77 | rewrap under 80 columns; narrow module exports |
+| Release bundle | — | unchanged |
+| Chapter-based locator labels | — | unchanged |
+| Locator-control follow-ups | KI5, KI74 | the three author-control items |
+| A range spanning two chapters | KI19, KI20 | pair them, on the record shape |
+| Book sidecar-store follow-ups | KI16, KI17, KI18 | prune; stabilize key order; decide the non-`book.render` page |
+| A leftover `.ind` | KI4 | cover it with a gobbling stand-in |
+| Multiple named indexes | — | unchanged |
+| Quarto version floor + CI matrix | KI79 | the floor and the matrix |
+| Non-Latin-1 scripts | KI6 | the engine/font decision |
+| Acceptance-suite hardening | KI27–KI74 | close them; absorbs six single-item suite rows below |
+| Windows checkouts | KI78 | support them |
+| `marks_seen` | KI10 | guard a cell added after M26 joining no `reset` |
+| `\index` in a moving argument | KI2 | probe it; protect `\quartoindexregister` |
+| see-also entries keep their locators | KI9 | settle the semantics and the repeated `\seename` |
+| Escaping probe covers singly | KI71 | absorbed into acceptance-suite hardening |
+| `[` and `]` not in the escape table | KI1 | add them |
+| Bare unquoted values | KI70 | absorbed into acceptance-suite hardening |
+| Demo manifests have no count | KI67 | absorbed into acceptance-suite hardening |
+| Demo's makeindex acceptance | KI68 | absorbed into acceptance-suite hardening |
+| `\printindex` precedes the bibliography | KI3 | move it after |
+| PDF cross-reference substring checks | KI69 | absorbed into acceptance-suite hardening |
+| Attribute values in pass-through formats | KI15 | settle whether the residue is acceptable |
+| Planted-defect self-test is `.tex`-only | KI66 | absorbed into acceptance-suite hardening |
+| Marker in YAML `abstract:` | KI11 | reach it |
+| `resolve_markers` rebuilds every list | KI12, KI52 | restore byte-level evidence |
+| Headings consumed by Quarto constructs | KI13 | pin the invariant |
+| Locator hrefs cannot be escaped | KI14 | handle `#`/`?` in a chapter filename |
+| Sort-key paths keyed unclamped | KI7 | key them on what the back-end prints |
+| An empty entry tree | KI8 | report it |
+| Hard-coded English strings | KI26 | adopt a `lang` policy |
+| A mark whose `entry=` is all empty | KI24 | absorbed into acceptance-suite hardening |
+| The chapter-count report's numbers | KI25 | absorbed into the emptied-place row |
+| The two range traversals | KI20 | absorbed into the two-chapter range row |
+
+**Lesson lines.** A lesson stays where it states transferable craft about
+Pandoc, LaTeX, makeindex or check design that no `cairn/` file owns and no test
+fires on. It leaves on one of two exits: **ownership**, where the line is a
+statement about how this repo behaves today, which `## Known issues` now owns
+under the boundary entry T2 writes; or **enforcement**, where a named check in
+`tests/run-tests.sh` fails on the mistake the line warns about. Which lines
+those are is settled at T5 against a `tests/run-tests.sh --self-test` run, and
+recorded there with the covering check named; nothing is retired on this
+ledger's authority alone.
 
 ## Review

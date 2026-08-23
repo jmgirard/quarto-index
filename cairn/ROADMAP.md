@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-23 (status audit after M26's merge: all 16 mechanic
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M27 | A finding about today's behavior is a known issue, not a candidate row | planned | — | normal | milestones/M27-record-ownership.md |
+| M27 | A finding about today's behavior is a known issue, not a candidate row | in-progress | — | normal | milestones/M27-record-ownership.md |
 | M25 | A check that cannot hold its promise is retired, not widened | done | M24 | normal | milestones/archive/M25-scan-disposition.md |
 | M24 | Every check reads the copy, never the working tree | done | — | normal | milestones/archive/M24-captured-artifacts.md |
 | M26 | A document's accumulators start empty, whoever ran before it | done | — | normal | milestones/archive/M26-per-document-state.md |

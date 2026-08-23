@@ -120,7 +120,7 @@ FILTER_SOURCE_COUNT=$(printf '%s\n' "$FILTER_SOURCES" | wc -l | tr -d ' ')
 # Capturing a render's artifacts (M24). Quarto writes beside the source, so a
 # `.tex` under examples/ is whatever the LAST render of that document left
 # there — including one from a previous run, on a branch since changed, or of a
-# different format entirely. A check reading examples/demo.tex is therefore
+# different format entirely. A check reading $WORK/cap/demo-latex/demo.tex is therefore
 # asserting nothing about the render it sits under. This helper is called at
 # every render site and copies that render's artifacts into a directory of
 # their own under $WORK; every check then reads the copy, named by the render
@@ -456,7 +456,7 @@ README_LETTER_CLAIMS=(
 PROBE_CHARS='% & # _ { } \ ~ ^ $ @ | ! " < >'
 
 # ---------------------------------------------------------------------------
-# Manifest 1 — expected \index{} entries in examples/demo.tex (AC1).
+# Manifest 1 — expected \index{} entries in $WORK/cap/demo-latex/demo.tex (AC1).
 # Format: <count><TAB><exact \index{} argument text>
 # ---------------------------------------------------------------------------
 read -r -d '' DEMO_ENTRIES <<'MANIFEST' || true
@@ -524,7 +524,7 @@ HTML_LETTER_CLASS='qi-letter'
 HTML_PRINCIPAL_CLASS='qi-principal'
 
 # ---------------------------------------------------------------------------
-# Manifest 1e — the generated index in examples/demo.html (M03-AC2).
+# Manifest 1e — the generated index in $WORK/cap/demo-html/demo.html (M03-AC2).
 # EXHAUSTIVE: a rendered entry absent from this list fails, as does a listed
 # entry the render does not produce.
 # Two row shapes. An ENTRY row is
@@ -717,7 +717,7 @@ ALL_DEMO_ENTRIES="$DEMO_ENTRIES
 $XREF_ENTRIES"
 
 # ---------------------------------------------------------------------------
-# Manifest 2 — control tokens expected in examples/control.tex (AC3).
+# Manifest 2 — control tokens expected in $WORK/cap/control-latex/control.tex (AC3).
 # For each mark, an escape-free token containing that mark's own `entry=`
 # value or visible text, plus the bracketed visible-text tokens.
 # ---------------------------------------------------------------------------
@@ -732,7 +732,7 @@ read -r -d '' CONTROL_TOKENS <<'MANIFEST' || true
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 3 — visible terms expected in examples/demo.html (AC7), as rendered
+# Manifest 3 — visible terms expected in $WORK/cap/demo-html/demo.html (AC7), as rendered
 # text: markdown backslash-escapes consumed, then & < > as HTML entities.
 # The count total must equal the number of marks carrying visible text.
 # ---------------------------------------------------------------------------
@@ -813,7 +813,8 @@ Bee
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 5 — the aggregated index in examples/book/_book/last.html (M05-AC1,
+# Manifest 5 — the aggregated index the book fixture renders into its own
+# output directory, `_book/last.html` (M05-AC1,
 # AC2, AC3, AC4). EXHAUSTIVE, and stated in HREFS rather than locator counts:
 # a book index that links three times to the wrong chapter has the right
 # counts and is still wrong.
@@ -1524,11 +1525,11 @@ run_scan html-identifiers
 quarto render examples/demo.qmd --to latex > "$WORK/demo-latex.log" 2>&1 \
   || { cat "$WORK/demo-latex.log" >&2; fail "AC1: demo.qmd failed to render to LaTeX"; }
 capture examples/demo.qmd latex "demo-latex"
-[ -s examples/demo.tex ] || fail "AC1: examples/demo.tex is empty"
-check_entry_manifest examples/demo.tex "$ALL_DEMO_ENTRIES" "AC1/AC4"
-# Keep a copy: the later PDF render consumes examples/demo.tex, and the AC5
+[ -s $WORK/cap/demo-latex/demo.tex ] || fail "AC1: $WORK/cap/demo-latex/demo.tex is empty"
+check_entry_manifest $WORK/cap/demo-latex/demo.tex "$ALL_DEMO_ENTRIES" "AC1/AC4"
+# Keep a copy: the later PDF render consumes $WORK/cap/demo-latex/demo.tex, and the AC5
 # self-test plants its defects in this snapshot.
-cp examples/demo.tex "$WORK/demo-latex.tex"
+cp $WORK/cap/demo-latex/demo.tex "$WORK/demo-latex.tex"
 
 # Folding deeper levels is defensible under IP2 only because it warns; assert
 # the warning, or a refactor that drops it leaves the suite green.
@@ -1668,7 +1669,7 @@ run_scan xref-both-definition
 # ---------------------------------------------------------------------------
 # AC2 — preamble injection and \printindex placement.
 # ---------------------------------------------------------------------------
-python3 - examples/demo.tex <<'PY'
+python3 - $WORK/cap/demo-latex/demo.tex <<'PY'
 import sys
 src = open(sys.argv[1], encoding='utf-8').read()
 def need(tok):
@@ -1712,7 +1713,7 @@ PY
 # would abort the PDF compile); the negative is covered nowhere else, and a
 # filter that injected it unconditionally would leave every document carrying
 # preamble it does not need.
-python3 - examples/demo.tex examples/control.tex <<'PY'
+python3 - $WORK/cap/demo-latex/demo.tex $WORK/cap/control-latex/control.tex <<'PY'
 import sys
 defn = '\\providecommand*\\quartoindexseeboth'
 demo = open(sys.argv[1], encoding='utf-8').read()
@@ -1740,13 +1741,13 @@ PY
 quarto render examples/control.qmd --to latex > "$WORK/control-latex.log" 2>&1 \
   || { cat "$WORK/control-latex.log" >&2; fail "AC3: control.qmd failed to render to LaTeX"; }
 capture examples/control.qmd latex "control-latex"
-[ -s examples/control.tex ] || fail "AC3: examples/control.tex is empty"
+[ -s $WORK/cap/control-latex/control.tex ] || fail "AC3: $WORK/cap/control-latex/control.tex is empty"
 for tok in '\index{' 'imakeidx' '\makeindex' '\printindex'; do
-  if grep -qF -- "$tok" examples/control.tex; then
+  if grep -qF -- "$tok" $WORK/cap/control-latex/control.tex; then
     fail "AC3: control.tex must not contain $tok"
   fi
 done
-check_token_manifest examples/control.tex "$CONTROL_TOKENS" "AC3"
+check_token_manifest $WORK/cap/control-latex/control.tex "$CONTROL_TOKENS" "AC3"
 
 # ---------------------------------------------------------------------------
 # AC7 — HTML pass-through.
@@ -1754,9 +1755,9 @@ check_token_manifest examples/control.tex "$CONTROL_TOKENS" "AC3"
 quarto render examples/demo.qmd --to html > "$WORK/demo-html.log" 2>&1 \
   || { cat "$WORK/demo-html.log" >&2; fail "AC7: demo.qmd failed to render to HTML"; }
 capture examples/demo.qmd html "demo-html"
-[ -s examples/demo.html ] || fail "AC7: examples/demo.html is empty"
+[ -s $WORK/cap/demo-html/demo.html ] || fail "AC7: $WORK/cap/demo-html/demo.html is empty"
 for tok in '\index' 'imakeidx' '\makeindex' '\printindex'; do
-  if grep -qF -- "$tok" examples/demo.html; then
+  if grep -qF -- "$tok" $WORK/cap/demo-html/demo.html; then
     fail "AC7: demo.html must not contain $tok"
   fi
 done
@@ -1764,12 +1765,12 @@ done
 # ---------------------------------------------------------------------------
 # M03-AC2 / M03-AC3 — the generated HTML index, its anchors and its links.
 # ---------------------------------------------------------------------------
-check_html_index_manifest examples/demo.html "$DEMO_HTML_INDEX" "M03-AC2"
-check_letter_sweep examples/demo.html "M07-AC3 (demo)" \
+check_html_index_manifest $WORK/cap/demo-html/demo.html "$DEMO_HTML_INDEX" "M03-AC2"
+check_letter_sweep $WORK/cap/demo-html/demo.html "M07-AC3 (demo)" \
   $'Symbols\nA\nB\nC\nD\nG\nL\nO\nP\nS\nT\nU\nW'
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - examples/demo.html \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - $WORK/cap/demo-html/demo.html \
   examples/demo.qmd <<'PY'
 import os, re, sys
 sys.path.insert(0, 'tests')
@@ -1912,12 +1913,12 @@ done
 # Counted as `dot.png`, not `dot`: the bare substring collides with ordinary
 # prose and with Quarto's own boilerplate (`dotted`), so an exact count of it
 # would be pinned to the template rather than to the images.
-for f in examples/content.html examples/content.tex; do
+for f in $WORK/cap/content-html/content.html $WORK/cap/content-latex/content.tex; do
   CONTENT_DOTS=$(grep -o 'dot\.png' "$f" | wc -l | tr -d ' ')
   [ "$CONTENT_DOTS" = "3" ] \
     || fail "AC7/M02-AC5: expected 3 image references in $f, got $CONTENT_DOTS; marking an image must never remove it (IP2)"
 done
-CONTENT_IDX=$(grep -o '\\index{[^}]*}' examples/content.tex | wc -l | tr -d ' ')
+CONTENT_IDX=$(grep -o '\\index{[^}]*}' $WORK/cap/content-latex/content.tex | wc -l | tr -d ' ')
 [ "$CONTENT_IDX" = "1" ] \
   || fail "AC7: expected exactly one \\index from content.qmd (the entry= mark), got $CONTENT_IDX"
 pass "AC7: marked content with no derivable text is indexed not at all and deleted not at all"
@@ -1927,7 +1928,7 @@ pass "AC7: marked content with no derivable text is indexed not at all and delet
 # sweep. Only one mark here indexes anything (entry="Figure!Dot"); the others
 # yield no text or are cross-references with no source entry. So one top-level
 # entry, `Figure`, and one group.
-check_letter_sweep examples/content.html "M07-AC1 (marked content)" $'F'
+check_letter_sweep $WORK/cap/content-html/content.html "M07-AC1 (marked content)" $'F'
 
 # M02-AC5 case (a): a cross-reference mark with no source entry. Two shapes —
 # content that yields no text, and a genuinely empty mark — both warn, neither
@@ -1951,9 +1952,9 @@ for fmt in latex html; do
   capture examples/xref-conflict.qmd $fmt "conflict-$fmt"
 done
 # The emitted LaTeX, kept: the PDF render in the M15 section below removes
-# examples/xref-conflict.tex, and two checks there read the argument this
+# $WORK/cap/conflict-latex/xref-conflict.tex, and two checks there read the argument this
 # fixture emits rather than the index it prints.
-cp examples/xref-conflict.tex "$WORK/conflict-latex.tex"
+cp $WORK/cap/conflict-latex/xref-conflict.tex "$WORK/conflict-latex.tex"
 # M15 replaced this report's text: the emission no longer risks the failed
 # render the old wording warned of, so the report now says what the author's
 # two marks print as. Keyed on the clause that names the outcome, not on the
@@ -2026,14 +2027,14 @@ letter	U
 0	upsilon	0	see-plain One Way	see-plain Another Way
 MANIFEST
 
-check_html_index_manifest examples/xref-conflict.html "$XREF_HTML_INDEX" "M03-AC4"
-check_letter_sweep examples/xref-conflict.html "M07-AC3 (cross-references)" \
+check_html_index_manifest $WORK/cap/conflict-html/xref-conflict.html "$XREF_HTML_INDEX" "M03-AC4"
+check_letter_sweep $WORK/cap/conflict-html/xref-conflict.html "M07-AC3 (cross-references)" \
   $'C\nD\nK\nL\nM\nN\nP\nR\nS\nT\nU'
 
 # The token above says sigma's target is A link; this says it is the RIGHT
 # link. A cross-reference pointing at some other entry would satisfy the
 # manifest and mislead every reader who followed it.
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/xref-conflict.html <<'PY'
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - $WORK/cap/conflict-html/xref-conflict.html <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -2099,17 +2100,17 @@ MANIFEST
 quarto render examples/html-index.qmd --to html > "$WORK/html-index.log" 2>&1 \
   || { tail -20 "$WORK/html-index.log" >&2; fail "M03-AC4: html-index.qmd failed to render to HTML"; }
 capture examples/html-index.qmd html "html-index"
-check_html_index_manifest examples/html-index.html "$HTML_INDEX_MANIFEST" "M03-AC4"
-check_letter_sweep examples/html-index.html "M07-AC3 (no Symbols group)" \
+check_html_index_manifest $WORK/cap/html-index/html-index.html "$HTML_INDEX_MANIFEST" "M03-AC4"
+check_letter_sweep $WORK/cap/html-index/html-index.html "M07-AC3 (no Symbols group)" \
   $'A\nB\nE\nI\nK\nL\nN\nT\nZ'
-check_html_index_links examples/html-index.html "M03-AC3"
+check_html_index_links $WORK/cap/html-index/html-index.html "M03-AC3"
 
 # M03-AC3 — a minted id must never be an id the document already uses. Two
 # elements answering to one name is not a cosmetic problem: the browser
 # resolves a link to the first, so one of the two locators silently lands
 # somewhere the reader did not ask for.
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - examples/html-index.html <<'PY'
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - $WORK/cap/html-index/html-index.html <<'PY'
 import os, sys
 from collections import Counter
 sys.path.insert(0, 'tests')
@@ -2187,13 +2188,13 @@ MANIFEST
 quarto render examples/placement.qmd --to html > "$WORK/placement-html.log" 2>&1 \
   || { tail -20 "$WORK/placement-html.log" >&2; fail "M03-AC2: placement.qmd failed to render to HTML"; }
 capture examples/placement.qmd html "placement-html"
-check_html_index_manifest examples/placement.html "$PLACEMENT_HTML_INDEX" "M03-AC2"
-check_letter_sweep examples/placement.html "M07-AC3 (placement)" \
+check_html_index_manifest $WORK/cap/placement-html/placement.html "$PLACEMENT_HTML_INDEX" "M03-AC2"
+check_letter_sweep $WORK/cap/placement-html/placement.html "M07-AC3 (placement)" \
   $'C\nD\nF\nG\nS\nT\nW'
-check_html_index_links examples/placement.html "M03-AC3"
+check_html_index_links $WORK/cap/placement-html/placement.html "M03-AC3"
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-python3 - examples/placement.html <<'PY'
+python3 - $WORK/cap/placement-html/placement.html <<'PY'
 import os, sys
 from collections import Counter
 sys.path.insert(0, 'tests')
@@ -2336,7 +2337,7 @@ MARKER_CLASS='qi-index-here'
 run_scan marker-class
 
 # ---------------------------------------------------------------------------
-# Manifest 1i — the generated index in examples/marker.html (M04-AC1), same
+# Manifest 1i — the generated index in $WORK/cap/marker-html/marker.html (M04-AC1), same
 # oracle rule and row format as manifest 1e. marker.qmd marks `alpha` once on
 # each side of the marker, `beta` under entry="Beta!Nested", and `gamma` after
 # the marker. Case folds before ordering, so alpha, Beta, gamma; `Beta` itself
@@ -2372,7 +2373,7 @@ Le Guin
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 1n — the order and nesting examples/sortkey.pdf must print its
+# Manifest 1n — the order and nesting $WORK/cap/sortkey-pdf/sortkey.pdf must print its
 # index in (M06-AC1). Format: <level><TAB><term>, top to bottom, level 0 for
 # a top-level entry.
 #
@@ -2406,7 +2407,7 @@ read -r -d '' SORTKEY_PDF_OUTLINE <<'MANIFEST' || true
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 1o — the generated index in examples/sortkey.html (M06-AC2).
+# Manifest 1o — the generated index in $WORK/cap/sortkey-html/sortkey.html (M06-AC2).
 # EXHAUSTIVE, same format and same oracle rule as manifest 1e, with one
 # further layer derived by hand on top of it:
 #   8. Order: an entry files under its sort key (manifest 1m) where it has
@@ -2439,7 +2440,7 @@ letter	T
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 1p — the same index in examples/sortkey-twin.html (M06-AC2): the
+# Manifest 1p — the same index in $WORK/cap/sortkey-twin-html/sortkey-twin.html (M06-AC2): the
 # same entries with no sort keys at all, so manifest 1e step 5 applies to the
 # printed text directly. Every top-level row is in a different position than
 # it holds in manifest 1o, and the two sub-entries are in the opposite order;
@@ -2463,7 +2464,7 @@ letter	V
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 1q — every `\index{}` argument examples/sortkey-paths.tex must
+# Manifest 1q — every `\index{}` argument $WORK/cap/sortkey-paths-latex/sortkey-paths.tex must
 # carry, in document order (M06-AC1/AC2). ORACLE RULE: derived by hand from
 # examples/sortkey-paths.qmd, never read back from a render.
 #
@@ -2502,7 +2503,7 @@ Qqq@Mmm
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 1r — the generated index in examples/sortkey-paths.html
+# Manifest 1r — the generated index in $WORK/cap/sortkey-paths-html/sortkey-paths.html
 # (M06-AC2). EXHAUSTIVE, same format and oracle rule as manifest 1o.
 #
 # The top-level keys are the ones manifest 1q derives: `!Zed` for `Literal`,
@@ -2544,14 +2545,14 @@ letter	Z
 1	inner	1
 MANIFEST
 
-# Manifest 1j — the \index{} commands examples/marker.tex must carry (M04-AC2).
+# Manifest 1j — the \index{} commands $WORK/cap/marker-latex/marker.tex must carry (M04-AC2).
 read -r -d '' MARKER_ENTRIES <<'MANIFEST' || true
 2	alpha
 1	Beta!Nested
 1	gamma
 MANIFEST
 
-# Manifest 1k — the generated index in examples/marker-misuse.html (M04-AC4):
+# Manifest 1k — the generated index in $WORK/cap/misuse-html/marker-misuse.html (M04-AC4):
 # one term marked on each side of the surviving first marker.
 read -r -d '' MISUSE_HTML_INDEX <<'MANIFEST' || true
 letter	D
@@ -2576,30 +2577,6 @@ MANIFEST
 # is an empty div that kept none. Quarto's own title block carries one empty
 # div in every render, marker or not, so that one is named and allowed.
 QUARTO_EMPTY_DIV='quarto-title-meta'
-check_no_html_residue() {
-  local htmlfile="$1" label="$2"
-  MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
-  python3 - "$htmlfile" "$label" <<'PY'
-import os, sys
-sys.path.insert(0, 'tests')
-import htmlindex as H
-path, label = sys.argv[1:3]
-doc = H.parse(path)
-marker, allowed = os.environ['MARKER_CLASS'], os.environ['QUARTO_EMPTY_DIV']
-kept = [n.tag for n in H.walk(doc) if marker in H.classes(n)]
-if kept:
-    print(f'FAIL: {label}: {len(kept)} element(s) in {path} still carry the '
-          f'marker class', file=sys.stderr)
-    sys.exit(1)
-stray = [n.attrs.get('class', '') for n in H.empty_divs(doc)
-         if allowed not in H.classes(n)]
-if stray:
-    print(f'FAIL: {label}: empty div(s) left where a marker was removed from '
-          f'{path}: {stray}', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   {label}: no marker element and no empty div in {path}')
-PY
-}
 
 # ---------------------------------------------------------------------------
 # M04-AC1 — the index section lands where the marker was written.
@@ -2607,14 +2584,13 @@ PY
 quarto render examples/marker.qmd --to html > "$WORK/marker-html.log" 2>&1 \
   || { tail -20 "$WORK/marker-html.log" >&2; fail "M04-AC1: marker.qmd failed to render to HTML"; }
 capture examples/marker.qmd html "marker-html"
-check_html_index_manifest examples/marker.html "$MARKER_HTML_INDEX" "M04-AC1"
-check_letter_sweep examples/marker.html "M07-AC3 (marker)" \
+check_html_index_manifest $WORK/cap/marker-html/marker.html "$MARKER_HTML_INDEX" "M04-AC1"
+check_letter_sweep $WORK/cap/marker-html/marker.html "M07-AC3 (marker)" \
   $'A\nB\nG'
-check_html_index_links examples/marker.html "M04-AC1"
-check_no_html_residue examples/marker.html "M04-AC1"
+check_html_index_links $WORK/cap/marker-html/marker.html "M04-AC1"
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-python3 - examples/marker.html <<'PY'
+python3 - $WORK/cap/marker-html/marker.html <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -2674,10 +2650,10 @@ PY
 quarto render examples/marker.qmd --to latex > "$WORK/marker-latex.log" 2>&1 \
   || { cat "$WORK/marker-latex.log" >&2; fail "M04-AC2: marker.qmd failed to render to LaTeX"; }
 capture examples/marker.qmd latex "marker-latex"
-[ -s examples/marker.tex ] || fail "M04-AC2: examples/marker.tex is empty"
-check_entry_manifest examples/marker.tex "$MARKER_ENTRIES" "M04-AC2"
+[ -s $WORK/cap/marker-latex/marker.tex ] || fail "M04-AC2: $WORK/cap/marker-latex/marker.tex is empty"
+check_entry_manifest $WORK/cap/marker-latex/marker.tex "$MARKER_ENTRIES" "M04-AC2"
 
-python3 - examples/marker.tex examples/demo.tex <<'PY'
+python3 - $WORK/cap/marker-latex/marker.tex $WORK/cap/demo-latex/demo.tex <<'PY'
 import sys
 src = open(sys.argv[1], encoding='utf-8').read()
 demo = open(sys.argv[2], encoding='utf-8').read()
@@ -2737,14 +2713,14 @@ pass "M04-AC4: the nested, duplicate and non-empty marker each warn exactly once
 
 # Nothing an author wrote inside a marker may be deleted with it (IP2), in any
 # format — including the one with no index back-end at all.
-for f in examples/marker-misuse.html examples/marker-misuse.tex examples/marker-misuse.md; do
+for f in $WORK/cap/misuse-html/marker-misuse.html $WORK/cap/misuse-latex/marker-misuse.tex $WORK/cap/misuse-gfm/marker-misuse.md; do
   grep -qF -- "$MARKER_KEPT_CONTENT" "$f" \
     || fail "M04-AC4: content written inside a marker was deleted from $f"
 done
 pass "M04-AC4: content written inside a misused marker survives in every format"
 
-check_html_index_manifest examples/marker-misuse.html "$MISUSE_HTML_INDEX" "M04-AC4"
-check_letter_sweep examples/marker-misuse.html "M07-AC3 (misused marker)" \
+check_html_index_manifest $WORK/cap/misuse-html/marker-misuse.html "$MISUSE_HTML_INDEX" "M04-AC4"
+check_letter_sweep $WORK/cap/misuse-html/marker-misuse.html "M07-AC3 (misused marker)" \
   $'D\nE'
 
 # The content lives inside the marker that PLACES the index, so this pins the
@@ -2752,7 +2728,7 @@ check_letter_sweep examples/marker-misuse.html "M07-AC3 (misused marker)" \
 # removed duplicate would exercise. It must land immediately before the index
 # it was written in front of.
 HTML_SECTION_ID="$HTML_SECTION_ID" MARKER_KEPT_CONTENT="$MARKER_KEPT_CONTENT" \
-python3 - examples/marker-misuse.html <<'PY'
+python3 - $WORK/cap/misuse-html/marker-misuse.html <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -2774,12 +2750,11 @@ if index_at < 0 or not at < index_at:
 print('ok   M04-AC4: content written inside the PLACING marker survives, '
       'immediately before the index it places')
 PY
-check_no_html_residue examples/marker-misuse.html "M04-AC4"
 
 # Two misused markers, and the index still lands at the first one: after the
 # mark written before it, before the mark written after it.
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-python3 - examples/marker-misuse.html <<'PY'
+python3 - $WORK/cap/misuse-html/marker-misuse.html <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -2797,7 +2772,7 @@ print('ok   M04-AC4: the index is placed at the first marker, and the nested '
       'and duplicate markers place nothing')
 PY
 
-python3 - examples/marker-misuse.tex <<'PY'
+python3 - $WORK/cap/misuse-latex/marker-misuse.tex <<'PY'
 import sys
 src = open(sys.argv[1], encoding='utf-8').read()
 n = src.count('\\printindex')
@@ -2843,7 +2818,7 @@ pass "M08-AC3: three misplaced marker classes each report, in HTML, LaTeX and gf
 # content. The heading case lands the class on BOTH the <h2> and the <section>
 # wrapper Quarto builds around it, so this asserts presence per tag, never a
 # count of elements.
-MARKER_CLASS="$MARKER_CLASS" python3 - examples/marker-sites.html <<'PY'
+MARKER_CLASS="$MARKER_CLASS" python3 - $WORK/cap/sites-html/marker-sites.html <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -2873,7 +2848,7 @@ PY
 # gfm carries no index back-end, so nothing this extension emits may reach it.
 # Class survival is NOT claimed here: gfm has no heading attributes at all, so
 # a dropped heading class is the writer's doing and not this filter's.
-python3 - examples/marker-sites.md <<'PY'
+python3 - $WORK/cap/sites-gfm/marker-sites.md <<'PY'
 import re, sys
 src = open(sys.argv[1], encoding='utf-8').read()
 # gfm is a wrapped format: the writer breaks a line wherever it likes, so a
@@ -2899,7 +2874,7 @@ PY
 
 # The index still lands at the one real marker, in both back-ends: after the
 # delta mark written above it, before the After-the-marker section below it.
-python3 - examples/marker-sites.tex <<'PY'
+python3 - $WORK/cap/sites-latex/marker-sites.tex <<'PY'
 import sys
 src = open(sys.argv[1], encoding='utf-8').read()
 n = src.count('\\printindex')
@@ -2919,7 +2894,7 @@ print('ok   M08-AC3: one \\printindex, at the one real marker, in a document '
 PY
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-python3 - examples/marker-sites.html <<'PY'
+python3 - $WORK/cap/sites-html/marker-sites.html <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -3049,7 +3024,7 @@ pass "M12-AC1/AC2/AC3: every warning the three renders emit is either one of the
 # be a marker div that survived into a body, which is the residue IP2 forbids.
 # Located, not counted: the check reads what each occurrence sits in, so a body
 # occurrence fails even though the total is unchanged.
-python3 - examples/marker-shapes.html examples/marker-shapes.tex examples/marker-shapes.md <<'PY'
+python3 - $WORK/cap/shapes-html/marker-shapes.html $WORK/cap/shapes-latex/marker-shapes.tex $WORK/cap/shapes-gfm/marker-shapes.md <<'PY'
 import re, sys
 
 errs = []
@@ -3082,7 +3057,7 @@ PY
 
 # What a nested marker carried is spliced in where it stood, so its container
 # keeps that content — pinned structurally, not merely by a warning count.
-python3 - examples/marker-shapes.html <<'PY'
+python3 - $WORK/cap/shapes-html/marker-shapes.html <<'PY'
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -3122,7 +3097,7 @@ quarto render examples/id-collision.qmd --to html \
   || { tail -20 "$WORK/id-collision-html.log" >&2; fail "M08-AC1: id-collision.qmd failed to render to HTML"; }
 capture examples/id-collision.qmd html "id-collision-html"
 
-python3 - examples/id-collision.html <<'PY'
+python3 - $WORK/cap/id-collision-html/id-collision.html <<'PY'
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -3163,7 +3138,7 @@ PY
 
 # The locators must still link: minting a fresh section id is worth nothing if
 # the index it names stopped resolving.
-python3 - examples/id-collision.html <<'PY'
+python3 - $WORK/cap/id-collision-html/id-collision.html <<'PY'
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -3273,7 +3248,7 @@ pass "M08-AC2/M10-AC4/M11-AC5: six self-referential targets each report once in 
 # ---------------------------------------------------------------------------
 run_scan mark-report-keys
 
-python3 - examples/self-xref.tex <<'PY'
+python3 - $WORK/cap/self-xref-latex/self-xref.tex <<'PY'
 import sys
 src = open(sys.argv[1], encoding='utf-8').read()
 errs = []
@@ -3312,11 +3287,11 @@ print('ok   M08-AC2: three self-targeting marks index plainly, the fourth keeps 
       'untouched')
 PY
 
-python3 - examples/self-xref.html <<'PY'
+python3 - $WORK/cap/self-xref-html/self-xref.html <<'PY'
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
-doc = H.parse('examples/self-xref.html')
+doc = H.parse(sys.argv[1])
 section = H.index_section(doc)
 errs = []
 
@@ -3379,7 +3354,7 @@ PY
 # of any of these keys puts a `|` exactly where the expected string's closing
 # brace is, so no expected string can match an encapped command.
 # ---------------------------------------------------------------------------
-python3 - examples/self-xref.tex <<'PY'
+python3 - $WORK/cap/self-xref-latex/self-xref.tex <<'PY'
 import re, sys
 src = open(sys.argv[1], encoding='utf-8').read()
 errs = []
@@ -3420,7 +3395,7 @@ print('ok   M10-AC1/AC2: the three folded shapes and the two empty-level '
 PY
 # M11-AC2, taken here rather than in the M11 block below: this fixture is
 # re-rendered to PDF later in the run and the .tex does not survive it.
-check_no_null_field examples/self-xref.tex "M11-AC2 (self-xref)"
+check_no_null_field $WORK/cap/self-xref-latex/self-xref.tex "M11-AC2 (self-xref)"
 
 # ---------------------------------------------------------------------------
 # M10-AC2/AC3 — the same five shapes in HTML, where there is no level ceiling.
@@ -3432,11 +3407,11 @@ check_no_null_field examples/self-xref.tex "M11-AC2 (self-xref)"
 # below them, which is what says the level went rather than merely printing
 # blank, and to carry the locator themselves.
 # ---------------------------------------------------------------------------
-python3 - examples/self-xref.html <<'PY'
+python3 - $WORK/cap/self-xref-html/self-xref.html <<'PY'
 import re, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
-doc = H.parse('examples/self-xref.html')
+doc = H.parse(sys.argv[1])
 section = H.index_section(doc)
 records = H.entry_records(section)
 errs = []
@@ -3581,11 +3556,11 @@ print('ok   M04-AC4: with no index to place, all three renders are '
 PY
 
 for tok in '\printindex' 'imakeidx'; do
-  if grep -qF -- "$tok" examples/marker-nomarks.tex; then
+  if grep -qF -- "$tok" $WORK/cap/marker-nomarks-latex/marker-nomarks.tex; then
     fail "M04-AC4: a document whose only index-related content is a marker must not contain $tok"
   fi
 done
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/marker-nomarks.html <<'PY'
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - $WORK/cap/marker-nomarks-html/marker-nomarks.html <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -3597,7 +3572,6 @@ if H.find_id(doc, os.environ['HTML_SECTION_ID']) is not None:
 print('ok   M04-AC4: a marker with no marks to place emits no index section '
       'and no \\printindex')
 PY
-check_no_html_residue examples/marker-nomarks.html "M04-AC4"
 
 # ---------------------------------------------------------------------------
 # M04-AC4 — the one marker case the filter cannot repair: a document that has
@@ -3610,15 +3584,15 @@ quarto render examples/marker-preloaded.qmd --to latex \
   > "$WORK/preloaded-latex.log" 2>&1 \
   || { tail -20 "$WORK/preloaded-latex.log" >&2; fail "M04-AC4: marker-preloaded.qmd failed to render to LaTeX"; }
 capture examples/marker-preloaded.qmd latex "preloaded-latex"
-grep -qF 'ifpackagewith{imakeidx}{noautomatic}' examples/marker-preloaded.tex \
+grep -qF 'ifpackagewith{imakeidx}{noautomatic}' $WORK/cap/preloaded-latex/marker-preloaded.tex \
   || fail "M04-AC4: the marker document carries no begin-document check for a preloaded imakeidx"
-if grep -qF 'ifpackagewith{imakeidx}' examples/demo.tex; then
+if grep -qF 'ifpackagewith{imakeidx}' $WORK/cap/demo-latex/demo.tex; then
   fail "M04-AC4: a document with no marker carries the preloaded-imakeidx check"
 fi
 # `\PassOptionsToPackage` must NOT be emitted beside the check: it registers the
 # option on the already-loaded package, which makes the check report success on
 # exactly the document it exists to catch.
-if grep -qF 'PassOptionsToPackage{noautomatic}{imakeidx}' examples/marker-preloaded.tex; then
+if grep -qF 'PassOptionsToPackage{noautomatic}{imakeidx}' $WORK/cap/preloaded-latex/marker-preloaded.tex; then
   fail "M04-AC4: PassOptionsToPackage is emitted alongside the check and would silence it"
 fi
 pass "M04-AC4: a marker document carries the preloaded-imakeidx check, a marker-free one does not, and nothing silences it"
@@ -3632,10 +3606,10 @@ pass "M04-AC4: a marker document carries the preloaded-imakeidx check, a marker-
 quarto render examples/marker.qmd --to gfm > "$WORK/marker-gfm.log" 2>&1 \
   || { tail -20 "$WORK/marker-gfm.log" >&2; fail "M04-AC5: marker.qmd failed to render to gfm"; }
 capture examples/marker.qmd gfm "marker-gfm"
-[ -s examples/marker.md ] || fail "M04-AC5: examples/marker.md is empty"
+[ -s $WORK/cap/marker-gfm/marker.md ] || fail "M04-AC5: $WORK/cap/marker-gfm/marker.md is empty"
 
 MARKER_CLASS="$MARKER_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
-  examples/marker.md <<'PY'
+  $WORK/cap/marker-gfm/marker.md <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -3660,11 +3634,11 @@ print(f'ok   M04-AC5: {path} carries no marker element, no div and no index '
       f'section')
 PY
 for tok in 'qi-index-here' 'qi-index' 'printindex'; do
-  if grep -qF -- "$tok" examples/marker.md; then
+  if grep -qF -- "$tok" $WORK/cap/marker-gfm/marker.md; then
     fail "M04-AC5: gfm output must not contain $tok"
   fi
 done
-grep -qF 'gamma' examples/marker.md || fail "M04-AC5: gfm output lost visible term text"
+grep -qF 'gamma' $WORK/cap/marker-gfm/marker.md || fail "M04-AC5: gfm output lost visible term text"
 pass "M04-AC5: the marker leaves no token in gfm output, and the visible text is kept"
 
 # ---------------------------------------------------------------------------
@@ -3679,7 +3653,7 @@ quarto render examples/escaping.qmd --to html > "$WORK/esc-html.log" 2>&1 \
   || { tail -20 "$WORK/esc-html.log" >&2; fail "M03-AC5: escaping.qmd failed to render to HTML"; }
 capture examples/escaping.qmd html "esc-html"
 
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/escaping.html <<'PY'
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - $WORK/cap/esc-html/escaping.html <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -3706,18 +3680,12 @@ PY
 # every printable ASCII character except space files at the top level, so the
 # non-letters form the leading Symbols group and each letter forms a group
 # holding its upper- and lower-case entries — 27 headings, Symbols then A-Z.
-check_letter_sweep examples/escaping.html "M07-AC1 (escaping)" \
+check_letter_sweep $WORK/cap/esc-html/escaping.html "M07-AC1 (escaping)" \
   $'Symbols\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\nM\nN\nO\nP\nQ\nR\nS\nT\nU\nV\nW\nX\nY\nZ'
 
-# M03-AC3 — the pending tag is filter plumbing and must never survive into
-# rendered output; nor may an author's FORGED copy steal a real mark's anchor
-# (examples/html-index.qmd carries a forged copy on a non-mark span and on a
-# cross-reference mark — the anchor numbering above already pins that neither
-# consumed a minted id).
-if grep -l 'data-qi-pending' examples/*.html >/dev/null 2>&1; then
-  fail "M03-AC3: data-qi-pending survived into rendered HTML: $(grep -l 'data-qi-pending' examples/*.html | tr '\n' ' ')"
-fi
-pass "M03-AC3: the pending attribute reaches no rendered HTML, forged author copies included"
+# M03-AC3's pending-attribute sweep and M12's marker-residue sweep both run at
+# the END of the run, over every page it captured — see the residue sweeps
+# below. Sweeping here would have read whatever examples/ happened to hold.
 
 # ---------------------------------------------------------------------------
 # M03-AC6 — negatives. A document with no marks gets no section and no
@@ -3729,7 +3697,7 @@ quarto render examples/control.qmd --to html > "$WORK/control-html.log" 2>&1 \
 capture examples/control.qmd html "control-html"
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - examples/control.html <<'PY'
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - $WORK/cap/control-html/control.html <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -3747,7 +3715,7 @@ print('ok   M03-AC6: a document with no marks gets no index section and no '
 PY
 
 # M07-AC5 — and no letter-group heading either: no marks, no groups.
-if grep -qF -- "$HTML_LETTER_CLASS" examples/control.html; then
+if grep -qF -- "$HTML_LETTER_CLASS" $WORK/cap/control-html/control.html; then
   fail "M07-AC5: a document with no marks carries $HTML_LETTER_CLASS"
 fi
 pass "M07-AC5: a document with no marks gets no letter-group heading"
@@ -3755,9 +3723,9 @@ pass "M07-AC5: a document with no marks gets no letter-group heading"
 quarto render examples/demo.qmd --to gfm > "$WORK/demo-gfm.log" 2>&1 \
   || { tail -20 "$WORK/demo-gfm.log" >&2; fail "M03-AC6: demo.qmd failed to render to gfm"; }
 capture examples/demo.qmd gfm "demo-gfm"
-[ -s examples/demo.md ] || fail "M03-AC6: examples/demo.md is empty"
+[ -s $WORK/cap/demo-gfm/demo.md ] || fail "M03-AC6: $WORK/cap/demo-gfm/demo.md is empty"
 for tok in 'qi-index' 'qi-mark-' 'qi-entry-' '\index' '\printindex'; do
-  if grep -qF -- "$tok" examples/demo.md; then
+  if grep -qF -- "$tok" $WORK/cap/demo-gfm/demo.md; then
     fail "M03-AC6: gfm output must not contain $tok (gfm has no index back-end)"
   fi
 done
@@ -3765,17 +3733,17 @@ done
 # neither the heading class nor the label a heading would show. `Symbols` is
 # the one label that is a word rather than a letter, so it is the one that can
 # be looked for without matching ordinary prose.
-if grep -qF -- "$HTML_LETTER_CLASS" examples/demo.md; then
+if grep -qF -- "$HTML_LETTER_CLASS" $WORK/cap/demo-gfm/demo.md; then
   fail "M07-AC5: gfm output must not contain $HTML_LETTER_CLASS"
 fi
-if grep -qF 'Symbols' examples/demo.md; then
+if grep -qF 'Symbols' $WORK/cap/demo-gfm/demo.md; then
   fail "M07-AC5: gfm output carries a letter-group label"
 fi
 pass "M07-AC5: gfm output carries neither the heading class nor a group label"
-if grep -qE '^# Index$' examples/demo.md; then
+if grep -qE '^# Index$' $WORK/cap/demo-gfm/demo.md; then
   fail "M03-AC6: gfm output must not contain a generated index section"
 fi
-grep -qF 'café' examples/demo.md || fail "M03-AC6: gfm output lost visible term text"
+grep -qF 'café' $WORK/cap/demo-gfm/demo.md || fail "M03-AC6: gfm output lost visible term text"
 # The warnings that are genuinely about what the author wrote are emitted in
 # every format now, not only where a back-end exists. demo.qmd holds two
 # empty levels: the trailing one in `A!!B!` and the trailing one in the
@@ -3795,7 +3763,7 @@ pass "M03-AC6: gfm renders clean with no index artifacts, the format-neutral war
 
 printf '%s\n' "$VISIBLE_TERMS" > "$WORK/visible.txt"
 printf '%s\n' "$ENTRY_VALUES_NO_LEAK" > "$WORK/noleak.txt"
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/demo.html examples/demo.qmd \
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - $WORK/cap/demo-html/demo.html examples/demo.qmd \
   "$WORK/visible.txt" "$WORK/noleak.txt" <<'PY'
 import os, re, sys
 sys.path.insert(0, 'tests')
@@ -3934,13 +3902,13 @@ quarto render examples/demo.qmd --to beamer -M keep-tex:true \
   > "$WORK/demo-beamer.log" 2>&1 \
   || { tail -20 "$WORK/demo-beamer.log" >&2; fail "AC7: beamer render failed (IP2: a marked term must never break a render)"; }
 capture examples/demo.qmd beamer "demo-beamer"
-[ -s examples/demo.tex ] || fail "AC7: beamer render kept no .tex to inspect"
+[ -s $WORK/cap/demo-beamer/demo.tex ] || fail "AC7: beamer render kept no .tex to inspect"
 for tok in '\index' 'imakeidx' '\makeindex' '\printindex'; do
-  if grep -qF -- "$tok" examples/demo.tex; then
+  if grep -qF -- "$tok" $WORK/cap/demo-beamer/demo.tex; then
     fail "AC7: beamer .tex must not contain $tok (beamer has no index back-end)"
   fi
 done
-grep -qF 'café' examples/demo.tex || fail "AC7: beamer .tex lost visible term text"
+grep -qF 'café' $WORK/cap/demo-beamer/demo.tex || fail "AC7: beamer .tex lost visible term text"
 pass "AC7: beamer renders clean, no index tokens, visible text kept"
 
 # M04-AC5 — the marker fixture goes through the same beamer compile. beamer
@@ -3950,13 +3918,13 @@ quarto render examples/marker.qmd --to beamer -M keep-tex:true \
   > "$WORK/marker-beamer.log" 2>&1 \
   || { tail -20 "$WORK/marker-beamer.log" >&2; fail "M04-AC5: the marker fixture failed to render to beamer (IP2: a marker must never break a render)"; }
 capture examples/marker.qmd beamer "marker-beamer"
-[ -s examples/marker.tex ] || fail "M04-AC5: the beamer render kept no .tex to inspect"
+[ -s $WORK/cap/marker-beamer/marker.tex ] || fail "M04-AC5: the beamer render kept no .tex to inspect"
 for tok in '\index' 'imakeidx' '\makeindex' '\printindex' 'qi-index-here'; do
-  if grep -qF -- "$tok" examples/marker.tex; then
+  if grep -qF -- "$tok" $WORK/cap/marker-beamer/marker.tex; then
     fail "M04-AC5: the beamer .tex must not contain $tok"
   fi
 done
-grep -qF 'gamma' examples/marker.tex || fail "M04-AC5: the beamer .tex lost visible term text"
+grep -qF 'gamma' $WORK/cap/marker-beamer/marker.tex || fail "M04-AC5: the beamer .tex lost visible term text"
 pass "M04-AC5: the marker fixture compiles clean in beamer, no index tokens, no marker residue, visible text kept"
 
 # ---------------------------------------------------------------------------
@@ -3970,8 +3938,8 @@ pass "M04-AC5: the marker fixture compiles clean in beamer, no index tokens, no 
 quarto render examples/marker.qmd --to pdf > "$WORK/marker-pdf.log" 2>&1 \
   || { tail -40 "$WORK/marker-pdf.log" >&2; fail "M04-AC2: marker.qmd failed to render to PDF"; }
 capture examples/marker.qmd pdf "marker-pdf"
-[ -s examples/marker.pdf ] || fail "M04-AC2: examples/marker.pdf is empty"
-pdftotext -layout examples/marker.pdf "$WORK/marker.txt"
+[ -s $WORK/cap/marker-pdf/marker.pdf ] || fail "M04-AC2: $WORK/cap/marker-pdf/marker.pdf is empty"
+pdftotext -layout $WORK/cap/marker-pdf/marker.pdf "$WORK/marker.txt"
 
 printf '%s\n' "$MARKER_PDF_TERMS" > "$WORK/markerterms.txt"
 python3 - "$WORK/marker.txt" "$WORK/markerterms.txt" <<'PY'
@@ -4009,7 +3977,7 @@ PY
 # it names and stays silent on the one it does not. Both halves are compiled
 # here with the engine that ships, since the warning exists only in a LaTeX
 # run's log.
-mkdir -p "$WORK/preloaded" && cp examples/marker-preloaded.tex "$WORK/preloaded/"
+mkdir -p "$WORK/preloaded" && cp $WORK/cap/preloaded-latex/marker-preloaded.tex "$WORK/preloaded/"
 ( cd "$WORK/preloaded" && pdflatex -interaction=nonstopmode marker-preloaded.tex ) \
   > "$WORK/preloaded-tex.log" 2>&1 \
   || { grep -E '^! ' "$WORK/preloaded-tex.log" | head -5 >&2; fail "M04-AC4: the preloaded-imakeidx fixture failed to compile (IP2: it must still render)"; }
@@ -4027,7 +3995,7 @@ fi
 mkdir -p "$WORK/markertex" && quarto render examples/marker.qmd --to latex > "$WORK/marker-latex2.log" 2>&1 \
   || { cat "$WORK/marker-latex2.log" >&2; fail "M04-AC4: marker.qmd failed to re-render to LaTeX"; }
 capture examples/marker.qmd latex "marker-latex2"
-cp examples/marker.tex "$WORK/markertex/"
+cp $WORK/cap/marker-latex2/marker.tex "$WORK/markertex/"
 ( cd "$WORK/markertex" && pdflatex -interaction=nonstopmode marker.tex ) \
   > "$WORK/markertex-tex.log" 2>&1 \
   || { grep -E '^! ' "$WORK/markertex-tex.log" | head -5 >&2; fail "M04-AC4: the marker fixture failed to compile"; }
@@ -4068,7 +4036,7 @@ print(f'ok   AC4: escaping probe covers all {len(domain)} printable ASCII '
       f'characters (space excluded) in both contexts')
 PY
 
-mkdir -p "$WORK/esc" && cp examples/escaping.tex "$WORK/esc/"
+mkdir -p "$WORK/esc" && cp $WORK/cap/esc-latex/escaping.tex "$WORK/esc/"
 quarto render examples/escaping.qmd --to pdf > "$WORK/esc-pdf.log" 2>&1 \
   || { tail -20 "$WORK/esc-pdf.log" >&2; fail "AC4: escaping probe failed to compile through Quarto's own PDF engine — a character in the range breaks the build"; }
 capture examples/escaping.qmd pdf "esc-pdf"
@@ -4083,7 +4051,7 @@ grep -qE "\($ESC_MARKS entries accepted, 0 rejected\)" "$WORK/esc/escaping.ilg" 
 # The typeset evidence comes from Quarto's own PDF, built with the engine that
 # actually ships: compiling proves the argument READS, typesetting proves the
 # character PRINTS, and both must hold under the shipping engine.
-pdftotext -layout examples/escaping.pdf "$WORK/esc/escaping.txt"
+pdftotext -layout $WORK/cap/esc-pdf/escaping.pdf "$WORK/esc/escaping.txt"
 PROBE_CHARS="$PROBE_CHARS" python3 - "$WORK/esc/escaping.txt" <<'PY'
 import os, re, sys
 txt = open(sys.argv[1], encoding='utf-8').read()
@@ -4112,7 +4080,7 @@ quarto render examples/xref-escaping.qmd --to latex > "$WORK/xref-latex.log" 2>&
 capture examples/xref-escaping.qmd latex "xref-latex"
 
 XREF_BOTH_COMMAND="$XREF_BOTH_COMMAND" PROBE_CHARS="$PROBE_CHARS" python3 - \
-  examples/xref-escaping.qmd examples/xref-escaping.tex <<'PY'
+  examples/xref-escaping.qmd $WORK/cap/xref-latex/xref-escaping.tex <<'PY'
 import os, re, sys
 qmd = open(sys.argv[1], encoding='utf-8').read()
 tex = open(sys.argv[2], encoding='utf-8').read()
@@ -4252,7 +4220,7 @@ pass "M02-AC3: an empty target level and an unusable target each warn once"
 
 # Compile, and require makeindex to accept every probe entry. Counted by
 # construction from the fixture's own shape, never read back from the run.
-mkdir -p "$WORK/xref" && cp examples/xref-escaping.tex "$WORK/xref/"
+mkdir -p "$WORK/xref" && cp $WORK/cap/xref-latex/xref-escaping.tex "$WORK/xref/"
 quarto render examples/xref-escaping.qmd --to pdf > "$WORK/xref-pdf.log" 2>&1 \
   || { tail -20 "$WORK/xref-pdf.log" >&2; fail "M02-AC3: the cross-reference probe failed to compile through Quarto's own PDF engine"; }
 capture examples/xref-escaping.qmd pdf "xref-pdf"
@@ -4272,7 +4240,7 @@ grep -qE "\($XREF_MARKS entries accepted, 0 rejected\)" "$WORK/xref/xref-escapin
 
 # Typeset evidence from Quarto's own PDF: compiling proves the encap argument
 # READS, typesetting proves the character PRINTS in a cross-reference.
-pdftotext -layout examples/xref-escaping.pdf "$WORK/xref/xref-escaping.txt"
+pdftotext -layout $WORK/cap/xref-pdf/xref-escaping.pdf "$WORK/xref/xref-escaping.txt"
 printf '%s\n' "$XREF_PROBE_TEXT" > "$WORK/xrefprobe.txt"
 python3 - "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" <<'PY'
 import re, sys
@@ -4298,8 +4266,8 @@ PY
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
   || { tail -40 "$WORK/demo-pdf.log" >&2; fail "AC6: demo.qmd failed to render to PDF"; }
 capture examples/demo.qmd pdf "demo-pdf"
-[ -s examples/demo.pdf ] || fail "AC6: examples/demo.pdf is empty"
-pdftotext -layout examples/demo.pdf "$WORK/demo.txt"
+[ -s $WORK/cap/demo-pdf/demo.pdf ] || fail "AC6: $WORK/cap/demo-pdf/demo.pdf is empty"
+pdftotext -layout $WORK/cap/demo-pdf/demo.pdf "$WORK/demo.txt"
 
 printf '%s\n' "$PDF_TERMS" > "$WORK/pdfterms.txt"
 python3 - "$WORK/demo.txt" "$WORK/pdfterms.txt" <<'PY'
@@ -5064,7 +5032,7 @@ TWINPY
 quarto render examples/sortkey.qmd --to pdf > "$WORK/sortkey-pdf.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-pdf.log" >&2; fail "M06-AC1: sortkey.qmd failed to render to PDF"; }
 capture examples/sortkey.qmd pdf "sortkey-pdf"
-[ -s examples/sortkey.pdf ] || fail "M06-AC1: examples/sortkey.pdf is empty"
+[ -s $WORK/cap/sortkey-pdf/sortkey.pdf ] || fail "M06-AC1: $WORK/cap/sortkey-pdf/sortkey.pdf is empty"
 # A sort key must not cost the author a warning: every mark in this fixture is
 # well formed, so a clean render is part of the criterion.
 if grep -q '^(W)' "$WORK/sortkey-pdf.log"; then
@@ -5073,7 +5041,7 @@ if grep -q '^(W)' "$WORK/sortkey-pdf.log"; then
 fi
 
 printf '%s\n' "$SORTKEY_PDF_OUTLINE" > "$WORK/sortkey-outline.txt"
-python3 - examples/sortkey.pdf "$WORK/sortkey-outline.txt" <<'OUTLINEPY'
+python3 - $WORK/cap/sortkey-pdf/sortkey.pdf "$WORK/sortkey-outline.txt" <<'OUTLINEPY'
 import sys
 sys.path.insert(0, 'tests')
 import pdfindex
@@ -5109,7 +5077,7 @@ OUTLINEPY
 quarto render examples/sortkey-twin.qmd --to pdf > "$WORK/sortkey-twin-pdf.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-twin-pdf.log" >&2; fail "M06-AC1: sortkey-twin.qmd failed to render to PDF"; }
 capture examples/sortkey-twin.qmd pdf "sortkey-twin-pdf"
-python3 - examples/sortkey.pdf examples/sortkey-twin.pdf <<'DIFFPY'
+python3 - $WORK/cap/sortkey-pdf/sortkey.pdf $WORK/cap/sortkey-twin-pdf/sortkey-twin.pdf <<'DIFFPY'
 import sys
 sys.path.insert(0, 'tests')
 import pdfindex
@@ -5149,16 +5117,16 @@ if grep -q '^(W)' "$WORK/sortkey-html.log"; then
   grep '^(W)' "$WORK/sortkey-html.log" >&2
   fail "M06-AC2: examples/sortkey.qmd warned in HTML; every mark in it is well formed"
 fi
-check_html_index_manifest examples/sortkey.html "$SORTKEY_HTML_INDEX" "M06-AC2"
-check_letter_sweep examples/sortkey.html "M07-AC3 (sort keys)" \
+check_html_index_manifest $WORK/cap/sortkey-html/sortkey.html "$SORTKEY_HTML_INDEX" "M06-AC2"
+check_letter_sweep $WORK/cap/sortkey-html/sortkey.html "M07-AC3 (sort keys)" \
   $'A\nH\nL\nM\nN\nT'
-check_html_index_links examples/sortkey.html "M06-AC2"
+check_html_index_links $WORK/cap/sortkey-html/sortkey.html "M06-AC2"
 
 quarto render examples/sortkey-twin.qmd --to html > "$WORK/sortkey-twin-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-twin-html.log" >&2; fail "M06-AC2: sortkey-twin.qmd failed to render to HTML"; }
 capture examples/sortkey-twin.qmd html "sortkey-twin-html"
-check_html_index_manifest examples/sortkey-twin.html "$SORTKEY_TWIN_HTML_INDEX" "M06-AC2 (twin)"
-check_letter_sweep examples/sortkey-twin.html "M07-AC3 (sort-key twin)" \
+check_html_index_manifest $WORK/cap/sortkey-twin-html/sortkey-twin.html "$SORTKEY_TWIN_HTML_INDEX" "M06-AC2 (twin)"
+check_letter_sweep $WORK/cap/sortkey-twin-html/sortkey-twin.html "M07-AC3 (sort-key twin)" \
   $'Symbols\nM\nT\nU\nV'
 
 # The two manifests must disagree at every top-level position and at every
@@ -5278,7 +5246,7 @@ if grep -q '^(W)' "$WORK/sortkey-paths-latex.log"; then
   fail "M06-AC1: examples/sortkey-paths.qmd warned; every mark in it is well formed"
 fi
 printf '%s\n' "$SORTKEY_PATHS_ENTRIES" > "$WORK/sk-paths-entries.txt"
-python3 - examples/sortkey-paths.qmd examples/sortkey-paths.tex \
+python3 - examples/sortkey-paths.qmd $WORK/cap/sortkey-paths-latex/sortkey-paths.tex \
   "$WORK/sk-paths-entries.txt" <<'PATHSPY'
 import re, sys
 src = open(sys.argv[1], encoding='utf-8').read()
@@ -5366,11 +5334,11 @@ quarto render examples/sortkey-paths.qmd --to html \
   > "$WORK/sortkey-paths-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-paths-html.log" >&2; fail "M06-AC2: sortkey-paths.qmd failed to render to HTML"; }
 capture examples/sortkey-paths.qmd html "sortkey-paths-html"
-check_html_index_manifest examples/sortkey-paths.html \
+check_html_index_manifest $WORK/cap/sortkey-paths-html/sortkey-paths.html \
   "$SORTKEY_PATHS_HTML_INDEX" "M06-AC2 (level paths)"
-check_letter_sweep examples/sortkey-paths.html "M07-AC3 (level paths)" \
+check_letter_sweep $WORK/cap/sortkey-paths-html/sortkey-paths.html "M07-AC3 (level paths)" \
   $'Symbols\nB\nH\nQ\nW\nZ'
-check_html_index_links examples/sortkey-paths.html "M06-AC2 (level paths)"
+check_html_index_links $WORK/cap/sortkey-paths-html/sortkey-paths.html "M06-AC2 (level paths)"
 
 # ---------------------------------------------------------------------------
 # M06-AC4 — the three sort-key reports.
@@ -5408,7 +5376,7 @@ done
 # against the folded text the back-end prints — otherwise every folded entry
 # comes out carrying a sort field naming its own third level, which is what
 # no sort field already means.
-python3 - examples/sortkey-misuse.tex <<'FOLDPY'
+python3 - $WORK/cap/sortkey-misuse-latex/sortkey-misuse.tex <<'FOLDPY'
 import re, sys
 tex = open(sys.argv[1], encoding='utf-8').read()
 args = re.findall(r'\\index\{(.*?)\}', tex)
@@ -5538,7 +5506,7 @@ mkdir -p "$WORK/sortesc"
 quarto render examples/sort-escaping.qmd --to latex > "$WORK/sortesc-latex.log" 2>&1 \
   || { tail -20 "$WORK/sortesc-latex.log" >&2; fail "M06-AC3: sort-escaping.qmd failed to render to LaTeX"; }
 capture examples/sort-escaping.qmd latex "sortesc-latex"
-cp examples/sort-escaping.tex "$WORK/sortesc/"
+cp $WORK/cap/sortesc-latex/sort-escaping.tex "$WORK/sortesc/"
 quarto render examples/sort-escaping.qmd --to pdf > "$WORK/sortesc-pdf.log" 2>&1 \
   || { tail -20 "$WORK/sortesc-pdf.log" >&2; fail "M06-AC3: the sort-key escaping probe failed to compile through Quarto's own PDF engine"; }
 capture examples/sort-escaping.qmd pdf "sortesc-pdf"
@@ -5646,7 +5614,7 @@ SORTFIELDPY
 quarto render examples/sort-escaping.qmd --to html > "$WORK/sortesc-html.log" 2>&1 \
   || { tail -20 "$WORK/sortesc-html.log" >&2; fail "M06-AC3: sort-escaping.qmd failed to render to HTML"; }
 capture examples/sort-escaping.qmd html "sortesc-html"
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/sort-escaping.html \
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - $WORK/cap/sortesc-html/sort-escaping.html \
   examples/sort-escaping.qmd <<'SORTESCHTMLPY'
 import os, re, sys
 sys.path.insert(0, 'tests')
@@ -5672,7 +5640,7 @@ SORTESCHTMLPY
 # The same 27 groups, reached the other way: every entry here prints as
 # `term-XX` and would file under T on its printed text alone, so the groups
 # below are the SORT KEYS' doing — one printable ASCII character each.
-check_letter_sweep examples/sort-escaping.html "M07-AC1 (sort-escaping)" \
+check_letter_sweep $WORK/cap/sortesc-html/sort-escaping.html "M07-AC1 (sort-escaping)" \
   $'Symbols\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\nM\nN\nO\nP\nQ\nR\nS\nT\nU\nV\nW\nX\nY\nZ'
 
 # Leg 3 — gfm, the format with no index back-end at all (IP2). The twin is the
@@ -5687,7 +5655,7 @@ for f in sort-escaping sort-escaping-twin; do
   capture "examples/$f.qmd" gfm "$f-gfm"
 done
 python3 - examples/sort-escaping.qmd examples/sort-escaping-twin.qmd \
-  examples/sort-escaping.md examples/sort-escaping-twin.md <<'SORTESCGFMPY'
+  $WORK/cap/sort-escaping-gfm/sort-escaping.md $WORK/cap/sort-escaping-twin-gfm/sort-escaping-twin.md <<'SORTESCGFMPY'
 import re, sys
 source, twin_src, rendered, twin_rendered = sys.argv[1:5]
 # Two layers, two grammars, and they are NOT the same. In a Pandoc markdown
@@ -5722,7 +5690,7 @@ SORTESCGFMPY
 
 
 # ---------------------------------------------------------------------------
-# Manifest 1q — the generated index in examples/letter-groups.html
+# Manifest 1q — the generated index in $WORK/cap/letter-groups-html/letter-groups.html
 # (M07-AC1/AC2). EXHAUSTIVE, same format and same oracle rule as manifest 1e,
 # every group derivation spelled out entry by entry — the same rule manifest
 # 1e's step 5 states, applied here to a fixture built to exercise it:
@@ -5767,10 +5735,10 @@ quarto render examples/letter-groups.qmd --to html \
   > "$WORK/letter-groups-html.log" 2>&1 \
   || { tail -40 "$WORK/letter-groups-html.log" >&2; fail "M07-AC2: letter-groups.qmd failed to render to HTML"; }
 capture examples/letter-groups.qmd html "letter-groups-html"
-check_html_index_manifest examples/letter-groups.html "$LETTER_GROUPS_INDEX" \
+check_html_index_manifest $WORK/cap/letter-groups-html/letter-groups.html "$LETTER_GROUPS_INDEX" \
   "M07-AC2"
-check_html_index_links examples/letter-groups.html "M07-AC2"
-check_letter_sweep examples/letter-groups.html "M07-AC3 (letter groups)" \
+check_html_index_links $WORK/cap/letter-groups-html/letter-groups.html "M07-AC2"
+check_letter_sweep $WORK/cap/letter-groups-html/letter-groups.html "M07-AC3 (letter groups)" \
   $'Symbols\nA\nM\nW\nZ'
 
 # The discriminator the manifest above carries but does not name: `#` and `~`
@@ -5779,7 +5747,7 @@ check_letter_sweep examples/letter-groups.html "M07-AC3 (letter groups)" \
 # rendered index ONLY because the letters have been lifted into groups of
 # their own — an index that merely collated by character code would print the
 # whole alphabet between these two rows.
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - examples/letter-groups.html <<'ADJPY'
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - $WORK/cap/letter-groups-html/letter-groups.html <<'ADJPY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -5949,7 +5917,7 @@ check_warning_count "$WORK/sortkey-clamp-latex.log" \
 pass "M09-AC1: each pair of entries contesting one printed level path is reported once, naming both sort keys and the path"
 
 # ---------------------------------------------------------------------------
-# Manifest 1s — the generated index in examples/sortkey-clamp.html (M09-AC2).
+# Manifest 1s — the generated index in $WORK/cap/sortkey-clamp-html/sortkey-clamp.html (M09-AC2).
 # EXHAUSTIVE, same row format as manifest 1e, and DERIVED FOR THESE ROWS: the
 # HTML back-end applies no level ceiling, so the four entries the LaTeX side
 # folds into two stay four here, at the level paths they were written with.
@@ -5999,9 +5967,9 @@ capture examples/sortkey-clamp.qmd html "sortkey-clamp-html"
 # fix something that is not wrong.
 check_warning_count "$WORK/sortkey-clamp-html.log" "$WARN_CLAMP_SPLIT" 0 \
   "M09-AC2"
-check_html_index_manifest examples/sortkey-clamp.html \
+check_html_index_manifest $WORK/cap/sortkey-clamp-html/sortkey-clamp.html \
   "$SORTKEY_CLAMP_HTML_INDEX" "M09-AC2"
-check_html_index_links examples/sortkey-clamp.html "M09-AC2"
+check_html_index_links $WORK/cap/sortkey-clamp-html/sortkey-clamp.html "M09-AC2"
 
 # ---------------------------------------------------------------------------
 # M09-AC3 — the same entries with one shared key per pair: nothing to report,
@@ -6018,7 +5986,7 @@ done
 # Hand-derived from the twin: each pair's two marks emit the same argument —
 # the pair's printed level path, folded, filed under the one key both carry —
 # so the tool receives one key per pair and two locators for it.
-python3 - examples/sortkey-clamp-twin.tex <<'CLAMPTWINTEXPY'
+python3 - $WORK/cap/sortkey-clamp-twin-latex/sortkey-clamp-twin.tex <<'CLAMPTWINTEXPY'
 import re, sys
 from collections import Counter
 tex = open(sys.argv[1], encoding='utf-8').read()
@@ -6048,8 +6016,8 @@ quarto render examples/sortkey-clamp-twin.qmd --to pdf \
   > "$WORK/sortkey-clamp-twin-pdf.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-clamp-twin-pdf.log" >&2; fail "M09-AC3: sortkey-clamp-twin.qmd failed to render to PDF"; }
 capture examples/sortkey-clamp-twin.qmd pdf "sortkey-clamp-twin-pdf"
-[ -s examples/sortkey-clamp-twin.pdf ] \
-  || fail "M09-AC3: examples/sortkey-clamp-twin.pdf is empty"
+[ -s $WORK/cap/sortkey-clamp-twin-pdf/sortkey-clamp-twin.pdf ] \
+  || fail "M09-AC3: $WORK/cap/sortkey-clamp-twin-pdf/sortkey-clamp-twin.pdf is empty"
 check_warning_count "$WORK/sortkey-clamp-twin-pdf.log" "$WARN_CLAMP_SPLIT" 0 \
   "M09-AC3 (pdf)"
 read -r -d '' SORTKEY_CLAMP_TWIN_OUTLINE <<'MANIFEST' || true
@@ -6061,7 +6029,7 @@ read -r -d '' SORTKEY_CLAMP_TWIN_OUTLINE <<'MANIFEST' || true
 2	xi, omicron, pi
 MANIFEST
 printf '%s\n' "$SORTKEY_CLAMP_TWIN_OUTLINE" > "$WORK/clamp-twin-outline.txt"
-python3 - examples/sortkey-clamp-twin.pdf "$WORK/clamp-twin-outline.txt" \
+python3 - $WORK/cap/sortkey-clamp-twin-pdf/sortkey-clamp-twin.pdf "$WORK/clamp-twin-outline.txt" \
   <<'CLAMPPDFPY'
 import sys
 from collections import Counter
@@ -6124,9 +6092,9 @@ quarto render examples/self-xref.qmd --to pdf \
   > "$WORK/self-xref-pdf.log" 2>&1 \
   || { tail -40 "$WORK/self-xref-pdf.log" >&2; fail "M10-AC6: self-xref.qmd failed to render to PDF"; }
 capture examples/self-xref.qmd pdf "self-xref-pdf"
-[ -s examples/self-xref.pdf ] || fail "M10-AC6: examples/self-xref.pdf is empty"
+[ -s $WORK/cap/self-xref-pdf/self-xref.pdf ] || fail "M10-AC6: $WORK/cap/self-xref-pdf/self-xref.pdf is empty"
 check_warning_count "$WORK/self-xref-pdf.log" "$WARN_FOLD_SELF" 3 "M10-AC6"
-python3 - examples/self-xref.pdf <<'SELFXREFPDFPY'
+python3 - $WORK/cap/self-xref-pdf/self-xref.pdf <<'SELFXREFPDFPY'
 import sys
 sys.path.insert(0, 'tests')
 import pdfindex
@@ -6492,10 +6460,10 @@ done
 # form cannot both fail, since the first already requires the closing brace
 # (review F12). Counting every argument that files under `a@Moles` is what
 # actually pins the indexed depth at one.
-moles=$( { grep -oF 'index{a@Moles' examples/empty-levels.tex || true; } | wc -l | tr -d ' ')
+moles=$( { grep -oF 'index{a@Moles' $WORK/cap/empty-levels-latex/empty-levels.tex || true; } | wc -l | tr -d ' ')
 [ "$moles" = 1 ] \
   || fail "M13-AC3: expected exactly 1 emitted argument filing under a@Moles, got $moles"
-grep -qF '\index{a@Moles}' examples/empty-levels.tex \
+grep -qF '\index{a@Moles}' $WORK/cap/empty-levels-latex/empty-levels.tex \
   || fail "M13-AC3: the one a@Moles argument is not the single-level \index{a@Moles}; the report's numbers are not the three-way-distinct case"
 pass "M13-AC3: the extra-sort report states both counts as taken before the empty-level drop, for a mark whose written, sorted and indexed depths are 2, 3 and 1, and for one carrying sort= with no entry= at all"
 
@@ -6555,12 +6523,12 @@ done
 pass "M13-AC5: neither report names the no-empty-level control entry=\"Birds!Wrens\""
 
 
-check_no_null_field examples/empty-levels.tex "M11-AC2 (empty-levels)"
+check_no_null_field $WORK/cap/empty-levels-latex/empty-levels.tex "M11-AC2 (empty-levels)"
 
 # ---------------------------------------------------------------------------
 # M11-AC1/AC4 — the emitted LaTeX, argument for argument.
 # ---------------------------------------------------------------------------
-python3 - examples/empty-levels.tex "$EMPTY_LEVELS_TEX" <<EMPTYTEXPY
+python3 - $WORK/cap/empty-levels-latex/empty-levels.tex "$EMPTY_LEVELS_TEX" <<EMPTYTEXPY
 import sys
 $(index_fields)
 
@@ -6583,16 +6551,16 @@ quarto render examples/empty-levels.qmd --to html \
   > "$WORK/empty-levels-html.log" 2>&1 \
   || { tail -40 "$WORK/empty-levels-html.log" >&2; fail "M11-AC3: empty-levels.qmd failed to render to HTML"; }
 capture examples/empty-levels.qmd html "empty-levels-html"
-check_html_index_manifest examples/empty-levels.html "$EMPTY_LEVELS_HTML" \
+check_html_index_manifest $WORK/cap/empty-levels-html/empty-levels.html "$EMPTY_LEVELS_HTML" \
   "M11-AC3"
-check_html_index_links examples/empty-levels.html "M11-AC3"
-check_letter_sweep examples/empty-levels.html "M11-AC3 (letter groups)" \
+check_html_index_links $WORK/cap/empty-levels-html/empty-levels.html "M11-AC3"
+check_letter_sweep $WORK/cap/empty-levels-html/empty-levels.html "M11-AC3 (letter groups)" \
   $'A\nB\nC\nD\nF\nO\nQ\nS'
 
 # The two back-ends compared against each other rather than each against its
 # own manifest: two manifests can drift apart while both still pass, and the
 # claim here is that one mark prints one path wherever it is rendered.
-python3 - examples/empty-levels.tex examples/empty-levels.html <<BOTHENDSPY
+python3 - $WORK/cap/empty-levels-latex/empty-levels.tex $WORK/cap/empty-levels-html/empty-levels.html <<BOTHENDSPY
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -6641,8 +6609,8 @@ quarto render examples/empty-levels.qmd --to pdf \
   > "$WORK/empty-levels-pdf.log" 2>&1 \
   || { tail -40 "$WORK/empty-levels-pdf.log" >&2; fail "M11-AC1: empty-levels.qmd failed to render to PDF"; }
 capture examples/empty-levels.qmd pdf "empty-levels-pdf"
-[ -s examples/empty-levels.pdf ] || fail "M11-AC1: examples/empty-levels.pdf is empty"
-python3 - examples/empty-levels.pdf "$EMPTY_LEVELS_PDF" <<'EMPTYPDFPY'
+[ -s $WORK/cap/empty-levels-pdf/empty-levels.pdf ] || fail "M11-AC1: $WORK/cap/empty-levels-pdf/empty-levels.pdf is empty"
+python3 - $WORK/cap/empty-levels-pdf/empty-levels.pdf "$EMPTY_LEVELS_PDF" <<'EMPTYPDFPY'
 import sys
 sys.path.insert(0, 'tests')
 import pdfindex
@@ -6769,8 +6737,8 @@ pass "M14-AC2: a fixture whose every target resolves — an exact single-level m
 # is asserted here instead. In the HTML index a target is a link exactly when
 # the walk found its entry, so the set of unlinked targets must be exactly the
 # set of targets the report named.
-python3 - "$WORK/dangling-html.log" examples/dangling-xref.html \
-         "$WORK/resolving-html.log" examples/resolving-xref.html <<'PY'
+python3 - "$WORK/dangling-html.log" $WORK/cap/dangling-html/dangling-xref.html \
+         "$WORK/resolving-html.log" $WORK/cap/resolving-html/resolving-xref.html <<'PY'
 import re, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -7054,7 +7022,7 @@ for f in fold-xref fold-xref-both fold-xref-self fold-xref-empty; do
       || { tail -20 "$WORK/$f-$fmt.log" >&2; fail "M18: examples/$f.qmd failed to render to $fmt"; }
     capture "examples/$f.qmd" $fmt "$f-$fmt"
   done
-  cp "examples/$f.tex" "$WORK/$f-latex.tex"
+  cp "$WORK/cap/$f-latex/$f.tex" "$WORK/$f-latex.tex"
 done
 
 # ---------------------------------------------------------------------------
@@ -7074,7 +7042,7 @@ quarto render examples/xref-conflict.qmd --to pdf \
   > "$WORK/conflict-pdf.log" 2>&1 \
   || { tail -30 "$WORK/conflict-pdf.log" >&2; fail "M15-AC1: xref-conflict.qmd failed to render to PDF; a term marked both ways must build"; }
 capture examples/xref-conflict.qmd pdf "conflict-pdf"
-[ -s examples/xref-conflict.pdf ] || fail "M15-AC1: examples/xref-conflict.pdf is empty"
+[ -s $WORK/cap/conflict-pdf/xref-conflict.pdf ] || fail "M15-AC1: $WORK/cap/conflict-pdf/xref-conflict.pdf is empty"
 check_warning_count "$WORK/conflict-pdf.log" "$CONFLICT_FAIL_A" 0 "M15-AC1"
 check_warning_count "$WORK/conflict-pdf.log" "$CONFLICT_FAIL_B" 0 "M15-AC1"
 pass "M15-AC1: the fixture that could not build now renders to PDF, with neither the index tool's rejection nor Quarto's error"
@@ -7138,7 +7106,7 @@ read -r -d '' CONFLICT_PDF_INDEX <<'MANIFEST' || true
 MANIFEST
 
 printf '%s\n' "$CONFLICT_PDF_INDEX" > "$WORK/conflict-index.txt"
-python3 - examples/xref-conflict.pdf "$WORK/conflict-index.txt" <<'CONFLICTPDFPY'
+python3 - $WORK/cap/conflict-pdf/xref-conflict.pdf "$WORK/conflict-index.txt" <<'CONFLICTPDFPY'
 import sys
 sys.path.insert(0, 'tests')
 import pdfindex
@@ -7382,10 +7350,15 @@ pass "M15-AC5: no joined filter message claims a failed render, and the report t
 
 # The uncontested half: the folded form and the list command appear in the
 # emission of the fixtures that have a contested key and nowhere else. The
-# files are discovered by glob over what the run rendered; what each is
-# expected to carry is a mapping, and the comparison is EQUALITY per file, so
-# a fixture that silently stops carrying its shape fails exactly as one that
-# gains a shape it should not have (M16's vacuity mode).
+# files are discovered by glob over the CAPTURED LaTeX artifacts of this run —
+# every one every latex render produced, each still beside the render that
+# wrote it (M24) — rather than over whatever examples/ happened to hold, which
+# was whatever the last render of each fixture left and silently omitted every
+# artifact a later PDF render had removed. What each is expected to carry is a
+# mapping, and the comparison is EQUALITY per file, so a fixture that silently
+# stops carrying its shape fails exactly as one that gains a shape it should
+# not have (M16's vacuity mode).
+CAP="$CAPTURE_ROOT" \
 CONFLICT_TEX="$WORK/conflict-latex.tex" FOLD_TEX="$WORK/fold-xref-latex.tex" \
 python3 - <<'M15UNTOUCHEDPY'
 import glob, os, re, sys
@@ -7410,8 +7383,8 @@ def carried(path):
 
 # Both directions, or the check would pass on a filter that emitted neither
 # mark anywhere at all. The contested fixture's own artifact is read from the
-# copy kept before the PDF render removed it — a glob over examples/*.tex
-# cannot see it at this point, so the basename it would have matched is absent.
+# copy kept at its own render, which is also what the captured set below
+# holds.
 missing = [name for name in MARKS if name not in carried(os.environ['CONFLICT_TEX'])]
 if missing:
     print(f'FAIL: M15: the fixture that HAS contested keys of both shapes '
@@ -7427,35 +7400,41 @@ if carried(os.environ['FOLD_TEX']) != [FOLD_ONLY]:
           f'folded-field shape and only that shape, but its emission carries '
           f'{carried(os.environ["FOLD_TEX"])}', file=sys.stderr)
     sys.exit(1)
-# The sweep proper. Neither fixture WITH a contested key is required to be
-# here — a PDF render removes the intermediate .tex, so whether one survives to
-# this point is not something the sweep should depend on; both are checked
-# above from copies taken at their own renders. What is required is that no
-# OTHER artifact carries either shape, and that fold-xref's, if it is still on
-# disk, carries only the shape it writes.
+# The sweep proper, over every LaTeX artifact this run captured. The allowed
+# map is keyed by capture slug, so a fixture rendered to latex more than once
+# is judged once per render rather than once per basename.
 # M20's two fixtures each mark `gorgon` with a plain locator mark and a
 # cross-reference mark, which is a contested key of the folded-field shape, so
-# each carries that shape and only it. Listed for the same reason fold-xref is
-# — the sweep tolerates their absence, since whichever render ran last decides
-# whether the intermediate .tex is still on disk.
-ALLOWED = {'examples/fold-xref.tex': {FOLD_ONLY},
-           'examples/principal.tex': {FOLD_ONLY},
-           'examples/principal-twin.tex': {FOLD_ONLY}}
+# each carries that shape and only it, as fold-xref does. Every artifact the
+# map does not name must carry neither shape — and every artifact the map DOES
+# name must be present, since the captured set is the run's own and no later
+# render can take one out of it.
+ALLOWED = {'fold-xref-latex/fold-xref.tex': {FOLD_ONLY},
+           'principal-latex/principal.tex': {FOLD_ONLY},
+           'principal-twin-latex/principal-twin.tex': {FOLD_ONLY}}
+cap = os.environ['CAP']
+found = sorted(glob.glob(os.path.join(cap, '*', '*.tex')))
+rel = {os.path.relpath(p, cap): p for p in found}
+absent = sorted(set(ALLOWED) - set(rel))
+if absent:
+    print(f'FAIL: M15: the captured LaTeX set is missing {absent}, so the '
+          f'sweep below would report them as carrying nothing rather than as '
+          f'never having been read', file=sys.stderr)
+    sys.exit(1)
 wrong = []
-for path in sorted(glob.glob('examples/*.tex')):
-    want = ALLOWED.get(path, set())
-    got = set(carried(path))
+for name in sorted(rel):
+    want = ALLOWED.get(name, set())
+    got = set(carried(rel[name]))
     if got != want:
-        wrong.append((path, sorted(want), sorted(got)))
+        wrong.append((name, sorted(want), sorted(got)))
 if wrong:
     print(f'FAIL: M15: the contested-key emission is not where it should be '
-          f'(path, expected, found): {wrong}', file=sys.stderr)
+          f'(capture, expected, found): {wrong}', file=sys.stderr)
     sys.exit(1)
 print(f'ok   M15: the contested-key fixture carries both shapes of the '
       f'contested-key emission, the one other fixture with a contested key '
-      f'carries exactly the shape it writes, and none of the '
-      f'{len(glob.glob("examples/*.tex"))} rendered LaTeX artifacts carries '
-      f'anything else')
+      f'carries exactly the shape it writes, and none of the {len(rel)} '
+      f'captured LaTeX artifacts carries anything else')
 M15UNTOUCHEDPY
 pass "M15-AC5: the failed-render claim is gone from the filter, and the contested-key emission reaches only the fixture that has one"
 
@@ -7786,7 +7765,7 @@ pass "M19-AC4: the entry-fold report names both counts where a dropped level mak
 # so the same targets keep every level the author wrote and link to entries
 # four and five deep. Compared as a whole list, so an entry the manifest omits
 # fails rather than passing unseen.
-python3 - examples/fold-xref.html <<'M18HTMLPY'
+python3 - $WORK/cap/fold-xref-html/fold-xref.html <<'M18HTMLPY'
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -7852,8 +7831,8 @@ pass "M18: HTML applies no ceiling, so the same targets the LaTeX back-end folds
 quarto render examples/fold-xref.qmd --to pdf > "$WORK/fold-xref-pdf.log" 2>&1 \
   || { tail -40 "$WORK/fold-xref-pdf.log" >&2; fail "M18-AC4: fold-xref.qmd failed to render to PDF"; }
 capture examples/fold-xref.qmd pdf "fold-xref-pdf"
-[ -s examples/fold-xref.pdf ] || fail "M18-AC4: examples/fold-xref.pdf is empty"
-python3 - examples/fold-xref.pdf <<'M18PDFPY'
+[ -s $WORK/cap/fold-xref-pdf/fold-xref.pdf ] || fail "M18-AC4: $WORK/cap/fold-xref-pdf/fold-xref.pdf is empty"
+python3 - $WORK/cap/fold-xref-pdf/fold-xref.pdf <<'M18PDFPY'
 import sys
 sys.path.insert(0, 'tests')
 import pdfindex
@@ -7946,8 +7925,8 @@ pass "M18 (F1): a target the fold turns into a self-reference draws exactly one 
 quarto render examples/fold-xref-both.qmd --to pdf > "$WORK/fold-xref-both-pdf.log" 2>&1 \
   || { tail -40 "$WORK/fold-xref-both-pdf.log" >&2; fail "M18 (F5): fold-xref-both.qmd failed to render to PDF"; }
 capture examples/fold-xref-both.qmd pdf "fold-xref-both-pdf"
-[ -s examples/fold-xref-both.pdf ] || fail "M18 (F5): examples/fold-xref-both.pdf is empty"
-python3 - examples/fold-xref-both.pdf <<'M18BOTHPDFPY'
+[ -s $WORK/cap/fold-xref-both-pdf/fold-xref-both.pdf ] || fail "M18 (F5): $WORK/cap/fold-xref-both-pdf/fold-xref-both.pdf is empty"
+python3 - $WORK/cap/fold-xref-both-pdf/fold-xref-both.pdf <<'M18BOTHPDFPY'
 import re, subprocess, sys
 
 text = subprocess.run(['pdftotext', sys.argv[1], '-'], check=True,
@@ -8004,31 +7983,29 @@ pass "M18 (F5): the both-attributes site reaches a compiled artifact, where both
 # Removed before the render, not merely overwritten by it: AC5 is stated over
 # the gfm render of this run, and a stale committed .md left in place would
 # satisfy the check after the filter had regressed (the audit's F6).
-rm -f examples/principal.md examples/principal.html
 for fmt in latex html gfm; do
   quarto render examples/principal.qmd --to $fmt > "$WORK/principal-$fmt.log" 2>&1 \
     || { cat "$WORK/principal-$fmt.log" >&2; fail "M20: examples/principal.qmd failed to render to $fmt"; }
   capture examples/principal.qmd $fmt "principal-$fmt"
 done
-for artifact in examples/principal.md examples/principal.html; do
+for artifact in $WORK/cap/principal-gfm/principal.md $WORK/cap/principal-html/principal.html; do
   [ -s "$artifact" ] \
     || fail "M20: the render produced no $artifact, so every check stated over it would read a file this run did not write"
 done
 # Copied before the PDF render below removes the intermediate .tex (M15).
-cp examples/principal.tex "$WORK/principal.tex"
+cp $WORK/cap/principal-latex/principal.tex "$WORK/principal.tex"
 for fmt in latex html gfm; do
   quarto render examples/principal-twin.qmd --to $fmt \
     > "$WORK/principal-twin-$fmt.log" 2>&1 \
     || { cat "$WORK/principal-twin-$fmt.log" >&2; fail "M20: examples/principal-twin.qmd failed to render to $fmt"; }
   capture examples/principal-twin.qmd $fmt "principal-twin-$fmt"
 done
-cp examples/principal-twin.tex "$WORK/principal-twin.tex"
+cp $WORK/cap/principal-twin-latex/principal-twin.tex "$WORK/principal-twin.tex"
 # Removed, not merely overwritten: AC1 is stated over the artifacts of THIS
 # render, and its whole content is a cross-artifact agreement — the identifiers
 # the .ind carries against the ones the .aux registers. A stale .aux left in
 # place from a tree where the ordinals were assigned differently would satisfy
 # the check while this run's filter emitted something else entirely.
-rm -f examples/principal.ind examples/principal.ilg examples/principal.aux
 quarto render examples/principal.qmd --to pdf > "$WORK/principal-pdf.log" 2>&1 \
   || { cat "$WORK/principal-pdf.log" >&2; fail "M20-AC1: examples/principal.qmd failed to render to PDF"; }
 capture examples/principal.qmd pdf "principal-pdf"
@@ -8056,7 +8033,7 @@ pass "M20-AC1: every locator of a principal key carries one uniform encapsulatio
 # AND the emphasis node are both asserted: the class alone needs a stylesheet
 # this extension does not ship, and the emphasis alone would leave an author's
 # CSS nothing to hold on to.
-HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" python3 tests/m20probes.py html examples/principal.html
+HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" python3 tests/m20probes.py html $WORK/cap/principal-html/principal.html
 pass "M20-AC2: the HTML index marks exactly the principal mark's locator link, at its own position, and leaves every other locator plain"
 
 # M20-AC3/AC4 — the two reports, in all three formats, and the counterfactual
@@ -8145,7 +8122,7 @@ printf '%s\n' "$PRINCIPAL_GFM_SPANS" > "$WORK/principal-gfm-spans.txt"
 # carries is compared against the manifest above, in document order and byte
 # for byte, and the permitted residue is stated as an exact set of tokens
 # rather than as an exemption, so a stray one cannot be argued into it.
-python3 tests/m20probes.py gfm examples/principal.md "$WORK/principal-gfm-spans.txt"
+python3 tests/m20probes.py gfm $WORK/cap/principal-gfm/principal.md "$WORK/principal-gfm-spans.txt"
 pass "M20-AC5: in the format with no index back-end every index mark the fixture writes passes through as its visible text plus exactly its own attributes, data-prefixed, in document order and byte for byte against a hand-derived manifest, with no residue of either back-end"
 
 # M20-AC6 — the subsystem is injected where it is used and nowhere else. Both
@@ -8165,7 +8142,7 @@ SUBSYSTEM_CMDS=("$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_
 # not reach must define the three `.aux`-borne names as empty gobbling
 # stand-ins, so the leak scan subtracts exactly that form — and nothing else —
 # before asking what reached the control.
-python3 tests/m20probes.py tex "$WORK/principal.tex" examples/content.tex \
+python3 tests/m20probes.py tex "$WORK/principal.tex" $WORK/cap/content-latex/content.tex \
   "${SUBSYSTEM_CMDS[@]}" --standins "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"
 pass "M20-AC6: the ${#SUBSYSTEM_CMDS[@]} subsystem commands are defined once each with \\providecommand* in the fixture that uses them, nothing else naming quartoindex is defined there, and no live definition of any of them reaches a document with no principal mention (the three .aux-borne names ride there only as M22's empty gobbling stand-ins)"
 python3 tests/m20probes.py tex "$WORK/principal.tex" "$WORK/principal-twin.tex" \
@@ -8185,8 +8162,6 @@ pass "M20-AC6: nor does any live definition reach the role-free twin, which is t
 # not a workaround but the second thing this section proves, since that
 # redefinition taking effect at all is the author-facing promise README makes.
 # ---------------------------------------------------------------------------
-rm -f examples/principal-cases.ind examples/principal-cases.ilg \
-      examples/principal-cases.aux examples/principal-cases.pdf
 quarto render examples/principal-cases.qmd --to pdf \
   > "$WORK/principal-cases-pdf.log" 2>&1 \
   || { cat "$WORK/principal-cases-pdf.log" >&2; fail "M20 T9: examples/principal-cases.qmd failed to render to PDF — a plain and a principal mark of one key on one page is the shape this milestone died on, and this render is what proves it no longer breaks the document"; }
@@ -8196,9 +8171,9 @@ for aux in ind ilg aux; do
     || fail "M20 T9: the PDF render left no examples/principal-cases.$aux"
   cp "examples/principal-cases.$aux" "$WORK/principal-cases.$aux"
 done
-[ -s examples/principal-cases.pdf ] \
+[ -s $WORK/cap/principal-cases-pdf/principal-cases.pdf ] \
   || fail "M20 T9: the render produced no PDF, so the printed index every clause below reads was never written"
-pdftotext examples/principal-cases.pdf "$WORK/principal-cases.txt"
+pdftotext $WORK/cap/principal-cases-pdf/principal-cases.pdf "$WORK/principal-cases.txt"
 python3 tests/m20probes.py cases "$WORK/principal-cases.txt" \
   "$WORK/principal-cases.ilg" "$WORK/principal-cases.ind" \
   "$WORK/principal-cases.aux" "$WORK/principal-cases-pdf.log"
@@ -8280,13 +8255,12 @@ pass "M21: every behavior the README documents for a page range is present verba
 # Removed before the render, not merely overwritten: AC6 is stated over the gfm
 # render of THIS run, and a stale committed .md would satisfy it after the
 # filter had regressed.
-rm -f examples/range.md examples/range.html examples/range.tex
 for fmt in latex html gfm; do
   quarto render examples/range.qmd --to $fmt > "$WORK/range-$fmt.log" 2>&1 \
     || { cat "$WORK/range-$fmt.log" >&2; fail "M21: examples/range.qmd failed to render to $fmt"; }
   capture examples/range.qmd $fmt "range-$fmt"
 done
-for artifact in examples/range.md examples/range.html; do
+for artifact in $WORK/cap/range-gfm/range.md $WORK/cap/range-html/range.html; do
   [ -s "$artifact" ] \
     || fail "M21: the render produced no $artifact, so every check stated over it would read a file this run did not write"
 done
@@ -8294,14 +8268,13 @@ done
 # size-checked first like every other artifact here: a render that exits 0 and
 # writes nothing would otherwise leave every AC2 clause reading a file this run
 # did not produce (review round 3, R3-F6).
-[ -s examples/range.tex ] \
-  || fail "M21-AC2: the latex render produced no examples/range.tex"
-cp examples/range.tex "$WORK/range.tex"
+[ -s $WORK/cap/range-latex/range.tex ] \
+  || fail "M21-AC2: the latex render produced no $WORK/cap/range-latex/range.tex"
+cp $WORK/cap/range-latex/range.tex "$WORK/range.tex"
 # Removed, not overwritten: AC2 is a cross-artifact agreement between the .ind
 # and the .aux of one render, and a stale .aux from a tree where the ordinals
 # were assigned differently would satisfy it while this run emitted something
 # else entirely.
-rm -f examples/range.ind examples/range.ilg examples/range.aux
 quarto render examples/range.qmd --to pdf > "$WORK/range-pdf.log" 2>&1 \
   || { cat "$WORK/range-pdf.log" >&2; fail "M21-AC1: examples/range.qmd failed to render to PDF"; }
 capture examples/range.qmd pdf "range-pdf"
@@ -8335,8 +8308,8 @@ pass "M21: the range commands ride with the rest of the subsystem, so a document
 # bracketed marker is the only way an emphasis claim can be read out of a PDF.
 # Which ranges are principal is read from the fixture's source, not the output.
 require_pdf_tools
-pdftotext "examples/range.pdf" "$WORK/range.txt" \
-  || fail "M21-AC2: could not extract text from examples/range.pdf"
+pdftotext "$WORK/cap/range-pdf/range.pdf" "$WORK/range.txt" \
+  || fail "M21-AC2: could not extract text from $WORK/cap/range-pdf/range.pdf"
 python3 - "$WORK/range.txt" <<'M21PDF'
 import re, sys
 text = open(sys.argv[1], encoding='utf-8').read()
@@ -8386,7 +8359,7 @@ M21PDF
 pass "M21-AC2: in the compiled PDF the principal ranges print emphasized whole — the last link of the chain the .ind cannot carry — and no other entry does"
 
 HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
-  python3 tests/m21probes.py html examples/range.html
+  python3 tests/m21probes.py html $WORK/cap/range-html/range.html
 pass "M21-AC3: every range contributes exactly one locator link, at its opening mark's anchor and never at its closing one, emphasized exactly where the opening is principal, while each closing mark keeps an anchor and adds nothing to its own text"
 
 # M21-AC6 — the format with no index back-end. Derived by hand from the .qmd
@@ -8408,7 +8381,7 @@ read -r -d '' RANGE_GFM_SPANS <<'MANIFEST' || true
 <span class="index" data-range="close" data-mention="principal">firebird</span>
 MANIFEST
 printf '%s\n' "$RANGE_GFM_SPANS" > "$WORK/range-gfm-spans.txt"
-python3 tests/m21probes.py gfm examples/range.md "$WORK/range-gfm-spans.txt"
+python3 tests/m21probes.py gfm $WORK/cap/range-gfm/range.md "$WORK/range-gfm-spans.txt"
 pass "M21-AC6: in the format with no index back-end an opening and a closing mark pass their visible text through with exactly their own attributes data-prefixed, range= included, and no range delimiter or registration command reaches the format"
 
 # M21-AC4 — the five misuse shapes, in all three formats. The needles are per
@@ -8423,9 +8396,9 @@ for fmt in latex html gfm; do
   # Copied at the render, so the emitted-LaTeX check below reads this run's
   # artifact and not whatever the working tree happens to hold (M15).
   if [ "$fmt" = "latex" ]; then
-    [ -s examples/range-misuse.tex ] \
-      || fail "M21-AC4: the latex render produced no examples/range-misuse.tex"
-    cp examples/range-misuse.tex "$WORK/range-misuse-latex.tex"
+    [ -s $WORK/cap/range-misuse-latex/range-misuse.tex ] \
+      || fail "M21-AC4: the latex render produced no $WORK/cap/range-misuse-latex/range-misuse.tex"
+    cp $WORK/cap/range-misuse-latex/range-misuse.tex "$WORK/range-misuse-latex.tex"
   fi
   # Two marks of this shape: a value naming neither end, and an EMPTY value,
   # which README singles out as a value the author wrote rather than an
@@ -8548,13 +8521,12 @@ pass "M21-AC5: each chapter of an HTML book reports its own half of a split rang
 # third. That is a fact about the source the author wrote, and it is the one
 # fact this section does not read out of the artifacts under test (M20).
 # ---------------------------------------------------------------------------
-rm -f examples/range-nested.html
 quarto render examples/range-nested.qmd --to html \
   > "$WORK/range-nested-html.log" 2>&1 \
   || { cat "$WORK/range-nested-html.log" >&2; fail "M23-AC1: examples/range-nested.qmd failed to render to html"; }
 capture examples/range-nested.qmd html "range-nested-html"
-[ -s examples/range-nested.html ] \
-  || fail "M23-AC1: the html render produced no examples/range-nested.html, so every clause stated over it would read a file this run did not write"
+[ -s $WORK/cap/range-nested-html/range-nested.html ] \
+  || fail "M23-AC1: the html render produced no $WORK/cap/range-nested-html/range-nested.html, so every clause stated over it would read a file this run did not write"
 # Removed, not overwritten: a stale `.ind` from a tree where the marks paired
 # differently would satisfy every clause below while this run emitted something
 # else entirely (the M15 destroyed-artifact lesson, in its stale-artifact half).
@@ -8565,8 +8537,6 @@ capture examples/range-nested.qmd html "range-nested-html"
 # it at `\makeindex`, verified 2026-08-22 by planting `\indexentry{Ghostterm}{99}`
 # and finding it gone after one run — so that a FAILED render cannot leave one
 # behind to be read as this run's.
-rm -f examples/range-nested.ind examples/range-nested.ilg \
-      examples/range-nested.idx examples/range-nested.aux
 quarto render examples/range-nested.qmd --to pdf \
   > "$WORK/range-nested-pdf.log" 2>&1 \
   || { cat "$WORK/range-nested-pdf.log" >&2; fail "M23-AC1: examples/range-nested.qmd failed to render to PDF"; }
@@ -8586,7 +8556,7 @@ check_warning_count "$WORK/range-nested-pdf.log" '(W)' 0 \
 
 python3 tests/m23probes.py ind "$WORK/range-nested.ind" "$WORK/range-nested.ilg"
 HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
-  python3 tests/m23probes.py html examples/range-nested.html
+  python3 tests/m23probes.py html $WORK/cap/range-nested-html/range-nested.html
 pass "M23-AC1: a range mark whose own content carries another mark pairs with its closing mark in both back-ends — one page range in the PDF index, one locator at the opening mark's anchor in the HTML one — while the plain range beside it keeps its own narrower span and the nested inner mark keeps its two separate locators"
 
 # ---------------------------------------------------------------------------
@@ -8612,21 +8582,18 @@ pass "M23-AC1: a range mark whose own content carries another mark pairs with it
 # closes on the fourth, the plain one opens on the second and closes on the
 # third (M20).
 # ---------------------------------------------------------------------------
-rm -f examples/range-position.html
 quarto render examples/range-position.qmd --to html \
   > "$WORK/range-position-html.log" 2>&1 \
   || { cat "$WORK/range-position-html.log" >&2; fail "M23-AC2: examples/range-position.qmd failed to render to html"; }
 capture examples/range-position.qmd html "range-position-html"
-[ -s examples/range-position.html ] \
-  || fail "M23-AC2: the html render produced no examples/range-position.html, so every clause stated over it would read a file this run did not write"
+[ -s $WORK/cap/range-position-html/range-position.html ] \
+  || fail "M23-AC2: the html render produced no $WORK/cap/range-position-html/range-position.html, so every clause stated over it would read a file this run did not write"
 # The `.aux` goes with the `.ind`/`.ilg`: it carries the principal-locator
 # registry the preamble reads back at \begin{document}, so a surviving one is
 # an INPUT to the render that follows (the M22 auxiliary-file lesson). The
 # `.idx` is removed as residue rather than as an input — pdflatex truncates it
 # at \makeindex, verified 2026-08-22 by planting an entry and watching it go —
 # so that a FAILED render cannot leave one behind to be read as this run's.
-rm -f examples/range-position.ind examples/range-position.ilg \
-      examples/range-position.idx examples/range-position.aux
 quarto render examples/range-position.qmd --to pdf \
   > "$WORK/range-position-pdf.log" 2>&1 \
   || { cat "$WORK/range-position-pdf.log" >&2; fail "M23-AC2: examples/range-position.qmd failed to render to PDF"; }
@@ -8652,7 +8619,7 @@ check_warning_count "$WORK/range-position-pdf.log" '(W)' 1 \
 
 python3 tests/m23probes.py posind "$WORK/range-position.ind" "$WORK/range-position.ilg"
 HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" HTML_SECTION_ID="$HTML_SECTION_ID" \
-  python3 tests/m23probes.py poshtml examples/range-position.html
+  python3 tests/m23probes.py poshtml $WORK/cap/range-position-html/range-position.html
 pass "M23-AC2: a range verdict is bound to its mark by document position — in a document carrying a span with range= and no index class, a range mark deriving no entry, a nested entry=-less range and a plain range overlapping it, both back-ends render clean, each range prints the page range its own marks sit at, and the only report drawn is the one the no-entry mark calls for"
 
 # ---------------------------------------------------------------------------
@@ -8671,8 +8638,8 @@ pass "M23-AC2: a range verdict is bound to its mark by document position — in 
 #
 # The parent is authored here rather than borrowing examples/range.qmd: no
 # committed fixture's `.aux` carries all three names in one file —
-# examples/range.aux holds only the two range commands and
-# examples/principal.aux only the page command — and the criterion is stated
+# $WORK/cap/range-pdf/range.aux holds only the two range commands and
+# $WORK/cap/principal-pdf/principal.aux only the page command — and the criterion is stated
 # over one surviving `.aux` carrying all three.
 # ---------------------------------------------------------------------------
 M22W="$WORK/m22"
@@ -8802,8 +8769,8 @@ m22_nogobblers() {
   done
 }
 # AC2 over every no-subsystem document in reach. Three documents, one reader:
-# the two variants this section authors, and examples/control.tex — which the
-# AC3 render writes rather than the repo committing (examples/*.tex is
+# the two variants this section authors, and $WORK/cap/control-latex/control.tex — which the
+# AC3 render writes rather than the repo committing (a rendered `.tex` is
 # gitignored), and which is the only zero-mark document read outside this
 # section, so a regression dropping that branch for real documents would leave
 # the two authored variants passing.
@@ -8830,7 +8797,7 @@ m22_standins_only() {
     return 1
   fi
 }
-for tex in "$M22W/noattrs.tex" "$M22W/nomarks.tex" examples/control.tex; do
+for tex in "$M22W/noattrs.tex" "$M22W/nomarks.tex" $WORK/cap/control-latex/control.tex; do
   m22_standins_only "$tex" \
     || fail "M22-AC2: $tex does not carry exactly the three empty gobbling stand-ins in its preamble, which every LaTeX document without the live subsystem must"
 done
@@ -9108,16 +9075,16 @@ filtersrc.sources()" >/dev/null 2>&1; then
   probe_plant "$WORK/principal.tex" "$M20W/notprovide.tex" \
     -e "s/providecommand\\*\\\\$REGISTER_CMD\\[1\\]/gdef\\\\$REGISTER_CMD/"
   probe_defect "a subsystem command defined with something other than \\providecommand" \
-    m20_tex "$M20W/notprovide.tex" examples/content.tex
+    m20_tex "$M20W/notprovide.tex" $WORK/cap/content-latex/content.tex
   probe_plantpl "$WORK/principal.tex" "$M20W/belowdoc.tex" \
     's/\\providecommand\*\\quartoindexprincipal\[1\]\{\\textbf\{\#1\}\}\n//; s/(\\begin\{document\})/$1\n\\providecommand*\\quartoindexprincipal[1]{\\textbf{\#1}}/'
   probe_defect "a subsystem command defined below \\begin{document} rather than in the preamble" \
-    m20_tex "$M20W/belowdoc.tex" examples/content.tex
+    m20_tex "$M20W/belowdoc.tex" $WORK/cap/content-latex/content.tex
   probe_plantpl "$WORK/principal.tex" "$M20W/csname.tex" \
     's/(\\begin\{document\})/\\expandafter\\def\\csname quartoindexextra\\endcsname{}\n$1/'
   probe_defect "a quartoindex command whose name is built with \\csname" \
-    m20_tex "$M20W/csname.tex" examples/content.tex
-  probe_plantpl examples/content.tex "$M20W/leakedpre.tex" \
+    m20_tex "$M20W/csname.tex" $WORK/cap/content-latex/content.tex
+  probe_plantpl $WORK/cap/content-latex/content.tex "$M20W/leakedpre.tex" \
     's/(\\begin\{document\})/\\providecommand*\\quartoindexlocator[2]{}\n$1/'
   probe_defect "the subsystem injected into a document with no principal mention" \
     m20_tex "$WORK/principal.tex" "$M20W/leakedpre.tex"
@@ -9125,18 +9092,18 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # --- the HTML index. The class and the emphasis node are separable, so each
   #     is removed on its own: a check asserting only one of the two would pass
   #     on the artifact that lost the other.
-  probe_plant examples/principal.html "$M20W/wrongmark.html" \
+  probe_plant $WORK/cap/principal-html/principal.html "$M20W/wrongmark.html" \
     -e 's/<a href="#qi-mark-2" class="qi-principal"><strong>2<\/strong><\/a>/<a href="#qi-mark-2">2<\/a>/' \
     -e 's/<a href="#qi-mark-1">1<\/a>/<a href="#qi-mark-1" class="qi-principal"><strong>1<\/strong><\/a>/'
   probe_defect "the HTML emphasis on the first mention instead of the principal one" \
     env HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
     python3 tests/m20probes.py html "$M20W/wrongmark.html"
-  probe_plant examples/principal.html "$M20W/noclass.html" \
+  probe_plant $WORK/cap/principal-html/principal.html "$M20W/noclass.html" \
     -e 's/class="qi-principal"><strong>2<\/strong>/><strong>2<\/strong>/'
   probe_defect "the class dropped from the HTML principal locator" \
     env HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
     python3 tests/m20probes.py html "$M20W/noclass.html"
-  probe_plant examples/principal.html "$M20W/nostrong.html" \
+  probe_plant $WORK/cap/principal-html/principal.html "$M20W/nostrong.html" \
     -e 's/class="qi-principal"><strong>2<\/strong><\/a>/class="qi-principal">2<\/a>/'
   probe_defect "the emphasis node dropped from the HTML principal locator" \
     env HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
@@ -9145,13 +9112,13 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # --- the back-end-less format. The ARIA-role defect the attribute was
   #     renamed to avoid is planted directly, since no filter change can
   #     produce it any more and it is the one this criterion exists for.
-  probe_plant examples/principal.md "$M20W/aria.md" \
+  probe_plant $WORK/cap/principal-gfm/principal.md "$M20W/aria.md" \
     -e 's/data-mention="principal"/role="principal"/'
   probe_defect "a literal ARIA role attribute in the pass-through format" \
     python3 tests/m20probes.py gfm "$M20W/aria.md" "$WORK/principal-gfm-spans.txt"
   # Aimed at the attribute alone, not at the whole span: gfm wraps a long
   # line inside the tag, so a pattern spanning the element matches nothing.
-  probe_plant examples/principal.md "$M20W/residue.md" \
+  probe_plant $WORK/cap/principal-gfm/principal.md "$M20W/residue.md" \
     -e 's/data-mention="paramount"/data-mention="paramount" data-qi-pending="4"/'
   probe_defect "the filter's own plumbing attribute surviving into the pass-through format" \
     python3 tests/m20probes.py gfm "$M20W/residue.md" "$WORK/principal-gfm-spans.txt"
@@ -9159,15 +9126,15 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # planted on its own: a mark the render lost, one it gained, and two the
   # filter emitted in the wrong order. The last is what a reader that sorted
   # its spans before comparing could not catch at all.
-  probe_plant examples/principal.md "$M20W/dropped.md" \
+  probe_plant $WORK/cap/principal-gfm/principal.md "$M20W/dropped.md" \
     -e 's|<span class="index" data-mention="paramount">dryad</span>|dryad|'
   probe_defect "an index mark missing from the pass-through render" \
     python3 tests/m20probes.py gfm "$M20W/dropped.md" "$WORK/principal-gfm-spans.txt"
-  probe_plant examples/principal.md "$M20W/extra.md" \
+  probe_plant $WORK/cap/principal-gfm/principal.md "$M20W/extra.md" \
     -e 's|<span class="index">faun</span>|<span class="index">faun</span> and <span class="index">faun</span>|'
   probe_defect "an index mark the fixture never wrote appearing in the pass-through render" \
     python3 tests/m20probes.py gfm "$M20W/extra.md" "$WORK/principal-gfm-spans.txt"
-  probe_plant examples/principal.md "$M20W/transposed.md" \
+  probe_plant $WORK/cap/principal-gfm/principal.md "$M20W/transposed.md" \
     -e 's|<span class="index" data-mention="paramount">dryad</span>|@@QI@@|' \
     -e 's|<span class="index" data-mention="">ettin</span>|<span class="index" data-mention="paramount">dryad</span>|' \
     -e 's|@@QI@@|<span class="index" data-mention="">ettin</span>|'
@@ -9176,7 +9143,7 @@ filtersrc.sources()" >/dev/null 2>&1; then
   # The nested-markup mark, mangled: the span the widened scan exists to
   # enumerate. A scan that could not see it would drop it from the domain
   # rather than fail, so the defect has to be inside that span's own text.
-  probe_plant examples/principal.md "$M20W/nested.md" \
+  probe_plant $WORK/cap/principal-gfm/principal.md "$M20W/nested.md" \
     -e 's|<span class="index" data-mention="principal">\*\*kraken\*\*</span>|<span class="index" data-mention="principal">kraken</span>|'
   probe_defect "the nested inline markup stripped from a mark's visible text" \
     python3 tests/m20probes.py gfm "$M20W/nested.md" "$WORK/principal-gfm-spans.txt"
@@ -9432,22 +9399,22 @@ filtersrc.sources()" >/dev/null 2>&1; then
     m21_tex "$M21W/noreg.tex"
 
   # --- the HTML index.
-  m21_html examples/range.html >/dev/null \
+  m21_html $WORK/cap/range-html/range.html >/dev/null \
     || fail "M21 self-test: the html reader fails on the unplanted render"
   # (x) the locator pointing at the CLOSING mark rather than the opening one —
   #     a link that works, to the wrong end of the discussion.
-  probe_plantpl examples/range.html "$M21W/closeanchor.html" \
+  probe_plantpl $WORK/cap/range-html/range.html "$M21W/closeanchor.html" \
     's/href="#qi-mark-1"/href="#qi-mark-2"/'
   probe_defect "a range locator pointing at its closing mark" \
     m21_html "$M21W/closeanchor.html"
   # (xi) the closing mark contributing a locator of its own, which is the
   #      pre-milestone behavior: two locators where a reader wants one.
-  probe_plantpl examples/range.html "$M21W/twolinks.html" \
+  probe_plantpl $WORK/cap/range-html/range.html "$M21W/twolinks.html" \
     's{(<span class="qi-locators"><a href="#qi-mark-1"[^>]*>1</a>)}{$1, <a href="#qi-mark-2">2</a>}'
   probe_defect "a closing mark contributing a locator of its own" \
     m21_html "$M21W/twolinks.html"
   # (xii) the emphasis on a range whose opening is not principal.
-  probe_plantpl examples/range.html "$M21W/wrongmark.html" \
+  probe_plantpl $WORK/cap/range-html/range.html "$M21W/wrongmark.html" \
     's{<a href="#qi-mark-1">1</a>}{<a href="#qi-mark-1" class="qi-principal"><strong>1</strong></a>}'
   probe_defect "a plain range printed as the principal one" \
     m21_html "$M21W/wrongmark.html"
@@ -9552,7 +9519,7 @@ filtersrc.sources()" >/dev/null 2>&1; then
   rm -rf "$M23W"; mkdir -p "$M23W"
   cp "$WORK/range-nested.ind" "$M23W/clean.ind"
   cp "$WORK/range-nested.ilg" "$M23W/clean.ilg"
-  cp examples/range-nested.html "$M23W/clean.html"
+  cp $WORK/cap/range-nested-html/range-nested.html "$M23W/clean.html"
   m23_ind() { python3 tests/m23probes.py ind "$1" "$2"; }
   m23_html() {
     HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
@@ -9793,7 +9760,7 @@ filtersrc.sources()" >/dev/null 2>&1; then
   #       m20_tex's four wanted names and the three subtracted ones meet in
   #       it alone, so a plant on either range name would sit outside the
   #       leak scan's own list and prove nothing about the subtraction.
-  probe_plant "examples/content.tex" "$M22SW/bodied.tex" \
+  probe_plant "$WORK/cap/content-latex/content.tex" "$M22SW/bodied.tex" \
     -e 's|^\\providecommand\*\\'"$PRINCIPALPAGE_CMD"'\[2\]{}$|\\providecommand*\\'"$PRINCIPALPAGE_CMD"'[2]{\\relax}|'
   probe_defect "a bodied definition of a subtracted name in a document with no principal mention" \
     m20_tex "$WORK/principal.tex" "$M22SW/bodied.tex"
@@ -10112,7 +10079,7 @@ SOLO_BASE="$IP/tree/solo/$SOLO_NAME"
 # and is reported here, so no list of names has to be right (review, pass 2).
 cmp -s "$WORK/demo-latex.tex" "$SOLO_BASE.tex" \
   || fail "M17-AC3: the probe's working-tree latex render of $SOLO_FIXTURE differs from this run's in-place render of the same fixture; the scratch copy is missing something the fixture needs"
-cmp -s "examples/$SOLO_NAME.html" "$SOLO_BASE.html" \
+cmp -s "$WORK/cap/demo-html/$SOLO_NAME.html" "$SOLO_BASE.html" \
   || fail "M17-AC3: the probe's working-tree html render of $SOLO_FIXTURE differs from this run's in-place render of the same fixture; the scratch copy is missing something the fixture needs"
 
 # The comparison is only worth making if each side actually built an index. A
@@ -10137,6 +10104,27 @@ for PAIR in "solo/$SOLO_NAME.tex" "solo/$SOLO_NAME.html" book-latex/_book book-h
   PARITY=$((PARITY + 1))
 done
 pass "M17-AC3: all $PARITY outputs — a standalone fixture and a book project, each to latex and html — are byte-identical rendered from an extension installed by quarto add and from the working tree"
+
+# ---------------------------------------------------------------------------
+# The residue sweeps (M03-AC3, M12), LAST in the run and over the CAPTURED set
+# (M24). Both are stated over every page the run rendered, so their domain is
+# the capture root — every artifact of every render, book pages included — and
+# a fixture added to the suite joins the sweep by being rendered. Each used to
+# name its own fixtures: the pending sweep globbed examples/*.html, which held
+# whatever the last render of each fixture left there, and the marker sweep was
+# three hand-written call sites. A page neither reached was a page nothing
+# swept, and both went on printing their passing line.
+#
+# Here, after the parity probe, so nothing this run renders is outside the
+# domain the sweeps claim.
+# ---------------------------------------------------------------------------
+python3 tests/htmlsweep.py pending "$CAPTURE_ROOT" \
+  || fail "M03-AC3: the pending attribute reached rendered HTML"
+pass "M03-AC3: the pending attribute reaches no page this run rendered, forged author copies included"
+MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
+  python3 tests/htmlsweep.py marker "$CAPTURE_ROOT" \
+  || fail "M04-AC1/M04-AC4/M12: a marker element or the empty div it would leave behind reached rendered HTML"
+pass "M04-AC1/M04-AC4/M12: no page this run rendered carries the marker class or an empty div where a marker was removed"
 
 }
 

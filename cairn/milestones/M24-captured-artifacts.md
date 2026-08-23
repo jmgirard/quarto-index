@@ -1,6 +1,6 @@
 # M24: Every check reads the copy, never the working tree
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —

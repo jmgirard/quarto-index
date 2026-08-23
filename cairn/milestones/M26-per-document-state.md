@@ -1,6 +1,6 @@
 # M26: A document's accumulators start empty, whoever ran before it
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -50,11 +50,12 @@ mutable state and are untouched.
 ## Acceptance criteria
 
 - [ ] AC1: Each of `examples/state-reuse.qmd`, `examples/state-reuse-plain.qmd`
-      and `examples/state-reuse-empty.qmd`, rendered to PDF behind the
-      test-only pollution filter, produces a captured `.tex` byte-identical
-      (`cmp -s`) to the captured `.tex` from the same fixture rendered without
-      that filter off the same tree, and a captured warning stream
-      byte-identical to that render's.
+      and `examples/state-reuse-empty.qmd`, rendered to LaTeX with the
+      test-only pollution filter listed in its filter list and that filter's
+      switch set, produces a captured `.tex` byte-identical (`cmp -s`) to the
+      captured `.tex` from the same fixture rendered off the same tree with
+      that switch unset, and a captured warning stream byte-identical to that
+      render's.
 - [ ] AC2: The same three fixtures rendered to HTML each produce a captured
       page byte-identical (`cmp -s`) between the two renders, the emitted
       preamble and index section included, and a captured warning stream
@@ -146,6 +147,8 @@ mutable state and are untouched.
 - 2026-08-23: plan gate chose shipping the fix over holding the row and over a reachability-probe-only milestone, because Quarto runs one process per document so no probe would find a path, while DESIGN.md:169-176 records M17 having weakened the guarantee and one cell's value reaches an on-disk artifact; falsified by the harness of T1 proving unbuildable, which returns this to plan.
 
 - 2026-08-23: amendment return: AC1 — "Each of `examples/state-reuse.qmd`, `examples/state-reuse-plain.qmd` and `examples/state-reuse-empty.qmd`, rendered to LaTeX with the test-only pollution filter listed in its filter list and that filter's switch set, produces a captured `.tex` byte-identical (`cmp -s`) to the captured `.tex` from the same fixture rendered off the same tree with that switch unset, and a captured warning stream byte-identical to that render's."
+- 2026-08-23: the amendment-return criteria audit ran the FULL mode (user-facing tier) over the amended AC1 and returned nothing: the state satisfying it is the three `state_reuse_pair ... latex tex` lines at tests/run-tests.sh:10217, no IP or D-entry puts that state out of reach (both renders are off one tree, so D-004 is not engaged, and the comparison is positional rather than a source scan), its domain is the three fixtures it names, and its promise is a property of the shipped filter's emitted output rather than of the harness that observes it. Run in this session, which read the branch cold and authored none of the wording, but not as a spawned fresh-context [O] reader — the arrangement the user chose at the mini gate, this session being instructed not to spawn agents.
+- 2026-08-23: amendment executed at the mini gate (user chose the review's proposed wording as written): AC1 alone changed, from "rendered to PDF ... rendered without that filter" to a LaTeX render pair distinguished only by the pollution filter's switch. AC2, AC3 and AC4 read AC1 by reference and were left untouched at the user's selection; no criterion's promise was widened and none was added.
 
 ## Decisions
 

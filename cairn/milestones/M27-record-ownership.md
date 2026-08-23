@@ -1,6 +1,6 @@
 # M27: A finding about today's behavior is a known issue, not a candidate row
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -44,10 +44,10 @@ the module carries the sixteen as they stand. Any change under `tests/` or
 - [ ] AC2: `python3 ~/.claude/skills/cairn/scripts/cairn_validate.py` reports
       every check passing and no advisory firing.
 - [ ] AC3: No text this milestone removes from `cairn/ROADMAP.md` or
-      `cairn/LESSONS.md` is absent from both `cairn/DESIGN.md` and this file's
-      `## Decisions` section. Domain: every removed line in
-      `git diff <merge-base>..HEAD -- cairn/ROADMAP.md cairn/LESSONS.md`,
-      read whole.
+      `cairn/LESSONS.md` is absent from all of `cairn/DESIGN.md`,
+      `cairn/check-design.md`, and this file's `## Decisions` section. Domain:
+      every removed line in `git diff <merge-base>..HEAD -- cairn/ROADMAP.md
+      cairn/LESSONS.md`, read whole.
 - [ ] AC4: Every `- ` row under `## Candidates` in the committed
       `cairn/ROADMAP.md` states work this repo might do and carries no finding
       about how the extension behaves today. Domain: every such row in the
@@ -94,7 +94,7 @@ the module carries the sixteen as they stand. Any change under `tests/` or
       module a header that states its scope and its own line and byte budget.
       Confirm the move byte for byte, and run `tests/run-tests.sh --self-test`
       once to confirm no code moved.
-- [ ] T6: Re-measure `wc -c -l` on both files against AC1, run
+- [x] T6: Re-measure `wc -c -l` on both files against AC1, run
       `cairn_validate.py`, and run `tests/run-tests.sh --self-test` once to
       confirm no code moved.
 
@@ -109,6 +109,9 @@ the module carries the sixteen as they stand. Any change under `tests/` or
 - 2026-08-23: amendment (substantive, taken at a mini gate): Scope In loses "retiring lesson content the acceptance suite's self-test already enforces" and gains graduating the sixteen check-, oracle- and criterion-design lines into `cairn/check-design.md` under the maturation exit; Scope Out gains "Rewriting any graduated line — the module carries the sixteen as they stand"; AC6 is replaced. The criteria set stays at six. Amended AC6: "The sixteen `cairn/LESSONS.md` lines about how to build a check, an oracle or a criterion are absent from that file and present verbatim in `cairn/check-design.md`. Domain: every line the diff of `cairn/LESSONS.md` removes, compared byte for byte against the module's own lines."
 - 2026-08-23: the amended AC6 wording was audited in reduced mode (internal tier), in-session rather than by a spawned fresh-context reader, because this session is instructed not to spawn agents — the same weaker arrangement M26 and this milestone's plan recorded. The audit changed the instrument: the first draft bound the move with T4's word-level check, but Scope Out now fixes the lines as verbatim, so a byte-for-byte line comparison is available and strictly stronger; the draft's reliance on a scratch script review could not run was what the "read a criterion's named procedure against what the repo can actually run" lesson asks about, and the byte comparison removes it.
 - 2026-08-23: T5 graduated the sixteen lines into `cairn/check-design.md` with a header stating its scope and a budget of under 40 lines and under 18,000 bytes. `cairn/LESSONS.md` is 7,796 bytes / 34 lines (AC1 wants <= 16,000 / <= 44); the module is 11,752 / 33. The byte-for-byte check reports 16 lines removed, 0 absent from the module, 0 still in LESSONS. Verify slot green with the self-test (409 checks).
+- 2026-08-23: amendment (substantive, taken at a mini gate): AC3's destination set gains `cairn/check-design.md`, the module the earlier amendment created — the criterion had listed only `cairn/DESIGN.md` and this file's `## Decisions`, so the sixteen graduated lines failed it on a destination that did not exist when it was written. Same promise, three records instead of two; nothing widened or dropped. Amended AC3: "No text this milestone removes from `cairn/ROADMAP.md` or `cairn/LESSONS.md` is absent from all of `cairn/DESIGN.md`, `cairn/check-design.md`, and this file's `## Decisions` section. Domain: every removed line in `git diff <merge-base>..HEAD -- cairn/ROADMAP.md cairn/LESSONS.md`, read whole."
+- 2026-08-23: the amended AC3 wording was audited in reduced mode (internal tier), in-session rather than by a spawned fresh-context reader, for the reason the earlier audit line gives. No finding: the amendment changes the destination set and no promise, and the procedure it names is one the repo runs.
+- 2026-08-23: T6 measured `cairn/ROADMAP.md` at 7,064 bytes / 49 lines and `cairn/LESSONS.md` at 7,928 / 36, against AC1's 18,000 / 52 and 16,000 / 44. `cairn_validate.py` passes all 16 checks with all 7 advisories OK. `tests/run-tests.sh --self-test` passes 409 checks, unchanged from the merge base, so no code moved. The removed-text bound over both files reports 54 removed lines and zero uncovered words.
 - 2026-08-23: plan gate chose refiling findings into `cairn/DESIGN.md`'s `## Known issues` with a recorded boundary rule over compressing row prose in place, because compression leaves the append-a-finding-to-a-work-row mechanism intact and both files return to their caps in roughly five milestones at the observed ~500 bytes per milestone; falsified by the files climbing back toward their caps after this milestone without any row gaining a finding clause.
 - 2026-08-23: T1 classified all 37 candidate rows and framed the lesson exits; the ledger is in `## Decisions`. Findings take labels KI1-KI79 in `cairn/DESIGN.md`; six single-item suite rows fold into the acceptance-suite-hardening row. Verify slot green (275 checks).
 - 2026-08-23: plan gate chose retiring the enforced variations of the "prove a check discriminating" lesson over keeping the line whole and cutting mid-sized lessons instead, because the line is 2,995 bytes of 18,439 and the repo now runs a planted-defect self-test; falsified by a self-test run that passes with a variation's defect planted.

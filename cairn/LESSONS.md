@@ -5,7 +5,9 @@
      present state is a DESIGN.md Known-issues entry (D-013). Current
      knowledge: corrected in place when proven false (marked, e.g. "corrected
      M75"), retired when a test enforces it, another file owns it, or a
-     stabilized family graduates. One per line; not status or task notes. -->
+     stabilized family graduates. One per line; not status or task notes.
+     How to build a check, an oracle or a criterion graduated to
+     cairn/check-design.md at M27; read that module at plan gates. -->
 
 - 2026-08-16 (M01): Reviewing an escape table character by character cannot establish that a character survives — the failure depends on how the consumer *reads* the argument. Only compiling each one settles survival; only typesetting the result settles that it prints.
 - 2026-08-16 (M01): Pandoc consumes one backslash level in a quoted span-attribute value (`\!`→`!`, `\\`→`\`, `\"`→`"`), so an escape defined at the filter layer is not what the author types.

@@ -426,4 +426,315 @@ of the kind each check names, which the check must fail on, naming it.
 
 ## Known issues
 
-_None._
+What the extension and its acceptance suite do today that a reader should know
+about, each naming where it came from — the review that found it, or the
+decision or review report that recorded it. Labels are assigned in order and
+never reused, so a `cairn/ROADMAP.md` row can point at one and survive a
+rewording;
+the milestone that closes an issue strikes its entry and rewrites the rows
+pointing at it (D-013). A candidate row states the work; the finding lives here.
+
+### The LaTeX back-end
+
+- **KI1.** `[` and `]` are escaped by Pandoc's LaTeX writer but are not in the
+  filter's escape table. Verified harmless in practice. — M01 review N11
+- **KI2.** `\index` inside a moving argument (a section heading) is unprobed,
+  and the typeset-time channel puts a second unprotected macro on that path,
+  `\quartoindexregister`, whose `\protected@write` would expand inside a
+  `.toc`/`.lof` write. — M01 review R17, M20 review round 2 R2-F7
+- **KI3.** `\printindex` precedes a bibliography rather than following it, since
+  Quarto appends reference blocks after filters run. README states the current
+  behavior. — M01 review P2
+- **KI4.** A leftover `.ind` outliving its marks breaks the render the way a
+  leftover `.aux` did before M22: the compiled index carries
+  `\quartoindexlocator`, defined only where a principal mention is, and no
+  gobbling stand-in covers it. Reproduced at M22 review — hyperref and imakeidx
+  loaded, an `.ind` holding `\hyperxindexformat{\quartoindexlocator{qi1}}{4--6}`,
+  pdflatex exit 1 on `Undefined control sequence`. M22 scopes its README promise
+  to the `.aux` rather than closing this. — M22 review F1
+- **KI5.** A registered principal page folded inside a makeindex page range is
+  not emphasized: the typeset-time channel D-007 adopts looks a page up by
+  string, and a range misses, printing it unemphasized and silently. — RR01
+- **KI6.** pdflatex's default fonts do not cover non-Latin-1 scripts (Greek,
+  CJK, combining marks, RTL), so index terms in them need an engine and font
+  decision this repo has not made. — M01 review R7/R9
+
+### Entries, levels and sort keys
+
+- **KI7.** Sort-key level paths are keyed on unclamped levels while the LaTeX
+  back-end prints clamped ones, so a 4-level entry and a 3-level entry spelling
+  the folded form collide under two makeindex keys with no report. The
+  printed-text collision itself predates sort keys. — M06 review pass 2 F9
+- **KI8.** An empty entry tree would render the index as a bare `Index` heading
+  with no list and no warning. Unreachable today: every path that builds the
+  section is gated on a mark with at least one level. — M07 review F3
+- **KI9.** see-also entries keep their locators in both back-ends — M03's gate
+  chose LaTeX-aligned no-locator semantics and M15 keeps that semantics for a
+  contested key — and the extension prints `see One Way; see Another Way` where
+  a printed index would write `see One Way; Another Way`, repeating `\seename`
+  per same-kind target. — M03 gate, M15 review
+
+### The HTML back-end and books
+
+- **KI10.** The filter's 17 per-document accumulators are module-level state,
+  latent if Lua state is ever reused across documents. `marks_seen` was the
+  first (it was `marks_emitted` until M04 made it format-neutral); the HTML
+  back-end's `html_marks` was a second until the M03 F1/F2 fix refactored it
+  away. The rest arrived one review at a time: `sort_keys`, the sort-key
+  registry (M06 F-a); `clamped_paths`, the level-fold collision accumulator
+  (M09 F6); `marked_paths` and `pending_xrefs`, the dangling-target report's
+  path set and deferred target list (M14) — a leaked `pending_xrefs` emits
+  reports naming marks in a different file, so the blast radius is worse than a
+  skewed count, reading as a filter bug rather than a stale number;
+  `principal_keys`, `principal_ordinals` and `principal_emitted` (M20 R2-F14),
+  of which `principal_ordinals` is the first whose value reaches an on-disk
+  artifact, the `.aux` registry keys, so a reused state would offset the next
+  document's ordinals rather than merely skew a count; and `range_verdicts`
+  and `range_at` (M23 F8), which replaced the `range_plan`/`range_cursor` pair.
+  `range_at` is the first whose correctness depends on being reset mid-document
+  — `finish_ranges` returns it to the origin between the two traversals, so a
+  state carried into a second document would number that document's range marks
+  from where the first one stopped and hand every one of them another mark's
+  verdict; and `finish_ranges` returns that counter to the origin while leaving
+  `range_items`, `range_found`, `range_pair_found` and `range_verdicts` as the
+  first document filled them, so a reused state would pair the second document's
+  marks against the first's and report the first's findings again. M17 made the
+  mechanism stronger: the module split moved every one of these out of the
+  filter chunk's own locals and into module tables `require` caches in
+  `package.loaded`, so a reused state no longer re-initializes them on the next
+  execution the way re-running the chunk did. M26 resets all 17 per document; a
+  cell added after it that joins no `reset` is unguarded, and D-011 refuses to
+  pin that with a source scan. — M01 review R16, widened through M03 P1, M04,
+  M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8
+- **KI11.** A marker written in YAML `abstract:` survives verbatim into the HTML
+  header — filter residue of the IP2 class, since `resolve_markers` reads
+  `doc.blocks` alone; the misplaced-class report is silent there for the same
+  reason. — M08 review R4/Q2
+- **KI12.** `resolve_markers` rebuilds every Blocks list in every format whether
+  or not a marker exists. The LaTeX byte-diff that proved that output-neutral
+  was deleted at M16 (D-004), so neither back-end has byte-level evidence for it
+  now. — M04 review F12
+- **KI13.** Headings consumed by Quarto constructs (callout titles, tabsets)
+  bypass the after-heading anchor relocation. No TOC copy today, so no defect;
+  the invariant is unpinned against Quarto's own filter ordering. — M03 review
+  pass 3 F8
+- **KI14.** Locator hrefs into chapter pages cannot be percent-escaped at the
+  filter layer: Quarto normalizes a link target either way — verified, the
+  filter emitted `later%20chapter.html` and output carried `later chapter.html`,
+  matching Quarto's own `./later chapter.html` — so a chapter filename
+  containing `#` or `?` yields a broken locator. — M05 review F11
+- **KI15.** A mark's attribute values ride into pass-through formats on the span
+  itself (`data-see` and its siblings in gfm). Whether that markup residue is
+  acceptable is unsettled; M03's AC3 scope note defers it. — M03 review F4/F9
+- **KI16.** The book sidecar store is never pruned, so a renamed or removed
+  chapter leaves its record forever. Harmless today: reads are filtered by the
+  current chapter list and validated against a store version. — M05 review F4
+- **KI17.** The store's declared-key map is written in `pairs` order, so an
+  identical chapter's record is byte-unstable between renders. Read as a map, so
+  no ordering effect. — M06 review pass 2 F11
+- **KI18.** A book page rendered but absent from `book.render` (via
+  `project: render:`) gets its own per-chapter index rather than contributing to
+  the book's. — M05 review F13
+- **KI19.** A range spanning two chapters of an HTML book indexes each half on
+  its own, and the book reports it. — D-009
+- **KI20.** The two range traversals number a mark identically but can still
+  derive differently: the collecting pass plans nothing for a mark it derives no
+  entry for, and the emitting pass reads the store at that mark's position
+  regardless. Unreachable today — both read the same attributes, and only the
+  visible text differs between the passes — but M23 changed the failure shape,
+  from a verdict handed to the wrong mark (a silently wrong page span) to one
+  never consumed (an unmatched range opening, which makeindex logs and Quarto
+  fails the render on). — M23 review F7
+
+### Reports and messages
+
+- **KI21.** The emptied-place report's position is a post-Quarto AST index, not
+  the author's source block count, and is unverified where Quarto injects
+  top-level blocks (executable cells, shortcodes). M04's duplicate-marker
+  message shares the convention M12 makes load-bearing. — M12 review F6
+- **KI22.** In a book the emptied-place position is chapter-local and the
+  message names no file, unlike the book-aware marker warnings, which carry
+  `ctx.file`. — M12 review F7
+- **KI23.** The emptied-place reports for a callout, a tabset and a captioned
+  figure exist only because Quarto's scaffold wrapping happens to leave the
+  marker alone in an inner block list — the private structure M12's gate refused
+  to model — so an upstream change would surface as a manifest mismatch reading
+  like a regression here. — M12 review F12
+- **KI24.** A mark whose `entry=` is all empty levels and whose `sort=` reaches
+  past it is told "writes N levels against the M the entry is written with",
+  where those M levels print nothing and the mark indexes at one level under its
+  visible text. The number is one the author wrote, so D-006 holds, but no
+  fixture carries the shape (`entry="!" sort="a!b!c"`) and no check covers it.
+  — M19 review F1
+- **KI25.** The chapter-count report in `book.lua` and the two reports in
+  `marker.lua` that name a top-level-block-position name numbers no
+  convention covers: M19's
+  level-count rule excludes them because their numbers have no empty-level drop
+  to distinguish, leaving open what a block position is measured over. — M19
+  Scope Out
+- **KI26.** Reader-facing strings the filter emits are hard-coded English
+  (`Index`, and the `Symbols` group label) with no `lang` policy in this
+  document. Distinct from KI6, which is about what an author writes. — M07
+  review F6
+
+### The acceptance suite: what it reads and what it holds
+
+- **KI27.** The suite hard-depends on git and deletes any ignored file parked
+  under `examples/`; neither is recorded as a precondition. — M24 review D14/D15
+- **KI28.** `git clean -X` removes and reports only ignored files, so an
+  artifact under `examples/` matching no ignore rule escapes both the pre-render
+  clean and M24's AC2 assertion. Latent. — M24 review R1
+- **KI29.** Nothing asserts which capture a read belongs to, and two captures
+  can hold one stem (three `marker.tex`), so a read naming the wrong slug reads
+  another render's output. — M24 review D2
+- **KI30.** M24's AC2 clean assertion sits outside `run_all_checks`, reaching
+  neither the check count nor the run log. — M24 review D3
+- **KI31.** The read check exempts any line matching `quarto render` and the
+  pairing check treats that phrase in prose as a render, so a comment can
+  silence either. — M24 review D5/D11
+- **KI32.** Five book captures copy a whole `_book` tree an earlier render
+  mostly wrote. — M24 review D7
+- **KI33.** The sweep self-test is quadratic in captured pages, about 14,000
+  parses. — M24 review D8
+- **KI34.** `capture` copies every extension for the render's stem rather than
+  what the render produced. — M24 review D9
+- **KI35.** The emission sweep's domain includes `.tex` from deliberately-broken
+  filters and scratch parity fixtures, and its `ALLOWED` is a written-down slug
+  map. — M24 review R2
+- **KI36.** `capture` runs inside a command substitution in `m23_render`, where
+  its `fail` ends only the subshell. — M24 review R4
+- **KI37.** The parity comparison hardcodes the `demo-html` slug. — M24 review R5
+- **KI38.** The read check's helper exemption is never exercised. — M24 review R6
+- **KI39.** `check_reads` ignores backslash continuations, which `check_pairs`
+  follows. — M24 review R7
+- **KI40.** Each residue sweep prints two `ok` lines, double-counting in
+  `CHECK_COUNT`. — M24 review R8
+- **KI41.** The HTML residue plants target the first `<body` textually. — M24
+  review R9
+- **KI42.** `CAPTURE_CALL` matches the helper's own definition line. — M24
+  review R10
+- **KI43.** `run-tests.sh:1651` calls `warn-distinct.py --patterns` directly,
+  not through `run_scan`, which its header calls the one place saying how each
+  scan is invoked. — M25 review F9
+- **KI44.** A criterion enumerating scans by `re.search`/`re.match`/`re.findall`
+  reaches neither `re.finditer` nor `.count(`/`.split(`, so a scan reading the
+  source set through one of those falls outside it. — M25 review F7
+
+### The acceptance suite: coverage gaps
+
+- **KI45.** The `\index` scanner is not brace-aware — no longer benign now that
+  unbalanced braces are probed. — M01 review R14
+- **KI46.** BSD-sed portability is unpinned. — M01 review N12/N13/N14
+- **KI47.** A `]{.index` substring undercount. — M04 review F9/F10/F13
+- **KI48.** The `include_text` guard is unchecked. — M04 review F9/F10/F13
+- **KI49.** There is no structural residue check on LaTeX misuse output. — M04
+  review F9/F10/F13
+- **KI50.** The check-count baseline is not mechanized. — M01 review, plus a
+  clean-clone failure hit at M04 review
+- **KI51.** `tests/htmlindex.py`'s `index_section` takes the first heading whose
+  text is `Index`, so a fixture carrying its own would silently locate the wrong
+  element. — M08 review F10
+- **KI52.** Deleting `tests/byte-diff.sh` left no merge-base output comparison
+  at all, so a change that moves rendered output outside the roughly 100 checks
+  now passes unseen — D-004's own residual risk. D-011 records the second:
+  a source-shape regression no render probes. — D-004, D-011
+- **KI53.** `tests/pdfindex.py`'s footer heuristic takes the bottom-most
+  locator-only line with no check that it sits in the folio band, so a page with
+  the folio suppressed loses a genuine continuation's locators. The orphan case
+  is now on stderr. — M15 review F4
+- **KI54.** Two independent joined-`warn()`-message readers — the M02-AC5
+  counter and M15-AC5's — can drift apart. — M15 review
+- **KI55.** The moved-definition probe's planted defect exercises only
+  `warn-distinct`'s count clause, leaving its single-literal, duplicate and
+  prefix clauses unproven against the moving case; and the probe still writes
+  every relocated definition into one `modules/moved.lua`, so "a definition
+  moved into a module" is a nine-member family the probe exercises one member
+  of. — M16 review F7, M17
+- **KI56.** M17's AC3 install-parity probe has no planted-defect proof in the
+  run: it was shown discriminating out of band at M17 T9, not by a check. — M17
+- **KI57.** No check in the suite guards the rule M17-AC1 states, one
+  definition per entry point (`one-definition-per-entry-point`), so a later
+  hotfix that puts a helper back into `index.lua` leaves
+  the run green while the milestone's premise silently reverts.
+  `tests/filtersrc.py`'s `lines()` exists for exactly this question and has no
+  consumer but the AC3 require-position check. — M17 review F-A
+- **KI58.** `tests/scans/warn-distinct.py` cuts each message expression at
+  `:format(`, so it reads neither the numbers a message names nor the text built
+  there: `depth_phrase`'s two clauses and the extra-sort report's `against`
+  clause are built outside the `warn()` call it reads, so they sit outside both
+  its pinned literal count and its single-literal needles, held only by the M13
+  and M19 rendered-log pins. A report shipping an unlabelled count is therefore
+  caught only at its own review. — M19 plan gate, M19 review F3
+- **KI59.** The gfm span reader stops at the first `</span>`, so a mark whose
+  visible text carried a nested span would be truncated and mismatch rather than
+  enumerate. — M20 review round 2 R2-F10
+- **KI60.** `book.lua`'s `role` field is written, validated and read with no
+  book fixture exercising the round trip. — M20 review round 1 F5, round 2
+  R2-F12
+- **KI61.** README's `\newcommand*` redefinition recipe is exercised in one
+  header ordering only, where `\providecommand*` would be correct in both and
+  `\newcommand*` hard-errors if the extension's definition ever lands first.
+  — M20 review round 2 R2-F15
+- **KI62.** The pairing-report scope word a merged PDF book prints ("book") has
+  no fixture exercising it: every book fixture's PDF render pairs its ranges and
+  warns nothing. — M21 review round 5
+- **KI63.** `tests/m23probes.py`'s `_ind` tests only that its three expected
+  terms are present, and pins neither the entry total nor the `.ilg` line count,
+  so a defect that indexed the class-less `range=` span or gave the no-entry
+  mark an entry would leave both extents, the makeindex warning count and the
+  `(W)` count untouched and pass every AC2 check. — M23 review round 3 F7
+- **KI64.** The two range fixtures' opening marks fall on page 1 because the
+  prose above them fits one page rather than by an explicit pagebreak, so a
+  longer preamble in either silently moves the printed width the readers pin.
+  — M23 review round 3 F5
+- **KI65.** M24's AC1 read check reaches only a token ending in a literal
+  extension, so a read written `examples/<stem>.$var` passes it unseen (five
+  such, all repaired in M24), and it matches the fixture directory only where
+  that is spelled literally, so a read reaching it through a shell variable
+  (`$BOOK_OUT` among them) passes it unseen too (14 such, all repaired in M24).
+  — M24, M24 review
+- **KI66.** The planted-defect self-test mutates only the `.tex` fixture; no
+  HTML index check has a planted-defect proof. — M03 review F14
+- **KI67.** Demo manifests have no independent count, so coverage can shrink
+  silently. — M01 review P10
+- **KI68.** The demo's own makeindex acceptance is never asserted. — M01 review
+  P11
+- **KI69.** The PDF cross-reference checks assert substring presence, not
+  counts, so a cross-reference printed twice would pass; the approach mirrors
+  M02's own AC6. M15 asserts counts for its contested keys and leaves the rest.
+  — M02 review, M15
+- **KI70.** Bare (unquoted) `entry=`, `see=` and `see-also=` values escape both
+  the no-leak sweep and the probe-coverage pin; for no-leak this is a false
+  pass, not a false failure. The suite's `sort=` extraction is double-quote-only
+  too, with no false pass today since every fixture quotes its values. — M01
+  review N9, M02 review, M06 review F-b
+- **KI71.** The escaping probe covers characters singly; combinations remain an
+  untested axis. — M01 review, and M01's own milestone Decisions entry
+- **KI72.** The example corpus's roughly 250 probe `see=`/`see-also=` targets do
+  not all name terms the fixture indexes; M14 pins the expected report counts
+  instead. — M14 plan gate
+- **KI73.** The README claim pins and the filter's warning literals are two
+  hand-maintained copies of the same strings, and the claim check asserts a
+  string is in README, never that the filter emits it. — M13 review F20
+- **KI74.** That a registered page actually prints emphasized is exercised only
+  by M20's T9 checks and by no acceptance criterion, the criteria set having
+  been held rather than widened, so the last leg of that chain has no criterion
+  binding it. — M20 amendment gate
+
+### The repo and its packaging
+
+- **KI75.** `examples/.gitignore` duplicates the root ignore's
+  `examples/.quarto/` and adds an unrelated `**/*.quarto_ipynb` rule. — M13
+  review F16
+- **KI76.** The `qi_` prefixes added at M17 took lines over 80 columns from 14
+  at that milestone's merge base to 62, of which 47 are code lines whose
+  rewrapping risks the single-literal warning messages `warn-distinct` pins.
+  — M17 review J
+- **KI77.** Every module exports its entire top-level surface — 106 names, with
+  `html.lua` exporting 23 where four are reached from outside — so no module
+  boundary carries any information about what is API and what is internal.
+  — M17 review I
+- **KI78.** Windows checkouts without symlink support break
+  `examples/_extensions`. — M01 review R18
+- **KI79.** The Quarto version floor is an untested contract claim; a CI matrix
+  at floor and latest is what would fence it. — M01 review R15

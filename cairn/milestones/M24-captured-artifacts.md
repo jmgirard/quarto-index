@@ -90,11 +90,11 @@ checker-regress shape D-004 refused.
 - [x] T5: Rewrite the LaTeX aux-family read sites (`.aux`, `.idx`, `.ilg`,
       `.ind`, `.log`), including the M22 block at `tests/run-tests.sh:8653` and
       the M20 principal-registry reads.
-- [ ] T6: Re-point the two residue sweeps at the captured set and make each
+- [x] T6: Re-point the two residue sweeps at the captured set and make each
       iterate it. Prove each discriminating by planting the residue into a
       copy of every captured HTML artifact in turn and requiring failure; wire
       that into `tests/plantdefect.py`'s self-test.
-- [ ] T7: Add the AC1 self-grep and the AC3 pairing check to the suite, over
+- [x] T7: Add the AC1 self-grep and the AC3 pairing check to the suite, over
       `git ls-files tests`.
 - [ ] T8: Full `tests/run-tests.sh --self-test` from a cleaned tree; capture
       evidence for each criterion.
@@ -110,3 +110,5 @@ checker-regress shape D-004 refused.
 - 2026-08-23: T3-T5 done in one scripted pass rather than three (minor amendment): the tasks split the read sites by artifact family, but the rewrite rule is one rule — the capture of the last render that produces that extension for that fixture — so splitting it would have been three runs of one script. 238 sites rewritten, then audited; the nine hand-written `rm -f examples/...` pre-render cleans deleted as the per-fixture form of what `capture` now does everywhere; the AC3 control-token comparison moved below the render it reads, which is the clean-checkout failure the plan named; the M15 contested-key sweep re-pointed from `examples/*.tex` to the captured LaTeX set and moved to the end of the run so its domain is complete, which brought `xref-conflict.tex` and `range.tex` into it — both derived from their fixtures as carrying a contested key, and both invisible to the old glob because a later PDF render removed them.
 - 2026-08-23: AC4 amended at a mini gate (substantive): the marker-residue check has two halves that generalize differently. The marker-class half iterates the captured set with an equality-per-page map naming the two fixtures that keep a marker on purpose; the empty-div half cannot, because every rendered page carries empty divs Quarto wrote, so it reads the three fixtures a marker was removed from. The criterion narrows to say so; nothing was added. The amended wording was audited in-session rather than by a fresh reader — this session is configured not to spawn subagents — and that was disclosed at the gate.
 - 2026-08-23: T6 (part) — both residue sweeps moved into `tests/htmlsweep.py` and run last, after the parity probe, so nothing the run renders sits outside the domain they claim. The pending sweep now reads 85 captured pages where it globbed `examples/*.html`; the marker-class sweep reads the same 85 where it was three hand-written call sites.
+- 2026-08-23: T6 — both sweeps proved discriminating: the residue each names is planted into a mirror of the captured set, once per captured page, and the sweep is required to fail naming that page; the empty-div reader likewise on each of its three. `tests/plantdefect.py` gained the three residue plants beside its source-scan ones, reading the marker class from the environment rather than holding a second copy of it.
+- 2026-08-23: T7 — `tests/suitescan.py` adds the AC1 read check and the AC3 pairing check over `git ls-files tests`, and the suite runs both on itself: 23 tracked files, 85 render lines, all paired. Both are scans over source, the shape M23's lesson says can certify a property it never asserts, so each takes an overlay directory whose bytes replace a tracked file's and each is proved on a planted violation — a working-tree read added, a capture call removed — with the unplanted overlay required to pass first. Neither the checker nor the probe may itself carry the shape being forbidden, so both assemble the forbidden text from pieces rather than spelling it out.

@@ -10135,14 +10135,24 @@ pass "M15-AC5: the failed-render claim is gone from the filter, and the conteste
 # (M24). Both are stated over every page the run rendered, so their domain is
 # the capture root — every artifact of every render, book pages included — and
 # a fixture added to the suite joins the sweep by being rendered. Each used to
-# name its own fixtures: the pending sweep globbed examples/*.html, which held
-# whatever the last render of each fixture left there, and the marker sweep was
+# name its own fixtures: the pending sweep globbed the fixture directory's
+# rendered HTML, which was whatever the last render of each fixture left
+# there, and the marker sweep was
 # three hand-written call sites. A page neither reached was a page nothing
 # swept, and both went on printing their passing line.
 #
 # Here, after the parity probe, so nothing this run renders is outside the
 # domain the sweeps claim.
 # ---------------------------------------------------------------------------
+# The suite's two claims about its own source (M24-AC1, M24-AC3): no check
+# reads a rendered artifact out of the working tree, and no render goes
+# uncaptured. Both quantify over `git ls-files tests`, so the suite runs them
+# on itself.
+python3 tests/suitescan.py reads \
+  || fail "M24-AC1: a check reads a rendered artifact out of the working tree"
+python3 tests/suitescan.py pairs \
+  || fail "M24-AC3: a render's artifacts are never captured"
+
 python3 tests/htmlsweep.py pending "$CAPTURE_ROOT" \
   || fail "M03-AC3: the pending attribute reached rendered HTML"
 pass "M03-AC3: the pending attribute reaches no page this run rendered, forged author copies included"
@@ -10160,6 +10170,123 @@ MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
     "$CAPTURE_ROOT/misuse-html/marker-misuse.html" \
     "$CAPTURE_ROOT/marker-nomarks-html/marker-nomarks.html" \
   || fail "M04-AC1/M04-AC4/M12: a removed marker left an empty div behind"
+
+# ---------------------------------------------------------------------------
+# The sweeps' own discrimination (M24). A sweep over a set passes on a set it
+# never opens, which is exactly the vacuity the per-file checks it replaced
+# could not have had: three named files either exist and are read, or the run
+# dies. So for each of the pages the run captured, the residue that sweep names
+# is planted into a mirror of the captured set and the sweep is required to
+# fail — and to fail naming THAT page, so a sweep that died for some other
+# reason cannot be read as this page having been read.
+# ---------------------------------------------------------------------------
+if [ "${1:-}" = "--self-test" ]; then
+  SWEEPW="$WORK/sweepprobe"
+  rm -rf "$SWEEPW"
+  SWEEP_PAGES=0
+  while IFS= read -r page; do
+    REL="${page#"$CAPTURE_ROOT"/}"
+    mkdir -p "$SWEEPW/$(dirname "$REL")"
+    cp "$page" "$SWEEPW/$REL"
+    SWEEP_PAGES=$((SWEEP_PAGES + 1))
+  done < <(find "$CAPTURE_ROOT" -name '*.html' | sort)
+  [ "$SWEEP_PAGES" -gt 0 ] \
+    || fail "M24 self-test: the captured set holds no HTML page, so the probe below would prove the sweeps discriminating over nothing"
+  # The mirror must pass BOTH sweeps unplanted, or no failure below is evidence
+  # of anything — it would be the mirror that was wrong, not the plant.
+  python3 tests/htmlsweep.py pending "$SWEEPW" > /dev/null \
+    || fail "M24 self-test: the pending sweep fails on the unplanted mirror, so no failure below is evidence of anything"
+  MARKER_CLASS="$MARKER_CLASS" python3 tests/htmlsweep.py marker "$SWEEPW" > /dev/null \
+    || fail "M24 self-test: the marker sweep fails on the unplanted mirror, so no failure below is evidence of anything"
+  while IFS= read -r page; do
+    REL="${page#"$CAPTURE_ROOT"/}"
+    for KIND in pending marker; do
+      cp "$page" "$SWEEPW/$REL"
+      SWEEP_EXPECT=$(MARKER_CLASS="$MARKER_CLASS" \
+        python3 tests/plantdefect.py --html "$SWEEPW/$REL" "$KIND") \
+        || fail "M24 self-test: the $KIND defect aimed at $REL planted nothing — the sweep that follows would be reported as failing to discriminate when the fault is this mutation's"
+      # `&& rc=0 || rc=$?` rather than a bare `&& fail`: this line sits on a
+      # failing path BY DESIGN, and `A && B` with a failing A returns non-zero,
+      # which `set -e` would take as the run aborting here with no FAIL line.
+      SWEEP_OUT=$(MARKER_CLASS="$MARKER_CLASS" \
+        python3 tests/htmlsweep.py "$KIND" "$SWEEPW" 2>&1) && SWEEP_RC=0 || SWEEP_RC=$?
+      [ "$SWEEP_RC" -ne 0 ] \
+        || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep passed with the residue planted in $REL, so it is not reading that page"; }
+      printf '%s' "$SWEEP_OUT" | grep -qF -- "$SWEEP_EXPECT" \
+        || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep failed on the plant in $REL, but not with <<$SWEEP_EXPECT>> — that failure is not this sweep catching this defect"; }
+      printf '%s' "$SWEEP_OUT" | grep -qF -- "$REL" \
+        || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep failed on the plant in $REL without naming that page, so nothing here says it read it"; }
+      cp "$page" "$SWEEPW/$REL"
+    done
+  done < <(find "$CAPTURE_ROOT" -name '*.html' | sort)
+  pass "M24: both whole-set residue sweeps fail, naming the page, on their own residue planted into each of the $SWEEP_PAGES captured page(s) in turn"
+
+  # The empty-div half names its three pages, so its discrimination is per
+  # page and not per set: each planted in a copy, each required to fail.
+  SWEEP_ED=0
+  for page in "$CAPTURE_ROOT/marker-html/marker.html" \
+              "$CAPTURE_ROOT/misuse-html/marker-misuse.html" \
+              "$CAPTURE_ROOT/marker-nomarks-html/marker-nomarks.html"; do
+    cp "$page" "$SWEEPW/edprobe.html"
+    SWEEP_EXPECT=$(python3 tests/plantdefect.py --html "$SWEEPW/edprobe.html" emptydiv) \
+      || fail "M24 self-test: the empty-div defect aimed at $page planted nothing"
+    SWEEP_OUT=$(MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
+      python3 tests/htmlsweep.py emptydiv "$SWEEPW/edprobe.html" 2>&1) && SWEEP_RC=0 || SWEEP_RC=$?
+    [ "$SWEEP_RC" -ne 0 ] \
+      || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the empty-div reader passed on a copy of $page with an empty div planted in it"; }
+    printf '%s' "$SWEEP_OUT" | grep -qF -- "$SWEEP_EXPECT" \
+      || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the empty-div reader failed on the plant in $page, but not with <<$SWEEP_EXPECT>>"; }
+    SWEEP_ED=$((SWEEP_ED + 1))
+  done
+  pass "M24: the empty-div reader fails on an empty div planted into each of the $SWEEP_ED pages a marker was removed from"
+
+  # The two self-checks' own discrimination. Each reads the suite's own source
+  # for a SHAPE, which is the reading M23's lesson names as certifying a
+  # property it never asserts — so each is pointed at an overlay carrying one
+  # planted violation and required to fail on it, and the same overlay
+  # unplanted is required to pass, or the failure would be the copy's and not
+  # the plant's.
+  SCANW="$WORK/suitescan"
+  rm -rf "$SCANW"
+  mkdir -p "$SCANW/tests"
+  cp tests/run-tests.sh "$SCANW/tests/run-tests.sh"
+  python3 tests/suitescan.py reads "$SCANW" > /dev/null \
+    && python3 tests/suitescan.py pairs "$SCANW" > /dev/null \
+    || fail "M24 self-test: the unplanted overlay fails one of the two self-checks, so no failure below is evidence of anything"
+  # A read of a rendered artifact in the working tree, on a line that is
+  # neither a render command nor inside the capture helper. The fixture
+  # directory's name is held in a variable so that THIS file does not itself
+  # carry the shape the check forbids — the check reads its own source too.
+  SCAN_PLANT_DIR="examples"
+  printf 'grep -q planted %s/demo.tex\n' "$SCAN_PLANT_DIR" \
+    >> "$SCANW/tests/run-tests.sh"
+  SCAN_OUT=$(python3 tests/suitescan.py reads "$SCANW" 2>&1) && SCAN_RC=0 || SCAN_RC=$?
+  [ "$SCAN_RC" -ne 0 ] \
+    || { printf '%s\n' "$SCAN_OUT" >&2; fail "M24 self-test: the read check passed on a line reading a rendered artifact out of the working tree"; }
+  printf '%s' "$SCAN_OUT" | grep -qF 'tests/run-tests.sh' \
+    || { printf '%s\n' "$SCAN_OUT" >&2; fail "M24 self-test: the read check failed without naming the file the violation was planted in"; }
+  # A render whose capture call is gone.
+  cp tests/run-tests.sh "$SCANW/tests/run-tests.sh"
+  python3 - "$SCANW/tests/run-tests.sh" <<'SCANPLANTPY'
+import sys
+path = sys.argv[1]
+lines = open(path, encoding='utf-8').read().split('\n')
+for i, line in enumerate(lines):
+    if line.strip().startswith('capture '):
+        del lines[i]
+        open(path, 'w', encoding='utf-8').write('\n'.join(lines))
+        sys.exit(0)
+raise SystemExit('FAIL: the overlay carries no capture call to remove, so the '
+                 'pairing check below would be reported as failing to '
+                 'discriminate when the fault is this mutation\'s')
+SCANPLANTPY
+  SCAN_OUT=$(python3 tests/suitescan.py pairs "$SCANW" 2>&1) && SCAN_RC=0 || SCAN_RC=$?
+  [ "$SCAN_RC" -ne 0 ] \
+    || { printf '%s\n' "$SCAN_OUT" >&2; fail "M24 self-test: the pairing check passed on a render whose capture call was removed"; }
+  printf '%s' "$SCAN_OUT" | grep -qF 'not followed by a call to the capture' \
+    || { printf '%s\n' "$SCAN_OUT" >&2; fail "M24 self-test: the pairing check failed on the removed capture call, but not on the pairing itself"; }
+  pass "M24: the read check fails on a line reading a rendered artifact out of the working tree, and the pairing check fails on a render whose capture call is gone — each on an overlay that passes both unplanted"
+fi
 
 }
 

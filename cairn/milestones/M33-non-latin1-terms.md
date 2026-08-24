@@ -85,9 +85,9 @@ remainder.
 - AC1 → T1, T2, T3
 - AC2 → T2, T3, T4, T6
 - AC3 → T4, T5, T6
-- AC4 → T7
+- AC4 → T7, T9
 - AC5 → T8
-- AC6 → T3, T4, T5, T6
+- AC6 → T3, T4, T5, T6, T9
 
 ## Tasks
 
@@ -123,6 +123,12 @@ remainder.
       characters`, cross-referenced from it.
 - [x] T8. Amend IP2 in DESIGN.md, narrow KI6 to the proven set and the unproven
       remainder, and append D-016. (The RTL candidate row lands with this plan's commit.)
+- [x] T9. Repair the six findings the review gate returned to implement:
+      README's default-engine framing and its STIX-install claim, its
+      fixture-list miscount and its suite-prerequisites sentence;
+      `tests/unicodeprint.py`'s missing empty-term-list guard and its relative
+      import; a fourth control render pinning the no-engine path README now
+      documents, and a plant for the new guard's clause.
 
 ## Work log
 
@@ -147,6 +153,10 @@ remainder.
 - 2026-08-24: minor — the tool guard now fails loudly when `kpsewhich` cannot find `STIX-Regular.otf`, so a machine without TeX Live's `stix` package reports the missing package rather than four renders failing inside a LaTeX log.
 - 2026-08-24: all tasks complete; status to review. `tests/run-tests.sh --self-test` clean at 485 checks (336 on the merge base).
 - 2026-08-24: review returned M33 to in-progress (defect return #1): the README recipe states two things review probed false — that Quarto's default engine is pdflatex, when 1.10.18 defaults to lualatex and the fixture minus its `pdf-engine:` line exits 0 with only the Vietnamese term corrupted, and that STIX needs no installing, when it ships in collection-fontsextra. Six findings to fix, five to follow-up rows, three rejected; all fourteen and their dispositions are in the Review section.
+
+- 2026-08-24: implement gate re-probed both returned defects before touching anything. Quarto 1.10.18 renders through LuaHBTeX, not pdflatex; the fixture with only its `pdf-engine:` line removed exits 0 with `Việt` printing as `Vi<?>t` and its other seven terms correct, and with both recipe lines removed it exits 0 with Greek and Cyrillic printing as empty boxes. `tlmgr info stix` reports `collection: collection-fontsextra`, which TinyTeX does not install by default.
+- 2026-08-24: implement gate chose, user-selected, to document the no-engine path in README and pin it with a fourth control render, over stating less and adding no check, and over naming the control in an acceptance criterion. AC3 keeps the three controls it names and AC4 keeps its five things — no criterion changed. Minor amendment: T9 added for the return's six fixes, and mapped under AC4 and AC6 in Coverage; no criterion text changed.
+- 2026-08-24: T9 — R9 and R7 fixed in `tests/unicodeprint.py` (import resolved from `__file__`; `entries` refuses an empty term list, a clause now planted, eleven plants over eleven reachable clauses). R1: README's "one of two failures" replaced by three, the third naming lualatex as Quarto's default engine and the silent half-set build, with control (d) rendering the fixture minus its `pdf-engine:` line and holding it to exit 0, the ASCII entry line present and the Vietnamese term not printing as itself; two claim rows added. R2, R10, R13: the STIX install fact, the suite-prerequisites sentence and the fixture-list count corrected, the install fact added as a claim row. D-017 appended, correcting D-016's default-engine context and leaving its decision standing. Suite `--self-test` clean at 487 checks.
 
 ## Decisions
 

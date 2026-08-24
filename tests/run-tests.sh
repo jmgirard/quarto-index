@@ -507,17 +507,23 @@ README_REFS_CLAIMS=(
 PROBE_CHARS='% & # _ { } \ ~ ^ $ @ | ! " < >'
 
 # M33-AC4 — the five things README's `### Terms outside Latin-1` section has to
-# state. Each row is a claim a reader acts on, held verbatim below: a
-# documented claim with no check beside it drifts (M13). The three of them that
-# describe behavior are the ones the M33 checks above execute.
+# state, plus what the section says beyond them. Each row is a claim a reader
+# acts on, held verbatim below: a documented claim with no check beside it
+# drifts (M13). Every row that describes a behavior names one the M33 renders
+# above execute — the two failure signatures AC3 pins, and the third path
+# control (d) pins, where the engine line is left out and the build succeeds
+# with a term printed wrongly.
 README_UNICODE_CLAIMS=(
   $'engine\t`xelatex` is the engine'
   $'font\t`STIX` is the main font'
   $'font-by-file\tnamed by file rather than by family, which is why the options above are needed'
+  $'font-install\tSTIX is not in a default TinyTeX install — it lives in TeX Live\'s `collection-fontsextra`, so install it with `tlmgr install stix`'
   $'font-rule\tyour main font must cover the script you are indexing'
   $'fail-engine\tWith `pdf-engine: pdflatex` the render stops and the LaTeX log says `not set up for use with LaTeX`, naming the character'
   $'fail-font\tthe render **succeeds** and the term is simply absent from the printed index'
-  $'fail-warning\tDo not read the log\'s `Missing character` line as the second failure'
+  $'fail-noengine-engine\tQuarto\'s default engine is `lualatex`, not `pdflatex`, so leaving the `pdf-engine:` line out does not get you the failed build above'
+  $'fail-noengine-silent\tthe render **succeeds** and most of `examples/unicode.qmd` still prints correctly, while its Vietnamese term does not print as itself'
+  $'fail-warning\tDo not read the log\'s `Missing character` line as that missing-font failure'
   $'sortkey\t`sort=` still works and still does only what it says — it sets one entry\'s sort key. The order of the index as a whole is the index processor\'s, and for non-ASCII terms it is best-effort'
   $'proven\tproven, with a typeset-print check in the test suite, for Greek, Cyrillic, and Latin beyond Latin-1 including terms written with combining marks'
   $'unsupported\t**CJK and right-to-left scripts are not supported**'
@@ -594,6 +600,9 @@ M33_TERMS=(θεωρία ψυχή Москва źródło Việt café Nux̌alk As
 M33_GREEK=(θεωρία ψυχή)
 M33_ASCII=Ascii
 M33_CJK=漢字
+# The one term the recipe's font prints correctly under xelatex and does NOT
+# print under Quarto's default engine — the no-engine control's whole subject.
+M33_VIET=Việt
 # The captures the M33 checks and the self-test both read, named once.
 M33_PDF="$CAPTURE_ROOT/m33-recipe/unicode.pdf"
 M33_ENGINE_LOG="$CAPTURE_ROOT/m33-engine/engine.log"
@@ -4230,22 +4239,32 @@ python3 tests/unicodeprint.py entries "$M33_PDF" "${M33_TERMS[@]}" \
 pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engine and main font, and all ${#M33_TERMS[@]} of its terms print as their own entry in the typeset index, compared in Unicode NFC"
 
 # ---------------------------------------------------------------------------
-# M33-AC3 — the three controls. A recipe is only a recipe if leaving out
-# either half breaks something, and the break has to be one a reader can
-# recognize. Each control is derived from examples/unicode.qmd by one edit to
-# its YAML, so the terms under test are the same bytes in all four renders.
+# M33-AC3 — the three controls the criterion names, plus (d), a fourth this
+# suite carries for the README sentence it is the test of. A recipe is only a
+# recipe if leaving out either half breaks something, and the break has to be
+# one a reader can recognize. Each control is derived from examples/unicode.qmd
+# by one edit to its YAML, so the terms under test are the same bytes in all
+# five renders.
 #
-# (b) and (c) are read for a POSITIVE signal as well as an absence: each has
-# to print the fixture's ASCII term's own entry line before its missing Greek
-# or CJK entry lines mean anything. Without it a render whose index failed to
-# print at all — no heading, no entries, a wrecked build — would satisfy "no
-# entry line carries this term" exactly as a dropped glyph does.
+# (b), (c) and (d) are read for a POSITIVE signal as well as an absence: each
+# has to print the fixture's ASCII term's own entry line before its missing
+# Greek, CJK or Vietnamese entry line means anything. Without it a render whose
+# index failed to print at all — no heading, no entries, a wrecked build —
+# would satisfy "no entry line carries this term" exactly as a dropped glyph
+# does.
+#
+# (d) is NOT a fourth signature of the pair AC3 names; it is the control under
+# README's "no engine set" paragraph, which exists because Quarto's default
+# engine is lualatex and the loud pdflatex stop (a) pins is reachable only by
+# opting in. Setting the font and leaving the engine alone succeeds at exit 0
+# with this fixture's Vietnamese term not printing as itself — the outcome an
+# author is likeliest to hit and least likely to notice.
 # ---------------------------------------------------------------------------
 M33C="$WORK/m33-controls"
 rm -rf "$M33C"; mkdir -p "$M33C/_extensions"
 cp -R "$QI_EXT_DIR" "$M33C/_extensions/index"
 M33_CJK="$M33_CJK" python3 - examples/unicode.qmd "$M33C" <<'M33CTLPY' \
-  || fail "M33-AC3: the three controls could not be derived from examples/unicode.qmd (its own FAIL line is above)"
+  || fail "M33-AC3: the four controls could not be derived from examples/unicode.qmd (its own FAIL line is above)"
 import io, os, re, sys
 
 src = io.open(sys.argv[1], encoding='utf-8').read()
@@ -4280,9 +4299,18 @@ if src.count(anchor) != 1:
     sys.exit(1)
 cjkdoc = src.replace(anchor, mark + anchor, 1)
 
-for name, text in (('engine', engine), ('nofont', nofont), ('cjk', cjkdoc)):
+# (d) no engine at all: the font stays, the `pdf-engine:` line goes, and the
+# render falls to whatever Quarto picks by default.
+noengine, n = re.subn(r'^pdf-engine: .*\n', '', src, count=1, flags=re.M)
+if n != 1 or 'pdf-engine' in noengine:
+    print('FAIL: M33-AC3: the fixture does not carry exactly one pdf-engine '
+          'line for the no-engine control to remove', file=sys.stderr)
+    sys.exit(1)
+
+for name, text in (('engine', engine), ('nofont', nofont), ('cjk', cjkdoc),
+                   ('noengine', noengine)):
     io.open(os.path.join(out, name + '.qmd'), 'w', encoding='utf-8').write(text)
-print('ok   M33-AC3: the three controls derive from examples/unicode.qmd by '
+print('ok   M33-AC3: the four controls derive from examples/unicode.qmd by '
       'one YAML edit each, plus one added mark for the CJK control')
 M33CTLPY
 
@@ -4324,6 +4352,19 @@ python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-cjk/cjk.pdf" \
   "$M33_ASCII" "$M33_CJK" \
   || fail "M33-AC3c: the added CJK term prints under the recipe's font, or the control's index did not print at all (its own FAIL line is above)"
 pass "M33-AC3c: the fixture with one CJK term added renders at exit 0 under the full recipe, its index still prints the fixture's ASCII term, and the CJK term does not print"
+
+# --- (d) no engine set. The font is there and the `pdf-engine:` line is not,
+#     which is the half-followed recipe README now documents: Quarto's default
+#     engine renders it at exit 0, most terms print, and the Vietnamese term
+#     does not print as itself. Nothing about this render is loud.
+( cd "$M33C" && quarto render noengine.qmd --to pdf ) \
+  > "$WORK/m33-noengine.log" 2>&1 \
+  || { tail -20 "$WORK/m33-noengine.log" >&2; fail "M33-AC4: the fixture failed to render with no pdf-engine set; README documents this as a build that SUCCEEDS while printing a term wrongly, so a broken build is not the state it pins"; }
+capture "$M33C/noengine.qmd" pdf "m33-noengine"
+python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-noengine/noengine.pdf" \
+  "$M33_ASCII" "$M33_VIET" \
+  || fail "M33-AC4: with no pdf-engine set the Vietnamese term prints as itself after all, or the control's index did not print at all — either way README's 'no engine set' paragraph states something that does not happen (its own FAIL line is above)"
+pass "M33-AC4: with the font set and no pdf-engine the render exits 0, its index still prints the fixture's ASCII term, and the Vietnamese term does not print as itself"
 
 # ---------------------------------------------------------------------------
 # M33-AC4 — the README section a reader acts on. Two checks, because the
@@ -4398,7 +4439,7 @@ print(f'ok   M33-AC4: every one of the {len(lines)} line(s) an author copies '
       f'out of README\'s recipe block appears verbatim in '
       f'examples/unicode.qmd')
 M33BLOCKPY
-pass "M33-AC4: README's Terms outside Latin-1 section states the engine, the font and the must-cover rule, both failure signatures and the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is held line for line against the fixture"
+pass "M33-AC4: README's Terms outside Latin-1 section states the engine, the font, where to install it and the must-cover rule, both failure signatures, the third path where no engine is set, the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is held line for line against the fixture"
 
 # ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as
@@ -11786,7 +11827,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # expects, so a reader that goes red for some OTHER reason is not counted as
   # having caught the defect.
   #
-  # THE MATRIX. Ten plants over the reader's ten reachable clauses:
+  # THE MATRIX. Eleven plants over the reader's eleven reachable clauses:
   #
   #   marks   count      a term dropped from the stated list
   #   marks   stated     a stated term respelled, so it is stated and not marked
@@ -11794,6 +11835,8 @@ if [ "${1:-}" = "--self-test" ]; then
   #   entries missing    a stated term the fixture prints no entry for
   #   entries wrong      a stated term respelled by one character
   #   entries no index   a captured PDF that prints no index at all
+  #   entries no terms   the reading asked for nothing, which would pass over
+  #                      any index at all
   #   stopped signature  a successful render's log, which carries no rejection
   #   stopped character  the rejection, with the character it names replaced
   #   absent  silent     a control's own present-term named as one it never prints
@@ -11862,6 +11905,13 @@ if [ "${1:-}" = "--self-test" ]; then
     'the render produced no printed index' \
     entries "$CAPTURE_ROOT/marker-beamer/marker.pdf" "${M33_TERMS[@]}"
 
+  # The empty domain. `marks` pins the stated list against the fixture, but a
+  # caller that passed no terms at all would reach `entries` with nothing to
+  # look for and be green over any PDF in the tree.
+  m33_planted 'the reading asked for nothing at all' \
+    'no terms to look for' \
+    entries "$M33_PDF"
+
   # --- stopped: the pdflatex control's log.
   m33_planted "a successful render's log, which carries no rejection" \
     'does not carry' \
@@ -11884,7 +11934,7 @@ if [ "${1:-}" = "--self-test" ]; then
     'printed after all' \
     absent "$M33_PDF" "$M33_ASCII" "${M33_GREEK[@]}"
 
-  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — ten plants over ten reachable clauses"
+  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — eleven plants over eleven reachable clauses"
 
   # The two self-checks' own discrimination. Each reads the suite's own source
   # for a SHAPE, which is the reading M23's lesson names as certifying a

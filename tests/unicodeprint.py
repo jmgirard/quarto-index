@@ -28,10 +28,12 @@ Four readings, each its own subcommand:
       and not about something else in the document.
 
   absent <pdf> <present-term> <absent-term>...
-      The control reading. Every absent-term has NO entry line, AND the
-      present-term does — the positive signal that separates "the font dropped
-      this script" from "this render printed no index at all", which is the
-      state a bare absence check cannot tell apart.
+      The control reading. Every absent-term has NO entry line of its own, AND
+      the present-term does — the positive signal that separates "this render
+      did not print this term" from "this render printed no index at all",
+      which is the state a bare absence check cannot tell apart. Why a term
+      failed to print is not this reading's business: a font that does not
+      carry the script and an engine that mangles the term both land here.
 
 Both sides of every comparison are normalized to Unicode NFC first. This is
 not politeness about equivalent spellings: xelatex prints a precomposed
@@ -52,11 +54,12 @@ term it is held to is stated by hand in run-tests.sh (the ORACLE RULE there).
 Exits non-zero naming what it could not find, or what it found instead.
 """
 
+import os
 import re
 import sys
 import unicodedata
 
-sys.path.insert(0, 'tests')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import pdfindex  # noqa: E402  (path set above)
 
 
@@ -114,6 +117,9 @@ def cmd_marks(qmd, expected):
 
 
 def cmd_entries(pdf, expected):
+    if not expected:
+        die('FAIL: M33: entries was given no terms to look for, so it would '
+            'pass over any index at all')
     entries = read_entries(pdf)
     printed = [nfc(e.term) for e in entries]
     missing = []
@@ -161,10 +167,10 @@ def cmd_absent(pdf, present, absent):
     unexpected = [term for term in absent if nfc(term) in printed]
     if unexpected:
         die(f'FAIL: M33: the control render {pdf} printed an entry line for '
-            f'{len(unexpected)} term(s) its font does not cover:',
+            f'{len(unexpected)} term(s) it is held not to print:',
             *[f'  {term!r} printed after all' for term in unexpected])
     print(f'ok   M33: {pdf} prints {present!r} and none of the '
-          f'{len(absent)} term(s) its font does not cover')
+          f'{len(absent)} term(s) it is held not to print')
 
 
 def codepoints(term):

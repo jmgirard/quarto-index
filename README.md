@@ -265,8 +265,8 @@ thing from your document — see [Terms outside Latin-1](#terms-outside-latin-1)
 ### Terms outside Latin-1
 
 Escaping is not what stops a Greek or Polish term from reaching your index. A
-PDF build has to be able to *draw* the characters, and the default engine and
-font cannot. Set both:
+PDF build has to be able to *draw* the characters, which takes an engine and a
+main font chosen for the job. Set both:
 
 ```yaml
 pdf-engine: xelatex
@@ -281,21 +281,27 @@ mainfontoptions:
 
 `xelatex` is the engine, and `STIX` is the main font — named by file rather
 than by family, which is why the options above are needed; the plain family
-name is not findable. STIX ships with TeX Live and TinyTeX, so there is
-nothing to install. The general rule behind the recipe is that **your main
-font must cover the script you are indexing**; STIX is one font that does, not
-the only one.
+name is not findable. STIX is not in a default TinyTeX install — it lives in
+TeX Live's `collection-fontsextra`, so install it with `tlmgr install stix`.
+The general rule behind the recipe is that **your main font must cover the
+script you are indexing**; STIX is one font that does, not the only one.
 
-Leave out either half and you get one of two failures:
+Both lines are load-bearing, and each is load-bearing differently:
 
 - **Wrong engine.** With `pdf-engine: pdflatex` the render stops and the LaTeX
   log says `not set up for use with LaTeX`, naming the character. A failed
-  build is the friendlier of the two.
+  build is the friendliest of the three.
 - **Wrong or missing font.** With the right engine and a main font that does
   not cover the script, the render **succeeds** and the term is simply absent
   from the printed index. Nothing warns you.
+- **No engine set.** Quarto's default engine is `lualatex`, not `pdflatex`, so
+  leaving the `pdf-engine:` line out does not get you the failed build above.
+  With the font set and the engine left alone the render **succeeds** and most
+  of `examples/unicode.qmd` still prints correctly, while its Vietnamese term
+  does not print as itself. A build that succeeds is not evidence that the
+  index is right.
 
-Do not read the log's `Missing character` line as the second failure. Under
+Do not read the log's `Missing character` line as that missing-font failure. Under
 `xelatex` that line also appears for characters that print perfectly well: the
 engine draws a precomposed letter it lacks from the letter's accent-plus-base
 spelling instead. The reliable check is the printed index itself.
@@ -849,8 +855,10 @@ every cross-reference target in the first names a term nothing indexes, and
 every target in the second resolves.
 `examples/unicode.qmd` carries the recipe from
 [Terms outside Latin-1](#terms-outside-latin-1) and marks eight terms under
-it — Greek, Cyrillic, Polish, Vietnamese, a term written with a combining
-mark, and one whose combining sequence has no precomposed form.
+it — Greek, a second Greek term carrying a `sort=` key, Cyrillic, Polish,
+Vietnamese, a term written with a combining mark, one whose combining sequence
+has no precomposed form, and one plain ASCII term the suite's controls read as
+their positive signal.
 
 ```bash
 quarto render examples/demo.qmd --to pdf
@@ -865,5 +873,7 @@ tests/run-tests.sh --self-test
 
 The suite renders the examples to LaTeX, HTML, PDF, beamer and
 GitHub-flavoured markdown, and checks the output against hand-derived
-manifests. It needs TinyTeX, `makeindex` and `pdftotext`, and fails loudly
-rather than skipping if any is missing.
+manifests. It needs TinyTeX (with `kpsewhich` on the path and TeX Live's
+`stix` package installed, which the non-Latin-1 renders load by file name),
+`makeindex` and `pdftotext`, and fails loudly rather than skipping if any is
+missing.

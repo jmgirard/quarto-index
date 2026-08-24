@@ -1,11 +1,11 @@
 # M33: An index term outside Latin-1 prints in the PDF index
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP2, GP3
-- **Branch/PR:** —
+- **Branch/PR:** m033-non-latin1-terms
 
 ## Goal
 
@@ -19,17 +19,19 @@ Surface tier: **user-facing** — the deliverable is an author-facing recipe in
 README, an example, and the IP2 promise authors read.
 
 **In:** a documented `pdf-engine` + `mainfont` recipe for index terms outside
-Latin-1; a fixture and a typeset-print proof covering Greek and Latin beyond
-Latin-1 (combining marks included) under a font TeX Live bundles; three controls pinning the failure
-signature of each half of the recipe; IP2 amended to carry the recipe as its
-condition (D-016); KI6 narrowed to the scripts left unproven.
+Latin-1; a fixture and a typeset-print proof covering Greek, Cyrillic and Latin
+beyond Latin-1 (combining marks included) under a font TeX Live bundles; three
+controls pinning the failure signature of each half of the recipe and of a
+script the recipe's font does not cover; IP2 amended to carry the recipe as its
+condition (D-016); KI6 narrowed to name the proven set and the unproven
+remainder.
 
 **Out:**
 - RTL scripts (bidi shaping, and the locator comma the plan-gate probe found on
   the wrong side of the entry) → candidate row.
-- Cyrillic and CJK as *proven* scripts — both need a covering font the suite
-  cannot assume on every machine → named in the narrowed KI6, promoted on a
-  bundled font that covers them.
+- CJK as a *proven* script — it needs a covering font the suite cannot assume
+  on every machine → named in the narrowed KI6, promoted on a bundled font that
+  covers it.
 - Collation order beyond what makeindex gives: the DESIGN convention already
   declares it best-effort, and nothing here changes it.
 - Any filter-side detection of the engine or the font. D-003 excludes "a
@@ -40,32 +42,41 @@ condition (D-016); KI6 narrowed to the scripts left unproven.
 ## Acceptance criteria
 
 - [ ] AC1. `examples/unicode.qmd` — a fixture whose index marks carry terms in
-      Greek and in Latin beyond Latin-1 — renders to PDF at Quarto exit 0 under
-      the engine and the main font README's `### Terms outside Latin-1` names.
-- [ ] AC2. `tests/unicodeprint.py` extracts as many index terms from the marks
-      in `examples/unicode.qmd` as that fixture carries `.index` marks, and for
-      every one of them the text extracted from that term's own entry line in
-      the captured PDF's index equals that term's own characters, each side
-      compared in Unicode NFC; a term it extracts no entry line for fails it,
-      and the recipe render's LaTeX log carries no `Missing character` line.
+      Greek, in Cyrillic, and in Latin beyond Latin-1, each mark indexing at one
+      level — renders to PDF at Quarto exit 0 under the engine and the main font
+      README's `### Terms outside Latin-1` names.
+- [ ] AC2. For every term in the list `tests/run-tests.sh` states for
+      `examples/unicode.qmd`, the text `tests/unicodeprint.py` extracts from
+      that term's own entry line in the captured PDF's index, its locators
+      removed, equals that term's own characters, each side compared in Unicode
+      NFC; a listed term with no entry line fails it.
 - [ ] AC3. Three controls fail in the named way: (a) the fixture under
       `pdf-engine: pdflatex` — Quarto exits non-zero and the LaTeX log names
       `not set up for use with LaTeX` for a Greek character the fixture marks;
       (b) the fixture under the recipe's engine with `mainfont` left at its
-      default — Quarto exits 0 and the LaTeX log names `Missing character` for
-      that same Greek character; (c) the fixture with one Cyrillic term added,
-      under the recipe's engine and font — Quarto exits 0 and the LaTeX log
-      names `Missing character` for a Cyrillic character.
+      default — Quarto exits 0, that render's printed index carries an entry
+      line for an ASCII term the fixture also marks, and no entry line in it
+      carries any of the fixture's Greek terms; (c) the fixture with one CJK
+      term added, under the recipe's engine and font — Quarto exits 0, that
+      render's printed index carries an entry line for that same ASCII term, and
+      no entry line in it carries the added CJK term.
 - [ ] AC4. README's new `### Terms outside Latin-1` section states each of five
       things: the engine the recipe names; the main font it names, and that a
-      main font must cover the script being indexed; the three failure
-      signatures AC3 names; that `sort=` sets an entry's sort key while ordering
-      beyond that is the index processor's and best-effort; and that Cyrillic,
-      CJK and RTL are unsupported, RTL additionally unresolved for bidi shaping
-      and locator placement.
+      main font must cover the script being indexed; the two failure signatures
+      — pdflatex ending the render with `not set up for use with LaTeX`, and a
+      main font not covering the script leaving the term absent from the printed
+      index at a render that otherwise succeeds — together with the fact that a
+      `Missing character` line in the LaTeX log does not by itself mean a glyph
+      was dropped, since xelatex prints many such characters from their
+      decomposition; that `sort=` sets an entry's sort key while ordering beyond
+      that is the index processor's and best-effort; and that the recipe is
+      proven for Greek, Cyrillic and Latin beyond Latin-1 including combining
+      marks, with any other script unproven — CJK and RTL named, RTL
+      additionally unresolved for bidi shaping and locator placement.
 - [ ] AC5. `cairn/DESIGN.md`'s IP2 carries the engine-and-font condition D-016
-      records, and KI6 names exactly three scripts as unsupported by a proven
-      recipe — Cyrillic, CJK and RTL — the RTL entry naming the bidi shaping and
+      records, and KI6 names Greek, Cyrillic and Latin beyond Latin-1 including
+      combining marks as the set proven under the recipe and every other script
+      as unproven, naming CJK and RTL, the RTL entry naming the bidi shaping and
       locator placement this milestone's plan gate recorded.
 - [ ] AC6. `tests/run-tests.sh` exits 0 on this branch.
 
@@ -73,40 +84,45 @@ condition (D-016); KI6 narrowed to the scripts left unproven.
 
 - AC1 → T1, T2, T3
 - AC2 → T2, T3, T4, T6
-- AC3 → T5, T6
+- AC3 → T4, T5, T6
 - AC4 → T7
 - AC5 → T8
 - AC6 → T3, T4, T5, T6
 
 ## Tasks
 
-- [ ] T1. Pin the recipe's font: confirm a TeX Live-bundled font covering Greek
-      and Latin-Extended (`texgyrepagella` at the plan gate) and the
+- [ ] T1. Pin the recipe's font: confirm a TeX Live-bundled font covering
+      Greek, Cyrillic and Latin-Extended (`STIX` at the amendment gate) and the
       `mainfont` / `mainfontoptions` spelling Quarto needs to load it by file
       name — the plain family name is not findable (probe: fontspec "cannot be
       found").
-- [ ] T2. Write `examples/unicode.qmd`: Greek, Polish and Vietnamese terms, one
-      written with a combining mark rather than a precomposed character, one
-      whose combining sequence has no precomposed form at all, and one carrying
-      `sort=`, plus the `.index-here` marker. Give each term a level path no
-      other fixture indexes (the M13 registry hazard).
+- [ ] T2. Write `examples/unicode.qmd`: Greek, Cyrillic, Polish and Vietnamese
+      terms, one written with a combining mark rather than a precomposed
+      character, one whose combining sequence has no precomposed form at all,
+      one carrying `sort=`, and one ASCII term the controls read as their
+      positive signal, plus the `.index-here` marker. Every mark indexes at one
+      level, and each term takes a level path no other fixture indexes (the M13
+      registry hazard).
 - [ ] T3. Add the recipe render to `tests/run-tests.sh`, capturing the compiled
       PDF into `$WORK` at that render and reading the copy (M24).
-- [ ] T4. Write `tests/unicodeprint.py`: extract the fixture's marked terms from
-      source, extract each term's own entry line from the captured PDF, and hold
-      each to its own characters — the entry's own cell, never a search of the
-      index region (M30).
-- [ ] T5. Add AC3's three controls as their own renders, each capturing its
-      LaTeX log; the Cyrillic control renders a copy of the fixture with one
-      Cyrillic term added.
+- [ ] T4. Write `tests/unicodeprint.py`: read each listed term's own entry line
+      from the captured PDF and hold it, its locators removed, to that term's
+      own characters in NFC — the entry's own cell, never a search of the index
+      region (M30). It also holds the term list `tests/run-tests.sh` states
+      against the fixture's own marks, one term per mark, so the list cannot
+      drift from what the fixture indexes.
+- [ ] T5. Add AC3's three controls as their own renders, each capturing its PDF
+      and its LaTeX log; the third renders a copy of the fixture with one CJK
+      term added. Controls (b) and (c) each read their own printed index for the
+      ASCII term's entry line and for the absence of the foreign-script term's.
 - [ ] T6. Plant a defect per CLAUSE of `tests/unicodeprint.py` and of the three
       controls — not per reader (M32) — one substitution per plant (M29), and
-      record the matrix. Include a wrong expected string and a term whose entry
-      line is absent.
+      record the matrix. Include a wrong expected string, a term whose entry
+      line is absent, and a stated term list drifted from the fixture's marks.
 - [ ] T7. Write README's `### Terms outside Latin-1` after `### Special
       characters`, cross-referenced from it.
-- [ ] T8. Amend IP2 in DESIGN.md, narrow KI6 to the three scripts, and append
-      D-016. (The RTL candidate row lands with this plan's commit.)
+- [ ] T8. Amend IP2 in DESIGN.md, narrow KI6 to the proven set and the unproven
+      remainder, and append D-016. (The RTL candidate row lands with this plan's commit.)
 
 ## Work log
 
@@ -119,6 +135,9 @@ condition (D-016); KI6 narrowed to the scripts left unproven.
 
 - 2026-08-24: remainder ledger caught "combining marks" from the absorbed candidate row absent from the plan; probing it found the PDF text layer renormalizes both ways (decomposed `cafe`+U+0301 extracts precomposed; precomposed Greek `\u03cc` extracts decomposed), which made AC2's byte-equality unsatisfiable for a term already in scope. AC2 now compares in NFC and the fixture carries the combining shapes.
 - 2026-08-24: criteria audit re-ran in FULL mode over the changed AC2 and returned 4 findings; 3 were fixed here (a no-precomposed-form fixture term, the extracted-term count floored against the fixture's mark count, and a zero-`Missing character` clause) and the "no control that the check can fail" finding was disposed as an instrument property (D-118) already carried by T6.
+- 2026-08-24: implement gate probed the font matrix: `texgyrepagella` drops Cyrillic, but xelatex prints a precomposed character the font lacks from that character's decomposition, so a `Missing character` log line fires on correctly-printing Greek as well as on dropped Cyrillic; TinyTeX also bundles `STIX`, which printed and extracted Greek, Cyrillic, Polish, Vietnamese, a decomposed `café` and `Nux̌alk` correctly and drops CJK at Quarto exit 0.
+- 2026-08-24: amendment at the implement gate, both halves user-selected: the recipe names `STIX` and the proven set gains Cyrillic (the plan gate's own falsifier, "a bundled font shown to cover both", fired), and AC2 loses its zero-`Missing character` clause. Scope In/Out, AC1-AC5, Coverage and T1/T2/T4/T5/T6/T8 amended.
+- 2026-08-24: criteria audit ran twice in FULL mode over the amended wording, each over a fresh-context reader that did not author it; round 1 returned 7 findings, all disposed by narrowing (positively-stated proven set, one-level marks, a stated term list as AC2's domain, printed-index evidence replacing the log line in the controls); round 2 over the repaired wording returned 6 on the same criteria and went to the user under the once-more rule, who accepted the repair. AC5 and AC6 came back clean.
 
 ## Decisions
 

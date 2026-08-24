@@ -20,7 +20,7 @@ README, an example, and the IP2 promise authors read.
 
 **In:** a documented `pdf-engine` + `mainfont` recipe for index terms outside
 Latin-1; a fixture and a typeset-print proof covering Greek and Latin beyond
-Latin-1 under a font TeX Live bundles; three controls pinning the failure
+Latin-1 (combining marks included) under a font TeX Live bundles; three controls pinning the failure
 signature of each half of the recipe; IP2 amended to carry the recipe as its
 condition (D-016); KI6 narrowed to the scripts left unproven.
 
@@ -42,10 +42,12 @@ condition (D-016); KI6 narrowed to the scripts left unproven.
 - [ ] AC1. `examples/unicode.qmd` — a fixture whose index marks carry terms in
       Greek and in Latin beyond Latin-1 — renders to PDF at Quarto exit 0 under
       the engine and the main font README's `### Terms outside Latin-1` names.
-- [ ] AC2. For every index term `tests/unicodeprint.py` extracts from the marks
-      in `examples/unicode.qmd`, the text extracted from that term's own entry
-      line in the captured PDF's index equals that term's own characters; a term
-      the check extracts no entry line for fails it.
+- [ ] AC2. `tests/unicodeprint.py` extracts as many index terms from the marks
+      in `examples/unicode.qmd` as that fixture carries `.index` marks, and for
+      every one of them the text extracted from that term's own entry line in
+      the captured PDF's index equals that term's own characters, each side
+      compared in Unicode NFC; a term it extracts no entry line for fails it,
+      and the recipe render's LaTeX log carries no `Missing character` line.
 - [ ] AC3. Three controls fail in the named way: (a) the fixture under
       `pdf-engine: pdflatex` — Quarto exits non-zero and the LaTeX log names
       `not set up for use with LaTeX` for a Greek character the fixture marks;
@@ -84,8 +86,10 @@ condition (D-016); KI6 narrowed to the scripts left unproven.
       name — the plain family name is not findable (probe: fontspec "cannot be
       found").
 - [ ] T2. Write `examples/unicode.qmd`: Greek, Polish and Vietnamese terms, one
-      carrying `sort=`, plus the `.index-here` marker. Give each term a level
-      path no other fixture indexes (the M13 registry hazard).
+      written with a combining mark rather than a precomposed character, one
+      whose combining sequence has no precomposed form at all, and one carrying
+      `sort=`, plus the `.index-here` marker. Give each term a level path no
+      other fixture indexes (the M13 registry hazard).
 - [ ] T3. Add the recipe render to `tests/run-tests.sh`, capturing the compiled
       PDF into `$WORK` at that render and reading the copy (M24).
 - [ ] T4. Write `tests/unicodeprint.py`: extract the fixture's marked terms from
@@ -112,6 +116,9 @@ condition (D-016); KI6 narrowed to the scripts left unproven.
 - 2026-08-24: plan gate chose a documented recipe plus a typeset-print proof over filter-side engine detection, because D-003 excludes "a missing font" by name and detection would need a superseding entry; falsified by evidence that an author following the README recipe still gets a broken index.
 - 2026-08-24: plan gate chose amending IP2 to carry the engine-and-font condition over reading GP2 as already scoping it, because IP2's words otherwise stay an unconditional promise the probes show is false; falsified by a reading of IP2 under which the pdflatex break is not "because of a marked term".
 - 2026-08-24: plan gate chose Greek + Latin-Extended as the proven set over adding Cyrillic, because no TeX Live-bundled font found at the gate covers Cyrillic and assuming one makes the suite machine-dependent; falsified by a bundled font shown to cover both.
+
+- 2026-08-24: remainder ledger caught "combining marks" from the absorbed candidate row absent from the plan; probing it found the PDF text layer renormalizes both ways (decomposed `cafe`+U+0301 extracts precomposed; precomposed Greek `\u03cc` extracts decomposed), which made AC2's byte-equality unsatisfiable for a term already in scope. AC2 now compares in NFC and the fixture carries the combining shapes.
+- 2026-08-24: criteria audit re-ran in FULL mode over the changed AC2 and returned 4 findings; 3 were fixed here (a no-precomposed-form fixture term, the extracted-term count floored against the fixture's mark count, and a zero-`Missing character` clause) and the "no control that the check can fail" finding was disposed as an instrument property (D-118) already carried by T6.
 
 ## Decisions
 

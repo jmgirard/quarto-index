@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M32: An index follows the bibliography where the author puts it
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** low
 - **Depends on:** —
 - **Driving RR:** —
@@ -65,7 +65,7 @@ replaces the README's statement of current behavior with the recipe.
       HTML rather than raw offsets in text.
 - [x] T3: Replace the README's bibliography sentence with the recipe, naming
       what an author writes and what happens without it.
-- [ ] T4: Run `tests/run-tests.sh --self-test`; strike KI3 (its candidate row
+- [x] T4: Run `tests/run-tests.sh --self-test`; strike KI3 (its candidate row
       was absorbed into this milestone at the plan gate).
 
 ## Work log
@@ -78,6 +78,7 @@ replaces the README's statement of current behavior with the recipe.
 - 2026-08-24: criteria audit ran in **full** mode (user-facing tier), inline rather than in a fresh-context [O] reader — this session is under a standing instruction not to spawn subagents. It returned one finding, fixed before the criteria were written: AC2 originally asserted the index "appears after the references" in the HTML text, which a check reading raw offsets satisfies without knowing which element carries either; it now asserts element identity (M07).
 - 2026-08-24: T2 — the suite renders both fixtures to LaTeX and HTML through `capture`, checks the twin is the fixture with its `#refs` div block deleted, and asserts the two orders: `\printindex` against the `CSLReferences` environment in the `.tex`, and the generated index section against the `refs` div in the HTML, the latter by id plus the bibliography classes and by the section being the one the index heading sits in. Five plants ran red, each naming its own defect: the two artifacts swapped in each format, a twin identical to the fixture, a fixture carrying no `#refs` div, and a `refs` div stripped of its bibliography classes. Full suite: 305 checks, all passing.
 - 2026-08-24: T3 — README's *Placing the index* section gains the recipe: the empty `#refs` div, why Quarto's ordering makes it work, what each back-end then does, and that writing no div leaves the default order. The *What it emits* sentence that stated the old order as fixed now points at that section, and the retired sentence joined the suite's must-be-gone set. Six claim rows pinned verbatim against README, beside the fixture pair that enforces them.
+- 2026-08-24: T4 — `tests/run-tests.sh --self-test` exits 0 on 442 checks. KI3 struck from DESIGN's known issues: the order is now the author's to set and README says how. One candidate row added for the Scope Out item — a filter-side move of the index relative to content Quarto adds after filters run.
 
 ## Decisions
 

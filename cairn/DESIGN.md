@@ -455,9 +455,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   and the typeset-time channel puts a second unprotected macro on that path,
   `\quartoindexregister`, whose `\protected@write` would expand inside a
   `.toc`/`.lof` write. — M01 review R17, M20 review round 2 R2-F7
-- **KI3.** `\printindex` precedes a bibliography rather than following it, since
-  Quarto appends reference blocks after filters run. README states the current
-  behavior. — M01 review P2
 - **KI5.** A registered principal page folded inside a makeindex page range is
   not emphasized: the typeset-time channel D-007 adopts looks a page up by
   string, and a range misses, printing it unemphasized and silently. — RR01

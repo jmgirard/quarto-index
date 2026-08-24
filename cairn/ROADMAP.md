@@ -1,12 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-24 (M29 merged and archived; KI22 and KI80 struck, KI83-KI85 filed, KI82 corrected, the M26 terminal row pruned. ROADMAP 6.9k of its 24k byte budget and 48 lines; LESSONS 8.3k of 20k and 37 of 50; check-design 12.8k of 18k and 34 of 40.)_
+_Last hygiene check: 2026-08-24 (M30-M32 planned; the escape-table, leftover-`.ind` and printindex-ordering candidate rows absorbed into them; KI1 struck under D-015 and KI86 filed.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M30 | A character in an index entry is proved to print, not merely to compile | planned | — | normal | milestones/M30-typeset-print-proof.md |
+| M31 | A leftover index file never breaks the next render | planned | — | normal | milestones/M31-stale-ind-standin.md |
+| M32 | An index follows the bibliography where the author puts it | planned | — | low | milestones/M32-index-after-references.md |
 | M29 | A marker report in a book names its chapter | done | M28 | normal | milestones/archive/M29-book-chapter-in-report.md |
 | M28 | A reported block position names the sequence it counts | done | — | normal | milestones/archive/M28-block-position-naming.md |
 | M27 | A finding about today's behavior is a known issue, not a candidate row | done | — | normal | milestones/archive/M27-record-ownership.md |
@@ -27,7 +30,6 @@ _Last hygiene check: 2026-08-24 (M29 merged and archived; KI22 and KI80 struck, 
 - Locator-control follow-ups (clustered): roles beyond `principal` for a locator (a defining passage, an illustration), promoted on evidence an author wants a second role; an author-written id pairing two overlapping ranges of one term, which pairing by entry cannot tell apart, promoted on evidence that authors write them; author control over the range dash; and emphasizing a principal page folded inside a page range — added 2026-08-21 — M20/M21 Scope Out, RR01, M20 amendment gate — KI5, KI74
 - Pair a range spanning two chapters of an HTML book; promote on a per-chapter record that separates what the author wrote from what a chapter concluded, never on the feature being wanted, and on a derivation path that reads the mark's rewritten content — added 2026-08-22 — M21 review rounds 1-3, D-009 — KI19, KI20
 - Book sidecar-store follow-ups (clustered): prune records for chapters no longer in the book; give the declared-key map a stable order; decide what a page outside `book.render` should do — added 2026-08-17, clustered 2026-08-22 — M05 review F4/F13, M06 review pass 2 F11 — KI16, KI17, KI18
-- Cover a leftover `.ind` with a gobbling stand-in the way M22 covers the `.aux`; promote on evidence a real pipeline leaves an `.ind` unrewritten across a render — added 2026-08-22 — M22 review F1 — KI4
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN) — KI79
 - Pick an engine and fonts for non-Latin-1 index terms (Greek, CJK, combining marks, RTL) — added 2026-08-16 — M01 review R7/R9 — KI6
@@ -36,8 +38,6 @@ _Last hygiene check: 2026-08-24 (M29 merged and archived; KI22 and KI80 struck, 
 - Guard an accumulator added after M26 that joins no `reset`; D-011 refuses a source scan, so the guard is a render or nothing — added 2026-08-16, promoted to M26 2026-08-23 — KI10
 - Probe `\index` inside a moving argument, and protect `\quartoindexregister` on that path — added 2026-08-16 — M01 review R17, M20 review round 2 R2-F7 — KI2
 - Settle the see-also locator semantics and whether repeated `\seename` should join — added 2026-08-16 — M03 gate chose LaTeX-aligned no-locator semantics, M15 keeps it for a contested key — KI9
-- Add `[` and `]` to the filter's escape table — added 2026-08-16 — M01 review N11 — KI1
-- Print `\printindex` after the bibliography rather than before — added 2026-08-16 — M01 review P2 — KI3
 - Settle whether a mark's attribute values may ride into pass-through formats — added 2026-08-17 — M03 review F4/F9 — KI15
 - Reach markers written in YAML `abstract:` — added 2026-08-18 — M08 review R4/Q2 — KI11
 - Restore byte-level evidence that `resolve_markers` is output-neutral; D-004 refused the merge-base oracle and D-012 licenses a same-tree one — added 2026-08-17 — M04 review F12 — KI12, KI52

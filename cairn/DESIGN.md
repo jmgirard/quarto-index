@@ -451,8 +451,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 ### The LaTeX back-end
 
-- **KI1.** `[` and `]` are escaped by Pandoc's LaTeX writer but are not in the
-  filter's escape table. Verified harmless in practice. — M01 review N11
 - **KI2.** `\index` inside a moving argument (a section heading) is unprobed,
   and the typeset-time channel puts a second unprotected macro on that path,
   `\quartoindexregister`, whose `\protected@write` would expand inside a
@@ -745,6 +743,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   review N9, M02 review, M06 review F-b
 - **KI71.** The escaping probe covers characters singly; combinations remain an
   untested axis. — M01 review, and M01's own milestone Decisions entry
+- **KI86.** The escaping probe proves all 94 printable ASCII characters compile
+  and are accepted by makeindex, and proves only the 16 `PROBE_CHARS` names
+  actually print: the typeset assertion searches the index region for those 16
+  alone. The other 78 are compiled-but-unproved-in-print. — M30 plan gate
 - **KI72.** The example corpus's roughly 250 probe `see=`/`see-also=` targets do
   not all name terms the fixture indexes; M14 pins the expected report counts
   instead. — M14 plan gate

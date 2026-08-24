@@ -158,12 +158,156 @@ remainder.
 - 2026-08-24: implement gate chose, user-selected, to document the no-engine path in README and pin it with a fourth control render, over stating less and adding no check, and over naming the control in an acceptance criterion. AC3 keeps the three controls it names and AC4 keeps its five things — no criterion changed. Minor amendment: T9 added for the return's six fixes, and mapped under AC4 and AC6 in Coverage; no criterion text changed.
 - 2026-08-24: T9 — R9 and R7 fixed in `tests/unicodeprint.py` (import resolved from `__file__`; `entries` refuses an empty term list, a clause now planted, eleven plants over eleven reachable clauses). R1: README's "one of two failures" replaced by three, the third naming lualatex as Quarto's default engine and the silent half-set build, with control (d) rendering the fixture minus its `pdf-engine:` line and holding it to exit 0, the ASCII entry line present and the Vietnamese term not printing as itself; two claim rows added. R2, R10, R13: the STIX install fact, the suite-prerequisites sentence and the fixture-list count corrected, the install fact added as a claim row. D-017 appended, correcting D-016's default-engine context and leaving its decision standing. Suite `--self-test` clean at 487 checks.
 - 2026-08-24: defect return #1 repaired; status back to review. `tests/run-tests.sh --self-test` clean at 487 checks (485 before the return, 336 on the merge base).
+- 2026-08-24: re-review gathered fresh evidence on 30fc555 — suite green at 487 checks, cairn_validate exit 0, all six criteria verified. Three fresh-context lenses: blame-history and prior-review clean, diff-bug returned 12; none reaches the return floor. Recommended fix-now: N2, N3, N4, N10.
 
 ## Decisions
 
 ## Review
 
-### Acceptance criteria — fresh evidence
+### Re-review after defect return #1 (2026-08-24)
+
+The evidence below was re-gathered on `30fc555` (the repaired branch); it
+supersedes the round-1 evidence, which was gathered on `b61091b` and is kept
+below under "Round 1" with the fourteen findings and their dispositions.
+
+#### Acceptance criteria — fresh evidence
+
+`tests/run-tests.sh --self-test` on `30fc555`: exit 0, 487 checks (485 before
+the return, 336 on the merge base). `main` was fetched and is an ancestor of
+HEAD, so the branch is not stale.
+
+- AC1 — `M33-AC1/AC2` renders `examples/unicode.qmd` under README's
+  `pdf-engine: xelatex` and `mainfont: STIX` at Quarto exit 0, capturing the
+  PDF at that render; green.
+- AC2 — the same check reads all 8 stated terms out of their own entry lines
+  in the captured PDF, locators removed, compared in NFC; the companion
+  `marks` check holds the stated list against the fixture's own marks (8
+  terms, one per mark), so a listed term with no entry line fails. Both green.
+- AC3 — three control checks, each green: `M33-AC3a` (pdflatex, non-zero exit,
+  log stopping on U+03B8 with `not set up for use with LaTeX`); `M33-AC3b`
+  (default `mainfont`, exit 0, the ASCII entry line present and neither Greek
+  term printing); `M33-AC3c` (recipe engine and font plus one CJK term, exit 0,
+  ASCII entry line present, CJK term absent). A fourth check holds all four
+  controls to deriving from the fixture by one YAML edit each.
+- AC4 — read at review on `30fc555`. README's `### Terms outside Latin-1`
+  states all five: the engine (`xelatex`); the font (`STIX`, named by file,
+  with `tlmgr install stix` since it is not in a default TinyTeX install) and
+  the must-cover rule; both failure signatures plus the `Missing character`
+  caveat — and now a third, the no-engine silent path R1 returned the
+  milestone for; what `sort=` does against best-effort ordering; and the proven
+  set with CJK and RTL named unsupported, RTL additionally unshaped with the
+  locator comma misplaced. Two suite checks hold this mechanically — 14 claim
+  rows verbatim (11 before the return) and the copyable YAML block held line
+  for line, 8 lines, against `examples/unicode.qmd`; both green.
+- AC5 — read at review: `cairn/DESIGN.md` IP2 carries the engine-and-font
+  condition and cites the README section (marked `amended M33; D-016`); KI6
+  names Greek, Cyrillic and Latin beyond Latin-1 including combining marks as
+  the proven set, every other script unproven, CJK unsupported, RTL both
+  unsupported and unresolved for shaping and locator placement.
+- AC6 — `tests/run-tests.sh --self-test` exits 0 on `30fc555` at 487 checks.
+
+No Driving RR on this milestone, so the projection-vs-outcome record no-ops.
+
+#### Consistency gate (re-run)
+
+- `cairn_validate.py` — exit 0, all checks passed; no `release window`
+  advisory fired.
+- `cairn_impact.py --changed` again reports no changed principles (IP2's
+  amended lines do not themselves spell the id). Reconciled by hand at round 1
+  via `cairn_impact.py IP2`; the T9 repair touched no DESIGN principle line, so
+  that reconciliation stands.
+- Profile `generic` — its `consistency-gate` slot names no toolchain checks, a
+  clean no-op. The suite ran anyway as AC6's evidence.
+
+#### Independent review — findings (round 2)
+
+Three fresh-context lenses, none having seen the implementation (user-facing
+tier, executable surface touched).
+
+The blame-history lens and the prior-review lens each returned no
+regression: the branch deletes no line of `tests/run-tests.sh`, the five new
+captures take distinct slugs (M24), the eight fixture terms collide with no
+other fixture's level path (M13), D-003's toolchain boundary is respected, and
+the diff follows M32's copyable-block pattern, M13's held-claim-row pattern and
+M30's structural-read discipline. The prior-review probe again found no inline
+review comments anywhere in the repo (`pulls/comments` empty), so the archived
+`## Review` sections and LESSONS were its evidence.
+
+The diff-bug lens confirmed all six T9 repairs land — R1 (three paths in
+README, control (d) rendering the fixture minus its `pdf-engine:` line), R2
+(`collection-fontsextra` and `tlmgr install stix`, held as a claim row), R7
+(the empty-term guard, planted), R9 (`__file__` import), R10 (`kpsewhich` and
+`stix` in the prerequisites), R13 (eight items for eight terms) — and returned
+twelve new findings, ranked below with the review's recommended disposition.
+None demonstrates an acceptance criterion failing, so none reaches the return
+floor; the maintainer triages at the gate.
+
+- N1. README:237 — "The test suite compiles both with the same engine your PDF
+  build uses" was read as falsified by the escaping probes invoking `pdflatex`
+  directly. **Recommended: reject** — checked at review: both fixtures ARE
+  rendered through `quarto render --to pdf` (`tests/run-tests.sh:4840`,
+  `:5095`), i.e. the reader's own default engine; the direct `pdflatex` call is
+  an additional pass, not the one the sentence describes. The claim is true.
+- N2. README:297 states "Quarto's default engine is `lualatex`" with no version
+  attached, while D-017 scopes that fact to Quarto 1.10.18 and README:28
+  promises Quarto 1.4 or later. The `fail-noengine-engine` claim row pins the
+  unversioned wording, so a supported Quarto whose default differs makes
+  control (d) fail at `tests/run-tests.sh:4362` naming the wrong cause.
+  **Recommended: fix now** — one clause, and it is the same class of
+  over-strong README fact the return was opened for.
+- N3. `tests/run-tests.sh:11937` asserts "eleven plants over eleven reachable
+  clauses", but `tests/unicodeprint.py:189-198` holds three further reachable
+  guards with no plant and no matrix row — `stopped needs at least one term`,
+  `absent needs a present-term…`, and `unknown mode` — the first two being
+  siblings of the empty-domain guard R7 forced into existence. The completeness
+  claim overstates. **Recommended: fix now.**
+- N4. `tests/run-tests.sh:11832` labels a matrix row `marks count`, but its
+  plant (`M33_SHORT`, one term dropped) asserts `marked but not stated` — the
+  set-difference clause's message. The count clause's own message is asserted
+  by no plant and can only be isolated by a stated list carrying a duplicate.
+  **Recommended: fix now** — one added plant.
+- N5. Control (d) (`tests/run-tests.sh:4364-4366`) pins only half the README
+  sentence it exists for: it asserts `Ascii` present and `Việt` absent, not
+  that the rest still prints correctly, so a regression dropping every
+  non-ASCII term leaves it green — the state control (b) pins for another
+  cause. **Recommended: follow-up.**
+- N6. The tool guard (`tests/run-tests.sh:1364`) probes only
+  `STIX-Regular.otf`, while the recipe declares four faces; a partial install
+  defeats it and produces exactly the deep LaTeX-log failure the guard exists
+  to prevent. **Recommended: follow-up.**
+- N7. That guard makes the WHOLE suite unrunnable on a default TinyTeX for a
+  font package outside the default install, where every other hard requirement
+  there is core — a GP3 tension distinct from R3's obsolescence point.
+  **Recommended: follow-up**, folded into R3's row (the blame-history lens
+  raised the same GP3 tension independently).
+- N8. The M33 constants at `tests/run-tests.sh:592-608` split a commented
+  constant group whose comment now describes lines 15 rows away.
+  **Recommended: reject** — placement style, the out-of-scope taxonomy's
+  nitpick member.
+- N9. Control (d)'s messages are prefixed `M33-AC4`, the same label the
+  README-content check at `:4379`/`:4442` uses, while the milestone records
+  that no criterion covers control (d). **Recommended: follow-up.**
+- N10. README:269 "Set both:" and :289 "Both lines are load-bearing" introduce
+  three bullets, the third of which ("No engine set") is not a line — in the
+  paragraph T9 rewrote. **Recommended: fix now** — user-facing prose in the
+  deliverable, one sentence.
+- N11. README:28's "No other runtime dependencies" sits 250 lines above
+  `tlmgr install stix`. **Recommended: reject** — line 28 states the
+  extension's own runtime dependencies; STIX is a font an author opts into for
+  a recipe, not something the extension loads.
+- N12. No candidate rows exist yet for round 1's five follow-up dispositions
+  (R3, R4, R6, R8, R12). **Recommended: reject as a finding** — the row is
+  written at the milestone that closes, which is this gate; treated as the
+  reminder it is, and the rows are written in the hygiene pass.
+
+The blame-history lens additionally flagged the work log's `D-118` citation as
+pointing at nothing in `cairn/DECISIONS.md`. **Rejected** — D-118 is the cairn
+plugin's own decision id, cited by its tracking rulebook, not this repo's.
+
+
+### Round 1 (superseded)
+
+#### Acceptance criteria — evidence (superseded; gathered on b61091b)
 
 Evidence from `tests/run-tests.sh --self-test` on b61091b (exit 0, 485 checks),
 run at review 2026-08-24.
@@ -198,7 +342,7 @@ run at review 2026-08-24.
   unsupported and unresolved for shaping and locator placement.
 - AC6 — `tests/run-tests.sh --self-test` exits 0 on b61091b at 485 checks.
 
-### Consistency gate
+#### Consistency gate (round 1)
 
 - `cairn_validate.py` — exit 0, all checks passed, no advisory fired.
 - `cairn_impact.py --changed` reported no changed principles: IP2's amendment
@@ -211,7 +355,7 @@ run at review 2026-08-24.
 - Profile `generic` — its `consistency-gate` slot names no toolchain checks, so
   that half is a clean no-op. The suite ran anyway as AC6's evidence.
 
-### Independent review — findings
+#### Independent review — findings (round 1)
 
 Three fresh-context lenses (user-facing tier, executable surface). The
 blame-history lens and the prior-review lens each reported no findings; the
@@ -290,7 +434,7 @@ gate.
   `.qi-index-here`. Task text only, no code effect. **Recommended: reject** —
   the work log is history and the task is done.
 
-### Gate disposition (2026-08-24)
+#### Gate disposition — round 1 (2026-08-24)
 
 The maintainer judged R1 and R2 load-bearing defects in the README recipe, the
 milestone's user-facing deliverable, and returned M33 to `in-progress` rather

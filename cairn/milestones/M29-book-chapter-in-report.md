@@ -152,11 +152,12 @@ PR #29. Whole suite run: `tests/run-tests.sh`.
   whole-line pattern; two planted logs prove it able to fail (clause moved to
   the line's end, clause dropped), each failing for its own reason.
 - AC2 — met. Same render, whole: `index placement marker 2 in document order
-  (top-level block 5) of last.qmd is ignored; the index is placed at the first
+  (top-level block 5 of last.qmd) is ignored; the index is placed at the first
   marker. Block positions are counted over ...`. Clause immediately after the
   block position; otherwise AC3's pdf duplicate text with only the block number
   (5 against 34) free to differ, the ordinal being 2 in both. Same partition
-  check, same planted-defect proofs.
+  check, same planted-defect proofs. Re-verified after F2's fix moved the
+  clause inside the parenthesis.
 - AC3 — met. The pdf book render emits both reports with no chapter clause:
   `... in top-level block 26 was the only thing written where it stood; ...`
   and `... marker 2 in document order (top-level block 34) is ignored; ...`.
@@ -177,8 +178,9 @@ PR #29. Whole suite run: `tests/run-tests.sh`.
   naming no chapter. Two further planted logs prove the book partition closed
   rather than a template search — an extra warning belonging to neither
   partition, and a log holding none of our warnings at all.
-- AC6 — met. `tests/run-tests.sh` exit 0, 296 checks. `tests/run-tests.sh
-  --self-test` exit 0, 430 checks.
+- AC6 — met. `tests/run-tests.sh` exit 0, 296 checks; `tests/run-tests.sh
+  --self-test` exit 0, 430 checks. Both re-run on the tree carrying the gate's
+  fix-now list, with the same results.
 
 Consistency gate: `cairn_validate` exit 0, all 16 checks PASS and 7 advisories
 OK. No IP/GP principle text changed, so `cairn_impact` does not apply. Active

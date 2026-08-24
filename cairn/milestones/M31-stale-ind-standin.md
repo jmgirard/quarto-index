@@ -77,7 +77,7 @@ promise to the `.aux` alone.
 
 ## Tasks
 
-- [ ] T1: Build the stale-`.ind` fixture and reproduce the failure before the
+- [x] T1: Build the stale-`.ind` fixture and reproduce the failure before the
       fix: render a parent carrying a principal mention, a both-attributes mark
       and an all-xref contested key; keep the `.ind`; delete the marks that emit
       the three commands; re-render; record the `Undefined control sequence` and
@@ -121,6 +121,7 @@ promise to the `.aux` alone.
 - 2026-08-24: implement branch `m031-stale-ind-standin` cut; status in-progress.
 - 2026-08-24: amendment gate — investigation found the plan's Scope premise false. Three extension commands reach a compiled `.ind`, each injected on its own condition: `\quartoindexlocator` (`passes.lua:254`, gated on `principal_emitted`), `\quartoindexseeboth` (`latex.lua:264`, gated on `xref_both_emitted`) and `\quartoindexxrefs` (`passes.lua:561`, gated on `xref_list_emitted`). Scope In, the first Out item, the acceptance criteria, Coverage and Tasks were amended to cover all three; the user chose the widening over shipping the locator alone and filing the other two. The locator keeps the planned two-block stand-in because its live definition is stateful; the two cross-reference definitions are stateless and become unconditional, since each is already its own stand-in. Rejected: giving the two their own conditional stand-in blocks, which buys three one-of-two invariants for a discipline whose stated reason — an author's own `\providecommand` surviving — unconditional injection does not touch. Falsified by a document that must not carry a cross-reference definition it does not use.
 - 2026-08-24: criteria audit re-ran on the amended wording in **full** mode (user-facing tier), inline rather than in a fresh-context [O] reader, this session being under a standing instruction not to spawn subagents. It returned one finding: AC4's promise is reachable only if no `quartoindex` name beyond the three reaches an `.ind`. Disposed by adding the sweep to T1, which settles it from the produced artifact; a fourth name returns AC4 to the amendment gate rather than widening it silently.
+- 2026-08-24: T1 — stale-`.ind` failure reproduced before any fix. A parent carrying a principal mention, a both-attributes mark and an all-cross-reference contested key renders to PDF and leaves an `.ind` holding `\hyperxindexformat{\quartoindexlocator{qi1}}{1, 2}`, `\hyperxindexformat{\quartoindexseeboth{Wyvern}{Hydra}}{2}` and `\hyperxindexformat{\quartoindexxrefs{\see{Wyvern}{}; \seealso{Hydra}{}}}{2}`. The same document with `mention=`/`see=`/`see-also=` stripped renders to a `.tex` naming none of the three; pdflatex on it beside that `.ind` exits 1 with three `Undefined control sequence` errors, each naming its command at the `<argument>` line. Run under `-no-shell-escape`: TinyTeX's restricted shell escape lets imakeidx re-run makeindex, which rebuilds the `.ind` and hides the hazard — with it off the file is byte-identical after the run. The AC4 sweep over that `.ind` returns exactly those three `quartoindex` names and no fourth, settling the criteria-audit finding from the artifact.
 
 ## Decisions
 

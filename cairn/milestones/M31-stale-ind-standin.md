@@ -7,7 +7,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** `m031-stale-ind-standin`
+- **Branch/PR:** `m031-stale-ind-standin` / https://github.com/jmgirard/quarto-index/pull/31
 
 ## Goal
 
@@ -47,26 +47,26 @@ promise to the `.aux` alone.
 
 ## Acceptance criteria
 
-- [ ] AC1: A document whose own marks emit none of the three, rendered beside a
+- [x] AC1: A document whose own marks emit none of the three, rendered beside a
       leftover `.ind` carrying `\quartoindexlocator`, `\quartoindexseeboth`
       and `\quartoindexxrefs`, compiles to a PDF, and the pages and
       cross-reference targets those commands carry appear in the compiled index
       as ordinary locators and cross-references.
-- [ ] AC2: With any one of the three definitions removed and nothing else
+- [x] AC2: With any one of the three definitions removed and nothing else
       changed, that same render fails on `Undefined control sequence` naming
       that command — one probe per definition, the failure asserted by
       identity, not by a non-zero exit alone.
-- [ ] AC3: A rendered document that does emphasize a principal mention carries
+- [x] AC3: A rendered document that does emphasize a principal mention carries
       the subsystem block and not the locator stand-in, and one that does not
       carries the locator stand-in and not the subsystem block — the
       exactly-one-of-two invariant M22 established, held over the widened
       stand-in block.
-- [ ] AC4: Every `quartoindex` command name appearing in any `.ind` the suite's
+- [x] AC4: Every `quartoindex` command name appearing in any `.ind` the suite's
       own captured renders produce is defined in the preamble of every captured
       LaTeX document carrying `\printindex` — the command that reads an `.ind`
       — with both sets and that domain enumerated by a sweep over the captured
       artifacts, never from a written list.
-- [ ] AC5: `tests/run-tests.sh --self-test` completes clean.
+- [x] AC5: `tests/run-tests.sh --self-test` completes clean.
 
 ## Coverage
 
@@ -132,3 +132,101 @@ promise to the `.aux` alone.
 ## Decisions
 
 ## Review
+
+### Acceptance criteria — fresh evidence
+
+Suite run 2026-08-24 on `06e525c` + the PR-URL header edit: `tests/run-tests.sh
+--self-test`, exit 0, 436 checks, planted-defect batteries included.
+
+- AC1 — `M31-AC1`: the stripped-marks document builds at pdflatex exit 0 beside
+  the surviving `.ind` carrying all three commands, logs no undefined control
+  sequence, leaves that `.ind` byte-identical (run under `-no-shell-escape`), and
+  prints its pages and cross-reference targets as ordinary locators and
+  cross-references.
+
+- AC2 — `M31-AC2`: each of the three definitions removed by a single
+  substitution asserted to take exactly one line; that same render then exits 1
+  and the failure is asserted by identity — an `Undefined control sequence`
+  naming the removed command itself, not a bare non-zero exit. One probe per
+  definition; this is also T5's discrimination proof.
+- AC3 — `M31-AC3`: the document that emphasizes a principal mention carries the
+  subsystem's locator definition and none of the four stand-ins; the one that
+  does not carries the stand-ins and no subsystem residue. The
+  exactly-one-of-two invariant holds over the widened block. The M22 self-test
+  battery re-confirms it from the other side: the absence reader fails on a
+  stand-in planted beside the subsystem.
+- AC4 — `M31-AC4`: the sweep enumerates 3 `quartoindex` names across the 7
+  captured `.ind` files (`quartoindexlocator`, `quartoindexseeboth`,
+  `quartoindexxrefs`) and finds each defined in the preamble of every one of the
+  30 captured `.tex` files carrying `\printindex`. Both sets and the domain are
+  read off this run's artifacts, never from a written list; no fourth name
+  appeared, so the amendment gate T1 fenced did not fire.
+- AC5 — `tests/run-tests.sh --self-test` completes clean: exit 0, 436 checks,
+  4m32s wall.
+
+No Driving RR, so the projection-vs-outcome record is empty.
+
+### Consistency gate
+
+- `cairn_validate.py` — exit 0; every check PASS, every advisory OK, `release
+  window` not fired.
+- Toolchain checks — the `generic` profile's `consistency-gate` slot names none,
+  so this half is a clean no-op.
+- No `DESIGN.md` principle changed (the diff strikes KI4, a known-issue entry),
+  so `cairn_impact.py` is skipped.
+
+### Independent review
+
+Deviation, logged: the declared tier is user-facing and the diff touches
+executable surface, so the protocol calls for three fresh-context reviewers.
+This session runs under a standing instruction not to spawn subagents — the same
+instruction the plan-phase criteria audits were run under — so the three lenses
+were run inline by the implementing session instead. They are therefore not
+fresh-context. The maintainer is offered a re-run with real subagents at the
+gate.
+
+Six findings, ranked, all reported unfiltered.
+
+- **F1 [diff-bug] — `index.lua:167-171`, the zero-mark branch's justification is
+  false.** The comment added beside the two cross-reference definitions says a
+  document that has lost EVERY mark "still reads a surviving `.ind` naming
+  them". It does not: the zero-mark branch calls `place_index(doc, nil)`, which
+  emits no `\printindex`, and `\printindex` is the only command that reads an
+  `.ind` — the same predicate AC4's own sweep uses to bound its domain. Measured
+  on this run's captures: seven captured LaTeX documents carry the two
+  definitions with no `\printindex` at all. The two lines are inert there and
+  harmless; the claim about why they are there is not derived from what the
+  branch does.
+- **F2 [diff-bug] — `passes.lua:572`, a comment T3 promised to rewrite and
+  missed.** "the both-targets form needs `qi_core.XREF_BOTH_COMMAND`, which is
+  injected only in a document that uses it" states exactly the discipline this
+  milestone reverses.
+- **F3 [diff-bug] — `latex.lua:4-5`, the module header counts flags that are
+  gone.** "The two `emitted` flags below are read by the Pandoc pass, which
+  writes the preamble: a command is defined only in a document that uses it."
+  The diff removes both cross-reference flags, leaving one; and the discipline
+  the sentence states no longer holds for the two commands it was written about.
+- **F4 [diff-bug] — `core.lua:79-80`, a stale analogy.** The principal-emphasis
+  command's comment says it is "injected only into a document that uses it,
+  exactly like the two cross-reference commands above." The claim about that
+  command stays true; the comparison it draws is now false.
+- **F5 [diff-bug] — `run-tests.sh`, AC4's sweep reports a domain wider than the
+  one it compares.** A captured `.tex` matching `\printindex` but with no
+  `\begin{document}` is `continue`d silently, while the non-empty guard and the
+  `ok` line both count `len(texs)` from before that skip. No such file exists
+  today, so the reported 30 is honest on this run; the drift is latent.
+- **F6 [blame-history] — `state-pollute.lua:78-79`, the rewritten comment
+  misreads the shape.** The `Both` mark's comment now calls it "contested_keys
+  again, through the other shape", but `is_contested` counts distinct
+  ENCAPSULATIONS and its own comment says a single mark carrying both attributes
+  "emits a single command and contests nothing". The mark records into
+  `contested_keys`; it does not make the key contested.
+
+Lens results: the blame-history lens found no change silently undoing a past
+milestone's deliberate work — M02-AC5's negative half is reversed openly, in the
+check's own comment and at the M31 amendment gate, and no `DECISIONS.md` entry
+pins the conditional-injection discipline. The prior-review lens read the
+archived `## Review` sections touching these files; M22's record warns of a
+README claim reproduced false, and the widened `README_STALEAUX_CLAIMS` pinning
+plus AC1's compiled-PDF assertions answer it. Neither lens contributed a
+finding beyond F6.

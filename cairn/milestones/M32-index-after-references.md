@@ -43,7 +43,7 @@ replaces the README's statement of current behavior with the recipe.
 - [x] AC2: In the HTML rendered from that same fixture, the index section
       follows the element carrying the references, asserted by element identity
       — id and class — rather than by text position alone.
-- [ ] AC3: In a fixture with the same citations and bibliography but no `#refs`
+- [x] AC3: In a fixture with the same citations and bibliography but no `#refs`
       div, the index still precedes the references in both formats — the
       unchanged default, held so the recipe is shown to be what moves it.
 - [x] AC4: `tests/run-tests.sh --self-test` completes clean.
@@ -101,6 +101,7 @@ replaces the README's statement of current behavior with the recipe.
 - 2026-08-24: T7 — the recipe paragraph moved below the marker's six rules and the `imakeidx` paragraph, so the rules keep their lead-in; the recipe now writes a References heading of its own, and README says why: rendering both halves shows Quarto's appendix wrapper and its **References** heading present in the twin and absent in the fixture, so an author following the recipe supplies the heading. Two claim rows added, and the pinned recipe row updated to the heading-carrying shape.
 - 2026-08-24: T8 — KI3 restored under the LaTeX back-end, reworded from "README states the current behavior" down to the residual gap: the filter still cannot place the index relative to content Quarto adds after filters run, and the recipe that works around it costs an HTML author the appendix wrapper and heading. The candidate row for a filter-side move now points at it. Two milestone-local decisions recorded, and GP6 named in the header.
 - 2026-08-24: all eight fixes the review return named are in; the suite runs 457 checks clean under `--self-test` and `cairn_validate` exits 0. Status back to review.
+- 2026-08-24: review round 2 — checkpoint. All four criteria verified on fresh evidence (suite green at 457 checks under `--self-test`, plus independent renders of both fixtures and of the marker-less variant outside the working tree); consistency gate clean, `cairn_validate` exit 0. AC3 ticked: the marker-less render now lands `\printindex` below `\label{qi-afterword}` and both readers refuse it by name, which is what F1 falsified. Three-lens fan-out spawned (no-subagent rule lifted at the user's explicit direction); findings and the merge gate still to come.
 
 ## Decisions
 
@@ -124,11 +125,88 @@ replaces the README's statement of current behavior with the recipe.
 
 ## Review
 
-PR: [#32](https://github.com/jmgirard/quarto-index/pull/32). Reviewed 2026-08-24
-on `m032-index-after-references`, branch containing `origin/main` at 835882a —
-no merge needed.
+PR: [#32](https://github.com/jmgirard/quarto-index/pull/32). Two rounds, both
+on `m032-index-after-references`; at each the branch already contained
+`origin/main` at 835882a, so no merge was needed. Round 1 returned the
+milestone; round 2 is the current record and its evidence is the fresh
+evidence the gate reads.
 
-### Acceptance criteria
+### Round 2 (2026-08-24)
+
+#### Acceptance criteria
+
+- **AC1 — verified.** `tests/run-tests.sh --self-test` reports
+  `M32-AC1/AC3: \printindex sits at the placement marker in both artifacts,
+  following \end{CSLReferences} in the fixture that writes an empty #refs div
+  and preceding \begin{CSLReferences} in the twin that writes none`. The
+  reader requires exactly one occurrence of each of `\begin{CSLReferences}`,
+  `\end{CSLReferences}`, `\printindex` and `\label{qi-afterword}` in each
+  artifact before stating any order. Corroborated by an independent render at
+  review time, outside the suite and outside the working tree: in the fixture's
+  `.tex`, `\begin{CSLReferences}` at line 243, `\end{CSLReferences}` at 251,
+  `\printindex` at 253, `\label{qi-afterword}` at 255.
+- **AC2 — verified.** The suite reports `M32-AC2/AC3: the generated index
+  section sits at the placement marker in both, following the bibliography div
+  in the fixture that writes an empty #refs div (41 then 47)`. Identity, not
+  offset: the references element is the one carrying id `refs` **and** the
+  classes `csl-bib-body` and `references`; the index element is the one
+  carrying id `qi-index` **and** required to be the same node
+  `htmlindex.index_section` finds the index heading in (the method recorded in
+  this file's Decisions against round 1's F6). Corroborated by an independent
+  render: `id="refs"` at byte 4017, `id="qi-index"` at 4400,
+  `id="qi-afterword"` at 4826.
+- **AC3 — verified.** The twin keeps the default order in both formats, and
+  the pair now separates the two halves of the recipe, which is what round 1's
+  F1 falsified. LaTeX, independent render of the twin: `\printindex` at 242,
+  `\label{qi-afterword}` at 244, `\begin{CSLReferences}` at 253 — index
+  first, at the marker. HTML, same render: `id="qi-index"` at 4087,
+  `id="qi-afterword"` at 4513, `id="refs"` at 5071. The derivation is proved
+  before either order is stated — `ok M32: the twin fixture is the references
+  fixture with the \`#refs\` div block deleted, and nothing else` — over a
+  cut that removes the block whole and refuses any count of `#refs` blocks
+  other than one. The marker clause is now load-bearing and was reproduced
+  independently: rendering the fixture with its `::: {.qi-index-here}` block
+  deleted and nothing else puts `\printindex` at 260, below
+  `\label{qi-afterword}` at 252, and both readers refuse it by name —
+  `the marker half of the recipe is untested` from the LaTeX reader and from
+  the HTML reader. The suite commits that same marker-less render as two of
+  its plants.
+- **AC4 — verified.** `tests/run-tests.sh --self-test` exits 0 on 457 checks,
+  run fresh twice at review time. Its M32 leg contributes 21 lines: the three
+  readers' `ok` lines, the composite pass, 15 planted defects each required to
+  fail for its own reason, and the README claim check reporting all 8 pinned
+  claims present verbatim.
+
+#### Consistency gate
+
+- `cairn_validate.py` — exit 0, all 16 PASS checks and 7 advisories clean; the
+  `release window` advisory did not fire.
+- `cairn_impact.py` — not run: this milestone changed no DESIGN principle. Its
+  DESIGN edit rewords a Known-issues entry, KI3.
+- Toolchain checks — the `generic` profile's `consistency-gate` slot names
+  none, so this half is a clean no-op. Its `verify` slot is
+  `tests/run-tests.sh`, run above with `--self-test`.
+- README claims re-verified independently of the suite's own check: all eight
+  `README_REFS_CLAIMS` strings present verbatim in `README.md`, and the retired
+  sentence absent.
+
+#### Round 1 findings, re-verified as fixed
+
+Each of the eight actioned findings was checked against the implementation at
+review time, not against the work log's account of it. F1 — reproduced and now
+refused (AC3 above). F2 — README states the cost in two pinned claims, and the
+HTML reader asserts it both ways round: absent in the fixture, present in the
+twin. F3 — KI3 restored under the LaTeX back-end, reworded to the residual gap,
+with the candidate row citing it. F4 — 15 plants committed, all red for their
+own reason. F5 — `cut_block` removes the block whole and fails loudly on an
+unclosed one. F6 — recorded as a Decision rather than amended. F7 — the recipe
+paragraph now sits at `README.md:532`, below the six rules at 499 and the
+`imakeidx` paragraph at 526. F10 — the twin's prose no longer claims to carry
+the div. F8 stays rejected; F9's header line names GP6.
+
+### Round 1 (2026-08-24) — returned
+
+#### Acceptance criteria
 
 - **AC1 — verified.** `tests/run-tests.sh --self-test` reports
   `M32-AC1/AC3: \printindex follows \end{CSLReferences} in the fixture that
@@ -162,7 +240,7 @@ no merge needed.
   run fresh at review time; its planted-defect leg ran 24 plants, each failing
   the check that names it.
 
-### Consistency gate
+#### Consistency gate
 
 - `cairn_validate.py` — exit 0, all checks passed; no advisory fired,
   `release window` included.
@@ -175,7 +253,7 @@ no merge needed.
   `README_REFS_CLAIMS` strings present verbatim in `README.md`, and the
   retired sentence absent.
 
-### Independent review
+#### Independent review
 
 The declared tier is user-facing and the diff touches `tests/run-tests.sh`, so
 the full three-lens fan-out ran; the standing no-subagent instruction was
@@ -198,7 +276,7 @@ lifted for this step at the user's explicit direction (2026-08-24).
 - **[O] diff-bug — ten findings, ranked. Two verified at the gate as
   floor-qualifying; dispositions below.**
 
-### Findings
+#### Findings
 
 Every reported finding is logged with its disposition. F1 and F2 were
 re-verified at review time against the implementation, not against the
@@ -279,7 +357,7 @@ reviewer's account of it.
   div", which is untrue in the twin. Forced by the byte-derivation rule, so the
   wording has to read correctly in both halves.
 
-### Disposition
+#### Disposition
 
 **Returned to `in-progress`.** F1 falsifies AC3's operative clause, and F2 is a
 load-bearing defect in the milestone's headline deliverable — the documented

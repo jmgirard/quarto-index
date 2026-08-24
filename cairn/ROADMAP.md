@@ -1,12 +1,13 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-24 (M32 done and archived; M27's terminal row pruned to keep five; two candidate rows added from M32's round-2 review and check-design.md's consolidated discrimination line extended with a twelfth shape, on plant granularity; caps, byte budgets and each doctrine module's own budget clean.)_
+_Last hygiene check: 2026-08-24 (M33 planned; its candidate row — the non-Latin-1 engine/font pick — promoted into the milestone and replaced by an RTL-only row; caps, byte budgets and each doctrine module's own budget clean.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M33 | An index term outside Latin-1 prints in the PDF index | planned | — | normal | milestones/M33-non-latin1-terms.md |
 | M32 | An index follows the bibliography where the author puts it | done | — | low | milestones/archive/M32-index-after-references.md |
 | M31 | A leftover index file never breaks the next render | done | — | normal | milestones/archive/M31-stale-ind-standin.md |
 | M30 | A character in an index entry is proved to print, not merely to compile | done | — | normal | milestones/archive/M30-typeset-print-proof.md |
@@ -33,7 +34,7 @@ _Last hygiene check: 2026-08-24 (M32 done and archived; M27's terminal row prune
 - Narrow M32's HTML-cost check from "the fixture carries no `#quarto-appendix` at all" to the bibliography's own wrapper, so a fixture that later grows a footnote or a Citation block cannot turn it red while README stays true; promote on that fixture growing one — added 2026-08-24 — M32 review R2-F14
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN) — KI79
-- Pick an engine and fonts for non-Latin-1 index terms (Greek, CJK, combining marks, RTL) — added 2026-08-16 — M01 review R7/R9 — KI6
+- Print an RTL index term correctly: the plan gate's probe shows it unshaped with the locator comma on the wrong side of the entry, which a covering font does not fix; promote on a bidi path that also settles locator placement — added 2026-08-24 — M33 Scope Out — KI6
 - Acceptance-suite hardening (clustered): close the gaps KI27-KI74 record, from where a check reads and what it holds through the coverage gaps; absorbs six rows refiled here — the escaping-combination probe, bare unquoted attribute values, an independent demo-manifest count, the demo's own makeindex acceptance, cross-reference counts rather than substring presence, and an HTML planted-defect proof — plus a fixture for the all-empty-`entry=` shape, and the typeset print proof M30 gave the escaping probe extended to the cross-reference and sort-key probes, which still assert compile-and-accept only — added 2026-08-16, extended 2026-08-17, clustered 2026-08-18, refiled 2026-08-23, extended 2026-08-24 — KI24, KI27-KI74, KI81, KI82, KI84, KI85
 - Support Windows checkouts without symlink support — added 2026-08-16 — M01 review R18 — KI78
 - Guard an accumulator added after M26 that joins no `reset`; D-011 refuses a source scan, so the guard is a render or nothing — added 2026-08-16, promoted to M26 2026-08-23 — KI10

@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M32: An index follows the bibliography where the author puts it
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** low
 - **Depends on:** —
 - **Driving RR:** —
@@ -43,7 +43,7 @@ replaces the README's statement of current behavior with the recipe.
 - [x] AC2: In the HTML rendered from that same fixture, the index section
       follows the element carrying the references, asserted by element identity
       — id and class — rather than by text position alone.
-- [x] AC3: In a fixture with the same citations and bibliography but no `#refs`
+- [ ] AC3: In a fixture with the same citations and bibliography but no `#refs`
       div, the index still precedes the references in both formats — the
       unchanged default, held so the recipe is shown to be what moves it.
 - [x] AC4: `tests/run-tests.sh --self-test` completes clean.
@@ -80,6 +80,8 @@ replaces the README's statement of current behavior with the recipe.
 - 2026-08-24: T3 — README's *Placing the index* section gains the recipe: the empty `#refs` div, why Quarto's ordering makes it work, what each back-end then does, and that writing no div leaves the default order. The *What it emits* sentence that stated the old order as fixed now points at that section, and the retired sentence joined the suite's must-be-gone set. Six claim rows pinned verbatim against README, beside the fixture pair that enforces them.
 - 2026-08-24: T4 — `tests/run-tests.sh --self-test` exits 0 on 442 checks. KI3 struck from DESIGN's known issues: the order is now the author's to set and README says how. One candidate row added for the Scope Out item — a filter-side move of the index relative to content Quarto adds after filters run.
 
+- 2026-08-24: review returned M32 to in-progress. F1 — the fixture pair never exercises the marker half of the documented recipe: with the `::: {.qi-index-here}` block deleted from `examples/references.qmd`, `\printindex` still lands at 248 after `\end{CSLReferences}` at 246, so the whole M32 battery passes on a marker-less tree and AC3's "held so the recipe is shown to be what moves it" is false. F2 — following the recipe drops the HTML References heading and the `quarto-appendix` wrapper (`quarto-appendix` and `doc-bibliography` present in the twin, absent in the fixture) and the README does not say so. Defect returns to date: 1.
+
 ## Decisions
 
 ## Review
@@ -106,7 +108,9 @@ no merge needed.
   be the same node `htmlindex.index_section` finds the index heading in.
   Corroborated by an independent render: in `examples/references.html`
   `id="refs"` at byte 3794, `id="qi-index"` at 4183.
-- **AC3 — verified.** Both halves come from the same two suite lines. LaTeX:
+- **AC3 — NOT verified (unticked at review; see F1).** The two orders below
+  are real and were reproduced independently, but the criterion's operative
+  clause is not met. Both halves come from the same two suite lines. LaTeX:
   `\printindex` precedes `\begin{CSLReferences}` in the twin (independent
   render: 238 against 241). HTML: the index section precedes the bibliography
   in the twin, `37 then 54` in document order (independent render: `id="qi-index"`
@@ -153,9 +157,96 @@ lifted for this step at the user's explicit direction (2026-08-24).
   `tests/run-tests.sh` and read `LESSONS.md` in full; the probe
   `gh api repos/jmgirard/quarto-index/pulls/comments?per_page=1` returned `[]`,
   so the PR-thread walk was not paid for. Zero findings, clean no-op.
-- **[O] diff-bug — pending at this checkpoint.**
+- **[O] diff-bug — ten findings, ranked. Two verified at the gate as
+  floor-qualifying; dispositions below.**
 
 ### Findings
 
-Pending the [O] lens.
+Every reported finding is logged with its disposition. F1 and F2 were
+re-verified at review time against the implementation, not against the
+reviewer's account of it.
+
+- **F1 — the fixture pair never exercises the marker half of the recipe.
+  RETURN (defect).** The marker is the last block of both fixtures, which is
+  where the extension already places `\printindex` when a document has no
+  marker at all. Verified at review: rendering `examples/references.qmd` with
+  the `::: {.qi-index-here}` block deleted and nothing else gives
+  `\begin{CSLReferences}` 238, `\end{CSLReferences}` 246, `\printindex` 248 —
+  the same order, so the entire M32 battery stays green on a fixture carrying
+  no marker. This falsifies AC3's operative clause, *held so the recipe is
+  shown to be what moves it*: the pair shows the `#refs` div moves the index
+  and shows nothing at all about the marker the README tells the author to
+  write. `examples/marker-nomarks.qmd:14` states the house idiom this breaks —
+  "Prose after the marker, so its removal is visible as an absence rather than
+  as the end of the document."
+- **F2 — the recipe's HTML cost is undocumented. RETURN (load-bearing defect
+  in a user-facing deliverable).** Verified at review by rendering both
+  fixtures to HTML: without the `#refs` div Quarto builds a
+  `quarto-appendix` block with `role="doc-bibliography"` and an
+  `<h2 class="anchored quarto-appendix-heading">References</h2>`; with the div,
+  `quarto-appendix` and `doc-bibliography` are both absent and there is no
+  References heading at all. An author who follows the README recipe silently
+  loses the References heading and the appendix wrapper in HTML, and the README
+  does not say so. (The pinned sentence *Write no `#refs` div and nothing
+  changes* is itself true — it describes the no-div case. The defect is the
+  omission on the other side of the recipe, not a false claim.) GP1 holds
+  README to discovery-surface quality; the M32 HTML check reads only the `refs`
+  element's position and classes, so no check can see this.
+- **F3 — KI3 struck while the behavior it records still stands, and the
+  replacement row cites no KI. FIX ON RETURN.** The filter still cannot place
+  the index relative to content Quarto adds after filters run; what changed is
+  that a workaround is now documented, and F2 shows the workaround has a cost.
+  D-013 puts a statement about how the extension behaves today in Known issues
+  and has the candidate row point at it; 23 of the 27 candidate rows cite a
+  `KI<n>` and the new one does not. The shape to restore is a KI3 reworded down
+  to the residual gap, with the new row pointing at it.
+- **F4 — no planted-defect check is committed for any of the new readers.
+  FIX ON RETURN.** The work log records five plants run by hand at T2; none is
+  in the tree, so nothing holds the new checks' discrimination over time.
+  Recent milestones commit theirs (`M29_PLANT`, `tests/run-tests.sh:11062`).
+  F1 is the case this would already have caught.
+- **F5 — the twin-derivation check deletes the div's fences, not its block.
+  FIX ON RETURN.** In the loop at `tests/run-tests.sh:3768`, a line inside the
+  div that is not exactly `:::` falls through to `out.append(line)`, and a
+  nested `:::` closes the skip early. Harmless while the div is empty, but both
+  the failure message and the `ok` line claim the block was deleted. The
+  `cut != 1` guard does not cover it.
+- **F6 — AC2 says "id and class"; the index half is asserted by id plus
+  heading-section identity. OPEN — maintainer's call.** `REF_CLASSES` guards
+  the references element by id and class as AC2 says. The index element is
+  guarded by `find_id(doc, 'qi-index')` plus `H.index_section(doc) is section`,
+  which is structurally stronger but is not the clause AC2 wrote, and the
+  substitution is recorded nowhere. Under the never-reinterpret rule this is
+  either an equivalent method to be recorded or an amendment return on AC2's
+  wording; it is not review's to decide charitably.
+- **F7 — the README recipe paragraph orphans the "Six rules" lead-in. FIX ON
+  RETURN.** The paragraph was inserted between "Both back-ends honour the same
+  marker…" and "Six rules, each of which warns rather than breaking your
+  build:". The six rules are the *marker's* rules; a reader arriving from the
+  bibliography paragraph reads them as rules about the `#refs` recipe, and the
+  first is "Top level only", which plausibly reads that way. GP1.
+- **F8 — a 92-character README line at `README.md:564`. REJECTED**,
+  out-of-scope taxonomy: a pure style point a formatter would carry, and
+  README already holds several such lines.
+- **F9 — the milestone's `## Decisions` is empty while the work log records two
+  gate choices. FIX ON RETURN.** Review found the same tension independently:
+  the question gate traded GP6 — *acceptance evidence for output-producing
+  features runs to the final compiled artifact, not only intermediate output* —
+  by asserting order in the `.tex` rather than a PDF, on a user-facing tier,
+  and "Principles touched" lists GP1 and GP4 without GP6. Whether that warrants
+  a D-entry or only an honest header line is the maintainer's call, but it
+  currently has no record outside the work-log prose.
+- **F10 — the twin fixture's body asserts something false about itself. FIX ON
+  RETURN.** `examples/references-twin.qmd:17` reads "This fixture carries the
+  div", which is untrue in the twin. Forced by the byte-derivation rule, so the
+  wording has to read correctly in both halves.
+
+### Disposition
+
+**Returned to `in-progress`.** F1 falsifies AC3's operative clause, and F2 is a
+load-bearing defect in the milestone's headline deliverable — the documented
+recipe — both verified at the gate rather than taken on report. AC3's checkbox
+is unticked; AC1, AC2 and AC4 keep their recorded evidence, with F6 left open
+against AC2's wording. No merge was put to the user and no approval marker was
+written.
 

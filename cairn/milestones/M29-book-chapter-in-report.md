@@ -97,7 +97,7 @@ milestone depends on.
 - [x] T3: repair KI80 — rename the duplicate-marker report's introduction of
       the shared clause from both numbers to its block position, leaving
       `POSITION_BASIS` (`marker.lua:31`) one shared string (D-014).
-- [ ] T4: suite — add the emptied-place shape to `examples/book/sub/two.qmd`
+- [x] T4: suite — add the emptied-place shape to `examples/book/sub/two.qmd`
       and the duplicate shape to `examples/book/last.qmd`; update the
       `BOOK_WARNINGS` count (`tests/run-tests.sh:4631`); assert both reports
       whole in
@@ -124,6 +124,10 @@ milestone depends on.
 - 2026-08-24: T2 — added `in_chapter` beside `POSITION_BASIS` in `marker.lua` and threaded `chapter` through `resolve_markers` and `strip_nested_markers`; nil chapter emits the empty string, so every non-book render is byte-identical to M28.
 - 2026-08-24: T3 — KI80 repaired by renaming the duplicate report's introduction of the shared clause from "Both numbers are" to "Block positions are"; `POSITION_BASIS` stays one string, so D-014's no-drift consequence holds. Rejected splitting the string into a per-report tail because that is the drift D-014 names; falsified by a later report needing a divergence clause the block-position wording cannot carry.
 - 2026-08-24: amendment (substantive, gated). A render showed a second top-level marker in `sub/two.qmd` would make it the book's placing chapter over `last.qmd` and move the index, so AC2's duplicate probe moved to `last.qmd`; Scope and T4 retargeted with it. Two fresh-context [O] readers audited the amended wording in FULL mode; their findings fixed before writing: "unchanged" became "free to differ" (the pdf book concatenates chapters, so the block number and ordinal cannot match), the path form pinned as root-relative, and the clause pinned to sit immediately after the block position. AC1 and AC2 are the only criteria whose text changed.
+- 2026-08-24: T4 — added `tests/m29book.py`, which partitions every extension warning in a log against the fixture's other known warnings and two end-anchored report patterns whose only free parts are the block position, the marker ordinal and the chapter clause; run over the HTML book, the PDF book and the three misuse logs. Five planted logs prove it able to fail — clause moved off the position, clause dropped where a chapter is known, clause added where none is, a warning in neither partition, and a log with none of our warnings — each asserted to fail for its own reason. `BOOK_WARNINGS` 4 to 7. The M28 both-numbers assertion was rewritten to AC4's claim, with a control that fails if "Both numbers are" returns.
+- 2026-08-24: T4 — the fixture edits to `examples/book/sub/two.qmd` and `examples/book/last.qmd` were in the working tree when T1-T3 was committed, so they landed in 77c5ab5 rather than the T4 commit.
+- 2026-08-24: T4 — no new shell grep key was introduced, so the M18 key-distinctness scan's argument list is unchanged; `tests/m29book.py` matches by its own end-anchored patterns rather than by a `WARN_` constant. `tests/m28pos.py` needed no edit either: it holds the shared clause tail only, not the duplicate report's lead-in, so KI82's three copies cost two edits here rather than three.
+- 2026-08-24: T4 — the PDF book render confirmed what the amendment's wording rests on: the merged document reports block 26 and block 34 where the HTML chapters report 8 and 5, and the marker ordinal is 2 in both, so "free to differ" is the satisfiable form and a flat "unchanged" would not have been.
 
 ## Decisions
 

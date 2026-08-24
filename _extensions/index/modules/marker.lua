@@ -258,11 +258,13 @@ local function resolve_markers(doc, chapter)
       else
         -- Two numbers, so each is named where it is printed (D-014): the first
         -- counts markers down the document and says so, the second counts
-        -- top-level blocks and takes the shared clause. That clause is about
+        -- top-level blocks and takes the shared clause, with the chapter
+        -- inside the parenthesis holding that number, as the emptied-place
+        -- report attaches it to its own. That clause is about
         -- the block position alone — it ends in what a POSITION can differ
         -- from, and a marker ordinal is no position, which is what saying
         -- "both numbers" got wrong (KI80).
-        qi_core.warn(("index placement marker %d in document order (top-level block %d)%s "
+        qi_core.warn(("index placement marker %d in document order (top-level block %d%s) "
               .. "is ignored; the index is placed at the first marker. Block "
               .. "positions are %s"):format(seen, position, in_chapter(chapter), POSITION_BASIS))
         out:extend(marker_content(block))

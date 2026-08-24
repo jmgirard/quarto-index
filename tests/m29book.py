@@ -39,7 +39,7 @@ EMPTIED = re.compile(
     r'nothing you wrote remains there\. ' + re.escape(BASIS) + r'$')
 DUP = re.compile(
     r'index placement marker (?P<ord>\d+) in document order \(top-level block '
-    r'(?P<pos>\d+)\)(?P<chapter> of \S+)? is ignored; the index is placed at '
+    r'(?P<pos>\d+)(?P<chapter> of \S+)?\) is ignored; the index is placed at '
     r'the first marker\. ' + re.escape(BASIS) + r'$')
 
 NESTED = ('index placement marker below the top level of the document places '
@@ -103,8 +103,11 @@ def main():
         sys.exit('M29: %s holds no warning patterns, so every line of %s '
                  'would be judged as none of ours' % (patterns, log))
 
-    with open(log, encoding='utf-8') as handle:
-        lines = handle.read().splitlines()
+    with open(log, encoding='utf-8', errors='replace') as handle:
+        # Colour codes are stripped as the M12 partition strips them: a
+        # colourized log would otherwise make every report unmatchable and
+        # fail for a reason that is not a defect in what the report says.
+        lines = re.sub(r'\x1b\[[0-9;]*m', '', handle.read()).splitlines()
 
     ours = [ln for ln in lines if any(p.search(ln) for p in pats)]
     if not ours:

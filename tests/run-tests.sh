@@ -10468,12 +10468,12 @@ m29_partition() {
   local logfile="$1" mode="$2" label="$3"
   python3 tests/m29book.py "$logfile" "$QI_WARN_PATTERNS" "$mode" \
     || fail "$label: the warning partition over $logfile failed (its own FAIL line is above)"
-  pass "$label: every warning in $logfile partitions, and both marker reports say what they should about a chapter"
+  pass "$label: every warning in $logfile partitions, and every marker report in it says what it should about a chapter"
 }
 m29_partition "$WORK/book-html.log" book-html "M29-AC1/AC2/AC5 (HTML book)"
 m29_partition "$WORK/book-pdf.log" book-pdf "M29-AC3/AC5 (PDF book)"
 for fmt in html latex gfm; do
-  m29_partition "$WORK/misuse-$fmt.log" misuse "M29-AC3 (single document, $fmt)"
+  m29_partition "$WORK/misuse-$fmt.log" misuse "M29-AC4/AC5 (single document, $fmt)"
 done
 
 # The partition is proven able to fail before its green is trusted, on the four
@@ -10497,7 +10497,13 @@ mkdir -p "$M29_PLANT"
 # The clause moved from after the block position to the end of the line: the
 # text an author reads still holds the chapter, so only a whole-line pattern
 # can tell this apart from the shipped wording.
-sed 's| of sub/two\.qmd was the only thing| was the only thing|; s|source file$|source file (in sub/two.qmd)|' \
+# One expression, not two: it matches only a line carrying the clause AND
+# ending in the shared basis -- the emptied-place report -- and moves the
+# clause from the position to the line's end in the one substitution. Written
+# this way so a no-op leaves the log untouched and the probe fails loudly, the
+# discipline m23_inject exists for; two expressions let the second alone
+# produce the expected failure with the first no-oping.
+sed 's| of sub/two\.qmd\(.*source file\)$|\1 (in sub/two.qmd)|' \
   "$WORK/book-html.log" > "$M29_PLANT/moved.log"
 m29_planted "$M29_PLANT/moved.log" book-html 'warning in neither partition' \
   'a chapter clause moved off the block position'
@@ -10509,7 +10515,7 @@ m29_planted "$M29_PLANT/dropped.log" book-html "want ' of sub/two.qmd'" \
   'a report that names no chapter where one is known'
 # A chapter named in the PDF book, where no chapter is known: the failure mode
 # of hoisting the book context past its `is_html` gate.
-sed 's|(top-level block \([0-9]*\)) is ignored|(top-level block \1) of last.qmd is ignored|' \
+sed 's|(top-level block \([0-9]*\)) is ignored|(top-level block \1 of last.qmd) is ignored|' \
   "$WORK/book-pdf.log" > "$M29_PLANT/spurious.log"
 m29_planted "$M29_PLANT/spurious.log" book-pdf 'want None' \
   'a report that names a chapter where none is known'

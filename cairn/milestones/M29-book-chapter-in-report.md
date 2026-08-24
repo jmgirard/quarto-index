@@ -133,6 +133,8 @@ milestone depends on.
 - 2026-08-24: all five tasks done; `tests/run-tests.sh` passes 296 checks and `tests/run-tests.sh --self-test` passes 430. Status to review.
 
 - 2026-08-24: review opened; draft PR #29 recorded in the header. Suite run and the three review lenses are in flight.
+- 2026-08-24: T4 divergence, recorded at review (F13). T4 said the `WARN_MARKER_DUP` substring pin would be REPLACED by a whole-line comparison; the whole-line comparison was added in `tests/m29book.py` and the substring pin left standing at `tests/run-tests.sh:2742`, where the M18 stem guard beside it still binds. AC4 is met either way.
+- 2026-08-24: review gate directed the fix-now list. F2: the duplicate report's chapter clause moved inside the parenthesis holding the block position, so both reports now attach the chapter to the number it scopes. F4: the moved-clause planted probe rewritten as one self-guarding substitution, and the spurious-chapter probe replanted in the shipped shape. F5: KI82's count corrected to four. F6: the misuse partitions relabelled AC4/AC5. F7: `tests/m29book.py` strips colour codes. F9: README's two marker bullets name the chapter. F15: the partition pass line and one DESIGN.md line. F8 and F11 filed as KI84 and KI85, pointed at by the suite-hardening row.
 ## Decisions
 
 ## Review

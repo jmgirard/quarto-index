@@ -2,12 +2,12 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M32: An index follows the bibliography where the author puts it
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** low
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP4
-- **Branch/PR:** —
+- **Branch/PR:** `m032-index-after-references`
 
 ## Goal
 
@@ -57,7 +57,7 @@ replaces the README's statement of current behavior with the recipe.
 
 ## Tasks
 
-- [ ] T1: Add `examples/references.qmd` and its twin without the `#refs` div,
+- [x] T1: Add `examples/references.qmd` and its twin without the `#refs` div,
       plus a small `.bib`, following the existing twin-fixture naming
       (`examples/*-twin.qmd`).
 - [ ] T2: Add the render and the ordering checks to `tests/run-tests.sh`,
@@ -73,6 +73,8 @@ replaces the README's statement of current behavior with the recipe.
 - 2026-08-24: created by /milestone-plan.
 - 2026-08-24: plan gate chose documenting an author-side recipe over changing the filter to move the index, because Quarto adds the reference block after filters run and no ordering hook a filter can reach is known; falsified by Quarto exposing such a hook, which the Out row is promoted on.
 - 2026-08-24: plan chose committing a no-`#refs` twin over testing the recipe alone, because a fixture built only from the shape a milestone changes cannot show the change is what moved anything (M11); falsified by the two fixtures proving to differ in more than the div.
+- 2026-08-24: T1 — added `examples/references.qmd`, `examples/references-twin.qmd` and `examples/references.bib`; the twin is generated as the fixture with the `#refs` div block deleted and nothing else. Renders confirm the pair: `\printindex` after `\end{CSLReferences}` with the div and before `\begin{CSLReferences}` without it; `div#refs` before `section#qi-index` with the div and after it without.
+- 2026-08-24: question gate chose asserting the order in the LaTeX Quarto writes over compiling the fixture to PDF and reading the printed pages, because a PDF leg widens the criteria set past what the plan promised and the typeset-print gap is already a backlog row.
 - 2026-08-24: criteria audit ran in **full** mode (user-facing tier), inline rather than in a fresh-context [O] reader — this session is under a standing instruction not to spawn subagents. It returned one finding, fixed before the criteria were written: AC2 originally asserted the index "appears after the references" in the HTML text, which a check reading raw offsets satisfies without knowing which element carries either; it now asserts element identity (M07).
 
 ## Decisions

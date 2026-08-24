@@ -1,0 +1,28 @@
+---
+title: "quarto-index index after a bibliography"
+from: markdown-smart
+bibliography: references.bib
+filters:
+  - index
+---
+
+# Where the index lands beside a bibliography
+
+Quarto appends a document's reference block after this filter has already
+placed the index, so a document that leaves the bibliography where Quarto
+puts it gets the index first and the references after. An empty `#refs` div
+is what settles the order the other way: Quarto fills that div in place, and
+a placement marker written below it puts the index after the references.
+
+This fixture carries the div; its twin is this same document with the div
+block deleted and nothing else changed, so the pair shows that the div is
+what moves the index rather than anything else about the document.
+
+An [otter]{.index} swims [@doe2020], and a [widget]{.index} does not
+[@roe2018].
+
+::: {#refs}
+:::
+
+::: {.qi-index-here}
+:::

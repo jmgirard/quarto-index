@@ -4123,24 +4123,91 @@ grep -qE "\($ESC_MARKS entries accepted, 0 rejected\)" "$WORK/esc/escaping.ilg" 
   || { grep -E 'accepted|rejected' "$WORK/esc/escaping.ilg" >&2; fail "AC4: makeindex did not accept all $ESC_MARKS escaping-probe entries"; }
 # The typeset evidence comes from Quarto's own PDF, built with the engine that
 # actually ships: compiling proves the argument READS, typesetting proves the
-# character PRINTS, and both must hold under the shipping engine.
-pdftotext -layout "$CAPTURE_ROOT/esc-pdf/escaping.pdf" "$WORK/esc/escaping.txt"
-PROBE_CHARS="$PROBE_CHARS" python3 - "$WORK/esc/escaping.txt" <<'PY'
-import os, re, sys
+# character PRINTS, and both must hold under the shipping engine. Presence
+# anywhere in the index region is not that proof — the punctuation an index
+# prints around its own entries would satisfy it — so each character is looked
+# for as its own printed entry: the cell `pdftotext -layout` yields for it.
+#
+# One reader, called at the site below and again by the self-test's
+# planted-defect probe; a second copy would be the duplicated-reader drift the
+# suite already carries two instances of (M15 review). Silent on success,
+# non-zero on failure naming every character it could not find.
+esc_typeset_check() {
+  local pdf="$1" txt="$2"
+  pdftotext -layout "$pdf" "$txt" || return 1
+  python3 - "$txt" <<'PY'
+import re, sys
+
+# What `pdftotext -layout` is expected to yield as the printed cell for one
+# character's index entry. The default is the character itself, then `, `, then
+# the page number; EXPECTED_CELL carries only the characters that print as
+# something else, and each row states the typesetting fact behind it rather
+# than a value read back from the PDF under test. `{page}` stands for the page
+# number, which is the only part of a cell this check leaves open.
+#
+#   U+0027 `'`  In a T1 text font the ASCII apostrophe is the glyph for the
+#               RIGHT SINGLE QUOTATION MARK — TeX's text fonts have carried it
+#               that way since Computer Modern, and `\textquotesingle` is the
+#               command for an upright one. The delimiter after it is
+#               unaffected.
+#   U+0060 '`'  The same font encoding puts the LEFT SINGLE QUOTATION MARK at
+#               the ASCII grave accent's position.
+#   U+002C `,`  makeindex writes this entry as `\item ,, \hyperpage{N}`: the
+#               entry's own comma and the delimiter comma the index style puts
+#               after it are adjacent, and `,,` is the T1 ligature for the
+#               DOUBLE LOW-9 QUOTATION MARK. Entry and delimiter print as that
+#               single glyph, so this row has no `, ` separator to match and no
+#               space before its page number.
+EXPECTED_CELL = {
+    "'": '’, {page}',
+    '`': '‘, {page}',
+    ',': '„{page}',
+}
+DEFAULT_CELL = '{char}, {page}'
+
 txt = open(sys.argv[1], encoding='utf-8').read()
 m = re.search(r'^\s*Index\s*$', txt, re.MULTILINE)
 if not m:
-    print('FAIL: AC4: escaping probe produced no index section', file=sys.stderr)
+    print('FAIL: M30-AC1: the escaping probe produced no index section',
+          file=sys.stderr)
     sys.exit(1)
 region = txt[m.end():]
-missing = [c for c in os.environ['PROBE_CHARS'].split(' ') if c not in region]
-if missing:
-    print(f'FAIL: AC4: escape-domain characters absent from the typeset '
-          f'index: {missing}', file=sys.stderr)
+# A printed index is set in two columns and `-layout` keeps them on one line
+# separated by a run of spaces, so a line is split into cells rather than read
+# whole. Every entry in this fixture is one character wide, so no cell of it
+# can carry an internal run of spaces.
+cells = [part for line in region.splitlines()
+         for part in re.split(r'\s{2,}', line.strip()) if part]
+if not cells:
+    print('FAIL: M30-AC1: the index region holds no printed cells, so the '
+          'search below would report every character missing', file=sys.stderr)
     sys.exit(1)
-print('ok   AC4: escaping probe compiles, all entries accepted, and every '
-      'escape-domain character typesets in its index')
+
+
+def cell_pattern(template):
+    """The template with `{page}` open to a page number and the rest literal."""
+    return re.compile(r'\d+'.join(re.escape(p) for p in template.split('{page}')))
+
+
+missing = []
+for code in range(0x21, 0x7F):
+    char = chr(code)
+    template = EXPECTED_CELL.get(char, DEFAULT_CELL.replace('{char}', char))
+    if not any(cell_pattern(template).fullmatch(cell) for cell in cells):
+        missing.append(f'  U+{code:04X} {char!r}: no printed index entry '
+                       f'matching {template!r}')
+if missing:
+    print(f'FAIL: M30-AC1: {len(missing)} of 94 printable ASCII characters '
+          f'have no index entry of their own in the typeset index:',
+          file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
 PY
+}
+
+esc_typeset_check "$CAPTURE_ROOT/esc-pdf/escaping.pdf" "$WORK/esc/escaping.txt" \
+  || fail "M30-AC1: a printable ASCII character the probe indexes does not print as its own entry in the typeset index"
+pass "M30-AC1: escaping probe compiles, all entries accepted, and each of the 94 printable ASCII characters prints as its own entry in the typeset index"
 
 # ---------------------------------------------------------------------------
 # M02-AC3 — the same three-way test for cross-reference targets, which travel
@@ -10801,6 +10868,50 @@ SCANPLANTPY
   printf '%s' "$SCAN_OUT" | grep -qF 'not followed by a call to the capture' \
     || { printf '%s\n' "$SCAN_OUT" >&2; fail "M24 self-test: the pairing check failed on the removed capture call, but not on the pairing itself"; }
   pass "M24: the read check fails on a line reading a rendered artifact out of the working tree, and the pairing check fails on a render whose capture call is gone — each on an overlay that passes both unplanted"
+
+  # -------------------------------------------------------------------------
+  # M30 — the widened typeset check discriminates. The run's own call to
+  # esc_typeset_check is the green control: it passes on the fixture as it
+  # ships. Here one character's index marks are removed from a copy of that
+  # fixture, the copy is rendered through the same Quarto PDF pipeline, and the
+  # SAME reader must go red and name that character. Without this, "every
+  # printable ASCII character prints" would read identically off a reader that
+  # finds nothing and reports it as nothing missing.
+  #
+  # The apostrophe, because it is one of the three characters whose expected
+  # cell the table states rather than defaults: a plant on a defaulted
+  # character would leave every stated row unexercised.
+  # -------------------------------------------------------------------------
+  M30W="$WORK/m30-plant"
+  rm -rf "$M30W"; mkdir -p "$M30W/_extensions"
+  cp -R "$QI_EXT_DIR" "$M30W/_extensions/index"
+  cp examples/escaping.qmd "$M30W/escaping.qmd"
+  python3 - "$M30W/escaping.qmd" <<'M30PLANTPY'
+import re, sys
+
+path = sys.argv[1]
+src = open(path, encoding='utf-8').read()
+# BOTH marks for U+0027 — the visible term and the entry= level. They register
+# the same key, so either one left behind still prints the entry and the reader
+# below would be reported as blind when the fault is this mutation's.
+plant, visible = re.subn(r"\[\\'\]\{\.index\}\n", '', src)
+plant, level = re.subn(r'\[e\d+\]\{\.index entry="\'"\}\n', '', plant)
+if (visible, level) != (1, 1):
+    raise SystemExit(f'FAIL: the plant removed {visible} visible apostrophe '
+                     f'mark(s) and {level} entry= level(s), not one of each')
+open(path, 'w', encoding='utf-8').write(plant)
+M30PLANTPY
+  ( cd "$M30W" && quarto render escaping.qmd --to pdf ) > "$M30W/render.log" 2>&1 \
+    || { tail -20 "$M30W/render.log" >&2; fail "M30 self-test: the fixture with the apostrophe's marks removed failed to render at all, so the reader below would fail for the wrong reason"; }
+  set +e
+  M30_OUT=$(esc_typeset_check "$M30W/escaping.pdf" "$M30W/escaping.txt" 2>&1)
+  M30_RC=$?
+  set -e
+  [ "$M30_RC" -ne 0 ] \
+    || fail "M30 self-test: the typeset check passed on a render with the apostrophe's index marks removed; it does not distinguish a character that prints from one that is not there"
+  printf '%s' "$M30_OUT" | grep -qF "U+0027" \
+    || { printf '%s\n' "$M30_OUT" >&2; fail "M30 self-test: the typeset check failed on the planted render but did not name U+0027, so its failure is not evidence about the character that was removed"; }
+  pass "M30 self-test: the typeset check fails, naming U+0027, on a fixture whose apostrophe marks are removed, and passes on the same fixture unplanted"
 fi
 
 }

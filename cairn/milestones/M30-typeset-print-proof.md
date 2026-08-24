@@ -70,14 +70,14 @@ named in `cairn/DESIGN.md` with what extraction yields instead.
       imakeidx probe on 2026-08-24 returned 93 of 94 as themselves, with `'`
       returned as U+2019; the shipping preamble is not that preamble, so this is
       measured, not inherited.
-- [ ] T2: Write the expected-extraction table into `tests/run-tests.sh` beside
+- [x] T2: Write the expected-extraction table into `tests/run-tests.sh` beside
       the widened check — one row per character whose extracted form differs,
       each naming the typesetting fact behind it (T1 encoding's quote shapes,
       and whatever else T1 finds).
-- [ ] T3: Widen the assertion to `range(0x21, 0x7F)`, asserting the
+- [x] T3: Widen the assertion to `range(0x21, 0x7F)`, asserting the
       `<expected>, <page>` entry shape and reporting every character that fails
       by name. Read the captured PDF, never the working tree.
-- [ ] T4: Prove the widened check able to fail: on a copy of the fixture, remove
+- [x] T4: Prove the widened check able to fail: on a copy of the fixture, remove
       one character's index mark with a single substitution, require the check
       red and naming that character, and require the unplanted run green.
 - [ ] T5: Run `tests/run-tests.sh --self-test`; strike KI86; file a
@@ -95,6 +95,8 @@ named in `cairn/DESIGN.md` with what extraction yields instead.
 - 2026-08-24: implement gate chose the expected-extraction table as a named dict inside the check's heredoc, and the planted-defect proof as a permanent `--self-test` entry.
 - 2026-08-24: T1 measured the shipping pipeline (Quarto PDF render of `examples/escaping.qmd`, `pdftotext -layout`): 91 of 94 characters extract as themselves in an `X, <page>` cell; `'` yields `’`, `` ` `` yields `‘`, and `,` yields `„<page>` because the `.ind` line is `\item ,, \hyperpage{1}` and `,,` is the T1 ligature for the double-low-9 quote.
 - 2026-08-24: amendment (substantive, user-selected at a mini gate): AC1 now asks for the cell `pdftotext -layout` is expected to yield — the character, `, `, a page number by default, otherwise the cell the AC2 table states — because the comma's entry has no `, ` separator to match. No criterion added; the criteria set is not widened. Inline criteria audit (full mode, user-facing tier, no subagent per this session's standing instruction) returned two findings on the draft, both fixed before writing: an unnamed extraction instrument, and a table clause readable as a skip list.
+
+- 2026-08-24: T2, T3 and T4 landed in one checkpoint — they are one edit to `tests/run-tests.sh` plus its self-test half. T2/T3: the typeset assertion is now `esc_typeset_check`, a single reader carrying the named `EXPECTED_CELL` table (three rows: `'`, `` ` ``, `,`) and sweeping `range(0x21, 0x7F)` against the cells `pdftotext -layout` yields from the captured PDF, naming every character it cannot find. T4: the same reader is called again in `--self-test` against a copy of the fixture with the apostrophe's two marks removed; it exits 1 reporting `U+0027 "'": no printed index entry matching '’, {page}'`, and passes on the same fixture unplanted.
 
 ## Decisions
 

@@ -58,8 +58,7 @@ local marks = {
   -- sort_keys: a key for a path the rich fixture marks without one.
   mark("Solo", { sort = "ZZZ" }),
   -- contested_keys: two cross-references and no plain mark on one key, which
-  -- the rich fixture marks one way only. xref_list_emitted rides along, being
-  -- set by exactly this shape.
+  -- the rich fixture marks one way only.
   mark("Held", { see = "Nowhere" }),
   mark("Held", { ["see-also"] = "Elsewhere" }),
   -- marked_paths: the path the rich fixture's dangling cross-reference names,
@@ -76,7 +75,8 @@ local marks = {
   -- one, and the counter alone hands it a later one still.
   mark("Prior", { mention = "principal" }),
   mark("Pivot", { mention = "principal" }),
-  -- xref_both_emitted: one mark carrying both cross-reference kinds.
+  -- contested_keys again, through the other shape: one mark carrying both
+  -- cross-reference kinds.
   mark("Both", { see = "Nowhere", ["see-also"] = "Elsewhere" }),
   -- marks_seen, html_marks and range_at are filled by everything above; the
   -- mark-free fixture reads the first of them.

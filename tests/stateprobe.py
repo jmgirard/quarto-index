@@ -69,8 +69,6 @@ CELLS = [
     ('contested_keys', 'latex', 'qi_core.empty(contested_keys)'),
     ('principal_keys', 'latex', 'qi_core.empty(principal_keys)'),
     ('principal_ordinals', 'latex', 'principal_ordinals = 0'),
-    ('xref_list_emitted', 'latex', 'M["xref_list_emitted"] = false'),
-    ('xref_both_emitted', 'latex', 'M["xref_both_emitted"] = false'),
     ('principal_emitted', 'latex', 'M["principal_emitted"] = false'),
     ('sort_keys', 'sortkeys', 'qi_core.empty(sort_keys)'),
 ]

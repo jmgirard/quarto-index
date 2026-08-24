@@ -113,8 +113,7 @@ end
 -- of them is a plain locator mark, and every distinct cross-reference target
 -- written on it, in a fixed order. Module-level, like the other accumulators.
 local contested_keys = {}
-M["xref_list_emitted"] = false
--- Likewise for the typeset-time channel's commands, the range half included:
+-- The typeset-time channel's commands, the range half included:
 -- one flag, because the whole subsystem is injected together (qi_core explains
 -- why the range commands cannot be conditional on a range).
 M["principal_emitted"] = false
@@ -159,9 +158,6 @@ end
 local function principal_ordinal(source)
   return principal_keys[source]
 end
--- Likewise: the both-targets command is defined only in a document that uses
--- it, so a document without one gets nothing extra in its preamble.
-M["xref_both_emitted"] = false
 
 -- One mark's LaTeX shape, from levels the caller has already derived. `report`
 -- follows the convention the rest of the file uses: only the emitting pass
@@ -340,8 +336,6 @@ local function reset()
   qi_core.empty(contested_keys)
   qi_core.empty(principal_keys)
   principal_ordinals = 0
-  M["xref_list_emitted"] = false
-  M["xref_both_emitted"] = false
   M["principal_emitted"] = false
 end
 

@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP2, GP3
-- **Branch/PR:** m033-non-latin1-terms
+- **Branch/PR:** m033-non-latin1-terms · https://github.com/jmgirard/quarto-index/pull/33
 
 ## Goal
 
@@ -41,16 +41,16 @@ remainder.
 
 ## Acceptance criteria
 
-- [ ] AC1. `examples/unicode.qmd` — a fixture whose index marks carry terms in
+- [x] AC1. `examples/unicode.qmd` — a fixture whose index marks carry terms in
       Greek, in Cyrillic, and in Latin beyond Latin-1, each mark indexing at one
       level — renders to PDF at Quarto exit 0 under the engine and the main font
       README's `### Terms outside Latin-1` names.
-- [ ] AC2. For every term in the list `tests/run-tests.sh` states for
+- [x] AC2. For every term in the list `tests/run-tests.sh` states for
       `examples/unicode.qmd`, the text `tests/unicodeprint.py` extracts from
       that term's own entry line in the captured PDF's index, its locators
       removed, equals that term's own characters, each side compared in Unicode
       NFC; a listed term with no entry line fails it.
-- [ ] AC3. Three controls fail in the named way: (a) the fixture under
+- [x] AC3. Three controls fail in the named way: (a) the fixture under
       `pdf-engine: pdflatex` — Quarto exits non-zero and the LaTeX log names
       `not set up for use with LaTeX` for a Greek character the fixture marks;
       (b) the fixture under the recipe's engine with `mainfont` left at its
@@ -60,7 +60,7 @@ remainder.
       term added, under the recipe's engine and font — Quarto exits 0, that
       render's printed index carries an entry line for that same ASCII term, and
       no entry line in it carries the added CJK term.
-- [ ] AC4. README's new `### Terms outside Latin-1` section states each of five
+- [x] AC4. README's new `### Terms outside Latin-1` section states each of five
       things: the engine the recipe names; the main font it names, and that a
       main font must cover the script being indexed; the two failure signatures
       — pdflatex ending the render with `not set up for use with LaTeX`, and a
@@ -73,12 +73,12 @@ remainder.
       proven for Greek, Cyrillic and Latin beyond Latin-1 including combining
       marks, with any other script unproven — CJK and RTL named, RTL
       additionally unresolved for bidi shaping and locator placement.
-- [ ] AC5. `cairn/DESIGN.md`'s IP2 carries the engine-and-font condition D-016
+- [x] AC5. `cairn/DESIGN.md`'s IP2 carries the engine-and-font condition D-016
       records, and KI6 names Greek, Cyrillic and Latin beyond Latin-1 including
       combining marks as the set proven under the recipe and every other script
       as unproven, naming CJK and RTL, the RTL entry naming the bidi shaping and
       locator placement this milestone's plan gate recorded.
-- [ ] AC6. `tests/run-tests.sh` exits 0 on this branch.
+- [x] AC6. `tests/run-tests.sh` exits 0 on this branch.
 
 ## Coverage
 
@@ -150,3 +150,51 @@ remainder.
 ## Decisions
 
 ## Review
+
+### Acceptance criteria — fresh evidence
+
+Evidence from `tests/run-tests.sh --self-test` on b61091b (exit 0, 485 checks),
+run at review 2026-08-24.
+
+- AC1 — the suite's `M33-AC1/AC2` check renders `examples/unicode.qmd` under
+  README's engine and main font at Quarto exit 0, capturing the PDF at that
+  render; green.
+- AC2 — the same check reads all 8 stated terms out of their own entry lines in
+  the captured PDF and compares each, locators removed, to that term's own
+  characters in NFC; a companion check holds the stated term list against the
+  fixture's own marks (8 terms, one per mark), so a listed term with no entry
+  line fails. Both green.
+- AC3 — three control checks, each green: `M33-AC3a` (pdflatex render exits
+  non-zero, its log stopping on U+03B8, a Greek character the fixture marks,
+  with `not set up for use with LaTeX`); `M33-AC3b` (default `mainfont`, exit 0,
+  the ASCII term's entry line present and neither of the 2 Greek terms
+  printing); `M33-AC3c` (recipe engine and font with one CJK term added, exit 0,
+  the ASCII entry line present and the CJK term absent). A fourth check holds
+  each control to deriving from the fixture by one YAML edit.
+- AC4 — read at review, README's `### Terms outside Latin-1` states all five:
+  the engine (`xelatex`); the font (`STIX`, named by file) and the rule that a
+  main font must cover the script; both failure signatures plus the
+  `Missing character` caveat; what `sort=` does against best-effort ordering;
+  and the proven set with CJK and RTL named unsupported, RTL additionally
+  unshaped with the locator comma misplaced. Two suite checks hold this
+  mechanically — 11 claim rows verbatim, and the copyable YAML block line for
+  line against `examples/unicode.qmd`; both green.
+- AC5 — read at review: `cairn/DESIGN.md` IP2 carries the engine-and-font
+  condition and cites the README section (marked `amended M33; D-016`), and KI6
+  names Greek, Cyrillic and Latin beyond Latin-1 including combining marks as
+  the proven set, every other script unproven, CJK unsupported, and RTL both
+  unsupported and unresolved for shaping and locator placement.
+- AC6 — `tests/run-tests.sh --self-test` exits 0 on b61091b at 485 checks.
+
+### Consistency gate
+
+- `cairn_validate.py` — exit 0, all checks passed, no advisory fired.
+- `cairn_impact.py --changed` reported no changed principles: IP2's amendment
+  sits on lines that do not themselves spell the id, so the mechanical
+  detection misses it. Reconciled by hand via `cairn_impact.py IP2` (24
+  references): `DESIGN.md:66` was corrected in T8; `DESIGN.md:318/392/532` and
+  KI11 cite IP2's never-break-the-document half, which the amendment leaves
+  untouched; DECISIONS.md hits are D-016 itself; archive and work-log hits are
+  history (IP4).
+- Profile `generic` — its `consistency-gate` slot names no toolchain checks, so
+  that half is a clean no-op. The suite ran anyway as AC6's evidence.

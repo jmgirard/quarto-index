@@ -236,11 +236,18 @@ run_scan() {
       # one warning, and every zero-expectation control resting on it passes
       # vacuously (M18 review F3). M20's three and M21's five were both added
       # to the run without reaching here (M21 review F6).
+      # M28's three keys join them. Each is greped for a report M28's clause
+      # checks read, and a key that stopped matching its warning would leave
+      # those checks asserting the clause over no report at all. The duplicate
+      # report enters as WARN_MARKER_DUP_STEM — the number-free stem of the key
+      # the run greps by, tied to it at its definition — because this scan
+      # compares against source literals, where the key's two numbers are `%d`.
       python3 "$script" "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" \
         "$WARN_FOLD_TARGET" \
         "$M20_UNKNOWN" "$M20_NOLOCATOR" "$M20_UNINDEXED" \
         "$R_UNKNOWN" "$R_DISPLACED" "$R_ALREADY" "$R_NOOPEN" "$R_NOCLOSE" \
-        "$R_BOOKUNPAIRED" ;;
+        "$R_BOOKUNPAIRED" \
+        "$WARN_MARKER_EMPTIED" "$WARN_MARKER_NOT_LAST" "$WARN_MARKER_DUP_STEM" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -2727,7 +2734,23 @@ PY
 # second top-level marker, and content inside that second marker.
 # ---------------------------------------------------------------------------
 WARN_MARKER_NESTED='index placement marker below the top level'
-WARN_MARKER_DUP='index placement marker 2 (top-level block 8) is ignored'
+# The emptied-place report, keyed on the half that carries no number: the
+# block position varies per report and the naming clause M28 added is shared
+# with the duplicate report, so the middle of the sentence is the only part
+# that identifies this report and only this one.
+WARN_MARKER_EMPTIED='was the only thing written where it stood'
+WARN_MARKER_DUP='index placement marker 2 in document order (top-level block 8) is ignored'
+# The duplicate report is greped by a key carrying two RENDERED numbers, and
+# mark-report-keys compares its keys against the filter's source literals,
+# where those two places are `%d`. So the scan is given the number-free stem of
+# the same message instead, and the two are held together here: a rewording
+# that moved the stem out of the numbered key would fail below rather than
+# leave the scan holding a message the run no longer greps by.
+WARN_MARKER_DUP_STEM='in document order (top-level block'
+case "$WARN_MARKER_DUP" in
+  *"$WARN_MARKER_DUP_STEM"*) ;;
+  *) fail "M28: the duplicate-marker grep key no longer contains the stem passed to mark-report-keys, so the scan and the run would hold different messages" ;;
+esac
 WARN_MARKER_CONTENT='index placement marker is not empty'
 # The three sort-key reports (M06-AC4). Each is a report about the MARK, so
 # each is asserted in a format with an index back-end and in one without.
@@ -2997,7 +3020,10 @@ import re, sys
 log, fixture, fmt = sys.argv[1], sys.argv[2], sys.argv[3]
 TEMPLATE = ('index placement marker in top-level block {} was the only thing '
             'written where it stood; the marker is removed, so nothing you '
-            'wrote remains there')
+            'wrote remains there. Block positions are counted over the '
+            'document as this filter received it, after Quarto expanded any '
+            'includes and executable cells, so they can differ from the '
+            'positions in your source file')
 # The other two warnings this fixture draws, whose counts are pinned above.
 OTHER = {
     'index placement marker below the top level of the document places '
@@ -10332,6 +10358,193 @@ print(f'ok   M15: the contested-key fixture carries both shapes of the '
       f'captured LaTeX artifacts carries anything else')
 M15UNTOUCHEDPY
 pass "M15-AC5: the failed-render claim is gone from the filter, and the contested-key emission reaches only the fixture that has one"
+
+# ---------------------------------------------------------------------------
+# M28-AC1/M28-AC2 — a reported block position names the sequence it counts.
+#
+# The clauses below are written out here as a READER sees them in a render
+# log, never read out of the filter's source: what the milestone promises is
+# what an author is told, and a check that greped the source for its own
+# expectation would certify the wording against itself (D-011). They are
+# compared against each report's FULL emitted text, so a clause that landed on
+# some other warning satisfies nothing here.
+# ---------------------------------------------------------------------------
+M28_BLOCK_CLAUSE='counted over the document as this filter received it, after Quarto expanded any includes and executable cells, so they can differ from the positions in your source file'
+M28_CHAPTER_CLAUSE="The chapter count is over the files this book renders, in the order the book's render list gives them"
+
+# Every emitted warning matching $key must carry $clause. The match count is
+# asserted non-zero first: a key that stopped matching would otherwise leave
+# this check passing over an empty set, which is the whole failure mode the
+# clause checks exist to avoid.
+check_report_clause() {
+  local logfile="$1" key="$2" clause="$3" label="$4" hits missing
+  # The log is proven readable BEFORE it is greped. An absent or mistyped path
+  # leaves `grep -c` printing nothing, and an emptiness test on that empty
+  # string reads as non-zero — the guard would pass over a file that is not
+  # there, which is the likeliest way this check goes blind.
+  [ -r "$logfile" ] \
+    || fail "$label: $logfile is not readable, so nothing about the naming clause was asserted"
+  hits=$( { grep -cF -- "$key" "$logfile" || true; } | tr -d ' ')
+  case "$hits" in
+    ''|*[!0-9]*) fail "$label: counting warnings matching <<$key>> in $logfile gave <<$hits>>, not a number" ;;
+  esac
+  [ "$hits" != "0" ] \
+    || fail "$label: no warning matching <<$key>> was emitted into $logfile, so the naming clause would be asserted over no report at all"
+  missing=$( { grep -F -- "$key" "$logfile" || true; } \
+             | { grep -vcF -- "$clause" || true; } | tr -d ' ')
+  if [ "$missing" != "0" ]; then
+    { grep -F -- "$key" "$logfile" | grep -vF -- "$clause" || true; } >&2
+    fail "$label: $missing of the $hits emitted report(s) matching <<$key>> do not say which sequence their number is counted over"
+  fi
+  pass "$label: each of the $hits emitted report(s) matching <<$key>> names the sequence its number is counted over"
+}
+
+# The emptied-place report, in all three formats of the shapes fixture. The
+# duplicate report is drawn by the misuse fixture instead — the shapes fixture
+# has one top-level marker — so the two criteria's reports come from the two
+# fixtures between them.
+for fmt in html latex gfm; do
+  check_report_clause "$WORK/shapes-$fmt.log" "$WARN_MARKER_EMPTIED" \
+    "$M28_BLOCK_CLAUSE" "M28-AC2 (emptied place, $fmt)"
+  check_report_clause "$WORK/misuse-$fmt.log" "$WARN_MARKER_DUP" \
+    "$M28_BLOCK_CLAUSE" "M28-AC2 (duplicate marker, $fmt)"
+done
+# The duplicate report names TWO numbers, and the clause above covers both
+# only because the sentence carrying it says so. Asserted separately from the
+# clause itself: a reworded lead-in that dropped "Both numbers" would leave
+# the marker ordinal unnamed while the clause check still passed.
+for fmt in html latex gfm; do
+  # Counted before it is judged, for the same reason check_report_clause counts
+  # first: a key that stopped matching would otherwise be reported as a report
+  # naming one number, which is a misdiagnosis of a report that is not there.
+  dup_hits=$( { grep -cF -- "$WARN_MARKER_DUP" "$WORK/misuse-$fmt.log" || true; } | tr -d ' ')
+  [ "$dup_hits" = "1" ] \
+    || fail "M28-AC2: $WORK/misuse-$fmt.log holds $dup_hits warning(s) matching <<$WARN_MARKER_DUP>>, want exactly 1, so the both-numbers clause would be judged over the wrong set"
+  { grep -F -- "$WARN_MARKER_DUP" "$WORK/misuse-$fmt.log" \
+    | grep -qF 'Both numbers are'; } \
+    || fail "M28-AC2: the duplicate-marker report in $fmt names a sequence for only one of its two numbers"
+done
+pass "M28-AC2: the duplicate-marker report says its clause covers both of its numbers, in all three formats"
+
+# The chapter count, over the ordering book. Its log is the two passes
+# concatenated, so the two reports it holds are both required to carry it.
+check_report_clause "$WORK/book-order.log" "$WARN_MARKER_NOT_LAST" \
+  "$M28_CHAPTER_CLAUSE" "M28-AC2 (chapter count)"
+
+# ---------------------------------------------------------------------------
+# M28-AC1 — the fixture where the two positions diverge. The marker is written
+# as the host file's third top-level block and reported at the fifth, because
+# Quarto expands the include before any filter runs. Both numbers are read off
+# the fixture's own manifest and neither is written down here, so the check
+# fails on a manifest that quietly agreed with whatever the render said.
+# ---------------------------------------------------------------------------
+quarto render examples/marker-position.qmd --to gfm \
+  > "$WORK/marker-position.log" 2>&1 \
+  || { tail -20 "$WORK/marker-position.log" >&2; fail "M28-AC1: marker-position.qmd failed to render to gfm"; }
+capture examples/marker-position.qmd gfm "marker-position-gfm"
+
+python3 tests/m28pos.py "$WORK/marker-position.log" examples/marker-position.qmd \
+  || fail "M28-AC1: the reported block position is not the divergent one the fixture's manifest states"
+
+# ---------------------------------------------------------------------------
+# The three checks above are evidence only if they discriminate, so each is
+# shown failing on a planted copy of THIS run's own log or fixture — never a
+# hand-built file — and failing for its own reason rather than for any reason
+# at all.
+# ---------------------------------------------------------------------------
+# (a) the naming clause cut out of every report in a real log. The report
+#     itself must survive the cut, or the failure below would be about a
+#     missing report rather than a missing clause.
+M28_STRIP="$WORK/m28-noclause.log"
+sed "s|\. Block positions are $M28_BLOCK_CLAUSE||" "$WORK/shapes-gfm.log" > "$M28_STRIP"
+grep -qF -- "$WARN_MARKER_EMPTIED" "$M28_STRIP" \
+  || fail "M28: the clause-stripping plant removed the emptied-place report itself, so the failure below would not be about the clause"
+if grep -qF -- "$M28_BLOCK_CLAUSE" "$M28_STRIP"; then
+  fail "M28: the clause-stripping plant landed nothing — the check below would be reported as failing to discriminate when the fault is this mutation's"
+fi
+if M28_OUT=$( ( check_report_clause "$M28_STRIP" "$WARN_MARKER_EMPTIED" \
+                  "$M28_BLOCK_CLAUSE" "M28 clause probe" ) 2>&1 ); then
+  fail "M28-AC2: the clause check passed on a copy of this render's log with the naming clause cut out of every report, so no report carrying it is evidence of anything"
+fi
+case "$M28_OUT" in
+  *"M28 clause probe: "*"do not say which sequence their number is counted over"*) : ;;
+  *) fail "M28-AC2: the clause check failed on the stripped log, but not on the clause (<<$M28_OUT>>)" ;;
+esac
+
+# (b) the report gone from the log entirely. A clause check over an empty set
+#     passes vacuously unless the match count is asserted first, which is the
+#     failure this leg pins.
+M28_EMPTY="$WORK/m28-noreport.log"
+{ grep -vF -- "$WARN_MARKER_EMPTIED" "$WORK/shapes-gfm.log" || true; } > "$M28_EMPTY"
+if grep -qF -- "$WARN_MARKER_EMPTIED" "$M28_EMPTY"; then
+  fail "M28: the report-removing plant landed nothing — the check below would be reported as failing to discriminate when the fault is this mutation's"
+fi
+if M28_OUT=$( ( check_report_clause "$M28_EMPTY" "$WARN_MARKER_EMPTIED" \
+                  "$M28_BLOCK_CLAUSE" "M28 empty probe" ) 2>&1 ); then
+  fail "M28-AC2: the clause check passed on a log the emptied-place report was removed from, so it certifies the clause over a set it never read"
+fi
+case "$M28_OUT" in
+  *"M28 empty probe: no warning matching"*) : ;;
+  *) fail "M28-AC2: the clause check failed on the report-free log, but not by finding no report (<<$M28_OUT>>)" ;;
+esac
+pass "M28-AC2: the clause check fails on a copy of this render's log with the clause cut out of every report, and fails again — by finding no report — on one the report was removed from"
+
+# (c) the fixture's two positions made equal, which is the manifest defect
+#     that would leave AC1's divergence unexercised while everything still
+#     matched.
+python3 - examples/marker-position.qmd "$WORK/m28-samenumbers.qmd" <<'M28PLANTPY'
+import re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+rep = re.search(r'^#\s+reported position:\s+(\d+)\s*$', src, re.M)
+if rep is None:
+    raise SystemExit('FAIL: M28: the fixture states no reported position, so '
+                     'this plant has nothing to copy over the author position')
+out, n = re.subn(r'^(#\s+author position:\s+)\d+\s*$', r'\g<1>' + rep.group(1),
+                 src, flags=re.M)
+if n != 1:
+    raise SystemExit('FAIL: M28: the plant rewrote no author position, so the '
+                     'reader below would be reported as failing to '
+                     'discriminate when the fault is this mutation\'s')
+open(sys.argv[2], 'w', encoding='utf-8').write(out)
+M28PLANTPY
+if M28_OUT=$( python3 tests/m28pos.py "$WORK/marker-position.log" \
+                "$WORK/m28-samenumbers.qmd" 2>&1 ); then
+  fail "M28-AC1: the reader passed on a manifest whose two positions are the same number, so it never checks that the fixture exercises any divergence"
+fi
+case "$M28_OUT" in
+  *"exercises no divergence"*) : ;;
+  *) fail "M28-AC1: the reader failed on the equal-numbers manifest, but not on the numbers being equal (<<$M28_OUT>>)" ;;
+esac
+
+# (d) the log's report made to name the AUTHOR's position — the exact wrong
+#     number this milestone is about, and the one a report that had not been
+#     corrected would print.
+M28_AUTHORPOS="$WORK/m28-authorpos.log"
+python3 - examples/marker-position.qmd "$WORK/marker-position.log" "$M28_AUTHORPOS" <<'M28PLANTPY'
+import re, sys
+src = open(sys.argv[1], encoding='utf-8').read()
+nums = {n: re.search(rf'^#\s+{n} position:\s+(\d+)\s*$', src, re.M)
+        for n in ('author', 'reported')}
+if None in nums.values():
+    raise SystemExit('FAIL: M28: the fixture states no author or reported '
+                     'position, so this plant has no numbers to swap')
+log = open(sys.argv[2], encoding='utf-8', errors='replace').read()
+out, n = re.subn(f'top-level block {nums["reported"].group(1)} was',
+                 f'top-level block {nums["author"].group(1)} was', log)
+if n != 1:
+    raise SystemExit('FAIL: M28: the plant rewrote no reported position in the '
+                     'log, so the reader below would be reported as failing to '
+                     'discriminate when the fault is this mutation\'s')
+open(sys.argv[3], 'w', encoding='utf-8').write(out)
+M28PLANTPY
+if M28_OUT=$( python3 tests/m28pos.py "$M28_AUTHORPOS" examples/marker-position.qmd 2>&1 ); then
+  fail "M28-AC1: the reader passed on a log whose report names the author's own block position, which is the report this milestone exists to correct"
+fi
+case "$M28_OUT" in
+  *"which is the position the marker is written at in the source file"*) : ;;
+  *) fail "M28-AC1: the reader failed on the author-position log, but not on the position being the author's (<<$M28_OUT>>)" ;;
+esac
+pass "M28-AC1: the divergence reader fails on a manifest whose two positions are equal, and on a copy of this render's log whose report names the author's own position instead of the reported one"
 
 # ---------------------------------------------------------------------------
 # The residue sweeps (M03-AC3, M12), LAST in the run and over the CAPTURED set

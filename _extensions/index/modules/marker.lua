@@ -18,6 +18,20 @@ local function is_marker(block)
   return block.t == "Div" and block.classes:includes(qi_core.MARKER_CLASS)
 end
 
+-- The sequence a reported block position is counted over, written once here
+-- and spliced into both reports below (D-014). Quarto expands includes and
+-- executable cells before any filter runs, so the block list this filter is
+-- handed can hold blocks the author never wrote, and a position counted over
+-- it is not the position the author would count in their own source file --
+-- `examples/marker-position.qmd` is the fixture where the two differ. The
+-- author's own position is not recoverable here: by the time this code runs
+-- the expansion has already happened and nothing records where a block came
+-- from, so the report names what its number counts rather than offering a
+-- second number it cannot compute.
+local POSITION_BASIS = "counted over the document as this filter received "
+      .. "it, after Quarto expanded any includes and executable cells, so "
+      .. "they can differ from the positions in your source file"
+
 -- The marker class means something on exactly one shape: an empty top-level
 -- div. Written anywhere else it is inert, and until now it was inert in
 -- silence — a heading or a span carrying it placed nothing and said nothing,
@@ -183,10 +197,13 @@ end
 -- would look empty.
 local function strip_nested_markers(block, position)
   for _ = 1, emptied_places(block) do
-    -- One literal, not concatenated. Written this way when the distinctness
-    -- scan read only a call's FIRST literal (M10); the scan joins them all
-    -- now, so the form is a readability choice here rather than a requirement.
-    qi_core.warn(("index placement marker in top-level block %d was the only thing written where it stood; the marker is removed, so nothing you wrote remains there"):format(position))
+    -- One literal for the report's own sentence, not concatenated. Written
+    -- this way when the distinctness scan read only a call's FIRST literal
+    -- (M10); the scan joins them all now, so the form is a readability choice
+    -- here rather than a requirement. The trailing clause is the shared
+    -- POSITION_BASIS above, so both reports say the same thing about what
+    -- their numbers count.
+    qi_core.warn(("index placement marker in top-level block %d was the only thing written where it stood; the marker is removed, so nothing you wrote remains there. Block positions are %s"):format(position, POSITION_BASIS))
   end
   return block:walk({
     Blocks = function(blocks)
@@ -207,8 +224,12 @@ end
 
 -- Warn about and remove every marker that cannot be a placement site — each
 -- nested one, and each top-level one after the first — and report whether a
--- site remains. Positions are the author's: the index the marker has among the
--- document's top-level blocks, counted before anything is removed.
+-- site remains. A reported position is counted over the blocks this filter is
+-- handed, after Quarto's own processing, before anything is removed here. It
+-- is not the author's own source position: Quarto expands includes and
+-- executable cells first, so the two diverge whenever the document holds any
+-- (`examples/marker-position.qmd`). The reports say so themselves through
+-- POSITION_BASIS above.
 local function resolve_markers(doc)
   local out = pandoc.Blocks({})
   local seen = 0
@@ -219,8 +240,12 @@ local function resolve_markers(doc)
       if seen == 1 then
         out:insert(block)
       else
-        qi_core.warn(("index placement marker %d (top-level block %d) is ignored; the "
-              .. "index is placed at the first marker"):format(seen, position))
+        -- Two numbers, so each is named where it is printed: the first counts
+        -- markers down the document, the second counts top-level blocks, and
+        -- the shared clause says what both are counted over (D-014).
+        qi_core.warn(("index placement marker %d in document order (top-level block %d) "
+              .. "is ignored; the index is placed at the first marker. Both "
+              .. "numbers are %s"):format(seen, position, POSITION_BASIS))
         out:extend(marker_content(block))
       end
     else

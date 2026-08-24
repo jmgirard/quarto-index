@@ -572,11 +572,17 @@ local function html_book(doc, ctx, marker, taken)
       -- run yet in this render: what the index shows for it is whatever an
       -- earlier render recorded, which may name terms that chapter no longer
       -- marks and link to anchors its page no longer has.
+      -- The count names the sequence it is over (D-014), which for a book is
+      -- the render list rather than the files on disk: a part heading with no
+      -- file of its own is not a chapter and is not counted, and a file the
+      -- book does not render is not in the sequence at all.
       qi_core.warn(("the index placement marker is in %s, and %d chapter(s) come "
             .. "after it (%s); the index is built where the marker is, so "
             .. "those chapters are represented by what an earlier render "
             .. "recorded — entries and links for them can be out of date or "
-            .. "dead. Put the marker chapter last in the book")
+            .. "dead. Put the marker chapter last in the book. The chapter "
+            .. "count is over the files this book renders, in the order the "
+            .. "book's render list gives them")
            :format(ctx.file, #later, table.concat(later, ", ")))
     end
     return qi_marker.place_index(doc, qi_html.html_index_blocks(book_marks(ctx, records), taken))

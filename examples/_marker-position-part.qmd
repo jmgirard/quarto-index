@@ -1,0 +1,8 @@
+## A heading the host file does not contain
+
+The blocks in this file are pulled into the host document by Quarto's include
+shortcode, before any filter runs. One term is marked here: [alpha]{.index}.
+
+Three top-level blocks live here — this heading and two paragraphs — so the
+one shortcode block they replace in the host file shifts everything written
+after it two places further down.

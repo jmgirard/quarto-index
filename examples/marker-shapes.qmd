@@ -9,7 +9,16 @@ filters:
 # wrote in the block list it stood in, numbered by the 1-based index of the
 # TOP-LEVEL block it is written under, counted down the body below (the H1s
 # and the explanatory paragraphs are top-level blocks and are counted). The
-# numbers come from this file's structure, never from a render. A shape is
+# numbers come from this file's structure, never from a render.
+#
+# That works HERE only because this file holds no include and no executable
+# cell, so the blocks Quarto hands the filter are the blocks written below,
+# one for one. The report's number is counted over what the filter is handed,
+# after Quarto's own processing — not over the author's source file — and
+# examples/marker-position.qmd is the fixture where the two diverge. Add an
+# include or a cell above and every number here would move.
+#
+# A shape is
 # listed here BECAUSE the marker is the only thing in its list, so the list is
 # what the manifest is about; the container kind is deliberately absent,
 # because the report never names one.

@@ -119,7 +119,7 @@ remainder.
       controls — not per reader (M32) — one substitution per plant (M29), and
       record the matrix. Include a wrong expected string, a term whose entry
       line is absent, and a stated term list drifted from the fixture's marks.
-- [ ] T7. Write README's `### Terms outside Latin-1` after `### Special
+- [x] T7. Write README's `### Terms outside Latin-1` after `### Special
       characters`, cross-referenced from it.
 - [ ] T8. Amend IP2 in DESIGN.md, narrow KI6 to the proven set and the unproven
       remainder, and append D-016. (The RTL candidate row lands with this plan's commit.)
@@ -142,6 +142,7 @@ remainder.
 - 2026-08-24: T3/T4 — the recipe render and `tests/unicodeprint.py` are in the suite; all eight terms print as their own entry line in the captured PDF, compared in NFC, and the stated term list is held against the fixture's own marks one per mark. Suite 339 checks, up from 336.
 - 2026-08-24: T5 — the three controls are in the suite, each derived from the fixture by one YAML edit (the CJK control also adds one mark): pdflatex exits non-zero with `not set up for use with LaTeX` naming U+03B8; the default main font exits 0 with the Greek entry lines gone; the full recipe exits 0 with the added CJK entry line gone. Both silent-drop controls first prove their own index printed, by finding the fixture's ASCII entry line. Suite 346 checks.
 - 2026-08-24: T6 — ten plants over the reader's ten reachable clauses, one substitution each, matrix recorded in the self-test's own comment beside them; each plant states the message fragment it expects, so a reader going red for another reason is not counted. The pdflatex control's log reading moved out of a shell heredoc into a fourth reader mode (`stopped`) so its two clauses could be planted. One clause is guarded and not planted: an index heading present with no entry lines is unreachable through this extension — probed, a document with no marks gets no heading at all. Self-test 482 checks.
+- 2026-08-24: T7 — README's `### Terms outside Latin-1` lands after `### Special characters`, cross-referenced from it and from the Examples list; eleven claim rows are held verbatim and the copyable YAML block is held line for line against `examples/unicode.qmd` (the M32 recipe-block pattern). Suite 349 checks.
 
 ## Decisions
 

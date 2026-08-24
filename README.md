@@ -259,6 +259,60 @@ The same two rules apply inside `see=` and `see-also=`, and inside `sort=`.
 uses some of them in raw `makeindex` syntax, is not part of this syntax and
 will arrive later as a separate span attribute.
 
+All of that is about ASCII. A term written in another script needs one more
+thing from your document — see [Terms outside Latin-1](#terms-outside-latin-1).
+
+### Terms outside Latin-1
+
+Escaping is not what stops a Greek or Polish term from reaching your index. A
+PDF build has to be able to *draw* the characters, and the default engine and
+font cannot. Set both:
+
+```yaml
+pdf-engine: xelatex
+mainfont: STIX
+mainfontoptions:
+  - Extension=.otf
+  - UprightFont=*-Regular
+  - BoldFont=*-Bold
+  - ItalicFont=*-Italic
+  - BoldItalicFont=*-BoldItalic
+```
+
+`xelatex` is the engine, and `STIX` is the main font — named by file rather
+than by family, which is why the options above are needed; the plain family
+name is not findable. STIX ships with TeX Live and TinyTeX, so there is
+nothing to install. The general rule behind the recipe is that **your main
+font must cover the script you are indexing**; STIX is one font that does, not
+the only one.
+
+Leave out either half and you get one of two failures:
+
+- **Wrong engine.** With `pdf-engine: pdflatex` the render stops and the LaTeX
+  log says `not set up for use with LaTeX`, naming the character. A failed
+  build is the friendlier of the two.
+- **Wrong or missing font.** With the right engine and a main font that does
+  not cover the script, the render **succeeds** and the term is simply absent
+  from the printed index. Nothing warns you.
+
+Do not read the log's `Missing character` line as the second failure. Under
+`xelatex` that line also appears for characters that print perfectly well: the
+engine draws a precomposed letter it lacks from the letter's accent-plus-base
+spelling instead. The reliable check is the printed index itself.
+
+`sort=` still works and still does only what it says — it sets one entry's
+sort key. The order of the index as a whole is the index processor's, and for
+non-ASCII terms it is best-effort; see
+[Sorting an entry under something else](#sorting-an-entry-under-something-else).
+
+This recipe is proven, with a typeset-print check in the test suite, for
+Greek, Cyrillic, and Latin beyond Latin-1 including terms written with
+combining marks — `examples/unicode.qmd` is the fixture. Any other script is
+unproven. In particular **CJK and right-to-left scripts are not supported**:
+STIX does not cover CJK, and RTL additionally has two problems no font fixes —
+the text is not shaped, and the comma between an entry and its page numbers
+lands on the wrong side of the entry.
+
 ### Sorting an entry under something else
 
 Some terms do not file where their spelling puts them. `The Hague` belongs
@@ -793,6 +847,10 @@ a negative control: mark-like text inside code, which must never be indexed.
 `examples/dangling-xref.qmd` and `examples/resolving-xref.qmd` are a pair:
 every cross-reference target in the first names a term nothing indexes, and
 every target in the second resolves.
+`examples/unicode.qmd` carries the recipe from
+[Terms outside Latin-1](#terms-outside-latin-1) and marks eight terms under
+it — Greek, Cyrillic, Polish, Vietnamese, a term written with a combining
+mark, and one whose combining sequence has no precomposed form.
 
 ```bash
 quarto render examples/demo.qmd --to pdf

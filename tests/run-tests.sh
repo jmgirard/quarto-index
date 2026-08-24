@@ -506,6 +506,24 @@ README_REFS_CLAIMS=(
 # a character the filter handles can never go unprobed.
 PROBE_CHARS='% & # _ { } \ ~ ^ $ @ | ! " < >'
 
+# M33-AC4 — the five things README's `### Terms outside Latin-1` section has to
+# state. Each row is a claim a reader acts on, held verbatim below: a
+# documented claim with no check beside it drifts (M13). The three of them that
+# describe behavior are the ones the M33 checks above execute.
+README_UNICODE_CLAIMS=(
+  $'engine\t`xelatex` is the engine'
+  $'font\t`STIX` is the main font'
+  $'font-by-file\tnamed by file rather than by family, which is why the options above are needed'
+  $'font-rule\tyour main font must cover the script you are indexing'
+  $'fail-engine\tWith `pdf-engine: pdflatex` the render stops and the LaTeX log says `not set up for use with LaTeX`, naming the character'
+  $'fail-font\tthe render **succeeds** and the term is simply absent from the printed index'
+  $'fail-warning\tDo not read the log\'s `Missing character` line as the second failure'
+  $'sortkey\t`sort=` still works and still does only what it says — it sets one entry\'s sort key. The order of the index as a whole is the index processor\'s, and for non-ASCII terms it is best-effort'
+  $'proven\tproven, with a typeset-print check in the test suite, for Greek, Cyrillic, and Latin beyond Latin-1 including terms written with combining marks'
+  $'unsupported\t**CJK and right-to-left scripts are not supported**'
+  $'rtl\tthe text is not shaped, and the comma between an entry and its page numbers lands on the wrong side of the entry'
+)
+
 # ---------------------------------------------------------------------------
 # Manifest 1 — expected \index{} entries in "$CAPTURE_ROOT/demo-latex/demo.tex" (AC1).
 # Format: <count><TAB><exact \index{} argument text>
@@ -4297,6 +4315,81 @@ python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-cjk/cjk.pdf" \
   "$M33_ASCII" "$M33_CJK" \
   || fail "M33-AC3c: the added CJK term prints under the recipe's font, or the control's index did not print at all (its own FAIL line is above)"
 pass "M33-AC3c: the fixture with one CJK term added renders at exit 0 under the full recipe, its index still prints the fixture's ASCII term, and the CJK term does not print"
+
+# ---------------------------------------------------------------------------
+# M33-AC4 — the README section a reader acts on. Two checks, because the
+# section has two jobs. The claims are held verbatim (whitespace normalized on
+# both sides, so a rewrapped sentence still counts and a stale one cannot hide
+# behind a line break); the YAML block a reader COPIES is held line for line
+# against examples/unicode.qmd, which is the document the checks above prove
+# the recipe on. Prose cannot hold a copyable block (the M32 lesson).
+# ---------------------------------------------------------------------------
+printf '%s\n' "${README_UNICODE_CLAIMS[@]}" > "$WORK/readme-unicode.txt"
+python3 - "$WORK/readme-unicode.txt" README.md <<'M33DOCPY' \
+  || fail "M33-AC4: README's `### Terms outside Latin-1` section does not state what this suite exercises (its own FAIL line is above)"
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M33-AC4: README.md does not document the non-Latin-1 recipe '
+          'as this suite exercises it:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M33-AC4: all {len(rows)} documented claims about terms outside '
+      f'Latin-1 appear verbatim in README.md')
+M33DOCPY
+
+python3 - README.md examples/unicode.qmd <<'M33BLOCKPY' \
+  || fail "M33-AC4: the recipe block a reader copies out of README has drifted from the fixture that proves it (its own FAIL line is above)"
+import re
+import sys
+
+readme = open(sys.argv[1], encoding='utf-8').read()
+fixture = open(sys.argv[2], encoding='utf-8').read()
+
+anchor = '### Terms outside Latin-1'
+if anchor not in readme:
+    print(f'FAIL: M33-AC4: {sys.argv[1]} carries no {anchor!r} section for '
+          f'this check to read its copyable block out of', file=sys.stderr)
+    sys.exit(1)
+# Bounded to the section itself: the search would otherwise run to the end of
+# the file and pick up every later fenced block.
+section = readme[readme.index(anchor) + len(anchor):]
+end = re.search(r'^#{2,3} ', section, re.M)
+section = section[:end.start()] if end else section
+blocks = re.findall(r'^```yaml\n(.*?)^```', section, re.S | re.M)
+if len(blocks) != 1:
+    print(f'FAIL: M33-AC4: the section carries {len(blocks)} fenced `yaml` '
+          f'block(s); the recipe a reader copies is exactly one',
+          file=sys.stderr)
+    sys.exit(1)
+lines = [l for l in blocks[0].splitlines() if l.strip()]
+if not lines:
+    print('FAIL: M33-AC4: the recipe block a reader copies is empty',
+          file=sys.stderr)
+    sys.exit(1)
+missing = [l for l in lines if l not in fixture]
+if missing:
+    print(f'FAIL: M33-AC4: the recipe block in {sys.argv[1]} has drifted from '
+          f'{sys.argv[2]}, which is the document the typeset-print check above '
+          f'proves the recipe on; these lines are in the README block and not '
+          f'in the fixture:', file=sys.stderr)
+    print('\n'.join(f'  <<{l}>>' for l in missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M33-AC4: every one of the {len(lines)} line(s) an author copies '
+      f'out of README\'s recipe block appears verbatim in '
+      f'examples/unicode.qmd')
+M33BLOCKPY
+pass "M33-AC4: README's Terms outside Latin-1 section states the engine, the font and the must-cover rule, both failure signatures and the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is held line for line against the fixture"
 
 # ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as

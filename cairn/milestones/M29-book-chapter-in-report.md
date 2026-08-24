@@ -5,7 +5,7 @@
 - **Depends on:** M28
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** `m029-book-chapter-in-report`
+- **Branch/PR:** `m029-book-chapter-in-report` / https://github.com/jmgirard/quarto-index/pull/29
 
 ## Goal
 
@@ -132,6 +132,7 @@ milestone depends on.
 - 2026-08-24: T5 — DESIGN.md's marker-resolution paragraph updated to say the reports carry the chapter and that a chapter is known only in an HTML book.
 - 2026-08-24: all five tasks done; `tests/run-tests.sh` passes 296 checks and `tests/run-tests.sh --self-test` passes 430. Status to review.
 
+- 2026-08-24: review opened; draft PR #29 recorded in the header. Suite run and the three review lenses are in flight.
 ## Decisions
 
 ## Review

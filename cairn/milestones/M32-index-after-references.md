@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M32: An index follows the bibliography where the author puts it
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** low
 - **Depends on:** —
 - **Driving RR:** —
@@ -100,6 +100,7 @@ replaces the README's statement of current behavior with the recipe.
 - 2026-08-24: T6 — the derivation, LaTeX and HTML readers moved into `tests/m32refs.py`; the derivation now deletes the `#refs` block whole, refusing an unclosed one, rather than skipping its fences. Fifteen planted defects committed beside them, each required to fail for its own reason: five on the derivation, four on the LaTeX order, six on the HTML order and the recipe's HTML cost. Two are the marker-less document F1 named, rendered rather than mutated — the fixture with its marker block deleted and nothing else, which both readers now refuse.
 - 2026-08-24: T7 — the recipe paragraph moved below the marker's six rules and the `imakeidx` paragraph, so the rules keep their lead-in; the recipe now writes a References heading of its own, and README says why: rendering both halves shows Quarto's appendix wrapper and its **References** heading present in the twin and absent in the fixture, so an author following the recipe supplies the heading. Two claim rows added, and the pinned recipe row updated to the heading-carrying shape.
 - 2026-08-24: T8 — KI3 restored under the LaTeX back-end, reworded from "README states the current behavior" down to the residual gap: the filter still cannot place the index relative to content Quarto adds after filters run, and the recipe that works around it costs an HTML author the appendix wrapper and heading. The candidate row for a filter-side move now points at it. Two milestone-local decisions recorded, and GP6 named in the header.
+- 2026-08-24: all eight fixes the review return named are in; the suite runs 457 checks clean under `--self-test` and `cairn_validate` exits 0. Status back to review.
 
 ## Decisions
 

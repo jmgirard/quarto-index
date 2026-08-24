@@ -455,6 +455,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   and the typeset-time channel puts a second unprotected macro on that path,
   `\quartoindexregister`, whose `\protected@write` would expand inside a
   `.toc`/`.lof` write. — M01 review R17, M20 review round 2 R2-F7
+- **KI3.** The filter cannot place the index relative to content Quarto adds
+  after filters run: the reference block is appended once the marker has
+  already placed the index, so the default order is index first, references
+  after, in both back-ends. An author-written empty `#refs` div above the
+  marker settles the order instead, which README documents as the recipe; in
+  HTML that div also costs the author the appendix wrapper and the
+  **References** heading Quarto builds when it appends the block itself, so
+  the recipe writes its own heading. — M01 review P2, restored and reworded
+  from M32 review F2/F3
 - **KI5.** A registered principal page folded inside a makeindex page range is
   not emphasized: the typeset-time channel D-007 adopts looks a page up by
   string, and a range misses, printing it unemphasized and silently. — RR01

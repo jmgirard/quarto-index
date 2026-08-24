@@ -29,7 +29,7 @@ _Last hygiene check: 2026-08-24 (M31 done and archived; M25's terminal row prune
 - Pair a range spanning two chapters of an HTML book; promote on a per-chapter record that separates what the author wrote from what a chapter concluded, never on the feature being wanted, and on a derivation path that reads the mark's rewritten content — added 2026-08-22 — M21 review rounds 1-3, D-009 — KI19, KI20
 - Book sidecar-store follow-ups (clustered): prune records for chapters no longer in the book; give the declared-key map a stable order; decide what a page outside `book.render` should do — added 2026-08-17, clustered 2026-08-22 — M05 review F4/F13, M06 review pass 2 F11 — KI16, KI17, KI18
 - Make a `,` index entry print as a comma rather than merging with the index style's delimiter into one glyph; promote on evidence that a reader or author reads the merged glyph as wrong, never on the oddity being noticed — added 2026-08-24 — M30 T1 — KI87
-- Move the index relative to content Quarto adds after filters run, rather than leaving the order to an author-written `#refs` div; promote on evidence Quarto exposes an ordering hook a filter can reach — added 2026-08-24 — M32 Scope Out
+- Move the index relative to content Quarto adds after filters run, rather than leaving the order to an author-written `#refs` div; promote on evidence Quarto exposes an ordering hook a filter can reach — added 2026-08-24 — M32 Scope Out — KI3
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN) — KI79
 - Pick an engine and fonts for non-Latin-1 index terms (Greek, CJK, combining marks, RTL) — added 2026-08-16 — M01 review R7/R9 — KI6

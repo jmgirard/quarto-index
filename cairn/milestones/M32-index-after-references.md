@@ -6,7 +6,7 @@
 - **Priority:** low
 - **Depends on:** —
 - **Driving RR:** —
-- **Principles touched:** GP1, GP4
+- **Principles touched:** GP1, GP4, GP6
 - **Branch/PR:** `m032-index-after-references` — [PR #32](https://github.com/jmgirard/quarto-index/pull/32)
 
 ## Goal
@@ -78,7 +78,7 @@ replaces the README's statement of current behavior with the recipe.
 - [x] T7: README says what the recipe costs in HTML and where the References
       heading comes from, and the recipe paragraph stops orphaning the
       marker's six rules (F2, F7).
-- [ ] T8: Restore KI3 at its residual gap with the candidate row pointing at
+- [x] T8: Restore KI3 at its residual gap with the candidate row pointing at
       it; record the two gate choices in this file's Decisions and name the
       end-to-end principle in the header (F3, F6, F9).
 
@@ -99,8 +99,27 @@ replaces the README's statement of current behavior with the recipe.
 - 2026-08-24: T5 — the fixture pair gains an `Afterword` section after the placement marker, which is what tells an index at the marker apart from one at the end of the body; the twin's prose no longer claims to carry the div. Coverage rows for AC1-AC3 extended to name T5 and T6.
 - 2026-08-24: T6 — the derivation, LaTeX and HTML readers moved into `tests/m32refs.py`; the derivation now deletes the `#refs` block whole, refusing an unclosed one, rather than skipping its fences. Fifteen planted defects committed beside them, each required to fail for its own reason: five on the derivation, four on the LaTeX order, six on the HTML order and the recipe's HTML cost. Two are the marker-less document F1 named, rendered rather than mutated — the fixture with its marker block deleted and nothing else, which both readers now refuse.
 - 2026-08-24: T7 — the recipe paragraph moved below the marker's six rules and the `imakeidx` paragraph, so the rules keep their lead-in; the recipe now writes a References heading of its own, and README says why: rendering both halves shows Quarto's appendix wrapper and its **References** heading present in the twin and absent in the fixture, so an author following the recipe supplies the heading. Two claim rows added, and the pinned recipe row updated to the heading-carrying shape.
+- 2026-08-24: T8 — KI3 restored under the LaTeX back-end, reworded from "README states the current behavior" down to the residual gap: the filter still cannot place the index relative to content Quarto adds after filters run, and the recipe that works around it costs an HTML author the appendix wrapper and heading. The candidate row for a filter-side move now points at it. Two milestone-local decisions recorded, and GP6 named in the header.
 
 ## Decisions
+
+- **AC2's index half is guarded by id plus heading-section identity, not by class.**
+  Quarto's bibliography div carries stable classes (`references`,
+  `csl-bib-body`) that make id-plus-class a real identity check; the generated
+  index section's own classes are this extension's to change, so a class check
+  there would assert the extension's current output against itself. Requiring
+  the `qi-index` element to be the same node `htmlindex.index_section` finds
+  the index heading in is the identity assertion AC2 asks for, on the fact that
+  does not derive from the artifact under test. Recorded rather than amended:
+  the criterion's promise — identity, not text position — is met.
+- **GP6 traded: the order is asserted in the LaTeX Quarto writes, not in a
+  compiled PDF.** A PDF leg would have to read the printed page sequence to say
+  the index follows the references, which is the typeset-print gap already
+  carried as a backlog row rather than this milestone's promise; widening the
+  criteria set to reach it was refused at the question gate. What the `.tex`
+  shows is the command order this extension controls, which is the whole of
+  what the recipe changes. Falsified by a case where `\printindex` after
+  `\end{CSLReferences}` prints on a page before the references.
 
 ## Review
 

@@ -569,7 +569,11 @@ local function Span(span)
   -- here. imakeidx, which this back-end already loads, defines `\see`,
   -- `\seealso`, `\seename` and `\alsoname` with `\providecommand`, so nothing
   -- needs injecting for the single-target forms; the both-targets form needs
-  -- qi_core.XREF_BOTH_COMMAND, which is injected only in a document that uses it.
+  -- qi_core.XREF_BOTH_COMMAND, which since M31 is injected into EVERY
+  -- LaTeX-derived preamble rather than only where a mark emits it: the
+  -- command reaches the compiled `.ind`, which outlives the marks that wrote
+  -- it, so a document that has since lost this mark still reads the name at
+  -- `\printindex`.
   local encap = qi_latex.mark_encap(xrefs)
   if encap == "" then
     result:insert(pandoc.RawInline("latex",

@@ -9212,6 +9212,11 @@ for path in texs:
     src = open(path, encoding='utf-8').read()
     cut = src.find('\\begin{document}')
     if cut < 0:
+        # Never skipped: a silent `continue` would shrink the set actually
+        # compared while the count reported below still came from `texs`,
+        # which is the domain-emptying shape this sweep is built to refuse.
+        errs.append(f'  {path} carries \\printindex but no \\begin{{document}}, '
+                    f'so it has no preamble to read')
         continue
     defined = set(DEFN.findall(src[:cut]))
     for name in sorted(carried):

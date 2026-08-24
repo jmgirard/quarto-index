@@ -77,7 +77,10 @@ local MENTION_ROLES = {
 -- The emphasis a principal locator is printed in. `\providecommand*` so a
 -- document wanting different emphasis redefines it in its own preamble and
 -- this definition steps aside (GP4), and injected only into a document that
--- uses it, exactly like the two cross-reference commands above. Bold is the
+-- uses it — unlike the two cross-reference commands above, which since M31
+-- ride in every LaTeX preamble because each reaches the compiled `.ind`. This
+-- one does not: it is applied at `\printindex` time by the subsystem below,
+-- never named in the `.ind` itself. Bold is the
 -- convention a printed index uses for a principal reference. It is applied by
 -- the subsystem below at `\printindex` time, not by makeindex's encapsulation
 -- channel, so hyperref never rewrites it.

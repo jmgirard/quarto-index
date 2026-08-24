@@ -75,8 +75,9 @@ local marks = {
   -- one, and the counter alone hands it a later one still.
   mark("Prior", { mention = "principal" }),
   mark("Pivot", { mention = "principal" }),
-  -- contested_keys again, through the other shape: one mark carrying both
-  -- cross-reference kinds.
+  -- contested_keys again, through the UNcontested shape: one mark carrying
+  -- both cross-reference kinds emits a single encapsulation, so is_contested
+  -- stays false and this records a key the Held pair's branch never reaches.
   mark("Both", { see = "Nowhere", ["see-also"] = "Elsewhere" }),
   -- marks_seen, html_marks and range_at are filled by everything above; the
   -- mark-free fixture reads the first of them.

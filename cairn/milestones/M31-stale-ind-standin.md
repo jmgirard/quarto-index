@@ -230,3 +230,12 @@ archived `## Review` sections touching these files; M22's record warns of a
 README claim reproduced false, and the widened `README_STALEAUX_CLAIMS` pinning
 plus AC1's compiled-PDF assertions answer it. Neither lens contributed a
 finding beyond F6.
+
+**Triage.** At the gate the maintainer chose to fix all six on the branch before
+merging; none was rejected and none was deferred to a follow-up. F1 took two
+rewrites, the branch header's claim about the `.ind` as well as the one beside
+the definitions. F5 turned the silent `continue` into a recorded error, so a
+`\printindex` document with no preamble fails the sweep rather than shrinking
+the set it compares below the count it reports. The suite was re-run over the
+fixes: `tests/run-tests.sh --self-test`, exit 0, 436 checks. The maintainer
+declined a fresh-context re-review of the inline lenses.

@@ -1,8 +1,12 @@
 -- The LaTeX back-end: turning derived levels into `\\index{...}` commands, and
 -- the contested-key bookkeeping that decides which shape a key gets.
 --
--- The two `emitted` flags below are read by the Pandoc pass, which writes the
--- preamble: a command is defined only in a document that uses it.
+-- The `emitted` flag below is read by the Pandoc pass, which writes the
+-- preamble: the typeset-time subsystem is defined only in a document that uses
+-- it. The two cross-reference commands had a flag each until M31, which made
+-- them unconditional — each reaches the compiled `.ind` and each is stateless
+-- enough to be its own stand-in there, so nothing is left to decide per
+-- document.
 
 local qi_core = require("./core")
 local qi_levels = require("./levels")

@@ -154,20 +154,24 @@ local function Pandoc(doc)
   end
   if qi_marks.marks_seen == 0 then
     -- A document with no marks gets no preamble — except the stand-ins
-    -- (M22, M31): its `.aux` may still carry the typeset-time subsystem's
-    -- lines, and its `.ind` the commands a compiled index carries, from a
-    -- render whose marks have since been deleted, and reading those against
-    -- no definition fails the render, which is the IP2 break the subsystem
-    -- exists to avoid. Injection needs Quarto;
+    -- (M22): its `.aux` may still carry the typeset-time subsystem's lines
+    -- from a render whose marks have since been deleted, and reading those
+    -- against no definition fails the render, which is the IP2 break the
+    -- subsystem exists to avoid. Injection needs Quarto;
     -- plain pandoc has no preamble channel. Silent where the marked path
     -- below warns about the same missing channel, and deliberately: that
     -- warning is about marks whose index setup is being skipped, and this
     -- document has no marks to report anything about.
     if quarto and quarto.doc and quarto.doc.include_text then
       quarto.doc.include_text("in-header", qi_core.PRINCIPAL_GOBBLERS)
-      -- And the two cross-reference definitions, for the same reason one step
-      -- further out (M31): a document that has lost EVERY mark still reads a
-      -- surviving `.ind` naming them.
+      -- And the two cross-reference definitions (M31). Not for the same
+      -- reason as the block above: this branch emits no `\printindex`, which
+      -- is the only command that reads an `.ind`, so no leftover index can
+      -- reach a document with no marks — where the `.aux` above IS read, at
+      -- `\begin{document}`, whether an index is printed or not. They ride
+      -- here so that "every LaTeX-derived render defines them" holds without
+      -- a branch to remember, which is what makes the containment sweep a
+      -- predicate over the artifacts rather than a list of exempt shapes.
       quarto.doc.include_text("in-header", qi_core.XREF_BOTH_DEFINITION)
       quarto.doc.include_text("in-header", qi_core.XREF_LIST_DEFINITION)
     end

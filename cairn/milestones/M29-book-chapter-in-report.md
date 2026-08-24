@@ -1,11 +1,11 @@
 # M29: A marker report in a book names its chapter
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M28
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** `m029-book-chapter-in-report`
 
 ## Goal
 
@@ -27,9 +27,12 @@ The repair renames that introduction to the block position; the shared
 `POSITION_BASIS` string (`marker.lua:31`) is NOT split, so D-014's consequence
 that the two reports cannot drift apart survives, and D-014's own "each is
 named where it is printed" is what licenses naming the ordinal separately. A
-book fixture exercises both reports in `examples/book/sub/two.qmd`, a chapter
-that is neither first nor at the book's top level, and the pdf book render pins
-that both reports carry no chapter clause.
+book fixture exercises the emptied-place report in `examples/book/sub/two.qmd`
+and the duplicate-marker report in `examples/book/last.qmd`. The two chapters
+differ deliberately: `sub/two.qmd` gives the clause a subdirectory path to
+carry, and `last.qmd` is the only chapter a second placement marker can go in
+without becoming the book's placing chapter and moving the index. The pdf book
+render pins that both reports carry no chapter clause.
 
 **Out:** the incomplete-metadata HTML case (`index.lua:75-78`), where Quarto
 supplies too little for `book_context` to return a chapter — no fixture can
@@ -45,13 +48,15 @@ milestone depends on.
 
 - [ ] AC1: In the html render of `examples/book`, a nested marker that empties
       its place in the chapter `sub/two.qmd` draws an emptied-place report
-      whose whole emitted line names that chapter's source path the way the
-      book-aware marker warnings name `ctx.file`, and is otherwise the
-      no-chapter text of AC3 unchanged.
-- [ ] AC2: In that same html render, a second top-level marker in
-      `sub/two.qmd` draws a duplicate-marker report whose whole emitted line
-      names that chapter's source path and is otherwise the no-chapter text of
-      AC3 unchanged.
+      whose whole emitted line names that chapter's path as `sub/two.qmd` —
+      root-relative, as the book-aware marker warnings name `ctx.file` —
+      immediately after its block position, and is otherwise the emptied-place
+      report's no-chapter text of AC3 with only its block number free to differ.
+- [ ] AC2: In that same html render, a second top-level marker in `last.qmd`
+      draws a duplicate-marker report whose whole emitted line names that
+      chapter's path as `last.qmd` immediately after its block position, and is
+      otherwise the duplicate-marker report's no-chapter text of AC3 with only
+      its block number and marker ordinal free to differ.
 - [ ] AC3: In the pdf render of `examples/book`, the emptied-place and
       duplicate-marker reports each emit a line carrying no chapter clause,
       and each such line is the text M28 shipped except for AC4's change.
@@ -79,21 +84,23 @@ milestone depends on.
 
 ## Tasks
 
-- [ ] T1: make the chapter file available where marker resolution runs —
+- [x] T1: make the chapter file available where marker resolution runs —
       either by deriving it before `qi_marker.resolve_markers` at
       `index.lua:65` or by passing it in — without moving the book-path
       decisions that read the full `book_context` (`index.lua:70`). The file
       is available only where a chapter is genuinely known, so the pdf book
       render reaches the no-chapter wording by the same path a single document
       does.
-- [ ] T2: splice the file clause into the two reports (`marker.lua:206`,
+- [x] T2: splice the file clause into the two reports (`marker.lua:206`,
       `marker.lua:246`), keeping M28's wording verbatim where no chapter is
       known, apart from T3's repair.
-- [ ] T3: repair KI80 — rename the duplicate-marker report's introduction of
+- [x] T3: repair KI80 — rename the duplicate-marker report's introduction of
       the shared clause from both numbers to its block position, leaving
       `POSITION_BASIS` (`marker.lua:31`) one shared string (D-014).
-- [ ] T4: suite — add the emptied-place and duplicate shapes to
-      `examples/book/sub/two.qmd`; assert both reports whole in
+- [ ] T4: suite — add the emptied-place shape to `examples/book/sub/two.qmd`
+      and the duplicate shape to `examples/book/last.qmd`; update the
+      `BOOK_WARNINGS` count (`tests/run-tests.sh:4631`); assert both reports
+      whole in
       `$WORK/book-html.log` and `$WORK/book-pdf.log`; extend the whole-warning
       line partition to both book logs; replace the substring pin
       `WARN_MARKER_DUP` (`tests/run-tests.sh:2742`) with a whole-line
@@ -112,6 +119,11 @@ milestone depends on.
 - 2026-08-23: criteria audit for this milestone ran in FULL mode ([O] fresh- context reader, user-facing tier) in the same round as M28's; its findings on M29-AC3, AC4 and AC5 are recorded in M28's work log with the rest.
 - 2026-08-24: amended by /milestone-plan. Gate absorbed KI80 into scope over leaving it standing as a homeless known issue, because M29's T2 already rewrites that warning's format string; falsified by the repair proving to need a D-014 supersession. Gate accepted KI82 over deduping the suite's three copies, because M28's review judged it cost rather than a hole; falsified by a reword landing that the three-copy coupling lets drift through silently.
 - 2026-08-24: criteria audit ran again in FULL mode ([O] fresh-context reader, user-facing tier) over the amended criteria and returned twelve findings. Fixed at the gate: the chapter probe moved to `sub/two.qmd` so its path form varies as well as its position; AC2 now requires the same non-first chapter as AC1; AC3 names `examples/book` and the pdf render rather than "a non-HTML format", and T1 now states the gate that makes the no-chapter state reachable; AC1-AC4 rewritten to bind the emitted line rather than the comparison method, which moved to T4; AC5's partition extended to the book logs, which no criterion previously covered; T5 rewrites KI22 rather than striking it, since AC1 repairs only its second half. The auditor's finding that KI80 and D-014 cannot both hold was refuted at the gate: renaming the duplicate report's introduction of the shared clause satisfies both without splitting the string. AC6 was kept instrument-bound against the audit's reading, as the regression gate every milestone in this repo carries.
+- 2026-08-24: implement gate chose attaching the chapter to the block position ("top-level block 5 of sub/two.qmd") over a leading or trailing clause, because scoping the number is what the clause is for and it states KI22's chapter-local half in the text; falsified by an author reading the position as the book's rather than the chapter's anyway.
+- 2026-08-24: T1 — hoisted `book_context` above `resolve_markers` in `index.lua` and passed `book and book.file` down, leaving the `is_html` gate and the post-resolution book decisions where they were; the gate is what keeps a pdf book on the no-chapter path.
+- 2026-08-24: T2 — added `in_chapter` beside `POSITION_BASIS` in `marker.lua` and threaded `chapter` through `resolve_markers` and `strip_nested_markers`; nil chapter emits the empty string, so every non-book render is byte-identical to M28.
+- 2026-08-24: T3 — KI80 repaired by renaming the duplicate report's introduction of the shared clause from "Both numbers are" to "Block positions are"; `POSITION_BASIS` stays one string, so D-014's no-drift consequence holds. Rejected splitting the string into a per-report tail because that is the drift D-014 names; falsified by a later report needing a divergence clause the block-position wording cannot carry.
+- 2026-08-24: amendment (substantive, gated). A render showed a second top-level marker in `sub/two.qmd` would make it the book's placing chapter over `last.qmd` and move the index, so AC2's duplicate probe moved to `last.qmd`; Scope and T4 retargeted with it. Two fresh-context [O] readers audited the amended wording in FULL mode; their findings fixed before writing: "unchanged" became "free to differ" (the pdf book concatenates chapters, so the block number and ordinal cannot match), the path form pinned as root-relative, and the clause pinned to sit immediately after the block position. AC1 and AC2 are the only criteria whose text changed.
 
 ## Decisions
 

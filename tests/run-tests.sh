@@ -3735,6 +3735,167 @@ grep -qF 'gamma' "$CAPTURE_ROOT/marker-gfm/marker.md" || fail "M04-AC5: gfm outp
 pass "M04-AC5: the marker leaves no token in gfm output, and the visible text is kept"
 
 # ---------------------------------------------------------------------------
+# M32 — where the index lands beside a bibliography. Quarto appends a
+# document's reference block after this filter has already placed the index,
+# so a document that leaves the bibliography where Quarto puts it gets the
+# index first. An empty `#refs` div is what settles the order the other way:
+# Quarto fills that div in place, above the placement marker.
+#
+# The pair is the whole point. A fixture built only from the shape the recipe
+# adds cannot show the div is what moved anything, so the twin — the same
+# document with the div block deleted and nothing else — is rendered beside it
+# and required to come out the other way round. The derivation is checked
+# first, or the two orders below would be two different documents' orders.
+# ---------------------------------------------------------------------------
+python3 - examples/references.qmd examples/references-twin.qmd <<'PY'
+import sys
+fixture, twin = (open(sys.argv[1], encoding='utf-8').read(),
+                 open(sys.argv[2], encoding='utf-8').read())
+out, skip, cut = [], False, 0
+for line in fixture.splitlines(True):
+    stripped = line.strip()
+    if stripped == '::: {#refs}':
+        skip = True
+        cut += 1
+        continue
+    if skip and stripped == ':::':
+        skip = False
+        continue
+    out.append(line)
+# The block has to have been found: with no `#refs` div in the fixture at all
+# the loop copies it through unchanged, and a twin that is a byte copy would
+# then satisfy the comparison while the pair tested nothing.
+if cut != 1:
+    print(f'FAIL: M32: examples/references.qmd writes {cut} `#refs` div '
+          f'blocks; the recipe under test is exactly one', file=sys.stderr)
+    sys.exit(1)
+if ''.join(out) != twin:
+    print('FAIL: M32: the twin fixture is not the references fixture with its '
+          '`#refs` div block deleted; the two have drifted apart and the '
+          'orders compared below would be two different documents\' orders',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M32: the twin fixture is the references fixture with the `#refs` '
+      'div block deleted, and nothing else')
+PY
+
+for f in references references-twin; do
+  for fmt in latex html; do
+    quarto render examples/$f.qmd --to $fmt > "$WORK/$f-$fmt.log" 2>&1 \
+      || { tail -20 "$WORK/$f-$fmt.log" >&2; fail "M32: $f.qmd failed to render to $fmt"; }
+    capture examples/$f.qmd $fmt "$f-$fmt"
+  done
+done
+
+# M32-AC1/AC3 (LaTeX). The reference environment is named, not guessed at by
+# offset into the prose: `\begin{CSLReferences}` … `\end{CSLReferences}` is the
+# environment Quarto's citation processing writes the bibliography into, and
+# `\printindex` is the one command that prints the index. Both must be present
+# in both artifacts before either order means anything — a file carrying no
+# bibliography at all would otherwise pass the "index comes first" half.
+python3 - "$CAPTURE_ROOT/references-latex/references.tex" \
+         "$CAPTURE_ROOT/references-twin-latex/references-twin.tex" <<'PY'
+import sys
+
+OPEN, CLOSE, INDEX = (r'\begin{CSLReferences}', r'\end{CSLReferences}',
+                      r'\printindex')
+
+
+def places(path):
+    src = open(path, encoding='utf-8').read()
+    where = {}
+    for name in (OPEN, CLOSE, INDEX):
+        if src.count(name) != 1:
+            print(f'FAIL: M32: {path} carries {src.count(name)} occurrences of '
+                  f'{name}; the order below is stated over exactly one of each',
+                  file=sys.stderr)
+            sys.exit(1)
+        where[name] = src.index(name)
+    return where
+
+
+withdiv, without = places(sys.argv[1]), places(sys.argv[2])
+if not withdiv[INDEX] > withdiv[CLOSE]:
+    print(f'FAIL: M32-AC1: in {sys.argv[1]} the index command does not follow '
+          f'the reference environment', file=sys.stderr)
+    sys.exit(1)
+if not without[INDEX] < without[OPEN]:
+    print(f'FAIL: M32-AC3: in {sys.argv[2]}, which writes no `#refs` div, the '
+          f'index command does not precede the reference environment; the '
+          f'default order is not what the recipe moves', file=sys.stderr)
+    sys.exit(1)
+print(r'ok   M32-AC1/AC3: \printindex follows \end{CSLReferences} in the '
+      r'fixture that writes an empty #refs div, and precedes '
+      r'\begin{CSLReferences} in the twin that writes none')
+PY
+
+# M32-AC2/AC3 (HTML). Element identity, not text position: the references are
+# the element carrying the id `refs` AND the classes Quarto's bibliography
+# writer puts on it, and the index is the element carrying the generated
+# section id — which is required to be the same node the index heading sits
+# in, so an id landing on some other element could not stand in for it.
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
+  "$CAPTURE_ROOT/references-html/references.html" \
+  "$CAPTURE_ROOT/references-twin-html/references-twin.html" <<'PY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+
+SECTION_ID = os.environ['HTML_SECTION_ID']
+# What Quarto's citation processing puts on the div it fills: the id the
+# author wrote (or that Quarto mints when they did not) and the classes that
+# make it the bibliography. Both, so a `#refs` div the filter left empty could
+# not be read as the references having arrived.
+REF_CLASSES = {'references', 'csl-bib-body'}
+
+
+def places(path):
+    doc = H.parse(path)
+    refs = H.find_id(doc, 'refs')
+    if refs is None:
+        print(f'FAIL: M32: {path} carries no element with the id `refs`, so it '
+              f'holds no rendered bibliography to order the index against',
+              file=sys.stderr)
+        sys.exit(1)
+    if not REF_CLASSES <= H.classes(refs):
+        print(f'FAIL: M32: the `refs` element of {path} is a <{refs.tag}> '
+              f'carrying {sorted(H.classes(refs))}; the bibliography Quarto '
+              f'writes carries {sorted(REF_CLASSES)}', file=sys.stderr)
+        sys.exit(1)
+    section = H.find_id(doc, SECTION_ID)
+    if section is None:
+        print(f'FAIL: M32: {path} carries no element with the generated index '
+              f'section id `{SECTION_ID}`', file=sys.stderr)
+        sys.exit(1)
+    if H.index_section(doc) is not section:
+        print(f'FAIL: M32: in {path} the element carrying `{SECTION_ID}` is not '
+              f'the section the index heading sits in, so its position is not '
+              f'the index\'s position', file=sys.stderr)
+        sys.exit(1)
+    return H.position(doc, refs), H.position(doc, section)
+
+
+with_refs, with_index = places(sys.argv[1])
+without_refs, without_index = places(sys.argv[2])
+if not with_index > with_refs:
+    print(f'FAIL: M32-AC2: in {sys.argv[1]} the index section (document '
+          f'position {with_index}) does not follow the bibliography '
+          f'({with_refs})', file=sys.stderr)
+    sys.exit(1)
+if not without_index < without_refs:
+    print(f'FAIL: M32-AC3: in {sys.argv[2]}, which writes no `#refs` div, the '
+          f'index section ({without_index}) does not precede the bibliography '
+          f'({without_refs}); the default order is not what the recipe moves',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M32-AC2/AC3: the generated index section follows the '
+      f'bibliography div in the fixture that writes an empty #refs div '
+      f'({with_refs} then {with_index}), and precedes it in the twin that '
+      f'writes none ({without_index} then {without_refs})')
+PY
+pass "M32-AC1/AC2/AC3: an empty #refs div above the placement marker puts the index after the references in both LaTeX and HTML, and the same document without the div keeps the default order"
+
+# ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as
 # an entry of its own. The domain is the fixture's by construction and is
 # pinned by the coverage check above; this asserts the characters arrive.

@@ -60,7 +60,7 @@ replaces the README's statement of current behavior with the recipe.
 - [x] T1: Add `examples/references.qmd` and its twin without the `#refs` div,
       plus a small `.bib`, following the existing twin-fixture naming
       (`examples/*-twin.qmd`).
-- [ ] T2: Add the render and the ordering checks to `tests/run-tests.sh`,
+- [x] T2: Add the render and the ordering checks to `tests/run-tests.sh`,
       reading captured artifacts (M24) and asserting element identity in the
       HTML rather than raw offsets in text.
 - [ ] T3: Replace the README's bibliography sentence with the recipe, naming
@@ -76,6 +76,7 @@ replaces the README's statement of current behavior with the recipe.
 - 2026-08-24: T1 — added `examples/references.qmd`, `examples/references-twin.qmd` and `examples/references.bib`; the twin is generated as the fixture with the `#refs` div block deleted and nothing else. Renders confirm the pair: `\printindex` after `\end{CSLReferences}` with the div and before `\begin{CSLReferences}` without it; `div#refs` before `section#qi-index` with the div and after it without.
 - 2026-08-24: question gate chose asserting the order in the LaTeX Quarto writes over compiling the fixture to PDF and reading the printed pages, because a PDF leg widens the criteria set past what the plan promised and the typeset-print gap is already a backlog row.
 - 2026-08-24: criteria audit ran in **full** mode (user-facing tier), inline rather than in a fresh-context [O] reader — this session is under a standing instruction not to spawn subagents. It returned one finding, fixed before the criteria were written: AC2 originally asserted the index "appears after the references" in the HTML text, which a check reading raw offsets satisfies without knowing which element carries either; it now asserts element identity (M07).
+- 2026-08-24: T2 — the suite renders both fixtures to LaTeX and HTML through `capture`, checks the twin is the fixture with its `#refs` div block deleted, and asserts the two orders: `\printindex` against the `CSLReferences` environment in the `.tex`, and the generated index section against the `refs` div in the HTML, the latter by id plus the bibliography classes and by the section being the one the index heading sits in. Five plants ran red, each naming its own defect: the two artifacts swapped in each format, a twin identical to the fixture, a fixture carrying no `#refs` div, and a `refs` div stripped of its bibliography classes. Full suite: 305 checks, all passing.
 
 ## Decisions
 

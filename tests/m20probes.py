@@ -271,15 +271,18 @@ def _tex(argv):
                   '\\providecommand* %d times; exactly one is what makes an author\'s '
                   'own definition win and a second injection impossible'
                   % (cmd, len(hits)))
-    # `quartoindexseeboth` is the fixture's own pre-existing cross-reference
-    # command: the both-targets mark it carries required it before this
-    # milestone, so it is named here rather than left to a wildcard.
-    allowed = set(wanted) | {'quartoindexseeboth'}
+    # The two cross-reference commands are not the subsystem's, and since M31
+    # they ride in EVERY LaTeX preamble — each reaches the compiled `.ind`, and
+    # each is stateless enough to be its own stand-in there. They are named
+    # here rather than left to a wildcard, so a fourth name appearing in this
+    # preamble is still the leak this check is about.
+    XREF_CMDS = {'quartoindexseeboth', 'quartoindexxrefs'}
+    allowed = set(wanted) | XREF_CMDS
     extra = sorted(set(_defined(pre)) - allowed)
     if extra:
         _fail('M20-AC6: the principal fixture\'s preamble also defines %s; the '
-              'subsystem is exactly %s plus the pre-existing %s'
-              % (extra, sorted(wanted), 'quartoindexseeboth'))
+              'subsystem is exactly %s plus the two cross-reference commands %s'
+              % (extra, sorted(wanted), sorted(XREF_CMDS)))
     if r'\csname quartoindex' in pre:
         _fail('M20-AC6: the principal fixture\'s preamble builds a quartoindex name '
               'with \\csname, which the definition scan above cannot see')
@@ -287,20 +290,32 @@ def _tex(argv):
     if r'\makeindex' not in content:
         _fail('M20-AC6: the control fixture\'s preamble carries no \\makeindex, so it '
               'is not the extension-processed preamble the negative half is about')
-    # The four SUBSYSTEM commands, not `allowed`: `quartoindexseeboth` belongs to
-    # the cross-reference channel, and a control carrying a both-targets mark is
-    # entitled to it. Forbidding it here would make this check about the wrong
-    # feature and fail on the role-free twin, which carries exactly that mark.
+    # The SUBSYSTEM commands, not `allowed`: the two cross-reference commands
+    # belong to the cross-reference channel and ride in every preamble, so
+    # forbidding them here would make this check about the wrong feature.
+    #
+    # `standins` arrives as whole definition strings rather than command names,
+    # and each is subtracted literally. Before M31 this subtracted a `[2]{}`
+    # pattern instead, which assumed every stand-in gobbles its arguments —
+    # false as soon as the locator's stand-in had to PRINT one (`[2]{#2}`), and
+    # a pattern that quietly matched nothing would have reported the locator as
+    # a leak. Each is required to appear exactly once before it is removed, so
+    # a stand-in that stops being injected fails here rather than making this
+    # subtraction silently empty (the M16 shape).
     content_live = content
-    if standins:
-        content_live = re.sub(
-            r'\\providecommand\*\\(?:%s)\[2\]\{\}'
-            % '|'.join(re.escape(s) for s in standins), '', content)
+    for defn in standins:
+        n = content_live.count(defn)
+        if n != 1:
+            _fail('M20-AC6: the control fixture\'s preamble carries the stand-in '
+                  '%r %d time(s); exactly one is what this subtraction removes '
+                  'before asking what leaked' % (defn, n))
+        content_live = content_live.replace(defn, '')
     leaked = sorted(set(_defined(content_live)) & set(wanted))
     if leaked or r'\csname quartoindex' in content_live:
         _fail('M20-AC6: the control fixture, which has no principal mention, has %s '
-              'injected into its preamble anyway — the empty gobbling stand-ins '
-              'for the .aux-borne names are the one allowed shape there'
+              'injected into its preamble anyway — the stand-ins for the three '
+              '.aux-borne names and the one the .ind carries are the only '
+              'allowed shapes there'
               % (leaked or '\\csname quartoindex'))
     print('ok   M20-AC6: the subsystem commands are defined once each with '
           '\\providecommand* in the fixture that uses them, nothing else naming '

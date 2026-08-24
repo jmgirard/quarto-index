@@ -103,9 +103,9 @@ remainder.
       positive signal, plus the `.index-here` marker. Every mark indexes at one
       level, and each term takes a level path no other fixture indexes (the M13
       registry hazard).
-- [ ] T3. Add the recipe render to `tests/run-tests.sh`, capturing the compiled
+- [x] T3. Add the recipe render to `tests/run-tests.sh`, capturing the compiled
       PDF into `$WORK` at that render and reading the copy (M24).
-- [ ] T4. Write `tests/unicodeprint.py`: read each listed term's own entry line
+- [x] T4. Write `tests/unicodeprint.py`: read each listed term's own entry line
       from the captured PDF and hold it, its locators removed, to that term's
       own characters in NFC — the entry's own cell, never a search of the index
       region (M30). It also holds the term list `tests/run-tests.sh` states
@@ -139,6 +139,7 @@ remainder.
 - 2026-08-24: amendment at the implement gate, both halves user-selected: the recipe names `STIX` and the proven set gains Cyrillic (the plan gate's own falsifier, "a bundled font shown to cover both", fired), and AC2 loses its zero-`Missing character` clause. Scope In/Out, AC1-AC5, Coverage and T1/T2/T4/T5/T6/T8 amended.
 - 2026-08-24: criteria audit ran twice in FULL mode over the amended wording, each over a fresh-context reader that did not author it; round 1 returned 7 findings, all disposed by narrowing (positively-stated proven set, one-level marks, a stated term list as AC2's domain, printed-index evidence replacing the log line in the controls); round 2 over the repaired wording returned 6 on the same criteria and went to the user under the once-more rule, who accepted the repair. AC5 and AC6 came back clean.
 - 2026-08-24: T1 — `STIX` is the recipe font: the plain family name `STIX` fails the render with fontspec's "The font \"STIX\" cannot be found", so the recipe names it by file (`Extension=.otf`, `UprightFont=*-Regular` and the three siblings). T2 — `examples/unicode.qmd` marks eight one-level terms: Greek, Greek with `sort=`, Cyrillic, Polish, Vietnamese, a decomposed `café`, `Nux̌alk` (`x` + U+030C, no precomposed form) and an ASCII term the controls read as their positive signal.
+- 2026-08-24: T3/T4 — the recipe render and `tests/unicodeprint.py` are in the suite; all eight terms print as their own entry line in the captured PDF, compared in NFC, and the stated term list is held against the fixture's own marks one per mark. Suite 339 checks, up from 336.
 
 ## Decisions
 

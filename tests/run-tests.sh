@@ -4151,6 +4151,51 @@ M32BLOCKPY
 pass "M32: the copyable recipe block in README is held line for line against the fixture that proves it works"
 
 # ---------------------------------------------------------------------------
+# M33 — a term outside Latin-1 PRINTS in the typeset index, under the engine
+# and main font README's `### Terms outside Latin-1` section names.
+#
+# Compiling is not the question here and neither is makeindex acceptance: both
+# succeed on a Greek entry under a main font that carries no Greek, and the
+# reader gets an index with blanks where the term was. The evidence is the
+# printed entry line, read structurally through tests/pdfindex.py.
+#
+# The LaTeX log's `Missing character` line is NOT read as evidence anywhere in
+# this section, and the README section T7 writes says so too: xelatex prints a
+# precomposed character its font lacks by falling back to the character's
+# canonical decomposition, so the same line fires on the recipe's own working
+# render (U+1EC7 in `Việt`) and on a genuinely dropped glyph alike. The one
+# log line read below is the pdflatex control's, which is an error, not a
+# warning, and stops the render.
+#
+# ORACLE RULE. M33_TERMS is derived by hand from examples/unicode.qmd and is
+# never read back out of a render; `unicodeprint.py marks` holds it against
+# the fixture's own marks, one term per mark, so neither can drift from the
+# other unnoticed. Spellings here are the precomposed ones where a precomposed
+# form exists — deliberately NOT the fixture's bytes for `café`, which is
+# written decomposed there — since both sides are compared in Unicode NFC and
+# a list copied character for character out of the fixture would be blind to
+# exactly the normalization this milestone is about.
+# ---------------------------------------------------------------------------
+M33_TERMS=(θεωρία ψυχή Москва źródło Việt café Nux̌alk Ascii)
+# The subsets the controls below name: the Greek terms a font without Greek
+# drops, and the ASCII term every control must still print.
+M33_GREEK=(θεωρία ψυχή)
+M33_ASCII=Ascii
+M33_CJK=漢字
+
+python3 tests/unicodeprint.py marks examples/unicode.qmd "${M33_TERMS[@]}" \
+  || fail "M33-AC2: the term list this suite states for examples/unicode.qmd is not what that fixture marks (its own FAIL line is above)"
+
+quarto render examples/unicode.qmd --to pdf > "$WORK/m33-recipe.log" 2>&1 \
+  || { tail -20 "$WORK/m33-recipe.log" >&2; fail "M33-AC1: examples/unicode.qmd failed to render to PDF under the documented recipe"; }
+capture examples/unicode.qmd pdf "m33-recipe"
+
+M33_PDF="$CAPTURE_ROOT/m33-recipe/unicode.pdf"
+python3 tests/unicodeprint.py entries "$M33_PDF" "${M33_TERMS[@]}" \
+  || fail "M33-AC2: a term outside Latin-1 does not print as its own entry in the typeset index (its own FAIL line is above)"
+pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engine and main font, and all ${#M33_TERMS[@]} of its terms print as their own entry in the typeset index, compared in Unicode NFC"
+
+# ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as
 # an entry of its own. The domain is the fixture's by construction and is
 # pinned by the coverage check above; this asserts the characters arrive.

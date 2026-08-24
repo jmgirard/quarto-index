@@ -85,11 +85,11 @@ promise to the `.aux` alone.
       the command it names. Sweep the produced `.ind` for every `quartoindex`
       name it carries, settling AC4's reachability from the artifact — a fourth
       name returns AC4 to the amendment gate.
-- [ ] T2: Add the pass-through locator stand-in to `PRINCIPAL_GOBBLERS`
+- [x] T2: Add the pass-through locator stand-in to `PRINCIPAL_GOBBLERS`
       (`core.lua:309`) — `\providecommand*`, two arguments, printing the second
       — keeping the exactly-one-of-two-blocks discipline the comment above it
       states.
-- [ ] T3: Make `XREF_BOTH_DEFINITION` and `XREF_LIST_DEFINITION` unconditional
+- [x] T3: Make `XREF_BOTH_DEFINITION` and `XREF_LIST_DEFINITION` unconditional
       in every LaTeX-derived render, the zero-mark branch (`index.lua:166`)
       included, and rewrite the comments that state the old conditional
       discipline.
@@ -105,7 +105,7 @@ promise to the `.aux` alone.
 - [x] T6: Add the AC4 sweep: enumerate every `quartoindex` name in the captured
       `.ind` artifacts and every definition in the captured `.tex` preambles,
       and require containment.
-- [ ] T7: Update the README's leftover-file paragraph (`README.md:388-401`) and
+- [x] T7: Update the README's leftover-file paragraph (`README.md:388-401`) and
       the emitted-preamble sentence (`README.md:545-549`) from the `.aux` alone
       to the `.aux` and the `.ind`, and update `README_STALEAUX_CLAIMS`
       (`run-tests.sh:401-407`), whose pinned `.ind`-exclusion string this
@@ -126,6 +126,7 @@ promise to the `.aux` alone.
 - 2026-08-24: T2 and T3 — code landed, boxes left unticked until T4: the suite's `m22_standins_only` pins a no-subsystem preamble at exactly three `quartoindex` mentions, which this change makes six, so `verify` is red by construction until that count is re-derived. T2 adds `\providecommand*\quartoindexlocator[2]{#2}` to `PRINCIPAL_GOBBLERS`. T3 makes `XREF_BOTH_DEFINITION` and `XREF_LIST_DEFINITION` unconditional on both the marked and the zero-mark branch. That leaves `xref_both_emitted` and `xref_list_emitted` written and never read; they are removed rather than kept, because `stateprobe.py` requires every reset it probes to be load-bearing and a write-only flag's reset removal produces no render difference for it to catch — keeping them would turn the state-pollution guard red or need an exemption entry for dead state. Verified on the T1 reproduction: the child `.tex` now defines all six commands, pdflatex beside the same stale `.ind` exits 0 with no undefined control sequence, and the compiled index prints `basilisk, 1, 2`, `chimera, see Wyvern; see also Hydra` and `Drake, see Wyvern; see also Hydra`.
 - 2026-08-24: amendment gate — AC4 narrowed. The sweep found beamer captures carrying no definitions, which is deliberate: beamer has no `theindex` environment, so the extension emits no `\index` and no `\printindex` there (`core.lua:391`), and a document with no `\printindex` never reads an `.ind`. AC4's domain is now every captured `.tex` carrying `\printindex`, read off each artifact. Rejected: naming beamer in an exclusion list, which is the exemption-registry shape a second excluded format would fall silently outside of; and injecting the definitions into beamer, which widens the deliverable to fit the criterion for no failure it can close. Falsified by a format that reads an `.ind` without carrying `\printindex`. The amended wording was asked the full-mode audit questions inline and returned no finding.
 - 2026-08-24: T4, T5, T6 — checks landed and the suite runs clean. Four existing checks asserted the discipline this milestone reverses and were repaired rather than deleted: M02-AC5 now requires both cross-reference commands defined exactly once in the preamble of the using document AND the mark-free control; M08-AC2 and M15's shape sweep match `|<command>`, makeindex's encap opener, so they read an emission rather than the definition every preamble now carries; and `m20probes.py --standins` takes whole definition strings instead of a `[2]{}` pattern, which assumed every stand-in gobbles its arguments and would have reported the locator's `[2]{#2}` as a leak. `m22_standins_only` strikes out the six definitions it enumerates and requires no `quartoindex` residue, replacing the literal count of three, so a seventh definition fails by residue rather than needing the number edited. The new M31 section renders the T1 parent, re-renders it with the attributes stripped, and runs pdflatex beside the surviving `.ind` under `-no-shell-escape`, asserting the `.ind` byte-identical afterwards — TinyTeX's restricted shell escape whitelists makeindex, so imakeidx would otherwise rebuild the file and hide the hazard. T5's discriminating proof is the AC2 loop: each of the three definitions removed by a single substitution asserted to take exactly one line, the render required to exit non-zero AND to name that command at the `Undefined control sequence` argument line. T6's sweep reports 3 names across 7 captured `.ind` files against 30 captured `.tex` preambles.
+- 2026-08-24: T7 — README updated and T2/T3 ticked, the suite now being clean. The leftover-file paragraph is rewritten over both files, and the sentence that scoped the promise to the `.aux` and excluded the `.ind` is gone rather than left standing beside a promise that now covers it. The emitted count goes from three `\providecommand*` definitions to six, split by which render carries which. `README_STALEAUX_CLAIMS` is repinned on the widened promise: its `ind exclusion` row asserted a sentence this milestone makes false, so it is replaced rather than kept. One suite run in between failed on a Quarto/Deno segfault during the gfm render of principal.qmd, unrelated to this branch and not reproduced on the re-run.
 
 ## Decisions
 

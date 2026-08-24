@@ -398,14 +398,17 @@ README_PRINCIPAL_CLAIMS=(
   $'range degradation\ta principal mention whose page is anywhere in such a folded range, its first page included, prints plain, silently'
 )
 
-# README claims about a stale `.aux` (NORMATIVE, M22). Same discipline. The
-# scope word matters as much as the promise: the extension covers a leftover
-# `.aux` and not a leftover `.ind`, so the qualification is pinned beside the
-# claim rather than left to the paragraph around it.
+# README claims about a stale build file (NORMATIVE, M22, widened at M31). Same
+# discipline. The scope word matters as much as the promise: M22 covered a
+# leftover `.aux` and pinned its `.ind` exclusion beside it, and M31 closed the
+# `.ind` too, so what is pinned here is the widened promise and the count of
+# definitions a render now carries — a claim that drifts from what the filter
+# injects fails here rather than in a reader's build.
 README_STALEAUX_CLAIMS=(
-  $'aux promise\tDeleting marks never breaks the next render on a leftover `.aux`.'
-  $'ind exclusion\tA leftover `.ind` is a different matter, and this does not cover it.'
-  $'emissions\tevery LaTeX-derived render that does *not* emphasize a principal mention carries them'
+  $'standin promise\tDeleting marks never breaks the next render on a leftover build file.'
+  $'both files\tEither file can outlive the marks that wrote it'
+  $'ind covered\tthe pages and targets a stale index holds print as the ordinary locators and cross-references they now are'
+  $'emissions\tevery LaTeX-derived render carries the two cross-reference commands, and every one that does *not* emphasize a principal mention carries four more'
 )
 
 # README claims about the page range (NORMATIVE, M21). Same discipline: the
@@ -8996,14 +8999,14 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 missing = [f'  missing ({label}): <<{text}>>'
            for label, text in rows if flat(text) not in readme]
 if missing:
-    print('FAIL: M22: README.md does not document the stale-.aux behavior as '
-          'this suite exercises it:', file=sys.stderr)
+    print('FAIL: M22/M31: README.md does not document the stale-build-file '
+          'behavior as this suite exercises it:', file=sys.stderr)
     print('\n'.join(missing), file=sys.stderr)
     sys.exit(1)
-print(f'ok   M22: all {len(rows)} documented claims about a stale .aux appear '
-      f'verbatim in README.md')
+print(f'ok   M22/M31: all {len(rows)} documented claims about a stale build '
+      f'file appear verbatim in README.md')
 M22DOCPY
-pass "M22: README documents the stale-.aux promise, its .ind exclusion and the preamble lines every no-principal LaTeX render carries, each verbatim"
+pass "M22/M31: README documents the leftover-build-file promise over both the .aux and the .ind, and the six preamble definitions a LaTeX render carries, each verbatim"
 
 # ---------------------------------------------------------------------------
 # M31 — a stale `.ind` outliving its marks still builds.

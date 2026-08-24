@@ -77,7 +77,18 @@ _None yet — populated as the codebase takes shape._
   and gives both counts where the two differ. The rule governs what a number is
   called, never what it is: no count any report computes changes. A report whose
   number has no drop to distinguish — a book's chapter count, a top-level block
-  position — is outside it.
+  position — is outside THIS bullet's rule, and inside the next one (corrected
+  M28).
+- **A reported position or count names the sequence it is over** (added M28). A
+  warning that reports a position or a count over a sequence says which
+  sequence. A top-level block position is counted over the document as the
+  filter received it, after Quarto expanded any includes and executable cells,
+  so it can differ from the position in the author's source file; a book's
+  chapter count is over the files the book renders, in render-list order. Where
+  a report names two numbers, each is named where it is printed. The author's
+  own source position is not offered alongside the reported one — the expansion
+  has already happened and nothing records where a block came from (D-014). A
+  report whose number indexes into no sequence is outside it.
 
 ## Design Principles
 
@@ -235,8 +246,9 @@ marker — an empty top-level div, class `qi-index-here` — is resolved before 
 back-end is chosen, so a misused one (nested, duplicate, non-empty, or in a
 document with no marks) is diagnosed in every format and no marker survives
 into any output. A nested marker that was the only thing in the block list it stood in empties
-that place, which is reported — carrying the marker's top-level block position
-and naming nothing else (added M12). Naming what held it is what the report
+that place, which is reported — carrying the top-level block position and the
+clause saying what that position is counted over, and naming nothing else
+(added M12, position clause added M28). Naming what held it is what the report
 refuses: Quarto wraps a callout, a tabset and a captioned figure in scaffold
 divs no author wrote, so every available name is invented or false, and a
 callout holding only a marker still renders its title bar and so is not empty
@@ -550,13 +562,19 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 - **KI21.** No fixture exercises a reported block position where Quarto injects
   a top-level block from an executable cell or from a shortcode other than
-  `{{< include >}}`; the include member is covered by
-  `examples/marker-position.qmd`. What the position is counted over is no
+  `{{< include >}}`; the include member is covered for the emptied-place report
+  by `examples/marker-position.qmd`, and for neither the duplicate-marker
+  report nor the book chapter count. What the position is counted over is no
   longer open — the reports say so themselves — so only the un-probed injection
   kinds remain. — M12 review F6, narrowed M28
 - **KI22.** In a book the emptied-place position is chapter-local and the
   message names no file, unlike the book-aware marker warnings, which carry
   `ctx.file`. — M12 review F7
+- **KI80.** The duplicate-marker report's shared clause says "Both numbers are
+  counted over the document as this filter received it … so they can differ
+  from the positions in your source file". Its first number is a marker
+  ordinal, not a position, so the trailing half of that sentence describes only
+  the second. — M28 review F7
 - **KI23.** The emptied-place reports for a callout, a tabset and a captioned
   figure exist only because Quarto's scaffold wrapping happens to leave the
   marker alone in an inner block list — the private structure M12's gate refused
@@ -615,6 +633,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI44.** A criterion enumerating scans by `re.search`/`re.match`/`re.findall`
   reaches neither `re.finditer` nor `.count(`/`.split(`, so a scan reading the
   source set through one of those falls outside it. — M25 review F7
+- **KI81.** `tests/m28pos.py` matches only the fixture manifest's *reported*
+  position against the render; the *author* position it states is held to
+  nothing but being a different number, so a manifest naming the wrong author
+  position passes. Counting the host file's own top-level blocks is
+  mechanically checkable and is not done. — M28 review F2
+- **KI82.** The block-position naming clause is written out three times in the
+  suite (`run-tests.sh` twice, `tests/m28pos.py` once) against one shared string
+  in the filter, so a reword takes three coordinated suite edits where the
+  filter takes one. Drift fails loudly in all three, so this is cost, not a
+  hole; it is the price of not reading the expectation out of the filter's
+  source (D-011). — M28 review F10
 
 ### The acceptance suite: coverage gaps
 

@@ -109,6 +109,7 @@ to that residue rather than struck, and the residue stays a Known issue.
 - 2026-08-23: T6 — D-014 appended annotating D-006; KI21 narrowed to the un-probed injection kinds and marked narrowed M28; KI25 struck. No candidate row pointed at either label — the block-position row was narrowed to its KI23 remainder at plan time — so no row needed rewriting. cairn_validate clean.
 
 - 2026-08-23: all tasks done; `tests/run-tests.sh` passes (286 checks) and `tests/run-tests.sh --self-test` passes (420 checks). Status set to review.
+- 2026-08-24: review gate — maintainer directed the seven fix-now items; all landed on the branch, three follow-ups filed as KI80/KI81/KI82 with the suite-hardening row extended. Suite re-run green (286 / 420), cairn_validate exit 0.
 - 2026-08-23: review — three fresh-context lenses ran; blame-history and prior-review record returned no findings, diff-bug returned thirteen. Six triaged fix-now, three to a follow-up row, three rejected with reason, one (F1) already carried by KI22/M29. No finding meets the return floor.
 - 2026-08-23: review — PR #28 opened as a draft; all five criteria executed with fresh evidence and ticked; consistency gate clean (cairn_validate exit 0, no principle change, generic profile names no toolchain checks). Fresh-context review fan-out spawned; findings pending.
 
@@ -280,3 +281,38 @@ would find the unsuffixed slug taken and hit `capture`'s duplicate-slug `fail`."
 none is a load-bearing defect in what the filter does for an author: F1 is an
 already-recorded Known issue, F11 and F12 are readings rather than defects, and
 the rest are suite strength and record staleness. Status stays `review`.
+
+### Fix-now work directed at the gate (2026-08-24)
+
+The maintainer chose "fix seven, then merge". What landed:
+
+- **F3.** The direct repair the finding names is not available: `WARN_MARKER_DUP`
+  carries two RENDERED numbers and `mark-report-keys` compares its keys against
+  the filter's source literals, where those places are `%d`. Probed directly —
+  passing the key verbatim gives "matches 0 filter warnings, want 1". The
+  duplicate report now enters the scan as `WARN_MARKER_DUP_STEM`, the
+  number-free stem of the same message, with a shell check beside the two
+  constants that fails if the numbered key stops containing the stem. The
+  overclaiming comment above the argument list is corrected. The scan now holds
+  16 keys, up from 15.
+- **F4.** The "Both numbers are" loop counts its matches first and fails naming
+  the count when it is not exactly 1, so a key that stopped matching is
+  reported as a missing report rather than as a report naming one number.
+- **F5.** `check_report_clause` tests `[ -r "$logfile" ]` before greping, and
+  refuses a match count that is not a number — the two ways the old string
+  compare let an absent file through.
+- **F6.** `DESIGN.md`'s Conventions section gains the D-014 bullet, and the
+  D-006 bullet's exclusion is corrected in place to point at it (`corrected M28`).
+- **F8.** The architecture description of the emptied-place report now says it
+  carries the position clause as well as the position.
+- **F9.** KI21 no longer claims the include member is covered outright — it is
+  covered for the emptied-place report and for neither of the other two.
+- **F13.** The capture slug is `marker-position-gfm`, following the local
+  `<name>-<fmt>` idiom.
+
+Follow-ups filed as Known issues, with the existing acceptance-suite hardening
+row extended to point at the two suite ones: **KI80** (F7), **KI81** (F2),
+**KI82** (F10).
+
+Re-verified after the fixes: `tests/run-tests.sh` 286 checks exit 0,
+`tests/run-tests.sh --self-test` 420 checks exit 0, `cairn_validate` exit 0.

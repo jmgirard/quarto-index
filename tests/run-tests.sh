@@ -236,15 +236,18 @@ run_scan() {
       # one warning, and every zero-expectation control resting on it passes
       # vacuously (M18 review F3). M20's three and M21's five were both added
       # to the run without reaching here (M21 review F6).
-      # M28's two keys join them: both are greped for a report whose text the
-      # milestone reworded, and a key that stopped matching its warning would
-      # leave M28's clause checks asserting the clause over no report at all.
+      # M28's three keys join them. Each is greped for a report M28's clause
+      # checks read, and a key that stopped matching its warning would leave
+      # those checks asserting the clause over no report at all. The duplicate
+      # report enters as WARN_MARKER_DUP_STEM — the number-free stem of the key
+      # the run greps by, tied to it at its definition — because this scan
+      # compares against source literals, where the key's two numbers are `%d`.
       python3 "$script" "$WARN_SELF_XREF" "$WARN_FOLD_SELF" "$WARN_FOLD_DEPTH" \
         "$WARN_FOLD_TARGET" \
         "$M20_UNKNOWN" "$M20_NOLOCATOR" "$M20_UNINDEXED" \
         "$R_UNKNOWN" "$R_DISPLACED" "$R_ALREADY" "$R_NOOPEN" "$R_NOCLOSE" \
         "$R_BOOKUNPAIRED" \
-        "$WARN_MARKER_EMPTIED" "$WARN_MARKER_NOT_LAST" ;;
+        "$WARN_MARKER_EMPTIED" "$WARN_MARKER_NOT_LAST" "$WARN_MARKER_DUP_STEM" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -2737,6 +2740,17 @@ WARN_MARKER_NESTED='index placement marker below the top level'
 # that identifies this report and only this one.
 WARN_MARKER_EMPTIED='was the only thing written where it stood'
 WARN_MARKER_DUP='index placement marker 2 in document order (top-level block 8) is ignored'
+# The duplicate report is greped by a key carrying two RENDERED numbers, and
+# mark-report-keys compares its keys against the filter's source literals,
+# where those two places are `%d`. So the scan is given the number-free stem of
+# the same message instead, and the two are held together here: a rewording
+# that moved the stem out of the numbered key would fail below rather than
+# leave the scan holding a message the run no longer greps by.
+WARN_MARKER_DUP_STEM='in document order (top-level block'
+case "$WARN_MARKER_DUP" in
+  *"$WARN_MARKER_DUP_STEM"*) ;;
+  *) fail "M28: the duplicate-marker grep key no longer contains the stem passed to mark-report-keys, so the scan and the run would hold different messages" ;;
+esac
 WARN_MARKER_CONTENT='index placement marker is not empty'
 # The three sort-key reports (M06-AC4). Each is a report about the MARK, so
 # each is asserted in a format with an index back-end and in one without.
@@ -10364,7 +10378,16 @@ M28_CHAPTER_CLAUSE="The chapter count is over the files this book renders, in th
 # clause checks exist to avoid.
 check_report_clause() {
   local logfile="$1" key="$2" clause="$3" label="$4" hits missing
+  # The log is proven readable BEFORE it is greped. An absent or mistyped path
+  # leaves `grep -c` printing nothing, and an emptiness test on that empty
+  # string reads as non-zero — the guard would pass over a file that is not
+  # there, which is the likeliest way this check goes blind.
+  [ -r "$logfile" ] \
+    || fail "$label: $logfile is not readable, so nothing about the naming clause was asserted"
   hits=$( { grep -cF -- "$key" "$logfile" || true; } | tr -d ' ')
+  case "$hits" in
+    ''|*[!0-9]*) fail "$label: counting warnings matching <<$key>> in $logfile gave <<$hits>>, not a number" ;;
+  esac
   [ "$hits" != "0" ] \
     || fail "$label: no warning matching <<$key>> was emitted into $logfile, so the naming clause would be asserted over no report at all"
   missing=$( { grep -F -- "$key" "$logfile" || true; } \
@@ -10391,6 +10414,12 @@ done
 # clause itself: a reworded lead-in that dropped "Both numbers" would leave
 # the marker ordinal unnamed while the clause check still passed.
 for fmt in html latex gfm; do
+  # Counted before it is judged, for the same reason check_report_clause counts
+  # first: a key that stopped matching would otherwise be reported as a report
+  # naming one number, which is a misdiagnosis of a report that is not there.
+  dup_hits=$( { grep -cF -- "$WARN_MARKER_DUP" "$WORK/misuse-$fmt.log" || true; } | tr -d ' ')
+  [ "$dup_hits" = "1" ] \
+    || fail "M28-AC2: $WORK/misuse-$fmt.log holds $dup_hits warning(s) matching <<$WARN_MARKER_DUP>>, want exactly 1, so the both-numbers clause would be judged over the wrong set"
   { grep -F -- "$WARN_MARKER_DUP" "$WORK/misuse-$fmt.log" \
     | grep -qF 'Both numbers are'; } \
     || fail "M28-AC2: the duplicate-marker report in $fmt names a sequence for only one of its two numbers"
@@ -10412,7 +10441,7 @@ check_report_clause "$WORK/book-order.log" "$WARN_MARKER_NOT_LAST" \
 quarto render examples/marker-position.qmd --to gfm \
   > "$WORK/marker-position.log" 2>&1 \
   || { tail -20 "$WORK/marker-position.log" >&2; fail "M28-AC1: marker-position.qmd failed to render to gfm"; }
-capture examples/marker-position.qmd gfm "marker-position"
+capture examples/marker-position.qmd gfm "marker-position-gfm"
 
 python3 tests/m28pos.py "$WORK/marker-position.log" examples/marker-position.qmd \
   || fail "M28-AC1: the reported block position is not the divergent one the fixture's manifest states"

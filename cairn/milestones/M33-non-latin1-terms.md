@@ -1,6 +1,6 @@
 # M33: An index term outside Latin-1 prints in the PDF index
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -144,6 +144,8 @@ remainder.
 - 2026-08-24: T6 — ten plants over the reader's ten reachable clauses, one substitution each, matrix recorded in the self-test's own comment beside them; each plant states the message fragment it expects, so a reader going red for another reason is not counted. The pdflatex control's log reading moved out of a shell heredoc into a fourth reader mode (`stopped`) so its two clauses could be planted. One clause is guarded and not planted: an index heading present with no entry lines is unreachable through this extension — probed, a document with no marks gets no heading at all. Self-test 482 checks.
 - 2026-08-24: T7 — README's `### Terms outside Latin-1` lands after `### Special characters`, cross-referenced from it and from the Examples list; eleven claim rows are held verbatim and the copyable YAML block is held line for line against `examples/unicode.qmd` (the M32 recipe-block pattern). Suite 349 checks.
 - 2026-08-24: T8 — IP2 amended in place and marked, the collation convention corrected to match, KI6 narrowed to the proven set and the unproven remainder, D-016 appended. Pre-review check `tests/run-tests.sh --self-test` clean at 485 checks.
+- 2026-08-24: minor — the tool guard now fails loudly when `kpsewhich` cannot find `STIX-Regular.otf`, so a machine without TeX Live's `stix` package reports the missing package rather than four renders failing inside a LaTeX log.
+- 2026-08-24: all tasks complete; status to review. `tests/run-tests.sh --self-test` clean at 485 checks (336 on the merge base).
 
 ## Decisions
 

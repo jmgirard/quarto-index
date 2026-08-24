@@ -1345,6 +1345,15 @@ require_pdf_tools() {
     || fail "pdflatex not found on PATH (the escaping probe invokes it directly). AC6 must never pass unrun."
   command -v pdftotext >/dev/null 2>&1 \
     || fail "pdftotext not found on PATH. AC6 must never pass unrun."
+
+  # M33's recipe names a main font by file, so the font has to be findable the
+  # same way fontspec finds it. Without this the four M33 renders fail deep
+  # inside a LaTeX log with fontspec's "cannot be found", which reads like a
+  # defect in the recipe rather than a package this machine does not have.
+  command -v kpsewhich >/dev/null 2>&1 \
+    || fail "kpsewhich not found on PATH. AC6 must never pass unrun."
+  kpsewhich STIX-Regular.otf >/dev/null 2>&1 \
+    || fail "STIX-Regular.otf is not findable by kpsewhich; the TeX Live 'stix' package is missing (run: tlmgr install stix). M33's documented recipe names this font, so its renders would fail on the font rather than on anything this suite is testing."
 }
 
 # ---------------------------------------------------------------------------

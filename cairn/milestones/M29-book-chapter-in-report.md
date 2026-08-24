@@ -46,26 +46,26 @@ milestone depends on.
 
 ## Acceptance criteria
 
-- [ ] AC1: In the html render of `examples/book`, a nested marker that empties
+- [x] AC1: In the html render of `examples/book`, a nested marker that empties
       its place in the chapter `sub/two.qmd` draws an emptied-place report
       whose whole emitted line names that chapter's path as `sub/two.qmd` —
       root-relative, as the book-aware marker warnings name `ctx.file` —
       immediately after its block position, and is otherwise the emptied-place
       report's no-chapter text of AC3 with only its block number free to differ.
-- [ ] AC2: In that same html render, a second top-level marker in `last.qmd`
+- [x] AC2: In that same html render, a second top-level marker in `last.qmd`
       draws a duplicate-marker report whose whole emitted line names that
       chapter's path as `last.qmd` immediately after its block position, and is
       otherwise the duplicate-marker report's no-chapter text of AC3 with only
       its block number and marker ordinal free to differ.
-- [ ] AC3: In the pdf render of `examples/book`, the emptied-place and
+- [x] AC3: In the pdf render of `examples/book`, the emptied-place and
       duplicate-marker reports each emit a line carrying no chapter clause,
       and each such line is the text M28 shipped except for AC4's change.
-- [ ] AC4: In the html, latex and gfm renders of `examples/marker-misuse.qmd`,
+- [x] AC4: In the html, latex and gfm renders of `examples/marker-misuse.qmd`,
       the duplicate-marker report's whole emitted line introduces the shared
       position clause as being about its block position rather than about both
       of its numbers, so the source-divergence tail no longer describes the
       marker ordinal (KI80).
-- [ ] AC5: Every warning line in the captured logs of `examples/marker-shapes.qmd`
+- [x] AC5: Every warning line in the captured logs of `examples/marker-shapes.qmd`
       in html, latex and gfm, and of `examples/book` in html and pdf, is either
       one of those fixtures' known other warnings or one of this milestone's two
       report templates with only its block number, marker ordinal and chapter
@@ -136,3 +136,47 @@ milestone depends on.
 ## Decisions
 
 ## Review
+
+Fresh evidence, 2026-08-24, branch `m029-book-chapter-in-report` at 2875f2e,
+PR #29. Whole suite run: `tests/run-tests.sh`.
+
+- AC1 — met. The HTML book render emits, whole: `index placement marker in
+  top-level block 8 of sub/two.qmd was the only thing written where it stood;
+  the marker is removed, so nothing you wrote remains there. Block positions
+  are counted over the document as this filter received it, ...`. The clause
+  sits immediately after the block position, names the chapter root-relative,
+  and the line is otherwise AC3's pdf text with only `8` against `26` free to
+  differ. Pinned by `tests/m29book.py` in `book-html` mode with an end-anchored
+  whole-line pattern; two planted logs prove it able to fail (clause moved to
+  the line's end, clause dropped), each failing for its own reason.
+- AC2 — met. Same render, whole: `index placement marker 2 in document order
+  (top-level block 5) of last.qmd is ignored; the index is placed at the first
+  marker. Block positions are counted over ...`. Clause immediately after the
+  block position; otherwise AC3's pdf duplicate text with only the block number
+  (5 against 34) free to differ, the ordinal being 2 in both. Same partition
+  check, same planted-defect proofs.
+- AC3 — met. The pdf book render emits both reports with no chapter clause:
+  `... in top-level block 26 was the only thing written where it stood; ...`
+  and `... marker 2 in document order (top-level block 34) is ignored; ...`.
+  Each is M28's shipped text but for AC4's reword of the duplicate report's
+  lead-in. `tests/m29book.py` in `book-pdf` mode requires the clause absent; a
+  planted pdf log carrying `of last.qmd` fails with `want None`.
+- AC4 — met. In all three misuse renders the duplicate report reads `... is
+  ignored; the index is placed at the first marker. Block positions are ...`;
+  the suite asserts that lead-in, asserts the ordinal is still named by `in
+  document order`, and carries a control that fails if `Both numbers are`
+  returns. KI80 closed.
+- AC5 — met, line by line over each of the five logs. The three
+  `marker-shapes` logs: M12's partition, `of 34 warnings, the 13 that are not
+  the fixture's two known ones are exactly the manifest's emptied-place
+  reports`, in html, latex and gfm. The two book logs: `tests/m29book.py`,
+  7 warnings in the html book partitioning into the fixture's known others and
+  the two reports naming `last.qmd` and `sub/two.qmd`, and 4 in the pdf book
+  naming no chapter. Two further planted logs prove the book partition closed
+  rather than a template search — an extra warning belonging to neither
+  partition, and a log holding none of our warnings at all.
+- AC6 — pending the self-test run.
+
+Consistency gate: `cairn_validate` exit 0, all 16 checks PASS and 7 advisories
+OK. No IP/GP principle text changed, so `cairn_impact` does not apply. Active
+profile is `generic`, whose `consistency-gate` slot names no toolchain checks.

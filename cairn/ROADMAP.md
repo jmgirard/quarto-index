@@ -1,13 +1,13 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-24 (M30-M32 planned; the escape-table, leftover-`.ind` and printindex-ordering candidate rows absorbed into them; KI1 struck under D-015 and KI86 filed.)_
+_Last hygiene check: 2026-08-24 (M30 in progress; KI86 struck as it closed and KI87 filed for the comma entry's ligature; the suite-hardening row absorbed the two un-widened print proofs and one row added for the comma.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M30 | A character in an index entry is proved to print, not merely to compile | planned | — | normal | milestones/M30-typeset-print-proof.md |
+| M30 | A character in an index entry is proved to print, not merely to compile | review | — | normal | milestones/M30-typeset-print-proof.md |
 | M31 | A leftover index file never breaks the next render | planned | — | normal | milestones/M31-stale-ind-standin.md |
 | M32 | An index follows the bibliography where the author puts it | planned | — | low | milestones/M32-index-after-references.md |
 | M29 | A marker report in a book names its chapter | done | M28 | normal | milestones/archive/M29-book-chapter-in-report.md |
@@ -30,10 +30,11 @@ _Last hygiene check: 2026-08-24 (M30-M32 planned; the escape-table, leftover-`.i
 - Locator-control follow-ups (clustered): roles beyond `principal` for a locator (a defining passage, an illustration), promoted on evidence an author wants a second role; an author-written id pairing two overlapping ranges of one term, which pairing by entry cannot tell apart, promoted on evidence that authors write them; author control over the range dash; and emphasizing a principal page folded inside a page range — added 2026-08-21 — M20/M21 Scope Out, RR01, M20 amendment gate — KI5, KI74
 - Pair a range spanning two chapters of an HTML book; promote on a per-chapter record that separates what the author wrote from what a chapter concluded, never on the feature being wanted, and on a derivation path that reads the mark's rewritten content — added 2026-08-22 — M21 review rounds 1-3, D-009 — KI19, KI20
 - Book sidecar-store follow-ups (clustered): prune records for chapters no longer in the book; give the declared-key map a stable order; decide what a page outside `book.render` should do — added 2026-08-17, clustered 2026-08-22 — M05 review F4/F13, M06 review pass 2 F11 — KI16, KI17, KI18
+- Make a `,` index entry print as a comma rather than merging with the index style's delimiter into one glyph; promote on evidence that a reader or author reads the merged glyph as wrong, never on the oddity being noticed — added 2026-08-24 — M30 T1 — KI87
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN) — KI79
 - Pick an engine and fonts for non-Latin-1 index terms (Greek, CJK, combining marks, RTL) — added 2026-08-16 — M01 review R7/R9 — KI6
-- Acceptance-suite hardening (clustered): close the gaps KI27-KI74 record, from where a check reads and what it holds through the coverage gaps; absorbs six rows refiled here — the escaping-combination probe, bare unquoted attribute values, an independent demo-manifest count, the demo's own makeindex acceptance, cross-reference counts rather than substring presence, and an HTML planted-defect proof — plus a fixture for the all-empty-`entry=` shape — added 2026-08-16, extended 2026-08-17, clustered 2026-08-18, refiled 2026-08-23, extended 2026-08-24 — KI24, KI27-KI74, KI81, KI82, KI84, KI85
+- Acceptance-suite hardening (clustered): close the gaps KI27-KI74 record, from where a check reads and what it holds through the coverage gaps; absorbs six rows refiled here — the escaping-combination probe, bare unquoted attribute values, an independent demo-manifest count, the demo's own makeindex acceptance, cross-reference counts rather than substring presence, and an HTML planted-defect proof — plus a fixture for the all-empty-`entry=` shape, and the typeset print proof M30 gave the escaping probe extended to the cross-reference and sort-key probes, which still assert compile-and-accept only — added 2026-08-16, extended 2026-08-17, clustered 2026-08-18, refiled 2026-08-23, extended 2026-08-24 — KI24, KI27-KI74, KI81, KI82, KI84, KI85
 - Support Windows checkouts without symlink support — added 2026-08-16 — M01 review R18 — KI78
 - Guard an accumulator added after M26 that joins no `reset`; D-011 refuses a source scan, so the guard is a render or nothing — added 2026-08-16, promoted to M26 2026-08-23 — KI10
 - Probe `\index` inside a moving argument, and protect `\quartoindexregister` on that path — added 2026-08-16 — M01 review R17, M20 review round 2 R2-F7 — KI2

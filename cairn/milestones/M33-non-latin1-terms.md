@@ -1,6 +1,6 @@
 # M33: An index term outside Latin-1 prints in the PDF index
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -157,6 +157,7 @@ remainder.
 - 2026-08-24: implement gate re-probed both returned defects before touching anything. Quarto 1.10.18 renders through LuaHBTeX, not pdflatex; the fixture with only its `pdf-engine:` line removed exits 0 with `Việt` printing as `Vi<?>t` and its other seven terms correct, and with both recipe lines removed it exits 0 with Greek and Cyrillic printing as empty boxes. `tlmgr info stix` reports `collection: collection-fontsextra`, which TinyTeX does not install by default.
 - 2026-08-24: implement gate chose, user-selected, to document the no-engine path in README and pin it with a fourth control render, over stating less and adding no check, and over naming the control in an acceptance criterion. AC3 keeps the three controls it names and AC4 keeps its five things — no criterion changed. Minor amendment: T9 added for the return's six fixes, and mapped under AC4 and AC6 in Coverage; no criterion text changed.
 - 2026-08-24: T9 — R9 and R7 fixed in `tests/unicodeprint.py` (import resolved from `__file__`; `entries` refuses an empty term list, a clause now planted, eleven plants over eleven reachable clauses). R1: README's "one of two failures" replaced by three, the third naming lualatex as Quarto's default engine and the silent half-set build, with control (d) rendering the fixture minus its `pdf-engine:` line and holding it to exit 0, the ASCII entry line present and the Vietnamese term not printing as itself; two claim rows added. R2, R10, R13: the STIX install fact, the suite-prerequisites sentence and the fixture-list count corrected, the install fact added as a claim row. D-017 appended, correcting D-016's default-engine context and leaving its decision standing. Suite `--self-test` clean at 487 checks.
+- 2026-08-24: defect return #1 repaired; status back to review. `tests/run-tests.sh --self-test` clean at 487 checks (485 before the return, 336 on the merge base).
 
 ## Decisions
 

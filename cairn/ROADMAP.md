@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-24 (M33 planned; its candidate row — the non-Lati
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M33 | An index term outside Latin-1 prints in the PDF index | in-progress | — | normal | milestones/M33-non-latin1-terms.md |
+| M33 | An index term outside Latin-1 prints in the PDF index | review | — | normal | milestones/M33-non-latin1-terms.md |
 | M32 | An index follows the bibliography where the author puts it | done | — | low | milestones/archive/M32-index-after-references.md |
 | M31 | A leftover index file never breaks the next render | done | — | normal | milestones/archive/M31-stale-ind-standin.md |
 | M30 | A character in an index entry is proved to print, not merely to compile | done | — | normal | milestones/archive/M30-typeset-print-proof.md |

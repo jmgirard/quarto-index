@@ -565,6 +565,20 @@ XREF_BOTH_COMMAND='quartoindexseeboth'
 # filter's own constants below, so the suite cannot go on checking names the
 # filter has renamed.
 HTML_SECTION_ID='qi-index'
+
+# M33's normative term list, at top level because the planted-defect self-test
+# below reads it too and `run_all_checks` runs in a subshell of its own. See
+# the ORACLE RULE beside the M33 section for how it is derived and why the
+# spellings here are not the fixture's bytes.
+M33_TERMS=(θεωρία ψυχή Москва źródło Việt café Nux̌alk Ascii)
+# The subsets the controls name: the Greek terms a font without Greek drops,
+# and the ASCII term every control must still print.
+M33_GREEK=(θεωρία ψυχή)
+M33_ASCII=Ascii
+M33_CJK=漢字
+# The captures the M33 checks and the self-test both read, named once.
+M33_PDF="$CAPTURE_ROOT/m33-recipe/unicode.pdf"
+M33_ENGINE_LOG="$CAPTURE_ROOT/m33-engine/engine.log"
 HTML_ANCHOR_PREFIX='qi-mark-'
 HTML_ENTRY_PREFIX='qi-entry-'
 HTML_LETTER_CLASS='qi-letter'
@@ -4176,12 +4190,6 @@ pass "M32: the copyable recipe block in README is held line for line against the
 # a list copied character for character out of the fixture would be blind to
 # exactly the normalization this milestone is about.
 # ---------------------------------------------------------------------------
-M33_TERMS=(θεωρία ψυχή Москва źródło Việt café Nux̌alk Ascii)
-# The subsets the controls below name: the Greek terms a font without Greek
-# drops, and the ASCII term every control must still print.
-M33_GREEK=(θεωρία ψυχή)
-M33_ASCII=Ascii
-M33_CJK=漢字
 
 python3 tests/unicodeprint.py marks examples/unicode.qmd "${M33_TERMS[@]}" \
   || fail "M33-AC2: the term list this suite states for examples/unicode.qmd is not what that fixture marks (its own FAIL line is above)"
@@ -4190,7 +4198,6 @@ quarto render examples/unicode.qmd --to pdf > "$WORK/m33-recipe.log" 2>&1 \
   || { tail -20 "$WORK/m33-recipe.log" >&2; fail "M33-AC1: examples/unicode.qmd failed to render to PDF under the documented recipe"; }
 capture examples/unicode.qmd pdf "m33-recipe"
 
-M33_PDF="$CAPTURE_ROOT/m33-recipe/unicode.pdf"
 python3 tests/unicodeprint.py entries "$M33_PDF" "${M33_TERMS[@]}" \
   || fail "M33-AC2: a term outside Latin-1 does not print as its own entry in the typeset index (its own FAIL line is above)"
 pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engine and main font, and all ${#M33_TERMS[@]} of its terms print as their own entry in the typeset index, compared in Unicode NFC"
@@ -4260,27 +4267,10 @@ M33CTLPY
 capture "$M33C/engine.qmd" pdf "m33-engine"
 [ "$M33_ENGINE_RC" -ne 0 ] \
   || fail "M33-AC3a: examples/unicode.qmd rendered at exit 0 under pdf-engine: pdflatex; the engine half of the recipe is not load-bearing and README documents a failure that does not happen"
-M33_ENGINE_LOG="$CAPTURE_ROOT/m33-engine/engine.log"
 [ -f "$M33_ENGINE_LOG" ] \
   || fail "M33-AC3a: the pdflatex control left no LaTeX log to read, so its non-zero exit is not evidence about a character"
-grep -qF 'not set up for use with LaTeX' "$M33_ENGINE_LOG" \
-  || { grep -E '^! ' "$M33_ENGINE_LOG" | head -5 >&2; fail "M33-AC3a: the pdflatex control failed, but its LaTeX log does not name 'not set up for use with LaTeX'; that failure is not the one README teaches a reader to recognize"; }
-python3 - "$M33_ENGINE_LOG" "${M33_GREEK[@]}" <<'M33ENGPY' \
-  || fail "M33-AC3a: the pdflatex control's LaTeX log does not name a Greek character the fixture marks (its own FAIL line is above)"
-import io, sys
-
-log = io.open(sys.argv[1], encoding='utf-8', errors='replace').read()
-greek = {c for term in sys.argv[2:] for c in term if ord(c) > 0x7F}
-named = sorted(c for c in greek if f'Unicode character {c} ' in log)
-if not named:
-    print('FAIL: M33-AC3a: the LaTeX error names no character the fixture\'s '
-          'Greek terms are made of, so the rejection it reports is not about '
-          'a term this fixture indexes', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M33-AC3a: the pdflatex control stops on '
-      f'{", ".join(f"U+{ord(c):04X}" for c in named)}, which the fixture\'s '
-      f'Greek terms carry')
-M33ENGPY
+python3 tests/unicodeprint.py stopped "$M33_ENGINE_LOG" "${M33_GREEK[@]}" \
+  || fail "M33-AC3a: the pdflatex control's LaTeX log does not carry the rejection, or does not name a Greek character the fixture marks (its own FAIL line is above)"
 pass "M33-AC3a: the fixture under pdf-engine: pdflatex exits non-zero and its LaTeX log names 'not set up for use with LaTeX' for a Greek character the fixture marks"
 
 # --- (b) the font half. The recipe's engine, no main font: the build now
@@ -11686,6 +11676,113 @@ if [ "${1:-}" = "--self-test" ]; then
     SWEEP_ED=$((SWEEP_ED + 1))
   done
   pass "M24: the empty-div reader fails on an empty div planted into each of the $SWEEP_ED pages a marker was removed from"
+
+  # -------------------------------------------------------------------------
+  # M33 self-test — the four readings of tests/unicodeprint.py are proved able
+  # to fail, one plant per CLAUSE rather than one per reader (M32), one
+  # substitution per plant (M29). Each plant states the message fragment it
+  # expects, so a reader that goes red for some OTHER reason is not counted as
+  # having caught the defect.
+  #
+  # THE MATRIX. Ten plants over the reader's ten reachable clauses:
+  #
+  #   marks   count      a term dropped from the stated list
+  #   marks   stated     a stated term respelled, so it is stated and not marked
+  #   marks   marked     a mark removed from a copy of the fixture
+  #   entries missing    a stated term the fixture prints no entry for
+  #   entries wrong      a stated term respelled by one character
+  #   entries no index   a captured PDF that prints no index at all
+  #   stopped signature  a successful render's log, which carries no rejection
+  #   stopped character  the rejection, with the character it names replaced
+  #   absent  silent     a control's own present-term named as one it never prints
+  #   absent  printed    a term named absent that the render does print
+  #
+  # ONE clause has no plant, and it is guarded rather than proved: `entries`
+  # and `absent` both refuse a PDF whose index heading is present but whose
+  # index holds no entry lines. That state is not reachable through this
+  # extension — a document with no marks gets no index heading at all, so the
+  # heading and the entries arrive together or not at all (probed at T6) —
+  # so there is no defect of that class to plant. The guard stays because a
+  # future back-end change could make it reachable, and an unreachable branch
+  # costs a line.
+  # -------------------------------------------------------------------------
+  m33_planted() {
+    local label="$1" want="$2"; shift 2
+    local out rc
+    out=$(python3 tests/unicodeprint.py "$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M33 self-test: the reader passed the planted case ($label), so its green over the real artifacts says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M33 self-test: the reader failed the planted case ($label), but not with <<$want>> — that failure is not this clause catching this defect"; }
+  }
+
+  M33W="$WORK/m33-plant"
+  rm -rf "$M33W"; mkdir -p "$M33W"
+
+  # The unplanted readings must be green first, or no failure below is
+  # evidence of anything — it would be the copy that was wrong, not the plant.
+  python3 tests/unicodeprint.py marks examples/unicode.qmd "${M33_TERMS[@]}" > /dev/null \
+    && python3 tests/unicodeprint.py entries "$M33_PDF" "${M33_TERMS[@]}" > /dev/null \
+    || fail "M33 self-test: the readers fail on the unplanted fixture and render, so no failure below is evidence of anything"
+
+  # --- marks: the stated list and the fixture's own marks.
+  M33_SHORT=("${M33_TERMS[@]:1}")
+  m33_planted 'a term dropped from the stated list' \
+    'marked but not stated' \
+    marks examples/unicode.qmd "${M33_SHORT[@]}"
+
+  M33_RESPELLED=("${M33_TERMS[@]:1}" 'θεωρια')
+  m33_planted 'a stated term respelled, so it is stated and not marked' \
+    'stated but not marked' \
+    marks examples/unicode.qmd "${M33_RESPELLED[@]}"
+
+  sed 's/^- \[Ascii\]{\.index}.*$/- Ascii, no longer marked./' \
+    examples/unicode.qmd > "$M33W/unmarked.qmd"
+  cmp -s examples/unicode.qmd "$M33W/unmarked.qmd" \
+    && fail "M33 self-test: the mark-removing mutation changed nothing, so the reader below would be reported as failing to discriminate when the fault is this mutation's"
+  m33_planted 'a mark removed from a copy of the fixture' \
+    'stated but not marked' \
+    marks "$M33W/unmarked.qmd" "${M33_TERMS[@]}"
+
+  # --- entries: a term's own printed entry line.
+  m33_planted 'a stated term the fixture prints no entry for' \
+    'has no entry line of its own' \
+    entries "$M33_PDF" "${M33_TERMS[@]}" 'Ἀθῆναι'
+
+  m33_planted 'a stated term respelled by one character' \
+    'has no entry line of its own' \
+    entries "$M33_PDF" 'θεωρίο'
+
+  # A captured PDF that prints no index at all — beamer carries none. Not a
+  # mutation: the artifact is already in the capture set, and pointing the
+  # reader at it is the whole plant.
+  m33_planted 'a captured PDF that prints no index at all' \
+    'the render produced no printed index' \
+    entries "$CAPTURE_ROOT/marker-beamer/marker.pdf" "${M33_TERMS[@]}"
+
+  # --- stopped: the pdflatex control's log.
+  m33_planted "a successful render's log, which carries no rejection" \
+    'does not carry' \
+    stopped "$WORK/m33-nofont.log" "${M33_GREEK[@]}"
+
+  sed 's/Unicode character θ/Unicode character Z/' "$M33_ENGINE_LOG" \
+    > "$M33W/othercharacter.log"
+  cmp -s "$M33_ENGINE_LOG" "$M33W/othercharacter.log" \
+    && fail "M33 self-test: the character-replacing mutation changed nothing in the engine control's log"
+  m33_planted 'the rejection, with the character it names replaced' \
+    'names no character the terms' \
+    stopped "$M33W/othercharacter.log" "${M33_GREEK[@]}"
+
+  # --- absent: the two silent-drop controls' reading.
+  m33_planted "a control's own present-term named as one it never prints" \
+    'prints no entry line for' \
+    absent "$CAPTURE_ROOT/m33-nofont/nofont.pdf" 'θεωρία' "$M33_ASCII"
+
+  m33_planted 'a term named absent that the render does print' \
+    'printed after all' \
+    absent "$M33_PDF" "$M33_ASCII" "${M33_GREEK[@]}"
+
+  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — ten plants over ten reachable clauses"
 
   # The two self-checks' own discrimination. Each reads the suite's own source
   # for a SHAPE, which is the reading M23's lesson names as certifying a

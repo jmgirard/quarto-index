@@ -6,7 +6,7 @@ check); this module does it for the scripts the README recipe covers, where
 the failure mode is not an escaping bug but a main font that does not carry
 the script — a render that exits 0 and silently drops every glyph.
 
-Three readings, each its own subcommand:
+Four readings, each its own subcommand:
 
   marks <qmd> <term>...
       The fixture's `.index` marks carry exactly the terms named, one term per
@@ -20,6 +20,12 @@ Three readings, each its own subcommand:
       the index region is not this: the punctuation an index prints around its
       own entries would satisfy that, and so would a parent line. The entry
       line is read structurally, through tests/pdfindex.py.
+
+  stopped <latex-log> <term>...
+      The pdflatex control's reading. The LaTeX log carries the error that
+      stopped the render, AND that error names a character one of the terms is
+      made of — so the rejection reported is about a term this fixture indexes
+      and not about something else in the document.
 
   absent <pdf> <present-term> <absent-term>...
       The control reading. Every absent-term has NO entry line, AND the
@@ -124,6 +130,26 @@ def cmd_entries(pdf, expected):
           f'the typeset index of {pdf}')
 
 
+STOP_SIGNATURE = 'not set up for use with LaTeX'
+
+
+def cmd_stopped(log_path, terms):
+    log = open(log_path, encoding='utf-8', errors='replace').read()
+    if STOP_SIGNATURE not in log:
+        die(f'FAIL: M33: {log_path} does not carry {STOP_SIGNATURE!r}, so '
+            f'whatever stopped that render is not the rejection README '
+            f'teaches a reader to recognize')
+    wanted = {c for term in terms for c in term if ord(c) > 0x7F}
+    named = sorted(c for c in wanted if f'Unicode character {c} ' in log)
+    if not named:
+        die(f'FAIL: M33: the error in {log_path} names no character the '
+            f'terms {list(terms)} are made of, so the rejection it reports '
+            f'is not about a term this fixture indexes')
+    print(f'ok   M33: {log_path} stops on '
+          f'{", ".join(f"U+{ord(c):04X}" for c in named)}, which the terms '
+          f'named carry')
+
+
 def cmd_absent(pdf, present, absent):
     entries = read_entries(pdf)
     printed = [nfc(e.term) for e in entries]
@@ -153,6 +179,10 @@ def main(argv):
         cmd_marks(target, rest)
     elif mode == 'entries':
         cmd_entries(target, rest)
+    elif mode == 'stopped':
+        if not rest:
+            die('FAIL: M33: stopped needs at least one term')
+        cmd_stopped(target, rest)
     elif mode == 'absent':
         if len(rest) < 2:
             die('FAIL: M33: absent needs a present-term and at least one '

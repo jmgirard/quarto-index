@@ -529,6 +529,36 @@ entries are collected in, and every term marked after the marker vanishes from
 the index with no error. The option changes nothing else: building the index
 is Quarto's PDF loop's job either way.
 
+**Putting the index after a bibliography.** Quarto appends a document's
+reference block after this extension has already placed the index, so a
+document that leaves the bibliography where Quarto puts it gets the index
+first and the references after. To have it the other way round, write your own
+References heading and an empty `#refs` div where the references belong, and
+the placement marker below them:
+
+```markdown
+# References
+
+::: {#refs}
+:::
+
+::: {.qi-index-here}
+:::
+```
+
+Quarto fills that div in place, so the marker still sits below the finished
+bibliography and the index follows it — `\printindex` after the reference
+environment in LaTeX, the index section after the bibliography in HTML. Write
+no `#refs` div and nothing changes: the references are appended at the end,
+after the index.
+
+The heading is yours to write because in neither back-end will anything else
+write one where you put the div. When Quarto appends the reference block itself
+it wraps it in an appendix block carrying a **References** heading of its own
+in HTML, and in LaTeX it appends the block under no sectioning command at all;
+either way, a `#refs` div you wrote gets neither the heading nor the wrapper,
+so a recipe with no heading of its own leaves the bibliography unlabelled.
+
 ## What it emits
 
 ### LaTeX and PDF
@@ -538,10 +568,12 @@ position. When a document has at least one mark, it also adds
 `\usepackage{imakeidx}` and `\makeindex[intoc]` to the preamble and one
 `\printindex` after the document body — or at your placement marker, if the
 document has one — so the index is built and listed in the table of contents
-with no configuration. In a document with a bibliography the index currently
-prints before the references. A document with no marks gets none of this,
-except six one-line `\providecommand*` definitions: every LaTeX-derived render
-carries the two cross-reference commands, and every one that does *not*
+with no configuration. In a document with a bibliography, where `\printindex`
+lands relative to the reference block follows from where you put an empty
+`#refs` div and the placement marker below it — see *Placing the index*,
+above. A document with no marks gets none of this, except six one-line
+`\providecommand*` definitions: every LaTeX-derived render carries the two
+cross-reference commands, and every one that does *not*
 emphasize a principal mention carries four more — three against a leftover
 `.aux` from a render that did, and one against a leftover `.ind`. They are
 described under the principal mention, below.

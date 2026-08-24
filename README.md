@@ -552,11 +552,12 @@ environment in LaTeX, the index section after the bibliography in HTML. Write
 no `#refs` div and nothing changes: the references are appended at the end,
 after the index.
 
-The heading is yours to write because in HTML it has to be. When Quarto
-appends the reference block itself it wraps it in an appendix block carrying a
-**References** heading of its own; a `#refs` div you wrote gets neither the
-heading nor the wrapper, so a recipe with no heading of its own leaves the
-bibliography unlabelled.
+The heading is yours to write because in neither back-end will anything else
+write one where you put the div. When Quarto appends the reference block itself
+it wraps it in an appendix block carrying a **References** heading of its own
+in HTML, and in LaTeX it appends the block under no sectioning command at all;
+either way, a `#refs` div you wrote gets neither the heading nor the wrapper,
+so a recipe with no heading of its own leaves the bibliography unlabelled.
 
 ## What it emits
 
@@ -569,9 +570,10 @@ position. When a document has at least one mark, it also adds
 document has one — so the index is built and listed in the table of contents
 with no configuration. In a document with a bibliography, where `\printindex`
 lands relative to the reference block follows from where you put an empty
-`#refs` div — see *Placing the index*, above. A document with no marks gets
-none of this, except six one-line `\providecommand*` definitions: every LaTeX-derived render
-carries the two cross-reference commands, and every one that does *not*
+`#refs` div and the placement marker below it — see *Placing the index*,
+above. A document with no marks gets none of this, except six one-line
+`\providecommand*` definitions: every LaTeX-derived render carries the two
+cross-reference commands, and every one that does *not*
 emphasize a principal mention carries four more — three against a leftover
 `.aux` from a render that did, and one against a leftover `.ind`. They are
 described under the principal mention, below.

@@ -102,6 +102,7 @@ replaces the README's statement of current behavior with the recipe.
 - 2026-08-24: T8 — KI3 restored under the LaTeX back-end, reworded from "README states the current behavior" down to the residual gap: the filter still cannot place the index relative to content Quarto adds after filters run, and the recipe that works around it costs an HTML author the appendix wrapper and heading. The candidate row for a filter-side move now points at it. Two milestone-local decisions recorded, and GP6 named in the header.
 - 2026-08-24: all eight fixes the review return named are in; the suite runs 457 checks clean under `--self-test` and `cairn_validate` exits 0. Status back to review.
 - 2026-08-24: review round 2 — checkpoint. All four criteria verified on fresh evidence (suite green at 457 checks under `--self-test`, plus independent renders of both fixtures and of the marker-less variant outside the working tree); consistency gate clean, `cairn_validate` exit 0. AC3 ticked: the marker-less render now lands `\printindex` below `\label{qi-afterword}` and both readers refuse it by name, which is what F1 falsified. Three-lens fan-out spawned (no-subagent rule lifted at the user's explicit direction); findings and the merge gate still to come.
+- 2026-08-24: review round 2 — gate triage: eleven findings fixed on the branch (R2-F1 to F8, F10, F11, F13), two sent to candidate rows (R2-F9, R2-F14), three rejected with reason (R2-F12, F15, F16). No finding met the return floor. Suite 471 checks clean under `--self-test`; `cairn_validate` exit 0.
 
 ## Decisions
 
@@ -330,6 +331,79 @@ implementation, not against the reviewer's account of it.
   longer exists.** T4's recorded run was 442 checks and predates the T5-T8
   suite changes; the 457-check re-run lives only in the work log. Scope still
   cites `README.md:544` for a sentence this milestone deleted.
+
+#### Disposition (round 2)
+
+**No return.** No finding demonstrates an acceptance criterion failing, and
+none is a load-bearing defect in what the extension does for its users — the
+documented recipe works end to end, verified above. Triage at the gate, per the
+return floor. Defect returns to date: 1 (round 1); amendment returns: 0.
+
+At the gate the maintainer directed the eleven recommended fixes, committed on
+the branch before the approval marker:
+
+- **R2-F1 — FIXED.** Ten new plants, one per unexercised clause: the marker
+  block's own count, the three LaTeX count clauses
+  (`\end{CSLReferences}`, `\printindex`, `\label{afterword}`), the twin's own
+  marker clause in both formats, `refs is None`, `section is None`, the twin's
+  own HTML order clause, and — the one AC2's Decision rests on — the identity
+  clause, planted by moving `id="qi-index"` onto the title block while leaving
+  the index heading where it is, so `find_id` and `index_section` disagree. The
+  M32 leg now runs 25 plants; the suite is 471 checks.
+- **R2-F2 — FIXED.** The retired sentence moved out of `README_STALE` into its
+  own `README_REFS_STALE`, checked in M32's own block under M32's own label.
+- **R2-F3 — FIXED.** Both derive plants now assert the token their own defect
+  is about — `writes 2 occurrences of \`::: {#refs}\`` and `writes 0
+  occurrences of \`{#afterword}\`` — rather than the message the three tokens
+  share.
+- **R2-F4 — FIXED.** A new check extracts the fenced `markdown` block from the
+  recipe section (bounded to that section) and requires every non-blank line of
+  it to appear verbatim in `examples/references.qmd`; 5 lines held.
+- **R2-F5 — FIXED.** The shared prose now reads: the heading is written by hand
+  in both halves, with the div under it it labels the bibliography Quarto fills
+  in place, and with the div gone it labels nothing while Quarto appends the
+  references under an appendix heading of its own. True of both halves, and the
+  byte derivation still holds.
+- **R2-F6 — FIXED.** *What it emits* now says the position follows from the div
+  **and the placement marker below it**, and the sentence is pinned as a claim
+  row.
+- **R2-F7 — FIXED.** The reason now covers both back-ends — "in neither
+  back-end will anything else write one where you put the div", with the LaTeX
+  half ("in LaTeX it appends the block under no sectioning command at all")
+  pinned as its own claim row.
+- **R2-F8 — FIXED.** The paragraph re-wrapped; no line this diff adds to
+  README exceeds 88 columns.
+- **R2-F10 — FIXED.** The docstring now states the contract the code keeps: any
+  fence line that is not a bare `:::` is read as an opener, so a `::::`-closed
+  block dies on the unclosed-block clause — loud, and narrower than "any nested
+  fence".
+- **R2-F11 — FIXED.** `READERS` plus the usage guard the three sibling readers
+  use; a bad or missing mode prints `usage: ...` and exits 2, verified both ways.
+- **R2-F13 — FIXED.** The fixture's section id is `afterword`, not
+  `qi-afterword`; the extension's `qi-` prefix is left to the extension.
+
+Sent to follow-up, both as candidate rows added in this milestone:
+
+- **R2-F9 — FOLLOW-UP.** The pre-existing marker-less plants still read the
+  render's working copy; the two added here read their captures, so this
+  milestone does not extend the debt.
+- **R2-F14 — FOLLOW-UP.** Narrowing the HTML-cost check to the bibliography's
+  own wrapper, promoted on the fixture growing a footnote or Citation block.
+
+Rejected, with reason:
+
+- **R2-F12 — REJECTED.** Round 1's return gate already chose recording the
+  method over amending AC2, and that Decision stands in this file. The
+  criterion's promise — identity rather than text position — is met, and
+  R2-F1's new identity plant now shows the clause able to fail.
+- **R2-F15 — REJECTED**, out-of-scope taxonomy: latent only, and every call
+  site passes one expression.
+- **R2-F16 — REJECTED.** Coverage and Scope are plan-owned sections a review
+  never edits, and `cairn_validate`'s `coverage complete` check passes; Scope
+  describes the state at plan time, when `README.md:544` was accurate.
+
+After the fixes: `tests/run-tests.sh --self-test` exits 0 on **471 checks**
+(up from 457), and `cairn_validate.py` exits 0 with no advisory fired.
 
 
 ### Round 1 findings, re-verified as fixed

@@ -299,10 +299,6 @@ README_STALE=(
   # sentence that replaced them is pinned in README_HTML_CLAIMS below.
   $'clash warning name\tThe clash warning is LaTeX-only'
   $'clash warning reason\tOne term marked two different ways can fail a PDF build, so the extension warns about it'
-  # M32: the README said the index prints before the references and left it
-  # there. The order is the author's to set, and the recipe that sets it is
-  # pinned in README_REFS_CLAIMS below.
-  $'bibliography order fixed\tIn a document with a bibliography the index currently prints before the references'
 )
 
 # Each must be PRESENT: one beamer-scoped pass-through sentence, and one row
@@ -469,6 +465,14 @@ README_LETTER_CLAIMS=(
 # pinned — what the div does and what happens without it — because a reader
 # who is told only the first cannot tell whether the div is what moved
 # anything.
+# Must be GONE (NORMATIVE, M32). Its own set rather than a row in
+# README_STALE: that set is enforced under the `M03-AC7` label over "sentences
+# that described a world with one back-end", so an M32 regression filed there
+# would be reported as an M03 HTML-back-end failure (M32 review R2-F2).
+README_REFS_STALE=(
+  $'bibliography order fixed\tIn a document with a bibliography the index currently prints before the references'
+)
+
 README_REFS_CLAIMS=(
   $'why the default\tQuarto appends a document\'s reference block after this extension has already placed the index'
   $'default order\tgets the index first and the references after'
@@ -482,6 +486,13 @@ README_REFS_CLAIMS=(
   # the fixture does not.
   $'why the heading\tWhen Quarto appends the reference block itself it wraps it in an appendix block carrying a **References** heading of its own'
   $'html cost\ta `#refs` div you wrote gets neither the heading nor the wrapper'
+  # M32 review R2-F7: the reason covers both back-ends. LaTeX appends the
+  # block under no sectioning command either, so the heading is the author's
+  # in both, not in HTML alone.
+  $'latex cost\tin LaTeX it appends the block under no sectioning command at all'
+  # M32 review R2-F6: where the index lands follows from the div AND the
+  # marker; the div alone leaves the index after the references either way.
+  $'div and marker\tfollows from where you put an empty `#refs` div and the placement marker below it'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -3849,14 +3860,21 @@ m32_planted derive "$M32_PLANT/byte-copy-source.qmd" examples/references.qmd \
 m32_mutate examples/references.qmd "$M32_PLANT/twice.qmd" \
   's/(::: \{\#refs\}\n:::\n)/$1\n$1/'
 m32_planted derive "$M32_PLANT/twice.qmd" examples/references-twin.qmd \
-  'the recipe under test writes exactly one' \
+  'writes 2 occurrences of `::: {#refs}`' \
   'a fixture writing the `#refs` div twice'
 
 m32_mutate examples/references.qmd "$M32_PLANT/no-after.qmd" \
-  's/\{\#qi-afterword\}/{#qi-elsewhere}/'
+  's/\{\#afterword\}/{#elsewhere}/'
 m32_planted derive "$M32_PLANT/no-after.qmd" examples/references-twin.qmd \
-  'the recipe under test writes exactly one' \
+  'writes 0 occurrences of `{#afterword}`' \
   'a fixture that no longer writes the section the marker clause is read against'
+
+# --- R2-F1: the marker block's own count clause, which no plant reached.
+m32_mutate examples/references.qmd "$M32_PLANT/marker-twice.qmd" \
+  's/(::: \{\.qi-index-here\}\n:::\n)/$1\n$1/'
+m32_planted derive "$M32_PLANT/marker-twice.qmd" examples/references-twin.qmd \
+  'writes 2 occurrences of `::: {.qi-index-here}`' \
+  'a fixture writing the placement marker twice'
 
 m32_mutate examples/references.qmd "$M32_PLANT/reordered.qmd" \
   's/(::: \{\#refs\}\n:::\n\n)(::: \{\.qi-index-here\}\n:::\n)/$2\n$1/'
@@ -3918,6 +3936,58 @@ m32_planted latex "$M32_PLANT/nobib.tex" "$M32_TEX_TWIN" \
   'occurrences of \begin{CSLReferences}' \
   'a fixture carrying no reference environment at all'
 
+m32_mutate "$M32_TEX" "$M32_PLANT/noclose.tex" \
+  's/\\end\{CSLReferences\}/\\end{NotTheBibliography}/'
+m32_planted latex "$M32_PLANT/noclose.tex" "$M32_TEX_TWIN" \
+  'occurrences of \end{CSLReferences}' \
+  'a fixture whose reference environment never closes'
+
+m32_mutate "$M32_TEX" "$M32_PLANT/noindex.tex" \
+  's/\\printindex/\\nottheindex/'
+m32_planted latex "$M32_PLANT/noindex.tex" "$M32_TEX_TWIN" \
+  'occurrences of \printindex' \
+  'a fixture carrying no index command at all'
+
+m32_mutate "$M32_TEX" "$M32_PLANT/nolabel.tex" \
+  's/\\label\{afterword\}/\\label{elsewhere}/'
+m32_planted latex "$M32_PLANT/nolabel.tex" "$M32_TEX_TWIN" \
+  'occurrences of \label{afterword}' \
+  'a fixture carrying no label for the section that follows the marker'
+
+# The twin's own marker clause: the twin rendered with its placement marker
+# deleted keeps the default order the AC3 clause above reads, so only this
+# clause tells the two apart.
+M32W_TWIN="$WORK/m32-nomarker-twin"
+rm -rf "$M32W_TWIN"; mkdir -p "$M32W_TWIN"
+cp -R _extensions "$M32W_TWIN/_extensions"
+cp examples/references.bib "$M32W_TWIN/references.bib"
+python3 - examples/references-twin.qmd "$M32W_TWIN/nomarker-twin.qmd" <<'M32TWINPY' \
+  || fail "M32: the marker-less twin variant could not be derived (its own FAIL line is above)"
+import sys
+src = open(sys.argv[1], encoding='utf-8').read()
+block = '::: {.qi-index-here}\n:::\n'
+if src.count(block) != 1:
+    print('FAIL: M32: the twin fixture does not write exactly one placement-'
+          'marker block, so the variant below would not be the twin with its '
+          'marker deleted', file=sys.stderr)
+    sys.exit(1)
+open(sys.argv[2], 'w', encoding='utf-8').write(src.replace(block, '', 1))
+M32TWINPY
+for fmt in latex html; do
+  ( cd "$M32W_TWIN" && quarto render nomarker-twin.qmd --to $fmt ) \
+      > "$WORK/m32-nomarker-twin-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/m32-nomarker-twin-$fmt.log" >&2; fail "M32: the marker-less twin variant failed to render to $fmt"; }
+  capture "$M32W_TWIN/nomarker-twin.qmd" $fmt "m32-nomarker-twin-$fmt"
+done
+m32_planted latex "$M32_TEX" \
+  "$CAPTURE_ROOT/m32-nomarker-twin-latex/nomarker-twin.tex" \
+  'the index command does not precede \label{afterword}' \
+  'a twin rendered with its placement marker deleted, where the index command lands at the end of the body'
+m32_planted html "$M32_HTML" \
+  "$CAPTURE_ROOT/m32-nomarker-twin-html/nomarker-twin.html" \
+  'does not precede the `afterword` section' \
+  'a twin rendered with its placement marker deleted, where the index section lands at the end of the body'
+
 # --- the HTML order and the recipe's cost. The swap needs no mutation: read
 #     the twin as the fixture and the order clause has to refuse it.
 m32_planted html "$M32_HTML_TWIN" "$M32_HTML" \
@@ -3931,7 +4001,7 @@ m32_planted html "$M32_PLANT/unclassed.html" "$M32_HTML_TWIN" \
   'a `refs` element stripped of the classes that make it the bibliography'
 
 m32_mutate "$M32_HTML" "$M32_PLANT/no-after.html" \
-  's/id="qi-afterword"/id="qi-elsewhere"/'
+  's/id="afterword"/id="elsewhere"/'
 m32_planted html "$M32_PLANT/no-after.html" "$M32_HTML_TWIN" \
   'there is nothing to tell an index at the marker apart' \
   'a fixture carrying no section after the marker'
@@ -3947,6 +4017,35 @@ m32_mutate "$M32_HTML" "$M32_PLANT/wrapped.html" \
 m32_planted html "$M32_PLANT/wrapped.html" "$M32_HTML_TWIN" \
   'README tells an author following the recipe' \
   'a fixture that did get the appendix wrapper, against a README saying it does not'
+
+m32_mutate "$M32_HTML" "$M32_PLANT/norefs.html" \
+  's/id="refs"/id="not-refs"/'
+m32_planted html "$M32_PLANT/norefs.html" "$M32_HTML_TWIN" \
+  'carries no element with the id `refs`' \
+  'a fixture carrying no bibliography element at all'
+
+m32_mutate "$M32_HTML" "$M32_PLANT/nosection.html" \
+  's/id="qi-index"/id="qi-index-gone"/'
+m32_planted html "$M32_PLANT/nosection.html" "$M32_HTML_TWIN" \
+  'carries no element with the generated index section id' \
+  'a fixture carrying no element under the generated index section id'
+
+# The identity clause AC2's recorded Decision rests on, and the only one that
+# separates "some element carries this id" from "the index is here": plant the
+# id on the title block, leaving the index heading where it is.
+m32_mutate "$M32_HTML" "$M32_PLANT/id-moved.html" \
+  's/id="title-block-header"/id="qi-index"/'
+m32_planted html "$M32_PLANT/id-moved.html" "$M32_HTML_TWIN" \
+  'is not the section the index heading sits in' \
+  'a fixture whose generated index id sits on an element that is not the index section'
+
+# The twin's own order clause. No mutation: read the fixture as the twin and
+# the default-order clause has to refuse it, since in the fixture the index
+# follows the bibliography. The first two clauses pass on it, so this is the
+# only one that can fire.
+m32_planted html "$M32_HTML" "$M32_HTML" \
+  'the default order is not what the recipe moves' \
+  'a twin whose index section follows the bibliography, leaving the pair with no default to move'
 
 # The README paragraph handing a reader this recipe is normative: a documented
 # claim with no check beside it drifts (M13), and this one's enforcement is the
@@ -3976,6 +4075,80 @@ print(f'ok   M32: all {len(rows)} documented claims about an index beside a '
       f'bibliography appear verbatim in README.md')
 M32DOCPY
 pass "M32: README documents the empty #refs div recipe, why it works, what both back-ends do and what happens without it, each verbatim"
+
+# The retired sentence, checked here under M32's own label rather than as a row
+# in README_STALE — that set is enforced under `M03-AC7` over the one-back-end
+# world, so a regression filed there would be reported as an M03 HTML failure
+# (review R2-F2).
+printf '%s\n' "${README_REFS_STALE[@]}" > "$WORK/readme-refs-stale.txt"
+python3 - "$WORK/readme-refs-stale.txt" README.md <<'M32STALEPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+still = [f'  still present ({label}): <<{text}>>'
+         for label, text in rows if flat(text) in readme]
+if still:
+    print('FAIL: M32: README.md still states the bibliography order as fixed, '
+          'beside the recipe that says it is the author\'s to set:',
+          file=sys.stderr)
+    print('\n'.join(still), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M32: all {len(rows)} retired claim(s) about a fixed index/'
+      f'references order are gone from README.md')
+M32STALEPY
+pass "M32: the retired sentence stating the index prints before the references is gone from README"
+
+# The block an author copies is the part of the recipe that has to be right,
+# and prose around it cannot hold it (review R2-F4). Every non-blank line of
+# the fenced `markdown` block must appear verbatim in the fixture that proves
+# the recipe works, so the two cannot drift apart — the M13 rule, applied to
+# the one piece of README a reader pastes.
+python3 - README.md examples/references.qmd <<'M32BLOCKPY'
+import re
+import sys
+
+readme = open(sys.argv[1], encoding='utf-8').read()
+fixture = open(sys.argv[2], encoding='utf-8').read()
+
+anchor = '**Putting the index after a bibliography.**'
+if anchor not in readme:
+    print(f'FAIL: M32: {sys.argv[1]} no longer carries the recipe section this '
+          f'check reads its copyable block out of', file=sys.stderr)
+    sys.exit(1)
+# Bounded to the recipe's own section: the search would otherwise run to the
+# end of the file and pick up every later fenced block.
+section = readme[readme.index(anchor):]
+end = re.search(r'^## ', section, re.M)
+section = section[:end.start()] if end else section
+blocks = re.findall(r'^```markdown\n(.*?)^```', section, re.S | re.M)
+if len(blocks) != 1:
+    print(f'FAIL: M32: the recipe section carries {len(blocks)} fenced '
+          f'`markdown` block(s); the recipe a reader copies is exactly one',
+          file=sys.stderr)
+    sys.exit(1)
+lines = [l for l in blocks[0].splitlines() if l.strip()]
+if not lines:
+    print('FAIL: M32: the recipe block a reader copies is empty',
+          file=sys.stderr)
+    sys.exit(1)
+missing = [l for l in lines if l not in fixture]
+if missing:
+    print(f'FAIL: M32: the recipe block in {sys.argv[1]} has drifted from '
+          f'{sys.argv[2]}, which is what proves the recipe works; these lines '
+          f'are in the README block and not in the fixture:', file=sys.stderr)
+    print('\n'.join(f'  <<{l}>>' for l in missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M32: every one of the {len(lines)} line(s) an author copies out '
+      f'of README\'s recipe block appears verbatim in examples/references.qmd')
+M32BLOCKPY
+pass "M32: the copyable recipe block in README is held line for line against the fixture that proves it works"
 
 # ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as

@@ -26,7 +26,7 @@ import htmlindex as H  # noqa: E402
 # to the bibliography, so a check reading only the bibliography passes on a
 # document carrying no marker at all. The Afterword section is what tells them
 # apart, and `derive` below refuses a fixture that has stopped writing it.
-AFTER_ID = 'qi-afterword'
+AFTER_ID = 'afterword'
 REFS_OPEN = '::: {#refs}'
 MARKER_OPEN = '::: {.qi-index-here}'
 FENCE = ':::'
@@ -49,9 +49,16 @@ def cut_block(source, opener, what, path):
     """`source` with the one fenced block opening `opener` removed whole.
 
     Removed *whole*: a line inside the block that is not a fence is part of the
-    block, and a nested fence closes the inner block, not this one. A loop that
-    skipped only the two fences would leave the contents behind while both the
-    failure message and the ok line said the block was deleted.
+    block, and a nested `::: {...}` opener is counted in, so its own bare `:::`
+    closes it rather than this one. A loop that skipped only the two fences
+    would leave the contents behind while both the failure message and the ok
+    line said the block was deleted.
+
+    The depth rule reads any fence line that is not a bare `:::` as an opener,
+    so a block closed with `::::` rather than `:::` is counted open and the
+    caller dies on the unclosed-block clause. Loud, not silent — but it is a
+    narrower contract than "any nested fence", and the fixtures under test
+    write neither shape.
     """
     out, depth, cuts = [], 0, 0
     for line in source.splitlines(True):
@@ -240,6 +247,11 @@ def html(fixture_path, twin_path):
           f'not in the fixture')
 
 
+READERS = {'derive': derive, 'latex': latex, 'html': html}
+
 if __name__ == '__main__':
-    mode, args = sys.argv[1], sys.argv[2:]
-    {'derive': derive, 'latex': latex, 'html': html}[mode](*args)
+    if len(sys.argv) < 2 or sys.argv[1] not in READERS:
+        print(f'usage: {sys.argv[0]} <{"|".join(READERS)}> <args...>',
+              file=sys.stderr)
+        sys.exit(2)
+    READERS[sys.argv[1]](*sys.argv[2:])

@@ -190,7 +190,149 @@ evidence the gate reads.
   `README_REFS_CLAIMS` strings present verbatim in `README.md`, and the retired
   sentence absent.
 
-#### Round 1 findings, re-verified as fixed
+##### Independent review
+
+The declared tier is user-facing and the diff touches `tests/run-tests.sh`,
+`tests/m32refs.py` and `examples/`, so the full three-lens fan-out ran; the
+standing no-subagent instruction was lifted for this step at the user's
+explicit direction (2026-08-24). Each lens ran fresh-context, in parallel, on a
+distinct evidence base, ref-based git only.
+
+- **[S] prior-review — no prior-review evidence bearing on the diff.** Swept
+  every archived `## Review` section for findings touching the nine files this
+  diff changes and read `LESSONS.md` in full; `examples/references*.qmd`,
+  `examples/references.bib` and `tests/m32refs.py` are new in this milestone
+  and no archived review has touched them, and the prior findings on
+  `README.md`, `cairn/DESIGN.md` and `tests/run-tests.sh` (M01, M10, M16, M17,
+  M25-M28, M30) concern unrelated areas. It confirmed KI3's lineage back to M01
+  review P2 is cited correctly. The probe
+  `gh api repos/jmgirard/quarto-index/pulls/comments?per_page=1` returned `[]`,
+  so the PR-thread walk was not paid for. Zero findings, clean no-op.
+- **[S] blame-history — two findings**, R2-F5 and R2-F11 below, plus one
+  confirmed non-issue: the deleted README sentence traces to `0714487e` (M22)
+  and KI3's wording to `66fc8e6d` (M27, from M01 review P2), and both the
+  deletion and the reword are genuine rather than restatements. `capture`, the
+  `*-twin.qmd` naming and the planted-defect idiom all match prior milestones.
+- **[O] diff-bug — sixteen findings, ranked.** It reproduced the pair
+  independently and confirmed the F1 and F2 fixes are genuine before reporting.
+
+#### Findings (round 2)
+
+Eighteen across the three lenses, consolidated and re-ranked; every one is
+logged with its disposition. Each was re-verified at review time against the
+implementation, not against the reviewer's account of it.
+- **R2-F1 — the one clause AC2's Decision rests on is never shown able to
+  fail.** `H.index_section(doc) is not section` in `m32refs.py:html_places` is
+  the substitution this file's Decisions record for AC2's "class" wording, and
+  none of the 15 plants exercises it. Eight further clauses are also unplanted:
+  `refs is None`, `section is None`, `count(MARKER_OPEN) != 1`, the three
+  `\end{CSLReferences}` / `\printindex` / `\label{qi-afterword}` count checks,
+  `without[INDEX] < without[AFTER_TEX]`, `t_index < t_refs` and
+  `t_index < t_after`. "A planted defect for each reader" holds at reader
+  granularity, not at clause granularity — and `m32refs.py`'s own docstring
+  states the rule this misses: a check never shown red covers nothing.
+- **R2-F2 — M32's stale sentence is filed in a set whose check reports under
+  another milestone and another subject.** The new `bibliography order fixed`
+  row sits in `README_STALE` (`tests/run-tests.sh:302`), enforced at
+  `tests/run-tests.sh:1371` under the label `M03-AC7: README.md does not
+  describe the HTML back-end as this suite exercises it`, over a set whose
+  header comment declares it to be "sentences that described a world with one
+  back-end". An M32 regression would be reported as an M03 HTML-back-end
+  failure. Verified at review: both the row and the label read as quoted.
+- **R2-F3 — two derive plants share a want-string that names no token,
+  including the one the F1 fix depends on.** `m32_planted derive ... 'the
+  recipe under test writes exactly one'` is used for both `twice.qmd`
+  (`tests/run-tests.sh:3852`) and `no-after.qmd` (`:3858`), and that string is
+  in the count-check message for `::: {#refs}`, `::: {.qi-index-here}` and
+  `{#qi-afterword}` alike, so the Afterword plant would pass its `case` even if
+  the reader had died on the `#refs` count. The real message does name the
+  token; the plant just does not assert it.
+- **R2-F4 — the part of the recipe an author actually copies is unpinned.** The
+  fenced `markdown` block at `README.md:539-547` — `# References`, `::: {#refs}`,
+  `::: {.qi-index-here}` — is not in `README_REFS_CLAIMS`; only the surrounding
+  prose is. The block can drift from `examples/references.qmd` with no check,
+  which is the drift M13 (cited in that array's own comment) exists to prevent.
+- **R2-F5 — the twin fixture's prose still reads false of the twin, the same
+  class as round 1's F10.** `examples/references-twin.qmd:19-21` says "The
+  `References` heading this document writes is its own: in HTML, Quarto
+  supplies a heading and an appendix wrapper only when it appends the reference
+  block itself." In the twin Quarto does append the block itself. Verified at
+  review by rendering the twin: it carries **two** References headings — the
+  author's `<h1>References</h1>` over an empty section, and Quarto's
+  `<h2 class="anchored quarto-appendix-heading">References</h2>` inside
+  `div#quarto-appendix`. Raised independently by both the [O] and the [S]
+  blame-history lens, the latter adding that the twin is therefore not a clean
+  model of "an author who writes no `#refs` div" but of one who wrote the
+  recipe's heading and not its div. Forced by the byte-derivation rule, so any
+  repair has to read true in both halves.
+- **R2-F6 — the replacement "What it emits" sentence is incomplete and
+  unpinned.** `README.md:569-571` says where `\printindex` lands "follows from
+  where you put an empty `#refs` div". It follows from the div's position
+  *relative to the marker*: with a div and no marker the index still lands
+  after the references (verified at review — `\printindex` at 260,
+  `\end{CSLReferences}` at 250 in the marker-less render). The sentence is not
+  in `README_REFS_CLAIMS`, so nothing holds it.
+- **R2-F7 — "The heading is yours to write because in HTML it has to be"
+  understates the LaTeX case.** Verified at review in the twin's `.tex`: the
+  appended bibliography sits at `references-twin.tex:253` under no `\section`
+  of any kind, so a LaTeX author who writes no div also gets an unlabelled
+  bibliography. README's stated reason is narrower than the fact and may read
+  as "optional in LaTeX".
+- **R2-F8 — a 92-character README line introduced by this diff.**
+  `README.md:573`, produced by an incomplete re-wrap of the "What it emits"
+  paragraph. Round 1's F8 rejected a long README line as pre-existing style;
+  verified at review against `git diff origin/main...HEAD`, this one is an
+  added line, so that rejection was wrong on the facts for this line.
+- **R2-F9 — the marker-less plants read the render's working copy, not the
+  capture.** The suite captures that render under `m32-nomarker-latex` /
+  `m32-nomarker-html`, then the plants read `"$M32W/nomarker.tex"` and
+  `"$M32W/nomarker.html"` directly. `suitescan.py reads` only flags paths under
+  `examples/`, so this passes; the capture exists solely to satisfy
+  `suitescan.py pairs` and is never read. M24's rule is met in letter.
+- **R2-F10 — `cut_block`'s docstring states a contract the code does not
+  keep.** It says "a nested fence closes the inner block", but
+  `stripped.startswith(FENCE) and stripped != FENCE` increments depth for any
+  non-bare-`:::` fence line, a `::::` closing a `:::: {.x}` opener included.
+  Verified: that input dies with "never closes the ... block it opens" — loud
+  rather than silent, so not a correctness hole today, but the documented
+  behaviour is wrong.
+- **R2-F11 — `m32refs.py`'s mode dispatch skips the usage-guard idiom every
+  comparable reader here uses.** `m20probes.py`, `m21probes.py` and
+  `m23probes.py` all validate `sys.argv[1]` against their mode set and exit 2
+  with a `usage:` line; `m32refs.py:245` is a bare
+  `{'derive': ..., 'latex': ..., 'html': ...}[mode](*args)`, so a bad or
+  missing mode raises an uncaught `KeyError`/`IndexError`. Verified at review
+  against all three siblings. Never exercised by the suite, which only calls
+  valid modes.
+- **R2-F12 — AC2 as written is still not literally what the check asserts.**
+  AC2 says "element identity — id and class"; `REF_CLASSES` guards the
+  references element by id and class, while the index element is guarded by id
+  plus heading-section identity with no class assertion. Round 1 raised this as
+  F6 and the return gate chose recording the method over amending the
+  criterion; the [O] lens re-raises it under the instruction not to read
+  charitably.
+- **R2-F13 — the fixture squats the extension's own id namespace.**
+  `examples/references.qmd:34` writes `{#qi-afterword}`; `qi-` is the prefix
+  the extension mints ids under, and an author-written id in that namespace is
+  what `examples/id-collision.qmd` exists to probe (verified at review — that
+  fixture claims `#qi-index` and `#qi-index-1..4`). `#afterword` would carry
+  identical weight for the marker clause.
+- **R2-F14 — the HTML-cost check is stronger than the README claim it
+  enforces.** `m32refs.py` fails the fixture if `find_id(fdoc,
+  'quarto-appendix')` is non-None at all; README's claim is narrower — the
+  *bibliography* gets neither heading nor wrapper. A fixture that later grew a
+  footnote or a Citation block would make Quarto build `#quarto-appendix` for
+  an unrelated reason and turn this check red while README stayed true.
+- **R2-F15 — `m32_mutate` forwards all remaining args to `perl -0777 -pe
+  "$@"`,** so a second expression would silently be read as a filename ahead of
+  `$src`. Every current call site passes one expression, so this is latent.
+- **R2-F16 — Coverage row `AC4 -> T4` is stale and Scope cites a line that no
+  longer exists.** T4's recorded run was 442 checks and predates the T5-T8
+  suite changes; the 457-check re-run lives only in the work log. Scope still
+  cites `README.md:544` for a sentence this milestone deleted.
+
+
+### Round 1 findings, re-verified as fixed
 
 Each of the eight actioned findings was checked against the implementation at
 review time, not against the work log's account of it. F1 — reproduced and now

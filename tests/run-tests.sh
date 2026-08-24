@@ -299,6 +299,10 @@ README_STALE=(
   # sentence that replaced them is pinned in README_HTML_CLAIMS below.
   $'clash warning name\tThe clash warning is LaTeX-only'
   $'clash warning reason\tOne term marked two different ways can fail a PDF build, so the extension warns about it'
+  # M32: the README said the index prints before the references and left it
+  # there. The order is the author's to set, and the recipe that sets it is
+  # pinned in README_REFS_CLAIMS below.
+  $'bibliography order fixed\tIn a document with a bibliography the index currently prints before the references'
 )
 
 # Each must be PRESENT: one beamer-scoped pass-through sentence, and one row
@@ -457,6 +461,21 @@ README_LETTER_CLAIMS=(
   $'always on\tGrouping is always on.** There is nothing to switch on and no threshold'
   $'top level only\tOnly the top level is grouped.** A sub-entry files under its parent rather than under a letter of its own'
   $'class hook\tEach label is a `div` carrying the class `qi-letter` and nothing else'
+)
+
+# README claims about a bibliography (NORMATIVE, M32). Same discipline as
+# README_HTML_CLAIMS: the bytes are compared, so the recipe README hands a
+# reader cannot drift from the one the fixture pair exercises. Both halves are
+# pinned — what the div does and what happens without it — because a reader
+# who is told only the first cannot tell whether the div is what moved
+# anything.
+README_REFS_CLAIMS=(
+  $'why the default\tQuarto appends a document\'s reference block after this extension has already placed the index'
+  $'default order\tgets the index first and the references after'
+  $'the recipe\twrite an empty `#refs` div where the references belong, and the placement marker below it'
+  $'why it works\tQuarto fills that div in place, so the marker still sits below the finished bibliography'
+  $'both back-ends\t`\\printindex` after the reference environment in LaTeX, the index section after the bibliography in HTML'
+  $'without the div\tWrite no `#refs` div and nothing changes: the references are appended at the end, after the index'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -3894,6 +3913,35 @@ print(f'ok   M32-AC2/AC3: the generated index section follows the '
       f'writes none ({without_index} then {without_refs})')
 PY
 pass "M32-AC1/AC2/AC3: an empty #refs div above the placement marker puts the index after the references in both LaTeX and HTML, and the same document without the div keeps the default order"
+
+# The README paragraph handing a reader this recipe is normative: a documented
+# claim with no check beside it drifts (M13), and this one's enforcement is the
+# fixture pair above. The retired sentence — the index prints before the
+# references, full stop — is in README_STALE, so it cannot sit beside the
+# recipe telling a reader the opposite.
+printf '%s\n' "${README_REFS_CLAIMS[@]}" > "$WORK/readme-refs.txt"
+python3 - "$WORK/readme-refs.txt" README.md <<'M32DOCPY'
+import sys
+
+
+def flat(text):
+    return ' '.join(text.split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+readme = flat(open(sys.argv[2], encoding='utf-8').read())
+missing = [f'  missing ({label}): <<{text}>>'
+           for label, text in rows if flat(text) not in readme]
+if missing:
+    print('FAIL: M32: README.md does not document the bibliography recipe as '
+          'this suite exercises it:', file=sys.stderr)
+    print('\n'.join(missing), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M32: all {len(rows)} documented claims about an index beside a '
+      f'bibliography appear verbatim in README.md')
+M32DOCPY
+pass "M32: README documents the empty #refs div recipe, why it works, what both back-ends do and what happens without it, each verbatim"
 
 # ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as

@@ -2,12 +2,12 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M30: A character in an index entry is proved to print, not merely to compile
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** —
+- **Branch/PR:** `m030-typeset-print-proof`
 
 ## Goal
 
@@ -43,9 +43,12 @@ named in `cairn/DESIGN.md` with what extraction yields instead.
 
 - [ ] AC1: In the index region of the PDF Quarto renders from
       `examples/escaping.qmd`, each of the 94 printable ASCII characters
-      U+0021–U+007E is found as its own index entry — its expected extracted
-      form, then `, `, then a page number. The check enumerates that domain as
-      the codepoint range itself and carries no per-character skip list.
+      U+0021–U+007E is found as its own index entry: the cell `pdftotext
+      -layout` is expected to yield for that character — by default the
+      character itself, then `, `, then a page number, and otherwise the cell
+      the AC2 table states for it. A table row states a cell to find, never an
+      exemption from finding one. The check enumerates that domain as the
+      codepoint range itself and carries no per-character skip list.
 - [ ] AC2: Every character whose expected extracted form is not the character
       itself is carried in one named table beside the check, each row stating
       the typesetting fact it rests on rather than a value read back from the
@@ -60,7 +63,7 @@ named in `cairn/DESIGN.md` with what extraction yields instead.
 
 ## Tasks
 
-- [ ] T1: Re-derive the extraction against the shipping pipeline: render
+- [x] T1: Re-derive the extraction against the shipping pipeline: render
       `examples/escaping.qmd` to PDF through Quarto, capture, extract with
       `pdftotext -layout`, and record what the text layer yields for each of the
       94 characters. A hand-built `article` + `[T1]{fontenc}` + hyperref +
@@ -88,6 +91,10 @@ named in `cairn/DESIGN.md` with what extraction yields instead.
 - 2026-08-24: plan chose a stated-fact expected-extraction table over deriving expected forms from the render under test because an oracle derived from its own artifact is blind where it derives (M20); falsified by extraction proving to vary with engine or font version, which would make hand-stated rows stale.
 - 2026-08-24: plan chose three milestones (M30, M31, M32) over one clustered milestone because the goal sentence needed "and" and the three ship independently; falsified by the three proving to share a fixture or a check.
 - 2026-08-24: criteria audit ran in **full** mode (user-facing tier), inline rather than in a fresh-context [O] reader — this session is under a standing instruction not to spawn subagents. It returned three findings, all fixed before the criteria were written: a draft criterion promising every character "appears in the index region" was unsatisfiable as a bare-presence test and became the entry-shape assertion; a draft criterion binding the D-entry and the Known-issues strike bound records rather than the deliverable and moved out of the milestone entirely (landed in the plan commit); a draft criterion requiring the widened check to go red on a planted defect bound the checker, not the deliverable (M25), and moved to T4.
+
+- 2026-08-24: implement gate chose the expected-extraction table as a named dict inside the check's heredoc, and the planted-defect proof as a permanent `--self-test` entry.
+- 2026-08-24: T1 measured the shipping pipeline (Quarto PDF render of `examples/escaping.qmd`, `pdftotext -layout`): 91 of 94 characters extract as themselves in an `X, <page>` cell; `'` yields `’`, `` ` `` yields `‘`, and `,` yields `„<page>` because the `.ind` line is `\item ,, \hyperpage{1}` and `,,` is the T1 ligature for the double-low-9 quote.
+- 2026-08-24: amendment (substantive, user-selected at a mini gate): AC1 now asks for the cell `pdftotext -layout` is expected to yield — the character, `, `, a page number by default, otherwise the cell the AC2 table states — because the comma's entry has no `, ` separator to match. No criterion added; the criteria set is not widened. Inline criteria audit (full mode, user-facing tier, no subagent per this session's standing instruction) returned two findings on the draft, both fixed before writing: an unnamed extraction instrument, and a table clause readable as a skip list.
 
 ## Decisions
 

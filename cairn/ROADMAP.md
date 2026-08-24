@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-24 (M30-M32 planned; the escape-table, leftover-`.i
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M30 | A character in an index entry is proved to print, not merely to compile | planned | — | normal | milestones/M30-typeset-print-proof.md |
+| M30 | A character in an index entry is proved to print, not merely to compile | in-progress | — | normal | milestones/M30-typeset-print-proof.md |
 | M31 | A leftover index file never breaks the next render | planned | — | normal | milestones/M31-stale-ind-standin.md |
 | M32 | An index follows the bibliography where the author puts it | planned | — | low | milestones/M32-index-after-references.md |
 | M29 | A marker report in a book names its chapter | done | M28 | normal | milestones/archive/M29-book-chapter-in-report.md |

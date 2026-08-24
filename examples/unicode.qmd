@@ -1,0 +1,34 @@
+---
+title: "quarto-index terms outside Latin-1"
+from: markdown-smart
+pdf-engine: xelatex
+mainfont: STIX
+mainfontoptions:
+  - Extension=.otf
+  - UprightFont=*-Regular
+  - BoldFont=*-Bold
+  - ItalicFont=*-Italic
+  - BoldItalicFont=*-BoldItalic
+filters:
+  - index
+---
+
+# Terms outside Latin-1
+
+Every term here is marked at one level, so each has one entry line of its
+own in the printed index and no parent line above it. The YAML above is the
+recipe README's `### Terms outside Latin-1` section documents: the engine
+and a main font that covers the scripts marked below. The font is named by
+file rather than by family — the plain family name is not findable.
+
+- [θεωρία]{.index} — Greek, with a precomposed accented vowel.
+- [ψυχή]{.index sort="psyche"} — Greek again, carrying a sort key so it files under the Latin spelling.
+- [Москва]{.index} — Cyrillic.
+- [źródło]{.index} — Polish, three Latin letters beyond Latin-1.
+- [Việt]{.index} — Vietnamese, a vowel carrying two marks.
+- [café]{.index} — written as `e` plus a combining acute rather than the precomposed letter.
+- [Nux̌alk]{.index} — `x` plus a combining caron, a sequence with no precomposed form at all.
+- [Ascii]{.index} — plain ASCII: the control renders below prove their index printed at all by finding this one.
+
+::: {.qi-index-here}
+:::

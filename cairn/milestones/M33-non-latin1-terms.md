@@ -91,12 +91,12 @@ remainder.
 
 ## Tasks
 
-- [ ] T1. Pin the recipe's font: confirm a TeX Live-bundled font covering
+- [x] T1. Pin the recipe's font: confirm a TeX Live-bundled font covering
       Greek, Cyrillic and Latin-Extended (`STIX` at the amendment gate) and the
       `mainfont` / `mainfontoptions` spelling Quarto needs to load it by file
       name — the plain family name is not findable (probe: fontspec "cannot be
       found").
-- [ ] T2. Write `examples/unicode.qmd`: Greek, Cyrillic, Polish and Vietnamese
+- [x] T2. Write `examples/unicode.qmd`: Greek, Cyrillic, Polish and Vietnamese
       terms, one written with a combining mark rather than a precomposed
       character, one whose combining sequence has no precomposed form at all,
       one carrying `sort=`, and one ASCII term the controls read as their
@@ -138,6 +138,7 @@ remainder.
 - 2026-08-24: implement gate probed the font matrix: `texgyrepagella` drops Cyrillic, but xelatex prints a precomposed character the font lacks from that character's decomposition, so a `Missing character` log line fires on correctly-printing Greek as well as on dropped Cyrillic; TinyTeX also bundles `STIX`, which printed and extracted Greek, Cyrillic, Polish, Vietnamese, a decomposed `café` and `Nux̌alk` correctly and drops CJK at Quarto exit 0.
 - 2026-08-24: amendment at the implement gate, both halves user-selected: the recipe names `STIX` and the proven set gains Cyrillic (the plan gate's own falsifier, "a bundled font shown to cover both", fired), and AC2 loses its zero-`Missing character` clause. Scope In/Out, AC1-AC5, Coverage and T1/T2/T4/T5/T6/T8 amended.
 - 2026-08-24: criteria audit ran twice in FULL mode over the amended wording, each over a fresh-context reader that did not author it; round 1 returned 7 findings, all disposed by narrowing (positively-stated proven set, one-level marks, a stated term list as AC2's domain, printed-index evidence replacing the log line in the controls); round 2 over the repaired wording returned 6 on the same criteria and went to the user under the once-more rule, who accepted the repair. AC5 and AC6 came back clean.
+- 2026-08-24: T1 — `STIX` is the recipe font: the plain family name `STIX` fails the render with fontspec's "The font \"STIX\" cannot be found", so the recipe names it by file (`Extension=.otf`, `UprightFont=*-Regular` and the three siblings). T2 — `examples/unicode.qmd` marks eight one-level terms: Greek, Greek with `sort=`, Cyrillic, Polish, Vietnamese, a decomposed `café`, `Nux̌alk` (`x` + U+030C, no precomposed form) and an ASCII term the controls read as their positive signal.
 
 ## Decisions
 

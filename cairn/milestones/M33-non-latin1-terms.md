@@ -198,3 +198,82 @@ run at review 2026-08-24.
   history (IP4).
 - Profile `generic` — its `consistency-gate` slot names no toolchain checks, so
   that half is a clean no-op. The suite ran anyway as AC6's evidence.
+
+### Independent review — findings
+
+Three fresh-context lenses (user-facing tier, executable surface). The
+blame-history lens and the prior-review lens each reported no findings; the
+prior-review probe found no inline review comments anywhere in the repo, so its
+evidence was the archived `## Review` sections and LESSONS, against which the
+diff was found compliant (M30's oracle rule, M16's empty-region rule, M32's
+recipe-block and per-clause-plant patterns, M29's one-substitution rule, M24's
+capture rule, M13's registry hazard). The diff-bug lens returned 14, ranked
+below with the review's recommended disposition; the maintainer triages at the
+gate.
+
+- R1. README:268-269 ("the default engine and font cannot" draw the characters)
+  and D-016 ("under Quarto's default `pdflatex`") state a false fact: Quarto
+  1.10.18 defaults to **lualatex**, not pdflatex. Re-probed at review — a bare
+  document renders under `lualatex`, and the fixture with only its
+  `pdf-engine:` line removed exits 0 and prints an index in which Greek,
+  Cyrillic, Polish, the combining-mark terms and the ASCII term are all
+  correct while the Vietnamese term prints corrupted (`Vi<?>t`). So omitting
+  the engine half gives a *third*, silent, partial failure — not the loud
+  pdflatex stop README documents. The pdflatex control pins a signature only an
+  author who opts *into* pdflatex can reach. **Recommended: fix now** — the
+  silent-corruption path is the IP2 class, and README currently tells an author
+  the opposite of what happens.
+- R2. README:284-285 ("STIX ships with TeX Live and TinyTeX, so there is
+  nothing to install") is contradicted by the guard this same diff adds at
+  `tests/run-tests.sh` (which tells the operator to run `tlmgr install stix`).
+  Confirmed at review: `tlmgr info stix` reports `collection:
+  collection-fontsextra`, which is not in TinyTeX's default install. The claim
+  is also not one of the 11 rows `README_UNICODE_CLAIMS` holds.
+  **Recommended: fix now** — it is the one sentence telling a reader the recipe
+  needs no setup.
+- R3. `tlmgr info stix`: "As of April 2018 this package is considered
+  obsolete. See `stix2-otf` and `stix2-type1` instead." GP3 asks LaTeX-side
+  needs to stay within mainstream-bundled packages; an obsolete fontsextra-only
+  package meets that weakly, and README, KI6 and D-016 all now name it as the
+  recipe font. **Recommended: follow-up** — re-probing `stix2-otf` is its own
+  render matrix.
+- R4. `tests/unicodeprint.py` `cmd_entries` compares `nfc(term)` against every
+  entry's term at every level and never reads `Entry.level`, so a term printed
+  as a sub-entry would pass, though AC1 and the fixture both require one-level
+  marks. **Recommended: follow-up.**
+- R5. The AC3(a) control flips only the engine, and the fixture's Greek appears
+  in body prose as well as in marks, so the control shows "pdflatex refuses
+  Greek", not "a marked term breaks the document". **Recommended: reject** —
+  the milestone's plan gate recorded this reachability conflict and disposed of
+  it; the control is the change the plan called for.
+- R6. `cmd_stopped` searches the log for the stop signature and for a named
+  character independently, so a log whose fatal error named some other
+  character while a Greek character appeared elsewhere would pass; AC3(a) asks
+  for the stronger relation. **Recommended: follow-up.**
+- R7. `cmd_entries` accepts an empty term list and passes vacuously; `stopped`
+  and `absent` both guard against it. Mitigated in the suite by the paired
+  `marks` check, which pins the list against the fixture's marks.
+  **Recommended: fix now** — a two-line guard.
+- R8. The copyable-block check is one-directional (README's block ⊆ fixture),
+  so it cannot catch a README block that drops `pdf-engine:` or a
+  `mainfontoptions` line, and it does not notice that the fixture carries
+  `from: markdown-smart` while README's block does not.
+  **Recommended: follow-up.**
+- R9. `tests/unicodeprint.py` uses a relative `sys.path.insert(0, 'tests')`
+  where every other helper resolves from `__file__`. **Recommended: fix now** —
+  one line, and it matches convention.
+- R10. README's suite-prerequisites sentence still names only TinyTeX,
+  `makeindex` and `pdftotext`; this diff adds `kpsewhich` and the `stix`
+  package as hard requirements. **Recommended: fix now.**
+- R11. README's general "Any other script is unproven" disclaimer is not among
+  the claim rows held verbatim. **Recommended: reject** — a general disclaimer
+  is not the kind of claim a verbatim row can fence without pinning wording.
+- R12. The `stopped` "no rejection" plant feeds a Quarto stdout log to a reader
+  that in production reads a LaTeX log; it goes red for the right reason but
+  not against the artifact family it guards. **Recommended: follow-up.**
+- R13. README's fixture-list entry says the fixture "marks eight terms" and
+  then lists six categories, omitting the second Greek term carrying `sort=`
+  and the ASCII term the controls depend on. **Recommended: fix now.**
+- R14. Task T2 names `.index-here`; the class the fixture correctly uses is
+  `.qi-index-here`. Task text only, no code effect. **Recommended: reject** —
+  the work log is history and the task is done.

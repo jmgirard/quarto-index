@@ -1,19 +1,18 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-23 (M28 and M29 planned from the block-position candidate row; that row narrowed to its KI23 remainder. ROADMAP 7.2k of its 24k byte budget and 50 lines.)_
+_Last hygiene check: 2026-08-24 (M28 merged and archived; three review findings filed as KI80-KI82 and the suite-hardening row extended to point at two of them. ROADMAP 7.0k of its 24k byte budget and 49 lines.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M28 | A reported block position names the sequence it counts | review | — | normal | milestones/M28-block-position-naming.md |
 | M29 | A marker report in a book names its chapter | planned | M28 | normal | milestones/M29-book-chapter-in-report.md |
+| M28 | A reported block position names the sequence it counts | done | — | normal | milestones/archive/M28-block-position-naming.md |
 | M27 | A finding about today's behavior is a known issue, not a candidate row | done | — | normal | milestones/archive/M27-record-ownership.md |
 | M25 | A check that cannot hold its promise is retired, not widened | done | M24 | normal | milestones/archive/M25-scan-disposition.md |
 | M24 | Every check reads the copy, never the working tree | done | — | normal | milestones/archive/M24-captured-artifacts.md |
 | M26 | A document's accumulators start empty, whoever ran before it | done | — | normal | milestones/archive/M26-per-document-state.md |
-| M23 | A range verdict follows its mark's position, not its text | done | — | normal | milestones/archive/M23-positional-range-verdicts.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

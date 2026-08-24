@@ -1,6 +1,6 @@
 # M33: An index term outside Latin-1 prints in the PDF index
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -146,6 +146,7 @@ remainder.
 - 2026-08-24: T8 — IP2 amended in place and marked, the collation convention corrected to match, KI6 narrowed to the proven set and the unproven remainder, D-016 appended. Pre-review check `tests/run-tests.sh --self-test` clean at 485 checks.
 - 2026-08-24: minor — the tool guard now fails loudly when `kpsewhich` cannot find `STIX-Regular.otf`, so a machine without TeX Live's `stix` package reports the missing package rather than four renders failing inside a LaTeX log.
 - 2026-08-24: all tasks complete; status to review. `tests/run-tests.sh --self-test` clean at 485 checks (336 on the merge base).
+- 2026-08-24: review returned M33 to in-progress (defect return #1): the README recipe states two things review probed false — that Quarto's default engine is pdflatex, when 1.10.18 defaults to lualatex and the fixture minus its `pdf-engine:` line exits 0 with only the Vietnamese term corrupted, and that STIX needs no installing, when it ships in collection-fontsextra. Six findings to fix, five to follow-up rows, three rejected; all fourteen and their dispositions are in the Review section.
 
 ## Decisions
 
@@ -277,3 +278,20 @@ gate.
 - R14. Task T2 names `.index-here`; the class the fixture correctly uses is
   `.qi-index-here`. Task text only, no code effect. **Recommended: reject** —
   the work log is history and the task is done.
+
+### Gate disposition (2026-08-24)
+
+The maintainer judged R1 and R2 load-bearing defects in the README recipe, the
+milestone's user-facing deliverable, and returned M33 to `in-progress` rather
+than repairing them at the gate: R1's repair is new documentation of the
+default-engine failure plus, on the review's reading, a fourth control, which
+is implementation work. Defect return #1 for this milestone.
+
+Dispositions carried into that return: **fix** — R1, R2, R7, R9, R10, R13;
+**follow-up** — R3, R4, R6, R8, R12 (candidate rows, search-first, at the
+milestone that closes); **reject** — R5 (the plan gate recorded and disposed
+of this reachability conflict; the control is the change the plan called for),
+R11 (a general disclaimer is not fenceable by a verbatim claim row), R14 (task
+text, no code effect, and the work log is history). Every criterion's evidence
+above stands and was gathered on b61091b; the ticks are unchanged by this
+return, and re-review re-gathers them on the repaired branch.

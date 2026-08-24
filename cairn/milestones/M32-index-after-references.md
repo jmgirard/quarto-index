@@ -7,7 +7,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP4
-- **Branch/PR:** `m032-index-after-references`
+- **Branch/PR:** `m032-index-after-references` — [PR #32](https://github.com/jmgirard/quarto-index/pull/32)
 
 ## Goal
 
@@ -37,16 +37,16 @@ replaces the README's statement of current behavior with the recipe.
 
 ## Acceptance criteria
 
-- [ ] AC1: In the LaTeX Quarto renders from a committed fixture carrying
+- [x] AC1: In the LaTeX Quarto renders from a committed fixture carrying
       citations, a bibliography, an empty `#refs` div and an index placement
       marker below it, `\printindex` follows the reference environment.
-- [ ] AC2: In the HTML rendered from that same fixture, the index section
+- [x] AC2: In the HTML rendered from that same fixture, the index section
       follows the element carrying the references, asserted by element identity
       — id and class — rather than by text position alone.
-- [ ] AC3: In a fixture with the same citations and bibliography but no `#refs`
+- [x] AC3: In a fixture with the same citations and bibliography but no `#refs`
       div, the index still precedes the references in both formats — the
       unchanged default, held so the recipe is shown to be what moves it.
-- [ ] AC4: `tests/run-tests.sh --self-test` completes clean.
+- [x] AC4: `tests/run-tests.sh --self-test` completes clean.
 
 ## Coverage
 
@@ -83,3 +83,79 @@ replaces the README's statement of current behavior with the recipe.
 ## Decisions
 
 ## Review
+
+PR: [#32](https://github.com/jmgirard/quarto-index/pull/32). Reviewed 2026-08-24
+on `m032-index-after-references`, branch containing `origin/main` at 835882a —
+no merge needed.
+
+### Acceptance criteria
+
+- **AC1 — verified.** `tests/run-tests.sh --self-test` reports
+  `M32-AC1/AC3: \printindex follows \end{CSLReferences} in the fixture that
+  writes an empty #refs div, and precedes \begin{CSLReferences} in the twin
+  that writes none`. The check requires exactly one occurrence of each of the
+  three names in each artifact before stating any order. Corroborated by an
+  independent render at review time: in `examples/references.tex`
+  `\begin{CSLReferences}` at line 239, `\end{CSLReferences}` at 247,
+  `\printindex` at 249.
+- **AC2 — verified.** The suite reports `M32-AC2/AC3: the generated index
+  section follows the bibliography div in the fixture that writes an empty
+  #refs div (37 then 43)`. Identity, not offset: the references element is the
+  one carrying id `refs` **and** the classes `csl-bib-body` and `references`,
+  and the index element is the one carrying id `qi-index` **and** required to
+  be the same node `htmlindex.index_section` finds the index heading in.
+  Corroborated by an independent render: in `examples/references.html`
+  `id="refs"` at byte 3794, `id="qi-index"` at 4183.
+- **AC3 — verified.** Both halves come from the same two suite lines. LaTeX:
+  `\printindex` precedes `\begin{CSLReferences}` in the twin (independent
+  render: 238 against 241). HTML: the index section precedes the bibliography
+  in the twin, `37 then 54` in document order (independent render: `id="qi-index"`
+  at 3864, `id="refs"` at 4481). The pair is load-bearing, so the suite first
+  proves the twin is the fixture with its `#refs` div block deleted and
+  nothing else — `ok M32: the twin fixture is the references fixture with the
+  \`#refs\` div block deleted, and nothing else` — and refuses a fixture that
+  writes any count of `#refs` blocks other than one, which closes the vacuous
+  case where a byte-identical twin would satisfy the derivation.
+- **AC4 — verified.** `tests/run-tests.sh --self-test` exits 0 on 442 checks,
+  run fresh at review time; its planted-defect leg ran 24 plants, each failing
+  the check that names it.
+
+### Consistency gate
+
+- `cairn_validate.py` — exit 0, all checks passed; no advisory fired,
+  `release window` included.
+- `cairn_impact.py` — not run: this milestone changed no DESIGN principle
+  (the DESIGN edit strikes a Known-issues entry, KI3).
+- Toolchain checks — the `generic` profile's `consistency-gate` slot names
+  none, so this half is a clean no-op. `verify` is `tests/run-tests.sh`, run
+  above.
+- README claims independently re-verified at review time: all six
+  `README_REFS_CLAIMS` strings present verbatim in `README.md`, and the
+  retired sentence absent.
+
+### Independent review
+
+The declared tier is user-facing and the diff touches `tests/run-tests.sh`, so
+the full three-lens fan-out ran; the standing no-subagent instruction was
+lifted for this step at the user's explicit direction (2026-08-24).
+
+- **[S] blame-history — no findings.** Traced the deleted README sentence to
+  `0714487e` (M22) and KI3's formalization to `66fc8e6d` (M27, from M01 review
+  P2), and judged the strike genuine rather than a restatement: the order is no
+  longer fixed. Confirmed `README_STALE` used as `9f1eb4ae` (M03) established
+  it, `capture` used per `334837c1` (M24) with four distinct slugs, and the
+  twin-fixture derivation check honouring the M11 lesson `check-design.md`
+  records. `grep` finds no dangling `KI3` reference. It also noted, as
+  out-of-scope working-tree state, the uncommitted PR-link edit to this file —
+  which is this review's own step-2 edit.
+- **[S] prior-review — no prior-review evidence bearing on the diff.** Swept
+  the archived `## Review` sections touching `README.md` and
+  `tests/run-tests.sh` and read `LESSONS.md` in full; the probe
+  `gh api repos/jmgirard/quarto-index/pulls/comments?per_page=1` returned `[]`,
+  so the PR-thread walk was not paid for. Zero findings, clean no-op.
+- **[O] diff-bug — pending at this checkpoint.**
+
+### Findings
+
+Pending the [O] lens.
+

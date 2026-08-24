@@ -1,19 +1,18 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-24 (M30 done and archived; M24's terminal row pruned to keep five; one lesson on PDF text-layer extraction captured and one check-design shape appended; caps and budgets clean.)_
+_Last hygiene check: 2026-08-24 (M31 done and archived; M25's terminal row pruned to keep five; M22's stale-file lesson corrected where M31 made its tail false, and two lessons captured on restricted shell escape and on pass-through stand-ins; caps, byte budgets and check-design.md's own budget clean.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M31 | A leftover index file never breaks the next render | review | — | normal | milestones/M31-stale-ind-standin.md |
 | M32 | An index follows the bibliography where the author puts it | planned | — | low | milestones/M32-index-after-references.md |
+| M31 | A leftover index file never breaks the next render | done | — | normal | milestones/archive/M31-stale-ind-standin.md |
 | M30 | A character in an index entry is proved to print, not merely to compile | done | — | normal | milestones/archive/M30-typeset-print-proof.md |
 | M29 | A marker report in a book names its chapter | done | M28 | normal | milestones/archive/M29-book-chapter-in-report.md |
 | M28 | A reported block position names the sequence it counts | done | — | normal | milestones/archive/M28-block-position-naming.md |
 | M27 | A finding about today's behavior is a known issue, not a candidate row | done | — | normal | milestones/archive/M27-record-ownership.md |
-| M25 | A check that cannot hold its promise is retired, not widened | done | M24 | normal | milestones/archive/M25-scan-disposition.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

@@ -1,0 +1,11 @@
+# M31: A leftover index file never breaks the next render
+
+**Status:** done (2026-08-24, PR #31 https://github.com/jmgirard/quarto-index/pull/31)
+
+**Goal:** A LaTeX render whose `.ind` outlives the marks that defined it completes, the way M22 made a render whose `.aux` outlives them complete.
+
+**Outcome:** Three commands reach a compiled `.ind`. `PRINCIPAL_GOBBLERS` (`core.lua`) gained a fourth member, `\providecommand*\quartoindexlocator[2]{#2}` — a PASS-THROUGH, not a gobbler: swallowing the page list would strip every locator from a stale index rather than break the build. `XREF_BOTH_DEFINITION` and `XREF_LIST_DEFINITION` became unconditional in both branches of `index.lua`, each stateless and so already its own stand-in; `xref_both_emitted` and `xref_list_emitted` were removed rather than left write-only, which `stateprobe.py` forbids. Four checks asserting the reversed discipline were repaired: M02-AC5 requires both commands everywhere; M08-AC2 and M15's sweep match `|<command>`, makeindex's encap opener, to read an emission rather than a definition; `m20probes.py --standins` takes whole definition strings, not a `[2]{}` pattern. `m22_standins_only` strikes out the six definitions it enumerates and requires no `quartoindex` residue, replacing a pinned count of 3. New suite section: a stale-`.ind` reproduction under `-no-shell-escape` (TinyTeX re-runs makeindex otherwise and hides the hazard), a per-definition removal probe asserting the failure by identity, and a containment sweep of every captured `.ind` against every captured `.tex` carrying `\printindex`. README covers both build files; KI4 struck.
+
+**Decisions:** none milestone-local.
+
+**Review:** Three lenses run inline, not in fresh-context subagents — a logged deviation under this session's no-subagent instruction, declined at the gate. Six findings, all prose accuracy, no behavior defect: four stale comments still stating the reversed discipline (the largest claiming a mark-free document reads a leftover `.ind`, which it cannot — it emits no `\printindex`), one silent `continue` shrinking the sweep's compared set below its reported count, one fixture comment misreading an uncontested key as contested. All fixed on the branch before merge. 436 checks, exit 0.

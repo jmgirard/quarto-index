@@ -4628,10 +4628,14 @@ PY
 # scope), and the book names the split pair once.
 BOOK_DANGLING='see= on term "Epsilon" in sub/two.qmd points at "No Such Entry", which no index mark in this book indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'
 check_warning_count "$WORK/book-html.log" "$BOOK_DANGLING" 1 "M14-AC5"
-BOOK_WARNINGS=4
+# M29 adds three more: the nested marker it put in `sub/two.qmd` draws the
+# emptied-place report and the below-top-level report, and the second top-level
+# marker it put in `last.qmd` draws the duplicate report. Which chapter each of
+# those three sits in is not arbitrary — see the M29 partition below.
+BOOK_WARNINGS=7
 check_extension_warning_count "$WORK/book-html.log" "$BOOK_WARNINGS" \
-  "M05-AC4/M14-AC5 (the book fixture emitted warning(s) this suite cannot name; its $BOOK_WARNINGS are the dangling-target report, the two chapter halves of the split range, and the book's own unpaired-range report — and a resolvable cross-file target must draw none)"
-pass "M05-AC4/M14-AC5: all four of the book's warnings are ones this suite names — the target no chapter indexes, each chapter's half of the split range, and the book's report naming the pair — and the resolvable cross-file target draws neither"
+  "M05-AC4/M14-AC5 (the book fixture emitted warning(s) this suite cannot name; its $BOOK_WARNINGS are the dangling-target report, the two chapter halves of the split range, the book's own unpaired-range report, and M29's three marker-misuse reports — and a resolvable cross-file target must draw none)"
+pass "M05-AC4/M14-AC5: all seven of the book's warnings are ones this suite names — the target no chapter indexes, each chapter's half of the split range, the book's report naming the pair, and M29's three marker-misuse reports — and the resolvable cross-file target draws neither"
 
 # ---------------------------------------------------------------------------
 # M05-AC6 — a book with marks and no marker chapter.
@@ -10409,27 +10413,122 @@ for fmt in html latex gfm; do
   check_report_clause "$WORK/misuse-$fmt.log" "$WARN_MARKER_DUP" \
     "$M28_BLOCK_CLAUSE" "M28-AC2 (duplicate marker, $fmt)"
 done
-# The duplicate report names TWO numbers, and the clause above covers both
-# only because the sentence carrying it says so. Asserted separately from the
-# clause itself: a reworded lead-in that dropped "Both numbers" would leave
-# the marker ordinal unnamed while the clause check still passed.
+# The duplicate report names TWO numbers, and the clause above describes only
+# one of them. M28 shipped it saying "Both numbers are", which M29 repaired
+# (KI80): the clause ends in what a POSITION can differ from, and the first
+# number is a marker ordinal, which is no position. The ordinal is named where
+# it is printed instead, by "in document order" (D-014). Asserted separately
+# from the clause itself, so a lead-in that went back to claiming both numbers
+# fails here while the clause check still passes.
 for fmt in html latex gfm; do
   # Counted before it is judged, for the same reason check_report_clause counts
   # first: a key that stopped matching would otherwise be reported as a report
-  # naming one number, which is a misdiagnosis of a report that is not there.
+  # introducing its clause wrongly, which is a misdiagnosis of a report that is
+  # not there.
   dup_hits=$( { grep -cF -- "$WARN_MARKER_DUP" "$WORK/misuse-$fmt.log" || true; } | tr -d ' ')
   [ "$dup_hits" = "1" ] \
-    || fail "M28-AC2: $WORK/misuse-$fmt.log holds $dup_hits warning(s) matching <<$WARN_MARKER_DUP>>, want exactly 1, so the both-numbers clause would be judged over the wrong set"
+    || fail "M29-AC4: $WORK/misuse-$fmt.log holds $dup_hits warning(s) matching <<$WARN_MARKER_DUP>>, want exactly 1, so the clause's lead-in would be judged over the wrong set"
   { grep -F -- "$WARN_MARKER_DUP" "$WORK/misuse-$fmt.log" \
-    | grep -qF 'Both numbers are'; } \
-    || fail "M28-AC2: the duplicate-marker report in $fmt names a sequence for only one of its two numbers"
+    | grep -qF 'the first marker. Block positions are'; } \
+    || fail "M29-AC4: the duplicate-marker report in $fmt does not introduce the shared clause as being about its block position"
+  if { grep -F -- "$WARN_MARKER_DUP" "$WORK/misuse-$fmt.log" \
+       | grep -qF 'Both numbers are'; }; then
+    fail "M29-AC4: the duplicate-marker report in $fmt still says the shared clause covers both of its numbers, which describes the marker ordinal as a position it is not (KI80)"
+  fi
+  # The ordinal is not left unnamed by that repair: it carries its own clause.
+  { grep -F -- "$WARN_MARKER_DUP" "$WORK/misuse-$fmt.log" \
+    | grep -qF 'in document order'; } \
+    || fail "M29-AC4: the duplicate-marker report in $fmt names no sequence for its marker ordinal"
 done
-pass "M28-AC2: the duplicate-marker report says its clause covers both of its numbers, in all three formats"
+pass "M29-AC4: the duplicate-marker report introduces its shared clause as being about its block position and names its ordinal separately, in all three formats"
 
 # The chapter count, over the ordering book. Its log is the two passes
 # concatenated, so the two reports it holds are both required to carry it.
 check_report_clause "$WORK/book-order.log" "$WARN_MARKER_NOT_LAST" \
   "$M28_CHAPTER_CLAUSE" "M28-AC2 (chapter count)"
+
+# ---------------------------------------------------------------------------
+# M29-AC1/AC2/AC3/AC5 — a marker report in a book names its chapter.
+#
+# tests/m29book.py partitions EVERY warning this extension emits into a log:
+# the fixture's other known warnings, written out whole, and the two marker
+# reports, matched by a pattern anchored to end of line with the block
+# position, the marker ordinal and the chapter clause the only free parts. A
+# report whose chapter clause landed anywhere but immediately after the block
+# position therefore falls into neither partition and fails, which a search
+# anchored at the template's first word would have missed.
+#
+# The three modes are the three states the chapter clause has. In the HTML
+# book each chapter is its own Pandoc process, so both reports name a chapter;
+# in the PDF book Quarto concatenates the chapters, so neither does; and the
+# single-document misuse fixture is the no-book control, where the reports must
+# read exactly as they did before this milestone.
+# ---------------------------------------------------------------------------
+m29_partition() {
+  local logfile="$1" mode="$2" label="$3"
+  python3 tests/m29book.py "$logfile" "$QI_WARN_PATTERNS" "$mode" \
+    || fail "$label: the warning partition over $logfile failed (its own FAIL line is above)"
+  pass "$label: every warning in $logfile partitions, and every marker report in it says what it should about a chapter"
+}
+m29_partition "$WORK/book-html.log" book-html "M29-AC1/AC2/AC5 (HTML book)"
+m29_partition "$WORK/book-pdf.log" book-pdf "M29-AC3/AC5 (PDF book)"
+for fmt in html latex gfm; do
+  m29_partition "$WORK/misuse-$fmt.log" misuse "M29-AC4/AC5 (single document, $fmt)"
+done
+
+# The partition is proven able to fail before its green is trusted, on the four
+# ways this milestone can break: the chapter clause moved off the position, the
+# clause dropped where a chapter is known, the clause added where none is, and
+# a warning the fixture should not draw at all. Each planted log is checked to
+# fail for ITS OWN reason and not merely to fail, so a probe that broke the
+# script in some other way cannot be read as the defect being caught.
+m29_planted() {
+  local logfile="$1" mode="$2" want="$3" label="$4" out
+  if out=$( python3 tests/m29book.py "$logfile" "$QI_WARN_PATTERNS" "$mode" 2>&1 ); then
+    fail "M29: the partition passed the planted log $logfile ($label), so its green over the real logs says nothing"
+  fi
+  case "$out" in
+    *"$want"*) pass "M29: the partition catches $label, and reports it as that" ;;
+    *) fail "M29: the partition failed the planted log $logfile ($label), but not for that reason (<<$out>>)" ;;
+  esac
+}
+M29_PLANT="$WORK/m29-planted"
+mkdir -p "$M29_PLANT"
+# The clause moved from after the block position to the end of the line: the
+# text an author reads still holds the chapter, so only a whole-line pattern
+# can tell this apart from the shipped wording.
+# One expression, not two: it matches only a line carrying the clause AND
+# ending in the shared basis -- the emptied-place report -- and moves the
+# clause from the position to the line's end in the one substitution. Written
+# this way so a no-op leaves the log untouched and the probe fails loudly, the
+# discipline m23_inject exists for; two expressions let the second alone
+# produce the expected failure with the first no-oping.
+sed 's| of sub/two\.qmd\(.*source file\)$|\1 (in sub/two.qmd)|' \
+  "$WORK/book-html.log" > "$M29_PLANT/moved.log"
+m29_planted "$M29_PLANT/moved.log" book-html 'warning in neither partition' \
+  'a chapter clause moved off the block position'
+# The clause dropped in the book, which is the pre-M29 behavior this milestone
+# exists to change.
+sed 's| of sub/two\.qmd was the only thing| was the only thing|' \
+  "$WORK/book-html.log" > "$M29_PLANT/dropped.log"
+m29_planted "$M29_PLANT/dropped.log" book-html "want ' of sub/two.qmd'" \
+  'a report that names no chapter where one is known'
+# A chapter named in the PDF book, where no chapter is known: the failure mode
+# of hoisting the book context past its `is_html` gate.
+sed 's|(top-level block \([0-9]*\)) is ignored|(top-level block \1 of last.qmd) is ignored|' \
+  "$WORK/book-pdf.log" > "$M29_PLANT/spurious.log"
+m29_planted "$M29_PLANT/spurious.log" book-pdf 'want None' \
+  'a report that names a chapter where none is known'
+# A warning the book fixture does not draw, to show the partition is closed
+# rather than a search for the two reports it knows about.
+{ cat "$WORK/book-html.log"; echo "(W) $WARN_MARKER_CONTENT; the marker should be an empty div, and its content is kept where the marker was written"; } \
+  > "$M29_PLANT/extra.log"
+m29_planted "$M29_PLANT/extra.log" book-html 'warning in neither partition' \
+  'a warning belonging to neither partition'
+# And the empty domain: a log holding none of our warnings must not pass.
+: > "$M29_PLANT/none.log"
+m29_planted "$M29_PLANT/none.log" book-html 'no warnings from this extension' \
+  'a log holding no warning of ours at all'
 
 # ---------------------------------------------------------------------------
 # M28-AC1 — the fixture where the two positions diverge. The marker is written

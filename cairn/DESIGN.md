@@ -246,10 +246,13 @@ marker — an empty top-level div, class `qi-index-here` — is resolved before 
 back-end is chosen, so a misused one (nested, duplicate, non-empty, or in a
 document with no marks) is diagnosed in every format and no marker survives
 into any output. A nested marker that was the only thing in the block list it stood in empties
-that place, which is reported — carrying the top-level block position and the
-clause saying what that position is counted over, and naming nothing else
-(added M12, position clause added M28). Naming what held it is what the report
-refuses: Quarto wraps a callout, a tabset and a captioned figure in scaffold
+that place, which is reported — carrying the top-level block position, the
+chapter that position was counted over where one is known, and the clause
+saying what the position is counted over, and naming nothing else (added M12,
+position clause added M28, chapter added M29). A chapter is known only in an
+HTML book, the one format Quarto renders a chapter per Pandoc process in; the
+duplicate-marker report carries the same chapter on the same terms. Naming
+what held it is what the report refuses: Quarto wraps a callout, a tabset and a captioned figure in scaffold
 divs no author wrote, so every available name is invented or false, and a
 callout holding only a marker still renders its title bar and so is not empty
 at all. The count is taken before anything is stripped — the strip runs
@@ -567,14 +570,21 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   report nor the book chapter count. What the position is counted over is no
   longer open — the reports say so themselves — so only the un-probed injection
   kinds remain. — M12 review F6, narrowed M28
-- **KI22.** In a book the emptied-place position is chapter-local and the
-  message names no file, unlike the book-aware marker warnings, which carry
-  `ctx.file`. — M12 review F7
-- **KI80.** The duplicate-marker report's shared clause says "Both numbers are
-  counted over the document as this filter received it … so they can differ
-  from the positions in your source file". Its first number is a marker
-  ordinal, not a position, so the trailing half of that sentence describes only
-  the second. — M28 review F7
+- **KI83.** No fixture reaches the HTML book path where Quarto supplies too
+  little for `book_context` to return a chapter (`index.lua:75-78`), so the two
+  marker reports' no-chapter wording is unprobed on the one path where a
+  chapter exists and is not known. Producing that state takes metadata Quarto
+  does not emit, which is the private-structure modelling M12's gate refused.
+  — M29 plan Scope
+- **KI84.** `tests/m29book.py` matches a chapter clause as ` of \S+`, so a
+  chapter whose filename holds a space would put a genuine marker report in
+  neither partition and fail the check for a reason that is not a defect.
+  `examples/book-order/` already ships such a filename; the book fixture the
+  partition reads does not. — M29 review F8
+- **KI85.** Only `book-html.log` carries a total extension-warning count. The
+  partition requires exactly one of each marker report, but a repeated one of
+  the fixture's other known warnings in `book-pdf.log` or the three
+  `misuse-*.log` would pass it unnoticed. — M29 review F11
 - **KI23.** The emptied-place reports for a callout, a tabset and a captioned
   figure exist only because Quarto's scaffold wrapping happens to leave the
   marker alone in an inner block list — the private structure M12's gate refused
@@ -638,12 +648,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   nothing but being a different number, so a manifest naming the wrong author
   position passes. Counting the host file's own top-level blocks is
   mechanically checkable and is not done. — M28 review F2
-- **KI82.** The block-position naming clause is written out three times in the
-  suite (`run-tests.sh` twice, `tests/m28pos.py` once) against one shared string
-  in the filter, so a reword takes three coordinated suite edits where the
-  filter takes one. Drift fails loudly in all three, so this is cost, not a
-  hole; it is the price of not reading the expectation out of the filter's
-  source (D-011). — M28 review F10
+- **KI82.** The block-position naming clause is written out four times in the
+  suite (`run-tests.sh` twice, `tests/m28pos.py` once, `tests/m29book.py` once)
+  against one shared string in the filter, so a reword takes four coordinated
+  suite edits where the filter takes one. Drift fails loudly in all four, so
+  this is cost, not a hole; it is the price of not reading the expectation out
+  of the filter's source (D-011). — M28 review F10, count corrected M29
 
 ### The acceptance suite: coverage gaps
 

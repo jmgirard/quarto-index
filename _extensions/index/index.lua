@@ -62,12 +62,20 @@ local function Pandoc(doc)
   -- misuse is diagnosed in every format and its residue removed in every
   -- format, whether or not that format has an index to place.
   qi_marker.report_marker_sites(doc)
-  local marker = qi_marker.resolve_markers(doc)
   -- A book chapter is not the whole document: the marks the marker places are
   -- mostly in other chapters, so "no marks here" says nothing about whether
   -- there is an index to place, and the book path reports what it finds
   -- across the whole store instead.
+  --
+  -- Computed here rather than after resolution because the marker reports name
+  -- the chapter they are about, and resolution is what draws them. Nothing
+  -- below the marker reports reads it any earlier than it used to, and the
+  -- decisions that need the whole context still run after resolution. The
+  -- `is_html` gate is what makes a chapter file mean a chapter: only the HTML
+  -- book renders a chapter per Pandoc process, so every other format reaches
+  -- the no-chapter wording by the path a single document takes.
   local book = qi_core.is_html() and qi_book.book_context(doc) or nil
+  local marker = qi_marker.resolve_markers(doc, book and book.file or nil)
   if qi_core.is_html() and book == nil and doc.meta.book ~= nil then
     -- Falling back to a per-chapter index is not a safe default in a book: it
     -- is the shipped-before-M05 defect, one index per chapter and none of them

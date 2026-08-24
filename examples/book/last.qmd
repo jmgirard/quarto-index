@@ -12,3 +12,10 @@ no chapter can see both ends of: the discussion of
 
 ::: {.qi-index-here}
 :::
+
+A second placement marker in this chapter, which a book still resolves within
+the one chapter before book order is consulted: the first marker above places
+the index and this one is reported as ignored, naming this chapter.
+
+::: {.qi-index-here}
+:::

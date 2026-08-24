@@ -32,6 +32,20 @@ local POSITION_BASIS = "counted over the document as this filter received "
       .. "it, after Quarto expanded any includes and executable cells, so "
       .. "they can differ from the positions in your source file"
 
+-- Where a reported block position was counted, when that is a book chapter
+-- rather than the whole document. Attached to the position itself rather than
+-- offered as a sentence of its own, because scoping the number is the whole
+-- point: in a book each chapter is its own Pandoc process, so block 5 means
+-- the fifth block of THAT chapter and of nothing larger. `chapter` is nil
+-- wherever no chapter is known -- every non-book render, and every format
+-- but HTML -- and the reports then read exactly as they did before.
+local function in_chapter(chapter)
+  if chapter == nil then
+    return ""
+  end
+  return " of " .. chapter
+end
+
 -- The marker class means something on exactly one shape: an empty top-level
 -- div. Written anywhere else it is inert, and until now it was inert in
 -- silence — a heading or a span carrying it placed nothing and said nothing,
@@ -194,8 +208,8 @@ end
 -- The emptied places are reported BEFORE anything is stripped, from the shape
 -- as the author wrote it: the strip runs bottom-up, so by the time an outer
 -- list is visited its markers have already lost their content and every list
--- would look empty.
-local function strip_nested_markers(block, position)
+-- would look empty. `chapter` is the book chapter this document is, or nil.
+local function strip_nested_markers(block, position, chapter)
   for _ = 1, emptied_places(block) do
     -- One literal for the report's own sentence, not concatenated. Written
     -- this way when the distinctness scan read only a call's FIRST literal
@@ -203,7 +217,7 @@ local function strip_nested_markers(block, position)
     -- here rather than a requirement. The trailing clause is the shared
     -- POSITION_BASIS above, so both reports say the same thing about what
     -- their numbers count.
-    qi_core.warn(("index placement marker in top-level block %d was the only thing written where it stood; the marker is removed, so nothing you wrote remains there. Block positions are %s"):format(position, POSITION_BASIS))
+    qi_core.warn(("index placement marker in top-level block %d%s was the only thing written where it stood; the marker is removed, so nothing you wrote remains there. Block positions are %s"):format(position, in_chapter(chapter), POSITION_BASIS))
   end
   return block:walk({
     Blocks = function(blocks)
@@ -229,23 +243,30 @@ end
 -- is not the author's own source position: Quarto expands includes and
 -- executable cells first, so the two diverge whenever the document holds any
 -- (`examples/marker-position.qmd`). The reports say so themselves through
--- POSITION_BASIS above.
-local function resolve_markers(doc)
+-- POSITION_BASIS above. In a book each chapter is a Pandoc process of its own,
+-- so the position is over that chapter alone; `chapter` names it where the
+-- caller knows which one it is, and the reports scope their number to it.
+local function resolve_markers(doc, chapter)
   local out = pandoc.Blocks({})
   local seen = 0
   for position, block in ipairs(doc.blocks) do
-    block = strip_nested_markers(block, position)
+    block = strip_nested_markers(block, position, chapter)
     if is_marker(block) then
       seen = seen + 1
       if seen == 1 then
         out:insert(block)
       else
-        -- Two numbers, so each is named where it is printed: the first counts
-        -- markers down the document, the second counts top-level blocks, and
-        -- the shared clause says what both are counted over (D-014).
-        qi_core.warn(("index placement marker %d in document order (top-level block %d) "
-              .. "is ignored; the index is placed at the first marker. Both "
-              .. "numbers are %s"):format(seen, position, POSITION_BASIS))
+        -- Two numbers, so each is named where it is printed (D-014): the first
+        -- counts markers down the document and says so, the second counts
+        -- top-level blocks and takes the shared clause, with the chapter
+        -- inside the parenthesis holding that number, as the emptied-place
+        -- report attaches it to its own. That clause is about
+        -- the block position alone — it ends in what a POSITION can differ
+        -- from, and a marker ordinal is no position, which is what saying
+        -- "both numbers" got wrong (KI80).
+        qi_core.warn(("index placement marker %d in document order (top-level block %d%s) "
+              .. "is ignored; the index is placed at the first marker. Block "
+              .. "positions are %s"):format(seen, position, in_chapter(chapter), POSITION_BASIS))
         out:extend(marker_content(block))
       end
     else

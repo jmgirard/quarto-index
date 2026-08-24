@@ -246,9 +246,12 @@ marker — an empty top-level div, class `qi-index-here` — is resolved before 
 back-end is chosen, so a misused one (nested, duplicate, non-empty, or in a
 document with no marks) is diagnosed in every format and no marker survives
 into any output. A nested marker that was the only thing in the block list it stood in empties
-that place, which is reported — carrying the top-level block position and the
-clause saying what that position is counted over, and naming nothing else
-(added M12, position clause added M28). Naming what held it is what the report
+that place, which is reported — carrying the top-level block position, the
+chapter that position was counted over where one is known, and the clause
+saying what the position is counted over, and naming nothing else (added M12,
+position clause added M28, chapter added M29). A chapter is known only in an
+HTML book, the one format Quarto renders a chapter per Pandoc process in; the
+duplicate-marker report carries the same chapter on the same terms. Naming what held it is what the report
 refuses: Quarto wraps a callout, a tabset and a captioned figure in scaffold
 divs no author wrote, so every available name is invented or false, and a
 callout holding only a marker still renders its title bar and so is not empty
@@ -567,14 +570,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   report nor the book chapter count. What the position is counted over is no
   longer open — the reports say so themselves — so only the un-probed injection
   kinds remain. — M12 review F6, narrowed M28
-- **KI22.** In a book the emptied-place position is chapter-local and the
-  message names no file, unlike the book-aware marker warnings, which carry
-  `ctx.file`. — M12 review F7
-- **KI80.** The duplicate-marker report's shared clause says "Both numbers are
-  counted over the document as this filter received it … so they can differ
-  from the positions in your source file". Its first number is a marker
-  ordinal, not a position, so the trailing half of that sentence describes only
-  the second. — M28 review F7
+- **KI83.** No fixture reaches the HTML book path where Quarto supplies too
+  little for `book_context` to return a chapter (`index.lua:75-78`), so the two
+  marker reports' no-chapter wording is unprobed on the one path where a
+  chapter exists and is not known. Producing that state takes metadata Quarto
+  does not emit, which is the private-structure modelling M12's gate refused.
+  — M29 plan Scope
 - **KI23.** The emptied-place reports for a callout, a tabset and a captioned
   figure exist only because Quarto's scaffold wrapping happens to leave the
   marker alone in an inner block list — the private structure M12's gate refused

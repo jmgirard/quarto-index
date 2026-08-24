@@ -107,7 +107,7 @@ milestone depends on.
       comparison; update the three existing copies of the position clause
       (`run-tests.sh` twice, `tests/m28pos.py` once) for T3's reword; pass
       every new grep key to the key-distinctness scan (M18).
-- [ ] T5: in `cairn/DESIGN.md`, rewrite KI22 to keep its chapter-local
+- [x] T5: in `cairn/DESIGN.md`, rewrite KI22 to keep its chapter-local
       position half and strike its names-no-file half, strike KI80, and add
       the Known-issues entry for the uncovered incomplete-metadata HTML case;
       rewrite any candidate row pointing at them, in the same commit (D-013).
@@ -128,6 +128,8 @@ milestone depends on.
 - 2026-08-24: T4 — the fixture edits to `examples/book/sub/two.qmd` and `examples/book/last.qmd` were in the working tree when T1-T3 was committed, so they landed in 77c5ab5 rather than the T4 commit.
 - 2026-08-24: T4 — no new shell grep key was introduced, so the M18 key-distinctness scan's argument list is unchanged; `tests/m29book.py` matches by its own end-anchored patterns rather than by a `WARN_` constant. `tests/m28pos.py` needed no edit either: it holds the shared clause tail only, not the duplicate report's lead-in, so KI82's three copies cost two edits here rather than three.
 - 2026-08-24: T4 — the PDF book render confirmed what the amendment's wording rests on: the merged document reports block 26 and block 34 where the HTML chapters report 8 and 5, and the marker ordinal is 2 in both, so "free to differ" is the satisfiable form and a flat "unchanged" would not have been.
+- 2026-08-24: T5 — KI22 struck whole rather than half-rewritten as the task said: attaching the clause to the position ("top-level block 5 of sub/two.qmd") states the chapter-local half in the text as well, so neither half survives. KI80 struck. KI83 added for the unprobed incomplete-metadata HTML path. No candidate row pointed at either struck entry, so none needed rewriting; the ROADMAP's hygiene stamp names KI80 as a record of the last pass and is replaced, not edited, at the next one.
+- 2026-08-24: T5 — DESIGN.md's marker-resolution paragraph updated to say the reports carry the chapter and that a chapter is known only in an HTML book.
 
 ## Decisions
 

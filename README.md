@@ -496,26 +496,6 @@ Both back-ends honour the same marker: the HTML index section and the LaTeX
 `\printindex` each land where you wrote it. A format with no index back-end
 drops the marker and leaves nothing in its place.
 
-**Putting the index after a bibliography.** Quarto appends a document's
-reference block after this extension has already placed the index, so a
-document that leaves the bibliography where Quarto puts it gets the index
-first and the references after. To have it the other way round, write an empty
-`#refs` div where the references belong, and the placement marker below it:
-
-```markdown
-::: {#refs}
-:::
-
-::: {.qi-index-here}
-:::
-```
-
-Quarto fills that div in place, so the marker still sits below the finished
-bibliography and the index follows it — `\printindex` after the reference
-environment in LaTeX, the index section after the bibliography in HTML. Write
-no `#refs` div and nothing changes: the references are appended at the end,
-after the index.
-
 Six rules, each of which warns rather than breaking your build:
 
 - **Top level only.** A marker inside a callout, a list or another div places
@@ -548,6 +528,35 @@ Printing an index in the middle of a document otherwise closes the file the
 entries are collected in, and every term marked after the marker vanishes from
 the index with no error. The option changes nothing else: building the index
 is Quarto's PDF loop's job either way.
+
+**Putting the index after a bibliography.** Quarto appends a document's
+reference block after this extension has already placed the index, so a
+document that leaves the bibliography where Quarto puts it gets the index
+first and the references after. To have it the other way round, write your own
+References heading and an empty `#refs` div where the references belong, and
+the placement marker below them:
+
+```markdown
+# References
+
+::: {#refs}
+:::
+
+::: {.qi-index-here}
+:::
+```
+
+Quarto fills that div in place, so the marker still sits below the finished
+bibliography and the index follows it — `\printindex` after the reference
+environment in LaTeX, the index section after the bibliography in HTML. Write
+no `#refs` div and nothing changes: the references are appended at the end,
+after the index.
+
+The heading is yours to write because in HTML it has to be. When Quarto
+appends the reference block itself it wraps it in an appendix block carrying a
+**References** heading of its own; a `#refs` div you wrote gets neither the
+heading nor the wrapper, so a recipe with no heading of its own leaves the
+bibliography unlabelled.
 
 ## What it emits
 

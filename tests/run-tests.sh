@@ -472,10 +472,16 @@ README_LETTER_CLAIMS=(
 README_REFS_CLAIMS=(
   $'why the default\tQuarto appends a document\'s reference block after this extension has already placed the index'
   $'default order\tgets the index first and the references after'
-  $'the recipe\twrite an empty `#refs` div where the references belong, and the placement marker below it'
+  $'the recipe\twrite your own References heading and an empty `#refs` div where the references belong, and the placement marker below them'
   $'why it works\tQuarto fills that div in place, so the marker still sits below the finished bibliography'
   $'both back-ends\t`\\printindex` after the reference environment in LaTeX, the index section after the bibliography in HTML'
   $'without the div\tWrite no `#refs` div and nothing changes: the references are appended at the end, after the index'
+  # M32 review F2: the recipe costs an author the heading and the appendix
+  # wrapper Quarto builds when it appends the block itself. Both halves are
+  # pinned, and the fixture pair holds them: the twin carries the wrapper and
+  # the fixture does not.
+  $'why the heading\tWhen Quarto appends the reference block itself it wraps it in an appendix block carrying a **References** heading of its own'
+  $'html cost\ta `#refs` div you wrote gets neither the heading nor the wrapper'
 )
 
 # Escaping probe set (NORMATIVE): every character below appears independently
@@ -3766,37 +3772,12 @@ pass "M04-AC5: the marker leaves no token in gfm output, and the visible text is
 # and required to come out the other way round. The derivation is checked
 # first, or the two orders below would be two different documents' orders.
 # ---------------------------------------------------------------------------
-python3 - examples/references.qmd examples/references-twin.qmd <<'PY'
-import sys
-fixture, twin = (open(sys.argv[1], encoding='utf-8').read(),
-                 open(sys.argv[2], encoding='utf-8').read())
-out, skip, cut = [], False, 0
-for line in fixture.splitlines(True):
-    stripped = line.strip()
-    if stripped == '::: {#refs}':
-        skip = True
-        cut += 1
-        continue
-    if skip and stripped == ':::':
-        skip = False
-        continue
-    out.append(line)
-# The block has to have been found: with no `#refs` div in the fixture at all
-# the loop copies it through unchanged, and a twin that is a byte copy would
-# then satisfy the comparison while the pair tested nothing.
-if cut != 1:
-    print(f'FAIL: M32: examples/references.qmd writes {cut} `#refs` div '
-          f'blocks; the recipe under test is exactly one', file=sys.stderr)
-    sys.exit(1)
-if ''.join(out) != twin:
-    print('FAIL: M32: the twin fixture is not the references fixture with its '
-          '`#refs` div block deleted; the two have drifted apart and the '
-          'orders compared below would be two different documents\' orders',
-          file=sys.stderr)
-    sys.exit(1)
-print('ok   M32: the twin fixture is the references fixture with the `#refs` '
-      'div block deleted, and nothing else')
-PY
+m32_read() {
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 tests/m32refs.py "$@"
+}
+
+m32_read derive examples/references.qmd examples/references-twin.qmd \
+  || fail "M32: the fixture pair is not the derivation the orders below are stated over (its own FAIL line is above)"
 
 for f in references references-twin; do
   for fmt in latex html; do
@@ -3806,113 +3787,166 @@ for f in references references-twin; do
   done
 done
 
-# M32-AC1/AC3 (LaTeX). The reference environment is named, not guessed at by
-# offset into the prose: `\begin{CSLReferences}` … `\end{CSLReferences}` is the
-# environment Quarto's citation processing writes the bibliography into, and
-# `\printindex` is the one command that prints the index. Both must be present
-# in both artifacts before either order means anything — a file carrying no
-# bibliography at all would otherwise pass the "index comes first" half.
-python3 - "$CAPTURE_ROOT/references-latex/references.tex" \
-         "$CAPTURE_ROOT/references-twin-latex/references-twin.tex" <<'PY'
+M32_TEX="$CAPTURE_ROOT/references-latex/references.tex"
+M32_TEX_TWIN="$CAPTURE_ROOT/references-twin-latex/references-twin.tex"
+M32_HTML="$CAPTURE_ROOT/references-html/references.html"
+M32_HTML_TWIN="$CAPTURE_ROOT/references-twin-html/references-twin.html"
+
+m32_read latex "$M32_TEX" "$M32_TEX_TWIN" \
+  || fail "M32-AC1/AC3: the LaTeX order over the fixture pair failed (its own FAIL line is above)"
+m32_read html "$M32_HTML" "$M32_HTML_TWIN" \
+  || fail "M32-AC2/AC3: the HTML order over the fixture pair failed (its own FAIL line is above)"
+pass "M32-AC1/AC2/AC3: an empty #refs div above the placement marker puts the index after the references in both LaTeX and HTML, the index sits at the marker rather than at the end of the body in each, and the same document without the div keeps the default order"
+
+# --- the three readers above, shown able to fail.
+#
+# Every one of them is re-run against a copy of its own artifact with a defect
+# planted in it, and must FAIL — and each planted run is checked to fail for
+# ITS OWN reason, so a probe that broke the script some other way cannot be
+# read as the defect being caught. The first LaTeX plant and the first HTML
+# plant are the marker-less document review found this pair passing on: with
+# the placement marker deleted the index is appended at the end of the body,
+# which is still after a bibliography Quarto filled in place, so a reader that
+# looks only at the bibliography stays green on a document following half the
+# recipe.
+M32_PLANT="$WORK/m32-planted"
+rm -rf "$M32_PLANT"; mkdir -p "$M32_PLANT"
+
+# A mutation that changes nothing would be reported below as the READER
+# failing to discriminate when the fault is the probe's — a defect in the
+# costume of a finding. Same refusal probe_plant makes in the self-test.
+m32_mutate() {
+  local src="$1" dst="$2"; shift 2
+  perl -0777 -pe "$@" "$src" > "$dst"
+  if cmp -s "$src" "$dst"; then
+    fail "M32: the defect aimed at $dst planted nothing — the reader that follows would be reported as failing to discriminate when the fault is this mutation's"
+  fi
+}
+
+m32_planted() {
+  local mode="$1" a="$2" b="$3" want="$4" label="$5" out
+  if out=$( m32_read "$mode" "$a" "$b" 2>&1 ); then
+    fail "M32: the $mode reader passed the planted pair ($label), so its green over the rendered artifacts says nothing"
+  fi
+  case "$out" in
+    *"$want"*) pass "M32: the $mode reader catches $label, and reports it as that" ;;
+    *) fail "M32: the $mode reader failed the planted pair ($label), but not for that reason (<<$out>>)" ;;
+  esac
+}
+
+# --- the derivation. A twin that is not the fixture-minus-the-div, a fixture
+#     writing the recipe twice, a fixture that has stopped writing the section
+#     the marker clause is read against, and the two blocks in the wrong order.
+cp examples/references-twin.qmd "$M32_PLANT/drifted.qmd"
+printf '\nA sentence the fixture does not carry.\n' >> "$M32_PLANT/drifted.qmd"
+m32_planted derive examples/references.qmd "$M32_PLANT/drifted.qmd" \
+  'drifted apart' 'a twin that is not the fixture with its `#refs` div deleted'
+
+cp examples/references.qmd "$M32_PLANT/byte-copy-source.qmd"
+m32_planted derive "$M32_PLANT/byte-copy-source.qmd" examples/references.qmd \
+  'drifted apart' 'a twin that is a byte copy of the fixture, div and all'
+
+m32_mutate examples/references.qmd "$M32_PLANT/twice.qmd" \
+  's/(::: \{\#refs\}\n:::\n)/$1\n$1/'
+m32_planted derive "$M32_PLANT/twice.qmd" examples/references-twin.qmd \
+  'the recipe under test writes exactly one' \
+  'a fixture writing the `#refs` div twice'
+
+m32_mutate examples/references.qmd "$M32_PLANT/no-after.qmd" \
+  's/\{\#qi-afterword\}/{#qi-elsewhere}/'
+m32_planted derive "$M32_PLANT/no-after.qmd" examples/references-twin.qmd \
+  'the recipe under test writes exactly one' \
+  'a fixture that no longer writes the section the marker clause is read against'
+
+m32_mutate examples/references.qmd "$M32_PLANT/reordered.qmd" \
+  's/(::: \{\#refs\}\n:::\n\n)(::: \{\.qi-index-here\}\n:::\n)/$2\n$1/'
+m32_planted derive "$M32_PLANT/reordered.qmd" examples/references-twin.qmd \
+  'then the placement marker' \
+  'a fixture writing the marker above the `#refs` div'
+
+# --- the marker-less document review found this pair passing on, rendered
+#     rather than mutated. Delete the placement marker from the fixture and
+#     nothing else, and the index is appended at the end of the body — which is
+#     still after a bibliography Quarto filled in place, so a reader looking
+#     only at the bibliography stays green on a document following half the
+#     recipe. Both readers must refuse it, and for the marker clause.
+M32W="$WORK/m32-nomarker"
+rm -rf "$M32W"; mkdir -p "$M32W"
+cp -R _extensions "$M32W/_extensions"
+cp examples/references.bib "$M32W/references.bib"
+python3 - examples/references.qmd "$M32W/nomarker.qmd" <<'M32NOMARKPY' \
+  || fail "M32: the marker-less variant could not be derived from the fixture (its own FAIL line is above)"
 import sys
-
-OPEN, CLOSE, INDEX = (r'\begin{CSLReferences}', r'\end{CSLReferences}',
-                      r'\printindex')
-
-
-def places(path):
-    src = open(path, encoding='utf-8').read()
-    where = {}
-    for name in (OPEN, CLOSE, INDEX):
-        if src.count(name) != 1:
-            print(f'FAIL: M32: {path} carries {src.count(name)} occurrences of '
-                  f'{name}; the order below is stated over exactly one of each',
-                  file=sys.stderr)
-            sys.exit(1)
-        where[name] = src.index(name)
-    return where
-
-
-withdiv, without = places(sys.argv[1]), places(sys.argv[2])
-if not withdiv[INDEX] > withdiv[CLOSE]:
-    print(f'FAIL: M32-AC1: in {sys.argv[1]} the index command does not follow '
-          f'the reference environment', file=sys.stderr)
+src = open(sys.argv[1], encoding='utf-8').read()
+block = '::: {.qi-index-here}\n:::\n'
+if src.count(block) != 1:
+    print('FAIL: M32: the references fixture does not write exactly one '
+          'placement-marker block, so the variant below would not be the '
+          'fixture with its marker deleted', file=sys.stderr)
     sys.exit(1)
-if not without[INDEX] < without[OPEN]:
-    print(f'FAIL: M32-AC3: in {sys.argv[2]}, which writes no `#refs` div, the '
-          f'index command does not precede the reference environment; the '
-          f'default order is not what the recipe moves', file=sys.stderr)
-    sys.exit(1)
-print(r'ok   M32-AC1/AC3: \printindex follows \end{CSLReferences} in the '
-      r'fixture that writes an empty #refs div, and precedes '
-      r'\begin{CSLReferences} in the twin that writes none')
-PY
+open(sys.argv[2], 'w', encoding='utf-8').write(src.replace(block, '', 1))
+M32NOMARKPY
+for fmt in latex html; do
+  ( cd "$M32W" && quarto render nomarker.qmd --to $fmt ) \
+      > "$WORK/m32-nomarker-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/m32-nomarker-$fmt.log" >&2; fail "M32: the marker-less variant failed to render to $fmt"; }
+  capture "$M32W/nomarker.qmd" $fmt "m32-nomarker-$fmt"
+done
+m32_planted latex "$M32W/nomarker.tex" "$M32_TEX_TWIN" \
+  'the marker half of the recipe is untested' \
+  'the fixture rendered with its placement marker deleted, where the index command lands at the end of the body'
+m32_planted html "$M32W/nomarker.html" "$M32_HTML_TWIN" \
+  'the marker half of the recipe is untested' \
+  'the fixture rendered with its placement marker deleted, where the index section lands at the end of the body'
 
-# M32-AC2/AC3 (HTML). Element identity, not text position: the references are
-# the element carrying the id `refs` AND the classes Quarto's bibliography
-# writer puts on it, and the index is the element carrying the generated
-# section id — which is required to be the same node the index heading sits
-# in, so an id landing on some other element could not stand in for it.
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
-  "$CAPTURE_ROOT/references-html/references.html" \
-  "$CAPTURE_ROOT/references-twin-html/references-twin.html" <<'PY'
-import os, sys
-sys.path.insert(0, 'tests')
-import htmlindex as H
+# --- the LaTeX order.
+m32_mutate "$M32_TEX" "$M32_PLANT/before.tex" \
+  's/\\printindex\n//; s/(\\begin\{CSLReferences\})/\\printindex\n$1/'
+m32_planted latex "$M32_PLANT/before.tex" "$M32_TEX_TWIN" \
+  'does not follow the reference environment' \
+  'an index command printed before the bibliography in the fixture'
 
-SECTION_ID = os.environ['HTML_SECTION_ID']
-# What Quarto's citation processing puts on the div it fills: the id the
-# author wrote (or that Quarto mints when they did not) and the classes that
-# make it the bibliography. Both, so a `#refs` div the filter left empty could
-# not be read as the references having arrived.
-REF_CLASSES = {'references', 'csl-bib-body'}
+m32_mutate "$M32_TEX_TWIN" "$M32_PLANT/twin-after.tex" \
+  's/\\printindex\n//; s/(\\end\{CSLReferences\})/$1\n\\printindex/'
+m32_planted latex "$M32_TEX" "$M32_PLANT/twin-after.tex" \
+  'the default order is not what the recipe moves' \
+  'a twin whose index command follows the bibliography, leaving the pair with no default to move'
 
+m32_mutate "$M32_TEX" "$M32_PLANT/nobib.tex" \
+  's/\\begin\{CSLReferences\}/\\begin{NotTheBibliography}/'
+m32_planted latex "$M32_PLANT/nobib.tex" "$M32_TEX_TWIN" \
+  'occurrences of \begin{CSLReferences}' \
+  'a fixture carrying no reference environment at all'
 
-def places(path):
-    doc = H.parse(path)
-    refs = H.find_id(doc, 'refs')
-    if refs is None:
-        print(f'FAIL: M32: {path} carries no element with the id `refs`, so it '
-              f'holds no rendered bibliography to order the index against',
-              file=sys.stderr)
-        sys.exit(1)
-    if not REF_CLASSES <= H.classes(refs):
-        print(f'FAIL: M32: the `refs` element of {path} is a <{refs.tag}> '
-              f'carrying {sorted(H.classes(refs))}; the bibliography Quarto '
-              f'writes carries {sorted(REF_CLASSES)}', file=sys.stderr)
-        sys.exit(1)
-    section = H.find_id(doc, SECTION_ID)
-    if section is None:
-        print(f'FAIL: M32: {path} carries no element with the generated index '
-              f'section id `{SECTION_ID}`', file=sys.stderr)
-        sys.exit(1)
-    if H.index_section(doc) is not section:
-        print(f'FAIL: M32: in {path} the element carrying `{SECTION_ID}` is not '
-              f'the section the index heading sits in, so its position is not '
-              f'the index\'s position', file=sys.stderr)
-        sys.exit(1)
-    return H.position(doc, refs), H.position(doc, section)
+# --- the HTML order and the recipe's cost. The swap needs no mutation: read
+#     the twin as the fixture and the order clause has to refuse it.
+m32_planted html "$M32_HTML_TWIN" "$M32_HTML" \
+  'does not follow the bibliography' \
+  'the two artifacts read the wrong way round'
 
+m32_mutate "$M32_HTML" "$M32_PLANT/unclassed.html" \
+  's/<div id="refs" class="[^"]*"/<div id="refs" class="hanging-indent"/'
+m32_planted html "$M32_PLANT/unclassed.html" "$M32_HTML_TWIN" \
+  'the bibliography Quarto writes carries' \
+  'a `refs` element stripped of the classes that make it the bibliography'
 
-with_refs, with_index = places(sys.argv[1])
-without_refs, without_index = places(sys.argv[2])
-if not with_index > with_refs:
-    print(f'FAIL: M32-AC2: in {sys.argv[1]} the index section (document '
-          f'position {with_index}) does not follow the bibliography '
-          f'({with_refs})', file=sys.stderr)
-    sys.exit(1)
-if not without_index < without_refs:
-    print(f'FAIL: M32-AC3: in {sys.argv[2]}, which writes no `#refs` div, the '
-          f'index section ({without_index}) does not precede the bibliography '
-          f'({without_refs}); the default order is not what the recipe moves',
-          file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M32-AC2/AC3: the generated index section follows the '
-      f'bibliography div in the fixture that writes an empty #refs div '
-      f'({with_refs} then {with_index}), and precedes it in the twin that '
-      f'writes none ({without_index} then {without_refs})')
-PY
-pass "M32-AC1/AC2/AC3: an empty #refs div above the placement marker puts the index after the references in both LaTeX and HTML, and the same document without the div keeps the default order"
+m32_mutate "$M32_HTML" "$M32_PLANT/no-after.html" \
+  's/id="qi-afterword"/id="qi-elsewhere"/'
+m32_planted html "$M32_PLANT/no-after.html" "$M32_HTML_TWIN" \
+  'there is nothing to tell an index at the marker apart' \
+  'a fixture carrying no section after the marker'
+
+m32_mutate "$M32_HTML_TWIN" "$M32_PLANT/twin-unwrapped.html" \
+  's/id="quarto-appendix"/id="quarto-not-an-appendix"/; s/role="doc-bibliography"/role="none"/'
+m32_planted html "$M32_HTML" "$M32_PLANT/twin-unwrapped.html" \
+  'there is then no cost for the recipe to have' \
+  'a twin carrying neither the appendix block nor the bibliography role, which would leave the documented cost costless'
+
+m32_mutate "$M32_HTML" "$M32_PLANT/wrapped.html" \
+  's/id="title-block-header"/id="quarto-appendix" role="doc-bibliography"/'
+m32_planted html "$M32_PLANT/wrapped.html" "$M32_HTML_TWIN" \
+  'README tells an author following the recipe' \
+  'a fixture that did get the appendix wrapper, against a README saying it does not'
 
 # The README paragraph handing a reader this recipe is normative: a documented
 # claim with no check beside it drifts (M13), and this one's enforcement is the

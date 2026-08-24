@@ -50,9 +50,9 @@ replaces the README's statement of current behavior with the recipe.
 
 ## Coverage
 
-- AC1 → T1, T2
-- AC2 → T1, T2
-- AC3 → T1, T2
+- AC1 → T1, T2, T5, T6
+- AC2 → T1, T2, T5, T6
+- AC3 → T1, T2, T5, T6
 - AC4 → T4
 
 ## Tasks
@@ -67,6 +67,20 @@ replaces the README's statement of current behavior with the recipe.
       what an author writes and what happens without it.
 - [x] T4: Run `tests/run-tests.sh --self-test`; strike KI3 (its candidate row
       was absorbed into this milestone at the plan gate).
+- [x] T5: Make the placement marker load-bearing in the fixture pair — a
+      section written after the marker in both halves, so an index at the
+      marker and an index at the end of the body are different positions — and
+      prose that reads true of the twin as well as of the fixture (F1, F10).
+- [x] T6: Move the three readers into `tests/m32refs.py`, delete the `#refs`
+      block rather than its fences in the twin derivation, and commit a
+      planted defect for each reader, the marker-less render among them
+      (F4, F5).
+- [x] T7: README says what the recipe costs in HTML and where the References
+      heading comes from, and the recipe paragraph stops orphaning the
+      marker's six rules (F2, F7).
+- [ ] T8: Restore KI3 at its residual gap with the candidate row pointing at
+      it; record the two gate choices in this file's Decisions and name the
+      end-to-end principle in the header (F3, F6, F9).
 
 ## Work log
 
@@ -81,6 +95,10 @@ replaces the README's statement of current behavior with the recipe.
 - 2026-08-24: T4 — `tests/run-tests.sh --self-test` exits 0 on 442 checks. KI3 struck from DESIGN's known issues: the order is now the author's to set and README says how. One candidate row added for the Scope Out item — a filter-side move of the index relative to content Quarto adds after filters run.
 
 - 2026-08-24: review returned M32 to in-progress. F1 — the fixture pair never exercises the marker half of the documented recipe: with the `::: {.qi-index-here}` block deleted from `examples/references.qmd`, `\printindex` still lands at 248 after `\end{CSLReferences}` at 246, so the whole M32 battery passes on a marker-less tree and AC3's "held so the recipe is shown to be what moves it" is false. F2 — following the recipe drops the HTML References heading and the `quarto-appendix` wrapper (`quarto-appendix` and `doc-bibliography` present in the twin, absent in the fixture) and the README does not say so. Defect returns to date: 1.
+- 2026-08-24: return gate chose recording the method AC2's index half is checked by, and recording the end-to-end-verification trade with the principle named in the header, over amending either criterion — the criteria set is held where it was planned (F6, F9).
+- 2026-08-24: T5 — the fixture pair gains an `Afterword` section after the placement marker, which is what tells an index at the marker apart from one at the end of the body; the twin's prose no longer claims to carry the div. Coverage rows for AC1-AC3 extended to name T5 and T6.
+- 2026-08-24: T6 — the derivation, LaTeX and HTML readers moved into `tests/m32refs.py`; the derivation now deletes the `#refs` block whole, refusing an unclosed one, rather than skipping its fences. Fifteen planted defects committed beside them, each required to fail for its own reason: five on the derivation, four on the LaTeX order, six on the HTML order and the recipe's HTML cost. Two are the marker-less document F1 named, rendered rather than mutated — the fixture with its marker block deleted and nothing else, which both readers now refuse.
+- 2026-08-24: T7 — the recipe paragraph moved below the marker's six rules and the `imakeidx` paragraph, so the rules keep their lead-in; the recipe now writes a References heading of its own, and README says why: rendering both halves shows Quarto's appendix wrapper and its **References** heading present in the twin and absent in the fixture, so an author following the recipe supplies the heading. Two claim rows added, and the pinned recipe row updated to the heading-carrying shape.
 
 ## Decisions
 

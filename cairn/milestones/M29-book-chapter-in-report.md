@@ -1,6 +1,6 @@
 # M29: A marker report in a book names its chapter
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M28
 - **Driving RR:** —
@@ -130,6 +130,7 @@ milestone depends on.
 - 2026-08-24: T4 — the PDF book render confirmed what the amendment's wording rests on: the merged document reports block 26 and block 34 where the HTML chapters report 8 and 5, and the marker ordinal is 2 in both, so "free to differ" is the satisfiable form and a flat "unchanged" would not have been.
 - 2026-08-24: T5 — KI22 struck whole rather than half-rewritten as the task said: attaching the clause to the position ("top-level block 5 of sub/two.qmd") states the chapter-local half in the text as well, so neither half survives. KI80 struck. KI83 added for the unprobed incomplete-metadata HTML path. No candidate row pointed at either struck entry, so none needed rewriting; the ROADMAP's hygiene stamp names KI80 as a record of the last pass and is replaced, not edited, at the next one.
 - 2026-08-24: T5 — DESIGN.md's marker-resolution paragraph updated to say the reports carry the chapter and that a chapter is known only in an HTML book.
+- 2026-08-24: all five tasks done; `tests/run-tests.sh` passes 296 checks and `tests/run-tests.sh --self-test` passes 430. Status to review.
 
 ## Decisions
 

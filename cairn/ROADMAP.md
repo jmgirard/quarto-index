@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-24 (M28 merged and archived; three review findings filed as KI80-KI82 and the suite-hardening row extended to point at two of them. ROADMAP 7.0k of its 24k byte budget and 49 lines.)_
+_Last hygiene check: 2026-08-24 (M29 merged and archived; KI22 and KI80 struck, KI83-KI85 filed, KI82 corrected, the M26 terminal row pruned. ROADMAP 6.9k of its 24k byte budget and 48 lines; LESSONS 8.3k of 20k and 37 of 50; check-design 12.8k of 18k and 34 of 40.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M29 | A marker report in a book names its chapter | review | M28 | normal | milestones/M29-book-chapter-in-report.md |
+| M29 | A marker report in a book names its chapter | done | M28 | normal | milestones/archive/M29-book-chapter-in-report.md |
 | M28 | A reported block position names the sequence it counts | done | — | normal | milestones/archive/M28-block-position-naming.md |
 | M27 | A finding about today's behavior is a known issue, not a candidate row | done | — | normal | milestones/archive/M27-record-ownership.md |
 | M25 | A check that cannot hold its promise is retired, not widened | done | M24 | normal | milestones/archive/M25-scan-disposition.md |
 | M24 | Every check reads the copy, never the working tree | done | — | normal | milestones/archive/M24-captured-artifacts.md |
-| M26 | A document's accumulators start empty, whoever ran before it | done | — | normal | milestones/archive/M26-per-document-state.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

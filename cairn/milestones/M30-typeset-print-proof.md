@@ -209,3 +209,13 @@ Rejected, with reason:
 - **KI87's position in the Known-issues list** — it was written into the slot
   KI86 vacated, so it sits between KI71 and KI72. The list is not kept in
   numeric order (KI86 sat there too), so this is a cosmetic nitpick.
+
+Triage at the gate, 2026-08-24: the maintainer chose to fix all three on the
+branch. F1 — the self-test now also requires the reader's own header to read
+`M30-AC1: 1 of 94`, matched with that fixed prefix attached so the count cannot
+match inside a larger one; the pass line says "naming U+0027 and no other
+character". F2 — the call site's summary now names the check and points at the
+reader's own message for which of its four causes fired. F3 — KI87 now reads
+"where every other entry's shape would give `,, 1` and a reader would want
+`, 1`". `tests/run-tests.sh --self-test` re-run after the three fixes: exit 0,
+431 checks, both M30 checks green. `cairn_validate` re-run: clean.

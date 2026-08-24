@@ -744,8 +744,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI71.** The escaping probe covers characters singly; combinations remain an
   untested axis. — M01 review, and M01's own milestone Decisions entry
 - **KI87.** In a compiled PDF index the entry for `,` prints as one DOUBLE LOW-9
-  QUOTATION MARK followed by the page number, so a reader sees `„1` where `, 1`
-  is meant: makeindex writes the line as `\item ,, \hyperpage{N}`, and in a T1
+  QUOTATION MARK followed by the page number, so a reader sees `„1` where every
+  other entry's shape would give `,, 1` and a reader would want `, 1`:
+  makeindex writes the line as `\item ,, \hyperpage{N}`, and in a T1
   text font `,,` is the ligature for that glyph, merging the entry's own comma
   with the index style's delimiter. The entries for `'` and `` ` `` likewise
   print as the right and left single quotation marks, which is what those ASCII

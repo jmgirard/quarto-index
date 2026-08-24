@@ -4205,8 +4205,12 @@ if missing:
 PY
 }
 
+# The reader names its own cause on stderr above this line — a missing
+# character, but also a failed extraction, a PDF with no index section, or an
+# index region holding no cells. This summary names the check, not a cause it
+# has not read.
 esc_typeset_check "$CAPTURE_ROOT/esc-pdf/escaping.pdf" "$WORK/esc/escaping.txt" \
-  || fail "M30-AC1: a printable ASCII character the probe indexes does not print as its own entry in the typeset index"
+  || fail "M30-AC1: the typeset index check failed on the escaping probe; its own message above names which of its four causes fired"
 pass "M30-AC1: escaping probe compiles, all entries accepted, and each of the 94 printable ASCII characters prints as its own entry in the typeset index"
 
 # ---------------------------------------------------------------------------
@@ -10912,7 +10916,13 @@ M30PLANTPY
     || fail "M30 self-test: the typeset check passed on a render with the apostrophe's index marks removed; it does not distinguish a character that prints from one that is not there"
   printf '%s' "$M30_OUT" | grep -qF "U+0027" \
     || { printf '%s\n' "$M30_OUT" >&2; fail "M30 self-test: the typeset check failed on the planted render but did not name U+0027, so its failure is not evidence about the character that was removed"; }
-  pass "M30 self-test: the typeset check fails, naming U+0027, on a fixture whose apostrophe marks are removed, and passes on the same fixture unplanted"
+  # Naming U+0027 is not enough: a reader that found nothing at all would name
+  # it too, among the other 93. The count in the reader's own header is what
+  # says the redness is scoped to what the plant removed. Matched with the
+  # check's fixed prefix attached, so `1 of 94` cannot match inside `31 of 94`.
+  printf '%s' "$M30_OUT" | grep -qF "M30-AC1: 1 of 94" \
+    || { printf '%s\n' "$M30_OUT" >&2; fail "M30 self-test: the typeset check failed on the planted render naming U+0027, but reported more than the one character the plant removed — a reader blind to the whole index would report exactly that way"; }
+  pass "M30 self-test: the typeset check fails on a fixture whose apostrophe marks are removed, naming U+0027 and no other character, and passes on the same fixture unplanted"
 fi
 
 }

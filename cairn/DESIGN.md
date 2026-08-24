@@ -743,10 +743,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   review N9, M02 review, M06 review F-b
 - **KI71.** The escaping probe covers characters singly; combinations remain an
   untested axis. — M01 review, and M01's own milestone Decisions entry
-- **KI86.** The escaping probe proves all 94 printable ASCII characters compile
-  and are accepted by makeindex, and proves only the 16 `PROBE_CHARS` names
-  actually print: the typeset assertion searches the index region for those 16
-  alone. The other 78 are compiled-but-unproved-in-print. — M30 plan gate
+- **KI87.** In a compiled PDF index the entry for `,` prints as one DOUBLE LOW-9
+  QUOTATION MARK followed by the page number, so a reader sees `„1` where `, 1`
+  is meant: makeindex writes the line as `\item ,, \hyperpage{N}`, and in a T1
+  text font `,,` is the ligature for that glyph, merging the entry's own comma
+  with the index style's delimiter. The entries for `'` and `` ` `` likewise
+  print as the right and left single quotation marks, which is what those ASCII
+  positions hold in a T1 text font. — M30 T1
 - **KI72.** The example corpus's roughly 250 probe `see=`/`see-also=` targets do
   not all name terms the fixture indexes; M14 pins the expected report counts
   instead. — M14 plan gate

@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M30: A character in an index entry is proved to print, not merely to compile
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -80,7 +80,7 @@ named in `cairn/DESIGN.md` with what extraction yields instead.
 - [x] T4: Prove the widened check able to fail: on a copy of the fixture, remove
       one character's index mark with a single substitution, require the check
       red and naming that character, and require the unplanted run green.
-- [ ] T5: Run `tests/run-tests.sh --self-test`; strike KI86; file a
+- [x] T5: Run `tests/run-tests.sh --self-test`; strike KI86; file a
       Known-issues entry for any character the text layer cannot distinguish,
       and a candidate row for the two probes left un-widened.
 
@@ -97,6 +97,8 @@ named in `cairn/DESIGN.md` with what extraction yields instead.
 - 2026-08-24: amendment (substantive, user-selected at a mini gate): AC1 now asks for the cell `pdftotext -layout` is expected to yield — the character, `, `, a page number by default, otherwise the cell the AC2 table states — because the comma's entry has no `, ` separator to match. No criterion added; the criteria set is not widened. Inline criteria audit (full mode, user-facing tier, no subagent per this session's standing instruction) returned two findings on the draft, both fixed before writing: an unnamed extraction instrument, and a table clause readable as a skip list.
 
 - 2026-08-24: T2, T3 and T4 landed in one checkpoint — they are one edit to `tests/run-tests.sh` plus its self-test half. T2/T3: the typeset assertion is now `esc_typeset_check`, a single reader carrying the named `EXPECTED_CELL` table (three rows: `'`, `` ` ``, `,`) and sweeping `range(0x21, 0x7F)` against the cells `pdftotext -layout` yields from the captured PDF, naming every character it cannot find. T4: the same reader is called again in `--self-test` against a copy of the fixture with the apostrophe's two marks removed; it exits 1 reporting `U+0027 "'": no printed index entry matching '’, {page}'`, and passes on the same fixture unplanted.
+
+- 2026-08-24: T5: `tests/run-tests.sh --self-test` exits 0 with 431 checks, including the widened `M30-AC1` check and the M30 self-test entry. KI86 struck as closed; KI87 filed for the comma entry printing as one double-low-9 quote and for the apostrophe and grave printing as curly quotes; the suite-hardening candidate row absorbed the two probes left un-widened, and one row added for making a comma entry print as a comma.
 
 ## Decisions
 

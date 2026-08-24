@@ -10903,8 +10903,9 @@ open(path, 'w', encoding='utf-8').write(plant)
 M30PLANTPY
   ( cd "$M30W" && quarto render escaping.qmd --to pdf ) > "$M30W/render.log" 2>&1 \
     || { tail -20 "$M30W/render.log" >&2; fail "M30 self-test: the fixture with the apostrophe's marks removed failed to render at all, so the reader below would fail for the wrong reason"; }
+  capture "$M30W/escaping.qmd" pdf "m30-plant"
   set +e
-  M30_OUT=$(esc_typeset_check "$M30W/escaping.pdf" "$M30W/escaping.txt" 2>&1)
+  M30_OUT=$(esc_typeset_check "$CAPTURE_ROOT/m30-plant/escaping.pdf" "$M30W/escaping.txt" 2>&1)
   M30_RC=$?
   set -e
   [ "$M30_RC" -ne 0 ] \

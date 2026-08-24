@@ -70,7 +70,7 @@ milestone depends on.
       one of those fixtures' known other warnings or one of this milestone's two
       report templates with only its block number, marker ordinal and chapter
       clause varying — judged line by line over the whole of each log.
-- [ ] AC6: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
+- [x] AC6: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
       passes.
 
 ## Coverage
@@ -175,8 +175,67 @@ PR #29. Whole suite run: `tests/run-tests.sh`.
   naming no chapter. Two further planted logs prove the book partition closed
   rather than a template search — an extra warning belonging to neither
   partition, and a log holding none of our warnings at all.
-- AC6 — pending the self-test run.
+- AC6 — met. `tests/run-tests.sh` exit 0, 296 checks. `tests/run-tests.sh
+  --self-test` exit 0, 430 checks.
 
 Consistency gate: `cairn_validate` exit 0, all 16 checks PASS and 7 advisories
 OK. No IP/GP principle text changed, so `cairn_impact` does not apply. Active
 profile is `generic`, whose `consistency-gate` slot names no toolchain checks.
+
+### Independent fresh-context review
+
+Three lenses, none having seen the implementation. [S] blame-history: no
+findings — it checked for a data dependency the `book_context` hoist could
+break and found `book_context` reads only `doc.meta`, `quarto.project` and
+`quarto.doc`, none of which marker resolution mutates. [S] prior-review
+record: no findings; `gh api .../pulls/comments` returned `[]`, so the PR-thread
+walk was correctly skipped and the archived `## Review` sections were the whole
+evidence base. [O] diff-bug: fifteen findings, below in its own ranking.
+
+- F1 (rejected, refuted against the implementation). "The partition is only
+  tail-anchored, so text prepended to a report passes." Tested: a dup line with
+  `chapter last.qmd: ` prepended fails `book-pdf` mode with `dup report matched
+  0 line(s) ... want exactly 1`. `tests/.work/warn-patterns.txt` anchors every
+  pattern at `^\(W\) `, so a prepended clause drops the line out of the set the
+  partition is taken over, and a report count of 0 is itself a failure.
+- F2 (fix now). The duplicate report puts the chapter clause outside the
+  parenthesis holding the position — `(top-level block 5) of last.qmd` — where
+  the emptied report reads `top-level block 8 of sub/two.qmd`.
+- F3 (rejected). "The ordinal still says `in document order` inside a book
+  chapter." In an HTML book the chapter IS the Pandoc document the filter
+  received, which is what `POSITION_BASIS` says the numbers are counted over.
+- F4 (fix now, confirmed by experiment). The `moved.log` planted probe runs two
+  `sed` expressions; the second alone rewrites the duplicate line too and
+  produces the expected `warning in neither partition`, so the probe would pass
+  with the first expression no-oping.
+- F5 (fix now). `KI82` says the position clause is written out three times in
+  the suite; `tests/m29book.py` makes four, exactly as this milestone's Scope
+  predicted.
+- F6 (fix now). The three `misuse-$fmt` partitions are labeled `M29-AC3`, which
+  is scoped to the pdf book render; they are AC4/AC5's no-book control.
+- F7 (fix now). `tests/m29book.py` does not strip ANSI escapes, where the M12
+  partition it extends does.
+- F8 (follow-up). `(?P<chapter> of \S+)?` cannot express a chapter path holding
+  a space, and `examples/book-order/` already ships `later chapter.qmd`.
+- F9 (fix now). README's two marker bullets describe the reports without the
+  chapter, on a user-facing-tier milestone.
+- F10 (rejected). "The basis clause says `the document` while the same sentence
+  names a chapter." The chapter is that document; F3's reason.
+- F11 (follow-up). Only `book-html.log` carries a total extension-warning pin,
+  so a repeated known-other warning in the pdf book or the misuse logs would
+  pass the partition.
+- F12 (rejected). The work log's "no new shell grep key was introduced" is
+  about the `WARN_` constants the M18 distinctness scan takes as arguments, and
+  none were added; the three new inline needles are not keys.
+- F13 (fix now, as a work-log line). T4 said the `WARN_MARKER_DUP` substring pin
+  would be replaced by a whole-line comparison; the whole-line comparison was
+  added in `tests/m29book.py` and the substring pin left standing.
+- F14 (rejected). `KI83` sits in the slot the struck `KI22`/`KI80` vacated,
+  which is where it belongs thematically; labels are never reused, order is not
+  a rule.
+- F15 (fix now). The misuse pass line says "both marker reports" where that mode
+  has one, and one `cairn/DESIGN.md` line runs to 106 columns.
+
+No finding demonstrates an acceptance criterion failing, and none is a
+load-bearing defect in what the extension does for authors, so the return floor
+is not reached.

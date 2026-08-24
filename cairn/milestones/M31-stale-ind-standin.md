@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M31: A leftover index file never breaks the next render
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -110,7 +110,7 @@ promise to the `.aux` alone.
       to the `.aux` and the `.ind`, and update `README_STALEAUX_CLAIMS`
       (`run-tests.sh:401-407`), whose pinned `.ind`-exclusion string this
       milestone makes false.
-- [ ] T8: Run `tests/run-tests.sh --self-test`; strike KI4 (its candidate row
+- [x] T8: Run `tests/run-tests.sh --self-test`; strike KI4 (its candidate row
       was absorbed into this milestone at the plan gate).
 
 ## Work log
@@ -127,6 +127,7 @@ promise to the `.aux` alone.
 - 2026-08-24: amendment gate — AC4 narrowed. The sweep found beamer captures carrying no definitions, which is deliberate: beamer has no `theindex` environment, so the extension emits no `\index` and no `\printindex` there (`core.lua:391`), and a document with no `\printindex` never reads an `.ind`. AC4's domain is now every captured `.tex` carrying `\printindex`, read off each artifact. Rejected: naming beamer in an exclusion list, which is the exemption-registry shape a second excluded format would fall silently outside of; and injecting the definitions into beamer, which widens the deliverable to fit the criterion for no failure it can close. Falsified by a format that reads an `.ind` without carrying `\printindex`. The amended wording was asked the full-mode audit questions inline and returned no finding.
 - 2026-08-24: T4, T5, T6 — checks landed and the suite runs clean. Four existing checks asserted the discipline this milestone reverses and were repaired rather than deleted: M02-AC5 now requires both cross-reference commands defined exactly once in the preamble of the using document AND the mark-free control; M08-AC2 and M15's shape sweep match `|<command>`, makeindex's encap opener, so they read an emission rather than the definition every preamble now carries; and `m20probes.py --standins` takes whole definition strings instead of a `[2]{}` pattern, which assumed every stand-in gobbles its arguments and would have reported the locator's `[2]{#2}` as a leak. `m22_standins_only` strikes out the six definitions it enumerates and requires no `quartoindex` residue, replacing the literal count of three, so a seventh definition fails by residue rather than needing the number edited. The new M31 section renders the T1 parent, re-renders it with the attributes stripped, and runs pdflatex beside the surviving `.ind` under `-no-shell-escape`, asserting the `.ind` byte-identical afterwards — TinyTeX's restricted shell escape whitelists makeindex, so imakeidx would otherwise rebuild the file and hide the hazard. T5's discriminating proof is the AC2 loop: each of the three definitions removed by a single substitution asserted to take exactly one line, the render required to exit non-zero AND to name that command at the `Undefined control sequence` argument line. T6's sweep reports 3 names across 7 captured `.ind` files against 30 captured `.tex` preambles.
 - 2026-08-24: T7 — README updated and T2/T3 ticked, the suite now being clean. The leftover-file paragraph is rewritten over both files, and the sentence that scoped the promise to the `.aux` and excluded the `.ind` is gone rather than left standing beside a promise that now covers it. The emitted count goes from three `\providecommand*` definitions to six, split by which render carries which. `README_STALEAUX_CLAIMS` is repinned on the widened promise: its `ind exclusion` row asserted a sentence this milestone makes false, so it is replaced rather than kept. One suite run in between failed on a Quarto/Deno segfault during the gfm render of principal.qmd, unrelated to this branch and not reproduced on the re-run.
+- 2026-08-24: T8 — `tests/run-tests.sh --self-test` completes clean: 436 checks, exit 0, the planted-defect batteries included. KI4 struck from DESIGN.md; no ROADMAP candidate row pointed at it, its row having been absorbed into this milestone at the plan gate.
 
 ## Decisions
 

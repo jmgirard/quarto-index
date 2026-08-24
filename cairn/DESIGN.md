@@ -458,13 +458,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI3.** `\printindex` precedes a bibliography rather than following it, since
   Quarto appends reference blocks after filters run. README states the current
   behavior. — M01 review P2
-- **KI4.** A leftover `.ind` outliving its marks breaks the render the way a
-  leftover `.aux` did before M22: the compiled index carries
-  `\quartoindexlocator`, defined only where a principal mention is, and no
-  gobbling stand-in covers it. Reproduced at M22 review — hyperref and imakeidx
-  loaded, an `.ind` holding `\hyperxindexformat{\quartoindexlocator{qi1}}{4--6}`,
-  pdflatex exit 1 on `Undefined control sequence`. M22 scopes its README promise
-  to the `.aux` rather than closing this. — M22 review F1
 - **KI5.** A registered principal page folded inside a makeindex page range is
   not emphasized: the typeset-time channel D-007 adopts looks a page up by
   string, and a range misses, printing it unemphasized and silently. — RR01

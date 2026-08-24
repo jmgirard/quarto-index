@@ -111,7 +111,7 @@ remainder.
       region (M30). It also holds the term list `tests/run-tests.sh` states
       against the fixture's own marks, one term per mark, so the list cannot
       drift from what the fixture indexes.
-- [ ] T5. Add AC3's three controls as their own renders, each capturing its PDF
+- [x] T5. Add AC3's three controls as their own renders, each capturing its PDF
       and its LaTeX log; the third renders a copy of the fixture with one CJK
       term added. Controls (b) and (c) each read their own printed index for the
       ASCII term's entry line and for the absence of the foreign-script term's.
@@ -140,6 +140,7 @@ remainder.
 - 2026-08-24: criteria audit ran twice in FULL mode over the amended wording, each over a fresh-context reader that did not author it; round 1 returned 7 findings, all disposed by narrowing (positively-stated proven set, one-level marks, a stated term list as AC2's domain, printed-index evidence replacing the log line in the controls); round 2 over the repaired wording returned 6 on the same criteria and went to the user under the once-more rule, who accepted the repair. AC5 and AC6 came back clean.
 - 2026-08-24: T1 — `STIX` is the recipe font: the plain family name `STIX` fails the render with fontspec's "The font \"STIX\" cannot be found", so the recipe names it by file (`Extension=.otf`, `UprightFont=*-Regular` and the three siblings). T2 — `examples/unicode.qmd` marks eight one-level terms: Greek, Greek with `sort=`, Cyrillic, Polish, Vietnamese, a decomposed `café`, `Nux̌alk` (`x` + U+030C, no precomposed form) and an ASCII term the controls read as their positive signal.
 - 2026-08-24: T3/T4 — the recipe render and `tests/unicodeprint.py` are in the suite; all eight terms print as their own entry line in the captured PDF, compared in NFC, and the stated term list is held against the fixture's own marks one per mark. Suite 339 checks, up from 336.
+- 2026-08-24: T5 — the three controls are in the suite, each derived from the fixture by one YAML edit (the CJK control also adds one mark): pdflatex exits non-zero with `not set up for use with LaTeX` naming U+03B8; the default main font exits 0 with the Greek entry lines gone; the full recipe exits 0 with the added CJK entry line gone. Both silent-drop controls first prove their own index printed, by finding the fixture's ASCII entry line. Suite 346 checks.
 
 ## Decisions
 

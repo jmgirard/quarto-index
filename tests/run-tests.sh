@@ -4196,6 +4196,119 @@ python3 tests/unicodeprint.py entries "$M33_PDF" "${M33_TERMS[@]}" \
 pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engine and main font, and all ${#M33_TERMS[@]} of its terms print as their own entry in the typeset index, compared in Unicode NFC"
 
 # ---------------------------------------------------------------------------
+# M33-AC3 — the three controls. A recipe is only a recipe if leaving out
+# either half breaks something, and the break has to be one a reader can
+# recognize. Each control is derived from examples/unicode.qmd by one edit to
+# its YAML, so the terms under test are the same bytes in all four renders.
+#
+# (b) and (c) are read for a POSITIVE signal as well as an absence: each has
+# to print the fixture's ASCII term's own entry line before its missing Greek
+# or CJK entry lines mean anything. Without it a render whose index failed to
+# print at all — no heading, no entries, a wrecked build — would satisfy "no
+# entry line carries this term" exactly as a dropped glyph does.
+# ---------------------------------------------------------------------------
+M33C="$WORK/m33-controls"
+rm -rf "$M33C"; mkdir -p "$M33C/_extensions"
+cp -R "$QI_EXT_DIR" "$M33C/_extensions/index"
+M33_CJK="$M33_CJK" python3 - examples/unicode.qmd "$M33C" <<'M33CTLPY' \
+  || fail "M33-AC3: the three controls could not be derived from examples/unicode.qmd (its own FAIL line is above)"
+import io, os, re, sys
+
+src = io.open(sys.argv[1], encoding='utf-8').read()
+out = sys.argv[2]
+
+# (a) the engine alone. `mainfont` stays: pandoc's template only emits the
+# fontspec calls under a Unicode engine, so this is the one-line change a
+# reader makes, not a document rewritten around the control.
+engine = src.replace('pdf-engine: xelatex', 'pdf-engine: pdflatex', 1)
+if engine == src:
+    print('FAIL: M33-AC3: the fixture does not name pdf-engine: xelatex, so '
+          'the engine control changed nothing', file=sys.stderr)
+    sys.exit(1)
+
+# (b) the font alone: the recipe's engine, `mainfont` and its options gone, so
+# the render falls back to the default the template picks.
+nofont, n = re.subn(r'^mainfont: .*\nmainfontoptions:\n(?:  - .*\n)+', '',
+                    src, count=1, flags=re.M)
+if n != 1 or 'mainfont' in nofont:
+    print('FAIL: M33-AC3: the fixture\'s mainfont block is not the shape the '
+          'font control removes, so that control would test nothing',
+          file=sys.stderr)
+    sys.exit(1)
+
+# (c) the whole recipe, plus one term in a script its font does not cover.
+cjk = os.environ['M33_CJK']
+mark = f'- [{cjk}]{{.index}} — CJK, which the recipe font does not cover.\n'
+anchor = '- [Ascii]{.index}'
+if src.count(anchor) != 1:
+    print('FAIL: M33-AC3: the fixture does not carry exactly one Ascii mark '
+          'for the CJK control to sit beside', file=sys.stderr)
+    sys.exit(1)
+cjkdoc = src.replace(anchor, mark + anchor, 1)
+
+for name, text in (('engine', engine), ('nofont', nofont), ('cjk', cjkdoc)):
+    io.open(os.path.join(out, name + '.qmd'), 'w', encoding='utf-8').write(text)
+print('ok   M33-AC3: the three controls derive from examples/unicode.qmd by '
+      'one YAML edit each, plus one added mark for the CJK control')
+M33CTLPY
+
+# --- (a) the engine half. `latex-clean:false` keeps the LaTeX log, which is
+#     where the error that stopped the render is written. This is an error,
+#     not a `Missing character` warning: it ends the build.
+( cd "$M33C" && quarto render engine.qmd --to pdf -M latex-clean:false ) \
+  > "$WORK/m33-engine.log" 2>&1 && M33_ENGINE_RC=0 || M33_ENGINE_RC=$?
+capture "$M33C/engine.qmd" pdf "m33-engine"
+[ "$M33_ENGINE_RC" -ne 0 ] \
+  || fail "M33-AC3a: examples/unicode.qmd rendered at exit 0 under pdf-engine: pdflatex; the engine half of the recipe is not load-bearing and README documents a failure that does not happen"
+M33_ENGINE_LOG="$CAPTURE_ROOT/m33-engine/engine.log"
+[ -f "$M33_ENGINE_LOG" ] \
+  || fail "M33-AC3a: the pdflatex control left no LaTeX log to read, so its non-zero exit is not evidence about a character"
+grep -qF 'not set up for use with LaTeX' "$M33_ENGINE_LOG" \
+  || { grep -E '^! ' "$M33_ENGINE_LOG" | head -5 >&2; fail "M33-AC3a: the pdflatex control failed, but its LaTeX log does not name 'not set up for use with LaTeX'; that failure is not the one README teaches a reader to recognize"; }
+python3 - "$M33_ENGINE_LOG" "${M33_GREEK[@]}" <<'M33ENGPY' \
+  || fail "M33-AC3a: the pdflatex control's LaTeX log does not name a Greek character the fixture marks (its own FAIL line is above)"
+import io, sys
+
+log = io.open(sys.argv[1], encoding='utf-8', errors='replace').read()
+greek = {c for term in sys.argv[2:] for c in term if ord(c) > 0x7F}
+named = sorted(c for c in greek if f'Unicode character {c} ' in log)
+if not named:
+    print('FAIL: M33-AC3a: the LaTeX error names no character the fixture\'s '
+          'Greek terms are made of, so the rejection it reports is not about '
+          'a term this fixture indexes', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M33-AC3a: the pdflatex control stops on '
+      f'{", ".join(f"U+{ord(c):04X}" for c in named)}, which the fixture\'s '
+      f'Greek terms carry')
+M33ENGPY
+pass "M33-AC3a: the fixture under pdf-engine: pdflatex exits non-zero and its LaTeX log names 'not set up for use with LaTeX' for a Greek character the fixture marks"
+
+# --- (b) the font half. The recipe's engine, no main font: the build now
+#     SUCCEEDS and the reader gets an index with the Greek entries silently
+#     gone. That is the failure this milestone exists for.
+( cd "$M33C" && quarto render nofont.qmd --to pdf ) \
+  > "$WORK/m33-nofont.log" 2>&1 \
+  || { tail -20 "$WORK/m33-nofont.log" >&2; fail "M33-AC3b: the fixture failed to render with mainfont left at its default; the control claims a silent drop at exit 0, so a broken build is not the state it pins"; }
+capture "$M33C/nofont.qmd" pdf "m33-nofont"
+python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-nofont/nofont.pdf" \
+  "$M33_ASCII" "${M33_GREEK[@]}" \
+  || fail "M33-AC3b: with mainfont left at its default the Greek terms still print, or the control's index did not print at all (its own FAIL line is above)"
+pass "M33-AC3b: with mainfont left at its default the render exits 0, its index still prints the fixture's ASCII term, and none of the fixture's Greek terms print"
+
+# --- (c) the recipe's own limit. Everything the README names, plus one term in
+#     a script the font does not cover: the same silent drop, which is why the
+#     README section states the recipe's proven set rather than promising
+#     every script.
+( cd "$M33C" && quarto render cjk.qmd --to pdf ) \
+  > "$WORK/m33-cjk.log" 2>&1 \
+  || { tail -20 "$WORK/m33-cjk.log" >&2; fail "M33-AC3c: the CJK control failed to render; the control claims a silent drop at exit 0"; }
+capture "$M33C/cjk.qmd" pdf "m33-cjk"
+python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-cjk/cjk.pdf" \
+  "$M33_ASCII" "$M33_CJK" \
+  || fail "M33-AC3c: the added CJK term prints under the recipe's font, or the control's index did not print at all (its own FAIL line is above)"
+pass "M33-AC3c: the fixture with one CJK term added renders at exit 0 under the full recipe, its index still prints the fixture's ASCII term, and the CJK term does not print"
+
+# ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as
 # an entry of its own. The domain is the fixture's by construction and is
 # pinned by the coverage check above; this asserts the characters arrive.

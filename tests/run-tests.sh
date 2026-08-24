@@ -398,14 +398,17 @@ README_PRINCIPAL_CLAIMS=(
   $'range degradation\ta principal mention whose page is anywhere in such a folded range, its first page included, prints plain, silently'
 )
 
-# README claims about a stale `.aux` (NORMATIVE, M22). Same discipline. The
-# scope word matters as much as the promise: the extension covers a leftover
-# `.aux` and not a leftover `.ind`, so the qualification is pinned beside the
-# claim rather than left to the paragraph around it.
+# README claims about a stale build file (NORMATIVE, M22, widened at M31). Same
+# discipline. The scope word matters as much as the promise: M22 covered a
+# leftover `.aux` and pinned its `.ind` exclusion beside it, and M31 closed the
+# `.ind` too, so what is pinned here is the widened promise and the count of
+# definitions a render now carries — a claim that drifts from what the filter
+# injects fails here rather than in a reader's build.
 README_STALEAUX_CLAIMS=(
-  $'aux promise\tDeleting marks never breaks the next render on a leftover `.aux`.'
-  $'ind exclusion\tA leftover `.ind` is a different matter, and this does not cover it.'
-  $'emissions\tevery LaTeX-derived render that does *not* emphasize a principal mention carries them'
+  $'standin promise\tDeleting marks never breaks the next render on a leftover build file.'
+  $'both files\tEither file can outlive the marks that wrote it'
+  $'ind covered\tthe pages and targets a stale index holds print as the ordinary locators and cross-references they now are'
+  $'emissions\tevery LaTeX-derived render carries the two cross-reference commands, and every one that does *not* emphasize a principal mention carries four more'
 )
 
 # README claims about the page range (NORMATIVE, M21). Same discipline: the
@@ -1766,31 +1769,38 @@ for tok in '\index{' 'imakeidx' '\makeindex' '\printindex'; do
 done
 check_token_manifest "$CAPTURE_ROOT/control-latex/control.tex" "$CONTROL_TOKENS" "AC3"
 
-# M02: the dual-target command is defined exactly when a document uses one.
-# The positive is otherwise only indirectly covered (an undefined command
-# would abort the PDF compile); the negative is covered nowhere else, and a
-# filter that injected it unconditionally would leave every document carrying
-# preamble it does not need.
+# M02: the two cross-reference commands are defined once each, in the preamble,
+# in EVERY LaTeX-derived document — the document that uses them and the one with
+# no marks at all alike. M02 asserted the opposite, that each is injected only
+# where a mark emits it; M31 reversed the discipline, because both commands
+# reach the compiled `.ind`, which outlives the marks that wrote it, so a
+# document that has since lost the mark still reads the name at `\printindex`.
+# Each is stateless, so its live definition already IS its stand-in and no
+# second block is needed — which is why "defined everywhere" and "defined once"
+# are both asserted here: a second definition of a name a document also defines
+# live is the first-wins hazard the locator's two blocks exist to avoid.
 python3 - "$CAPTURE_ROOT/demo-latex/demo.tex" "$CAPTURE_ROOT/control-latex/control.tex" <<'PY'
 import sys
-defn = '\\providecommand*\\quartoindexseeboth'
-demo = open(sys.argv[1], encoding='utf-8').read()
-control = open(sys.argv[2], encoding='utf-8').read()
-n = demo.count(defn)
-if n != 1:
-    print(f'FAIL: M02-AC5: expected exactly one {defn!r} in demo.tex, found {n}',
-          file=sys.stderr)
-    sys.exit(1)
-if demo.index(defn) > demo.index('\\begin{document}'):
-    print(f'FAIL: M02-AC5: {defn!r} appears after \\begin{{document}}',
-          file=sys.stderr)
-    sys.exit(1)
-if defn in control:
-    print(f'FAIL: M02-AC5: {defn!r} injected into a document with no '
-          f'both-attributes mark', file=sys.stderr)
-    sys.exit(1)
-print('ok   M02-AC5: the dual-target command is defined once in the preamble '
-      'of the document that uses it, and not at all in one that does not')
+defns = ('\\providecommand*\\quartoindexseeboth',
+         '\\providecommand*\\quartoindexxrefs')
+for path in sys.argv[1:]:
+    text = open(path, encoding='utf-8').read()
+    body = text.index('\\begin{document}')
+    for defn in defns:
+        n = text.count(defn)
+        if n != 1:
+            print(f'FAIL: M02-AC5/M31: expected exactly one {defn!r} in '
+                  f'{path}, found {n}', file=sys.stderr)
+            sys.exit(1)
+        if text.index(defn) > body:
+            print(f'FAIL: M02-AC5/M31: {defn!r} appears after '
+                  f'\\begin{{document}} in {path}, where a stale .ind read at '
+                  f'\\printindex would still reach it but an .aux line would '
+                  f'not', file=sys.stderr)
+            sys.exit(1)
+print('ok   M02-AC5/M31: both cross-reference commands are defined exactly '
+      'once, in the preamble, in the document that uses them and in the '
+      'mark-free control alike')
 PY
 
 # ---------------------------------------------------------------------------
@@ -3330,9 +3340,19 @@ for want in ('\\index{Cats}', '\\index{Birds!Owls}', '\\index{ferrets}'):
 if src.count('\\index{Dogs|seealso{Cats}}') != 1:
     errs.append('the surviving see-also target on the both-attributes mark was '
                 'not emitted as its only encap')
-if 'quartoindexseeboth' in src:
-    errs.append('the both-targets command was emitted though one target was '
-                'dropped')
+# The command must not be EMITTED here. Since M31 its definition rides in
+# every LaTeX preamble, so a bare name search would match that and say nothing
+# about this mark; `|` is makeindex's encap opener and is the byte that makes
+# the difference between a definition and an emission. The count pins the
+# definition to exactly the one occurrence, so a second one — an emission that
+# spelled itself differently, or a stray duplicate definition — still fails.
+if '|quartoindexseeboth' in src:
+    errs.append('the both-targets command was emitted into an encap though one '
+                'target was dropped')
+if src.count('quartoindexseeboth') != 1:
+    errs.append(f"expected the one preamble definition of quartoindexseeboth "
+                f"and nothing else, found {src.count('quartoindexseeboth')} "
+                f"occurrence(s)")
 # The control: a target naming a different entry is untouched.
 if src.count('\\index{Lynxes|see{Cats}}') != 1:
     errs.append('the cross-reference to a DIFFERENT entry was not emitted; '
@@ -8200,15 +8220,33 @@ pass "M20-AC5: in the format with no index back-end every index mark the fixture
 # unchanged and still both-directional.
 SUBSYSTEM_CMDS=("$PRINCIPAL_CMD" "$LOCATOR_CMD" "$REGISTER_CMD" "$PRINCIPALPAGE_CMD"
                 "$RANGEFROM_CMD" "$RANGEEND_CMD" "$RANGEAT_CMD" "$RANGETO_CMD")
-# The `--standins` trio is M22's carve-out: every document the subsystem does
-# not reach must define the three `.aux`-borne names as empty gobbling
-# stand-ins, so the leak scan subtracts exactly that form — and nothing else —
-# before asking what reached the control.
+# The `--standins` list is M22's carve-out, widened by M31: every document the
+# subsystem does not reach must define the three `.aux`-borne names as empty
+# gobbling stand-ins AND the one name a compiled `.ind` carries as a
+# pass-through, so the leak scan subtracts exactly those four definitions — and
+# nothing else — before asking what reached the control. They are passed as
+# whole definition strings, not names: the locator's stand-in prints its second
+# argument where the other three swallow both, and a check that assumed one
+# body shape would report the odd one out as a leak.
+STANDIN_DEFNS=(
+  "\\providecommand*\\$PRINCIPALPAGE_CMD[2]{}"
+  "\\providecommand*\\$RANGEAT_CMD[2]{}"
+  "\\providecommand*\\$RANGETO_CMD[2]{}"
+  "\\providecommand*\\$LOCATOR_CMD[2]{#2}"
+)
+# The two cross-reference definitions, which since M31 ride in every LaTeX
+# preamble rather than only where a mark emits them. Not stand-ins: each is the
+# live definition, doing the same work in the document that emits the command
+# and in the one reading it out of a stale `.ind`.
+XREF_DEFNS=(
+  "\\providecommand*\\quartoindexseeboth[3]{\\emph{\\seename} #1; \\emph{\\alsoname} #2}"
+  "\\providecommand*\\quartoindexxrefs[2]{#1}"
+)
 python3 tests/m20probes.py tex "$WORK/principal.tex" "$CAPTURE_ROOT/content-latex/content.tex" \
-  "${SUBSYSTEM_CMDS[@]}" --standins "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"
+  "${SUBSYSTEM_CMDS[@]}" --standins "${STANDIN_DEFNS[@]}"
 pass "M20-AC6: the ${#SUBSYSTEM_CMDS[@]} subsystem commands are defined once each with \\providecommand* in the fixture that uses them, nothing else naming quartoindex is defined there, and no live definition of any of them reaches a document with no principal mention (the three .aux-borne names ride there only as M22's empty gobbling stand-ins)"
 python3 tests/m20probes.py tex "$WORK/principal.tex" "$WORK/principal-twin.tex" \
-  "${SUBSYSTEM_CMDS[@]}" --standins "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"
+  "${SUBSYSTEM_CMDS[@]}" --standins "${STANDIN_DEFNS[@]}"
 pass "M20-AC6: nor does any live definition reach the role-free twin, which is the same document with every mention attribute removed"
 
 # ---------------------------------------------------------------------------
@@ -8876,14 +8914,18 @@ pass "M22-AC1: a document that lost its mention=/range= attributes and one that 
 # suite already carries two instances of (M15 review). Returns non-zero on
 # the first stand-in found, naming it on stderr.
 m22_nogobblers() {
-  local tex="$1" cmd
+  local tex="$1" defn
   # `grep -qF` exits 2 on a missing path, so without this the loop would find
-  # nothing three times and the function would report a clean absence over a
+  # nothing four times and the function would report a clean absence over a
   # file that was never produced — the hole m20probes._tex guards explicitly.
   [ -f "$tex" ] || { printf 'no such file: %s\n' "$tex" >&2; return 1; }
-  for cmd in "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"; do
-    if grep -qF -- "\\providecommand*\\$cmd[2]{}" "$tex"; then
-      printf 'gobbling stand-in for \\%s found in %s\n' "$cmd" "$tex" >&2
+  # All four stand-in definitions, the locator's included (M31): its live
+  # definition is the subsystem's, so a stand-in beside it is the first-wins
+  # collision this half of the criterion exists to catch — and the one that
+  # matters most, since the stand-in prints locators and emphasizes nothing.
+  for defn in "${STANDIN_DEFNS[@]}"; do
+    if grep -qF -- "$defn" "$tex"; then
+      printf 'stand-in %s found in %s\n' "$defn" "$tex" >&2
       return 1
     fi
   done
@@ -8903,17 +8945,31 @@ m22_nogobblers() {
 # and a bodied definition of the same name would satisfy presence alone, and
 # M20-AC6's leak scan reads other files than these three.
 m22_standins_only() {
-  local tex="$1" pre cmd n
+  local tex="$1" pre rest defn
   [ -f "$tex" ] || { printf 'no such file: %s\n' "$tex" >&2; return 1; }
   pre="$WORK/$(basename "$tex").preamble"
   sed -n '1,/\\begin{document}/p' "$tex" > "$pre"
-  for cmd in "$PRINCIPALPAGE_CMD" "$RANGEAT_CMD" "$RANGETO_CMD"; do
-    grep -qF -- "\\providecommand*\\$cmd[2]{}" "$pre" \
-      || { printf 'no gobbling stand-in for \\%s in the preamble of %s\n' "$cmd" "$tex" >&2; return 1; }
+  # The four stand-ins and the two cross-reference definitions, each required
+  # present exactly once and then STRUCK OUT of a working copy. What the
+  # residue must hold is nothing: the count is derived from the list this
+  # function enumerates rather than written down beside it, so adding a
+  # seventh definition to the filter fails here by leaving a residue, where a
+  # pinned number would only have to be edited (M31; before it, the number was
+  # a literal 3).
+  rest="$pre.residue"
+  cp "$pre" "$rest"
+  for defn in "${STANDIN_DEFNS[@]}" "${XREF_DEFNS[@]}"; do
+    if [ "$(grep -coF -- "$defn" "$pre")" -ne 1 ]; then
+      printf 'the preamble of %s carries %s %s time(s); exactly one is what every LaTeX document without the live subsystem must have\n' \
+        "$tex" "$defn" "$(grep -coF -- "$defn" "$pre")" >&2
+      return 1
+    fi
+    grep -vF -- "$defn" "$rest" > "$rest.tmp" && mv "$rest.tmp" "$rest"
   done
-  n=$(grep -coF -- 'quartoindex' "$pre")
-  if [ "$n" -ne 3 ]; then
-    printf '%s names quartoindex %s time(s) in its preamble; the three empty gobbling stand-ins are the only mentions a document without the subsystem may carry\n' "$tex" "$n" >&2
+  if grep -qF -- 'quartoindex' "$rest"; then
+    printf '%s names quartoindex in its preamble outside the %s definitions this check enumerates:\n' \
+      "$tex" "$(( ${#STANDIN_DEFNS[@]} + ${#XREF_DEFNS[@]} ))" >&2
+    grep -nF -- 'quartoindex' "$rest" >&2
     return 1
   fi
 }
@@ -8943,14 +8999,241 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 missing = [f'  missing ({label}): <<{text}>>'
            for label, text in rows if flat(text) not in readme]
 if missing:
-    print('FAIL: M22: README.md does not document the stale-.aux behavior as '
-          'this suite exercises it:', file=sys.stderr)
+    print('FAIL: M22/M31: README.md does not document the stale-build-file '
+          'behavior as this suite exercises it:', file=sys.stderr)
     print('\n'.join(missing), file=sys.stderr)
     sys.exit(1)
-print(f'ok   M22: all {len(rows)} documented claims about a stale .aux appear '
-      f'verbatim in README.md')
+print(f'ok   M22/M31: all {len(rows)} documented claims about a stale build '
+      f'file appear verbatim in README.md')
 M22DOCPY
-pass "M22: README documents the stale-.aux promise, its .ind exclusion and the preamble lines every no-principal LaTeX render carries, each verbatim"
+pass "M22/M31: README documents the leftover-build-file promise over both the .aux and the .ind, and the six preamble definitions a LaTeX render carries, each verbatim"
+
+# ---------------------------------------------------------------------------
+# M31 — a stale `.ind` outliving its marks still builds.
+#
+# The `.aux` hazard M22 closed has a sibling one file over. Three extension
+# commands reach a COMPILED index — `\quartoindexlocator`, written into the
+# encapsulation channel for every locator of a key carrying a principal
+# mention; `\quartoindexseeboth`, for a mark carrying both cross-reference
+# kinds; and `\quartoindexxrefs`, for a contested key no plain mark
+# contributes to — and the `.ind` outlives the marks that wrote it exactly as
+# the `.aux` does. Where the `.aux` is read at `\begin{document}`, the `.ind`
+# is read later, at `\printindex`.
+#
+# This section renders a parent carrying all three shapes, keeps its `.ind`,
+# re-renders the document with those attributes deleted, and runs pdflatex on
+# the result beside the surviving `.ind`. A term that WAS marked must no more
+# break the document than one that is (IP2).
+#
+# `-no-shell-escape` is what holds the file stale, and is not a thumb on the
+# scale: TinyTeX ships restricted shell escape, whose whitelist includes
+# makeindex, so imakeidx re-runs it and REBUILDS the `.ind` before
+# `\printindex` reads it — hiding the hazard on this machine while leaving it
+# live on every installation with shell escape off. With the flag the file is
+# byte-identical after the run, which the check asserts rather than assumes.
+# ---------------------------------------------------------------------------
+M31W="$WORK/m31"
+mkdir -p "$M31W"
+cp -R _extensions "$M31W/_extensions"
+cat > "$M31W/stale.qmd" <<'EOF'
+---
+title: "quarto-index stale-ind parent"
+from: markdown-smart
+format:
+  pdf:
+    latex-clean: false
+filters:
+  - index
+---
+
+The principal discussion of [basilisk]{.index mention="principal"} is here.
+
+{{< pagebreak >}}
+
+A second mention of [basilisk]{.index} sits on another page.
+
+Both targets on one mark: [chimera]{.index see="Wyvern" see-also="Hydra"}.
+
+A contested key no plain mark contributes to:
+[drake]{.index entry="Drake" see="Wyvern"} and
+[drakes]{.index entry="Drake" see-also="Hydra"}.
+EOF
+( cd "$M31W" && quarto render stale.qmd --to pdf ) > "$WORK/m31-parent.log" 2>&1 \
+  || { cat "$WORK/m31-parent.log" >&2; fail "M31: the stale-ind parent fixture failed to render to PDF"; }
+capture "$M31W/stale.qmd" pdf "m31-parent"
+[ -s "$M31W/stale.ind" ] \
+  || fail "M31: the parent render left no stale.ind — the fixture's latex-clean option is what keeps it"
+# The probe's own premise, asserted rather than assumed: the surviving `.ind`
+# carries all three commands, so a pass below covers all of them.
+M31_IND_CMDS=("$LOCATOR_CMD" quartoindexseeboth quartoindexxrefs)
+for cmd in "${M31_IND_CMDS[@]}"; do
+  grep -q "\\\\$cmd{" "$M31W/stale.ind" \
+    || fail "M31: the parent .ind carries no \\$cmd, so the probe below would not exercise that command at all"
+done
+
+# The deletion shape. The sed pass is asserted to have landed — a pattern gone
+# silent would probe the parent document twice (M16 lesson: a check's domain
+# silently emptying looks no different from a pass).
+sed -E 's/ (mention|see|see-also)="[^"]*"//g' "$M31W/stale.qmd" > "$M31W/nomention.qmd"
+if grep -qE 'mention=|see=|see-also=' "$M31W/nomention.qmd"; then
+  fail "M31: the attribute-stripping pass left a mention=/see=/see-also= attribute behind"
+fi
+[ "$(grep -cF '{.index' "$M31W/nomention.qmd")" -eq 5 ] \
+  || fail "M31: the attribute-stripping pass did not leave the five bare index marks the variant is supposed to keep"
+( cd "$M31W" && quarto render nomention.qmd --to latex ) \
+    > "$WORK/m31-nomention-latex.log" 2>&1 \
+  || { cat "$WORK/m31-nomention-latex.log" >&2; fail "M31: the nomention variant failed to render to latex"; }
+capture "$M31W/nomention.qmd" latex "m31-nomention-latex"
+# The variant EMITS none of the three — `|` is makeindex's encap opener, and
+# is what tells an emission from the preamble definitions every LaTeX document
+# now carries. Without this the probe below could pass on a document that still
+# emitted the commands it is supposed to have lost.
+for cmd in "${M31_IND_CMDS[@]}"; do
+  if grep -qF -- "|$cmd" "$M31W/nomention.tex"; then
+    fail "M31: the nomention variant still emits \\$cmd, so it is not the document that lost those marks"
+  fi
+done
+
+M31RUN="$M31W/run"
+mkdir -p "$M31RUN"
+cp "$M31W/nomention.tex" "$M31RUN/probe.tex"
+cp "$M31W/stale.ind" "$M31RUN/probe.ind"
+cp "$M31W/stale.aux" "$M31RUN/probe.aux"
+( cd "$M31RUN" && pdflatex -no-shell-escape -interaction=nonstopmode probe.tex ) \
+    > "$WORK/m31-pdflatex.log" 2>&1 \
+  || { tail -30 "$M31RUN/probe.log" >&2; fail "M31-AC1: pdflatex on the nomention variant beside the surviving .ind exited non-zero — deleting marks broke the next render (IP2)"; }
+if grep -q 'Undefined control sequence' "$M31RUN/probe.log"; then
+  grep -A3 'Undefined control sequence' "$M31RUN/probe.log" >&2
+  fail "M31-AC1: the nomention variant's log reports an undefined control sequence against the surviving .ind"
+fi
+cmp -s "$M31RUN/probe.ind" "$M31W/stale.ind" \
+  || fail "M31-AC1: probe.ind changed during the run, so \\printindex read a REBUILT index and this probe never exercised the stale one"
+
+# What the stale index must PRINT. Each expectation is the typesetting fact
+# behind it, not a line copied back out of the artifact (the M30 lesson): the
+# `theindex` entry is the term, then makeindex's own `delim_r` — a comma and a
+# space — then the encapsulated field. For `basilisk` the stand-in prints its
+# second argument untouched, so the field is the page list the stale `.ind`
+# holds verbatim, `1, 2`. For the two cross-reference entries the live
+# definitions render `\seename`/`\alsoname`, which in an unlocalized document
+# are `see` and `see also`, around the targets in the order the commands take
+# them.
+pdftotext -layout "$M31RUN/probe.pdf" "$M31RUN/probe.txt" \
+  || fail "M31-AC1: pdftotext could not read the compiled PDF"
+for want in 'basilisk, 1, 2' 'chimera, see Wyvern; see also Hydra' \
+            'Drake, see Wyvern; see also Hydra'; do
+  grep -qF -- "$want" "$M31RUN/probe.txt" \
+    || { cat "$M31RUN/probe.txt" >&2; fail "M31-AC1: the compiled index does not print <<$want>> — the stale field reached the page as something other than the ordinary locators and cross-references it now names"; }
+done
+pass "M31-AC1: a document whose marks emit none of the three commands builds at pdflatex exit 0 beside a surviving .ind that carries all three, logs no undefined control sequence, leaves that .ind byte-identical, and prints its pages and cross-reference targets as ordinary locators and cross-references"
+
+# M31-AC2 — one probe per definition. Each removal is a SINGLE substitution on
+# a copy, asserted to have removed exactly one line, and the failure is read by
+# identity: pdflatex must exit non-zero AND its log must name that command at
+# the `<argument>` line. A bare non-zero exit would pass on a fixture broken
+# some other way, which is what the failure-identity rule is about.
+for defn in "${STANDIN_DEFNS[3]}" "${XREF_DEFNS[@]}"; do
+  cmd=$(printf '%s' "$defn" | sed -E 's/^\\providecommand\*\\([a-zA-Z]+).*/\1/')
+  case "$cmd" in "$LOCATOR_CMD"|quartoindexseeboth|quartoindexxrefs) ;;
+    *) fail "M31-AC2: could not read a command name out of the definition <<$defn>>" ;;
+  esac
+  D="$M31W/minus-$cmd"
+  rm -rf "$D"; mkdir -p "$D"
+  cp "$M31W/stale.ind" "$D/probe.ind"
+  cp "$M31W/stale.aux" "$D/probe.aux"
+  grep -vF -- "$defn" "$M31RUN/probe.tex" > "$D/probe.tex"
+  removed=$(( $(wc -l < "$M31RUN/probe.tex") - $(wc -l < "$D/probe.tex") ))
+  [ "$removed" -eq 1 ] \
+    || fail "M31-AC2: removing <<$defn>> took out $removed line(s) rather than one, so this probe does not isolate that definition"
+  set +e
+  ( cd "$D" && pdflatex -no-shell-escape -interaction=nonstopmode probe.tex ) > "$D/out.log" 2>&1
+  rc=$?
+  set -e
+  [ "$rc" -ne 0 ] \
+    || fail "M31-AC2: pdflatex exited 0 with \\$cmd undefined, so the stand-in this suite credits for the AC1 pass is not what makes that render build"
+  grep -qF "Undefined control sequence" "$D/probe.log" \
+    || { tail -30 "$D/probe.log" >&2; fail "M31-AC2: removing \\$cmd failed the render for some reason other than that command being undefined"; }
+  grep -A1 'Undefined control sequence' "$D/probe.log" | grep -qF "\\$cmd" \
+    || { grep -A2 'Undefined control sequence' "$D/probe.log" >&2; fail "M31-AC2: the render failed on an undefined control sequence that is not \\$cmd"; }
+done
+pass "M31-AC2: removing any one of the three definitions and nothing else fails that same render at pdflatex exit 1, on an Undefined control sequence naming the removed command itself"
+
+# M31-AC3 — the exactly-one-of-two invariant, over the widened stand-in block.
+# Both halves are already read above: m22_standins_only requires the locator's
+# pass-through stand-in in the preamble of every no-subsystem document and
+# leaves no quartoindex residue there, and m22_nogobblers requires none of the
+# four stand-ins beside the live subsystem. Restated here over the two
+# documents this section produces, which are the only ones in the suite whose
+# `.ind` hazard is exercised end to end.
+m22_standins_only "$M31W/nomention.tex" \
+  || fail "M31-AC3: the nomention variant does not carry the four stand-ins and the two cross-reference definitions alone"
+m22_nogobblers "$WORK/principal.tex" \
+  || fail "M31-AC3: the principal document carries a stand-in beside its live subsystem, and both define with \\providecommand* — whichever landed first wins, and the locator's stand-in emphasizes nothing while looking installed"
+grep -qF -- "\\providecommand*\\$LOCATOR_CMD[2]{\\def\\qi@arg" "$WORK/principal.tex" \
+  || fail "M31-AC3: the principal document does not carry the SUBSYSTEM's own locator definition, so the absence checked above is not evidence of anything"
+pass "M31-AC3: the document that emphasizes a principal mention carries the subsystem's locator definition and none of the four stand-ins, and the one that does not carries the stand-ins and no subsystem residue"
+
+# M31-AC4 — the containment sweep. Both sets are enumerated from the captured
+# artifacts of this run, never from a list written here: every quartoindex name
+# any captured `.ind` carries, against the names every captured `.tex` preamble
+# defines. A fourth command reaching a compiled index without a definition
+# riding in every preamble fails here, which a hand-list of three would not.
+python3 - "$CAPTURE_ROOT" <<'M31SWEEPPY'
+import glob, os, re, sys
+
+root = sys.argv[1]
+inds = sorted(glob.glob(os.path.join(root, '**', '*.ind'), recursive=True))
+# The domain is every captured `.tex` that carries `\printindex`, which is the
+# command that READS an `.ind` — not every captured `.tex`. beamer has no
+# `theindex` environment, so the extension emits no index machinery into it at
+# all and a beamer document can never read one. Read off each artifact rather
+# than written as a list of excluded formats: a second format the extension
+# leaves alone falls outside this domain by the same predicate, where a
+# named exemption would have to be remembered.
+texs = [p for p in sorted(glob.glob(os.path.join(root, '**', '*.tex'),
+                                    recursive=True))
+        if '\\printindex' in open(p, encoding='utf-8').read()]
+if not inds or not texs:
+    print(f'FAIL: M31-AC4: the capture tree holds {len(inds)} .ind file(s) and '
+          f'{len(texs)} .tex file(s) carrying \\printindex; with either set '
+          f'empty this sweep would pass over nothing', file=sys.stderr)
+    sys.exit(1)
+
+NAME = re.compile(r'\\(quartoindex[a-zA-Z]*)')
+DEFN = re.compile(r'\\providecommand\*?\\(quartoindex[a-zA-Z]*)\[')
+
+carried = {}
+for path in inds:
+    for name in NAME.findall(open(path, encoding='utf-8').read()):
+        carried.setdefault(name, []).append(path)
+
+errs = []
+for path in texs:
+    src = open(path, encoding='utf-8').read()
+    cut = src.find('\\begin{document}')
+    if cut < 0:
+        # Never skipped: a silent `continue` would shrink the set actually
+        # compared while the count reported below still came from `texs`,
+        # which is the domain-emptying shape this sweep is built to refuse.
+        errs.append(f'  {path} carries \\printindex but no \\begin{{document}}, '
+                    f'so it has no preamble to read')
+        continue
+    defined = set(DEFN.findall(src[:cut]))
+    for name in sorted(carried):
+        if name not in defined:
+            errs.append(f'  {path} defines no \\{name}, which '
+                        f'{carried[name][0]} carries')
+if errs:
+    print('FAIL: M31-AC4: a name a compiled index carries is undefined in a '
+          'rendered preamble, which is the stale-.ind break:', file=sys.stderr)
+    print('\n'.join(errs), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M31-AC4: all {len(carried)} quartoindex name(s) carried by the '
+      f'{len(inds)} captured .ind file(s) — {", ".join(sorted(carried))} — are '
+      f'defined in the preamble of every one of the {len(texs)} captured .tex '
+      f'file(s) carrying \\printindex')
+M31SWEEPPY
+pass "M31-AC4: every quartoindex command name any captured .ind carries is defined in the preamble of every captured .tex that carries \\printindex, both sets and that domain enumerated from this run's artifacts"
 
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
@@ -10342,7 +10625,11 @@ import glob, os, re, sys
 # uncontested cross-reference travels the encapsulation channel as `|see{...}`
 # with none, and the preamble's \providecommand defines no such macro.
 MARKS = {
-    'the combined-encapsulation command': re.compile(r'quartoindexxrefs'),
+    # `|` is makeindex's encap opener, and matching it is what keeps this
+    # about the EMISSION. Since M31 the command's \providecommand definition
+    # rides in every LaTeX preamble, so a bare-name pattern would match every
+    # file in the sweep and report each as carrying a shape it does not.
+    'the combined-encapsulation command': re.compile(r'\|quartoindexxrefs'),
     'a cross-reference folded into the printed field':
         # `\see(?:also)?` — NOT `\seealso?`, which requires the literal
         # `seeals` and so would miss a fold that carries only `\see{`.

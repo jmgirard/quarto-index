@@ -1,8 +1,12 @@
 -- The LaTeX back-end: turning derived levels into `\\index{...}` commands, and
 -- the contested-key bookkeeping that decides which shape a key gets.
 --
--- The two `emitted` flags below are read by the Pandoc pass, which writes the
--- preamble: a command is defined only in a document that uses it.
+-- The `emitted` flag below is read by the Pandoc pass, which writes the
+-- preamble: the typeset-time subsystem is defined only in a document that uses
+-- it. The two cross-reference commands had a flag each until M31, which made
+-- them unconditional — each reaches the compiled `.ind` and each is stateless
+-- enough to be its own stand-in there, so nothing is left to decide per
+-- document.
 
 local qi_core = require("./core")
 local qi_levels = require("./levels")
@@ -113,8 +117,7 @@ end
 -- of them is a plain locator mark, and every distinct cross-reference target
 -- written on it, in a fixed order. Module-level, like the other accumulators.
 local contested_keys = {}
-M["xref_list_emitted"] = false
--- Likewise for the typeset-time channel's commands, the range half included:
+-- The typeset-time channel's commands, the range half included:
 -- one flag, because the whole subsystem is injected together (qi_core explains
 -- why the range commands cannot be conditional on a range).
 M["principal_emitted"] = false
@@ -159,9 +162,6 @@ end
 local function principal_ordinal(source)
   return principal_keys[source]
 end
--- Likewise: the both-targets command is defined only in a document that uses
--- it, so a document without one gets nothing extra in its preamble.
-M["xref_both_emitted"] = false
 
 -- One mark's LaTeX shape, from levels the caller has already derived. `report`
 -- follows the convention the rest of the file uses: only the emitting pass
@@ -340,8 +340,6 @@ local function reset()
   qi_core.empty(contested_keys)
   qi_core.empty(principal_keys)
   principal_ordinals = 0
-  M["xref_list_emitted"] = false
-  M["xref_both_emitted"] = false
   M["principal_emitted"] = false
 end
 

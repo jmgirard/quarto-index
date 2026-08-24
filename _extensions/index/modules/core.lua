@@ -77,7 +77,10 @@ local MENTION_ROLES = {
 -- The emphasis a principal locator is printed in. `\providecommand*` so a
 -- document wanting different emphasis redefines it in its own preamble and
 -- this definition steps aside (GP4), and injected only into a document that
--- uses it, exactly like the two cross-reference commands above. Bold is the
+-- uses it — unlike the two cross-reference commands above, which since M31
+-- ride in every LaTeX preamble because each reaches the compiled `.ind`. This
+-- one does not: it is applied at `\printindex` time by the subsystem below,
+-- never named in the `.ind` itself. Bold is the
 -- convention a printed index uses for a principal reference. It is applied by
 -- the subsystem below at `\printindex` time, not by makeindex's encapsulation
 -- channel, so hyperref never rewrites it.
@@ -149,8 +152,8 @@ local RANGE_ENDS = {
 -- never break a document (IP2), so they ride along (M21 review F3). The same
 -- hazard at one remove — a document losing its LAST principal mention — is
 -- closed by PRINCIPAL_GOBBLERS below (M22): every LaTeX document that does
--- not define this subsystem defines gobbling stand-ins for the three
--- commands an `.aux` line can name.
+-- not define this subsystem defines stand-ins for the three commands an
+-- `.aux` line can name and for the one a compiled `.ind` carries (M31).
 -- ---------------------------------------------------------------------------
 local LOCATOR_COMMAND = "quartoindexlocator"
 local REGISTER_COMMAND = "quartoindexregister"
@@ -295,21 +298,34 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
 }, "\n")
 
 -- The stand-ins for the subsystem, in every LaTeX document the subsystem is
--- NOT injected into. These are the three names a surviving `.aux` line can
--- carry — the page command REGISTER_COMMAND writes, and the two range
--- commands RANGEFROM_COMMAND and RANGEEND_COMMAND write — and a document
--- that has just lost its last principal mention still reads such lines on
--- its next pass. Undefined, each is `Undefined control sequence` and the
--- render is over, which is the IP2 break the subsystem exists to avoid;
--- gobbling both arguments, the line expands to nothing and the page prints
--- as the ordinary locator it now is. `\providecommand*` like the subsystem's
--- own definitions, and exactly one of the two blocks is injected per
--- document, never both — injected together, whichever landed first would
--- win, and a gobbled subsystem emphasizes nothing while looking installed.
+-- NOT injected into. Two build files outlive the marks that wrote them, and
+-- each hands the next render a name only the subsystem defines.
+--
+-- The `.aux` carries three: the page command REGISTER_COMMAND writes, and the
+-- two range commands RANGEFROM_COMMAND and RANGEEND_COMMAND write. A document
+-- that has just lost its last principal mention still reads such lines on its
+-- next pass, at `\begin{document}`. Undefined, each is `Undefined control
+-- sequence` and the render is over, which is the IP2 break the subsystem
+-- exists to avoid; gobbling both arguments, the line expands to nothing and
+-- the page prints as the ordinary locator it now is.
+--
+-- The compiled `.ind` carries a fourth, LOCATOR_COMMAND, read later at
+-- `\printindex` (M31). Its stand-in GOBBLES NOTHING: the live command takes
+-- the key's ordinal and the key's whole page list and prints the list, so a
+-- stand-in swallowing both arguments would turn a stale index into one with
+-- no page numbers in it at all — a render that builds and lies, where the
+-- point of the block is a render that builds and tells the truth. Passing
+-- `#2` through prints exactly the ordinary locators the entry now has.
+--
+-- `\providecommand*` like the subsystem's own definitions, and exactly one of
+-- the two blocks is injected per document, never both — injected together,
+-- whichever landed first would win, and a gobbled subsystem emphasizes
+-- nothing while looking installed.
 local PRINCIPAL_GOBBLERS = table.concat({
   "\\providecommand*\\" .. PRINCIPALPAGE_COMMAND .. "[2]{}",
   "\\providecommand*\\" .. RANGEAT_COMMAND .. "[2]{}",
   "\\providecommand*\\" .. RANGETO_COMMAND .. "[2]{}",
+  "\\providecommand*\\" .. LOCATOR_COMMAND .. "[2]{#2}",
 }, "\n")
 
 -- The class the HTML back-end puts on a principal locator link. Namespaced

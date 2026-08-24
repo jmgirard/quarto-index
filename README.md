@@ -385,20 +385,17 @@ folded for itself: a range you wrote with `range=` is one the extension knows
 about, and it prints emphasized whole (see [A discussion that spans
 pages](#a-discussion-that-spans-pages)).
 
-**Deleting marks never breaks the next render on a leftover `.aux`.** The
+**Deleting marks never breaks the next render on a leftover build file.** The
 emphasis machinery writes its page registrations into the document's `.aux`,
-and that file can outlive the marks that wrote it — `latex-clean: false`, or a
-failed render, leaves it in place. A document whose principal or range marks
-have since been deleted — every mark included — still defines stand-ins that
-read those leftover lines and do nothing, so the next render builds cleanly
-and the pages they name print as the ordinary locators they now are. The
-leftover lines are gone as soon as that render rewrites the `.aux`.
-
-A leftover `.ind` is a different matter, and this does not cover it. The
-compiled index carries `\quartoindexlocator`, which is defined only where a
-principal mention is, so a `.ind` from an earlier render that `makeindex` has
-not since rewritten will stop a document that no longer has one. Delete it, or
-let the render rebuild it.
+and the compiled index in the `.ind` carries the commands that print a locator
+and a cross-reference. Either file can outlive the marks that wrote it —
+`latex-clean: false`, or a failed render, leaves it in place. A document whose
+principal, range or cross-reference marks have since been deleted — every mark
+included — still defines every command those leftover files name, so the next
+render builds cleanly: the `.aux` lines are read and do nothing, and the pages
+and targets a stale index holds print as the ordinary locators and
+cross-references they now are. The leftovers are gone as soon as that render
+rewrites the two files.
 
 **A role needs a locator to apply to.** A cross-reference takes the place of a
 locator, so `mention="principal"` on a mark that also carries `see=` or
@@ -543,10 +540,11 @@ position. When a document has at least one mark, it also adds
 document has one — so the index is built and listed in the table of contents
 with no configuration. In a document with a bibliography the index currently
 prints before the references. A document with no marks gets none of this,
-except three one-line `\providecommand*` definitions: every LaTeX-derived
-render that does *not* emphasize a principal mention carries them, against a
-leftover `.aux` from one that did. They are described under the principal
-mention, below.
+except six one-line `\providecommand*` definitions: every LaTeX-derived render
+carries the two cross-reference commands, and every one that does *not*
+emphasize a principal mention carries four more — three against a leftover
+`.aux` from a render that did, and one against a leftover `.ind`. They are
+described under the principal mention, below.
 
 A cross-reference is written into the same `\index{…}` command, through
 `makeindex`'s encapsulation channel — `\index{cats|see{Felines}}` — except

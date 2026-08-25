@@ -1447,14 +1447,19 @@ RECIPEFONTPY
 # contributor after a package they already have. A fixture whose front matter
 # this parser cannot read — a quoted `mainfont:`, a flow-style options block —
 # surfaces here as the face it could not assemble rather than as a parse
-# report, which is the reading that names something the author can act on.
+# report, which is the reading that names something the author can act on. That
+# is also why the report below names the mis-spelled-face reading BESIDE the
+# package one: this function cannot tell the two apart — a face assembled wrong
+# misses in `kpsewhich` exactly as a genuinely absent one does — and asserting
+# the package alone would be a false diagnosis with a no-op remedy for that
+# class.
 require_recipe_fonts() {
   local qmd="$1" files face
   files=$(recipe_font_files "$qmd") || return 1
   while IFS= read -r face; do
     [ -n "$face" ] || continue
     kpsewhich "$face" >/dev/null 2>&1 || {
-      printf 'FAIL: %s, a face the `mainfontoptions:` block in %s names, is not findable by kpsewhich; the TeX Live `stix2-otf` package is missing (run: tlmgr install stix2-otf)\n' \
+      printf 'FAIL: %s, a face the `mainfontoptions:` block in %s names, is not findable by kpsewhich; either the TeX Live `stix2-otf` package is missing (run: tlmgr install stix2-otf) or that block spells the face in a way this guard assembled wrong\n' \
         "$face" "$qmd" >&2
       return 1
     }
@@ -1472,11 +1477,14 @@ require_recipe_fonts() {
 # file that is not a PDF, and under `set -o pipefail` a bare
 # `producer=$(pdfinfo ... | sed ...)` hands that status to the assignment,
 # which under `errexit` kills the run before the report below is ever reached —
-# silently, since nothing has printed yet. Both of M35's call sites happened to
-# sit in `&&`/`||` lists, where errexit is suspended, so the defect was invisible
-# there and would have surfaced the first time anyone called it plainly. Read
-# the tool's output into a variable, absorb its status there, and let the two
-# `return`s below be the only statuses this function ever produces.
+# silently, since nothing has printed yet. All three of M35's call sites
+# happened to sit in `&&`/`||` lists, where errexit is suspended, so the defect
+# was invisible there and would have surfaced the first time anyone called it
+# plainly. Read the tool's output into a variable, absorb its status there, and
+# let the three `return`s below be the only statuses this function ever
+# produces. The `printf | sed | sed` on the next line is still a pipeline, but
+# every stage of it is a builtin or a `sed` over text already in memory, so no
+# input the caller can supply makes it exit non-zero.
 pdf_producer_names() {
   local pdf="$1" want="$2" info producer
   info=$(pdfinfo "$pdf" 2>/dev/null) || info=''
@@ -4640,10 +4648,12 @@ import sys
 readme = open(sys.argv[1], encoding='utf-8').read()
 fixture = open(sys.argv[2], encoding='utf-8').read()
 # The stated list is a literal array in this file, not a glob or a generated
-# artifact, so there is no input that reaches here with it empty — `set -u`
-# stops an unset array before the caller writes the file. Its non-emptiness is
-# pinned by the self-test's plants below, each of which names one of these
-# lines and could not go red over an empty list.
+# artifact. Its non-emptiness is pinned by the self-test's plants below, each of
+# which names one of these lines and could not go red over an empty list — that
+# is the whole of the argument, and it holds on any shell. `set -u` is NOT part
+# of it: it stops an empty array expansion on bash 3.2, but bash 4.4 and later
+# expand an empty declared array to nothing instead, so a reachability claim
+# resting on it would be true only on the shell this repo happens to run.
 stated = [l.rstrip('\n') for l in open(sys.argv[3], encoding='utf-8')
           if l.strip()]
 
@@ -12626,7 +12636,7 @@ M37BOUNDPY
     > "$M37_PLAIN_OUT" 2>&1 &
   wait $! && M37_PLAIN_RC=0 || M37_PLAIN_RC=$?
   [ "$M37_PLAIN_RC" -eq 1 ] \
-    || { cat "$M37_PLAIN_OUT" >&2; fail "M37 self-test: called plainly on a file carrying no Producer line, the producer reading exited $M37_PLAIN_RC rather than 1 — that is a status it did not choose"; }
+    || { cat "$M37_PLAIN_OUT" >&2; fail "M37 self-test: called plainly on a file carrying no Producer line, the producer reading exited $M37_PLAIN_RC rather than 1 — a status neither of its failure branches returns (the OLD form exits 1 here too, so this clause bounds the status; the report assertion below is what separates reporting from dying)"; }
   grep -qF -- 'carries no Producer line' "$M37_PLAIN_OUT" \
     || { cat "$M37_PLAIN_OUT" >&2; fail "M37 self-test: called plainly on a file carrying no Producer line, the producer reading printed no <<carries no Producer line>> report — it died before reaching its own reporting branch, which is what a caller outside an && list would see"; }
 

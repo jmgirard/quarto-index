@@ -247,7 +247,8 @@ run_scan() {
         "$M20_UNKNOWN" "$M20_NOLOCATOR" "$M20_UNINDEXED" \
         "$R_UNKNOWN" "$R_DISPLACED" "$R_ALREADY" "$R_NOOPEN" "$R_NOCLOSE" \
         "$R_BOOKUNPAIRED" \
-        "$WARN_MARKER_EMPTIED" "$WARN_MARKER_NOT_LAST" "$WARN_MARKER_DUP_STEM" ;;
+        "$WARN_MARKER_EMPTIED" "$WARN_MARKER_NOT_LAST" "$WARN_MARKER_DUP_STEM" \
+        "$WARN_MARKER_DUP_NAMED" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -3026,14 +3027,20 @@ WARN_MARKER_NESTED='index placement marker below the top level'
 # with the duplicate report, so the middle of the sentence is the only part
 # that identifies this report and only this one.
 WARN_MARKER_EMPTIED='was the only thing written where it stood'
-WARN_MARKER_DUP='index placement marker 2 in document order (top-level block 8) is ignored'
+WARN_MARKER_DUP='index placement marker 2 in document order (top-level block 8) is ignored; the index is placed at the first marker'
 # The duplicate report is greped by a key carrying two RENDERED numbers, and
 # mark-report-keys compares its keys against the filter's source literals,
 # where those two places are `%d`. So the scan is given the number-free stem of
 # the same message instead, and the two are held together here: a rewording
 # that moved the stem out of the numbered key would fail below rather than
 # leave the scan holding a message the run no longer greps by.
-WARN_MARKER_DUP_STEM='in document order (top-level block'
+# M38 gave the duplicate report a second shape: a document that DECLARES its
+# indexes names the index the second marker repeats, since which index is
+# repeated is the whole question there. The two share the position clause, so
+# the stem each is greped by is the half that identifies it — the shared clause
+# alone would match both and every count using it would be over two reports.
+WARN_MARKER_DUP_STEM='is ignored; the index is placed at the first marker'
+WARN_MARKER_DUP_NAMED='is a second marker for the index named'
 case "$WARN_MARKER_DUP" in
   *"$WARN_MARKER_DUP_STEM"*) ;;
   *) fail "M28: the duplicate-marker grep key no longer contains the stem passed to mark-report-keys, so the scan and the run would hold different messages" ;;

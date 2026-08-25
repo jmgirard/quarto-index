@@ -589,7 +589,12 @@ local function html_book(doc, ctx, marker, taken)
             .. "book's render list gives them")
            :format(ctx.file, #later, table.concat(later, ", ")))
     end
-    return qi_marker.place_index(doc, qi_html.html_index_blocks(book_marks(ctx, records), taken))
+    -- Under the default index: the store's record format carries no index
+    -- name, so a book has the one index every chapter's marks were folded
+    -- into (M38).
+    return qi_marker.place_index(doc,
+      { [qi_indexes.default()] =
+          qi_html.html_index_blocks(book_marks(ctx, records), taken) })
   end
 
   if marker then

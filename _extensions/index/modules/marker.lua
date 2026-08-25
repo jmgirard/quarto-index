@@ -238,30 +238,57 @@ local function strip_nested_markers(block, position, chapter)
 end
 
 -- Warn about and remove every marker that cannot be a placement site — each
--- nested one, and each top-level one after the first — and report whether a
--- site remains. A reported position is counted over the blocks this filter is
--- handed, after Quarto's own processing, before anything is removed here. It
--- is not the author's own source position: Quarto expands includes and
--- executable cells first, so the two diverge whenever the document holds any
--- (`examples/marker-position.qmd`). The reports say so themselves through
--- POSITION_BASIS above. In a book each chapter is a Pandoc process of its own,
--- so the position is over that chapter alone; `chapter` names it where the
--- caller knows which one it is, and the reports scope their number to it.
+-- nested one, and each top-level one after the FIRST OF ITS INDEX — and report
+-- which indexes a site remains for. A reported position is counted over the
+-- blocks this filter is handed, after Quarto's own processing, before anything
+-- is removed here. It is not the author's own source position: Quarto expands
+-- includes and executable cells first, so the two diverge whenever the document
+-- holds any (`examples/marker-position.qmd`). The reports say so themselves
+-- through POSITION_BASIS above. In a book each chapter is a Pandoc process of
+-- its own, so the position is over that chapter alone; `chapter` names it where
+-- the caller knows which one it is, and the reports scope their number to it.
+--
+-- The first-marker rule is per index (M38): two indexes are two sections, so
+-- each has its own site and the second marker of ONE index is the one that is
+-- ignored. A marker naming an index the running back-end folds away has already
+-- been told so by `marker_index`, and becomes a marker for the index that
+-- back-end does build — so it is not also reported as a duplicate, which would
+-- name a second marker of an index its author never wrote one for.
+--
+-- Returns whether any placement site survived, exactly as it always has: WHICH
+-- index each surviving marker places is read back off the marker itself by
+-- `place_index`, so there is no second thing for this to hand over.
 local function resolve_markers(doc, chapter)
   local out = pandoc.Blocks({})
+  local placed = {}
   local seen = 0
+  local any = false
   for position, block in ipairs(doc.blocks) do
     block = strip_nested_markers(block, position, chapter)
     if is_marker(block) then
+      seen = seen + 1
       -- Which index this marker places, and the report for a value naming
       -- none. Drawn for every top-level marker, not only the surviving one: a
       -- marker naming an index this document never declared is the author's
       -- mistake wherever it sits, and a second marker's own report already
       -- says why it places nothing.
-      qi_indexes.marker_index(block.attributes[qi_indexes.INDEX_ATTR], true)
-      seen = seen + 1
-      if seen == 1 then
+      local name, folded =
+        qi_indexes.marker_index(block.attributes[qi_indexes.INDEX_ATTR], true)
+      if placed[name] == nil then
+        placed[name] = true
+        any = true
         out:insert(block)
+      elseif folded then
+        -- Its own report, one line above, already said this marker places the
+        -- document's one index instead. A duplicate report as well would name
+        -- a second marker of an index the author never wrote one for.
+        out:extend(marker_content(block))
+      elseif qi_indexes.is_declared() then
+        -- Two numbers, so each is named where it is printed (D-014), and the
+        -- index the second marker repeats, which is the whole question in a
+        -- document with more than one.
+        qi_core.warn(('index placement marker %d in document order (top-level block %d%s) is a second marker for the index named "%s"; that index is placed at the first marker naming it, so this one is ignored. Block positions are %s'):format(seen, position, in_chapter(chapter), name, POSITION_BASIS))
+        out:extend(marker_content(block))
       else
         -- Two numbers, so each is named where it is printed (D-014): the first
         -- counts markers down the document and says so, the second counts
@@ -281,25 +308,31 @@ local function resolve_markers(doc, chapter)
     end
   end
   doc.blocks = out
-  return seen > 0
+  return any
 end
 
--- Put the index where the author asked for it, or at the end of the document
--- when no marker survived resolution. Both back-ends call this, so the two
--- cannot drift apart on where an index goes. `blocks` is nil when the back-end
--- has nothing to emit, which still removes the marker.
-local function place_index(doc, blocks)
+-- Put each index where the author asked for it, and any index no marker names
+-- at the end of the document, in declared order. Both back-ends call this, so
+-- the two cannot drift apart on where an index goes. `by_index` maps an index
+-- name to the blocks that index emits; it is nil when the back-end has nothing
+-- to emit at all, which still removes every marker.
+--
+-- The per-index guard is what keeps one index from being emitted twice; every
+-- marker is stripped whether or not it places anything, since a marker that
+-- survived into output would be exactly the residue IP2 forbids.
+local function place_index(doc, by_index)
   local out = pandoc.Blocks({})
-  local placed = false
+  local placed = {}
   for _, block in ipairs(doc.blocks) do
     if is_marker(block) then
-      -- Every marker is stripped here, not only the first: a marker that
-      -- survived into output would be exactly the residue IP2 forbids, and a
-      -- fail-open branch would emit one verbatim the day resolve_markers
-      -- stops guaranteeing there is at most one.
       out:extend(marker_content(block))
-      if not placed then
-        placed = true
+      -- Silently: `resolve_markers` has already reported this marker's value,
+      -- and it left at most one marker per index behind.
+      local name =
+        qi_indexes.marker_index(block.attributes[qi_indexes.INDEX_ATTR], false)
+      if not placed[name] then
+        placed[name] = true
+        local blocks = by_index ~= nil and by_index[name] or nil
         if blocks then
           out:extend(blocks)
         end
@@ -308,8 +341,12 @@ local function place_index(doc, blocks)
       out:insert(block)
     end
   end
-  if blocks and not placed then
-    out:extend(blocks)
+  if by_index ~= nil then
+    for _, name in ipairs(qi_indexes.names()) do
+      if not placed[name] and by_index[name] then
+        out:extend(by_index[name])
+      end
+    end
   end
   doc.blocks = out
   return doc

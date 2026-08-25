@@ -154,7 +154,9 @@ local function Pandoc(doc)
     if qi_marks.marks_seen == 0 then
       return qi_marker.place_index(doc, nil)
     end
-    return qi_marker.place_index(doc, qi_html.html_index_blocks(qi_marks.html_marks, taken))
+    return qi_marker.place_index(doc,
+      { [qi_indexes.default()] =
+          qi_html.html_index_blocks(qi_marks.html_marks, taken) })
   end
 
   if not qi_core.is_latex_derived() then
@@ -331,8 +333,12 @@ local function Pandoc(doc)
     quarto.doc.include_text("in-header", qi_core.PRINCIPAL_GOBBLERS)
   end
 
+  -- One `\printindex`, under the one index a LaTeX-derived render builds:
+  -- every mark and every marker naming another was folded to this one and told
+  -- its author so.
   return qi_marker.place_index(doc,
-    pandoc.Blocks({ pandoc.RawBlock("latex", "\\printindex") }))
+    { [qi_indexes.default()] =
+        pandoc.Blocks({ pandoc.RawBlock("latex", "\\printindex") }) })
 end
 
 -- The Span pass records the marks; every anchor decision that needs the

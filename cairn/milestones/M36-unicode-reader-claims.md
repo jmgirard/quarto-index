@@ -68,7 +68,7 @@ KI87 — stays on its candidate row.
 - [x] T2. Plant it: a copy of the engine control log with its final error
       unterminated and a `Unicode character` line in the chatter after it;
       assert `stopped` red on it and green on the unmutated log.
-- [ ] T3. Narrow `stated()` (`tests/unicodeprint.py:90-101`): refuse a level
+- [x] T3. Narrow `stated()` (`tests/unicodeprint.py:90-101`): refuse a level
       that is not ASCII-digit, refuse an empty term, each with its own message.
 - [ ] T4. Plant both: `'٣:foo'` through `entries`, `'0:'` through `marks` —
       the second exercising `cmd_marks`' argv contract, which F11 records as
@@ -90,6 +90,7 @@ KI87 — stays on its candidate row.
 - 2026-08-24: reduced criteria audit ran twice, mode reduced both times (internal tier, no RB-tripwire tag). Round 1 over 8 pre-gate criteria returned one finding: AC8 bound a work-log recording act and a check count, both instruments; fixed by cutting both clauses. Round 2 over the 10 post-gate simplify-wording criteria returned three: M36-AC3 and M37-AC5 bound a checker's own prose, M37-AC2 bound an unenumerated universal and a check count; all three fixed, M36-AC3 and M37-AC5 cut to tasks and M37-AC2 rewritten as a state-of-the-file promise. Seven criteria clean.
 - 2026-08-25: T1: `error_blocks` no longer closes an unclosed final `! ` report at EOF; run against a two-error string, a log whose second `! ` line is never closed now returns only the closed first block. Docstring rewritten to say what closes a block and what the tail after an unclosed one is. Plain suite 352 checks, exit 0.
 - 2026-08-25: T2: self-test plants a copy of the engine control log with every real error report removed and the signature and `Unicode character θ` stated only in chatter after an unclosed `! ` line; run against both readers, the pre-T1 reader is green on it and the post-T1 reader red at the one-error clause. The unplanted engine log is now asserted green alongside `marks` and `entries`. The one-error failure message widened to cover text in no error report at all, which is what this input is. Self-test 491 checks, exit 0.
+- 2026-08-25: T3: `stated()` now has three refusals with three messages — no level stated, a level not written in ASCII digits, an empty term. Run over six specs: `0:Ascii` reads, `Ascii` and `:foo` take the pair message, `٣:foo` and `ab:foo` the ASCII-digit message, `0:` the empty-term message. Gate chose refusing only a truly empty term, not a spaces-only one, so the reader does not judge whitespace. Plain suite 352 checks, exit 0.
 
 ## Decisions
 

@@ -94,11 +94,28 @@ def stated(spec):
     A bare term is refused rather than defaulted to level 0: the level is the
     half this reading exists to check, and a caller who forgot it would other-
     wise get a green that says nothing about the level at all.
+
+    Three refusals, each with its own message, because each is a different
+    mistake in what the suite stated. A spec with no colon or nothing before
+    it states no level. A level written in digits of some other script —
+    `str.isdigit()` is true of them and `int()` reads them — states a level
+    no caller of this module can have meant, since every level the suite
+    states it writes in ASCII. An empty term states no term: `entries` would
+    then look for an entry line whose text is the empty string, which no
+    printed index has, and report it missing for a reason that is the spec's
+    and not the render's.
     """
     level, sep, term = spec.partition(':')
-    if not sep or not level.isdigit():
+    if not sep or not level:
         die(f'FAIL: M33: {spec!r} is not a <level>:<term> pair, so the level '
             f'this reading holds the term to is not stated')
+    if not (level.isascii() and level.isdigit()):
+        die(f'FAIL: M33: {spec!r} states its level as {level!r}, which is not '
+            f'written in ASCII digits, so it is not a level this suite states '
+            f'(codepoints {codepoints(level)})')
+    if not term:
+        die(f'FAIL: M33: {spec!r} names an empty term, so there is no term '
+            f'for this reading to hold to level {int(level)}')
     return int(level), nfc(term)
 
 

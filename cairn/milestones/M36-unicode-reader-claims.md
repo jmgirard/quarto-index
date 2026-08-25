@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** `m036-unicode-reader-claims`
+- **Branch/PR:** `m036-unicode-reader-claims` — https://github.com/jmgirard/quarto-index/pull/36
 
 ## Goal
 
@@ -42,15 +42,15 @@ KI87 — stays on its candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1. `error_blocks` returns no block for an unterminated final `! ` line,
+- [x] AC1. `error_blocks` returns no block for an unterminated final `! ` line,
       so text following one belongs to no error report; `cmd_stopped` reports
       red on a log whose only `Unicode character` mention sits in that trailing
       text, and the self-test plants such a log.
-- [ ] AC2. `stated()` refuses a level written in non-ASCII digits and refuses
+- [x] AC2. `stated()` refuses a level written in non-ASCII digits and refuses
       an empty term, each with its own message; the self-test plants both
       specs, one of them through `cmd_marks`, whose `<level>:<term>` argv
       contract is unplanted today.
-- [ ] AC3. `tests/run-tests.sh` exits 0 in both plain and `--self-test` modes
+- [x] AC3. `tests/run-tests.sh` exits 0 in both plain and `--self-test` modes
       (the `generic` profile's verify slot, plus its self-test).
 
 ## Coverage
@@ -124,3 +124,108 @@ KI87 — stays on its candidate row.
   added a refusal for: one plant closes both.
 
 ## Review
+
+### Acceptance criteria — fresh evidence (2026-08-25)
+
+- AC1 — met. `error_blocks` run on a string whose second `! ` line is never
+  closed returns 1 block, the closed first one. The self-test's own plant,
+  rebuilt from `tests/.work/cap/m33-engine/engine.log` the same way, states the
+  signature and `Unicode character θ` only in chatter after an unclosed `! `
+  line: the merge-base reader (origin/main) is green on it and reports "in one
+  error report"; the branch reader is red at the one-error clause, reading 0
+  error reports. The self-test plants it at `tests/run-tests.sh:12297` and
+  asserts it at 12334.
+- AC2 — met. `stated()` run over four specs: `0:Ascii` reads `(0, 'Ascii')`;
+  `٣:foo` is refused naming its level as not written in ASCII digits and giving
+  the codepoint; `0:` is refused naming an empty term; `Ascii` keeps the
+  existing no-level-stated message. The merge-base reader accepts the first two
+  of those refusals as `(3, 'foo')` and `(0, '')`. Both specs are planted —
+  `٣:foo` through `entries` at `tests/run-tests.sh:12192`, `0:` through `marks`
+  at 12159, the reading whose argv contract had no plant.
+- AC3 — met. `tests/run-tests.sh` exits 0 with 352 checks; `--self-test` exits 0
+  with 491 checks, its M33 pass line printing 23 planted defects.
+
+### Consistency gate
+
+`cairn_validate.py` exit 0, all 16 checks PASS, 7 advisories OK. `generic`
+profile's `consistency-gate` slot names no toolchain checks — clean no-op. No
+principle changed, so no impact report.
+
+### Independent review
+
+Three fresh-context reviewers, none having seen the implementation.
+
+- **[S] prior-PR-comments** — no findings. The GitHub inline-comment probe
+  returned empty, so no per-PR walk. Against `cairn/milestones/archive/`'s M33
+  and M35 Review sections: the diff addresses exactly the five findings M36
+  scopes and re-opens none.
+- **[S] blame-history** — no findings of regression. Each change traces to a
+  finding M35's review filed; the D-118 citation it flagged is the cairn
+  plugin's own decision id, a point M33's review already rejected on the same
+  grounds.
+- **[O] diff-bug** — 13 ranked findings, below.
+
+### Findings and dispositions
+
+1. **`error_blocks`' EOF-tail drop silently discards a real error report, and
+   the docstring's justification is false for it.** TeX writes
+   `!  ==> Fatal error occurred, no output PDF file produced!` as a complete
+   one-line report with no `l.<n>` line; it is the last line of the engine
+   control log, so `error_blocks` went from 2 blocks to 1 and now returns
+   nothing for a report the log genuinely does carry. — Verified against the
+   captured log: old 2 blocks, new 1, the dropped one being that fatal line.
+   **Fix now** (prose): the docstring's claim is corrected to say what is
+   dropped, the fatal-error shape named. AC1 is unaffected — it promises no
+   block for an unterminated final `! ` line, which is what happens.
+2. **The plain-suite `stopped` check is now dependent on the fatal-error
+   trailer being present.** A log whose inputenc rejection is the last `! ` line
+   with no `l.` echo and no fatal trailer after it would give 0 blocks and go
+   red, blaming the recipe for a log-shape difference. — Verified: the inputenc
+   block in the captured log is closed by the fatal `! ` line that follows it,
+   not by an `l.` line. **Follow-up**: a candidate row; changing the reader here
+   is the widening this milestone's gate declined.
+3. **The block header still asserts "one plant per CLAUSE", which the rewritten
+   matrix contradicts six lines later.** **Fix now.**
+4. **"A clause carries more than one row where no single input shape isolates
+   it" is untrue for two of the three duplicated pairs** — the two
+   `entries missing` rows and the two `stopped one error` rows are two defect
+   shapes reaching one clause, not one clause no shape isolates. **Fix now.**
+5. **"nothing here or in the readings above it says anything about that class of
+   error" overclaims, and points at the wrong readings.** `cmd_stopped` searches
+   the signature and the character over the whole log before calling
+   `error_blocks`, and is defined below it, not above. **Fix now.**
+6. **The widened message can print "(0 error report(s) in the log)" for a log
+   that visibly contains a `! ` line**, with no hint that unclosed is the
+   reason. **Fix now.**
+7. **The empty-term message describes a level the `marks` path never uses** —
+   it reads "there is no term for this reading to hold to level 0" while the
+   plant deliberately routes `0:` through the reading that discards the level.
+   **Fix now.**
+8. **A level that is not digits in any script changed message class.**
+   `ab:foo` previously took the pair message and now takes the ASCII-digits
+   one, which the docstring's rationale explains only for other scripts.
+   **Fix now.**
+9. **The matrix's `absent` rows are ordered silent / level / printed while the
+   plants run silent / printed / level.** **Fix now.**
+10. **The Scope cites `(D-118)`, which `cairn/DECISIONS.md` does not hold.**
+    **Rejected**: D-118 is the cairn plugin's own decision id, cited by its
+    tracking rulebook, not this repo's — the same point M33's review rejected
+    on the same grounds.
+11. **"(probed at T6)" now collides with M36's own T6.** The parenthetical was
+    written for M33's task numbering and survived into a paragraph this branch
+    rewrote. **Fix now**: the citation names its milestone.
+12. **"one substitution per plant (M29)" is not backed by the new plant** —
+    `unclosed.log` strips every error report and appends a tail. **Fix now**,
+    with finding 3's rewrite of the same header.
+13. **The pass line says the two unplanted clauses are "named above this
+    block"; they are named inside this block's own header comment.**
+    **Fix now.**
+
+The reviewer separately verified as sound: both new plants discriminate against
+the merge-base reader, `M33_PLANTED` counts 23 against 23 matrix rows, the
+U+0663 literal is the right codepoint, no existing caller passes a spec the
+narrowed `stated()` now refuses, and `bash -n` is clean.
+
+No finding demonstrates an acceptance criterion failing inside its named
+domain, and none is a defect in what this repo's extension does for its users —
+every one is prose in the acceptance suite. No return floor is reached.

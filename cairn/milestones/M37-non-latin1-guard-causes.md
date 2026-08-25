@@ -1,11 +1,11 @@
 # M37: The non-Latin-1 guards report the cause they hit
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M36
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** m037-non-latin1-guard-causes
 
 ## Goal
 
@@ -60,12 +60,15 @@ KI81–85, KI87 — stays on its candidate row.
       carrying no Producer line, and the run reports red rather than dying
       under `pipefail`.
 - [ ] AC4. Each of the three plants M35-F13, F14 and F15 name builds the input
-      class its label claims: the "no options block" mutation is bounded to the
-      `mainfontoptions:` block whatever follows it, the extra-line README
-      mutation is bounded to the `### Terms outside Latin-1` section, and the
-      `grep -v` mutation asserts it emitted lines. Each is shown, on a fixture
-      where its old form would have mutated the wrong region or emitted
-      nothing, to fail loudly instead.
+      class its label claims. The "no options block" mutation is bounded to the
+      `mainfontoptions:` block by that block's own extent rather than by the
+      `filters:` line that happens to follow it, and the extra-line README
+      mutation to the `### Terms outside Latin-1` section; each is shown, on a
+      fixture where its old form mutated a region outside that bound, to leave
+      every byte outside its own bound unchanged. The `norejection.log`
+      mutation asserts it removed at least one error report. Each of the three
+      fails loudly, naming what it could not find, on an input carrying no
+      region of the kind its label names.
 - [ ] AC5. `tests/run-tests.sh` exits 0 in both plain and `--self-test` modes
       (the `generic` profile's verify slot, plus its self-test).
 
@@ -110,6 +113,9 @@ KI81–85, KI87 — stays on its candidate row.
 ## Work log
 
 - 2026-08-24: created by /milestone-plan alongside M36; the gate's rejected alternatives and both criteria-audit rounds are recorded in that file's work log and cover this milestone too.
+- 2026-08-25: branch m037-non-latin1-guard-causes cut from main at a631685; status in-progress.
+- 2026-08-25: amendment gate — AC4's "fail loudly instead" ending was unsatisfiable for the two mutations bounded by construction: such a mutation succeeds correctly on the very fixture where its unbounded old form went wrong. Amended at the user's selection to bind those two to byte-identity outside their own bound on that fixture, and all three to a loud failure on an input carrying no region of the kind their label names; the third mutation is named `norejection.log` rather than `grep -v`, the form M35's own review commit 7680a3d replaced. No criterion added; AC4's promise narrows on the loud-failure half and is stated per mutation.
+- 2026-08-25: criteria audit (reduced mode, internal tier) by a fresh [O] reader over the amended AC4: one finding — "bounded to the `mainfontoptions:` block whatever follows it" quantified over every possible continuation of the front matter, a domain no procedure the criterion names enumerates. Fixed before writing, to "by that block's own extent rather than by the `filters:` line that happens to follow it". Proportionality and instrument questions passed.
 
 ## Decisions
 

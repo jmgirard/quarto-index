@@ -271,7 +271,7 @@ takes an options block, because it is named by file):
 
 ```yaml
 pdf-engine: xelatex
-mainfont: STIX
+mainfont: STIXTwoText
 mainfontoptions:
   - Extension=.otf
   - UprightFont=*-Regular
@@ -280,15 +280,18 @@ mainfontoptions:
   - BoldItalicFont=*-BoldItalic
 ```
 
-`xelatex` is the engine, and `STIX` is the main font — named by file rather
-than by family, which is why the options above are needed; the plain family
-name is not findable. STIX is not in a default TinyTeX install — it lives in
-TeX Live's `collection-fontsextra`, so install it with `tlmgr install stix`.
+`xelatex` is the engine, and STIX Two Text is the main font — named by file
+rather than by family, which is why the options above are needed. Naming it by
+file is what makes the build load the copy you installed: the family name
+`STIX Two Text` is findable too, but on a machine whose operating system ships
+a font of that name it finds that one instead, and the two are not the same
+build. STIX Two Text is not in a default TinyTeX install — it lives in TeX
+Live's `collection-fontsextra`, so install it with `tlmgr install stix2-otf`.
 The general rule behind the recipe is that **your main font must cover the
-script you are indexing**; STIX is one font that does, not the only one.
+script you are indexing**; STIX Two Text is one font that does, not the only
+one.
 
-Each line is load-bearing, and setting one without the other fails
-differently again — three paths in all:
+Leaving out either line changes what you get — three paths in all:
 
 - **Wrong engine.** With `pdf-engine: pdflatex` the render stops and the LaTeX
   log says `not set up for use with LaTeX`, naming the character. A failed
@@ -298,10 +301,13 @@ differently again — three paths in all:
   from the printed index. Nothing warns you.
 - **No engine set.** Quarto's default engine is not `pdflatex` — on Quarto
   1.10 it is `lualatex` — so leaving the `pdf-engine:` line out does not get
-  you the failed build above. With the font set and the engine left alone the
-  render **succeeds** and most of `examples/unicode.qmd` still prints
-  correctly, while its Vietnamese term does not print as itself. A build that
-  succeeds is not evidence that the index is right.
+  you the failed build above. With the font set and the engine left alone,
+  `examples/unicode.qmd` renders at exit 0 and its whole index prints
+  correctly: on this Quarto the font is doing the work and the engine line is
+  not what saves you. Set it anyway. It is the line that pins the behaviour to
+  something this recipe states rather than to whichever engine your Quarto
+  picks, and the failed build above is what you get if that default ever
+  becomes `pdflatex`.
 
 Do not read the log's `Missing character` line as that missing-font failure. Under
 `xelatex` that line also appears for characters that print perfectly well: the
@@ -317,7 +323,7 @@ This recipe is proven, with a typeset-print check in the test suite, for
 Greek, Cyrillic, and Latin beyond Latin-1 including terms written with
 combining marks — `examples/unicode.qmd` is the fixture. Any other script is
 unproven. In particular **CJK and right-to-left scripts are not supported**:
-STIX does not cover CJK, and RTL additionally has two problems no font fixes —
+STIX Two Text does not cover CJK, and RTL additionally has two problems no font fixes —
 the text is not shaped, and the comma between an entry and its page numbers
 lands on the wrong side of the entry.
 
@@ -876,6 +882,7 @@ tests/run-tests.sh --self-test
 The suite renders the examples to LaTeX, HTML, PDF, beamer and
 GitHub-flavoured markdown, and checks the output against hand-derived
 manifests. It needs TinyTeX (with `kpsewhich` on the path and TeX Live's
-`stix` package installed, which the non-Latin-1 renders load by file name),
+`stix2-otf` package installed, which the non-Latin-1 renders load by file
+name),
 `makeindex` and `pdftotext`, and fails loudly rather than skipping if any is
 missing.

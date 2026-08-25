@@ -74,20 +74,20 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
       STIX Two Text block and read the printed index for every term it marks;
       then run the four controls by hand and record each one's actual
       signature, the no-engine render's printed index included.
-- [ ] T2: rewrite `examples/unicode.qmd`'s front matter to the STIX Two Text
+- [x] T2: rewrite `examples/unicode.qmd`'s front matter to the STIX Two Text
       block (`examples/unicode.qmd:1`).
-- [ ] T3: rewrite README's recipe block, its font and install prose, and its
+- [x] T3: rewrite README's recipe block, its font and install prose, and its
       "no engine set" paragraph against T1's captured renders
       (`README.md:265`).
-- [ ] T4: update the claims rows (`tests/run-tests.sh:509`) and the font guard
+- [x] T4: update the claims rows (`tests/run-tests.sh:509`) and the font guard
       (`tests/run-tests.sh:1364`) to name `stix2-otf` and
       `STIXTwoText-Regular.otf`; the guard keeps stopping the run.
-- [ ] T5: update the control-derivation assertions that pin the fixture's
+- [x] T5: update the control-derivation assertions that pin the fixture's
       `mainfont` block shape (`tests/run-tests.sh:4287`) and re-run all four
       controls under the new font.
 - [ ] T6: run `tests/run-tests.sh --self-test`; compare the check count
       against the merge base.
-- [ ] T7: append the decision entry; update KI6 and the DESIGN collation
+- [x] T7: append the decision entry; update KI6 and the DESIGN collation
       convention where they name the recipe's font; strike the candidate row.
 
 ## Work log
@@ -100,7 +100,31 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
 - 2026-08-24: T2 — `examples/unicode.qmd` front matter swapped to `mainfont: STIXTwoText`; its body's by-file sentence reworded, since "the plain family name is not findable" is false for this font and the operating-system copy is the real reason.
 - 2026-08-24: question gate — the recipe keeps `pdf-engine: xelatex` with the section stating that the font alone prints correctly on Quarto 1.10 and the engine line is what holds if Quarto's default changes; README states the by-file reason as the operating-system copy rather than findability.
 - 2026-08-24: plan gate chose to keep the suite stopping when the font is absent over skipping the recipe renders, because a skip line reads as a pass to anyone scanning the output and this suite's evidence rests on nothing passing unrun; falsified by evidence that the stop keeps contributors from running the rest of the suite in practice.
+- 2026-08-24: T3 — README's recipe block, font and install prose, and "no engine set" paragraph rewritten against T1's renders; the by-file rationale now names the operating-system copy rather than findability, and the third path becomes a build that succeeds with the index correct.
+- 2026-08-24: T4 — claims rows renamed the font and the install package, `fail-noengine-silent` replaced by two rows for the new paragraph, and one row added for the by-file reason, marked in the section comment as held verbatim only since no render here executes it; the font guard now probes `STIXTwoText-Regular.otf` and names `tlmgr install stix2-otf`, still stopping the run.
+- 2026-08-24: T5 — the control-derivation assertions needed no change: only the `mainfont` value moved, so the block-shape regex still matches and all four controls derive. Control (d)'s check flipped from `absent … Việt` to `entries` over the full term list, and the now-unused `M33_VIET` was removed.
+- 2026-08-24: T7 — KI6 marked as re-established under STIX Two Text; the collation convention and IP2 name the README section rather than a font, so neither changed. D-018 was already appended at the plan gate, and the stix/GP3 candidate row was graduated into this milestone then, so neither was outstanding.
+- 2026-08-24: the fixture's own render under STIX Two Text emits no `Missing character` line at all, where under `stix` it emitted one for U+1EC7. README's caveat about that line is a general xelatex fact and stands; the suite comment that cited the fixture's own log as the example was corrected.
 
 ## Decisions
+
+### 2026-08-24: the recipe keeps `pdf-engine: xelatex` though the font alone now prints correctly
+
+**Context:** under STIX Two Text the no-engine control — the fixture with its
+`pdf-engine:` line removed — exits 0 on Quarto 1.10's lualatex and prints all
+eight terms as their own entry lines, where under `stix` it dropped `Việt`. The
+engine line is no longer what makes the index right on this Quarto.
+**Decision:** the recipe keeps the engine line. README's "no engine set"
+paragraph states that the index prints correctly today and tells the reader to
+set the engine anyway, because it pins the behavior to what the recipe states
+rather than to whichever engine their Quarto picks; the suite's control (d)
+flips from an absence check to the same positive reading the recipe render
+gets, over the same term list.
+**Consequences:** the section's three paths are now two failures and one that
+works. `M33_VIET` leaves the suite, and the claims table loses
+`fail-noengine-silent` for two rows that state the new paragraph. A Quarto
+whose default engine changes falsifies the paragraph's "prints correctly"
+sentence and the control that pins it, and leaves the recipe itself untouched
+— which is the reason for keeping the line.
 
 ## Review

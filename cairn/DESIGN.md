@@ -479,7 +479,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   render drops it silently at exit 0. RTL is unsupported and additionally
   unresolved — the text prints unshaped and the comma between an entry and its
   locators lands on the wrong side of the entry, neither of which a covering
-  font fixes. — M01 review R7/R9, narrowed M33 (D-016)
+  font fixes. The proven set was re-established under STIX Two Text, the font
+  the recipe now names (corrected M34; D-018). — M01 review R7/R9, narrowed
+  M33 (D-016)
 
 ### Entries, levels and sort keys
 

@@ -509,20 +509,32 @@ PROBE_CHARS='% & # _ { } \ ~ ^ $ @ | ! " < >'
 # M33-AC4 — the five things README's `### Terms outside Latin-1` section has to
 # state, plus what the section says beyond them. Each row is a claim a reader
 # acts on, held verbatim below: a documented claim with no check beside it
-# drifts (M13). Every row that describes a behavior names one the M33 renders
+# drifts (M13). Most rows that describe a behavior name one the M33 renders
 # above execute — the two failure signatures AC3 pins, and the third path
 # control (d) pins, where the engine line is left out and the build succeeds
-# with a term printed wrongly.
+# with the whole index printing correctly.
+#
+# Three rows are held verbatim only, because no render here executes what they
+# say. `font-by-file-why` states what the family name resolves to on a machine
+# whose operating system ships a font of that name, which none portably could;
+# the reading that established it — the recipe render embedding the package's
+# `STIXTwoText-Regular` where the family-name form embeds the system TrueType —
+# is recorded in M34's milestone file, not run here. `fail-noengine-engine`
+# names Quarto's default engine: control (d) runs under that default but reads
+# only the printed index, never which engine produced it. `rtl` states what an
+# unsupported script does, which nothing here renders.
 README_UNICODE_CLAIMS=(
   $'engine\t`xelatex` is the engine'
-  $'font\t`STIX` is the main font'
+  $'font\tSTIX Two Text is the main font'
   $'font-by-file\tnamed by file rather than by family, which is why the options above are needed'
-  $'font-install\tSTIX is not in a default TinyTeX install — it lives in TeX Live\'s `collection-fontsextra`, so install it with `tlmgr install stix`'
+  $'font-by-file-why\tNaming it by file is what makes the build load the copy you installed: the family name `STIX Two Text` is findable too, but on a machine whose operating system ships a font of that name it finds that one instead'
+  $'font-install\tSTIX Two Text is not in a default TinyTeX install — it lives in TeX Live\'s `collection-fontsextra`, so install it with `tlmgr install stix2-otf`'
   $'font-rule\tyour main font must cover the script you are indexing'
   $'fail-engine\tWith `pdf-engine: pdflatex` the render stops and the LaTeX log says `not set up for use with LaTeX`, naming the character'
   $'fail-font\tthe render **succeeds** and the term is simply absent from the printed index'
   $'fail-noengine-engine\tQuarto\'s default engine is not `pdflatex` — on Quarto 1.10 it is `lualatex` — so leaving the `pdf-engine:` line out does not get you the failed build above'
-  $'fail-noengine-silent\tthe render **succeeds** and most of `examples/unicode.qmd` still prints correctly, while its Vietnamese term does not print as itself'
+  $'fail-noengine-succeeds\tWith the font set and the engine left alone, `examples/unicode.qmd` renders at exit 0 and its whole index prints correctly'
+  $'fail-noengine-setitanyway\tSet it anyway. It is the line that pins the behaviour to something this recipe states rather than to whichever engine your Quarto picks'
   $'fail-warning\tDo not read the log\'s `Missing character` line as that missing-font failure'
   $'sortkey\t`sort=` still works and still does only what it says — it sets one entry\'s sort key. The order of the index as a whole is the index processor\'s, and for non-ASCII terms it is best-effort'
   $'proven\tproven, with a typeset-print check in the test suite, for Greek, Cyrillic, and Latin beyond Latin-1 including terms written with combining marks'
@@ -600,9 +612,6 @@ M33_TERMS=(θεωρία ψυχή Москва źródło Việt café Nux̌alk As
 M33_GREEK=(θεωρία ψυχή)
 M33_ASCII=Ascii
 M33_CJK=漢字
-# The one term the recipe's font prints correctly under xelatex and does NOT
-# print under Quarto's default engine — the no-engine control's whole subject.
-M33_VIET=Việt
 # The captures the M33 checks and the self-test both read, named once.
 M33_PDF="$CAPTURE_ROOT/m33-recipe/unicode.pdf"
 M33_ENGINE_LOG="$CAPTURE_ROOT/m33-engine/engine.log"
@@ -1355,14 +1364,14 @@ require_pdf_tools() {
   command -v pdftotext >/dev/null 2>&1 \
     || fail "pdftotext not found on PATH. AC6 must never pass unrun."
 
-  # M33's recipe names a main font by file, so the font has to be findable the
+  # The recipe names a main font by file, so the font has to be findable the
   # same way fontspec finds it. Without this the four M33 renders fail deep
   # inside a LaTeX log with fontspec's "cannot be found", which reads like a
   # defect in the recipe rather than a package this machine does not have.
   command -v kpsewhich >/dev/null 2>&1 \
     || fail "kpsewhich not found on PATH. AC6 must never pass unrun."
-  kpsewhich STIX-Regular.otf >/dev/null 2>&1 \
-    || fail "STIX-Regular.otf is not findable by kpsewhich; the TeX Live 'stix' package is missing (run: tlmgr install stix). M33's documented recipe names this font, so its renders would fail on the font rather than on anything this suite is testing."
+  kpsewhich STIXTwoText-Regular.otf >/dev/null 2>&1 \
+    || fail "STIXTwoText-Regular.otf is not findable by kpsewhich; the TeX Live 'stix2-otf' package is missing (run: tlmgr install stix2-otf). The documented recipe names this font, so its renders would fail on the font rather than on anything this suite is testing."
 }
 
 # ---------------------------------------------------------------------------
@@ -4210,12 +4219,15 @@ pass "M32: the copyable recipe block in README is held line for line against the
 # printed entry line, read structurally through tests/pdfindex.py.
 #
 # The LaTeX log's `Missing character` line is NOT read as evidence anywhere in
-# this section, and the README section T7 writes says so too: xelatex prints a
+# this section, and the README section says so too: xelatex prints a
 # precomposed character its font lacks by falling back to the character's
-# canonical decomposition, so the same line fires on the recipe's own working
-# render (U+1EC7 in `Việt`) and on a genuinely dropped glyph alike. The one
-# log line read below is the pdflatex control's, which is an error, not a
-# warning, and stops the render.
+# canonical decomposition, so the line fires on text that typesets perfectly
+# and on a genuinely dropped glyph alike. Under M33's `stix` the recipe's own
+# working render fired it for U+1EC7 in `Việt`; under STIX Two Text that render
+# fires it for nothing at all, which is why the caveat is stated as the general
+# xelatex behaviour rather than as this fixture's log. The one log line read
+# below is the pdflatex control's, which is an error, not a warning, and stops
+# the render.
 #
 # ORACLE RULE. M33_TERMS is derived by hand from examples/unicode.qmd and is
 # never read back out of a render; `unicodeprint.py marks` holds it against
@@ -4246,19 +4258,22 @@ pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engi
 # by one edit to its YAML, so the terms under test are the same bytes in all
 # five renders.
 #
-# (b), (c) and (d) are read for a POSITIVE signal as well as an absence: each
-# has to print the fixture's ASCII term's own entry line before its missing
-# Greek, CJK or Vietnamese entry line means anything. Without it a render whose
-# index failed to print at all — no heading, no entries, a wrecked build —
-# would satisfy "no entry line carries this term" exactly as a dropped glyph
-# does.
+# (b) and (c) are read for a POSITIVE signal as well as an absence: each has to
+# print the fixture's ASCII term's own entry line before its missing Greek or
+# CJK entry line means anything. Without it a render whose index failed to
+# print at all — no heading, no entries, a wrecked build — would satisfy "no
+# entry line carries this term" exactly as a dropped glyph does.
 #
-# (d) is NOT a fourth signature of the pair AC3 names; it is the control under
-# README's "no engine set" paragraph, which exists because Quarto's default
-# engine is lualatex and the loud pdflatex stop (a) pins is reachable only by
-# opting in. Setting the font and leaving the engine alone succeeds at exit 0
-# with this fixture's Vietnamese term not printing as itself — the outcome an
-# author is likeliest to hit and least likely to notice.
+# (d) is NOT a fourth signature of the pair AC3 names, and under this recipe's
+# font it is not a failure at all. It is the control under README's "no engine
+# set" paragraph, which exists because Quarto's default engine is lualatex and
+# the loud pdflatex stop (a) pins is reachable only by opting in. Setting the
+# font and leaving the engine alone succeeds at exit 0 with the whole index
+# printing correctly, so (d) is read the way the recipe render itself is read:
+# every term the fixture marks prints as its own entry line. Under M33's `stix`
+# the same control dropped `Việt`; the engine line stopped being what saves the
+# reader when the font changed, which is why README now tells them to set it
+# for a reason that is not today's output.
 # ---------------------------------------------------------------------------
 M33C="$WORK/m33-controls"
 rm -rf "$M33C"; mkdir -p "$M33C/_extensions"
@@ -4354,17 +4369,18 @@ python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-cjk/cjk.pdf" \
 pass "M33-AC3c: the fixture with one CJK term added renders at exit 0 under the full recipe, its index still prints the fixture's ASCII term, and the CJK term does not print"
 
 # --- (d) no engine set. The font is there and the `pdf-engine:` line is not,
-#     which is the half-followed recipe README now documents: Quarto's default
-#     engine renders it at exit 0, most terms print, and the Vietnamese term
-#     does not print as itself. Nothing about this render is loud.
+#     which is the half-followed recipe README documents: Quarto's default
+#     engine renders it at exit 0 and every term prints. The check is the same
+#     reading the recipe render gets, over the same term list, so a font or
+#     engine change that breaks one of them here cannot pass as an absence.
 ( cd "$M33C" && quarto render noengine.qmd --to pdf ) \
   > "$WORK/m33-noengine.log" 2>&1 \
-  || { tail -20 "$WORK/m33-noengine.log" >&2; fail "M33-AC4: the fixture failed to render with no pdf-engine set; README documents this as a build that SUCCEEDS while printing a term wrongly, so a broken build is not the state it pins"; }
+  || { tail -20 "$WORK/m33-noengine.log" >&2; fail "M34-AC4 control (d): the fixture failed to render with no pdf-engine set; README documents this as a build that SUCCEEDS with its index printing correctly, so a broken build is not the state it pins"; }
 capture "$M33C/noengine.qmd" pdf "m33-noengine"
-python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-noengine/noengine.pdf" \
-  "$M33_ASCII" "$M33_VIET" \
-  || fail "M33-AC4: with no pdf-engine set the Vietnamese term prints as itself after all, or the control's index did not print at all — either way README's 'no engine set' paragraph states something that does not happen (its own FAIL line is above)"
-pass "M33-AC4: with the font set and no pdf-engine the render exits 0, its index still prints the fixture's ASCII term, and the Vietnamese term does not print as itself"
+python3 tests/unicodeprint.py entries "$CAPTURE_ROOT/m33-noengine/noengine.pdf" \
+  "${M33_TERMS[@]}" \
+  || fail "M34-AC4 control (d): with no pdf-engine set a term the fixture marks does not print as its own entry, so README's 'no engine set' paragraph states an index that prints correctly where this one does not (its own FAIL line is above)"
+pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 0 and all ${#M33_TERMS[@]} of the fixture's terms print as their own entry in the typeset index"
 
 # ---------------------------------------------------------------------------
 # M33-AC4 — the README section a reader acts on. Two checks, because the

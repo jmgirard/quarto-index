@@ -64,7 +64,8 @@ _None yet — populated as the codebase takes shape._
   parameter that shares its name — `sortkeys.lua`'s `register_sort(levels, …)`
   is the case that forced the rule.
 - **Collation is best-effort**: non-ASCII terms appearing correctly is an IP2
-  commitment, but sort *order* beyond what the user's index processor
+  commitment under that principle's engine-and-font condition (corrected M33),
+  but sort *order* beyond what the user's index processor
   provides is best-effort. Sort keys (`sort=`) are how an author overrides it,
   and each back-end orders under its own rules (corrected M06). The HTML
   back-end ranks its top-level entries into letter groups — Symbols, then
@@ -105,8 +106,11 @@ _None yet — populated as the codebase takes shape._
   back-end realizes it yet; unrealized formats degrade gracefully (IP2).
 - IP2: **Never break the document.** A document using this extension never
   fails to render, and never silently corrupts output, because of a marked
-  term: any characters in a visible term appear correctly in the index
-  (non-ASCII included), and formats without an index back-end pass the
+  term: any characters in a visible term appear correctly in the index —
+  non-ASCII included, on the condition that the document's PDF engine and
+  main font can draw them, which for terms outside Latin-1 means the recipe
+  README's `### Terms outside Latin-1` section names (amended M33; D-016) —
+  and formats without an index back-end pass the
   visible text through untouched, with no artifacts. An escaping bug, a
   crash on exotic input, or garbage in a back-end-less format is the
   highest-severity bug class and earns a regression test forever.
@@ -467,9 +471,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI5.** A registered principal page folded inside a makeindex page range is
   not emphasized: the typeset-time channel D-007 adopts looks a page up by
   string, and a range misses, printing it unemphasized and silently. — RR01
-- **KI6.** pdflatex's default fonts do not cover non-Latin-1 scripts (Greek,
-  CJK, combining marks, RTL), so index terms in them need an engine and font
-  decision this repo has not made. — M01 review R7/R9
+- **KI6.** The engine-and-font recipe README's `### Terms outside Latin-1`
+  section names — xelatex plus a main font loaded by file — is proven by a
+  typeset-print check for Greek, Cyrillic, and Latin beyond Latin-1 including
+  terms written with combining marks. Every other script is unproven under it.
+  CJK is unsupported: the font the recipe names does not cover it, and the
+  render drops it silently at exit 0. RTL is unsupported and additionally
+  unresolved — the text prints unshaped and the comma between an entry and its
+  locators lands on the wrong side of the entry, neither of which a covering
+  font fixes. — M01 review R7/R9, narrowed M33 (D-016)
 
 ### Entries, levels and sort keys
 

@@ -259,6 +259,68 @@ The same two rules apply inside `see=` and `see-also=`, and inside `sort=`.
 uses some of them in raw `makeindex` syntax, is not part of this syntax and
 will arrive later as a separate span attribute.
 
+All of that is about ASCII. A term written in another script needs one more
+thing from your document — see [Terms outside Latin-1](#terms-outside-latin-1).
+
+### Terms outside Latin-1
+
+Escaping is not what stops a Greek or Polish term from reaching your index. A
+PDF build has to be able to *draw* the characters, which takes an engine and a
+main font chosen for the job. Set both — the engine, and the font (which
+takes an options block, because it is named by file):
+
+```yaml
+pdf-engine: xelatex
+mainfont: STIX
+mainfontoptions:
+  - Extension=.otf
+  - UprightFont=*-Regular
+  - BoldFont=*-Bold
+  - ItalicFont=*-Italic
+  - BoldItalicFont=*-BoldItalic
+```
+
+`xelatex` is the engine, and `STIX` is the main font — named by file rather
+than by family, which is why the options above are needed; the plain family
+name is not findable. STIX is not in a default TinyTeX install — it lives in
+TeX Live's `collection-fontsextra`, so install it with `tlmgr install stix`.
+The general rule behind the recipe is that **your main font must cover the
+script you are indexing**; STIX is one font that does, not the only one.
+
+Each line is load-bearing, and setting one without the other fails
+differently again — three paths in all:
+
+- **Wrong engine.** With `pdf-engine: pdflatex` the render stops and the LaTeX
+  log says `not set up for use with LaTeX`, naming the character. A failed
+  build is the friendliest of the three.
+- **Wrong or missing font.** With the right engine and a main font that does
+  not cover the script, the render **succeeds** and the term is simply absent
+  from the printed index. Nothing warns you.
+- **No engine set.** Quarto's default engine is not `pdflatex` — on Quarto
+  1.10 it is `lualatex` — so leaving the `pdf-engine:` line out does not get
+  you the failed build above. With the font set and the engine left alone the
+  render **succeeds** and most of `examples/unicode.qmd` still prints
+  correctly, while its Vietnamese term does not print as itself. A build that
+  succeeds is not evidence that the index is right.
+
+Do not read the log's `Missing character` line as that missing-font failure. Under
+`xelatex` that line also appears for characters that print perfectly well: the
+engine draws a precomposed letter it lacks from the letter's accent-plus-base
+spelling instead. The reliable check is the printed index itself.
+
+`sort=` still works and still does only what it says — it sets one entry's
+sort key. The order of the index as a whole is the index processor's, and for
+non-ASCII terms it is best-effort; see
+[Sorting an entry under something else](#sorting-an-entry-under-something-else).
+
+This recipe is proven, with a typeset-print check in the test suite, for
+Greek, Cyrillic, and Latin beyond Latin-1 including terms written with
+combining marks — `examples/unicode.qmd` is the fixture. Any other script is
+unproven. In particular **CJK and right-to-left scripts are not supported**:
+STIX does not cover CJK, and RTL additionally has two problems no font fixes —
+the text is not shaped, and the comma between an entry and its page numbers
+lands on the wrong side of the entry.
+
 ### Sorting an entry under something else
 
 Some terms do not file where their spelling puts them. `The Hague` belongs
@@ -793,6 +855,12 @@ a negative control: mark-like text inside code, which must never be indexed.
 `examples/dangling-xref.qmd` and `examples/resolving-xref.qmd` are a pair:
 every cross-reference target in the first names a term nothing indexes, and
 every target in the second resolves.
+`examples/unicode.qmd` carries the recipe from
+[Terms outside Latin-1](#terms-outside-latin-1) and marks eight terms under
+it — Greek, a second Greek term carrying a `sort=` key, Cyrillic, Polish,
+Vietnamese, a term written with a combining mark, one whose combining sequence
+has no precomposed form, and one plain ASCII term the suite's controls read as
+their positive signal.
 
 ```bash
 quarto render examples/demo.qmd --to pdf
@@ -807,5 +875,7 @@ tests/run-tests.sh --self-test
 
 The suite renders the examples to LaTeX, HTML, PDF, beamer and
 GitHub-flavoured markdown, and checks the output against hand-derived
-manifests. It needs TinyTeX, `makeindex` and `pdftotext`, and fails loudly
-rather than skipping if any is missing.
+manifests. It needs TinyTeX (with `kpsewhich` on the path and TeX Live's
+`stix` package installed, which the non-Latin-1 renders load by file name),
+`makeindex` and `pdftotext`, and fails loudly rather than skipping if any is
+missing.

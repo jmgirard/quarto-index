@@ -1324,8 +1324,15 @@ import htmlindex as H
 html_path, manifest_path, label = sys.argv[1:4]
 minted = (os.environ['HTML_SECTION_ID'], os.environ['HTML_ANCHOR_PREFIX'],
           os.environ['HTML_ENTRY_PREFIX'])
-actual = H.section_rows(H.parse(html_path), os.environ['HTML_SECTION_ID'],
-                        minted)
+try:
+    actual = H.section_rows(H.parse(html_path), os.environ['HTML_SECTION_ID'],
+                            minted)
+except ValueError as bad:
+    # A section this reader cannot read at all is a finding, not a crash: it
+    # would otherwise reach a probe as a traceback, which is a non-zero exit
+    # for a reason nothing here states.
+    print(f'FAIL: {label}: {bad}', file=sys.stderr)
+    sys.exit(1)
 expected = H.read_manifest(manifest_path)
 if not expected:
     print(f'FAIL: {label}: manifest is empty', file=sys.stderr)
@@ -11127,7 +11134,7 @@ filtersrc.sources()" >/dev/null 2>&1; then
     modules/marks.lua \
       's{  range_at = range_at \+ 1\n  return range_at\n}{  return range_at\n}' \
     modules/marks.lua \
-      's{^local function plan_range\(pos, value, key, context, blocked, principal\)$}{local function plan_range(pos, value, key, context, blocked, principal)\n  range_at = range_at + 1}m'
+      's{^local function plan_range\(pos, value, key, context, blocked, principal, index\)$}{local function plan_range(pos, value, key, context, blocked, principal, index)\n  range_at = range_at + 1}m'
   m23_inject guardclass "the guard's index-class clause dropped" \
     modules/marks.lua \
       's{  if not span\.classes:includes\(qi_core\.INDEX_CLASS\) then\n    return nil\n  end\n}{}'
@@ -11138,7 +11145,7 @@ filtersrc.sources()" >/dev/null 2>&1; then
     modules/marks.lua \
       's{  -- Back to the origin for the emitting pass, which numbers positions with\n  -- this same counter\.\n  range_at = 0\n}{}' \
     modules/marks.lua \
-      's{^local function plan_range\(pos, value, key, context, blocked, principal\)$}{local function plan_range(pos, value, key, context, blocked, principal)\n  range_at = 0}m'
+      's{^local function plan_range\(pos, value, key, context, blocked, principal, index\)$}{local function plan_range(pos, value, key, context, blocked, principal, index)\n  range_at = 0}m'
   m23_inject resetgone "the counter never returned to the origin at all" \
     modules/marks.lua \
       's{  -- Back to the origin for the emitting pass, which numbers positions with\n  -- this same counter\.\n  range_at = 0\n}{}'
@@ -13202,6 +13209,74 @@ M30PLANTPY
   printf '%s' "$M30_OUT" | grep -qF "M30-AC1: 1 of 94" \
     || { printf '%s\n' "$M30_OUT" >&2; fail "M30 self-test: the typeset check failed on the planted render naming U+0027, but reported more than the one character the plant removed — a reader blind to the whole index would report exactly that way"; }
   pass "M30 self-test: the typeset check fails on a fixture whose apostrophe marks are removed, naming U+0027 and no other character, and passes on the same fixture unplanted"
+
+  # -------------------------------------------------------------------------
+  # M38 — the section reader, shown discriminating on each clause it states.
+  #
+  # It reads five things about a page, and a green over the fixture is evidence
+  # about each of them only if each can go red on its own: the set of sections,
+  # each section's id, the element its heading is, the text that heading shows,
+  # and the authored element it follows. The rows it prints per section are the
+  # single-index manifest's own rows, whose reader is shown discriminating
+  # elsewhere; one entry plant is kept here all the same, because those rows
+  # reach this reader through a path of its own.
+  #
+  # Every mutation is planted in a copy of THIS run's captured page, through
+  # probe_plant, which refuses one that changes nothing.
+  # -------------------------------------------------------------------------
+  M38W="$WORK/m38-planted"
+  rm -rf "$M38W"; mkdir -p "$M38W"
+  cp "$CAPTURE_ROOT/named-indexes-html/named-indexes.html" "$M38W/clean.html"
+  # The control. Without it, every failure below could be the reader failing on
+  # the page rather than on the plant.
+  check_index_sections "$M38W/clean.html" "$NAMED_INDEX_SECTIONS" \
+    "M38 self-test (control)" \
+    || fail "M38 self-test: the reader fails on an unplanted copy of this run's page, so no failure below is evidence of anything"
+
+  probe_plant "$M38W/clean.html" "$M38W/id.html" \
+    's|id="qi-index-authors"|id="qi-index-others"|g'
+  probe_defect "a section carrying an id no declaration asks for" \
+    check_index_sections "$M38W/id.html" "$NAMED_INDEX_SECTIONS" "M38 probe"
+
+  probe_plant "$M38W/clean.html" "$M38W/gone.html" \
+    's|id="qi-index-authors"|id="somewhere-else"|g'
+  probe_defect "a page printing one section where the document declares two" \
+    check_index_sections "$M38W/gone.html" "$NAMED_INDEX_SECTIONS" "M38 probe"
+
+  # The heading element alone: a section headed by something that is not a
+  # heading reads identically on the page, and reaches neither the table of
+  # contents nor a reader's outline. Aimed at the second section's heading, so
+  # the first's still matches and the failure is about this clause.
+  probe_plant "$M38W/clean.html" "$M38W/tag.html" \
+    's|<h1 class="unnumbered">Index of Authors</h1>|<p class="unnumbered">Index of Authors</p>|g'
+  probe_defect "a section heading that is not a heading element" \
+    check_index_sections "$M38W/tag.html" "$NAMED_INDEX_SECTIONS" "M38 probe"
+
+  probe_plant "$M38W/clean.html" "$M38W/title.html" \
+    's|>Index of Authors<|>Index of People<|g'
+  probe_defect "a section headed with a title no declaration gives it" \
+    check_index_sections "$M38W/title.html" "$NAMED_INDEX_SECTIONS" "M38 probe"
+
+  probe_plant "$M38W/clean.html" "$M38W/after.html" \
+    's|id="site-authors"|id="site-elsewhere"|g'
+  probe_defect "a section standing after an element the author did not write it after" \
+    check_index_sections "$M38W/after.html" "$NAMED_INDEX_SECTIONS" "M38 probe"
+
+  probe_plant "$M38W/clean.html" "$M38W/term.html" \
+    's|>Babbage<|>Babbege<|g'
+  probe_defect "an entry text no mark of that index asks for" \
+    check_index_sections "$M38W/term.html" "$NAMED_INDEX_SECTIONS" "M38 probe"
+
+  # And the reader's two guards over its own manifest. A manifest naming no
+  # section would be matched by a page printing none, and an empty one by any
+  # page at all — both are the vacuous pass this reader exists to avoid.
+  probe_defect "a manifest naming no index section" \
+    check_index_sections "$M38W/clean.html" \
+      $'letter\tA\n0\tAardvark\t1' "M38 probe"
+  probe_defect "an empty manifest" \
+    check_index_sections "$M38W/clean.html" "" "M38 probe"
+
+  pass "M38 self-test: the section reader fails on each clause it states planted on its own — a section id, a section missing from the set, a heading that is not a heading element, a heading's text, the authored element a section follows, and an entry's text — and refuses a manifest that names no section and an empty one, while passing on the same page unplanted"
 fi
 
 }

@@ -80,6 +80,22 @@ _None yet — populated as the codebase takes shape._
   number has no drop to distinguish — a book's chapter count, a top-level block
   position — is outside THIS bullet's rule, and inside the next one (corrected
   M28).
+- **A judgement about a mark is made inside the index the mark files in**
+  (added M38). A document declares its indexes in `indexes:` metadata, each
+  with a name a mark reaches by `index=` and a title its section is headed
+  with; a mark or a placement marker naming none belongs to the first declared
+  index, and a document declaring nothing has one unnamed index, which is the
+  behavior every document had before. Every format-neutral accumulator is one
+  namespace per index — the marked paths a cross-reference target resolves
+  against, the sort-key registry, the printed-path collision map, and the
+  pairing map a range opening waits in — so a target, a key and a range are
+  each settled within one index and never across two. WHICH index a mark files
+  in is the running back-end's answer, exactly as the printed path a target is
+  judged against is (D-005): a back-end that keeps one index resolves every
+  mark to that one and says so per mark and per marker, which is what a
+  LaTeX-derived render and an HTML book both do — the first because Quarto's
+  PDF loop builds only the main `.idx`, the second because the sidecar store's
+  record format carries no index name.
 - **A reported position or count names the sequence it is over** (added M28). A
   warning that reports a position or a count over a sequence says which
   sequence. A top-level block position is counted over the document as the

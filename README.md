@@ -30,7 +30,7 @@ side it uses `imakeidx`, which ships with mainstream TeX distributions.
 
 ## Syntax
 
-There are exactly nine supported forms.
+There are exactly ten supported forms.
 
 | Form | Writes | Index entry |
 |---|---|---|
@@ -43,6 +43,7 @@ There are exactly nine supported forms.
 | `[term]{.index mention="principal"}` | `term` | `term`, its locator emphasized |
 | `[term]{.index range="open"}` | `term` | `term`, one locator spanning to its closing mark |
 | `[term]{.index range="close"}` | `term` | nothing of its own; it closes the range |
+| `[term]{.index index="authors"}` | `term` | `term`, in the index named `authors` |
 
 The visible text is always left exactly as written. The first form indexes a
 term under its own text; the second indexes it under something else; the
@@ -51,6 +52,7 @@ visible mark on the page. The next two point the reader at a different entry
 instead of at a page. The seventh says which of a term's mentions is its
 principal one. The last two mark where a discussion begins and where it ends,
 so the index prints one locator spanning them rather than a locator at each.
+The tenth says which of a document's declared indexes the mark belongs to.
 
 ### Sub-entry levels
 
@@ -628,6 +630,70 @@ in HTML, and in LaTeX it appends the block under no sectioning command at all;
 either way, a `#refs` div you wrote gets neither the heading nor the wrapper,
 so a recipe with no heading of its own leaves the bibliography unlabelled.
 
+### Named indexes
+
+A document can have more than one index — a subject index and an index of
+names, say. Declare them in the metadata, in the order they should print:
+
+```yaml
+indexes:
+  - name: main
+    title: Index
+  - name: people
+    title: Index of Names
+```
+
+`name` is what a mark writes to file in that index; `title` is the heading a
+reader sees. A mark says which index it belongs to with `index=`:
+
+```markdown
+[Cantor]{.index index="people"}
+```
+
+A mark that names no index files in the first declared index. So a document
+that declares nothing keeps the single index it has always had, and one that
+declares several needs `index=` only on the marks that go somewhere other
+than the first.
+
+A placement marker names its index the same way, and each index is placed at
+the first marker naming it:
+
+```markdown
+::: {.qi-index-here index="people"}
+:::
+```
+
+A marker that names no index places the first declared one, exactly as a mark
+that names none files there. A declared index no marker names goes at the end
+of the document, in declared order. A second marker for one index is reported
+and places nothing; two markers naming two different indexes are not second
+markers for each other.
+
+Every judgement this extension makes about a mark is made inside the index the
+mark belongs to. A cross-reference target resolves against the terms of its
+own index, a sort key files a term in its own index only, and a range pairs an
+opening with a closing of the same index. An opening in one index and a
+closing in another are not a pair: each is reported and indexes as an ordinary
+locator.
+
+**One index outside HTML, for now.** A LaTeX or PDF render builds a single
+index. Quarto's PDF loop builds only the main entry file, so a second index
+would print empty with nothing said, and refusing that is worth more than the
+feature. An HTML book builds a single index too: its chapters are aggregated
+through a per-chapter record that carries no index name. In both, every mark
+and every marker naming another index is folded into the one index that is
+built, and each is reported by the index it named — nothing is dropped, and
+nothing is silent.
+
+`examples/named-indexes.qmd` declares two indexes and writes every one of
+those judgements across both; `examples/named-indexes-twin.qmd` is the same
+terms in a document that declares none.
+
+```bash
+quarto render examples/named-indexes.qmd --to html
+quarto render examples/named-indexes.qmd --to latex
+```
+
 ## What it emits
 
 ### LaTeX and PDF
@@ -862,6 +928,10 @@ a negative control: mark-like text inside code, which must never be indexed.
 `examples/dangling-xref.qmd` and `examples/resolving-xref.qmd` are a pair:
 every cross-reference target in the first names a term nothing indexes, and
 every target in the second resolves.
+`examples/named-indexes.qmd` declares two indexes and puts a cross-reference,
+a sort key, a range and a placement marker in each of them;
+`examples/named-indexes-twin.qmd` writes the same terms with no declaration at
+all.
 `examples/unicode.qmd` carries the recipe from
 [Terms outside Latin-1](#terms-outside-latin-1) and marks eight terms under
 it — Greek, a second Greek term carrying a `sort=` key, Cyrillic, Polish,

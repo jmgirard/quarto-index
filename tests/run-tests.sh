@@ -278,6 +278,8 @@ SUPPORTED_FORMS=(
   $'principal mention\t[term]{.index mention="principal"}'
   $'range opening\t[term]{.index range="open"}'
   $'range closing\t[term]{.index range="close"}'
+  $'named index mark\t[term]{.index index="authors"}'
+  $'named placement marker\t::: {.qi-index-here index="people"}'
 )
 
 # ---------------------------------------------------------------------------
@@ -4447,7 +4449,11 @@ if anchor not in readme:
 # Bounded to the recipe's own section: the search would otherwise run to the
 # end of the file and pick up every later fenced block.
 section = readme[readme.index(anchor):]
-end = re.search(r'^## ', section, re.M)
+# Bounded at the next heading of ANY depth from `##` down, not at `## ` alone:
+# the recipe sits inside a `###` section, so a later `###` is as much the end
+# of it as a later `##` is, and reading past one picks up that section's own
+# fenced blocks (M38 added the first `###` after it).
+end = re.search(r'^#{2,3} ', section, re.M)
 section = section[:end.start()] if end else section
 blocks = re.findall(r'^```markdown\n(.*?)^```', section, re.S | re.M)
 if len(blocks) != 1:
@@ -12169,6 +12175,74 @@ read -r -d '' NAMED_INDEX_TEX <<'MANIFEST' || true
 1	Cantor|(
 1	Cantor|)
 MANIFEST
+
+# M38-AC6 — the README section that documents all of this. Its four claims are
+# compared as bytes (whitespace normalized, so a rewrap is not a change), every
+# fixture it names must exist, and every command it shows must be one this suite
+# runs — which is what "runs clean" means here: the suite is green or it is not.
+# Neither the paths nor the commands are written down below; they are read out
+# of the section, so a path or a command added to the docs joins the check by
+# being documented.
+read -r -d '' README_INDEXES_CLAIMS <<'MANIFEST' || true
+declaration fields	`name` is what a mark writes to file in that index; `title` is the heading a reader sees
+unnamed mark	A mark that names no index files in the first declared index
+marker names its index	A placement marker names its index the same way
+one index in latex	A LaTeX or PDF render builds a single index
+one index in a book	An HTML book builds a single index too
+MANIFEST
+printf '%s\n' "$README_INDEXES_CLAIMS" > "$WORK/readme-indexes.txt"
+python3 - README.md "$WORK/readme-indexes.txt" tests/run-tests.sh <<'READMEPY'
+import os, re, sys
+readme_path, claims_path, suite_path = sys.argv[1:4]
+body = open(readme_path, encoding='utf-8').read()
+head = '### Named indexes'
+at = body.find('\n' + head + '\n')
+if at < 0:
+    sys.exit(f'FAIL: M38-AC6: README.md has no {head!r} section')
+rest = body[at + len(head) + 2:]
+end = re.search(r'^#{2,3} ', rest, re.M)
+section = rest[:end.start()] if end else rest
+
+flat = ' '.join(section.split())
+bad = []
+for line in open(claims_path, encoding='utf-8'):
+    line = line.rstrip('\n')
+    if not line.strip():
+        continue
+    label, claim = line.split('\t', 1)
+    if ' '.join(claim.split()) not in flat:
+        bad.append(f'  {label}: <<{claim}>>')
+if bad:
+    print('FAIL: M38-AC6: claim(s) absent from the README section:',
+          file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+
+paths = sorted(set(re.findall(r'examples/[A-Za-z0-9_./-]+\.qmd', section)))
+if not paths:
+    sys.exit('FAIL: M38-AC6: the README section names no fixture at all, so '
+             'this check would pass over an empty set')
+missing = [p for p in paths if not os.path.exists(p)]
+if missing:
+    sys.exit('FAIL: M38-AC6: the README section names fixture(s) that do not '
+             'exist: ' + ', '.join(missing))
+
+commands = []
+for fence in re.findall(r'```bash\n(.*?)```', section, re.S):
+    commands.extend(c for c in (l.strip() for l in fence.splitlines()) if c)
+if not commands:
+    sys.exit('FAIL: M38-AC6: the README section shows no command at all, so '
+             'this check would pass over an empty set')
+suite = open(suite_path, encoding='utf-8').read()
+unrun = [c for c in commands if c not in suite]
+if unrun:
+    sys.exit('FAIL: M38-AC6: the README section shows command(s) this suite '
+             'never runs, so nothing here says they are clean: '
+             + '; '.join(unrun))
+print(f'ok   M38-AC6: the README section states all its claims, names '
+      f'{len(paths)} fixture(s) that exist, and shows {len(commands)} '
+      f'command(s) this suite runs')
+READMEPY
 
 quarto render examples/named-indexes.qmd --to html \
   > "$WORK/named-indexes-html.log" 2>&1 \

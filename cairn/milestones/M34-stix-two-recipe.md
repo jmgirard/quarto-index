@@ -37,13 +37,13 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
       every line of that block appears in `examples/unicode.qmd`'s front
       matter — the direction the suite's block check reads, over the block's
       own lines.
-- [ ] AC2: `examples/unicode.qmd`, rendered to PDF under its own front matter
+- [x] AC2: `examples/unicode.qmd`, rendered to PDF under its own front matter
       and captured, prints every term it marks as its own entry line in the
       typeset index — the terms enumerated from the fixture by
       `tests/unicodeprint.py marks`, each one's entry line read out of the
       captured PDF by `tests/unicodeprint.py entries`, locators removed and
       compared in NFC against the expected precomposed list that check states.
-- [ ] AC3: under the new font, three of the four controls the suite derives
+- [x] AC3: under the new font, three of the four controls the suite derives
       from `examples/unicode.qmd` by one edit each reproduce their recorded
       states — (a) `pdf-engine: pdflatex` exits non-zero and its LaTeX log
       says `not set up for use with LaTeX` naming a Greek character the
@@ -51,7 +51,7 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
       prints the fixture's ASCII term and none of its Greek terms; (c) one
       added CJK term exits 0, the index prints the ASCII term and not the CJK
       term.
-- [ ] AC4: README's section names STIX Two Text and the command that installs
+- [x] AC4: README's section names STIX Two Text and the command that installs
       it, a search of README for `tlmgr install` returns only lines naming
       `stix2-otf`, and the section's "no engine set" paragraph states what the
       no-engine control render does under the new font — naming the term that
@@ -143,3 +143,23 @@ against `main` at fd47dcc (branch 3 commits ahead, nothing to merge back).
   `BoldItalicFont=*-BoldItalic`). Every one of the 8 lines appears verbatim in
   `examples/unicode.qmd`'s front matter — zero missing, checked block-to-fixture,
   the direction the suite's own check reads.
+- **AC2 — verified.** `tests/run-tests.sh --self-test` (fresh run, 487 checks,
+  exit 0): `M33-AC1/AC2` green — `examples/unicode.qmd` renders to PDF under its
+  own front matter, `unicodeprint.py marks` holds the suite's 8-term list
+  against the fixture's own marks, and `unicodeprint.py entries` reads all 8
+  terms out of the captured PDF as their own entry lines, locators removed,
+  compared in NFC.
+- **AC3 — verified.** Same run: `M33-AC3` green (the four controls derive by
+  one YAML edit each plus the CJK mark); `M33-AC3a` green (pdflatex control
+  exits non-zero, its LaTeX log carries `not set up for use with LaTeX` naming a
+  Greek character the fixture marks); `M33-AC3b` green (default `mainfont`
+  exits 0, prints the ASCII term, prints no Greek term); `M33-AC3c` green (the
+  added CJK term does not print while the ASCII term does).
+- **AC4 — verified.** README's section names STIX Two Text and
+  `tlmgr install stix2-otf`; a search of README for `tlmgr install` returns
+  exactly one line (`README.md:289`), naming `stix2-otf`. The "no engine set"
+  paragraph says the render exits 0 and the whole index prints correctly — the
+  "where none does" branch — and the suite's no-engine control (`M34-AC4`,
+  green in the same run) reads all 8 terms out of that render as their own
+  entry lines. The 16-row claims check and the section-content check are green
+  too.

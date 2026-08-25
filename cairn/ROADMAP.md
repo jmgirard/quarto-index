@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-24 (M35 planned, absorbing the "M33 suite-hardening" candidate row, which is removed here; no other row touched. ROADMAP 50 lines / 8,094 bytes and LESSONS 44 lines / 11,521 bytes, both inside their caps; no code changed, so no suite run is claimed at this stamp.)_
+_Last hygiene check: 2026-08-24 (M35 done and archived; M30 pruned under terminal-row retention; the suite-hardening candidate row absorbs M35's sixteen filed findings. Two check-design lessons moved into cairn/check-design.md under the ownership exit, none retired. ROADMAP 49 lines / 8,234 bytes, LESSONS 44 / 11,521, check-design 35 / 14,749 against its stated 40 / 18,000, cairn CLAUDE.md section 25 lines — all inside their caps. Suite green at 352 plain / 491 self-test.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M35 | The non-Latin-1 checks fail on the defects they claim to catch | review | — | normal | milestones/M35-non-latin1-check-hardening.md |
+| M35 | The non-Latin-1 checks fail on the defects they claim to catch | done | — | normal | milestones/archive/M35-non-latin1-check-hardening.md |
 | M34 | The non-Latin-1 recipe names a font TeX Live still maintains | done | — | normal | milestones/archive/M34-stix-two-recipe.md |
 | M33 | An index term outside Latin-1 prints in the PDF index | done | — | normal | milestones/archive/M33-non-latin1-terms.md |
 | M32 | An index follows the bibliography where the author puts it | done | — | low | milestones/archive/M32-index-after-references.md |
 | M31 | A leftover index file never breaks the next render | done | — | normal | milestones/archive/M31-stale-ind-standin.md |
-| M30 | A character in an index entry is proved to print, not merely to compile | done | — | normal | milestones/archive/M30-typeset-print-proof.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

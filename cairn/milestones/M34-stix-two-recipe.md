@@ -1,11 +1,11 @@
 # M34: The non-Latin-1 recipe names a font TeX Live still maintains
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP3
-- **Branch/PR:** —
+- **Branch/PR:** `m034-stix-two-recipe`
 
 ## Goal
 
@@ -70,7 +70,7 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
 
 ## Tasks
 
-- [ ] T1: `tlmgr install stix2-otf`; render `examples/unicode.qmd` with the
+- [x] T1: `tlmgr install stix2-otf`; render `examples/unicode.qmd` with the
       STIX Two Text block and read the printed index for every term it marks;
       then run the four controls by hand and record each one's actual
       signature, the no-engine render's printed index included.
@@ -95,6 +95,10 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
 - 2026-08-24: created by /milestone-plan.
 - 2026-08-24: plan gate criteria audit ran in full mode ([O], fresh context, user-facing tier) and returned 10 findings over 6 drafted criteria, all fixed here — AC1's symmetric line-for-line match narrowed to the direction the check reads, AC2's domain moved from the check's hand-stated term list to the fixture's own marks, AC3's "one YAML edit" corrected and its pins replaced by the signatures themselves, and the drafted AC4/AC5/AC6 dropped as instrument and recording-act promises (the font guard, the claims table, the DESIGN edit), the first two re-entering as tasks T4 and T7 and the third reworded to bind README's own content.
 - 2026-08-24: plan gate chose STIX Two Text over keeping the obsolete `stix` package and over naming no font at all, because the successor package the obsolescence notice points at holds the coverage with one install command and no second step for the reader; falsified by evidence that STIX Two Text fails to print a term of the proven set, or that a font inside a default TinyTeX covers Greek, Cyrillic and Latin beyond Latin-1 together.
+- 2026-08-24: T1 — `stix2-otf` installed; all four faces resolve by `kpsewhich`. Under STIX Two Text the recipe render and controls (a), (b) and (c) reproduce their M33 signatures exactly, but control (d), the no-engine path, now exits 0 and prints all eight terms correctly where under STIX it dropped `Việt` — README's third failure path and the suite's (d) check both have to change, the branch AC4 anticipated.
+- 2026-08-24: T1 — `mainfont: STIX Two Text` with no options block also prints all eight terms, but `pdffonts` shows it embeds macOS's own `STIXTwoText` TrueType while the by-file form embeds the package's `STIXTwoText-Regular` Type 0C; the by-file recipe AC1 names is what loads the installed package. The no-engine render embeds the package face too, so its success is not a fallback.
+- 2026-08-24: T2 — `examples/unicode.qmd` front matter swapped to `mainfont: STIXTwoText`; its body's by-file sentence reworded, since "the plain family name is not findable" is false for this font and the operating-system copy is the real reason.
+- 2026-08-24: question gate — the recipe keeps `pdf-engine: xelatex` with the section stating that the font alone prints correctly on Quarto 1.10 and the engine line is what holds if Quarto's default changes; README states the by-file reason as the operating-system copy rather than findability.
 - 2026-08-24: plan gate chose to keep the suite stopping when the font is absent over skipping the recipe renders, because a skip line reads as a pass to anyone scanning the output and this suite's evidence rests on nothing passing unrun; falsified by evidence that the stop keeps contributors from running the rest of the suite in practice.
 
 ## Decisions

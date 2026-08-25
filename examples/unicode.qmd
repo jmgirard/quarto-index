@@ -2,7 +2,7 @@
 title: "quarto-index terms outside Latin-1"
 from: markdown-smart
 pdf-engine: xelatex
-mainfont: STIX
+mainfont: STIXTwoText
 mainfontoptions:
   - Extension=.otf
   - UprightFont=*-Regular
@@ -19,7 +19,8 @@ Every term here is marked at one level, so each has one entry line of its
 own in the printed index and no parent line above it. The YAML above is the
 recipe README's `### Terms outside Latin-1` section documents: the engine
 and a main font that covers the scripts marked below. The font is named by
-file rather than by family — the plain family name is not findable.
+file, which is what makes the render load the TeX Live package rather than
+whatever the operating system carries under the same family name.
 
 - [θεωρία]{.index} — Greek, with a precomposed accented vowel.
 - [ψυχή]{.index sort="psyche"} — Greek again, carrying a sort key so it files under the Latin spelling.

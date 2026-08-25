@@ -1,12 +1,13 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-25 (M37 done and archived; M32 pruned under terminal-row retention; the suite-hardening candidate row absorbed M37's four bound-and-anchor findings. Two lessons added, none retired; KI89 added. ROADMAP 49 lines / 8,902 bytes, LESSONS 48 / 13,338, check-design 35 / 14,749 against its stated 40 / 18,000, cairn CLAUDE.md section 25 lines — all inside their caps. Suite green at 354 plain / 496 self-test.)_
+_Last hygiene check: 2026-08-25 (M38 planned; the 2026-08-16 "Multiple named indexes" candidate row absorbed into it, with two follow-up rows added for the PDF fork and for books. No lessons added or retired.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M38 | Marks name which index they belong to, and the HTML back-end prints each | planned | — | normal | milestones/M38-named-indexes-html.md |
 | M37 | The non-Latin-1 guards report the cause they hit | done | M36 | normal | milestones/archive/M37-non-latin1-guard-causes.md |
 | M36 | The non-Latin-1 readers stop reading text that belongs to no error | done | — | normal | milestones/archive/M36-unicode-reader-claims.md |
 | M35 | The non-Latin-1 checks fail on the defects they claim to catch | done | — | normal | milestones/archive/M35-non-latin1-check-hardening.md |
@@ -31,9 +32,10 @@ _Last hygiene check: 2026-08-25 (M37 done and archived; M32 pruned under termina
 - Move the index relative to content Quarto adds after filters run, rather than leaving the order to an author-written `#refs` div; promote on evidence Quarto exposes an ordering hook a filter can reach — added 2026-08-24 — M32 Scope Out — KI3
 - Make M32's marker-less plants read the captured artifact rather than the render's working copy, so M24's capture rule is met in intent and not only in letter; promote with any other suite-wide capture sweep — added 2026-08-24 — M32 review R2-F9
 - Narrow M32's HTML-cost check from "the fixture carries no `#quarto-appendix` at all" to the bibliography's own wrapper, so a fixture that later grows a footnote or a Citation block cannot turn it red while README stays true; promote on that fixture growing one — added 2026-08-24 — M32 review R2-F14
-- Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN) — KI79
 - Print an RTL index term correctly: the plan gate's probe shows it unshaped with the locator comma on the wrong side of the entry, which a covering font does not fix; promote on a bidi path that also settles locator placement — added 2026-08-24 — M33 Scope Out — KI6
+- Multiple named indexes in the PDF back-end: Quarto's PDF loop builds only the main `.idx`, so a named index prints empty at exit 0 unless imakeidx runs makeindex itself under shell escape, which is machine-dependent and, without `noautomatic`, loses every mark below a marker; promote once the fork is settled between that path plus a loud absent-`.ind` check and a documented one-index limit — added 2026-08-25 — M38 plan gate probe, M38 Scope Out
+- Multiple named indexes across a book's chapters: needs the sidecar store to carry a per-record index name, whose version bump invalidates every other chapter's record; promote once M38 lands — added 2026-08-25 — M38 Scope Out
 - Acceptance-suite hardening (clustered): close the gaps KI27-KI74 record, from where a check reads and what it holds through the coverage gaps; absorbs six rows refiled here — the escaping-combination probe, bare unquoted attribute values, an independent demo-manifest count, the demo's own makeindex acceptance, cross-reference counts rather than substring presence, and an HTML planted-defect proof — plus a fixture for the all-empty-`entry=` shape, and the typeset print proof M30 gave the escaping probe extended to the cross-reference and sort-key probes, which still assert compile-and-accept only — added 2026-08-16, extended 2026-08-17, clustered 2026-08-18, refiled 2026-08-23, extended 2026-08-24 — M35's sixteen filed findings left here 2026-08-24 when M36 and M37 took them, the row keeping the pointer to that milestone's archived Review section for anything those two decline; extended 2026-08-25 with the `stopped` reading depending on TeX's fatal-error line ending the engine log, which is what closes the inputenc report it reads (M36 review F2), promoted on a capture whose rejection is the log's last `! ` line; extended 2026-08-25 with M37 review's four filed findings, all on the guards and bounded mutations that milestone shipped — a bound assertion that recomputes its bound with the builder's own regex, a section-end regex matching one character into a `####` heading, mutation anchors matched anywhere in the file, and a hand-written rather than derived loud-failure fixture — KI24, KI27-KI74, KI81, KI82, KI84, KI85
 - Support Windows checkouts without symlink support — added 2026-08-16 — M01 review R18 — KI78
 - Guard an accumulator added after M26 that joins no `reset`; D-011 refuses a source scan, so the guard is a render or nothing — added 2026-08-16, promoted to M26 2026-08-23 — KI10

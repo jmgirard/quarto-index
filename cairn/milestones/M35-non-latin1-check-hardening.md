@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M35: The non-Latin-1 checks fail on the defects they claim to catch
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -112,6 +112,11 @@ its own milestone.
 - [x] T7: run both suite modes; record the check counts; update the M33
       section comments that describe what each reading now reads, and the
       `pass` lines that summarize it.
+- [x] T8: move the PDF tool guard (`require_pdf_tools`, which carries T4's font
+      guard) from the AC6 section to the head of the M33 section, ahead of the
+      first compile in the run, so a face this machine cannot find stops the
+      run at the guard rather than at the render the guard exists to protect.
+      Added 2026-08-24 from the review return on AC4.
 
 ## Work log
 <!-- owner: any skill · append-only; one line per entry; absolute dates. -->
@@ -129,6 +134,10 @@ its own milestone.
 - 2026-08-24: T6 — the README recipe block is now held to `README_RECIPE_LINES`, eight lines the suite states under an ORACLE RULE, equal in both directions and in order, with each stated line still required in the fixture; four plants show it red on a dropped `pdf-engine:` line, a reordering, an unstated line, and a stated line the fixture no longer carries. The `README_UNICODE_CLAIMS` header comment saying control (d) never reads which engine produced its render was corrected in the same commit — T5 made it false. Self-test 491 checks, exit 0.
 - 2026-08-24: T7 — the M33-AC3 and M33-AC4 section comments now describe the level-qualified positive signal, control (d)'s producer reading, and the two-directional block check. Check counts: merge base 351 plain / 487 self-test; this branch 352 plain / 491 self-test (+1 plain, the producer reading's own line; +4 self-test, that line plus the three new M35 plant summaries). One plain run died on a Quarto segfault rendering marker-sites.qmd to gfm, unrelated to this branch; the immediately following self-test run and a re-run of plain mode both passed clean.
 - 2026-08-24: review returned M35 to in-progress — AC4 fails: the font guard sits in `require_pdf_tools`, called at `tests/run-tests.sh:4896`, after the M33 renders at `:4385`; with an unfindable face planted in `examples/unicode.qmd` the run died at "M33-AC1: ... failed to render to PDF under the documented recipe" and the guard, and its `stix2-otf` message, never ran. AC1/AC2/AC3/AC5/AC6/AC7 verified with fresh evidence; 13 further diff-lens findings recorded in the Review section, untriaged.
+
+- 2026-08-24: T8 — the whole PDF tool guard moved from `tests/run-tests.sh:4894` (the AC6 section) to `:4391`, immediately before the M33 recipe render, which is the first compile in the run; the AC6 header comment now points at the new call site and the later re-call at `:9329` is untouched. Re-planting the defect AC4 names — `BoldFont=*-Bold` changed to a face no TeX tree carries — the run now dies at "FAIL: STIXTwoText-NoSuchFaceHere.otf is not findable by kpsewhich" followed by the guard's `tlmgr install stix2-otf` line, with no M33 render attempted; the fixture was restored and both modes re-run clean at 352 plain / 491 self-test, the same counts T7 recorded.
+- 2026-08-24: minor plan amendment — T8 added to the task list as the discovered repair for the AC4 return; Goal, Scope, Acceptance criteria and Coverage untouched, AC4 still mapping to T4.
+- 2026-08-24: the 13 diff-lens findings the review recorded unactioned stay unactioned by user selection at this session's question gate, for triage at the re-review gate.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

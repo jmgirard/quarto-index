@@ -4382,6 +4382,14 @@ pass "M32: the copyable recipe block in README is held line for line against the
 python3 tests/unicodeprint.py marks examples/unicode.qmd "${M33_TERMS[@]}" \
   || fail "M33-AC2: the term list this suite states for examples/unicode.qmd is not what that fixture marks (its own FAIL line is above)"
 
+# The whole PDF tool guard, here rather than beside the AC6 section it used to
+# open, because the render on the next line is the FIRST compile in the run and
+# every one of these tools is already load-bearing for it. A guard placed after
+# the thing it protects reports nothing: with a face this machine cannot find,
+# the render below dies first and the run blames the recipe, never the missing
+# `stix2-otf` package the guard exists to name.
+require_pdf_tools
+
 quarto render examples/unicode.qmd --to pdf > "$WORK/m33-recipe.log" 2>&1 \
   || { tail -20 "$WORK/m33-recipe.log" >&2; fail "M33-AC1: examples/unicode.qmd failed to render to PDF under the documented recipe"; }
 capture examples/unicode.qmd pdf "m33-recipe"
@@ -4891,9 +4899,10 @@ print(f'ok   AC7/M02-AC4: {len(rows)} visible terms present ({total} marks), '
 PY
 
 # ---------------------------------------------------------------------------
-# AC6 — end-to-end to a compiled PDF with a real index.
+# AC6 — end-to-end to a compiled PDF with a real index. The tool guard this
+# section used to open with now runs further up, before the M33 renders, which
+# are the first compiles in the run; see its call site there.
 # ---------------------------------------------------------------------------
-require_pdf_tools
 
 # Regression test for the IP2 failure review found: beamer has no `theindex`
 # environment, so emitting \printindex there aborted the render. Exit 0 alone

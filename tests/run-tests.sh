@@ -1457,9 +1457,20 @@ require_recipe_fonts() {
 # control that exists to pin one engine's behaviour has to read the artifact's
 # own Producer line — and read it from the CAPTURE, which is the artifact the
 # rest of this suite is judging, not from a build scratch file.
+#
+# The status this function hands back is its own. `pdfinfo` exits non-zero on a
+# file that is not a PDF, and under `set -o pipefail` a bare
+# `producer=$(pdfinfo ... | sed ...)` hands that status to the assignment,
+# which under `errexit` kills the run before the report below is ever reached —
+# silently, since nothing has printed yet. Both of M35's call sites happened to
+# sit in `&&`/`||` lists, where errexit is suspended, so the defect was invisible
+# there and would have surfaced the first time anyone called it plainly. Read
+# the tool's output into a variable, absorb its status there, and let the two
+# `return`s below be the only statuses this function ever produces.
 pdf_producer_names() {
-  local pdf="$1" want="$2" producer
-  producer=$(pdfinfo "$pdf" 2>/dev/null | sed -n 's/^Producer:[[:space:]]*//p' | head -1)
+  local pdf="$1" want="$2" info producer
+  info=$(pdfinfo "$pdf" 2>/dev/null) || info=''
+  producer=$(printf '%s\n' "$info" | sed -n 's/^Producer:[[:space:]]*//p' | sed -n '1p')
   if [ -z "$producer" ]; then
     printf 'FAIL: %s carries no Producer line, so which program wrote it cannot be read\n' "$pdf" >&2
     return 1
@@ -12471,7 +12482,32 @@ M33UNCLOSEDPY
   printf '%s' "$M35_PRODUCER_OUT" | grep -qF -- 'carries no Producer line' \
     || { printf '%s\n' "$M35_PRODUCER_OUT" >&2; fail "M35 self-test: the producer reading rejected the non-PDF, but not with <<carries no Producer line>> — that failure is not this clause catching this defect"; }
 
-  pass "M35: control (d)'s producer reading names $M33_NOENGINE_PRODUCER on the no-engine capture and goes red on this suite's own xelatex capture and on a file carrying no Producer line at all"
+  # M37: the same file again, but called PLAINLY — a bare statement inside a
+  # subshell that has errexit and pipefail set, which is how any future caller
+  # outside an `&&`/`||` list would reach it. The two readings above are both
+  # shielded by their own `&&`, where errexit is suspended, so neither could
+  # tell a function that reports and returns 1 from one that dies at its first
+  # assignment with nothing printed. This one can: the old form left this
+  # subshell with an empty capture, the new one leaves it carrying the report.
+  #
+  # The subshell is BACKGROUNDED, and that is not a stylistic choice: bash
+  # suppresses errexit inside a subshell that sits in an `&&`/`||` list even
+  # when the subshell sets it again itself, so `( set -e; f ) && rc=0 || rc=$?`
+  # would run the call in exactly the shielded context this check exists to get
+  # out of — and would be green on the old form. Backgrounding it, then reading
+  # the status with `wait`, leaves the call unshielded and puts only `wait` in
+  # the `&&` list. Verified both ways on this repair.
+  M37_PLAIN_OUT="$M33W/producer-plain.txt"
+  ( set -eo pipefail
+    pdf_producer_names "$M33W/notapdf.pdf" "$M33_NOENGINE_PRODUCER" ) \
+    > "$M37_PLAIN_OUT" 2>&1 &
+  wait $! && M37_PLAIN_RC=0 || M37_PLAIN_RC=$?
+  [ "$M37_PLAIN_RC" -eq 1 ] \
+    || { cat "$M37_PLAIN_OUT" >&2; fail "M37 self-test: called plainly on a file carrying no Producer line, the producer reading exited $M37_PLAIN_RC rather than 1 — that is a status it did not choose"; }
+  grep -qF -- 'carries no Producer line' "$M37_PLAIN_OUT" \
+    || { cat "$M37_PLAIN_OUT" >&2; fail "M37 self-test: called plainly on a file carrying no Producer line, the producer reading printed no <<carries no Producer line>> report — it died before reaching its own reporting branch, which is what a caller outside an && list would see"; }
+
+  pass "M35/M37: control (d)'s producer reading names $M33_NOENGINE_PRODUCER on the no-engine capture, goes red on this suite's own xelatex capture and on a file carrying no Producer line at all, and called plainly under errexit on that last file still reports and returns 1 rather than dying at its first assignment"
 
   # --- The README recipe block. Each plant is a copy of README with one thing
   # about its `### Terms outside Latin-1` block wrong, and the unplanted

@@ -91,7 +91,7 @@ KI81–85, KI87 — stays on its candidate row.
       naming an unfindable face. Assert each red with its own cause named.
 - [x] T3. Delete the two unreachable clauses (`:1511`, `:4597`) and the pass
       lines that only they could reach.
-- [ ] T4. Make `pdf_producer_names` (`:1447`) hold its own status — read
+- [x] T4. Make `pdf_producer_names` (`:1447`) hold its own status — read
       `pdfinfo` into a variable and test it, rather than returning a pipeline's
       — and add a self-test call outside any `&&`/`||` list.
 - [ ] T5. Bound the two `sed` plants: the "no options block" mutation to the
@@ -120,6 +120,8 @@ KI81–85, KI87 — stays on its candidate row.
 - 2026-08-25: T1+T2 in one commit — T1's message change moves the text T2's plants assert, so neither is green alone. `require_recipe_fonts` now reports the missing face with the `stix2-otf` sentence and the fixture name; the three front-matter causes reach the terminal as `recipe_font_files`' own exits, and `require_pdf_tools`' fail line points at them instead of restating one of them. Each of the four plants now also asserts whether the package is named: planting the M35 defect (the package sentence added to the no-`mainfont:` exit) turned the no-main-font plant red on that clause; unplanted, the self-test is green at 491 checks.
 
 - 2026-08-25: T3 — both unreachable clauses removed. `[ -n "$faces" ]` sat after a `require_recipe_fonts` that exits 1 on an empty list, and `if not stated:` after a `printf` over a literal array `set -u` would have stopped. Neither had a pass line of its own. The recipe-line list's non-emptiness is now stated where it is read, pointing at the self-test plants that each name one of those lines; the face list's is covered by T7's printed domain. Self-test green at 491 checks.
+
+- 2026-08-25: T4 — `pdf_producer_names` reads `pdfinfo` into a variable and absorbs its status there, so its two `return`s are the only statuses it produces. The self-test call was first written as `( set -eo pipefail; ... ) && rc=0 || rc=$?` and was green on the OLD form: bash suppresses errexit inside a subshell sitting in an `&&`/`||` list even when the subshell sets it again, so that shape reproduces the shielding the check exists to escape. Rewritten to background the subshell and read its status with `wait`, which leaves the call unshielded; on the old form planted back it goes red with <<printed no carries no Producer line report>>, and green on the repair at 491 checks.
 
 ## Decisions
 

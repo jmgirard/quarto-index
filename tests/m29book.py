@@ -56,13 +56,13 @@ DUP_NAMED = re.compile(
 # no index name, so a named mark and a named marker are both folded into the
 # one index the book builds, and each is told so.
 FOLD_MARK = ('index="people" on term "Turing" names a second index, and this '
-             'output builds one index only, so the mark is indexed in the '
-             "document's one index instead; more than one index prints in a "
-             'single HTML document today')
+             'output has one index only, so the mark is indexed in that one '
+             'index instead; more than one index prints in a single HTML '
+             'document today')
 FOLD_MARKER = ('index="people" on an index placement marker names a second '
-               'index, and this output builds one index only, so the marker '
-               "places the document's one index instead; more than one index "
-               'prints in a single HTML document today')
+               'index, and this output has one index only, so the marker '
+               'places that one index instead; more than one index prints in '
+               'a single HTML document today')
 
 NESTED = ('index placement marker below the top level of the document places '
           'nothing; write it as a top-level block')

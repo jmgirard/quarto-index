@@ -186,6 +186,89 @@ def index_section(root):
     return best if best is not None else head
 
 
+def preceding_authored_id(root, node, minted):
+    """The id of the last element BEFORE `node` that this extension did not mint.
+
+    A section's place on the page is what a placement check asks about, and the
+    element it follows is the only part of that place an author wrote. Read in
+    document order rather than as a preceding sibling: the HTML writer nests a
+    lower heading's section inside the higher one before it, so the authored
+    heading a generated section actually follows is often not its sibling at
+    all — it is its predecessor's last child.
+
+    `minted` is the id prefixes this extension mints, passed in rather than
+    written here so the suite's own pins against the filter's constants are
+    what decide which ids are ours. Skipping them is the whole point: every id
+    between an authored heading and the section it precedes is one of ours.
+
+    Returns None where nothing authored comes before the node.
+    """
+    found = None
+    for other in walk(root):
+        if other is node:
+            return found
+        ident = other.attrs.get('id', '')
+        if ident and not any(ident.startswith(p) for p in minted):
+            found = ident
+    return None
+
+
+def index_sections(root, prefix, minted=()):
+    """Every generated index section on the page, in document order.
+
+    `prefix` is the section id this extension mints — passed in rather than
+    written here, so the suite's own pin against the filter's constant is what
+    decides which ids are ours. A document declaring no indexes has one section
+    carrying the bare prefix; one declaring them has a section per index,
+    carrying the prefix and the index's own name (M38).
+
+    Each hit is a dict: `ident` (the id the section carries), `tag` and `title`
+    (the element its heading is, and the text it shows), `after` (the id of the
+    last authored element before it, or None), and `records` (the section's own
+    entry and letter-group records, in rendered order).
+
+    The heading's ELEMENT is reported and not only its text: a section headed
+    by something other than a heading element would read identically on the
+    page and reach neither the table of contents nor a reader's outline.
+    """
+    out = []
+    for node in walk(root):
+        ident = node.attrs.get('id', '')
+        if ident != prefix and not ident.startswith(prefix + '-'):
+            continue
+        heads = [n for n in walk(node) if n.tag in ('h1', 'h2', 'h3')]
+        if not heads:
+            raise ValueError(
+                f'the generated index section {ident!r} carries no heading '
+                f'element, so it has no title a reader can find it by')
+        out.append({'ident': ident, 'tag': heads[0].tag,
+                    'title': text(heads[0]).strip(),
+                    'after': preceding_authored_id(root, node, minted),
+                    'records': index_entries(node)})
+    return out
+
+
+SECTION_TOKEN = 'section'
+
+
+def section_rows(root, prefix, minted=()):
+    """The manifest form of every generated index section on a page.
+
+    One `section<TAB>id<TAB>heading tag<TAB>title<TAB>id it follows` row per
+    section, each followed by that section's own entry and letter-group rows in
+    rendered order — the same `row()` form a single index's manifest uses, so
+    the two cannot drift apart in what an entry row means. No entry row starts
+    with the word `section`: an entry row starts with a depth digit and a
+    letter row with `letter`.
+    """
+    rows = []
+    for found in index_sections(root, prefix, minted):
+        rows.append('\t'.join((SECTION_TOKEN, found['ident'], found['tag'],
+                               found['title'], found['after'] or '-')))
+        rows.extend(row(r) for r in found['records'])
+    return rows
+
+
 def duplicate_ids(root, prefix=None):
     """Every id carried by more than one element, in first-seen order.
 

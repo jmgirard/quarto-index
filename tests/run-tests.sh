@@ -248,7 +248,8 @@ run_scan() {
         "$R_UNKNOWN" "$R_DISPLACED" "$R_ALREADY" "$R_NOOPEN" "$R_NOCLOSE" \
         "$R_BOOKUNPAIRED" \
         "$WARN_MARKER_EMPTIED" "$WARN_MARKER_NOT_LAST" "$WARN_MARKER_DUP_STEM" \
-        "$WARN_MARKER_DUP_NAMED" ;;
+        "$WARN_MARKER_DUP_NAMED" \
+        "$WARN_INDEX_FOLD_MARK" "$WARN_INDEX_FOLD_MARKER" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -1299,6 +1300,56 @@ print(f'ok   {label}: the generated index matches all {len(expected)} '
 PY
 }
 
+# Compare a rendered page's generated index SECTIONS against an exhaustive row
+# manifest (M38-AC1). One `section` row per section — its id, the element its
+# heading is, the text that heading shows, and the id of the last authored
+# element before it — each followed by that section's own entry and
+# letter-group rows in rendered order, in the same form the single-index
+# manifest above uses.
+#
+# The whole page is read, not one section found by name: a document declaring
+# two indexes must print two sections and no more, and a manifest naming each
+# by id could never say that. The three minted prefixes are passed in so the
+# `after` field skips every id this extension wrote and lands on the heading an
+# author put the marker under.
+check_index_sections() {
+  local htmlfile="$1" manifest="$2" label="$3"
+  printf '%s\n' "$manifest" > "$WORK/index-sections.txt"
+  HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+  HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - \
+    "$htmlfile" "$WORK/index-sections.txt" "$label" <<'SECTIONPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+html_path, manifest_path, label = sys.argv[1:4]
+minted = (os.environ['HTML_SECTION_ID'], os.environ['HTML_ANCHOR_PREFIX'],
+          os.environ['HTML_ENTRY_PREFIX'])
+actual = H.section_rows(H.parse(html_path), os.environ['HTML_SECTION_ID'],
+                        minted)
+expected = H.read_manifest(manifest_path)
+if not expected:
+    print(f'FAIL: {label}: manifest is empty', file=sys.stderr)
+    sys.exit(1)
+if not any(r.startswith(H.SECTION_TOKEN + chr(9)) for r in expected):
+    print(f'FAIL: {label}: the manifest names no index section at all, so a '
+          f'page that printed none would match it', file=sys.stderr)
+    sys.exit(1)
+if actual != expected:
+    print(f'FAIL: {label}: the generated index sections do not match the '
+          f'manifest', file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such row rendered>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  row {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+sections = [r for r in expected if r.startswith(H.SECTION_TOKEN + chr(9))]
+print(f'ok   {label}: {len(sections)} generated index section(s) and all '
+      f'{len(expected)} manifest rows match, in order')
+SECTIONPY
+}
+
 # A WHOLE-DOCUMENT sweep for the letter-group heading class (M07-AC3). The
 # expected labels are hand-derived, one per line, in the order the page must
 # show them; the sweep reads the entire document rather than the index
@@ -1365,8 +1416,11 @@ SWEEPPY
 # each HTML fixture, including the two that carry the shapes demo.qmd's
 # invariants deliberately exclude.
 check_html_index_links() {
+  # The third argument names the section to read, for a page carrying more
+  # than one (M38); it defaults to the id a document declaring no indexes
+  # mints, which is what every caller before that milestone means.
   local htmlfile="$1" label="$2"
-  HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+  HTML_SECTION_ID="${3:-$HTML_SECTION_ID}" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
   HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - "$htmlfile" "$label" <<'PY'
 import os, sys
 from collections import Counter
@@ -3048,6 +3102,12 @@ WARN_MARKER_DUP='index placement marker 2 in document order (top-level block 8) 
 # alone would match both and every count using it would be over two reports.
 WARN_MARKER_DUP_STEM='is ignored; the index is placed at the first marker'
 WARN_MARKER_DUP_NAMED='is a second marker for the index named'
+# The two reports a back-end that keeps ONE index draws for a mark and for a
+# marker that name a second one (M38). Keyed on the half that says what became
+# of the thing named, which is what tells the two apart: the first half is
+# identical in both.
+WARN_INDEX_FOLD_MARK='so the mark is indexed in that one index instead'
+WARN_INDEX_FOLD_MARKER='so the marker places that one index instead'
 case "$WARN_MARKER_DUP" in
   *"$WARN_MARKER_DUP_STEM"*) ;;
   *) fail "M28: the duplicate-marker grep key no longer contains the stem passed to mark-report-keys, so the scan and the run would hold different messages" ;;
@@ -12007,6 +12067,205 @@ case "$M28_OUT" in
   *) fail "M28-AC1: the reader failed on the author-position log, but not on the position being the author's (<<$M28_OUT>>)" ;;
 esac
 pass "M28-AC1: the divergence reader fails on a manifest whose two positions are equal, and on a copy of this render's log whose report names the author's own position instead of the reported one"
+
+# ---------------------------------------------------------------------------
+# M38 — an author sends marks to more than one named index, and the HTML
+# back-end prints one section per index.
+#
+# examples/named-indexes.qmd declares two indexes and writes, in each of them,
+# every judgement this extension makes about a mark: which entry it indexes,
+# which target it resolves against, which sort key it files under, which range
+# it pairs with. The twin beside it writes the same terms with no declaration
+# at all and no `index=` anywhere, which is the shape this milestone leaves
+# untouched.
+#
+# ORACLE — every row below is derived by hand from the fixture and the
+# documented semantics, never copied from a render:
+#
+#   sections   Two declared indexes, so two sections, in the order their
+#              markers stand: the first marker names none and so places the
+#              first declared index, the second names `authors`. Each section
+#              follows the heading its own marker was written under, and is
+#              headed `h1` with the title its declaration gives it. The twin
+#              declares nothing, so its one section carries the bare id this
+#              extension has always minted and the heading `Index`.
+#   entries    `Aardvark` and `Cantor`(open) and `Neighbour` name no index, so
+#              they file in `main`; `Babbage`, `Hague`, `Stranger` and
+#              `Cantor`(close) name `authors`. `Hague` is marked in both, and
+#              the sort key `Zebra` is written on the `main` mark alone — the
+#              registry is one namespace per index, so `main`'s Hague files
+#              under Z and `authors`' Hague under its own H.
+#   targets    Both cross-references name `Aardvark`, which only `main`
+#              carries. `Neighbour`'s resolves and is a link; `Stranger`'s
+#              resolves against nothing in its own index, so it prints plain
+#              and draws the dangling-target report — once, for that mark and
+#              not for the other.
+#   ranges     The opening is in `main` and the closing in `authors`. Neither
+#              has a counterpart inside its own index, so `main`'s opening is
+#              never closed and `authors`' closing never opened; each indexes
+#              as an ordinary locator, which is the single locator each of the
+#              two `Cantor` entries carries.
+#   twin       One index, so every one of those judgements is made across the
+#              whole document: one `Hague` entry with two locators, both
+#              targets linked, and the range paired into one locator on
+#              `Cantor`. It draws no warning at all.
+# ---------------------------------------------------------------------------
+read -r -d '' NAMED_INDEX_SECTIONS <<'MANIFEST' || true
+section	qi-index-main	h1	Index	site-main
+letter	A
+0	Aardvark	1
+letter	C
+0	Cantor	1
+letter	N
+0	Neighbour	0	see-link Aardvark
+letter	Z
+0	Hague	1
+section	qi-index-authors	h1	Index of Authors	site-authors
+letter	B
+0	Babbage	1
+letter	C
+0	Cantor	1
+letter	H
+0	Hague	1
+letter	S
+0	Stranger	0	see-plain Aardvark
+MANIFEST
+
+read -r -d '' NAMED_INDEX_TWIN_SECTIONS <<'MANIFEST' || true
+section	qi-index	h1	Index	site-index
+letter	A
+0	Aardvark	1
+letter	B
+0	Babbage	1
+letter	C
+0	Cantor	1
+letter	N
+0	Neighbour	0	see-link Aardvark
+letter	S
+0	Stranger	0	see-link Aardvark
+letter	Z
+0	Hague	2
+MANIFEST
+
+# The LaTeX back-end keeps one index, so every mark of the fixture emits an
+# `\index` under the argument the default index gives it. `Hague` is emitted
+# twice under one sort field: the two indexes are one here, so the registry has
+# one namespace and the key written on either mark applies to both. The two
+# `Cantor` marks pair for the same reason, and their range delimiters are the
+# only thing in these arguments that is not the entry itself.
+read -r -d '' NAMED_INDEX_TEX <<'MANIFEST' || true
+1	Aardvark
+1	Babbage
+2	Zebra@Hague
+1	Neighbour|see{Aardvark}
+1	Stranger|see{Aardvark}
+1	Cantor|(
+1	Cantor|)
+MANIFEST
+
+quarto render examples/named-indexes.qmd --to html \
+  > "$WORK/named-indexes-html.log" 2>&1 \
+  || { tail -30 "$WORK/named-indexes-html.log" >&2; fail "M38-AC1: named-indexes.qmd failed to render to HTML"; }
+capture examples/named-indexes.qmd html "named-indexes-html"
+NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
+
+check_index_sections "$NAMED_HTML" "$NAMED_INDEX_SECTIONS" "M38-AC1"
+check_html_index_links "$NAMED_HTML" "M38-AC1 (links, first index)" \
+  "$HTML_SECTION_ID-main"
+check_html_index_links "$NAMED_HTML" "M38-AC1 (links, second index)" \
+  "$HTML_SECTION_ID-authors"
+
+# M38-AC1's other half, and the one the manifest above cannot state: the letter
+# headings of BOTH sections, swept over the whole page in the order it shows
+# them. A heading that leaked outside either section fails here.
+check_letter_sweep "$NAMED_HTML" "M38-AC1 (letter groups)" \
+  $'A\nC\nN\nZ\nB\nC\nH\nS'
+
+# M38-AC2 — the dangling target is the one written in the index that does not
+# carry it, and only that one. Both readings come from the captured log, greped
+# by the report's own key.
+check_warning_count "$WORK/named-indexes-html.log" "$WARN_DANGLING" 1 "M38-AC2"
+grep -F -- "$WARN_DANGLING" "$WORK/named-indexes-html.log" \
+  | grep -qF 'entry="Stranger"' \
+  || fail "M38-AC2: the one dangling-target report does not name the mark in the second index, so the report the check counted is not the one the criterion is about"
+if grep -F -- "$WARN_DANGLING" "$WORK/named-indexes-html.log" \
+     | grep -qF 'entry="Neighbour"'; then
+  fail "M38-AC2: the mark of the first index whose target names a term that index carries drew a dangling-target report; a target must resolve inside its own index"
+fi
+pass "M38-AC2: a cross-reference target resolves inside its own index — the second index's target for a term only the first carries is reported once, and the first index's target for that same term is not reported at all"
+
+# M38-AC3 — the range that spans two indexes pairs in neither, so both halves
+# are refused, each in its own index's words. The ordinary locator each mark
+# then carries is the `1` on both Cantor rows of the section manifest above.
+check_warning_count "$WORK/named-indexes-html.log" "$R_NOCLOSE" 1 "M38-AC3"
+check_warning_count "$WORK/named-indexes-html.log" "$R_NOOPEN" 1 "M38-AC3"
+pass "M38-AC3: an opening in one index and a closing in the other pair in neither — the opening is never closed and the closing never opened — and each mark carries the ordinary locator the section manifest states"
+
+# M38-AC4 — three markers, two indexes: the third is the second marker of the
+# first index and the only one reported. WHICH index it repeats is what the
+# report has to say in a document with more than one.
+check_warning_count "$WORK/named-indexes-html.log" "$WARN_MARKER_DUP_NAMED" 1 \
+  "M38-AC4"
+grep -F -- "$WARN_MARKER_DUP_NAMED" "$WORK/named-indexes-html.log" \
+  | grep -qF 'the index named "main"' \
+  || fail "M38-AC4: the duplicate-marker report does not name the index it repeats"
+check_warning_count "$WORK/named-indexes-html.log" "$WARN_MARKER_DUP_STEM" 0 \
+  "M38-AC4 (the unnamed wording, which a declaring document must not use)"
+pass "M38-AC4: each index sits at its own marker, and the one repeated marker draws exactly one report, naming the index it repeats"
+
+# The twin: the shape this milestone leaves untouched. One section under the
+# bare id, every judgement made across the whole document, and no warning.
+quarto render examples/named-indexes-twin.qmd --to html \
+  > "$WORK/named-indexes-twin-html.log" 2>&1 \
+  || { tail -30 "$WORK/named-indexes-twin-html.log" >&2; fail "M38-AC1: named-indexes-twin.qmd failed to render to HTML"; }
+capture examples/named-indexes-twin.qmd html "named-indexes-twin-html"
+check_index_sections "$CAPTURE_ROOT/named-indexes-twin-html/named-indexes-twin.html" \
+  "$NAMED_INDEX_TWIN_SECTIONS" "M38-AC1 (the untouched single-index shape)"
+check_extension_warning_count "$WORK/named-indexes-twin-html.log" 0 \
+  "M38-AC1 (the untouched single-index shape draws no report)"
+
+# M38-AC5 — outside HTML the fixture degrades without loss. The `.tex` carries
+# an `\index` for every mark, one `\printindex`, and no marker residue; the log
+# carries one report per named-index mark and one per named-index marker.
+quarto render examples/named-indexes.qmd --to latex \
+  > "$WORK/named-indexes-latex.log" 2>&1 \
+  || { tail -30 "$WORK/named-indexes-latex.log" >&2; fail "M38-AC5: named-indexes.qmd failed to render to latex"; }
+capture examples/named-indexes.qmd latex "named-indexes-latex"
+NAMED_TEX="$CAPTURE_ROOT/named-indexes-latex/named-indexes.tex"
+check_entry_manifest "$NAMED_TEX" "$NAMED_INDEX_TEX" "M38-AC5"
+check_token_manifest "$NAMED_TEX" $'1\t\\printindex\n0\tqi-index-here' "M38-AC5"
+check_warning_count "$WORK/named-indexes-latex.log" "$WARN_INDEX_FOLD_MARK" 4 \
+  "M38-AC5 (one report per named-index mark)"
+check_warning_count "$WORK/named-indexes-latex.log" "$WARN_INDEX_FOLD_MARKER" 1 \
+  "M38-AC5 (one report per named-index marker)"
+grep -F -- "$WARN_INDEX_FOLD_MARK" "$WORK/named-indexes-latex.log" \
+  | grep -cF 'index="authors"' | grep -qx 4 \
+  || fail "M38-AC5: a named-index mark's report does not name the index the mark named"
+grep -F -- "$WARN_INDEX_FOLD_MARKER" "$WORK/named-indexes-latex.log" \
+  | grep -qF 'index="authors"' \
+  || fail "M38-AC5: the named-index marker's report does not name the index the marker named"
+pass "M38-AC5: a LaTeX render indexes all 8 marks under the one index it builds, keeps one \\printindex and no marker residue, and reports each of the four named-index marks and the one named-index marker by the index it named"
+
+# And it builds: the degradation is only a degradation if the document still
+# renders (IP2).
+quarto render examples/named-indexes.qmd --to pdf \
+  > "$WORK/named-indexes-pdf.log" 2>&1 \
+  || { tail -30 "$WORK/named-indexes-pdf.log" >&2; fail "M38-AC5: named-indexes.qmd failed to render to PDF"; }
+capture examples/named-indexes.qmd pdf "named-indexes-pdf"
+[ -s "$CAPTURE_ROOT/named-indexes-pdf/named-indexes.pdf" ] \
+  || fail "M38-AC5: $CAPTURE_ROOT/named-indexes-pdf/named-indexes.pdf is empty"
+pass "M38-AC5: the two-index fixture still builds a PDF"
+
+# M38-AC5's second half — a book chapter. examples/book/ declares two indexes
+# and carries one named mark and one named marker; a book aggregates through a
+# store whose record format holds no index name, so both are folded into the
+# one index the book builds and each is told so. That the folded mark reaches
+# the index is the `Turing` row of BOOK_HTML_INDEX above.
+check_warning_count "$WORK/book-html.log" "$WARN_INDEX_FOLD_MARK" 1 \
+  "M38-AC5 (the book's named-index mark)"
+check_warning_count "$WORK/book-html.log" "$WARN_INDEX_FOLD_MARKER" 1 \
+  "M38-AC5 (the book's named-index marker)"
+pass "M38-AC5: an HTML book folds its named mark and its named marker into the one index it builds, reports each once, and lists the folded mark's term in that index"
 
 # ---------------------------------------------------------------------------
 # The residue sweeps (M03-AC3, M12), LAST in the run and over the CAPTURED set

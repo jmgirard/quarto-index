@@ -220,7 +220,7 @@ local function mark_index(value, context, report)
   end
   if folded and name ~= order[1] then
     if report and builds_index() then
-      qi_core.warn(('%s="%s" on %s names a second index, and this output builds one index only, so the mark is indexed in the document\'s one index instead; more than one index prints in a single HTML document today'):format(INDEX_ATTR, value, context))
+      qi_core.warn(('%s="%s" on %s names a second index, and this output has one index only, so the mark is indexed in that one index instead; more than one index prints in a single HTML document today'):format(INDEX_ATTR, value, context))
     end
     return order[1]
   end
@@ -241,7 +241,7 @@ local function marker_index(value, report)
   end
   if folded and name ~= order[1] then
     if report and builds_index() then
-      qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output builds one index only, so the marker places the document\'s one index instead; more than one index prints in a single HTML document today'):format(INDEX_ATTR, value))
+      qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output has one index only, so the marker places that one index instead; more than one index prints in a single HTML document today'):format(INDEX_ATTR, value))
     end
     return order[1], true
   end

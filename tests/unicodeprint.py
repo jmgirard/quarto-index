@@ -94,11 +94,29 @@ def stated(spec):
     A bare term is refused rather than defaulted to level 0: the level is the
     half this reading exists to check, and a caller who forgot it would other-
     wise get a green that says nothing about the level at all.
+
+    Three refusals, each with its own message, because each is a different
+    mistake in what the suite stated. A spec with no colon or nothing before
+    it states no level. A level written in anything but ASCII digits states
+    no level this suite can have meant: digits of another script are the trap
+    the check exists for, since `str.isdigit()` is true of them and `int()`
+    reads them, while any other spelling was never a number at all. An empty
+    term states no term: `entries` would
+    then look for an entry line whose text is the empty string, which no
+    printed index has, and report it missing for a reason that is the spec's
+    and not the render's.
     """
     level, sep, term = spec.partition(':')
-    if not sep or not level.isdigit():
+    if not sep or not level:
         die(f'FAIL: M33: {spec!r} is not a <level>:<term> pair, so the level '
             f'this reading holds the term to is not stated')
+    if not (level.isascii() and level.isdigit()):
+        die(f'FAIL: M33: {spec!r} states its level as {level!r}, which is not '
+            f'written in ASCII digits, so it is not a level this suite states '
+            f'(codepoints {codepoints(level)})')
+    if not term:
+        die(f'FAIL: M33: {spec!r} names an empty term, so this spec states '
+            f'no term for the reading to look for')
     return int(level), nfc(term)
 
 
@@ -203,9 +221,28 @@ def error_blocks(log):
     """The log's `! ...` error reports, each as one string.
 
     A block runs from its `! ` line to the echoed source line that closes it,
-    or to the next `! ` line where no source line intervenes. Text outside any
-    error report — the font and package chatter that fills most of a LaTeX log
-    — belongs to no block and is deliberately unreachable from here.
+    or to the next `! ` line where no source line intervenes; a `! ` line the
+    log never closes — neither a source line nor a later `! ` line before the
+    end of the file — opens no block at all. Text outside any error report —
+    the font and package chatter that fills most of a LaTeX log — belongs to
+    no block, and so does the tail following an unclosed `! ` line.
+
+    Dropping that tail costs a real report. TeX ends a failed run with
+    `!  ==> Fatal error occurred, no output PDF file produced!`, a whole
+    report on one line that no source line ever closes, and the engine
+    control's own log ends on it; run against that log this returns the
+    inputenc error and not the fatal line. The trade is deliberate — closing
+    an unclosed report at EOF is what let the chatter after one be read as
+    part of it — and no reading in this module asks anything of the fatal
+    line.
+
+    Only `! ` — the bang with its space — opens a report, which is the shape
+    LaTeX's own errors take and the shape the rejection this module reads is
+    written in. pdfTeX writes some of its errors as `!pdfTeX error:`, with no
+    space; run against such a line this returns no block. `cmd_stopped` below
+    still searches the whole log for its signature and its character, so text
+    in such a region can satisfy those two searches; what it can never do is
+    put them in one error report.
     """
     blocks, current = [], None
     for line in log.splitlines():
@@ -219,8 +256,6 @@ def error_blocks(log):
                 current = None
             else:
                 current.append(line)
-    if current is not None:
-        blocks.append('\n'.join(current))
     return blocks
 
 
@@ -237,15 +272,18 @@ def cmd_stopped(log_path, terms):
             f'{list(terms)} are made of, so the rejection it reports is not '
             f'about a term this fixture indexes')
     blocks = error_blocks(log)
+    opened = sum(1 for line in log.splitlines() if line.startswith('! '))
     named = sorted({c for block in blocks if STOP_SIGNATURE in block
                     for c in wanted if f'Unicode character {c} ' in block})
     if not named:
         die(f'FAIL: M33: {log_path} carries {STOP_SIGNATURE!r} and names '
             f'{", ".join(f"U+{ord(c):04X}" for c in anywhere)}, but never in '
             f'one error: the rejection that stopped this render and the '
-            f'character this fixture indexes are separate errors, and the '
-            f'two read apart say nothing about each other '
-            f'({len(blocks)} error report(s) in the log)')
+            f'character this fixture indexes are not reported together — '
+            f'separate error reports, or text belonging to no error report at '
+            f'all — and the two read apart say nothing about each other '
+            f'({len(blocks)} error report(s) read from {opened} '
+            f'`! ` line(s) — a `! ` line the log never closes opens none)')
     print(f'ok   M33: {log_path} stops on '
           f'{", ".join(f"U+{ord(c):04X}" for c in named)}, which the terms '
           f'named carry, in one error report')

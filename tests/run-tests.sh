@@ -12032,50 +12032,77 @@ if [ "${1:-}" = "--self-test" ]; then
   pass "M24: the empty-div reader fails on an empty div planted into each of the $SWEEP_ED pages a marker was removed from"
 
   # -------------------------------------------------------------------------
-  # M33 self-test — the four readings of tests/unicodeprint.py are proved able
-  # to fail, one plant per CLAUSE rather than one per reader (M32), one
-  # substitution per plant (M29). Each plant states the message fragment it
-  # expects, so a reader that goes red for some OTHER reason is not counted as
-  # having caught the defect.
+  # M33 self-test — the readings of tests/unicodeprint.py are proved able to
+  # fail per CLAUSE rather than per reader (M32). Most plants are one
+  # substitution into a real artifact (M29); the two that are not — the logs
+  # with every error report removed — say so at their own site. Each plant
+  # states the message fragment it expects, so a reader that goes red for some
+  # OTHER reason is not counted as having caught the defect.
   #
-  # THE MATRIX. Fifteen plants over the reader's fifteen reachable clauses.
-  # The four `main` rows are the argv guards: three of them are the siblings
-  # of `entries no terms` below, and a reading whose domain guard is unproven
-  # is a reading that can be called into vacuous green.
+  # THE MATRIX. One row per plant, grouped by the reading it goes through.
+  # A clause carries more than one row where more than one defect shape
+  # reaches it, or where no single shape isolates it — which is why the two
+  # `marks stated` rows exist. TWO clauses carry no row at all, named at the
+  # foot of this comment. The four `main` rows are the argv guards: three of
+  # them are the siblings of `entries no terms` below, and a reading whose
+  # domain guard is unproven is one that can be called into vacuous green.
   #
   #   marks   count      the stated list carrying a duplicate, so it is longer
   #                      than the fixture's marks while naming the same terms —
   #                      the only shape that isolates the count clause, since
   #                      any count mismatch over DISTINCT terms fires the set
   #                      clause below instead
+  #   marks   marked     a term dropped from the stated list
   #   marks   stated     a stated term respelled, so it is stated and not marked
-  #   marks   marked     a mark removed from a copy of the fixture
+  #   marks   stated     a mark removed from a copy of the fixture
+  #   marks   empty      a spec stating a level and no term, through the one
+  #                      reading whose spec parsing shows in none of its output
   #   entries missing    a stated term the fixture prints no entry for
-  #   entries wrong      a stated term respelled by one character
+  #   entries missing    a stated term respelled by one character
+  #   entries level      a stated term named at a level it does not print at
+  #   entries pair       a term stated with no level at all
+  #   entries script     a level written in digits of another script
   #   entries no index   a captured PDF that prints no index at all
   #   entries no terms   the reading asked for nothing, which would pass over
   #                      any index at all
-  #   stopped signature  a successful render's log, which carries no rejection
+  #   stopped signature  a log with every error report removed, which carries
+  #                      no rejection
   #   stopped character  the rejection, with the character it names replaced
+  #   stopped one error  the signature and the character in separate errors
+  #   stopped one error  the rejection stated only in the chatter after a `! `
+  #                      line the log never closes
   #   absent  silent     a control's own present-term named as one it never prints
   #   absent  printed    a term named absent that the render does print
+  #   absent  level      a control's present-term named at a level it does not
+  #                      print at
   #   main    argv       a call naming a mode and nothing else
   #   main    stopped    `stopped` called with no term
   #   main    absent     `absent` called with a present-term and nothing else
   #   main    mode       a mode the reader does not have
   #
-  # ONE clause has no plant, and it is guarded rather than proved: `entries`
-  # and `absent` both refuse a PDF whose index heading is present but whose
-  # index holds no entry lines. That state is not reachable through this
-  # extension — a document with no marks gets no index heading at all, so the
-  # heading and the entries arrive together or not at all (probed at T6) —
+  # TWO clauses have no plant, and are guarded rather than proved.
+  #
+  # `entries` and `absent` both refuse a PDF whose index heading is present
+  # but whose index holds no entry lines. That state is not reachable through
+  # this extension — a document with no marks gets no index heading at all, so
+  # the heading and the entries arrive together or not at all (probed by M33,
+  # which built these controls) —
   # so there is no defect of that class to plant. The guard stays because a
   # future back-end change could make it reachable, and an unreachable branch
   # costs a line.
+  #
+  # `levelled` refuses a printed index one of whose columns holds no top-level
+  # entry, the state that would make every level pdfindex reports in that
+  # column a level too shallow. No capture in this suite is such a PDF, and
+  # nothing here builds a document whose index would break a column between a
+  # parent line and its sub-entries. So the pass line below claims nothing
+  # about this clause: it is unproven, not proven.
   # -------------------------------------------------------------------------
+  M33_PLANTED=0
   m33_planted() {
     local label="$1" want="$2"; shift 2
     local out rc
+    M33_PLANTED=$((M33_PLANTED + 1))
     out=$(python3 tests/unicodeprint.py "$@" 2>&1) && rc=0 || rc=$?
     [ "$rc" -ne 0 ] \
       || { printf '%s\n' "$out" >&2; fail "M33 self-test: the reader passed the planted case ($label), so its green over the real artifacts says nothing"; }
@@ -12091,7 +12118,8 @@ if [ "${1:-}" = "--self-test" ]; then
   # evidence of anything — it would be the copy that was wrong, not the plant.
   python3 tests/unicodeprint.py marks examples/unicode.qmd "${M33_TERMS[@]}" > /dev/null \
     && python3 tests/unicodeprint.py entries "$M33_PDF" "${M33_TERMS[@]}" > /dev/null \
-    || fail "M33 self-test: the readers fail on the unplanted fixture and render, so no failure below is evidence of anything"
+    && python3 tests/unicodeprint.py stopped "$M33_ENGINE_LOG" "${M33_GREEK[@]}" > /dev/null \
+    || fail "M33 self-test: the readers fail on the unplanted fixture, render and engine log, so no failure below is evidence of anything"
 
   # --- marks: the stated list and the fixture's own marks.
   #
@@ -12122,6 +12150,17 @@ if [ "${1:-}" = "--self-test" ]; then
     'stated but not marked' \
     marks "$M33W/unmarked.qmd" "${M33_TERMS[@]}"
 
+  # `marks` reads the same `<level>:<term>` specs `entries` does and then
+  # discards the level half, so nothing in this reading's own output can show
+  # that it parsed the spec at all. Planting the spec here is what holds it to
+  # the contract its argv states: a caller who wrote a level and no term
+  # reaches a reading with no term to look for, and the count clause below
+  # would report the stated list as the wrong length rather than naming the
+  # spec that is malformed.
+  m33_planted 'a spec stating a level and an empty term, through marks' \
+    'names an empty term' \
+    marks examples/unicode.qmd "${M33_TERMS[@]}" '0:'
+
   # --- entries: a term's own printed entry line.
   m33_planted 'a stated term the fixture prints no entry for' \
     'has no entry line of its own' \
@@ -12144,6 +12183,16 @@ if [ "${1:-}" = "--self-test" ]; then
   m33_planted 'a term stated with no level at all' \
     'is not a <level>:<term> pair' \
     entries "$M33_PDF" 'Ascii'
+
+  # The level's own spelling. Python reads a digit from any script and `int()`
+  # gives it a value, so a level written outside ASCII would be taken as a
+  # level and the term looked for at it; the reading would then go red naming
+  # a missing entry line, which is the render's fault and not the spec's.
+  # The level below is U+0663 ARABIC-INDIC DIGIT THREE, written literally
+  # because this repo builds on bash 3.2, whose quoting has no `\u` escape.
+  m33_planted 'a level written in digits of another script' \
+    'not written in ASCII digits' \
+    entries "$M33_PDF" '٣:foo'
 
   # A captured PDF that prints no index at all — beamer carries none. Not a
   # mutation: the artifact is already in the capture set, and pointing the
@@ -12240,6 +12289,53 @@ M33SPLITPY
     'but never in one error' \
     stopped "$M33W/splitrejection.log" "${M33_GREEK[@]}"
 
+  # The unclosed-report clause. TeX closes an error report with the echoed
+  # source line; a log whose last `! ` line is never closed carries a report
+  # that never ended, and the font and package chatter after it belongs to no
+  # error at all. This plant states the signature and the character ONLY in
+  # that chatter, so a reader that closes the final report at EOF reads both
+  # out of a report the log does not carry and calls them "in one error
+  # report". Removing every real error report first is what leaves the chatter
+  # as the only place either half is stated.
+  python3 - "$M33_ENGINE_LOG" "$M33W/unclosed.log" <<'M33UNCLOSEDPY' \
+    || fail "M33 self-test: the unclosed-report mutation did not apply to the engine control's log, so the plant below would test the unmutated log"
+import io, re, sys
+
+lines = io.open(sys.argv[1], encoding='utf-8', errors='replace').read().splitlines()
+out, inside, dropped = [], False, 0
+for line in lines:
+    if line.startswith('! '):
+        inside, dropped = True, dropped + 1
+        continue
+    if inside:
+        if re.match(r'^l\.\d', line):
+            inside = False
+        continue
+    out.append(line)
+if not dropped:
+    print('FAIL: M33 self-test: the engine control log carries no error report '
+          'to remove, so the tail appended below would not be the only place '
+          'this plant states the rejection', file=sys.stderr)
+    sys.exit(1)
+rest = '\n'.join(out)
+if 'not set up for use with LaTeX' in rest or 'Unicode character' in rest:
+    print('FAIL: M33 self-test: the engine control log states the rejection '
+          'outside its error reports, so the tail appended below would not be '
+          'the only place this plant states it', file=sys.stderr)
+    sys.exit(1)
+tail = [
+    '! LaTeX Error: an error report this log never closes.',
+    '',
+    'Type  H <return>  for immediate help.',
+    'Unicode character θ (U+03B8)',
+    '(inputenc)                 not set up for use with LaTeX.',
+]
+io.open(sys.argv[2], 'w', encoding='utf-8').write(rest + '\n' + '\n'.join(tail) + '\n')
+M33UNCLOSEDPY
+  m33_planted 'the rejection stated only in the chatter after an error report the log never closes' \
+    'but never in one error' \
+    stopped "$M33W/unclosed.log" "${M33_GREEK[@]}"
+
   # --- absent: the two silent-drop controls' reading.
   m33_planted "a control's own present-term named as one it never prints" \
     'prints no entry line for' \
@@ -12276,7 +12372,7 @@ M33SPLITPY
     'unknown mode' \
     entrys "$M33_PDF" "${M33_TERMS[@]}"
 
-  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — twenty plants naming eighteen distinct clauses"
+  pass "M33: each of the $M33_PLANTED planted defects makes a reading of tests/unicodeprint.py go red with the message of the clause it plants; the two clauses named in the comment that opens this block have no plant and are claimed for by nothing here"
 
   # --- The recipe font guard. It runs before any check, so a red run is what
   # a contributor without the font sees rather than a LaTeX log; that also

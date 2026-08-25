@@ -11975,18 +11975,57 @@ if [ "${1:-}" = "--self-test" ]; then
     'no terms to look for' \
     entries "$M33_PDF"
 
-  # --- stopped: the pdflatex control's log.
-  m33_planted "a successful render's log, which carries no rejection" \
+  # --- stopped: the pdflatex control's log. Every plant here is a mutation of
+  # that LaTeX log and not of Quarto's stdout: the reading parses TeX's own
+  # error-report shape (`! ` opens one, the echoed `l.<n>` source line closes
+  # it), and a log written by something else exercises none of that.
+
+  grep -v 'not set up for use with LaTeX' "$M33_ENGINE_LOG" \
+    > "$M33W/norejection.log"
+  cmp -s "$M33_ENGINE_LOG" "$M33W/norejection.log" \
+    && fail "M33 self-test: the signature-deleting mutation changed nothing in the engine control's log, so the plant below would test the unmutated log"
+  m33_planted 'a LaTeX log with the rejection deleted' \
     'does not carry' \
-    stopped "$WORK/m33-nofont.log" "${M33_GREEK[@]}"
+    stopped "$M33W/norejection.log" "${M33_GREEK[@]}"
 
   sed 's/Unicode character θ/Unicode character Z/' "$M33_ENGINE_LOG" \
     > "$M33W/othercharacter.log"
   cmp -s "$M33_ENGINE_LOG" "$M33W/othercharacter.log" \
     && fail "M33 self-test: the character-replacing mutation changed nothing in the engine control's log"
   m33_planted 'the rejection, with the character it names replaced' \
-    'names no character the terms' \
+    'names a character the terms' \
     stopped "$M33W/othercharacter.log" "${M33_GREEK[@]}"
+
+  # The one-error clause. Both halves are still in the log and each would be
+  # found by a search over the whole file; only reading them per error report
+  # can tell that the rejection which stopped this render is not the one
+  # naming a character this fixture indexes.
+  python3 - "$M33_ENGINE_LOG" "$M33W/splitrejection.log" <<'M33SPLITPY' \
+    || fail "M33 self-test: the error-splitting mutation did not apply to the engine control's log, so the plant below would test the unmutated log"
+import io, sys
+
+lines = io.open(sys.argv[1], encoding='utf-8', errors='replace').read().splitlines()
+out, split = [], 0
+for line in lines:
+    out.append(line)
+    if line.startswith('! ') and 'Unicode character' in line:
+        # Close this error report with an echoed source line, then open a
+        # fresh one, so the explanation below — which carries the signature —
+        # lands in an error of its own.
+        out.append('l.1 \\index{planted}')
+        out.append('! LaTeX Error: a planted second error, about nothing this '
+                   'fixture indexes.')
+        split += 1
+if split != 1:
+    print(f'FAIL: M33 self-test: the engine log carries {split} error(s) '
+          f'opening on a Unicode character; the split plant expects exactly '
+          f'one', file=sys.stderr)
+    sys.exit(1)
+io.open(sys.argv[2], 'w', encoding='utf-8').write('\n'.join(out) + '\n')
+M33SPLITPY
+  m33_planted 'the signature and the character in separate errors' \
+    'but never in one error' \
+    stopped "$M33W/splitrejection.log" "${M33_GREEK[@]}"
 
   # --- absent: the two silent-drop controls' reading.
   m33_planted "a control's own present-term named as one it never prints" \
@@ -12024,7 +12063,7 @@ if [ "${1:-}" = "--self-test" ]; then
     'unknown mode' \
     entrys "$M33_PDF" "${M33_TERMS[@]}"
 
-  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — eighteen plants over eighteen reachable clauses"
+  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — twenty plants naming eighteen distinct clauses"
 
   # The two self-checks' own discrimination. Each reads the suite's own source
   # for a SHAPE, which is the reading M23's lesson names as certifying a

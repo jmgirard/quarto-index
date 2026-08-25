@@ -191,6 +191,38 @@ def cmd_entries(pdf, expected):
 
 STOP_SIGNATURE = 'not set up for use with LaTeX'
 
+# TeX opens an error report with `! ` in column one and closes it with the
+# echoed source line, `l.<n>`. Everything between belongs to that one error,
+# including the indented continuation line inputenc/LaTeX writes its
+# explanation on — which is where STOP_SIGNATURE sits, one line below the
+# `Unicode character` line it is about.
+CONTEXT_LINE = re.compile(r'^l\.\d')
+
+
+def error_blocks(log):
+    """The log's `! ...` error reports, each as one string.
+
+    A block runs from its `! ` line to the echoed source line that closes it,
+    or to the next `! ` line where no source line intervenes. Text outside any
+    error report — the font and package chatter that fills most of a LaTeX log
+    — belongs to no block and is deliberately unreachable from here.
+    """
+    blocks, current = [], None
+    for line in log.splitlines():
+        if line.startswith('! '):
+            if current is not None:
+                blocks.append('\n'.join(current))
+            current = [line]
+        elif current is not None:
+            if CONTEXT_LINE.match(line):
+                blocks.append('\n'.join(current))
+                current = None
+            else:
+                current.append(line)
+    if current is not None:
+        blocks.append('\n'.join(current))
+    return blocks
+
 
 def cmd_stopped(log_path, terms):
     log = open(log_path, encoding='utf-8', errors='replace').read()
@@ -199,14 +231,24 @@ def cmd_stopped(log_path, terms):
             f'whatever stopped that render is not the rejection README '
             f'teaches a reader to recognize')
     wanted = {c for term in terms for c in term if ord(c) > 0x7F}
-    named = sorted(c for c in wanted if f'Unicode character {c} ' in log)
+    anywhere = sorted(c for c in wanted if f'Unicode character {c} ' in log)
+    if not anywhere:
+        die(f'FAIL: M33: no error in {log_path} names a character the terms '
+            f'{list(terms)} are made of, so the rejection it reports is not '
+            f'about a term this fixture indexes')
+    blocks = error_blocks(log)
+    named = sorted({c for block in blocks if STOP_SIGNATURE in block
+                    for c in wanted if f'Unicode character {c} ' in block})
     if not named:
-        die(f'FAIL: M33: the error in {log_path} names no character the '
-            f'terms {list(terms)} are made of, so the rejection it reports '
-            f'is not about a term this fixture indexes')
+        die(f'FAIL: M33: {log_path} carries {STOP_SIGNATURE!r} and names '
+            f'{", ".join(f"U+{ord(c):04X}" for c in anywhere)}, but never in '
+            f'one error: the rejection that stopped this render and the '
+            f'character this fixture indexes are separate errors, and the '
+            f'two read apart say nothing about each other '
+            f'({len(blocks)} error report(s) in the log)')
     print(f'ok   M33: {log_path} stops on '
           f'{", ".join(f"U+{ord(c):04X}" for c in named)}, which the terms '
-          f'named carry')
+          f'named carry, in one error report')
 
 
 def cmd_absent(pdf, present_spec, absent):

@@ -90,7 +90,7 @@ its own milestone.
       call sites (`tests/run-tests.sh:4249`, `:4353`, `:4366`, `:4380`).
       Plant, per reading, a term stated at a level the render does not print
       it at.
-- [ ] T3: in `cmd_stopped` (`tests/unicodeprint.py:140`), match the stop
+- [x] T3: in `cmd_stopped` (`tests/unicodeprint.py:140`), match the stop
       signature and the `Unicode character` line within one error block rather
       than searching the whole log for each. Rebuild the two plants
       (`tests/run-tests.sh:11953`, `:11961`) on the engine control's LaTeX log:
@@ -121,8 +121,9 @@ its own milestone.
 - 2026-08-24: audit deviation — this session is configured to not spawn subagents, so the audit ran inline in the authoring context rather than in a fresh-context [O] reader; the reader-freshness the instrument depends on was not obtained.
 - 2026-08-24: plan gate chose reading the capture's producer with `pdfinfo` over keeping control (d)'s LaTeX log and reading its engine banner, because the producer is read from the captured artifact rather than a build scratch file (M24's capture rule) and was already the probe used by hand at M34's review; falsified by a Quarto or engine that writes no usable producer string into the PDF.
 - 2026-08-24: plan gate chose simplifying README's recipe-block check to a stated line list over hardening it into a two-directional file comparison, because the checker-regress shape recommends simplifying a repo-internal checker and the stated list closes the reported hole with fewer moving parts; falsified by a recipe whose copyable block cannot be stated as a fixed line list — one carrying a value that legitimately varies between README and the fixture.
-- 2026-08-24: T1+T2 landed together — the reader change and its call sites cannot be green apart, so one commit ticks both; `entries` and `absent` now take `<level>:<term>`, assert `columns_carry_top_level` before reading a level, and three new plants cover the two level clauses and the pair form (15 M33 plants -> 18); suite 351 checks, exit 0.
 - 2026-08-24: plan gate chose one milestone over splitting the reader repairs from the guard-and-control repairs, because both halves edit one test section and the split's second half would wait on the first; falsified by the implementation running past three sittings or over the 150-line plan cap.
+- 2026-08-24: T1+T2 landed together — the reader change and its call sites cannot be green apart, so one commit ticks both; `entries` and `absent` now take `<level>:<term>`, assert `columns_carry_top_level` before reading a level, and three new plants cover the two level clauses and the pair form (15 M33 plants -> 18); suite 351 checks, exit 0.
+- 2026-08-24: T3 — `stopped` now parses the log into TeX error reports (`! ` opens one, the echoed `l.<n>` line closes it) and requires the signature and an indexed character in the SAME report; its three plants are all mutations of the engine control's LaTeX log — rejection deleted, character replaced, the two split into separate errors. The M33 plant summary said "fifteen plants over fifteen reachable clauses" while the file held sixteen plants naming fourteen distinct clauses; it now states the counts the file has (twenty plants, eighteen distinct clauses). Self-test 487 checks, exit 0.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

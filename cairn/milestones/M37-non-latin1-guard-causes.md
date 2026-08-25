@@ -1,6 +1,6 @@
 # M37: The non-Latin-1 guards report the cause they hit
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M36
 - **Driving RR:** —
@@ -107,7 +107,7 @@ KI81–85, KI87 — stays on its candidate row.
       and state in the `M33_NOENGINE_PRODUCER` ORACLE RULE comment that it and
       README's engine word are two hand statements. Record all three
       dispositions, and F3's fold into T1, in the Decisions section.
-- [ ] T8. Run both suite modes; state the resulting counts against the merge
+- [x] T8. Run both suite modes; state the resulting counts against the merge
       base in the work log.
 
 ## Work log
@@ -128,6 +128,8 @@ KI81–85, KI87 — stays on its candidate row.
 - 2026-08-25: each of the three demonstrations planted and shown red. Strip builder with its zero-count clause removed: <<reported success over a log carrying no error report>>. Options demonstration fed the M35 form: <<the bounded mutation changed bytes outside the `mainfontoptions:` block: it emitted 111 character(s) against the 1268 the fixture carries with that block cut out>> — the M35 range deleted the document's body, which is M35-F13 measured. README demonstration fed the M35 form: <<the bounded form added 2 unstated line(s)>>. Unplanted, the self-test is green at 494 checks, up from 491.
 
 - 2026-08-25: T7 — the face list is printed on a green run (4 faces, named), the recipe-block check's comment and both pass lines now say the fixture direction is a whole-file substring search rather than a front-matter line test, and the `M33_NOENGINE_PRODUCER` ORACLE RULE comment states that it and README's `lualatex` are two hand statements no check compares. All four dispositions, F3's fold into T1 among them, are in the Decisions section above. Self-test green at 496 checks.
+
+- 2026-08-25: T8 — both modes green off the merge base a631685: 354 plain (was 352) and 496 self-test (was 491). Plain gains the two font-guard domain lines, one per `require_pdf_tools` call site; the self-test gains those two plus the three bounded-mutation demonstrations. Nothing dropped. Status review.
 
 ## Decisions
 

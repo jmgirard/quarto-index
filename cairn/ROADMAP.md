@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-25 (M36 done and archived; M31 pruned under termina
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M37 | The non-Latin-1 guards report the cause they hit | in-progress | M36 | normal | milestones/M37-non-latin1-guard-causes.md |
+| M37 | The non-Latin-1 guards report the cause they hit | review | M36 | normal | milestones/M37-non-latin1-guard-causes.md |
 | M36 | The non-Latin-1 readers stop reading text that belongs to no error | done | — | normal | milestones/archive/M36-unicode-reader-claims.md |
 | M35 | The non-Latin-1 checks fail on the defects they claim to catch | done | — | normal | milestones/archive/M35-non-latin1-check-hardening.md |
 | M34 | The non-Latin-1 recipe names a font TeX Live still maintains | done | — | normal | milestones/archive/M34-stix-two-recipe.md |

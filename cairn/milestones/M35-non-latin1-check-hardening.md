@@ -96,7 +96,7 @@ its own milestone.
       (`tests/run-tests.sh:11953`, `:11961`) on the engine control's LaTeX log:
       one with the rejection deleted, one splitting the signature and the
       character into separate errors.
-- [ ] T4: replace the single `kpsewhich STIXTwoText-Regular.otf` guard
+- [x] T4: replace the single `kpsewhich STIXTwoText-Regular.otf` guard
       (`tests/run-tests.sh:1373`) with a parse of `examples/unicode.qmd`'s
       `mainfontoptions` block into font filenames, each probed. Show the guard
       red with one face made unfindable, and show its parse non-empty.
@@ -124,6 +124,7 @@ its own milestone.
 - 2026-08-24: plan gate chose one milestone over splitting the reader repairs from the guard-and-control repairs, because both halves edit one test section and the split's second half would wait on the first; falsified by the implementation running past three sittings or over the 150-line plan cap.
 - 2026-08-24: T1+T2 landed together — the reader change and its call sites cannot be green apart, so one commit ticks both; `entries` and `absent` now take `<level>:<term>`, assert `columns_carry_top_level` before reading a level, and three new plants cover the two level clauses and the pair form (15 M33 plants -> 18); suite 351 checks, exit 0.
 - 2026-08-24: T3 — `stopped` now parses the log into TeX error reports (`! ` opens one, the echoed `l.<n>` line closes it) and requires the signature and an indexed character in the SAME report; its three plants are all mutations of the engine control's LaTeX log — rejection deleted, character replaced, the two split into separate errors. The M33 plant summary said "fifteen plants over fifteen reachable clauses" while the file held sixteen plants naming fourteen distinct clauses; it now states the counts the file has (twenty plants, eighteen distinct clauses). Self-test 487 checks, exit 0.
+- 2026-08-24: T4 — the font guard now parses `examples/unicode.qmd`'s `mainfont:` stem and `mainfontoptions:` `*Font=` lines into filenames (4 faces here, was 1 hardcoded) and probes each with `kpsewhich`; four plants show it red on a copy of the fixture with a face renamed to a file no TeX tree carries, with no `*Font=` key, with no options block, and with no `mainfont:`, and the unplanted fixture is required green first. Self-test 488 checks, exit 0.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

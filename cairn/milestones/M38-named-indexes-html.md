@@ -1,6 +1,6 @@
 # M38: Marks name which index they belong to, and the HTML back-end prints each
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -93,42 +93,55 @@ collation rules — nothing here changes how one index is ordered or printed.
 
 ## Tasks
 
-- [x] T1: Read the `indexes:` metadata into an ordered name→title table with
-      the first name the default, in `core.lua` beside the other constants
-      and called from `index.lua`'s `Pandoc`; report a declaration that is
-      malformed, empty, or repeats a name. A document with no `indexes:` key
-      yields the one unnamed index titled `Index`, exactly today's behavior.
-- [x] T2: Read `index=` on a mark in all four Span passes
-      (`passes.lua:42,83,163,318`) and on the marker div in `marker.lua`;
-      report a value naming no declared index and file the mark in the
-      default index.
+<!-- T1-T10 were the original cut; each is done and its outcome is the work-log
+     line naming it, so the text here is compressed to what the task was.
+     T11-T17 were added at the 2026-08-25 review gate. -->
+
+- [x] T1: Read `indexes:` into an ordered name->title table, first name the
+      default, reporting a malformed, empty or repeating declaration; no
+      `indexes:` key keeps today's single unnamed index.
+- [x] T2: Read `index=` on a mark and on a placement marker; report a value
+      naming no declared index and file the mark in the default index.
 - [x] T3: Key the format-neutral accumulators per index — `marked_paths`,
-      `pending_xrefs` and `clamped_paths` in `marks.lua`, `sort_keys` in
-      `sortkeys.lua:21`, and the `pending`/`waiting` maps inside
-      `pair_ranges` — one namespace per index rather than one per document,
-      with `reset` still emptying every one of them in place.
-- [x] T4: Make `resolve_markers` and `place_index` in `marker.lua` per index:
-      one surviving marker per index name, the duplicate report naming the
-      index it repeats, and `place_index` taking a per-index block map so
-      both back-ends still share one placement rule.
-- [x] T5: `html.lua`: build one entry tree per index and emit one section
-      each in declared order, each minting its section id and entry-id prefix
-      from the shared `taken` set so two sections cannot collide.
-- [x] T6: `latex.lua`/`index.lua` and `book.lua`: file every named-index mark
-      in the default index, emit one report per such mark and per such
-      marker, and keep exactly one `\printindex` and one book index.
-- [x] T7: `examples/named-indexes.qmd` and its manifest, covering the
-      two-index shape, the cross-index `see=`, the cross-index sort key, the
-      cross-index range pair and the three markers — plus one shape this
-      milestone leaves untouched: a single-index document with no `indexes:`
-      block whose captured output must not change.
-- [x] T8: The checks for AC1–AC5 in `tests/run-tests.sh` and
-      `tests/htmlindex.py`, each reading a captured artifact rather than the
-      working tree.
+      `pending_xrefs`, `clamped_paths`, `sort_keys` and `pair_ranges`'
+      pending/waiting maps — with `reset` still emptying each in place.
+- [x] T4: Make `resolve_markers` and `place_index` per index: one surviving
+      marker per name, the duplicate report naming the index it repeats, and
+      `place_index` taking a per-index block map.
+- [x] T5: `html.lua`: one entry tree and one section per index in declared
+      order, section ids and entry ids minted from the shared `taken` set.
+- [x] T6: `latex.lua`/`index.lua` and `book.lua`: fold every named-index mark
+      into the default index, report each mark and marker, keep one
+      `\printindex` and one book index.
+- [x] T7: `examples/named-indexes.qmd` and its manifest, plus the single-index
+      twin whose captured output must not change.
+- [x] T8: The AC1-AC5 checks in `tests/run-tests.sh` and `tests/htmlindex.py`,
+      each over a captured artifact.
 - [x] T9: Self-test entries planting one defect per clause of each reader T8
       adds, each shown red.
-- [x] T10: README's new section under `## Syntax`, the DESIGN convention line
-      naming the per-index scoping rule, and the ROADMAP row edits.
+- [x] T10: README's `### Named indexes` section, the DESIGN convention line,
+      and the ROADMAP row edits.
+- [ ] T11: Validate a declared index name as an HTML id fragment: report a name
+      that cannot be one and refuse to build a section id from it, so no render
+      emits an invalid `id` silently (R1).
+- [ ] T12: In `resolve_markers`, settle a marker's placement slot so a folded
+      marker naming a second index cannot take the default index's slot, and
+      the author's own default marker is never reported as its duplicate (R2).
+- [ ] T13: Head a folded union index with something that does not claim to be
+      one declared index, matching the reason `section_id` keeps its id neutral
+      (R3). Correct `DESIGN.md`'s KI10 inventory in the same task, marked
+      `corrected M38`, to carry `indexes.lua`'s four cells (R13).
+- [ ] T14: Report a second marker naming the same non-default index under fold,
+      rather than dropping it silently, so README's claim holds in PDF and in
+      books (R4).
+- [ ] T15: Give the declared-order rule a fixture that marker order cannot
+      satisfy — the markerless append path, and a document whose marker order
+      differs from its declared order (R5).
+- [ ] T16: Make AC6's command check read what the suite runs rather than
+      matching a substring of its text, and pin the `indexes:` declaration
+      block the criterion names (R6, R12's five-row comment).
+- [ ] T17: Plant a section heading at the wrong level, so the section reader's
+      tag comparison is shown red on its own clause (R7).
 
 ## Work log
 
@@ -318,3 +331,27 @@ scratch copy, never against the reviewer's account of it.
   README's "A mark says which index it belongs to with `index=`" sentence or its
   example, so that claim — one AC6 enumerates — could be deleted from README
   without the check going red.
+
+### Triage
+
+Maintainer at the 2026-08-25 gate: send back, fixing the four confirmed output
+defects and the three check gaps that let them through. R1 and R2 qualify under
+the return floor as load-bearing defects in what the extension does for an
+author — silently invalid HTML, and a wrong placement site paired with a report
+accusing the author of a second marker they never wrote. Both sit inside
+changes this milestone intentionally made, so the out-of-scope member for an
+intentional change does not cover them.
+
+- R1, R2, R3, R4 → fix now, on the branch, as T11-T14.
+- R5, R6, R7 → fix now, as T15-T17: the checks that were supposed to fence this
+  work and did not.
+- R8, R9, R10, R11, R14 → follow-up. Filed as candidate rows or Known issues in
+  the hygiene pass of whichever review merges this milestone; R9 is a Known
+  issue (a fact about today's behavior, not proposed work).
+- R12's comment and count slips → fixed with T15-T17. Its work-log citation
+  (48 -> 61 against a shipped 62) is history and is superseded by the T11-T17
+  work-log lines, never edited.
+- R13 → fix now, with T11-T14, since the entry it corrects is about the state
+  this milestone added.
+- 2026-08-25: review — PR #38 opened; `main` had not moved. All seven criteria passed with fresh evidence (full suite --self-test, exit 0, 520 checks) and the consistency gate was clean. Returned to in-progress at the merge gate under the return floor: the independent review found, and this session re-verified by probe, that a declared index name is never validated as an HTML id fragment so a name with a space emits an invalid `id` with no report (R1), and that in a folded render a marker naming a second index takes the default index's placement slot while the author's own default marker is reported as its duplicate (R2). R3, R4 and the three check gaps R5-R7 ride the same return. Defect return 1 for this milestone; no amendment return, no criterion reinterpreted. Requested changes logged as T11-T17 at the gate's direction.
+- 2026-08-25: the seven added tasks put the plan-owned body 4 lines over the cap; the Tasks section, the heaviest, was compressed in one rewrite — T1-T10 shortened to what each task was, their outcomes already standing in the work-log lines above. `cairn_validate` passes; the 17-task split tripwire is an advisory this milestone accepts, the seven added tasks being one round of gate-directed repair rather than new scope.

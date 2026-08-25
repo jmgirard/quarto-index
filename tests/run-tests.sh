@@ -647,12 +647,12 @@ M33_GREEK=(θεωρία ψυχή)
 M33_ASCII=Ascii
 M33_ASCII_ENTRY="0:$M33_ASCII"
 M33_CJK=漢字
-# ORACLE RULE. The engine README's `### Terms outside Latin-1` third path names
-# for a document that sets the font and no `pdf-engine:` — stated here by hand
-# from that paragraph, never read back out of a render. The name only, not the
-# version: a TeX Live update that bumps the version says nothing about which
-# engine ran, and a check that went red on it would be red for no reason a
-# reader could act on.
+# ORACLE RULE. This is the engine that README's `### Terms outside Latin-1`
+# third path names for a document which sets the font and leaves `pdf-engine:`
+# unset — stated here by hand from that paragraph, never read back out of a
+# render. The name only, not the version: a TeX Live update that bumps the
+# version says nothing about which engine ran, and a check that went red on it
+# would be red for no reason a reader could act on.
 M33_NOENGINE_PRODUCER=LuaTeX
 # The captures the M33 checks and the self-test both read, named once.
 M33_PDF="$CAPTURE_ROOT/m33-recipe/unicode.pdf"
@@ -12164,11 +12164,40 @@ if [ "${1:-}" = "--self-test" ]; then
   # error-report shape (`! ` opens one, the echoed `l.<n>` source line closes
   # it), and a log written by something else exercises none of that.
 
-  grep -v 'not set up for use with LaTeX' "$M33_ENGINE_LOG" \
-    > "$M33W/norejection.log"
-  cmp -s "$M33_ENGINE_LOG" "$M33W/norejection.log" \
-    && fail "M33 self-test: the signature-deleting mutation changed nothing in the engine control's log, so the plant below would test the unmutated log"
-  m33_planted 'a LaTeX log with the rejection deleted' \
+  # Every error report removed WHOLE — the `! ` line that opens one through the
+  # echoed source line that closes it — so what is left is a log carrying no
+  # rejection at all, which is the input class this clause is the reading of.
+  # Deleting the signature line alone would leave the inputenc error standing
+  # and the plant would be about a log that still carries the rejection.
+  python3 - "$M33_ENGINE_LOG" "$M33W/norejection.log" <<'M33NOREJPY' \
+    || fail "M33 self-test: the error-removing mutation did not apply to the engine control's log, so the plant below would test the unmutated log"
+import io, re, sys
+
+lines = io.open(sys.argv[1], encoding='utf-8', errors='replace').read().splitlines()
+out, inside, dropped = [], False, 0
+for line in lines:
+    if line.startswith('! '):
+        inside, dropped = True, dropped + 1
+        continue
+    if inside:
+        if re.match(r'^l\.\d', line):
+            inside = False
+        continue
+    out.append(line)
+if not dropped:
+    print('FAIL: M33 self-test: the engine control log carries no error report '
+          'to remove, so the plant below would test the unmutated log',
+          file=sys.stderr)
+    sys.exit(1)
+rest = '\n'.join(out)
+if 'not set up for use with LaTeX' in rest:
+    print('FAIL: M33 self-test: the signature survived the error-removing '
+          'mutation, so the plant below would not be about a log carrying no '
+          'rejection', file=sys.stderr)
+    sys.exit(1)
+io.open(sys.argv[2], 'w', encoding='utf-8').write(rest + '\n')
+M33NOREJPY
+  m33_planted 'a LaTeX log carrying no error report at all' \
     'does not carry' \
     stopped "$M33W/norejection.log" "${M33_GREEK[@]}"
 

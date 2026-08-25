@@ -139,6 +139,7 @@ its own milestone.
 - 2026-08-24: minor plan amendment — T8 added to the task list as the discovered repair for the AC4 return; Goal, Scope, Acceptance criteria and Coverage untouched, AC4 still mapping to T4.
 - 2026-08-24: the 13 diff-lens findings the review recorded unactioned stay unactioned by user selection at this session's question gate, for triage at the re-review gate.
 - 2026-08-24: review round 2 — all seven criteria met with fresh evidence, AC4 ticked; consistency gate clean; three lenses returned 18 consolidated findings, none meeting the return floor (F1 falls outside AC2's domain, F3/F4 outside AC4's, both verified against the implementation); dispositions taken at the merge gate.
+- 2026-08-24: review round 2 triage — the maintainer delegated the disposition; F2 (the AC3 plant deleted only the signature line) and F18 (an ORACLE RULE comment that did not parse) fixed on the branch, both suite modes re-run green at 352 / 491; F1 and F3-F17 absorbed into the standing acceptance-suite hardening candidate row.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->
@@ -334,4 +335,22 @@ users; the declared tier is internal.
 - F18: the `M33_NOENGINE_PRODUCER` ORACLE RULE comment is ungrammatical and
   does not say what it governs.
 
-Dispositions are recorded at the merge gate below.
+**Dispositions.** At the merge gate the maintainer delegated the triage
+decision; the disposition taken was: fix the two findings that misdescribe this
+milestone's own work, file the other sixteen.
+
+- F2 — fixed on the branch. The AC3 plant now removes every error report whole
+  (the `! ` line through the echoed `l.<n>` line that closes it) and asserts
+  the signature does not survive the mutation, so the suite itself builds the
+  input class AC3 names; its label reads "a LaTeX log carrying no error report
+  at all".
+- F18 — fixed on the branch. The ORACLE RULE sentence was missing its subject
+  and did not parse; rewritten to say what the constant is and where it comes
+  from.
+- F1, F3-F17 — follow-up. Absorbed into the standing acceptance-suite
+  hardening candidate row rather than a new row (search-first: that row already
+  covers exactly this class of gap), pointing at this Review section.
+
+Both suite modes re-run after the two fixes: plain 352 checks exit 0,
+`--self-test` 491 checks exit 0 — the same counts the criterion evidence above
+records.

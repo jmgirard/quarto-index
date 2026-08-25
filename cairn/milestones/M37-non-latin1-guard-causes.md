@@ -94,11 +94,11 @@ KI81–85, KI87 — stays on its candidate row.
 - [x] T4. Make `pdf_producer_names` (`:1447`) hold its own status — read
       `pdfinfo` into a variable and test it, rather than returning a pipeline's
       — and add a self-test call outside any `&&`/`||` list.
-- [ ] T5. Bound the two `sed` plants: the "no options block" mutation to the
+- [x] T5. Bound the two `sed` plants: the "no options block" mutation to the
       `mainfontoptions:` block by its own extent, the extra-line README
       mutation to the `### Terms outside Latin-1` section as its sibling
       reordering plant already is.
-- [ ] T6. Make the `grep -v … > norejection.log` mutation assert it emitted
+- [x] T6. Make the `grep -v … > norejection.log` mutation assert it emitted
       lines, and show each of the three plants failing loudly on a fixture
       where its old form would have gone silent or mutated the wrong region.
 - [ ] T7. F6, F8 and F12, narrow-not-widen: print the face list on a green run;
@@ -122,6 +122,10 @@ KI81–85, KI87 — stays on its candidate row.
 - 2026-08-25: T3 — both unreachable clauses removed. `[ -n "$faces" ]` sat after a `require_recipe_fonts` that exits 1 on an empty list, and `if not stated:` after a `printf` over a literal array `set -u` would have stopped. Neither had a pass line of its own. The recipe-line list's non-emptiness is now stated where it is read, pointing at the self-test plants that each name one of those lines; the face list's is covered by T7's printed domain. Self-test green at 491 checks.
 
 - 2026-08-25: T4 — `pdf_producer_names` reads `pdfinfo` into a variable and absorbs its status there, so its two `return`s are the only statuses it produces. The self-test call was first written as `( set -eo pipefail; ... ) && rc=0 || rc=$?` and was green on the OLD form: bash suppresses errexit inside a subshell sitting in an `&&`/`||` list even when the subshell sets it again, so that shape reproduces the shielding the check exists to escape. Rewritten to background the subshell and read its status with `wait`, which leaves the call unshielded; on the old form planted back it goes red with <<printed no carries no Producer line report>>, and green on the repair at 491 checks.
+
+- 2026-08-25: T5+T6 — the three mutations are named builders (`m37_drop_options_block`, `m37_add_unstated_line`, `m37_strip_error_reports`), each bounded to the region its label names and each exiting non-zero, naming what it could not find, over an input carrying no such region. The two M35 forms are kept beside them as `*_m35_form`, used by nothing but the demonstrations. Three demonstrations added: the options block on a fixture with `filters:` renamed, the README insertion on a document carrying a second `Extension=.otf` line in an appendix, and the log strip on a log carrying no error report. Each demonstration also asserts the M35 form differs there, so a fixture that stopped discriminating would be caught rather than pass.
+- 2026-08-25: T6 — the `grep -v` form AC4 was written against is already gone: M35's own review commit 7680a3d replaced it with the python builder, which counts what it removed. What was owed was the demonstration, not the assertion.
+- 2026-08-25: each of the three demonstrations planted and shown red. Strip builder with its zero-count clause removed: <<reported success over a log carrying no error report>>. Options demonstration fed the M35 form: <<the bounded mutation changed bytes outside the `mainfontoptions:` block: it emitted 111 character(s) against the 1268 the fixture carries with that block cut out>> — the M35 range deleted the document's body, which is M35-F13 measured. README demonstration fed the M35 form: <<the bounded form added 2 unstated line(s)>>. Unplanted, the self-test is green at 494 checks, up from 491.
 
 ## Decisions
 

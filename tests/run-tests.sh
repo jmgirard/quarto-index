@@ -12240,8 +12240,12 @@ if [ "${1:-}" = "--self-test" ]; then
   # rejection at all, which is the input class this clause is the reading of.
   # Deleting the signature line alone would leave the inputenc error standing
   # and the plant would be about a log that still carries the rejection.
-  python3 - "$M33_ENGINE_LOG" "$M33W/norejection.log" <<'M33NOREJPY' \
-    || fail "M33 self-test: the error-removing mutation did not apply to the engine control's log, so the plant below would test the unmutated log"
+  # Removing every error report is a mutation that can quietly do nothing —
+  # over a log carrying none it would emit a copy and the plant below would be
+  # about the unmutated log. So it counts what it removed and says so when the
+  # count is zero, rather than leaving an empty or unchanged file behind.
+  m37_strip_error_reports() {
+    python3 - "$1" "$2" <<'M37NOREJPY'
 import io, re, sys
 
 lines = io.open(sys.argv[1], encoding='utf-8', errors='replace').read().splitlines()
@@ -12256,21 +12260,37 @@ for line in lines:
         continue
     out.append(line)
 if not dropped:
-    print('FAIL: M33 self-test: the engine control log carries no error report '
-          'to remove, so the plant below would test the unmutated log',
+    print(f'FAIL: {sys.argv[1]} carries no error report for this mutation to '
+          f'remove, so it cannot build the input class its label names',
           file=sys.stderr)
     sys.exit(1)
 rest = '\n'.join(out)
 if 'not set up for use with LaTeX' in rest:
-    print('FAIL: M33 self-test: the signature survived the error-removing '
-          'mutation, so the plant below would not be about a log carrying no '
-          'rejection', file=sys.stderr)
+    print(f'FAIL: the inputenc signature survived removing {dropped} error '
+          f'report(s) from {sys.argv[1]}, so the result still carries the '
+          f'rejection this mutation is meant to take out', file=sys.stderr)
     sys.exit(1)
 io.open(sys.argv[2], 'w', encoding='utf-8').write(rest + '\n')
-M33NOREJPY
+M37NOREJPY
+  }
+
+  m37_strip_error_reports "$M33_ENGINE_LOG" "$M33W/norejection.log" \
+    || fail "M33 self-test: the error-removing mutation did not apply to the engine control's log, so the plant below would test the unmutated log"
   m33_planted 'a LaTeX log carrying no error report at all' \
     'does not carry' \
     stopped "$M33W/norejection.log" "${M33_GREEK[@]}"
+
+  # --- M37: this mutation over a log carrying no error report at all. The
+  # bare `grep -v` M35 first wrote here would have emitted nothing and, under
+  # `set -e`, killed the run without a word; what stands here counts what it
+  # removed and names the input it could not build the class from.
+  printf 'This is a LaTeX log with no error report in it.\n(./probe.tex\n)\n' \
+    > "$M33W/noreports.log"
+  M37_STRIP_OUT=$(m37_strip_error_reports "$M33W/noreports.log" "$M33W/noreports-out.log" 2>&1) \
+    && fail "M37 self-test: the error-report-removing mutation reported success over a log carrying no error report, so a plant built from it would be about the unmutated log"
+  printf '%s' "$M37_STRIP_OUT" | grep -qF -- 'carries no error report for this mutation to remove' \
+    || { printf '%s\n' "$M37_STRIP_OUT" >&2; fail "M37 self-test: the error-report-removing mutation failed over a log carrying no error report, but not by saying so — that failure is not this clause naming what it could not find"; }
+  pass "M37: the error-report-removing mutation names what it could not find, rather than emitting an empty log, when handed a log carrying no error report"
 
   sed 's/Unicode character θ/Unicode character Z/' "$M33_ENGINE_LOG" \
     > "$M33W/othercharacter.log"
@@ -12450,13 +12470,92 @@ M33UNCLOSEDPY
     'names no `*Font=` face' \
     "$M33W/nofaces.qmd" recipe
 
-  sed '/^mainfontoptions:$/,/^filters:$/{/^filters:$/!d;}' examples/unicode.qmd \
-    > "$M33W/nooptions.qmd"
+  # The options-block removal, bounded by the block's OWN extent — the
+  # `mainfontoptions:` line and the indented `- ` lines under it — rather than
+  # by whatever key happens to follow it. M35 wrote this as a `sed` range
+  # ending at `/^filters:$/`; the demonstration below shows what that cost on a
+  # fixture where that key is not there to stop it.
+  m37_drop_options_block() {
+    python3 - "$1" "$2" <<'M37NOOPTPY'
+import io
+import re
+import sys
+
+src = io.open(sys.argv[1], encoding='utf-8').read()
+block = re.compile(r'^mainfontoptions:\n(?:[ \t]+- .*\n)+', re.M)
+found = block.search(src)
+if found is None:
+    print(f'FAIL: {sys.argv[1]} carries no `mainfontoptions:` block for this '
+          f'mutation to remove, so it cannot build the input class its label '
+          f'names', file=sys.stderr)
+    sys.exit(1)
+io.open(sys.argv[2], 'w', encoding='utf-8').write(
+    src[:found.start()] + src[found.end():])
+M37NOOPTPY
+  }
+
+  # The form M35 shipped. It exists for exactly one purpose — the
+  # demonstration below measures the bounded form against it — and builds no
+  # plant.
+  m37_drop_options_block_m35_form() {
+    sed '/^mainfontoptions:$/,/^filters:$/{/^filters:$/!d;}' "$1" > "$2"
+  }
+
+  m37_drop_options_block examples/unicode.qmd "$M33W/nooptions.qmd" \
+    || fail "M35 self-test: the options-block-removing mutation did not apply to the fixture, so the plant below would test the unmutated fixture"
   cmp -s examples/unicode.qmd "$M33W/nooptions.qmd" \
     && fail "M35 self-test: the options-block-removing mutation changed nothing in the fixture"
   m35_font_planted 'a fixture with no options block to read faces out of' \
     'carries no `mainfontoptions:` block' \
     "$M33W/nooptions.qmd" recipe
+
+  # --- M37: what the bound is worth, shown on a fixture where the M35 form
+  # mutated a region outside it. Renaming `filters:` is the whole difference:
+  # the old `sed` range had nothing left to stop at, ran to end of file, and
+  # deleted the document's body — so its "a fixture with no options block"
+  # plant was really a fixture with no content. The assertion is an identity,
+  # not the absence of a complaint: the bounded form's output must be the
+  # fixture with exactly that block cut out, byte for byte, and the M35 form's
+  # must NOT be, or this fixture does not tell the two apart at all.
+  sed 's/^filters:$/quarto-filters:/' examples/unicode.qmd > "$M33W/nofilters.qmd"
+  cmp -s examples/unicode.qmd "$M33W/nofilters.qmd" \
+    && fail "M37 self-test: renaming the fixture's \`filters:\` key changed nothing, so the demonstration below would not be about a fixture the M35 form runs past"
+  m37_drop_options_block_m35_form "$M33W/nofilters.qmd" "$M33W/nofilters-m35.qmd"
+  m37_drop_options_block "$M33W/nofilters.qmd" "$M33W/nofilters-m37.qmd" \
+    || fail "M37 self-test: the bounded options-block mutation could not apply to a fixture whose only difference is the name of the key after the block"
+  python3 - "$M33W/nofilters.qmd" "$M33W/nofilters-m35.qmd" "$M33W/nofilters-m37.qmd" <<'M37BOUNDPY' \
+    || fail "M37 self-test: the options-block mutation is not bounded to the block it names (its own FAIL line is above)"
+import io
+import re
+import sys
+
+src, m35, m37 = (io.open(p, encoding='utf-8').read() for p in sys.argv[1:4])
+block = re.search(r'^mainfontoptions:\n(?:[ \t]+- .*\n)+', src, re.M)
+if block is None:
+    print(f'FAIL: {sys.argv[1]} carries no `mainfontoptions:` block, so this '
+          f'demonstration has no bound to measure against', file=sys.stderr)
+    sys.exit(1)
+bounded = src[:block.start()] + src[block.end():]
+if m35 == bounded:
+    print(f'FAIL: the M35 form left exactly the bytes the bound allows, so '
+          f'{sys.argv[1]} does not tell the two forms apart and nothing below '
+          f'is evidence about the bound', file=sys.stderr)
+    sys.exit(1)
+if m37 != bounded:
+    print(f'FAIL: the bounded mutation changed bytes outside the '
+          f'`mainfontoptions:` block: it emitted {len(m37)} character(s) '
+          f'against the {len(bounded)} the fixture carries with that block cut '
+          f'out', file=sys.stderr)
+    sys.exit(1)
+M37BOUNDPY
+
+  # And the loud failure: the same mutation over a fixture carrying no block of
+  # the kind its label names — the one it just built.
+  M37_DROP_OUT=$(m37_drop_options_block "$M33W/nooptions.qmd" "$M33W/nooptions-twice.qmd" 2>&1) \
+    && fail "M37 self-test: the options-block mutation reported success over a fixture that carries no \`mainfontoptions:\` block, so it would hand a plant an unmutated copy"
+  printf '%s' "$M37_DROP_OUT" | grep -qF -- 'carries no `mainfontoptions:` block for this mutation to remove' \
+    || { printf '%s\n' "$M37_DROP_OUT" >&2; fail "M37 self-test: the options-block mutation failed over a fixture with no such block, but not by saying so — that failure is not this clause naming what it could not find"; }
+  pass "M37: the options-block mutation is bounded to the \`mainfontoptions:\` block by that block's own extent — on a fixture where the M35 form ran past it to end of file, it leaves every byte outside the block unchanged — and it names what it could not find rather than emitting a copy when there is no such block"
 
   sed '/^mainfont:/d' examples/unicode.qmd > "$M33W/nomainfont.qmd"
   cmp -s examples/unicode.qmd "$M33W/nomainfont.qmd" \
@@ -12569,13 +12668,105 @@ M35REORDERPY
     'same lines, different order' \
     "$M33W/reordered.md"
 
-  awk '{print} /^  - Extension=\.otf$/{print "  - SmallCapsFont=*-SmallCaps"}' \
-    README.md > "$M33W/extra-line.md"
+  # The unstated-line insertion, bounded to the `### Terms outside Latin-1`
+  # section the check reads — as its sibling reordering plant above already is.
+  # M35 wrote this as a bare `awk` over the whole file, which would have
+  # inserted the line at every `Extension=.otf` in README, wherever it sat.
+  m37_add_unstated_line() {
+    python3 - "$1" "$2" <<'M37EXTRAPY'
+import io
+import re
+import sys
+
+text = io.open(sys.argv[1], encoding='utf-8').read()
+anchor = '### Terms outside Latin-1'
+if anchor not in text:
+    print(f'FAIL: {sys.argv[1]} carries no {anchor!r} section for this '
+          f'mutation to add a line inside, so it cannot build the input class '
+          f'its label names', file=sys.stderr)
+    sys.exit(1)
+start = text.index(anchor)
+after = re.search(r'^#{2,3} ', text[start + len(anchor):], re.M)
+end = start + len(anchor) + (after.start() if after else len(text) - start - len(anchor))
+section = text[start:end]
+target = re.search(r'^  - Extension=\.otf$', section, re.M)
+if target is None:
+    print(f'FAIL: the {anchor!r} section of {sys.argv[1]} carries no '
+          f'`  - Extension=.otf` line for this mutation to insert after, so it '
+          f'cannot build the input class its label names', file=sys.stderr)
+    sys.exit(1)
+cut = start + target.end()
+io.open(sys.argv[2], 'w', encoding='utf-8').write(
+    text[:cut] + '\n  - SmallCapsFont=*-SmallCaps' + text[cut:])
+M37EXTRAPY
+  }
+
+  # The form M35 shipped, kept only as what the demonstration below measures
+  # the bounded form against. Builds no plant.
+  m37_add_unstated_line_m35_form() {
+    awk '{print} /^  - Extension=\.otf$/{print "  - SmallCapsFont=*-SmallCaps"}' \
+      "$1" > "$2"
+  }
+
+  m37_add_unstated_line README.md "$M33W/extra-line.md" \
+    || fail "M35 self-test: the extra-line mutation did not apply to README, so the plant below would test the unmutated document"
   cmp -s README.md "$M33W/extra-line.md" \
     && fail "M35 self-test: the extra-line mutation changed nothing in README"
   m35_block_planted 'a line in the block the suite does not state' \
     'in the block, not stated: <<  - SmallCapsFont=*-SmallCaps>>' \
     "$M33W/extra-line.md"
+
+  # --- M37: the same demonstration for the README insertion. The document
+  # here carries a SECOND `  - Extension=.otf` line, in an appendix below every
+  # heading the section ends at; M35's file-wide `awk` inserted the unstated
+  # line after that one too, leaving a plant that mutated a block this check
+  # never reads. The bounded form touches only the section, and that is
+  # asserted as an identity outside it.
+  { cat README.md
+    printf '\n## An appendix this suite does not read\n\n```yaml\nmainfontoptions:\n  - Extension=.otf\n```\n'
+  } > "$M33W/second-extension.md"
+  m37_add_unstated_line_m35_form "$M33W/second-extension.md" "$M33W/second-extension-m35.md"
+  m37_add_unstated_line "$M33W/second-extension.md" "$M33W/second-extension-m37.md" \
+    || fail "M37 self-test: the bounded extra-line mutation could not apply to a README carrying a second Extension line outside the section"
+  python3 - "$M33W/second-extension.md" "$M33W/second-extension-m35.md" "$M33W/second-extension-m37.md" <<'M37EXTRABOUNDPY' \
+    || fail "M37 self-test: the extra-line mutation is not bounded to the \`### Terms outside Latin-1\` section (its own FAIL line is above)"
+import io
+import re
+import sys
+
+src, m35, m37 = (io.open(p, encoding='utf-8').read() for p in sys.argv[1:4])
+added = '  - SmallCapsFont=*-SmallCaps'
+anchor = '### Terms outside Latin-1'
+start = src.index(anchor)
+after = re.search(r'^#{2,3} ', src[start + len(anchor):], re.M)
+end = start + len(anchor) + (after.start() if after else len(src) - start - len(anchor))
+if m35.count(added) != 2:
+    print(f'FAIL: the M35 form added {m35.count(added)} unstated line(s) to a '
+          f'document carrying two `Extension=.otf` lines; this demonstration '
+          f'is about the one it added outside the section, and without it the '
+          f'two forms are not told apart', file=sys.stderr)
+    sys.exit(1)
+if m37.count(added) != 1:
+    print(f'FAIL: the bounded form added {m37.count(added)} unstated line(s); '
+          f'the plant it builds is one line the suite does not state',
+          file=sys.stderr)
+    sys.exit(1)
+if m37[:start] != src[:start] or m37[len(m37) - (len(src) - end):] != src[end:]:
+    print(f'FAIL: the bounded form changed bytes outside the {anchor!r} '
+          f'section', file=sys.stderr)
+    sys.exit(1)
+M37EXTRABOUNDPY
+
+  # And the loud failure: a document carrying no section of the kind the label
+  # names.
+  grep -vF -- '### Terms outside Latin-1' README.md > "$M33W/nosection.md"
+  cmp -s README.md "$M33W/nosection.md" \
+    && fail "M37 self-test: removing the section heading changed nothing in README, so the demonstration below would be about the unmutated document"
+  M37_EXTRA_OUT=$(m37_add_unstated_line "$M33W/nosection.md" "$M33W/nosection-out.md" 2>&1) \
+    && fail "M37 self-test: the extra-line mutation reported success over a document carrying no \`### Terms outside Latin-1\` section, so it would hand a plant a line inserted somewhere else"
+  printf '%s' "$M37_EXTRA_OUT" | grep -qF -- "carries no '### Terms outside Latin-1' section" \
+    || { printf '%s\n' "$M37_EXTRA_OUT" >&2; fail "M37 self-test: the extra-line mutation failed over a document with no such section, but not by saying so — that failure is not this clause naming what it could not find"; }
+  pass "M37: the extra-line mutation is bounded to README's \`### Terms outside Latin-1\` section — on a document carrying a second \`Extension=.otf\` line in an appendix, where the M35 form inserted twice, it inserts once and leaves every byte outside the section unchanged — and it names what it could not find rather than inserting nowhere when there is no such section"
 
   # The other direction: a stated line that no longer reaches the fixture. The
   # copy is of the FIXTURE, so README and the stated list still agree and only

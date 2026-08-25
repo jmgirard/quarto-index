@@ -514,15 +514,15 @@ PROBE_CHARS='% & # _ { } \ ~ ^ $ @ | ! " < >'
 # control (d) pins, where the engine line is left out and the build succeeds
 # with the whole index printing correctly.
 #
-# Three rows are held verbatim only, because no render here executes what they
+# Two rows are held verbatim only, because no render here executes what they
 # say. `font-by-file-why` states what the family name resolves to on a machine
 # whose operating system ships a font of that name, which none portably could;
 # the reading that established it — the recipe render embedding the package's
 # `STIXTwoText-Regular` where the family-name form embeds the system TrueType —
-# is recorded in M34's milestone file, not run here. `fail-noengine-engine`
-# names Quarto's default engine: control (d) runs under that default but reads
-# only the printed index, never which engine produced it. `rtl` states what an
-# unsupported script does, which nothing here renders.
+# is recorded in M34's milestone file, not run here. `rtl` states what an
+# unsupported script does, which nothing here renders. `fail-noengine-engine`
+# names Quarto's default engine and is no longer among them: control (d) reads
+# its own capture's `Producer` line, so that claim is executed here.
 README_UNICODE_CLAIMS=(
   $'engine\t`xelatex` is the engine'
   $'font\tSTIX Two Text is the main font'
@@ -540,6 +540,32 @@ README_UNICODE_CLAIMS=(
   $'proven\tproven, with a typeset-print check in the test suite, for Greek, Cyrillic, and Latin beyond Latin-1 including terms written with combining marks'
   $'unsupported\t**CJK and right-to-left scripts are not supported**'
   $'rtl\tthe text is not shaped, and the comma between an entry and its page numbers lands on the wrong side of the entry'
+)
+
+# ---------------------------------------------------------------------------
+# The recipe block a reader COPIES out of README's `### Terms outside Latin-1`
+# section, stated here line for line.
+#
+# ORACLE RULE. These lines are stated by hand and are never read out of either
+# document. The block in README must equal this list exactly — same lines, same
+# order — and every line here must also appear in examples/unicode.qmd, which
+# is the fixture the typeset-print checks prove the recipe on. Holding the
+# block to the fixture ALONE, which is what this check used to do, only asks
+# that the README block's lines be a subset of the fixture: a README that
+# dropped `pdf-engine: xelatex` would still pass, because everything left was
+# still in the fixture, and a reader copying the shortened block would get the
+# silent failure the section is about. Stating the list is what closes that
+# direction, and it means a change to the recipe is a change a reader makes
+# here, in README, and in the fixture together.
+README_RECIPE_LINES=(
+  'pdf-engine: xelatex'
+  'mainfont: STIXTwoText'
+  'mainfontoptions:'
+  '  - Extension=.otf'
+  '  - UprightFont=*-Regular'
+  '  - BoldFont=*-Bold'
+  '  - ItalicFont=*-Italic'
+  '  - BoldItalicFont=*-BoldItalic'
 )
 
 # ---------------------------------------------------------------------------
@@ -4536,13 +4562,21 @@ print(f'ok   M33-AC4: all {len(rows)} documented claims about terms outside '
       f'Latin-1 appear verbatim in README.md')
 M33DOCPY
 
-python3 - README.md examples/unicode.qmd <<'M33BLOCKPY' \
-  || fail "M33-AC4: the recipe block a reader copies out of README has drifted from the fixture that proves it (its own FAIL line is above)"
+# The recipe block, held to the stated list in BOTH directions and to the
+# fixture in one. Wrapped in a function so the self-test can point it at a
+# README copy with one line dropped: this check runs once over the real
+# document, and nothing in an ordinary run ever shows it able to go red.
+check_recipe_block() {
+  local readme="$1" fixture="$2" stated="$WORK/recipe-lines.txt"
+  printf '%s\n' "${README_RECIPE_LINES[@]}" > "$stated"
+  python3 - "$readme" "$fixture" "$stated" <<'M33BLOCKPY'
 import re
 import sys
 
 readme = open(sys.argv[1], encoding='utf-8').read()
 fixture = open(sys.argv[2], encoding='utf-8').read()
+stated = [l.rstrip('\n') for l in open(sys.argv[3], encoding='utf-8')
+          if l.strip()]
 
 anchor = '### Terms outside Latin-1'
 if anchor not in readme:
@@ -4560,24 +4594,44 @@ if len(blocks) != 1:
           f'block(s); the recipe a reader copies is exactly one',
           file=sys.stderr)
     sys.exit(1)
-lines = [l for l in blocks[0].splitlines() if l.strip()]
-if not lines:
-    print('FAIL: M33-AC4: the recipe block a reader copies is empty',
-          file=sys.stderr)
+if not stated:
+    print('FAIL: M33-AC4: the suite states no recipe lines, so this check '
+          'would accept any block at all', file=sys.stderr)
     sys.exit(1)
-missing = [l for l in lines if l not in fixture]
+
+printed = [l for l in blocks[0].splitlines() if l.strip()]
+if printed != stated:
+    print(f'FAIL: M33-AC4: the recipe block in {sys.argv[1]} is not the '
+          f'recipe this suite states — it carries {len(printed)} non-blank '
+          f'line(s) against {len(stated)} stated, and a reader copying it '
+          f'would not get the document these checks prove:', file=sys.stderr)
+    for line in [l for l in stated if l not in printed]:
+        print(f'  stated, not in the block: <<{line}>>', file=sys.stderr)
+    for line in [l for l in printed if l not in stated]:
+        print(f'  in the block, not stated: <<{line}>>', file=sys.stderr)
+    if sorted(printed) == sorted(stated):
+        print(f'  same lines, different order: block {printed} against '
+              f'stated {stated}', file=sys.stderr)
+    sys.exit(1)
+
+missing = [l for l in stated if l not in fixture]
 if missing:
-    print(f'FAIL: M33-AC4: the recipe block in {sys.argv[1]} has drifted from '
-          f'{sys.argv[2]}, which is the document the typeset-print check above '
-          f'proves the recipe on; these lines are in the README block and not '
-          f'in the fixture:', file=sys.stderr)
+    print(f'FAIL: M33-AC4: the recipe this suite states has drifted from '
+          f'{sys.argv[2]}, which is the document the typeset-print check '
+          f'above proves the recipe on; these stated lines are not in the '
+          f'fixture:', file=sys.stderr)
     print('\n'.join(f'  <<{l}>>' for l in missing), file=sys.stderr)
     sys.exit(1)
-print(f'ok   M33-AC4: every one of the {len(lines)} line(s) an author copies '
-      f'out of README\'s recipe block appears verbatim in '
-      f'examples/unicode.qmd')
+print(f'ok   M33-AC4: the {len(stated)} line(s) an author copies out of '
+      f'README\'s recipe block are exactly the lines this suite states, in '
+      f'that order, and every one of them appears verbatim in '
+      f'{sys.argv[2]}')
 M33BLOCKPY
-pass "M33-AC4: README's Terms outside Latin-1 section states the engine, the font, where to install it and the must-cover rule, both failure signatures, the third path where no engine is set, the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is held line for line against the fixture"
+}
+
+check_recipe_block README.md examples/unicode.qmd \
+  || fail "M33-AC4: the recipe block a reader copies out of README is not the recipe this suite states, or a stated line is not in the fixture that proves it (its own FAIL line is above)"
+pass "M33-AC4: README's Terms outside Latin-1 section states the engine, the font, where to install it and the must-cover rule, both failure signatures, the third path where no engine is set, the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is exactly the ${#README_RECIPE_LINES[@]} lines this suite states, each of them also in the fixture"
 
 # ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as
@@ -12246,6 +12300,87 @@ M33SPLITPY
     || { printf '%s\n' "$M35_PRODUCER_OUT" >&2; fail "M35 self-test: the producer reading rejected the non-PDF, but not with <<carries no Producer line>> — that failure is not this clause catching this defect"; }
 
   pass "M35: control (d)'s producer reading names $M33_NOENGINE_PRODUCER on the no-engine capture and goes red on this suite's own xelatex capture and on a file carrying no Producer line at all"
+
+  # --- The README recipe block. Each plant is a copy of README with one thing
+  # about its `### Terms outside Latin-1` block wrong, and the unplanted
+  # document is required to pass first — otherwise a failure here would be the
+  # copy's and not the plant's.
+  m35_block_planted() {
+    local label="$1" want="$2" readme="$3"
+    local out rc
+    out=$(check_recipe_block "$readme" examples/unicode.qmd 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M35 self-test: the recipe-block check passed the planted case ($label), so its green over README says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M35 self-test: the recipe-block check failed the planted case ($label), but not with <<$want>> — that failure is not this clause catching this defect"; }
+  }
+
+  check_recipe_block README.md examples/unicode.qmd > /dev/null \
+    || fail "M35 self-test: the recipe-block check is red on the unplanted README, so no failure below is evidence of anything"
+
+  # The direction the old containment test could not see: every line left in
+  # the block is still in the fixture, so a subset test stays green while a
+  # reader copying the block gets the half-set recipe README's own third path
+  # is about.
+  sed '/^pdf-engine: xelatex$/d' README.md > "$M33W/dropped-engine.md"
+  cmp -s README.md "$M33W/dropped-engine.md" \
+    && fail "M35 self-test: the engine-line-dropping mutation changed nothing in README"
+  m35_block_planted 'the block with its `pdf-engine:` line dropped' \
+    'stated, not in the block: <<pdf-engine: xelatex>>' \
+    "$M33W/dropped-engine.md"
+
+  python3 - README.md "$M33W/reordered.md" <<'M35REORDERPY' \
+    || fail "M35 self-test: the block-reordering mutation did not apply to README"
+import io, re, sys
+
+text = io.open(sys.argv[1], encoding='utf-8').read()
+# Bounded to the section this check reads, exactly as the check bounds itself:
+# README carries earlier fenced yaml blocks, and reordering one of those would
+# leave the recipe block untouched and the plant testing nothing.
+anchor = '### Terms outside Latin-1'
+if anchor not in text:
+    print(f'FAIL: M35 self-test: README carries no {anchor!r} section to '
+          f'reorder a block in', file=sys.stderr)
+    sys.exit(1)
+block = re.compile(r'^```yaml\n(.*?)^```', re.S | re.M)
+match = block.search(text, text.index(anchor))
+if match is None:
+    print('FAIL: M35 self-test: README carries no fenced yaml block to reorder',
+          file=sys.stderr)
+    sys.exit(1)
+lines = match.group(1).splitlines()
+if len(lines) < 2:
+    print('FAIL: M35 self-test: the block has fewer than two lines to swap',
+          file=sys.stderr)
+    sys.exit(1)
+lines[0], lines[1] = lines[1], lines[0]
+io.open(sys.argv[2], 'w', encoding='utf-8').write(
+    text[:match.start(1)] + '\n'.join(lines) + '\n' + text[match.end(1):])
+M35REORDERPY
+  m35_block_planted 'the same lines in a different order' \
+    'same lines, different order' \
+    "$M33W/reordered.md"
+
+  awk '{print} /^  - Extension=\.otf$/{print "  - SmallCapsFont=*-SmallCaps"}' \
+    README.md > "$M33W/extra-line.md"
+  cmp -s README.md "$M33W/extra-line.md" \
+    && fail "M35 self-test: the extra-line mutation changed nothing in README"
+  m35_block_planted 'a line in the block the suite does not state' \
+    'in the block, not stated: <<  - SmallCapsFont=*-SmallCaps>>' \
+    "$M33W/extra-line.md"
+
+  # The other direction: a stated line that no longer reaches the fixture. The
+  # copy is of the FIXTURE, so README and the stated list still agree and only
+  # the fixture clause can be what fails.
+  sed '/^pdf-engine: xelatex$/d' examples/unicode.qmd > "$M33W/dropped-fixture.qmd"
+  cmp -s examples/unicode.qmd "$M33W/dropped-fixture.qmd" \
+    && fail "M35 self-test: the engine-line-dropping mutation changed nothing in the fixture"
+  M35_BLOCK_OUT=$(check_recipe_block README.md "$M33W/dropped-fixture.qmd" 2>&1) \
+    && fail "M35 self-test: the recipe-block check passed a fixture missing a stated recipe line, so the block it proves is not the document it proves it on"
+  printf '%s' "$M35_BLOCK_OUT" | grep -qF -- 'these stated lines are not in the fixture' \
+    || { printf '%s\n' "$M35_BLOCK_OUT" >&2; fail "M35 self-test: the recipe-block check rejected the shortened fixture, but not with <<these stated lines are not in the fixture>> — that failure is not this clause catching this defect"; }
+
+  pass "M35: the README recipe-block check holds the block to the ${#README_RECIPE_LINES[@]} lines this suite states in both directions and to the fixture in one, going red on a dropped line, a reordering, an unstated line, and a stated line the fixture no longer carries"
 
   # The two self-checks' own discrimination. Each reads the suite's own source
   # for a SHAPE, which is the reading M23's lesson names as certifying a

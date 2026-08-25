@@ -593,8 +593,7 @@ local function html_book(doc, ctx, marker, taken)
     -- name, so a book has the one index every chapter's marks were folded
     -- into (M38).
     return qi_marker.place_index(doc,
-      { [qi_indexes.default()] =
-          qi_html.html_index_blocks(book_marks(ctx, records), taken) })
+      qi_html.html_index_blocks(book_marks(ctx, records), taken))
   end
 
   if marker then

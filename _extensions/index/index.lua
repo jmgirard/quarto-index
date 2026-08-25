@@ -155,8 +155,7 @@ local function Pandoc(doc)
       return qi_marker.place_index(doc, nil)
     end
     return qi_marker.place_index(doc,
-      { [qi_indexes.default()] =
-          qi_html.html_index_blocks(qi_marks.html_marks, taken) })
+      qi_html.html_index_blocks(qi_marks.html_marks, taken))
   end
 
   if not qi_core.is_latex_derived() then

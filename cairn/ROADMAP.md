@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-24 (M33 merged and archived; two follow-up rows add
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M34 | The non-Latin-1 recipe names a font TeX Live still maintains | in-progress | — | normal | milestones/M34-stix-two-recipe.md |
+| M34 | The non-Latin-1 recipe names a font TeX Live still maintains | review | — | normal | milestones/M34-stix-two-recipe.md |
 | M33 | An index term outside Latin-1 prints in the PDF index | done | — | normal | milestones/archive/M33-non-latin1-terms.md |
 | M32 | An index follows the bibliography where the author puts it | done | — | low | milestones/archive/M32-index-after-references.md |
 | M31 | A leftover index file never breaks the next render | done | — | normal | milestones/archive/M31-stale-ind-standin.md |

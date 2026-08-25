@@ -1,6 +1,6 @@
 # M34: The non-Latin-1 recipe names a font TeX Live still maintains
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -85,7 +85,7 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
 - [x] T5: update the control-derivation assertions that pin the fixture's
       `mainfont` block shape (`tests/run-tests.sh:4287`) and re-run all four
       controls under the new font.
-- [ ] T6: run `tests/run-tests.sh --self-test`; compare the check count
+- [x] T6: run `tests/run-tests.sh --self-test`; compare the check count
       against the merge base.
 - [x] T7: append the decision entry; update KI6 and the DESIGN collation
       convention where they name the recipe's font; strike the candidate row.
@@ -105,6 +105,8 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
 - 2026-08-24: T5 — the control-derivation assertions needed no change: only the `mainfont` value moved, so the block-shape regex still matches and all four controls derive. Control (d)'s check flipped from `absent … Việt` to `entries` over the full term list, and the now-unused `M33_VIET` was removed.
 - 2026-08-24: T7 — KI6 marked as re-established under STIX Two Text; the collation convention and IP2 name the README section rather than a font, so neither changed. D-018 was already appended at the plan gate, and the stix/GP3 candidate row was graduated into this milestone then, so neither was outstanding.
 - 2026-08-24: the fixture's own render under STIX Two Text emits no `Missing character` line at all, where under `stix` it emitted one for U+1EC7. README's caveat about that line is a general xelatex fact and stands; the suite comment that cited the fixture's own log as the example was corrected.
+- 2026-08-24: T6 — branch runs 351 checks plain and 487 with `--self-test`, both green; the merge base (fd47dcc), run in a throwaway worktree under the same toolchain, runs 351 and 487 too, so neither count dropped.
+- 2026-08-24: all tasks done, suite green; status to review.
 
 ## Decisions
 

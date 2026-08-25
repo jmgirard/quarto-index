@@ -514,15 +514,15 @@ PROBE_CHARS='% & # _ { } \ ~ ^ $ @ | ! " < >'
 # control (d) pins, where the engine line is left out and the build succeeds
 # with the whole index printing correctly.
 #
-# Three rows are held verbatim only, because no render here executes what they
+# Two rows are held verbatim only, because no render here executes what they
 # say. `font-by-file-why` states what the family name resolves to on a machine
 # whose operating system ships a font of that name, which none portably could;
 # the reading that established it — the recipe render embedding the package's
 # `STIXTwoText-Regular` where the family-name form embeds the system TrueType —
-# is recorded in M34's milestone file, not run here. `fail-noengine-engine`
-# names Quarto's default engine: control (d) runs under that default but reads
-# only the printed index, never which engine produced it. `rtl` states what an
-# unsupported script does, which nothing here renders.
+# is recorded in M34's milestone file, not run here. `rtl` states what an
+# unsupported script does, which nothing here renders. `fail-noengine-engine`
+# names Quarto's default engine and is no longer among them: control (d) reads
+# its own capture's `Producer` line, so that claim is executed here.
 README_UNICODE_CLAIMS=(
   $'engine\t`xelatex` is the engine'
   $'font\tSTIX Two Text is the main font'
@@ -540,6 +540,32 @@ README_UNICODE_CLAIMS=(
   $'proven\tproven, with a typeset-print check in the test suite, for Greek, Cyrillic, and Latin beyond Latin-1 including terms written with combining marks'
   $'unsupported\t**CJK and right-to-left scripts are not supported**'
   $'rtl\tthe text is not shaped, and the comma between an entry and its page numbers lands on the wrong side of the entry'
+)
+
+# ---------------------------------------------------------------------------
+# The recipe block a reader COPIES out of README's `### Terms outside Latin-1`
+# section, stated here line for line.
+#
+# ORACLE RULE. These lines are stated by hand and are never read out of either
+# document. The block in README must equal this list exactly — same lines, same
+# order — and every line here must also appear in examples/unicode.qmd, which
+# is the fixture the typeset-print checks prove the recipe on. Holding the
+# block to the fixture ALONE, which is what this check used to do, only asks
+# that the README block's lines be a subset of the fixture: a README that
+# dropped `pdf-engine: xelatex` would still pass, because everything left was
+# still in the fixture, and a reader copying the shortened block would get the
+# silent failure the section is about. Stating the list is what closes that
+# direction, and it means a change to the recipe is a change a reader makes
+# here, in README, and in the fixture together.
+README_RECIPE_LINES=(
+  'pdf-engine: xelatex'
+  'mainfont: STIXTwoText'
+  'mainfontoptions:'
+  '  - Extension=.otf'
+  '  - UprightFont=*-Regular'
+  '  - BoldFont=*-Bold'
+  '  - ItalicFont=*-Italic'
+  '  - BoldItalicFont=*-BoldItalic'
 )
 
 # ---------------------------------------------------------------------------
@@ -606,12 +632,28 @@ HTML_SECTION_ID='qi-index'
 # below reads it too and `run_all_checks` runs in a subshell of its own. See
 # the ORACLE RULE beside the M33 section for how it is derived and why the
 # spellings here are not the fixture's bytes.
-M33_TERMS=(θεωρία ψυχή Москва źródło Việt café Nux̌alk Ascii)
+# Each entry is `<level>:<term>` — the index level the fixture's mark puts the
+# term at, stated here rather than read out of any render. Every mark in
+# examples/unicode.qmd is written at one level, so every term is stated at 0;
+# a term the render demoted under a parent would still print an entry line of
+# its own, which a text-only reading cannot tell from the entry stated here.
+M33_TERMS=(0:θεωρία 0:ψυχή 0:Москва 0:źródło 0:Việt 0:café 0:Nux̌alk 0:Ascii)
 # The subsets the controls name: the Greek terms a font without Greek drops,
-# and the ASCII term every control must still print.
+# and the ASCII term every control must still print. The Greek terms and
+# M33_ASCII are stated bare because they are named on the ABSENT side, which is
+# level-free by design; M33_ASCII_ENTRY is the same term on the present side,
+# where the level is what makes the positive signal a signal.
 M33_GREEK=(θεωρία ψυχή)
 M33_ASCII=Ascii
+M33_ASCII_ENTRY="0:$M33_ASCII"
 M33_CJK=漢字
+# ORACLE RULE. This is the engine that README's `### Terms outside Latin-1`
+# third path names for a document which sets the font and leaves `pdf-engine:`
+# unset — stated here by hand from that paragraph, never read back out of a
+# render. The name only, not the version: a TeX Live update that bumps the
+# version says nothing about which engine ran, and a check that went red on it
+# would be red for no reason a reader could act on.
+M33_NOENGINE_PRODUCER=LuaTeX
 # The captures the M33 checks and the self-test both read, named once.
 M33_PDF="$CAPTURE_ROOT/m33-recipe/unicode.pdf"
 M33_ENGINE_LOG="$CAPTURE_ROOT/m33-engine/engine.log"
@@ -1334,6 +1376,90 @@ print(f'ok   {label}: every id unique and all {len(links)} index links resolve '
 PY
 }
 
+# The font files the documented recipe actually loads, read out of the fixture
+# rather than listed here. `mainfont:` names the family stem and
+# `mainfontoptions:` names one face per `*Font=` line, with `*` standing for
+# the stem and `Extension=` supplying the suffix — so `UprightFont=*-Regular`
+# plus `Extension=.otf` is the file `STIXTwoText-Regular.otf`. Listing the
+# faces here instead would leave the guard covering whatever the list said on
+# the day it was written: a face added to the fixture's block would go unprobed
+# and its renders would fail deep in a LaTeX log instead of at this guard.
+# Prints one filename per line; exits non-zero, saying why, on a fixture whose
+# block it cannot read or which names no face at all.
+recipe_font_files() {
+  python3 - "$1" <<'RECIPEFONTPY'
+import io
+import re
+import sys
+
+qmd = sys.argv[1]
+src = io.open(qmd, encoding='utf-8').read()
+
+stem = re.search(r'^mainfont:[ \t]*(\S+)[ \t]*$', src, re.M)
+if not stem:
+    print(f'FAIL: {qmd} names no `mainfont:`, so the recipe this guard probes '
+          f'the faces of is not in the fixture', file=sys.stderr)
+    sys.exit(1)
+block = re.search(r'^mainfontoptions:\n((?:[ \t]+- .*\n)+)', src, re.M)
+if not block:
+    print(f'FAIL: {qmd} carries no `mainfontoptions:` block, so this guard has '
+          f'no face list to probe and would probe nothing', file=sys.stderr)
+    sys.exit(1)
+
+options = {}
+for line in block.group(1).splitlines():
+    key, sep, value = line.strip().lstrip('-').strip().partition('=')
+    if sep:
+        options[key.strip()] = value.strip()
+
+extension = options.get('Extension', '')
+files = sorted({value.replace('*', stem.group(1)) + extension
+                for key, value in options.items() if key.endswith('Font')})
+if not files:
+    print(f'FAIL: the `mainfontoptions:` block in {qmd} names no `*Font=` '
+          f'face, so this guard would probe an empty list and pass over any '
+          f'machine at all', file=sys.stderr)
+    sys.exit(1)
+print('\n'.join(files))
+RECIPEFONTPY
+}
+
+# Each of those faces findable the way fontspec finds it. Prints the faces it
+# probed; exits non-zero naming the first one that is missing.
+require_recipe_fonts() {
+  local qmd="$1" files face
+  files=$(recipe_font_files "$qmd") || return 1
+  while IFS= read -r face; do
+    [ -n "$face" ] || continue
+    kpsewhich "$face" >/dev/null 2>&1 || {
+      printf 'FAIL: %s is not findable by kpsewhich\n' "$face" >&2
+      return 1
+    }
+  done <<< "$files"
+  printf '%s\n' "$files"
+}
+
+# Which program wrote a PDF, read out of the PDF itself. A render's exit code
+# and its printed index say nothing about the engine that produced them, so a
+# control that exists to pin one engine's behaviour has to read the artifact's
+# own Producer line — and read it from the CAPTURE, which is the artifact the
+# rest of this suite is judging, not from a build scratch file.
+pdf_producer_names() {
+  local pdf="$1" want="$2" producer
+  producer=$(pdfinfo "$pdf" 2>/dev/null | sed -n 's/^Producer:[[:space:]]*//p' | head -1)
+  if [ -z "$producer" ]; then
+    printf 'FAIL: %s carries no Producer line, so which program wrote it cannot be read\n' "$pdf" >&2
+    return 1
+  fi
+  case "$producer" in
+    *"$want"*)
+      printf 'ok   %s was produced by %s, which names %s\n' "$pdf" "$producer" "$want"
+      return 0 ;;
+  esac
+  printf 'FAIL: %s was produced by %s, which does not name %s\n' "$pdf" "$producer" "$want" >&2
+  return 1
+}
+
 # ---------------------------------------------------------------------------
 # Tool guard (AC6): fail loudly rather than skipping the end-to-end check.
 # ---------------------------------------------------------------------------
@@ -1363,15 +1489,26 @@ require_pdf_tools() {
     || fail "pdflatex not found on PATH (the escaping probe invokes it directly). AC6 must never pass unrun."
   command -v pdftotext >/dev/null 2>&1 \
     || fail "pdftotext not found on PATH. AC6 must never pass unrun."
+  # Ships in the same poppler package as pdftotext above. Control (d) reads
+  # which engine wrote its capture out of the PDF's own Producer line, and a
+  # missing tool there would leave that control silent about the one thing it
+  # is the test of.
+  command -v pdfinfo >/dev/null 2>&1 \
+    || fail "pdfinfo not found on PATH (it ships with pdftotext, in poppler). AC6 must never pass unrun."
 
-  # The recipe names a main font by file, so the font has to be findable the
-  # same way fontspec finds it. Without this the four M33 renders fail deep
-  # inside a LaTeX log with fontspec's "cannot be found", which reads like a
-  # defect in the recipe rather than a package this machine does not have.
+  # The recipe names a main font by file, so every face it names has to be
+  # findable the same way fontspec finds it. Without this the four M33 renders
+  # fail deep inside a LaTeX log with fontspec's "cannot be found", which reads
+  # like a defect in the recipe rather than a package this machine does not
+  # have. The face list is parsed out of the fixture, so a face added there is
+  # covered here without anyone remembering to add it.
   command -v kpsewhich >/dev/null 2>&1 \
     || fail "kpsewhich not found on PATH. AC6 must never pass unrun."
-  kpsewhich STIXTwoText-Regular.otf >/dev/null 2>&1 \
-    || fail "STIXTwoText-Regular.otf is not findable by kpsewhich; the TeX Live 'stix2-otf' package is missing (run: tlmgr install stix2-otf). The documented recipe names this font, so its renders would fail on the font rather than on anything this suite is testing."
+  local faces
+  faces=$(require_recipe_fonts examples/unicode.qmd) \
+    || fail "a font face examples/unicode.qmd's mainfontoptions block names is not findable by kpsewhich; the TeX Live 'stix2-otf' package is missing (run: tlmgr install stix2-otf). The documented recipe names this font by file, so its renders would fail on the font rather than on anything this suite is testing. The face is named on the line above."
+  [ -n "$faces" ] \
+    || fail "the font guard probed no faces at all, so it says nothing about this machine. AC6 must never pass unrun."
 }
 
 # ---------------------------------------------------------------------------
@@ -4230,9 +4367,12 @@ pass "M32: the copyable recipe block in README is held line for line against the
 # the render.
 #
 # ORACLE RULE. M33_TERMS is derived by hand from examples/unicode.qmd and is
-# never read back out of a render; `unicodeprint.py marks` holds it against
-# the fixture's own marks, one term per mark, so neither can drift from the
-# other unnoticed. Spellings here are the precomposed ones where a precomposed
+# never read back out of a render; `unicodeprint.py marks` holds its term
+# halves against the fixture's own marks, one term per mark, so neither can
+# drift from the other unnoticed. The level half is stated by the same hand
+# from the same fixture and is read only by the two readings that compare
+# against a render, since a mark carries no level for `marks` to hold it to.
+# Spellings here are the precomposed ones where a precomposed
 # form exists — deliberately NOT the fixture's bytes for `café`, which is
 # written decomposed there — since both sides are compared in Unicode NFC and
 # a list copied character for character out of the fixture would be blind to
@@ -4242,13 +4382,21 @@ pass "M32: the copyable recipe block in README is held line for line against the
 python3 tests/unicodeprint.py marks examples/unicode.qmd "${M33_TERMS[@]}" \
   || fail "M33-AC2: the term list this suite states for examples/unicode.qmd is not what that fixture marks (its own FAIL line is above)"
 
+# The whole PDF tool guard, here rather than beside the AC6 section it used to
+# open, because the render on the next line is the FIRST compile in the run and
+# every one of these tools is already load-bearing for it. A guard placed after
+# the thing it protects reports nothing: with a face this machine cannot find,
+# the render below dies first and the run blames the recipe, never the missing
+# `stix2-otf` package the guard exists to name.
+require_pdf_tools
+
 quarto render examples/unicode.qmd --to pdf > "$WORK/m33-recipe.log" 2>&1 \
   || { tail -20 "$WORK/m33-recipe.log" >&2; fail "M33-AC1: examples/unicode.qmd failed to render to PDF under the documented recipe"; }
 capture examples/unicode.qmd pdf "m33-recipe"
 
 python3 tests/unicodeprint.py entries "$M33_PDF" "${M33_TERMS[@]}" \
   || fail "M33-AC2: a term outside Latin-1 does not print as its own entry in the typeset index (its own FAIL line is above)"
-pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engine and main font, and all ${#M33_TERMS[@]} of its terms print as their own entry in the typeset index, compared in Unicode NFC"
+pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engine and main font, and all ${#M33_TERMS[@]} of its terms print as their own entry AT THE LEVEL the suite states in the typeset index, compared in Unicode NFC"
 
 # ---------------------------------------------------------------------------
 # M33-AC3 — the three controls the criterion names, plus (d), a fourth this
@@ -4259,10 +4407,13 @@ pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engi
 # five renders.
 #
 # (b) and (c) are read for a POSITIVE signal as well as an absence: each has to
-# print the fixture's ASCII term's own entry line before its missing Greek or
-# CJK entry line means anything. Without it a render whose index failed to
-# print at all — no heading, no entries, a wrecked build — would satisfy "no
-# entry line carries this term" exactly as a dropped glyph does.
+# print the fixture's ASCII term's own entry line, at the level the suite states
+# for it, before its missing Greek or CJK entry line means anything. Without it
+# a render whose index failed to print at all — no heading, no entries, a
+# wrecked build — would satisfy "no entry line carries this term" exactly as a
+# dropped glyph does, and without the level a render that demoted the term under
+# a parent would satisfy it too. The absent side stays level-free on purpose: a
+# term printed anywhere at all is a term this render did print.
 #
 # (d) is NOT a fourth signature of the pair AC3 names, and under this recipe's
 # font it is not a failure at all. It is the control under README's "no engine
@@ -4273,7 +4424,11 @@ pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engi
 # every term the fixture marks prints as its own entry line. Under M33's `stix`
 # the same control dropped `Việt`; the engine line stopped being what saves the
 # reader when the font changed, which is why README now tells them to set it
-# for a reason that is not today's output.
+# for a reason that is not today's output. (d) also reads WHICH engine wrote
+# its capture, out of the PDF's own Producer line: the paragraph it tests names
+# lualatex by name, and a Quarto that quietly defaulted to something else would
+# leave every reading of the printed index green while that sentence went
+# false (D-020).
 # ---------------------------------------------------------------------------
 M33C="$WORK/m33-controls"
 rm -rf "$M33C"; mkdir -p "$M33C/_extensions"
@@ -4351,9 +4506,9 @@ pass "M33-AC3a: the fixture under pdf-engine: pdflatex exits non-zero and its La
   || { tail -20 "$WORK/m33-nofont.log" >&2; fail "M33-AC3b: the fixture failed to render with mainfont left at its default; the control claims a silent drop at exit 0, so a broken build is not the state it pins"; }
 capture "$M33C/nofont.qmd" pdf "m33-nofont"
 python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-nofont/nofont.pdf" \
-  "$M33_ASCII" "${M33_GREEK[@]}" \
+  "$M33_ASCII_ENTRY" "${M33_GREEK[@]}" \
   || fail "M33-AC3b: with mainfont left at its default the Greek terms still print, or the control's index did not print at all (its own FAIL line is above)"
-pass "M33-AC3b: with mainfont left at its default the render exits 0, its index still prints the fixture's ASCII term, and none of the fixture's Greek terms print"
+pass "M33-AC3b: with mainfont left at its default the render exits 0, its index still prints the fixture's ASCII term at its stated level, and none of the fixture's Greek terms print at any level"
 
 # --- (c) the recipe's own limit. Everything the README names, plus one term in
 #     a script the font does not cover: the same silent drop, which is why the
@@ -4364,9 +4519,9 @@ pass "M33-AC3b: with mainfont left at its default the render exits 0, its index 
   || { tail -20 "$WORK/m33-cjk.log" >&2; fail "M33-AC3c: the CJK control failed to render; the control claims a silent drop at exit 0"; }
 capture "$M33C/cjk.qmd" pdf "m33-cjk"
 python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-cjk/cjk.pdf" \
-  "$M33_ASCII" "$M33_CJK" \
+  "$M33_ASCII_ENTRY" "$M33_CJK" \
   || fail "M33-AC3c: the added CJK term prints under the recipe's font, or the control's index did not print at all (its own FAIL line is above)"
-pass "M33-AC3c: the fixture with one CJK term added renders at exit 0 under the full recipe, its index still prints the fixture's ASCII term, and the CJK term does not print"
+pass "M33-AC3c: the fixture with one CJK term added renders at exit 0 under the full recipe, its index still prints the fixture's ASCII term at its stated level, and the CJK term does not print at any level"
 
 # --- (d) no engine set. The font is there and the `pdf-engine:` line is not,
 #     which is the half-followed recipe README documents: Quarto's default
@@ -4380,15 +4535,26 @@ capture "$M33C/noengine.qmd" pdf "m33-noengine"
 python3 tests/unicodeprint.py entries "$CAPTURE_ROOT/m33-noengine/noengine.pdf" \
   "${M33_TERMS[@]}" \
   || fail "M34-AC4 control (d): with no pdf-engine set a term the fixture marks does not print as its own entry, so README's 'no engine set' paragraph states an index that prints correctly where this one does not (its own FAIL line is above)"
-pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 0 and all ${#M33_TERMS[@]} of the fixture's terms print as their own entry in the typeset index"
+# The index printing correctly is only half of what this control claims. The
+# other half is WHICH engine printed it: README's third path says Quarto's
+# default is lualatex and that the font, not the engine line, is doing the
+# work here. A Quarto that quietly defaulted to xelatex would leave every
+# reading above green while that sentence went false, and nothing but the
+# capture's own Producer line can tell the two apart.
+pdf_producer_names "$CAPTURE_ROOT/m33-noengine/noengine.pdf" "$M33_NOENGINE_PRODUCER" \
+  || fail "M34-AC4 control (d): the no-engine capture was not produced by $M33_NOENGINE_PRODUCER, so README's 'no engine set' paragraph names an engine that is not the one Quarto defaulted to here (its own FAIL line is above)"
+pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 0 under $M33_NOENGINE_PRODUCER — read from the capture's own Producer line — and all ${#M33_TERMS[@]} of the fixture's terms print as their own entry at the level the suite states in the typeset index"
 
 # ---------------------------------------------------------------------------
 # M33-AC4 — the README section a reader acts on. Two checks, because the
 # section has two jobs. The claims are held verbatim (whitespace normalized on
 # both sides, so a rewrapped sentence still counts and a stale one cannot hide
-# behind a line break); the YAML block a reader COPIES is held line for line
-# against examples/unicode.qmd, which is the document the checks above prove
-# the recipe on. Prose cannot hold a copyable block (the M32 lesson).
+# behind a line break); the YAML block a reader COPIES is held to the line list
+# README_RECIPE_LINES states — equal, in order, in both directions — with each
+# stated line also required in examples/unicode.qmd, which is the document the
+# checks above prove the recipe on. Prose cannot hold a copyable block (the M32
+# lesson), and a one-directional containment test cannot hold one either: it
+# passes on a block with a line missing.
 # ---------------------------------------------------------------------------
 printf '%s\n' "${README_UNICODE_CLAIMS[@]}" > "$WORK/readme-unicode.txt"
 python3 - "$WORK/readme-unicode.txt" README.md <<'M33DOCPY' \
@@ -4414,13 +4580,21 @@ print(f'ok   M33-AC4: all {len(rows)} documented claims about terms outside '
       f'Latin-1 appear verbatim in README.md')
 M33DOCPY
 
-python3 - README.md examples/unicode.qmd <<'M33BLOCKPY' \
-  || fail "M33-AC4: the recipe block a reader copies out of README has drifted from the fixture that proves it (its own FAIL line is above)"
+# The recipe block, held to the stated list in BOTH directions and to the
+# fixture in one. Wrapped in a function so the self-test can point it at a
+# README copy with one line dropped: this check runs once over the real
+# document, and nothing in an ordinary run ever shows it able to go red.
+check_recipe_block() {
+  local readme="$1" fixture="$2" stated="$WORK/recipe-lines.txt"
+  printf '%s\n' "${README_RECIPE_LINES[@]}" > "$stated"
+  python3 - "$readme" "$fixture" "$stated" <<'M33BLOCKPY'
 import re
 import sys
 
 readme = open(sys.argv[1], encoding='utf-8').read()
 fixture = open(sys.argv[2], encoding='utf-8').read()
+stated = [l.rstrip('\n') for l in open(sys.argv[3], encoding='utf-8')
+          if l.strip()]
 
 anchor = '### Terms outside Latin-1'
 if anchor not in readme:
@@ -4438,24 +4612,44 @@ if len(blocks) != 1:
           f'block(s); the recipe a reader copies is exactly one',
           file=sys.stderr)
     sys.exit(1)
-lines = [l for l in blocks[0].splitlines() if l.strip()]
-if not lines:
-    print('FAIL: M33-AC4: the recipe block a reader copies is empty',
-          file=sys.stderr)
+if not stated:
+    print('FAIL: M33-AC4: the suite states no recipe lines, so this check '
+          'would accept any block at all', file=sys.stderr)
     sys.exit(1)
-missing = [l for l in lines if l not in fixture]
+
+printed = [l for l in blocks[0].splitlines() if l.strip()]
+if printed != stated:
+    print(f'FAIL: M33-AC4: the recipe block in {sys.argv[1]} is not the '
+          f'recipe this suite states — it carries {len(printed)} non-blank '
+          f'line(s) against {len(stated)} stated, and a reader copying it '
+          f'would not get the document these checks prove:', file=sys.stderr)
+    for line in [l for l in stated if l not in printed]:
+        print(f'  stated, not in the block: <<{line}>>', file=sys.stderr)
+    for line in [l for l in printed if l not in stated]:
+        print(f'  in the block, not stated: <<{line}>>', file=sys.stderr)
+    if sorted(printed) == sorted(stated):
+        print(f'  same lines, different order: block {printed} against '
+              f'stated {stated}', file=sys.stderr)
+    sys.exit(1)
+
+missing = [l for l in stated if l not in fixture]
 if missing:
-    print(f'FAIL: M33-AC4: the recipe block in {sys.argv[1]} has drifted from '
-          f'{sys.argv[2]}, which is the document the typeset-print check above '
-          f'proves the recipe on; these lines are in the README block and not '
-          f'in the fixture:', file=sys.stderr)
+    print(f'FAIL: M33-AC4: the recipe this suite states has drifted from '
+          f'{sys.argv[2]}, which is the document the typeset-print check '
+          f'above proves the recipe on; these stated lines are not in the '
+          f'fixture:', file=sys.stderr)
     print('\n'.join(f'  <<{l}>>' for l in missing), file=sys.stderr)
     sys.exit(1)
-print(f'ok   M33-AC4: every one of the {len(lines)} line(s) an author copies '
-      f'out of README\'s recipe block appears verbatim in '
-      f'examples/unicode.qmd')
+print(f'ok   M33-AC4: the {len(stated)} line(s) an author copies out of '
+      f'README\'s recipe block are exactly the lines this suite states, in '
+      f'that order, and every one of them appears verbatim in '
+      f'{sys.argv[2]}')
 M33BLOCKPY
-pass "M33-AC4: README's Terms outside Latin-1 section states the engine, the font, where to install it and the must-cover rule, both failure signatures, the third path where no engine is set, the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is held line for line against the fixture"
+}
+
+check_recipe_block README.md examples/unicode.qmd \
+  || fail "M33-AC4: the recipe block a reader copies out of README is not the recipe this suite states, or a stated line is not in the fixture that proves it (its own FAIL line is above)"
+pass "M33-AC4: README's Terms outside Latin-1 section states the engine, the font, where to install it and the must-cover rule, both failure signatures, the third path where no engine is set, the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is exactly the ${#README_RECIPE_LINES[@]} lines this suite states, each of them also in the fixture"
 
 # ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as
@@ -4705,9 +4899,10 @@ print(f'ok   AC7/M02-AC4: {len(rows)} visible terms present ({total} marks), '
 PY
 
 # ---------------------------------------------------------------------------
-# AC6 — end-to-end to a compiled PDF with a real index.
+# AC6 — end-to-end to a compiled PDF with a real index. The tool guard this
+# section used to open with now runs further up, before the M33 renders, which
+# are the first compiles in the run; see its call site there.
 # ---------------------------------------------------------------------------
-require_pdf_tools
 
 # Regression test for the IP2 failure review found: beamer has no `theindex`
 # environment, so emitting \printindex there aborted the render. Exit 0 alone
@@ -11890,6 +12085,7 @@ if [ "${1:-}" = "--self-test" ]; then
 
   M33W="$WORK/m33-plant"
   rm -rf "$M33W"; mkdir -p "$M33W"
+  printf 'not a PDF at all.\n' > "$M33W/notapdf.pdf"
 
   # The unplanted readings must be green first, or no failure below is
   # evidence of anything — it would be the copy that was wrong, not the plant.
@@ -11913,7 +12109,7 @@ if [ "${1:-}" = "--self-test" ]; then
     'marked but not stated' \
     marks examples/unicode.qmd "${M33_SHORT[@]}"
 
-  M33_RESPELLED=("${M33_TERMS[@]:1}" 'θεωρια')
+  M33_RESPELLED=("${M33_TERMS[@]:1}" '0:θεωρια')
   m33_planted 'a stated term respelled, so it is stated and not marked' \
     'stated but not marked' \
     marks examples/unicode.qmd "${M33_RESPELLED[@]}"
@@ -11929,11 +12125,25 @@ if [ "${1:-}" = "--self-test" ]; then
   # --- entries: a term's own printed entry line.
   m33_planted 'a stated term the fixture prints no entry for' \
     'has no entry line of its own' \
-    entries "$M33_PDF" "${M33_TERMS[@]}" 'Ἀθῆναι'
+    entries "$M33_PDF" "${M33_TERMS[@]}" '0:Ἀθῆναι'
 
   m33_planted 'a stated term respelled by one character' \
     'has no entry line of its own' \
-    entries "$M33_PDF" 'θεωρίο'
+    entries "$M33_PDF" '0:θεωρίο'
+
+  # The level clause on its own. The term is the fixture's own ASCII one, so
+  # the text half is satisfied and only the level can be what fails; without
+  # this clause the reading would be green on an index that demoted the term
+  # under a parent line.
+  m33_planted 'a stated term named at a level the render does not print it at' \
+    'the level the suite states for it' \
+    entries "$M33_PDF" '1:Ascii'
+
+  # The pair form itself. A caller who wrote the bare term would otherwise
+  # reach a reading that checks a level it was never given.
+  m33_planted 'a term stated with no level at all' \
+    'is not a <level>:<term> pair' \
+    entries "$M33_PDF" 'Ascii'
 
   # A captured PDF that prints no index at all — beamer carries none. Not a
   # mutation: the artifact is already in the capture set, and pointing the
@@ -11949,27 +12159,103 @@ if [ "${1:-}" = "--self-test" ]; then
     'no terms to look for' \
     entries "$M33_PDF"
 
-  # --- stopped: the pdflatex control's log.
-  m33_planted "a successful render's log, which carries no rejection" \
+  # --- stopped: the pdflatex control's log. Every plant here is a mutation of
+  # that LaTeX log and not of Quarto's stdout: the reading parses TeX's own
+  # error-report shape (`! ` opens one, the echoed `l.<n>` source line closes
+  # it), and a log written by something else exercises none of that.
+
+  # Every error report removed WHOLE — the `! ` line that opens one through the
+  # echoed source line that closes it — so what is left is a log carrying no
+  # rejection at all, which is the input class this clause is the reading of.
+  # Deleting the signature line alone would leave the inputenc error standing
+  # and the plant would be about a log that still carries the rejection.
+  python3 - "$M33_ENGINE_LOG" "$M33W/norejection.log" <<'M33NOREJPY' \
+    || fail "M33 self-test: the error-removing mutation did not apply to the engine control's log, so the plant below would test the unmutated log"
+import io, re, sys
+
+lines = io.open(sys.argv[1], encoding='utf-8', errors='replace').read().splitlines()
+out, inside, dropped = [], False, 0
+for line in lines:
+    if line.startswith('! '):
+        inside, dropped = True, dropped + 1
+        continue
+    if inside:
+        if re.match(r'^l\.\d', line):
+            inside = False
+        continue
+    out.append(line)
+if not dropped:
+    print('FAIL: M33 self-test: the engine control log carries no error report '
+          'to remove, so the plant below would test the unmutated log',
+          file=sys.stderr)
+    sys.exit(1)
+rest = '\n'.join(out)
+if 'not set up for use with LaTeX' in rest:
+    print('FAIL: M33 self-test: the signature survived the error-removing '
+          'mutation, so the plant below would not be about a log carrying no '
+          'rejection', file=sys.stderr)
+    sys.exit(1)
+io.open(sys.argv[2], 'w', encoding='utf-8').write(rest + '\n')
+M33NOREJPY
+  m33_planted 'a LaTeX log carrying no error report at all' \
     'does not carry' \
-    stopped "$WORK/m33-nofont.log" "${M33_GREEK[@]}"
+    stopped "$M33W/norejection.log" "${M33_GREEK[@]}"
 
   sed 's/Unicode character θ/Unicode character Z/' "$M33_ENGINE_LOG" \
     > "$M33W/othercharacter.log"
   cmp -s "$M33_ENGINE_LOG" "$M33W/othercharacter.log" \
     && fail "M33 self-test: the character-replacing mutation changed nothing in the engine control's log"
   m33_planted 'the rejection, with the character it names replaced' \
-    'names no character the terms' \
+    'names a character the terms' \
     stopped "$M33W/othercharacter.log" "${M33_GREEK[@]}"
+
+  # The one-error clause. Both halves are still in the log and each would be
+  # found by a search over the whole file; only reading them per error report
+  # can tell that the rejection which stopped this render is not the one
+  # naming a character this fixture indexes.
+  python3 - "$M33_ENGINE_LOG" "$M33W/splitrejection.log" <<'M33SPLITPY' \
+    || fail "M33 self-test: the error-splitting mutation did not apply to the engine control's log, so the plant below would test the unmutated log"
+import io, sys
+
+lines = io.open(sys.argv[1], encoding='utf-8', errors='replace').read().splitlines()
+out, split = [], 0
+for line in lines:
+    out.append(line)
+    if line.startswith('! ') and 'Unicode character' in line:
+        # Close this error report with an echoed source line, then open a
+        # fresh one, so the explanation below — which carries the signature —
+        # lands in an error of its own.
+        out.append('l.1 \\index{planted}')
+        out.append('! LaTeX Error: a planted second error, about nothing this '
+                   'fixture indexes.')
+        split += 1
+if split != 1:
+    print(f'FAIL: M33 self-test: the engine log carries {split} error(s) '
+          f'opening on a Unicode character; the split plant expects exactly '
+          f'one', file=sys.stderr)
+    sys.exit(1)
+io.open(sys.argv[2], 'w', encoding='utf-8').write('\n'.join(out) + '\n')
+M33SPLITPY
+  m33_planted 'the signature and the character in separate errors' \
+    'but never in one error' \
+    stopped "$M33W/splitrejection.log" "${M33_GREEK[@]}"
 
   # --- absent: the two silent-drop controls' reading.
   m33_planted "a control's own present-term named as one it never prints" \
     'prints no entry line for' \
-    absent "$CAPTURE_ROOT/m33-nofont/nofont.pdf" 'θεωρία' "$M33_ASCII"
+    absent "$CAPTURE_ROOT/m33-nofont/nofont.pdf" '0:θεωρία' "$M33_ASCII"
 
   m33_planted 'a term named absent that the render does print' \
     'printed after all' \
-    absent "$M33_PDF" "$M33_ASCII" "${M33_GREEK[@]}"
+    absent "$M33_PDF" "$M33_ASCII_ENTRY" "${M33_GREEK[@]}"
+
+  # The present-term's level clause. The control's positive signal is what
+  # separates a dropped glyph from an index that never printed; read without
+  # the level it would also accept an index that printed the term somewhere
+  # other than where this control states it.
+  m33_planted "a control's present-term named at a level the render does not print it at" \
+    'the level the control states' \
+    absent "$M33_PDF" '1:Ascii' "${M33_GREEK[@]}"
 
   # --- main: the argv guards. Three of these are `entries no terms` in the
   # other three readings — a domain a caller can empty, where an unguarded
@@ -11984,13 +12270,165 @@ if [ "${1:-}" = "--self-test" ]; then
 
   m33_planted '`absent` called with a present-term and nothing else' \
     'absent needs a present-term' \
-    absent "$M33_PDF" "$M33_ASCII"
+    absent "$M33_PDF" "$M33_ASCII_ENTRY"
 
   m33_planted 'a mode the reader does not have' \
     'unknown mode' \
     entrys "$M33_PDF" "${M33_TERMS[@]}"
 
-  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — fifteen plants over fifteen reachable clauses"
+  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — twenty plants naming eighteen distinct clauses"
+
+  # --- The recipe font guard. It runs before any check, so a red run is what
+  # a contributor without the font sees rather than a LaTeX log; that also
+  # means nothing in the ordinary run ever shows it able to go red. Each plant
+  # below is a copy of the fixture with one thing about its font block wrong,
+  # and the unplanted fixture is required to pass first — otherwise a failure
+  # here would be the copy's and not the plant's.
+  m35_font_planted() {
+    local label="$1" want="$2" qmd="$3"
+    local out rc
+    out=$(require_recipe_fonts "$qmd" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M35 self-test: the font guard passed the planted case ($label), so its silence on the real fixture says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M35 self-test: the font guard failed the planted case ($label), but not with <<$want>> — that failure is not this clause catching this defect"; }
+  }
+
+  M35_FACES=$(require_recipe_fonts examples/unicode.qmd) \
+    || fail "M35 self-test: the font guard is red on the unplanted fixture, so no failure below is evidence of anything"
+  [ "$(printf '%s\n' "$M35_FACES" | wc -l | tr -d ' ')" -ge 2 ] \
+    || fail "M35 self-test: the font guard parsed fewer than two faces out of examples/unicode.qmd, so its domain is close enough to empty that a pass says nothing"
+
+  sed 's/UprightFont=\*-Regular/UprightFont=*-NoSuchFace/' examples/unicode.qmd \
+    > "$M33W/nosuchface.qmd"
+  cmp -s examples/unicode.qmd "$M33W/nosuchface.qmd" \
+    && fail "M35 self-test: the face-renaming mutation changed nothing in the fixture"
+  m35_font_planted 'one face renamed to a file no TeX tree carries' \
+    'STIXTwoText-NoSuchFace.otf is not findable' \
+    "$M33W/nosuchface.qmd"
+
+  sed 's/^  - \(.*\)Font=/  - \1Face=/' examples/unicode.qmd \
+    > "$M33W/nofaces.qmd"
+  cmp -s examples/unicode.qmd "$M33W/nofaces.qmd" \
+    && fail "M35 self-test: the face-key mutation changed nothing in the fixture"
+  m35_font_planted 'an options block naming no face at all' \
+    'names no `*Font=` face' \
+    "$M33W/nofaces.qmd"
+
+  sed '/^mainfontoptions:$/,/^filters:$/{/^filters:$/!d;}' examples/unicode.qmd \
+    > "$M33W/nooptions.qmd"
+  cmp -s examples/unicode.qmd "$M33W/nooptions.qmd" \
+    && fail "M35 self-test: the options-block-removing mutation changed nothing in the fixture"
+  m35_font_planted 'a fixture with no options block to read faces out of' \
+    'carries no `mainfontoptions:` block' \
+    "$M33W/nooptions.qmd"
+
+  sed '/^mainfont:/d' examples/unicode.qmd > "$M33W/nomainfont.qmd"
+  cmp -s examples/unicode.qmd "$M33W/nomainfont.qmd" \
+    && fail "M35 self-test: the mainfont-removing mutation changed nothing in the fixture"
+  m35_font_planted 'a fixture naming no main font for `*` to stand for' \
+    'names no `mainfont:`' \
+    "$M33W/nomainfont.qmd"
+
+  pass "M35: the recipe font guard reads its face list out of examples/unicode.qmd, probes the $(printf '%s\n' "$M35_FACES" | wc -l | tr -d ' ') faces that block names, and goes red on four planted defects — a face no TeX tree carries, an options block naming no face, no options block, and no main font"
+
+  # --- Control (d)'s producer reading. The plant is not a mutation: this suite
+  # already writes a capture under a different engine — the recipe render,
+  # which sets `pdf-engine: xelatex` — and pointing the reading at it is the
+  # whole plant. A reading that could not tell the two apart would be green on
+  # both.
+  M35_PRODUCER_OUT=$(pdf_producer_names "$M33_PDF" "$M33_NOENGINE_PRODUCER" 2>&1) \
+    && fail "M35 self-test: the producer reading called the xelatex recipe capture a $M33_NOENGINE_PRODUCER render, so its green on control (d) says nothing about which engine ran"
+  printf '%s' "$M35_PRODUCER_OUT" | grep -qF -- 'does not name' \
+    || { printf '%s\n' "$M35_PRODUCER_OUT" >&2; fail "M35 self-test: the producer reading rejected the xelatex recipe capture, but not with <<does not name>> — that failure is not this clause catching this defect"; }
+
+  M35_PRODUCER_OUT=$(pdf_producer_names "$M33W/notapdf.pdf" "$M33_NOENGINE_PRODUCER" 2>&1) \
+    && fail "M35 self-test: the producer reading passed a file that is not a PDF at all, so an unreadable capture would read as the right engine"
+  printf '%s' "$M35_PRODUCER_OUT" | grep -qF -- 'carries no Producer line' \
+    || { printf '%s\n' "$M35_PRODUCER_OUT" >&2; fail "M35 self-test: the producer reading rejected the non-PDF, but not with <<carries no Producer line>> — that failure is not this clause catching this defect"; }
+
+  pass "M35: control (d)'s producer reading names $M33_NOENGINE_PRODUCER on the no-engine capture and goes red on this suite's own xelatex capture and on a file carrying no Producer line at all"
+
+  # --- The README recipe block. Each plant is a copy of README with one thing
+  # about its `### Terms outside Latin-1` block wrong, and the unplanted
+  # document is required to pass first — otherwise a failure here would be the
+  # copy's and not the plant's.
+  m35_block_planted() {
+    local label="$1" want="$2" readme="$3"
+    local out rc
+    out=$(check_recipe_block "$readme" examples/unicode.qmd 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M35 self-test: the recipe-block check passed the planted case ($label), so its green over README says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M35 self-test: the recipe-block check failed the planted case ($label), but not with <<$want>> — that failure is not this clause catching this defect"; }
+  }
+
+  check_recipe_block README.md examples/unicode.qmd > /dev/null \
+    || fail "M35 self-test: the recipe-block check is red on the unplanted README, so no failure below is evidence of anything"
+
+  # The direction the old containment test could not see: every line left in
+  # the block is still in the fixture, so a subset test stays green while a
+  # reader copying the block gets the half-set recipe README's own third path
+  # is about.
+  sed '/^pdf-engine: xelatex$/d' README.md > "$M33W/dropped-engine.md"
+  cmp -s README.md "$M33W/dropped-engine.md" \
+    && fail "M35 self-test: the engine-line-dropping mutation changed nothing in README"
+  m35_block_planted 'the block with its `pdf-engine:` line dropped' \
+    'stated, not in the block: <<pdf-engine: xelatex>>' \
+    "$M33W/dropped-engine.md"
+
+  python3 - README.md "$M33W/reordered.md" <<'M35REORDERPY' \
+    || fail "M35 self-test: the block-reordering mutation did not apply to README"
+import io, re, sys
+
+text = io.open(sys.argv[1], encoding='utf-8').read()
+# Bounded to the section this check reads, exactly as the check bounds itself:
+# README carries earlier fenced yaml blocks, and reordering one of those would
+# leave the recipe block untouched and the plant testing nothing.
+anchor = '### Terms outside Latin-1'
+if anchor not in text:
+    print(f'FAIL: M35 self-test: README carries no {anchor!r} section to '
+          f'reorder a block in', file=sys.stderr)
+    sys.exit(1)
+block = re.compile(r'^```yaml\n(.*?)^```', re.S | re.M)
+match = block.search(text, text.index(anchor))
+if match is None:
+    print('FAIL: M35 self-test: README carries no fenced yaml block to reorder',
+          file=sys.stderr)
+    sys.exit(1)
+lines = match.group(1).splitlines()
+if len(lines) < 2:
+    print('FAIL: M35 self-test: the block has fewer than two lines to swap',
+          file=sys.stderr)
+    sys.exit(1)
+lines[0], lines[1] = lines[1], lines[0]
+io.open(sys.argv[2], 'w', encoding='utf-8').write(
+    text[:match.start(1)] + '\n'.join(lines) + '\n' + text[match.end(1):])
+M35REORDERPY
+  m35_block_planted 'the same lines in a different order' \
+    'same lines, different order' \
+    "$M33W/reordered.md"
+
+  awk '{print} /^  - Extension=\.otf$/{print "  - SmallCapsFont=*-SmallCaps"}' \
+    README.md > "$M33W/extra-line.md"
+  cmp -s README.md "$M33W/extra-line.md" \
+    && fail "M35 self-test: the extra-line mutation changed nothing in README"
+  m35_block_planted 'a line in the block the suite does not state' \
+    'in the block, not stated: <<  - SmallCapsFont=*-SmallCaps>>' \
+    "$M33W/extra-line.md"
+
+  # The other direction: a stated line that no longer reaches the fixture. The
+  # copy is of the FIXTURE, so README and the stated list still agree and only
+  # the fixture clause can be what fails.
+  sed '/^pdf-engine: xelatex$/d' examples/unicode.qmd > "$M33W/dropped-fixture.qmd"
+  cmp -s examples/unicode.qmd "$M33W/dropped-fixture.qmd" \
+    && fail "M35 self-test: the engine-line-dropping mutation changed nothing in the fixture"
+  M35_BLOCK_OUT=$(check_recipe_block README.md "$M33W/dropped-fixture.qmd" 2>&1) \
+    && fail "M35 self-test: the recipe-block check passed a fixture missing a stated recipe line, so the block it proves is not the document it proves it on"
+  printf '%s' "$M35_BLOCK_OUT" | grep -qF -- 'these stated lines are not in the fixture' \
+    || { printf '%s\n' "$M35_BLOCK_OUT" >&2; fail "M35 self-test: the recipe-block check rejected the shortened fixture, but not with <<these stated lines are not in the fixture>> — that failure is not this clause catching this defect"; }
+
+  pass "M35: the README recipe-block check holds the block to the ${#README_RECIPE_LINES[@]} lines this suite states in both directions and to the fixture in one, going red on a dropped line, a reordering, an unstated line, and a stated line the fixture no longer carries"
 
   # The two self-checks' own discrimination. Each reads the suite's own source
   # for a SHAPE, which is the reading M23's lesson names as certifying a

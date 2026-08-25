@@ -121,7 +121,7 @@ collation rules — nothing here changes how one index is ordered or printed.
       adds, each shown red.
 - [x] T10: README's `### Named indexes` section, the DESIGN convention line,
       and the ROADMAP row edits.
-- [ ] T11: Validate a declared index name as an HTML id fragment: report a name
+- [x] T11: Validate a declared index name as an HTML id fragment: report a name
       that cannot be one and refuse to build a section id from it, so no render
       emits an invalid `id` silently (R1).
 - [ ] T12: In `resolve_markers`, settle a marker's placement slot so a folded
@@ -176,6 +176,23 @@ collation rules — nothing here changes how one index is ordered or printed.
   section's id is derived from the index's own name — `qi-index-<name>` — so a
   link keeps pointing at the same index when the declaration is reordered; a
   document declaring no indexes keeps the bare `qi-index` it has today.
+- 2026-08-25 (return gate): A declared index name must be usable as an HTML id
+  fragment — ASCII letters, digits, `-`, `_` and `.`, beginning with a letter —
+  and a name that cannot be one is refused with its own report, exactly as an
+  empty or repeated name is, so the document keeps the indexes it declared
+  usably and never emits a section whose `id` no link resolves against. Under
+  fold the one index is placed at the first marker naming the default index
+  where the document writes one, and only otherwise at the first folded marker,
+  so the author's own default marker is never reported as the duplicate of a
+  marker they never wrote; the folded section is headed `Index`, the heading a
+  document declaring nothing prints, for the same reason `section_id` keeps its
+  id bare — the section holds every index's marks, so one declared index's
+  title would claim it is that index. AC6's "runs clean" is read off a ledger
+  the suite writes as it renders, each documented command required to appear
+  there with exit status 0, rather than off a substring of the suite's own text.
+
+- 2026-08-25: return gate settled four open choices for T11-T17; recorded under Decisions above.
+- 2026-08-25: T11 — a declared name must match `^[A-Za-z][A-Za-z0-9._%-]*$`; a name that cannot be an HTML id fragment is refused with its own report, so the document keeps the indexes it declared usably. `examples/named-indexes-misuse.qmd` writes four entries of which two are refused and one has no title; the M38-R1 check reads the refusal by name, matches the two sections the two usable entries leave, and asserts no id on the whole rendered page holds a space, a `#`, a `<` or a `>` — probed red by planting `id="qi-index-my people"` into this run's own capture. warn-distinct's pinned count 62 -> 63. Suite green, 370 checks (was 368).
 
 ## Review
 

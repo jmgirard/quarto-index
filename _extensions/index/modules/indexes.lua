@@ -26,8 +26,21 @@ local NAME_FIELD = "name"
 local TITLE_FIELD = "title"
 
 -- The heading a document that declares nothing prints, which is what it has
--- always printed.
+-- always printed. It is also what a FOLDED render heads its single section
+-- with, for the reason `section_id` keeps that section's id bare: the section
+-- holds every declared index's marks, so heading it with one declared index's
+-- title would claim it is that index rather than the union it is.
 local DEFAULT_TITLE = "Index"
+
+-- What a declared name may be. The name reaches output as the section's HTML
+-- id (`section_id` below) and as the fragment of every link to it, so a name
+-- that is no id fragment is a section no link resolves against -- a space, a
+-- `#`, a `"` or a `<` each break the id, the URL fragment or both. The rule is
+-- stated positively rather than as a blacklist: an author reading the report
+-- learns what to write, and a character nobody thought of is refused rather
+-- than emitted. A leading letter is required because an id starting with a
+-- digit is a CSS selector no `#id` rule can name without escaping.
+local NAME_SHAPE = "^[A-Za-z][A-Za-z0-9._%-]*$"
 
 -- The name of the one index a document that declares nothing has. The empty
 -- string is not a name an author can write -- a declaration whose `name:` is
@@ -88,6 +101,10 @@ local function read_declaration(item, position, kept, seen)
   local name = pandoc.utils.stringify(item[NAME_FIELD])
   if name == UNNAMED then
     qi_core.warn(("entry %d of the %s: metadata has an empty %s:, which no mark can name, so it declares no index"):format(position, INDEXES_KEY, NAME_FIELD))
+    return
+  end
+  if not name:match(NAME_SHAPE) then
+    qi_core.warn(('entry %d of the %s: metadata declares the name "%s", which cannot be an HTML id fragment; a name holds ASCII letters, digits, hyphen, underscore or dot and begins with a letter, so this entry declares no index'):format(position, INDEXES_KEY, name))
     return
   end
   if seen[name] then
@@ -179,7 +196,15 @@ local function names()
   return order
 end
 
+-- The heading this index's section carries. A folded render prints ONE section
+-- holding every declared index's marks, so it is headed with the neutral title
+-- rather than with the first declared index's -- the same reason `section_id`
+-- keeps that section's id bare, and the same heading a document that declares
+-- nothing has always printed.
 local function title(name)
+  if declared and folded then
+    return DEFAULT_TITLE
+  end
   return titles[name] or DEFAULT_TITLE
 end
 
@@ -276,6 +301,7 @@ M["INDEXES_KEY"] = INDEXES_KEY
 M["NAME_FIELD"] = NAME_FIELD
 M["TITLE_FIELD"] = TITLE_FIELD
 M["DEFAULT_TITLE"] = DEFAULT_TITLE
+M["NAME_SHAPE"] = NAME_SHAPE
 M["UNNAMED"] = UNNAMED
 M["reset"] = reset
 M["read"] = read

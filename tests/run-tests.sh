@@ -249,7 +249,8 @@ run_scan() {
         "$R_BOOKUNPAIRED" \
         "$WARN_MARKER_EMPTIED" "$WARN_MARKER_NOT_LAST" "$WARN_MARKER_DUP_STEM" \
         "$WARN_MARKER_DUP_NAMED" \
-        "$WARN_INDEX_FOLD_MARK" "$WARN_INDEX_FOLD_MARKER" ;;
+        "$WARN_INDEX_FOLD_MARK" "$WARN_INDEX_FOLD_MARKER" \
+        "$WARN_INDEX_BADNAME" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -3117,6 +3118,10 @@ WARN_MARKER_DUP_NAMED='is a second marker for the index named'
 # identical in both.
 WARN_INDEX_FOLD_MARK='so the mark is indexed in that one index instead'
 WARN_INDEX_FOLD_MARKER='so the marker places that one index instead'
+# The report for a declared name that cannot be an HTML id fragment (M38 R1).
+# Keyed on the clause that says what is wrong with the name, which no other
+# declaration report carries.
+WARN_INDEX_BADNAME='which cannot be an HTML id fragment'
 case "$WARN_MARKER_DUP" in
   *"$WARN_MARKER_DUP_STEM"*) ;;
   *) fail "M28: the duplicate-marker grep key no longer contains the stem passed to mark-report-keys, so the scan and the run would hold different messages" ;;
@@ -12293,6 +12298,52 @@ grep -F -- "$WARN_MARKER_DUP_NAMED" "$WORK/named-indexes-html.log" \
 check_warning_count "$WORK/named-indexes-html.log" "$WARN_MARKER_DUP_STEM" 0 \
   "M38-AC4 (the unnamed wording, which a declaring document must not use)"
 pass "M38-AC4: each index sits at its own marker, and the one repeated marker draws exactly one report, naming the index it repeats"
+
+# ---------------------------------------------------------------------------
+# M38-R1 — a declared name that cannot be an HTML id fragment. The name reaches
+# output as the section's id and as the fragment of every link to it, so a name
+# carrying a space (or a `#`, a `"`, a `<`) is a section no link resolves
+# against. The entry is refused and says so, like an empty or a repeated name,
+# rather than the invalid id being emitted in silence.
+#
+# ORACLE — read off examples/named-indexes-misuse.qmd by hand. Four entries are
+# written; entry 2 names `my index` and is refused, entry 3 repeats `main` and
+# is refused, entry 4 gives no title and is headed with its own name. What is
+# left is `main` then `people`. `Alpha` names nothing and files in `main`;
+# `Bravo` names `people`; `Charlie` names the refused entry, which is no
+# declared index, so it is reported and files in `main` too.
+# ---------------------------------------------------------------------------
+read -r -d '' NAMED_INDEX_MISUSE_SECTIONS <<'MANIFEST' || true
+section	qi-index-main	h1	Index	site-first
+letter	A
+0	Alpha	1
+letter	C
+0	Charlie	1
+section	qi-index-people	h1	people	site-second
+letter	B
+0	Bravo	1
+MANIFEST
+quarto render examples/named-indexes-misuse.qmd --to html \
+  > "$WORK/named-indexes-misuse-html.log" 2>&1 \
+  || { tail -30 "$WORK/named-indexes-misuse-html.log" >&2; fail "M38-R1: named-indexes-misuse.qmd failed to render to HTML"; }
+capture examples/named-indexes-misuse.qmd html "named-indexes-misuse-html"
+NAMED_MISUSE_HTML="$CAPTURE_ROOT/named-indexes-misuse-html/named-indexes-misuse.html"
+check_warning_count "$WORK/named-indexes-misuse-html.log" "$WARN_INDEX_BADNAME" 1 \
+  "M38-R1"
+grep -F -- "$WARN_INDEX_BADNAME" "$WORK/named-indexes-misuse-html.log" \
+  | grep -qF '"my index"' \
+  || fail "M38-R1: the refused-name report does not name the name it refused"
+check_index_sections "$NAMED_MISUSE_HTML" "$NAMED_INDEX_MISUSE_SECTIONS" "M38-R1"
+# And the output itself: no id on the page holds a character an id may not, so
+# the refusal is what kept the invalid id out rather than the manifest above
+# happening not to name it. Read over EVERY id the page carries, the extension's
+# and Quarto's alike, since an id with a space in it is invalid wherever it came
+# from.
+if grep -qE 'id="[^"]*[[:space:]#<>]' "$NAMED_MISUSE_HTML"; then
+  grep -oE 'id="[^"]*[[:space:]#<>][^"]*"' "$NAMED_MISUSE_HTML" | head -5 >&2
+  fail "M38-R1: the rendered page carries an id holding a character no HTML id fragment may hold"
+fi
+pass "M38-R1: a declared name that is no HTML id fragment is refused by name, the document keeps the indexes it declared usably, and the page carries no invalid id"
 
 # The twin: the shape this milestone leaves untouched. One section under the
 # bare id, every judgement made across the whole document, and no warning.

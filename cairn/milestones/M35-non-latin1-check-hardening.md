@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M35: The non-Latin-1 checks fail on the defects they claim to catch
 
-- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** IP2   <!-- owner: plan · create/amend-via-gate; comma-separated IPn/GPn ids this milestone touches, or — -->
-- **Branch/PR:** m035-non-latin1-check-hardening   <!-- owner: implement (branch) / review (PR URL) · create -->
+- **Branch/PR:** m035-non-latin1-check-hardening · PR #35 (https://github.com/jmgirard/quarto-index/pull/35)   <!-- owner: implement (branch) / review (PR URL) · create -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -43,26 +43,26 @@ its own milestone.
 ## Acceptance criteria
 <!-- owner: plan · create/amend-via-gate; review reads, never reinterprets. -->
 
-- [ ] AC1: `entries` and `absent` hold a term to an entry line's level as well
+- [x] AC1: `entries` and `absent` hold a term to an entry line's level as well
       as its text. Each reading reports red, naming the level clause, on an
       input stating a term at a level the render under it does not print that
       term at.
-- [ ] AC2: `stopped` reports red, naming its one-error clause, on a LaTeX log
+- [x] AC2: `stopped` reports red, naming its one-error clause, on a LaTeX log
       whose stop signature and whose `Unicode character` line belong to
       different errors.
-- [ ] AC3: `stopped` reports red, naming its signature clause, on a LaTeX log
+- [x] AC3: `stopped` reports red, naming its signature clause, on a LaTeX log
       that carries no rejection at all.
 - [ ] AC4: the suite's font guard stops the run, naming the missing TeX Live
       package, when any font file named by `examples/unicode.qmd`'s
       `mainfontoptions` block — the guard parsing that block for its list — is
       unfindable by `kpsewhich`.
-- [ ] AC5: control (d) reads its own capture's producer and reports red when
+- [x] AC5: control (d) reads its own capture's producer and reports red when
       that producer does not name the engine README's third path states;
       shown red on a capture this suite already writes under another engine.
-- [ ] AC6: the README recipe-block check reports red when the block's
+- [x] AC6: the README recipe-block check reports red when the block's
       non-blank lines are not exactly the recipe lines the suite states, and
       red when a stated line is absent from `examples/unicode.qmd`.
-- [ ] AC7: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit
+- [x] AC7: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit
       0, and the milestone states the check counts before and after.
 
 ## Coverage
@@ -128,9 +128,82 @@ its own milestone.
 - 2026-08-24: T5 — `pdfinfo` joined the tool guards at a question gate and is recorded as D-020; control (d) now reads its own capture's `Producer` line and requires it to name `LuaTeX`, with two plants — this suite's own xelatex recipe capture, and a file carrying no `Producer` line. Self-test 490 checks, exit 0.
 - 2026-08-24: T6 — the README recipe block is now held to `README_RECIPE_LINES`, eight lines the suite states under an ORACLE RULE, equal in both directions and in order, with each stated line still required in the fixture; four plants show it red on a dropped `pdf-engine:` line, a reordering, an unstated line, and a stated line the fixture no longer carries. The `README_UNICODE_CLAIMS` header comment saying control (d) never reads which engine produced its render was corrected in the same commit — T5 made it false. Self-test 491 checks, exit 0.
 - 2026-08-24: T7 — the M33-AC3 and M33-AC4 section comments now describe the level-qualified positive signal, control (d)'s producer reading, and the two-directional block check. Check counts: merge base 351 plain / 487 self-test; this branch 352 plain / 491 self-test (+1 plain, the producer reading's own line; +4 self-test, that line plus the three new M35 plant summaries). One plain run died on a Quarto segfault rendering marker-sites.qmd to gfm, unrelated to this branch; the immediately following self-test run and a re-run of plain mode both passed clean.
+- 2026-08-24: review returned M35 to in-progress — AC4 fails: the font guard sits in `require_pdf_tools`, called at `tests/run-tests.sh:4896`, after the M33 renders at `:4385`; with an unfindable face planted in `examples/unicode.qmd` the run died at "M33-AC1: ... failed to render to PDF under the documented recipe" and the guard, and its `stix2-otf` message, never ran. AC1/AC2/AC3/AC5/AC6/AC7 verified with fresh evidence; 13 further diff-lens findings recorded in the Review section, untriaged.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->
 
 ## Review
 <!-- owner: review · exclusive -->
+
+Reviewed 2026-08-24 against PR #35. Suite run fresh on this branch: plain
+mode 352 checks exit 0; `--self-test` 491 checks exit 0.
+
+**Criterion evidence.**
+
+- AC1 — met. `entries` run by hand on this run's recipe capture with `Ascii`
+  stated at level 1 exits 1 with "prints at level [0], not at level 1, the
+  level the suite states for it"; `absent` with the same present-term spec
+  exits 1 with "not at level 1, the level the control states for its
+  present-term". Suite line: "all 8 terms print as their own entry at the
+  level the suite states".
+- AC2 — met. `stopped` run on a copy of this run's engine control log with the
+  `Unicode character` error closed early and a second error opened around the
+  signature exits 1 with "but never in one error: the rejection that stopped
+  this render and the character this fixture indexes are separate errors".
+  The unmutated log passes on the same call.
+- AC3 — met. `stopped` on a copy of that log with every `! ` line removed
+  (0 errors, 0 signature lines) exits 1 with "does not carry 'not set up for
+  use with LaTeX'".
+- AC4 — NOT met. See the return below.
+- AC5 — met. Self-test: control (d)'s producer reading names LuaTeX on the
+  no-engine capture and goes red both on this suite's own xelatex recipe
+  capture ("does not name") and on a file carrying no Producer line.
+- AC6 — met. Self-test: the block check holds README's block to the 8 stated
+  lines in both directions and goes red on a dropped `pdf-engine:` line, a
+  reordering, an unstated line, and a stated line the fixture no longer
+  carries. Plain run line 159: the 8 lines are exactly the stated ones, in
+  order, each also verbatim in the fixture.
+- AC7 — met. Both modes exit 0 at 352 / 491 checks; the work log states the
+  merge-base counts (351 / 487) beside them.
+
+**Consistency gate.** `cairn_validate.py` exit 0, all checks passed, no
+advisory fired. No DESIGN principle changed, so `cairn_impact.py` was not run.
+The `generic` profile names no toolchain checks.
+
+**Fresh-context review.** Three lenses, distinct evidence bases. The
+blame-history lens and the prior-review lens each reported zero findings; the
+prior-review lens confirmed the diff implements what M33's R4/R6/R8/R12 and
+M34's F2/F9 asked for. The diff-bug lens reported 14 ranked findings; its
+first is the return below. The remaining 13 stand unactioned pending the
+re-review gate, and are recorded here rather than triaged now, since the gate
+was not reached: (2) `error_blocks` ends the final block at EOF, so trailing
+text after an unterminated `! ` error is absorbed into it; (3) no plant
+reaches `require_pdf_tools`' own package-naming `fail` line; (4) the parsed
+face list is captured and discarded, so a plain run never prints the guard's
+domain; (5) the "no rejection" plant deletes only the signature line, leaving
+the inputenc error, so its label overstates the input; (6) `levelled()`'s
+`columns_carry_top_level` clause is reachable but unplanted while the summary
+line claims a plant per clause; (7) the fixture-direction check is a substring
+search over the whole `.qmd`, not a front-matter line test; (8) the
+`fail-noengine-engine` claim row's Quarto-version qualifier is not read;
+(9) the "no options block" plant's `sed` range depends on `filters:` following
+the font block; (10) a missing `Extension=` yields extensionless probe names
+and a misdirected `tlmgr` message; (11) `pdf_producer_names`' pipeline status
+is safe only because both call sites sit in `&&`/`||` lists; (12) `cmd_marks`
+requires the level prefix but never reads it, and no plant exercises it;
+(13) `M33_NOENGINE_PRODUCER` and README's `lualatex` word are independent hand
+statements with no asserted correspondence; (14) `stated()` accepts non-ASCII
+digits.
+
+**Return.** AC4 fails inside its own domain. The font guard lives in
+`require_pdf_tools`, which `run_all_checks` calls at `tests/run-tests.sh:4896`
+— after the four M33 renders at `:4385` and `:4425-4538` that it exists to
+protect. Verified by planting the defect the criterion names: with
+`examples/unicode.qmd`'s `BoldFont=*-Bold` changed to a face no TeX tree
+carries, the suite died at `FAIL: M33-AC1: examples/unicode.qmd failed to
+render to PDF under the documented recipe`, the string `stix2-otf` appeared
+nowhere in the run, and the guard never executed. The criterion promises the
+guard stops the run naming the missing package; on the one input class it
+quantifies over, a different check stops the run naming something else.
+

@@ -19,13 +19,17 @@ format:
   html: default
   pdf: default
 
-# Two declared indexes (M38), for the one property a book has to show about
-# them: an HTML book aggregates its chapters through a sidecar store whose
+# Two declared indexes (M38), for the two properties a book has to show about
+# them. An HTML book aggregates its chapters through a sidecar store whose
 # record format carries no index name, so every named mark and every named
 # marker is folded into the one index the book builds, and each is told so.
+# And the FIRST declared title is deliberately not "Index": the one section a
+# folded book prints holds every declared index's marks, so it is headed with
+# the neutral title rather than with this one, which would claim the section is
+# the subject index alone (M38 R3).
 indexes:
   - name: main
-    title: Index
+    title: Index of Subjects
   - name: people
     title: Index of People
 

@@ -516,7 +516,7 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 ### The HTML back-end and books
 
-- **KI10.** The filter's 17 per-document accumulators are module-level state,
+- **KI10.** The filter's 19 per-document accumulators are module-level state,
   latent if Lua state is ever reused across documents. `marks_seen` was the
   first (it was `marks_emitted` until M04 made it format-neutral); the HTML
   back-end's `html_marks` was a second until the M03 F1/F2 fix refactored it
@@ -542,10 +542,25 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   mechanism stronger: the module split moved every one of these out of the
   filter chunk's own locals and into module tables `require` caches in
   `package.loaded`, so a reused state no longer re-initializes them on the next
-  execution the way re-running the chunk did. M26 resets all 17 per document; a
-  cell added after it that joins no `reset` is unguarded, and D-011 refuses to
-  pin that with a source scan. — M01 review R16, widened through M03 P1, M04,
-  M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8
+  execution the way re-running the chunk did. M38 added the last four:
+  `indexes.lua`'s `order`, `titles`, `declared` and `folded`, the declared
+  indexes and what the running back-end does with them. They are the first that
+  must be settled BEFORE any mark is recorded — every other accumulator is
+  keyed by the index a mark files in — which is why `indexes.reset` is a
+  `Pandoc` hook taking the document rather than an element one, and why it
+  reinstalls the single unnamed index rather than leaving the tables empty: a
+  module that acquired an index only once a declaration was read would hand a
+  nil key to every accumulator keyed by one. The count is what
+  `tests/stateprobe.py`'s `CELLS` enumerates plus those four; the prose above
+  is a history of how they arrived and names neither `contested_keys` nor them,
+  which is what made the older "17" wrong in both directions. M26's probe
+  resets and proves 15 of the 19: the four `indexes.lua` cells are reset per
+  document but are outside the probe's enumeration, and the fixtures it drives
+  declare no indexes, so a removed reset for them would show no difference to
+  compare. A cell added after M26 that joins no `reset` is unguarded, and D-011
+  refuses to pin that with a source scan. — M01 review R16, widened through
+  M03 P1, M04, M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8; inventory
+  corrected M38
 - **KI11.** A marker written in YAML `abstract:` survives verbatim into the HTML
   header — filter residue of the IP2 class, since `resolve_markers` reads
   `doc.blocks` alone; the misplaced-class report is silent there for the same

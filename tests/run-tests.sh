@@ -12518,6 +12518,49 @@ check_warning_count "$WORK/book-html.log" "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" 1 
 pass "M38-AC5: an HTML book folds its named mark and its named marker into the one index it builds, reports each once, and lists the folded mark's term in that index"
 
 # ---------------------------------------------------------------------------
+# M38-R3 — what heads the ONE section a folded render prints.
+#
+# examples/book/ declares `main` first under the title `Index of Subjects`, and
+# `people` second. The book folds every named mark into the one index it
+# builds, so that section holds both declarations' marks — heading it with the
+# first declaration's title would claim it is the subject index alone, which is
+# the same reason its id stays the bare one rather than being named after a
+# declared index.
+#
+# ORACLE — the book declares two indexes and prints one section, headed with
+# the neutral title this extension gives a document that declares none, under
+# the bare id. The title read here is NOT `Index of Subjects`, which is what
+# the fixture's first declaration says and what makes this check discriminate.
+# ---------------------------------------------------------------------------
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
+  "$CAPTURE_ROOT/book-html/_book/last.html" <<'FOLDHEADPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex
+prefix = os.environ['HTML_SECTION_ID']
+root = htmlindex.parse(sys.argv[1])
+found = htmlindex.index_sections(root, prefix)
+if len(found) != 1:
+    sys.exit(f'FAIL: M38-R3: the folded book page carries {len(found)} '
+             f'generated index section(s), want the 1 a folded render prints')
+one = found[0]
+if one['ident'] != prefix:
+    sys.exit(f'FAIL: M38-R3: the one section carries the id {one["ident"]!r} '
+             f'rather than the bare {prefix!r}, so it claims to be one of the '
+             f'declared indexes rather than the union it is')
+if one['tag'] != 'h1':
+    sys.exit(f'FAIL: M38-R3: the one section is headed by a {one["tag"]!r} '
+             f'rather than an h1')
+if one['title'] != 'Index':
+    sys.exit(f'FAIL: M38-R3: the one section is headed {one["title"]!r}; a '
+             f'section holding every declared index\'s marks is headed with '
+             f'the neutral title, not with one declaration\'s')
+print('ok   M38-R3: the one section a folded book prints is headed with the '
+      'neutral title under the bare id, though the fixture\'s first '
+      'declaration gives that index a title of its own')
+FOLDHEADPY
+
+# ---------------------------------------------------------------------------
 # The residue sweeps (M03-AC3, M12), LAST in the run and over the CAPTURED set
 # (M24). Both are stated over every page the run rendered, so their domain is
 # the capture root — every artifact of every render, book pages included — and

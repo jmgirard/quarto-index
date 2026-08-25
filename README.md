@@ -266,7 +266,8 @@ thing from your document — see [Terms outside Latin-1](#terms-outside-latin-1)
 
 Escaping is not what stops a Greek or Polish term from reaching your index. A
 PDF build has to be able to *draw* the characters, which takes an engine and a
-main font chosen for the job. Set both:
+main font chosen for the job. Set both — the engine, and the font (which
+takes an options block, because it is named by file):
 
 ```yaml
 pdf-engine: xelatex
@@ -286,7 +287,8 @@ TeX Live's `collection-fontsextra`, so install it with `tlmgr install stix`.
 The general rule behind the recipe is that **your main font must cover the
 script you are indexing**; STIX is one font that does, not the only one.
 
-Both lines are load-bearing, and each is load-bearing differently:
+Each line is load-bearing, and setting one without the other fails
+differently again — three paths in all:
 
 - **Wrong engine.** With `pdf-engine: pdflatex` the render stops and the LaTeX
   log says `not set up for use with LaTeX`, naming the character. A failed
@@ -294,12 +296,12 @@ Both lines are load-bearing, and each is load-bearing differently:
 - **Wrong or missing font.** With the right engine and a main font that does
   not cover the script, the render **succeeds** and the term is simply absent
   from the printed index. Nothing warns you.
-- **No engine set.** Quarto's default engine is `lualatex`, not `pdflatex`, so
-  leaving the `pdf-engine:` line out does not get you the failed build above.
-  With the font set and the engine left alone the render **succeeds** and most
-  of `examples/unicode.qmd` still prints correctly, while its Vietnamese term
-  does not print as itself. A build that succeeds is not evidence that the
-  index is right.
+- **No engine set.** Quarto's default engine is not `pdflatex` — on Quarto
+  1.10 it is `lualatex` — so leaving the `pdf-engine:` line out does not get
+  you the failed build above. With the font set and the engine left alone the
+  render **succeeds** and most of `examples/unicode.qmd` still prints
+  correctly, while its Vietnamese term does not print as itself. A build that
+  succeeds is not evidence that the index is right.
 
 Do not read the log's `Missing character` line as that missing-font failure. Under
 `xelatex` that line also appears for characters that print perfectly well: the

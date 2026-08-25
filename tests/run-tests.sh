@@ -521,7 +521,7 @@ README_UNICODE_CLAIMS=(
   $'font-rule\tyour main font must cover the script you are indexing'
   $'fail-engine\tWith `pdf-engine: pdflatex` the render stops and the LaTeX log says `not set up for use with LaTeX`, naming the character'
   $'fail-font\tthe render **succeeds** and the term is simply absent from the printed index'
-  $'fail-noengine-engine\tQuarto\'s default engine is `lualatex`, not `pdflatex`, so leaving the `pdf-engine:` line out does not get you the failed build above'
+  $'fail-noengine-engine\tQuarto\'s default engine is not `pdflatex` — on Quarto 1.10 it is `lualatex` — so leaving the `pdf-engine:` line out does not get you the failed build above'
   $'fail-noengine-silent\tthe render **succeeds** and most of `examples/unicode.qmd` still prints correctly, while its Vietnamese term does not print as itself'
   $'fail-warning\tDo not read the log\'s `Missing character` line as that missing-font failure'
   $'sortkey\t`sort=` still works and still does only what it says — it sets one entry\'s sort key. The order of the index as a whole is the index processor\'s, and for non-ASCII terms it is best-effort'
@@ -11827,9 +11827,16 @@ if [ "${1:-}" = "--self-test" ]; then
   # expects, so a reader that goes red for some OTHER reason is not counted as
   # having caught the defect.
   #
-  # THE MATRIX. Eleven plants over the reader's eleven reachable clauses:
+  # THE MATRIX. Fifteen plants over the reader's fifteen reachable clauses.
+  # The four `main` rows are the argv guards: three of them are the siblings
+  # of `entries no terms` below, and a reading whose domain guard is unproven
+  # is a reading that can be called into vacuous green.
   #
-  #   marks   count      a term dropped from the stated list
+  #   marks   count      the stated list carrying a duplicate, so it is longer
+  #                      than the fixture's marks while naming the same terms —
+  #                      the only shape that isolates the count clause, since
+  #                      any count mismatch over DISTINCT terms fires the set
+  #                      clause below instead
   #   marks   stated     a stated term respelled, so it is stated and not marked
   #   marks   marked     a mark removed from a copy of the fixture
   #   entries missing    a stated term the fixture prints no entry for
@@ -11841,6 +11848,10 @@ if [ "${1:-}" = "--self-test" ]; then
   #   stopped character  the rejection, with the character it names replaced
   #   absent  silent     a control's own present-term named as one it never prints
   #   absent  printed    a term named absent that the render does print
+  #   main    argv       a call naming a mode and nothing else
+  #   main    stopped    `stopped` called with no term
+  #   main    absent     `absent` called with a present-term and nothing else
+  #   main    mode       a mode the reader does not have
   #
   # ONE clause has no plant, and it is guarded rather than proved: `entries`
   # and `absent` both refuse a PDF whose index heading is present but whose
@@ -11871,6 +11882,16 @@ if [ "${1:-}" = "--self-test" ]; then
     || fail "M33 self-test: the readers fail on the unplanted fixture and render, so no failure below is evidence of anything"
 
   # --- marks: the stated list and the fixture's own marks.
+  #
+  # The count clause on its own. A list one term SHORT also trips the set
+  # clause, so it cannot isolate the count; a list carrying one term twice
+  # names exactly the terms the fixture marks and is still the wrong length,
+  # which the count clause and nothing else catches.
+  M33_DUPED=("${M33_TERMS[@]}" "${M33_TERMS[0]}")
+  m33_planted 'the stated list carrying a duplicate' \
+    'index mark(s); the suite states' \
+    marks examples/unicode.qmd "${M33_DUPED[@]}"
+
   M33_SHORT=("${M33_TERMS[@]:1}")
   m33_planted 'a term dropped from the stated list' \
     'marked but not stated' \
@@ -11934,7 +11955,26 @@ if [ "${1:-}" = "--self-test" ]; then
     'printed after all' \
     absent "$M33_PDF" "$M33_ASCII" "${M33_GREEK[@]}"
 
-  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — eleven plants over eleven reachable clauses"
+  # --- main: the argv guards. Three of these are `entries no terms` in the
+  # other three readings — a domain a caller can empty, where an unguarded
+  # reader passes over any artifact at all.
+  m33_planted 'a call naming a mode and nothing else' \
+    'Whether a term outside Latin-1 PRINTS' \
+    marks
+
+  m33_planted '`stopped` called with no term' \
+    'stopped needs at least one term' \
+    stopped "$M33_ENGINE_LOG"
+
+  m33_planted '`absent` called with a present-term and nothing else' \
+    'absent needs a present-term' \
+    absent "$M33_PDF" "$M33_ASCII"
+
+  m33_planted 'a mode the reader does not have' \
+    'unknown mode' \
+    entrys "$M33_PDF" "${M33_TERMS[@]}"
+
+  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — fifteen plants over fifteen reachable clauses"
 
   # The two self-checks' own discrimination. Each reads the suite's own source
   # for a SHAPE, which is the reading M23's lesson names as certifying a

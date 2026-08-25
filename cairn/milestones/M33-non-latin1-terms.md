@@ -159,6 +159,7 @@ remainder.
 - 2026-08-24: T9 — R9 and R7 fixed in `tests/unicodeprint.py` (import resolved from `__file__`; `entries` refuses an empty term list, a clause now planted, eleven plants over eleven reachable clauses). R1: README's "one of two failures" replaced by three, the third naming lualatex as Quarto's default engine and the silent half-set build, with control (d) rendering the fixture minus its `pdf-engine:` line and holding it to exit 0, the ASCII entry line present and the Vietnamese term not printing as itself; two claim rows added. R2, R10, R13: the STIX install fact, the suite-prerequisites sentence and the fixture-list count corrected, the install fact added as a claim row. D-017 appended, correcting D-016's default-engine context and leaving its decision standing. Suite `--self-test` clean at 487 checks.
 - 2026-08-24: defect return #1 repaired; status back to review. `tests/run-tests.sh --self-test` clean at 487 checks (485 before the return, 336 on the merge base).
 - 2026-08-24: re-review gathered fresh evidence on 30fc555 — suite green at 487 checks, cairn_validate exit 0, all six criteria verified. Three fresh-context lenses: blame-history and prior-review clean, diff-bug returned 12; none reaches the return floor. Recommended fix-now: N2, N3, N4, N10.
+- 2026-08-24: gate fix-now landed — N2 and N10 in README (and the `fail-noengine-engine` claim row), N4's count-clause plant and N3's four argv-guard plants in the self-test; matrix now fifteen plants over fifteen reachable clauses. Suite `--self-test` clean at 487 checks.
 
 ## Decisions
 
@@ -304,6 +305,38 @@ The blame-history lens additionally flagged the work log's `D-118` citation as
 pointing at nothing in `cairn/DECISIONS.md`. **Rejected** — D-118 is the cairn
 plugin's own decision id, cited by its tracking rulebook, not this repo's.
 
+
+#### Gate disposition — round 2 (2026-08-24)
+
+The maintainer took the review's recommendation on every finding. **Fixed at
+the gate** — N2, N3, N4, N10; **follow-up** — N5, N6, N7 (folded into R3's
+row), N9, and round 1's R3, R4, R6, R8, R12, all written as candidate rows in
+the hygiene pass; **rejected** — N1, N8, N11, N12 and the blame lens's `D-118`
+flag, each for the reason recorded beside it above.
+
+No finding reached the return floor: every criterion's fresh evidence is green
+on `30fc555`, and none of the twelve demonstrates a criterion failing. Defect
+returns for this milestone stay at one.
+
+What the fix-now work changed, all of it re-verified by a full
+`tests/run-tests.sh --self-test` at 487 checks, exit 0:
+
+- N2 — README's no-engine bullet now reads "Quarto's default engine is not
+  `pdflatex` — on Quarto 1.10 it is `lualatex`", and the `fail-noengine-engine`
+  claim row was updated to the same wording, so the suite no longer pins a
+  version-specific fact as a timeless one.
+- N10 — "Both lines are load-bearing" became "Each line is load-bearing, and
+  setting one without the other fails differently again — three paths in all",
+  and "Set both:" now names what the two settings are.
+- N4 — a `marks count` plant that isolates the count clause: a stated list
+  carrying one term twice, which is the wrong length while naming exactly the
+  fixture's terms, so the set clause cannot fire instead. The existing
+  one-term-short plant keeps its row under the set clause, whose message it
+  actually asserts.
+- N3 — plants for the reader's four `main` argv guards (a mode with no target,
+  `stopped` with no term, `absent` with no absent-term, an unknown mode). The
+  matrix and the pass line now read fifteen plants over fifteen reachable
+  clauses.
 
 ### Round 1 (superseded)
 

@@ -203,9 +203,14 @@ def error_blocks(log):
     """The log's `! ...` error reports, each as one string.
 
     A block runs from its `! ` line to the echoed source line that closes it,
-    or to the next `! ` line where no source line intervenes. Text outside any
-    error report — the font and package chatter that fills most of a LaTeX log
-    — belongs to no block and is deliberately unreachable from here.
+    or to the next `! ` line where no source line intervenes; a `! ` line the
+    log never closes — neither a source line nor a later `! ` line before the
+    end of the file — opens no block at all. Text outside any error report —
+    the font and package chatter that fills most of a LaTeX log, and the tail
+    following an unclosed `! ` line — belongs to no block and is deliberately
+    unreachable from here. Closing an unclosed final report at EOF would make
+    that tail readable as part of it, which is a report the log does not
+    carry.
     """
     blocks, current = [], None
     for line in log.splitlines():
@@ -219,8 +224,6 @@ def error_blocks(log):
                 current = None
             else:
                 current.append(line)
-    if current is not None:
-        blocks.append('\n'.join(current))
     return blocks
 
 

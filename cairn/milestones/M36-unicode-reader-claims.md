@@ -1,11 +1,11 @@
 # M36: The non-Latin-1 readers stop reading text that belongs to no error
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** `m036-unicode-reader-claims`
 
 ## Goal
 
@@ -61,7 +61,7 @@ KI87 — stays on its candidate row.
 
 ## Tasks
 
-- [ ] T1. Drop `error_blocks`' EOF tail (`tests/unicodeprint.py:224-225`), so
+- [x] T1. Drop `error_blocks`' EOF tail (`tests/unicodeprint.py:224-225`), so
       an unterminated final `! ` line yields no block, and rewrite the
       docstring's "or to the next `! ` line" sentence to say what now closes a
       block.
@@ -88,6 +88,7 @@ KI87 — stays on its candidate row.
 - 2026-08-24: plan gate chose narrowing each check's claim over widening what it reads, because the checker-regress shape fired (M35 shipped these checks; `check_recipe_block` and the plant-coverage findings verify repo-internal artifacts); falsified by a finding on this list turning out to be reachable from a real render rather than only from a hand-built input.
 - 2026-08-24: plan gate chose splitting the sixteen findings by file over one milestone, because the eight-criterion draft tripped the >~7 split tripwire; falsified by M37 proving unreviewable apart from M36's reader changes.
 - 2026-08-24: reduced criteria audit ran twice, mode reduced both times (internal tier, no RB-tripwire tag). Round 1 over 8 pre-gate criteria returned one finding: AC8 bound a work-log recording act and a check count, both instruments; fixed by cutting both clauses. Round 2 over the 10 post-gate simplify-wording criteria returned three: M36-AC3 and M37-AC5 bound a checker's own prose, M37-AC2 bound an unenumerated universal and a check count; all three fixed, M36-AC3 and M37-AC5 cut to tasks and M37-AC2 rewritten as a state-of-the-file promise. Seven criteria clean.
+- 2026-08-25: T1: `error_blocks` no longer closes an unclosed final `! ` report at EOF; run against a two-error string, a log whose second `! ` line is never closed now returns only the closed first block. Docstring rewritten to say what closes a block and what the tail after an unclosed one is. Plain suite 352 checks, exit 0.
 
 ## Decisions
 

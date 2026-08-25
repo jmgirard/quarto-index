@@ -1,11 +1,11 @@
 # M38: Marks name which index they belong to, and the HTML back-end prints each
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP4, GP5
-- **Branch/PR:** —
+- **Branch/PR:** m038-named-indexes-html
 
 ## Goal
 
@@ -139,7 +139,19 @@ collation rules — nothing here changes how one index is ordered or printed.
 - 2026-08-25: plan gate chose HTML-first with PDF degrading loudly over shipping both back-ends together because the PDF path's design fork is unsettled; falsified by evidence that authors reach for a second index only in print, which would make an HTML-only release useless.
 - 2026-08-25: plan gate chose warn-and-fold in books over including book support here because the store's record format and version bump would roughly double this milestone; falsified by evidence that the named-index feature is wanted mainly in books.
 - 2026-08-25: plan gate chose "the first declared index is the default" over a reserved default name because a document declaring nothing keeps today's behavior with no reserved word; falsified by evidence that authors reorder the declaration for print order and silently move their default with it.
+- 2026-08-25: status in-progress; branch m038-named-indexes-html cut from a synced main. Question gate settled three open implementation choices; recorded below under Decisions.
 
 ## Decisions
+
+- 2026-08-25 (gate): An index is declared as a list entry carrying `name:` and
+  `title:`, rather than as a one-key `name: title` pair, so a later per-index
+  setting is a third field rather than a change to syntax authors have already
+  written. A placement marker naming no index places the first declared index,
+  the same index an unnamed mark files in, so one rule covers marks and markers
+  alike; a declared index no marker names goes at the end of the document in
+  declared order, which is what a marker-less document does today. Each
+  section's id is derived from the index's own name — `qi-index-<name>` — so a
+  link keeps pointing at the same index when the declaration is reordered; a
+  document declaring no indexes keeps the bare `qi-index` it has today.
 
 ## Review

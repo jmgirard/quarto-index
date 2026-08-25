@@ -1426,13 +1426,26 @@ RECIPEFONTPY
 
 # Each of those faces findable the way fontspec finds it. Prints the faces it
 # probed; exits non-zero naming the first one that is missing.
+#
+# Four things can go wrong here and only ONE of them is the missing TeX Live
+# package. `recipe_font_files` above owns three — no `mainfont:`, no
+# `mainfontoptions:` block, a block naming no `*Font=` face — and each of its
+# exits already says which it hit, so this function surfaces them rather than
+# speaking over them. The fourth, a face the block names that no TeX tree
+# carries, is this function's own, and it is the only one `tlmgr install
+# stix2-otf` answers: naming that package on the other three would send a
+# contributor after a package they already have. A fixture whose front matter
+# this parser cannot read — a quoted `mainfont:`, a flow-style options block —
+# surfaces here as the face it could not assemble rather than as a parse
+# report, which is the reading that names something the author can act on.
 require_recipe_fonts() {
   local qmd="$1" files face
   files=$(recipe_font_files "$qmd") || return 1
   while IFS= read -r face; do
     [ -n "$face" ] || continue
     kpsewhich "$face" >/dev/null 2>&1 || {
-      printf 'FAIL: %s is not findable by kpsewhich\n' "$face" >&2
+      printf 'FAIL: %s, a face the `mainfontoptions:` block in %s names, is not findable by kpsewhich; the TeX Live `stix2-otf` package is missing (run: tlmgr install stix2-otf)\n' \
+        "$face" "$qmd" >&2
       return 1
     }
   done <<< "$files"
@@ -1506,7 +1519,7 @@ require_pdf_tools() {
     || fail "kpsewhich not found on PATH. AC6 must never pass unrun."
   local faces
   faces=$(require_recipe_fonts examples/unicode.qmd) \
-    || fail "a font face examples/unicode.qmd's mainfontoptions block names is not findable by kpsewhich; the TeX Live 'stix2-otf' package is missing (run: tlmgr install stix2-otf). The documented recipe names this font by file, so its renders would fail on the font rather than on anything this suite is testing. The face is named on the line above."
+    || fail "the recipe font guard could not confirm that the faces examples/unicode.qmd's recipe names are on this machine; its own FAIL line above names which of the four it hit and what to do about it. The documented recipe names this font by file, so its renders would fail on the font rather than on anything this suite is testing."
   [ -n "$faces" ] \
     || fail "the font guard probed no faces at all, so it says nothing about this machine. AC6 must never pass unrun."
 }
@@ -12380,14 +12393,31 @@ M33UNCLOSEDPY
   # below is a copy of the fixture with one thing about its font block wrong,
   # and the unplanted fixture is required to pass first — otherwise a failure
   # here would be the copy's and not the plant's.
+  # The fourth argument is which of the four causes this plant is: `package`
+  # for the one a missing TeX Live package explains, `recipe` for the three
+  # that are about what the fixture's own front matter says. Asserting the
+  # `stix2-otf` sentence's ABSENCE on the three is the half that M35 could not
+  # see — the guard reported that package on all four, and a plant that only
+  # checked its own cause was named stayed green on the three it was false for.
   m35_font_planted() {
-    local label="$1" want="$2" qmd="$3"
+    local label="$1" want="$2" qmd="$3" cause="$4"
     local out rc
     out=$(require_recipe_fonts "$qmd" 2>&1) && rc=0 || rc=$?
     [ "$rc" -ne 0 ] \
       || { printf '%s\n' "$out" >&2; fail "M35 self-test: the font guard passed the planted case ($label), so its silence on the real fixture says nothing"; }
     printf '%s' "$out" | grep -qF -- "$want" \
       || { printf '%s\n' "$out" >&2; fail "M35 self-test: the font guard failed the planted case ($label), but not with <<$want>> — that failure is not this clause catching this defect"; }
+    case "$cause" in
+      package)
+        printf '%s' "$out" | grep -qF -- 'stix2-otf' \
+          || { printf '%s\n' "$out" >&2; fail "M37 self-test: the font guard reported the planted case ($label) without naming the stix2-otf package, which is the one thing that would fix it"; } ;;
+      recipe)
+        if printf '%s' "$out" | grep -qF -- 'stix2-otf'; then
+          printf '%s\n' "$out" >&2
+          fail "M37 self-test: the font guard reported the planted case ($label) by naming the stix2-otf package, which is not the cause it hit — this defect is in the fixture's own front matter and installing that package would not touch it"
+        fi ;;
+      *) fail "M37 self-test: m35_font_planted was given the cause <<$cause>>, which is neither package nor recipe" ;;
+    esac
   }
 
   M35_FACES=$(require_recipe_fonts examples/unicode.qmd) \
@@ -12400,8 +12430,8 @@ M33UNCLOSEDPY
   cmp -s examples/unicode.qmd "$M33W/nosuchface.qmd" \
     && fail "M35 self-test: the face-renaming mutation changed nothing in the fixture"
   m35_font_planted 'one face renamed to a file no TeX tree carries' \
-    'STIXTwoText-NoSuchFace.otf is not findable' \
-    "$M33W/nosuchface.qmd"
+    'STIXTwoText-NoSuchFace.otf, a face the `mainfontoptions:` block in' \
+    "$M33W/nosuchface.qmd" package
 
   sed 's/^  - \(.*\)Font=/  - \1Face=/' examples/unicode.qmd \
     > "$M33W/nofaces.qmd"
@@ -12409,7 +12439,7 @@ M33UNCLOSEDPY
     && fail "M35 self-test: the face-key mutation changed nothing in the fixture"
   m35_font_planted 'an options block naming no face at all' \
     'names no `*Font=` face' \
-    "$M33W/nofaces.qmd"
+    "$M33W/nofaces.qmd" recipe
 
   sed '/^mainfontoptions:$/,/^filters:$/{/^filters:$/!d;}' examples/unicode.qmd \
     > "$M33W/nooptions.qmd"
@@ -12417,16 +12447,16 @@ M33UNCLOSEDPY
     && fail "M35 self-test: the options-block-removing mutation changed nothing in the fixture"
   m35_font_planted 'a fixture with no options block to read faces out of' \
     'carries no `mainfontoptions:` block' \
-    "$M33W/nooptions.qmd"
+    "$M33W/nooptions.qmd" recipe
 
   sed '/^mainfont:/d' examples/unicode.qmd > "$M33W/nomainfont.qmd"
   cmp -s examples/unicode.qmd "$M33W/nomainfont.qmd" \
     && fail "M35 self-test: the mainfont-removing mutation changed nothing in the fixture"
   m35_font_planted 'a fixture naming no main font for `*` to stand for' \
     'names no `mainfont:`' \
-    "$M33W/nomainfont.qmd"
+    "$M33W/nomainfont.qmd" recipe
 
-  pass "M35: the recipe font guard reads its face list out of examples/unicode.qmd, probes the $(printf '%s\n' "$M35_FACES" | wc -l | tr -d ' ') faces that block names, and goes red on four planted defects — a face no TeX tree carries, an options block naming no face, no options block, and no main font"
+  pass "M35/M37: the recipe font guard reads its face list out of examples/unicode.qmd, probes the $(printf '%s\n' "$M35_FACES" | wc -l | tr -d ' ') faces that block names, and goes red on four planted defects — a face no TeX tree carries, an options block naming no face, no options block, and no main font — each reported as the cause it is, with only the first naming the stix2-otf package"
 
   # --- Control (d)'s producer reading. The plant is not a mutation: this suite
   # already writes a capture under a different engine — the recipe render,

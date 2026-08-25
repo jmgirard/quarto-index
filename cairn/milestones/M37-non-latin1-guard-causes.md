@@ -82,11 +82,11 @@ KI81–85, KI87 — stays on its candidate row.
 
 ## Tasks
 
-- [ ] T1. Give each `require_recipe_fonts` failure path its own message: the
+- [x] T1. Give each `require_recipe_fonts` failure path its own message: the
       three `recipe_font_files` exits already say what they could not read, so
       surface them rather than replacing them, and reserve the `stix2-otf`
       sentence for the `kpsewhich` miss (`tests/run-tests.sh:1503-1509`).
-- [ ] T2. Plant all four: a fixture with no `mainfont:`, one with no
+- [x] T2. Plant all four: a fixture with no `mainfont:`, one with no
       `mainfontoptions:` block, one whose block names no `*Font=`, and one
       naming an unfindable face. Assert each red with its own cause named.
 - [ ] T3. Delete the two unreachable clauses (`:1511`, `:4597`) and the pass
@@ -116,6 +116,8 @@ KI81–85, KI87 — stays on its candidate row.
 - 2026-08-25: branch m037-non-latin1-guard-causes cut from main at a631685; status in-progress.
 - 2026-08-25: amendment gate — AC4's "fail loudly instead" ending was unsatisfiable for the two mutations bounded by construction: such a mutation succeeds correctly on the very fixture where its unbounded old form went wrong. Amended at the user's selection to bind those two to byte-identity outside their own bound on that fixture, and all three to a loud failure on an input carrying no region of the kind their label names; the third mutation is named `norejection.log` rather than `grep -v`, the form M35's own review commit 7680a3d replaced. No criterion added; AC4's promise narrows on the loud-failure half and is stated per mutation.
 - 2026-08-25: criteria audit (reduced mode, internal tier) by a fresh [O] reader over the amended AC4: one finding — "bounded to the `mainfontoptions:` block whatever follows it" quantified over every possible continuation of the front matter, a domain no procedure the criterion names enumerates. Fixed before writing, to "by that block's own extent rather than by the `filters:` line that happens to follow it". Proportionality and instrument questions passed.
+
+- 2026-08-25: T1+T2 in one commit — T1's message change moves the text T2's plants assert, so neither is green alone. `require_recipe_fonts` now reports the missing face with the `stix2-otf` sentence and the fixture name; the three front-matter causes reach the terminal as `recipe_font_files`' own exits, and `require_pdf_tools`' fail line points at them instead of restating one of them. Each of the four plants now also asserts whether the package is named: planting the M35 defect (the package sentence added to the no-`mainfont:` exit) turned the no-main-font plant red on that clause; unplanted, the self-test is green at 491 checks.
 
 ## Decisions
 

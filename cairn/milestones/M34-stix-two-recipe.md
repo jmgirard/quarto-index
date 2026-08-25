@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP3
-- **Branch/PR:** `m034-stix-two-recipe`
+- **Branch/PR:** `m034-stix-two-recipe` / https://github.com/jmgirard/quarto-index/pull/34
 
 ## Goal
 
@@ -32,7 +32,7 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
 
 ## Acceptance criteria
 
-- [ ] AC1: README's `### Terms outside Latin-1` copyable YAML block names
+- [x] AC1: README's `### Terms outside Latin-1` copyable YAML block names
       `pdf-engine: xelatex` and `STIXTwoText` with its four face options, and
       every line of that block appears in `examples/unicode.qmd`'s front
       matter — the direction the suite's block check reads, over the block's
@@ -130,3 +130,16 @@ sentence and the control that pins it, and leaves the recipe itself untouched
 — which is the reason for keeping the line.
 
 ## Review
+
+Reviewed 2026-08-24 on `m034-stix-two-recipe` at commit ee24554, PR #34,
+against `main` at fd47dcc (branch 3 commits ahead, nothing to merge back).
+
+### Acceptance-criteria evidence
+
+- **AC1 — verified.** A read of README's `### Terms outside Latin-1` section
+  finds exactly one fenced `yaml` block, 8 non-blank lines; it carries
+  `pdf-engine: xelatex`, `mainfont: STIXTwoText`, and the four face options
+  (`UprightFont=*-Regular`, `BoldFont=*-Bold`, `ItalicFont=*-Italic`,
+  `BoldItalicFont=*-BoldItalic`). Every one of the 8 lines appears verbatim in
+  `examples/unicode.qmd`'s front matter — zero missing, checked block-to-fixture,
+  the direction the suite's own check reads.

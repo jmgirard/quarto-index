@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M35: The non-Latin-1 checks fail on the defects they claim to catch
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** IP2   <!-- owner: plan · create/amend-via-gate; comma-separated IPn/GPn ids this milestone touches, or — -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create -->
+- **Branch/PR:** m035-non-latin1-check-hardening   <!-- owner: implement (branch) / review (PR URL) · create -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -79,13 +79,13 @@ its own milestone.
 ## Tasks
 <!-- owner: plan (create) / implement (check-off, minor edits) -->
 
-- [ ] T1: give `cmd_entries` and `cmd_absent`'s present-term signal the
+- [x] T1: give `cmd_entries` and `cmd_absent`'s present-term signal the
       `(level, term)` pair `pdfindex.rows()` already returns
       (`tests/pdfindex.py:224`), taking each stated term's level from the
       suite. Assert `pdfindex.columns_carry_top_level` on the read set first,
       so a column of nothing but sub-entries cannot make the level reading
       lie (`tests/pdfindex.py:207`).
-- [ ] T2: state the level beside the term list in `tests/run-tests.sh:609`
+- [x] T2: state the level beside the term list in `tests/run-tests.sh:609`
       under the ORACLE RULE that governs `M33_TERMS`, and update the four
       call sites (`tests/run-tests.sh:4249`, `:4353`, `:4366`, `:4380`).
       Plant, per reading, a term stated at a level the render does not print
@@ -121,6 +121,7 @@ its own milestone.
 - 2026-08-24: audit deviation — this session is configured to not spawn subagents, so the audit ran inline in the authoring context rather than in a fresh-context [O] reader; the reader-freshness the instrument depends on was not obtained.
 - 2026-08-24: plan gate chose reading the capture's producer with `pdfinfo` over keeping control (d)'s LaTeX log and reading its engine banner, because the producer is read from the captured artifact rather than a build scratch file (M24's capture rule) and was already the probe used by hand at M34's review; falsified by a Quarto or engine that writes no usable producer string into the PDF.
 - 2026-08-24: plan gate chose simplifying README's recipe-block check to a stated line list over hardening it into a two-directional file comparison, because the checker-regress shape recommends simplifying a repo-internal checker and the stated list closes the reported hole with fewer moving parts; falsified by a recipe whose copyable block cannot be stated as a fixed line list — one carrying a value that legitimately varies between README and the fixture.
+- 2026-08-24: T1+T2 landed together — the reader change and its call sites cannot be green apart, so one commit ticks both; `entries` and `absent` now take `<level>:<term>`, assert `columns_carry_top_level` before reading a level, and three new plants cover the two level clauses and the pair form (15 M33 plants -> 18); suite 351 checks, exit 0.
 - 2026-08-24: plan gate chose one milestone over splitting the reader repairs from the guard-and-control repairs, because both halves edit one test section and the split's second half would wait on the first; falsified by the implementation running past three sittings or over the 150-line plan cap.
 
 ## Decisions

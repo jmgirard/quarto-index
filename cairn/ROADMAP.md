@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-24 (M35 planned, absorbing the "M33 suite-hardening
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M35 | The non-Latin-1 checks fail on the defects they claim to catch | planned | — | normal | milestones/M35-non-latin1-check-hardening.md |
+| M35 | The non-Latin-1 checks fail on the defects they claim to catch | in-progress | — | normal | milestones/M35-non-latin1-check-hardening.md |
 | M34 | The non-Latin-1 recipe names a font TeX Live still maintains | done | — | normal | milestones/archive/M34-stix-two-recipe.md |
 | M33 | An index term outside Latin-1 prints in the PDF index | done | — | normal | milestones/archive/M33-non-latin1-terms.md |
 | M32 | An index follows the bibliography where the author puts it | done | — | low | milestones/archive/M32-index-after-references.md |

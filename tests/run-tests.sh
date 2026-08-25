@@ -606,11 +606,20 @@ HTML_SECTION_ID='qi-index'
 # below reads it too and `run_all_checks` runs in a subshell of its own. See
 # the ORACLE RULE beside the M33 section for how it is derived and why the
 # spellings here are not the fixture's bytes.
-M33_TERMS=(θεωρία ψυχή Москва źródło Việt café Nux̌alk Ascii)
+# Each entry is `<level>:<term>` — the index level the fixture's mark puts the
+# term at, stated here rather than read out of any render. Every mark in
+# examples/unicode.qmd is written at one level, so every term is stated at 0;
+# a term the render demoted under a parent would still print an entry line of
+# its own, which a text-only reading cannot tell from the entry stated here.
+M33_TERMS=(0:θεωρία 0:ψυχή 0:Москва 0:źródło 0:Việt 0:café 0:Nux̌alk 0:Ascii)
 # The subsets the controls name: the Greek terms a font without Greek drops,
-# and the ASCII term every control must still print.
+# and the ASCII term every control must still print. The Greek terms and
+# M33_ASCII are stated bare because they are named on the ABSENT side, which is
+# level-free by design; M33_ASCII_ENTRY is the same term on the present side,
+# where the level is what makes the positive signal a signal.
 M33_GREEK=(θεωρία ψυχή)
 M33_ASCII=Ascii
+M33_ASCII_ENTRY="0:$M33_ASCII"
 M33_CJK=漢字
 # The captures the M33 checks and the self-test both read, named once.
 M33_PDF="$CAPTURE_ROOT/m33-recipe/unicode.pdf"
@@ -4230,9 +4239,12 @@ pass "M32: the copyable recipe block in README is held line for line against the
 # the render.
 #
 # ORACLE RULE. M33_TERMS is derived by hand from examples/unicode.qmd and is
-# never read back out of a render; `unicodeprint.py marks` holds it against
-# the fixture's own marks, one term per mark, so neither can drift from the
-# other unnoticed. Spellings here are the precomposed ones where a precomposed
+# never read back out of a render; `unicodeprint.py marks` holds its term
+# halves against the fixture's own marks, one term per mark, so neither can
+# drift from the other unnoticed. The level half is stated by the same hand
+# from the same fixture and is read only by the two readings that compare
+# against a render, since a mark carries no level for `marks` to hold it to.
+# Spellings here are the precomposed ones where a precomposed
 # form exists — deliberately NOT the fixture's bytes for `café`, which is
 # written decomposed there — since both sides are compared in Unicode NFC and
 # a list copied character for character out of the fixture would be blind to
@@ -4248,7 +4260,7 @@ capture examples/unicode.qmd pdf "m33-recipe"
 
 python3 tests/unicodeprint.py entries "$M33_PDF" "${M33_TERMS[@]}" \
   || fail "M33-AC2: a term outside Latin-1 does not print as its own entry in the typeset index (its own FAIL line is above)"
-pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engine and main font, and all ${#M33_TERMS[@]} of its terms print as their own entry in the typeset index, compared in Unicode NFC"
+pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engine and main font, and all ${#M33_TERMS[@]} of its terms print as their own entry AT THE LEVEL the suite states in the typeset index, compared in Unicode NFC"
 
 # ---------------------------------------------------------------------------
 # M33-AC3 — the three controls the criterion names, plus (d), a fourth this
@@ -4351,9 +4363,9 @@ pass "M33-AC3a: the fixture under pdf-engine: pdflatex exits non-zero and its La
   || { tail -20 "$WORK/m33-nofont.log" >&2; fail "M33-AC3b: the fixture failed to render with mainfont left at its default; the control claims a silent drop at exit 0, so a broken build is not the state it pins"; }
 capture "$M33C/nofont.qmd" pdf "m33-nofont"
 python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-nofont/nofont.pdf" \
-  "$M33_ASCII" "${M33_GREEK[@]}" \
+  "$M33_ASCII_ENTRY" "${M33_GREEK[@]}" \
   || fail "M33-AC3b: with mainfont left at its default the Greek terms still print, or the control's index did not print at all (its own FAIL line is above)"
-pass "M33-AC3b: with mainfont left at its default the render exits 0, its index still prints the fixture's ASCII term, and none of the fixture's Greek terms print"
+pass "M33-AC3b: with mainfont left at its default the render exits 0, its index still prints the fixture's ASCII term at its stated level, and none of the fixture's Greek terms print at any level"
 
 # --- (c) the recipe's own limit. Everything the README names, plus one term in
 #     a script the font does not cover: the same silent drop, which is why the
@@ -4364,9 +4376,9 @@ pass "M33-AC3b: with mainfont left at its default the render exits 0, its index 
   || { tail -20 "$WORK/m33-cjk.log" >&2; fail "M33-AC3c: the CJK control failed to render; the control claims a silent drop at exit 0"; }
 capture "$M33C/cjk.qmd" pdf "m33-cjk"
 python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-cjk/cjk.pdf" \
-  "$M33_ASCII" "$M33_CJK" \
+  "$M33_ASCII_ENTRY" "$M33_CJK" \
   || fail "M33-AC3c: the added CJK term prints under the recipe's font, or the control's index did not print at all (its own FAIL line is above)"
-pass "M33-AC3c: the fixture with one CJK term added renders at exit 0 under the full recipe, its index still prints the fixture's ASCII term, and the CJK term does not print"
+pass "M33-AC3c: the fixture with one CJK term added renders at exit 0 under the full recipe, its index still prints the fixture's ASCII term at its stated level, and the CJK term does not print at any level"
 
 # --- (d) no engine set. The font is there and the `pdf-engine:` line is not,
 #     which is the half-followed recipe README documents: Quarto's default
@@ -4380,7 +4392,7 @@ capture "$M33C/noengine.qmd" pdf "m33-noengine"
 python3 tests/unicodeprint.py entries "$CAPTURE_ROOT/m33-noengine/noengine.pdf" \
   "${M33_TERMS[@]}" \
   || fail "M34-AC4 control (d): with no pdf-engine set a term the fixture marks does not print as its own entry, so README's 'no engine set' paragraph states an index that prints correctly where this one does not (its own FAIL line is above)"
-pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 0 and all ${#M33_TERMS[@]} of the fixture's terms print as their own entry in the typeset index"
+pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 0 and all ${#M33_TERMS[@]} of the fixture's terms print as their own entry at the level the suite states in the typeset index"
 
 # ---------------------------------------------------------------------------
 # M33-AC4 — the README section a reader acts on. Two checks, because the
@@ -11913,7 +11925,7 @@ if [ "${1:-}" = "--self-test" ]; then
     'marked but not stated' \
     marks examples/unicode.qmd "${M33_SHORT[@]}"
 
-  M33_RESPELLED=("${M33_TERMS[@]:1}" 'θεωρια')
+  M33_RESPELLED=("${M33_TERMS[@]:1}" '0:θεωρια')
   m33_planted 'a stated term respelled, so it is stated and not marked' \
     'stated but not marked' \
     marks examples/unicode.qmd "${M33_RESPELLED[@]}"
@@ -11929,11 +11941,25 @@ if [ "${1:-}" = "--self-test" ]; then
   # --- entries: a term's own printed entry line.
   m33_planted 'a stated term the fixture prints no entry for' \
     'has no entry line of its own' \
-    entries "$M33_PDF" "${M33_TERMS[@]}" 'Ἀθῆναι'
+    entries "$M33_PDF" "${M33_TERMS[@]}" '0:Ἀθῆναι'
 
   m33_planted 'a stated term respelled by one character' \
     'has no entry line of its own' \
-    entries "$M33_PDF" 'θεωρίο'
+    entries "$M33_PDF" '0:θεωρίο'
+
+  # The level clause on its own. The term is the fixture's own ASCII one, so
+  # the text half is satisfied and only the level can be what fails; without
+  # this clause the reading would be green on an index that demoted the term
+  # under a parent line.
+  m33_planted 'a stated term named at a level the render does not print it at' \
+    'the level the suite states for it' \
+    entries "$M33_PDF" '1:Ascii'
+
+  # The pair form itself. A caller who wrote the bare term would otherwise
+  # reach a reading that checks a level it was never given.
+  m33_planted 'a term stated with no level at all' \
+    'is not a <level>:<term> pair' \
+    entries "$M33_PDF" 'Ascii'
 
   # A captured PDF that prints no index at all — beamer carries none. Not a
   # mutation: the artifact is already in the capture set, and pointing the
@@ -11965,11 +11991,19 @@ if [ "${1:-}" = "--self-test" ]; then
   # --- absent: the two silent-drop controls' reading.
   m33_planted "a control's own present-term named as one it never prints" \
     'prints no entry line for' \
-    absent "$CAPTURE_ROOT/m33-nofont/nofont.pdf" 'θεωρία' "$M33_ASCII"
+    absent "$CAPTURE_ROOT/m33-nofont/nofont.pdf" '0:θεωρία' "$M33_ASCII"
 
   m33_planted 'a term named absent that the render does print' \
     'printed after all' \
-    absent "$M33_PDF" "$M33_ASCII" "${M33_GREEK[@]}"
+    absent "$M33_PDF" "$M33_ASCII_ENTRY" "${M33_GREEK[@]}"
+
+  # The present-term's level clause. The control's positive signal is what
+  # separates a dropped glyph from an index that never printed; read without
+  # the level it would also accept an index that printed the term somewhere
+  # other than where this control states it.
+  m33_planted "a control's present-term named at a level the render does not print it at" \
+    'the level the control states' \
+    absent "$M33_PDF" '1:Ascii' "${M33_GREEK[@]}"
 
   # --- main: the argv guards. Three of these are `entries no terms` in the
   # other three readings — a domain a caller can empty, where an unguarded
@@ -11984,13 +12018,13 @@ if [ "${1:-}" = "--self-test" ]; then
 
   m33_planted '`absent` called with a present-term and nothing else' \
     'absent needs a present-term' \
-    absent "$M33_PDF" "$M33_ASCII"
+    absent "$M33_PDF" "$M33_ASCII_ENTRY"
 
   m33_planted 'a mode the reader does not have' \
     'unknown mode' \
     entrys "$M33_PDF" "${M33_TERMS[@]}"
 
-  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — fifteen plants over fifteen reachable clauses"
+  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — eighteen plants over eighteen reachable clauses"
 
   # The two self-checks' own discrimination. Each reads the suite's own source
   # for a SHAPE, which is the reading M23's lesson names as certifying a

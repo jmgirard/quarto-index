@@ -8,32 +8,43 @@ the script — a render that exits 0 and silently drops every glyph.
 
 Four readings, each its own subcommand:
 
-  marks <qmd> <term>...
+  marks <qmd> <level>:<term>...
       The fixture's `.index` marks carry exactly the terms named, one term per
       mark. This is the floor under `entries` below: that reading quantifies
       over a term list run-tests.sh states by hand, and without this the list
-      could name terms the fixture stopped marking and go on passing.
+      could name terms the fixture stopped marking and go on passing. The
+      level half is not read here — a mark carries no level — but the list is
+      stated once and read by both, so this reading takes the same spelling.
 
-  entries <pdf> <term>...
+  entries <pdf> <level>:<term>...
       Every term named has an entry line of its OWN in the printed index whose
-      text, with its locators removed, equals that term. Presence anywhere in
-      the index region is not this: the punctuation an index prints around its
-      own entries would satisfy that, and so would a parent line. The entry
-      line is read structurally, through tests/pdfindex.py.
+      text, with its locators removed, equals that term, AND that line is
+      printed at the stated level. Presence anywhere in the index region is
+      not this: the punctuation an index prints around its own entries would
+      satisfy that, and so would a parent line. Neither is text alone: a term
+      the render demoted under a parent still prints its own line, and reading
+      only the text would call that the entry the suite states. The entry line
+      is read structurally, through tests/pdfindex.py.
 
   stopped <latex-log> <term>...
       The pdflatex control's reading. The LaTeX log carries the error that
-      stopped the render, AND that error names a character one of the terms is
-      made of — so the rejection reported is about a term this fixture indexes
-      and not about something else in the document.
+      stopped the render, AND that same error names a character one of the
+      terms is made of — so the rejection reported is about a term this
+      fixture indexes and not about something else in the document. Read per
+      error block, not over the whole log: a log carrying the signature in one
+      error and an indexed character in another satisfies neither claim
+      together, and reading the two independently cannot tell that apart.
 
-  absent <pdf> <present-term> <absent-term>...
-      The control reading. Every absent-term has NO entry line of its own, AND
-      the present-term does — the positive signal that separates "this render
-      did not print this term" from "this render printed no index at all",
-      which is the state a bare absence check cannot tell apart. Why a term
-      failed to print is not this reading's business: a font that does not
-      carry the script and an engine that mangles the term both land here.
+  absent <pdf> <level>:<present-term> <absent-term>...
+      The control reading. Every absent-term has NO entry line of its own at
+      any level, AND the present-term has one at the stated level — the
+      positive signal that separates "this render did not print this term"
+      from "this render printed no index at all", which is the state a bare
+      absence check cannot tell apart. The absent side stays level-free
+      deliberately: a term printed anywhere at all is a term this render did
+      print, and qualifying the absence by level would let one through. Why a
+      term failed to print is not this reading's business: a font that does
+      not carry the script and an engine that mangles the term both land here.
 
 Both sides of every comparison are normalized to Unicode NFC first. This is
 not politeness about equivalent spellings: xelatex prints a precomposed
@@ -76,6 +87,21 @@ def unescape(text):
     return re.sub(r'\\(.)', r'\1', text)
 
 
+def stated(spec):
+    """`<level>:<term>` -> `(level, NFC term)`.
+
+    Split at the FIRST colon only, so a term carrying one of its own keeps it.
+    A bare term is refused rather than defaulted to level 0: the level is the
+    half this reading exists to check, and a caller who forgot it would other-
+    wise get a green that says nothing about the level at all.
+    """
+    level, sep, term = spec.partition(':')
+    if not sep or not level.isdigit():
+        die(f'FAIL: M33: {spec!r} is not a <level>:<term> pair, so the level '
+            f'this reading holds the term to is not stated')
+    return int(level), nfc(term)
+
+
 def die(*lines):
     for line in lines:
         print(line, file=sys.stderr)
@@ -99,7 +125,7 @@ def read_entries(pdf):
 def cmd_marks(qmd, expected):
     source = open(qmd, encoding='utf-8').read()
     found = [nfc(unescape(m)) for m in MARK.findall(source)]
-    want = [nfc(t) for t in expected]
+    want = [term for _level, term in (stated(spec) for spec in expected)]
     problems = []
     if len(found) != len(want):
         problems.append(f'  {qmd} carries {len(found)} index mark(s); the '
@@ -116,24 +142,51 @@ def cmd_marks(qmd, expected):
           f'states, one per mark')
 
 
+def levelled(pdf):
+    """The printed entry lines as `(level, term)`, with the level trustworthy.
+
+    `pdfindex` reads a level from where a line's left edge sits in its column,
+    which it can only do when the column holds a top-level entry to measure
+    against. A column of nothing but sub-entries would have its own edge read
+    as level 0 and every entry in it come back a level too shallow, so the
+    module's own assertion of that assumption is run here rather than trusted:
+    without it a level reading could be uniformly wrong and still agree with
+    itself.
+    """
+    entries = read_entries(pdf)
+    if not pdfindex.columns_carry_top_level(entries):
+        die(f'FAIL: M33: a column of the printed index in {pdf} holds no '
+            f'top-level entry, so pdfindex has no top-level left edge to '
+            f'measure that column against and every level it reports there '
+            f'may be a level too shallow')
+    return [(e.level, nfc(e.term)) for e in entries]
+
+
 def cmd_entries(pdf, expected):
     if not expected:
         die('FAIL: M33: entries was given no terms to look for, so it would '
             'pass over any index at all')
-    entries = read_entries(pdf)
-    printed = [nfc(e.term) for e in entries]
-    missing = []
-    for term in expected:
-        if nfc(term) not in printed:
-            missing.append(f'  {term!r} has no entry line of its own '
-                           f'(codepoints {codepoints(term)})')
-    if missing:
-        die(f'FAIL: M33: {len(missing)} of {len(expected)} term(s) do not '
-            f'print as their own entry in the typeset index of {pdf}:',
-            *missing,
+    want = [stated(spec) for spec in expected]
+    printed = levelled(pdf)
+    texts = [term for _level, term in printed]
+    problems = []
+    for level, term in want:
+        if term not in texts:
+            problems.append(f'  {term!r} has no entry line of its own '
+                            f'(codepoints {codepoints(term)})')
+        elif (level, term) not in printed:
+            at = sorted({lv for lv, t in printed if t == term})
+            problems.append(f'  {term!r} prints at level {at}, not at '
+                            f'level {level}, the level the suite states for '
+                            f'it')
+    if problems:
+        die(f'FAIL: M33: {len(problems)} of {len(want)} term(s) do not print '
+            f'as their own entry at the stated level in the typeset index of '
+            f'{pdf}:',
+            *problems,
             f'  the index printed these entry lines: {printed}')
-    print(f'ok   M33: all {len(expected)} terms print as their own entry in '
-          f'the typeset index of {pdf}')
+    print(f'ok   M33: all {len(want)} terms print as their own entry at the '
+          f'level the suite states in the typeset index of {pdf}')
 
 
 STOP_SIGNATURE = 'not set up for use with LaTeX'
@@ -156,21 +209,29 @@ def cmd_stopped(log_path, terms):
           f'named carry')
 
 
-def cmd_absent(pdf, present, absent):
-    entries = read_entries(pdf)
-    printed = [nfc(e.term) for e in entries]
-    if nfc(present) not in printed:
+def cmd_absent(pdf, present_spec, absent):
+    level, present = stated(present_spec)
+    printed = levelled(pdf)
+    texts = [term for _lv, term in printed]
+    if present not in texts:
         die(f'FAIL: M33: the control render {pdf} prints no entry line for '
             f'{present!r}, so its index did not print at all and the absences '
             f'below would say nothing about the font:',
             f'  the index printed these entry lines: {printed}')
-    unexpected = [term for term in absent if nfc(term) in printed]
+    if (level, present) not in printed:
+        at = sorted({lv for lv, t in printed if t == present})
+        die(f'FAIL: M33: the control render {pdf} prints {present!r} at '
+            f'level {at}, not at level {level}, the level the control states '
+            f'for its present-term, so this control is not reading the index '
+            f'it is stated against:',
+            f'  the index printed these entry lines: {printed}')
+    unexpected = [term for term in absent if nfc(term) in texts]
     if unexpected:
         die(f'FAIL: M33: the control render {pdf} printed an entry line for '
             f'{len(unexpected)} term(s) it is held not to print:',
             *[f'  {term!r} printed after all' for term in unexpected])
-    print(f'ok   M33: {pdf} prints {present!r} and none of the '
-          f'{len(absent)} term(s) it is held not to print')
+    print(f'ok   M33: {pdf} prints {present!r} at level {level} and none of '
+          f'the {len(absent)} term(s) it is held not to print')
 
 
 def codepoints(term):

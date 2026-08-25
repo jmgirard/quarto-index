@@ -52,7 +52,7 @@ its own milestone.
       different errors.
 - [x] AC3: `stopped` reports red, naming its signature clause, on a LaTeX log
       that carries no rejection at all.
-- [ ] AC4: the suite's font guard stops the run, naming the missing TeX Live
+- [x] AC4: the suite's font guard stops the run, naming the missing TeX Live
       package, when any font file named by `examples/unicode.qmd`'s
       `mainfontoptions` block — the guard parsing that block for its list — is
       unfindable by `kpsewhich`.
@@ -138,6 +138,7 @@ its own milestone.
 - 2026-08-24: T8 — the whole PDF tool guard moved from `tests/run-tests.sh:4894` (the AC6 section) to `:4391`, immediately before the M33 recipe render, which is the first compile in the run; the AC6 header comment now points at the new call site and the later re-call at `:9329` is untouched. Re-planting the defect AC4 names — `BoldFont=*-Bold` changed to a face no TeX tree carries — the run now dies at "FAIL: STIXTwoText-NoSuchFaceHere.otf is not findable by kpsewhich" followed by the guard's `tlmgr install stix2-otf` line, with no M33 render attempted; the fixture was restored and both modes re-run clean at 352 plain / 491 self-test, the same counts T7 recorded.
 - 2026-08-24: minor plan amendment — T8 added to the task list as the discovered repair for the AC4 return; Goal, Scope, Acceptance criteria and Coverage untouched, AC4 still mapping to T4.
 - 2026-08-24: the 13 diff-lens findings the review recorded unactioned stay unactioned by user selection at this session's question gate, for triage at the re-review gate.
+- 2026-08-24: review round 2 — all seven criteria met with fresh evidence, AC4 ticked; consistency gate clean; three lenses returned 18 consolidated findings, none meeting the return floor (F1 falls outside AC2's domain, F3/F4 outside AC4's, both verified against the implementation); dispositions taken at the merge gate.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->
@@ -216,3 +217,121 @@ nowhere in the run, and the guard never executed. The criterion promises the
 guard stops the run naming the missing package; on the one input class it
 quantifies over, a different check stops the run naming something else.
 
+
+### Round 2 — 2026-08-24
+
+Re-reviewed against PR #35 after the AC4 return. `main` had not moved since the
+branch was cut, so no merge was needed. Suite run fresh on this branch: plain
+mode 352 checks exit 0; `--self-test` 491 checks exit 0.
+
+**Criterion evidence.** Every criterion re-executed this round; AC4 is ticked
+here for the first time.
+
+- AC1 — met. `entries` on this round's recipe capture with `Ascii` stated at
+  level 1 exits 1 with "prints at level [0], not at level 1, the level the
+  suite states for it"; `absent` on the no-font capture with the same
+  present-term spec exits 1 with "not at level 1, the level the control states
+  for its present-term". Plain run: "all 8 terms print as their own entry at
+  the level the suite states".
+- AC2 — met. `stopped` on a copy of this round's engine control log with the
+  `Unicode character` error closed early and a second error opened around the
+  signature exits 1 with "but never in one error … (3 error report(s) in the
+  log)". The unmutated log passes the same call, naming U+03B8 in one report —
+  shown to pass for the claim's reason, not merely to pass.
+- AC3 — met. `stopped` on a copy of that log with every error report removed
+  whole (0 `! ` lines, 0 signature lines) exits 1 with "does not carry 'not set
+  up for use with LaTeX'".
+- AC4 — met. Planted the defect the criterion names: `BoldFont=*-Bold` in
+  `examples/unicode.qmd` changed to a face no TeX tree carries. The run died at
+  "FAIL: STIXTwoText-NoSuchFaceHere.otf is not findable by kpsewhich" followed
+  by the guard's `tlmgr install stix2-otf` line, with no M33 render attempted —
+  the last green line before it is the marks check. Fixture restored, tree
+  clean. The unplanted parse prints the fixture's four faces.
+- AC5 — met. Plain run: the no-engine capture "was produced by LuaTeX-1.24.0,
+  which names LuaTeX". Self-test: red on this suite's own xelatex recipe
+  capture and on a file carrying no Producer line.
+- AC6 — met. Plain run: the 8 block lines are exactly the stated ones, in
+  order, each verbatim in the fixture. Self-test: red on a dropped
+  `pdf-engine:` line, a reordering, an unstated line, and a stated line the
+  fixture no longer carries.
+- AC7 — met. Both modes exit 0 at 352 / 491 checks, against merge base
+  351 / 487.
+
+**Consistency gate.** `cairn_validate.py` exit 0, every check passed, no
+advisory fired. No DESIGN principle changed, so `cairn_impact.py` was not run.
+The `generic` profile names no toolchain checks.
+
+**Fresh-context review.** Three lenses, distinct evidence bases. The
+prior-review lens reported no prior-review evidence of reintroduction: the one
+prior finding on these files is this milestone's own AC4 return, which T8
+repairs, and the GitHub inline-comment probe returned empty, so the PR-thread
+surface was not walked. The blame-history lens reported no violations — it
+independently confirmed no PDF render precedes the guard's new call site, and
+that T5 added control (d)'s engine reading beside the existing positive
+assertion rather than replacing it (the M34 lesson against flipping a control).
+Its two other items restate findings already on this list. The diff-bug lens
+reported 18 ranked findings, a superset of the 13 the first round left
+untriaged; the consolidated list is below, verified and triaged at the gate.
+
+**Return floor.** No finding returns the milestone. The top-ranked finding (F1)
+claims AC2 can pass green in its own domain; verified against the
+implementation rather than the account: on a log where the signature and the
+`Unicode character` line genuinely belong to two error reports, `stopped` still
+reports red, because a `! ` line always closes the preceding block and two real
+errors can never merge. The green case absorbs a `Unicode character` mention
+that belongs to no error at all — a real gap in `error_blocks`, outside what
+AC2 quantifies over. F3 and F4 likewise fall outside AC4's domain: on the
+re-spelled fixtures the guard goes loudly red naming what it could not read,
+never silently green, and today's `examples/unicode.qmd` is in the shape the
+parse handles. Nothing on the list touches what the extension does for its
+users; the declared tier is internal.
+
+**Findings and disposition.** Ranked most severe first, as reported.
+
+- F1: `error_blocks` closes an unterminated final error at EOF, so a
+  `Unicode character` mention in trailing non-error chatter is absorbed into
+  it and `stopped` reports "in one error report". Verified green on such a log.
+- F2: the AC3 plant is `grep -v 'not set up for use with LaTeX'`, which deletes
+  one continuation line and leaves the inputenc error standing; its label "a
+  LaTeX log with the rejection deleted" overstates what it plants.
+- F3: `recipe_font_files` parses only today's fixture shape — a quoted or
+  multi-word `mainfont:`, a flow-style `mainfontoptions:`, a block with no
+  `Extension=`, or an explicitly-named face each mis-parse. Verified: the
+  quoted and flow-style fixtures both exit 1.
+- F4: all four guard failure classes report the same hardcoded "the TeX Live
+  `stix2-otf` package is missing … the face is named on the line above",
+  which is false for the three where no face is named.
+- F5: `[ -n "$faces" ] || fail "the font guard probed no faces at all"` is
+  unreachable — `recipe_font_files` already exits 1 on an empty list.
+- F6: the parsed face list is captured by command substitution and discarded,
+  so a green run never prints the guard's domain; and no plant drives
+  `require_pdf_tools`' own package-naming `fail` line.
+- F7: `pdf_producer_names`' pipeline status is safe only because both call
+  sites sit in `&&`/`||` lists; a bare third call site would die wordlessly
+  under `pipefail`.
+- F8: the fixture direction of the recipe-block check is a substring search
+  over the whole `.qmd`, not a front-matter line test.
+- F9: `levelled()`'s `columns_carry_top_level` clause and `read_entries`' "no
+  entry lines" branch are reachable but unplanted, while the pass line claims
+  a plant per clause.
+- F10: `stated()` accepts non-ASCII digits as a level and an empty term.
+  Verified: `'٣:foo'` → `(3, 'foo')`, `'0:'` → `(0, '')`.
+- F11: `cmd_marks` requires the `<level>:<term>` pair and then discards the
+  level, with no plant on that new argv contract.
+- F12: `M33_NOENGINE_PRODUCER=LuaTeX` and README's `lualatex` are independent
+  hand statements with no asserted correspondence, and the claim row's
+  `Quarto 1.10` qualifier is read nowhere.
+- F13: the "no options block" plant's `sed` range depends on `filters:`
+  following the font block; moved or renamed, it deletes the fixture's body.
+- F14: the extra-line README plant is not bounded to the `### Terms outside
+  Latin-1` section, unlike its sibling reordering plant.
+- F15: the bare `grep -v … > norejection.log` mutation would kill the run
+  wordlessly under `set -e` if it ever emitted no lines.
+- F16: `error_blocks` recognizes only `! ` with a following space, so
+  pdfTeX's `!pdfTeX error:` opens no block.
+- F17: `check_recipe_block`'s `if not stated:` clause is unreachable from any
+  input the suite can produce.
+- F18: the `M33_NOENGINE_PRODUCER` ORACLE RULE comment is ungrammatical and
+  does not say what it governs.
+
+Dispositions are recorded at the merge gate below.

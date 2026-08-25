@@ -12403,6 +12403,58 @@ check_warning_count "$WORK/named-indexes-foldsite-latex.log" \
   "$WARN_MARKER_DUP_STEM" 0 "M38-R2 (nor under the unnamed wording)"
 pass "M38-R2: a marker naming a folded-away index does not take the built index's place, and the author's own marker for it is not reported as that marker's duplicate"
 
+# ---------------------------------------------------------------------------
+# M38-R4 — a second marker naming the SAME folded-away index.
+#
+# examples/named-indexes-foldsecond.qmd writes two markers, both naming the
+# second index, and none naming the first. README says a second marker for one
+# index is reported and places nothing; under fold that shape used to be
+# dropped in silence, so the claim was false in PDF and in books.
+#
+# ORACLE — read off the fixture by hand. No marker names the index this
+# back-end builds, so the FIRST marker of any name places it: `\printindex`
+# stands after `\label{site-first}` and before `\label{site-second}`, and
+# that marker draws the fold report for a marker that DOES place the one index
+# — the shape named-indexes.qmd never draws. The second marker draws exactly
+# one duplicate report, naming `authors`, the index it repeats.
+# ---------------------------------------------------------------------------
+quarto render examples/named-indexes-foldsecond.qmd --to latex \
+  > "$WORK/named-indexes-foldsecond-latex.log" 2>&1 \
+  || { tail -30 "$WORK/named-indexes-foldsecond-latex.log" >&2; fail "M38-R4: named-indexes-foldsecond.qmd failed to render to latex"; }
+capture examples/named-indexes-foldsecond.qmd latex "named-indexes-foldsecond-latex"
+check_token_manifest \
+  "$CAPTURE_ROOT/named-indexes-foldsecond-latex/named-indexes-foldsecond.tex" \
+  $'1\t\\printindex\n0\tqi-index-here' "M38-R4"
+python3 - "$CAPTURE_ROOT/named-indexes-foldsecond-latex/named-indexes-foldsecond.tex" <<'FOLDSECONDPY'
+import re, sys
+tex = open(sys.argv[1], encoding='utf-8').read()
+at = tex.index('\\printindex')
+sites = [(m.start(), m.group(1))
+         for m in re.finditer(r'\\label\{(site-[a-z]+)\}', tex)]
+if [name for pos, name in sites] != ['site-first', 'site-second']:
+    sys.exit(f'FAIL: M38-R4: the capture carries the placement-site labels '
+             f'{[n for _, n in sites]}, not the fixture\'s two in order')
+before = [name for pos, name in sites if pos < at]
+if before != ['site-first']:
+    sys.exit(f'FAIL: M38-R4: the one index follows {before} rather than the '
+             f'first of the two markers alone, so the marker that places it is '
+             f'not the first one written')
+print('ok   M38-R4: with no marker naming the index this back-end builds, the '
+      'first marker written places it and the second does not')
+FOLDSECONDPY
+check_warning_count "$WORK/named-indexes-foldsecond-latex.log" \
+  "$WARN_INDEX_FOLD_MARKER" 1 \
+  "M38-R4 (the shape for the marker that DOES place the one index)"
+check_warning_count "$WORK/named-indexes-foldsecond-latex.log" \
+  "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" 0 \
+  "M38-R4 (and not the shape for one that does not)"
+check_warning_count "$WORK/named-indexes-foldsecond-latex.log" \
+  "$WARN_MARKER_DUP_NAMED" 1 "M38-R4"
+grep -F -- "$WARN_MARKER_DUP_NAMED" "$WORK/named-indexes-foldsecond-latex.log" \
+  | grep -qF 'the index named "authors"' \
+  || fail "M38-R4: the duplicate report does not name the index the second marker repeats"
+pass "M38-R4: a second marker naming an index a folded back-end does not build is reported as the second marker it is, naming that index, rather than dropped in silence"
+
 # The twin: the shape this milestone leaves untouched. One section under the
 # bare id, every judgement made across the whole document, and no warning.
 quarto render examples/named-indexes-twin.qmd --to html \

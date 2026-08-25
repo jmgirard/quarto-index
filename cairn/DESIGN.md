@@ -754,6 +754,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   review N9, M02 review, M06 review F-b
 - **KI71.** The escaping probe covers characters singly; combinations remain an
   untested axis. — M01 review, and M01's own milestone Decisions entry
+- **KI88.** Two clauses of `tests/unicodeprint.py` have no planted defect and
+  are guarded rather than proved: `entries` and `absent` refusing a PDF whose
+  index heading printed but whose entry list is empty, and `levelled` refusing
+  a printed index one of whose columns holds no top-level entry. Nothing in the
+  suite builds an artifact of either shape, so the self-test's pass line claims
+  nothing about them and names them as unplanted. — M36 T5
 - **KI87.** In a compiled PDF index the entry for `,` prints as one DOUBLE LOW-9
   QUOTATION MARK followed by the page number, so a reader sees `„1` where every
   other entry's shape would give `,, 1` and a reader would want `, 1`:

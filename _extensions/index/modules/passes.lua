@@ -11,6 +11,7 @@
 -- for the life of the Lua state — which is what the reset above them is for.
 
 local qi_core = require("./core")
+local qi_indexes = require("./indexes")
 local qi_latex = require("./latex")
 local qi_levels = require("./levels")
 local qi_marks = require("./marks")
@@ -24,7 +25,11 @@ local M = {}
 -- one because it has to run before the first mark is seen, and Pandoc runs a
 -- filter table with no element function over the document before the next
 -- table's element functions (M26).
-local function Reset()
+local function Reset(doc)
+  -- First of the four, and it takes the document: every accumulator below is
+  -- keyed by the index a mark files in, so which indexes this document has
+  -- must be settled before the first mark is recorded.
+  qi_indexes.reset(doc)
   qi_marks.reset()
   qi_latex.reset()
   qi_sortkeys.reset()

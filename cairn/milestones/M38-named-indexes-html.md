@@ -93,7 +93,7 @@ collation rules — nothing here changes how one index is ordered or printed.
 
 ## Tasks
 
-- [ ] T1: Read the `indexes:` metadata into an ordered name→title table with
+- [x] T1: Read the `indexes:` metadata into an ordered name→title table with
       the first name the default, in `core.lua` beside the other constants
       and called from `index.lua`'s `Pandoc`; report a declaration that is
       malformed, empty, or repeats a name. A document with no `indexes:` key
@@ -140,6 +140,7 @@ collation rules — nothing here changes how one index is ordered or printed.
 - 2026-08-25: plan gate chose warn-and-fold in books over including book support here because the store's record format and version bump would roughly double this milestone; falsified by evidence that the named-index feature is wanted mainly in books.
 - 2026-08-25: plan gate chose "the first declared index is the default" over a reserved default name because a document declaring nothing keeps today's behavior with no reserved word; falsified by evidence that authors reorder the declaration for print order and silently move their default with it.
 - 2026-08-25: status in-progress; branch m038-named-indexes-html cut from a synced main. Question gate settled three open implementation choices; recorded below under Decisions.
+- 2026-08-25: T1 — `indexes:` metadata read into an ordered name->title table. Two minor task edits: the table lives in a new `modules/indexes.lua` rather than in `core.lua` (core requires nothing and holds constants, not per-document state), and it is read from `passes.Reset` rather than `index.lua`'s `Pandoc`, because the Span passes record marks long before that pass runs. Nine reports cover a non-list, an empty list, a non-map entry, a missing/empty name, a repeated name, a missing/empty title, and a declaration no entry of which is usable; each probed by render. Suite green, 354 checks; warn-distinct's pinned message count 48 -> 61.
 
 ## Decisions
 

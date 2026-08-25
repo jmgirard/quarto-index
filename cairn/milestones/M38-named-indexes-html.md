@@ -240,3 +240,81 @@ checks; plus direct reads of the captured artifacts named below.
   clean no-op.
 - `cairn_impact.py` not run: the milestone added a `DESIGN.md` convention
   bullet and changed no numbered principle's text.
+
+### Independent review
+
+Three fresh-context reviewers, each on a distinct evidence base, spawned at the
+user's explicit direction (the session carries a standing directive against
+spawning subagents unless asked; the directive was put to the user at this
+gate and they chose the full fan-out).
+
+- [S] prior-PR-comments lens: no findings. It read the archived `## Review`
+  sections touching these files (M03, M04, M05, M08, M17, M19, M20, M22, M23,
+  M25, M26, M28, M29, M31) and probed the GitHub inline-comment surface, which
+  returned empty, so the per-PR walk was not paid for.
+- [S] blame-history lens: one finding (R13 below); no D-entry contradicted, no
+  guard weakened, M26's reset invariant intact.
+- [O] diff-bug lens: twelve findings (R1-R12 below).
+
+Findings, ranked as reported, with the disposition each was given. R1-R4 were
+re-verified in this session by probe renders against the shipped extension in a
+scratch copy, never against the reviewer's account of it.
+
+- R1: An index name is never validated as an HTML id fragment, so a declared
+  name with a space emits an invalid `id`. Confirmed by probe: a document
+  declaring `name: "my index"` renders `<section id="qi-index-my index">`, with
+  no report drawn. An id carrying whitespace is invalid HTML and no link to it
+  resolves. `#`, `"` and `<` are the same hole.
+- R2: In a folded render, a marker naming a second index takes the default
+  index's placement slot, and the author's own default marker is then reported
+  as its duplicate. Confirmed by probe: a two-index document whose `authors`
+  marker precedes its unnamed marker renders `\printindex` under the `authors`
+  marker's heading, and the log says the author's single `main` marker "is a
+  second marker for the index named main". The comment at `marker.lua:252-256`
+  says the design avoids exactly this false report; it avoids it only in the
+  marker ordering `examples/named-indexes.qmd` happens to use.
+- R3: A folded union index is headed with the first declared index's title,
+  contradicting the reason its id is kept neutral. Confirmed by probe: a book
+  declaring `people` first and `main` second heads its single union section
+  `Index of People` while carrying `main`'s marks, under the neutral id
+  `qi-index` that `indexes.lua:264-266` keeps neutral precisely so the section
+  does not claim to be one declared index.
+- R4: Two markers naming the same non-default index draw no duplicate report at
+  all under fold; one is silently dropped. Confirmed by probe: two
+  `index="authors"` markers in a LaTeX render draw two fold reports and no
+  duplicate report. README's "A second marker for one index is reported and
+  places nothing" is false for that shape in PDF and in books.
+- R5: AC1's "in declared order" is not what the check asserts. The fixture
+  writes its markers in declared order, so section order equals marker order
+  and declared order at once and the manifest cannot tell them apart; the
+  markerless-append path, the one place declared order is actually the rule,
+  is exercised by no fixture.
+- R6: AC6's "every command runs clean" is a substring match over the whole
+  suite file, comments included, and reads no exit status; the `indexes:` YAML
+  block the criterion names is pinned by nothing.
+- R7: The self-test's heading-element plant only exercises the no-heading
+  guard, not the tag comparison — an `h2` where an `h1` belongs has no plant.
+- R8: `index=""` is silently accepted in a document that declares nothing,
+  while the same attribute in a declaring document is reported.
+- R9: A declared index with a marker and no marks disappears with nothing said.
+  A continuation of the pre-M38 whole-document silence, far easier to hit per
+  index.
+- R10: `latex.lua`'s `contested_keys` is the one accumulator M38 did not
+  namespace — unreachable today, the sole exception to the DESIGN bullet's
+  "every format-neutral accumulator is one namespace per index", and live the
+  day the PDF fork lands.
+- R11: Dangling-target reports are now grouped by index rather than emitted in
+  document order — deterministic, user-visible, unnoted.
+- R12: Bookkeeping — `warn-distinct.py`'s `EXPECTED` is 62 while the T1 work-log
+  line records 48 -> 61; the `README_INDEXES_CLAIMS` comment says "four claims"
+  over a five-row manifest; T1/T2's task text cites file positions the shipped
+  code moved.
+- R13: `DESIGN.md`'s KI10 says "M26 resets all 17 per document" and enumerates
+  them through M23; `indexes.lua` adds four more module-level per-document cells
+  (`order`, `titles`, `declared`, `folded`), all correctly reset by
+  `indexes.reset` and confirmed so here, but KI10 is now an incomplete inventory
+  of the surface it exists to document.
+- R14 (this session, over AC6): the pinned-claim manifest carries no row for
+  README's "A mark says which index it belongs to with `index=`" sentence or its
+  example, so that claim — one AC6 enumerates — could be deleted from README
+  without the check going red.

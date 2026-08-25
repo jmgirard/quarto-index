@@ -89,7 +89,7 @@ KI81–85, KI87 — stays on its candidate row.
 - [x] T2. Plant all four: a fixture with no `mainfont:`, one with no
       `mainfontoptions:` block, one whose block names no `*Font=`, and one
       naming an unfindable face. Assert each red with its own cause named.
-- [ ] T3. Delete the two unreachable clauses (`:1511`, `:4597`) and the pass
+- [x] T3. Delete the two unreachable clauses (`:1511`, `:4597`) and the pass
       lines that only they could reach.
 - [ ] T4. Make `pdf_producer_names` (`:1447`) hold its own status — read
       `pdfinfo` into a variable and test it, rather than returning a pipeline's
@@ -118,6 +118,8 @@ KI81–85, KI87 — stays on its candidate row.
 - 2026-08-25: criteria audit (reduced mode, internal tier) by a fresh [O] reader over the amended AC4: one finding — "bounded to the `mainfontoptions:` block whatever follows it" quantified over every possible continuation of the front matter, a domain no procedure the criterion names enumerates. Fixed before writing, to "by that block's own extent rather than by the `filters:` line that happens to follow it". Proportionality and instrument questions passed.
 
 - 2026-08-25: T1+T2 in one commit — T1's message change moves the text T2's plants assert, so neither is green alone. `require_recipe_fonts` now reports the missing face with the `stix2-otf` sentence and the fixture name; the three front-matter causes reach the terminal as `recipe_font_files`' own exits, and `require_pdf_tools`' fail line points at them instead of restating one of them. Each of the four plants now also asserts whether the package is named: planting the M35 defect (the package sentence added to the no-`mainfont:` exit) turned the no-main-font plant red on that clause; unplanted, the self-test is green at 491 checks.
+
+- 2026-08-25: T3 — both unreachable clauses removed. `[ -n "$faces" ]` sat after a `require_recipe_fonts` that exits 1 on an empty list, and `if not stated:` after a `printf` over a literal array `set -u` would have stopped. Neither had a pass line of its own. The recipe-line list's non-emptiness is now stated where it is read, pointing at the self-test plants that each name one of those lines; the face list's is covered by T7's printed domain. Self-test green at 491 checks.
 
 ## Decisions
 

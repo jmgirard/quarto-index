@@ -1520,8 +1520,6 @@ require_pdf_tools() {
   local faces
   faces=$(require_recipe_fonts examples/unicode.qmd) \
     || fail "the recipe font guard could not confirm that the faces examples/unicode.qmd's recipe names are on this machine; its own FAIL line above names which of the four it hit and what to do about it. The documented recipe names this font by file, so its renders would fail on the font rather than on anything this suite is testing."
-  [ -n "$faces" ] \
-    || fail "the font guard probed no faces at all, so it says nothing about this machine. AC6 must never pass unrun."
 }
 
 # ---------------------------------------------------------------------------
@@ -4606,6 +4604,11 @@ import sys
 
 readme = open(sys.argv[1], encoding='utf-8').read()
 fixture = open(sys.argv[2], encoding='utf-8').read()
+# The stated list is a literal array in this file, not a glob or a generated
+# artifact, so there is no input that reaches here with it empty — `set -u`
+# stops an unset array before the caller writes the file. Its non-emptiness is
+# pinned by the self-test's plants below, each of which names one of these
+# lines and could not go red over an empty list.
 stated = [l.rstrip('\n') for l in open(sys.argv[3], encoding='utf-8')
           if l.strip()]
 
@@ -4625,11 +4628,6 @@ if len(blocks) != 1:
           f'block(s); the recipe a reader copies is exactly one',
           file=sys.stderr)
     sys.exit(1)
-if not stated:
-    print('FAIL: M33-AC4: the suite states no recipe lines, so this check '
-          'would accept any block at all', file=sys.stderr)
-    sys.exit(1)
-
 printed = [l for l in blocks[0].splitlines() if l.strip()]
 if printed != stated:
     print(f'FAIL: M33-AC4: the recipe block in {sys.argv[1]} is not the '

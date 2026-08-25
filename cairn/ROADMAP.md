@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-25 (M36 done and archived; M31 pruned under terminal-row retention; the suite-hardening candidate row absorbed M36's log-shape finding. Two lessons added, none retired; KI88 added. ROADMAP 50 lines / 8,649 bytes, LESSONS 46 / 12,471, check-design 35 / 14,749 against its stated 40 / 18,000, cairn CLAUDE.md section 25 lines — all inside their caps. Suite green at 352 plain / 491 self-test.)_
+_Last hygiene check: 2026-08-25 (M37 done and archived; M32 pruned under terminal-row retention; the suite-hardening candidate row absorbed M37's four bound-and-anchor findings. Two lessons added, none retired; KI89 added. ROADMAP 49 lines / 8,902 bytes, LESSONS 48 / 13,338, check-design 35 / 14,749 against its stated 40 / 18,000, cairn CLAUDE.md section 25 lines — all inside their caps. Suite green at 354 plain / 496 self-test.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M37 | The non-Latin-1 guards report the cause they hit | review | M36 | normal | milestones/M37-non-latin1-guard-causes.md |
+| M37 | The non-Latin-1 guards report the cause they hit | done | M36 | normal | milestones/archive/M37-non-latin1-guard-causes.md |
 | M36 | The non-Latin-1 readers stop reading text that belongs to no error | done | — | normal | milestones/archive/M36-unicode-reader-claims.md |
 | M35 | The non-Latin-1 checks fail on the defects they claim to catch | done | — | normal | milestones/archive/M35-non-latin1-check-hardening.md |
 | M34 | The non-Latin-1 recipe names a font TeX Live still maintains | done | — | normal | milestones/archive/M34-stix-two-recipe.md |
 | M33 | An index term outside Latin-1 prints in the PDF index | done | — | normal | milestones/archive/M33-non-latin1-terms.md |
-| M32 | An index follows the bibliography where the author puts it | done | — | low | milestones/archive/M32-index-after-references.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

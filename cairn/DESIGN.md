@@ -754,6 +754,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   review N9, M02 review, M06 review F-b
 - **KI71.** The escaping probe covers characters singly; combinations remain an
   untested axis. — M01 review, and M01's own milestone Decisions entry
+- **KI89.** `recipe_font_files` reads the recipe's front matter with two fixed
+  regexes, so a quoted or multi-word `mainfont:`, a flow-style
+  `mainfontoptions:`, or an options block naming no `Extension=` is a mis-parse
+  rather than a parse error. Deliberately not widened (checker-regress on an
+  input class nobody writes): such a fixture surfaces at `require_recipe_fonts`
+  as a `kpsewhich` miss on the filename the guard assembled, and that report
+  names the mis-spelled-face reading beside the missing-package one because the
+  guard cannot tell the two apart. — M37 F3 disposition
+
 - **KI88.** Two clauses of `tests/unicodeprint.py` have no planted defect and
   are guarded rather than proved: `entries` and `absent` refusing a PDF whose
   index heading printed but whose entry list is empty, and `levelled` refusing

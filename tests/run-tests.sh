@@ -12032,18 +12032,20 @@ if [ "${1:-}" = "--self-test" ]; then
   pass "M24: the empty-div reader fails on an empty div planted into each of the $SWEEP_ED pages a marker was removed from"
 
   # -------------------------------------------------------------------------
-  # M33 self-test — the four readings of tests/unicodeprint.py are proved able
-  # to fail, one plant per CLAUSE rather than one per reader (M32), one
-  # substitution per plant (M29). Each plant states the message fragment it
-  # expects, so a reader that goes red for some OTHER reason is not counted as
-  # having caught the defect.
+  # M33 self-test — the readings of tests/unicodeprint.py are proved able to
+  # fail per CLAUSE rather than per reader (M32). Most plants are one
+  # substitution into a real artifact (M29); the two that are not — the logs
+  # with every error report removed — say so at their own site. Each plant
+  # states the message fragment it expects, so a reader that goes red for some
+  # OTHER reason is not counted as having caught the defect.
   #
   # THE MATRIX. One row per plant, grouped by the reading it goes through.
-  # A clause carries more than one row where no single input shape isolates
-  # it; TWO clauses carry no row at all, named at the foot of this block. The
-  # four `main` rows are the argv guards: three of them are the siblings of
-  # `entries no terms` below, and a reading whose domain guard is unproven is
-  # a reading that can be called into vacuous green.
+  # A clause carries more than one row where more than one defect shape
+  # reaches it, or where no single shape isolates it — which is why the two
+  # `marks stated` rows exist. TWO clauses carry no row at all, named at the
+  # foot of this comment. The four `main` rows are the argv guards: three of
+  # them are the siblings of `entries no terms` below, and a reading whose
+  # domain guard is unproven is one that can be called into vacuous green.
   #
   #   marks   count      the stated list carrying a duplicate, so it is longer
   #                      than the fixture's marks while naming the same terms —
@@ -12070,9 +12072,9 @@ if [ "${1:-}" = "--self-test" ]; then
   #   stopped one error  the rejection stated only in the chatter after a `! `
   #                      line the log never closes
   #   absent  silent     a control's own present-term named as one it never prints
+  #   absent  printed    a term named absent that the render does print
   #   absent  level      a control's present-term named at a level it does not
   #                      print at
-  #   absent  printed    a term named absent that the render does print
   #   main    argv       a call naming a mode and nothing else
   #   main    stopped    `stopped` called with no term
   #   main    absent     `absent` called with a present-term and nothing else
@@ -12083,7 +12085,8 @@ if [ "${1:-}" = "--self-test" ]; then
   # `entries` and `absent` both refuse a PDF whose index heading is present
   # but whose index holds no entry lines. That state is not reachable through
   # this extension — a document with no marks gets no index heading at all, so
-  # the heading and the entries arrive together or not at all (probed at T6) —
+  # the heading and the entries arrive together or not at all (probed by M33,
+  # which built these controls) —
   # so there is no defect of that class to plant. The guard stays because a
   # future back-end change could make it reachable, and an unreachable branch
   # costs a line.
@@ -12369,7 +12372,7 @@ M33UNCLOSEDPY
     'unknown mode' \
     entrys "$M33_PDF" "${M33_TERMS[@]}"
 
-  pass "M33: each of the $M33_PLANTED planted defects makes a reading of tests/unicodeprint.py go red with the message of the clause it plants; the two clauses named above this block have no plant and are claimed for by nothing here"
+  pass "M33: each of the $M33_PLANTED planted defects makes a reading of tests/unicodeprint.py go red with the message of the clause it plants; the two clauses named in the comment that opens this block have no plant and are claimed for by nothing here"
 
   # --- The recipe font guard. It runs before any check, so a red run is what
   # a contributor without the font sees rather than a LaTeX log; that also

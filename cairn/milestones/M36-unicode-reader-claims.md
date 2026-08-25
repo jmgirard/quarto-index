@@ -94,6 +94,7 @@ KI87 — stays on its candidate row.
 - 2026-08-25: T4: two plants added — a level written as U+0663 through `entries`, and a level with an empty term through `marks`, the reading whose `<level>:<term>` argv contract had no plant. The U+0663 level is written literally, since this repo builds on bash 3.2 whose quoting has no `\u` escape. Self-test 491 checks, exit 0.
 - 2026-08-25: T5: the plant matrix rewritten to one row per plant (23 rows, the table having drifted to 15), the two unplanted clauses named at its foot, and the pass line narrowed to what each plant shows, its plant count counted at run time. `error_blocks`' docstring names the `! `-with-space shape as its whole domain. Self-test 491 checks, exit 0, the pass line printing 23.
 - 2026-08-25: T6: both modes run on the final tree — plain 352 checks exit 0, `--self-test` 491 checks exit 0, the same counts as the merge base (1326635). Neither mode's count moves: the three new plants go through `m33_planted`, which reports only on failure, and the readings they exercise are already counted by the block's single pass line.
+- 2026-08-25: gate triage applied — eleven prose findings fixed on the branch (findings 1, 3-9, 11-13), finding 2 absorbed into the acceptance-suite hardening candidate row, finding 10 rejected. Both suite modes re-run after the fixes: plain 352, self-test 491, both exit 0.
 
 ## Decisions
 
@@ -229,3 +230,18 @@ narrowed `stated()` now refuses, and `bash -n` is clean.
 No finding demonstrates an acceptance criterion failing inside its named
 domain, and none is a defect in what this repo's extension does for its users —
 every one is prose in the acceptance suite. No return floor is reached.
+
+### Gate triage (2026-08-25)
+
+The maintainer directed: fix the eleven prose findings, file finding 2, merge.
+Applied on the branch — `error_blocks`' docstring now names the fatal-error
+report it drops and the trade that drops it; the one-error failure message
+reports how many `! ` lines it read blocks from and says an unclosed one opens
+none; the empty-term message no longer names a level; the ASCII-digit rationale
+covers every non-digit spelling; the block header's per-clause and
+one-substitution claims are narrowed to what holds; the matrix's `absent` rows
+run in the order the plants do; the T6 citation names M33; the pass line points
+at the comment that opens its block. Finding 2 went to the acceptance-suite
+hardening candidate row, promoted on a capture whose rejection is the log's
+last `! ` line. Finding 10 rejected as recorded above. Both suite modes re-run
+clean after the fixes.

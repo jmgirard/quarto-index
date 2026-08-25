@@ -12038,44 +12038,68 @@ if [ "${1:-}" = "--self-test" ]; then
   # expects, so a reader that goes red for some OTHER reason is not counted as
   # having caught the defect.
   #
-  # THE MATRIX. Fifteen plants over the reader's fifteen reachable clauses.
-  # The four `main` rows are the argv guards: three of them are the siblings
-  # of `entries no terms` below, and a reading whose domain guard is unproven
-  # is a reading that can be called into vacuous green.
+  # THE MATRIX. One row per plant, grouped by the reading it goes through.
+  # A clause carries more than one row where no single input shape isolates
+  # it; TWO clauses carry no row at all, named at the foot of this block. The
+  # four `main` rows are the argv guards: three of them are the siblings of
+  # `entries no terms` below, and a reading whose domain guard is unproven is
+  # a reading that can be called into vacuous green.
   #
   #   marks   count      the stated list carrying a duplicate, so it is longer
   #                      than the fixture's marks while naming the same terms —
   #                      the only shape that isolates the count clause, since
   #                      any count mismatch over DISTINCT terms fires the set
   #                      clause below instead
+  #   marks   marked     a term dropped from the stated list
   #   marks   stated     a stated term respelled, so it is stated and not marked
-  #   marks   marked     a mark removed from a copy of the fixture
+  #   marks   stated     a mark removed from a copy of the fixture
+  #   marks   empty      a spec stating a level and no term, through the one
+  #                      reading whose spec parsing shows in none of its output
   #   entries missing    a stated term the fixture prints no entry for
-  #   entries wrong      a stated term respelled by one character
+  #   entries missing    a stated term respelled by one character
+  #   entries level      a stated term named at a level it does not print at
+  #   entries pair       a term stated with no level at all
+  #   entries script     a level written in digits of another script
   #   entries no index   a captured PDF that prints no index at all
   #   entries no terms   the reading asked for nothing, which would pass over
   #                      any index at all
-  #   stopped signature  a successful render's log, which carries no rejection
+  #   stopped signature  a log with every error report removed, which carries
+  #                      no rejection
   #   stopped character  the rejection, with the character it names replaced
+  #   stopped one error  the signature and the character in separate errors
+  #   stopped one error  the rejection stated only in the chatter after a `! `
+  #                      line the log never closes
   #   absent  silent     a control's own present-term named as one it never prints
+  #   absent  level      a control's present-term named at a level it does not
+  #                      print at
   #   absent  printed    a term named absent that the render does print
   #   main    argv       a call naming a mode and nothing else
   #   main    stopped    `stopped` called with no term
   #   main    absent     `absent` called with a present-term and nothing else
   #   main    mode       a mode the reader does not have
   #
-  # ONE clause has no plant, and it is guarded rather than proved: `entries`
-  # and `absent` both refuse a PDF whose index heading is present but whose
-  # index holds no entry lines. That state is not reachable through this
-  # extension — a document with no marks gets no index heading at all, so the
-  # heading and the entries arrive together or not at all (probed at T6) —
+  # TWO clauses have no plant, and are guarded rather than proved.
+  #
+  # `entries` and `absent` both refuse a PDF whose index heading is present
+  # but whose index holds no entry lines. That state is not reachable through
+  # this extension — a document with no marks gets no index heading at all, so
+  # the heading and the entries arrive together or not at all (probed at T6) —
   # so there is no defect of that class to plant. The guard stays because a
   # future back-end change could make it reachable, and an unreachable branch
   # costs a line.
+  #
+  # `levelled` refuses a printed index one of whose columns holds no top-level
+  # entry, the state that would make every level pdfindex reports in that
+  # column a level too shallow. No capture in this suite is such a PDF, and
+  # nothing here builds a document whose index would break a column between a
+  # parent line and its sub-entries. So the pass line below claims nothing
+  # about this clause: it is unproven, not proven.
   # -------------------------------------------------------------------------
+  M33_PLANTED=0
   m33_planted() {
     local label="$1" want="$2"; shift 2
     local out rc
+    M33_PLANTED=$((M33_PLANTED + 1))
     out=$(python3 tests/unicodeprint.py "$@" 2>&1) && rc=0 || rc=$?
     [ "$rc" -ne 0 ] \
       || { printf '%s\n' "$out" >&2; fail "M33 self-test: the reader passed the planted case ($label), so its green over the real artifacts says nothing"; }
@@ -12345,7 +12369,7 @@ M33UNCLOSEDPY
     'unknown mode' \
     entrys "$M33_PDF" "${M33_TERMS[@]}"
 
-  pass "M33: all four readings of tests/unicodeprint.py fail, each naming its own clause, on a defect planted per clause — twenty plants naming eighteen distinct clauses"
+  pass "M33: each of the $M33_PLANTED planted defects makes a reading of tests/unicodeprint.py go red with the message of the clause it plants; the two clauses named above this block have no plant and are claimed for by nothing here"
 
   # --- The recipe font guard. It runs before any check, so a red run is what
   # a contributor without the font sees rather than a LaTeX log; that also

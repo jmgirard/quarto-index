@@ -73,7 +73,7 @@ KI87 — stays on its candidate row.
 - [x] T4. Plant both: `'٣:foo'` through `entries`, `'0:'` through `marks` —
       the second exercising `cmd_marks`' argv contract, which F11 records as
       unplanted.
-- [ ] T5. F9 and F16, narrow-not-widen: cut the per-clause plant claim from the
+- [x] T5. F9 and F16, narrow-not-widen: cut the per-clause plant claim from the
       pass line beside the `tests/unicodeprint.py` plants down to the clauses
       that have one, and state in `error_blocks`' docstring that it reads
       `! `-opened reports only, so `!pdfTeX error:` is named as outside its
@@ -92,7 +92,34 @@ KI87 — stays on its candidate row.
 - 2026-08-25: T2: self-test plants a copy of the engine control log with every real error report removed and the signature and `Unicode character θ` stated only in chatter after an unclosed `! ` line; run against both readers, the pre-T1 reader is green on it and the post-T1 reader red at the one-error clause. The unplanted engine log is now asserted green alongside `marks` and `entries`. The one-error failure message widened to cover text in no error report at all, which is what this input is. Self-test 491 checks, exit 0.
 - 2026-08-25: T3: `stated()` now has three refusals with three messages — no level stated, a level not written in ASCII digits, an empty term. Run over six specs: `0:Ascii` reads, `Ascii` and `:foo` take the pair message, `٣:foo` and `ab:foo` the ASCII-digit message, `0:` the empty-term message. Gate chose refusing only a truly empty term, not a spaces-only one, so the reader does not judge whitespace. Plain suite 352 checks, exit 0.
 - 2026-08-25: T4: two plants added — a level written as U+0663 through `entries`, and a level with an empty term through `marks`, the reading whose `<level>:<term>` argv contract had no plant. The U+0663 level is written literally, since this repo builds on bash 3.2 whose quoting has no `\u` escape. Self-test 491 checks, exit 0.
+- 2026-08-25: T5: the plant matrix rewritten to one row per plant (23 rows, the table having drifted to 15), the two unplanted clauses named at its foot, and the pass line narrowed to what each plant shows, its plant count counted at run time. `error_blocks`' docstring names the `! `-with-space shape as its whole domain. Self-test 491 checks, exit 0, the pass line printing 23.
 
 ## Decisions
+
+- **F9 — a clause with no plant is closed by narrowing the claim, not by adding
+  a plant.** The pass line beside the `tests/unicodeprint.py` plants claimed a
+  plant per clause. Two clauses have none: `entries` and `absent` refusing an
+  index whose heading printed but whose entry list is empty, already named in
+  that block's comment as unreachable through this extension; and `levelled`
+  refusing a column that holds no top-level entry, for which no capture in this
+  suite is such a PDF and nothing here builds a document whose index would break
+  a column between a parent line and its sub-entries. The pass line now claims
+  only that each plant makes its own clause's message appear, and names both
+  unplanted clauses as claimed for by nothing. The count it prints is counted at
+  run time rather than restated in prose.
+
+- **F16 — `!pdfTeX error:` opening no block is closed by naming the domain, not
+  by widening it.** `error_blocks` opens a report only on `! ` with its space,
+  the shape LaTeX's own errors take and the only shape the rejection this module
+  reads is written in. Widening it to pdfTeX's spelling would make the reader
+  return blocks for a class of error no reading here holds anything to. The
+  docstring now says the reader returns no block for such a line and that
+  nothing here speaks about that class.
+
+- **F11 — the `marks` argv contract folded into T4 rather than taken as its own
+  task.** That contract is `stated()`, which `marks` calls and whose level half
+  it then discards, so nothing in the reading's own output shows it parsed a
+  spec at all. The plant that holds `marks` to it is the empty-term spec T3
+  added a refusal for: one plant closes both.
 
 ## Review

@@ -228,6 +228,12 @@ def error_blocks(log):
     unreachable from here. Closing an unclosed final report at EOF would make
     that tail readable as part of it, which is a report the log does not
     carry.
+
+    Only `! ` — the bang with its space — opens a report, which is the shape
+    LaTeX's own errors take and the only shape the rejection this module reads
+    is written in. pdfTeX writes some of its errors as `!pdfTeX error:`, with
+    no space; run against such a line this returns no block, and nothing here
+    or in the readings above it says anything about that class of error.
     """
     blocks, current = [], None
     for line in log.splitlines():

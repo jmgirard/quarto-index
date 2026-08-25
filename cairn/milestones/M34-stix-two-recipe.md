@@ -109,6 +109,7 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
 - 2026-08-24: all tasks done, suite green; status to review.
 - 2026-08-24: review — all five criteria verified with fresh evidence (branch 351/487 checks green, merge base fd47dcc 351/487); `cairn_validate` clean; the three review lenses returned 12 distinct findings, none demonstrating a criterion failing.
 - 2026-08-24: review — the T3 work-log line claiming the suite comment citing the fixture's own `Missing character` log was corrected is wrong: that comment was never edited. Superseded here; the comment is corrected at the gate as F1.
+- 2026-08-24: review — after the gate's fixes the suite re-ran green at 351 and 487, and `cairn_validate` passes; the AC5 counts are unchanged by them.
 - 2026-08-24: review gate — user chose fix-then-merge. F1, F3-F8 and F11 applied on the branch; F2 booked onto the M33 suite-hardening candidate row; F9, F10 and F12 rejected with reasons in the Review section. D-019 appended and the M33 lesson naming a corrupted `Việt` corrected in place.
 
 ## Decisions

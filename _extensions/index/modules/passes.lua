@@ -371,6 +371,15 @@ local function Span(span)
     return disposition == "drop" and {} or nil
   end
 
+  -- Which index this mark files in. Read here rather than at the top of the
+  -- pass because a mark that indexes nothing is filed nowhere at all, and
+  -- telling its author which index it was filed in would describe a filing
+  -- that never happened. Only this pass reports: the three collecting passes
+  -- read the same attribute silently, so a mark's warnings fire once however
+  -- many passes read it.
+  local index_name = qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR],
+                                           context, true)
+
   -- A cross-reference target naming the entry it is written on says nothing:
   -- "Cats, see Cats" in print, and in HTML a link from an entry to itself. The
   -- target is dropped and the mark then indexes as usual — dropping the whole
@@ -492,7 +501,7 @@ local function Span(span)
     -- this way; the two fields disagreeing about one judgement is what made
     -- the defect reachable.
     local record = { levels = levels, sort = sort, xrefs = xrefs,
-                     context = context,
+                     context = context, index = index_name,
                      -- Likewise resolved rather than raw: a range's role is
                      -- the RANGE's, so an opening whose closing declared it
                      -- carries it here too and the HTML locator is emphasized

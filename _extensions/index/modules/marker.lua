@@ -2,6 +2,7 @@
 -- index where it stood.
 
 local qi_core = require("./core")
+local qi_indexes = require("./indexes")
 
 local M = {}
 
@@ -252,6 +253,12 @@ local function resolve_markers(doc, chapter)
   for position, block in ipairs(doc.blocks) do
     block = strip_nested_markers(block, position, chapter)
     if is_marker(block) then
+      -- Which index this marker places, and the report for a value naming
+      -- none. Drawn for every top-level marker, not only the surviving one: a
+      -- marker naming an index this document never declared is the author's
+      -- mistake wherever it sits, and a second marker's own report already
+      -- says why it places nothing.
+      qi_indexes.marker_index(block.attributes[qi_indexes.INDEX_ATTR], true)
       seen = seen + 1
       if seen == 1 then
         out:insert(block)

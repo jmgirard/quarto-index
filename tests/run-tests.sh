@@ -12091,7 +12091,8 @@ if [ "${1:-}" = "--self-test" ]; then
   # evidence of anything — it would be the copy that was wrong, not the plant.
   python3 tests/unicodeprint.py marks examples/unicode.qmd "${M33_TERMS[@]}" > /dev/null \
     && python3 tests/unicodeprint.py entries "$M33_PDF" "${M33_TERMS[@]}" > /dev/null \
-    || fail "M33 self-test: the readers fail on the unplanted fixture and render, so no failure below is evidence of anything"
+    && python3 tests/unicodeprint.py stopped "$M33_ENGINE_LOG" "${M33_GREEK[@]}" > /dev/null \
+    || fail "M33 self-test: the readers fail on the unplanted fixture, render and engine log, so no failure below is evidence of anything"
 
   # --- marks: the stated list and the fixture's own marks.
   #
@@ -12239,6 +12240,53 @@ M33SPLITPY
   m33_planted 'the signature and the character in separate errors' \
     'but never in one error' \
     stopped "$M33W/splitrejection.log" "${M33_GREEK[@]}"
+
+  # The unclosed-report clause. TeX closes an error report with the echoed
+  # source line; a log whose last `! ` line is never closed carries a report
+  # that never ended, and the font and package chatter after it belongs to no
+  # error at all. This plant states the signature and the character ONLY in
+  # that chatter, so a reader that closes the final report at EOF reads both
+  # out of a report the log does not carry and calls them "in one error
+  # report". Removing every real error report first is what leaves the chatter
+  # as the only place either half is stated.
+  python3 - "$M33_ENGINE_LOG" "$M33W/unclosed.log" <<'M33UNCLOSEDPY' \
+    || fail "M33 self-test: the unclosed-report mutation did not apply to the engine control's log, so the plant below would test the unmutated log"
+import io, re, sys
+
+lines = io.open(sys.argv[1], encoding='utf-8', errors='replace').read().splitlines()
+out, inside, dropped = [], False, 0
+for line in lines:
+    if line.startswith('! '):
+        inside, dropped = True, dropped + 1
+        continue
+    if inside:
+        if re.match(r'^l\.\d', line):
+            inside = False
+        continue
+    out.append(line)
+if not dropped:
+    print('FAIL: M33 self-test: the engine control log carries no error report '
+          'to remove, so the tail appended below would not be the only place '
+          'this plant states the rejection', file=sys.stderr)
+    sys.exit(1)
+rest = '\n'.join(out)
+if 'not set up for use with LaTeX' in rest or 'Unicode character' in rest:
+    print('FAIL: M33 self-test: the engine control log states the rejection '
+          'outside its error reports, so the tail appended below would not be '
+          'the only place this plant states it', file=sys.stderr)
+    sys.exit(1)
+tail = [
+    '! LaTeX Error: an error report this log never closes.',
+    '',
+    'Type  H <return>  for immediate help.',
+    'Unicode character θ (U+03B8)',
+    '(inputenc)                 not set up for use with LaTeX.',
+]
+io.open(sys.argv[2], 'w', encoding='utf-8').write(rest + '\n' + '\n'.join(tail) + '\n')
+M33UNCLOSEDPY
+  m33_planted 'the rejection stated only in the chatter after an error report the log never closes' \
+    'but never in one error' \
+    stopped "$M33W/unclosed.log" "${M33_GREEK[@]}"
 
   # --- absent: the two silent-drop controls' reading.
   m33_planted "a control's own present-term named as one it never prints" \

@@ -246,8 +246,9 @@ def cmd_stopped(log_path, terms):
         die(f'FAIL: M33: {log_path} carries {STOP_SIGNATURE!r} and names '
             f'{", ".join(f"U+{ord(c):04X}" for c in anywhere)}, but never in '
             f'one error: the rejection that stopped this render and the '
-            f'character this fixture indexes are separate errors, and the '
-            f'two read apart say nothing about each other '
+            f'character this fixture indexes are not reported together — '
+            f'separate error reports, or text belonging to no error report at '
+            f'all — and the two read apart say nothing about each other '
             f'({len(blocks)} error report(s) in the log)')
     print(f'ok   M33: {log_path} stops on '
           f'{", ".join(f"U+{ord(c):04X}" for c in named)}, which the terms '

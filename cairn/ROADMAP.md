@@ -1,12 +1,13 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-24 (M34 merged and archived; the M33 suite-hardening row corrected — two items closed, the engine-pin follow-up absorbed; the M33 lesson on the no-engine path corrected in place; D-019 appended; M29's row aged out of the terminal five; caps and byte budgets clean at ROADMAP 50 lines / 9,043 bytes and LESSONS 44 lines / 11,521 bytes; check-design.md at 34/40 lines and 13,764/18,000 bytes; no prose-guard suite in this repo, and tests/run-tests.sh ran green at 351/487 at the gate.)_
+_Last hygiene check: 2026-08-24 (M35 planned, absorbing the "M33 suite-hardening" candidate row, which is removed here; no other row touched. ROADMAP 50 lines / 8,094 bytes and LESSONS 44 lines / 11,521 bytes, both inside their caps; no code changed, so no suite run is claimed at this stamp.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M35 | The non-Latin-1 checks fail on the defects they claim to catch | planned | — | normal | milestones/M35-non-latin1-check-hardening.md |
 | M34 | The non-Latin-1 recipe names a font TeX Live still maintains | done | — | normal | milestones/archive/M34-stix-two-recipe.md |
 | M33 | An index term outside Latin-1 prints in the PDF index | done | — | normal | milestones/archive/M33-non-latin1-terms.md |
 | M32 | An index follows the bibliography where the author puts it | done | — | low | milestones/archive/M32-index-after-references.md |
@@ -31,7 +32,6 @@ _Last hygiene check: 2026-08-24 (M34 merged and archived; the M33 suite-hardenin
 - Move the index relative to content Quarto adds after filters run, rather than leaving the order to an author-written `#refs` div; promote on evidence Quarto exposes an ordering hook a filter can reach — added 2026-08-24 — M32 Scope Out — KI3
 - Make M32's marker-less plants read the captured artifact rather than the render's working copy, so M24's capture rule is met in intent and not only in letter; promote with any other suite-wide capture sweep — added 2026-08-24 — M32 review R2-F9
 - Narrow M32's HTML-cost check from "the fixture carries no `#quarto-appendix` at all" to the bibliography's own wrapper, so a fixture that later grows a footnote or a Citation block cannot turn it red while README stays true; promote on that fixture growing one — added 2026-08-24 — M32 review R2-F14
-- M33 suite-hardening (clustered; corrected M34): `unicodeprint.py entries` never reads `Entry.level`, so a term printed as a sub-entry passes; `stopped` searches for the stop signature and the named character independently; the README copyable-block check is one-directional (block ⊆ fixture), so a dropped `pdf-engine:` line escapes it; the `stopped` "no rejection" plant feeds a Quarto stdout log to a reader that in production reads a LaTeX log; the tool guard probes one of STIX Two Text's four faces; control (d) reads only the printed index and never which engine produced it, so a Quarto default flipping to xelatex would leave it green while README's lualatex sentence went false — added 2026-08-24, corrected 2026-08-24 when M34 closed the two control-(d) items it listed and added the engine-pin one — M33 review R4, R6, R8, R12, N5, N6, N9; M34 review F2
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN) — KI79
 - Print an RTL index term correctly: the plan gate's probe shows it unshaped with the locator comma on the wrong side of the entry, which a covering font does not fix; promote on a bidi path that also settles locator placement — added 2026-08-24 — M33 Scope Out — KI6

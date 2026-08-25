@@ -102,7 +102,7 @@ collation rules — nothing here changes how one index is ordered or printed.
       (`passes.lua:42,83,163,318`) and on the marker div in `marker.lua`;
       report a value naming no declared index and file the mark in the
       default index.
-- [ ] T3: Key the format-neutral accumulators per index — `marked_paths`,
+- [x] T3: Key the format-neutral accumulators per index — `marked_paths`,
       `pending_xrefs` and `clamped_paths` in `marks.lua`, `sort_keys` in
       `sortkeys.lua:21`, and the `pending`/`waiting` maps inside
       `pair_ranges` — one namespace per index rather than one per document,
@@ -142,6 +142,7 @@ collation rules — nothing here changes how one index is ordered or printed.
 - 2026-08-25: status in-progress; branch m038-named-indexes-html cut from a synced main. Question gate settled three open implementation choices; recorded below under Decisions.
 - 2026-08-25: T1 — `indexes:` metadata read into an ordered name->title table. Two minor task edits: the table lives in a new `modules/indexes.lua` rather than in `core.lua` (core requires nothing and holds constants, not per-document state), and it is read from `passes.Reset` rather than `index.lua`'s `Pandoc`, because the Span passes record marks long before that pass runs. Nine reports cover a non-list, an empty list, a non-map entry, a missing/empty name, a repeated name, a missing/empty title, and a declaration no entry of which is usable; each probed by render. Suite green, 354 checks; warn-distinct's pinned message count 48 -> 61.
 - 2026-08-25: T2 — the emitting Span pass and every top-level placement marker read `index=` and report a value naming no declared index; a folded back-end (PDF, or an HTML book) reports each named-index mark and marker and files it in the document's one index. Minor task edit: the three collecting passes read the attribute in T3, where the accumulators they feed are keyed by it, rather than here where the value would have no consumer. Probed by HTML and PDF renders of a two-index fixture; suite green, 354 checks.
+- 2026-08-25: T3 — `marked_paths`, `pending_xrefs`, `clamped_paths`, `sort_keys` and `pair_ranges`' pending map are one namespace per index, through a new `qi_core.namespace`; the three collecting passes read `index=` silently and the emitting pass reports it. Probed: a `see=` across indexes dangles while the same target within its own index resolves, and an opening in one index with a closing in the other draws the never-closed and never-opened reports. The M26 pollution probe caught the first cut leaving the module with no index before `reset` ran — a nil accumulator key that failed the synthetic drive and would have made every state-reuse comparison vacuous; the declaration now installs the unnamed index and `reset` restores exactly it. Suite green, 354 checks.
 
 ## Decisions
 

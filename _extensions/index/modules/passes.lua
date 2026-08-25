@@ -67,7 +67,11 @@ local function CollectSort(span)
   end
   -- Reported here rather than in the emitting pass: this is the pass that can
   -- see a conflict before anything has been emitted under either key.
-  qi_sortkeys.register_sort(levels,
+  -- Silently: the emitting pass reports a value naming no declared index, so
+  -- a mark's warnings fire once however many passes read it.
+  local index_name = qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR],
+                                           context, false)
+  qi_sortkeys.register_sort(index_name, levels,
                 qi_levels.sort_levels(sort_value, levels, context, true, kept, depth),
                 context)
   return nil
@@ -117,9 +121,11 @@ local function CollectKeys(span)
       surviving[#surviving + 1] = xref
     end
   end
+  local index_name = qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR],
+                                           context, false)
   local source, printed_path, _, kept =
-    qi_latex.latex_plan(levels, qi_sortkeys.sort_for(levels), surviving, context,
-                        false, nil, entry_written)
+    qi_latex.latex_plan(levels, qi_sortkeys.sort_for(index_name, levels),
+                        surviving, context, false, nil, entry_written)
   qi_latex.record_contest(source, printed_path, kept)
   -- Which keys carry a principal mention is a fact about the whole document
   -- too, and for the same reason: EVERY locator mark of such a key has to
@@ -201,10 +207,12 @@ local function CollectRanges(span)
       surviving[#surviving + 1] = xref
     end
   end
+  local index_name = qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR],
+                                           context, false)
   if qi_core.is_latex_derived() then
     local _, _, _, kept =
-      qi_latex.latex_plan(levels, qi_sortkeys.sort_for(levels), surviving,
-                          context, false, nil, entry_written)
+      qi_latex.latex_plan(levels, qi_sortkeys.sort_for(index_name, levels),
+                          surviving, context, false, nil, entry_written)
     surviving = kept
   end
   local blocked = nil
@@ -219,7 +227,7 @@ local function CollectRanges(span)
                                      blocked ~= nil and { attrs = blocked } or nil,
                                      false)
   qi_marks.plan_range(pos, value, own_key, context, blocked,
-                      role == "principal")
+                      role == "principal", index_name)
   return nil
 end
 
@@ -420,7 +428,7 @@ local function Span(span)
   -- Resolved by the collect pass, which has already seen every mark of this
   -- entry: whichever mark declared the sort key, every mark of the entry files
   -- under it.
-  local sort = qi_sortkeys.sort_for(levels)
+  local sort = qi_sortkeys.sort_for(index_name, levels)
   -- Every path from here indexes the mark in whichever back-end is running:
   -- one `\index` command in LaTeX, one record in HTML, nothing at all where
   -- there is no back-end. The count is what the marker's no-marks warning and
@@ -471,7 +479,7 @@ local function Span(span)
   -- included, in the space its own back-end resolves a target in. A target
   -- dropped as a self-reference is not among the pending ones below — neither
   -- the format-neutral drop above nor the fold's inside latex_plan.
-  qi_marks.record_marked(indexed)
+  qi_marks.record_marked(index_name, indexed)
   for _, xref in ipairs(xrefs) do
     -- Two spellings, because they answer different questions. `levels` is what
     -- the author wrote, which is what a report quotes: a derived string names
@@ -480,7 +488,7 @@ local function Span(span)
     -- the fold moved it.
     qi_marks.pending_xrefs[#qi_marks.pending_xrefs + 1] =
       { attr = xref.kind.attr, levels = xref.written or xref.levels,
-        resolve = xref.levels, context = context }
+        resolve = xref.levels, context = context, index = index_name }
   end
 
   if qi_core.is_html() then
@@ -533,7 +541,7 @@ local function Span(span)
   -- Recorded for every mark whatever it emits: a cross-reference mark files
   -- under the same key a plain one does, so it contests a printed path just
   -- as a locator mark would.
-  qi_marks.record_clamped(printed_path, filing_path)
+  qi_marks.record_clamped(index_name, printed_path, filing_path)
 
   local result = pandoc.List(span.content)
 

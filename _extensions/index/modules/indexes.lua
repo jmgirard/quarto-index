@@ -38,8 +38,14 @@ local UNNAMED = ""
 -- The declared names in print order, and the title each prints under. Both are
 -- module-level accumulators like every other, emptied in place by `reset` for
 -- the reason marks.lua's own `reset` states.
-local order = {}
-local titles = {}
+-- Initialized to the unnamed index rather than to empty tables, and `reset`
+-- restores exactly this: the rest of the filter is written against "there is
+-- always an index to file a mark in", and a module that only acquired one once
+-- `reset` had run would hand a nil index to every accumulator keyed by one.
+-- Nothing in the shipped filter reads these before `reset`; the M26 pollution
+-- probe does, which is what makes the invariant testable rather than assumed.
+local order = { UNNAMED }
+local titles = { [UNNAMED] = DEFAULT_TITLE }
 -- Did the document declare anything? A document that did not is not the same
 -- as one that declared a single index: the first prints the bare `qi-index`
 -- section it always has, and the second prints an index named after what its

@@ -18,7 +18,17 @@ local M = {}
 -- so the mistake is reported instead. The accumulator is format-neutral —
 -- filled before any back-end branch — because it is a property of what the
 -- author wrote, like every other warning about the mark itself.
+-- One namespace per index (M38): two indexes of one document are two indexes,
+-- so a sort key written in one says nothing about where the same printed text
+-- files in the other. A back-end that keeps one index resolves every mark to
+-- that one before it gets here, so its registry has a single namespace and
+-- behaves exactly as it did.
 local sort_keys = {}
+
+-- This index's share of the registry, created on first use.
+local function for_index(index)
+  return qi_core.namespace(sort_keys, index)
+end
 
 -- Register a mark's declared sort keys, one per level, and report a second,
 -- different key for a level already spoken for. First mark in document order
@@ -27,10 +37,11 @@ local sort_keys = {}
 -- term is usually marked in several places and a sort key written on one of
 -- them is meant for the entry, not for that one mark (GP4), so the marks that
 -- stay silent inherit it rather than contradict it.
-local function register_sort(levels, declared, context)
+local function register_sort(index, levels, declared, context)
   if declared == nil then
     return
   end
+  local registry = for_index(index)
   for i = 1, #levels do
     local key = declared[i]
     -- Positional filler was already dropped by qi_levels.sort_levels, so everything
@@ -39,9 +50,9 @@ local function register_sort(levels, declared, context)
     -- wins ties and reports rivals like any other.
     if key then
       local path = qi_levels.level_path(levels, i)
-      local seen = sort_keys[path]
+      local seen = registry[path]
       if seen == nil then
-        sort_keys[path] = { sort = key, context = context }
+        registry[path] = { sort = key, context = context }
       elseif seen.sort ~= key then
         -- Once per RIVAL KEY at this path, not once per mark carrying it: a
         -- term is usually marked in several places, and repeating one rival
@@ -69,10 +80,11 @@ end
 -- printed text where no mark declared anything. Returns nil when no level on
 -- this path has a key, so a mark with no sort key anywhere above or at it
 -- emits exactly what it always did.
-local function sort_for(levels)
+local function sort_for(index, levels)
+  local registry = for_index(index)
   local resolved, any = {}, false
   for i = 1, #levels do
-    local seen = sort_keys[qi_levels.level_path(levels, i)]
+    local seen = registry[qi_levels.level_path(levels, i)]
     if seen then
       resolved[i] = seen.sort
       any = true
@@ -117,6 +129,7 @@ end
 -- `NAME =` line left behind here would then mask it (M16 review F3).
 M["reset"] = reset
 M["sort_keys"] = sort_keys
+M["for_index"] = for_index
 M["register_sort"] = register_sort
 M["sort_for"] = sort_for
 M["clamp_sort"] = clamp_sort

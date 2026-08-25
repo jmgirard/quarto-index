@@ -46,6 +46,7 @@
 -- shadow a module (`levels`, `marks` and `marker` are all ordinary local names
 -- in this filter).
 local qi_core = require("./modules/core")
+local qi_indexes = require("./modules/indexes")
 local qi_latex = require("./modules/latex")
 local qi_marks = require("./modules/marks")
 local qi_passes = require("./modules/passes")
@@ -103,8 +104,15 @@ local function Pandoc(doc)
   -- target on it would then be reported as naming nothing indexed, which is
   -- false of the book the author is writing and buries the one warning that
   -- is true.
+  -- One index at a time, in declared order (M38): a target is resolved against
+  -- the paths of the index its own mark files in, so a `see=` in one index
+  -- naming a term marked only in another is the dangling target it is to a
+  -- reader. A document with one index has one namespace and one pass here.
   if not book and not (qi_core.is_html() and doc.meta.book ~= nil) then
-    qi_marks.report_dangling(qi_marks.marked_paths, qi_marks.pending_xrefs, "document")
+    for _, name in ipairs(qi_indexes.names()) do
+      qi_marks.report_dangling(qi_marks.marked_paths[name] or {},
+                               qi_marks.xrefs_for(name), "document")
+    end
   end
   -- The range reports, held rather than emitted where they were found so they
   -- print after the per-mark reports. Under D-009 every Pandoc process is its
@@ -217,14 +225,16 @@ local function Pandoc(doc)
   -- walked in sorted order, and so are the keys within one, so the report does
   -- not depend on Lua's table iteration order.
   local contested = {}
-  for path, filings in pairs(qi_marks.clamped_paths) do
-    local keys = {}
-    for filing in pairs(filings) do
-      keys[#keys + 1] = filing
-    end
-    if #keys > 1 then
-      table.sort(keys)
-      contested[#contested + 1] = { path = path, keys = keys }
+  for _, name in ipairs(qi_indexes.names()) do
+    for path, filings in pairs(qi_marks.clamped_paths[name] or {}) do
+      local keys = {}
+      for filing in pairs(filings) do
+        keys[#keys + 1] = filing
+      end
+      if #keys > 1 then
+        table.sort(keys)
+        contested[#contested + 1] = { path = path, keys = keys }
+      end
     end
   end
   table.sort(contested, function(a, b) return a.path < b.path end)

@@ -153,10 +153,29 @@ local marked_paths = {}
 -- down the page, and judging it at the mark would call that broken.
 local pending_xrefs = {}
 
-local function record_marked(levels)
+-- One namespace per index (M38): a cross-reference target is resolved against
+-- the paths of the index its own mark files in, never against another index's.
+-- A back-end that keeps one index resolves every mark to that one before it
+-- gets here, so its set has a single namespace and behaves exactly as it did.
+local function record_marked(index, levels)
+  local paths = qi_core.namespace(marked_paths, index)
   for i = 1, #levels do
-    marked_paths[qi_levels.level_path(levels, i)] = true
+    paths[qi_levels.level_path(levels, i)] = true
   end
+end
+
+-- One index's pending targets, in document order. `report_dangling` still
+-- takes a flat path set and a flat target list, so the book's own report --
+-- which aggregates chapters that have all folded to one index -- calls it
+-- exactly as it always did.
+local function xrefs_for(index)
+  local out = {}
+  for _, xref in ipairs(pending_xrefs) do
+    if xref.index == index then
+      out[#out + 1] = xref
+    end
+  end
+  return out
 end
 
 -- One report per mark per target that names nothing the marks index. `scope`
@@ -195,12 +214,8 @@ end
 -- back-end applies none, so there the two entries are genuinely two.
 local clamped_paths = {}
 
-local function record_clamped(path, filing)
-  local seen = clamped_paths[path]
-  if not seen then
-    seen = {}
-    clamped_paths[path] = seen
-  end
+local function record_clamped(index, path, filing)
+  local seen = qi_core.namespace(qi_core.namespace(clamped_paths, index), path)
   seen[filing] = true
 end
 
@@ -315,13 +330,18 @@ end
 local function pair_ranges(items)
   local verdicts, found, pending, waiting = {}, {}, {}, {}
   for i, item in ipairs(items) do
+    -- One namespace per index (M38): an opening in one index and a closing in
+    -- another are two marks of two entries, so neither pairs and each draws
+    -- its own report. A back-end that keeps one index resolved every mark to
+    -- that one before this ran, so its pairing has a single namespace.
+    local open_here = qi_core.namespace(pending, item.index)
     if item.ending == "open" then
-      if pending[item.key] ~= nil then
+      if open_here[item.key] ~= nil then
         verdicts[i] = false
         found[#found + 1] = { kind = "already-open", context = item.context }
       else
         verdicts[i] = { ending = "open", principal = item.principal }
-        pending[item.key] = i
+        open_here[item.key] = i
         -- The OPENING's own position, not its key: a key opened, closed and
         -- opened again appends twice, and walking by key below would then
         -- report the second opening in the first one's place. Entries whose
@@ -329,12 +349,12 @@ local function pair_ranges(items)
         waiting[#waiting + 1] = i
       end
     else
-      local at = pending[item.key]
+      local at = open_here[item.key]
       if at == nil then
         verdicts[i] = false
         found[#found + 1] = { kind = "never-opened", context = item.context }
       else
-        pending[item.key] = nil
+        open_here[item.key] = nil
         local principal = verdicts[at].principal or item.principal
         -- Written back onto the OPENING's verdict too, which is what makes a
         -- role declared on the closing reach the end that registers the
@@ -348,8 +368,9 @@ local function pair_ranges(items)
   -- were written rather than by table iteration, so the findings do not depend
   -- on Lua's hash order.
   for _, at in ipairs(waiting) do
-    if pending[items[at].key] == at then
-      pending[items[at].key] = nil
+    local open_here = qi_core.namespace(pending, items[at].index)
+    if open_here[items[at].key] == at then
+      open_here[items[at].key] = nil
       verdicts[at] = false
       found[#found + 1] = { kind = "never-closed", context = items[at].context }
     end
@@ -414,7 +435,7 @@ end
 -- opening pairs with the next closing of the SAME entry, which is what the
 -- extension documents. What left is the key's second job — standing in for
 -- the mark's identity between the two passes, which is the position's now.
-local function plan_range(pos, value, key, context, blocked, principal)
+local function plan_range(pos, value, key, context, blocked, principal, index)
   local ending, found = range_end(value, context, blocked)
   if ending == nil then
     range_found[#range_found + 1] = found
@@ -422,7 +443,7 @@ local function plan_range(pos, value, key, context, blocked, principal)
   end
   range_items[#range_items + 1] =
     { pos = pos, key = key, ending = ending, principal = principal,
-      context = context }
+      context = context, index = index }
 end
 
 -- Called once the whole document has been read.
@@ -592,6 +613,7 @@ M["html_marks"] = html_marks
 M["marked_paths"] = marked_paths
 M["pending_xrefs"] = pending_xrefs
 M["record_marked"] = record_marked
+M["xrefs_for"] = xrefs_for
 M["report_dangling"] = report_dangling
 M["clamped_paths"] = clamped_paths
 M["record_clamped"] = record_clamped

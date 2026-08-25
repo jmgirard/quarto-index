@@ -12123,6 +12123,17 @@ if [ "${1:-}" = "--self-test" ]; then
     'stated but not marked' \
     marks "$M33W/unmarked.qmd" "${M33_TERMS[@]}"
 
+  # `marks` reads the same `<level>:<term>` specs `entries` does and then
+  # discards the level half, so nothing in this reading's own output can show
+  # that it parsed the spec at all. Planting the spec here is what holds it to
+  # the contract its argv states: a caller who wrote a level and no term
+  # reaches a reading with no term to look for, and the count clause below
+  # would report the stated list as the wrong length rather than naming the
+  # spec that is malformed.
+  m33_planted 'a spec stating a level and an empty term, through marks' \
+    'names an empty term' \
+    marks examples/unicode.qmd "${M33_TERMS[@]}" '0:'
+
   # --- entries: a term's own printed entry line.
   m33_planted 'a stated term the fixture prints no entry for' \
     'has no entry line of its own' \
@@ -12145,6 +12156,16 @@ if [ "${1:-}" = "--self-test" ]; then
   m33_planted 'a term stated with no level at all' \
     'is not a <level>:<term> pair' \
     entries "$M33_PDF" 'Ascii'
+
+  # The level's own spelling. Python reads a digit from any script and `int()`
+  # gives it a value, so a level written outside ASCII would be taken as a
+  # level and the term looked for at it; the reading would then go red naming
+  # a missing entry line, which is the render's fault and not the spec's.
+  # The level below is U+0663 ARABIC-INDIC DIGIT THREE, written literally
+  # because this repo builds on bash 3.2, whose quoting has no `\u` escape.
+  m33_planted 'a level written in digits of another script' \
+    'not written in ASCII digits' \
+    entries "$M33_PDF" '٣:foo'
 
   # A captured PDF that prints no index at all — beamer carries none. Not a
   # mutation: the artifact is already in the capture set, and pointing the

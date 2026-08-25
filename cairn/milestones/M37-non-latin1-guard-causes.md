@@ -1,11 +1,11 @@
 # M37: The non-Latin-1 guards report the cause they hit
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M36
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** m037-non-latin1-guard-causes / https://github.com/jmgirard/quarto-index/pull/37
 
 ## Goal
 
@@ -47,26 +47,29 @@ KI81–85, KI87 — stays on its candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1. Each of `require_recipe_fonts`' four failure paths reports the cause
+- [x] AC1. Each of `require_recipe_fonts`' four failure paths reports the cause
       it actually hit — no `mainfont:`, no `mainfontoptions:` block, no `*Font=`
       face, or the specific face `kpsewhich` could not find — and only the last
       names the `stix2-otf` package. Each of the four is shown red by the
       self-test.
-- [ ] AC2. The `[ -n "$faces" ]` clause in `require_pdf_tools`
+- [x] AC2. The `[ -n "$faces" ]` clause in `require_pdf_tools`
       (`tests/run-tests.sh:1511`) and the `if not stated:` clause in
       `check_recipe_block` (`:4597`) are removed.
-- [ ] AC3. `pdf_producer_names` returns a status of its own rather than its
+- [x] AC3. `pdf_producer_names` returns a status of its own rather than its
       pipeline's: the self-test calls it outside an `&&`/`||` list on a file
       carrying no Producer line, and the run reports red rather than dying
       under `pipefail`.
-- [ ] AC4. Each of the three plants M35-F13, F14 and F15 name builds the input
-      class its label claims: the "no options block" mutation is bounded to the
-      `mainfontoptions:` block whatever follows it, the extra-line README
-      mutation is bounded to the `### Terms outside Latin-1` section, and the
-      `grep -v` mutation asserts it emitted lines. Each is shown, on a fixture
-      where its old form would have mutated the wrong region or emitted
-      nothing, to fail loudly instead.
-- [ ] AC5. `tests/run-tests.sh` exits 0 in both plain and `--self-test` modes
+- [x] AC4. Each of the three plants M35-F13, F14 and F15 name builds the input
+      class its label claims. The "no options block" mutation is bounded to the
+      `mainfontoptions:` block by that block's own extent rather than by the
+      `filters:` line that happens to follow it, and the extra-line README
+      mutation to the `### Terms outside Latin-1` section; each is shown, on a
+      fixture where its old form mutated a region outside that bound, to leave
+      every byte outside its own bound unchanged. The `norejection.log`
+      mutation asserts it removed at least one error report. Each of the three
+      fails loudly, naming what it could not find, on an input carrying no
+      region of the kind its label names.
+- [x] AC5. `tests/run-tests.sh` exits 0 in both plain and `--self-test` modes
       (the `generic` profile's verify slot, plus its self-test).
 
 ## Coverage
@@ -79,38 +82,214 @@ KI81–85, KI87 — stays on its candidate row.
 
 ## Tasks
 
-- [ ] T1. Give each `require_recipe_fonts` failure path its own message: the
+- [x] T1. Give each `require_recipe_fonts` failure path its own message: the
       three `recipe_font_files` exits already say what they could not read, so
       surface them rather than replacing them, and reserve the `stix2-otf`
       sentence for the `kpsewhich` miss (`tests/run-tests.sh:1503-1509`).
-- [ ] T2. Plant all four: a fixture with no `mainfont:`, one with no
+- [x] T2. Plant all four: a fixture with no `mainfont:`, one with no
       `mainfontoptions:` block, one whose block names no `*Font=`, and one
       naming an unfindable face. Assert each red with its own cause named.
-- [ ] T3. Delete the two unreachable clauses (`:1511`, `:4597`) and the pass
+- [x] T3. Delete the two unreachable clauses (`:1511`, `:4597`) and the pass
       lines that only they could reach.
-- [ ] T4. Make `pdf_producer_names` (`:1447`) hold its own status — read
+- [x] T4. Make `pdf_producer_names` (`:1447`) hold its own status — read
       `pdfinfo` into a variable and test it, rather than returning a pipeline's
       — and add a self-test call outside any `&&`/`||` list.
-- [ ] T5. Bound the two `sed` plants: the "no options block" mutation to the
+- [x] T5. Bound the two `sed` plants: the "no options block" mutation to the
       `mainfontoptions:` block by its own extent, the extra-line README
       mutation to the `### Terms outside Latin-1` section as its sibling
       reordering plant already is.
-- [ ] T6. Make the `grep -v … > norejection.log` mutation assert it emitted
+- [x] T6. Make the `grep -v … > norejection.log` mutation assert it emitted
       lines, and show each of the three plants failing loudly on a fixture
       where its old form would have gone silent or mutated the wrong region.
-- [ ] T7. F6, F8 and F12, narrow-not-widen: print the face list on a green run;
+- [x] T7. F6, F8 and F12, narrow-not-widen: print the face list on a green run;
       reword the recipe-block check's fixture-direction pass line to say each
       stated line appears somewhere in the fixture, not in its front matter;
       and state in the `M33_NOENGINE_PRODUCER` ORACLE RULE comment that it and
       README's engine word are two hand statements. Record all three
       dispositions, and F3's fold into T1, in the Decisions section.
-- [ ] T8. Run both suite modes; state the resulting counts against the merge
+- [x] T8. Run both suite modes; state the resulting counts against the merge
       base in the work log.
 
 ## Work log
 
 - 2026-08-24: created by /milestone-plan alongside M36; the gate's rejected alternatives and both criteria-audit rounds are recorded in that file's work log and cover this milestone too.
+- 2026-08-25: branch m037-non-latin1-guard-causes cut from main at a631685; status in-progress.
+- 2026-08-25: amendment gate — AC4's "fail loudly instead" ending was unsatisfiable for the two mutations bounded by construction: such a mutation succeeds correctly on the very fixture where its unbounded old form went wrong. Amended at the user's selection to bind those two to byte-identity outside their own bound on that fixture, and all three to a loud failure on an input carrying no region of the kind their label names; the third mutation is named `norejection.log` rather than `grep -v`, the form M35's own review commit 7680a3d replaced. No criterion added; AC4's promise narrows on the loud-failure half and is stated per mutation.
+- 2026-08-25: criteria audit (reduced mode, internal tier) by a fresh [O] reader over the amended AC4: one finding — "bounded to the `mainfontoptions:` block whatever follows it" quantified over every possible continuation of the front matter, a domain no procedure the criterion names enumerates. Fixed before writing, to "by that block's own extent rather than by the `filters:` line that happens to follow it". Proportionality and instrument questions passed.
+
+- 2026-08-25: T1+T2 in one commit — T1's message change moves the text T2's plants assert, so neither is green alone. `require_recipe_fonts` now reports the missing face with the `stix2-otf` sentence and the fixture name; the three front-matter causes reach the terminal as `recipe_font_files`' own exits, and `require_pdf_tools`' fail line points at them instead of restating one of them. Each of the four plants now also asserts whether the package is named: planting the M35 defect (the package sentence added to the no-`mainfont:` exit) turned the no-main-font plant red on that clause; unplanted, the self-test is green at 491 checks.
+
+- 2026-08-25: T3 — both unreachable clauses removed. `[ -n "$faces" ]` sat after a `require_recipe_fonts` that exits 1 on an empty list, and `if not stated:` after a `printf` over a literal array `set -u` would have stopped. Neither had a pass line of its own. The recipe-line list's non-emptiness is now stated where it is read, pointing at the self-test plants that each name one of those lines; the face list's is covered by T7's printed domain. Self-test green at 491 checks.
+
+- 2026-08-25: T4 — `pdf_producer_names` reads `pdfinfo` into a variable and absorbs its status there, so its two `return`s are the only statuses it produces. The self-test call was first written as `( set -eo pipefail; ... ) && rc=0 || rc=$?` and was green on the OLD form: bash suppresses errexit inside a subshell sitting in an `&&`/`||` list even when the subshell sets it again, so that shape reproduces the shielding the check exists to escape. Rewritten to background the subshell and read its status with `wait`, which leaves the call unshielded; on the old form planted back it goes red with <<printed no carries no Producer line report>>, and green on the repair at 491 checks.
+
+- 2026-08-25: T5+T6 — the three mutations are named builders (`m37_drop_options_block`, `m37_add_unstated_line`, `m37_strip_error_reports`), each bounded to the region its label names and each exiting non-zero, naming what it could not find, over an input carrying no such region. The two M35 forms are kept beside them as `*_m35_form`, used by nothing but the demonstrations. Three demonstrations added: the options block on a fixture with `filters:` renamed, the README insertion on a document carrying a second `Extension=.otf` line in an appendix, and the log strip on a log carrying no error report. Each demonstration also asserts the M35 form differs there, so a fixture that stopped discriminating would be caught rather than pass.
+- 2026-08-25: T6 — the `grep -v` form AC4 was written against is already gone: M35's own review commit 7680a3d replaced it with the python builder, which counts what it removed. What was owed was the demonstration, not the assertion.
+- 2026-08-25: each of the three demonstrations planted and shown red. Strip builder with its zero-count clause removed: <<reported success over a log carrying no error report>>. Options demonstration fed the M35 form: <<the bounded mutation changed bytes outside the `mainfontoptions:` block: it emitted 111 character(s) against the 1268 the fixture carries with that block cut out>> — the M35 range deleted the document's body, which is M35-F13 measured. README demonstration fed the M35 form: <<the bounded form added 2 unstated line(s)>>. Unplanted, the self-test is green at 494 checks, up from 491.
+
+- 2026-08-25: T7 — the face list is printed on a green run (4 faces, named), the recipe-block check's comment and both pass lines now say the fixture direction is a whole-file substring search rather than a front-matter line test, and the `M33_NOENGINE_PRODUCER` ORACLE RULE comment states that it and README's `lualatex` are two hand statements no check compares. All four dispositions, F3's fold into T1 among them, are in the Decisions section above. Self-test green at 496 checks.
+
+- 2026-08-25: T8 — both modes green off the merge base a631685: 354 plain (was 352) and 496 self-test (was 491). Plain gains the two font-guard domain lines, one per `require_pdf_tools` call site; the self-test gains those two plus the three bounded-mutation demonstrations. Nothing dropped. Status review.
+- 2026-08-25: review — all five criteria verified with fresh evidence; gate green (cairn_validate exit 0, generic profile names no toolchain checks). Three fresh-context reviewers reported thirteen findings: five fixed on the branch, four absorbed into the acceptance-suite hardening candidate row, four rejected. No return-floor trigger. Both suite modes re-run green after the fixes at 354 / 496.
 
 ## Decisions
 
+- 2026-08-25 (F3, folded into T1). A `mainfont:` in quotes, a flow-style
+  `mainfontoptions:`, or a block with no `Extension=` are all shapes
+  `recipe_font_files` mis-parses. The parser is not widened. Each of them now
+  surfaces as the face the guard could not assemble — a `kpsewhich` miss naming
+  a filename the machine does not carry — which is a thing the reader can look
+  at and act on, where a parse report would name a YAML shape the fixture is
+  free to change. The fixture is one file in this repo, written by whoever
+  changes the recipe; a parser covering every YAML spelling of it would be
+  checker-regress on an input class nobody is going to write.
+- 2026-08-25 (F6). The face list is printed on a green run rather than
+  discarded. It is the guard's domain, parsed out of the fixture, so a run that
+  probed one face and a run that probed four are otherwise the same green line.
+  No criterion binds this: it is what a check prints, not what the suite
+  certifies.
+- 2026-08-25 (F8). The recipe-block check's fixture direction stays a
+  whole-file substring search, and its comment and pass line now say so — each
+  stated line occurs somewhere in the `.qmd`, not necessarily in its front
+  matter. Narrowing the claim, not widening the check: what this clause is for
+  is catching a stated line the fixture no longer carries at all, and the front
+  matter is read for real by `recipe_font_files` and by the render the
+  typeset-print check judges.
+- 2026-08-25 (F12). `M33_NOENGINE_PRODUCER` and README's `lualatex` stay two
+  hand statements, and the ORACLE RULE comment now says that no check compares
+  them. They are not the same string — one is the Producer name LuaTeX writes,
+  the other the engine word a reader sets — so a comparison would encode a rule
+  about LuaTeX's own naming that this suite has no independent statement of.
+  Keeping them in step is a maintainer's job, and the comment is where a
+  maintainer would look.
+
 ## Review
+
+_Evidence is fresh, run on this branch at 28fce3e against merge base a631685._
+
+### Acceptance criteria
+
+- AC1 — verified. `--self-test` green; its plant line reports the guard reading
+  4 faces out of `examples/unicode.qmd` and going red on four planted defects,
+  "each reported as the cause it is, with only the first naming the stix2-otf
+  package". The three front-matter causes reach the terminal as
+  `recipe_font_files`' own exits (`tests/run-tests.sh:1409-1430`); the
+  `kpsewhich` miss is the only path carrying the package sentence (`:1457`).
+- AC2 — verified. `grep -n '\[ -n "\$faces" \]' tests/run-tests.sh` and
+  `grep -n 'if not stated' tests/run-tests.sh` both return no match at HEAD;
+  `git diff main..HEAD` carries each as a deleted line. No pass line was left
+  behind that only those clauses could reach.
+- AC3 — verified. `pdf_producer_names` reads `pdfinfo` into a variable and
+  absorbs its status there (`tests/run-tests.sh:1482`). The self-test calls it
+  on `notapdf.pdf` from a backgrounded subshell under `set -eo pipefail`, read
+  back with `wait` (`:12623-12626`) — outside any `&&`/`||` list — and asserts
+  both the status and the presence of the `carries no Producer line` report
+  (`:12628-12631`); the report assertion is what separates reporting from dying.
+  Green in the self-test run.
+- AC4 — verified. Three self-test lines, all green: the options-block mutation
+  is bounded by the `mainfontoptions:` block's own extent and, on a fixture
+  where the M35 form ran to end of file, leaves every byte outside the block
+  unchanged; the extra-line README mutation is bounded to the
+  `### Terms outside Latin-1` section and, on a document carrying a second
+  `Extension=.otf` line in an appendix where the M35 form inserted twice,
+  inserts once and leaves every byte outside the section unchanged; the
+  `norejection.log` mutation names what it could not find rather than emitting
+  an empty log. Each of the three exits non-zero naming what it could not find
+  over an input carrying no region of the kind its label names. Each
+  demonstration also asserts the M35 form differs on that fixture, so a fixture
+  that stopped discriminating goes red rather than green.
+- AC5 — verified. `tests/run-tests.sh` exits 0 at 354 checks;
+  `tests/run-tests.sh --self-test` exits 0 at 496 checks. Merge base a631685
+  was 352 / 491.
+
+### Consistency gate
+
+- `cairn_validate.py` exit 0, all 16 checks PASS and all 7 advisories OK —
+  `coverage complete` and `scaffold present` among them. The `release window`
+  advisory did not fire.
+- `cairn_impact.py` skipped: the diff changes no `DESIGN.md` principle (the
+  header's `Principles touched: GP1` records a principle the work operates
+  under, not one it changed).
+- Toolchain checks: the `generic` profile's `consistency-gate` slot names none
+  — a clean no-op.
+
+### Independent review
+
+Three fresh-context reviewers, distinct evidence bases, none having seen the
+implementation: [O] diff-bug over `git diff main..HEAD`, [S] blame-history over
+`git blame`/`git log` on the modified lines, [S] prior-review over archived
+`## Review` sections (its GitHub probe returned no inline review comments, so
+that surface was skipped). Thirteen findings reported; each is listed with its
+disposition. No finding demonstrated an acceptance criterion failing inside its
+named procedure's domain, and none was judged a load-bearing defect in what the
+suite does for its reader, so the return floor did not fire.
+
+**Fixed now** (all in `tests/run-tests.sh`, committed on the branch before
+approval):
+
+- [O]-1. The `kpsewhich` miss reported "the TeX Live `stix2-otf` package is
+  missing" as a bare diagnosis, false with a no-op remedy for the mis-parse
+  class the F3 disposition deliberately routes there (a quoted `mainfont:`
+  assembles `"STIXTwoText"-Regular.otf`, which misses). The report now names
+  the mis-spelled-face reading beside the package one, and the comment says why
+  the guard cannot tell them apart. AC1's "only the last names the package"
+  still holds, and the four plants still discriminate on that substring.
+- [O]-3. The plain-call status assertion's failure text claimed "a status it
+  did not choose", which that clause cannot establish — the old form also exits
+  1 there. Reworded to say what the clause does bound and to point at the report
+  assertion that carries AC3.
+- [O]-4. The comment beside AC2's removed `if not stated:` clause argued
+  unreachability from `set -u` stopping an empty array, true on bash 3.2 and
+  false on bash 4.4 and later. The `set -u` argument is withdrawn; the
+  machine-independent one already beside it — the self-test plants each name one
+  stated line and could not go red over an empty list — is now stated as the
+  whole of it.
+- [O]-5. `pdf_producer_names`' comment said "the two `return`s below"; there are
+  three, and the `printf | sed | sed` it does not mention is still a pipeline.
+  Corrected, with why that pipeline cannot fail on caller-suppliable input.
+- [O]-6. The same comment said "Both of M35's call sites"; there were three.
+  Corrected.
+
+**Follow-up** — absorbed into the existing acceptance-suite hardening candidate
+row (search-first: the row already covers where a check reads and what it holds):
+
+- [O]-2. The options-block bound assertion recomputes the bound with the same
+  regex the builder uses, so it catches a slicing slip but not a wrong region
+  definition; only the `m35 == bounded` guard beside it is an independent force.
+- [O]-7. The section-end regex `^#{2,3} ` matches at offset 1 of a `#### `
+  heading, so a `####` subsection inside `### Terms outside Latin-1` would
+  truncate the bound mid-line. The pre-existing copy in `check_recipe_block`
+  shares it and would report a wrong fenced-block count.
+- [O]-8. Both mutation anchors match anywhere in the file, code fences included;
+  today the bounds hold only because the real anchors precede any such prose.
+- [O]-9. The strip mutation's loud-failure fixture is hand-written rather than
+  derived from a real log, so a later change to the builder's `! ` detection
+  would leave the demonstration green for an unrelated reason. Its two siblings
+  derive theirs.
+
+**Rejected:**
+
+- [O]-10. The two `*_m35_form` builders run unchecked. Out of scope as a style
+  point the downstream count and byte-identity assertions already cover.
+- [S] prior-review's own low-confidence candidate: `m37_strip_error_reports`
+  swallowing an unclosed final `! ` report to EOF echoes the shape M36-F2 fixed
+  in `unicodeprint.py`. Rejected for the reviewer's own reason — M36's finding
+  was about a reader misattributing survived text, where this is a mutation
+  builder whose job is to strip every report including a trailing unclosed one.
+- [S] blame-history and [O] both noted the Scope section cites `D-118`, which is
+  not a decision in this repo (`DECISIONS.md` runs to D-020) and which M36's
+  review already rejected as cairn's own id. It arrived on `main` in the plan
+  commit, so it is not this branch's change; Scope is plan-owned and the file is
+  about to be replaced by its archive summary. Logged here, and the archive
+  summary states the F6/F8/F12 disposition without the invalid citation.
+
+[S] blame-history found no other conflict with prior intent in the executable
+diff, and confirmed both removed clauses were introduced by M35 itself and
+dead by construction. [S] prior-review found no regression of any archived
+review finding.
+
+### Post-fix re-verification
+
+Both suite modes re-run after the five fix-now repairs: plain exits 0 at 354
+checks, `--self-test` exits 0 at 496. Counts unchanged; the repairs are message
+and comment text plus one report string the plants still discriminate on.

@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M35: The non-Latin-1 checks fail on the defects they claim to catch
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -109,7 +109,7 @@ its own milestone.
       (`tests/run-tests.sh:4417`) with a stated recipe-line list the block
       must equal, each line also required in the fixture. Plant a dropped
       `pdf-engine:` line in a copy of README and show it red.
-- [ ] T7: run both suite modes; record the check counts; update the M33
+- [x] T7: run both suite modes; record the check counts; update the M33
       section comments that describe what each reading now reads, and the
       `pass` lines that summarize it.
 
@@ -127,6 +127,7 @@ its own milestone.
 - 2026-08-24: T4 — the font guard now parses `examples/unicode.qmd`'s `mainfont:` stem and `mainfontoptions:` `*Font=` lines into filenames (4 faces here, was 1 hardcoded) and probes each with `kpsewhich`; four plants show it red on a copy of the fixture with a face renamed to a file no TeX tree carries, with no `*Font=` key, with no options block, and with no `mainfont:`, and the unplanted fixture is required green first. Self-test 488 checks, exit 0.
 - 2026-08-24: T5 — `pdfinfo` joined the tool guards at a question gate and is recorded as D-020; control (d) now reads its own capture's `Producer` line and requires it to name `LuaTeX`, with two plants — this suite's own xelatex recipe capture, and a file carrying no `Producer` line. Self-test 490 checks, exit 0.
 - 2026-08-24: T6 — the README recipe block is now held to `README_RECIPE_LINES`, eight lines the suite states under an ORACLE RULE, equal in both directions and in order, with each stated line still required in the fixture; four plants show it red on a dropped `pdf-engine:` line, a reordering, an unstated line, and a stated line the fixture no longer carries. The `README_UNICODE_CLAIMS` header comment saying control (d) never reads which engine produced its render was corrected in the same commit — T5 made it false. Self-test 491 checks, exit 0.
+- 2026-08-24: T7 — the M33-AC3 and M33-AC4 section comments now describe the level-qualified positive signal, control (d)'s producer reading, and the two-directional block check. Check counts: merge base 351 plain / 487 self-test; this branch 352 plain / 491 self-test (+1 plain, the producer reading's own line; +4 self-test, that line plus the three new M35 plant summaries). One plain run died on a Quarto segfault rendering marker-sites.qmd to gfm, unrelated to this branch; the immediately following self-test run and a re-run of plain mode both passed clean.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

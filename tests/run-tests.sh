@@ -4399,10 +4399,13 @@ pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engi
 # five renders.
 #
 # (b) and (c) are read for a POSITIVE signal as well as an absence: each has to
-# print the fixture's ASCII term's own entry line before its missing Greek or
-# CJK entry line means anything. Without it a render whose index failed to
-# print at all — no heading, no entries, a wrecked build — would satisfy "no
-# entry line carries this term" exactly as a dropped glyph does.
+# print the fixture's ASCII term's own entry line, at the level the suite states
+# for it, before its missing Greek or CJK entry line means anything. Without it
+# a render whose index failed to print at all — no heading, no entries, a
+# wrecked build — would satisfy "no entry line carries this term" exactly as a
+# dropped glyph does, and without the level a render that demoted the term under
+# a parent would satisfy it too. The absent side stays level-free on purpose: a
+# term printed anywhere at all is a term this render did print.
 #
 # (d) is NOT a fourth signature of the pair AC3 names, and under this recipe's
 # font it is not a failure at all. It is the control under README's "no engine
@@ -4413,7 +4416,11 @@ pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engi
 # every term the fixture marks prints as its own entry line. Under M33's `stix`
 # the same control dropped `Việt`; the engine line stopped being what saves the
 # reader when the font changed, which is why README now tells them to set it
-# for a reason that is not today's output.
+# for a reason that is not today's output. (d) also reads WHICH engine wrote
+# its capture, out of the PDF's own Producer line: the paragraph it tests names
+# lualatex by name, and a Quarto that quietly defaulted to something else would
+# leave every reading of the printed index green while that sentence went
+# false (D-020).
 # ---------------------------------------------------------------------------
 M33C="$WORK/m33-controls"
 rm -rf "$M33C"; mkdir -p "$M33C/_extensions"
@@ -4534,9 +4541,12 @@ pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 
 # M33-AC4 — the README section a reader acts on. Two checks, because the
 # section has two jobs. The claims are held verbatim (whitespace normalized on
 # both sides, so a rewrapped sentence still counts and a stale one cannot hide
-# behind a line break); the YAML block a reader COPIES is held line for line
-# against examples/unicode.qmd, which is the document the checks above prove
-# the recipe on. Prose cannot hold a copyable block (the M32 lesson).
+# behind a line break); the YAML block a reader COPIES is held to the line list
+# README_RECIPE_LINES states — equal, in order, in both directions — with each
+# stated line also required in examples/unicode.qmd, which is the document the
+# checks above prove the recipe on. Prose cannot hold a copyable block (the M32
+# lesson), and a one-directional containment test cannot hold one either: it
+# passes on a block with a line missing.
 # ---------------------------------------------------------------------------
 printf '%s\n' "${README_UNICODE_CLAIMS[@]}" > "$WORK/readme-unicode.txt"
 python3 - "$WORK/readme-unicode.txt" README.md <<'M33DOCPY' \

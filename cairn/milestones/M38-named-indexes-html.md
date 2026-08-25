@@ -134,7 +134,7 @@ collation rules — nothing here changes how one index is ordered or printed.
 - [x] T14: Report a second marker naming the same non-default index under fold,
       rather than dropping it silently, so README's claim holds in PDF and in
       books (R4).
-- [ ] T15: Give the declared-order rule a fixture that marker order cannot
+- [x] T15: Give the declared-order rule a fixture that marker order cannot
       satisfy — the markerless append path, and a document whose marker order
       differs from its declared order (R5).
 - [ ] T16: Make AC6's command check read what the suite runs rather than
@@ -199,6 +199,8 @@ collation rules — nothing here changes how one index is ordered or printed.
 - 2026-08-25: T14 — the duplicate report follows from T12's authored-index keying: a second marker naming the same folded-away index is now the second marker of THAT index rather than a marker of the built one, so it draws the duplicate report naming it instead of being dropped. `examples/named-indexes-foldsecond.qmd` writes two `authors` markers and no marker for the built index, which is also the one fixture drawing the fold shape for the marker that DOES place the one index; the M38-R4 check reads off the captured `.tex` that `\printindex` follows the first site alone, counts the two fold shapes 1 and 0, and reads the one duplicate report by the index it names. Suite green, 375 checks.
 
 - 2026-08-25: T13 — `indexes.title` returns the neutral `Index` wherever a declaring document folds, the same reason `section_id` keeps that section's id bare; the code landed with T11's commit, its check and the DESIGN correction here. `examples/book/`'s first declaration was retitled `Index of Subjects` so the fixture can tell the two apart, and the M38-R3 check reads the one section off the captured book page — one section, bare id, `h1`, headed `Index` — probed red by planting `Index of Subjects` into that heading on a copy of this run's capture. KI10's inventory was corrected against `tests/stateprobe.py`'s `CELLS`: 15 cells there plus `indexes.lua`'s four is 19, not the 17 the entry claimed, whose prose named neither `contested_keys` nor the new four. The entry now also records that M26's probe proves 15 of the 19 — the four new cells are reset per document but sit outside its enumeration, and the fixtures it drives declare no indexes, so a removed reset for them would show nothing to compare; that gap is a follow-up, not a repair this return covers. Suite green, 376 checks.
+
+- 2026-08-25: T15 — `examples/named-indexes-order.qmd` declares three indexes and writes one marker, for the last of them, so the page's section order is Third, First, Second: neither the declared order nor the marker order, and the two appended indexes are in declared order, which is the one place that rule is the rule rather than a coincidence of where the markers were written. The M38-R5 manifest is derived by hand from the fixture and the two documented rules, and the fixture draws no report at all. Note for the record: section order follows marker order wherever markers exist, and declared order only for the appended ones — AC1's evidence stands because its fixture writes its markers in declared order, so both readings agree there. Suite green, 378 checks.
 
 ## Review
 

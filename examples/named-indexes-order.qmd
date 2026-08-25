@@ -1,0 +1,36 @@
+---
+title: "quarto-index declared order probe"
+indexes:
+  - name: alpha
+    title: First Declared
+  - name: beta
+    title: Second Declared
+  - name: gamma
+    title: Third Declared
+filters:
+  - index
+---
+
+# What this document is for
+
+Three indexes are declared and exactly one marker is written, for the LAST of
+them. So the third index prints where its marker stands, in the middle of the
+document, and the two no marker names are appended at the end — in the order
+they were declared, which is the one place declared order is the rule rather
+than a coincidence of where the markers were written.
+
+The section order on the page is therefore Third, First, Second: neither the
+declared order nor the marker order, but what the two rules together say.
+
+One term files in each index: [Alpha term]{.index index="alpha"},
+[Beta term]{.index index="beta"}, [Gamma term]{.index index="gamma"}.
+
+# Where the third index goes {#site-gamma}
+
+::: {.qi-index-here index="gamma"}
+:::
+
+# After the marker {#after-marker}
+
+Nothing below places anything. The two unplaced indexes follow the end of this
+section, in declared order.

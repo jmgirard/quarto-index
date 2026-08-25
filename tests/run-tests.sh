@@ -12455,6 +12455,47 @@ grep -F -- "$WARN_MARKER_DUP_NAMED" "$WORK/named-indexes-foldsecond-latex.log" \
   || fail "M38-R4: the duplicate report does not name the index the second marker repeats"
 pass "M38-R4: a second marker naming an index a folded back-end does not build is reported as the second marker it is, naming that index, rather than dropped in silence"
 
+# ---------------------------------------------------------------------------
+# M38-R5 — declared order, in the one shape where marker order cannot stand in
+# for it.
+#
+# named-indexes.qmd writes its markers in declared order, so section order
+# there equals marker order and declared order at once and a manifest over it
+# cannot tell which rule produced it. examples/named-indexes-order.qmd
+# separates them: three indexes are declared and ONE marker is written, for the
+# last of them.
+#
+# ORACLE — derived by hand from the fixture and the two documented rules. Each
+# index is placed at the first marker naming it, so `gamma` prints where its
+# marker stands, mid-document, after `site-gamma`. An index no marker names
+# goes at the end of the document in DECLARED order, so `alpha` then `beta`
+# follow, both after the last authored element on the page. Section order is
+# therefore Third, First, Second: neither the declared order (alpha, beta,
+# gamma) nor the marker order (gamma alone), which is what makes this manifest
+# evidence about the rules rather than about a coincidence.
+# ---------------------------------------------------------------------------
+read -r -d '' NAMED_INDEX_ORDER_SECTIONS <<'MANIFEST' || true
+section	qi-index-gamma	h1	Third Declared	site-gamma
+letter	G
+0	Gamma term	1
+section	qi-index-alpha	h1	First Declared	after-marker
+letter	A
+0	Alpha term	1
+section	qi-index-beta	h1	Second Declared	after-marker
+letter	B
+0	Beta term	1
+MANIFEST
+quarto render examples/named-indexes-order.qmd --to html \
+  > "$WORK/named-indexes-order-html.log" 2>&1 \
+  || { tail -30 "$WORK/named-indexes-order-html.log" >&2; fail "M38-R5: named-indexes-order.qmd failed to render to HTML"; }
+capture examples/named-indexes-order.qmd html "named-indexes-order-html"
+check_index_sections \
+  "$CAPTURE_ROOT/named-indexes-order-html/named-indexes-order.html" \
+  "$NAMED_INDEX_ORDER_SECTIONS" "M38-R5"
+check_extension_warning_count "$WORK/named-indexes-order-html.log" 0 \
+  "M38-R5 (a document whose markers are fewer than its indexes draws no report)"
+pass "M38-R5: an index no marker names is appended at the end of the document and the appended ones are in declared order, in a document whose section order is neither its declared order nor its marker order"
+
 # The twin: the shape this milestone leaves untouched. One section under the
 # bare id, every judgement made across the whole document, and no warning.
 quarto render examples/named-indexes-twin.qmd --to html \

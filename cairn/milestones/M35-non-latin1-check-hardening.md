@@ -100,7 +100,7 @@ its own milestone.
       (`tests/run-tests.sh:1373`) with a parse of `examples/unicode.qmd`'s
       `mainfontoptions` block into font filenames, each probed. Show the guard
       red with one face made unfindable, and show its parse non-empty.
-- [ ] T5: add `pdfinfo` to the tool guards beside `pdftotext`
+- [x] T5: add `pdfinfo` to the tool guards beside `pdftotext`
       (`tests/run-tests.sh:1365`), and read the no-engine capture's producer
       at control (d) (`tests/run-tests.sh:4380`), held to a producer string
       the suite states. Show it red against the recipe capture, which this
@@ -125,6 +125,7 @@ its own milestone.
 - 2026-08-24: T1+T2 landed together — the reader change and its call sites cannot be green apart, so one commit ticks both; `entries` and `absent` now take `<level>:<term>`, assert `columns_carry_top_level` before reading a level, and three new plants cover the two level clauses and the pair form (15 M33 plants -> 18); suite 351 checks, exit 0.
 - 2026-08-24: T3 — `stopped` now parses the log into TeX error reports (`! ` opens one, the echoed `l.<n>` line closes it) and requires the signature and an indexed character in the SAME report; its three plants are all mutations of the engine control's LaTeX log — rejection deleted, character replaced, the two split into separate errors. The M33 plant summary said "fifteen plants over fifteen reachable clauses" while the file held sixteen plants naming fourteen distinct clauses; it now states the counts the file has (twenty plants, eighteen distinct clauses). Self-test 487 checks, exit 0.
 - 2026-08-24: T4 — the font guard now parses `examples/unicode.qmd`'s `mainfont:` stem and `mainfontoptions:` `*Font=` lines into filenames (4 faces here, was 1 hardcoded) and probes each with `kpsewhich`; four plants show it red on a copy of the fixture with a face renamed to a file no TeX tree carries, with no `*Font=` key, with no options block, and with no `mainfont:`, and the unplanted fixture is required green first. Self-test 488 checks, exit 0.
+- 2026-08-24: T5 — `pdfinfo` joined the tool guards at a question gate and is recorded as D-020; control (d) now reads its own capture's `Producer` line and requires it to name `LuaTeX`, with two plants — this suite's own xelatex recipe capture, and a file carrying no `Producer` line. Self-test 490 checks, exit 0.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

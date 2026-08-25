@@ -621,6 +621,13 @@ M33_GREEK=(θεωρία ψυχή)
 M33_ASCII=Ascii
 M33_ASCII_ENTRY="0:$M33_ASCII"
 M33_CJK=漢字
+# ORACLE RULE. The engine README's `### Terms outside Latin-1` third path names
+# for a document that sets the font and no `pdf-engine:` — stated here by hand
+# from that paragraph, never read back out of a render. The name only, not the
+# version: a TeX Live update that bumps the version says nothing about which
+# engine ran, and a check that went red on it would be red for no reason a
+# reader could act on.
+M33_NOENGINE_PRODUCER=LuaTeX
 # The captures the M33 checks and the self-test both read, named once.
 M33_PDF="$CAPTURE_ROOT/m33-recipe/unicode.pdf"
 M33_ENGINE_LOG="$CAPTURE_ROOT/m33-engine/engine.log"
@@ -1406,6 +1413,27 @@ require_recipe_fonts() {
   printf '%s\n' "$files"
 }
 
+# Which program wrote a PDF, read out of the PDF itself. A render's exit code
+# and its printed index say nothing about the engine that produced them, so a
+# control that exists to pin one engine's behaviour has to read the artifact's
+# own Producer line — and read it from the CAPTURE, which is the artifact the
+# rest of this suite is judging, not from a build scratch file.
+pdf_producer_names() {
+  local pdf="$1" want="$2" producer
+  producer=$(pdfinfo "$pdf" 2>/dev/null | sed -n 's/^Producer:[[:space:]]*//p' | head -1)
+  if [ -z "$producer" ]; then
+    printf 'FAIL: %s carries no Producer line, so which program wrote it cannot be read\n' "$pdf" >&2
+    return 1
+  fi
+  case "$producer" in
+    *"$want"*)
+      printf 'ok   %s was produced by %s, which names %s\n' "$pdf" "$producer" "$want"
+      return 0 ;;
+  esac
+  printf 'FAIL: %s was produced by %s, which does not name %s\n' "$pdf" "$producer" "$want" >&2
+  return 1
+}
+
 # ---------------------------------------------------------------------------
 # Tool guard (AC6): fail loudly rather than skipping the end-to-end check.
 # ---------------------------------------------------------------------------
@@ -1435,6 +1463,12 @@ require_pdf_tools() {
     || fail "pdflatex not found on PATH (the escaping probe invokes it directly). AC6 must never pass unrun."
   command -v pdftotext >/dev/null 2>&1 \
     || fail "pdftotext not found on PATH. AC6 must never pass unrun."
+  # Ships in the same poppler package as pdftotext above. Control (d) reads
+  # which engine wrote its capture out of the PDF's own Producer line, and a
+  # missing tool there would leave that control silent about the one thing it
+  # is the test of.
+  command -v pdfinfo >/dev/null 2>&1 \
+    || fail "pdfinfo not found on PATH (it ships with pdftotext, in poppler). AC6 must never pass unrun."
 
   # The recipe names a main font by file, so every face it names has to be
   # findable the same way fontspec finds it. Without this the four M33 renders
@@ -4460,7 +4494,15 @@ capture "$M33C/noengine.qmd" pdf "m33-noengine"
 python3 tests/unicodeprint.py entries "$CAPTURE_ROOT/m33-noengine/noengine.pdf" \
   "${M33_TERMS[@]}" \
   || fail "M34-AC4 control (d): with no pdf-engine set a term the fixture marks does not print as its own entry, so README's 'no engine set' paragraph states an index that prints correctly where this one does not (its own FAIL line is above)"
-pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 0 and all ${#M33_TERMS[@]} of the fixture's terms print as their own entry at the level the suite states in the typeset index"
+# The index printing correctly is only half of what this control claims. The
+# other half is WHICH engine printed it: README's third path says Quarto's
+# default is lualatex and that the font, not the engine line, is doing the
+# work here. A Quarto that quietly defaulted to xelatex would leave every
+# reading above green while that sentence went false, and nothing but the
+# capture's own Producer line can tell the two apart.
+pdf_producer_names "$CAPTURE_ROOT/m33-noengine/noengine.pdf" "$M33_NOENGINE_PRODUCER" \
+  || fail "M34-AC4 control (d): the no-engine capture was not produced by $M33_NOENGINE_PRODUCER, so README's 'no engine set' paragraph names an engine that is not the one Quarto defaulted to here (its own FAIL line is above)"
+pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 0 under $M33_NOENGINE_PRODUCER — read from the capture's own Producer line — and all ${#M33_TERMS[@]} of the fixture's terms print as their own entry at the level the suite states in the typeset index"
 
 # ---------------------------------------------------------------------------
 # M33-AC4 — the README section a reader acts on. Two checks, because the
@@ -11970,6 +12012,7 @@ if [ "${1:-}" = "--self-test" ]; then
 
   M33W="$WORK/m33-plant"
   rm -rf "$M33W"; mkdir -p "$M33W"
+  printf 'not a PDF at all.\n' > "$M33W/notapdf.pdf"
 
   # The unplanted readings must be green first, or no failure below is
   # evidence of anything — it would be the copy that was wrong, not the plant.
@@ -12186,6 +12229,23 @@ M33SPLITPY
     "$M33W/nomainfont.qmd"
 
   pass "M35: the recipe font guard reads its face list out of examples/unicode.qmd, probes the $(printf '%s\n' "$M35_FACES" | wc -l | tr -d ' ') faces that block names, and goes red on four planted defects — a face no TeX tree carries, an options block naming no face, no options block, and no main font"
+
+  # --- Control (d)'s producer reading. The plant is not a mutation: this suite
+  # already writes a capture under a different engine — the recipe render,
+  # which sets `pdf-engine: xelatex` — and pointing the reading at it is the
+  # whole plant. A reading that could not tell the two apart would be green on
+  # both.
+  M35_PRODUCER_OUT=$(pdf_producer_names "$M33_PDF" "$M33_NOENGINE_PRODUCER" 2>&1) \
+    && fail "M35 self-test: the producer reading called the xelatex recipe capture a $M33_NOENGINE_PRODUCER render, so its green on control (d) says nothing about which engine ran"
+  printf '%s' "$M35_PRODUCER_OUT" | grep -qF -- 'does not name' \
+    || { printf '%s\n' "$M35_PRODUCER_OUT" >&2; fail "M35 self-test: the producer reading rejected the xelatex recipe capture, but not with <<does not name>> — that failure is not this clause catching this defect"; }
+
+  M35_PRODUCER_OUT=$(pdf_producer_names "$M33W/notapdf.pdf" "$M33_NOENGINE_PRODUCER" 2>&1) \
+    && fail "M35 self-test: the producer reading passed a file that is not a PDF at all, so an unreadable capture would read as the right engine"
+  printf '%s' "$M35_PRODUCER_OUT" | grep -qF -- 'carries no Producer line' \
+    || { printf '%s\n' "$M35_PRODUCER_OUT" >&2; fail "M35 self-test: the producer reading rejected the non-PDF, but not with <<carries no Producer line>> — that failure is not this clause catching this defect"; }
+
+  pass "M35: control (d)'s producer reading names $M33_NOENGINE_PRODUCER on the no-engine capture and goes red on this suite's own xelatex capture and on a file carrying no Producer line at all"
 
   # The two self-checks' own discrimination. Each reads the suite's own source
   # for a SHAPE, which is the reading M23's lesson names as certifying a

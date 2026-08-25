@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP4, GP5
-- **Branch/PR:** m038-named-indexes-html
+- **Branch/PR:** m038-named-indexes-html · https://github.com/jmgirard/quarto-index/pull/38
 
 ## Goal
 
@@ -37,19 +37,19 @@ collation rules — nothing here changes how one index is ordered or printed.
 
 ## Acceptance criteria
 
-- [ ] AC1: An HTML render of `examples/named-indexes.qmd`, whose metadata
+- [x] AC1: An HTML render of `examples/named-indexes.qmd`, whose metadata
       declares two indexes, prints one section per declared index in declared
       order. `tests/htmlindex.py` reads the captured page and asserts, for
       each declared index, the section heading's tag and text, the section
       id, and the exact set of top-level entry texts listed under it, against
       a manifest derived from that fixture's marks.
-- [ ] AC2: A cross-reference target resolves only within its own index. In
+- [x] AC2: A cross-reference target resolves only within its own index. In
       that fixture a `see=` on a mark of the second index whose target names
       a term marked only in the first draws the dangling-target report, and a
       `see=` on a mark of the first index naming that same term draws none;
       both readings come from the captured render log, greped by the report's
       own key.
-- [ ] AC3: The sort-key registry and range pairing are keyed within one
+- [x] AC3: The sort-key registry and range pairing are keyed within one
       index. In that fixture a term carrying `sort=` in the first index sits
       in the letter group its key selects while the same term with no sort
       key in the second index sits in the letter group its own text selects;
@@ -57,14 +57,14 @@ collation rules — nothing here changes how one index is ordered or printed.
       same term in the second leaves the never-closed report for the opening
       and the never-opened report for the closing in the captured log, each
       of the two marks printing an ordinary locator in the captured HTML.
-- [ ] AC4: A placement marker names the index it places, and the
+- [x] AC4: A placement marker names the index it places, and the
       first-marker rule applies per index. In a fixture writing three markers
       — one per declared index, plus a second for the first index — the
       captured HTML carries each index's section at its own marker's
       position, asserted by the id of the element preceding the section, and
       the captured log carries exactly one duplicate-marker report, naming
       the repeated index.
-- [ ] AC5: A named index outside HTML degrades without loss. A PDF render of
+- [x] AC5: A named index outside HTML degrades without loss. A PDF render of
       the same fixture leaves in the captured `.tex` an `\index{}` command
       for every mark the fixture's manifest lists, each carrying the argument
       the default index gives it, exactly one `\printindex`, and no marker
@@ -72,12 +72,12 @@ collation rules — nothing here changes how one index is ordered or printed.
       one per named-index marker, each naming the index and saying the mark
       was indexed in the document's one index instead. The same two
       properties hold for a chapter of `examples/book/` rendered to HTML.
-- [ ] AC6: README's new section states the metadata declaration form, the
+- [x] AC6: README's new section states the metadata declaration form, the
       `index=` attribute on a mark and on a placement marker, the rule that
       an unnamed mark files in the first declared index, and that a PDF
       render and a book index everything in one index for now; every fixture
       path and command that section names exists in the repo and runs clean.
-- [ ] AC7: `tests/run-tests.sh --self-test` passes, with a planted defect for
+- [x] AC7: `tests/run-tests.sh --self-test` passes, with a planted defect for
       each clause of each reader this milestone adds shown red before its
       green is trusted.
 
@@ -165,3 +165,78 @@ collation rules — nothing here changes how one index is ordered or printed.
   document declaring no indexes keeps the bare `qi-index` it has today.
 
 ## Review
+
+Reviewed 2026-08-25 on m038-named-indexes-html at d9ac001 (+ this section),
+PR #38. `main` had not moved since the branch was cut, so no merge was needed.
+Fresh evidence: one full `tests/run-tests.sh --self-test` run, exit 0, 520
+checks; plus direct reads of the captured artifacts named below.
+
+### Acceptance criteria
+
+- AC1 — PASS. The captured `named-indexes.html` carries exactly two generated
+  sections; `check_index_sections` matched all 18 manifest rows in order
+  (`M38-AC1`), and a direct read of `section_rows` over the same capture gives
+  `qi-index-main` / h1 / "Index" then `qi-index-authors` / h1 / "Index of
+  Authors" — declared order, each heading tag, text, id and top-level entry set
+  as the fixture's manifest states. Link and letter-group sweeps over both
+  sections passed (4 and 3 links resolved; 8 letter groups in order).
+- AC2 — PASS. Over the captured HTML render log, greped by the
+  dangling-target report's own key: exactly one such report, and it names
+  `Stranger`, the second index's mark whose `see=` targets `Aardvark` — a term
+  only the first index carries. The first index's `Neighbour`, whose `see=`
+  names that same `Aardvark`, draws none and renders as a resolved
+  `see-link`, while `Stranger` renders as `see-plain`.
+- AC3 — PASS. Both halves read from the same capture. Sort keys: the direct
+  `section_rows` dump shows `Hague` under letter group Z in `qi-index-main`
+  (where a mark writes `sort="Zebra"`) and under H in `qi-index-authors` (where
+  no mark writes one). Range pairing: the captured log carries exactly one
+  never-closed report and exactly one never-opened report, and the section
+  manifest AC1 matched lists both `Cantor` marks with an ordinary locator
+  (locator count 1 in each section), so neither half printed a range.
+- AC4 — PASS. In the same capture each section's `after` field — the last
+  author-written id before it, minted ids skipped — is `site-main` for
+  `qi-index-main` and `site-authors` for `qi-index-authors`, so each index sits
+  at its own marker. The captured log carries exactly one duplicate-marker
+  report; a grep by the report's key confirms it names the repeated index, and
+  a second grep confirms the unnamed-index wording a declaring document must
+  not use is absent.
+- AC5 — PASS, both halves. LaTeX: the captured `named-indexes.tex` carries 8
+  `\index{}` commands matching all 7 manifest rows, exactly one `\printindex`,
+  and zero occurrences of the marker id — read directly off the capture as well
+  as by the suite's manifest and token checks. Each named-index mark carries
+  the argument the default index gives it, including `Zebra@Hague` for the
+  second index's `Hague`, which writes no sort key of its own. The captured log
+  carries one fold report per named-index mark (4) and one per named-index
+  marker (1), each naming the index the author wrote. Book: the captured
+  `book-html/_book/last.html` carries exactly one generated section, keeping the
+  bare `qi-index` id since it holds every index's marks, and `Turing` — the
+  chapter's `index="people"` mark — is listed in it; the captured book log
+  carries one fold report for that mark and one for the named marker.
+- AC6 — PASS. Read directly from `README.md`'s `### Named indexes` section: it
+  shows the `indexes:` metadata form with `name`/`title` and says what each
+  does; shows `index=` on a mark and on a placement marker, each with an
+  example; states that a mark or marker naming none takes the first declared
+  index; and states under its own subheading that a LaTeX or PDF render and an
+  HTML book each build a single index for now, folding and reporting every
+  named-index mark and marker. The suite's `M38-AC6` check confirmed the
+  section's pinned claims are present, that the 2 fixture paths it names exist,
+  and that the 2 commands it shows are commands this suite runs — the suite
+  being green is what "runs clean" reports.
+- AC7 — PASS. `tests/run-tests.sh --self-test` exited 0 with 520 checks. The
+  eight plants for this milestone's section reader each ran red on its own
+  clause — a section id, a section dropped from the set, a heading turned into
+  a non-heading element, a heading's text, the authored element a section
+  follows, an entry's text, plus a manifest naming no section and an empty one
+  — and a control asserted the reader passes on the same captured page
+  unplanted before any of them. Every plant is applied to a copy of this run's
+  own capture through the no-op-refusing helper, so a plant that changed
+  nothing would itself fail.
+
+### Consistency gate
+
+- `cairn_validate.py` exit 0 — every check PASS, every advisory OK; the
+  `release window` advisory did not fire.
+- Toolchain checks: the active `generic` profile names none, so this half is a
+  clean no-op.
+- `cairn_impact.py` not run: the milestone added a `DESIGN.md` convention
+  bullet and changed no numbered principle's text.

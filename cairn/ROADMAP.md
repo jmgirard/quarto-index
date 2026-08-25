@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-24 (M33 merged and archived; two follow-up rows added — the stix/GP3 font question and M33's clustered suite-hardening set; M28's row aged out of the terminal five; caps, byte budgets and each doctrine module's own budget clean; check-design.md at 34/40 lines and 13,764/18,000 bytes; no prose-guard suite in this repo, and tests/run-tests.sh ran green at the gate.)_
+_Last hygiene check: 2026-08-24 (M34 merged and archived; the M33 suite-hardening row corrected — two items closed, the engine-pin follow-up absorbed; the M33 lesson on the no-engine path corrected in place; D-019 appended; M29's row aged out of the terminal five; caps and byte budgets clean at ROADMAP 50 lines / 9,043 bytes and LESSONS 44 lines / 11,521 bytes; check-design.md at 34/40 lines and 13,764/18,000 bytes; no prose-guard suite in this repo, and tests/run-tests.sh ran green at 351/487 at the gate.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M34 | The non-Latin-1 recipe names a font TeX Live still maintains | review | — | normal | milestones/M34-stix-two-recipe.md |
+| M34 | The non-Latin-1 recipe names a font TeX Live still maintains | done | — | normal | milestones/archive/M34-stix-two-recipe.md |
 | M33 | An index term outside Latin-1 prints in the PDF index | done | — | normal | milestones/archive/M33-non-latin1-terms.md |
 | M32 | An index follows the bibliography where the author puts it | done | — | low | milestones/archive/M32-index-after-references.md |
 | M31 | A leftover index file never breaks the next render | done | — | normal | milestones/archive/M31-stale-ind-standin.md |
 | M30 | A character in an index entry is proved to print, not merely to compile | done | — | normal | milestones/archive/M30-typeset-print-proof.md |
-| M29 | A marker report in a book names its chapter | done | M28 | normal | milestones/archive/M29-book-chapter-in-report.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

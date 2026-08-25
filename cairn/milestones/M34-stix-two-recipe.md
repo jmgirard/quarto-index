@@ -57,7 +57,7 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
       no-engine control render does under the new font — naming the term that
       does not print as itself where one does not, or saying the index prints
       correctly where none does.
-- [ ] AC5: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass,
+- [x] AC5: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass,
       at a check count no lower than the merge base's.
 
 ## Coverage
@@ -107,6 +107,7 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
 - 2026-08-24: the fixture's own render under STIX Two Text emits no `Missing character` line at all, where under `stix` it emitted one for U+1EC7. README's caveat about that line is a general xelatex fact and stands; the suite comment that cited the fixture's own log as the example was corrected.
 - 2026-08-24: T6 — branch runs 351 checks plain and 487 with `--self-test`, both green; the merge base (fd47dcc), run in a throwaway worktree under the same toolchain, runs 351 and 487 too, so neither count dropped.
 - 2026-08-24: all tasks done, suite green; status to review.
+- 2026-08-24: review — all five criteria verified with fresh evidence (branch 351/487 checks green, merge base fd47dcc 351/487); `cairn_validate` clean; the three review lenses returned 12 distinct findings, none demonstrating a criterion failing.
 
 ## Decisions
 
@@ -163,3 +164,79 @@ against `main` at fd47dcc (branch 3 commits ahead, nothing to merge back).
   green in the same run) reads all 8 terms out of that render as their own
   entry lines. The 16-row claims check and the section-content check are green
   too.
+- **AC5 — verified.** On the branch: `tests/run-tests.sh` exits 0 at 351
+  checks, `tests/run-tests.sh --self-test` exits 0 at 487. The merge base
+  (`fd47dcc`), re-run at review time in a throwaway worktree under the same
+  toolchain, exits 0 at 351 and 487. Neither count dropped.
+
+### Consistency gate
+
+`cairn_validate.py` exits 0 — all 16 checks PASS, all 7 advisories OK, the
+`release window` advisory among them (it did not fire). No `DESIGN.md`
+principle text changed (the diff touches the Known issues entry only), so
+`cairn_impact.py --changed` does not apply. The active profile is `generic`,
+whose `consistency-gate` slot names no toolchain checks, so that half of the
+gate is a clean no-op.
+
+### Review findings
+
+Three fresh-context lenses, user-facing tier, executable surface touched.
+[O] diff-bug returned 10, [S] blame-history 3 (one a duplicate), [S]
+prior-PR-comments 0 — the last after probing
+`repos/jmgirard/quarto-index/pulls/comments` (empty; no real inline threads
+exist) and reading the archived `## Review` sections that touch these files.
+No finding demonstrates an acceptance criterion failing, so none meets the
+return floor.
+
+- **F1 (fix now).** `tests/run-tests.sh:4222` still reads "the same line fires
+  on the recipe's own working render (U+1EC7 in `Việt`)". Confirmed false at
+  review: the recipe render's LaTeX log carries zero `Missing character` lines
+  under STIX Two Text. The work-log line claiming this comment was corrected is
+  itself wrong and needs superseding.
+- **F2 (follow-up).** Control (d) no longer discriminates on the engine. It now
+  asserts the same predicate as the recipe render on a document differing only
+  by a deleted `pdf-engine:` line, and nothing reads which engine ran, so a
+  Quarto whose default became `xelatex` would leave the control green while
+  README's "on Quarto 1.10 it is `lualatex`" went false. Verified at review that
+  the capture's producer is `LuaTeX-1.24.0`, so the claim holds today and the
+  gap is in the pin, not the prose.
+- **F3 (fix now).** `README.md:294` — "Leaving out either line changes what you
+  get — three paths in all" is contradicted by its own third bullet, where
+  leaving the engine line out changes nothing the reader can see.
+- **F4 (fix now).** `cairn/ROADMAP.md` — the M33 suite-hardening candidate row
+  still lists two items this diff closed (control (d) pinning only `Việt`'s
+  absence; the shared `M33-AC4` label) and a third naming STIX's four faces,
+  a font the repo no longer uses. ROADMAP is current knowledge, fixed in place
+  and marked.
+- **F5 (fix now).** `tests/run-tests.sh:517` — the rewritten comment singles out
+  `font-by-file-why` as the one row no render here executes, but
+  `fail-noengine-engine` and `rtl` are equally unexecuted.
+- **F6 (fix now).** `tests/run-tests.sh:4372-4377` — control (d)'s messages were
+  relabelled `M34-AC4`, but M34's AC4 is about README's prose and the
+  README-content check a few lines later still reads `M33-AC4`. Two checks now
+  compete for one label and neither matches its milestone's numbering.
+- **F7 (fix now).** `README.md:326` is 89 columns where the paragraph wraps at
+  ~78, and `README.md:886` is a two-word orphan line (`name),`) — both left by
+  the substitution.
+- **F8 (fix now).** `examples/unicode.qmd:22` says the by-file form beats
+  "whatever the operating system carries under the same family name", but the
+  fixture names `STIXTwoText`, not the family `STIX Two Text`; the sentence
+  should name the family it is contrasting with. README's wider claim about the
+  operating-system copy stays as the milestone's question gate settled it.
+- **F9 (reject — pre-existing, Scope Out).** The font guard probes only
+  `STIXTwoText-Regular.otf` of the four faces the recipe names. The diff rewrote
+  that line but the gap is inherited, and it is on the M33 suite-hardening
+  candidate row this milestone's Scope explicitly leaves out.
+- **F10 (reject — low confidence).** That the engine-line choice is
+  cross-cutting and belongs in `DECISIONS.md` rather than this milestone's own
+  Decisions section. It scopes to this milestone's prose; D-018 already carries
+  the cross-cutting half.
+- **F11 (fix now).** `cairn/DECISIONS.md` D-017's context and decision state
+  that a font-only recipe "gives a build that succeeds while printing a term
+  wrongly" — falsified for the recipe as it now stands, and D-018 annotates
+  D-016 rather than D-017. History is superseded, not edited, so this takes one
+  new entry.
+- **F12 (reject — theoretical).** That flipping control (d) from an absence
+  assertion to a positive one loses regression protection against a future STIX
+  Two Text dropping `Việt`. The `entries` reading covers that term structurally,
+  which the lens itself granted.

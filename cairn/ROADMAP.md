@@ -1,18 +1,17 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-24 (M33 planned; its candidate row — the non-Latin-1 engine/font pick — promoted into the milestone and replaced by an RTL-only row; caps, byte budgets and each doctrine module's own budget clean.)_
+_Last hygiene check: 2026-08-24 (M33 merged and archived; two follow-up rows added — the stix/GP3 font question and M33's clustered suite-hardening set; M28's row aged out of the terminal five; caps, byte budgets and each doctrine module's own budget clean; check-design.md at 34/40 lines and 13,764/18,000 bytes; no prose-guard suite in this repo, and tests/run-tests.sh ran green at the gate.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M33 | An index term outside Latin-1 prints in the PDF index | review | — | normal | milestones/M33-non-latin1-terms.md |
+| M33 | An index term outside Latin-1 prints in the PDF index | done | — | normal | milestones/archive/M33-non-latin1-terms.md |
 | M32 | An index follows the bibliography where the author puts it | done | — | low | milestones/archive/M32-index-after-references.md |
 | M31 | A leftover index file never breaks the next render | done | — | normal | milestones/archive/M31-stale-ind-standin.md |
 | M30 | A character in an index entry is proved to print, not merely to compile | done | — | normal | milestones/archive/M30-typeset-print-proof.md |
 | M29 | A marker report in a book names its chapter | done | M28 | normal | milestones/archive/M29-book-chapter-in-report.md |
-| M28 | A reported block position names the sequence it counts | done | — | normal | milestones/archive/M28-block-position-naming.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -32,6 +31,8 @@ _Last hygiene check: 2026-08-24 (M33 planned; its candidate row — the non-Lati
 - Move the index relative to content Quarto adds after filters run, rather than leaving the order to an author-written `#refs` div; promote on evidence Quarto exposes an ordering hook a filter can reach — added 2026-08-24 — M32 Scope Out — KI3
 - Make M32's marker-less plants read the captured artifact rather than the render's working copy, so M24's capture rule is met in intent and not only in letter; promote with any other suite-wide capture sweep — added 2026-08-24 — M32 review R2-F9
 - Narrow M32's HTML-cost check from "the fixture carries no `#quarto-appendix` at all" to the bibliography's own wrapper, so a fixture that later grows a footnote or a Citation block cannot turn it red while README stays true; promote on that fixture growing one — added 2026-08-24 — M32 review R2-F14
+- Re-probe the non-Latin-1 recipe's font: `tlmgr info stix` calls stix obsolete since April 2018 in favour of `stix2-otf`, and requiring it makes the WHOLE suite unrunnable on a default TinyTeX for a package outside the core collections — a GP3 tension; promote with the render matrix a font swap needs — added 2026-08-24 — M33 review R3, N7 — KI6
+- M33 suite-hardening (clustered): `unicodeprint.py entries` never reads `Entry.level`, so a term printed as a sub-entry passes; `stopped` searches for the stop signature and the named character independently; the README copyable-block check is one-directional (block ⊆ fixture), so a dropped `pdf-engine:` line escapes it; the `stopped` "no rejection" plant feeds a Quarto stdout log to a reader that in production reads a LaTeX log; control (d) pins only that `Việt` is absent, not that the rest still prints; the tool guard probes one of STIX's four faces; control (d)'s messages share the `M33-AC4` label with the README-content check — added 2026-08-24 — M33 review R4, R6, R8, R12, N5, N6, N9
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN) — KI79
 - Print an RTL index term correctly: the plan gate's probe shows it unshaped with the locator comma on the wrong side of the entry, which a covering font does not fix; promote on a bidi path that also settles locator placement — added 2026-08-24 — M33 Scope Out — KI6

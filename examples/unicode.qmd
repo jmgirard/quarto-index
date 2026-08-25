@@ -20,7 +20,7 @@ own in the printed index and no parent line above it. The YAML above is the
 recipe README's `### Terms outside Latin-1` section documents: the engine
 and a main font that covers the scripts marked below. The font is named by
 file, which is what makes the render load the TeX Live package rather than
-whatever the operating system carries under the same family name.
+whatever the operating system carries under the family name `STIX Two Text`.
 
 - [θεωρία]{.index} — Greek, with a precomposed accented vowel.
 - [ψυχή]{.index sort="psyche"} — Greek again, carrying a sort key so it files under the Latin spelling.

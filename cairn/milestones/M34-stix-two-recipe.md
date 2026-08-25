@@ -108,6 +108,8 @@ whichever font the recipe names. CJK and RTL stay unsupported → KI6.
 - 2026-08-24: T6 — branch runs 351 checks plain and 487 with `--self-test`, both green; the merge base (fd47dcc), run in a throwaway worktree under the same toolchain, runs 351 and 487 too, so neither count dropped.
 - 2026-08-24: all tasks done, suite green; status to review.
 - 2026-08-24: review — all five criteria verified with fresh evidence (branch 351/487 checks green, merge base fd47dcc 351/487); `cairn_validate` clean; the three review lenses returned 12 distinct findings, none demonstrating a criterion failing.
+- 2026-08-24: review — the T3 work-log line claiming the suite comment citing the fixture's own `Missing character` log was corrected is wrong: that comment was never edited. Superseded here; the comment is corrected at the gate as F1.
+- 2026-08-24: review gate — user chose fix-then-merge. F1, F3-F8 and F11 applied on the branch; F2 booked onto the M33 suite-hardening candidate row; F9, F10 and F12 rejected with reasons in the Review section. D-019 appended and the M33 lesson naming a corrupted `Việt` corrected in place.
 
 ## Decisions
 
@@ -193,7 +195,7 @@ return floor.
   review: the recipe render's LaTeX log carries zero `Missing character` lines
   under STIX Two Text. The work-log line claiming this comment was corrected is
   itself wrong and needs superseding.
-- **F2 (follow-up).** Control (d) no longer discriminates on the engine. It now
+- **F2 (follow-up — booked onto the M33 suite-hardening candidate row).** Control (d) no longer discriminates on the engine. It now
   asserts the same predicate as the recipe render on a document differing only
   by a deleted `pdf-engine:` line, and nothing reads which engine ran, so a
   Quarto whose default became `xelatex` would leave the control green while

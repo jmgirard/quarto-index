@@ -291,7 +291,8 @@ The general rule behind the recipe is that **your main font must cover the
 script you are indexing**; STIX Two Text is one font that does, not the only
 one.
 
-Leaving out either line changes what you get — three paths in all:
+Leave one of the two lines out and what you get depends on which — three
+paths in all:
 
 - **Wrong engine.** With `pdf-engine: pdflatex` the render stops and the LaTeX
   log says `not set up for use with LaTeX`, naming the character. A failed
@@ -323,9 +324,9 @@ This recipe is proven, with a typeset-print check in the test suite, for
 Greek, Cyrillic, and Latin beyond Latin-1 including terms written with
 combining marks — `examples/unicode.qmd` is the fixture. Any other script is
 unproven. In particular **CJK and right-to-left scripts are not supported**:
-STIX Two Text does not cover CJK, and RTL additionally has two problems no font fixes —
-the text is not shaped, and the comma between an entry and its page numbers
-lands on the wrong side of the entry.
+STIX Two Text does not cover CJK, and RTL additionally has two problems no
+font fixes — the text is not shaped, and the comma between an entry and its
+page numbers lands on the wrong side of the entry.
 
 ### Sorting an entry under something else
 
@@ -883,6 +884,5 @@ The suite renders the examples to LaTeX, HTML, PDF, beamer and
 GitHub-flavoured markdown, and checks the output against hand-derived
 manifests. It needs TinyTeX (with `kpsewhich` on the path and TeX Live's
 `stix2-otf` package installed, which the non-Latin-1 renders load by file
-name),
-`makeindex` and `pdftotext`, and fails loudly rather than skipping if any is
-missing.
+name), `makeindex` and `pdftotext`, and fails loudly rather than skipping if
+any is missing.

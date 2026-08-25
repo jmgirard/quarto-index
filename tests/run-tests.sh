@@ -57,6 +57,29 @@ RUN_LOG="$WORK/run.log"
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 pass() { printf 'ok   %s\n' "$*"; }
 
+# The ledger of commands this run actually executed, and what each exited with.
+# A command the README shows is run through `ran_clean` below, which records the
+# argv it ran and that command's own status here; M38-AC6 then reads "runs
+# clean" off this file rather than off a substring of this suite's text, where a
+# command sitting in a comment read exactly like one the suite runs and no exit
+# status was read at all (M38 R6).
+RAN_LEDGER="$WORK/ran-commands.txt"
+: > "$RAN_LEDGER"
+
+# Run one documented command, record it, and fail loudly if it did not exit 0.
+# The command is passed as argv rather than as a string so that what is written
+# to the ledger is what ran: there is no second copy of the command text to
+# drift from the one executed. The renderer's own words stay on the CALL line
+# rather than moving in here, so M24-AC3 still reads each of these as the
+# render it is and holds it to being followed by a capture.
+ran_clean() {
+  local logfile="$1"; shift
+  local status=0
+  "$@" > "$logfile" 2>&1 || status=$?
+  printf '%d\t%s\n' "$status" "$*" >> "$RAN_LEDGER"
+  [ "$status" -eq 0 ] || { tail -30 "$logfile" >&2; fail "the documented command <<$*>> exited $status; a command the README shows must run clean"; }
+}
+
 # ---------------------------------------------------------------------------
 # The pre-render clean (M24). Every run starts from the state a fresh checkout
 # is in: no rendered artifact under examples/ outlives the run that made it.
@@ -12187,77 +12210,10 @@ read -r -d '' NAMED_INDEX_TEX <<'MANIFEST' || true
 1	Cantor|)
 MANIFEST
 
-# M38-AC6 — the README section that documents all of this. Its four claims are
-# compared as bytes (whitespace normalized, so a rewrap is not a change), every
-# fixture it names must exist, and every command it shows must be one this suite
-# runs — which is what "runs clean" means here: the suite is green or it is not.
-# Neither the paths nor the commands are written down below; they are read out
-# of the section, so a path or a command added to the docs joins the check by
-# being documented.
-read -r -d '' README_INDEXES_CLAIMS <<'MANIFEST' || true
-declaration fields	`name` is what a mark writes to file in that index; `title` is the heading a reader sees
-unnamed mark	A mark that names no index files in the first declared index
-marker names its index	A placement marker names its index the same way
-one index in latex	A LaTeX or PDF render builds a single index
-one index in a book	An HTML book builds a single index too
-MANIFEST
-printf '%s\n' "$README_INDEXES_CLAIMS" > "$WORK/readme-indexes.txt"
-python3 - README.md "$WORK/readme-indexes.txt" tests/run-tests.sh <<'READMEPY'
-import os, re, sys
-readme_path, claims_path, suite_path = sys.argv[1:4]
-body = open(readme_path, encoding='utf-8').read()
-head = '### Named indexes'
-at = body.find('\n' + head + '\n')
-if at < 0:
-    sys.exit(f'FAIL: M38-AC6: README.md has no {head!r} section')
-rest = body[at + len(head) + 2:]
-end = re.search(r'^#{2,3} ', rest, re.M)
-section = rest[:end.start()] if end else rest
-
-flat = ' '.join(section.split())
-bad = []
-for line in open(claims_path, encoding='utf-8'):
-    line = line.rstrip('\n')
-    if not line.strip():
-        continue
-    label, claim = line.split('\t', 1)
-    if ' '.join(claim.split()) not in flat:
-        bad.append(f'  {label}: <<{claim}>>')
-if bad:
-    print('FAIL: M38-AC6: claim(s) absent from the README section:',
-          file=sys.stderr)
-    print('\n'.join(bad), file=sys.stderr)
-    sys.exit(1)
-
-paths = sorted(set(re.findall(r'examples/[A-Za-z0-9_./-]+\.qmd', section)))
-if not paths:
-    sys.exit('FAIL: M38-AC6: the README section names no fixture at all, so '
-             'this check would pass over an empty set')
-missing = [p for p in paths if not os.path.exists(p)]
-if missing:
-    sys.exit('FAIL: M38-AC6: the README section names fixture(s) that do not '
-             'exist: ' + ', '.join(missing))
-
-commands = []
-for fence in re.findall(r'```bash\n(.*?)```', section, re.S):
-    commands.extend(c for c in (l.strip() for l in fence.splitlines()) if c)
-if not commands:
-    sys.exit('FAIL: M38-AC6: the README section shows no command at all, so '
-             'this check would pass over an empty set')
-suite = open(suite_path, encoding='utf-8').read()
-unrun = [c for c in commands if c not in suite]
-if unrun:
-    sys.exit('FAIL: M38-AC6: the README section shows command(s) this suite '
-             'never runs, so nothing here says they are clean: '
-             + '; '.join(unrun))
-print(f'ok   M38-AC6: the README section states all its claims, names '
-      f'{len(paths)} fixture(s) that exist, and shows {len(commands)} '
-      f'command(s) this suite runs')
-READMEPY
-
-quarto render examples/named-indexes.qmd --to html \
-  > "$WORK/named-indexes-html.log" 2>&1 \
-  || { tail -30 "$WORK/named-indexes-html.log" >&2; fail "M38-AC1: named-indexes.qmd failed to render to HTML"; }
+# Through `ran_clean`, because README shows this command: the ledger it writes
+# is what M38-AC6 reads "runs clean" off.
+ran_clean "$WORK/named-indexes-html.log" \
+  quarto render examples/named-indexes.qmd --to html
 capture examples/named-indexes.qmd html "named-indexes-html"
 NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
 
@@ -12510,9 +12466,9 @@ check_extension_warning_count "$WORK/named-indexes-twin-html.log" 0 \
 # M38-AC5 — outside HTML the fixture degrades without loss. The `.tex` carries
 # an `\index` for every mark, one `\printindex`, and no marker residue; the log
 # carries one report per named-index mark and one per named-index marker.
-quarto render examples/named-indexes.qmd --to latex \
-  > "$WORK/named-indexes-latex.log" 2>&1 \
-  || { tail -30 "$WORK/named-indexes-latex.log" >&2; fail "M38-AC5: named-indexes.qmd failed to render to latex"; }
+# The README shows this one too, so it goes through the ledger as well.
+ran_clean "$WORK/named-indexes-latex.log" \
+  quarto render examples/named-indexes.qmd --to latex
 capture examples/named-indexes.qmd latex "named-indexes-latex"
 NAMED_TEX="$CAPTURE_ROOT/named-indexes-latex/named-indexes.tex"
 check_entry_manifest "$NAMED_TEX" "$NAMED_INDEX_TEX" "M38-AC5"
@@ -12557,6 +12513,131 @@ check_warning_count "$WORK/book-html.log" "$WARN_INDEX_FOLD_MARK" 1 \
 check_warning_count "$WORK/book-html.log" "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" 1 \
   "M38-AC5 (the book's named-index marker)"
 pass "M38-AC5: an HTML book folds its named mark and its named marker into the one index it builds, reports each once, and lists the folded mark's term in that index"
+
+# ---------------------------------------------------------------------------
+# M38-AC6 — the README section that documents all of this.
+#
+# Its claims are compared as bytes (whitespace normalized, so a rewrap is not a
+# change); the `indexes:` declaration block it shows is compared line for line,
+# since a YAML block's structure is exactly what a whitespace-normalized
+# comparison throws away; every fixture it names must exist; and every command
+# it shows must appear in this run's own ledger with exit status 0 — which is
+# what "runs clean" means, read off what ran rather than off a substring of
+# this suite's text, comments included (M38 R6). Neither the paths nor the
+# commands are written down below; they are read out of the section, so a path
+# or a command added to the docs joins the check by being documented.
+#
+# Placed AFTER the renders above, because the ledger it reads is written by
+# them.
+# ---------------------------------------------------------------------------
+read -r -d '' README_INDEXES_CLAIMS <<'MANIFEST' || true
+declaration fields	`name` is what a mark writes to file in that index; `title` is the heading a reader sees
+unnamed mark	A mark that names no index files in the first declared index
+marker names its index	A placement marker names its index the same way
+one index in latex	A LaTeX or PDF render builds a single index
+one index in a book	An HTML book builds a single index too
+MANIFEST
+# The declaration form the criterion names, line for line. Written out here
+# rather than normalized into a claim row: `indexes:` is a list of two-field
+# maps, and an author who copies it out of a README whose indentation has
+# collapsed has a document that does not parse.
+read -r -d '' README_INDEXES_YAML <<'MANIFEST' || true
+indexes:
+  - name: main
+    title: Index
+  - name: people
+    title: Index of Names
+MANIFEST
+printf '%s\n' "$README_INDEXES_CLAIMS" > "$WORK/readme-indexes.txt"
+printf '%s\n' "$README_INDEXES_YAML" > "$WORK/readme-indexes-yaml.txt"
+python3 - README.md "$WORK/readme-indexes.txt" "$WORK/readme-indexes-yaml.txt" \
+  "$RAN_LEDGER" <<'READMEPY'
+import os, re, sys
+readme_path, claims_path, yaml_path, ledger_path = sys.argv[1:5]
+body = open(readme_path, encoding='utf-8').read()
+head = '### Named indexes'
+at = body.find('\n' + head + '\n')
+if at < 0:
+    sys.exit(f'FAIL: M38-AC6: README.md has no {head!r} section')
+rest = body[at + len(head) + 2:]
+end = re.search(r'^#{2,3} ', rest, re.M)
+section = rest[:end.start()] if end else rest
+
+flat = ' '.join(section.split())
+claims = [l.rstrip('\n') for l in open(claims_path, encoding='utf-8')
+          if l.strip()]
+bad = []
+for line in claims:
+    label, claim = line.split('\t', 1)
+    if ' '.join(claim.split()) not in flat:
+        bad.append(f'  {label}: <<{claim}>>')
+if bad:
+    print('FAIL: M38-AC6: claim(s) absent from the README section:',
+          file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+
+# The declaration block, line for line. Every yaml fence in the section is a
+# candidate, so the check says which one it matched rather than passing on the
+# first fence that happens to be something else.
+want = open(yaml_path, encoding='utf-8').read().rstrip('\n').split('\n')
+fences = [f.rstrip('\n').split('\n')
+          for f in re.findall(r'```yaml\n(.*?)```', section, re.S)]
+if not fences:
+    sys.exit('FAIL: M38-AC6: the README section shows no yaml block at all, '
+             'so the declaration form the criterion names is pinned by nothing')
+if want not in fences:
+    print('FAIL: M38-AC6: no yaml block in the README section is the '
+          'declaration form this check pins. want:', file=sys.stderr)
+    print('\n'.join(want), file=sys.stderr)
+    print('the section shows:', file=sys.stderr)
+    for f in fences:
+        print('  ---\n    ' + '\n    '.join(f), file=sys.stderr)
+    sys.exit(1)
+
+paths = sorted(set(re.findall(r'examples/[A-Za-z0-9_./-]+\.qmd', section)))
+if not paths:
+    sys.exit('FAIL: M38-AC6: the README section names no fixture at all, so '
+             'this check would pass over an empty set')
+missing = [p for p in paths if not os.path.exists(p)]
+if missing:
+    sys.exit('FAIL: M38-AC6: the README section names fixture(s) that do not '
+             'exist: ' + ', '.join(missing))
+
+commands = []
+for fence in re.findall(r'```bash\n(.*?)```', section, re.S):
+    commands.extend(c for c in (l.strip() for l in fence.splitlines()) if c)
+if not commands:
+    sys.exit('FAIL: M38-AC6: the README section shows no command at all, so '
+             'this check would pass over an empty set')
+# The ledger: one `<status><TAB><argv>` line per documented command this run
+# executed. A command is clean here only because THIS run ran it and it exited
+# 0 -- the hole R6 named was reading a command out of the suite's own text,
+# where a line in a comment read exactly like a line that runs.
+ran = {}
+for line in open(ledger_path, encoding='utf-8'):
+    line = line.rstrip('\n')
+    if not line:
+        continue
+    status, argv = line.split('\t', 1)
+    ran.setdefault(argv, []).append(int(status))
+if not ran:
+    sys.exit('FAIL: M38-AC6: this run\'s command ledger is empty, so every '
+             'command below would be reported unrun rather than checked')
+unrun = [c for c in commands if c not in ran]
+if unrun:
+    sys.exit('FAIL: M38-AC6: the README section shows command(s) this run '
+             'never executed, so nothing here says they are clean: '
+             + '; '.join(unrun))
+dirty = [f'{c} (exited {s})' for c in commands for s in ran[c] if s != 0]
+if dirty:
+    sys.exit('FAIL: M38-AC6: the README section shows command(s) this run '
+             'executed and which did not exit 0: ' + '; '.join(dirty))
+print(f'ok   M38-AC6: the README section states all {len(claims)} of its '
+      f'pinned claims and the declaration block line for line, names '
+      f'{len(paths)} fixture(s) that exist, and shows {len(commands)} '
+      f'command(s) this run executed, every one of them exiting 0')
+READMEPY
 
 # ---------------------------------------------------------------------------
 # M38-R3 — what heads the ONE section a folded render prints.

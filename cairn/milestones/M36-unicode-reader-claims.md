@@ -1,6 +1,6 @@
 # M36: The non-Latin-1 readers stop reading text that belongs to no error
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -79,7 +79,7 @@ KI87 — stays on its candidate row.
       `! `-opened reports only, so `!pdfTeX error:` is named as outside its
       domain. Record both dispositions, and F11's fold into T4, in the
       Decisions section.
-- [ ] T6. Run both suite modes; state the resulting counts against the merge
+- [x] T6. Run both suite modes; state the resulting counts against the merge
       base (352 / 491) in the work log.
 
 ## Work log
@@ -93,6 +93,7 @@ KI87 — stays on its candidate row.
 - 2026-08-25: T3: `stated()` now has three refusals with three messages — no level stated, a level not written in ASCII digits, an empty term. Run over six specs: `0:Ascii` reads, `Ascii` and `:foo` take the pair message, `٣:foo` and `ab:foo` the ASCII-digit message, `0:` the empty-term message. Gate chose refusing only a truly empty term, not a spaces-only one, so the reader does not judge whitespace. Plain suite 352 checks, exit 0.
 - 2026-08-25: T4: two plants added — a level written as U+0663 through `entries`, and a level with an empty term through `marks`, the reading whose `<level>:<term>` argv contract had no plant. The U+0663 level is written literally, since this repo builds on bash 3.2 whose quoting has no `\u` escape. Self-test 491 checks, exit 0.
 - 2026-08-25: T5: the plant matrix rewritten to one row per plant (23 rows, the table having drifted to 15), the two unplanted clauses named at its foot, and the pass line narrowed to what each plant shows, its plant count counted at run time. `error_blocks`' docstring names the `! `-with-space shape as its whole domain. Self-test 491 checks, exit 0, the pass line printing 23.
+- 2026-08-25: T6: both modes run on the final tree — plain 352 checks exit 0, `--self-test` 491 checks exit 0, the same counts as the merge base (1326635). Neither mode's count moves: the three new plants go through `m33_planted`, which reports only on failure, and the readings they exercise are already counted by the block's single pass line.
 
 ## Decisions
 

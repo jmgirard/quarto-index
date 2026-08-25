@@ -41,6 +41,28 @@ DUP = re.compile(
     r'index placement marker (?P<ord>\d+) in document order \(top-level block '
     r'(?P<pos>\d+)(?P<chapter> of \S+)?\) is ignored; the index is placed at '
     r'the first marker\. ' + re.escape(BASIS) + r'$')
+# The same report in a document that DECLARES its indexes (M38): which index
+# the second marker repeats is the whole question there, so it is named. M29's
+# subject is the chapter clause, which sits in the same place in both shapes,
+# so both are matched and either counts as the duplicate report.
+DUP_NAMED = re.compile(
+    r'index placement marker (?P<ord>\d+) in document order \(top-level block '
+    r'(?P<pos>\d+)(?P<chapter> of \S+)?\) is a second marker for the index '
+    r'named "[^"]*"; that index is placed at the first marker naming it, so '
+    r'this one is ignored\. ' + re.escape(BASIS) + r'$')
+
+# The two reports a book draws for the named-index declaration M38 added to
+# this fixture: a book aggregates through a store whose record format carries
+# no index name, so a named mark and a named marker are both folded into the
+# one index the book builds, and each is told so.
+FOLD_MARK = ('index="people" on term "Turing" names a second index, and this '
+             'output builds one index only, so the mark is indexed in the '
+             "document's one index instead; more than one index prints in a "
+             'single HTML document today')
+FOLD_MARKER = ('index="people" on an index placement marker names a second '
+               'index, and this output builds one index only, so the marker '
+               "places the document's one index instead; more than one index "
+               'prints in a single HTML document today')
 
 NESTED = ('index placement marker below the top level of the document places '
           'nothing; write it as a top-level block')
@@ -63,12 +85,16 @@ OTHER = {
         'term "Ranged Term" in one.qmd; term "Ranged Term" in sub/two.qmd. A '
         'range whose two marks are in one chapter, and a range in a PDF book, '
         'are both paired as usual',
+        FOLD_MARK,
+        FOLD_MARKER,
     },
     'book-pdf': {
         NESTED,
         'see= on term "Epsilon" points at "No Such Entry", which no index mark '
         'in this document indexes; a reader following the cross-reference '
         'finds no such entry, so mark that term somewhere or correct the target',
+        FOLD_MARK,
+        FOLD_MARKER,
     },
     'misuse': {
         NESTED,
@@ -126,7 +152,7 @@ def main():
         if hit is not None and hit.end() == len(text):
             seen['emptied'].append(hit)
             continue
-        hit = DUP.search(text)
+        hit = DUP.search(text) or DUP_NAMED.search(text)
         if hit is not None and hit.end() == len(text):
             seen['dup'].append(hit)
             continue

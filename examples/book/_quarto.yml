@@ -19,5 +19,15 @@ format:
   html: default
   pdf: default
 
+# Two declared indexes (M38), for the one property a book has to show about
+# them: an HTML book aggregates its chapters through a sidecar store whose
+# record format carries no index name, so every named mark and every named
+# marker is folded into the one index the book builds, and each is told so.
+indexes:
+  - name: main
+    title: Index
+  - name: people
+    title: Index of People
+
 filters:
   - index

@@ -17,3 +17,7 @@ A discussion that spans chapters opens here and closes in the next chapter.
 A chapter is the scope a range pairs in, so this opening is refused as never
 closed in this chapter and indexes on its own; the book reports the split
 pair once, naming both marks: [Ranged Term]{.index range="open"}.
+
+A mark naming the second declared index. A book builds one index, so this term
+is filed in it alongside every other and the extension says so:
+[Turing]{.index index="people"}.

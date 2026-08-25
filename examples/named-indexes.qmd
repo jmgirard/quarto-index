@@ -1,0 +1,54 @@
+---
+title: "Named indexes"
+indexes:
+  - name: main
+    title: Index
+  - name: authors
+    title: Index of Authors
+filters:
+  - index
+---
+
+Two indexes are declared in this document's metadata. Every mark below either
+names one of them or files in the first, and every judgement this extension
+makes about a mark — which entry it indexes, which target it resolves against,
+which sort key it files under, which range it pairs with — is made inside the
+one index the mark belongs to.
+
+A mark that names no index files in the first declared one:
+[Aardvark]{.index}. A mark that names the second files there:
+[Babbage]{.index index="authors"}.
+
+A sort key is written for one index and not for the other. The Hague files
+under Z in the first, where a mark writes one: [Hague]{.index sort="Zebra"}.
+The same term files under H in the second, where no mark writes one:
+[Hague]{.index index="authors"}.
+
+A cross-reference resolves inside its own index. This target names a term the
+first index carries: [near]{.index entry="Neighbour" see="Aardvark"}. This one
+names the same term from the second index, which does not carry it:
+[far]{.index index="authors" entry="Stranger" see="Aardvark"}.
+
+A range does not pair across two indexes. This opening is in the first index:
+[Cantor]{.index range="open"}, and this closing is in the second:
+[Cantor]{.index index="authors" range="close"}. Neither has a counterpart
+inside its own index, so each indexes as an ordinary page number.
+
+## Where the first index goes {#site-main}
+
+::: {.qi-index-here}
+:::
+
+## Where the second index goes {#site-authors}
+
+::: {.qi-index-here index="authors"}
+:::
+
+## A second marker for the first index {#site-again}
+
+The marker below names no index, so it is a second marker for the first one.
+The first marker naming an index is the one that places it, so this marker
+places nothing and the extension says so.
+
+::: {.qi-index-here}
+:::

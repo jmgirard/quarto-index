@@ -994,6 +994,11 @@ MANIFEST
 #      sub/two.qmd: no chapter sees both halves, so neither is paired and each
 #      indexes on its own, the closing carrying the principal class its own
 #      `mention=` asks for. The book reports that pair once.
+#  12. A mark naming the second declared index is in the ONE index a book
+#      builds (M38): `Turing` is written `index="people"` in one.qmd, and it
+#      is listed here beside every other term, under its own letter, at its
+#      own anchor — one.qmd's fifth minted anchor, since `Gamma` before it
+#      carries an id of the author's own and mints none.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_HTML_INDEX <<'MANIFEST' || true
 letter	A
@@ -1017,6 +1022,8 @@ letter	K
 1	Sub Level	one.html#qi-mark-3
 letter	R
 0	Ranged Term	one.html#qi-mark-4 sub/two.html#qi-mark-3
+letter	T
+0	Turing	one.html#qi-mark-5
 letter	Z
 0	Zeta	#qi-mark-1
 MANIFEST
@@ -5512,7 +5519,7 @@ pass "M21-AC5: a range paired inside one chapter gives one locator; a range span
 # M07-AC4: the book's B group holds Beta, marked in one.qmd, and Beacon,
 # marked in sub/two.qmd — a group gathers what every chapter contributed.
 check_letter_sweep "$CAPTURE_ROOT/book-html/_book/last.html" "M07-AC4" \
-  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ'
+  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nT\nZ'
 
 # The manifest above is the positive half: it says the marker chapter's index
 # is the whole book's. This is the negative half, and the questions only a
@@ -5704,10 +5711,10 @@ check_warning_count "$WORK/book-html.log" "$BOOK_DANGLING" 1 "M14-AC5"
 # emptied-place report and the below-top-level report, and the second top-level
 # marker it put in `last.qmd` draws the duplicate report. Which chapter each of
 # those three sits in is not arbitrary — see the M29 partition below.
-BOOK_WARNINGS=7
+BOOK_WARNINGS=9
 check_extension_warning_count "$WORK/book-html.log" "$BOOK_WARNINGS" \
-  "M05-AC4/M14-AC5 (the book fixture emitted warning(s) this suite cannot name; its $BOOK_WARNINGS are the dangling-target report, the two chapter halves of the split range, the book's own unpaired-range report, and M29's three marker-misuse reports — and a resolvable cross-file target must draw none)"
-pass "M05-AC4/M14-AC5: all seven of the book's warnings are ones this suite names — the target no chapter indexes, each chapter's half of the split range, the book's report naming the pair, and M29's three marker-misuse reports — and the resolvable cross-file target draws neither"
+  "M05-AC4/M14-AC5 (the book fixture emitted warning(s) this suite cannot name; its $BOOK_WARNINGS are the dangling-target report, the two chapter halves of the split range, the book's own unpaired-range report, M29's three marker-misuse reports, and M38's two named-index folds — and a resolvable cross-file target must draw none)"
+pass "M05-AC4/M14-AC5: all nine of the book's warnings are ones this suite names — the target no chapter indexes, each chapter's half of the split range, the book's report naming the pair, M29's three marker-misuse reports, and the named mark and named marker a book folds into its one index — and the resolvable cross-file target draws neither"
 
 # ---------------------------------------------------------------------------
 # M05-AC6 — a book with marks and no marker chapter.
@@ -5853,7 +5860,7 @@ capture --project "$BOOK_DIR" html "book-html2"
 check_html_index_manifest "$CAPTURE_ROOT/book-html2/_book/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (second render)" hrefs
 check_letter_sweep "$CAPTURE_ROOT/book-html2/_book/last.html" "M07-AC4 (second render)" \
-  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ'
+  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nT\nZ'
 
 # A record for a chapter the book does not list must not reach the index. The
 # planted record is well-formed and names a chapter absent from _quarto.yml,
@@ -5878,7 +5885,7 @@ check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE" 0 \
 check_html_index_manifest "$CAPTURE_ROOT/book-ghost/_book/last.html" "$BOOK_HTML_INDEX" \
   "M05 hardening (stale chapter ignored)" hrefs
 check_letter_sweep "$CAPTURE_ROOT/book-ghost/_book/last.html" "M07-AC4 (stale chapter)" \
-  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ'
+  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nT\nZ'
 rm -f "$GHOST"
 
 # A record this filter cannot read must cost that chapter's entries and say
@@ -8079,6 +8086,16 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  for carrying it. `golem` is marked in that file — as a closing
 #                  with no opening, which indexes as an ordinary locator — so the
 #                  target resolves. 0.
+#   named-indexes  2 attributes, both `see="Aardvark"` — one on a mark of the
+#                  first declared index, one on a mark of the second. gfm has
+#                  no index back-end and so builds one index, into which every
+#                  named mark is folded (M38): both targets are then resolved
+#                  against the one path set, `Aardvark` is in it, and neither
+#                  dangles. In HTML the two indexes are two, and the second
+#                  one's target is the dangling target M38-AC2 reads. 0.
+#   named-indexes-twin  the same two attributes: the twin declares no indexes
+#                  and names none, so its targets resolve here for the reason
+#                  they resolve in every format. 0.
 #   resolving-xref 3 attributes, all three resolving by construction. 0.
 #   state-reuse    2 attributes: `see="Alpha"` on the cross-reference mark of
 #                  the contested `Gamma` key, which resolves because the file
@@ -8103,6 +8120,8 @@ examples/fold-xref-empty.qmd	0
 examples/fold-xref-self.qmd	1
 examples/fold-xref.qmd	1
 examples/html-index.qmd	1
+examples/named-indexes-twin.qmd	0
+examples/named-indexes.qmd	0
 examples/placement.qmd	0
 examples/principal-cases.qmd	1
 examples/principal-twin.qmd	0
@@ -11854,7 +11873,12 @@ m29_planted "$M29_PLANT/dropped.log" book-html "want ' of sub/two.qmd'" \
   'a report that names no chapter where one is known'
 # A chapter named in the PDF book, where no chapter is known: the failure mode
 # of hoisting the book context past its `is_html` gate.
-sed 's|(top-level block \([0-9]*\)) is ignored|(top-level block \1 of last.qmd) is ignored|' \
+# Anchored on the parenthesised block position alone, which is the one place a
+# chapter clause may sit and is common to both shapes the duplicate report has
+# (M38 gave a document that declares its indexes a wording of its own). The
+# emptied-place report writes its position outside parentheses, so this reaches
+# the duplicate report and only it.
+sed 's|(top-level block \([0-9]*\))|(top-level block \1 of last.qmd)|' \
   "$WORK/book-pdf.log" > "$M29_PLANT/spurious.log"
 m29_planted "$M29_PLANT/spurious.log" book-pdf 'want None' \
   'a report that names a chapter where none is known'

@@ -255,7 +255,13 @@ end
 -- Whether the id is actually free is `mint_section_id`'s question, not this
 -- one's: this says what to ask for.
 local function section_id(name)
-  if not declared then
+  -- A document that declared nothing keeps the bare name, so its readers'
+  -- links still resolve. So does a render that FOLDS: there is exactly one
+  -- section there and it holds every index's marks, so naming it after one of
+  -- the declared indexes would claim it is that index rather than the union it
+  -- is. Only where the sections are actually one-per-index is each named after
+  -- the index it holds.
+  if not declared or folded then
     return qi_core.HTML_SECTION_ID
   end
   return qi_core.HTML_SECTION_ID .. "-" .. name

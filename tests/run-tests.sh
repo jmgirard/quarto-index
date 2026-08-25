@@ -250,7 +250,7 @@ run_scan() {
         "$WARN_MARKER_EMPTIED" "$WARN_MARKER_NOT_LAST" "$WARN_MARKER_DUP_STEM" \
         "$WARN_MARKER_DUP_NAMED" \
         "$WARN_INDEX_FOLD_MARK" "$WARN_INDEX_FOLD_MARKER" \
-        "$WARN_INDEX_BADNAME" ;;
+        "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" "$WARN_INDEX_BADNAME" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -3118,6 +3118,12 @@ WARN_MARKER_DUP_NAMED='is a second marker for the index named'
 # identical in both.
 WARN_INDEX_FOLD_MARK='so the mark is indexed in that one index instead'
 WARN_INDEX_FOLD_MARKER='so the marker places that one index instead'
+# A folded back-end has one index and one place to put it, and the author's own
+# marker for the index it builds is that place. A marker naming a second index
+# that does NOT hold the place draws a second shape saying so, rather than the
+# first shape's claim that it places the one index (M38 R2). Keyed on the clause
+# that says where the index went, which is what tells the two apart.
+WARN_INDEX_FOLD_MARKER_ELSEWHERE='which goes where this document already places it'
 # The report for a declared name that cannot be an HTML id fragment (M38 R1).
 # Keyed on the clause that says what is wrong with the name, which no other
 # declaration report carries.
@@ -12345,6 +12351,58 @@ if grep -qE 'id="[^"]*[[:space:]#<>]' "$NAMED_MISUSE_HTML"; then
 fi
 pass "M38-R1: a declared name that is no HTML id fragment is refused by name, the document keeps the indexes it declared usably, and the page carries no invalid id"
 
+# ---------------------------------------------------------------------------
+# M38-R2 — which marker places the one index a folded back-end builds.
+#
+# examples/named-indexes-foldsite.qmd writes the `authors` marker BEFORE the
+# marker for the index a LaTeX render actually builds. The author's own marker
+# for that index is where they asked for it, so it holds the place wherever it
+# stands; the earlier marker places nothing and says so.
+#
+# ORACLE — read off the fixture by hand. `\printindex` stands after
+# `\label{site-main}` and after no later label, so the nearest preceding
+# placement site is the author's own marker for the built index. The `authors`
+# marker draws the report for a marker that does not hold the place, and NO
+# duplicate report is drawn at all: the document writes one marker per index,
+# so neither is a second marker for anything.
+# ---------------------------------------------------------------------------
+quarto render examples/named-indexes-foldsite.qmd --to latex \
+  > "$WORK/named-indexes-foldsite-latex.log" 2>&1 \
+  || { tail -30 "$WORK/named-indexes-foldsite-latex.log" >&2; fail "M38-R2: named-indexes-foldsite.qmd failed to render to latex"; }
+capture examples/named-indexes-foldsite.qmd latex "named-indexes-foldsite-latex"
+python3 - "$CAPTURE_ROOT/named-indexes-foldsite-latex/named-indexes-foldsite.tex" <<'FOLDSITEPY'
+import re, sys
+tex = open(sys.argv[1], encoding='utf-8').read()
+at = [m.start() for m in re.finditer(r'\\printindex', tex)]
+if len(at) != 1:
+    sys.exit(f'FAIL: M38-R2: the capture carries {len(at)} \\printindex, want 1')
+sites = [(m.start(), m.group(1))
+         for m in re.finditer(r'\\label\{(site-[a-z]+)\}', tex)]
+if len(sites) != 2:
+    sys.exit(f'FAIL: M38-R2: the capture carries {len(sites)} placement-site '
+             f'label(s), want the fixture\'s 2 — so which one the index '
+             f'follows is not a question this check can answer')
+before = [name for pos, name in sites if pos < at[0]]
+if not before:
+    sys.exit('FAIL: M38-R2: the one index stands before every placement site '
+             'in the capture, so it is at neither marker')
+if before[-1] != 'site-main':
+    sys.exit(f'FAIL: M38-R2: the one index follows {before[-1]!r}, not the '
+             f'author\'s own marker for the index this back-end builds '
+             f'(site-main); a marker naming a second index took its place')
+print('ok   M38-R2: the one index a folded back-end builds stands at the '
+      'author\'s own marker for it, which the fixture writes after a marker '
+      'naming a second index')
+FOLDSITEPY
+check_warning_count "$WORK/named-indexes-foldsite-latex.log" \
+  "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" 1 "M38-R2"
+check_warning_count "$WORK/named-indexes-foldsite-latex.log" \
+  "$WARN_MARKER_DUP_NAMED" 0 \
+  "M38-R2 (the author wrote one marker per index, so neither is a second marker)"
+check_warning_count "$WORK/named-indexes-foldsite-latex.log" \
+  "$WARN_MARKER_DUP_STEM" 0 "M38-R2 (nor under the unnamed wording)"
+pass "M38-R2: a marker naming a folded-away index does not take the built index's place, and the author's own marker for it is not reported as that marker's duplicate"
+
 # The twin: the shape this milestone leaves untouched. One section under the
 # bare id, every judgement made across the whole document, and no warning.
 quarto render examples/named-indexes-twin.qmd --to html \
@@ -12368,12 +12426,20 @@ check_entry_manifest "$NAMED_TEX" "$NAMED_INDEX_TEX" "M38-AC5"
 check_token_manifest "$NAMED_TEX" $'1\t\\printindex\n0\tqi-index-here' "M38-AC5"
 check_warning_count "$WORK/named-indexes-latex.log" "$WARN_INDEX_FOLD_MARK" 4 \
   "M38-AC5 (one report per named-index mark)"
-check_warning_count "$WORK/named-indexes-latex.log" "$WARN_INDEX_FOLD_MARKER" 1 \
+# The fixture's first marker names no index, so it is the one that places the
+# single index this back-end builds; the `authors` marker draws the shape for a
+# marker that does NOT hold that place (M38 R2). One report per named-index
+# marker is the sum of the two shapes, and the other shape must be absent, or
+# the count above would be over a report about a different marker.
+check_warning_count "$WORK/named-indexes-latex.log" \
+  "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" 1 \
   "M38-AC5 (one report per named-index marker)"
+check_warning_count "$WORK/named-indexes-latex.log" "$WARN_INDEX_FOLD_MARKER" 0 \
+  "M38-AC5 (the shape for a marker that DOES place the one index, which this fixture's named marker is not)"
 grep -F -- "$WARN_INDEX_FOLD_MARK" "$WORK/named-indexes-latex.log" \
   | grep -cF 'index="authors"' | grep -qx 4 \
   || fail "M38-AC5: a named-index mark's report does not name the index the mark named"
-grep -F -- "$WARN_INDEX_FOLD_MARKER" "$WORK/named-indexes-latex.log" \
+grep -F -- "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" "$WORK/named-indexes-latex.log" \
   | grep -qF 'index="authors"' \
   || fail "M38-AC5: the named-index marker's report does not name the index the marker named"
 pass "M38-AC5: a LaTeX render indexes all 8 marks under the one index it builds, keeps one \\printindex and no marker residue, and reports each of the four named-index marks and the one named-index marker by the index it named"
@@ -12395,7 +12461,7 @@ pass "M38-AC5: the two-index fixture still builds a PDF"
 # the index is the `Turing` row of BOOK_HTML_INDEX above.
 check_warning_count "$WORK/book-html.log" "$WARN_INDEX_FOLD_MARK" 1 \
   "M38-AC5 (the book's named-index mark)"
-check_warning_count "$WORK/book-html.log" "$WARN_INDEX_FOLD_MARKER" 1 \
+check_warning_count "$WORK/book-html.log" "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" 1 \
   "M38-AC5 (the book's named-index marker)"
 pass "M38-AC5: an HTML book folds its named mark and its named marker into the one index it builds, reports each once, and lists the folded mark's term in that index"
 

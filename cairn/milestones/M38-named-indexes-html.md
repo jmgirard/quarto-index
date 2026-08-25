@@ -124,7 +124,7 @@ collation rules — nothing here changes how one index is ordered or printed.
 - [x] T11: Validate a declared index name as an HTML id fragment: report a name
       that cannot be one and refuse to build a section id from it, so no render
       emits an invalid `id` silently (R1).
-- [ ] T12: In `resolve_markers`, settle a marker's placement slot so a folded
+- [x] T12: In `resolve_markers`, settle a marker's placement slot so a folded
       marker naming a second index cannot take the default index's slot, and
       the author's own default marker is never reported as its duplicate (R2).
 - [ ] T13: Head a folded union index with something that does not claim to be
@@ -193,6 +193,8 @@ collation rules — nothing here changes how one index is ordered or printed.
 
 - 2026-08-25: return gate settled four open choices for T11-T17; recorded under Decisions above.
 - 2026-08-25: T11 — a declared name must match `^[A-Za-z][A-Za-z0-9._%-]*$`; a name that cannot be an HTML id fragment is refused with its own report, so the document keeps the indexes it declared usably. `examples/named-indexes-misuse.qmd` writes four entries of which two are refused and one has no title; the M38-R1 check reads the refusal by name, matches the two sections the two usable entries leave, and asserts no id on the whole rendered page holds a space, a `#`, a `<` or a `>` — probed red by planting `id="qi-index-my people"` into this run's own capture. warn-distinct's pinned count 62 -> 63. Suite green, 370 checks (was 368).
+
+- 2026-08-25: T12 — `resolve_markers` reads every top-level marker's authored index in a pass of its own, then settles the one place a folded back-end has for its one index: the author's own marker for the index that IS built holds it wherever it stands, and only where the document writes no such marker does the first marker of any name hold it. `placed` is keyed by the authored index rather than the built one, so a marker naming a second index is no longer a duplicate of the first. The fold report for a marker gained a second shape for the marker that does not hold the place, and a third state that stays quiet where a duplicate report says the same thing with the marker it lost to. `examples/named-indexes-foldsite.qmd` writes the `authors` marker before the built index's own, and the M38-R2 check reads off the captured `.tex` that the single `\printindex` follows `site-main` and that no duplicate report of either wording is drawn — the reader probed red on a copy of that capture with `\printindex` moved under `site-authors`. m29book's book-html/book-pdf partition and AC5's marker counts moved to the new shape, which is the one `examples/book/last.qmd` and `named-indexes.qmd` both draw. warn-distinct 63 -> 64. Suite green, 372 checks.
 
 ## Review
 

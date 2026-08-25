@@ -252,11 +252,34 @@ local function mark_index(value, context, report)
   return name
 end
 
+-- The index a mark or a marker names as its author wrote it, before any
+-- back-end folds anything: the declared index it names, or the default where it
+-- names none, or names one this document never declared. Silent, because the
+-- reports about what the author wrote are drawn once by the emitting pass; this
+-- is for the caller that has to know which index the AUTHOR meant even where
+-- the running back-end will not build it.
+local function authored_index(value)
+  return declared_for(value) or order[1]
+end
+
 -- The same for a placement marker. A separate call rather than a shared one
 -- with a composed noun: the message-distinctness scan reads the string
 -- literals INSIDE a `warn()` call, so a message built elsewhere and handed in
 -- is text no such scan can see.
-local function marker_index(value, report)
+--
+-- `fold` says what became of this marker under a back-end that keeps one index,
+-- which only the caller can know: under fold there is one index and one place
+-- to put it, and which marker holds that place is a question about the whole
+-- document rather than about this marker. `"places"` is the marker that holds
+-- it, `"elsewhere"` one that lost it to the marker naming the index this
+-- back-end does build, and `"quiet"` one whose own report is drawn by the
+-- caller instead -- a second marker for the same index, whose duplicate report
+-- says everything this one would and says which marker took the place.
+local FOLD_PLACES = "places"
+local FOLD_ELSEWHERE = "elsewhere"
+local FOLD_QUIET = "quiet"
+
+local function marker_index(value, report, fold)
   local name = declared_for(value)
   if name == nil then
     if value ~= nil and report then
@@ -265,8 +288,12 @@ local function marker_index(value, report)
     return order[1], false
   end
   if folded and name ~= order[1] then
-    if report and builds_index() then
-      qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output has one index only, so the marker places that one index instead; more than one index prints in a single HTML document today'):format(INDEX_ATTR, value))
+    if report and builds_index() and fold ~= FOLD_QUIET then
+      if fold == FOLD_PLACES then
+        qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output has one index only, so the marker places that one index instead; more than one index prints in a single HTML document today'):format(INDEX_ATTR, value))
+      else
+        qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output has one index only, which goes where this document already places it, so this marker places nothing; more than one index prints in a single HTML document today'):format(INDEX_ATTR, value))
+      end
     end
     return order[1], true
   end
@@ -312,7 +339,11 @@ M["is_declared"] = is_declared
 M["folds"] = folds
 M["builds_index"] = builds_index
 M["declared_for"] = declared_for
+M["authored_index"] = authored_index
 M["mark_index"] = mark_index
+M["FOLD_PLACES"] = FOLD_PLACES
+M["FOLD_ELSEWHERE"] = FOLD_ELSEWHERE
+M["FOLD_QUIET"] = FOLD_QUIET
 M["marker_index"] = marker_index
 M["section_id"] = section_id
 

@@ -258,8 +258,59 @@ end
 -- Returns whether any placement site survived, exactly as it always has: WHICH
 -- index each surviving marker places is read back off the marker itself by
 -- `place_index`, so there is no second thing for this to hand over.
+-- The index each top-level marker names, in document order, as its AUTHOR wrote
+-- it -- before any fold. Read in a pass of its own because the question the
+-- fold slot below asks is about the whole document: which marker places the one
+-- index cannot be answered while walking one marker at a time. Silent: every
+-- report about these values is drawn in the walk that follows, once per marker.
+--
+-- Reading `doc.blocks` before the walk strips anything is safe because the walk
+-- changes no top-level block's kind: `strip_nested_markers` removes markers
+-- INSIDE a block, so a marker stays a marker and a non-marker never becomes
+-- one, and the two passes see the same top-level markers in the same order.
+local function marker_names(doc)
+  local names = {}
+  for _, block in ipairs(doc.blocks) do
+    if is_marker(block) then
+      names[#names + 1] =
+        qi_indexes.authored_index(block.attributes[qi_indexes.INDEX_ATTR])
+    end
+  end
+  return names
+end
+
+-- Which marker places the one index a folded back-end builds, as an ordinal
+-- over `marker_names` above. The author's own marker for the index that IS
+-- built is where they asked for it, so it holds the slot wherever it stands in
+-- the document; only where no marker names that index does the first marker of
+-- any name hold it, since the alternative is an index appended at the end of a
+-- document whose author did write a place for one.
+--
+-- Without this, a marker naming a second index took the slot merely by standing
+-- first, and the author's own marker for the built index was then reported as
+-- that marker's duplicate -- a second marker for an index they had written
+-- exactly one marker for (M38 R2).
+local function fold_slot(names)
+  for i, name in ipairs(names) do
+    if name == qi_indexes.default() then
+      return i
+    end
+  end
+  if #names > 0 then
+    return 1
+  end
+  return nil
+end
+
 local function resolve_markers(doc, chapter)
+  local names = marker_names(doc)
+  local folds = qi_indexes.folds()
+  local slot = folds and fold_slot(names) or nil
   local out = pandoc.Blocks({})
+  -- Keyed by the index the AUTHOR named, not by the index the back-end builds:
+  -- under fold every marker would otherwise key to the one built index, and a
+  -- second marker naming a second index would read as a duplicate of the first
+  -- while two markers naming the SAME second index would read as neither.
   local placed = {}
   local seen = 0
   local any = false
@@ -267,21 +318,42 @@ local function resolve_markers(doc, chapter)
     block = strip_nested_markers(block, position, chapter)
     if is_marker(block) then
       seen = seen + 1
-      -- Which index this marker places, and the report for a value naming
-      -- none. Drawn for every top-level marker, not only the surviving one: a
+      local name = names[seen]
+      -- Under fold there is one index and one slot for it, settled above over
+      -- the whole document; otherwise each index has its own site and the
+      -- first marker naming one holds it.
+      local takes
+      if folds then
+        takes = (seen == slot)
+      else
+        takes = (placed[name] == nil)
+      end
+      -- The reports for the value this marker carries: one for a value naming
+      -- no declared index, and one for a value the running back-end folds
+      -- away. Drawn for every top-level marker, not only the surviving one: a
       -- marker naming an index this document never declared is the author's
-      -- mistake wherever it sits, and a second marker's own report already
-      -- says why it places nothing.
-      local name, folded =
-        qi_indexes.marker_index(block.attributes[qi_indexes.INDEX_ATTR], true)
-      if placed[name] == nil then
+      -- mistake wherever it sits. The fold report is held back for a marker
+      -- whose duplicate report is drawn below, which says everything it would
+      -- and also says which marker took the place.
+      local fold_shape = qi_indexes.FOLD_ELSEWHERE
+      if takes then
+        fold_shape = qi_indexes.FOLD_PLACES
+      elseif placed[name] ~= nil then
+        fold_shape = qi_indexes.FOLD_QUIET
+      end
+      qi_indexes.marker_index(block.attributes[qi_indexes.INDEX_ATTR], true,
+                              fold_shape)
+      if takes then
         placed[name] = true
         any = true
         out:insert(block)
-      elseif folded then
-        -- Its own report, one line above, already said this marker places the
-        -- document's one index instead. A duplicate report as well would name
-        -- a second marker of an index the author never wrote one for.
+      elseif placed[name] == nil then
+        -- Folded, and the slot went to the marker naming the index this
+        -- back-end builds. This marker is the first naming ITS index, so it is
+        -- no duplicate; its own fold report, one line above, already said it
+        -- places nothing. Recorded all the same, so a later marker naming this
+        -- same index is reported as the second one it is.
+        placed[name] = true
         out:extend(marker_content(block))
       elseif qi_indexes.is_declared() then
         -- Two numbers, so each is named where it is printed (D-014), and the

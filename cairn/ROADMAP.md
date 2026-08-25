@@ -7,6 +7,7 @@ _Last hygiene check: 2026-08-24 (M33 merged and archived; two follow-up rows add
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M34 | The non-Latin-1 recipe names a font TeX Live still maintains | planned | — | normal | milestones/M34-stix-two-recipe.md |
 | M33 | An index term outside Latin-1 prints in the PDF index | done | — | normal | milestones/archive/M33-non-latin1-terms.md |
 | M32 | An index follows the bibliography where the author puts it | done | — | low | milestones/archive/M32-index-after-references.md |
 | M31 | A leftover index file never breaks the next render | done | — | normal | milestones/archive/M31-stale-ind-standin.md |
@@ -31,7 +32,6 @@ _Last hygiene check: 2026-08-24 (M33 merged and archived; two follow-up rows add
 - Move the index relative to content Quarto adds after filters run, rather than leaving the order to an author-written `#refs` div; promote on evidence Quarto exposes an ordering hook a filter can reach — added 2026-08-24 — M32 Scope Out — KI3
 - Make M32's marker-less plants read the captured artifact rather than the render's working copy, so M24's capture rule is met in intent and not only in letter; promote with any other suite-wide capture sweep — added 2026-08-24 — M32 review R2-F9
 - Narrow M32's HTML-cost check from "the fixture carries no `#quarto-appendix` at all" to the bibliography's own wrapper, so a fixture that later grows a footnote or a Citation block cannot turn it red while README stays true; promote on that fixture growing one — added 2026-08-24 — M32 review R2-F14
-- Re-probe the non-Latin-1 recipe's font: `tlmgr info stix` calls stix obsolete since April 2018 in favour of `stix2-otf`, and requiring it makes the WHOLE suite unrunnable on a default TinyTeX for a package outside the core collections — a GP3 tension; promote with the render matrix a font swap needs — added 2026-08-24 — M33 review R3, N7 — KI6
 - M33 suite-hardening (clustered): `unicodeprint.py entries` never reads `Entry.level`, so a term printed as a sub-entry passes; `stopped` searches for the stop signature and the named character independently; the README copyable-block check is one-directional (block ⊆ fixture), so a dropped `pdf-engine:` line escapes it; the `stopped` "no rejection" plant feeds a Quarto stdout log to a reader that in production reads a LaTeX log; control (d) pins only that `Việt` is absent, not that the rest still prints; the tool guard probes one of STIX's four faces; control (d)'s messages share the `M33-AC4` label with the README-content check — added 2026-08-24 — M33 review R4, R6, R8, R12, N5, N6, N9
 - Multiple named indexes (e.g., subject + author) — added 2026-08-16 — suite target
 - Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN) — KI79

@@ -101,7 +101,7 @@ KI81–85, KI87 — stays on its candidate row.
 - [x] T6. Make the `grep -v … > norejection.log` mutation assert it emitted
       lines, and show each of the three plants failing loudly on a fixture
       where its old form would have gone silent or mutated the wrong region.
-- [ ] T7. F6, F8 and F12, narrow-not-widen: print the face list on a green run;
+- [x] T7. F6, F8 and F12, narrow-not-widen: print the face list on a green run;
       reword the recipe-block check's fixture-direction pass line to say each
       stated line appears somewhere in the fixture, not in its front matter;
       and state in the `M33_NOENGINE_PRODUCER` ORACLE RULE comment that it and
@@ -127,6 +127,37 @@ KI81–85, KI87 — stays on its candidate row.
 - 2026-08-25: T6 — the `grep -v` form AC4 was written against is already gone: M35's own review commit 7680a3d replaced it with the python builder, which counts what it removed. What was owed was the demonstration, not the assertion.
 - 2026-08-25: each of the three demonstrations planted and shown red. Strip builder with its zero-count clause removed: <<reported success over a log carrying no error report>>. Options demonstration fed the M35 form: <<the bounded mutation changed bytes outside the `mainfontoptions:` block: it emitted 111 character(s) against the 1268 the fixture carries with that block cut out>> — the M35 range deleted the document's body, which is M35-F13 measured. README demonstration fed the M35 form: <<the bounded form added 2 unstated line(s)>>. Unplanted, the self-test is green at 494 checks, up from 491.
 
+- 2026-08-25: T7 — the face list is printed on a green run (4 faces, named), the recipe-block check's comment and both pass lines now say the fixture direction is a whole-file substring search rather than a front-matter line test, and the `M33_NOENGINE_PRODUCER` ORACLE RULE comment states that it and README's `lualatex` are two hand statements no check compares. All four dispositions, F3's fold into T1 among them, are in the Decisions section above. Self-test green at 496 checks.
+
 ## Decisions
+
+- 2026-08-25 (F3, folded into T1). A `mainfont:` in quotes, a flow-style
+  `mainfontoptions:`, or a block with no `Extension=` are all shapes
+  `recipe_font_files` mis-parses. The parser is not widened. Each of them now
+  surfaces as the face the guard could not assemble — a `kpsewhich` miss naming
+  a filename the machine does not carry — which is a thing the reader can look
+  at and act on, where a parse report would name a YAML shape the fixture is
+  free to change. The fixture is one file in this repo, written by whoever
+  changes the recipe; a parser covering every YAML spelling of it would be
+  checker-regress on an input class nobody is going to write.
+- 2026-08-25 (F6). The face list is printed on a green run rather than
+  discarded. It is the guard's domain, parsed out of the fixture, so a run that
+  probed one face and a run that probed four are otherwise the same green line.
+  No criterion binds this: it is what a check prints, not what the suite
+  certifies.
+- 2026-08-25 (F8). The recipe-block check's fixture direction stays a
+  whole-file substring search, and its comment and pass line now say so — each
+  stated line occurs somewhere in the `.qmd`, not necessarily in its front
+  matter. Narrowing the claim, not widening the check: what this clause is for
+  is catching a stated line the fixture no longer carries at all, and the front
+  matter is read for real by `recipe_font_files` and by the render the
+  typeset-print check judges.
+- 2026-08-25 (F12). `M33_NOENGINE_PRODUCER` and README's `lualatex` stay two
+  hand statements, and the ORACLE RULE comment now says that no check compares
+  them. They are not the same string — one is the Producer name LuaTeX writes,
+  the other the engine word a reader sets — so a comparison would encode a rule
+  about LuaTeX's own naming that this suite has no independent statement of.
+  Keeping them in step is a maintainer's job, and the comment is where a
+  maintainer would look.
 
 ## Review

@@ -653,6 +653,16 @@ M33_CJK=漢字
 # render. The name only, not the version: a TeX Live update that bumps the
 # version says nothing about which engine ran, and a check that went red on it
 # would be red for no reason a reader could act on.
+#
+# Two hand statements, and nothing here asserts they agree. This value is
+# `LuaTeX`, the string LuaTeX writes into a PDF's Producer line; README's
+# paragraph says `lualatex`, the engine a reader would set. Neither is derived
+# from the other and no check compares them, so a README edit that changed the
+# engine word would leave this line saying what it says now and control (d)
+# green — the correspondence is a maintainer's to keep, not something the suite
+# reports on. Said here rather than repaired: the two spellings are not the
+# same string, and a comparison over them would be a rule about LuaTeX's own
+# naming that the suite has no independent statement of.
 M33_NOENGINE_PRODUCER=LuaTeX
 # The captures the M33 checks and the self-test both read, named once.
 M33_PDF="$CAPTURE_ROOT/m33-recipe/unicode.pdf"
@@ -1531,6 +1541,11 @@ require_pdf_tools() {
   local faces
   faces=$(require_recipe_fonts examples/unicode.qmd) \
     || fail "the recipe font guard could not confirm that the faces examples/unicode.qmd's recipe names are on this machine; its own FAIL line above names which of the four it hit and what to do about it. The documented recipe names this font by file, so its renders would fail on the font rather than on anything this suite is testing."
+  # The domain, printed. The face list is parsed out of the fixture, so how many
+  # faces this guard covered is a fact about today's fixture and not about the
+  # guard; a run that silently probed one face would otherwise look exactly like
+  # one that probed four.
+  pass "the recipe font guard probed the $(printf '%s\n' "$faces" | wc -l | tr -d ' ') face(s) examples/unicode.qmd names, and kpsewhich found every one: $(printf '%s' "$faces" | tr '\n' ' ')"
 }
 
 # ---------------------------------------------------------------------------
@@ -4606,6 +4621,15 @@ M33DOCPY
 # fixture in one. Wrapped in a function so the self-test can point it at a
 # README copy with one line dropped: this check runs once over the real
 # document, and nothing in an ordinary run ever shows it able to go red.
+#
+# What the fixture direction reads, said plainly so nobody reads more into it:
+# it asks whether each stated line occurs as a substring ANYWHERE in the
+# `.qmd`, prose and code blocks included — not whether it is a line of that
+# document's front matter. A fixture that mentioned `pdf-engine: xelatex` in a
+# paragraph and set nothing would satisfy it. That is enough for what this
+# clause is for, which is catching a stated line the fixture no longer carries
+# at all; the fixture's front matter is read for real by `recipe_font_files`
+# above and by the render the typeset-print check judges.
 check_recipe_block() {
   local readme="$1" fixture="$2" stated="$WORK/recipe-lines.txt"
   printf '%s\n' "${README_RECIPE_LINES[@]}" > "$stated"
@@ -4664,14 +4688,14 @@ if missing:
     sys.exit(1)
 print(f'ok   M33-AC4: the {len(stated)} line(s) an author copies out of '
       f'README\'s recipe block are exactly the lines this suite states, in '
-      f'that order, and every one of them appears verbatim in '
-      f'{sys.argv[2]}')
+      f'that order, and every one of them occurs somewhere in {sys.argv[2]} — '
+      f'anywhere in the file, not necessarily in its front matter')
 M33BLOCKPY
 }
 
 check_recipe_block README.md examples/unicode.qmd \
   || fail "M33-AC4: the recipe block a reader copies out of README is not the recipe this suite states, or a stated line is not in the fixture that proves it (its own FAIL line is above)"
-pass "M33-AC4: README's Terms outside Latin-1 section states the engine, the font, where to install it and the must-cover rule, both failure signatures, the third path where no engine is set, the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is exactly the ${#README_RECIPE_LINES[@]} lines this suite states, each of them also in the fixture"
+pass "M33-AC4: README's Terms outside Latin-1 section states the engine, the font, where to install it and the must-cover rule, both failure signatures, the third path where no engine is set, the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is exactly the ${#README_RECIPE_LINES[@]} lines this suite states, each of them occurring somewhere in the fixture"
 
 # ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as

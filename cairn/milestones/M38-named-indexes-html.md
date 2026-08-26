@@ -77,7 +77,7 @@ collation rules — nothing here changes how one index is ordered or printed.
       an unnamed mark files in the first declared index, and that a PDF
       render and a book index everything in one index for now; every fixture
       path and command that section names exists in the repo and runs clean.
-- [x] AC7: `tests/run-tests.sh --self-test` passes, with a planted defect for
+- [ ] AC7: `tests/run-tests.sh --self-test` passes, with a planted defect for
       each clause of each reader this milestone adds shown red before its
       green is trusted.
 
@@ -387,3 +387,87 @@ intentional change does not cover them.
   this milestone added.
 - 2026-08-25: review — PR #38 opened; `main` had not moved. All seven criteria passed with fresh evidence (full suite --self-test, exit 0, 520 checks) and the consistency gate was clean. Returned to in-progress at the merge gate under the return floor: the independent review found, and this session re-verified by probe, that a declared index name is never validated as an HTML id fragment so a name with a space emits an invalid `id` with no report (R1), and that in a folded render a marker naming a second index takes the default index's placement slot while the author's own default marker is reported as its duplicate (R2). R3, R4 and the three check gaps R5-R7 ride the same return. Defect return 1 for this milestone; no amendment return, no criterion reinterpreted. Requested changes logged as T11-T17 at the gate's direction.
 - 2026-08-25: the seven added tasks put the plan-owned body 4 lines over the cap; the Tasks section, the heaviest, was compressed in one rewrite — T1-T10 shortened to what each task was, their outcomes already standing in the work-log lines above. `cairn_validate` passes; the 17-task split tripwire is an advisory this milestone accepts, the seven added tasks being one round of gate-directed repair rather than new scope.
+
+### Round 2 — 2026-08-25
+
+Reviewed at fc541c8 on m038-named-indexes-html, PR #38 (draft, already open).
+`main` had not moved since the branch was cut, so no merge was needed. Fresh
+evidence: one full `tests/run-tests.sh --self-test` run, exit 0, 549 checks,
+plus direct reads of the captured artifacts named below.
+
+- AC1 — PASS. A direct `index_sections` read of the captured
+  `named-indexes.html` gives exactly two generated sections in document order:
+  `qi-index-main` / h1 / "Index", then `qi-index-authors` / h1 / "Index of
+  Authors" — declared order, each heading tag, text and id as the fixture's
+  manifest states, with top-level entry sets {Aardvark, Cantor, Neighbour,
+  Hague} and {Babbage, Cantor, Hague, Stranger}. The suite's `M38-AC1` matched
+  all 18 manifest rows in order; link and letter sweeps passed (4 and 3 links,
+  8 letter groups).
+- AC2 — PASS. The captured HTML render log carries exactly one dangling-target
+  report, naming `see=` on entry "Stranger" pointing at "Aardvark", a term only
+  the first index carries. `Neighbour`, whose `see=` names that same target from
+  within the first index, draws none and renders as a resolved link
+  (`xrefs=[('see','Aardvark',True,'#qi-entry-1')]`), while `Stranger` renders
+  unresolved (`(..., False, None)`).
+- AC3 — PASS. Both halves off the same capture. Sort keys: `Hague` sits under
+  letter group Z in `qi-index-main`, where a mark writes `sort="Zebra"`, and
+  under H in `qi-index-authors`, where none does. Range pairing: the captured
+  log carries exactly one never-closed report and one never-opened report, and
+  each `Cantor` entry carries a single ordinary locator (`#qi-mark-5`,
+  `#qi-mark-6`), so neither half printed a range.
+- AC4 — PASS. Each section's `after` — the last author-written id before it —
+  is `site-main` for `qi-index-main` and `site-authors` for `qi-index-authors`,
+  so each index sits at its own marker. The captured log carries exactly one
+  duplicate-marker report, and it names the repeated index ("main").
+- AC5 — PASS, both halves. LaTeX: the captured `named-indexes.tex` carries 8
+  `\index{}` commands against the manifest's 7 rows, exactly one `\printindex`,
+  and zero marker residue. Each named-index mark carries the argument the
+  default index gives it, including `Zebra@Hague` for the second index's
+  `Hague`, which writes no sort key of its own. The log carries 4 fold reports
+  for named-index marks and 1 for the named-index marker, each naming
+  "authors". Book: the captured `book-html/_book/last.html` carries exactly one
+  generated section under the bare `qi-index` id, headed "Index", listing
+  `Turing` — the chapter's `index="people"` mark — among its 14 terms; the book
+  log carries one fold report for that mark and one for the named marker.
+- AC6 — PASS. Read directly from `README.md`'s `### Named indexes` section: it
+  shows the `indexes:` metadata form with `name`/`title` and says what each
+  does; shows `index=` on a mark and on a placement marker with an example
+  each; states that a mark or marker naming none takes the first declared
+  index; and states under its own subheading that a LaTeX or PDF render and an
+  HTML book each build one index for now. Both fixture paths it names exist,
+  and this run's `ran-commands.txt` ledger carries both documented commands
+  with exit status 0.
+- AC7 — **FAIL.** `tests/run-tests.sh --self-test` exits 0 with 549 checks, and
+  every plant this milestone writes runs red behind a passing control. But the
+  criterion requires a plant for *each clause of each reader this milestone
+  adds*, and four of the five readers ship clauses no plant exercises. Read off
+  the shipped readers against the shipped plants:
+  `check_folded_site` states four failure clauses and three are planted — the
+  clause for an index standing before every placement site has none;
+  `check_folded_second` states three and one is planted — its label-order
+  clause has none, and its `\printindex` lookup is a bare `str.index`, verified
+  here to raise `ValueError: substring not found` rather than report a finding,
+  which is the traceback-not-a-finding defect T9 fixed for the section reader;
+  `check_folded_heading` states four and three are planted — the section-count
+  clause, which its own comment names first, has none, verified here to fire
+  cleanly on a two-section capture; `check_readme_indexes` states ten and six
+  are planted — its four empty-domain guards (no section, no yaml fence at all,
+  no fixture named at all, no command shown at all) have none, the same
+  silently-emptying-domain class the round-1 section reader *did* plant with
+  "a manifest naming no section" and "an empty manifest". The block's own
+  comments under-count with the readers: it calls the folded-site reader "two
+  clauses" against four, and the folded-heading reader "three" against four.
+  Its closing `pass` line states that each reader "fails on every clause it
+  states planted on its own", which is a branch-added claim the artifact it
+  describes does not bear out.
+
+### Consistency gate (round 2)
+
+- `cairn_validate.py` exit 0 — every check PASS, every advisory OK except the
+  sizing tripwire (17 tasks), which this milestone's work log already accepts
+  as one round of gate-directed repair rather than new scope. The `release
+  window` advisory did not fire.
+- Toolchain checks: the active `generic` profile names none, so this half is a
+  clean no-op.
+- `cairn_impact.py` not run: the diff changes no IP/GP principle line in
+  `DESIGN.md`.

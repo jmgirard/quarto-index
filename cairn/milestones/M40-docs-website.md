@@ -1,6 +1,6 @@
 # M40: The documentation moves into a Quarto website
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -140,6 +140,8 @@ version does not fence the floor and must not read as closing KI79.
 - 2026-08-26: T7 done: 27 planted cases, one per clause of the five site checks, the registry check and the claim-set check, each required to fail AND to name its own clause; plus one positive control, the root-relative href that resolves once the base path it is written under is given. The heading and prose plants use an overlay (suitescan's handle) so the defect enters a tracked set without editing the repo, and the pre-move README is stated in the self-test rather than read from git, since the merge base stops carrying it once M40 ships. Self-test green: 595 checks.
 
 - 2026-08-26: T8 done: DESIGN's Architecture records the docs home, the claim-container registry and the site checks; GP1's discovery surface now names the site; KI61, KI73 and KI78 corrected in place and marked for what the move changed. Pre-review check green: 595 checks under `--self-test`.
+
+- 2026-08-26: all tasks done, status review. Every criterion re-derived on the branch: AC1/AC2 from a clean clone of the branch (20 pages rendered, 752 local links resolve), AC3 (5046 words on 755 dropped lines all reach a site page) and AC4 (17 headings) against the merge base, AC5 (README 57 lines), AC6 (17 containers, 14 presence, all 164 entries land) and AC7 from the suite, AC8 `--self-test` 595 checks.
 
 - 2026-08-26: sizing tripwire also flags 8 acceptance criteria (>7). Not split: AC6 (presence containers) and AC7 (absence containers) are two domains with opposite promises, and the claim repoint cannot land in a later milestone than the prose move without leaving the suite red in between.
 

@@ -1,6 +1,6 @@
 # M38: Marks name which index they belong to, and the HTML back-end prints each
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -174,6 +174,7 @@ it binds in hand.
 - 2026-08-25: T25 — amendment gate: the criteria set narrows to AC1-AC6, AC7 deleted whole and its Coverage row with it; no AC1-AC6 wording changed, so nothing was widened and no fresh-reader audit of amended wording was owed. Scope's Out gained the descoped promise: "Proof that every clause of every check this milestone adds is shown red by the defect that clause states — AC7 bound that proof and failed twice, each time by a different mechanism, while the checks themselves ship and run → `candidate` row, promoted with the readers it binds in hand." The work itself was absorbed into the acceptance-suite hardening candidate row rather than filed as a new one (search-first): its section-count clause, that reader's raise-rather-than-report shape, and `ran_clean`'s unplanted clause. Gate also chose to fix G5 and the two false self-test claims (T26, T27) and to skip the fresh reader.
 - 2026-08-25: T26 — README's named-index section states the rule T20 tightened: "A name holds ASCII letters, digits, hyphen and underscore and begins with a letter, because it becomes the id of the section that index prints under; an entry declaring any other name is reported and declares no index." Written against `indexes.lua:49`'s `NAME_SHAPE` and the report it draws, not recalled. Pinned as a sixth AC6 claim row (`name shape`); probed by running the README reader over a copy of the shipped README with the character list shortened — red, naming the row — beside the shipped README as its control, green.
 - 2026-08-25: T27 — three branch-added claims the artifact does not bear out, corrected to what it does. The folded-heading reader's two-section plant inserts a heading-less section, so `index_sections` raises `ValueError: the generated index section 'qi-index-extra' carries no heading element` before the count comparison — verified here by running the reader over a fabricated two-section page. The plant's block comment, its `probe_defect` label and the block's closing `pass` line now say the page is shown unreadable and the section-count clause is planted by nothing. The same `pass` line attributed a "none of the one index" plant to the folded-site reader, which has none — it belongs to the second-marker reader; the enumeration was corrected against the plants actually written. No plant and no reader behavior changed.
+- 2026-08-25: T25-T27 complete; status review. The criteria set is AC1-AC6, all six verified with fresh evidence at round 3 and unchanged in wording since. `tests/run-tests.sh --self-test` exit 0, 559 checks; `cairn_validate` clean but for the task-count advisory this milestone already accepts. The narrowing's own follow-up rides the acceptance-suite hardening candidate row.
 
 ## Decisions
 

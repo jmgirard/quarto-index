@@ -70,7 +70,11 @@ greenfield flow for a generic repo; a richer profile adds its own on top.
 
 ## changelog
 The repo's changelog file, read by `/hotfix`, the release-walk, and the
-consistency-gate — **declare it here** (e.g. `CHANGELOG.md`), or "none" if the
-repo keeps no changelog: `/hotfix` then skips the changelog entry and the
-release-walk skips consolidation, deriving the version bump from git
-history.
+consistency-gate:
+
+    CHANGELOG.md
+
+Added at the 0.1.0 release, whose section is the file's first. Entries are
+grouped under the version heading by what they touch (marking syntax, output,
+project), and name behavior rather than milestones — the DESIGN "changelog
+discipline from the start" commitment, which had no file until then.

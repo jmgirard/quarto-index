@@ -1,12 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-26 (M39 merged and archived; M34 pruned from the table under terminal-row retention. One lesson added for the `warn(`-in-a-comment scan hazard, and M01's compile-don't-review escape-table line pruned to hold the 50-line cap.)_
+_Last hygiene check: 2026-08-26 (M40-M42 planned — the docs website, its example gallery, and the Pages workflow; the CI-matrix candidate row amended with a pointer to M42. M39 merged and archived; M34 pruned from the table under terminal-row retention. One lesson added for the `warn(`-in-a-comment scan hazard, and M01's compile-don't-review escape-table line pruned to hold the 50-line cap.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M40 | The documentation moves into a Quarto website | planned | — | normal | milestones/M40-docs-website.md |
+| M41 | The site shows each curated example's source, index and PDF | planned | M40 | normal | milestones/M41-example-gallery.md |
+| M42 | GitHub Actions renders the site and publishes it to Pages | planned | M41 | normal | milestones/M42-pages-publish.md |
 | M39 | The sort-key rival and dangling-target reports name the index they judge | done | — | normal | milestones/archive/M39-report-index-scope.md |
 | M38 | Marks name which index they belong to, and the HTML back-end prints each | done | — | normal | milestones/archive/M38-named-indexes-html.md |
 | M37 | The non-Latin-1 guards report the cause they hit | done | M36 | normal | milestones/archive/M37-non-latin1-guard-causes.md |
@@ -31,7 +34,7 @@ _Last hygiene check: 2026-08-26 (M39 merged and archived; M34 pruned from the ta
 - Move the index relative to content Quarto adds after filters run, rather than leaving the order to an author-written `#refs` div; promote on evidence Quarto exposes an ordering hook a filter can reach — added 2026-08-24 — M32 Scope Out — KI3
 - Make M32's marker-less plants read the captured artifact rather than the render's working copy, so M24's capture rule is met in intent and not only in letter; promote with any other suite-wide capture sweep — added 2026-08-24 — M32 review R2-F9
 - Narrow M32's HTML-cost check from "the fixture carries no `#quarto-appendix` at all" to the bibliography's own wrapper, so a fixture that later grows a footnote or a Citation block cannot turn it red while README stays true; promote on that fixture growing one — added 2026-08-24 — M32 review R2-F14
-- Quarto version floor + CI matrix (floor + latest) — added 2026-08-16 — contract-boundary commitment (DESIGN) — KI79
+- Quarto version floor + CI matrix (floor + latest) — added 2026-08-16, pointer added 2026-08-26 — contract-boundary commitment (DESIGN); M42's Pages workflow is where a matrix attaches, and its single pinned version fences nothing about the floor — KI79
 - Print an RTL index term correctly: the plan gate's probe shows it unshaped with the locator comma on the wrong side of the entry, which a covering font does not fix; promote on a bidi path that also settles locator placement — added 2026-08-24 — M33 Scope Out — KI6
 - Multiple named indexes in the PDF back-end: Quarto's PDF loop builds only the main `.idx`, so a named index prints empty at exit 0 unless imakeidx runs makeindex itself under shell escape, which is machine-dependent and, without `noautomatic`, loses every mark below a marker; promote once the fork is settled between that path plus a loud absent-`.ind` check and a documented one-index limit — added 2026-08-25 — M38 plan gate probe, M38 Scope Out
 - Multiple named indexes across a book's chapters: needs the sidecar store to carry a per-record index name, whose version bump invalidates every other chapter's record; promote once M38 lands — added 2026-08-25 — M38 Scope Out; extended 2026-08-25 with the change's own hazard, that `html.lua`'s emitting loop iterates the declared names alone and drops a mark group whose key is not one of them with no report — unreachable only while every record folds to the reading chapter's default (M38 review round 4, O7)

@@ -1,11 +1,11 @@
 # M40: The documentation moves into a Quarto website
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, IP3
-- **Branch/PR:** —
+- **Branch/PR:** m040-docs-website
 
 ## Goal
 
@@ -84,7 +84,7 @@ version does not fence the floor and must not read as closing KI79.
 
 ## Tasks
 
-- [ ] T1. Create the `site/` project: `_quarto.yml` (website, `output-dir:
+- [x] T1. Create the `site/` project: `_quarto.yml` (website, `output-dir:
       _site`, navigation), `site/index.qmd`, the `site/_extensions` symlink,
       and `site/_site/` + `site/.quarto/` in `.gitignore`.
 - [ ] T2. Move the 17 headings and their prose from README.md into site pages,
@@ -120,6 +120,9 @@ version does not fence the floor and must not read as closing KI79.
 - 2026-08-26: plan gate chose the claim-container registry over the criterion naming its containers by hand; the audit showed a hand list already wrong (13 named against 16 defined, `README_STALE` counted as a presence set, `SUPPORTED_FORMS` double-counted). Falsified by a container the registry omits that its own completeness check does not catch.
 - 2026-08-26: plan gate kept the criteria bound to the site and left "the suite enforces it" in the tasks, over stating enforcement as a criterion; the audit's cross-cutting finding that the site can rot post-merge with the suite green is real, and the answer is T5-T7, not an instrument-bound promise. Falsified by a post-merge site regression no suite check reaches.
 - 2026-08-26: sizing tripwire split this from the two milestones the user chose into three; the docs migration plus the claim repoint is a milestone on its own once the prose moves rather than being generated.
+
+- 2026-08-26: T1 done: `site/` Quarto website project (navbar + docked sidebar, `output-dir: _site`), the `site/_extensions` symlink, and `site/_site/` + `site/.quarto/` ignored. Verify slot green (381 checks).
+- 2026-08-26: question gate chose one page per README topic (18 pages) over one page per `## ` section, and navbar-plus-sidebar navigation; T2's one-page-per-`## `-section wording is superseded by the finer split, which no criterion binds.
 
 - 2026-08-26: sizing tripwire also flags 8 acceptance criteria (>7). Not split: AC6 (presence containers) and AC7 (absence containers) are two domains with opposite promises, and the claim repoint cannot land in a later milestone than the prose move without leaving the suite red in between.
 

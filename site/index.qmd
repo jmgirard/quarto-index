@@ -1,0 +1,51 @@
+---
+pagetitle: "quarto-index"
+---
+
+# quarto-index
+
+A Quarto extension for book-quality subject indexing. Mark index entries with
+a format-neutral span syntax; the extension emits the right thing per output
+format. Two back-ends ship: LaTeX/PDF and HTML.
+
+> **Pre-release: install at your own risk.** Until the first tagged release
+> the marking syntax is fluid and may change without a deprecation cycle.
+> Breaking changes are recorded in the changelog. From the first tagged
+> release onward, documented syntax forms change only via deprecation.
+
+## Install
+
+```bash
+quarto add jmgirard/quarto-index
+```
+
+Then enable the filter in your document (or `_quarto.yml`):
+
+```yaml
+---
+title: "My book"
+filters:
+  - index
+---
+```
+
+Requires Quarto 1.4 or later. No other runtime dependencies: on the LaTeX
+side it uses `imakeidx`, which ships with mainstream TeX distributions.
+
+## Where to go next
+
+- [Syntax](syntax.qmd) — the supported marking forms, and a page per topic:
+  [sub-entry levels](sub-entry-levels.qmd),
+  [cross-references](cross-references.qmd),
+  [special characters](special-characters.qmd),
+  [terms outside Latin-1](terms-outside-latin-1.qmd),
+  [sort keys](sorting.qmd),
+  [principal mentions](principal-mention.qmd),
+  [page ranges](page-ranges.qmd),
+  [placing the index](placing-the-index.qmd) and
+  [named indexes](named-indexes.qmd).
+- [What it emits](output.qmd) — what each output format gets, and where the
+  two back-ends differ.
+- [Books](books.qmd) — one index for a whole Quarto book.
+- [Examples](examples.qmd) and [Tests](tests.qmd) — the fixture corpus and the
+  acceptance suite.

@@ -25,4 +25,7 @@ examples/.quarto/
 examples/book*/_book/
 examples/book*/.quarto/
 /.quarto/
+# The docs website renders into its own output directory.
+site/_site/
+site/.quarto/
 tests/.work/

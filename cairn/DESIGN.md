@@ -133,7 +133,8 @@ _None yet — populated as the codebase takes shape._
   term: any characters in a visible term appear correctly in the index —
   non-ASCII included, on the condition that the document's PDF engine and
   main font can draw them, which for terms outside Latin-1 means the recipe
-  README's `### Terms outside Latin-1` section names (amended M33; D-016) —
+  the docs site's Terms outside Latin-1 page names (amended M33, D-016;
+  recipe home corrected M40, D-023) —
   and formats without an index back-end pass the
   visible text through untouched, with no artifacts. An escaping bug, a
   crash on exotic input, or garbage in a back-end-less format is the
@@ -501,8 +502,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI5.** A registered principal page folded inside a makeindex page range is
   not emphasized: the typeset-time channel D-007 adopts looks a page up by
   string, and a range misses, printing it unemphasized and silently. — RR01
-- **KI6.** The engine-and-font recipe README's `### Terms outside Latin-1`
-  section names — xelatex plus a main font loaded by file — is proven by a
+- **KI6.** The engine-and-font recipe the docs site's Terms outside Latin-1
+  page names (corrected M40) — xelatex plus a main font loaded by file — is
+  proven by a
   typeset-print check for Greek, Cyrillic, and Latin beyond Latin-1 including
   terms written with combining marks. Every other script is unproven under it.
   CJK is unsupported: the font the recipe names does not cover it, and the

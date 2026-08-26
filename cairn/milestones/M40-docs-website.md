@@ -24,8 +24,8 @@ moved into site pages with their prose intact; README rewritten to pitch,
 install, pre-release warning and a link to the docs; a **claim-container
 registry** in `tests/run-tests.sh` that the suite iterates, so the 16 existing
 `README_*` containers plus `SUPPORTED_FORMS` are enumerated by a procedure
-rather than by hand, each repointed at the site file that now holds it and each
-tagged presence or absence; and a link check over the rendered site.
+rather than by hand, each repointed at the site file or files that now hold it
+and each tagged presence or absence; and a link check over the rendered site.
 
 The site uses Quarto's default output naming — no `output-file:` overrides —
 and partials are `_`-prefixed, so a source path determines its output path.
@@ -61,10 +61,12 @@ version does not fence the floor and must not read as closing KI79.
 - [ ] AC5. README.md at HEAD is under 120 lines and contains the pre-release
       warning paragraph, the `quarto add jmgirard/quarto-index` line, and a
       relative link to `site/index.qmd` that resolves in the repo.
-- [ ] AC6. Every exemplar in `SUPPORTED_FORMS` and every entry in every
-      presence container the claim-container registry lists appears, under the
-      comparison the suite already uses for that container, in exactly one
-      tracked `.qmd` file under `site/` that AC1 renders.
+- [ ] AC6. Every entry of every presence claim container in
+      `tests/run-tests.sh` — `SUPPORTED_FORMS` and the 16 `README_*`
+      containers its source defines, 17 in all, of which the claim-container
+      registry tags 14 presence and 3 absence — appears, compared with runs of
+      whitespace flattened to one space, in the flattened text of some tracked
+      `.qmd` file under `site/`.
 - [ ] AC7. Every entry in every absence container the registry lists —
       `README_STALE` (:318), `README_REFS_STALE` (:500) and
       `README_MISUSE_STALE` (:1860) — appears in no tracked file under `site/`
@@ -107,8 +109,8 @@ version does not fence the floor and must not read as closing KI79.
       relative href, a dangling fragment, a root-relative href under the base
       path, an unrendered `.qmd`, a moved heading whose text drifted, a claim
       sentence deleted from its site file, an absence sentence copied into one,
-      a registry missing a container, and a README line whose words reach no
-      site file.
+      a registry missing a container, a presence container mis-tagged absence,
+      and a README line whose words reach no site file.
 - [ ] T8. DESIGN.md: record the docs-home split in Architecture; amend any
       Known-issue the move closes. Verify slot clean.
 
@@ -125,6 +127,10 @@ version does not fence the floor and must not read as closing KI79.
 - 2026-08-26: question gate chose one page per README topic (18 pages) over one page per `## ` section, and navbar-plus-sidebar navigation; T2's one-page-per-`## `-section wording is superseded by the finer split, which no criterion binds.
 
 - 2026-08-26: T2 and T3 landed as one checkpoint, boxes left unticked: the prose is in `site/` (18 pages) and README is 57 lines, so the suite's 17 claim containers still read README.md and the verify slot is red until T5 repoints them.
+
+- 2026-08-26: amendment gate — AC6 replaced and Scope's "the site file" widened to "the site file or files". AC6 as planned was unsatisfiable: `::: {.qi-index-here}` is documented on both the placing-the-index and books pages, as README documented it twice, and six presence containers span two or more pages. Two fresh-context [O] criteria audits ran in full mode (user-facing tier), one on the first replacement draft and one on the wording written; the first killed a draft that defined the promise by reference to the suite's own checks — two of which bound their search by a `### ` heading the move removes — and let the registry pick its own domain. Findings disposed here, none deferred. The user chose the replacement at the gate.
+- 2026-08-26: amendment gate — the recipe's home moves to the site and IP2's non-ASCII condition names it there; D-023 records it, IP2 and KI6 corrected in place and marked. Chosen by the user at the gate (RB tripwire: ip-touching, escalation offered and declined).
+- 2026-08-26: T7 gains one plant, a presence container mis-tagged absence, so AC6's domain cannot shrink by re-tagging.
 
 - 2026-08-26: sizing tripwire also flags 8 acceptance criteria (>7). Not split: AC6 (presence containers) and AC7 (absence containers) are two domains with opposite promises, and the claim repoint cannot land in a later milestone than the prose move without leaving the suite red in between.
 

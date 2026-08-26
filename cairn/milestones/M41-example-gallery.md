@@ -1,11 +1,11 @@
 # M41: The site shows each curated example's source, index and PDF
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M40
 - **Driving RR:** —
 - **Principles touched:** GP1, GP6
-- **Branch/PR:** —
+- **Branch/PR:** `m041-example-gallery`
 
 ## Goal
 

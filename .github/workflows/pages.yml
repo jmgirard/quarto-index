@@ -41,7 +41,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          version: 1.10.18
+          version: 1.10.999
           tinytex: true
 
       # The render's output is piped to `tee` so a failing render's message is

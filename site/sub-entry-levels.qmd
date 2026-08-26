@@ -1,0 +1,78 @@
+---
+pagetitle: "Sub-entry levels"
+---
+
+# Sub-entry levels
+
+Inside `entry=`, a single `!` separates sub-entry levels and `!!` is a
+literal exclamation mark:
+
+```markdown
+[nested]{.index entry="Top!Middle!Leaf"}   → Top → Middle → Leaf
+[wow]{.index entry="Wow!!Really"}          → one entry: Wow!Really
+```
+
+Levels are scanned left to right, longest match first, so `A!!!B` is the
+entry `A!` with sub-entry `B`.
+
+**An empty level is dropped.** A `!` at either end of the value asks for a
+level that prints no text at all. You get one warning per mark, naming the
+entry and which positions in the value were empty — `entry="!Sub!"` reports
+positions 1 and 3 of 3, and says that 1 of the 3 written levels remains. Those
+positions count the levels you wrote, not the `!` characters between them:
+`!!` is a literal `!` and not two separators, so `entry="A!!B!"` is two levels
+and reports position 2 of 2. A value that is *only* `!` has no level left at
+all and gets a different warning, below. The empty levels are dropped and the entry indexes
+at the levels that remain, so `entry="!Cats"` and `entry="Cats!"` both index
+as `Cats`. This is the same in every format, and it is not tidiness: the
+LaTeX index tool rejects an entry outright for a leading or middle null field,
+drops it from the index, and still reports no warning and exits 0, so the
+entry would vanish from a build that looked clean.
+
+Two empty levels can never sit side by side, because `!!` is a literal `!` and
+not two separators, so a level between two others is not something you can
+write.
+
+A value that is *only* empty levels leaves nothing to index. The mark falls
+back to its own visible text where it has some — `[Cats]{.index entry="!"}`
+indexes as `Cats` — and indexes nothing where it has none. Either way you get
+a warning naming the value you wrote.
+
+A sort level goes with the entry level it was written for. If that level is
+dropped, its key is dropped with it, so `entry="!Cats" sort="zzz!cats"` files
+`Cats` under `cats` and never under `zzz`; you get a warning saying how many
+keys went. Where every level is dropped, every key goes with them — a mark
+falling back to its visible text files under that text, never under a key
+written for a level that is gone. Dropping empty levels changes nothing for an
+entry that has none: restating a level's own text on the way to a deeper level
+still declares nothing for it. See the ceiling below for what happens in an
+entry deeper than three levels.
+
+**Three levels is the ceiling.** The LaTeX index back-end stores at most
+three. A deeper entry is not dropped: everything past the third level is
+folded into it, joined with `, `, and you get a warning naming the entry. So
+`entry="One!Two!Three!Four"` indexes as `One` → `Two` → `Three, Four`. Depth
+is counted after empty levels have gone, so a stray `!` cannot push an entry
+over the ceiling on its own: `entry="One!Two!Three!"` is three levels and
+folds nothing. The warning names that depth, and names the depth you wrote
+alongside it where a dropped level makes the two differ, so both numbers are
+ones you can find in the value you typed.
+
+A sort key written for a level past the third goes with that level in this
+back-end: the level is folded away here, so its key has nothing left to place.
+The folded level files under the third level's own sort key where you wrote
+one, and under its printed text where you did not. The HTML index has no
+ceiling, so it keeps both the level and the key written for it.
+
+**A cross-reference target meets the same ceiling.** In the LaTeX back-end a
+target is folded exactly as an entry is, and you get a warning naming the mark,
+the depth the target is at, the depth you wrote it at where a dropped level
+makes the two differ, and the path the target now points at. With
+`entry="One!Two!Three!Four"` marked somewhere, `see="One!Two!Three!Four"`
+prints as `see One: Two: Three, Four` —
+the path that entry prints — rather than sending a reader to a four-level path
+the printed index does not contain. The HTML index has no ceiling, so there the
+target keeps every level you wrote.
+
+`!` and `!!` are the extension's own syntax, not LaTeX. They mean the same
+thing whatever format you render to.

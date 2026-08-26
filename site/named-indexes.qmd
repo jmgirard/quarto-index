@@ -1,0 +1,75 @@
+---
+pagetitle: "Named indexes"
+---
+
+# Named indexes
+
+A document can have more than one index — a subject index and an index of
+names, say. Declare them in the metadata, in the order they should print:
+
+```yaml
+indexes:
+  - name: main
+    title: Index
+  - name: people
+    title: Index of Names
+```
+
+`name` is what a mark writes to file in that index; `title` is the heading a
+reader sees. A name holds ASCII letters, digits, hyphen and underscore and
+begins with a letter, because it becomes the id of the section that index
+prints under; an entry declaring any other name is reported and declares no
+index. A mark says which index it belongs to with `index=`:
+
+```markdown
+[Cantor]{.index index="people"}
+```
+
+A mark that names no index files in the first declared index. So a document
+that declares nothing keeps the single index it has always had, and one that
+declares several needs `index=` only on the marks that go somewhere other
+than the first.
+
+A placement marker names its index the same way, and each index is placed at
+the first marker naming it:
+
+```markdown
+::: {.qi-index-here index="people"}
+:::
+```
+
+A marker that names no index places the first declared one, exactly as a mark
+that names none files there. A declared index no marker names goes at the end
+of the document, in declared order. A second marker for one index is reported
+and places nothing; two markers naming two different indexes are not second
+markers for each other.
+
+Every judgement this extension makes about a mark is made inside the index the
+mark belongs to. A cross-reference target resolves against the terms of its
+own index, a sort key files a term in its own index only, and a range pairs an
+opening with a closing of the same index. An opening in one index and a
+closing in another are not a pair: each is reported and indexes as an ordinary
+locator. A report of one of these judgements names the index it was made in, so
+a warning that a target names nothing indexed is telling you nothing in *that*
+index carries the term — the term may well be marked elsewhere in the document,
+in another index.
+
+**One index outside HTML, for now.** A LaTeX or PDF render builds a single
+index. Quarto's PDF loop builds only the main entry file, so a second index
+would print empty with nothing said, and refusing that is worth more than the
+feature. An HTML book builds a single index too: its chapters are aggregated
+through a per-chapter record that carries no index name. In both, every mark
+and every marker naming another index is folded into the one index that is
+built, and each is reported by the index it named — nothing is dropped, and
+nothing is silent. The one index is placed at your own marker for it, wherever
+that marker stands; only where no marker names it does the first marker of any
+name place it.
+
+`examples/named-indexes.qmd` declares two indexes and writes every one of
+those judgements across both; `examples/named-indexes-twin.qmd` is the same
+terms in a document that declares none.
+
+```bash
+quarto render examples/named-indexes.qmd --to html
+quarto render examples/named-indexes.qmd --to latex
+```

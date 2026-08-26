@@ -1,0 +1,16 @@
+---
+pagetitle: "Tests"
+---
+
+# Tests
+
+```bash
+tests/run-tests.sh --self-test
+```
+
+The suite renders the examples to LaTeX, HTML, PDF, beamer and
+GitHub-flavoured markdown, and checks the output against hand-derived
+manifests. It needs TinyTeX (with `kpsewhich` on the path and TeX Live's
+`stix2-otf` package installed, which the non-Latin-1 renders load by file
+name), `makeindex` and `pdftotext`, and fails loudly rather than skipping if
+any is missing.

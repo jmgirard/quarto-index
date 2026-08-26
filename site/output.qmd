@@ -1,0 +1,11 @@
+---
+pagetitle: "What it emits"
+---
+
+# What it emits
+
+- [LaTeX and PDF](latex-and-pdf.qmd)
+- [HTML](html.qmd)
+- [Other formats](other-formats.qmd)
+- [Where the two back-ends differ](back-end-differences.qmd)
+- [Letter groups in the HTML index](letter-groups.qmd)

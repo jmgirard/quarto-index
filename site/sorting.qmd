@@ -1,0 +1,87 @@
+---
+pagetitle: "Sorting an entry under something else"
+---
+
+# Sorting an entry under something else
+
+Some terms do not file where their spelling puts them. `The Hague` belongs
+under H, `von Neumann` under N, `10 Downing Street` where a reader would say
+it. Write a sort key and the entry prints one way and files another:
+
+```markdown
+[The Hague]{.index sort="Hague"}
+```
+
+A sort key is ordinary text, not index-tool syntax — the extension writes
+whatever its back-end needs. It uses the same level syntax `entry=` does, and
+lines up with it position by position: the first sort level places the first
+entry level, the second places the second, and so on.
+
+```markdown
+[]{.index entry="mathematicians!von Neumann" sort="!Neumann"}
+```
+
+A sort level left empty means "file this level under its own printed text", so
+you only write the levels you are actually moving. Above, `mathematicians`
+files under itself and only the sub-entry is redirected.
+
+Two skipped levels cannot sit side by side, because `!!` is a literal `!` and
+not two separators — `sort="!!Zed"` is a one-level key reading `!Zed`. Where
+you would need to skip two in a row, write those levels' own printed text
+instead: `sort="One!Two!Zed"` rather than `sort="!!Zed"`.
+
+Restating a level's own text on the way to a deeper one declares nothing for
+that level — it is how you reach past it — so a key another mark writes for
+that level still applies. Written as the last level of a sort key it is an
+ordinary declaration: the level files under its own text, and a different key
+written elsewhere is reported rather than quietly preferred.
+
+A sort key belongs to the entry, not to the mark you happened to write it on.
+Mark a term in six places and give one of them a `sort=`, and all six file
+under it — you never have to repeat it.
+
+More exactly, it belongs to the entry level you wrote it for, and places that
+level wherever it appears. A key written for `Hague, The` files it the same
+way whether the mark carries that term alone or as the parent of a sub-entry,
+so one term never files two ways.
+
+Three things are reported, in every output format, because each is a mistake
+about the mark rather than about any one back-end:
+
+- a `sort=` on a mark that indexes nothing, which has nothing to sort;
+- a `sort=` with more levels than there are to sort, whose extra levels are
+  ignored. The report says what each count is over — the levels written in
+  `sort=`, against the levels the entry is written with — because neither is
+  the depth the entry finally indexes at: `entry="Moles!" sort="a!b!c"` is
+  written with two levels, sorted with three, and indexes at one. On a mark
+  carrying no `entry=` at all the second count is the one level its visible
+  text makes, and the report says that instead;
+- one entry given two different sort keys, which cannot file in two places —
+  the first one in the document wins, and in a book the first in book order.
+
+A book adds a fourth report, for a term two chapters sort differently. No
+single document can see that clash, since each chapter renders on its own, so
+it is reported where the book's index is built.
+
+A fifth report is LaTeX-only. The index tool stores three levels, and this
+extension folds a deeper entry into its third rather than lose it, so two
+entries written at different depths can end up printing at one place — and each
+still files where it was written to file, under its own sort key or, with none,
+under its printed text. That stores the entry once per key and prints it in as
+many places, identically. Every key contesting the path is named along with the
+path itself, because which one you meant is yours to choose. The HTML index
+applies no such ceiling, so there the two entries are two and nothing is
+reported.
+
+Sorting is otherwise best-effort: neither back-end collates accented or
+non-Latin text the way a language would, and a sort key is how you fix an
+entry that files wrongly.
+
+A sort key files an entry under the ordering of whichever back-end builds the
+index, and the two orderings need not agree. In HTML the ordering is the
+extension's own — ASCII case folded, then character code. In PDF it is
+`makeindex`'s, which groups punctuation ahead of letters and reads the key in
+the escaped form the back-end writes for it. Sort keys of plain letters and
+digits order the same way in both back-ends; one built out of punctuation may
+not, and neither will a key written past the three-level ceiling, which HTML
+honors and LaTeX drops with the level it was written for.

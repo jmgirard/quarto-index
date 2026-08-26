@@ -124,6 +124,8 @@ version does not fence the floor and must not read as closing KI79.
 - 2026-08-26: T1 done: `site/` Quarto website project (navbar + docked sidebar, `output-dir: _site`), the `site/_extensions` symlink, and `site/_site/` + `site/.quarto/` ignored. Verify slot green (381 checks).
 - 2026-08-26: question gate chose one page per README topic (18 pages) over one page per `## ` section, and navbar-plus-sidebar navigation; T2's one-page-per-`## `-section wording is superseded by the finer split, which no criterion binds.
 
+- 2026-08-26: T2 and T3 landed as one checkpoint, boxes left unticked: the prose is in `site/` (18 pages) and README is 57 lines, so the suite's 17 claim containers still read README.md and the verify slot is red until T5 repoints them.
+
 - 2026-08-26: sizing tripwire also flags 8 acceptance criteria (>7). Not split: AC6 (presence containers) and AC7 (absence containers) are two domains with opposite promises, and the claim repoint cannot land in a later milestone than the prose move without leaving the suite red in between.
 
 ## Decisions

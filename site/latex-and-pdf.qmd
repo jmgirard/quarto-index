@@ -1,0 +1,39 @@
+---
+pagetitle: "LaTeX and PDF"
+---
+
+# LaTeX and PDF
+
+For LaTeX-derived formats the extension writes `\index{…}` at the mark's
+position. When a document has at least one mark, it also adds
+`\usepackage{imakeidx}` and `\makeindex[intoc]` to the preamble and one
+`\printindex` after the document body — or at your placement marker, if the
+document has one — so the index is built and listed in the table of contents
+with no configuration. In a document with a bibliography, where `\printindex`
+lands relative to the reference block follows from where you put an empty
+`#refs` div and the placement marker below it — see *Placing the index*,
+above. A document with no marks gets none of this, except six one-line
+`\providecommand*` definitions: every LaTeX-derived render carries the two
+cross-reference commands, and every one that does *not*
+emphasize a principal mention carries four more — three against a leftover
+`.aux` from a render that did, and one against a leftover `.ind`. They are
+described under the principal mention, below.
+
+A cross-reference is written into the same `\index{…}` command, through
+`makeindex`'s encapsulation channel — `\index{cats|see{Felines}}` — except
+where a term is marked two different ways, whose single composed entry carries
+the cross-reference in its printed text instead. A document that puts both
+attributes on one mark, or that composes such an entry, also gets one small
+`\providecommand` in its preamble, which prints cross-references through
+LaTeX's own `\seename` and `\alsoname`, so a document loading `babel` keeps
+its translations. A document with neither gets nothing extra on this account.
+
+A page range is written into that same channel, as `makeindex`'s own range
+operators — `\index{otters|(}` at the opening mark and `\index{otters|)}` at
+the closing one. Where either mark of the range is the principal mention, both
+ends carry the same encapsulation command, which is what `makeindex` requires
+of a range's two ends, and the pages the two marks land on are recorded through
+the `.aux` so the span the index prints can be emphasized whole.
+
+Placement is automatic unless you write a marker; see [Placing the
+index](placing-the-index.qmd).

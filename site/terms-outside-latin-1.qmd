@@ -1,0 +1,69 @@
+---
+pagetitle: "Terms outside Latin-1"
+---
+
+# Terms outside Latin-1
+
+Escaping is not what stops a Greek or Polish term from reaching your index. A
+PDF build has to be able to *draw* the characters, which takes an engine and a
+main font chosen for the job. Set both — the engine, and the font (which
+takes an options block, because it is named by file):
+
+```yaml
+pdf-engine: xelatex
+mainfont: STIXTwoText
+mainfontoptions:
+  - Extension=.otf
+  - UprightFont=*-Regular
+  - BoldFont=*-Bold
+  - ItalicFont=*-Italic
+  - BoldItalicFont=*-BoldItalic
+```
+
+`xelatex` is the engine, and STIX Two Text is the main font — named by file
+rather than by family, which is why the options above are needed. Naming it by
+file is what makes the build load the copy you installed: the family name
+`STIX Two Text` is findable too, but on a machine whose operating system ships
+a font of that name it finds that one instead, and the two are not the same
+build. STIX Two Text is not in a default TinyTeX install — it lives in TeX
+Live's `collection-fontsextra`, so install it with `tlmgr install stix2-otf`.
+The general rule behind the recipe is that **your main font must cover the
+script you are indexing**; STIX Two Text is one font that does, not the only
+one.
+
+Leave one of the two lines out and what you get depends on which — three
+paths in all:
+
+- **Wrong engine.** With `pdf-engine: pdflatex` the render stops and the LaTeX
+  log says `not set up for use with LaTeX`, naming the character. A failed
+  build is the friendliest of the three.
+- **Wrong or missing font.** With the right engine and a main font that does
+  not cover the script, the render **succeeds** and the term is simply absent
+  from the printed index. Nothing warns you.
+- **No engine set.** Quarto's default engine is not `pdflatex` — on Quarto
+  1.10 it is `lualatex` — so leaving the `pdf-engine:` line out does not get
+  you the failed build above. With the font set and the engine left alone,
+  `examples/unicode.qmd` renders at exit 0 and its whole index prints
+  correctly: on this Quarto the font is doing the work and the engine line is
+  not what saves you. Set it anyway. It is the line that pins the behaviour to
+  something this recipe states rather than to whichever engine your Quarto
+  picks, and the failed build above is what you get if that default ever
+  becomes `pdflatex`.
+
+Do not read the log's `Missing character` line as that missing-font failure. Under
+`xelatex` that line also appears for characters that print perfectly well: the
+engine draws a precomposed letter it lacks from the letter's accent-plus-base
+spelling instead. The reliable check is the printed index itself.
+
+`sort=` still works and still does only what it says — it sets one entry's
+sort key. The order of the index as a whole is the index processor's, and for
+non-ASCII terms it is best-effort; see
+[Sorting an entry under something else](sorting.qmd).
+
+This recipe is proven, with a typeset-print check in the test suite, for
+Greek, Cyrillic, and Latin beyond Latin-1 including terms written with
+combining marks — `examples/unicode.qmd` is the fixture. Any other script is
+unproven. In particular **CJK and right-to-left scripts are not supported**:
+STIX Two Text does not cover CJK, and RTL additionally has two problems no
+font fixes — the text is not shaped, and the comma between an entry and its
+page numbers lands on the wrong side of the entry.

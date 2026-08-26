@@ -1,0 +1,19 @@
+---
+pagetitle: "Other formats"
+---
+
+# Other formats
+
+In beamer, and in any other format with no index back-end, marks pass through:
+the visible text is preserved exactly as written, no index is generated, and
+no LaTeX or index markup is emitted. The mark itself is still a span, so in a
+format that can carry span attributes — GitHub-flavoured markdown does,
+through inline HTML — its class and attribute values travel with it, just as
+any other span's would. Beamer slides
+have no index environment of their own, so a `\printindex` there would abort
+the render — and a marked term must never break a document, so beamer is
+deliberately not an index target rather than a broken one.
+
+Warnings about the mark itself — an empty sub-entry level, a cross-reference
+with no usable target, a mark with nothing to index — are about what you wrote
+rather than about any one back-end, so you get them whatever you render to.

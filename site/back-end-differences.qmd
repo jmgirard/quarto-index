@@ -1,0 +1,37 @@
+---
+pagetitle: "Where the two back-ends differ"
+---
+
+# Where the two back-ends differ
+
+The marking syntax means the same thing in both. What the two indexes can do
+differs, because the tools underneath them do:
+
+1. **No level ceiling in HTML.** Sub-entries nest as deep as you write them.
+   The three-level ceiling described above is `makeindex`'s limit, not the
+   extension's.
+2. **The one-entry warning is LaTeX-only.** A term marked two different ways
+   reaches the LaTeX index tool as one entry the extension had to compose, so
+   the extension says it did. An HTML index prints the locator and the
+   cross-reference together on one entry by itself, with nothing to compose,
+   so the warning would name a decision that format never has to make.
+3. **Sorting is the extension's own in HTML.** Top-level entries are ranked
+   into letter groups first; inside a group, and at every level below the top,
+   the order folds ASCII uppercase to lowercase and then compares character
+   codes, breaking a tie by character code, over an entry's sort key where it
+   has one. In LaTeX the order is `makeindex`'s. Neither collates accented or
+   non-Latin text the way a language would, which is what sort keys are for.
+4. **Locators are numbered links in HTML**, in the order the marks are
+   written, where LaTeX gives page numbers.
+5. **Cross-reference targets are hyperlinked in HTML** when the target names an
+   entry in the same index, and are plain text otherwise. A printed index
+   cannot link at all.
+6. **A cross-reference carries no locator in either back-end.** The `see also`
+   limitation described above is the same in both.
+7. **The principal mention is emphasized in both**, but by different means: the
+   LaTeX back-end wraps the page number in a command you can redefine, and the
+   HTML back-end marks the link with a class and a `<strong>`.
+8. **A page range is a page range only in LaTeX.** `makeindex` prints one span
+   of pages, `12--15`; HTML has no pages, so a range there is one numbered link
+   at the opening mark. Both are one locator where you wrote two marks, which
+   is what the syntax means.

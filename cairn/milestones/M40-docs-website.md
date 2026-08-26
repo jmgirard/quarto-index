@@ -94,14 +94,14 @@ version does not fence the floor and must not read as closing KI79.
       every pinned sentence byte-identical to what the suite compares today.
 - [x] T3. Rewrite README.md: pitch, `## Install`, the pre-release warning, the
       docs link, and short `## Examples` / `## Tests` pointers.
-- [ ] T4. Write the prose-move bound of AC3 (the M27 four-character-word rule
+- [x] T4. Write the prose-move bound of AC3 (the M27 four-character-word rule
       in `cairn/check-design.md`), stating its normalization in the check.
 - [x] T5. Add the claim-container registry to `tests/run-tests.sh`: every
       `README_*` container and `SUPPORTED_FORMS`, each tagged presence or
       absence and each naming the file it is compared against; add a check that
       the registry names every such container the file defines, so the domain
       cannot half-empty (`check-design.md`, M16); repoint each at its site file.
-- [ ] T6. Write the render and link-resolution checks (AC1, AC2, AC4, AC5),
+- [x] T6. Write the render and link-resolution checks (AC1, AC2, AC4, AC5),
       capturing the render and reading the capture (M24; note `suitescan.py`'s
       `pairs` rule binds any `quarto render` line the suite adds).
 - [ ] T7. Plant a defect per clause of each new check and record each red
@@ -133,6 +133,9 @@ version does not fence the floor and must not read as closing KI79.
 - 2026-08-26: T7 gains one plant, a presence container mis-tagged absence, so AC6's domain cannot shrink by re-tagging.
 
 - 2026-08-26: T5 done, and T2/T3 tick with it: `CLAIM_CONTAINERS` in `tests/run-tests.sh` names all 17 containers, 14 presence and 3 absence, each presence row naming the site page or pages that hold it and each absence row `ALL` (every tracked page under `site/` plus README). `claim_text` concatenates a row's pages and every claim check reads that instead of README.md; the three section-anchored checks take their heading as a parameter and bound the section outside fenced blocks, which a bare regex got wrong on a `# References` line inside a copyable block. Registry completeness is compared against a scan of the suite's own source reading both the array and here-document definition shapes. Verify slot green: 382 checks, 564 with `--self-test`.
+
+- 2026-08-26: T4 and T6 done: `tests/sitecheck.py` carries five modes — `rendered`, `links`, `headings`, `readme`, `prose` — each reporting the size of the domain it swept. `prose` states its normalization where the M27 four-character-word rule is applied and nowhere else. `capture` grew a `--site` mode so the website render is captured whole, as a book's `_book` is.
+- 2026-08-26: task refinement — the suite runs `rendered`, `links` and `readme` as standing checks; `headings` and `prose` compare the pre-move README against the site, which is a one-time fact about the migration, so they are run against the merge base for AC3/AC4 evidence rather than wired into a suite where their domain would be empty forever (M16). No criterion changes: AC3 and AC4 name a comparison, not an instrument. Verify slot green: 385 checks.
 
 - 2026-08-26: sizing tripwire also flags 8 acceptance criteria (>7). Not split: AC6 (presence containers) and AC7 (absence containers) are two domains with opposite promises, and the claim repoint cannot land in a later milestone than the prose move without leaving the suite red in between.
 

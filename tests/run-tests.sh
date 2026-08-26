@@ -171,8 +171,11 @@ CAPTURE_ROOT="$WORK/cap"
 CAPTURE_EXTS="html tex md pdf epub aux idx ilg ind log"
 
 capture() {
-  local project=0
+  local project=0 site=0
   if [ "${1:-}" = "--project" ]; then project=1; shift; fi
+  # A website project writes a whole output directory rather than a document
+  # beside its source, so it is captured whole, exactly as a book's `_book` is.
+  if [ "${1:-}" = "--site" ]; then site=1; shift; fi
   local src="$1" fmt="$2" slug base stem srcdir dir f ext found=0
   base=$(basename "$src")
   stem="${base%.qmd}"
@@ -191,6 +194,12 @@ capture() {
   # render broken trees and read the wreckage in place) is not an error here.
   local under_examples=0
   case "$srcdir" in examples|examples/*) under_examples=1 ;; esac
+  if [ "$site" = "1" ]; then
+    [ -d "$src/_site" ] \
+      || fail "M24: the website render of $src produced no _site directory, so every check naming the slug <<$slug>> would read a capture holding nothing"
+    cp -R "$src/_site" "$dir/_site"
+    return 0
+  fi
   if [ "$project" = "1" ]; then
     if [ -d "$src/_book" ]; then
       cp -R "$src/_book" "$dir/_book"
@@ -13138,6 +13147,37 @@ MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
     "$CAPTURE_ROOT/misuse-html/marker-misuse.html" \
     "$CAPTURE_ROOT/marker-nomarks-html/marker-nomarks.html" \
   || fail "M04-AC1/M04-AC4/M12: a removed marker left an empty div behind"
+
+# ---------------------------------------------------------------------------
+# M40 — the documentation website. Three standing checks: the render writes a
+# page for every tracked source, every link it makes to its own content
+# resolves, and README is still the short pointer that gets a reader to it.
+#
+# The other two modes of tests/sitecheck.py — `headings` and `prose` — are not
+# run here. Both compare the pre-move README against the site, and that
+# comparison is a one-time fact about the migration: once M40 is on the default
+# branch the pre-move README is not a state this suite can reach, and a check
+# whose domain is empty forever is one nobody notices going empty (M16). They
+# are run against the merge base for the milestone's own evidence, and their
+# discrimination is shown under --self-test below over fixtures built here.
+# ---------------------------------------------------------------------------
+quarto render site > "$WORK/site-render.log" 2>&1 \
+  || { tail -30 "$WORK/site-render.log" >&2; fail "M40-AC1: the documentation website failed to render"; }
+capture --site site html "docs-site"
+SITE_OUT="$CAPTURE_ROOT/docs-site/_site"
+
+python3 tests/sitecheck.py rendered site "$SITE_OUT" \
+  || fail "M40-AC1: a tracked page under site/ has no rendered output at the path its source names (its own FAIL line is above)"
+
+# The base path a link starting `/` is resolved against. The site declares none
+# today, so it is the empty string; M42 sets one when the site is published
+# under a path, and this is the one place that value enters the check.
+SITE_BASE_PATH=""
+python3 tests/sitecheck.py links "$SITE_OUT" "$SITE_BASE_PATH" \
+  || fail "M40-AC2: the rendered site makes a link to its own content that does not resolve (its own FAIL line is above)"
+
+python3 tests/sitecheck.py readme README.md site/index.qmd \
+  || fail "M40-AC5: README is not the short pointer that gets a reader to the documentation (its own FAIL line is above)"
 
 # ---------------------------------------------------------------------------
 # The sweeps' own discrimination (M24). A sweep over a set passes on a set it

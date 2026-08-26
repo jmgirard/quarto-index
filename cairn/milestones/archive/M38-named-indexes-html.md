@@ -1,0 +1,11 @@
+# M38: Marks name which index they belong to, and the HTML back-end prints each
+
+**Status:** done (2026-08-25, PR #38 https://github.com/jmgirard/quarto-index/pull/38)
+
+**Goal:** An author can send index marks to more than one named index, which the HTML back-end prints as one section each.
+
+**Outcome:** `modules/indexes.lua` reads an `indexes:` list into an ordered name->title table — the first declared is the default a mark or marker naming none files in — and refuses a name that is no `#id`-addressable section id (`NAME_SHAPE`). `index=` is read on a mark and on a top-level placement marker. `qi_core.namespace` keys `marked_paths`, `pending_xrefs`, `clamped_paths`, `sort_keys` and `pair_ranges`' pending map per index, so a target, a sort key and a range pair are each settled within one index; `qi_indexes.scope_phrase` makes each report name that index. `resolve_markers`/`place_index` are per index, one surviving marker per name, an index no marker names appended in declared order. `html.lua` builds one entry tree and section per index, ids from one `taken` set. LaTeX and HTML books fold every named-index mark and marker into the one index they build, place it at the author's own marker for it, head it neutrally, and report each fold. Fixtures: `named-indexes{,-twin,-misuse,-order,-foldsite,-foldsecond}.qmd` and `examples/book/`.
+
+**Decisions:** milestone-local — declaration as `name:`/`title:` list entries; `qi-index-<name>` section ids, bare where a document declares nothing; the fold's placement slot and neutral heading; AC6's "runs clean" read off a written ledger. Cross-cutting: D-021.
+
+**Review:** four rounds. Three defect returns on AC7 (per-clause planted-defect proof), which the maintainer narrowed out at the round-3 thrash disposition into the suite-hardening row; AC1-AC6 verified in rounds 3 and 4. Round 4's three-lens fan-out: O1/O2/O3 (reports still saying "this document" after the set narrowed to one index — a false claim to the author), O4, O5 and H1 fixed at the gate; O6 and the shared remedy clause went to a new report-scope candidate row rather than the suite-hardening row the triage first named; O7 to the book-chapters row; O8/O9 rejected with reasons; H2-H4 verified clean. Prior-review lens: no findings. One lesson added, none retired.

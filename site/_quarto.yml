@@ -1,6 +1,6 @@
 project:
   type: website
-  output-dir: _site
+  output-dir: _site-elsewhere
   # Builds the example gallery before the site renders: each shown fixture is
   # copied to a scratch tree at the repo root, rendered there, and its outputs
   # placed under gallery/. See site/build_gallery.py.

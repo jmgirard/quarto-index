@@ -84,7 +84,7 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
       at `tests/run-tests.sh:8-22`).
 - [x] T4. Build the gallery pages: source code block, embedded rendered
       fixture, PDF link, and navigation from the site's gallery landing page.
-- [ ] T5. Write the checks for AC1-AC5, capturing each render and reading the
+- [x] T5. Write the checks for AC1-AC5, capturing each render and reading the
       capture (M24).
 - [ ] T6. Plant a defect per clause and record each red (`check-design.md`,
       M32): a fixture in neither list, a fixture in both, a source block one
@@ -111,6 +111,8 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 - 2026-08-26: T3 done. A table in the suite names each per-fixture manifest by fixture, kind and format — 15 rows, 10 HTML and 5 PDF — and writes each variable's contents to `$WORK/gallery-manifests/<fixture>.<kind>.txt` with a registry beside it. No derived row was copied or re-derived; the table names variables. A row naming an undefined or empty variable fails there. `gallerycheck.py manifests` reads the registry and holds AC3's and AC4's coverage clauses: every shown fixture has an HTML manifest, `shown:` meets its floor of 8, at least 3 shown fixtures have a PDF manifest, and no manifest read for the gallery states zero entries. Verify slot clean, 388 checks.
 
 - 2026-08-26: T4 done. The build writes one `site/gallery/<name>.qmd` per shown fixture — the source verbatim in a backtick fence longer than any run the source carries, a framed `<iframe>` around the self-contained render, and links to that render and to the PDF — plus a `site/gallery/index.qmd` linking to all ten, reached from the sidebar. The whole `site/gallery/` directory is rebuilt each run so a fixture dropped from `shown:` leaves no page behind. One transform on the source: `{{< ... >}}` is escaped to `{{{< ... >}}}`, because Quarto expands a shortcode inside a fenced code block — `examples/xref-conflict.qmd` carries `{{< pagebreak >}}` and its block was 52 bytes short of the fixture until the escape went in. With it, the `<pre><code>` text content of all ten rendered gallery pages equals its fixture's bytes with a trailing newline normalized. Verify slot clean, 388 checks.
+
+- 2026-08-26: T5 done. Three further modes read the CAPTURED site, not `site/_site`: `source` (AC2, the `<pre><code>` text content against the fixture bytes), `embedded` (AC3, the frame's own `src` resolved, then every manifest entry required among the entry terms `htmlindex.section_rows` reads out of that page's generated index sections), and `pdf` (AC4, the page's single `.pdf` href resolved, then every manifest entry required in the `pdftotext` extraction with whitespace runs collapsed, so a column break cannot hide one). AC5 is a sha256-per-file listing of `examples/` taken immediately before and after the suite's one site render, asserted non-empty first and diffed after. Live figures: 10 pages carry their source, 134 HTML index entries checked across 10 embedded pages, 53 PDF entries across 5 PDFs, 172 files under `examples/` unchanged. Verify slot clean, 392 checks.
 
 ## Decisions
 

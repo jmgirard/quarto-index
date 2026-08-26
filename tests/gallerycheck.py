@@ -15,6 +15,27 @@
       writes: `<fixture>\t<kind>\t<format>\t<variable>\t<path>`, one row per
       addressable manifest.
 
+  source <gallery.yml> <captured-site>
+      Every shown fixture's gallery page carries a `<pre><code>` whose text
+      content — entities decoded by the parser, a trailing newline normalized
+      — is its fixture's `.qmd` under `examples/`, character for character.
+
+  embedded <gallery.yml> <registry.tsv> <captured-site>
+      Every shown fixture's gallery page frames exactly one page, that page
+      resolves inside the captured site, and its generated index prints every
+      entry the fixture's hand-derived HTML index manifest states. The frame's
+      target is read off the `src` the page carries, not composed from the
+      fixture's name.
+
+  pdf <gallery.yml> <registry.tsv> <captured-site>
+      Every shown fixture that has a hand-derived PDF index manifest links
+      exactly one `.pdf`, it resolves inside the captured site, and its
+      `pdftotext` extraction contains every entry that manifest states.
+
+Reading the CAPTURED site and not the live output directory is the M24 rule:
+a check that reads a render's working copy is reading something a later render
+can change under it.
+
 The declaration's shape is read by `read_gallery`, imported from
 site/build_gallery.py — the program that builds the gallery from the same
 file. One reader means the shape the build accepts and the shape this check
@@ -35,6 +56,8 @@ import sys
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'site'))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import htmlindex as H  # noqa: E402
 from build_gallery import read_gallery, shown_fixtures  # noqa: E402
 
 # A fixture of the corpus this gallery declares over: a `.qmd` directly under
@@ -227,9 +250,238 @@ def check_manifests(gallery, registry):
     return 0
 
 
+# ---------------------------------------------------------------------------
+# source
+# ---------------------------------------------------------------------------
+def gallery_page_path(captured, name):
+    """The rendered gallery page for one fixture, inside the captured site."""
+    return os.path.join(captured, 'gallery', name + '.html')
+
+
+def check_source(gallery, captured):
+    shown = [fixture_name(p) for p in shown_fixtures(gallery)]
+    wrong = []
+    for name in shown:
+        page = gallery_page_path(captured, name)
+        if not os.path.isfile(page):
+            wrong.append('%s: no gallery page at %s' % (name, page))
+            continue
+        root = H.parse(page)
+        blocks = [H.text(code)
+                  for pre in H.find_all(root, tag='pre')
+                  for code in H.find_all(pre, tag='code')]
+        if not blocks:
+            wrong.append('%s: the page carries no <pre><code> element at all'
+                         % name)
+            continue
+        want = open(os.path.join('examples', name + '.qmd'),
+                    encoding='utf-8').read().rstrip('\n')
+        hit = [b for b in blocks if b.rstrip('\n') == want]
+        if not hit:
+            closest = max(blocks, key=len)
+            where = next((i for i, (a, b) in enumerate(zip(closest, want))
+                          if a != b), min(len(closest), len(want)))
+            wrong.append(
+                '%s: no <pre><code> on the page carries the fixture source; '
+                'the longest of its %d block(s) is %d character(s) against '
+                'the fixture\'s %d, first differing at %d — page has %r, '
+                'fixture has %r'
+                % (name, len(blocks), len(closest), len(want), where,
+                   closest[where:where + 40], want[where:where + 40]))
+    if wrong:
+        return fail('the gallery pages under %s do not carry their fixture '
+                    'sources:\n  %s' % (captured, '\n  '.join(wrong)))
+    if not shown:
+        return fail('%s declares no shown fixture' % gallery)
+    print('ok   M41-AC2: each of the %d shown fixture(s) has a <pre><code> on '
+          'its gallery page under %s whose text content, entities decoded and '
+          'a trailing newline normalized, is its fixture\'s bytes'
+          % (len(shown), captured))
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# embedded
+# ---------------------------------------------------------------------------
+def embed_target(root, page, captured):
+    """The page a gallery page's frame embeds, as a path in the captured site.
+
+    Read off the `src` the page actually carries rather than composed from the
+    fixture's name: a page whose frame pointed somewhere else would otherwise
+    be judged against a file it does not show.
+    """
+    frames = H.find_all(root, tag='iframe')
+    if len(frames) != 1:
+        return None, ('carries %d <iframe> element(s), not the one that frames '
+                      'its rendered fixture' % len(frames))
+    src = frames[0].attrs.get('src', '')
+    if not src:
+        return None, 'carries an <iframe> with no src'
+    target = os.path.normpath(os.path.join(os.path.dirname(page), src))
+    if not os.path.isfile(target):
+        return None, 'frames %r, which resolves to no file under %s' % (
+            src, captured)
+    return target, None
+
+
+def rendered_entries(path):
+    """Every entry term the generated index sections of `path` print."""
+    minted = (os.environ['HTML_SECTION_ID'], os.environ['HTML_ANCHOR_PREFIX'],
+              os.environ['HTML_ENTRY_PREFIX'])
+    rows = H.section_rows(H.parse(path), os.environ['HTML_SECTION_ID'], minted)
+    found = []
+    for text_row in rows:
+        fields = text_row.split('\t')
+        if fields[0].isdigit() and len(fields) > 1:
+            found.append(fields[1])
+    return found
+
+
+def check_embedded(gallery, registry, captured):
+    shown = [fixture_name(p) for p in shown_fixtures(gallery)]
+    manifests = {(f, k): (fmt, var, path)
+                 for f, k, fmt, var, path in read_registry(registry)}
+    wrong = []
+    checked = 0
+    entries_seen = 0
+    for name in shown:
+        page = gallery_page_path(captured, name)
+        if not os.path.isfile(page):
+            wrong.append('%s: no gallery page at %s' % (name, page))
+            continue
+        target, why = embed_target(H.parse(page), page, captured)
+        if target is None:
+            wrong.append('%s: its gallery page %s' % (name, why))
+            continue
+        key = (name, 'html')
+        if key not in manifests:
+            wrong.append('%s: no HTML index manifest is addressable for it'
+                         % name)
+            continue
+        fmt, variable, manifest_path = manifests[key]
+        want = entries_of(manifest_path, fmt)
+        if not want:
+            wrong.append('%s: the manifest %s states no entry' % (name,
+                                                                  variable))
+            continue
+        try:
+            got = rendered_entries(target)
+        except ValueError as bad:
+            wrong.append('%s: the index of %s could not be read: %s'
+                         % (name, target, bad))
+            continue
+        if not got:
+            wrong.append('%s: %s prints no index entry at all' % (name, target))
+            continue
+        absent = [entry for entry in want if entry not in got]
+        if absent:
+            wrong.append('%s: %s prints %d entry(s), and these manifest '
+                         'entries are not among them: %s'
+                         % (name, target, len(got),
+                            ', '.join(repr(a) for a in absent)))
+            continue
+        checked += 1
+        entries_seen += len(want)
+    if wrong:
+        return fail('the fixture pages the gallery embeds do not print the '
+                    'index entries their manifests state:\n  %s'
+                    % '\n  '.join(wrong))
+    print('ok   M41-AC3: each of the %d shown fixture(s) frames a rendered '
+          'page whose generated index prints every one of the %d entry(s) its '
+          'hand-derived manifest states' % (checked, entries_seen))
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# pdf
+# ---------------------------------------------------------------------------
+def pdf_link(root, page, captured):
+    """The `.pdf` a gallery page links to, as a path in the captured site."""
+    hrefs = [node.attrs.get('href', '') for node in H.find_all(root, tag='a')]
+    pdfs = [href for href in hrefs if href.lower().endswith('.pdf')]
+    if len(pdfs) != 1:
+        return None, ('carries %d link(s) to a .pdf, not the one that names '
+                      'its built PDF' % len(pdfs))
+    target = os.path.normpath(os.path.join(os.path.dirname(page), pdfs[0]))
+    if not os.path.isfile(target):
+        return None, 'links %r, which resolves to no file under %s' % (
+            pdfs[0], captured)
+    return target, None
+
+
+def extracted_text(pdf_path):
+    """`pdftotext` over one PDF, whitespace runs collapsed to one space.
+
+    The typeset index breaks lines where the column ends, so an entry that a
+    reader sees whole can reach the extraction split across two lines. The
+    collapse is stated here and nowhere else: every run of whitespace, in the
+    extraction and in the entry compared against it, becomes one space.
+    """
+    out = subprocess.run(['pdftotext', pdf_path, '-'], check=True,
+                         capture_output=True, text=True).stdout
+    return re.sub(r'\s+', ' ', out)
+
+
+def check_pdf(gallery, registry, captured):
+    shown = [fixture_name(p) for p in shown_fixtures(gallery)]
+    manifests = {(f, k): (fmt, var, path)
+                 for f, k, fmt, var, path in read_registry(registry)}
+    wrong = []
+    checked = 0
+    entries_seen = 0
+    for name in shown:
+        key = (name, 'pdf')
+        if key not in manifests:
+            continue
+        fmt, variable, manifest_path = manifests[key]
+        page = gallery_page_path(captured, name)
+        if not os.path.isfile(page):
+            wrong.append('%s: no gallery page at %s' % (name, page))
+            continue
+        target, why = pdf_link(H.parse(page), page, captured)
+        if target is None:
+            wrong.append('%s: its gallery page %s' % (name, why))
+            continue
+        want = entries_of(manifest_path, fmt)
+        if not want:
+            wrong.append('%s: the manifest %s states no entry' % (name,
+                                                                  variable))
+            continue
+        got = extracted_text(target)
+        if not got.strip():
+            wrong.append('%s: pdftotext extracted nothing from %s'
+                         % (name, target))
+            continue
+        absent = [entry for entry in want
+                  if re.sub(r'\s+', ' ', entry) not in got]
+        if absent:
+            wrong.append('%s: the extraction of %s does not contain these '
+                         'manifest entries: %s'
+                         % (name, target, ', '.join(repr(a) for a in absent)))
+            continue
+        checked += 1
+        entries_seen += len(want)
+    if checked < PDF_FLOOR:
+        wrong.append('only %d shown fixture(s) were judged against a PDF '
+                     'manifest; the criterion states at least %d'
+                     % (checked, PDF_FLOOR))
+    if wrong:
+        return fail('the PDFs the gallery links do not carry the index '
+                    'entries their manifests state:\n  %s'
+                    % '\n  '.join(wrong))
+    print('ok   M41-AC4: each of the %d shown fixture(s) with a hand-derived '
+          'PDF index manifest links a .pdf under %s whose pdftotext '
+          'extraction contains all %d entry(s) that manifest states'
+          % (checked, captured, entries_seen))
+    return 0
+
+
 MODES = {
     'listing': (check_listing, 1),
     'manifests': (check_manifests, 2),
+    'source': (check_source, 2),
+    'embedded': (check_embedded, 3),
+    'pdf': (check_pdf, 3),
 }
 
 

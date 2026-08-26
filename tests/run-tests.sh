@@ -13169,10 +13169,35 @@ MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
 # are run against the merge base for the milestone's own evidence, and their
 # discrimination is shown under --self-test below over fixtures built here.
 # ---------------------------------------------------------------------------
+# M41-AC5 — the site build renders the gallery's fixtures, and it must do it
+# without writing into the fixture directory. A recursive listing of
+# `examples/` with a sha256 per file is taken immediately before and
+# immediately after the one render below, and the two must be identical: a
+# render that wrote a `.pdf`, a `.tex`, an aux file or a `_files/` directory
+# beside a fixture changes the listing even where every tracked file's bytes
+# are untouched. The hash comes first so a fixture's CONTENT changing is
+# caught too, not only the set of paths.
+examples_state() {
+  find examples -type f -print0 \
+    | LC_ALL=C sort -z \
+    | xargs -0 shasum -a 256
+}
+examples_state > "$WORK/examples-before.txt"
+[ -s "$WORK/examples-before.txt" ] \
+  || fail "M41-AC5: the listing of examples/ taken before the site render is empty, so comparing it against the one after would compare nothing"
+
 quarto render site > "$WORK/site-render.log" 2>&1 \
   || { tail -30 "$WORK/site-render.log" >&2; fail "M40-AC1: the documentation website failed to render"; }
 capture --site site html "docs-site"
 SITE_OUT="$CAPTURE_ROOT/docs-site/_site"
+
+examples_state > "$WORK/examples-after.txt"
+if ! diff -u "$WORK/examples-before.txt" "$WORK/examples-after.txt" \
+       > "$WORK/examples-diff.txt"; then
+  head -40 "$WORK/examples-diff.txt" >&2
+  fail "M41-AC5: rendering the site changed examples/; the gallery build must copy each fixture out and render the copy, never render in place"
+fi
+pass "M41-AC5: rendering the site left all $(wc -l < "$WORK/examples-before.txt" | tr -d ' ') file(s) under examples/ byte-identical, and added and removed none"
 
 python3 tests/sitecheck.py rendered site "$SITE_OUT" \
   || fail "M40-AC1: a tracked page under site/ has no rendered output at the path its source names (its own FAIL line is above)"
@@ -13569,6 +13594,21 @@ pass "M41 T3: $GALLERY_MANIFEST_COUNT per-fixture index manifest(s) are addressa
 
 python3 tests/gallerycheck.py manifests "$GALLERY_YML" "$GALLERY_MANIFEST_INDEX" \
   || fail "M41-AC3/AC4: the gallery's shown fixtures and the manifests addressable for them do not line up (its own FAIL line is above)"
+
+# The gallery pages themselves, read out of the CAPTURED site (M24) rather
+# than out of site/_site, which a later render would overwrite under them.
+python3 tests/gallerycheck.py source "$GALLERY_YML" "$SITE_OUT" \
+  || fail "M41-AC2: a shown fixture's gallery page does not carry that fixture's source (its own FAIL line is above)"
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+  python3 tests/gallerycheck.py embedded "$GALLERY_YML" \
+    "$GALLERY_MANIFEST_INDEX" "$SITE_OUT" \
+  || fail "M41-AC3: a fixture page the gallery embeds does not print the index entries its manifest states (its own FAIL line is above)"
+
+python3 tests/gallerycheck.py pdf "$GALLERY_YML" \
+  "$GALLERY_MANIFEST_INDEX" "$SITE_OUT" \
+  || fail "M41-AC4: a PDF the gallery links does not carry the index entries its manifest states (its own FAIL line is above)"
 
 # ---------------------------------------------------------------------------
 # The sweeps' own discrimination (M24). A sweep over a set passes on a set it

@@ -111,7 +111,7 @@ version does not fence the floor and must not read as closing KI79.
       sentence deleted from its site file, an absence sentence copied into one,
       a registry missing a container, a presence container mis-tagged absence,
       and a README line whose words reach no site file.
-- [ ] T8. DESIGN.md: record the docs-home split in Architecture; amend any
+- [x] T8. DESIGN.md: record the docs-home split in Architecture; amend any
       Known-issue the move closes. Verify slot clean.
 
 ## Work log
@@ -138,6 +138,8 @@ version does not fence the floor and must not read as closing KI79.
 - 2026-08-26: task refinement — the suite runs `rendered`, `links` and `readme` as standing checks; `headings` and `prose` compare the pre-move README against the site, which is a one-time fact about the migration, so they are run against the merge base for AC3/AC4 evidence rather than wired into a suite where their domain would be empty forever (M16). No criterion changes: AC3 and AC4 name a comparison, not an instrument. Verify slot green: 385 checks.
 
 - 2026-08-26: T7 done: 27 planted cases, one per clause of the five site checks, the registry check and the claim-set check, each required to fail AND to name its own clause; plus one positive control, the root-relative href that resolves once the base path it is written under is given. The heading and prose plants use an overlay (suitescan's handle) so the defect enters a tracked set without editing the repo, and the pre-move README is stated in the self-test rather than read from git, since the merge base stops carrying it once M40 ships. Self-test green: 595 checks.
+
+- 2026-08-26: T8 done: DESIGN's Architecture records the docs home, the claim-container registry and the site checks; GP1's discovery surface now names the site; KI61, KI73 and KI78 corrected in place and marked for what the move changed. Pre-review check green: 595 checks under `--self-test`.
 
 - 2026-08-26: sizing tripwire also flags 8 acceptance criteria (>7). Not split: AC6 (presence containers) and AC7 (absence containers) are two domains with opposite promises, and the claim repoint cannot land in a later milestone than the prose move without leaving the suite red in between.
 

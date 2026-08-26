@@ -86,6 +86,7 @@ ENTRY_OF = {
 def read_registry(path):
     """The manifest table as [(fixture, kind, format, variable, path), ...]."""
     rows = []
+    seen = {}
     with open(path, encoding='utf-8') as handle:
         for line in handle:
             line = line.rstrip('\n')
@@ -101,6 +102,14 @@ def read_registry(path):
                     'FAIL: M41: %s names the manifest format %r, which this '
                     'reader has no entry rule for; it knows %s'
                     % (path, fields[2], ', '.join(sorted(ENTRY_OF))))
+            key = (fields[0], fields[1])
+            if key in seen:
+                raise SystemExit(
+                    'FAIL: M41: %s names %s (%s) twice, on the rows for %s and '
+                    '%s; the readers below key on fixture and kind, so one of '
+                    'the two would be discarded with nothing said'
+                    % (path, fields[0], fields[1], seen[key], fields[3]))
+            seen[key] = fields[3]
             rows.append(tuple(fields))
     return rows
 
@@ -136,10 +145,14 @@ def corpus():
     Discovered rather than written down, for the reason tests/sitecheck.py
     discovers the site's pages: a written-down list becomes the sweep, and
     every fixture it omits goes unlisted and unread.
+
+    Read with `-z`: without it git C-quotes a path carrying a non-ASCII or
+    control character, and the quoted spelling matches no fixture pattern, so
+    the fixture would leave this domain rather than be judged in it.
     """
-    out = subprocess.run(['git', 'ls-files', 'examples'], check=True,
-                         capture_output=True, text=True).stdout.split('\n')
-    return [path for path in out if FIXTURE.fullmatch(path)]
+    out = subprocess.run(['git', 'ls-files', '-z', 'examples'], check=True,
+                         capture_output=True, encoding='utf-8').stdout
+    return [path for path in out.split('\0') if FIXTURE.fullmatch(path)]
 
 
 # ---------------------------------------------------------------------------
@@ -416,8 +429,11 @@ def extracted_text(pdf_path):
     collapse is stated here and nowhere else: every run of whitespace, in the
     extraction and in the entry compared against it, becomes one space.
     """
+    # encoding named rather than left to the locale: pdftotext emits UTF-8, and
+    # under LC_ALL=C Python would decode it as ASCII and raise on the first
+    # non-Latin-1 glyph a fixture's index prints.
     out = subprocess.run(['pdftotext', pdf_path, '-'], check=True,
-                         capture_output=True, text=True).stdout
+                         capture_output=True, encoding='utf-8').stdout
     return re.sub(r'\s+', ' ', out)
 
 

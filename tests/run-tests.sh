@@ -1743,6 +1743,11 @@ require_pdf_tools() {
   # is the test of.
   command -v pdfinfo >/dev/null 2>&1 \
     || fail "pdfinfo not found on PATH (it ships with pdftotext, in poppler). AC6 must never pass unrun."
+  # M41-AC5 hashes examples/ on both sides of the site render. shasum is a
+  # perl script and is absent from a minimal image; without this the run would
+  # die at the pipeline with a bare shell error rather than naming the tool.
+  command -v shasum >/dev/null 2>&1 \
+    || fail "shasum not found on PATH (M41-AC5 hashes examples/ with it). AC6 must never pass unrun."
 
   # The recipe names a main font by file, so every face it names has to be
   # findable the same way fontspec finds it. Without this the four M33 renders
@@ -13167,9 +13172,17 @@ examples_state() {
     | LC_ALL=C sort -z \
     | xargs -0 shasum -a 256
 }
+# The listing is required to carry one line per file, not merely to be
+# non-empty. GNU `xargs` without `-r` runs its command even on empty input, so
+# `shasum` with no operands would hash its own empty stdin and write one line:
+# a `[ -s ]` guard passes on a listing that describes nothing. Counting the
+# files independently of the pipeline is what makes the empty domain visible.
+EXAMPLES_FILE_COUNT=$(find examples -type f | wc -l | tr -d ' ')
+[ "$EXAMPLES_FILE_COUNT" -gt 0 ] \
+  || fail "M41-AC5: find enumerates no file under examples/, so the listings this check compares would describe nothing"
 examples_state examples > "$WORK/examples-before.txt"
-[ -s "$WORK/examples-before.txt" ] \
-  || fail "M41-AC5: the listing of examples/ taken before the site render is empty, so comparing it against the one after would compare nothing"
+[ "$(wc -l < "$WORK/examples-before.txt" | tr -d ' ')" -eq "$EXAMPLES_FILE_COUNT" ] \
+  || fail "M41-AC5: the listing of examples/ taken before the site render carries $(wc -l < "$WORK/examples-before.txt" | tr -d ' ') line(s) for $EXAMPLES_FILE_COUNT file(s); it does not describe the directory it is about"
 
 quarto render site > "$WORK/site-render.log" 2>&1 \
   || { tail -30 "$WORK/site-render.log" >&2; fail "M40-AC1: the documentation website failed to render"; }

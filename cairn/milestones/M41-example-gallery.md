@@ -120,6 +120,7 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 - 2026-08-26: T7 done. The site's Examples page opens with a link to the gallery, and README's Examples section names it; both describe what the gallery shows procedurally, by what `shown:` declares, rather than by a count. DESIGN Architecture gains a paragraph on the gallery: the declaration, the pre-render step and why its scratch tree is at the repo root, the manifests as the oracle with no source scan, the LaTeX toolchain the site build now needs, and the residue sweeps' move to after the site render. `tests/run-tests.sh --self-test` exits 0 at 618 checks.
 
 - 2026-08-26: all seven tasks checked; `tests/run-tests.sh --self-test` exits 0 at 618 checks. Status set to review.
+- 2026-08-26: review gate directed fix-now on six of the eighteen [O] findings; F2, F3, F8, F11, F12 and F14 are repaired on the branch and the suite re-run. The other twelve go to the acceptance-suite hardening candidate row.
 
 ## Decisions
 
@@ -273,5 +274,27 @@ in fresh context.
 ### Gate
 
 Every acceptance criterion verified with fresh evidence; the consistency gate
-passes; no finding meets the return floor.
+passes; no finding meets the return floor. At the gate the maintainer directed
+fix-now on six findings and follow-up on the other twelve.
+
+**Fixed on the branch (F2, F3, F8, F11, F12, F14).** AC5's listing is now
+required to carry one line per file, counted independently of the pipeline,
+because GNU `xargs` without `-r` runs `shasum` on empty input and the old
+`[ -s ]` guard would pass on a listing describing nothing; `shasum` joined the
+suite's preflight tool check; `corpus()` reads `git ls-files -z`, so a fixture
+whose name git C-quotes stays in AC1's domain; `pdftotext` output is decoded as
+UTF-8 rather than by locale; `read_registry` refuses two rows naming the same
+fixture and kind, which the readers' dicts had absorbed silently; and `stage()`
+no longer copies render artifacts out of `examples/`, the excluded set taken
+from the repo's own ignore list for that directory. The duplicate-row refusal
+and the `-z` corpus were each shown to fire before the re-run.
+
+**Filed as follow-up (F1, F4-F7, F9, F10, F13, F15-F18).** All of the same
+shape as the nineteen M40 review filed; they go on the acceptance-suite
+hardening candidate row at the post-merge hygiene pass.
+
+Re-run after the six fixes: `tests/run-tests.sh --self-test` exits 0 at 618
+checks, and all six criteria hold — 55 fixtures declared once (10 shown), 10
+source blocks byte-identical, 134 HTML index entries across the framed pages,
+53 PDF entries across 5 PDFs, 172 files under `examples/` unchanged.
 

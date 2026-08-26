@@ -52,6 +52,12 @@ RENDERED_DIR = os.path.join(SITE_DIR, 'gallery', 'rendered')
 EXAMPLES_DIR = os.path.join(REPO_ROOT, 'examples')
 EXTENSIONS_DIR = os.path.join(REPO_ROOT, '_extensions')
 
+# What a render leaves beside a fixture, as `.gitignore` enumerates it for
+# `examples/`. Never staged: see `stage`.
+ARTIFACT_SUFFIXES = frozenset(
+    ('.tex', '.pdf', '.html', '.md', '.epub',
+     '.aux', '.idx', '.ilg', '.ind', '.log'))
+
 
 def read_gallery(path):
     """The gallery declaration as ({key: [value, ...]}, key order).
@@ -130,6 +136,13 @@ def stage(fixture):
     partials a fixture may include. Copying the set rather than a written-down
     per-fixture asset list keeps a fixture that grows an include from failing
     to render for a reason nobody would look for here.
+
+    Render artifacts are the one exclusion. README documents `quarto render
+    examples/demo.qmd --to pdf`, which leaves a `.pdf`, a `.tex` and the
+    makeindex family beside the fixture; staged, they would sit at exactly the
+    paths `main` reads its own render's output back from, and a stale one would
+    ship as the gallery's PDF. The set is the repo's own ignore list for that
+    directory, so it cannot drift from what a render actually leaves.
     """
     name = os.path.basename(fixture)[:-len('.qmd')]
     directory = os.path.join(BUILD_DIR, name)
@@ -141,6 +154,8 @@ def stage(fixture):
         if not os.path.isfile(path):
             continue
         if entry.endswith('.qmd') and not entry.startswith('_'):
+            continue
+        if os.path.splitext(entry)[1] in ARTIFACT_SUFFIXES:
             continue
         shutil.copy2(path, os.path.join(directory, entry))
     shutil.copytree(EXTENSIONS_DIR, os.path.join(directory, '_extensions'),

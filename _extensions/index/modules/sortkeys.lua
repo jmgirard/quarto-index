@@ -5,6 +5,7 @@
 -- rather than in either back-end: both read the same registry.
 
 local qi_core = require("./core")
+local qi_indexes = require("./indexes")
 local qi_levels = require("./levels")
 
 local M = {}
@@ -37,7 +38,15 @@ end
 -- term is usually marked in several places and a sort key written on one of
 -- them is meant for the entry, not for that one mark (GP4), so the marks that
 -- stay silent inherit it rather than contradict it.
-local function register_sort(index, levels, declared, context)
+--
+-- `outer` is the word the caller would use for the set this rivalry was
+-- judged over if there were only one of them -- "document" for the single
+-- Pandoc process every sort key is registered in. A document that declares
+-- several indexes and a back-end that does not fold make that word false: the
+-- two keys are rivals inside ONE index, and the same printed path in the other
+-- index files under a key of its own. Where `scope_phrase` hands back a
+-- different phrase, the report says which index instead (D-021).
+local function register_sort(index, levels, declared, context, outer)
   if declared == nil then
     return
   end
@@ -66,9 +75,19 @@ local function register_sort(index, levels, declared, context)
         seen.reported = seen.reported or {}
         if not seen.reported[key] then
           seen.reported[key] = true
-          qi_core.warn(('index entry in %s is already sorted as "%s"; the sort key '
-                .. '"%s" written here cannot apply as well, so the first one '
-                .. 'wins'):format(context, seen.sort, key))
+          local scope = qi_indexes.scope_phrase(index, outer)
+          if scope == outer then
+            qi_core.warn(('index entry in %s is already sorted as "%s"; the sort key '
+                  .. '"%s" written here cannot apply as well, so the first one '
+                  .. 'wins'):format(context, seen.sort, key))
+          else
+            -- One literal, so the whole message is readable at its call site,
+            -- and the scope clause sits between the winning key and the tail
+            -- the two shapes share: appended after `wins` it would make the
+            -- message above a strict prefix of this one, and a grep for the
+            -- shorter would match both.
+            qi_core.warn(('index entry in %s is already sorted as "%s" in %s; the sort key "%s" written here cannot apply as well, so the first one wins'):format(context, seen.sort, scope, key))
+          end
         end
       end
     end

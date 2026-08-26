@@ -33,7 +33,12 @@ documented one-index limit) is unsettled → `candidate` row, promoted on that
 fork being settled. More than one index across a book's chapters, which
 needs the sidecar store's record format and version → `candidate` row,
 promoted once this milestone lands. Per-index index styles, headers or
-collation rules — nothing here changes how one index is ordered or printed.
+collation rules — nothing here changes how one index is ordered or
+printed. Proof that every clause of every check this
+milestone adds is shown red by the defect that clause states — AC7 bound
+that proof and failed twice, each time by a different mechanism, while the
+checks themselves ship and run → `candidate` row, promoted with the readers
+it binds in hand.
 
 ## Acceptance criteria
 
@@ -77,9 +82,6 @@ collation rules — nothing here changes how one index is ordered or printed.
       an unnamed mark files in the first declared index, and that a PDF
       render and a book index everything in one index for now; every fixture
       path and command that section names exists in the repo and runs clean.
-- [ ] AC7: `tests/run-tests.sh --self-test` passes, with a planted defect for
-      each clause of each reader this milestone adds shown red before its
-      green is trusted.
 
 ## Coverage
 
@@ -89,7 +91,6 @@ collation rules — nothing here changes how one index is ordered or printed.
 - AC4 → T4, T7, T8
 - AC5 → T6, T7, T8
 - AC6 → T10
-- AC7 → T9
 
 ## Tasks
 
@@ -133,6 +134,12 @@ collation rules — nothing here changes how one index is ordered or printed.
 - [x] T23: Correct `examples/book/last.qmd`'s prose about its third marker to
       the report the shipped filter draws (F7).
 - [x] T24: Correct README's "The last two" for the tenth form (F10).
+- [x] T25: Narrow the criteria set to AC1-AC6 at the amendment gate, the
+      per-clause proof work going to the hardening candidate row.
+- [ ] T26: README states the shape a declared index name may take, pinned as
+      an AC6 claim (G5).
+- [ ] T27: Correct the self-test block's two claims about the folded-heading
+      reader to what that reader is shown to do (G3).
 
 ## Work log
 
@@ -164,6 +171,7 @@ collation rules — nothing here changes how one index is ordered or printed.
 - 2026-08-25: review round 3 — AC1-AC6 passed with fresh evidence (full suite --self-test, exit 0, 559 checks, plus direct reads of the captured artifacts) and the consistency gate was clean. AC7 FAILED and returns the milestone to in-progress: `check_folded_heading`'s section-count clause — the one clause round 2 named — is still not shown red, because its plant inserts a heading-less section and `index_sections` raises `ValueError` before the count comparison, while `probe_defect` reads only the exit status; verified here by running the reader over a fabricated two-section page. The three-lens review added G2 (the same reader raises rather than reports) and G3 (three branch-added claims that the clause is planted), plus G5, a README that documents no rule for the name shape T20 tightened. Defect return 3 for this milestone; no amendment return, no criterion reinterpreted. The thrash rule fires on both triggers and the disposition goes to the maintainer.
 
 - 2026-08-25: maintainer disposition at the round-3 return — descope. M38 narrows to AC1-AC6, all six verified this round; AC7 and the reader-proof work it binds (G1, G2, G3, G15) exit the milestone, and G5 rides the narrowed set since AC6 stays. The narrowing runs through the gated criterion-amendment protocol in /milestone-implement, then re-review of the narrowed set. Neither a re-cut nor an escalation was spent.
+- 2026-08-25: T25 — amendment gate: the criteria set narrows to AC1-AC6, AC7 deleted whole and its Coverage row with it; no AC1-AC6 wording changed, so nothing was widened and no fresh-reader audit of amended wording was owed. Scope's Out gained the descoped promise: "Proof that every clause of every check this milestone adds is shown red by the defect that clause states — AC7 bound that proof and failed twice, each time by a different mechanism, while the checks themselves ship and run → `candidate` row, promoted with the readers it binds in hand." The work itself was absorbed into the acceptance-suite hardening candidate row rather than filed as a new one (search-first): its section-count clause, that reader's raise-rather-than-report shape, and `ran_clean`'s unplanted clause. Gate also chose to fix G5 and the two false self-test claims (T26, T27) and to skip the fresh reader.
 
 ## Decisions
 

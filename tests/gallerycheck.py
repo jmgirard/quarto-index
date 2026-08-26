@@ -169,20 +169,19 @@ def check_listing(gallery):
                     '%s. Every fixture is declared one way or the other.'
                     % (gallery, ', '.join(missing)))
 
+    # `counts` is over EVERY key, not only the two. That is what makes a
+    # fixture named under a third key reachable here: named there and under
+    # one of the two it is listed twice, and named there alone it is listed
+    # under neither, which the clause above already caught. A separate
+    # third-key clause would be unreachable, so there is none.
     twice = [path for path in fixtures if len(counts.get(path, [])) > 1]
     if twice:
-        return fail('%s lists %s more than once (under %s). Each fixture is '
-                    'declared exactly once.'
-                    % (gallery, ', '.join(twice),
-                       '; '.join('%s: %s' % (p, ', '.join(counts[p]))
-                                 for p in twice)))
-
-    elsewhere = sorted(path for path in fixtures
-                       for key in counts.get(path, [])
-                       if key not in ('shown', 'not-shown'))
-    if elsewhere:
-        return fail('%s names %s under a key that is neither `shown:` nor '
-                    '`not-shown:`' % (gallery, ', '.join(elsewhere)))
+        return fail('%s declares these fixtures more than once, so one of '
+                    'their entries is unreachable — each is declared exactly '
+                    'once, under `shown:` or `not-shown:`: %s'
+                    % (gallery, '; '.join('%s under %s'
+                                          % (path, ', '.join(counts[path]))
+                                          for path in twice)))
 
     stale = [value for key in ('shown', 'not-shown')
              for value in declared[key] if value not in fixtures]

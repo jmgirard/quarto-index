@@ -86,7 +86,7 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
       fixture, PDF link, and navigation from the site's gallery landing page.
 - [x] T5. Write the checks for AC1-AC5, capturing each render and reading the
       capture (M24).
-- [ ] T6. Plant a defect per clause and record each red (`check-design.md`,
+- [x] T6. Plant a defect per clause and record each red (`check-design.md`,
       M32): a fixture in neither list, a fixture in both, a source block one
       byte off, a source block with entity decoding skipped, a manifest entry
       missing from an embedded index, a PDF link resolving to nothing, a PDF
@@ -114,6 +114,27 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 
 - 2026-08-26: T5 done. Three further modes read the CAPTURED site, not `site/_site`: `source` (AC2, the `<pre><code>` text content against the fixture bytes), `embedded` (AC3, the frame's own `src` resolved, then every manifest entry required among the entry terms `htmlindex.section_rows` reads out of that page's generated index sections), and `pdf` (AC4, the page's single `.pdf` href resolved, then every manifest entry required in the `pdftotext` extraction with whitespace runs collapsed, so a column break cannot hide one). AC5 is a sha256-per-file listing of `examples/` taken immediately before and after the suite's one site render, asserted non-empty first and diffed after. Live figures: 10 pages carry their source, 134 HTML index entries checked across 10 embedded pages, 53 PDF entries across 5 PDFs, 172 files under `examples/` unchanged. Verify slot clean, 392 checks.
 
+- 2026-08-26: T6 done. Fifteen planted cases, one per clause, each run against a check first shown green on the same unplanted fixture. Six mutate a copy of the declaration; six mutate a copy of the captured site (three of them through `tests/galleryplant.py`, which re-reads what it changed with the checks' own reader and refuses a mutation that landed elsewhere); three exercise AC5's comparison over a copy of `examples/`, one adding a file, one changing a fixture's bytes, one changing nothing. Two plants were wrong on their first run and were fixed: the one-character source plant landed in the highlighter's own `<span>` markup rather than in the block's text, and the dropped-entry plant's report said the entry count fell when the entry is renamed and the count holds.
+- 2026-08-26: the gallery broke the residue sweeps' domain claim, and both halves are repaired here. See the milestone Decisions entry below. `tests/run-tests.sh --self-test` exits 0 at 618 checks, the two sweeps reading 141 captured pages against 100 before.
+
 ## Decisions
+
+### 2026-08-26: The pending-attribute sweep asks the parsed page, not the markup, and runs after the site render
+
+`tests/htmlsweep.py`'s `pending` sweep searched a rendered page's markup for
+the string `data-qi-pending`. The gallery prints each shown fixture's source in
+a code block, and `examples/html-index.qmd` writes a forged
+`data-qi-pending="1"` in its prose, so that string now reaches a rendered page
+as text a reader is meant to see — and the substring search reported it as
+filter residue that survived. The sweep now asks whether any element of the
+parsed page carries the attribute, which is the promise M03-AC3 states and what
+the module's own docstring already claimed it did. The planted case the suite
+has always run writes the attribute on `<body>`, so it is still caught, and it
+is still caught planted into each of the captured pages in turn.
+
+The same collision moved both whole-set sweeps. They sat before the site
+render, whose pre-render step renders ten more fixture pages; run there, they
+printed their passing line over a set those pages were not in. They now run
+after it, and read 141 captured pages where they read 100.
 
 ## Review

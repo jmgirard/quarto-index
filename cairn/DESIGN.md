@@ -92,7 +92,8 @@ _None yet — populated as the codebase takes shape._
   each settled within one index and never across two, and a report of such a
   judgement names the index it was made in rather than the document (corrected
   M38 review), the remedy such a report offers naming that index too rather
-  than sending the author to the document at large (extended M39). One format-neutral accumulator is outside that rule:
+  than sending the author to the document at large (extended M39). One
+  format-neutral accumulator is outside that rule:
   `latex.lua`'s `contested_keys`, which `passes.CollectKeys` fills in every
   format but whose two consumers both sit after the HTML early return, so it is
   only ever read where the back-end folds to one index and has one namespace to
@@ -186,15 +187,16 @@ The modules, in dependency order:
 - `levels.lua` — what an `entry=`, `see=` or `sort=` value means as a list of
   levels: the parse, the empty-level drop, the three-level clamp, and the
   level path a sort key is declared against.
+- `indexes.lua` — the indexes a document declares: the ordered name-to-title
+  table read out of `indexes:` metadata, the shape a declared name may be, and
+  which index a mark or a placement marker files in, folded to the one index a
+  back-end that builds one has (added M38; listed here corrected M38, and
+  moved above `sortkeys.lua` M39, which now requires it).
 - `sortkeys.lua` — the registry mapping a printed level path to the first sort
   key declared for it, and the report drawn when two marks disagree about it.
 - `latex.lua` — the LaTeX back-end: the `\index{...}` argument, the
   encapsulation a cross-reference rides in, and the contested-key bookkeeping
   that decides which shape a key gets.
-- `indexes.lua` — the indexes a document declares: the ordered name-to-title
-  table read out of `indexes:` metadata, the shape a declared name may be, and
-  which index a mark or a placement marker files in, folded to the one index a
-  back-end that builds one has (added M38; listed here corrected M38).
 - `marks.lua` — what every back-end needs from one mark, derived once, and the
   document-wide accumulators the passes share.
 - `passes.lua` — the per-document reset and the four Span passes, in the order

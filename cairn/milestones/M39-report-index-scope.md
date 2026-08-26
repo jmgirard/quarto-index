@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** `m039-report-index-scope`
+- **Branch/PR:** `m039-report-index-scope` — https://github.com/jmgirard/quarto-index/pull/39
 
 ## Goal
 
@@ -21,11 +21,11 @@ Surface tier: **user-facing** — the deliverable is warning text an author of a
 
 ## Acceptance criteria
 
-- [ ] AC1: The HTML render of `examples/named-indexes-rival.qmd` — a document declaring two indexes, whose second files two different sort keys under one printed level path — draws exactly one sort-key rival report, whose line carries the scope phrase `index "<second declared name>"` exactly as `qi_indexes.scope_phrase` spells it, alongside the two rival keys the report already names; and no line of that log carries the one-namespace rival shape.
-- [ ] AC2: The HTML render of `examples/named-indexes.qmd` draws exactly one dangling-target report — for the `entry="Stranger"` mark of its second declared index — whose remedy names that index as the place to mark the term; no line of that log carries the shared remedy text `mark that term somewhere`.
-- [ ] AC3: A diff of the two message literals against the pre-milestone filter source shows the shared dangling-target message and the existing one-namespace rival message unchanged byte for byte; and the folded LaTeX render of `examples/named-indexes-rival.qmd` draws exactly one rival report, in that unchanged one-namespace shape, with no line carrying the new multi-index shape.
-- [ ] AC4: The two message shapes this milestone adds are each distinct from every other `warn()` message template `tests/scans/warn-distinct.py` reads over the Lua source set, and neither is a prefix of any other template nor has any other template as a prefix.
-- [ ] AC5: `tests/run-tests.sh --self-test` runs clean (the `verify` slot's fuller pre-review check).
+- [x] AC1: The HTML render of `examples/named-indexes-rival.qmd` — a document declaring two indexes, whose second files two different sort keys under one printed level path — draws exactly one sort-key rival report, whose line carries the scope phrase `index "<second declared name>"` exactly as `qi_indexes.scope_phrase` spells it, alongside the two rival keys the report already names; and no line of that log carries the one-namespace rival shape.
+- [x] AC2: The HTML render of `examples/named-indexes.qmd` draws exactly one dangling-target report — for the `entry="Stranger"` mark of its second declared index — whose remedy names that index as the place to mark the term; no line of that log carries the shared remedy text `mark that term somewhere`.
+- [x] AC3: A diff of the two message literals against the pre-milestone filter source shows the shared dangling-target message and the existing one-namespace rival message unchanged byte for byte; and the folded LaTeX render of `examples/named-indexes-rival.qmd` draws exactly one rival report, in that unchanged one-namespace shape, with no line carrying the new multi-index shape.
+- [x] AC4: The two message shapes this milestone adds are each distinct from every other `warn()` message template `tests/scans/warn-distinct.py` reads over the Lua source set, and neither is a prefix of any other template nor has any other template as a prefix.
+- [x] AC5: `tests/run-tests.sh --self-test` runs clean (the `verify` slot's fuller pre-review check).
 
 ## Coverage
 
@@ -60,7 +60,33 @@ Surface tier: **user-facing** — the deliverable is warning text an author of a
 - 2026-08-25: a comment added in T3 wrote the token `warn(` with no closing paren; `tests/scans/m15-joined-messages.py` reads raw source and balances parens from every `warn(`, so on the M16-AC3 moved tree that comment swallowed the next file and read one message as carrying both replacement-report shapes. Caught by `--self-test`, not by the plain run, because the moved tree reorders which file follows `marks.lua`. Comment reworded to `warn()`; the scan reads 70 messages on the moved tree and 66 on the shipped one.
 - 2026-08-25: T5 evidence. AC1 — `named-indexes-rival-html.log`: `WARN_SORT_CONFLICT` 1, the whole scoped report `index entry in term "Ptarmigan" is already sorted as "Zebra" in index "authors"; the sort key "Yak" ...` 1, the whole one-namespace report 0. AC2 — `named-indexes-html.log`: `WARN_DANGLING_INDEX` 1, the whole per-index report for `entry="Stranger"` naming `index "authors"` twice 1, `WARN_DANGLING` 0. AC3 — `diff` of the shared dangling literal and of the one-namespace rival literal against `origin/main` is empty for both; `named-indexes-rival-latex.log`: `WARN_SORT_CONFLICT` 1, the whole one-namespace report 1, `WARN_SORT_RIVAL_SCOPED` 0. AC4 — `warn-distinct` reads 66 templates, all mutually distinct with no prefix relation, over the whole Lua source set. AC5 — `tests/run-tests.sh --self-test` exit 0, 562 checks.
 - 2026-08-25: plan gate chose an annotating D-entry over letting the milestone record carry it, because D-021's Consequences state the shared-remedy cost as accepted and would otherwise read as standing; falsified by a convention that a paid cost needs no entry.
+- 2026-08-26: review — every criterion executed with fresh evidence (three renders, the distinctness scan, and a green `--self-test` at 562 checks); `cairn_validate` clean; three-lens fan-out returned six findings, two fixed on the branch, one raised at the gate, three rejected with reason. No defect return.
 
 ## Decisions
 
 ## Review
+
+Fresh evidence, 2026-08-26, on branch `m039-report-index-scope` at afe5928 (plus the PR-URL header edit). Every render below was run in this review session, not carried from implementation.
+
+- AC1 — **met.** `quarto render examples/named-indexes-rival.qmd --to html` (exit 0): the log carries exactly 1 line matching any rival report head, and that line reads `index entry in term "Ptarmigan" is already sorted as "Zebra" in index "authors"; the sort key "Yak" written here cannot apply as well, so the first one wins` — the scope phrase `index "authors"` is `scope_phrase`'s `index "%s"` spelling of the second declared name, and both rival keys are named. The one-namespace shape (`already sorted as "Zebra"; the sort key`) counts 0 on that log.
+- AC2 — **met.** `quarto render examples/named-indexes.qmd --to html` (exit 0): exactly 1 dangling-target line on that log, and it is the `entry="Stranger"` mark of the second declared index, reading `see= on entry="Stranger" points at "Aardvark", which no mark of index "authors" indexes; a reader following the cross-reference finds no such entry, so mark that term in index "authors" or correct the target` — the remedy names `index "authors"` as the place to mark the term. The shared remedy text `mark that term somewhere` counts 0 on that log.
+- AC3 — **met**, both clauses. Clause 1: every `warn()` message literal was extracted from `marks.lua` and `sortkeys.lua` at `origin/main` and at HEAD and the two sets compared — no literal present at `origin/main` is absent at HEAD, so the shared dangling-target message and the one-namespace rival message survive byte for byte; exactly two literals are new, one per module. Clause 2: `quarto render examples/named-indexes-rival.qmd --to latex` (exit 0) carries exactly 1 rival report, and it is the unchanged one-namespace shape `index entry in term "Ptarmigan" is already sorted as "Zebra"; the sort key "Yak" ...`; the scope clause ` in index "` counts 0 on that log.
+- AC4 — **met.** `python3 tests/scans/warn-distinct.py` exits 0 reading 66 templates over the Lua source set, all mutually distinct compared as whole messages; the same run's prefix check (the scan rejects any template that is a prefix of another) passes, so neither new shape is a prefix of any other template nor has one as a prefix.
+- AC5 — **met.** `tests/run-tests.sh --self-test` exits 0: "All checks passed (562 checks)".
+
+**Projection-vs-outcome:** no Driving RR on this milestone — no-op.
+
+**Consistency gate.** `cairn_validate.py` exit 0, every check PASS and every advisory OK, `coverage complete` and `scaffold present` among them. No `DESIGN.md` principle (IPn/GPn) changed — the one DESIGN edit is prose in the Conventions section — so `cairn_impact.py` is skipped. Toolchain half: the active `generic` profile's `consistency-gate` slot names no checks, a clean no-op.
+
+**Independent fresh-context review.** The diff touches executable surface (`_extensions/index/**`, `tests/`), so the full three-lens fan-out ran: [O] diff-bug, [S] blame-history, [S] prior-review-record. Every reported finding and its disposition:
+
+- **O1 — `DESIGN.md`'s "modules, in dependency order" list is now false.** `sortkeys.lua` gained `require("./indexes")` but was still listed above `indexes.lua`, in a list whose own note marks the ordering as maintained. Confirmed by reading both files' `require` lines. **Fixed now:** the `indexes.lua` bullet moved above `sortkeys.lua`, its correction note extended. No runtime cycle existed — `indexes.lua` requires only `core`.
+- **O2 — the `warn(`-in-a-comment hazard the work log records left no `LESSONS.md` line and no guard.** A comment writing the bare token `warn(` unbalances `tests/scans/m15-joined-messages.py`, and only `--self-test` caught it. **Follow-up, in this milestone's post-merge hygiene:** a `LESSONS.md` line, which is where lesson capture belongs.
+- **O3 — both new branches discriminate by `scope == outer` rather than by `is_declared()`/`folds()`.** Reviewer's own confidence low; correct for every caller today. **Rejected:** the comparison is exactly `scope_phrase`'s recorded contract under D-021 — it hands the outer word back untouched wherever there is genuinely one namespace — so the branch reads that contract rather than duplicating its predicate.
+- **O4 — the per-index dangling remedy reads awkwardly** (`which no mark of index "authors" indexes` puts a quoted name between subject and verb). Raised to the maintainer at the gate as the milestone's user-facing deliverable — changing it now would re-needle the suite, and the recommendation is to keep it. **Disposition recorded at the gate below.**
+- **O5 — the M39 sentence in `DESIGN.md`'s Conventions paragraph was appended without re-wrapping**, leaving a 119-character line against the file's ~80-column wrap. Also reported independently by the blame-history lens. **Fixed now:** paragraph re-wrapped.
+- **O6 — `ROADMAP.md`'s hygiene stamp still reads "M39 planned".** **Rejected:** the stamp is a dated snapshot of the last hygiene pass, and this milestone's own post-merge hygiene replaces it.
+- **[S] blame-history — no correctness defects.** It traced `report_dangling`'s new signature through both callers (`index.lua` per-index, `book.lua` aggregate, the latter correctly left in its single-namespace shape), confirmed `register_sort`'s new `outer` only changes output where `scope_phrase` differs, and confirmed no `require` cycle. Its one cosmetic note duplicates O5.
+- **[S] prior-review-record — no findings.** The archived `## Review` sections identify this diff as exactly the narrowing the M38 review deferred, and the constraints that review imposed (no prefix collision, call ordering inside the distinctness scan's window) are respected. The GitHub inline-comment probe returned empty, so the PR-thread walk was skipped.
+
+**Return floor:** no actioned finding demonstrates an acceptance criterion failing, and none is a load-bearing defect in what the filter does for an author — the two fixed findings are inaccuracies in a tracking file's prose. Status stays `review`. Defect-return count for M39: 0.

@@ -2,12 +2,12 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M43: A version matrix renders the fixtures on the oldest supported Quarto
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP6
-- **Branch/PR:** —
+- **Branch/PR:** m043-quarto-version-matrix
 
 ## Goal
 
@@ -79,7 +79,7 @@ milestone; the gate's reasoning is in the work log.
 
 ## Tasks
 
-- [ ] T1. An extraction entry point that reads one rendered artifact and prints
+- [x] T1. An extraction entry point that reads one rendered artifact and prints
       its index in a canonical comparable form — HTML through
       `tests/htmlindex.py`, PDF through `tests/pdfindex.py` — failing loudly
       rather than printing nothing when the artifact carries no index.
@@ -107,6 +107,8 @@ milestone; the gate's reasoning is in the work log.
 - 2026-08-26: plan gate chose a floor leg pinned to 1.4.549 with the declared `>=1.4.0` range left alone, over narrowing the range to `>=1.4.549`, because `>=1.4.0` is the ordinary spelling for the 1.4 line and README's "Quarto 1.4 or later" is true either way; falsified by a user reading the range as naming an installable release.
 - 2026-08-26: plan gate chose running the release-channel leg weekly and on demand, over running it on every push, because the floor and pinned legs are exact versions whose red always traces to a commit while a channel leg can go red on an upstream release alone; falsified by an upstream break reaching the default branch before the weekly run finds it.
 - 2026-08-26: plan gate chose a bounded four-fixture matrix over running `tests/run-tests.sh` on each leg, because the suite pins `M33_NOENGINE_PRODUCER=LuaTeX` and the floor renders through xelatex, so it cannot be green there as written; falsified by the suite's engine-dependent checks being made version-aware. The suite runs 396 checks in 5m16s locally, so its cost was not the reason.
+- 2026-08-26: T1 — `tests/indexdump.py`, `html`/`pdf` modes over one artifact; `htmlindex.section_rows()` gained the `hrefs` flag `row()` already had, so the dump states where each locator points rather than how many there are. Its judging clauses are split from its reads (`html_rows`, `pdf_rows`) so each is reachable by a plant. Suite: four unplanted controls (single index, two declared indexes, a book's cross-page locators, a printed PDF index) and six planted clauses. 668 checks green.
+- 2026-08-26: implement gate — the extraction lives in its own `tests/indexdump.py` rather than as modes on the two reader modules; the HTML dump uses the locator-href row form rather than the count form; and the pinned leg's version is read out of `pages.yml` at run time rather than copied into `versions.yml`.
 - 2026-08-26: criteria audit ran in full mode (user-facing tier). It returned findings on all five drafted criteria: four bound a property of the checking machinery rather than of the deliverable (a recorded run URL, a log's fixture list, a message's wording, a header comment's content), which moved to T2, T4 and T5; AC1 let the workflow name its own fixture set, now named in the criterion; AC4's "oldest release satisfying the range" quantified over every Quarto release ever published, narrowed to the pinned 1.4.549 with the query kept as a dated observation in T2; AC5 promised README and the site agree with a fixture list nothing enumerates, narrowed to the floor version; and the equality comparison's relation to D-004 is now stated in Scope. Two findings went to the gate as questions — PDF comparability across engines, and one plant standing in for a family free in three axes.
 
 ## Decisions

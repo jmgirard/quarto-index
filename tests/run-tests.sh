@@ -15476,6 +15476,150 @@ M30PLANTPY
   pass "M38 self-test: each clause named below is planted on its own and shown red, while each reader passes on the same artifact unplanted — the page-wide id sweep on a space, a hash and an angle bracket, and its dotted-id sibling on the one character legal in an id and still refused; the folded-site reader on two of the one index, a site count the fixture does not write, an index at no site at all, and an index at the wrong site; the second-marker reader on none of the one index, labels that are not the fixture's two in order, and the index at the second marker; the folded-heading reader on an id naming one declared index, a heading below an h1, and a heading carrying one declaration's own title, its fourth clause — the section count — planted by nothing, since the plant written for it is refused as an unreadable page before the count is compared; the named-index docs reader on a missing claim, a declaration block whose title or indentation is not the one pinned, a fixture that does not exist, a command never executed or executed dirty, and each of the four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the link reader on a section id the page does not carry"
 fi
 
+
+# ---------------------------------------------------------------------------
+# M43 — tests/indexdump.py, the extraction the version matrix reduces each
+# rendered artifact to. The workflow runs it on a runner and compares two legs'
+# stdout byte for byte, so what is checked here is the property that comparison
+# rests on: an artifact carrying an index dumps rows, and an artifact carrying
+# none is a loud failure rather than an empty print two legs would agree about.
+#
+# Four unplanted controls, one per artifact shape the matrix renders: a single
+# document's index, a document declaring two indexes, a book whose locators
+# point across pages, and a printed PDF index. Each is read from the CAPTURE
+# (M24) and not from the working tree.
+# ---------------------------------------------------------------------------
+M43_DEMO_HTML="$CAPTURE_ROOT/demo-html/demo.html"
+M43_NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
+M43_BOOK_HTML="$CAPTURE_ROOT/book-html/_book/last.html"
+M43_DEMO_PDF="$CAPTURE_ROOT/demo-pdf/demo.pdf"
+
+# The dump's stdout is the comparison's whole subject, so a control asserts it
+# is non-empty AND that it carries both row kinds — a dump of section headers
+# with no entry under them would compare equal across two broken legs.
+m43_dump() {
+  local mode="$1" artifact="$2" want_sections="$3" label="$4"
+  local out sections entries
+  out=$(HTML_SECTION_ID="$HTML_SECTION_ID" \
+        HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+        HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+        python3 tests/indexdump.py "$mode" "$artifact" 2>/dev/null) \
+    || fail "M43-T1: the dump of $label failed on an artifact this run rendered and captured"
+  [ -n "$out" ] \
+    || fail "M43-T1: the dump of $label exited 0 and printed nothing, which is the one answer a cross-leg comparison must not be able to agree on"
+  entries=$(printf '%s\n' "$out" | grep -cE '^[0-9]	' || true)
+  [ "$entries" -gt 0 ] \
+    || fail "M43-T1: the dump of $label carries no entry row, so two legs printing only section headers would compare equal"
+  if [ "$want_sections" != "-" ]; then
+    sections=$(printf '%s\n' "$out" | grep -cE '^section	' || true)
+    [ "$sections" = "$want_sections" ] \
+      || fail "M43-T1: the dump of $label names $sections index section(s), expected $want_sections"
+  fi
+  printf '%s\n' "$out"
+}
+
+m43_dump html "$M43_DEMO_HTML" 1 "examples/demo.qmd (HTML)" > "$WORK/m43-demo-html.txt"
+m43_dump html "$M43_NAMED_HTML" 2 "examples/named-indexes.qmd (HTML)" > "$WORK/m43-named-html.txt"
+m43_dump html "$M43_BOOK_HTML" 1 "examples/book (HTML)" > "$WORK/m43-book-html.txt"
+m43_dump pdf "$M43_DEMO_PDF" - "examples/demo.qmd (PDF)" > "$WORK/m43-demo-pdf.txt"
+pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index, and the printed entry lines of the PDF"
+
+# The href form is what the criterion asks for and the count form is what the
+# manifests above read; the two are the same function under one flag, so this
+# asserts the flag reached the dump rather than trusting that it did. A book
+# locator points at another PAGE, which no count could ever say.
+grep -qE '^[0-9]	Beta	one\.html#' "$WORK/m43-book-html.txt" \
+  || fail "M43-T1: the book dump does not state WHERE a locator points (expected an entry row whose locator field names one.html), so the comparison is over locator counts and not over targets"
+pass "M43-T1: the dump states each locator's target and not its count — the book's Beta entry names the chapter page its locator points at"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M43 T1 — a planted defect per CLAUSE of the dump, not one per mode
+  # (check-design). Two clauses are reached with a mutated artifact; three
+  # cannot be reached by handing the command any PDF at all, so they are
+  # planted against the function the read hands its entries to, which is why
+  # that function is split out. Each planted case must fail AND name its own
+  # clause, so a reader dying on the fixture cannot be read as the clause
+  # firing.
+  # -------------------------------------------------------------------------
+  M43W="$WORK/m43probe"
+  rm -rf "$M43W"
+  mkdir -p "$M43W"
+
+  m43_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M43 self-test: the planted case ($label) passed, so this check's green says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M43 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    printf '%s' "$out" | grep -q 'Traceback' \
+      && { printf '%s\n' "$out" >&2; fail "M43 self-test: the planted case ($label) raised rather than reporting a finding, which exits non-zero for a reason nothing states"; }
+    printf 'ok   self-test: the dump fails on <<%s>>\n' "$label"
+  }
+
+  # <name> <source> <sed script> — one mutated copy at $M43W/<name>, asserted
+  # to differ from its source, so a no-op mutation cannot leave a green plant.
+  m43_plant() {
+    local name="$1" source="$2" script="$3"
+    sed "$script" "$source" > "$M43W/$name"
+    cmp -s "$source" "$M43W/$name" \
+      && fail "M43 self-test: the mutation for $name changed nothing in $source, so the case below is about the unplanted artifact"
+    return 0
+  }
+
+  m43_plant nosection.html "$M43_DEMO_HTML" "s|id=\"$HTML_SECTION_ID\"|id=\"not-the-index\"|"
+  m43_planted 'a page carrying no generated index section, whose empty dump two legs would compare equal' \
+    'carries no generated index section' \
+    python3 tests/indexdump.py html "$M43W/nosection.html"
+
+  m43_plant noterm.html "$M43_DEMO_HTML" 's|qi-term|qi-notterm|g'
+  m43_planted 'a page whose index entries carry no term span, which the reader cannot read at all' \
+    'term span(s), expected exactly 1' \
+    python3 tests/indexdump.py html "$M43W/noterm.html"
+
+  m43_planted 'an artifact that does not exist, over which the dump would otherwise sweep nothing' \
+    'no such artifact' \
+    python3 tests/indexdump.py html "$M43W/absent.html"
+
+  m43_planted 'a PDF printing no line that is the index heading, where the entry list starts' \
+    'no index heading' \
+    python3 tests/indexdump.py pdf "$M43_DEMO_PDF" 'Not The Index Heading'
+
+  # The two clauses below sit past the read: no PDF handed to this command
+  # reaches them, so each is planted against `pdf_rows` with an entry list of
+  # its own. The unplanted control is the PDF dump above, which ran green on
+  # this run's own capture through the same function.
+  m43_pdfrows() {
+    python3 - "$1" <<'M43ROWS'
+import sys
+sys.path.insert(0, 'tests')
+import indexdump
+import pdfindex
+case = sys.argv[1]
+if case == 'empty':
+    entries = []
+else:
+    # One entry, indented as a sub-entry, so its column carries no top-level
+    # entry and pdfindex's documented assumption is unmet.
+    entries = [pdfindex.Entry('Sub, 2', 1, 1, 0, 40.0, 100.0)]
+for line in indexdump.pdf_rows(entries, 'planted.pdf', 'Index'):
+    print(line)
+M43ROWS
+  }
+
+  m43_planted 'a PDF whose index heading is printed with no entry under it, which is an empty index and not an absent one' \
+    'no entry follows it' \
+    m43_pdfrows empty
+
+  m43_planted "a printed column carrying no top-level entry, where every level pdfindex reports in it is a level too shallow" \
+    'cannot read its indent levels' \
+    m43_pdfrows nolevel0
+
+  pass "M43 self-test: each clause of tests/indexdump.py is planted on its own and shown red, while the same reader passes unplanted on this run's own captures — an index section the page does not carry, an index the reader cannot read at all, an artifact that does not exist, a heading the PDF does not print, a heading with no entry under it, and a column carrying no top-level entry"
+fi
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

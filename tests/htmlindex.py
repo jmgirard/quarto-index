@@ -251,7 +251,7 @@ def index_sections(root, prefix, minted=()):
 SECTION_TOKEN = 'section'
 
 
-def section_rows(root, prefix, minted=()):
+def section_rows(root, prefix, minted=(), hrefs=False):
     """The manifest form of every generated index section on a page.
 
     One `section<TAB>id<TAB>heading tag<TAB>title<TAB>id it follows` row per
@@ -260,12 +260,18 @@ def section_rows(root, prefix, minted=()):
     the two cannot drift apart in what an entry row means. No entry row starts
     with the word `section`: an entry row starts with a depth digit and a
     letter row with `letter`.
+
+    `hrefs` is `row()`'s own flag, passed straight through: False states how
+    MANY locators an entry has, True states WHERE each one points. The
+    hand-written manifests here read the count form, and the cross-version
+    comparison (M43) reads the href form, where a locator that moved without
+    changing in number is exactly the difference being looked for.
     """
     rows = []
     for found in index_sections(root, prefix, minted):
         rows.append('\t'.join((SECTION_TOKEN, found['ident'], found['tag'],
                                found['title'], found['after'] or '-')))
-        rows.extend(row(r) for r in found['records'])
+        rows.extend(row(r, hrefs) for r in found['records'])
     return rows
 
 

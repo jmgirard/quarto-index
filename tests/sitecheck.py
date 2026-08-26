@@ -16,7 +16,7 @@
       an SVG symbol, not a document), and so is any value whose scheme is
       `http:`, `https:`, `mailto:`, `tel:`, `data:` or `javascript:`.
 
-  headings <old-readme> <new-readme> <site-dir>
+  headings <old-readme> <new-readme> <site-dir> [overlay]
       Every `##`/`###` heading the old README carried, other than the three the
       move keeps, is gone from the new README and is carried as a heading — at
       any level — by some file under the site directory.
@@ -26,7 +26,7 @@
       pre-release warning, the install line, and a relative link to the site
       index that resolves from the README's own directory.
 
-  prose <old-readme> <new-readme> <site-dir>
+  prose <old-readme> <new-readme> <site-dir> [overlay]
       No documentation prose was lost in the move. For every line the old README
       carried and the new one does not, every run of four or more ASCII
       alphanumerics on that line, lowercased, appears in the concatenated
@@ -39,6 +39,12 @@
       nowhere else: the words are the runs `[A-Za-z0-9]{4,}` finds, lowercased
       on both sides, and nothing else about the line is compared — not order,
       not punctuation, not the shorter words.
+
+The `headings` and `prose` modes take an optional OVERLAY directory, which
+supplies the BYTES for any tracked path it holds a copy of while git keeps
+supplying the file list - tests/suitescan.py's handle, and for the same reason:
+a check over a tracked set is shown to fail on the defect it names only if the
+defect can be put into that set without editing the repo.
 
 Every mode reports the size of the domain it swept, so a domain that has gone
 empty reads as empty rather than as a pass.
@@ -70,20 +76,39 @@ def fail(message):
     return 1
 
 
-def tracked_qmd(directory):
-    """Tracked `.qmd` paths under `directory`, as git enumerates them."""
+def tracked_qmd(directory, overlay=None):
+    """Tracked `.qmd` paths under `directory`, as git enumerates them.
+
+    Returns (reported path, path to read). With an overlay directory, a tracked
+    path the overlay holds a copy of is READ from there and still REPORTED
+    under its own name, so a planted violation is named where a reader would
+    look for it. This is tests/suitescan.py's handle, for the same reason: a
+    check over a tracked set can only be shown to fail on the defect it names
+    if the defect can be put into that set without editing the repo.
+    """
     out = subprocess.run(['git', 'ls-files', directory], check=True,
                          capture_output=True, text=True).stdout.split('\n')
-    return [p for p in out if p.endswith('.qmd')]
+    pairs = []
+    for path in out:
+        if not path.endswith('.qmd'):
+            continue
+        source = path
+        if overlay:
+            candidate = os.path.join(overlay, path)
+            if os.path.isfile(candidate):
+                source = candidate
+        pairs.append((path, source))
+    return pairs
 
 
-def renderable(paths):
+def renderable(pairs):
     """The tracked pages a website render turns into a page of their own.
 
     A `_`-prefixed basename is a partial: Quarto includes it into another page
     and writes no output of its own for it (M40 scope).
     """
-    return [p for p in paths if not os.path.basename(p).startswith('_')]
+    return [pair for pair in pairs
+            if not os.path.basename(pair[0]).startswith('_')]
 
 
 def headings_of(text):
@@ -118,7 +143,7 @@ def check_rendered(site_src, captured):
                     f'website render writes an output for, so this check '
                     f'would pass over an empty set')
     missing = []
-    for page in pages:
+    for page, _source in pages:
         rel = os.path.relpath(page, site_src)
         want = os.path.join(captured, rel[:-len('.qmd')] + '.html')
         if not os.path.isfile(want):
@@ -224,7 +249,7 @@ def check_links(captured, base_path=''):
 # ---------------------------------------------------------------------------
 # headings
 # ---------------------------------------------------------------------------
-def check_headings(old_readme, new_readme, site_dir):
+def check_headings(old_readme, new_readme, site_dir, overlay=None):
     old = open(old_readme, encoding='utf-8').read()
     new = open(new_readme, encoding='utf-8').read()
     moved = [line for line in old.split('\n')
@@ -239,10 +264,10 @@ def check_headings(old_readme, new_readme, site_dir):
 
     site_headings = set()
     files = 0
-    for path in tracked_qmd(site_dir):
+    for _path, source in tracked_qmd(site_dir, overlay):
         files += 1
         for _level, text in headings_of(
-                open(path, encoding='utf-8').read()):
+                open(source, encoding='utf-8').read()):
             site_headings.add(text)
     if not files:
         return fail(f'`git ls-files {site_dir}` enumerated no page, so the '
@@ -309,16 +334,16 @@ def check_readme(new_readme, site_index):
 # ---------------------------------------------------------------------------
 # prose
 # ---------------------------------------------------------------------------
-def check_prose(old_readme, new_readme, site_dir):
+def check_prose(old_readme, new_readme, site_dir, overlay=None):
     old = open(old_readme, encoding='utf-8').read().split('\n')
     new = set(open(new_readme, encoding='utf-8').read().split('\n'))
     removed = [line for line in old if line not in new]
 
     destination = []
     files = 0
-    for path in tracked_qmd(site_dir):
+    for _path, source in tracked_qmd(site_dir, overlay):
         files += 1
-        destination.append(open(path, encoding='utf-8').read())
+        destination.append(open(source, encoding='utf-8').read())
     if not files:
         return fail(f'`git ls-files {site_dir}` enumerated no page, so every '
                     f'removed word would be reported lost and the check is not '

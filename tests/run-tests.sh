@@ -1816,7 +1816,8 @@ printf '   %s file(s)\n\n' "$FILTER_SOURCE_COUNT"
 # README_INDEXES_CLAIMS and README_INDEXES_YAML are here-documents.
 # ---------------------------------------------------------------------------
 printf '%s\n' "${CLAIM_CONTAINERS[@]}" > "$WORK/claim-registry.txt"
-python3 - "$WORK/claim-registry.txt" tests/run-tests.sh <<'REGISTRYPY'
+check_claim_registry() {
+python3 - "$1" "$2" <<'REGISTRYPY'
 import re
 import sys
 
@@ -1863,6 +1864,9 @@ print(f'ok   M40-AC6: the claim-container registry names all {len(registered)} '
       f'{absence} absence, compared against a scan of the suite\'s own source '
       f'reading both the array and here-document definition shapes')
 REGISTRYPY
+}
+check_claim_registry "$WORK/claim-registry.txt" tests/run-tests.sh \
+  || fail "M40-AC6: the claim-container registry and the containers this suite defines are not the same set (its own FAIL line is above)"
 
 # M02-AC6 — the docs and the normative list cannot drift apart. A count would
 # pass on a README that documented some other syntax; this compares the bytes.
@@ -1890,8 +1894,8 @@ PY
 # sentence cannot hide behind a line break).
 printf '%s\n' "${README_STALE[@]}" > "$WORK/readme-stale.txt"
 printf '%s\n' "${README_HTML_CLAIMS[@]}" > "$WORK/readme-html.txt"
-python3 - "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
-  "$(claim_text README_STALE)" "$(claim_text README_HTML_CLAIMS)" <<'PY'
+check_claim_sets() {
+python3 - "$1" "$2" "$3" "$4" <<'PY'
 import sys
 
 def rows(path):
@@ -1924,6 +1928,10 @@ print(f'ok   M03-AC7: all {len(stale)} stale pass-through sentences are gone '
       f'from every site page and from README, and all {len(claims)} HTML '
       f'claims appear on the site pages the registry names for them')
 PY
+}
+check_claim_sets "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
+  "$(claim_text README_STALE)" "$(claim_text README_HTML_CLAIMS)" \
+  || fail "M03-AC7: the docs do not describe the HTML back-end as this suite exercises it (its own FAIL line is above)"
 
 # M06-AC6 — the same discipline for the sort-key documentation. Separate from
 # the block above so a failure names which milestone's docs drifted.
@@ -13178,6 +13186,320 @@ python3 tests/sitecheck.py links "$SITE_OUT" "$SITE_BASE_PATH" \
 
 python3 tests/sitecheck.py readme README.md site/index.qmd \
   || fail "M40-AC5: README is not the short pointer that gets a reader to the documentation (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M40 T7 — a planted defect for each CLAUSE of each check M40 adds, not one
+  # per reader (check-design, M32). Each plant is built with one substitution
+  # and asserted to have changed the file, so a no-op mutation cannot leave a
+  # green plant behind (M29); each planted case is required to fail AND to fail
+  # by naming its own clause, so a reader dying on the fixture cannot be read
+  # as the clause firing.
+  # -------------------------------------------------------------------------
+  M40W="$WORK/m40probe"
+  rm -rf "$M40W"
+  mkdir -p "$M40W"
+
+  m40_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M40 self-test: the planted case ($label) passed, so this check's green says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M40 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    printf 'ok   self-test: the check fails on <<%s>>\n' "$label"
+  }
+
+  # --- rendered ------------------------------------------------------------
+  cp -R "$SITE_OUT" "$M40W/norender"
+  [ -f "$M40W/norender/syntax.html" ] \
+    || fail "M40 self-test: the captured site holds no syntax.html to remove, so the plant below would be about a page the render never wrote"
+  rm -f "$M40W/norender/syntax.html"
+  m40_planted 'a tracked page the render wrote no output for' \
+    'have no rendered output at the path their source names' \
+    python3 tests/sitecheck.py rendered site "$M40W/norender"
+  mkdir -p "$M40W/untracked-src"
+  m40_planted 'a site source directory git tracks no page under, over which the render check would sweep nothing' \
+    'enumerated no page' \
+    python3 tests/sitecheck.py rendered "$M40W/untracked-src" "$SITE_OUT"
+
+  # --- links ---------------------------------------------------------------
+  # One anchor spliced into a copy of the captured home page per clause. The
+  # snippet is required to be in the copy afterwards, so a substitution that
+  # matched nothing cannot hand the plant an unmutated page.
+  m40_plant_link() {
+    local name="$1" snippet="$2" dir="$M40W/$1"
+    rm -rf "$dir"
+    cp -R "$SITE_OUT" "$dir"
+    sed "s|</body>|$snippet</body>|" "$dir/index.html" > "$dir/index.planted"
+    mv "$dir/index.planted" "$dir/index.html"
+    grep -qF -- "$snippet" "$dir/index.html" \
+      || fail "M40 self-test: the link plant <<$snippet>> did not apply to $dir/index.html, so the case below would be about the unmutated page"
+  }
+
+  m40_plant_link linkpath '<a href="nosuch-page.html">x</a>'
+  m40_planted 'a relative href naming a page the render never wrote' \
+    'names no file under' \
+    python3 tests/sitecheck.py links "$M40W/linkpath" ""
+
+  m40_plant_link linkfrag '<a href="syntax.html#nosuch-fragment">x</a>'
+  m40_planted 'a fragment naming an id the page it points at does not carry' \
+    'names no element with that id in' \
+    python3 tests/sitecheck.py links "$M40W/linkfrag" ""
+
+  m40_plant_link linkself '<a href="#nosuch-local-fragment">x</a>'
+  m40_planted 'a same-page fragment naming an id the page carrying it does not have' \
+    'names no element with that id in the page carrying it' \
+    python3 tests/sitecheck.py links "$M40W/linkself" ""
+
+  # The base path is the one value the check reads from outside the render, so
+  # it is shown in BOTH directions on one artifact: the same root-relative href
+  # is a dangling link when no base path is configured and resolves when the
+  # base path it is written under is the one given.
+  m40_plant_link linkbase '<a href="/docs/syntax.html">x</a>'
+  m40_planted 'a root-relative href under a base path the check was not given' \
+    'names no file under' \
+    python3 tests/sitecheck.py links "$M40W/linkbase" ""
+  python3 tests/sitecheck.py links "$M40W/linkbase" "docs" > /dev/null \
+    || fail "M40 self-test: the same root-relative href is still unresolved when the base path it is written under IS given, so the check does not strip the base path at all"
+  printf 'ok   self-test: the root-relative href the check calls dangling with no base path resolves when the base path it is written under is given\n'
+
+  mkdir -p "$M40W/nopages"
+  m40_planted 'a captured render holding no page at all' \
+    'holds no rendered page at all' \
+    python3 tests/sitecheck.py links "$M40W/nopages" ""
+
+  mkdir -p "$M40W/nolinks"
+  printf '<html><body><a href="https://example.com/x">x</a></body></html>\n' \
+    > "$M40W/nolinks/index.html"
+  m40_planted 'a rendered page making no link to its own content, over which the link check would sweep nothing' \
+    'make no link to their own content at all' \
+    python3 tests/sitecheck.py links "$M40W/nolinks" ""
+
+  # --- headings and prose --------------------------------------------------
+  # The old README is stated here rather than read out of git: the pre-move
+  # README is reachable from this branch's merge base and from nowhere after
+  # the merge, and a self-test whose control disappears once the milestone
+  # ships is a self-test that stops running. The seventeen heading texts are
+  # the independent statement of what moved.
+  cat > "$M40W/old-README.md" <<'M40OLD'
+# quarto-index
+
+## Install
+
+## Syntax
+
+### Sub-entry levels
+
+### Cross-references
+
+### Special characters
+
+### Terms outside Latin-1
+
+### Sorting an entry under something else
+
+### The principal mention of a term
+
+### A discussion that spans pages
+
+### Placing the index
+
+### Named indexes
+
+## What it emits
+
+### LaTeX and PDF
+
+### HTML
+
+### Other formats
+
+### Where the two back-ends differ
+
+### Letter groups in the HTML index
+
+## Books
+
+## Examples
+
+## Tests
+M40OLD
+
+  python3 tests/sitecheck.py headings "$M40W/old-README.md" README.md site \
+    > /dev/null \
+    || fail "M40 self-test: the heading-move check is red on the unplanted pair, so no failure below is evidence of anything"
+  python3 tests/sitecheck.py prose "$M40W/old-README.md" README.md site \
+    > /dev/null \
+    || fail "M40 self-test: the prose-loss check is red on the unplanted pair, so no failure below is evidence of anything"
+
+  # A heading the move was meant to remove, still in the README that replaces it.
+  { cat README.md; printf '\n### Named indexes\n'; } > "$M40W/readme-keptheading.md"
+  cmp -s README.md "$M40W/readme-keptheading.md" \
+    && fail "M40 self-test: the kept-heading mutation changed nothing in README"
+  m40_planted 'a moved heading still carried by the README that replaces it' \
+    'still in' \
+    python3 tests/sitecheck.py headings "$M40W/old-README.md" \
+      "$M40W/readme-keptheading.md" site
+
+  # A moved heading whose text drifted on the page that now carries it. The
+  # overlay supplies the bytes; git still supplies the file list, so the
+  # reported path is the tracked one.
+  mkdir -p "$M40W/drift/site"
+  sed 's|^# Named indexes$|# Named indices|' site/named-indexes.qmd \
+    > "$M40W/drift/site/named-indexes.qmd"
+  cmp -s site/named-indexes.qmd "$M40W/drift/site/named-indexes.qmd" \
+    && fail "M40 self-test: the heading-drift mutation changed nothing in the page"
+  m40_planted 'a moved heading whose text drifted on the page that now carries it' \
+    'no heading under' \
+    python3 tests/sitecheck.py headings "$M40W/old-README.md" README.md site \
+      "$M40W/drift"
+
+  # The count guard: an old README that is not the document this check is about.
+  grep -v '^### Named indexes$' "$M40W/old-README.md" > "$M40W/old-16.md"
+  cmp -s "$M40W/old-README.md" "$M40W/old-16.md" \
+    && fail "M40 self-test: the heading-removing mutation changed nothing in the old README"
+  m40_planted 'an old README carrying sixteen of the seventeen headings the move is about' \
+    'M40 moves 17' \
+    python3 tests/sitecheck.py headings "$M40W/old-16.md" README.md site
+
+  mkdir -p "$M40W/untracked-site"
+  m40_planted 'a site directory git tracks no page under, over which the heading check would find no destination' \
+    'enumerated no page' \
+    python3 tests/sitecheck.py headings "$M40W/old-README.md" README.md \
+      "$M40W/untracked-site"
+
+  # Prose: a line dropped from the README whose words reach no page.
+  { cat "$M40W/old-README.md"
+    printf '\nA sentence about zzunreachablewordzz nobody moved anywhere.\n'
+  } > "$M40W/old-lostword.md"
+  cmp -s "$M40W/old-README.md" "$M40W/old-lostword.md" \
+    && fail "M40 self-test: the lost-word mutation changed nothing in the old README"
+  m40_planted 'a line dropped from the README carrying a word that reaches no page' \
+    'reach no page under' \
+    python3 tests/sitecheck.py prose "$M40W/old-lostword.md" README.md site
+
+  m40_planted 'a site directory git tracks no page under, over which the prose check would report every word lost' \
+    'enumerated no page' \
+    python3 tests/sitecheck.py prose "$M40W/old-README.md" README.md \
+      "$M40W/untracked-site"
+
+  printf 'a b c\nd e f\n' > "$M40W/old-short.md"
+  : > "$M40W/new-empty.md"
+  m40_planted 'dropped lines carrying no word of four or more characters, over which the prose check would compare nothing' \
+    'compared nothing' \
+    python3 tests/sitecheck.py prose "$M40W/old-short.md" "$M40W/new-empty.md" site
+
+  # --- readme --------------------------------------------------------------
+  mkdir -p "$M40W/lonely"
+  cp README.md "$M40W/lonely/README.md"
+  m40_planted 'a README linking to a site index that does not resolve from where the README sits' \
+    'does not resolve from' \
+    python3 tests/sitecheck.py readme "$M40W/lonely/README.md" \
+      "$M40W/lonely/site/index.qmd"
+
+  { cat README.md; for i in $(seq 1 120); do printf 'padding line %s\n' "$i"; done; } \
+    > "$M40W/readme-long.md"
+  m40_planted 'a README past the line cap the criterion states' \
+    'the criterion is under' \
+    python3 tests/sitecheck.py readme "$M40W/readme-long.md" site/index.qmd
+
+  grep -vF -- '**Pre-release: install at your own risk.**' README.md \
+    > "$M40W/readme-nowarning.md"
+  cmp -s README.md "$M40W/readme-nowarning.md" \
+    && fail "M40 self-test: the warning-removing mutation changed nothing in README"
+  m40_planted 'a README carrying no pre-release warning' \
+    'does not carry the pre-release warning' \
+    python3 tests/sitecheck.py readme "$M40W/readme-nowarning.md" site/index.qmd
+
+  grep -vF -- 'quarto add jmgirard/quarto-index' README.md \
+    > "$M40W/readme-noinstall.md"
+  cmp -s README.md "$M40W/readme-noinstall.md" \
+    && fail "M40 self-test: the install-line-removing mutation changed nothing in README"
+  m40_planted 'a README carrying no install line' \
+    'does not carry the install line' \
+    python3 tests/sitecheck.py readme "$M40W/readme-noinstall.md" site/index.qmd
+
+  sed 's|(site/index\.qmd)|(https://example.com/docs)|' README.md \
+    > "$M40W/readme-nolink.md"
+  cmp -s README.md "$M40W/readme-nolink.md" \
+    && fail "M40 self-test: the link-rewriting mutation changed nothing in README"
+  m40_planted 'a README whose docs link no longer names the site index' \
+    'no markdown link in it names' \
+    python3 tests/sitecheck.py readme "$M40W/readme-nolink.md" site/index.qmd
+
+  # --- the claim-container registry ----------------------------------------
+  M40REG="$M40W/registry.txt"
+  cp "$WORK/claim-registry.txt" "$M40REG"
+  check_claim_registry "$M40REG" tests/run-tests.sh > /dev/null \
+    || fail "M40 self-test: the registry check is red on an unplanted copy of the registry, so no failure below is evidence of anything"
+
+  grep -v '^README_LETTER_CLAIMS	' "$M40REG" > "$M40W/registry-missing.txt"
+  cmp -s "$M40REG" "$M40W/registry-missing.txt" \
+    && fail "M40 self-test: the row-removing mutation changed nothing in the registry"
+  m40_planted 'a container this suite defines that the registry does not name' \
+    'defined here, not in the registry' \
+    check_claim_registry "$M40W/registry-missing.txt" tests/run-tests.sh
+
+  { cat "$M40REG"; printf 'README_NO_SUCH_CLAIMS\tpresence\tsite/index.qmd\n'; } \
+    > "$M40W/registry-stale.txt"
+  m40_planted 'a registry row for a container this suite does not define' \
+    'in the registry, not defined here' \
+    check_claim_registry "$M40W/registry-stale.txt" tests/run-tests.sh
+
+  sed 's|^README_LETTER_CLAIMS	presence	|README_LETTER_CLAIMS	absence	|' \
+    "$M40REG" > "$M40W/registry-retagged.txt"
+  cmp -s "$M40REG" "$M40W/registry-retagged.txt" \
+    && fail "M40 self-test: the re-tagging mutation changed nothing in the registry"
+  m40_planted 'a presence container re-tagged absence, which would drop it out of the criterion the registry is the domain of' \
+    'the criterion is over 17, 14 presence and 3 absence' \
+    check_claim_registry "$M40W/registry-retagged.txt" tests/run-tests.sh
+
+  { cat "$M40REG"; grep '^README_LETTER_CLAIMS	' "$M40REG"; } \
+    > "$M40W/registry-dup.txt"
+  m40_planted 'a registry naming one container twice, so one of its two rows is unreachable' \
+    'names a container twice' \
+    check_claim_registry "$M40W/registry-dup.txt" tests/run-tests.sh
+
+  printf '# a suite source defining no claim container at all\n' \
+    > "$M40W/no-containers.sh"
+  m40_planted 'a suite source defining no claim container at all, over which the registry scan would certify nothing' \
+    'found no claim container at all' \
+    check_claim_registry "$M40REG" "$M40W/no-containers.sh"
+
+  # --- the claim sets themselves -------------------------------------------
+  M40DOCS="$M40W/docs.txt"
+  M40EVERY="$M40W/everywhere.txt"
+  cp "$(claim_text README_HTML_CLAIMS)" "$M40DOCS"
+  cp "$(claim_text README_STALE)" "$M40EVERY"
+  check_claim_sets "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
+    "$M40EVERY" "$M40DOCS" > /dev/null \
+    || fail "M40 self-test: the claim-set check is red on unplanted copies of this run's own domains, so no failure below is evidence of anything"
+
+  M40CLAIM=$(head -1 "$WORK/readme-html.txt" | cut -f2-)
+  [ -n "$M40CLAIM" ] \
+    || fail "M40 self-test: the first live HTML claim row is empty, so the plant below would remove nothing"
+  grep -vF -- "$M40CLAIM" "$M40DOCS" > "$M40W/docs-dropped.txt"
+  cmp -s "$M40DOCS" "$M40W/docs-dropped.txt" \
+    && fail "M40 self-test: the claim-removing mutation changed nothing in the docs text"
+  m40_planted 'a documented claim deleted from the site page the registry names for it' \
+    'missing (' \
+    check_claim_sets "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
+      "$M40EVERY" "$M40W/docs-dropped.txt"
+
+  M40STALE=$(head -1 "$WORK/readme-stale.txt" | cut -f2-)
+  [ -n "$M40STALE" ] \
+    || fail "M40 self-test: the first retired sentence row is empty, so the plant below would add nothing"
+  { cat "$M40EVERY"; printf '%s\n' "$M40STALE"; } > "$M40W/every-stale.txt"
+  m40_planted 'a retired sentence copied back onto a page a reader looks at' \
+    'still present (' \
+    check_claim_sets "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
+      "$M40W/every-stale.txt" "$M40DOCS"
+
+  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing warning, a missing install line and a link naming something else; the registry check on an unregistered container, a stale row, a presence container re-tagged absence, a duplicated row and a source defining nothing; and the claim-set check on a documented claim deleted from its page and a retired sentence copied back onto one"
+fi
 
 # ---------------------------------------------------------------------------
 # The sweeps' own discrimination (M24). A sweep over a set passes on a set it

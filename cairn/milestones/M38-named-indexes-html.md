@@ -163,6 +163,8 @@ collation rules — nothing here changes how one index is ordered or printed.
 
 - 2026-08-25: review round 3 — AC1-AC6 passed with fresh evidence (full suite --self-test, exit 0, 559 checks, plus direct reads of the captured artifacts) and the consistency gate was clean. AC7 FAILED and returns the milestone to in-progress: `check_folded_heading`'s section-count clause — the one clause round 2 named — is still not shown red, because its plant inserts a heading-less section and `index_sections` raises `ValueError` before the count comparison, while `probe_defect` reads only the exit status; verified here by running the reader over a fabricated two-section page. The three-lens review added G2 (the same reader raises rather than reports) and G3 (three branch-added claims that the clause is planted), plus G5, a README that documents no rule for the name shape T20 tightened. Defect return 3 for this milestone; no amendment return, no criterion reinterpreted. The thrash rule fires on both triggers and the disposition goes to the maintainer.
 
+- 2026-08-25: maintainer disposition at the round-3 return — descope. M38 narrows to AC1-AC6, all six verified this round; AC7 and the reader-proof work it binds (G1, G2, G3, G15) exit the milestone, and G5 rides the narrowed set since AC6 stays. The narrowing runs through the gated criterion-amendment protocol in /milestone-implement, then re-review of the narrowed set. Neither a re-cut nor an escalation was spent.
+
 ## Decisions
 
 - 2026-08-25 (gate): An index is declared as a list entry carrying `name:` and

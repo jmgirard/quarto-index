@@ -91,7 +91,8 @@ _None yet — populated as the codebase takes shape._
   pairing map a range opening waits in — so a target, a key and a range are
   each settled within one index and never across two, and a report of such a
   judgement names the index it was made in rather than the document (corrected
-  M38 review). One format-neutral accumulator is outside that rule:
+  M38 review), the remedy such a report offers naming that index too rather
+  than sending the author to the document at large (extended M39). One format-neutral accumulator is outside that rule:
   `latex.lua`'s `contested_keys`, which `passes.CollectKeys` fills in every
   format but whose two consumers both sit after the HTML early return, so it is
   only ever read where the back-end folds to one index and has one namespace to

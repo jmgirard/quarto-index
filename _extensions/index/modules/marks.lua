@@ -211,8 +211,8 @@ local function report_dangling(paths, xrefs, outer, index)
     -- one spelling they have.
     if not paths[qi_levels.levels_key(xref.resolve or xref.levels)] then
       -- The one-namespace shape FIRST, and the per-index one second: the
-      -- message-distinctness scan reads a named report's `warn(` call and the
-      -- 400 characters after it, so a second call written above this one
+      -- message-distinctness scan reads a named report's `warn()` call and
+      -- the 400 characters after it, so a second call written above this one
       -- would put this literal inside that window and the scan would find two
       -- owners for a needle that names one.
       if scope == outer then

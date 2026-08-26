@@ -1,6 +1,6 @@
 # M39: The sort-key rival and dangling-target reports name the index they judge
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -41,8 +41,8 @@ Surface tier: **user-facing** — the deliverable is warning text an author of a
 - [x] T2: `_extensions/index/modules/sortkeys.lua:40` `register_sort` takes the caller's outer word, routes `index` through `qi_indexes.scope_phrase`, and emits a second `warn()` — its own single literal — only where the phrase differs from that word. The scope clause is inserted mid-message, BEFORE the `written here cannot apply as well` tail, so neither template is a prefix of the other. Update the `passes.lua:74` caller.
 - [x] T3: `_extensions/index/modules/marks.lua:190` `report_dangling` gains a second `warn()` for the per-index scope, its remedy naming the index. It must diverge before the `;` so it does not carry the existing `SINGLE_LITERAL` needle `%s= on %s points at "%s", which no index mark in this %s indexes;` — the two calls sit inside that scan's 400-character window, so the new head must not be added to `SINGLE_LITERAL` either.
 - [x] T4: Suite. Split `WARN_DANGLING` (`tests/run-tests.sh:2071`) into the shared and per-index remedy needles and update `dangling_report()`; re-needle the M38 block at `12466-12472`, whose count goes 1 → 0 against the old tail. Add the rival scope needle beside `WARN_SORT_CONFLICT` (`3172`) — `WARN_SORT_RIVAL` (`7598`) pins nothing, being used once at count 0. Render and capture the new fixture in HTML and LaTeX with its checks. Bump `warn-distinct` `EXPECTED` 64 → 66.
-- [ ] T5: Full `tests/run-tests.sh --self-test` green; record the evidence line for each criterion.
-- [ ] T6: Annotating D-entry on D-021 — the accepted cost is paid, the scope-word rule is unchanged, and the deferral pointer (which named the suite-hardening row) is corrected to the report-scope row. Update the DESIGN Reports section where it describes the scope words.
+- [x] T5: Full `tests/run-tests.sh --self-test` green; record the evidence line for each criterion.
+- [x] T6: Annotating D-entry on D-021 — the accepted cost is paid, the scope-word rule is unchanged, and the deferral pointer (which named the suite-hardening row) is corrected to the report-scope row. Update the DESIGN Reports section where it describes the scope words.
 
 ## Work log
 
@@ -56,6 +56,9 @@ Surface tier: **user-facing** — the deliverable is warning text an author of a
 - 2026-08-25: T3 and T4 share one checkpoint commit: the suite pins the message text T3 changes, so T3 alone cannot leave `verify` clean. Both task boxes and this line land with it.
 - 2026-08-25: T4 — `WARN_DANGLING` kept for the shared shape and `WARN_DANGLING_INDEX` added for the per-index remedy, with `dangling_report_index()` beside `dangling_report()`; the M38-AC2 block now reads the per-index needle at 1, the whole per-index report at 1 and the shared remedy at 0. `WARN_SORT_RIVAL_SCOPED` added beside `WARN_SORT_CONFLICT`; the one-namespace rival shape has no needle of its own (a bare `";` sits inside the per-index shape too) and is pinned by its whole text instead. New M39 block renders and captures the rival fixture in HTML and LaTeX, each shape pinned at 1 on its own log and 0 on the other, over a `WARN_SORT_CONFLICT` count of 1 that holds the rivalry to one report. `tests/run-tests.sh` green, 381 checks.
 - 2026-08-25: check discrimination — with `scope_phrase` short-circuited to the outer word in `sortkeys.lua`, the HTML rival counts read scoped 0 (wants 1) and plain 1 (wants 0); with the same plant in `marks.lua`, the HTML dangling counts read per-index 0 and whole-report 0 (each wants 1) and shared 1 (wants 0). Both plants reverted.
+- 2026-08-25: T6 — D-022 appended, annotating D-021: the second of its two accepted costs is paid, the scope-word rule is unchanged, and its deferral pointer is corrected from the suite-hardening row to the report-scope row M39 absorbed. DESIGN's per-index bullet extended so the rule covers the remedy a report offers, not only the set it names.
+- 2026-08-25: a comment added in T3 wrote the token `warn(` with no closing paren; `tests/scans/m15-joined-messages.py` reads raw source and balances parens from every `warn(`, so on the M16-AC3 moved tree that comment swallowed the next file and read one message as carrying both replacement-report shapes. Caught by `--self-test`, not by the plain run, because the moved tree reorders which file follows `marks.lua`. Comment reworded to `warn()`; the scan reads 70 messages on the moved tree and 66 on the shipped one.
+- 2026-08-25: T5 evidence. AC1 — `named-indexes-rival-html.log`: `WARN_SORT_CONFLICT` 1, the whole scoped report `index entry in term "Ptarmigan" is already sorted as "Zebra" in index "authors"; the sort key "Yak" ...` 1, the whole one-namespace report 0. AC2 — `named-indexes-html.log`: `WARN_DANGLING_INDEX` 1, the whole per-index report for `entry="Stranger"` naming `index "authors"` twice 1, `WARN_DANGLING` 0. AC3 — `diff` of the shared dangling literal and of the one-namespace rival literal against `origin/main` is empty for both; `named-indexes-rival-latex.log`: `WARN_SORT_CONFLICT` 1, the whole one-namespace report 1, `WARN_SORT_RIVAL_SCOPED` 0. AC4 — `warn-distinct` reads 66 templates, all mutually distinct with no prefix relation, over the whole Lua source set. AC5 — `tests/run-tests.sh --self-test` exit 0, 562 checks.
 - 2026-08-25: plan gate chose an annotating D-entry over letting the milestone record carry it, because D-021's Consequences state the shared-remedy cost as accepted and would otherwise read as standing; falsified by a convention that a paid cost needs no entry.
 
 ## Decisions

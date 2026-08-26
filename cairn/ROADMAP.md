@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-25 (M39 planned; the report-scope candidate row abs
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M39 | The sort-key rival and dangling-target reports name the index they judge | in-progress | — | normal | milestones/M39-report-index-scope.md |
+| M39 | The sort-key rival and dangling-target reports name the index they judge | review | — | normal | milestones/M39-report-index-scope.md |
 | M38 | Marks name which index they belong to, and the HTML back-end prints each | done | — | normal | milestones/archive/M38-named-indexes-html.md |
 | M37 | The non-Latin-1 guards report the cause they hit | done | M36 | normal | milestones/archive/M37-non-latin1-guard-causes.md |
 | M36 | The non-Latin-1 readers stop reading text that belongs to no error | done | — | normal | milestones/archive/M36-unicode-reader-claims.md |

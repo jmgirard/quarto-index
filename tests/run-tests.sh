@@ -12228,9 +12228,12 @@ claims = [l.rstrip('\n') for l in open(claims_path, encoding='utf-8')
           if l.strip()]
 bad = []
 for line in claims:
-    label, claim = line.split('\t', 1)
+    # `row` and not `label`: the label this check reports under is a parameter
+    # of its own, and a loop that rebound it left every message below naming
+    # the last claim row instead of the check.
+    row, claim = line.split('\t', 1)
     if ' '.join(claim.split()) not in flat:
-        bad.append(f'  {label}: <<{claim}>>')
+        bad.append(f'  {row}: <<{claim}>>')
 if bad:
     print(f'FAIL: {label}: claim(s) absent from the README section:',
           file=sys.stderr)
@@ -12690,6 +12693,7 @@ unnamed mark	A mark that names no index files in the first declared index
 marker names its index	A placement marker names its index the same way
 one index in latex	A LaTeX or PDF render builds a single index
 one index in a book	An HTML book builds a single index too
+where the folded index goes	The one index is placed at your own marker for it, wherever that marker stands
 MANIFEST
 # The declaration form the criterion names, line for line. Written out here
 # rather than normalized into a claim row: `indexes:` is a list of two-field

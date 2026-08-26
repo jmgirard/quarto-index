@@ -683,7 +683,9 @@ feature. An HTML book builds a single index too: its chapters are aggregated
 through a per-chapter record that carries no index name. In both, every mark
 and every marker naming another index is folded into the one index that is
 built, and each is reported by the index it named — nothing is dropped, and
-nothing is silent.
+nothing is silent. The one index is placed at your own marker for it, wherever
+that marker stands; only where no marker names it does the first marker of any
+name place it.
 
 `examples/named-indexes.qmd` declares two indexes and writes every one of
 those judgements across both; `examples/named-indexes-twin.qmd` is the same

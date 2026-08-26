@@ -1,6 +1,6 @@
 # M38: Marks name which index they belong to, and the HTML back-end prints each
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -205,6 +205,9 @@ collation rules — nothing here changes how one index is ordered or printed.
 - 2026-08-25: T16 — the two renders README shows now go through `ran_clean`, which runs the argv it is handed, writes that argv and the status it exited with to `$WORK/ran-commands.txt`, and fails loudly on anything but 0; the command text is never copied, so nothing can drift from what ran. AC6's check moved below those renders and reads its "runs clean" off that ledger: a documented command absent from it is unrun, and one present with a non-zero status is dirty. The `indexes:` block is pinned line for line against every yaml fence in the section, since normalizing a YAML block's whitespace throws away the one thing an author copies it for. R12's comment slip went with the rewrite — the check now counts its own claims (5) rather than a comment saying four. Suite green, 378 checks.
 
 - 2026-08-25: T17 — the section reader gained the plant its tag comparison had none of: an `h2` where the manifest states an `h1`, which the earlier non-heading plant could not reach because it exercised the no-heading guard alone. Task refined beyond its one line, since AC7 binds every reader this milestone adds and this return round added four: the R1-R4 and AC6 readers were lifted out of their inline heredocs into `check_no_invalid_id`, `check_folded_site`, `check_folded_second`, `check_folded_heading` and `check_readme_indexes`, each now callable over a planted copy. Nineteen new plants, each on a copy of this run's own capture through the no-op-refusing helper and each preceded by a control: three characters no id may hold; the one index moved to the wrong marker in each of the two fold shapes; a capture with the wrong number of placement sites or of indexes; a union section headed with a declaration's own title, named after one declared index, or headed below an h1; and a README missing a claim, showing a declaration block whose title or indentation is not the pinned one, naming a fixture that does not exist, and a ledger missing a documented command, carrying one with a non-zero status, or empty. `tests/run-tests.sh --self-test` green, 549 checks; the plain suite green, 378.
+
+- 2026-08-25: README's fold section stated what happens to a folded mark and marker but not where the one index goes, which T12 made a question with an answer; one sentence added — "The one index is placed at your own marker for it, wherever that marker stands; only where no marker names it does the first marker of any name place it." — and pinned as a sixth AC6 claim row. A slip caught by reading the run log rather than the exit status: the README reader's claims loop rebound `label`, so every message it prints named the last claim row instead of the check; renamed to `row`.
+- 2026-08-25: T11-T17 complete; status review. `tests/run-tests.sh --self-test` exit 0, 549 checks; the plain suite 378. Not carried by this return, per the gate's triage: R8, R9, R10, R11 and R14 stay follow-ups, and KI10 now records that M26's probe proves 15 of the 19 accumulators, the four `indexes.lua` cells being outside its enumeration.
 
 ## Review
 

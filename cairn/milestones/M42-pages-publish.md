@@ -5,7 +5,7 @@
 - **Depends on:** M41
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** m042-pages-publish
+- **Branch/PR:** m042-pages-publish · https://github.com/jmgirard/quarto-index/pull/42
 
 ## Goal
 

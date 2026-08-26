@@ -365,3 +365,7 @@ At the merge gate the maintainer chose "fix docs, then merge".
   claim check and the milestone's Scope all mean by it; the row label is a
   failure-message identifier. AC6 was verified under that reading and the other
   reading recorded beside it, so nothing was settled silently.
+
+Post-fix re-verification: `tests/run-tests.sh --self-test` exit 0, 595
+checks; `sitecheck.py` `prose`, `headings` and `readme` re-run green against
+the merge-base README, so AC3, AC4, AC5 and AC8 hold over the edited tree.

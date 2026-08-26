@@ -50,9 +50,10 @@ term under its own text; the second indexes it under something else; the
 third nests it under a parent heading; the fourth adds an entry with no
 visible mark on the page. The next two point the reader at a different entry
 instead of at a page. The seventh says which of a term's mentions is its
-principal one. The last two mark where a discussion begins and where it ends,
-so the index prints one locator spanning them rather than a locator at each.
-The tenth says which of a document's declared indexes the mark belongs to.
+principal one. The eighth and ninth mark where a discussion begins and where it
+ends, so the index prints one locator spanning them rather than a locator at
+each. The tenth says which of a document's declared indexes the mark belongs
+to.
 
 ### Sub-entry levels
 

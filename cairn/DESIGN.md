@@ -184,6 +184,10 @@ The modules, in dependency order:
 - `latex.lua` — the LaTeX back-end: the `\index{...}` argument, the
   encapsulation a cross-reference rides in, and the contested-key bookkeeping
   that decides which shape a key gets.
+- `indexes.lua` — the indexes a document declares: the ordered name-to-title
+  table read out of `indexes:` metadata, the shape a declared name may be, and
+  which index a mark or a placement marker files in, folded to the one index a
+  back-end that builds one has (added M38; listed here corrected M38).
 - `marks.lua` — what every back-end needs from one mark, derived once, and the
   document-wide accumulators the passes share.
 - `passes.lua` — the per-document reset and the four Span passes, in the order
@@ -201,9 +205,10 @@ The modules, in dependency order:
   carrying the marker builds out of it.
 
 The document-wide accumulators are module-level and are returned to their
-initial values once per document. Each of `marks.lua`, `latex.lua` and
+initial values once per document. Each of `indexes.lua`, `marks.lua`, `latex.lua` and
 `sortkeys.lua` owns a `reset` restoring every cell it declares; `passes.Reset`
-calls the three, and `index.lua` returns it as the pass list's leading
+calls the four, `indexes.lua` first because every accumulator below it is keyed
+by the index a mark files in (corrected M38); and `index.lua` returns it as the pass list's leading
 `{ Pandoc = ... }` table, which Pandoc runs over the document before any later
 table's element functions. **A new accumulator joins its module's `reset` in
 the commit that adds it** — that is the convention, and `tests/stateprobe.py`
@@ -352,8 +357,8 @@ Every other format — beamer, revealjs, epub, gfm — takes neither branch: no
 index, no anchors, no back-end tokens, and the visible text exactly as
 written. What such a format does carry is the mark's own attributes, which
 Pandoc passes through on the span as `data-entry`, `data-see`,
-`data-see-also`, `data-sort`, `data-mention` and `data-range`; whether that
-residue should
+`data-see-also`, `data-sort`, `data-mention`, `data-range` and `data-index`
+(the last added M38; the enumeration corrected M38); whether that residue should
 exist is open (ROADMAP). The mention attribute is spelled `mention` rather than
 `role` for this reason and no other: Pandoc data-prefixes a name it does not
 know but emits `role` literally, so `role=` would ship an invalid ARIA role on

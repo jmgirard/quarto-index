@@ -21,8 +21,9 @@ the index and this one is reported as ignored, naming this chapter.
 :::
 
 A third placement marker, this one naming the second declared index. A book
-builds one index, so it places that one instead and says so; it is not also
-reported as a second marker for an index no marker here names.
+builds one index, and this chapter already writes a marker for it above, so
+this marker places nothing and says so; it is not also reported as a second
+marker for the index it does not name.
 
 ::: {.qi-index-here index="people"}
 :::

@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, IP3
-- **Branch/PR:** m040-docs-website
+- **Branch/PR:** m040-docs-website · https://github.com/jmgirard/quarto-index/pull/40
 
 ## Goal
 
@@ -37,11 +37,11 @@ version does not fence the floor and must not read as closing KI79.
 
 ## Acceptance criteria
 
-- [ ] AC1. `quarto render site` from a clean checkout exits 0, and for every
+- [x] AC1. `quarto render site` from a clean checkout exits 0, and for every
       tracked path under `site/` ending in `.qmd` whose basename does not begin
       with `_` (enumerated by `git ls-files site`), the file at the same
       relative path with `.html` for `.qmd` exists under `site/_site/`.
-- [ ] AC2. Every link the rendered site makes to its own content resolves. For
+- [x] AC2. Every link the rendered site makes to its own content resolves. For
       each `href` value in each `.html` under `site/_site/`, excluding `<use>`
       hrefs and values whose scheme is `http:`, `https:`, `mailto:`, `tel:`,
       `data:` or `javascript:`: where the value has a path part, that path
@@ -49,29 +49,29 @@ version does not fence the floor and must not read as closing KI79.
       stripped; where it carries a `#fragment`, an element with that `id`
       exists in the file it names, or in the containing page when the value has
       no path part.
-- [ ] AC3. No documentation prose is lost: for every line
+- [x] AC3. No documentation prose is lost: for every line
       `git diff <merge-base>..HEAD -- README.md` reports removed, every run of
       four or more ASCII alphanumerics on that line, lowercased, appears in the
       concatenated lowercased text of the tracked files under `site/` at HEAD.
-- [ ] AC4. Every line matching `^#{2,3} ` in the merge-base README.md other
+- [x] AC4. Every line matching `^#{2,3} ` in the merge-base README.md other
       than `## Install`, `## Examples` and `## Tests` (17 lines) is absent from
       README.md at HEAD, and for each, a tracked file under `site/` carries a
       heading whose text — the line with its leading `#` run and following
       spaces removed — is identical.
-- [ ] AC5. README.md at HEAD is under 120 lines and contains the pre-release
+- [x] AC5. README.md at HEAD is under 120 lines and contains the pre-release
       warning paragraph, the `quarto add jmgirard/quarto-index` line, and a
       relative link to `site/index.qmd` that resolves in the repo.
-- [ ] AC6. Every entry of every presence claim container in
+- [x] AC6. Every entry of every presence claim container in
       `tests/run-tests.sh` — `SUPPORTED_FORMS` and the 16 `README_*`
       containers its source defines, 17 in all, of which the claim-container
       registry tags 14 presence and 3 absence — appears, compared with runs of
       whitespace flattened to one space, in the flattened text of some tracked
       `.qmd` file under `site/`.
-- [ ] AC7. Every entry in every absence container the registry lists —
+- [x] AC7. Every entry in every absence container the registry lists —
       `README_STALE` (:318), `README_REFS_STALE` (:500) and
       `README_MISUSE_STALE` (:1860) — appears in no tracked file under `site/`
       and not in README.md.
-- [ ] AC8. `tests/run-tests.sh --self-test` exits 0.
+- [x] AC8. `tests/run-tests.sh --self-test` exits 0.
 
 ## Coverage
 
@@ -145,6 +145,26 @@ version does not fence the floor and must not read as closing KI79.
 
 - 2026-08-26: sizing tripwire also flags 8 acceptance criteria (>7). Not split: AC6 (presence containers) and AC7 (absence containers) are two domains with opposite promises, and the claim repoint cannot land in a later milestone than the prose move without leaving the suite red in between.
 
+- 2026-08-26: review evidence recorded for AC1-AC8, all eight verified fresh on the branch; consistency gate clean. Findings triage pending the [O] diff lens, which died to an API error on its first spawn and is on its second.
+
 ## Decisions
 
 ## Review
+
+Fresh evidence, 2026-08-26, on `m040-docs-website` at 10994af with `main`
+unmoved (0 commits behind). PR #40.
+
+### Acceptance criteria
+
+- AC1 — pass. Clean clone of the branch into a scratch dir, `quarto render
+  site` exit 0, 20 of 20 pages written. `sitecheck.py rendered site
+  site/_site` ok over a 20-page domain; the same 20 paths re-derived by hand
+  from `git ls-files site` each have their `.html` at the matching relative
+  path.
+- AC2 — pass. `sitecheck.py links site/_site` over the same clean-clone
+  render: all 752 same-site links across the 20 pages resolve, path part and
+  `#fragment` alike. An independent href census of the rendered HTML counted
+  the same 752 in-site `href` values (plus 20 external, 0 `<use>`), so the
+  check's domain is the whole domain and not a subset. The site declares no
+  base path, so the base-path clause is exercised by T7's planted case rather
+  than by this render.

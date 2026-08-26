@@ -60,3 +60,7 @@ tests/run-tests.sh --self-test
 
 The [Tests](site/tests.qmd) page says what the suite renders, what it compares
 the output against, and what it needs installed.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

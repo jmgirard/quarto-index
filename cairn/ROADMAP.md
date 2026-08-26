@@ -9,7 +9,7 @@ _Last hygiene check: 2026-08-26 (M41 merged and archived — the docs site now c
 |---|---|---|---|---|---|
 | M40 | The documentation moves into a Quarto website | done | — | normal | milestones/archive/M40-docs-website.md |
 | M41 | The site shows each curated example's source, index and PDF | done | M40 | normal | milestones/archive/M41-example-gallery.md |
-| M42 | GitHub Actions renders the site and publishes it to Pages | in-progress | M41 | normal | milestones/M42-pages-publish.md |
+| M42 | GitHub Actions renders the site and publishes it to Pages | review | M41 | normal | milestones/M42-pages-publish.md |
 | M39 | The sort-key rival and dangling-target reports name the index they judge | done | — | normal | milestones/archive/M39-report-index-scope.md |
 | M38 | Marks name which index they belong to, and the HTML back-end prints each | done | — | normal | milestones/archive/M38-named-indexes-html.md |
 | M37 | The non-Latin-1 guards report the cause they hit | done | M36 | normal | milestones/archive/M37-non-latin1-guard-causes.md |

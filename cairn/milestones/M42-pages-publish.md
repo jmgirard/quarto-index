@@ -1,6 +1,6 @@
 # M42: GitHub Actions renders the site and publishes it to Pages
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M41
 - **Driving RR:** —
@@ -72,7 +72,7 @@ suite in CI → not planned; a candidate row.
 
 ## Tasks
 
-- [ ] T1. Confirm with the user that Pages source is set to GitHub Actions
+- [x] T1. Confirm with the user that Pages source is set to GitHub Actions
       before implementation ends; the deploy leg cannot be exercised otherwise.
 - [x] T2. Write `.github/workflows/pages.yml`: pinned Quarto, the LaTeX
       toolchain the render reaches (TinyTeX, which carries `makeindex`),
@@ -106,6 +106,8 @@ suite in CI → not planned; a candidate row.
 - 2026-08-26: AC1/AC2 evidence on commit cab7fdf — https://github.com/jmgirard/quarto-index/actions/runs/33013541670 concluded `success` with the deploy job skipped, and its `github-pages` artifact contains all 51 `.html`/`.pdf` paths a local render of the same commit produces, 10 of them PDFs.
 - 2026-08-26: T6 — DESIGN's Architecture gains the publishing workflow and `tests/pagescheck.py`; its sentence on the toolchain the site build needs is corrected in place and marked, since the workflow renders the whole site with TinyTeX alone.
 - 2026-08-26: verify slot clean after T5 and T6: `tests/run-tests.sh --self-test`, 649 checks, exit 0.
+- 2026-08-26: T1 — the user was asked at the gate whether Settings → Pages → Source is set to GitHub Actions and chose to set it. `gh api repos/jmgirard/quarto-index/pages` still answered 404 when checked immediately afterwards — observed 2026-08-26 — so the setting is not confirmed from this side; the plan puts the live URL post-merge, and /milestone-review re-reads this endpoint before it merges.
+- 2026-08-26: all tasks done, verify slot clean, status → review.
 
 ## Decisions
 

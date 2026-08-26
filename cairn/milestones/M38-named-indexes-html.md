@@ -838,7 +838,9 @@ exit 0, 559 checks, plus direct reads of this run's captured artifacts.
   `qi-index` id headed by the neutral "Index".
 - AC6 — PASS. Read directly from `README.md`'s `### Named indexes` section: the
   `indexes:` metadata form with `name` and `title`; `index=` shown on a mark and
-  on a placement marker; the rule that a mark or marker naming none takes the
+  on a placement marker — the mark half read directly, since the suite's pinned
+  manifest carries a row for the marker half only (finding O4); the rule that a
+  mark or marker naming none takes the
   first declared index; the name-shape rule T26 added, stating the characters a
   name may hold and that any other name is reported; and, under its own
   subheading, that a LaTeX or PDF render and an HTML book each build one index
@@ -858,3 +860,103 @@ exit 0, 559 checks, plus direct reads of this run's captured artifacts.
   none, so this half is a clean no-op.
 - `cairn_impact.py` not run: `git diff main...HEAD -- cairn/DESIGN.md` changes no
   IP/GP principle line.
+
+### Independent review (round 4)
+
+Three fresh-context reviewers on distinct evidence bases, each spawned without
+having seen the implementation. Recorded for the gate: the session carries a
+standing directive against spawning subagents unless asked, which round 3 put
+to the user before its fan-out; this round the fan-out was spawned on the
+`/milestone-review` invocation alone, and the fact is surfaced here rather than
+left implicit. The declared surface tier is user-facing and the diff touches
+Lua, Python and shell, so the full three-lens fan-out applied.
+
+**[O] diff-bug (Opus)** — nine findings, ranked. O1-O3 are new; O4, O5, O8 and
+O9 the reviewer states as restatements of findings already triaged in earlier
+rounds; O6 and O7 are new but latent.
+
+- O1 — `marks.lua:197`, reached from `index.lua:112-115`. The dangling-target
+  report's `scope` is still the literal `"document"`, though M38 narrowed the
+  path set the target is judged against from the document to one index. This
+  run's capture reads `see= on entry="Stranger" points at "Aardvark", which no
+  index mark in this document indexes; ... so mark that term somewhere or
+  correct the target` — and `Aardvark` IS marked in that document, in index
+  `main`, deliberately, as AC2's own fixture. The author is told to mark a term
+  they already marked, and the remedy offered is the wrong one.
+- O2 — `marks.lua:272,274`, same mechanism at two more call sites. This run's
+  capture reads `closes a range this document never opens` and `is never closed
+  in this document` for "Cantor", whose opening and closing the fixture writes
+  in two different indexes, as AC3 asks. The document does open and does close
+  it; the correct claim is "in this index".
+- O3 — `README.md`'s `### Named indexes` states the per-index rule but not that
+  the report the author will read asserts document scope, so the docs and the
+  runtime disagree in the author's face. The documentation half of O1/O2.
+- O4 — `tests/run-tests.sh:12735-12743`. AC6's text enumerates the `index=`
+  attribute "on a mark and on a placement marker", but `README_INDEXES_CLAIMS`
+  pins a row for the marker half only; the mark sentence and its example could
+  both be deleted with `M38-AC6` still green. Reviewer notes this matters more
+  after the descope, AC6 now being one of six. (R14 -> F12 -> G6.)
+- O5 — `DESIGN.md:88-91`. The bullet M38 added asserts "Every format-neutral
+  accumulator is one namespace per index" and enumerates four; `latex.lua`'s
+  `contested_keys` is filled by `passes.CollectKeys` in every format by the same
+  test and is not namespaced. Unreachable today — both consumers sit after the
+  HTML early return and every LaTeX-derived render folds — so a documentation
+  defect, not an output one, but the diff is what added the absolute.
+  (R10 -> F15 -> G7.)
+- O6 — `sortkeys.lua:69`. The rival-key report does not name the index its
+  registry is now scoped to. States nothing false; leaves the author to guess
+  which index the collision is in. No shipped fixture reaches a two-index
+  sort-key rivalry.
+- O7 — `html.lua:548-566`. `marks_by_index` groups by the mark's index but the
+  emitting loop iterates `qi_indexes.names()` alone, so a group whose key is not
+  a declared name is dropped with no report. Traced unreachable today; the
+  reviewer flags that the book-store follow-up row — adding a per-record index
+  name — is exactly the change that makes the two able to diverge, at which
+  point it drops marks in silence.
+- O8 — the milestone file's Tasks block comment still reads "T11-T17 were added
+  at the first review gate, T18-T24 at the second" and never mentions T25-T27;
+  Coverage maps AC1-AC6 to T1-T10 only, so T11-T27 map to no criterion.
+  `cairn_validate`'s coverage check passes, since it asks only that every
+  criterion map to an existing task. (G11.)
+- O9 — `check_folded_heading` still calls `index_sections` unguarded while its
+  two sibling readers guard it. This is G2, which the round-3 descope moved onto
+  the acceptance-suite hardening candidate row; listed so the record shows a
+  fresh reader saw it and agrees with the disposition.
+
+The reviewer also recorded what it hand-traced and found clean: every marker
+shape through `resolve_markers`/`fold_slot`/`place_index` (R2 and R4 genuinely
+closed), `marker_names` read before `strip_nested_markers`, `resolve_markers`'
+return equivalence, entry-id minting across sections, per-index cross-reference
+resolution in the rendered HTML, `indexes.reset`'s unnamed-index reinstall, and
+`warn-distinct.py`'s `EXPECTED = 64` against the live count.
+
+**[S] blame-history (Sonnet)** — no regression found. It hand-traced the
+highest-surface changes (the `marker.lua` placement rewrite and the accumulators
+becoming per-index namespaces) against the milestones that authored them and
+re-derived the reduction-to-old-behavior argument; it holds. Four low-confidence
+procedural observations:
+
+- H1 — M38 introduces a cross-cutting rule (the per-index judgement bullet) and
+  a backend-folding convention analogous to D-005, recorded only as a DESIGN
+  bullet; comparable rules in this repo's history got D-entries.
+- H2 — KI10's 17 -> 19 correction is arithmetically right (15 `CELLS` + 4) and
+  discloses rather than hides that M26's probe does not cover the four new
+  cells. No regression; flagged only for touching a long-lived entry.
+- H3 — `resolve_markers`/`place_index` rewritten; single-index behavior
+  provably degenerates to the old path and IP2's no-residue guarantee is
+  preserved on every path. `m29book.py` was updated in lockstep with new
+  regexes rather than by loosening assertions.
+- H4 — `warn-distinct.py`'s `EXPECTED` 48 -> 64 and `BOOK_WARNINGS` 7 -> 9 are
+  exact-count guards; both increases are accounted for by real new warnings.
+
+**[S] prior-review record (Sonnet)** — zero findings, a clean no-op with the
+surface actually walked. Primary surface: `cairn/milestones/archive/` `## Review`
+sections touching the modified files (M17, M22, M31), plus M38's own three
+in-file rounds, `LESSONS.md` and DESIGN's Known issues. Secondary surface: the
+existence probe `gh api repos/jmgirard/quarto-index/pulls/comments?per_page=1`
+returned `[]`, so no GitHub review-thread evidence exists and the per-PR walk
+was not paid for. It verified specifically that `NAME_SHAPE` has not regained
+its dot, that README's new name-shape sentence matches the shipped rule, that
+T27's corrections to the self-test block stand, that AC7 is gone from the live
+criteria and survives only in never-edited history (IP4), and that KI10 and the
+DESIGN module-list corrections are intact.

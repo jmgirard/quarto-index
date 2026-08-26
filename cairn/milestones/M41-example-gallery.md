@@ -82,7 +82,7 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 - [x] T3. Make the suite's per-fixture HTML and PDF index manifests addressable
       by fixture name, without changing a single derived row (the ORACLE RULE
       at `tests/run-tests.sh:8-22`).
-- [ ] T4. Build the gallery pages: source code block, embedded rendered
+- [x] T4. Build the gallery pages: source code block, embedded rendered
       fixture, PDF link, and navigation from the site's gallery landing page.
 - [ ] T5. Write the checks for AC1-AC5, capturing each render and reading the
       capture (M24).
@@ -109,6 +109,8 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 - 2026-08-26: T2 done. `site/build_gallery.py` is the site's `pre-render` step: it stages each shown fixture, the extension and the fixture directory's shared assets into `.gallery-build/<name>/` at the repo root, renders that copy to self-contained HTML and to PDF with Quarto's own project variables stripped from the child environment, and places both outputs under `site/gallery/rendered/`, declared as a project resource. `read_gallery` lives there and `tests/gallerycheck.py` imports it, so the build and the check read the declaration through one reader. All ten fixtures render to both formats; the suite's link check now sweeps 30 pages, 876 links, all resolving. Verify slot clean, 386 checks.
 
 - 2026-08-26: T3 done. A table in the suite names each per-fixture manifest by fixture, kind and format — 15 rows, 10 HTML and 5 PDF — and writes each variable's contents to `$WORK/gallery-manifests/<fixture>.<kind>.txt` with a registry beside it. No derived row was copied or re-derived; the table names variables. A row naming an undefined or empty variable fails there. `gallerycheck.py manifests` reads the registry and holds AC3's and AC4's coverage clauses: every shown fixture has an HTML manifest, `shown:` meets its floor of 8, at least 3 shown fixtures have a PDF manifest, and no manifest read for the gallery states zero entries. Verify slot clean, 388 checks.
+
+- 2026-08-26: T4 done. The build writes one `site/gallery/<name>.qmd` per shown fixture — the source verbatim in a backtick fence longer than any run the source carries, a framed `<iframe>` around the self-contained render, and links to that render and to the PDF — plus a `site/gallery/index.qmd` linking to all ten, reached from the sidebar. The whole `site/gallery/` directory is rebuilt each run so a fixture dropped from `shown:` leaves no page behind. One transform on the source: `{{< ... >}}` is escaped to `{{{< ... >}}}`, because Quarto expands a shortcode inside a fenced code block — `examples/xref-conflict.qmd` carries `{{< pagebreak >}}` and its block was 52 bytes short of the fixture until the escape went in. With it, the `<pre><code>` text content of all ten rendered gallery pages equals its fixture's bytes with a trailing newline normalized. Verify slot clean, 388 checks.
 
 ## Decisions
 

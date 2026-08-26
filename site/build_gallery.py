@@ -9,6 +9,11 @@ Quarto runs this as the website's `pre-render` step. For every fixture
   3. places both outputs under `site/gallery/rendered/`, which the project
      declares as a resource, so they reach `site/_site/gallery/rendered/`.
 
+It then writes the gallery pages: one `site/gallery/<name>.qmd` per shown
+fixture, carrying the fixture's source verbatim in a fenced block, a frame
+around the rendered page and a link to the PDF; and the
+`site/gallery/index.qmd` a reader arrives on, linking to each of them.
+
 Nothing here names a path under `examples/` as a render target. The fixture
 directory is read and never written: that is what the milestone's fifth
 criterion checks, by hashing `examples/` on both sides of a site render.
@@ -31,6 +36,10 @@ import re
 import shutil
 import subprocess
 import sys
+
+# A Quarto shortcode, which is expanded even inside a fenced code block. See
+# `gallery_page` for why the gallery escapes rather than expands one.
+SHORTCODE = re.compile(r'\{\{<(.*?)>\}\}', re.S)
 
 KEY = re.compile(r'^([A-Za-z0-9_-]+):\s*$')
 ITEM = re.compile(r'^  - (\S.*?)\s*$')
@@ -151,15 +160,100 @@ def render(source, fmt, extra=()):
                                                 result.returncode))
 
 
+def fence_for(text):
+    """A backtick fence longer than any run of backticks the text contains.
+
+    The fixtures are markdown documents and several carry fenced code blocks of
+    their own. A three-backtick fence around one of those would close at the
+    fixture's own fence, and the page would carry a truncated source while
+    still looking like a whole one.
+    """
+    longest = max((len(run) for run in re.findall(r'`+', text)), default=0)
+    return '`' * max(3, longest + 1)
+
+
+PAGE = '''---
+title: "examples/{name}.qmd"
+pagetitle: "examples/{name}.qmd"
+---
+
+{links}
+
+## The rendered page
+
+The fixture below is rendered on its own, the way `quarto render
+examples/{name}.qmd --to html` renders it. This page frames that output rather
+than reproducing it.
+
+<iframe class="gallery-frame" src="rendered/{name}.html"
+        title="examples/{name}.qmd rendered to HTML"></iframe>
+
+## The source
+
+{fence}markdown
+{body}
+{fence}
+'''
+
+INDEX = '''---
+title: "Gallery"
+pagetitle: "Gallery"
+---
+
+# Gallery
+
+Each page below carries one example fixture: its `.qmd` source, the page that
+fixture renders to, and the PDF built from the same source. The fixtures are
+the ones `site/gallery.yml` lists under `shown:`; the rest of the corpus is
+described on [Examples](../examples.qmd).
+
+{rows}'''
+
+
+def gallery_page(name, source_text, has_pdf):
+    """The `.qmd` for one fixture's gallery page.
+
+    The source goes into the fenced block verbatim, less the file's final
+    newline, which the fence supplies: the criterion compares the block's text
+    content against the fixture's bytes with a trailing newline normalized.
+
+    One substitution is made on the way in. Quarto expands its own shortcodes
+    inside a fenced code block, so a fixture carrying `{{< pagebreak >}}` — and
+    examples/xref-conflict.qmd does — would have that line expanded away and
+    the page would show a source the fixture does not have. Quarto's escape for
+    a shortcode meant literally is a second pair of braces, which renders back
+    as the one pair the fixture wrote.
+    """
+    links = ['[Open the rendered page](rendered/%s.html)' % name]
+    if has_pdf:
+        links.append('[Open the PDF](rendered/%s.pdf)' % name)
+    body = source_text[:-1] if source_text.endswith('\n') else source_text
+    body = SHORTCODE.sub(r'{{{<\1>}}}', body)
+    return PAGE.format(name=name, links=' &middot; '.join(links),
+                       fence=fence_for(source_text), body=body)
+
+
+def gallery_index(names):
+    """The `.qmd` a reader arrives on, linking to every fixture's page."""
+    rows = ''.join('- [`examples/%s.qmd`](%s.qmd)\n' % (name, name)
+                   for name in names)
+    return INDEX.format(rows=rows)
+
+
 def main():
     fixtures = shown_fixtures()
     if os.path.isdir(BUILD_DIR):
         shutil.rmtree(BUILD_DIR)
     os.makedirs(BUILD_DIR)
-    if os.path.isdir(RENDERED_DIR):
-        shutil.rmtree(RENDERED_DIR)
+    # The whole gallery directory goes, not just the renders under it: a
+    # fixture dropped from `shown:` would otherwise leave its page behind, and
+    # a page nobody generated any more reads exactly like one that was.
+    gallery_dir = os.path.join(SITE_DIR, 'gallery')
+    if os.path.isdir(gallery_dir):
+        shutil.rmtree(gallery_dir)
     os.makedirs(RENDERED_DIR)
 
+    names = []
     for fixture in fixtures:
         name, directory, source = stage(fixture)
         # Self-contained, so one file carries the whole rendered page: the
@@ -173,10 +267,24 @@ def main():
                 raise SystemExit('FAIL: M41: rendering %s produced no %s'
                                  % (fixture, name + suffix))
             shutil.copy2(built, os.path.join(RENDERED_DIR, name + suffix))
+        # Read from the staged copy rather than from `examples/`: the page
+        # shows the source the render it frames was made from.
+        with open(source, encoding='utf-8') as handle:
+            source_text = handle.read()
+        page = os.path.join(SITE_DIR, 'gallery', name + '.qmd')
+        with open(page, 'w', encoding='utf-8') as handle:
+            handle.write(gallery_page(name, source_text, has_pdf=True))
+        names.append(name)
         print('gallery: built %s' % name)
 
-    print('gallery: %d fixture(s) rendered into %s'
-          % (len(fixtures), os.path.relpath(RENDERED_DIR, REPO_ROOT)))
+    with open(os.path.join(SITE_DIR, 'gallery', 'index.qmd'), 'w',
+              encoding='utf-8') as handle:
+        handle.write(gallery_index(names))
+
+    print('gallery: %d fixture(s) rendered and %d gallery page(s) written '
+          'into %s' % (len(fixtures), len(names) + 1,
+                       os.path.relpath(os.path.join(SITE_DIR, 'gallery'),
+                                       REPO_ROOT)))
 
 
 if __name__ == '__main__':

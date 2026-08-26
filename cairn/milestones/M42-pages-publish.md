@@ -1,11 +1,11 @@
 # M42: GitHub Actions renders the site and publishes it to Pages
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M41
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** m042-pages-publish
 
 ## Goal
 
@@ -74,13 +74,13 @@ suite in CI → not planned; a candidate row.
 
 - [ ] T1. Confirm with the user that Pages source is set to GitHub Actions
       before implementation ends; the deploy leg cannot be exercised otherwise.
-- [ ] T2. Write `.github/workflows/pages.yml`: pinned Quarto, the LaTeX
-      toolchain (TinyTeX, `makeindex`, `pdftotext`, `stix2-otf`), render,
-      `upload-pages-artifact`, and a `deploy-pages` job gated on the default
-      branch.
-- [ ] T3. Extend `.gitignore` to cover the render's whole output under `site/`,
+- [x] T2. Write `.github/workflows/pages.yml`: pinned Quarto, the LaTeX
+      toolchain the render reaches (TinyTeX, which carries `makeindex`),
+      render, `upload-pages-artifact`, and a `deploy-pages` job gated on the
+      default branch.
+- [x] T3. Extend `.gitignore` to cover the render's whole output under `site/`,
       verified against a real render rather than a literal path.
-- [ ] T4. Write the checks for AC3 and AC5, including the version comparison
+- [x] T4. Write the checks for AC3 and AC5, including the version comparison
       procedure the criterion names.
 - [ ] T5. Run the five AC4 plants on probe branches, one substitution each so a
       no-op leaves the log unchanged (`check-design.md`, M29), and record each
@@ -94,7 +94,13 @@ suite in CI → not planned; a candidate row.
 - 2026-08-26: [O] criteria audit ran, full mode (user-facing tier), over the round-2 draft; it returned findings on AC1-AC4 of that draft and clean on the verify slot. All disposed here.
 - 2026-08-26: plan gate chose proving the build leg pre-merge on the branch and recording the live URL post-merge over making the live URL a criterion; the audit showed `actions/deploy-pages` needs a repo setting and the `github-pages` environment refuses non-default-branch deployments, so a live-URL criterion is unreachable at the gate that owns it. Falsified by a build-leg green run that the deploy leg then fails on.
 - 2026-08-26: plan gate chose one pinned Quarto version over a floor/latest matrix here; the matrix is a standing candidate row and belongs with KI79, and folding it in would make a red floor render block the site going public. Falsified by the pinned version diverging from what the floor claim promises in a way a reader hits.
+- 2026-08-26: gate chose the artifact's containment judged against a local render of the same commit over the runner's own listing; Quarto pinned to 1.10.18, the version installed here, so the local render is a same-toolchain render; TinyTeX alone rather than the wider toolchain T2's parenthetical names, since nothing in the site build reaches `pdftotext` or the STIX font (minor amendment to T2's wording, the workflow proved by a real CI render); and the actions named by major tag — D-024.
+- 2026-08-26: T2 — `.github/workflows/pages.yml` written. `actions/configure-pages` is not used; see this file's Decisions.
+- 2026-08-26: T3 — verified against a real `quarto render site`: the render's whole output under `site/` is `site/_site/`, `site/gallery/` and `site/.quarto/`, all three already covered (the first two by the root ignore file, the third by Quarto's own `site/.gitignore`), and `git status` reports no untracked path under `site/`. Nothing to extend.
+- 2026-08-26: T4 — `tests/pagescheck.py` added with three readers (`pin`, `built`, `contains`); the suite runs `pin` and `built` as standing checks and adds the AC5 clauses after the site render. Twenty planted cases and two discriminating controls, each clause planted on its own.
 
 ## Decisions
+
+- 2026-08-26 (T2): the workflow does not use `actions/configure-pages`. The starter workflow GitHub publishes includes it to hand a site generator the base URL it will be served under, and this site makes only relative links, so nothing reads that output. Keeping it would put a step that calls the Pages API — and fails while Pages is not yet enabled on the repository — ahead of the render on every branch, which would make a probe branch's red say nothing about the render it was planted in. The base path the published site is served under enters this repo in one place instead, the `SITE_BASE_PATH` value `tests/run-tests.sh` gives its link check.
 
 ## Review

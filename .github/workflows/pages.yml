@@ -1,0 +1,86 @@
+# Renders the documentation site and publishes it to GitHub Pages.
+#
+# The build job runs on every branch, so a milestone or probe branch proves the
+# render before anything is published. The deploy job is gated on the
+# repository's own default branch, so on any other branch it reports skipped:
+# `actions/deploy-pages` publishes through the `github-pages` environment,
+# which refuses a deployment from a non-default branch, and a job that would
+# always fail there tells a reader nothing about the render.
+#
+# Quarto is pinned to an exact version rather than tracking a channel. The pin
+# is not a claim about the extension's supported range — `_extension.yml`
+# declares `>=1.4.0`, and one version fences nothing about that floor; a
+# floor/latest matrix is a standing candidate row, and this workflow is where
+# it would attach. `tests/run-tests.sh` checks the pin against that range.
+#
+# The site build renders ten example fixtures to PDF, so the runner needs a TeX
+# installation; `quarto-actions/setup` installs TinyTeX, which carries
+# `makeindex` and fetches missing TeX packages on demand.
+name: Pages
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One Pages deployment at a time, and never cancel one mid-flight: a cancelled
+# deploy leaves the published site on whichever commit got there first.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install Quarto and TinyTeX
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.10.18
+          tinytex: true
+
+      # The render's output is piped to `tee` so a failing render's message is
+      # in the log next to the step that failed. `pipefail` is what makes the
+      # render's own exit status the step's: without it the pipeline reports
+      # `tee`'s success and the workflow goes green over a site that never
+      # rendered (tests/run-tests.sh records this shape at M04).
+      - name: Render the documentation site
+        shell: bash
+        run: |
+          set -euo pipefail
+          quarto render site 2>&1 | tee "$RUNNER_TEMP/render.log"
+
+      # A render can exit 0 and still have dropped a page: Quarto reports a
+      # failed nested render of a gallery fixture without failing the outer
+      # one. These two checks are what stands between that and a published
+      # site missing pages, so they run before the artifact is uploaded.
+      - name: Check every tracked page rendered
+        run: python3 tests/sitecheck.py rendered site site/_site
+
+      - name: Check the site's entry page and gallery are complete
+        run: python3 tests/pagescheck.py built site/gallery.yml site/_site
+
+      - name: Upload the rendered site as the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/_site
+
+  deploy:
+    needs: build
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

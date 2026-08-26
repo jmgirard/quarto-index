@@ -13197,18 +13197,58 @@ if ! diff -u "$WORK/examples-before.txt" "$WORK/examples-after.txt" \
 fi
 pass "M41-AC5: rendering the site left all $(wc -l < "$WORK/examples-before.txt" | tr -d ' ') file(s) under examples/ byte-identical, and added and removed none"
 
+# ---------------------------------------------------------------------------
+# M42-AC5 — the render leaves nothing untracked under `site/`, and nothing
+# under the two directories it writes is tracked. The first half is read from
+# `git status` in the working tree immediately after the render above, which is
+# the only moment the render's leftovers are on disk to be seen; the second is
+# read from the index, which no render touches. Both are quantified over what
+# git reports rather than over a literal path, so an ignore rule that stops
+# covering a directory the render grows shows up here.
+# ---------------------------------------------------------------------------
+git status --porcelain > "$WORK/site-status.txt"
+SITE_UNTRACKED=$(grep -c '^?? site/' "$WORK/site-status.txt" || true)
+[ "$SITE_UNTRACKED" -eq 0 ] \
+  || { grep '^?? site/' "$WORK/site-status.txt" >&2; fail "M42-AC5: rendering the site left $SITE_UNTRACKED untracked path(s) under site/; the ignore rules do not cover the render's whole output"; }
+SITE_TRACKED_OUTPUT=$(git ls-files -- 'site/_site' 'site/.quarto' | wc -l | tr -d ' ')
+[ "$SITE_TRACKED_OUTPUT" -eq 0 ] \
+  || { git ls-files -- 'site/_site' 'site/.quarto' >&2; fail "M42-AC5: git tracks $SITE_TRACKED_OUTPUT path(s) under site/_site/ or site/.quarto/; render output is not the repository's to carry"; }
+# The status listing is required to be a reading of this working tree and not
+# an empty file that would pass both clauses by describing nothing: the render
+# above writes site/_site/, which .gitignore covers, so `git status --ignored`
+# must report it.
+git status --porcelain --ignored > "$WORK/site-status-ignored.txt"
+grep -q '^!! site/_site' "$WORK/site-status-ignored.txt" \
+  || { head -20 "$WORK/site-status-ignored.txt" >&2; fail "M42-AC5: git reports no ignored path under site/_site/ after the render, so the status reading the clauses above rest on is not describing this working tree"; }
+pass "M42-AC5: after the site render git reports no untracked path under site/, and tracks none under site/_site/ or site/.quarto/"
+
 python3 tests/sitecheck.py rendered site "$SITE_OUT" \
   || fail "M40-AC1: a tracked page under site/ has no rendered output at the path its source names (its own FAIL line is above)"
 
-# The base path a link starting `/` is resolved against. The site declares none
-# today, so it is the empty string; M42 sets one when the site is published
-# under a path, and this is the one place that value enters the check.
-SITE_BASE_PATH=""
+# The base path a link starting `/` is resolved against. M42 publishes the site
+# to GitHub Pages as a project site, so it is served under the repository name
+# and a root-relative href has to carry that segment to resolve in production.
+# This is the one place that value enters the check; it is the same segment the
+# published URL README states carries.
+SITE_BASE_PATH="quarto-index"
 python3 tests/sitecheck.py links "$SITE_OUT" "$SITE_BASE_PATH" \
   || fail "M40-AC2: the rendered site makes a link to its own content that does not resolve (its own FAIL line is above)"
 
 python3 tests/sitecheck.py readme README.md site/index.qmd \
   || fail "M40-AC5: README is not the short pointer that gets a reader to the documentation (its own FAIL line is above)"
+
+# ---------------------------------------------------------------------------
+# M42 — the Pages workflow. Two standing checks: the Quarto version the
+# workflow pins satisfies the range the extension declares, and the render the
+# workflow publishes is complete. The second is the same reader the workflow
+# runs before it uploads, run here against the CAPTURED site (M24) rather than
+# the output directory a later render can replace.
+# ---------------------------------------------------------------------------
+python3 tests/pagescheck.py pin .github/workflows/pages.yml _extensions/index/_extension.yml \
+  || fail "M42-AC3: the Quarto version the Pages workflow pins does not satisfy the range the extension declares (its own FAIL line is above)"
+
+python3 tests/pagescheck.py built site/gallery.yml "$SITE_OUT" \
+  || fail "M42: the rendered site is missing a page the published site needs (its own FAIL line is above)"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -13871,6 +13911,230 @@ NOFRAMEPY
   pass "self-test: the fixture-directory comparison moves both when a file is added beside a fixture and when a fixture's own bytes change, and stands still when neither happens"
 
   pass "M41: each clause named above is planted on its own and shown red while the same check passes unplanted — the declaration check on a fixture in neither list, one in both, one named under a third key as well, and a listed path naming no fixture; the manifest check on a shown fixture with no hand-derived manifest and on a shown list under its floor; the source-block check on a block one character off, a block whose entity decodes to something else, and a page with no block at all; the embedded-index check on a manifest entry the framed page does not print, a page framing nothing, and a frame resolving to no file; and the PDF check on a link resolving to nothing and on a PDF whose extraction drops its manifest's entries"
+fi
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M42 T4 — a planted defect per CLAUSE of the two readers M42 adds, not one
+  # per reader (check-design, M32). Every plant over a text file is a single
+  # substitution at a site the plant asserts occurs exactly once and asserts
+  # produced a different file, so a mutation that matched nothing or matched
+  # in several places cannot hand a case an artifact it was not built for
+  # (M29). Every plant over the captured site removes a path the plant first
+  # asserts is there. Each planted case must fail AND fail naming its own
+  # clause. The unplanted controls for the two readers are the standing checks
+  # in the M42 section above, which ran green on this run's own workflow file,
+  # extension declaration and captured site.
+  # -------------------------------------------------------------------------
+  M42W="$WORK/m42probe"
+  rm -rf "$M42W"
+  mkdir -p "$M42W"
+  M42_WF=".github/workflows/pages.yml"
+  M42_EXT="_extensions/index/_extension.yml"
+
+  m42_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M42 self-test: the planted case ($label) passed, so this check's green says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M42 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    printf 'ok   self-test: the check fails on <<%s>>\n' "$label"
+  }
+
+  # <name> <source> <find> <replace> — one mutated copy at $M42W/<name>. The
+  # substituted text must occur exactly once in the source and the replacement
+  # must differ from it, so neither a no-op nor a mutation landing in several
+  # places can leave a green plant behind.
+  m42_plant() {
+    python3 - "$2" "$M42W/$1" "$3" "$4" <<'M42PLANT'
+import sys
+src, dst, find, repl = sys.argv[1:5]
+text = open(src, encoding='utf-8').read()
+seen = text.count(find)
+if seen != 1:
+    raise SystemExit('FAIL: M42 self-test: %r occurs %d time(s) in %s; a '
+                     'plant substitutes exactly one site' % (find, seen, src))
+if repl == find:
+    raise SystemExit('FAIL: M42 self-test: the substitution in %s replaces '
+                     'its site with itself, so the plant is a no-op' % src)
+open(dst, 'w', encoding='utf-8').write(text.replace(find, repl, 1))
+M42PLANT
+  }
+
+  # --- pin: the workflow's side -------------------------------------------
+  m42_plant wf-twopins "$M42_WF" '          version: 1.10.18' \
+    '          version: 1.10.18
+          version: 1.10.18'
+  m42_planted 'a workflow declaring two pinned versions, so which one is the pin is not a fact' \
+    'declares 2 `version:` line(s)' \
+    python3 tests/pagescheck.py pin "$M42W/wf-twopins" "$M42_EXT"
+
+  m42_plant wf-nopin "$M42_WF" '          version: 1.10.18' \
+    '          quarto-version: 1.10.18'
+  m42_planted 'a workflow declaring no pinned version at all, over which the comparison would sweep nothing' \
+    'declares 0 `version:` line(s)' \
+    python3 tests/pagescheck.py pin "$M42W/wf-nopin" "$M42_EXT"
+
+  m42_plant wf-channel "$M42_WF" 'version: 1.10.18' 'version: release'
+  m42_planted 'a workflow naming a release channel where the criterion requires an exact version' \
+    'which is not an exact version string' \
+    python3 tests/pagescheck.py pin "$M42W/wf-channel" "$M42_EXT"
+
+  # --- pin: the extension's side ------------------------------------------
+  m42_plant ext-tworanges "$M42_EXT" 'quarto-required: ">=1.4.0"' \
+    'quarto-required: ">=1.4.0"
+quarto-required: ">=1.4.0"'
+  m42_planted 'an extension declaring two required ranges, so which one the pin is judged against is not a fact' \
+    'declares 2 `quarto-required:` line(s)' \
+    python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-tworanges"
+
+  m42_plant ext-norange "$M42_EXT" 'quarto-required:' 'quarto-req:'
+  m42_planted 'an extension declaring no required range at all, over which the comparison would sweep nothing' \
+    'declares 0 `quarto-required:` line(s)' \
+    python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-norange"
+
+  m42_plant ext-caret "$M42_EXT" '">=1.4.0"' '"^1.4.0"'
+  m42_planted 'a required range whose operator is not the floor this check knows how to compare' \
+    'understands only a `>=` floor' \
+    python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-caret"
+
+  m42_plant ext-vfloor "$M42_EXT" '">=1.4.0"' '">=v1.4.0"'
+  m42_planted 'a floor that is not a dotted numeric version, which no integer-tuple comparison can read' \
+    'which is not a dotted numeric version' \
+    python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-vfloor"
+
+  m42_plant ext-abovepin "$M42_EXT" '">=1.4.0"' '">=1.11.0"'
+  m42_planted 'a floor above the version the workflow pins' \
+    'which is below the 1.11.0 floor' \
+    python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-abovepin"
+
+  # The comparison is stated to be over integer tuples and not over strings,
+  # and that is exactly the pair where the two disagree: as text `1.10.18`
+  # sorts before `1.9.0`, as tuples it is above it. A string comparison would
+  # report this floor unsatisfied, so the pass below is what separates them.
+  m42_plant ext-belowpin "$M42_EXT" '">=1.4.0"' '">=1.9.0"'
+  python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-belowpin" > /dev/null \
+    || fail "M42 self-test: the pin check calls the 1.9.0 floor unsatisfied by the 1.10.18 pin, so it is comparing the two as strings and not as the integer tuples the criterion names"
+  printf 'ok   self-test: the pin the check accepts against a 1.9.0 floor is one a string comparison would reject, so the comparison is over integer tuples\n'
+
+  # --- built ---------------------------------------------------------------
+  # One copy of the captured site per clause, each missing exactly the path
+  # that clause is about, asserted present before it is removed.
+  m42_drop_page() {
+    local name="$1" relative="$2"
+    rm -rf "$M42W/$name"
+    cp -R "$SITE_OUT" "$M42W/$name"
+    [ -f "$M42W/$name/$relative" ] \
+      || fail "M42 self-test: the captured site holds no $relative to remove, so the case below would be about a path the render never wrote"
+    rm -f "$M42W/$name/$relative"
+  }
+
+  m42_plant gallery-noshown "$GALLERY_YML" '
+shown:
+' '
+shown-under-another-name:
+'
+  m42_planted 'a gallery declaration showing no fixture, over which the per-fixture clauses would sweep nothing' \
+    'shows no fixture' \
+    python3 tests/pagescheck.py built "$M42W/gallery-noshown" "$SITE_OUT"
+
+  m42_drop_page site-noindex 'index.html'
+  m42_planted 'a rendered site with no entry page for a visitor to land on' \
+    'the page a visitor landing on the site gets' \
+    python3 tests/pagescheck.py built "$GALLERY_YML" "$M42W/site-noindex"
+
+  m42_drop_page site-nogallerypage 'gallery/demo.html'
+  m42_planted 'a shown fixture whose gallery page the render dropped' \
+    'its gallery page for examples/demo.qmd' \
+    python3 tests/pagescheck.py built "$GALLERY_YML" "$M42W/site-nogallerypage"
+
+  m42_drop_page site-norendered 'gallery/rendered/demo.html'
+  m42_planted 'a shown fixture whose rendered index page the render dropped' \
+    'its rendered index page for examples/demo.qmd' \
+    python3 tests/pagescheck.py built "$GALLERY_YML" "$M42W/site-norendered"
+
+  m42_drop_page site-nopdf 'gallery/rendered/demo.pdf'
+  m42_planted "a shown fixture whose PDF the render dropped" \
+    'its PDF for examples/demo.qmd' \
+    python3 tests/pagescheck.py built "$GALLERY_YML" "$M42W/site-nopdf"
+
+  # The PDF floor needs a declaration showing fewer fixtures than the floor
+  # while every path those fixtures need is still there — a state no removal
+  # from the site can produce. It is derived from the run's own declaration by
+  # dropping shown items, and the count kept is asserted, so a derivation that
+  # kept the wrong number cannot pass the floor for the wrong reason.
+  python3 - "$GALLERY_YML" "$M42W/gallery-two.yml" <<'M42TWO'
+import sys
+src, dst = sys.argv[1:3]
+kept, seen, out = 0, 0, []
+under_shown = False
+for line in open(src, encoding='utf-8').read().split('\n'):
+    if line.endswith(':') and not line.startswith((' ', '#')):
+        under_shown = line == 'shown:'
+    elif under_shown and line.startswith('  - '):
+        seen += 1
+        if kept >= 2:
+            continue
+        kept += 1
+    out.append(line)
+if seen < 3 or kept != 2:
+    raise SystemExit('FAIL: M42 self-test: the reduced declaration kept %d of '
+                     '%d shown fixture(s); the floor case needs exactly 2 kept '
+                     'out of more than 2' % (kept, seen))
+open(dst, 'w', encoding='utf-8').write('\n'.join(out))
+M42TWO
+  m42_planted 'a gallery showing fewer fixtures than the PDF floor the criterion states' \
+    'the criterion states at least 3' \
+    python3 tests/pagescheck.py built "$M42W/gallery-two.yml" "$SITE_OUT"
+
+  # --- contains ------------------------------------------------------------
+  # The reference side is this run's captured site; the judged side is a copy
+  # of it standing in for the unpacked Pages artifact.
+  rm -rf "$M42W/artifact"
+  cp -R "$SITE_OUT" "$M42W/artifact"
+  printf '<html><body>extra</body></html>\n' > "$M42W/artifact/extra-page.html"
+  python3 tests/pagescheck.py contains "$M42W/artifact" "$SITE_OUT" > /dev/null \
+    || fail "M42 self-test: an artifact holding every path the site produces AND one more is reported as not containing it, so the check is comparing for equality and not for containment"
+  printf 'ok   self-test: an artifact carrying a page the reference render does not is still reported as containing it\n'
+
+  [ -f "$M42W/artifact/syntax.html" ] \
+    || fail "M42 self-test: the artifact copy holds no syntax.html to remove, so the case below would be about a path the render never wrote"
+  rm -f "$M42W/artifact/syntax.html"
+  m42_planted 'an artifact missing a page the reference render produces' \
+    'is missing 1 of the' \
+    python3 tests/pagescheck.py contains "$M42W/artifact" "$SITE_OUT"
+
+  m42_planted 'an artifact path that is a file rather than the unpacked directory' \
+    'is not a directory' \
+    python3 tests/pagescheck.py contains "$M42_WF" "$SITE_OUT"
+
+  mkdir -p "$M42W/emptysite"
+  m42_planted 'a reference render holding no page at all, against which containment would be a comparison with nothing' \
+    'holds no .html or .pdf path at all' \
+    python3 tests/pagescheck.py contains "$SITE_OUT" "$M42W/emptysite"
+
+  # A reference render carrying fewer PDFs than the floor. Built by removing
+  # PDFs from a copy until two remain, with the count asserted, so a reference
+  # and an artifact that agree by both being empty of PDFs cannot pass.
+  rm -rf "$M42W/twopdfs"
+  cp -R "$SITE_OUT" "$M42W/twopdfs"
+  M42_PDFS=$(find "$M42W/twopdfs" -name '*.pdf' | wc -l | tr -d ' ')
+  [ "$M42_PDFS" -gt 2 ] \
+    || fail "M42 self-test: the captured site holds $M42_PDFS PDF(s), so a copy cannot be reduced to the two the floor case needs"
+  find "$M42W/twopdfs" -name '*.pdf' | sort | tail -n +3 | while IFS= read -r doomed; do
+    rm -f "$doomed"
+  done
+  M42_PDFS_LEFT=$(find "$M42W/twopdfs" -name '*.pdf' | wc -l | tr -d ' ')
+  [ "$M42_PDFS_LEFT" -eq 2 ] \
+    || fail "M42 self-test: the reduced reference render holds $M42_PDFS_LEFT PDF(s), not the 2 the floor case needs"
+  m42_planted 'a reference render holding fewer PDFs than the floor the criterion states' \
+    'the criterion states the set compared holds at least 3' \
+    python3 tests/pagescheck.py contains "$M42W/artifact" "$M42W/twopdfs"
+
+  pass "M42: each clause named above is planted on its own and shown red while the same reader passes unplanted — the pin check on two pins, no pin, a channel where an exact version is required, two declared ranges, no declared range, an operator it will not guess at, a floor that is not dotted numerics, and a floor above the pin, with a floor below the pin that a string comparison would reject accepted; the completeness check on a declaration showing nothing, a site with no entry page, and a shown fixture missing its gallery page, its rendered index page or its PDF, plus a shown list under the PDF floor; and the containment check on an artifact missing a page, an artifact path that is not a directory, a reference holding no page, and a reference under the PDF floor, with an artifact carrying an extra page still accepted"
 fi
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,12 @@
 project:
   type: website
   output-dir: _site
+  # Builds the example gallery before the site renders: each shown fixture is
+  # copied to a scratch tree at the repo root, rendered there, and its outputs
+  # placed under gallery/. See site/build_gallery.py.
+  pre-render: build_gallery.py
+  resources:
+    - gallery/rendered/**
 
 website:
   title: "quarto-index"

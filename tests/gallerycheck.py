@@ -7,11 +7,10 @@
       under either of those two keys that names no such fixture is reported
       too, so a renamed fixture cannot leave a dead entry behind.
 
-The declaration's shape is read by `read_gallery` below, which accepts only
-`<key>:` at column 0 followed by `  - <value>` lines. Anything else is an
-error rather than a key silently parsed as empty: a reader that returns an
-empty list for a shape it does not understand turns every check over that list
-green, which is the failure this refuses to have.
+The declaration's shape is read by `read_gallery`, imported from
+site/build_gallery.py — the program that builds the gallery from the same
+file. One reader means the shape the build accepts and the shape this check
+accepts cannot drift apart.
 
 Every mode reports the size of the domain it swept, so a domain that has gone
 empty reads as empty rather than as a pass.
@@ -21,62 +20,24 @@ Usage:  python3 tests/gallerycheck.py <mode> <args...>
 Exits non-zero with a `FAIL:` line naming what it found.
 """
 
+import os
 import re
 import subprocess
 import sys
+
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'site'))
+from build_gallery import read_gallery  # noqa: E402
 
 # A fixture of the corpus this gallery declares over: a `.qmd` directly under
 # `examples/`, which is the set the milestone's first criterion names. The
 # book fixtures live one directory deeper and are out of scope.
 FIXTURE = re.compile(r'examples/[^/]+\.qmd')
 
-KEY = re.compile(r'^([A-Za-z0-9_-]+):\s*$')
-ITEM = re.compile(r'^  - (\S.*?)\s*$')
-
 
 def fail(message):
     print('FAIL: M41: ' + message, file=sys.stderr)
     return 1
-
-
-def read_gallery(path):
-    """The declaration as {key: [value, ...]}, in file order.
-
-    Accepts exactly two line shapes outside comments and blanks: a top-level
-    `<key>:` and a `  - <value>` item under the key above it. Every other line
-    raises. The strictness is the point — see the module docstring.
-    """
-    found = {}
-    order = []
-    current = None
-    with open(path, encoding='utf-8') as handle:
-        for number, line in enumerate(handle.read().split('\n'), start=1):
-            stripped = line.strip()
-            if not stripped or stripped.startswith('#'):
-                continue
-            match = KEY.match(line)
-            if match:
-                current = match.group(1)
-                if current in found:
-                    raise SystemExit(
-                        'FAIL: M41: %s line %d: the key %r is declared twice'
-                        % (path, number, current))
-                found[current] = []
-                order.append(current)
-                continue
-            match = ITEM.match(line)
-            if match:
-                if current is None:
-                    raise SystemExit(
-                        'FAIL: M41: %s line %d: a sequence item before any key'
-                        % (path, number))
-                found[current].append(match.group(1))
-                continue
-            raise SystemExit(
-                'FAIL: M41: %s line %d: %r is neither a `<key>:` line nor a '
-                '`  - <value>` item; this reader accepts only those two shapes'
-                % (path, number, line))
-    return found, order
 
 
 def corpus():

@@ -75,7 +75,7 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
       letter-groups, marker, placement, xref-conflict, html-index,
       empty-levels) and `not-shown:` for the remainder; add the completeness
       check of AC1 over the git-enumerated corpus.
-- [ ] T2. Write the pre-render step: copy each shown fixture (and its assets)
+- [x] T2. Write the pre-render step: copy each shown fixture (and its assets)
       into a scratch directory at the repo root, render it to HTML and to PDF
       there, and place the outputs under the site's output tree. Nothing it
       runs may name a path under `examples/` as a render target.
@@ -105,6 +105,8 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 - 2026-08-26: implement gate chose ten shown fixtures over eight or all sixteen eligible; a repo-root scratch directory over one under `site/`, where Quarto finds the website project file walking up and renders each fixture as a page of the site; and a frame around a self-contained render over lifting the index markup into the gallery page.
 - 2026-08-26: minor amendment to T1 and T2 wording. T1 named `unicode`, `principal` and `range` among the shown fixtures; AC3 admits only fixtures the suite holds a hand-derived HTML index manifest for, and it holds none for those three (`unicode`'s oracle is a typeset PDF term list, `principal` and `range` have GFM span manifests). Replaced with ten manifest-holding fixtures. T2's scratch directory moved out of `site/` for the reason the gate line above records.
 - 2026-08-26: T1 done. `site/gallery.yml` declares all 55 fixtures, 10 shown and 45 not; `tests/gallerycheck.py listing` reads the declaration against `git ls-files examples` and refuses any file shape but `<key>:` and `  - <value>`. Wired into the suite as M41-AC1. Verify slot clean, 386 checks.
+
+- 2026-08-26: T2 done. `site/build_gallery.py` is the site's `pre-render` step: it stages each shown fixture, the extension and the fixture directory's shared assets into `.gallery-build/<name>/` at the repo root, renders that copy to self-contained HTML and to PDF with Quarto's own project variables stripped from the child environment, and places both outputs under `site/gallery/rendered/`, declared as a project resource. `read_gallery` lives there and `tests/gallerycheck.py` imports it, so the build and the check read the declaration through one reader. All ten fixtures render to both formats; the suite's link check now sweeps 30 pages, 876 links, all resolving. Verify slot clean, 386 checks.
 
 ## Decisions
 

@@ -28,4 +28,9 @@ examples/book*/.quarto/
 # The docs website renders into its own output directory; site/.gitignore is
 # Quarto's own, and covers the project scratch directory beside it.
 site/_site/
+# The example gallery is built by the site's pre-render step: the fixture
+# copies and their renders in a scratch tree at the repo root, and the gallery
+# pages and rendered fixtures it places under site/gallery/.
+/.gallery-build/
+site/gallery/
 tests/.work/

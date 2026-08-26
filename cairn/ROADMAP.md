@@ -1,20 +1,19 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-26 (M40-M42 planned — the docs website, its example gallery, and the Pages workflow; the CI-matrix candidate row amended with a pointer to M42. M39 merged and archived; M34 pruned from the table under terminal-row retention. One lesson added for the `warn(`-in-a-comment scan hazard, and M01's compile-don't-review escape-table line pruned to hold the 50-line cap.)_
+_Last hygiene check: 2026-08-26 (M40 merged and archived — the docs now live in a `site/` Quarto website, README is a 57-line pointer, and the suite's pinned claims are enumerated by a registry; M35 pruned from the table under terminal-row retention. The acceptance-suite hardening candidate row extended with M40 review's nineteen filed findings. One lesson added for bounding a docs section around fenced blocks, and M02's same-value-in-two-slots line pruned to hold the 50-line cap.)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M40 | The documentation moves into a Quarto website | review | — | normal | milestones/M40-docs-website.md |
+| M40 | The documentation moves into a Quarto website | done | — | normal | milestones/archive/M40-docs-website.md |
 | M41 | The site shows each curated example's source, index and PDF | planned | M40 | normal | milestones/M41-example-gallery.md |
 | M42 | GitHub Actions renders the site and publishes it to Pages | planned | M41 | normal | milestones/M42-pages-publish.md |
 | M39 | The sort-key rival and dangling-target reports name the index they judge | done | — | normal | milestones/archive/M39-report-index-scope.md |
 | M38 | Marks name which index they belong to, and the HTML back-end prints each | done | — | normal | milestones/archive/M38-named-indexes-html.md |
 | M37 | The non-Latin-1 guards report the cause they hit | done | M36 | normal | milestones/archive/M37-non-latin1-guard-causes.md |
 | M36 | The non-Latin-1 readers stop reading text that belongs to no error | done | — | normal | milestones/archive/M36-unicode-reader-claims.md |
-| M35 | The non-Latin-1 checks fail on the defects they claim to catch | done | — | normal | milestones/archive/M35-non-latin1-check-hardening.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

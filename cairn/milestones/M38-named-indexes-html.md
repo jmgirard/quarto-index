@@ -1,6 +1,6 @@
 # M38: Marks name which index they belong to, and the HTML back-end prints each
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -386,6 +386,7 @@ intentional change does not cover them.
 - R13 → fix now, with T11-T14, since the entry it corrects is about the state
   this milestone added.
 - 2026-08-25: review — PR #38 opened; `main` had not moved. All seven criteria passed with fresh evidence (full suite --self-test, exit 0, 520 checks) and the consistency gate was clean. Returned to in-progress at the merge gate under the return floor: the independent review found, and this session re-verified by probe, that a declared index name is never validated as an HTML id fragment so a name with a space emits an invalid `id` with no report (R1), and that in a folded render a marker naming a second index takes the default index's placement slot while the author's own default marker is reported as its duplicate (R2). R3, R4 and the three check gaps R5-R7 ride the same return. Defect return 1 for this milestone; no amendment return, no criterion reinterpreted. Requested changes logged as T11-T17 at the gate's direction.
+- 2026-08-25: review round 2 — AC1-AC6 passed with fresh evidence (full suite --self-test, exit 0, 549 checks, plus direct reads of the captured artifacts) and the consistency gate was clean. AC7 FAILED at step 3 and returns the milestone to in-progress: the criterion binds a plant to each clause of each reader this milestone adds, and four of the five readers ship clauses no plant exercises — check_folded_site 3 of 4, check_folded_second 1 of 3, check_folded_heading 3 of 4, check_readme_indexes 6 of 10 — while check_folded_second's \printindex lookup raises ValueError rather than reporting a finding, and check_no_invalid_id's control cannot take its own failure branch. The three-lens review added F1 (a declared name may hold a `.`, minting a section id no `#id` selector can address) and five further defects inside intentional changes: F5, F6, F7, F8, F10. Defect return 2 for this milestone; no amendment return, no criterion reinterpreted.
 - 2026-08-25: the seven added tasks put the plan-owned body 4 lines over the cap; the Tasks section, the heaviest, was compressed in one rewrite — T1-T10 shortened to what each task was, their outcomes already standing in the work-log lines above. `cairn_validate` passes; the 17-task split tripwire is an advisory this milestone accepts, the seven added tasks being one round of gate-directed repair rather than new scope.
 
 ### Round 2 — 2026-08-25
@@ -471,3 +472,118 @@ plus direct reads of the captured artifacts named below.
   clean no-op.
 - `cairn_impact.py` not run: the diff changes no IP/GP principle line in
   `DESIGN.md`.
+
+### Independent review (round 2)
+
+Three fresh-context reviewers on distinct evidence bases, spawned at the user's
+explicit direction (the session carries a standing directive against spawning
+subagents unless asked; put to the user at this round and they chose the full
+fan-out).
+
+- [S] prior-review-record lens: no findings. It read the archived `## Review`
+  records for the milestones touching these files (M01-M05, M08, M17, M19, M20,
+  M22, M23, M25, M26, M28, M29, M31), `LESSONS.md` and DESIGN's Known issues,
+  and probed the GitHub inline-comment surface, which returned empty, so the
+  per-PR walk was not paid for. Nothing in the diff reintroduces or contradicts
+  a point an earlier review raised.
+- [S] blame-history lens: three findings (B1-B3); no D-entry contradicted, no
+  guard weakened. It confirmed M23's position-binding guards, M24's
+  captured-artifact rule, D-005 and D-009/D-010, and the id-collision guard all
+  intact, and each module's own `reset` complete.
+- [O] diff-bug lens: seventeen findings (F1-F17).
+
+Findings, ranked as reported, each with its disposition. F1, F4, F5, F6, F7,
+F8, F9 and F10 were re-verified in this session against the shipped extension
+and the captured artifacts, never against the reviewer's account.
+
+- F1: `NAME_SHAPE` admits `.`, so a declared name mints a section id that no
+  plain `#id` selector can address — the same failure the rule's own comment
+  gives as its reason for refusing a leading digit. Confirmed by probe render
+  in a scratch copy: `name: my.index` is accepted with no report and emits
+  `<section id="qi-index-my.index">`, which a CSS or `querySelector` `#id` rule
+  parses as `#qi-index-my` plus the class `.index`. `check_no_invalid_id`
+  greps only `[[:space:]#<>]`, so it passes. This is the residue T11's
+  positive-shape rule left behind, not a re-report of R1.
+- F2: `index=""` is accepted in silence on a placement marker as well as on a
+  mark, in a document that declares nothing. Extends R8, which named only the
+  mark half.
+- F3: the Scope line and AC1's headline state an unconditional "in declared
+  order", while the shipped rule is marker order first and declared order only
+  for indexes no marker names. AC1 as written is satisfied by its fixture,
+  whose marker order and declared order coincide; the Scope prose is the loose
+  one. Overlaps R5, which T15 answered with a fixture rather than an amendment.
+- F4: a second marker naming the same folded-away index draws the
+  duplicate-marker report rather than a fold report. Read off the captured
+  `named-indexes-foldsecond-latex` log: both markers are reported, and the
+  duplicate report names "authors", so README's "each is reported by the index
+  it named" holds. What remains is a reporting-shape observation, not a false
+  claim.
+- F5: `DESIGN.md`'s Architecture section omits `indexes.lua` from "The
+  modules, in dependency order" and still says `passes.Reset` calls three
+  resets. Confirmed: `passes.lua:32-35` calls four, and its own comment says
+  "First of the four". KI10 was corrected by R13; the Architecture prose was
+  not.
+- F6: DESIGN's pass-through residue enumeration lists six `data-` attributes;
+  M38 added a seventh. Confirmed in the captured gfm render, which carries
+  `data-index="authors"`.
+- F7: `examples/book/last.qmd`'s prose about its third marker describes
+  pre-T12 behavior. It says the book "places that one instead and says so";
+  the captured book log says "so this marker places nothing". A fixture's
+  prose is oracle documentation here.
+- F8: `check_html_index_links`'s new section-id argument turns a wrong or
+  missing id into a traceback rather than a finding. Confirmed:
+  `find_id(doc, 'qi-index-nosuch')` returns `None` and `find_all` raises
+  `AttributeError`. Same shape T9 fixed for the section reader.
+- F9: `check_no_invalid_id`'s self-test control can never take its own `|| fail`
+  branch — the reader calls `fail`, which exits the script, so the control
+  string is unreachable and the control cannot tell a broken reader from a bad
+  page. It is the one M38 control of the five that is not a real control.
+- F10: README's Syntax prose still calls forms 8-9 "The last two" after a tenth
+  form was appended.
+- F11: `INDEX_ATTR`, `INDEXES_KEY` and `NAME_SHAPE` are not pinned to the
+  filter's own constants by any scan, unlike `MARKER_CLASS` and
+  `HTML_SECTION_ID`.
+- F12: AC6's pinned-claim manifest still carries no row for README's
+  "A mark says which index it belongs to with `index=`" sentence. This is R14,
+  deliberately deferred.
+- F13: the return gate's two rulings live only in the milestone file, not in
+  `DECISIONS.md`. A maintainer call, not a defect.
+- F14: a name declared as `here` mints `id="qi-index-here"`, byte-identical to
+  the literal the marker-residue sweeps grep for. A maintainer hazard, no
+  user-facing defect.
+- F15: `latex.lua`'s `contested_keys` is the one accumulator M38 did not
+  namespace. Restates R10, confirmed still present.
+- F16: dangling-target reports are emitted grouped by index rather than in
+  document order. Restates R11.
+- F17: a mark that indexes nothing carrying an `index=` value naming no
+  declared index draws no report. `passes.lua:382-390` reads the attribute
+  after the early return, and its comment states the reason: telling an author
+  which index a mark was filed in would describe a filing that never happened.
+  An intentional consequence of a documented choice.
+- B1: M26's state probe still enumerates 15 cells, so `indexes.lua`'s four are
+  reset in code but not proven by the probe. Already recorded in KI10 by R13 as
+  a follow-up, not a repair that round covered.
+- B2: no `DECISIONS.md` entry for the fold policy, unlike its closest
+  precedent D-005. Same substance as F13.
+- B3: with `clamped_paths` namespaced per index, the contested-path report's
+  final sort compares `.path` alone, so two different indexes contesting the
+  identical printed path are ordered by nothing pinned. Speculative — the
+  reviewer found no fixture reaching it, and neither did this session.
+
+### Triage and disposition (round 2)
+
+AC7 fails, so M38 returns to `in-progress` under step 4's exit. This is defect
+return 2 for the milestone; no amendment return, no criterion reinterpreted.
+
+- The AC7 gap → fix now: a plant for each unplanted clause of `check_folded_site`,
+  `check_folded_second`, `check_folded_heading` and `check_readme_indexes`;
+  `check_folded_second`'s bare `str.index` made to report a finding rather than
+  raise; the block's two under-counting comments and its closing `pass` line
+  corrected to what the readers state; and F9's decorative control made real.
+- F1, F5, F6, F7, F8, F10 → fix now. Each is a defect inside a change this
+  milestone intentionally made, so the out-of-scope member for an intentional
+  change does not cover them.
+- F2, F3, F11, F12, F13, F14, F15, F16, F17, B1, B2, B3 → follow-up. Filed as
+  candidate rows or Known issues in the hygiene pass of whichever review merges
+  this milestone. F12/F15/F16 and B1 are already-filed follow-ups (R14, R10,
+  R11, KI10) and need no new row.

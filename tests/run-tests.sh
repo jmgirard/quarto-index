@@ -777,17 +777,17 @@ M33_GREEK=(θεωρία ψυχή)
 M33_ASCII=Ascii
 M33_ASCII_ENTRY="0:$M33_ASCII"
 M33_CJK=漢字
-# ORACLE RULE. This is the engine that README's `### Terms outside Latin-1`
-# third path names for a document which sets the font and leaves `pdf-engine:`
+# ORACLE RULE. This is the engine that the docs site's Terms outside Latin-1
+# page's third path names for a document which sets the font and leaves `pdf-engine:`
 # unset — stated here by hand from that paragraph, never read back out of a
 # render. The name only, not the version: a TeX Live update that bumps the
 # version says nothing about which engine ran, and a check that went red on it
 # would be red for no reason a reader could act on.
 #
 # Two hand statements, and nothing here asserts they agree. This value is
-# `LuaTeX`, the string LuaTeX writes into a PDF's Producer line; README's
+# `LuaTeX`, the string LuaTeX writes into a PDF's Producer line; the page's
 # paragraph says `lualatex`, the engine a reader would set. Neither is derived
-# from the other and no check compares them, so a README edit that changed the
+# from the other and no check compares them, so a docs edit that changed the
 # engine word would leave this line saying what it says now and control (d)
 # green — the correspondence is a maintainer's to keep, not something the suite
 # reports on. Said here rather than repaired: the two spellings are not the
@@ -4749,7 +4749,7 @@ pass "M32: the copyable recipe block on the Placing-the-index page is held line 
 
 # ---------------------------------------------------------------------------
 # M33 — a term outside Latin-1 PRINTS in the typeset index, under the engine
-# and main font README's `### Terms outside Latin-1` section names.
+# and main font the docs site's Terms outside Latin-1 page names.
 #
 # Compiling is not the question here and neither is makeindex acceptance: both
 # succeed on a Greek entry under a main font that carries no Greek, and the
@@ -4911,9 +4911,9 @@ python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-nofont/nofont.pdf" \
   || fail "M33-AC3b: with mainfont left at its default the Greek terms still print, or the control's index did not print at all (its own FAIL line is above)"
 pass "M33-AC3b: with mainfont left at its default the render exits 0, its index still prints the fixture's ASCII term at its stated level, and none of the fixture's Greek terms print at any level"
 
-# --- (c) the recipe's own limit. Everything the README names, plus one term in
+# --- (c) the recipe's own limit. Everything the docs page names, plus one term in
 #     a script the font does not cover: the same silent drop, which is why the
-#     README section states the recipe's proven set rather than promising
+#     docs section states the recipe's proven set rather than promising
 #     every script.
 ( cd "$M33C" && quarto render cjk.qmd --to pdf ) \
   > "$WORK/m33-cjk.log" 2>&1 \

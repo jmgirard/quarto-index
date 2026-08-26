@@ -5,7 +5,8 @@ pagetitle: "Cross-references"
 # Cross-references
 
 `see=` sends the reader somewhere else instead of listing a page; `see-also=`
-points somewhere else as well. Both work on any of the mark forms above:
+points somewhere else as well. Both work on any of the mark forms on
+[Syntax](syntax.qmd):
 
 ```markdown
 [cats]{.index see="Felines"}                → cats, see Felines

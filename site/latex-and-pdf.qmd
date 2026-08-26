@@ -11,13 +11,14 @@ position. When a document has at least one mark, it also adds
 document has one — so the index is built and listed in the table of contents
 with no configuration. In a document with a bibliography, where `\printindex`
 lands relative to the reference block follows from where you put an empty
-`#refs` div and the placement marker below it — see *Placing the index*,
-above. A document with no marks gets none of this, except six one-line
+`#refs` div and the placement marker below it — see [Placing the
+index](placing-the-index.qmd). A document with no marks gets none of this, except six one-line
 `\providecommand*` definitions: every LaTeX-derived render carries the two
 cross-reference commands, and every one that does *not*
 emphasize a principal mention carries four more — three against a leftover
 `.aux` from a render that did, and one against a leftover `.ind`. They are
-described under the principal mention, below.
+described on [The principal mention of a
+term](principal-mention.qmd).
 
 A cross-reference is written into the same `\index{…}` command, through
 `makeindex`'s encapsulation channel — `\index{cats|see{Felines}}` — except

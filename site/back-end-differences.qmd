@@ -8,7 +8,8 @@ The marking syntax means the same thing in both. What the two indexes can do
 differs, because the tools underneath them do:
 
 1. **No level ceiling in HTML.** Sub-entries nest as deep as you write them.
-   The three-level ceiling described above is `makeindex`'s limit, not the
+   The three-level ceiling described on [Sub-entry
+   levels](sub-entry-levels.qmd) is `makeindex`'s limit, not the
    extension's.
 2. **The one-entry warning is LaTeX-only.** A term marked two different ways
    reaches the LaTeX index tool as one entry the extension had to compose, so
@@ -27,7 +28,8 @@ differs, because the tools underneath them do:
    entry in the same index, and are plain text otherwise. A printed index
    cannot link at all.
 6. **A cross-reference carries no locator in either back-end.** The `see also`
-   limitation described above is the same in both.
+   limitation described on [Cross-references](cross-references.qmd) is the
+   same in both.
 7. **The principal mention is emphasized in both**, but by different means: the
    LaTeX back-end wraps the page number in a command you can redefine, and the
    HTML back-end marks the link with a class and a `<strong>`.

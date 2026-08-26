@@ -149,6 +149,8 @@ version does not fence the floor and must not read as closing KI79.
 
 - 2026-08-26: an AC3-AC8 evidence write missed its anchor and left six ticks unbacked for one commit; the Review section was rewritten whole and re-verified before this line.
 
+- 2026-08-26: merge gate chose fix-docs-then-merge. F1-F5 (five directional cross-references false after the move) and F2 (six comments locating the recipe in README) fixed on the branch; nineteen findings absorbed into the standing acceptance-suite hardening candidate row; F17 rejected with its reason. Post-fix suite run in flight at this commit.
+
 ## Decisions
 
 ## Review
@@ -338,3 +340,28 @@ the `set -euo pipefail` interactions in `m40_planted`.
 AC2 and AC6-AC7 were re-derived here independently of the instruments F8-F11
 and F3-F6 attack, and AC1 and AC8 from a clean clone and a full suite run, so
 the evidence above does not rest on the checks these findings weaken.
+
+### Triage
+
+At the merge gate the maintainer chose "fix docs, then merge".
+
+- **F1-F5 — fixed now on the branch.** The five directional references became
+  links: `latex-and-pdf.qmd` to *Placing the index* and to *The principal
+  mention of a term*, `back-end-differences.qmd` to *Sub-entry levels* and to
+  *Cross-references*, `cross-references.qmd` to *Syntax*. None of the five was
+  pinned claim text, so no claim container moved.
+- **F2 — fixed now on the branch.** Six comment sites in `tests/run-tests.sh`
+  repointed from README's `### Terms outside Latin-1` section to the docs
+  site's page (`:780`, `:788`, `:790`, `:4752`, `:4914`, `:4916`).
+- **F3-F16, F18-F23 — follow-up.** Absorbed into the standing
+  acceptance-suite hardening candidate row rather than a new one
+  (search-first): nineteen findings on the registry and the site checks, with
+  their promotion condition stated as any other suite-wide hardening sweep.
+  F3's second half — DESIGN.md's Architecture sentence that no check names a
+  documentation file itself, which three call sites contradict — rides that
+  row as a correction owed.
+- **F17 — rejected, reason recorded.** A claim container's entry is the pinned
+  documentation sentence, which is what the registry's normative comment, every
+  claim check and the milestone's Scope all mean by it; the row label is a
+  failure-message identifier. AC6 was verified under that reading and the other
+  reading recorded beside it, so nothing was settled silently.

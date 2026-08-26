@@ -1,11 +1,11 @@
 # M39: The sort-key rival and dangling-target reports name the index they judge
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** `m039-report-index-scope`
 
 ## Goal
 
@@ -37,7 +37,7 @@ Surface tier: **user-facing** — the deliverable is warning text an author of a
 
 ## Tasks
 
-- [ ] T1: New `examples/named-indexes-rival.qmd` — two declared indexes; in the SECOND, two marks of one printed level path with different `sort=` values. Constraints the audit fixed: the FIRST index carries no `sort=` on that path, or HTML draws two reports and the folded LaTeX render disagrees with HTML about which key wins; every term is one no other mark in the file indexes (M13 lesson); no `see=`/`see-also=`, or the dangling-corpus roster diff at `tests/run-tests.sh:8263` needs a manifest row.
+- [x] T1: New `examples/named-indexes-rival.qmd` — two declared indexes; in the SECOND, two marks of one printed level path with different `sort=` values. Constraints the audit fixed: the FIRST index carries no `sort=` on that path, or HTML draws two reports and the folded LaTeX render disagrees with HTML about which key wins; every term is one no other mark in the file indexes (M13 lesson); no `see=`/`see-also=`, or the dangling-corpus roster diff at `tests/run-tests.sh:8263` needs a manifest row.
 - [ ] T2: `_extensions/index/modules/sortkeys.lua:40` `register_sort` takes the caller's outer word, routes `index` through `qi_indexes.scope_phrase`, and emits a second `warn()` — its own single literal — only where the phrase differs from that word. The scope clause is inserted mid-message, BEFORE the `written here cannot apply as well` tail, so neither template is a prefix of the other. Update the `passes.lua:74` caller.
 - [ ] T3: `_extensions/index/modules/marks.lua:190` `report_dangling` gains a second `warn()` for the per-index scope, its remedy naming the index. It must diverge before the `;` so it does not carry the existing `SINGLE_LITERAL` needle `%s= on %s points at "%s", which no index mark in this %s indexes;` — the two calls sit inside that scan's 400-character window, so the new head must not be added to `SINGLE_LITERAL` either.
 - [ ] T4: Suite. Split `WARN_DANGLING` (`tests/run-tests.sh:2071`) into the shared and per-index remedy needles and update `dangling_report()`; re-needle the M38 block at `12466-12472`, whose count goes 1 → 0 against the old tail. Add the rival scope needle beside `WARN_SORT_CONFLICT` (`3172`) — `WARN_SORT_RIVAL` (`7598`) pins nothing, being used once at count 0. Render and capture the new fixture in HTML and LaTeX with its checks. Bump `warn-distinct` `EXPECTED` 64 → 66.
@@ -50,6 +50,7 @@ Surface tier: **user-facing** — the deliverable is warning text an author of a
 - 2026-08-25: criteria audit ran in FULL mode (user-facing tier). Pass 1 returned six findings + one hazard: AC1's index grep pinned a bare string a term or key could supply; an appended scope clause would make the one-namespace template a strict prefix of the multi-index one; AC2's "the one report" was uncounted once `$WARN_DANGLING` stops matching; AC3 named `$WARN_SORT_RIVAL`, which is used once at count 0 and pins nothing; AC4 quantified over emitted text where the scan reads templates, and held unchanged pre-change; and the `SINGLE_LITERAL` 400-character window collides with a second dangling call however worded. Pass 2, over the three criteria the gate changed, returned two more: AC1 pinned no zero for the old shape, and AC3's first clause was unsatisfiable with intent (b) and had its domain defined by the instruments — "shrinking a needle's use satisfies the AC without the deliverable text being preserved". All fixed in the wording above; AC3 rebound to a byte diff of two literals plus one render's count, per D-118.
 - 2026-08-25: plan gate chose a second rival message shape, fired only where the scope differs, over threading `scope_phrase(index, "document")` into the single existing message, because the latter adds a scope clause to the common zero-config case (GP4) that the mark's own context already locates and reworks every pinned rival render; falsified by an author report that the two rival shapes read as two different findings.
 - 2026-08-25: plan gate chose a new `examples/named-indexes-rival.qmd` over extending `examples/named-indexes.qmd`, because the latter perturbs M38's pinned section manifest and letter sweep and walks into the M13 lesson's trap; falsified by the suite's render count becoming the binding cost.
+- 2026-08-25: T1 — `examples/named-indexes-rival.qmd` written: `main`/`authors` declared, `Quokka` in the first with no sort key, `Ptarmigan` marked twice in the second with rival keys `Zebra` and `Yak`, no cross-reference target, a marker per index. Baseline render draws exactly one rival report in HTML and one in LaTeX, both in the one-namespace shape.
 - 2026-08-25: plan gate chose an annotating D-entry over letting the milestone record carry it, because D-021's Consequences state the shared-remedy cost as accepted and would otherwise read as standing; falsified by a convention that a paid cost needs no entry.
 
 ## Decisions

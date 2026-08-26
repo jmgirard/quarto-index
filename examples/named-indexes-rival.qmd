@@ -1,0 +1,36 @@
+---
+title: "Named indexes rival"
+indexes:
+  - name: main
+    title: Index
+  - name: authors
+    title: Index of Authors
+filters:
+  - index
+---
+
+Two indexes are declared, and the sort-key rivalry below is inside the second
+one alone. A sort key files a term in its own index only, so the report of a
+rivalry has to say which index the two keys are rivals in — the same term in
+the other index is a different entry with a filing of its own.
+
+The first index carries one term, and no mark of it writes a sort key:
+[Quokka]{.index}.
+
+The second index carries one term, marked twice, and the two marks write
+different sort keys for it: [Ptarmigan]{.index index="authors" sort="Zebra"}
+and [Ptarmigan]{.index index="authors" sort="Yak"}. The first key wins and the
+second cannot apply as well, so the mistake is reported.
+
+No mark here writes a cross-reference target, so this document draws no
+dangling-target report of either shape.
+
+## Where the first index goes {#site-main}
+
+::: {.qi-index-here}
+:::
+
+## Where the second index goes {#site-authors}
+
+::: {.qi-index-here index="authors"}
+:::

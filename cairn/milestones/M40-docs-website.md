@@ -147,6 +147,8 @@ version does not fence the floor and must not read as closing KI79.
 
 - 2026-08-26: review evidence recorded for AC1-AC8, all eight verified fresh on the branch; consistency gate clean. Findings triage pending the [O] diff lens, which died to an API error on its first spawn and is on its second.
 
+- 2026-08-26: an AC3-AC8 evidence write missed its anchor and left six ticks unbacked for one commit; the Review section was rewritten whole and re-verified before this line.
+
 ## Decisions
 
 ## Review
@@ -163,8 +165,176 @@ unmoved (0 commits behind). PR #40.
   path.
 - AC2 — pass. `sitecheck.py links site/_site` over the same clean-clone
   render: all 752 same-site links across the 20 pages resolve, path part and
-  `#fragment` alike. An independent href census of the rendered HTML counted
-  the same 752 in-site `href` values (plus 20 external, 0 `<use>`), so the
-  check's domain is the whole domain and not a subset. The site declares no
-  base path, so the base-path clause is exercised by T7's planted case rather
-  than by this render.
+  `#fragment` alike. An independent href census counted the same 752 in-site
+  `href` values (plus 20 external, 0 `<use>`), so the check's domain is the
+  whole domain. Re-derived a second time with a resolver written here, confined
+  to `site/_site` and percent-decoding both path and fragment — 752 links, 0
+  violations — so this evidence does not rest on the resolver F8-F11 attack.
+  The site declares no base path, so that clause is exercised by T7's plant.
+- AC3 — pass. `sitecheck.py prose` reports 5046 four-or-more-character words
+  over the 755 lines it sees dropped, all reaching a site page. Re-derived
+  against the criterion's own wording — the 921 lines
+  `git diff 2afade7..HEAD -- README.md` reports removed, 942 distinct
+  lowercased `[A-Za-z0-9]{4,}` runs — 0 missing from the concatenated text of
+  the 20 tracked `site/` files at HEAD.
+- AC4 — pass. `sitecheck.py headings` ok over 17 headings and 20 pages.
+  Re-derived independently: the merge-base README carries 17 `^#{2,3} `
+  headings other than the three kept; none of the 17 lines survives in
+  README.md at HEAD, and each one's heading text matches a heading, at some
+  level, in a tracked `site/` file.
+- AC5 — pass. `sitecheck.py readme README.md site/index.qmd` ok: README.md is
+  57 lines (< 120), carries the pre-release warning paragraph (:7), the
+  `quarto add jmgirard/quarto-index` line (:15) and a relative link to
+  `site/index.qmd` (:33) whose target exists in the repo.
+- AC6 — pass. Independent extraction of the containers from
+  `tests/run-tests.sh` at HEAD, not through the suite's own helpers: 17
+  containers, 16 `README_*` plus `SUPPORTED_FORMS`, tagged 14 presence and 3
+  absence, matching the criterion's counts. The 14 presence containers hold 168
+  entries; every one, compared whitespace-flattened, appears in the flattened
+  text of a tracked `.qmd` under `site/` — 0 missing. The reading of "entry" is
+  recorded as F17 below rather than settled silently.
+- AC7 — pass. The 3 absence containers hold 16 entries (`README_STALE` 8,
+  `README_REFS_STALE` 1, `README_MISUSE_STALE` 7). Swept over all 24 files the
+  criterion names — every tracked file under `site/` plus README.md — under
+  both readings of an entry: 0 occurrences. The `(:318)`, `(:500)`, `(:1860)`
+  locators are merge-base line numbers, correct at 2afade7; the containers they
+  name are `tests/run-tests.sh:336`, `:518` and `:2038` at HEAD.
+- AC8 — pass. `tests/run-tests.sh --self-test` exit 0, 595 checks, run fresh
+  on the branch at 10994af.
+
+No `Driving RR:` is declared, so there are no carried projections to set
+against measured outcomes.
+
+### Consistency gate
+
+- `cairn_validate.py` exit 0: every check PASS. One advisory — 8 acceptance
+  criteria against the 7 tripwire — already dispositioned in the work log (AC6
+  and AC7 are opposite promises over two domains, and the claim repoint cannot
+  land later than the prose move without leaving the suite red in between).
+  `release window` did not fire.
+- `cairn_impact.py --changed` reports no changed principles: the diff's edits
+  to IP2 and GP1 fall on continuation lines carrying no principle id, which is
+  what the detector scans. Run by hand for the two ids instead — IP2 25
+  references, GP1 8. The live references reconcile; the archived ones are
+  history under IP4. One divergence found, filed as F2.
+- Toolchain `consistency-gate` slot: the `generic` profile names no toolchain
+  checks, so this half is a clean no-op.
+
+### Findings
+
+Three fresh-context lenses ran (user-facing tier, executable surface touched).
+[S] prior-review record: no prior-review evidence — the archives hold no
+`## Review` finding on the touched files that this diff reintroduces, and the
+GitHub inline-comment probe came back empty; zero findings. [S] blame-history:
+one finding (F2 below, found independently here as well). [O] diff-bug: 28
+findings, listed below with the two the orchestrator had already found folded
+in. The [O] lens died to an API error on its first spawn and was re-run whole.
+
+Ranked most severe first. Disposition after each.
+
+**F1-F5. Five "above"/"below" cross-references are false after the move.**
+`site/latex-and-pdf.qmd:14` ("see *Placing the index*, above" — a separate
+page, in a different sidebar section); `:20` ("described under the principal
+mention, below" — a separate page, and it precedes this one);
+`site/back-end-differences.qmd:11` ("The three-level ceiling described above" —
+now on `sub-entry-levels.qmd`); `:30` ("The `see also` limitation described
+above" — now on `cross-references.qmd`); `site/cross-references.qmd:8` ("any of
+the mark forms above" — the ten-form table is on `syntax.qmd`). A reader
+landing on any of these pages from the sidebar is sent to prose the page does
+not carry. No criterion reaches them: AC3 is an order-insensitive word bag, AC4
+is headings, AC6 is claim sentences, and none of the five is pinned claim text.
+
+**F2. Four comments still locate the Terms-outside-Latin-1 recipe in README.**
+`tests/run-tests.sh:780`, `:787`, `:4752`, `:4916`. D-023 moved the recipe's
+home to `site/terms-outside-latin-1.qmd`, and IP2, KI6 and the M32 pass message
+were repointed; these four were not. `:780`'s comment reasons explicitly about
+"a README edit that changed the engine word", which now names the wrong file.
+
+**F3. A presence container's registry domain is unread for 3 of 14 rows.**
+`README_RECIPE_LINES`, `README_INDEXES_CLAIMS` and `README_INDEXES_YAML` are
+consumed by `check_recipe_block` and `check_readme_indexes`, which take their
+page as a literal argument (`tests/run-tests.sh:5082`, `:13037`) rather than
+through `claim_text`. Repointing those three rows at any existing file leaves
+the suite green, so T5's repoint is nominal for them — and DESIGN.md's new
+Architecture paragraph says "no check names a documentation file itself",
+which those two call sites and `sitecheck.py readme` contradict.
+
+**F4. An absence row's `ALL` domain is not pinned.** `tests/run-tests.sh:638`,
+`:1819`. Editing `README_STALE`'s domain from `ALL` to one page leaves
+`check_claim_registry` green (names, kinds and the 17/14/3 counts are
+unchanged) and shrinks AC7's sweep from 24 files to 1, so a retired sentence
+re-added to another page would go unseen.
+
+**F5. The `kind` field is pinned only by its counts.** `claim_kind`
+(`tests/run-tests.sh:670`) is defined and never called; swapping two rows'
+tags holds the 14/3 counts, changes no check's behavior, and leaves the
+registry misdescribing both containers. T7's mis-tag plant does not reach it.
+
+**F6. The completeness scan's domain is a README-era name pattern.**
+`tests/run-tests.sh:1834`. It scans for `^(README_[A-Z_]+|SUPPORTED_FORMS)=\(`
+and the here-document shape. A container named for its site page
+(`SITE_BOOKS_CLAIMS=(`), or any name carrying a digit, is invisible to both the
+registry and the check meant to stop exactly that — which is the falsification
+condition M40's own work log states for this decision.
+
+**F7. `fail` inside `$(claim_text …)` exits only the subshell.**
+`tests/run-tests.sh:660-698`. A bad domain yields an empty filename and the run
+dies later on a Python traceback attributed to the consuming check rather than
+on `claim_text`'s message naming the missing file.
+
+**F8-F11. Link-check clauses weaker than AC2 or unexercised.**
+`sitecheck.py` resolves a root-relative href not under the configured base path
+against the capture root (so it passes where production 404s); does not confine
+resolution to the capture, letting `../_quarto.yml` resolve against the working
+tree; keeps a query string in the filename and never percent-decodes a path;
+and unquotes a fragment's HTML entities but not its percent-encoding. All four
+are latent on today's render — re-verified independently here with a resolver
+confined to `site/_site` and URL-decoding both parts: 752 links, 0 violations.
+
+**F12-F14. Clauses with no planted case.** The `<use>` exclusion and the
+`mailto:`/`tel:`/`data:`/`javascript:` schemes are never planted and the render
+carries no `<use>` element, so deleting either clause turns nothing red;
+relative resolution from a nested page is unexercised because the site is flat
+and every link plant splices into the capture root's `index.html`.
+
+**F15. The standing render check does not clean its output directory.**
+`tests/run-tests.sh:13171`. Quarto does not prune deleted pages, so a renamed
+`.qmd` leaves a stale `.html`, which `rendered` (source→output only) and
+`links` both accept. AC1's "from a clean checkout" is met by the evidence run
+above, not by the suite.
+
+**F16. AC5's "warning paragraph" is checked as one sentence.** `sitecheck.py`
+tests the substring `**Pre-release: install at your own risk.**`; the rest of
+the paragraph could be deleted green.
+
+**F17. "Entry" in AC6 has two readings.** A container row is
+`<label><TAB><pinned sentence>`. Read as the pinned sentence — what the
+registry's normative comment and every claim check mean — 168 of 168 land.
+Read as the whole row, 155 would be absent, since the labels are
+failure-message identifiers that were never documentation prose. Recorded here
+rather than settled silently.
+
+**F18-F23. Lower-confidence and latent.** `for f in $(git ls-files
+'site/*.qmd')` word-splits a path containing a space; `claim_text` joins pages
+with one newline, so a claim could in principle be satisfied across a page
+boundary; `check_recipe_block` compares its container as exact ordered lines
+where AC6 describes whitespace flattening (stricter, not weaker); `page.index`
+anchors are substring searches, so `# X` matches inside `## X`; `section_end`
+stops at the first `#`-`###` heading, so adding a `##` to an anchored page
+truncates its section (loudly, but for the wrong reason); `section_end` is
+transcribed verbatim in three here-documents; `sitecheck.py`'s `swept` counter
+increments on a bare `#` that checks nothing; site pages name `examples/` and
+`tests/` paths that exist only in a source checkout (pre-existing, and M42's
+audience question); every `open()` in `sitecheck.py` is unclosed.
+
+**Not findings.** The [O] lens checked and found correct: `_quarto.yml`
+navigation covers all 20 tracked pages with no dangling entry; every markdown
+link between site pages targets an existing `.qmd`; the 17 heading texts in the
+self-test's stub old-README match the site's H1s; `capture --site`'s
+slug-collision and empty-`_site` guards; the `ALL` domain's `n >= 2` guard; and
+the `set -euo pipefail` interactions in `m40_planted`.
+
+**Return floor.** No finding demonstrates an acceptance criterion failing.
+AC2 and AC6-AC7 were re-derived here independently of the instruments F8-F11
+and F3-F6 attack, and AC1 and AC8 from a clean clone and a full suite run, so
+the evidence above does not rest on the checks these findings weaken.

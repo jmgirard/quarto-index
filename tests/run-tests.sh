@@ -12735,6 +12735,8 @@ pass "M38-AC5: an HTML book folds its named mark and its named marker into the o
 read -r -d '' README_INDEXES_CLAIMS <<'MANIFEST' || true
 declaration fields	`name` is what a mark writes to file in that index; `title` is the heading a reader sees
 name shape	A name holds ASCII letters, digits, hyphen and underscore and begins with a letter
+mark names its index	A mark says which index it belongs to with `index=`
+reports name their index	A report of one of these judgements names the index it was made in
 unnamed mark	A mark that names no index files in the first declared index
 marker names its index	A placement marker names its index the same way
 one index in latex	A LaTeX or PDF render builds a single index

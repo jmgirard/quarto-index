@@ -218,6 +218,27 @@ local function default()
   return order[1]
 end
 
+-- The set a per-index judgement was made within, as a report must name it.
+-- A cross-reference target and a range pairing are settled inside ONE index
+-- (M38), so a document that declares several cannot call that set "this
+-- document": the term the author is told nothing indexes may be marked in the
+-- document all along, in another index, and "mark that term somewhere" is then
+-- advice that does not fix anything (review O1/O2).
+-- `outer` is the word the caller would otherwise have used -- "document",
+-- "book", "chapter" -- and is kept wherever there is genuinely one namespace:
+-- a document that declares nothing or declares one index, and any back-end
+-- that folds, which resolved every mark to the one index before these
+-- judgements ran.
+local function scope_phrase(name, outer)
+  -- A caller with no index in hand -- a finding whose message names no scope
+  -- at all -- gets the outer word back untouched, so this is safe to call on
+  -- every finding rather than only on the ones that print a scope.
+  if name == nil or not declared or folded or #order < 2 then
+    return outer
+  end
+  return ('index "%s"'):format(name)
+end
+
 local function is_declared()
   return declared
 end
@@ -341,6 +362,7 @@ M["read"] = read
 M["names"] = names
 M["title"] = title
 M["default"] = default
+M["scope_phrase"] = scope_phrase
 M["is_declared"] = is_declared
 M["folds"] = folds
 M["builds_index"] = builds_index

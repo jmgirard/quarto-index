@@ -960,3 +960,85 @@ its dot, that README's new name-shape sentence matches the shipped rule, that
 T27's corrections to the self-test block stand, that AC7 is gone from the live
 criteria and survives only in never-edited history (IP4), and that KI10 and the
 DESIGN module-list corrections are intact.
+
+### Triage and disposition (round 4)
+
+Every reported finding and its disposition, none dropped. AC1-AC6 all pass, so
+no finding demonstrates an acceptance criterion failing and the return floor's
+first limb does not fire. O1/O2/O3 were put to the maintainer at the gate as the
+floor's second limb — whether they are a load-bearing defect in what the
+deliverable does for its users — and the maintainer chose fix-now on the branch
+rather than a return. The four non-runtime findings were left to this review to
+decide ("decide for me"); three were fixed and one rejected, with reasons below.
+
+- O1, O2 → **fixed now on the branch.** `qi_indexes.scope_phrase` is the one
+  place an index name becomes the words a report uses; `index.lua`'s dangling
+  loop and `marks.lua`'s two pairing findings pass their own index through it.
+  A document that declares nothing or one index, and every folded back-end,
+  get their outer word back unchanged, so no pinned message text moved. Probed
+  by render: `see= on entry="Stranger" points at "Aardvark", which no index
+  mark in this index "authors" indexes`, `closes a range this index "authors"
+  never opens`, `is never closed in this index "main"` — each true of the set
+  it names. The unchanged shapes re-read off this run's captures:
+  `dangling-html.log` still says "this document", `book-html.log` "this book",
+  `book-order-1.log` "this chapter".
+  **Residual, recorded rather than fixed:** the dangling report's remedy clause
+  ("so mark that term somewhere or correct the target") is shared by all four
+  scopes and is now less specific than a per-index remedy would be. Narrowing it
+  needs a second message shape — the clause is inside the literal `warn-distinct`
+  pins as one piece, and a second shape must be distinct from the first and not
+  a prefix of it — so it rides the acceptance-suite hardening candidate row.
+  D-021 records the rule and names this cost as accepted.
+- O3 → **fixed now.** README's per-index paragraph gains the sentence that a
+  report of one of these judgements names the index it was made in, and that
+  the term may be marked elsewhere in the document; pinned as a ninth AC6 claim
+  row.
+- O4 → **fixed now.** `README_INDEXES_CLAIMS` gains `mark names its index`, the
+  half of AC6's enumerated `index=` claim the manifest did not pin. AC6's check
+  now reads 9 claim rows; it read 7 when this round's evidence was gathered, and
+  the mark half was read by hand there (noted in the AC6 evidence line above).
+- O5 → **fixed now.** DESIGN's per-index bullet names its one exception —
+  `latex.lua`'s `contested_keys`, format-neutral by the bullet's own test, not
+  namespaced, and read only where the back-end folds — so the absolute the diff
+  added no longer stands over a live exception unremarked. The bullet also now
+  states that a report of such a judgement names its index, which is O1/O2's
+  rule in the contract.
+- O6 → **follow-up.** The sort-key rival report does not name its index. States
+  nothing false, and no shipped fixture reaches a two-index sort-key rivalry;
+  it is the same shape as O1/O2 and now has `scope_phrase` to reach for.
+  Rides the acceptance-suite hardening candidate row with the O1 residual.
+- O7 → **follow-up.** `html.lua`'s emitting loop drops a mark group whose key is
+  not a declared name, with no report. Traced unreachable today; the change that
+  makes it reachable is the book-store follow-up row's own (a per-record index
+  name), so it is recorded there rather than filed twice.
+- O8 → **rejected.** The Tasks block comment and the Coverage map are plan- and
+  implement-owned (tracking-rules section ownership); review does not write
+  them. The observation is also moot at merge: step 9 replaces the whole
+  milestone file with a <=25-line archive summary, so the stale comment ceases to
+  exist rather than being corrected.
+- O9 → **rejected, out of scope.** `check_folded_heading`'s unguarded
+  `index_sections` call is G2, which the round-3 descope moved onto the
+  acceptance-suite hardening candidate row by the maintainer's own disposition.
+  Recorded here because a fresh reader saw it independently and agrees; no
+  AC1-AC6 evidence depends on it.
+- H1 → **fixed now.** D-021 records the per-index judgement rule as the
+  cross-cutting decision it is, extending D-005 (which back-end's answer decides
+  what a mark resolves against) and D-009 (whose scope word a pairing report
+  uses), and carries O1/O2's scope rule and its accepted cost.
+- H2, H3, H4 → **no action.** Each is an observation the reviewer itself
+  verified clean: KI10's 17 -> 19 correction is arithmetically right and
+  discloses M26's uncovered cells rather than hiding them; the `marker.lua`
+  rewrite provably degenerates to the old single-index path and preserves IP2's
+  no-residue guarantee, with `m29book.py` updated by new regexes rather than
+  loosened assertions; and both exact-count guards' increases are accounted for
+  by real new warnings. Logged as surfaced, per IP3.
+- Prior-review-record lens → **no findings**, on a surface actually walked: the
+  archive's `## Review` sections touching these files, M38's own three rounds,
+  `LESSONS.md`, DESIGN's Known issues, and a GitHub existence probe that
+  returned `[]`.
+
+Fix-now evidence: `tests/run-tests.sh --self-test` exit 0, 559 checks, with
+every fix above in the tree; `M38-AC1` through `M38-AC6` green, AC6 over 9
+pinned claims. `cairn_validate.py` re-run over the completed fixes, exit 0,
+same single sizing advisory. No IP/GP principle line changed, so `cairn_impact`
+stays skipped.

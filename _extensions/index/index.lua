@@ -110,8 +110,15 @@ local function Pandoc(doc)
   -- reader. A document with one index has one namespace and one pass here.
   if not book and not (qi_core.is_html() and doc.meta.book ~= nil) then
     for _, name in ipairs(qi_indexes.names()) do
+      -- The scope the report names is the set the target was judged against,
+      -- which is this ONE index wherever the document declares several
+      -- (review O1): "this document" there is a set no judgement was made
+      -- over, and the term it says nothing indexes may be marked two sections
+      -- up, in the other index. A document declaring nothing or one, and any
+      -- folded back-end, keep the "document" they have always printed.
       qi_marks.report_dangling(qi_marks.marked_paths[name] or {},
-                               qi_marks.xrefs_for(name), "document")
+                               qi_marks.xrefs_for(name),
+                               qi_indexes.scope_phrase(name, "document"))
     end
   end
   -- The range reports, held rather than emitted where they were found so they

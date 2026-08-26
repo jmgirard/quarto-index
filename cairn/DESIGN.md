@@ -89,7 +89,13 @@ _None yet — populated as the codebase takes shape._
   namespace per index — the marked paths a cross-reference target resolves
   against, the sort-key registry, the printed-path collision map, and the
   pairing map a range opening waits in — so a target, a key and a range are
-  each settled within one index and never across two. WHICH index a mark files
+  each settled within one index and never across two, and a report of such a
+  judgement names the index it was made in rather than the document (corrected
+  M38 review). One format-neutral accumulator is outside that rule:
+  `latex.lua`'s `contested_keys`, which `passes.CollectKeys` fills in every
+  format but whose two consumers both sit after the HTML early return, so it is
+  only ever read where the back-end folds to one index and has one namespace to
+  see. WHICH index a mark files
   in is the running back-end's answer, exactly as the printed path a target is
   judged against is (D-005): a back-end that keeps one index resolves every
   mark to that one and says so per mark and per marker, which is what a

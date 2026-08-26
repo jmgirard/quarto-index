@@ -678,7 +678,10 @@ mark belongs to. A cross-reference target resolves against the terms of its
 own index, a sort key files a term in its own index only, and a range pairs an
 opening with a closing of the same index. An opening in one index and a
 closing in another are not a pair: each is reported and indexes as an ordinary
-locator.
+locator. A report of one of these judgements names the index it was made in, so
+a warning that a target names nothing indexed is telling you nothing in *that*
+index carries the term — the term may well be marked elsewhere in the document,
+in another index.
 
 **One index outside HTML, for now.** A LaTeX or PDF render builds a single
 index. Quarto's PDF loop builds only the main entry file, so a second index

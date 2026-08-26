@@ -8,6 +8,7 @@
 
 local qi_core = require("./core")
 local qi_levels = require("./levels")
+local qi_indexes = require("./indexes")
 
 local M = {}
 
@@ -179,9 +180,13 @@ local function xrefs_for(index)
 end
 
 -- One report per mark per target that names nothing the marks index. `scope`
--- is what the path set was drawn from — one document, or a whole book —
--- because the two are different claims, and an author told "this document" in
--- a book would go looking in the wrong file.
+-- is what the path set was drawn from — one document, a whole book, or one
+-- named index of a document that declares several — because those are
+-- different claims, and an author told "this document" in a book would go
+-- looking in the wrong file, while one told it of a target that dangles only
+-- inside its own index would go looking for a mark they have already written
+-- (review O1). The caller names the set; `qi_indexes.scope_phrase` is what
+-- turns an index name into the words for it.
 local function report_dangling(paths, xrefs, scope)
   for _, xref in ipairs(xrefs) do
     -- The target as the author wrote it: `qi_levels.levels_key` doubles a literal `!`
@@ -262,6 +267,11 @@ end
 -- book, where an author told "this document" would go looking in the wrong
 -- file.
 local function report_range(found, scope)
+  -- Pairing is per index (M38), so a finding drawn inside one names it rather
+  -- than the whole document, which does open and does close the range the
+  -- other half of the pair sits in (review O2). `scope_phrase` hands back the
+  -- caller's own word wherever there is one namespace.
+  scope = qi_indexes.scope_phrase(found.index, scope)
   if found.kind == "unrecognized" then
     qi_core.warn(('%s= on %s names neither end of a range ("%s"); the mark indexes as though the attribute were absent'):format(qi_core.RANGE_ATTR, found.context, found.value))
   elseif found.kind == "displaced" then
@@ -352,7 +362,8 @@ local function pair_ranges(items)
       local at = open_here[item.key]
       if at == nil then
         verdicts[i] = false
-        found[#found + 1] = { kind = "never-opened", context = item.context }
+        found[#found + 1] = { kind = "never-opened", context = item.context,
+                             index = item.index }
       else
         open_here[item.key] = nil
         local principal = verdicts[at].principal or item.principal
@@ -372,7 +383,8 @@ local function pair_ranges(items)
     if open_here[items[at].key] == at then
       open_here[items[at].key] = nil
       verdicts[at] = false
-      found[#found + 1] = { kind = "never-closed", context = items[at].context }
+      found[#found + 1] = { kind = "never-closed", context = items[at].context,
+                             index = items[at].index }
     end
   end
   return verdicts, found

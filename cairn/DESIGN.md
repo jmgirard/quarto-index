@@ -498,7 +498,8 @@ registry — nothing scans the fixture sources. Because the site build renders
 fixtures, it needs a TeX installation: TinyTeX, which carries `makeindex`
 (corrected M42 — the site build reaches no further than that; `pdftotext` and
 `stix2-otf` are the acceptance suite's own requirements, and the Pages
-workflow renders the whole site, PDFs included, with TinyTeX alone). The whole-set residue sweeps run after the site render, since it is
+workflow renders the whole site, PDFs included, with TinyTeX alone). The
+whole-set residue sweeps run after the site render, since it is
 the last render the suite makes.
 
 The suite's pinned documentation sentences live in *claim containers*, and

@@ -13199,28 +13199,20 @@ pass "M41-AC5: rendering the site left all $(wc -l < "$WORK/examples-before.txt"
 
 # ---------------------------------------------------------------------------
 # M42-AC5 — the render leaves nothing untracked under `site/`, and nothing
-# under the two directories it writes is tracked. The first half is read from
-# `git status` in the working tree immediately after the render above, which is
-# the only moment the render's leftovers are on disk to be seen; the second is
-# read from the index, which no render touches. Both are quantified over what
-# git reports rather than over a literal path, so an ignore rule that stops
-# covering a directory the render grows shows up here.
+# under the two directories it writes is tracked. The listings are taken here,
+# immediately after the render above, which is the only moment the render's
+# leftovers are on disk to be seen; the reader that judges them is
+# tests/pagescheck.py, so each of its clauses can be planted. `-z` is what
+# makes the anchored pattern trustworthy: without it git C-quotes a path
+# carrying a non-ASCII character, and `?? "site/na\303\257ve.html"` does not
+# match a pattern anchored on `?? site/`.
 # ---------------------------------------------------------------------------
-git status --porcelain > "$WORK/site-status.txt"
-SITE_UNTRACKED=$(grep -c '^?? site/' "$WORK/site-status.txt" || true)
-[ "$SITE_UNTRACKED" -eq 0 ] \
-  || { grep '^?? site/' "$WORK/site-status.txt" >&2; fail "M42-AC5: rendering the site left $SITE_UNTRACKED untracked path(s) under site/; the ignore rules do not cover the render's whole output"; }
-SITE_TRACKED_OUTPUT=$(git ls-files -- 'site/_site' 'site/.quarto' | wc -l | tr -d ' ')
-[ "$SITE_TRACKED_OUTPUT" -eq 0 ] \
-  || { git ls-files -- 'site/_site' 'site/.quarto' >&2; fail "M42-AC5: git tracks $SITE_TRACKED_OUTPUT path(s) under site/_site/ or site/.quarto/; render output is not the repository's to carry"; }
-# The status listing is required to be a reading of this working tree and not
-# an empty file that would pass both clauses by describing nothing: the render
-# above writes site/_site/, which .gitignore covers, so `git status --ignored`
-# must report it.
-git status --porcelain --ignored > "$WORK/site-status-ignored.txt"
-grep -q '^!! site/_site' "$WORK/site-status-ignored.txt" \
-  || { head -20 "$WORK/site-status-ignored.txt" >&2; fail "M42-AC5: git reports no ignored path under site/_site/ after the render, so the status reading the clauses above rest on is not describing this working tree"; }
-pass "M42-AC5: after the site render git reports no untracked path under site/, and tracks none under site/_site/ or site/.quarto/"
+git status --porcelain -z | tr '\0' '\n' > "$WORK/site-status.txt"
+git status --porcelain -z --ignored | tr '\0' '\n' > "$WORK/site-status-ignored.txt"
+git ls-files -- 'site/_site' 'site/.quarto' > "$WORK/site-tracked-output.txt"
+python3 tests/pagescheck.py output \
+  "$WORK/site-status.txt" "$WORK/site-status-ignored.txt" "$WORK/site-tracked-output.txt" \
+  || fail "M42-AC5: the site render's leftovers are not what the ignore rules promise (its own FAIL line is above)"
 
 python3 tests/sitecheck.py rendered site "$SITE_OUT" \
   || fail "M40-AC1: a tracked page under site/ has no rendered output at the path its source names (its own FAIL line is above)"
@@ -13918,16 +13910,17 @@ fi
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
-  # M42 T4 — a planted defect per CLAUSE of the two readers M42 adds, not one
-  # per reader (check-design, M32). Every plant over a text file is a single
+  # M42 T4 — a planted defect per CLAUSE of the readers M42 adds, not one per
+  # reader (check-design, M32). Every plant over a text file is a single
   # substitution at a site the plant asserts occurs exactly once and asserts
   # produced a different file, so a mutation that matched nothing or matched
   # in several places cannot hand a case an artifact it was not built for
   # (M29). Every plant over the captured site removes a path the plant first
   # asserts is there. Each planted case must fail AND fail naming its own
-  # clause. The unplanted controls for the two readers are the standing checks
-  # in the M42 section above, which ran green on this run's own workflow file,
-  # extension declaration and captured site.
+  # clause. The unplanted controls are the standing checks in the M42 section
+  # above, which ran green on this run's own workflow file, extension
+  # declaration, captured site and git listings; `contains`, which the suite
+  # does not run standing, gets its own control here.
   # -------------------------------------------------------------------------
   M42W="$WORK/m42probe"
   rm -rf "$M42W"
@@ -13985,6 +13978,38 @@ M42PLANT
   m42_planted 'a workflow naming a release channel where the criterion requires an exact version' \
     'which is not an exact version string' \
     python3 tests/pagescheck.py pin "$M42W/wf-channel" "$M42_EXT"
+
+  m42_plant wf-partial "$M42_WF" 'version: 1.10.18' 'version: 1.10'
+  m42_planted 'a workflow naming a version line rather than a release, which is a channel and not a pin' \
+    'which is not an exact version string' \
+    python3 tests/pagescheck.py pin "$M42W/wf-partial" "$M42_EXT"
+
+  # The pin is read out of the Quarto setup step and not out of the file at
+  # large. Planted both ways round: the step gone with a `version:` line still
+  # in the file, and the step present twice.
+  m42_plant wf-nostep "$M42_WF" 'uses: quarto-dev/quarto-actions/setup@v2' \
+    'uses: actions/setup-node@v4'
+  m42_planted 'a workflow with no Quarto setup step, whose `version:` line belongs to something else' \
+    'declares 0 step(s) using quarto-dev/quarto-actions/setup' \
+    python3 tests/pagescheck.py pin "$M42W/wf-nostep" "$M42_EXT"
+
+  m42_plant wf-twosteps "$M42_WF" '      - name: Install Quarto and TinyTeX' \
+    '      - name: Install Quarto and TinyTeX
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.10.18
+
+      - name: Install Quarto and TinyTeX'
+  m42_planted 'a workflow using the Quarto setup action twice, so which step carries the pin is not a fact' \
+    'declares 2 step(s) using quarto-dev/quarto-actions/setup' \
+    python3 tests/pagescheck.py pin "$M42W/wf-twosteps" "$M42_EXT"
+
+  # A quoted pin is a legal YAML spelling of the same version, and the range
+  # parser in the same file strips quotes; the two readers must agree.
+  m42_plant wf-quoted "$M42_WF" 'version: 1.10.18' 'version: "1.10.18"'
+  python3 tests/pagescheck.py pin "$M42W/wf-quoted" "$M42_EXT" > /dev/null \
+    || fail "M42 self-test: the pin check rejects a quoted pin naming the same version it accepts unquoted, so its two parsers disagree on YAML quoting"
+  printf 'ok   self-test: a quoted pin naming the version the check accepts unquoted is accepted too\n'
 
   # --- pin: the extension's side ------------------------------------------
   m42_plant ext-tworanges "$M42_EXT" 'quarto-required: ">=1.4.0"' \
@@ -14114,6 +14139,10 @@ M42TWO
     'is not a directory' \
     python3 tests/pagescheck.py contains "$M42_WF" "$SITE_OUT"
 
+  m42_planted 'a reference-render path that is a file rather than the rendered directory' \
+    'is not a directory' \
+    python3 tests/pagescheck.py contains "$SITE_OUT" "$M42_WF"
+
   mkdir -p "$M42W/emptysite"
   m42_planted 'a reference render holding no page at all, against which containment would be a comparison with nothing' \
     'holds no .html or .pdf path at all' \
@@ -14133,9 +14162,17 @@ M42TWO
   M42_PDFS_LEFT=$(find "$M42W/twopdfs" -name '*.pdf' | wc -l | tr -d ' ')
   [ "$M42_PDFS_LEFT" -eq 2 ] \
     || fail "M42 self-test: the reduced reference render holds $M42_PDFS_LEFT PDF(s), not the 2 the floor case needs"
+  # A FRESH copy stands in for the artifact here. The copy above had a page
+  # removed for the case before this one, so reusing it would also fail the
+  # containment clause, and this case would pass for the right reason only
+  # because the reader happens to check the floor first.
+  rm -rf "$M42W/artifact-whole"
+  cp -R "$SITE_OUT" "$M42W/artifact-whole"
+  python3 tests/pagescheck.py contains "$M42W/artifact-whole" "$SITE_OUT" > /dev/null \
+    || fail "M42 self-test: the untouched artifact copy is already reported as not containing the site, so the floor case below would not be about the floor"
   m42_planted 'a reference render holding fewer PDFs than the floor the criterion states' \
     'the criterion states the set compared holds at least 3' \
-    python3 tests/pagescheck.py contains "$M42W/artifact" "$M42W/twopdfs"
+    python3 tests/pagescheck.py contains "$M42W/artifact-whole" "$M42W/twopdfs"
 
   # --- url -----------------------------------------------------------------
   # The published URL is derived from the `origin` remote, so each document is
@@ -14209,7 +14246,51 @@ M42BASE
     'has no `origin` remote to derive the published URL from' \
     python3 tests/pagescheck.py url README.md site/index.qmd tests/run-tests.sh "$M42W/noremote"
 
-  pass "M42: each clause named above is planted on its own and shown red while the same reader passes unplanted — the pin check on two pins, no pin, a channel where an exact version is required, two declared ranges, no declared range, an operator it will not guess at, a floor that is not dotted numerics, and a floor above the pin, with a floor below the pin that a string comparison would reject accepted; the completeness check on a declaration showing nothing, a site with no entry page, and a shown fixture missing its gallery page, its rendered index page or its PDF, plus a shown list under the PDF floor; the containment check on an artifact missing a page, an artifact path that is not a directory, a reference holding no page, and a reference under the PDF floor, with an artifact carrying an extra page still accepted; and the published-URL check on a README and on a site entry page naming a URL the origin remote does not imply, on a base path that is not that URL's path segment, on no base path and on two, and on a repository carrying no origin remote at all"
+  rm -rf "$M42W/oddremote"
+  mkdir -p "$M42W/oddremote"
+  git init -q "$M42W/oddremote"
+  git -C "$M42W/oddremote" remote add origin "https://gitlab.example/jmgirard/quarto-index.git"
+  m42_planted 'an origin remote this check cannot read as a GitHub owner and repository' \
+    'which this check cannot read as a GitHub owner and repository' \
+    python3 tests/pagescheck.py url README.md site/index.qmd tests/run-tests.sh "$M42W/oddremote"
+
+  # --- output ---------------------------------------------------------------
+  # The three listings the AC5 reader judges are git's own output, so each
+  # clause is planted by handing it a crafted listing beside this run's real
+  # ones. The real listings are asserted to pass first, or a red below would
+  # say nothing.
+  M42_ST="$WORK/site-status.txt"
+  M42_IG="$WORK/site-status-ignored.txt"
+  M42_TR="$WORK/site-tracked-output.txt"
+  python3 tests/pagescheck.py output "$M42_ST" "$M42_IG" "$M42_TR" > /dev/null \
+    || fail "M42 self-test: the AC5 reader is red on this run's own listings, so no failure below is evidence of anything"
+
+  cp "$M42_ST" "$M42W/status-untracked.txt"
+  printf '?? site/_site-leftover/index.html\n' >> "$M42W/status-untracked.txt"
+  m42_planted 'a render leaving an untracked path under site/ that no ignore rule covers' \
+    'the ignore rules do not cover the whole of what it writes' \
+    python3 tests/pagescheck.py output "$M42W/status-untracked.txt" "$M42_IG" "$M42_TR"
+
+  # The same path spelled the way git writes it WITHOUT -z, C-quoted for its
+  # non-ASCII byte. The reader must be given a listing that has never been
+  # quoted; this case shows what the anchored pattern would miss if it were.
+  cp "$M42_ST" "$M42W/status-quoted.txt"
+  printf '?? "site/na\\303\\257ve.html"\n' >> "$M42W/status-quoted.txt"
+  python3 tests/pagescheck.py output "$M42W/status-quoted.txt" "$M42_IG" "$M42_TR" > /dev/null \
+    && printf 'ok   self-test: a C-quoted untracked path is invisible to the anchored pattern, which is why the suite reads git with -z and never hands this reader a quoted listing\n' \
+    || fail "M42 self-test: the reader saw through a C-quoted path, so the -z the suite takes its listings with is doing nothing and this case no longer says what it is about"
+
+  printf 'site/_site/index.html\n' > "$M42W/tracked-output.txt"
+  m42_planted 'a repository tracking a file under the directory the render writes' \
+    "render output is not the repository's to carry" \
+    python3 tests/pagescheck.py output "$M42_ST" "$M42_IG" "$M42W/tracked-output.txt"
+
+  grep -v '^!! site/_site' "$M42_IG" > "$M42W/ignored-nosite.txt" || true
+  m42_planted 'an ignored listing naming nothing under the directory the render just wrote, which is not a reading of this tree' \
+    'is not describing a tree the site was just rendered in' \
+    python3 tests/pagescheck.py output "$M42_ST" "$M42W/ignored-nosite.txt" "$M42_TR"
+
+  pass "M42: each clause named above is planted on its own and shown red while the same reader passes unplanted — the pin check on two pins, no pin, a channel where an exact version is required, two declared ranges, no declared range, an operator it will not guess at, a floor that is not dotted numerics, and a floor above the pin, with a floor below the pin that a string comparison would reject accepted; the completeness check on a declaration showing nothing, a site with no entry page, and a shown fixture missing its gallery page, its rendered index page or its PDF, plus a shown list under the PDF floor; the containment check on an artifact missing a page, an artifact path that is not a directory, a reference holding no page, and a reference under the PDF floor, with an artifact carrying an extra page still accepted; the published-URL check on a README and on a site entry page naming a URL the origin remote does not imply, on a base path that is not that URL's path segment, on no base path and on two, on a repository carrying no origin remote at all and on one whose remote is not GitHub; and the render-leftovers check on an untracked path under site/, a tracked path under the render's own output directory, and an ignored listing that is not a reading of a tree the site was rendered in"
 fi
 
 # ---------------------------------------------------------------------------

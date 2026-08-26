@@ -108,9 +108,123 @@ suite in CI → not planned; a candidate row.
 - 2026-08-26: verify slot clean after T5 and T6: `tests/run-tests.sh --self-test`, 649 checks, exit 0.
 - 2026-08-26: T1 — the user was asked at the gate whether Settings → Pages → Source is set to GitHub Actions and chose to set it. `gh api repos/jmgirard/quarto-index/pages` still answered 404 when checked immediately afterwards — observed 2026-08-26 — so the setting is not confirmed from this side; the plan puts the live URL post-merge, and /milestone-review re-reads this endpoint before it merges.
 - 2026-08-26: all tasks done, verify slot clean, status → review.
+- 2026-08-26: review round 1 — three fresh-context reviewers. Blame-history and prior-review each reported no findings; diff-bug reported fourteen, every one re-run against the implementation before triage. Ten fixed on the branch at the maintainer's direction, two rejected with reason, two filed on the suite-hardening candidate row. Details in the Review section.
 
 ## Decisions
 
 - 2026-08-26 (T2): the workflow does not use `actions/configure-pages`. The starter workflow GitHub publishes includes it to hand a site generator the base URL it will be served under, and this site makes only relative links, so nothing reads that output. Keeping it would put a step that calls the Pages API — and fails while Pages is not yet enabled on the repository — ahead of the render on every branch, which would make a probe branch's red say nothing about the render it was planted in. The base path the published site is served under enters this repo in one place instead, the `SITE_BASE_PATH` value `tests/run-tests.sh` gives its link check.
 
 ## Review
+
+Reviewed 2026-08-26 against branch `m042-pages-publish` at commit 0b5295d, PR
+https://github.com/jmgirard/quarto-index/pull/42. Every figure below is from a
+command run at review, not from the implementation session's records.
+
+**AC1.** Run https://github.com/jmgirard/quarto-index/actions/runs/33015040639
+on commit 0b5295d concluded `success`. Its `github-pages` artifact was
+downloaded, unpacked, and compared with `tests/pagescheck.py contains` against
+`site/_site` from a `quarto render site` on the same commit with Quarto
+1.10.18, the version the workflow pins: the artifact contains all 51 `.html`
+and `.pdf` paths that render produces, 10 of them `.pdf` (floor 3).
+
+**AC2.** `.github/workflows/pages.yml:75` gates the deploy job
+`if: github.ref_name == github.event.repository.default_branch`, and the AC1
+run reports that job `skipped`. See finding F9 below on what that expression
+does and does not gate; the criterion is ticked against the gate as repaired.
+
+**AC3.** `python3 tests/pagescheck.py pin .github/workflows/pages.yml
+_extensions/index/_extension.yml` exits 0, reading the pin 1.10.18 and the
+declared floor 1.4.0 and comparing `(1, 10, 18) >= (1, 4, 0)` as integer
+tuples.
+
+**AC4.** Five probe branches, each rebased onto 0b5295d and carrying one
+substitution and nothing else (`git diff 0b5295d <probe>` shows a single
+changed line per branch), each concluding `failure` at the step its plant is
+about: a broken include in `site/index.qmd` at the render step
+(runs/33015043675); `output-dir` renamed in `site/_quarto.yml` at the
+tracked-page step (runs/33015046703); one shown fixture dropped from the
+gallery build's loop at the completeness step (runs/33015049214); the Quarto
+pin at 1.10.999 at the install step (runs/33015051107); and a render target
+that does not exist, inside the `tee` pipeline, at the render step
+(runs/33015054335). Every one reports the deploy job `skipped`.
+
+**AC5.** `tests/run-tests.sh --self-test` reports M42-AC5 green at its line
+600: after the site render `git status --porcelain` shows no untracked path
+under `site/`, and `git ls-files` returns none under `site/_site/` or
+`site/.quarto/`. The non-vacuity control — `git status --ignored` reporting
+`site/_site` — passed in the same run.
+
+**AC6.** `python3 tests/pagescheck.py url README.md site/index.qmd
+tests/run-tests.sh` exits 0: README and the site's entry page both name
+https://jmgirard.github.io/quarto-index/, the URL the `origin` remote implies,
+and the suite resolves a root-relative link against `quarto-index`, that URL's
+path segment. The criterion's second half — that this is the URL the deploy
+job publishes to — is discharged against the Pages API's own `html_url`; see
+the evidence line recorded with it below.
+
+**AC7.** `tests/run-tests.sh --self-test` exits 0, 649 checks.
+
+**Consistency gate.** `cairn_validate.py` passes, all 16 checks PASS and all 7
+advisories OK. The `generic` profile names no toolchain consistency check, so
+that half is a clean no-op. No principle changed, so `cairn_impact` is skipped.
+
+**Independent review.** Three fresh-context reviewers, none having seen the
+implementation. The blame-history lens and the prior-review lens each reported
+no findings. The diff-bug lens reported fourteen, ranked; each is recorded
+below with its disposition.
+
+**Findings and dispositions** (diff-bug lens, its own ranking kept). Each was
+re-run against the implementation before being triaged.
+
+- F1. `pin`'s `version:` pattern matches any indented `version:` line anywhere
+  in the workflow, while its message claims "under a `with:` block" — a
+  property it never establishes (check-design, M23). Reproduced: a workflow
+  with the pin removed from the Quarto setup step and `version: 1.10.18` on an
+  unrelated `actions/setup-node` step exits 0. → fix now.
+- F2. `SITE_BASE_PATH="quarto-index"` does not tighten the M40 link check: a
+  root-relative href that does not start with the base is still resolved
+  against the site root, so `/syntax.html` passes under either value while
+  production would 404, and the rendered site emits no root-relative href at
+  all. → reject: the change itself is right (it stops the production-correct
+  `/quarto-index/...` form reading as dangling), and the gap named is
+  pre-existing and already filed on the suite-hardening candidate row from M40
+  review. Row extended with the dead-branch observation.
+- F3. `EXACT` accepts a bare major line (`version: 2` exits 0) although the
+  comment beside it says a bare major line is a channel, not a pin.
+  Reproduced. → fix now.
+- F4. `check_url`'s unparseable-remote clause has no planted case
+  (check-design, M32). → fix now.
+- F5. AC5's two clauses have no planted case at all; only the non-vacuity
+  control is proved. → fix now.
+- F6. AC6's second half is checked by convention, not by reading the Pages
+  setting: a custom domain would leave both documents naming a URL the deploy
+  job does not publish to, with the suite green (check-design, M25). → follow-up
+  candidate row.
+- F7. The `contains` PDF-floor plant reuses the artifact copy the previous case
+  removed a page from, so it would also fail the containment clause; it passes
+  for the right reason only because the reader evaluates the floor first. →
+  fix now.
+- F8. Nothing binds the workflow's own steps: deleting the two completeness
+  steps, or changing the upload path, leaves the suite green. → reject: D-011
+  refuses a widened source-shape scan and says the evidence for a positional
+  property is a render. That evidence exists — AC4's `nooutput` probe fails at
+  the tracked-page step and its `droppage` probe at the completeness step, so
+  both steps are shown to run. The residual risk goes on the candidate row.
+- F9. `github.ref_name` is the tag name on a tag push, so a tag named after the
+  default branch satisfies the deploy gate and publishes from that tag. → fix
+  now; the gate compares `github.ref` against `refs/heads/<default>` instead.
+- F10. The deploy job's job-level `permissions` replaces the workflow-level
+  set, dropping `contents: read`. → fix now.
+- F11. `grep -c '^?? site/'` misses a path git C-quotes. Reproduced in a
+  scratch repository: an untracked `site/naïve.html` is reported as
+  `?? "site/na\303\257ve.html"` and does not match. → fix now.
+- F12. `contains` compares only `.html` and `.pdf`, so an upload dropping
+  `site_libs/` would publish an unstyled site and pass. AC1's own wording
+  scopes it that way. → follow-up candidate row.
+- F13. `PIN` rejects a legitimately quoted pin (`version: "1.10.18"` fails)
+  while `REQUIRED` in the same file strips quotes. Reproduced. → fix now.
+- F14. Minor: a local name shadows the module-level `published` function; the
+  self-test header says "the two readers M42 adds" where there are four; the
+  site side of the not-a-directory clause is unplanted; one corrected DESIGN
+  line runs past the file's wrap. → fix now.
+

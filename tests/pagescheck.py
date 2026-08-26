@@ -25,6 +25,17 @@
       the two documents are held against a fact neither of them states, and
       the base path and the published URL cannot drift apart.
 
+  output <status-listing> <ignored-listing> <tracked-listing>
+      The render leaves nothing untracked under `site/` and git tracks nothing
+      under the two directories it writes. The three listings are git's own
+      output, captured by the caller: `git status --porcelain -z` split on its
+      NUL separators (`-z`, so a path with a non-ASCII or special character is
+      never C-quoted and cannot slip past an anchored pattern), the same with
+      `--ignored`, and `git ls-files` over the two output directories. The
+      ignored listing is the non-vacuity control: the render just wrote
+      `site/_site/`, so git must report it ignored, and a listing that names it
+      nowhere is not a reading of the tree the other two clauses are about.
+
   contains <artifact-dir> <rendered-site>
       Every `.html` and `.pdf` path under the rendered site appears in the
       unpacked Pages artifact at the same relative path. The rendered site is
@@ -56,9 +67,6 @@ from build_gallery import read_gallery  # noqa: E402
 # without pinning the gallery's size.
 PDF_FLOOR = 3
 
-# `version: 1.10.18` under the Quarto setup action's `with:` block. The value
-# is required to be a bare dotted numeric string: `release`, `pre-release` and
-# a bare major line are channels, not pins, and the criterion is about a pin.
 # `SITE_BASE_PATH="<value>"` at column 0 in the suite: the assignment, not the
 # uses of the variable that follow it.
 BASE_PATH = re.compile(r'^SITE_BASE_PATH="(?P<value>[^"]*)"\s*$', re.M)
@@ -68,8 +76,24 @@ REMOTE = re.compile(
     r'^(?:https://github\.com/|git@github\.com:)'
     r'(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?$')
 
+# The Quarto setup action's step, and the `version:` line inside it. Read as a
+# pair, because a `version:` line anywhere in the file would otherwise be taken
+# for the pin: with the pin deleted from this step and an unrelated step
+# carrying one, a pattern matching any indented `version:` reports the workflow
+# pinned while Quarto tracks whatever is current (check-design, M23). The step
+# runs from its own `- ` to the next line at that indentation or shallower.
+SETUP_STEP = re.compile(
+    r'^(?P<indent>[ ]*)-[^\n]*\n'
+    r'(?:(?P=indent)[ ][^\n]*\n|[ ]*\n)*?'
+    r'(?P=indent)[ ]+uses:[ ]*quarto-dev/quarto-actions/setup@[^\n]*\n'
+    r'(?:(?P=indent)[ ][^\n]*\n|[ ]*\n)*', re.M)
+# `version: <value>` inside that step. The value is required to be a full
+# dotted version: `release` and `pre-release` are channels, and a bare major or
+# major.minor line names a line rather than a release, so neither is a pin. An
+# optional pair of surrounding quotes is stripped, as the range parser below
+# strips them, so the two readers in this file agree on YAML quoting.
 PIN = re.compile(r'^\s+version:\s*(?P<value>\S+)\s*$')
-EXACT = re.compile(r'^\d+(\.\d+)*$')
+EXACT = re.compile(r'^\d+\.\d+\.\d+$')
 REQUIRED = re.compile(r'^quarto-required:\s*"?(?P<range>[^"\n]+?)"?\s*$')
 
 
@@ -83,17 +107,26 @@ def parts(version):
 
 
 def check_pin(workflow, extension):
+    text = open(workflow, encoding='utf-8').read()
+    steps = list(SETUP_STEP.finditer(text))
+    if len(steps) != 1:
+        return fail('%s declares %d step(s) using quarto-dev/quarto-actions/'
+                    'setup; the pin this check is about lives in exactly one'
+                    % (workflow, len(steps)))
+    step = steps[0]
+    first = text[:step.start()].count('\n') + 1
     pins = []
-    with open(workflow, encoding='utf-8') as handle:
-        for number, line in enumerate(handle.read().split('\n'), start=1):
-            match = PIN.match(line)
-            if match:
-                pins.append((number, match.group('value')))
+    for number, line in enumerate(step.group(0).split('\n'), start=first):
+        match = PIN.match(line)
+        if match:
+            pins.append((number, match.group('value')))
     if len(pins) != 1:
-        return fail('%s declares %d `version:` line(s) under a `with:` block; '
-                    'the pin this check is about is exactly one'
-                    % (workflow, len(pins)))
+        return fail('%s declares %d `version:` line(s) inside the step that '
+                    'uses quarto-dev/quarto-actions/setup; the pin this check '
+                    'is about is exactly one' % (workflow, len(pins)))
     number, pinned = pins[0]
+    if len(pinned) > 2 and pinned[0] == pinned[-1] and pinned[0] in '"\'':
+        pinned = pinned[1:-1]
     if not EXACT.match(pinned):
         return fail('%s line %d pins Quarto to %r, which is not an exact '
                     'version string; a channel name or a partial version is '
@@ -225,18 +258,18 @@ def check_url(readme, site_index, runner, repo_dir='.'):
                     'is derived from those two and from nothing else'
                     % (repo_dir, remote))
     owner, repo = match.group('owner'), match.group('repo')
-    published = 'https://%s.github.io/%s/' % (owner.lower(), repo)
+    site_url = 'https://%s.github.io/%s/' % (owner.lower(), repo)
 
     wrong = []
     for path, what in ((readme, 'the repository README'),
                        (site_index, "the site's own entry page")):
         text = open(path, encoding='utf-8').read()
-        if published not in text:
-            wrong.append('%s (%s) does not name %s' % (path, what, published))
+        if site_url not in text:
+            wrong.append('%s (%s) does not name %s' % (path, what, site_url))
     if wrong:
         return fail('the published URL the `origin` remote %s implies is %s, '
                     'and %d document(s) do not name it:\n  %s'
-                    % (remote, published, len(wrong), '\n  '.join(wrong)))
+                    % (remote, site_url, len(wrong), '\n  '.join(wrong)))
 
     found = BASE_PATH.findall(open(runner, encoding='utf-8').read())
     if len(found) != 1:
@@ -247,16 +280,45 @@ def check_url(readme, site_index, runner, repo_dir='.'):
         return fail('%s resolves a root-relative link against the base path '
                     '%r, and the site is published under %r — the path '
                     'segment of %s. A link the check calls resolved would be '
-                    'a 404 in production' % (runner, found[0], repo, published))
+                    'a 404 in production' % (runner, found[0], repo, site_url))
     print('ok   M42-AC6: %s and %s both name %s, the URL the `origin` remote '
           '%s implies, and %s resolves a root-relative link against %r, that '
           "URL's own path segment"
-          % (readme, site_index, published, remote, runner, found[0]))
+          % (readme, site_index, site_url, remote, runner, found[0]))
+    return 0
+
+
+def check_output(status, ignored, tracked):
+    lines = {}
+    for name, path in (('status', status), ('ignored', ignored),
+                       ('tracked', tracked)):
+        with open(path, encoding='utf-8') as handle:
+            lines[name] = [line for line in handle.read().split('\n') if line]
+
+    untracked = [line for line in lines['status'] if line.startswith('?? site/')]
+    if untracked:
+        return fail('the render left %d untracked path(s) under site/; the '
+                    'ignore rules do not cover the whole of what it writes:'
+                    '\n  %s' % (len(untracked), '\n  '.join(untracked)))
+    if lines['tracked']:
+        return fail('git tracks %d path(s) under the render\'s own output '
+                    'directories; render output is not the repository\'s to '
+                    'carry:\n  %s'
+                    % (len(lines['tracked']), '\n  '.join(lines['tracked'])))
+    if not any(line.startswith('!! site/_site') for line in lines['ignored']):
+        return fail('git reports no ignored path under site/_site/, so the '
+                    'listing the two clauses above rest on is not describing a '
+                    'tree the site was just rendered in')
+    print('ok   M42-AC5: over %d line(s) of git status, none is an untracked '
+          'path under site/, git tracks none of the %d path(s) under the '
+          "render's output directories, and the render's own output directory "
+          'is reported ignored' % (len(lines['status']), len(lines['tracked'])))
     return 0
 
 
 MODES = {
     'pin': (check_pin, 2),
+    'output': (check_output, 3),
     'url': (check_url, 3),
     'built': (check_built, 2),
     'contains': (check_contains, 2),

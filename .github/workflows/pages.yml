@@ -72,7 +72,10 @@ jobs:
 
   deploy:
     needs: build
-    if: github.ref_name == github.event.repository.default_branch
+    # `github.ref`, not `github.ref_name`: the short name is the TAG name on a
+    # tag push, so a tag named after the default branch would satisfy a
+    # name comparison and publish the site from that tag.
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     # One Pages deployment at a time, and never cancel one mid-flight: a
     # cancelled deploy leaves the published site on whichever commit reached it
@@ -82,7 +85,10 @@ jobs:
     concurrency:
       group: pages
       cancel-in-progress: false
+    # A job-level block REPLACES the workflow-level one, so `contents: read`
+    # is restated here rather than inherited.
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:

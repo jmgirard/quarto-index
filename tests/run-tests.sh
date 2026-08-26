@@ -2069,14 +2069,31 @@ WARN_NO_SOURCE='cross-reference mark has no source entry'
 # the author what to do, so pinning it here is what keeps that half from being
 # reworded away unnoticed.
 WARN_DANGLING='indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'
+# M39 split the tail in two, because the REMEDY is what differs. Where the
+# path set was one index of a document that declares several, "mark that term
+# somewhere" is advice that does not fix anything -- the term has to be marked
+# in that index -- so the report names it, and the two shapes are told apart
+# here by the clause that varies rather than by the head they share. Neither
+# needle can match the other: one ends in `somewhere`, the other in `in `.
+WARN_DANGLING_INDEX='indexes; a reader following the cross-reference finds no such entry, so mark that term in '
 
 # One report's full text, assembled from the two halves rather than written
 # out per shape: the head carries the attribute, the mark and the target, and
-# the tail is WARN_DANGLING, which every instance shares and which is pinned
-# once where that constant is defined.
+# the tail is WARN_DANGLING, which every one-namespace instance shares and
+# which is pinned once where that constant is defined.
 dangling_report() {
   printf '%s= on %s points at "%s", which no index mark in this %s %s' \
     "$1" "$2" "$3" "$4" "$WARN_DANGLING"
+}
+
+# The per-index shape's full text. The index name is written twice on purpose:
+# the set the target was judged against and the place to mark the term are the
+# same index, and a report naming one but not the other is the half-answer
+# M39 exists to remove. `$4` is the DECLARED NAME; the words around it are
+# `qi_indexes.scope_phrase`'s, so a change to that spelling fails here.
+dangling_report_index() {
+  printf '%s= on %s points at "%s", which no mark of index "%s" %s%s' \
+    "$1" "$2" "$3" "$4" "$WARN_DANGLING_INDEX" "index \"$4\" or correct the target"
 }
 
 check_warning_count "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
@@ -3170,6 +3187,16 @@ WARN_MARKER_CONTENT='index placement marker is not empty'
 WARN_SORT_ORPHAN='has nothing to sort; the mark indexes no entry'
 WARN_SORT_EXTRA='the extra sort levels were ignored'
 WARN_SORT_CONFLICT='written here cannot apply as well, so the first one wins'
+# The rival report has two shapes and WARN_SORT_CONFLICT is the tail they
+# share, so it separates neither from the other. This is the clause that VARIES:
+# the per-index shape names the index between the winning key and the `;`, and
+# the one-namespace shape has nothing there at all. It is a needle no other
+# message this filter emits can supply -- `index "` appears in several, but
+# never directly after a closing quote. The one-namespace shape has no such
+# needle of its own (a bare `";` sits inside the per-index shape too, after the
+# index name), so it is pinned by its whole text, which the per-index shape
+# does not contain.
+WARN_SORT_RIVAL_SCOPED='" in index "'
 WARN_MARKER_NOMARKS='index placement marker in a document with no index marks'
 MARKER_KEPT_CONTENT='Content written inside a marker, which no misuse may delete.'
 
@@ -12463,15 +12490,27 @@ check_letter_sweep "$NAMED_HTML" "M38-AC1 (letter groups)" \
 # M38-AC2 — the dangling target is the one written in the index that does not
 # carry it, and only that one. Both readings come from the captured log, greped
 # by the report's own key.
-check_warning_count "$WORK/named-indexes-html.log" "$WARN_DANGLING" 1 "M38-AC2"
-grep -F -- "$WARN_DANGLING" "$WORK/named-indexes-html.log" \
-  | grep -qF 'entry="Stranger"' \
-  || fail "M38-AC2: the one dangling-target report does not name the mark in the second index, so the report the check counted is not the one the criterion is about"
-if grep -F -- "$WARN_DANGLING" "$WORK/named-indexes-html.log" \
+#
+# M39-AC2 — and the report is the PER-INDEX shape, whose remedy names the
+# index the term has to be marked in. The needle is the whole message, built
+# by `dangling_report_index` from the declared name, so a remedy that named
+# the wrong index, or none, fails here rather than passing on a shared tail.
+# The shared shape is pinned at ZERO on the same log: a document declaring two
+# indexes must not tell an author to "mark that term somewhere" when only one
+# of the two is the place that would fix it.
+check_warning_count "$WORK/named-indexes-html.log" "$WARN_DANGLING_INDEX" 1 \
+  "M39-AC2"
+check_warning_count "$WORK/named-indexes-html.log" \
+  "$(dangling_report_index see 'entry="Stranger"' 'Aardvark' authors)" 1 \
+  "M39-AC2 (the whole report, remedy included)"
+check_warning_count "$WORK/named-indexes-html.log" "$WARN_DANGLING" 0 \
+  "M39-AC2 (the shared remedy, which a declaring document must not use)"
+if grep -F -- "$WARN_DANGLING_INDEX" "$WORK/named-indexes-html.log" \
      | grep -qF 'entry="Neighbour"'; then
   fail "M38-AC2: the mark of the first index whose target names a term that index carries drew a dangling-target report; a target must resolve inside its own index"
 fi
 pass "M38-AC2: a cross-reference target resolves inside its own index — the second index's target for a term only the first carries is reported once, and the first index's target for that same term is not reported at all"
+pass "M39-AC2: that one report is the per-index shape, naming the second index both as the set the target was judged against and as the place to mark the term, and the shared remedy appears nowhere in the log"
 
 # M38-AC3 — the range that spans two indexes pairs in neither, so both halves
 # are refused, each in its own index's words. The ordinary locator each mark
@@ -12774,6 +12813,67 @@ check_readme_indexes README.md "$WORK/readme-indexes.txt" "$WORK/readme-indexes-
 # the fixture's first declaration says and what makes this check discriminate.
 # ---------------------------------------------------------------------------
 check_folded_heading "$CAPTURE_ROOT/book-html/_book/last.html" "M38-R3"
+
+# ---------------------------------------------------------------------------
+# M39-AC1 / M39-AC3 — which index a sort-key rivalry is inside.
+#
+# examples/named-indexes-rival.qmd declares `main` and `authors` and files the
+# two rival keys in the SECOND. A sort key files a term in its own index only,
+# so the two keys are rivals inside `authors` alone, and the same printed path
+# in `main` would file under a key of its own.
+#
+# ORACLE — read off the fixture by hand. `Quokka` is the first index's one
+# term and no mark of it writes a key, so it registers nothing and rivals
+# nothing. `Ptarmigan` is marked twice in the second index, with `Zebra` and
+# then `Yak`; the first registered key wins, and the second is one rival key at
+# one path, which is one report. No other path in the file carries a key.
+#
+# HTML builds both indexes, so the report names `authors`. A LaTeX render
+# folds every mark into the one index it builds, which is a single namespace
+# again -- the two marks are rivals inside it for the same reason, and the
+# report is the wording a document declaring nothing has always drawn. The two
+# logs are read by the clause that VARIES between the shapes, and each is
+# pinned at zero on the log the other belongs to, so neither check can be
+# satisfied by the other shape.
+# ---------------------------------------------------------------------------
+# One rival report's full text. `$3` is the scope clause -- empty for the
+# one-namespace shape, ` in index "<name>"` for the per-index one -- and the
+# tail is WARN_SORT_CONFLICT, which both shapes share and which is pinned once
+# where that constant is defined.
+rival_report() {
+  printf 'index entry in %s is already sorted as "%s"%s; the sort key "%s" %s' \
+    "$1" "$2" "$3" "$4" "$WARN_SORT_CONFLICT"
+}
+quarto render examples/named-indexes-rival.qmd --to html \
+  > "$WORK/named-indexes-rival-html.log" 2>&1 \
+  || { tail -30 "$WORK/named-indexes-rival-html.log" >&2; fail "M39-AC1: named-indexes-rival.qmd failed to render to HTML"; }
+capture examples/named-indexes-rival.qmd html "named-indexes-rival-html"
+# Exactly one rival report in the render, whichever shape it took: without
+# this the two shape counts below would both be satisfied by a log holding one
+# scoped report and any number of plain ones it happened not to look for.
+check_warning_count "$WORK/named-indexes-rival-html.log" "$WARN_SORT_CONFLICT" 1 \
+  "M39-AC1 (one rivalry, one report)"
+check_warning_count "$WORK/named-indexes-rival-html.log" \
+  "$(rival_report 'term "Ptarmigan"' Zebra ' in index "authors"' Yak)" 1 \
+  "M39-AC1 (the whole report, scope clause included)"
+check_warning_count "$WORK/named-indexes-rival-html.log" \
+  "$(rival_report 'term "Ptarmigan"' Zebra '' Yak)" 0 \
+  "M39-AC1 (the one-namespace shape, which a declaring document must not use)"
+pass "M39-AC1: the rivalry inside the second declared index is reported once, and the report names that index between the winning key and the tail both shapes share"
+
+quarto render examples/named-indexes-rival.qmd --to latex \
+  > "$WORK/named-indexes-rival-latex.log" 2>&1 \
+  || { tail -30 "$WORK/named-indexes-rival-latex.log" >&2; fail "M39-AC3: named-indexes-rival.qmd failed to render to latex"; }
+capture examples/named-indexes-rival.qmd latex "named-indexes-rival-latex"
+check_warning_count "$WORK/named-indexes-rival-latex.log" "$WARN_SORT_CONFLICT" 1 \
+  "M39-AC3 (one rivalry, one report)"
+check_warning_count "$WORK/named-indexes-rival-latex.log" \
+  "$(rival_report 'term "Ptarmigan"' Zebra '' Yak)" 1 \
+  "M39-AC3 (the unchanged one-namespace shape)"
+check_warning_count "$WORK/named-indexes-rival-latex.log" \
+  "$WARN_SORT_RIVAL_SCOPED" 0 \
+  "M39-AC3 (the multi-index shape, which a folded render must not use)"
+pass "M39-AC3: a folded render of the same fixture resolves both marks to the one index it builds, so the rivalry is reported once in the wording a single-index document has always drawn, with no scope clause at all"
 
 # ---------------------------------------------------------------------------
 # The residue sweeps (M03-AC3, M12), LAST in the run and over the CAPTURED set

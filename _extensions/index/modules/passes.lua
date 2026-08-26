@@ -71,9 +71,12 @@ local function CollectSort(span)
   -- a mark's warnings fire once however many passes read it.
   local index_name = qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR],
                                            context, false)
+  -- "document" is the word this report would use if the whole document were
+  -- one filing namespace; `register_sort` swaps it for the index where a
+  -- declaring document and an unfolded back-end make that word false.
   qi_sortkeys.register_sort(index_name, levels,
                 qi_levels.sort_levels(sort_value, levels, context, true, kept, depth),
-                context)
+                context, "document")
   return nil
 end
 

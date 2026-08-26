@@ -118,7 +118,7 @@ local function Pandoc(doc)
       -- folded back-end, keep the "document" they have always printed.
       qi_marks.report_dangling(qi_marks.marked_paths[name] or {},
                                qi_marks.xrefs_for(name),
-                               qi_indexes.scope_phrase(name, "document"))
+                               "document", name)
     end
   end
   -- The range reports, held rather than emitted where they were found so they

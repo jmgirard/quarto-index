@@ -1,0 +1,30 @@
+---
+title: "Named indexes twin"
+filters:
+  - index
+---
+
+The same terms as `named-indexes.qmd`, written by a document that declares no
+indexes at all and names none on any mark. It is the shape this milestone
+leaves untouched: one index, headed `Index`, under the section id this
+extension has always minted, with every judgement made across the whole
+document because the whole document is one index.
+
+A mark that names no index: [Aardvark]{.index}. A second one:
+[Babbage]{.index}.
+
+One term, marked twice, with a sort key on one of the marks:
+[Hague]{.index sort="Zebra"} and [Hague]{.index}. One entry, filed under Z.
+
+Both cross-references resolve here, because both targets are in the one index:
+[near]{.index entry="Neighbour" see="Aardvark"} and
+[far]{.index entry="Stranger" see="Aardvark"}.
+
+The range pairs here, because both of its marks are in the one index:
+[Cantor]{.index range="open"} opens it and [Cantor]{.index range="close"}
+closes it.
+
+## Where the index goes {#site-index}
+
+::: {.qi-index-here}
+:::

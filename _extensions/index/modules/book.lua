@@ -3,6 +3,7 @@
 
 local qi_core = require("./core")
 local qi_html = require("./html")
+local qi_indexes = require("./indexes")
 local qi_levels = require("./levels")
 local qi_marker = require("./marker")
 local qi_marks = require("./marks")
@@ -143,8 +144,11 @@ local function store_write(ctx, marker)
   -- key once written down — so the book would read one chapter's fallback as
   -- a rival to another chapter's real key, and, being first in book order,
   -- let the fallback win.
+  -- The default index's namespace, which in a book is the only one there is:
+  -- the store's record format carries no index name, so every chapter's marks
+  -- were resolved to that one index before they were recorded (M38).
   local sorts = {}
-  for path, seen in pairs(qi_sortkeys.sort_keys) do
+  for path, seen in pairs(qi_sortkeys.for_index(qi_indexes.default())) do
     sorts[path] = seen.sort
   end
   -- Every step here can fail on an ordinary machine — a stale file where the
@@ -585,7 +589,11 @@ local function html_book(doc, ctx, marker, taken)
             .. "book's render list gives them")
            :format(ctx.file, #later, table.concat(later, ", ")))
     end
-    return qi_marker.place_index(doc, qi_html.html_index_blocks(book_marks(ctx, records), taken))
+    -- Under the default index: the store's record format carries no index
+    -- name, so a book has the one index every chapter's marks were folded
+    -- into (M38).
+    return qi_marker.place_index(doc,
+      qi_html.html_index_blocks(book_marks(ctx, records), taken))
   end
 
   if marker then

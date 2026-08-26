@@ -382,6 +382,20 @@ local function empty(t)
   return t
 end
 
+-- The sub-table one index's share of an accumulator lives in, created on
+-- first use. Every format-neutral accumulator is now one namespace per index
+-- rather than one per document, so a cross-reference target, a sort key and a
+-- range pair are each settled within the index the mark files in; `empty`
+-- above still empties the outer table, and with it every namespace inside it.
+local function namespace(t, key)
+  local inner = t[key]
+  if inner == nil then
+    inner = {}
+    t[key] = inner
+  end
+  return inner
+end
+
 local function warn(msg)
   if quarto and quarto.log and quarto.log.warning then
     quarto.log.warning(msg)
@@ -455,6 +469,7 @@ M["PRINCIPAL_GOBBLERS"] = PRINCIPAL_GOBBLERS
 M["HTML_PRINCIPAL_CLASS"] = HTML_PRINCIPAL_CLASS
 M["LATEX_LITERAL"] = LATEX_LITERAL
 M["empty"] = empty
+M["namespace"] = namespace
 M["warn"] = warn
 M["is_latex_derived"] = is_latex_derived
 M["is_html"] = is_html

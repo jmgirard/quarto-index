@@ -3,6 +3,7 @@
 -- them.
 
 local qi_core = require("./core")
+local qi_indexes = require("./indexes")
 local qi_levels = require("./levels")
 local qi_marks = require("./marks")
 
@@ -492,44 +493,77 @@ local function assign_anchors(doc, taken)
   })
 end
 
--- The section needs no configuration (GP4) and is marked unnumbered, which is
--- how a printed index is set and which still lists it in the table of
--- contents. WHERE it goes is not decided here — place_index owns that, for
--- both back-ends at once. `marks` is this document's own marks in a single
--- document, and every chapter's marks in a book: one builder either way, so
--- the two cannot drift apart on what an index looks like.
--- The section id is minted like every other generated id, rather than fixed:
--- a document that already uses `qi-index` — on an element of its own, or
--- inside raw HTML — otherwise ended up with the name on two elements, which
--- is invalid HTML and sends a link to whichever the browser picks. Anchors and
--- entry ids have always stepped over a taken name; this closes the one
--- exception. The bare name is preferred, so the id a document without a
--- collision gets is the one it has always had.
-local function mint_section_id(taken)
-  if not taken[qi_core.HTML_SECTION_ID] then
-    taken[qi_core.HTML_SECTION_ID] = true
-    return qi_core.HTML_SECTION_ID
+-- One section per index that has marks, in declared order. A section needs no
+-- configuration (GP4) and is marked unnumbered, which is how a printed index
+-- is set and which still lists it in the table of contents. WHERE each goes is
+-- not decided here — place_index owns that, for both back-ends at once, and it
+-- is handed the map this returns. `marks` is this document's own marks in a
+-- single document, and every chapter's marks in a book: one builder either
+-- way, so the two cannot drift apart on what an index looks like.
+--
+-- A section id is minted like every other generated id, rather than fixed: a
+-- document that already uses the name — on an element of its own, or inside
+-- raw HTML — otherwise ended up with it on two elements, which is invalid HTML
+-- and sends a link to whichever the browser picks. Anchors and entry ids have
+-- always stepped over a taken name; this closes the one exception. The bare
+-- name is preferred, so the id a document without a collision gets is the one
+-- it has always had.
+local function mint_section_id(taken, wanted)
+  wanted = wanted or qi_core.HTML_SECTION_ID
+  if not taken[wanted] then
+    taken[wanted] = true
+    return wanted
   end
   local n = 0
   local candidate
   repeat
     n = n + 1
-    candidate = qi_core.HTML_SECTION_ID .. "-" .. n
+    candidate = wanted .. "-" .. n
   until not taken[candidate]
   taken[candidate] = true
   return candidate
 end
 
+-- This document's marks, split into the index each files in, each list still
+-- in document order. A mark carrying no index at all is the book's: its record
+-- format holds no index name, so every chapter's marks belong to the one index
+-- a book has.
+local function marks_by_index(marks)
+  local grouped = {}
+  for _, mark in ipairs(marks) do
+    local list = qi_core.namespace(grouped, mark.index or qi_indexes.default())
+    list[#list + 1] = mark
+  end
+  return grouped
+end
+
+-- Returns a map from index name to that index's blocks, holding an entry only
+-- for an index some mark files in: an index with a marker and no marks has no
+-- section, rather than a heading over an empty list.
+--
+-- The entry-id counter runs across every index rather than restarting per
+-- section, and every id is checked against the one `taken` set, so two sections
+-- of one page cannot mint the same entry id — which would send a
+-- cross-reference link to whichever element the browser picked.
 local function html_index_blocks(marks, taken)
-  local root = build_entry_tree(marks)
-  local section_id = mint_section_id(taken)
-  number_entries(root, 0, taken)
-  local blocks = pandoc.Blocks({
-    pandoc.Header(1, literal_inlines("Index"),
-                  pandoc.Attr(section_id, { "unnumbered" })),
-  })
-  blocks:extend(grouped_blocks(root))
-  return blocks
+  local grouped = marks_by_index(marks)
+  local by_index = {}
+  local counter = 0
+  for _, name in ipairs(qi_indexes.names()) do
+    local list = grouped[name]
+    if list ~= nil and #list > 0 then
+      local root = build_entry_tree(list)
+      local section_id = mint_section_id(taken, qi_indexes.section_id(name))
+      counter = number_entries(root, counter, taken)
+      local blocks = pandoc.Blocks({
+        pandoc.Header(1, literal_inlines(qi_indexes.title(name)),
+                      pandoc.Attr(section_id, { "unnumbered" })),
+      })
+      blocks:extend(grouped_blocks(root))
+      by_index[name] = blocks
+    end
+  end
+  return by_index
 end
 
 -- Exported through the bracket form, never `M.NAME = NAME`: the source
@@ -557,6 +591,7 @@ M["grouped_blocks"] = grouped_blocks
 M["taken_identifiers"] = taken_identifiers
 M["relocate_heading_anchors"] = relocate_heading_anchors
 M["assign_anchors"] = assign_anchors
+M["marks_by_index"] = marks_by_index
 M["mint_section_id"] = mint_section_id
 M["html_index_blocks"] = html_index_blocks
 

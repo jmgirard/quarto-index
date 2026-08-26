@@ -46,6 +46,7 @@
 -- shadow a module (`levels`, `marks` and `marker` are all ordinary local names
 -- in this filter).
 local qi_core = require("./modules/core")
+local qi_indexes = require("./modules/indexes")
 local qi_latex = require("./modules/latex")
 local qi_marks = require("./modules/marks")
 local qi_passes = require("./modules/passes")
@@ -103,8 +104,22 @@ local function Pandoc(doc)
   -- target on it would then be reported as naming nothing indexed, which is
   -- false of the book the author is writing and buries the one warning that
   -- is true.
+  -- One index at a time, in declared order (M38): a target is resolved against
+  -- the paths of the index its own mark files in, so a `see=` in one index
+  -- naming a term marked only in another is the dangling target it is to a
+  -- reader. A document with one index has one namespace and one pass here.
   if not book and not (qi_core.is_html() and doc.meta.book ~= nil) then
-    qi_marks.report_dangling(qi_marks.marked_paths, qi_marks.pending_xrefs, "document")
+    for _, name in ipairs(qi_indexes.names()) do
+      -- The scope the report names is the set the target was judged against,
+      -- which is this ONE index wherever the document declares several
+      -- (review O1): "this document" there is a set no judgement was made
+      -- over, and the term it says nothing indexes may be marked two sections
+      -- up, in the other index. A document declaring nothing or one, and any
+      -- folded back-end, keep the "document" they have always printed.
+      qi_marks.report_dangling(qi_marks.marked_paths[name] or {},
+                               qi_marks.xrefs_for(name),
+                               qi_indexes.scope_phrase(name, "document"))
+    end
   end
   -- The range reports, held rather than emitted where they were found so they
   -- print after the per-mark reports. Under D-009 every Pandoc process is its
@@ -146,7 +161,8 @@ local function Pandoc(doc)
     if qi_marks.marks_seen == 0 then
       return qi_marker.place_index(doc, nil)
     end
-    return qi_marker.place_index(doc, qi_html.html_index_blocks(qi_marks.html_marks, taken))
+    return qi_marker.place_index(doc,
+      qi_html.html_index_blocks(qi_marks.html_marks, taken))
   end
 
   if not qi_core.is_latex_derived() then
@@ -217,14 +233,16 @@ local function Pandoc(doc)
   -- walked in sorted order, and so are the keys within one, so the report does
   -- not depend on Lua's table iteration order.
   local contested = {}
-  for path, filings in pairs(qi_marks.clamped_paths) do
-    local keys = {}
-    for filing in pairs(filings) do
-      keys[#keys + 1] = filing
-    end
-    if #keys > 1 then
-      table.sort(keys)
-      contested[#contested + 1] = { path = path, keys = keys }
+  for _, name in ipairs(qi_indexes.names()) do
+    for path, filings in pairs(qi_marks.clamped_paths[name] or {}) do
+      local keys = {}
+      for filing in pairs(filings) do
+        keys[#keys + 1] = filing
+      end
+      if #keys > 1 then
+        table.sort(keys)
+        contested[#contested + 1] = { path = path, keys = keys }
+      end
     end
   end
   table.sort(contested, function(a, b) return a.path < b.path end)
@@ -321,8 +339,12 @@ local function Pandoc(doc)
     quarto.doc.include_text("in-header", qi_core.PRINCIPAL_GOBBLERS)
   end
 
+  -- One `\printindex`, under the one index a LaTeX-derived render builds:
+  -- every mark and every marker naming another was folded to this one and told
+  -- its author so.
   return qi_marker.place_index(doc,
-    pandoc.Blocks({ pandoc.RawBlock("latex", "\\printindex") }))
+    { [qi_indexes.default()] =
+        pandoc.Blocks({ pandoc.RawBlock("latex", "\\printindex") }) })
 end
 
 -- The Span pass records the marks; every anchor decision that needs the

@@ -789,3 +789,72 @@ remains a present but never-recommended option.
 - G11, G13, G14 → follow-up. Tracking and wrap hygiene, no runtime surface.
 - G12 → reject. The unticked box is what AC fencing requires.
 - G15 → follow-up, folded into whatever answers G1.
+
+### Round 4 — 2026-08-25
+
+Reviewed at 7601b16 on m038-named-indexes-html, PR #38 (draft, already open).
+`git fetch` first: `main` has not moved since the branch was cut and carries no
+unpushed local commits, so no merge was needed; the branch was pushed before
+evidence was gathered. The criteria set is the narrowed AC1-AC6 — AC7 and the
+per-clause reader proof it bound left the milestone at the T25 amendment gate —
+and no AC1-AC6 wording changed at that gate, so each criterion below is the one
+round 3 read. Fresh evidence: one full `tests/run-tests.sh --self-test` run,
+exit 0, 559 checks, plus direct reads of this run's captured artifacts.
+
+- AC1 — PASS. Read directly off the captured `named-indexes.html`: exactly two
+  generated index sections in document order, `qi-index-main` headed by an `h1`
+  reading "Index" and `qi-index-authors` headed by an `h1` reading "Index of
+  Authors" — declared order, each id and heading as the fixture's manifest
+  states. The suite's `M38-AC1` matched all 18 manifest rows in order; the link
+  sweeps resolved 4 and 3 index links with every id unique, and the letter sweep
+  read 8 letter-group headings in order. The single-index twin still reads as
+  one section over 13 rows.
+- AC2 — PASS. The captured HTML render log carries exactly one dangling-target
+  report and it names `see=` on entry "Stranger" — the second index's mark —
+  pointing at "Aardvark", a term only the first index carries; the first index's
+  own `see=` on that same target draws no report at all. `M38-AC2` green over
+  the same capture.
+- AC3 — PASS, both halves off this run's capture. Range pairing: the log carries
+  exactly one never-closed report and exactly one never-opened report, both
+  naming "Cantor" — the opening in the first index and the closing in the second
+  paired in neither — and `M38-AC3` asserts each of the two marks printed the
+  ordinary locator its section manifest states. Sort keys: the same term files
+  under the letter its own index selects, asserted by the AC1 manifest rows the
+  same run matched.
+- AC4 — PASS. Each section stands at its own marker: the AC1 section read gives
+  `qi-index-main` and `qi-index-authors` each preceded by its own authored
+  marker id, and `M38-AC4` asserts that pairing by id. The captured log carries
+  exactly one duplicate-marker report and it names the repeated index, "main".
+- AC5 — PASS, both halves. LaTeX: the captured `named-indexes.tex` carries 8
+  `\index{}` commands (the manifest's 7 rows plus the folded second-index
+  duplicate), exactly one `\printindex`, and no marker residue; the captured
+  latex log carries four fold reports for named-index marks (Babbage, Hague,
+  Stranger, Cantor) and one for the named-index marker, each naming "authors"
+  and each saying the mark was indexed in the document's one index instead.
+  `M38-AC5` green over that capture, and the same fixture still builds a PDF.
+  Book: `M38-AC5`'s book half green — an HTML book folds its named mark and its
+  named marker into the one index it builds, reports each once, and lists the
+  folded mark's term there — with `M38-R3` reading that section under the bare
+  `qi-index` id headed by the neutral "Index".
+- AC6 — PASS. Read directly from `README.md`'s `### Named indexes` section: the
+  `indexes:` metadata form with `name` and `title`; `index=` shown on a mark and
+  on a placement marker; the rule that a mark or marker naming none takes the
+  first declared index; the name-shape rule T26 added, stating the characters a
+  name may hold and that any other name is reported; and, under its own
+  subheading, that a LaTeX or PDF render and an HTML book each build one index
+  for now. `M38-AC6` states all 7 pinned claims matched plus the declaration
+  block line for line, both named fixture paths exist, and this run's
+  `ran-commands.txt` ledger carries both documented commands, each with exit
+  status 0.
+
+### Consistency gate (round 4)
+
+- `cairn_validate.py` exit 0 — every check PASS, including `coverage complete`
+  and `binding criteria` over the narrowed AC1-AC6 set; every advisory OK except
+  the sizing tripwire (27 tasks), which this milestone's work log already
+  accepts as gate-directed repair rather than new scope. The `release window`
+  advisory did not fire.
+- Toolchain checks: the active `generic` profile's `consistency-gate` slot names
+  none, so this half is a clean no-op.
+- `cairn_impact.py` not run: `git diff main...HEAD -- cairn/DESIGN.md` changes no
+  IP/GP principle line.

@@ -12116,6 +12116,202 @@ esac
 pass "M28-AC1: the divergence reader fails on a manifest whose two positions are equal, and on a copy of this render's log whose report names the author's own position instead of the reported one"
 
 # ---------------------------------------------------------------------------
+# The four readers M38's return round adds, each a function so the self-test can
+# put the same reader over a planted artifact. A reader written inline at its
+# one call site is a reader whose clauses nothing can be shown to discriminate
+# on, which is the shape R5-R7 found (AC7).
+# ---------------------------------------------------------------------------
+
+# Where the one index a folded back-end builds ended up, over a captured `.tex`
+# whose fixture writes one marker per index. Reads which placement site the
+# single `\printindex` follows.
+check_folded_site() {
+python3 - "$1" "$2" <<'FOLDSITEPY'
+import re, sys
+tex = open(sys.argv[1], encoding='utf-8').read()
+label = sys.argv[2]
+at = [m.start() for m in re.finditer(r'\\printindex', tex)]
+if len(at) != 1:
+    sys.exit(f'FAIL: {label}: the capture carries {len(at)} \\printindex, want 1')
+sites = [(m.start(), m.group(1))
+         for m in re.finditer(r'\\label\{(site-[a-z]+)\}', tex)]
+if len(sites) != 2:
+    sys.exit(f'FAIL: {label}: the capture carries {len(sites)} placement-site '
+             f'label(s), want the fixture\'s 2 — so which one the index '
+             f'follows is not a question this check can answer')
+before = [name for pos, name in sites if pos < at[0]]
+if not before:
+    sys.exit(f'FAIL: {label}: the one index stands before every placement site '
+             'in the capture, so it is at neither marker')
+if before[-1] != 'site-main':
+    sys.exit(f'FAIL: {label}: the one index follows {before[-1]!r}, not the '
+             f'author\'s own marker for the index this back-end builds '
+             f'(site-main); a marker naming a second index took its place')
+print(f'ok   {label}: the one index a folded back-end builds stands at the '
+      'author\'s own marker for it, which the fixture writes after a marker '
+      'naming a second index')
+FOLDSITEPY
+}
+
+# The same, for a capture whose fixture writes two markers naming ONE index and
+# none naming the index the back-end builds: the first marker written places it.
+check_folded_second() {
+python3 - "$1" "$2" <<'FOLDSECONDPY'
+import re, sys
+tex = open(sys.argv[1], encoding='utf-8').read()
+label = sys.argv[2]
+at = tex.index('\\printindex')
+sites = [(m.start(), m.group(1))
+         for m in re.finditer(r'\\label\{(site-[a-z]+)\}', tex)]
+if [name for pos, name in sites] != ['site-first', 'site-second']:
+    sys.exit(f'FAIL: {label}: the capture carries the placement-site labels '
+             f'{[n for _, n in sites]}, not the fixture\'s two in order')
+before = [name for pos, name in sites if pos < at]
+if before != ['site-first']:
+    sys.exit(f'FAIL: {label}: the one index follows {before} rather than the '
+             f'first of the two markers alone, so the marker that places it is '
+             f'not the first one written')
+print(f'ok   {label}: with no marker naming the index this back-end builds, the '
+      'first marker written places it and the second does not')
+FOLDSECONDPY
+}
+
+# What heads the ONE section a folded render prints, over a captured book page.
+check_folded_heading() {
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$1" "$2" <<'FOLDHEADPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex
+prefix = os.environ['HTML_SECTION_ID']
+root = htmlindex.parse(sys.argv[1])
+label = sys.argv[2]
+found = htmlindex.index_sections(root, prefix)
+if len(found) != 1:
+    sys.exit(f'FAIL: {label}: the folded book page carries {len(found)} '
+             f'generated index section(s), want the 1 a folded render prints')
+one = found[0]
+if one['ident'] != prefix:
+    sys.exit(f'FAIL: {label}: the one section carries the id {one["ident"]!r} '
+             f'rather than the bare {prefix!r}, so it claims to be one of the '
+             f'declared indexes rather than the union it is')
+if one['tag'] != 'h1':
+    sys.exit(f'FAIL: {label}: the one section is headed by a {one["tag"]!r} '
+             f'rather than an h1')
+if one['title'] != 'Index':
+    sys.exit(f'FAIL: {label}: the one section is headed {one["title"]!r}; a '
+             f'section holding every declared index\'s marks is headed with '
+             f'the neutral title, not with one declaration\'s')
+print(f'ok   {label}: the one section a folded book prints is headed with the '
+      'neutral title under the bare id, though the fixture\'s first '
+      'declaration gives that index a title of its own')
+FOLDHEADPY
+}
+
+# README's named-index section: its pinned claims, the declaration block line
+# for line, the fixtures it names, and the commands it shows against the ledger
+# of what this run actually executed.
+check_readme_indexes() {
+python3 - "$1" "$2" "$3" "$4" "$5" <<'READMEPY'
+import os, re, sys
+readme_path, claims_path, yaml_path, ledger_path, label = sys.argv[1:6]
+body = open(readme_path, encoding='utf-8').read()
+head = '### Named indexes'
+at = body.find('\n' + head + '\n')
+if at < 0:
+    sys.exit(f'FAIL: {label}: README.md has no {head!r} section')
+rest = body[at + len(head) + 2:]
+end = re.search(r'^#{2,3} ', rest, re.M)
+section = rest[:end.start()] if end else rest
+
+flat = ' '.join(section.split())
+claims = [l.rstrip('\n') for l in open(claims_path, encoding='utf-8')
+          if l.strip()]
+bad = []
+for line in claims:
+    label, claim = line.split('\t', 1)
+    if ' '.join(claim.split()) not in flat:
+        bad.append(f'  {label}: <<{claim}>>')
+if bad:
+    print(f'FAIL: {label}: claim(s) absent from the README section:',
+          file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+
+# The declaration block, line for line. Every yaml fence in the section is a
+# candidate, so the check says which one it matched rather than passing on the
+# first fence that happens to be something else.
+want = open(yaml_path, encoding='utf-8').read().rstrip('\n').split('\n')
+fences = [f.rstrip('\n').split('\n')
+          for f in re.findall(r'```yaml\n(.*?)```', section, re.S)]
+if not fences:
+    sys.exit(f'FAIL: {label}: the README section shows no yaml block at all, '
+             'so the declaration form the criterion names is pinned by nothing')
+if want not in fences:
+    print(f'FAIL: {label}: no yaml block in the README section is the '
+          'declaration form this check pins. want:', file=sys.stderr)
+    print('\n'.join(want), file=sys.stderr)
+    print('the section shows:', file=sys.stderr)
+    for f in fences:
+        print('  ---\n    ' + '\n    '.join(f), file=sys.stderr)
+    sys.exit(1)
+
+paths = sorted(set(re.findall(r'examples/[A-Za-z0-9_./-]+\.qmd', section)))
+if not paths:
+    sys.exit(f'FAIL: {label}: the README section names no fixture at all, so '
+             'this check would pass over an empty set')
+missing = [p for p in paths if not os.path.exists(p)]
+if missing:
+    sys.exit(f'FAIL: {label}: the README section names fixture(s) that do not '
+             'exist: ' + ', '.join(missing))
+
+commands = []
+for fence in re.findall(r'```bash\n(.*?)```', section, re.S):
+    commands.extend(c for c in (l.strip() for l in fence.splitlines()) if c)
+if not commands:
+    sys.exit(f'FAIL: {label}: the README section shows no command at all, so '
+             'this check would pass over an empty set')
+# The ledger: one `<status><TAB><argv>` line per documented command this run
+# executed. A command is clean here only because THIS run ran it and it exited
+# 0 -- the hole R6 named was reading a command out of the suite's own text,
+# where a line in a comment read exactly like a line that runs.
+ran = {}
+for line in open(ledger_path, encoding='utf-8'):
+    line = line.rstrip('\n')
+    if not line:
+        continue
+    status, argv = line.split('\t', 1)
+    ran.setdefault(argv, []).append(int(status))
+if not ran:
+    sys.exit(f'FAIL: {label}: this run\'s command ledger is empty, so every '
+             'command below would be reported unrun rather than checked')
+unrun = [c for c in commands if c not in ran]
+if unrun:
+    sys.exit(f'FAIL: {label}: the README section shows command(s) this run '
+             'never executed, so nothing here says they are clean: '
+             + '; '.join(unrun))
+dirty = [f'{c} (exited {s})' for c in commands for s in ran[c] if s != 0]
+if dirty:
+    sys.exit(f'FAIL: {label}: the README section shows command(s) this run '
+             'executed and which did not exit 0: ' + '; '.join(dirty))
+print(f'ok   {label}: the README section states all {len(claims)} of its '
+      f'pinned claims and the declaration block line for line, names '
+      f'{len(paths)} fixture(s) that exist, and shows {len(commands)} '
+      f'command(s) this run executed, every one of them exiting 0')
+READMEPY
+}
+
+# No id anywhere on a page holds a character an HTML id fragment may not. Read
+# over EVERY id, this extension's and Quarto's alike: an id with a space in it
+# is invalid wherever it came from.
+check_no_invalid_id() {
+  local htmlfile="$1" label="$2"
+  if grep -qE 'id="[^"]*[[:space:]#<>]' "$htmlfile"; then
+    grep -oE 'id="[^"]*[[:space:]#<>][^"]*"' "$htmlfile" | head -5 >&2
+    fail "$label: the rendered page carries an id holding a character no HTML id fragment may hold"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # M38 — an author sends marks to more than one named index, and the HTML
 # back-end prints one section per index.
 #
@@ -12301,10 +12497,7 @@ check_index_sections "$NAMED_MISUSE_HTML" "$NAMED_INDEX_MISUSE_SECTIONS" "M38-R1
 # happening not to name it. Read over EVERY id the page carries, the extension's
 # and Quarto's alike, since an id with a space in it is invalid wherever it came
 # from.
-if grep -qE 'id="[^"]*[[:space:]#<>]' "$NAMED_MISUSE_HTML"; then
-  grep -oE 'id="[^"]*[[:space:]#<>][^"]*"' "$NAMED_MISUSE_HTML" | head -5 >&2
-  fail "M38-R1: the rendered page carries an id holding a character no HTML id fragment may hold"
-fi
+check_no_invalid_id "$NAMED_MISUSE_HTML" "M38-R1"
 pass "M38-R1: a declared name that is no HTML id fragment is refused by name, the document keeps the indexes it declared usably, and the page carries no invalid id"
 
 # ---------------------------------------------------------------------------
@@ -12326,30 +12519,7 @@ quarto render examples/named-indexes-foldsite.qmd --to latex \
   > "$WORK/named-indexes-foldsite-latex.log" 2>&1 \
   || { tail -30 "$WORK/named-indexes-foldsite-latex.log" >&2; fail "M38-R2: named-indexes-foldsite.qmd failed to render to latex"; }
 capture examples/named-indexes-foldsite.qmd latex "named-indexes-foldsite-latex"
-python3 - "$CAPTURE_ROOT/named-indexes-foldsite-latex/named-indexes-foldsite.tex" <<'FOLDSITEPY'
-import re, sys
-tex = open(sys.argv[1], encoding='utf-8').read()
-at = [m.start() for m in re.finditer(r'\\printindex', tex)]
-if len(at) != 1:
-    sys.exit(f'FAIL: M38-R2: the capture carries {len(at)} \\printindex, want 1')
-sites = [(m.start(), m.group(1))
-         for m in re.finditer(r'\\label\{(site-[a-z]+)\}', tex)]
-if len(sites) != 2:
-    sys.exit(f'FAIL: M38-R2: the capture carries {len(sites)} placement-site '
-             f'label(s), want the fixture\'s 2 — so which one the index '
-             f'follows is not a question this check can answer')
-before = [name for pos, name in sites if pos < at[0]]
-if not before:
-    sys.exit('FAIL: M38-R2: the one index stands before every placement site '
-             'in the capture, so it is at neither marker')
-if before[-1] != 'site-main':
-    sys.exit(f'FAIL: M38-R2: the one index follows {before[-1]!r}, not the '
-             f'author\'s own marker for the index this back-end builds '
-             f'(site-main); a marker naming a second index took its place')
-print('ok   M38-R2: the one index a folded back-end builds stands at the '
-      'author\'s own marker for it, which the fixture writes after a marker '
-      'naming a second index')
-FOLDSITEPY
+check_folded_site "$CAPTURE_ROOT/named-indexes-foldsite-latex/named-indexes-foldsite.tex" "M38-R2"
 check_warning_count "$WORK/named-indexes-foldsite-latex.log" \
   "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" 1 "M38-R2"
 check_warning_count "$WORK/named-indexes-foldsite-latex.log" \
@@ -12381,23 +12551,7 @@ capture examples/named-indexes-foldsecond.qmd latex "named-indexes-foldsecond-la
 check_token_manifest \
   "$CAPTURE_ROOT/named-indexes-foldsecond-latex/named-indexes-foldsecond.tex" \
   $'1\t\\printindex\n0\tqi-index-here' "M38-R4"
-python3 - "$CAPTURE_ROOT/named-indexes-foldsecond-latex/named-indexes-foldsecond.tex" <<'FOLDSECONDPY'
-import re, sys
-tex = open(sys.argv[1], encoding='utf-8').read()
-at = tex.index('\\printindex')
-sites = [(m.start(), m.group(1))
-         for m in re.finditer(r'\\label\{(site-[a-z]+)\}', tex)]
-if [name for pos, name in sites] != ['site-first', 'site-second']:
-    sys.exit(f'FAIL: M38-R4: the capture carries the placement-site labels '
-             f'{[n for _, n in sites]}, not the fixture\'s two in order')
-before = [name for pos, name in sites if pos < at]
-if before != ['site-first']:
-    sys.exit(f'FAIL: M38-R4: the one index follows {before} rather than the '
-             f'first of the two markers alone, so the marker that places it is '
-             f'not the first one written')
-print('ok   M38-R4: with no marker naming the index this back-end builds, the '
-      'first marker written places it and the second does not')
-FOLDSECONDPY
+check_folded_second "$CAPTURE_ROOT/named-indexes-foldsecond-latex/named-indexes-foldsecond.tex" "M38-R4"
 check_warning_count "$WORK/named-indexes-foldsecond-latex.log" \
   "$WARN_INDEX_FOLD_MARKER" 1 \
   "M38-R4 (the shape for the marker that DOES place the one index)"
@@ -12550,94 +12704,7 @@ indexes:
 MANIFEST
 printf '%s\n' "$README_INDEXES_CLAIMS" > "$WORK/readme-indexes.txt"
 printf '%s\n' "$README_INDEXES_YAML" > "$WORK/readme-indexes-yaml.txt"
-python3 - README.md "$WORK/readme-indexes.txt" "$WORK/readme-indexes-yaml.txt" \
-  "$RAN_LEDGER" <<'READMEPY'
-import os, re, sys
-readme_path, claims_path, yaml_path, ledger_path = sys.argv[1:5]
-body = open(readme_path, encoding='utf-8').read()
-head = '### Named indexes'
-at = body.find('\n' + head + '\n')
-if at < 0:
-    sys.exit(f'FAIL: M38-AC6: README.md has no {head!r} section')
-rest = body[at + len(head) + 2:]
-end = re.search(r'^#{2,3} ', rest, re.M)
-section = rest[:end.start()] if end else rest
-
-flat = ' '.join(section.split())
-claims = [l.rstrip('\n') for l in open(claims_path, encoding='utf-8')
-          if l.strip()]
-bad = []
-for line in claims:
-    label, claim = line.split('\t', 1)
-    if ' '.join(claim.split()) not in flat:
-        bad.append(f'  {label}: <<{claim}>>')
-if bad:
-    print('FAIL: M38-AC6: claim(s) absent from the README section:',
-          file=sys.stderr)
-    print('\n'.join(bad), file=sys.stderr)
-    sys.exit(1)
-
-# The declaration block, line for line. Every yaml fence in the section is a
-# candidate, so the check says which one it matched rather than passing on the
-# first fence that happens to be something else.
-want = open(yaml_path, encoding='utf-8').read().rstrip('\n').split('\n')
-fences = [f.rstrip('\n').split('\n')
-          for f in re.findall(r'```yaml\n(.*?)```', section, re.S)]
-if not fences:
-    sys.exit('FAIL: M38-AC6: the README section shows no yaml block at all, '
-             'so the declaration form the criterion names is pinned by nothing')
-if want not in fences:
-    print('FAIL: M38-AC6: no yaml block in the README section is the '
-          'declaration form this check pins. want:', file=sys.stderr)
-    print('\n'.join(want), file=sys.stderr)
-    print('the section shows:', file=sys.stderr)
-    for f in fences:
-        print('  ---\n    ' + '\n    '.join(f), file=sys.stderr)
-    sys.exit(1)
-
-paths = sorted(set(re.findall(r'examples/[A-Za-z0-9_./-]+\.qmd', section)))
-if not paths:
-    sys.exit('FAIL: M38-AC6: the README section names no fixture at all, so '
-             'this check would pass over an empty set')
-missing = [p for p in paths if not os.path.exists(p)]
-if missing:
-    sys.exit('FAIL: M38-AC6: the README section names fixture(s) that do not '
-             'exist: ' + ', '.join(missing))
-
-commands = []
-for fence in re.findall(r'```bash\n(.*?)```', section, re.S):
-    commands.extend(c for c in (l.strip() for l in fence.splitlines()) if c)
-if not commands:
-    sys.exit('FAIL: M38-AC6: the README section shows no command at all, so '
-             'this check would pass over an empty set')
-# The ledger: one `<status><TAB><argv>` line per documented command this run
-# executed. A command is clean here only because THIS run ran it and it exited
-# 0 -- the hole R6 named was reading a command out of the suite's own text,
-# where a line in a comment read exactly like a line that runs.
-ran = {}
-for line in open(ledger_path, encoding='utf-8'):
-    line = line.rstrip('\n')
-    if not line:
-        continue
-    status, argv = line.split('\t', 1)
-    ran.setdefault(argv, []).append(int(status))
-if not ran:
-    sys.exit('FAIL: M38-AC6: this run\'s command ledger is empty, so every '
-             'command below would be reported unrun rather than checked')
-unrun = [c for c in commands if c not in ran]
-if unrun:
-    sys.exit('FAIL: M38-AC6: the README section shows command(s) this run '
-             'never executed, so nothing here says they are clean: '
-             + '; '.join(unrun))
-dirty = [f'{c} (exited {s})' for c in commands for s in ran[c] if s != 0]
-if dirty:
-    sys.exit('FAIL: M38-AC6: the README section shows command(s) this run '
-             'executed and which did not exit 0: ' + '; '.join(dirty))
-print(f'ok   M38-AC6: the README section states all {len(claims)} of its '
-      f'pinned claims and the declaration block line for line, names '
-      f'{len(paths)} fixture(s) that exist, and shows {len(commands)} '
-      f'command(s) this run executed, every one of them exiting 0')
-READMEPY
+check_readme_indexes README.md "$WORK/readme-indexes.txt" "$WORK/readme-indexes-yaml.txt" "$RAN_LEDGER" "M38-AC6"
 
 # ---------------------------------------------------------------------------
 # M38-R3 — what heads the ONE section a folded render prints.
@@ -12654,33 +12721,7 @@ READMEPY
 # the bare id. The title read here is NOT `Index of Subjects`, which is what
 # the fixture's first declaration says and what makes this check discriminate.
 # ---------------------------------------------------------------------------
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
-  "$CAPTURE_ROOT/book-html/_book/last.html" <<'FOLDHEADPY'
-import os, sys
-sys.path.insert(0, 'tests')
-import htmlindex
-prefix = os.environ['HTML_SECTION_ID']
-root = htmlindex.parse(sys.argv[1])
-found = htmlindex.index_sections(root, prefix)
-if len(found) != 1:
-    sys.exit(f'FAIL: M38-R3: the folded book page carries {len(found)} '
-             f'generated index section(s), want the 1 a folded render prints')
-one = found[0]
-if one['ident'] != prefix:
-    sys.exit(f'FAIL: M38-R3: the one section carries the id {one["ident"]!r} '
-             f'rather than the bare {prefix!r}, so it claims to be one of the '
-             f'declared indexes rather than the union it is')
-if one['tag'] != 'h1':
-    sys.exit(f'FAIL: M38-R3: the one section is headed by a {one["tag"]!r} '
-             f'rather than an h1')
-if one['title'] != 'Index':
-    sys.exit(f'FAIL: M38-R3: the one section is headed {one["title"]!r}; a '
-             f'section holding every declared index\'s marks is headed with '
-             f'the neutral title, not with one declaration\'s')
-print('ok   M38-R3: the one section a folded book prints is headed with the '
-      'neutral title under the bare id, though the fixture\'s first '
-      'declaration gives that index a title of its own')
-FOLDHEADPY
+check_folded_heading "$CAPTURE_ROOT/book-html/_book/last.html" "M38-R3"
 
 # ---------------------------------------------------------------------------
 # The residue sweeps (M03-AC3, M12), LAST in the run and over the CAPTURED set
@@ -13660,6 +13701,15 @@ M30PLANTPY
   probe_defect "a section heading that is not a heading element" \
     check_index_sections "$M38W/tag.html" "$NAMED_INDEX_SECTIONS" "M38 probe"
 
+  # The heading LEVEL, which the plant above cannot reach: turning an h1 into a
+  # non-heading exercises the no-heading guard alone, and a section headed by an
+  # h2 where an h1 belongs is a heading the reader must still refuse — it nests
+  # the index under whatever section precedes it in a reader's outline (R7).
+  probe_plant "$M38W/clean.html" "$M38W/level.html" \
+    's|<h1 class="unnumbered">Index of Authors</h1>|<h2 class="unnumbered">Index of Authors</h2>|g'
+  probe_defect "a section heading one level below the one the manifest states" \
+    check_index_sections "$M38W/level.html" "$NAMED_INDEX_SECTIONS" "M38 probe"
+
   probe_plant "$M38W/clean.html" "$M38W/title.html" \
     's|>Index of Authors<|>Index of People<|g'
   probe_defect "a section headed with a title no declaration gives it" \
@@ -13684,7 +13734,129 @@ M30PLANTPY
   probe_defect "an empty manifest" \
     check_index_sections "$M38W/clean.html" "" "M38 probe"
 
-  pass "M38 self-test: the section reader fails on each clause it states planted on its own — a section id, a section missing from the set, a heading that is not a heading element, a heading's text, the authored element a section follows, and an entry's text — and refuses a manifest that names no section and an empty one, while passing on the same page unplanted"
+  pass "M38 self-test: the section reader fails on each clause it states planted on its own — a section id, a section missing from the set, a heading that is not a heading element, a heading one level below the one stated, a heading's text, the authored element a section follows, and an entry's text — and refuses a manifest that names no section and an empty one, while passing on the same page unplanted"
+
+  # -------------------------------------------------------------------------
+  # M38's return round — the four readers it added, each shown discriminating
+  # on the clauses it states. These are the checks that were supposed to fence
+  # this work: R1-R4 were output defects that reached a green suite, so a
+  # reader added to catch one is worth exactly what a plant says it is.
+  #
+  # Every mutation is planted in a copy of THIS run's own captured artifact,
+  # through probe_plant, which refuses one that changes nothing.
+  # -------------------------------------------------------------------------
+  M38R="$WORK/m38-return-planted"
+  rm -rf "$M38R"; mkdir -p "$M38R"
+
+  # The invalid-id sweep (R1). Its whole job is to notice a character an id may
+  # not hold, so a page with none planted must pass and one with any must not.
+  cp "$CAPTURE_ROOT/named-indexes-misuse-html/named-indexes-misuse.html" \
+    "$M38R/misuse.html"
+  check_no_invalid_id "$M38R/misuse.html" "M38 self-test (control)" \
+    || fail "M38 self-test: the id sweep fails on an unplanted copy of this run's page, so no failure below is evidence of anything"
+  for bad in ' ' '#' '<'; do
+    probe_plant "$M38R/misuse.html" "$M38R/badid.html" \
+      "s|id=\"qi-index-people\"|id=\"qi-index-my${bad}people\"|g"
+    probe_defect "an id holding <<$bad>>, which no HTML id fragment may hold" \
+      check_no_invalid_id "$M38R/badid.html" "M38 probe"
+  done
+
+  # The folded placement site (R2), over the captured `.tex`. Two clauses: how
+  # many placement sites the capture carries, and which one the single index
+  # follows — the defect itself, an index that moved to the marker naming an
+  # index this back-end does not build.
+  FOLDSITE_TEX="$CAPTURE_ROOT/named-indexes-foldsite-latex/named-indexes-foldsite.tex"
+  cp "$FOLDSITE_TEX" "$M38R/foldsite.tex"
+  check_folded_site "$M38R/foldsite.tex" "M38 self-test (control)" >/dev/null \
+    || fail "M38 self-test: the folded-site reader fails on an unplanted copy of this run's capture, so no failure below is evidence of anything"
+  probe_plant "$M38R/foldsite.tex" "$M38R/foldsite-moved.tex" \
+    -e 's|^\\printindex$||' -e 's|^\\label{site-authors}$|\\label{site-authors}\\printindex|'
+  probe_defect "the one index standing at the marker naming an index this back-end does not build" \
+    check_folded_site "$M38R/foldsite-moved.tex" "M38 probe"
+  probe_plant "$M38R/foldsite.tex" "$M38R/foldsite-onesite.tex" \
+    's|\\label{site-authors}||g'
+  probe_defect "a capture carrying fewer placement sites than the fixture writes" \
+    check_folded_site "$M38R/foldsite-onesite.tex" "M38 probe"
+  probe_plant "$M38R/foldsite.tex" "$M38R/foldsite-twice.tex" \
+    's|^\\printindex$|\\printindex\n\\printindex|'
+  probe_defect "a capture carrying two of the one index a folded render prints" \
+    check_folded_site "$M38R/foldsite-twice.tex" "M38 probe"
+
+  # The same reader's sibling (R4): with no marker for the built index, the
+  # FIRST marker written places it.
+  FOLDSECOND_TEX="$CAPTURE_ROOT/named-indexes-foldsecond-latex/named-indexes-foldsecond.tex"
+  cp "$FOLDSECOND_TEX" "$M38R/foldsecond.tex"
+  check_folded_second "$M38R/foldsecond.tex" "M38 self-test (control)" >/dev/null \
+    || fail "M38 self-test: the second-marker reader fails on an unplanted copy of this run's capture, so no failure below is evidence of anything"
+  probe_plant "$M38R/foldsecond.tex" "$M38R/foldsecond-moved.tex" \
+    -e 's|^\\printindex$||' -e 's|^\\label{site-second}$|\\label{site-second}\\printindex|'
+  probe_defect "the one index standing at the second marker rather than the first" \
+    check_folded_second "$M38R/foldsecond-moved.tex" "M38 probe"
+
+  # What heads the one section a folded book prints (R3). Three clauses: the
+  # number of sections, the id that section carries, and its heading — the
+  # defect itself, a union section headed with one declaration's own title.
+  cp "$CAPTURE_ROOT/book-html/_book/last.html" "$M38R/book.html"
+  check_folded_heading "$M38R/book.html" "M38 self-test (control)" >/dev/null \
+    || fail "M38 self-test: the folded-heading reader fails on an unplanted copy of this run's page, so no failure below is evidence of anything"
+  probe_plant "$M38R/book.html" "$M38R/book-title.html" \
+    's|<h1 class="unnumbered">Index</h1>|<h1 class="unnumbered">Index of Subjects</h1>|g'
+  probe_defect "a folded union section headed with one declaration's own title" \
+    check_folded_heading "$M38R/book-title.html" "M38 probe"
+  probe_plant "$M38R/book.html" "$M38R/book-id.html" \
+    's|id="qi-index"|id="qi-index-main"|g'
+  probe_defect "a folded union section named after one of the declared indexes" \
+    check_folded_heading "$M38R/book-id.html" "M38 probe"
+  probe_plant "$M38R/book.html" "$M38R/book-level.html" \
+    's|<h1 class="unnumbered">Index</h1>|<h2 class="unnumbered">Index</h2>|g'
+  probe_defect "a folded union section headed one level below an h1" \
+    check_folded_heading "$M38R/book-level.html" "M38 probe"
+
+  # README's section and the command ledger (R6). The claims, the declaration
+  # block, the fixtures, and the two ledger clauses — a documented command this
+  # run never executed, and one it executed that did not exit 0.
+  cp README.md "$M38R/README.md"
+  cp "$RAN_LEDGER" "$M38R/ledger.txt"
+  check_readme_indexes "$M38R/README.md" "$WORK/readme-indexes.txt" \
+    "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" \
+    "M38 self-test (control)" >/dev/null \
+    || fail "M38 self-test: the README reader fails on unplanted copies of this run's own README and ledger, so no failure below is evidence of anything"
+  probe_plant "$M38R/README.md" "$M38R/README-claim.md" \
+    's|A mark that names no index files in the first declared index|A mark that names no index is dropped|'
+  probe_defect "a README whose section no longer states a claim the criterion enumerates" \
+    check_readme_indexes "$M38R/README-claim.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
+  probe_plant "$M38R/README.md" "$M38R/README-yaml.md" \
+    's|^    title: Index of Names$|    title: Index of People|'
+  probe_defect "a declaration block whose shown title is not the one pinned" \
+    check_readme_indexes "$M38R/README-yaml.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
+  probe_plant "$M38R/README.md" "$M38R/README-indent.md" \
+    's|^  - name: main$|- name: main|'
+  probe_defect "a declaration block whose indentation has collapsed, which a whitespace-normalized comparison would pass" \
+    check_readme_indexes "$M38R/README-indent.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
+  probe_plant "$M38R/README.md" "$M38R/README-path.md" \
+    's|examples/named-indexes-twin.qmd|examples/no-such-fixture.qmd|'
+  probe_defect "a README section naming a fixture the repo does not carry" \
+    check_readme_indexes "$M38R/README-path.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
+  probe_plant "$M38R/ledger.txt" "$M38R/ledger-missing.txt" \
+    '\|--to latex$|d'
+  probe_defect "a documented command this run never executed" \
+    check_readme_indexes "$M38R/README.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger-missing.txt" "M38 probe"
+  probe_plant "$M38R/ledger.txt" "$M38R/ledger-dirty.txt" \
+    's|^0\(\t.*--to latex\)$|1\1|'
+  probe_defect "a documented command this run executed and which did not exit 0" \
+    check_readme_indexes "$M38R/README.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger-dirty.txt" "M38 probe"
+  : > "$M38R/ledger-empty.txt"
+  probe_defect "an empty ledger, which would report every documented command unrun" \
+    check_readme_indexes "$M38R/README.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger-empty.txt" "M38 probe"
+
+  pass "M38 self-test: each of the four readers this return round adds fails on every clause it states planted on its own — an id holding a space, a hash or an angle bracket; the one index moved to a marker naming an index the back-end does not build, or to the second marker of the one it does; a capture carrying the wrong number of placement sites or of indexes; a folded union section headed with one declaration's title, named after one declared index, or headed below an h1; and a README missing a claim, showing a declaration block whose title or indentation is not the one pinned, naming a fixture that does not exist, or showing a command this run never executed, executed dirty, or could not have executed at all — while each passes on the same artifact unplanted"
 fi
 
 }

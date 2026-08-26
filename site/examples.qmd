@@ -4,6 +4,11 @@ pagetitle: "Examples"
 
 # Examples
 
+The [Gallery](gallery/index.qmd) gives a page to each fixture
+`site/gallery.yml` lists under `shown:`, carrying that fixture's `.qmd`
+source, the page it renders to with the index the extension built, and the PDF
+from the same source. The whole corpus is described below.
+
 `examples/book/` is a four-chapter book fixture — a shared term marked in
 three chapters, a chapter in a subdirectory, a cross-chapter cross-reference,
 and the marker in the last chapter — and `examples/book-nomarker/` is the same

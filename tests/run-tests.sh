@@ -1743,6 +1743,11 @@ require_pdf_tools() {
   # is the test of.
   command -v pdfinfo >/dev/null 2>&1 \
     || fail "pdfinfo not found on PATH (it ships with pdftotext, in poppler). AC6 must never pass unrun."
+  # M41-AC5 hashes examples/ on both sides of the site render. shasum is a
+  # perl script and is absent from a minimal image; without this the run would
+  # die at the pipeline with a bare shell error rather than naming the tool.
+  command -v shasum >/dev/null 2>&1 \
+    || fail "shasum not found on PATH (M41-AC5 hashes examples/ with it). AC6 must never pass unrun."
 
   # The recipe names a main font by file, so every face it names has to be
   # findable the same way fontspec finds it. Without this the four M33 renders
@@ -13126,8 +13131,10 @@ pass "M39-AC3: a folded render of the same fixture resolves both marks to the on
 # three hand-written call sites. A page neither reached was a page nothing
 # swept, and both went on printing their passing line.
 #
-# Here, after the parity probe, so nothing this run renders is outside the
-# domain the sweeps claim.
+# They run after the LAST render this suite makes, which since M41 is the
+# documentation site's — its pre-render builds the example gallery, so ten more
+# fixture pages are rendered there. Run before it, the sweeps would print their
+# passing line over a set that did not include them.
 # ---------------------------------------------------------------------------
 # The suite's two claims about its own source (M24-AC1, M24-AC3): no check
 # reads a rendered artifact out of the working tree, and no render goes
@@ -13138,23 +13145,6 @@ python3 tests/suitescan.py reads \
 python3 tests/suitescan.py pairs \
   || fail "M24-AC3: a render's artifacts are never captured"
 
-python3 tests/htmlsweep.py pending "$CAPTURE_ROOT" \
-  || fail "M03-AC3: the pending attribute reached rendered HTML"
-pass "M03-AC3: the pending attribute reaches no page this run rendered, forged author copies included"
-MARKER_CLASS="$MARKER_CLASS" python3 tests/htmlsweep.py marker "$CAPTURE_ROOT" \
-  || fail "M04-AC1/M04-AC4/M12: the marker class reached a rendered page that should not carry it, or left one that should"
-pass "M04-AC1/M04-AC4/M12: every page this run rendered carries exactly the marker elements the fixture that wrote it means to keep, and the two that keep any are the two that write one somewhere the filter refuses"
-# The empty-div half of the same promise. It is checkable only where a marker
-# was REMOVED — every rendered page carries empty divs Quarto itself wrote, so
-# a sweep of the captured set would be reading Quarto's chrome, not this
-# filter's residue — so it names the three fixtures a marker was removed from
-# and reads each one's captured copy.
-MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
-  python3 tests/htmlsweep.py emptydiv \
-    "$CAPTURE_ROOT/marker-html/marker.html" \
-    "$CAPTURE_ROOT/misuse-html/marker-misuse.html" \
-    "$CAPTURE_ROOT/marker-nomarks-html/marker-nomarks.html" \
-  || fail "M04-AC1/M04-AC4/M12: a removed marker left an empty div behind"
 
 # ---------------------------------------------------------------------------
 # M40 — the documentation website. Three standing checks: the render writes a
@@ -13169,10 +13159,43 @@ MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
 # are run against the merge base for the milestone's own evidence, and their
 # discrimination is shown under --self-test below over fixtures built here.
 # ---------------------------------------------------------------------------
+# M41-AC5 — the site build renders the gallery's fixtures, and it must do it
+# without writing into the fixture directory. A recursive listing of
+# `examples/` with a sha256 per file is taken immediately before and
+# immediately after the one render below, and the two must be identical: a
+# render that wrote a `.pdf`, a `.tex`, an aux file or a `_files/` directory
+# beside a fixture changes the listing even where every tracked file's bytes
+# are untouched. The hash comes first so a fixture's CONTENT changing is
+# caught too, not only the set of paths.
+examples_state() {
+  find "$1" -type f -print0 \
+    | LC_ALL=C sort -z \
+    | xargs -0 shasum -a 256
+}
+# The listing is required to carry one line per file, not merely to be
+# non-empty. GNU `xargs` without `-r` runs its command even on empty input, so
+# `shasum` with no operands would hash its own empty stdin and write one line:
+# a `[ -s ]` guard passes on a listing that describes nothing. Counting the
+# files independently of the pipeline is what makes the empty domain visible.
+EXAMPLES_FILE_COUNT=$(find examples -type f | wc -l | tr -d ' ')
+[ "$EXAMPLES_FILE_COUNT" -gt 0 ] \
+  || fail "M41-AC5: find enumerates no file under examples/, so the listings this check compares would describe nothing"
+examples_state examples > "$WORK/examples-before.txt"
+[ "$(wc -l < "$WORK/examples-before.txt" | tr -d ' ')" -eq "$EXAMPLES_FILE_COUNT" ] \
+  || fail "M41-AC5: the listing of examples/ taken before the site render carries $(wc -l < "$WORK/examples-before.txt" | tr -d ' ') line(s) for $EXAMPLES_FILE_COUNT file(s); it does not describe the directory it is about"
+
 quarto render site > "$WORK/site-render.log" 2>&1 \
   || { tail -30 "$WORK/site-render.log" >&2; fail "M40-AC1: the documentation website failed to render"; }
 capture --site site html "docs-site"
 SITE_OUT="$CAPTURE_ROOT/docs-site/_site"
+
+examples_state examples > "$WORK/examples-after.txt"
+if ! diff -u "$WORK/examples-before.txt" "$WORK/examples-after.txt" \
+       > "$WORK/examples-diff.txt"; then
+  head -40 "$WORK/examples-diff.txt" >&2
+  fail "M41-AC5: rendering the site changed examples/; the gallery build must copy each fixture out and render the copy, never render in place"
+fi
+pass "M41-AC5: rendering the site left all $(wc -l < "$WORK/examples-before.txt" | tr -d ' ') file(s) under examples/ byte-identical, and added and removed none"
 
 python3 tests/sitecheck.py rendered site "$SITE_OUT" \
   || fail "M40-AC1: a tracked page under site/ has no rendered output at the path its source names (its own FAIL line is above)"
@@ -13499,6 +13522,355 @@ M40OLD
       "$M40W/every-stale.txt" "$M40DOCS"
 
   pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing warning, a missing install line and a link naming something else; the registry check on an unregistered container, a stale row, a presence container re-tagged absence, a duplicated row and a source defining nothing; and the claim-set check on a documented claim deleted from its page and a retired sentence copied back onto one"
+fi
+
+# ---------------------------------------------------------------------------
+# M41 — the example gallery. The site declares which fixtures its gallery
+# shows in site/gallery.yml; this check is that declaration's completeness,
+# read against the corpus `git ls-files` enumerates rather than against a list
+# written down beside it (M41-AC1).
+# ---------------------------------------------------------------------------
+GALLERY_YML="site/gallery.yml"
+python3 tests/gallerycheck.py listing "$GALLERY_YML" \
+  || fail "M41-AC1: the gallery declaration and the fixture corpus are not the same set (its own FAIL line is above)"
+
+# ---------------------------------------------------------------------------
+# The per-fixture index manifests, addressable by fixture name (M41 T3). Not
+# one derived row is copied or re-derived here: each manifest stays the
+# variable it was derived into, beside the derivation that reasons about it,
+# and this table only NAMES it. The columns are
+#   <fixture>  <kind: html|pdf>  <format>  <variable>
+# and the four formats are the shapes those manifests already have:
+#   index     `letter\t<L>` group rows and `<level>\t<term>\t<count>[\t...]`
+#   sections  the same, with `section\t<id>\t...` rows above each index
+#   outline   `<level>\t<term>`, with no locator count
+#   terms     one printed term per line
+# A row whose variable this suite does not define, or defines empty, is a
+# failure here rather than an empty manifest file downstream — an empty
+# manifest is a check that judges nothing while still printing ok.
+# ---------------------------------------------------------------------------
+read -r -d '' GALLERY_MANIFEST_ROWS <<'GALLERYREG' || true
+demo	html	index	DEMO_HTML_INDEX
+demo	pdf	terms	PDF_TERMS
+empty-levels	html	index	EMPTY_LEVELS_HTML
+empty-levels	pdf	outline	EMPTY_LEVELS_PDF
+html-index	html	index	HTML_INDEX_MANIFEST
+letter-groups	html	index	LETTER_GROUPS_INDEX
+marker	html	index	MARKER_HTML_INDEX
+marker	pdf	terms	MARKER_PDF_TERMS
+named-indexes	html	sections	NAMED_INDEX_SECTIONS
+placement	html	index	PLACEMENT_HTML_INDEX
+sortkey	html	index	SORTKEY_HTML_INDEX
+sortkey	pdf	outline	SORTKEY_PDF_OUTLINE
+sortkey-paths	html	index	SORTKEY_PATHS_HTML_INDEX
+xref-conflict	html	index	XREF_HTML_INDEX
+xref-conflict	pdf	index	CONFLICT_PDF_INDEX
+GALLERYREG
+
+GALLERY_MANIFEST_DIR="$WORK/gallery-manifests"
+rm -rf "$GALLERY_MANIFEST_DIR"
+mkdir -p "$GALLERY_MANIFEST_DIR"
+GALLERY_MANIFEST_INDEX="$GALLERY_MANIFEST_DIR/registry.tsv"
+: > "$GALLERY_MANIFEST_INDEX"
+GALLERY_MANIFEST_COUNT=0
+while IFS=$'\t' read -r gm_fixture gm_kind gm_format gm_var; do
+  [ -n "$gm_fixture" ] || continue
+  [ -n "${!gm_var+set}" ] \
+    || fail "M41 T3: the manifest table names $gm_var for $gm_fixture ($gm_kind), and this suite defines no variable of that name"
+  [ -n "${!gm_var}" ] \
+    || fail "M41 T3: the manifest $gm_var, named for $gm_fixture ($gm_kind), is empty; a manifest with no row judges nothing"
+  gm_path="$GALLERY_MANIFEST_DIR/$gm_fixture.$gm_kind.txt"
+  printf '%s\n' "${!gm_var}" > "$gm_path"
+  printf '%s\t%s\t%s\t%s\t%s\n' \
+    "$gm_fixture" "$gm_kind" "$gm_format" "$gm_var" "$gm_path" \
+    >> "$GALLERY_MANIFEST_INDEX"
+  GALLERY_MANIFEST_COUNT=$((GALLERY_MANIFEST_COUNT + 1))
+done <<< "$GALLERY_MANIFEST_ROWS"
+[ "$GALLERY_MANIFEST_COUNT" -gt 0 ] \
+  || fail "M41 T3: the manifest table produced no addressable manifest at all"
+pass "M41 T3: $GALLERY_MANIFEST_COUNT per-fixture index manifest(s) are addressable by fixture name under $GALLERY_MANIFEST_DIR, each one the variable it was derived into"
+
+python3 tests/gallerycheck.py manifests "$GALLERY_YML" "$GALLERY_MANIFEST_INDEX" \
+  || fail "M41-AC3/AC4: the gallery's shown fixtures and the manifests addressable for them do not line up (its own FAIL line is above)"
+
+# The gallery pages themselves, read out of the CAPTURED site (M24) rather
+# than out of site/_site, which a later render would overwrite under them.
+python3 tests/gallerycheck.py source "$GALLERY_YML" "$SITE_OUT" \
+  || fail "M41-AC2: a shown fixture's gallery page does not carry that fixture's source (its own FAIL line is above)"
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+  python3 tests/gallerycheck.py embedded "$GALLERY_YML" \
+    "$GALLERY_MANIFEST_INDEX" "$SITE_OUT" \
+  || fail "M41-AC3: a fixture page the gallery embeds does not print the index entries its manifest states (its own FAIL line is above)"
+
+python3 tests/gallerycheck.py pdf "$GALLERY_YML" \
+  "$GALLERY_MANIFEST_INDEX" "$SITE_OUT" \
+  || fail "M41-AC4: a PDF the gallery links does not carry the index entries its manifest states (its own FAIL line is above)"
+
+python3 tests/htmlsweep.py pending "$CAPTURE_ROOT" \
+  || fail "M03-AC3: the pending attribute reached rendered HTML"
+pass "M03-AC3: the pending attribute reaches no page this run rendered, forged author copies included"
+MARKER_CLASS="$MARKER_CLASS" python3 tests/htmlsweep.py marker "$CAPTURE_ROOT" \
+  || fail "M04-AC1/M04-AC4/M12: the marker class reached a rendered page that should not carry it, or left one that should"
+pass "M04-AC1/M04-AC4/M12: every page this run rendered carries exactly the marker elements the fixture that wrote it means to keep, and the two that keep any are the two that write one somewhere the filter refuses"
+# The empty-div half of the same promise. It is checkable only where a marker
+# was REMOVED — every rendered page carries empty divs Quarto itself wrote, so
+# a sweep of the captured set would be reading Quarto's chrome, not this
+# filter's residue — so it names the three fixtures a marker was removed from
+# and reads each one's captured copy.
+MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
+  python3 tests/htmlsweep.py emptydiv \
+    "$CAPTURE_ROOT/marker-html/marker.html" \
+    "$CAPTURE_ROOT/misuse-html/marker-misuse.html" \
+    "$CAPTURE_ROOT/marker-nomarks-html/marker-nomarks.html" \
+  || fail "M04-AC1/M04-AC4/M12: a removed marker left an empty div behind"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M41 T6 — a planted defect per CLAUSE of the gallery's checks, not one per
+  # reader (check-design, M32). Each plant is one substitution, asserted to
+  # have changed the artifact it was made in; each planted case must fail AND
+  # fail naming its own clause, so a reader dying on the fixture cannot be
+  # read as the clause firing. Every check is run unplanted on the same
+  # fixture first, or its red below would say nothing.
+  # -------------------------------------------------------------------------
+  M41W="$WORK/m41probe"
+  rm -rf "$M41W"
+  mkdir -p "$M41W"
+
+  m41_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M41 self-test: the planted case ($label) passed, so this check's green says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M41 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    printf 'ok   self-test: the check fails on <<%s>>\n' "$label"
+  }
+
+  # One mutated copy of the declaration per clause. The mutation is required to
+  # have changed the file, so a substitution that matched nothing cannot hand
+  # a plant an unmutated declaration.
+  m41_plant_yml() {
+    local name="$1"; shift
+    local out="$M41W/$name.yml"
+    python3 - "$GALLERY_YML" "$out" "$@" <<'YMLPY'
+import sys
+src, dst, mode = sys.argv[1:4]
+rest = sys.argv[4:]
+text = open(src, encoding='utf-8').read()
+lines = text.split('\n')
+
+
+def index_of(key):
+    return lines.index(key + ':')
+
+
+if mode == 'unlisted':
+    lines.remove('  - ' + rest[0])
+elif mode == 'twice':
+    lines.insert(index_of('not-shown') + 1, '  - ' + rest[0])
+elif mode == 'third-key':
+    lines.append('elsewhere:')
+    lines.append('  - ' + rest[0])
+elif mode == 'stale':
+    lines.insert(index_of('not-shown') + 1, '  - examples/no-such-fixture.qmd')
+elif mode == 'move-to-shown':
+    lines.remove('  - ' + rest[0])
+    lines.insert(index_of('shown') + 1, '  - ' + rest[0])
+elif mode == 'shrink-shown':
+    keep = int(rest[0])
+    start = index_of('shown') + 1
+    end = index_of('not-shown')
+    moved = [l for l in lines[start:end] if l.startswith('  - ')][keep:]
+    for line in moved:
+        lines.remove(line)
+    at = index_of('not-shown') + 1
+    lines[at:at] = moved
+else:
+    sys.exit('FAIL: M41 plant: unknown gallery mutation %r' % mode)
+
+new = '\n'.join(lines)
+if new == text:
+    sys.exit('FAIL: M41 plant: the %r mutation changed nothing in %s'
+             % (mode, src))
+open(dst, 'w', encoding='utf-8').write(new)
+YMLPY
+    printf '%s' "$out"
+  }
+
+  # --- the declaration's completeness --------------------------------------
+  python3 tests/gallerycheck.py listing "$GALLERY_YML" > /dev/null \
+    || fail "M41 self-test: the listing check is red on the unplanted declaration, so no failure below is evidence of anything"
+  m41_planted 'a fixture listed neither as shown nor as not shown' \
+    'lists neither under `shown:` nor under `not-shown:`' \
+    python3 tests/gallerycheck.py listing \
+      "$(m41_plant_yml unlisted unlisted examples/control.qmd)"
+  m41_planted 'a fixture listed twice' \
+    'under shown, not-shown' \
+    python3 tests/gallerycheck.py listing \
+      "$(m41_plant_yml twice twice examples/demo.qmd)"
+  m41_planted 'a fixture listed under a third key as well as under shown' \
+    'under shown, elsewhere' \
+    python3 tests/gallerycheck.py listing \
+      "$(m41_plant_yml thirdkey third-key examples/demo.qmd)"
+  m41_planted 'a listed path git enumerates no fixture for' \
+    'which git enumerates no fixture for' \
+    python3 tests/gallerycheck.py listing \
+      "$(m41_plant_yml stale stale)"
+
+  # --- which fixtures may be shown -----------------------------------------
+  python3 tests/gallerycheck.py manifests "$GALLERY_YML" \
+    "$GALLERY_MANIFEST_INDEX" > /dev/null \
+    || fail "M41 self-test: the manifest check is red on the unplanted declaration, so no failure below is evidence of anything"
+  m41_planted 'a shown fixture the suite holds no hand-derived index manifest for' \
+    'holds no hand-derived HTML index manifest for' \
+    python3 tests/gallerycheck.py manifests \
+      "$(m41_plant_yml unbacked move-to-shown examples/unicode.qmd)" \
+      "$GALLERY_MANIFEST_INDEX"
+  m41_planted 'a shown list shorter than the floor the criterion states' \
+    'the criterion states at least' \
+    python3 tests/gallerycheck.py manifests \
+      "$(m41_plant_yml shrunk shrink-shown 4)" "$GALLERY_MANIFEST_INDEX"
+
+  # --- the source block ----------------------------------------------------
+  # One copy of the captured site per clause, mutated by tests/galleryplant.py,
+  # which re-reads what it changed with the checks' own reader.
+  m41_site_copy() {
+    local dir="$M41W/$1"
+    rm -rf "$dir"
+    cp -R "$SITE_OUT" "$dir"
+    printf '%s' "$dir"
+  }
+
+  python3 tests/gallerycheck.py source "$GALLERY_YML" "$SITE_OUT" > /dev/null \
+    || fail "M41 self-test: the source-block check is red on the unplanted capture, so no failure below is evidence of anything"
+
+  M41_OFF=$(m41_site_copy byteoff)
+  python3 tests/galleryplant.py bytes-off "$M41_OFF/gallery/demo.html" \
+    || fail "M41 self-test: the one-character plant did not land in the captured demo gallery page"
+  m41_planted 'a source block one character off from its fixture' \
+    'no <pre><code> on the page carries the fixture source' \
+    python3 tests/gallerycheck.py source "$GALLERY_YML" "$M41_OFF"
+
+  M41_ENT=$(m41_site_copy entity)
+  python3 tests/galleryplant.py double-entity "$M41_ENT/gallery/demo.html" \
+    || fail "M41 self-test: the doubled-entity plant did not land in the captured demo gallery page"
+  m41_planted 'a source block whose entity decodes to something the fixture does not carry' \
+    'no <pre><code> on the page carries the fixture source' \
+    python3 tests/gallerycheck.py source "$GALLERY_YML" "$M41_ENT"
+
+  M41_NOBLOCK=$(m41_site_copy noblock)
+  python3 - "$M41_NOBLOCK/gallery/demo.html" <<'NOBLOCKPY'
+import re
+import sys
+path = sys.argv[1]
+text = open(path, encoding='utf-8').read()
+new = re.sub(r'<pre[^>]*>\s*<code[^>]*>.*?</code>\s*</pre>', '<p>gone</p>',
+             text, count=1, flags=re.S)
+if new == text:
+    sys.exit('FAIL: M41 plant: %s carries no <pre><code> block to remove'
+             % path)
+open(path, 'w', encoding='utf-8').write(new)
+NOBLOCKPY
+  m41_planted 'a gallery page carrying no source block at all' \
+    'carries no <pre><code> element at all' \
+    python3 tests/gallerycheck.py source "$GALLERY_YML" "$M41_NOBLOCK"
+
+  # --- the embedded fixture page and its index -----------------------------
+  M41_EMBED_ENV=(HTML_SECTION_ID="$HTML_SECTION_ID"
+                 HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX"
+                 HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX")
+  env "${M41_EMBED_ENV[@]}" python3 tests/gallerycheck.py embedded \
+    "$GALLERY_YML" "$GALLERY_MANIFEST_INDEX" "$SITE_OUT" > /dev/null \
+    || fail "M41 self-test: the embedded-index check is red on the unplanted capture, so no failure below is evidence of anything"
+
+  M41_DROP=$(m41_site_copy dropentry)
+  env "${M41_EMBED_ENV[@]}" python3 tests/galleryplant.py drop-entry \
+    "$M41_DROP/gallery/rendered/letter-groups.html" windmill \
+    || fail "M41 self-test: the dropped-entry plant did not land in the captured letter-groups render"
+  m41_planted 'a manifest entry the embedded fixture page does not print' \
+    'are not among them' \
+    env "${M41_EMBED_ENV[@]}" python3 tests/gallerycheck.py embedded \
+      "$GALLERY_YML" "$GALLERY_MANIFEST_INDEX" "$M41_DROP"
+
+  M41_NOFRAME=$(m41_site_copy noframe)
+  python3 - "$M41_NOFRAME/gallery/demo.html" <<'NOFRAMEPY'
+import re
+import sys
+path = sys.argv[1]
+text = open(path, encoding='utf-8').read()
+new = re.sub(r'<iframe\b.*?</iframe>', '<p>gone</p>', text, count=1,
+             flags=re.S)
+if new == text:
+    sys.exit('FAIL: M41 plant: %s carries no <iframe> to remove' % path)
+open(path, 'w', encoding='utf-8').write(new)
+NOFRAMEPY
+  m41_planted 'a gallery page framing no rendered fixture at all' \
+    'not the one that frames its rendered fixture' \
+    env "${M41_EMBED_ENV[@]}" python3 tests/gallerycheck.py embedded \
+      "$GALLERY_YML" "$GALLERY_MANIFEST_INDEX" "$M41_NOFRAME"
+
+  M41_GHOSTFRAME=$(m41_site_copy ghostframe)
+  rm -f "$M41_GHOSTFRAME/gallery/rendered/demo.html"
+  m41_planted 'a frame whose target the render produced no file for' \
+    'resolves to no file under' \
+    env "${M41_EMBED_ENV[@]}" python3 tests/gallerycheck.py embedded \
+      "$GALLERY_YML" "$GALLERY_MANIFEST_INDEX" "$M41_GHOSTFRAME"
+
+  # --- the linked PDF ------------------------------------------------------
+  python3 tests/gallerycheck.py pdf "$GALLERY_YML" \
+    "$GALLERY_MANIFEST_INDEX" "$SITE_OUT" > /dev/null \
+    || fail "M41 self-test: the PDF check is red on the unplanted capture, so no failure below is evidence of anything"
+
+  M41_NOPDF=$(m41_site_copy nopdf)
+  [ -f "$M41_NOPDF/gallery/rendered/demo.pdf" ] \
+    || fail "M41 self-test: the captured site holds no demo.pdf to remove, so the plant below would be about a file the build never made"
+  rm -f "$M41_NOPDF/gallery/rendered/demo.pdf"
+  m41_planted 'a PDF link resolving to nothing' \
+    'resolves to no file under' \
+    python3 tests/gallerycheck.py pdf "$GALLERY_YML" \
+      "$GALLERY_MANIFEST_INDEX" "$M41_NOPDF"
+
+  M41_WRONGPDF=$(m41_site_copy wrongpdf)
+  cp "$M41_WRONGPDF/gallery/rendered/marker.pdf" \
+     "$M41_WRONGPDF/gallery/rendered/demo.pdf"
+  cmp -s "$M41_WRONGPDF/gallery/rendered/demo.pdf" \
+         "$SITE_OUT/gallery/rendered/demo.pdf" \
+    && fail "M41 self-test: substituting one PDF for another changed nothing, so the plant below would be about the right PDF"
+  m41_planted 'a PDF whose extraction drops the entries its fixture manifest states' \
+    'does not contain these manifest entries' \
+    python3 tests/gallerycheck.py pdf "$GALLERY_YML" \
+      "$GALLERY_MANIFEST_INDEX" "$M41_WRONGPDF"
+
+  # --- the fixture directory being written into ----------------------------
+  # The comparison AC5 makes, over a copy of the real fixture directory: a
+  # render that added a file beside a fixture, and one that changed a
+  # fixture's bytes, both have to move the listing.
+  M41_EX="$M41W/examples-copy"
+  rm -rf "$M41_EX"
+  cp -R examples "$M41_EX"
+  examples_state "$M41_EX" > "$M41W/ex-before.txt"
+  [ -s "$M41W/ex-before.txt" ] \
+    || fail "M41 self-test: the listing of the fixture-directory copy is empty, so the plants below would compare nothing"
+  examples_state "$M41_EX" > "$M41W/ex-again.txt"
+  cmp -s "$M41W/ex-before.txt" "$M41W/ex-again.txt" \
+    || fail "M41 self-test: two listings of an untouched fixture directory differ, so a difference below would say nothing about a render"
+  printf 'planted\n' > "$M41_EX/planted-render-output.pdf"
+  examples_state "$M41_EX" > "$M41W/ex-added.txt"
+  cmp -s "$M41W/ex-before.txt" "$M41W/ex-added.txt" \
+    && fail "M41 self-test: a file written beside a fixture left the listing unchanged, so AC5's comparison would not see a render writing into examples/"
+  rm -f "$M41_EX/planted-render-output.pdf"
+  printf '\n' >> "$M41_EX/demo.qmd"
+  examples_state "$M41_EX" > "$M41W/ex-changed.txt"
+  cmp -s "$M41W/ex-before.txt" "$M41W/ex-changed.txt" \
+    && fail "M41 self-test: a fixture's bytes changing left the listing unchanged, so AC5's comparison reads paths and not content"
+  pass "self-test: the fixture-directory comparison moves both when a file is added beside a fixture and when a fixture's own bytes change, and stands still when neither happens"
+
+  pass "M41: each clause named above is planted on its own and shown red while the same check passes unplanted — the declaration check on a fixture in neither list, one in both, one named under a third key as well, and a listed path naming no fixture; the manifest check on a shown fixture with no hand-derived manifest and on a shown list under its floor; the source-block check on a block one character off, a block whose entity decodes to something else, and a page with no block at all; the embedded-index check on a manifest entry the framed page does not print, a page framing nothing, and a frame resolving to no file; and the PDF check on a link resolving to nothing and on a PDF whose extraction drops its manifest's entries"
 fi
 
 # ---------------------------------------------------------------------------

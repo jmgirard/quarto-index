@@ -1,6 +1,12 @@
 project:
   type: website
   output-dir: _site
+  # Builds the example gallery before the site renders: each shown fixture is
+  # copied to a scratch tree at the repo root, rendered there, and its outputs
+  # placed under gallery/. See site/build_gallery.py.
+  pre-render: build_gallery.py
+  resources:
+    - gallery/rendered/**
 
 website:
   title: "quarto-index"
@@ -48,6 +54,8 @@ website:
         text: Books
       - href: examples.qmd
         text: Examples
+      - href: gallery/index.qmd
+        text: Gallery
       - href: tests.qmd
         text: Tests
 
@@ -55,3 +63,15 @@ format:
   html:
     theme: cosmo
     toc: true
+    # The frame each gallery page puts around its rendered fixture.
+    include-in-header:
+      text: |
+        <style>
+        iframe.gallery-frame {
+          width: 100%;
+          height: 32rem;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          background: #fff;
+        }
+        </style>

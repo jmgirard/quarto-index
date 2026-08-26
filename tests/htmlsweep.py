@@ -7,7 +7,12 @@ fixtures; the third is stated only where a marker was removed.
   pending — the `data-qi-pending` attribute is filter plumbing between two
             passes and must never survive into rendered output. An author's
             forged copy must not survive either, which is why the sweep asks
-            for the attribute rather than for a mark the filter minted.
+            for the attribute rather than for a mark the filter minted. It
+            asks STRUCTURALLY — an element of the parsed page carrying that
+            attribute — and not for the string in the markup. The promise is
+            about an attribute a page carries, and the site's gallery prints
+            examples/html-index.qmd's source in a code block, where the forged
+            copy that fixture writes is text a reader is meant to see (M41).
 
   marker  — the author's marker element is consumed by the filter, so a
             rendered page carries its class only where the fixture wrote a
@@ -57,9 +62,9 @@ def pages(root):
 def sweep_pending(root, names):
     bad = []
     for name in names:
-        with open(os.path.join(root, name), encoding='utf-8') as fh:
-            if PENDING_ATTR in fh.read():
-                bad.append(name)
+        doc = H.parse(os.path.join(root, name))
+        if any(PENDING_ATTR in node.attrs for node in H.walk(doc)):
+            bad.append(name)
     if bad:
         return ('%s survived into rendered HTML: %s'
                 % (PENDING_ATTR, ' '.join(bad)))

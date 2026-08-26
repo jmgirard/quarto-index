@@ -8,7 +8,7 @@ _Last hygiene check: 2026-08-26 (M40 merged and archived — the docs now live i
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M40 | The documentation moves into a Quarto website | done | — | normal | milestones/archive/M40-docs-website.md |
-| M41 | The site shows each curated example's source, index and PDF | planned | M40 | normal | milestones/M41-example-gallery.md |
+| M41 | The site shows each curated example's source, index and PDF | review | M40 | normal | milestones/M41-example-gallery.md |
 | M42 | GitHub Actions renders the site and publishes it to Pages | planned | M41 | normal | milestones/M42-pages-publish.md |
 | M39 | The sort-key rival and dangling-target reports name the index they judge | done | — | normal | milestones/archive/M39-report-index-scope.md |
 | M38 | Marks name which index they belong to, and the HTML back-end prints each | done | — | normal | milestones/archive/M38-named-indexes-html.md |

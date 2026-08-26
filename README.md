@@ -40,7 +40,9 @@ back-ends differ, and how a Quarto book gets one index.
 four-chapter book, every supported form, the escaping probes, the placement
 marker and its misuse cases, the cross-reference pairs, the named-index
 fixtures and the non-Latin-1 recipe. The [Examples](site/examples.qmd) page
-lists what each one exercises.
+lists what each one exercises, and the site's Gallery gives a page to each
+fixture it shows, with that fixture's source, the index its render produced,
+and its PDF.
 
 ```bash
 quarto render examples/demo.qmd --to pdf

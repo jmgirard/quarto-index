@@ -179,15 +179,25 @@ local function xrefs_for(index)
   return out
 end
 
--- One report per mark per target that names nothing the marks index. `scope`
--- is what the path set was drawn from — one document, a whole book, or one
--- named index of a document that declares several — because those are
--- different claims, and an author told "this document" in a book would go
--- looking in the wrong file, while one told it of a target that dangles only
--- inside its own index would go looking for a mark they have already written
--- (review O1). The caller names the set; `qi_indexes.scope_phrase` is what
--- turns an index name into the words for it.
-local function report_dangling(paths, xrefs, scope)
+-- One report per mark per target that names nothing the marks index. `outer`
+-- is what the path set was drawn from where it is one namespace — one
+-- document, a whole book — and `index` the index it was drawn from where a
+-- declaring document and an unfolded back-end make it narrower than that.
+-- Those are different claims, and an author told "this document" in a book
+-- would go looking in the wrong file, while one told it of a target that
+-- dangles only inside its own index would go looking for a mark they have
+-- already written (review O1). `qi_indexes.scope_phrase` is what turns the
+-- index name into the words for it, and hands back `outer` untouched wherever
+-- there is genuinely one namespace — the book's own aggregated report, which
+-- names no index, included.
+--
+-- The per-index shape is a second message rather than the first with a clause
+-- swapped in, because its REMEDY differs too: where the set is one index of
+-- several, "mark that term somewhere" is advice that does not fix anything,
+-- and the place to mark the term is the index the target was judged against
+-- (D-021).
+local function report_dangling(paths, xrefs, outer, index)
+  local scope = qi_indexes.scope_phrase(index, outer)
   for _, xref in ipairs(xrefs) do
     -- The target as the author wrote it: `qi_levels.levels_key` doubles a literal `!`
     -- back, exactly as it must be typed, so the string in the report is the
@@ -200,7 +210,16 @@ local function report_dangling(paths, xrefs, scope)
     -- other format, and the book store, carry no `resolve` and fall back to the
     -- one spelling they have.
     if not paths[qi_levels.levels_key(xref.resolve or xref.levels)] then
-      qi_core.warn(('%s= on %s points at "%s", which no index mark in this %s indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'):format(xref.attr, xref.context, target, scope))
+      -- The one-namespace shape FIRST, and the per-index one second: the
+      -- message-distinctness scan reads a named report's `warn(` call and the
+      -- 400 characters after it, so a second call written above this one
+      -- would put this literal inside that window and the scan would find two
+      -- owners for a needle that names one.
+      if scope == outer then
+        qi_core.warn(('%s= on %s points at "%s", which no index mark in this %s indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target'):format(xref.attr, xref.context, target, scope))
+      else
+        qi_core.warn(('%s= on %s points at "%s", which no mark of %s indexes; a reader following the cross-reference finds no such entry, so mark that term in %s or correct the target'):format(xref.attr, xref.context, target, scope, scope))
+      end
     end
   end
 end

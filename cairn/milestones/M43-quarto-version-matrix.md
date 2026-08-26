@@ -89,7 +89,7 @@ milestone; the gate's reasoning is in the work log.
       records the floor version, the query that returned it as the oldest
       non-prerelease Quarto release satisfying the declared range, and the date
       that query ran — a dated observation, not a standing claim.
-- [ ] T3. The comparison job: download the legs' extractions, compare the HTML
+- [x] T3. The comparison job: download the legs' extractions, compare the HTML
       indexes of the non-pinned legs against the pinned leg's, and report which
       fixture and which leg pair differed.
 - [ ] T4. Prove both checks discriminating on a probe branch, one plant per
@@ -109,6 +109,8 @@ milestone; the gate's reasoning is in the work log.
 - 2026-08-26: plan gate chose a bounded four-fixture matrix over running `tests/run-tests.sh` on each leg, because the suite pins `M33_NOENGINE_PRODUCER=LuaTeX` and the floor renders through xelatex, so it cannot be green there as written; falsified by the suite's engine-dependent checks being made version-aware. The suite runs 396 checks in 5m16s locally, so its cost was not the reason.
 - 2026-08-26: T1 — `tests/indexdump.py`, `html`/`pdf` modes over one artifact; `htmlindex.section_rows()` gained the `hrefs` flag `row()` already had, so the dump states where each locator points rather than how many there are. Its judging clauses are split from its reads (`html_rows`, `pdf_rows`) so each is reachable by a plant. Suite: four unplanted controls (single index, two declared indexes, a book's cross-page locators, a printed PDF index) and six planted clauses. 668 checks green.
 - 2026-08-26: implement gate — the extraction lives in its own `tests/indexdump.py` rather than as modes on the two reader modules; the HTML dump uses the locator-href row form rather than the count form; and the pinned leg's version is read out of `pages.yml` at run time rather than copied into `versions.yml`.
+- 2026-08-26: minor amendment — T3's reader is built before T2's workflow, because the workflow's plan job and its comparison job both run it; the task list's order is otherwise unchanged.
+- 2026-08-26: T3 — `tests/versioncheck.py`, `compare` (every leg's HTML extraction against the baseline leg's, byte for byte, naming each fixture and each leg pair, reporting the PDF extractions it deliberately leaves uncompared) and `legs` (the matrix JSON the workflow renders on). `tests/pagescheck.py` gained a `version` mode over `read_pin`, split out of `check_pin`, printing the pin to stdout alone. Suite: the comparison run over this run's own extractions, the matrix asserted per event, and nine planted clauses. 682 checks green.
 - 2026-08-26: criteria audit ran in full mode (user-facing tier). It returned findings on all five drafted criteria: four bound a property of the checking machinery rather than of the deliverable (a recorded run URL, a log's fixture list, a message's wording, a header comment's content), which moved to T2, T4 and T5; AC1 let the workflow name its own fixture set, now named in the criterion; AC4's "oldest release satisfying the range" quantified over every Quarto release ever published, narrowed to the pinned 1.4.549 with the query kept as a dated observation in T2; AC5 promised README and the site agree with a fixture list nothing enumerates, narrowed to the floor version; and the equality comparison's relation to D-004 is now stated in Scope. Two findings went to the gate as questions — PDF comparability across engines, and one plant standing in for a family free in three axes.
 
 ## Decisions

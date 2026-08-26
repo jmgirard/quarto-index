@@ -15620,6 +15620,161 @@ M43ROWS
 
   pass "M43 self-test: each clause of tests/indexdump.py is planted on its own and shown red, while the same reader passes unplanted on this run's own captures — an index section the page does not carry, an index the reader cannot read at all, an artifact that does not exist, a heading the PDF does not print, a heading with no entry under it, and a column carrying no top-level entry"
 fi
+
+# ---------------------------------------------------------------------------
+# M43 T3 — tests/versioncheck.py, the comparison job's own reader. The workflow
+# runs it against directories `actions/download-artifact` unpacked; here it is
+# run against a legs tree built out of THIS run's own extractions, so the
+# unplanted control is a comparison over real dumps of real renders rather than
+# over invented rows.
+#
+# Two legs of identical content is what a green matrix looks like, so the
+# control below is the shape the workflow reports on a healthy run.
+# ---------------------------------------------------------------------------
+M43L="$WORK/m43legs"
+rm -rf "$M43L"
+mkdir -p "$M43L/index-pinned" "$M43L/index-floor"
+for pair in "demo.html:m43-demo-html" "named-indexes.html:m43-named-html" \
+            "book.html:m43-book-html" "demo.pdf:m43-demo-pdf"; do
+  cp "$WORK/${pair#*:}.txt" "$M43L/index-pinned/${pair%%:*}.txt"
+  cp "$WORK/${pair#*:}.txt" "$M43L/index-floor/${pair%%:*}.txt"
+done
+
+M43CMP="$WORK/m43-compare.txt"
+python3 tests/versioncheck.py compare "$M43L" pinned > "$M43CMP" 2>&1 \
+  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison reader calls two legs holding the same extractions different"; }
+# AC2 asks the comparison to name each fixture it compared, so the report is
+# read rather than the exit status alone: a reader that compared nothing and a
+# reader that compared three fixtures both exit 0.
+# The fixture name is the extraction's own, with the `.html.txt` suffix off,
+# so `demo.html.txt` and `demo.pdf.txt` are two formats of the one fixture.
+for fixture in demo named-indexes book; do
+  grep -qE "^ok +M43-AC2: $fixture — the .* leg emits the index" "$M43CMP" \
+    || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not name $fixture as a fixture it compared"; }
+done
+grep -qF -- '3 comparison(s) over 3 fixture(s)' "$M43CMP" \
+  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not state that it compared the 3 HTML extractions it was given"; }
+grep -qF -- '1 PDF extraction(s) were uploaded and are not compared' "$M43CMP" \
+  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not say that the PDF extraction beside them was left uncompared, so a reader cannot tell it was excluded from one that was never there"; }
+pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the 3 fixtures it compared, while saying that the PDF extraction beside them is uploaded and deliberately not compared"
+
+# The matrix the workflow renders on: two exact versions on a push, and the
+# release channel added on a scheduled or manual run.
+M43LEGS_PUSH=$(python3 tests/versioncheck.py legs 1.4.549 1.10.18 push)
+printf '%s' "$M43LEGS_PUSH" | grep -qF '"name": "release"' \
+  && fail "M43-AC1: a push run's matrix carries the release-channel leg, whose red can trace to an upstream release rather than to a commit"
+for leg in floor pinned; do
+  printf '%s' "$M43LEGS_PUSH" | grep -qF "\"name\": \"$leg\"" \
+    || fail "M43-AC1: a push run's matrix carries no \`$leg\` leg"
+done
+M43LEGS_CRON=$(python3 tests/versioncheck.py legs 1.4.549 1.10.18 schedule)
+printf '%s' "$M43LEGS_CRON" | grep -qF '"name": "release"' \
+  || fail "M43-AC1: a scheduled run's matrix carries no release-channel leg"
+M43LEGS_HAND=$(python3 tests/versioncheck.py legs 1.4.549 1.10.18 workflow_dispatch)
+printf '%s' "$M43LEGS_HAND" | grep -qF '"name": "release"' \
+  || fail "M43-AC1: a manually dispatched run's matrix carries no release-channel leg"
+pass "M43-AC1: the matrix a push renders on is the floor and pinned legs alone, and a scheduled or manually dispatched run adds the release-channel leg"
+
+# The pinned leg's version is asked of pages.yml rather than written into
+# versions.yml, so this asserts the asking works and that its answer is the
+# pin the M42 check above judges — one reader, one pin, no second copy.
+M43PINNED=$(python3 tests/pagescheck.py version .github/workflows/pages.yml)
+grep -qF "version: $M43PINNED" .github/workflows/pages.yml \
+  || fail "M43-AC1: the version mode reports the Pages workflow pinning Quarto to $M43PINNED, which is not a version that file names"
+pass "M43-AC1: the pinned leg's version is read out of .github/workflows/pages.yml at run time ($M43PINNED) rather than copied into the version matrix"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M43 T3 — a planted defect per CLAUSE of the comparison reader, the matrix
+  # builder and the version mode. Each legs tree is built by copying the
+  # control tree above and breaking exactly one thing about it, so the reader
+  # that goes red below is the reader that ran green on the same tree unbroken.
+  # -------------------------------------------------------------------------
+  M43V="$WORK/m43vprobe"
+  rm -rf "$M43V"
+  mkdir -p "$M43V"
+
+  # <name> — a copy of the control legs tree at $M43V/<name>, for one clause
+  # to break.
+  m43_legs_copy() {
+    rm -rf "$M43V/$1"
+    cp -R "$M43L" "$M43V/$1"
+    [ -f "$M43V/$1/index-floor/demo.html.txt" ] \
+      || fail "M43 self-test: the copied legs tree holds no floor extraction of demo.html, so the case below is not about the tree the control read"
+  }
+
+  m43_legs_copy differ
+  printf '0\tPlanted Term\t#qi-mark-99\n' >> "$M43V/differ/index-floor/demo.html.txt"
+  m43_planted 'a leg emitting an index row the baseline leg does not, which is the difference this whole matrix exists to find' \
+    'the `floor` leg emits a different index from the `pinned` leg' \
+    python3 tests/versioncheck.py compare "$M43V/differ" pinned
+  # The report is read too: a difference nobody can locate is a red run with no
+  # next step.
+  python3 tests/versioncheck.py compare "$M43V/differ" pinned > "$M43V/differ.txt" 2>&1 || true
+  grep -qF 'Planted Term' "$M43V/differ.txt" \
+    || { cat "$M43V/differ.txt" >&2; fail "M43 self-test: the comparison reports a difference without naming the row that differs"; }
+  grep -qE '^FAIL: M43-AC2: demo — the `floor` leg emits a different index' "$M43V/differ.txt" \
+    || { cat "$M43V/differ.txt" >&2; fail "M43 self-test: the comparison reports a difference without naming the fixture it is in and the leg pair it is between"; }
+  printf 'ok   self-test: the difference the comparison reports names both the fixture and the row that differs\n'
+
+  m43_legs_copy oneleg
+  rm -rf "$M43V/oneleg/index-floor"
+  m43_planted 'a run in which only the baseline leg uploaded, which would otherwise be compared against itself' \
+    'this job would pass by comparing nothing' \
+    python3 tests/versioncheck.py compare "$M43V/oneleg" pinned
+
+  m43_legs_copy nobaseline
+  rm -rf "$M43V/nobaseline/index-pinned"
+  m43_planted 'a run in which the baseline leg itself never uploaded' \
+    'holds no `index-pinned` directory' \
+    python3 tests/versioncheck.py compare "$M43V/nobaseline" pinned
+
+  m43_legs_copy nohtml
+  rm -f "$M43V/nohtml/index-pinned"/*.html.txt
+  m43_planted 'a baseline leg carrying no HTML extraction, over which every leg would be compared on an empty set of fixtures' \
+    'would be compared over an empty set of fixtures' \
+    python3 tests/versioncheck.py compare "$M43V/nohtml" pinned
+
+  m43_legs_copy emptydump
+  : > "$M43V/emptydump/index-pinned/demo.html.txt"
+  : > "$M43V/emptydump/index-floor/demo.html.txt"
+  m43_planted 'two legs whose extraction of a fixture is empty, which compares equal while saying nothing about any index' \
+    'agrees with anything' \
+    python3 tests/versioncheck.py compare "$M43V/emptydump" pinned
+
+  m43_legs_copy skewed
+  rm -f "$M43V/skewed/index-floor/book.html.txt"
+  m43_planted 'two legs that did not render the same fixtures, whose intersection would report agreement about a fixture one never rendered' \
+    'did not render the same fixtures' \
+    python3 tests/versioncheck.py compare "$M43V/skewed" pinned
+
+  m43_planted 'a path the legs were never unpacked to' \
+    'is not a directory' \
+    python3 tests/versioncheck.py compare "$M43V/never-unpacked" pinned
+
+  m43_planted 'a matrix whose floor and pinned legs name the same Quarto version, which compares a version against itself' \
+    'compares a version against itself' \
+    python3 tests/versioncheck.py legs 1.10.18 1.10.18 push
+
+  # The version mode's own promise: stdout carries the version ALONE, so a
+  # workflow step can capture it into a matrix entry. Read on a workflow whose
+  # pin this reader refuses, where a diagnostic printed to stdout would be
+  # captured as if it were a version.
+  M43WF="$M43V/channel-pin.yml"
+  sed 's|version: 1.10.18|version: release|' .github/workflows/pages.yml > "$M43WF"
+  cmp -s .github/workflows/pages.yml "$M43WF" \
+    && fail "M43 self-test: the mutation for the channel pin changed nothing, so the case below is about the unplanted workflow"
+  M43OUT="$M43V/channel-pin.out"
+  python3 tests/pagescheck.py version "$M43WF" > "$M43OUT" 2>"$M43V/channel-pin.err" \
+    && fail "M43 self-test: the version mode reported a version for a workflow naming a release channel, which is not a pin"
+  [ ! -s "$M43OUT" ] \
+    || { cat "$M43OUT" >&2; fail "M43 self-test: the version mode printed to stdout while failing, so a workflow step would capture its diagnostic as the version"; }
+  grep -qF 'not an exact version string' "$M43V/channel-pin.err" \
+    || { cat "$M43V/channel-pin.err" >&2; fail "M43 self-test: the version mode failed on a channel pin, but not by saying it is not an exact version"; }
+  printf 'ok   self-test: the version mode fails on <<a workflow naming a release channel where an exact pin is required>>, saying so on stderr and leaving stdout empty\n'
+
+  pass "M43 T3 self-test: each clause of the comparison reader, the matrix builder and the version mode is planted on its own and shown red, while the same readers pass unplanted on this run's own extractions — a leg emitting a row the baseline does not, one leg alone, a missing baseline, a baseline with no HTML extraction, an empty extraction, two legs that rendered different fixtures, a path nothing was unpacked to, a matrix whose two exact legs are the same version, and a workflow whose pin is a channel"
+fi
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

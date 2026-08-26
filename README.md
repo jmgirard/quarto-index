@@ -645,7 +645,10 @@ indexes:
 ```
 
 `name` is what a mark writes to file in that index; `title` is the heading a
-reader sees. A mark says which index it belongs to with `index=`:
+reader sees. A name holds ASCII letters, digits, hyphen and underscore and
+begins with a letter, because it becomes the id of the section that index
+prints under; an entry declaring any other name is reported and declares no
+index. A mark says which index it belongs to with `index=`:
 
 ```markdown
 [Cantor]{.index index="people"}

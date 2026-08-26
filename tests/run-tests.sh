@@ -12734,6 +12734,7 @@ pass "M38-AC5: an HTML book folds its named mark and its named marker into the o
 # ---------------------------------------------------------------------------
 read -r -d '' README_INDEXES_CLAIMS <<'MANIFEST' || true
 declaration fields	`name` is what a mark writes to file in that index; `title` is the heading a reader sees
+name shape	A name holds ASCII letters, digits, hyphen and underscore and begins with a letter
 unnamed mark	A mark that names no index files in the first declared index
 marker names its index	A placement marker names its index the same way
 one index in latex	A LaTeX or PDF render builds a single index
@@ -13893,12 +13894,16 @@ M30PLANTPY
     's|<h1 class="unnumbered">Index</h1>|<h2 class="unnumbered">Index</h2>|g'
   probe_defect "a folded union section headed one level below an h1" \
     check_folded_heading "$M38R/book-level.html" "M38 probe"
-  # The fourth clause: how many sections the page carries. A folded render
-  # prints one, and a page printing two would otherwise be read by whichever
-  # one came first.
+  # A second section on the page. This is NOT the reader's own section-count
+  # clause, though it was written to be: `index_sections` raises ValueError on
+  # the heading-less section this plant inserts, before the count is ever
+  # compared, and `probe_defect` reads only the exit status. What is shown red
+  # here is the page being unreadable at all. The count clause itself is
+  # unplanted; M38 descoped the promise that every clause is proven (M38
+  # review round 3).
   probe_plant "$M38R/book.html" "$M38R/book-twice.html" \
     's|<section id="qi-index"|<section id="qi-index-extra"></section><section id="qi-index"|'
-  probe_defect "a folded book page carrying two generated sections where a folded render prints one" \
+  probe_defect "a folded book page carrying a second section the reader cannot read at all" \
     check_folded_heading "$M38R/book-twice.html" "M38 probe"
 
   # README's section and the command ledger (R6). The claims, the declaration
@@ -13985,7 +13990,7 @@ M30PLANTPY
     || fail "M38 self-test: the link reader's finding does not name the id it could not find"
   printf 'ok   self-test: the check fails on <<a section id the page does not carry>>, reporting a finding that names it rather than raising\n'
 
-  pass "M38 self-test: every clause each of this milestone's readers states is planted on its own and shown red, while each reader passes on the same artifact unplanted — the page-wide id sweep on a space, a hash and an angle bracket, and its dotted-id sibling on the one character legal in an id and still refused; the folded-site reader on none of the one index, two of it, a site count the fixture does not write, an index at no site at all, and an index at the wrong site; the second-marker reader on none of the one index, labels that are not the fixture's two in order, and the index at the second marker; the folded-heading reader on two sections, an id naming one declared index, a heading below an h1, and a heading carrying one declaration's own title; the README reader on a missing claim, a declaration block whose title or indentation is not the one pinned, a fixture that does not exist, a command never executed or executed dirty, and each of the four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the link reader on a section id the page does not carry"
+  pass "M38 self-test: each clause named below is planted on its own and shown red, while each reader passes on the same artifact unplanted — the page-wide id sweep on a space, a hash and an angle bracket, and its dotted-id sibling on the one character legal in an id and still refused; the folded-site reader on two of the one index, a site count the fixture does not write, an index at no site at all, and an index at the wrong site; the second-marker reader on none of the one index, labels that are not the fixture's two in order, and the index at the second marker; the folded-heading reader on an id naming one declared index, a heading below an h1, and a heading carrying one declaration's own title, its fourth clause — the section count — planted by nothing, since the plant written for it is refused as an unreadable page before the count is compared; the README reader on a missing claim, a declaration block whose title or indentation is not the one pinned, a fixture that does not exist, a command never executed or executed dirty, and each of the four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the link reader on a section id the page does not carry"
 fi
 
 }

@@ -5,7 +5,7 @@
 - **Depends on:** M40
 - **Driving RR:** —
 - **Principles touched:** GP1, GP6
-- **Branch/PR:** `m041-example-gallery`
+- **Branch/PR:** `m041-example-gallery` / https://github.com/jmgirard/quarto-index/pull/41
 
 ## Goal
 
@@ -39,25 +39,25 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1. Every path `git ls-files examples | grep -E '^examples/[^/]+\.qmd$'`
+- [x] AC1. Every path `git ls-files examples | grep -E '^examples/[^/]+\.qmd$'`
       returns (55 today) appears exactly once as a sequence item under either
       `shown:` or `not-shown:` in `site/gallery.yml`, and under no other key.
-- [ ] AC2. For each fixture under `shown:`, its gallery page under
+- [x] AC2. For each fixture under `shown:`, its gallery page under
       `site/_site/` holds a `<pre><code>` element whose concatenated text
       content, HTML-entity-decoded and with a trailing newline normalized, is
       byte-identical to that fixture's `.qmd` file under `examples/`.
-- [ ] AC3. Every fixture under `shown:` is one the acceptance suite holds a
+- [x] AC3. Every fixture under `shown:` is one the acceptance suite holds a
       hand-derived HTML index manifest for, and every entry in that manifest
       appears in the index region of the rendered fixture page that fixture's
       gallery page embeds. `shown:` holds at least eight fixtures.
-- [ ] AC4. For each fixture under `shown:` that the suite holds a hand-derived
+- [x] AC4. For each fixture under `shown:` that the suite holds a hand-derived
       PDF index manifest for — at least three — its gallery page carries a link
       whose target is a `.pdf` under `site/_site/` whose `pdftotext`
       extraction contains every entry in that manifest.
-- [ ] AC5. `quarto render site`, run with no other render in flight, leaves
+- [x] AC5. `quarto render site`, run with no other render in flight, leaves
       `examples/` unchanged: a recursive listing of `examples/` with a sha256
       per file is identical immediately before and immediately after it.
-- [ ] AC6. `tests/run-tests.sh --self-test` exits 0.
+- [x] AC6. `tests/run-tests.sh --self-test` exits 0.
 
 ## Coverage
 
@@ -142,3 +142,136 @@ printed their passing line over a set those pages were not in. They now run
 after it, and read 141 captured pages where they read 100.
 
 ## Review
+
+Fresh evidence, all from one `tests/run-tests.sh --self-test` run on
+`m041-example-gallery` at 1784567 (exit 0, 618 checks).
+
+- **AC1** — verified. `tests/gallerycheck.py listing` reads `site/gallery.yml`
+  against `git ls-files examples`: all 55 fixtures git enumerates under
+  `examples/` are declared exactly once, 10 shown and 45 not shown. Its
+  duplicate clause counts over every key in the file, so a fixture named under
+  a third key as well is caught; a listed path git enumerates no fixture for is
+  caught separately.
+- **AC2** — verified. `tests/gallerycheck.py source` reads the CAPTURED site at
+  `tests/.work/cap/docs-site/_site` (M24) rather than `site/_site`, which a
+  later render would overwrite: each of the 10 shown fixtures has a
+  `<pre><code>` on its gallery page whose text content, entities decoded by the
+  parser and a trailing newline normalized, is its fixture's bytes.
+- **AC3** — verified in two halves. `gallerycheck.py manifests` over the
+  15-row registry the suite writes: all 10 shown fixtures have a hand-derived
+  HTML index manifest, and `shown:` holds 10 against the floor of 8.
+  `gallerycheck.py embedded` resolves each gallery page's single `<iframe>`
+  `src` inside the captured site and requires every manifest entry among the
+  entry terms `htmlindex.section_rows` reads out of that page's generated index
+  — 134 entries across the 10 framed pages, none absent.
+- **AC4** — verified. `gallerycheck.py pdf` reads each shown fixture that has a
+  hand-derived PDF index manifest — 5 of them (demo, sortkey, marker,
+  xref-conflict, empty-levels), against the floor of 3 — resolves the single
+  `.pdf` href its gallery page carries inside the captured site, and requires
+  every manifest entry in the `pdftotext` extraction with whitespace runs
+  collapsed, so a column break cannot hide one. 53 entries across 5 PDFs, none
+  absent. The check also fails when fewer than 3 fixtures were judged, so the
+  floor cannot be met by an empty sweep.
+- **AC5** — verified. A `find`-plus-`shasum -a 256` listing of `examples/`,
+  asserted non-empty first, is taken immediately before and immediately after
+  the suite's one `quarto render site`, and the two are diffed: 172 files
+  byte-identical, none added or removed. The hash comes before the path, so a
+  fixture whose content changed is caught as well as a stray render artifact.
+- **AC6** — verified. `tests/run-tests.sh --self-test` exits 0 at 618 checks
+  on this branch.
+
+### Consistency gate
+
+`cairn_validate.py` exits 0 — every check PASS, every advisory OK, the
+`release window` advisory among them. No `DESIGN.md` principle changed (the
+diff adds an Architecture paragraph and touches no IP/GP), so `cairn_impact.py`
+does not apply. The active profile is `generic`, whose `consistency-gate` slot
+names no toolchain check, so that half is a clean no-op.
+
+No Driving RR, so there is no projection to set against a measured outcome.
+
+### Independent review
+
+Surface tier is user-facing and the diff touches executable surface
+(`site/build_gallery.py`, `tests/gallerycheck.py`, `tests/galleryplant.py`,
+`tests/run-tests.sh`, `tests/htmlsweep.py`), so the full three-lens fan-out ran
+in fresh context.
+
+- **[S] blame-history** — no defect. It traced both changes to code an earlier
+  milestone placed deliberately and found each justified: the `pending` sweep
+  going structural is what M24's own comment already claimed the sweep did, and
+  its planted `data-qi-pending` on `<body>` is still caught; the residue sweeps
+  moving after the site render restores M24's "nothing this run renders is
+  outside the domain the sweeps claim" rather than weakening it, since the
+  gallery's pre-render step now renders ten more fixture pages.
+- **[S] prior-review record** — no findings. It read the archived `## Review`
+  sections touching these files (M40 primarily, M24/M16/M30 secondarily) and
+  found nothing this diff reintroduces; the GitHub probe returned no inline
+  review comments repo-wide, so that surface was not walked.
+- **[O] diff-bug** — 18 findings, ranked. None demonstrates an acceptance
+  criterion failing, and none is a load-bearing defect in what the gallery does
+  for a reader, so none meets the return floor. Verified against the
+  implementation before triage: F2's stale-artifact path is real but
+  `examples/` carries no build artifact today (the ignored trees are book
+  subdirectories, which `stage` skips); F16's coupling is real and latent
+  (`marker.qmd` is shown and keeps no marker; the two fixtures in
+  `KEPT_MARKERS` are not shown); F18's dead `has_pdf` and two unreachable
+  `if not shown` clauses confirmed by reading. Recommended disposition below;
+  the maintainer triaged at the gate.
+
+  1. F1. AC4 extracts with plain `pdftotext`, no `-layout`; `tests/pdfindex.py`
+     documents that plain extraction interleaves a two-column index. Membership
+     survives interleaving today, but a wrapped multi-word entry could not.
+  2. F2. `stage()` copies every non-`.qmd` file under `examples/` into the
+     scratch tree, so a stale `.pdf`/`.idx`/`.ind` left by README's own
+     documented render would be staged, and `main()`'s only output guard is
+     `os.path.isfile` on the same path.
+  3. F3. `find -print0 | sort -z | xargs -0 shasum` — GNU `xargs` without `-r`
+     runs the command on empty input, so AC5's `[ -s ]` non-empty guard cannot
+     discriminate on Linux. Invisible on macOS; M42 puts this on CI.
+  4. F4. The AC5 self-test exercises `examples_state()` over a copy, never the
+     shipped `diff`+`fail` line, so a typo there would leave AC5 green.
+  5. F5. The "PDF drops one manifest entry" plant substitutes a whole different
+     PDF, which a far weaker check would catch; the per-entry loop is not shown
+     to discriminate.
+  6. F6. AC2's "a trailing newline normalized" is implemented as `rstrip('\n')`,
+     which strips all of them — a silent widening of the criterion.
+  7. F7. AC3/AC4 compare bare entry terms, discarding level, locator count,
+     order, and which index section printed them; for the `sections` manifest
+     an entry stated under one named index is satisfied by another.
+  8. F8. `corpus()` runs `git ls-files` without `-z`, so a fixture whose name
+     git C-quotes leaves AC1's domain silently.
+  9. F9. The structural `pending` sweep no longer sees the attribute name in a
+     comment or in script/style data, and a parse the builder recovers from
+     reads as clean; no plant writes it inside a self-contained gallery render.
+  10. F10. `m41_plant_yml` discards its mutation script's exit status; a
+      mutation that matched nothing fails safe but misdiagnoses.
+  11. F11. `shasum` is now load-bearing for AC5 and is not in the suite's
+      preflight tool check beside `pdftotext` and `pdfinfo`.
+  12. F12. `pdftotext` output is decoded with the locale encoding, not UTF-8.
+  13. F13. `.gallery-build/` is removed at the start of a build and left
+      populated at the end.
+  14. F14. Two registry rows naming the same fixture and kind are silently
+      absorbed by the readers' dicts, with no failure and no count mismatch.
+  15. F15. Resolved `<iframe>` and `.pdf` targets are only `isfile`-checked,
+      never constrained to the captured site; `htmlindex.resolve_href` is the
+      suite's established convention and is not used.
+  16. F16. Moving the whole-set sweeps after the site render widened
+      `sweep_marker`'s equality domain to the docs site. It holds only because
+      neither fixture in `KEPT_MARKERS` is shown; nothing records that
+      `shown:` and `KEPT_MARKERS` are now coupled.
+  17. F17. The shortcode escape is unanchored, so an already-escaped
+      `{{{< … >}}}` in a fixture would be corrupted. No fixture does this, and
+      AC2 would catch it.
+  18. F18. Smaller notes: `check_source` opens the fixture without `with` and
+      through a cwd-relative path; two `if not shown` clauses are unreachable;
+      `gallery_page`'s `has_pdf` is dead (`main` always passes `True`); AC2
+      says "concatenated" text content but each `<code>` is compared alone;
+      `examples_state`'s `find -type f` excludes symlinks and empty
+      directories; and several clauses named in T6 have no plant.
+
+### Gate
+
+Every acceptance criterion verified with fresh evidence; the consistency gate
+passes; no finding meets the return floor.
+

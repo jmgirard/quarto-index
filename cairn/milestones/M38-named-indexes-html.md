@@ -1,6 +1,6 @@
 # M38: Marks name which index they belong to, and the HTML back-end prints each
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -159,6 +159,7 @@ collation rules — nothing here changes how one index is ordered or printed.
 - 2026-08-25: T18 — a plant for every clause these readers state and none reached: the folded-site reader on an index standing before every placement site; the second-marker reader on a capture carrying none of the one index and on labels that are not the fixture's two in order; the folded-heading reader on a page carrying two sections; the README reader on each of its four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the new dotted-id reader on a dot in a section id, shown beside a control asserting the page-wide sweep stays quiet on the same page, since the two readers are only worth having apart. The link reader's new clause is read rather than probed: a traceback and a finding both exit non-zero, and the traceback is what the clause exists to stop, so the finding itself is asserted to name the id and to carry no traceback. The block's two comments now state the clause counts their readers state — four and four, not two and three — and the closing summary was rewritten to what is actually planted. `--self-test` green, 559 checks (was 549); the plain suite 378.
 - 2026-08-25: T22 — DESIGN's Architecture section carried the module list and the reset count this milestone made stale. `indexes.lua` joins the module list, `passes.Reset` now reads "the four" it calls with `indexes.lua` first, and `data-index` joins the pass-through residue enumeration, each marked `corrected M38`. Checked against the code rather than recalled: `passes.lua:32-35` calls four resets and its own comment says "First of the four", and the captured gfm render carries `data-index="authors"`.
 - 2026-08-25: T23 and T24 — two prose claims the branch made false. `examples/book/last.qmd` said its third marker "places that one instead and says so"; the captured book log says the marker "places nothing", and the fixture's prose is oracle documentation, so it was rewritten to what the report draws. Verified against this run's capture: last.qmd writes the placing marker at line 13, the duplicate at line 20 which is reported as a second marker for the built index, and the `people` marker at line 28 which draws the fold report alone and no duplicate report — which is what the corrected prose now says. README's Syntax paragraph called forms eight and nine "The last two" after a tenth was appended; they are now named. `--self-test` green, 559 checks.
+- 2026-08-25: T18-T24 complete; status review. `tests/run-tests.sh --self-test` exit 0, 559 checks; the plain suite 378. Not carried by this round, per the return's triage: F2, F3, F11, F12, F13, F14, F15, F16, F17 and the three blame-history findings stay follow-ups.
 
 ## Decisions
 

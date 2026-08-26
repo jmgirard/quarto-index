@@ -30,9 +30,12 @@ side it uses `imakeidx`, which ships with mainstream TeX distributions.
 
 ## Documentation
 
-The full documentation is a Quarto website in [`site/`](site/index.qmd): the
-supported marking forms, what each output format gets, where the two
-back-ends differ, and how a Quarto book gets one index.
+The full documentation is published at
+<https://jmgirard.github.io/quarto-index/>: the supported marking forms, what
+each output format gets, where the two back-ends differ, and how a Quarto book
+gets one index. Its source is the Quarto website in
+[`site/`](site/index.qmd), which GitHub Actions renders and publishes on every
+push to the default branch.
 
 ## Examples
 

@@ -98,6 +98,8 @@ suite in CI → not planned; a candidate row.
 - 2026-08-26: T2 — `.github/workflows/pages.yml` written. `actions/configure-pages` is not used; see this file's Decisions.
 - 2026-08-26: T3 — verified against a real `quarto render site`: the render's whole output under `site/` is `site/_site/`, `site/gallery/` and `site/.quarto/`, all three already covered (the first two by the root ignore file, the third by Quarto's own `site/.gitignore`), and `git status` reports no untracked path under `site/`. Nothing to extend.
 - 2026-08-26: T4 — `tests/pagescheck.py` added with three readers (`pin`, `built`, `contains`); the suite runs `pin` and `built` as standing checks and adds the AC5 clauses after the site render. Twenty planted cases and two discriminating controls, each clause planted on its own.
+- 2026-08-26: T6 (part) — README and the site's entry page name the published URL, and `tests/pagescheck.py url` binds both to the URL the `origin` remote implies and to the base path the suite's link check resolves against; the link check's base path moved from the empty string to the repository segment, which M40 left as the value this milestone sets. The CI-matrix candidate row now names the workflow file. Six more planted cases; the no-remote case first passed for the wrong reason, because `git -C` walks up out of a bare directory in the work tree into this checkout, and now plants a repository of its own.
+- 2026-08-26: suite green after those changes: `tests/run-tests.sh --self-test`, 649 checks, exit 0.
 
 ## Decisions
 

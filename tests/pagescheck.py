@@ -13,9 +13,17 @@
       The rendered site carries the entry page a visitor lands on, and every
       fixture the gallery declaration shows has its gallery page, its rendered
       index page and its PDF. This is the render-completeness guard the
-      workflow runs before it uploads: `quarto render` reports a nested
-      fixture render failing without failing the outer render, so a site that
-      exits 0 having dropped a page reaches Pages unless something looks.
+      workflow runs before it uploads: Quarto reports a nested fixture render
+      failing without failing the render that invoked it, so a site that exits
+      0 having dropped a page reaches Pages unless something looks.
+
+  url <readme> <site-index> <runner> [repo-dir]
+      README and the site's own entry page both name the URL GitHub Pages
+      serves this repository's site at, and the base path `<runner>` resolves
+      a root-relative link against is that URL's own path segment. The URL is
+      derived from the `origin` remote rather than written into this check, so
+      the two documents are held against a fact neither of them states, and
+      the base path and the published URL cannot drift apart.
 
   contains <artifact-dir> <rendered-site>
       Every `.html` and `.pdf` path under the rendered site appears in the
@@ -36,6 +44,7 @@ Exits non-zero with a `FAIL:` line naming what it found.
 
 import os
 import re
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.join(
@@ -50,6 +59,15 @@ PDF_FLOOR = 3
 # `version: 1.10.18` under the Quarto setup action's `with:` block. The value
 # is required to be a bare dotted numeric string: `release`, `pre-release` and
 # a bare major line are channels, not pins, and the criterion is about a pin.
+# `SITE_BASE_PATH="<value>"` at column 0 in the suite: the assignment, not the
+# uses of the variable that follow it.
+BASE_PATH = re.compile(r'^SITE_BASE_PATH="(?P<value>[^"]*)"\s*$', re.M)
+# `https://github.com/<owner>/<repo>` or `git@github.com:<owner>/<repo>`, with
+# an optional `.git`.
+REMOTE = re.compile(
+    r'^(?:https://github\.com/|git@github\.com:)'
+    r'(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?$')
+
 PIN = re.compile(r'^\s+version:\s*(?P<value>\S+)\s*$')
 EXACT = re.compile(r'^\d+(\.\d+)*$')
 REQUIRED = re.compile(r'^quarto-required:\s*"?(?P<range>[^"\n]+?)"?\s*$')
@@ -191,8 +209,55 @@ def check_contains(artifact, site):
     return 0
 
 
+def check_url(readme, site_index, runner, repo_dir='.'):
+    result = subprocess.run(
+        ['git', '-C', repo_dir, 'remote', 'get-url', 'origin'],
+        capture_output=True, text=True)
+    if result.returncode != 0:
+        return fail('%s has no `origin` remote to derive the published URL '
+                    'from, so the URLs below would be held against nothing: '
+                    '%s' % (repo_dir, result.stderr.strip()))
+    remote = result.stdout.strip()
+    match = REMOTE.match(remote)
+    if not match:
+        return fail('the `origin` remote of %s is %r, which this check cannot '
+                    'read as a GitHub owner and repository; the published URL '
+                    'is derived from those two and from nothing else'
+                    % (repo_dir, remote))
+    owner, repo = match.group('owner'), match.group('repo')
+    published = 'https://%s.github.io/%s/' % (owner.lower(), repo)
+
+    wrong = []
+    for path, what in ((readme, 'the repository README'),
+                       (site_index, "the site's own entry page")):
+        text = open(path, encoding='utf-8').read()
+        if published not in text:
+            wrong.append('%s (%s) does not name %s' % (path, what, published))
+    if wrong:
+        return fail('the published URL the `origin` remote %s implies is %s, '
+                    'and %d document(s) do not name it:\n  %s'
+                    % (remote, published, len(wrong), '\n  '.join(wrong)))
+
+    found = BASE_PATH.findall(open(runner, encoding='utf-8').read())
+    if len(found) != 1:
+        return fail('%s makes %d assignment(s) to SITE_BASE_PATH; the base '
+                    'path this check compares is exactly one'
+                    % (runner, len(found)))
+    if found[0] != repo:
+        return fail('%s resolves a root-relative link against the base path '
+                    '%r, and the site is published under %r — the path '
+                    'segment of %s. A link the check calls resolved would be '
+                    'a 404 in production' % (runner, found[0], repo, published))
+    print('ok   M42-AC6: %s and %s both name %s, the URL the `origin` remote '
+          '%s implies, and %s resolves a root-relative link against %r, that '
+          "URL's own path segment"
+          % (readme, site_index, published, remote, runner, found[0]))
+    return 0
+
+
 MODES = {
     'pin': (check_pin, 2),
+    'url': (check_url, 3),
     'built': (check_built, 2),
     'contains': (check_contains, 2),
 }

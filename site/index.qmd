@@ -8,6 +8,11 @@ A Quarto extension for book-quality subject indexing. Mark index entries with
 a format-neutral span syntax; the extension emits the right thing per output
 format. Two back-ends ship: LaTeX/PDF and HTML.
 
+This site lives at <https://jmgirard.github.io/quarto-index/>. It is built from
+`site/` in the [source repository](https://github.com/jmgirard/quarto-index)
+and republished by GitHub Actions on every push to the default branch, so the
+pages here describe the extension as that branch has it.
+
 > **Pre-release: install at your own risk.** Until the first tagged release
 > the marking syntax is fluid and may change without a deprecation cycle.
 > Breaking changes are recorded in the changelog. From the first tagged

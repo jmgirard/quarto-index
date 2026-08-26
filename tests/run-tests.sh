@@ -13250,6 +13250,9 @@ python3 tests/pagescheck.py pin .github/workflows/pages.yml _extensions/index/_e
 python3 tests/pagescheck.py built site/gallery.yml "$SITE_OUT" \
   || fail "M42: the rendered site is missing a page the published site needs (its own FAIL line is above)"
 
+python3 tests/pagescheck.py url README.md site/index.qmd tests/run-tests.sh \
+  || fail "M42-AC6: README, the site's entry page and the base path this suite resolves root-relative links against do not agree on the URL the site is published at (its own FAIL line is above)"
+
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M40 T7 — a planted defect for each CLAUSE of each check M40 adds, not one
@@ -14134,7 +14137,79 @@ M42TWO
     'the criterion states the set compared holds at least 3' \
     python3 tests/pagescheck.py contains "$M42W/artifact" "$M42W/twopdfs"
 
-  pass "M42: each clause named above is planted on its own and shown red while the same reader passes unplanted — the pin check on two pins, no pin, a channel where an exact version is required, two declared ranges, no declared range, an operator it will not guess at, a floor that is not dotted numerics, and a floor above the pin, with a floor below the pin that a string comparison would reject accepted; the completeness check on a declaration showing nothing, a site with no entry page, and a shown fixture missing its gallery page, its rendered index page or its PDF, plus a shown list under the PDF floor; and the containment check on an artifact missing a page, an artifact path that is not a directory, a reference holding no page, and a reference under the PDF floor, with an artifact carrying an extra page still accepted"
+  # --- url -----------------------------------------------------------------
+  # The published URL is derived from the `origin` remote, so each document is
+  # planted by substituting the one URL it carries; the base path is planted
+  # in a copy of this script. The `origin` remote itself is planted by pointing
+  # the check at a directory that is not a repository with one.
+  M42_URL="https://jmgirard.github.io/quarto-index/"
+
+  m42_plant readme-nourl README.md "$M42_URL" 'https://example.invalid/'
+  m42_planted 'a README naming no URL the origin remote implies' \
+    'the repository README) does not name' \
+    python3 tests/pagescheck.py url "$M42W/readme-nourl" site/index.qmd tests/run-tests.sh
+
+  m42_plant siteindex-nourl site/index.qmd "$M42_URL" 'https://example.invalid/'
+  m42_planted "a site entry page naming no URL the origin remote implies" \
+    "the site's own entry page) does not name" \
+    python3 tests/pagescheck.py url README.md "$M42W/siteindex-nourl" tests/run-tests.sh
+
+  # The base path is substituted through an anchored rewrite rather than a
+  # substring one: these very cases pass spellings of the assignment as
+  # arguments, and a substring plant would match one of those. The rewrite
+  # aims at a line that begins at column 0, which no argument here does, and
+  # asserts there is exactly one such line.
+  m42_plant_base() {
+    python3 - "$M42W/$1" "${@:2}" <<'M42BASE'
+import re
+import sys
+dst, lines = sys.argv[1], sys.argv[2:]
+src = 'tests/run-tests.sh'
+pattern = re.compile(r'^SITE_BASE_PATH="[^"]*"$', re.M)
+text = open(src, encoding='utf-8').read()
+sites = pattern.findall(text)
+if len(sites) != 1:
+    raise SystemExit('FAIL: M42 self-test: %s makes %d base-path assignment(s) '
+                     'at column 0; a plant substitutes exactly one site'
+                     % (src, len(sites)))
+planted = pattern.sub(lambda _m: '\n'.join(lines), text, count=1)
+if planted == text:
+    raise SystemExit('FAIL: M42 self-test: the base-path plant %s replaced the '
+                     'assignment with itself, so it is a no-op' % dst)
+open(dst, 'w', encoding='utf-8').write(planted)
+M42BASE
+  }
+
+  m42_plant_base runner-otherbase 'SITE_BASE_PATH="somewhere-else"'
+  m42_planted 'a base path that is not the path segment the site is published under' \
+    'would be a 404 in production' \
+    python3 tests/pagescheck.py url README.md site/index.qmd "$M42W/runner-otherbase"
+
+  m42_plant_base runner-nobase 'SITE_BASE_PATH_UNSET="quarto-index"'
+  m42_planted 'a suite assigning no base path at all, over which the comparison would sweep nothing' \
+    'makes 0 assignment(s) to SITE_BASE_PATH' \
+    python3 tests/pagescheck.py url README.md site/index.qmd "$M42W/runner-nobase"
+
+  m42_plant_base runner-twobases 'SITE_BASE_PATH="quarto-index"' 'SITE_BASE_PATH="quarto-index"'
+  m42_planted 'a suite assigning the base path twice, so which one the link check uses is not a fact' \
+    'makes 2 assignment(s) to SITE_BASE_PATH' \
+    python3 tests/pagescheck.py url README.md site/index.qmd "$M42W/runner-twobases"
+
+  # A bare directory is not this plant: `git -C` walks up out of it and reads
+  # THIS repository's remote, so the case would pass for the wrong reason —
+  # which it did, until the plant was run with the work directory inside the
+  # checkout. The plant is a repository of its own carrying no remote, and it
+  # is asserted to be one before it is used.
+  rm -rf "$M42W/noremote"
+  mkdir -p "$M42W/noremote"
+  git init -q "$M42W/noremote"
+  [ "$(git -C "$M42W/noremote" rev-parse --show-toplevel)" = "$(cd "$M42W/noremote" && pwd -P)" ] \
+    || fail "M42 self-test: the no-remote plant is not its own repository, so git would read the enclosing checkout's remote and the case below would pass for the wrong reason"
+  m42_planted 'a repository carrying no origin remote to derive the published URL from' \
+    'has no `origin` remote to derive the published URL from' \
+    python3 tests/pagescheck.py url README.md site/index.qmd tests/run-tests.sh "$M42W/noremote"
+
+  pass "M42: each clause named above is planted on its own and shown red while the same reader passes unplanted — the pin check on two pins, no pin, a channel where an exact version is required, two declared ranges, no declared range, an operator it will not guess at, a floor that is not dotted numerics, and a floor above the pin, with a floor below the pin that a string comparison would reject accepted; the completeness check on a declaration showing nothing, a site with no entry page, and a shown fixture missing its gallery page, its rendered index page or its PDF, plus a shown list under the PDF floor; the containment check on an artifact missing a page, an artifact path that is not a directory, a reference holding no page, and a reference under the PDF floor, with an artifact carrying an extra page still accepted; and the published-URL check on a README and on a site entry page naming a URL the origin remote does not imply, on a base path that is not that URL's path segment, on no base path and on two, and on a repository carrying no origin remote at all"
 fi
 
 # ---------------------------------------------------------------------------

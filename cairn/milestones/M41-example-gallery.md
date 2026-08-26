@@ -70,12 +70,13 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 
 ## Tasks
 
-- [ ] T1. Author `site/gallery.yml`: `shown:` (at least eight fixtures covering
-      the ten syntax forms — demo, named-indexes, unicode, sortkey, principal,
-      range, marker, letter-groups) and `not-shown:` for the remainder; add the
-      completeness check of AC1 over the git-enumerated corpus.
+- [x] T1. Author `site/gallery.yml`: `shown:` (ten fixtures covering the ten
+      syntax forms — demo, named-indexes, sortkey, sortkey-paths,
+      letter-groups, marker, placement, xref-conflict, html-index,
+      empty-levels) and `not-shown:` for the remainder; add the completeness
+      check of AC1 over the git-enumerated corpus.
 - [ ] T2. Write the pre-render step: copy each shown fixture (and its assets)
-      into a scratch directory under `site/`, render it to HTML and to PDF
+      into a scratch directory at the repo root, render it to HTML and to PDF
       there, and place the outputs under the site's output tree. Nothing it
       runs may name a path under `examples/` as a render target.
 - [ ] T3. Make the suite's per-fixture HTML and PDF index manifests addressable
@@ -101,6 +102,9 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 - 2026-08-26: plan gate chose reusing the suite's hand-derived manifests as the gallery oracle over a new scan of the fixture sources; D-011 refuses widening source-shape scans and KI47/KI59/KI70 record the existing ones misreading marks. Falsified by a shown fixture whose behaviour no manifest covers being worth showing anyway.
 - 2026-08-26: plan gate chose embedding the separately-rendered fixture page over including the fixture's markdown into the gallery page; an include would run this extension's own filter over the fixture's marks and placement markers on the gallery page, so the page could not both carry the source and print the fixture's index. Falsified by an embed that cannot be made to show the index region a reader needs to see.
 - 2026-08-26: plan gate chose a bare `not-shown:` list over per-fixture exclusion reasons; the audit called 55 rationale strings a bookkeeping surface coupling every future fixture milestone to this file. Falsified by a reviewer unable to tell a deliberate omission from an oversight.
+- 2026-08-26: implement gate chose ten shown fixtures over eight or all sixteen eligible; a repo-root scratch directory over one under `site/`, where Quarto finds the website project file walking up and renders each fixture as a page of the site; and a frame around a self-contained render over lifting the index markup into the gallery page.
+- 2026-08-26: minor amendment to T1 and T2 wording. T1 named `unicode`, `principal` and `range` among the shown fixtures; AC3 admits only fixtures the suite holds a hand-derived HTML index manifest for, and it holds none for those three (`unicode`'s oracle is a typeset PDF term list, `principal` and `range` have GFM span manifests). Replaced with ten manifest-holding fixtures. T2's scratch directory moved out of `site/` for the reason the gate line above records.
+- 2026-08-26: T1 done. `site/gallery.yml` declares all 55 fixtures, 10 shown and 45 not; `tests/gallerycheck.py listing` reads the declaration against `git ls-files examples` and refuses any file shape but `<key>:` and `  - <value>`. Wired into the suite as M41-AC1. Verify slot clean, 386 checks.
 
 ## Decisions
 

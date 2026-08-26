@@ -13502,6 +13502,16 @@ M40OLD
 fi
 
 # ---------------------------------------------------------------------------
+# M41 — the example gallery. The site declares which fixtures its gallery
+# shows in site/gallery.yml; this check is that declaration's completeness,
+# read against the corpus `git ls-files` enumerates rather than against a list
+# written down beside it (M41-AC1).
+# ---------------------------------------------------------------------------
+GALLERY_YML="site/gallery.yml"
+python3 tests/gallerycheck.py listing "$GALLERY_YML" \
+  || fail "M41-AC1: the gallery declaration and the fixture corpus are not the same set (its own FAIL line is above)"
+
+# ---------------------------------------------------------------------------
 # The sweeps' own discrimination (M24). A sweep over a set passes on a set it
 # never opens, which is exactly the vacuity the per-file checks it replaced
 # could not have had: three named files either exist and are read, or the run

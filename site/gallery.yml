@@ -1,0 +1,78 @@
+# Which example fixtures the documentation site's gallery shows.
+#
+# Every `.qmd` directly under `examples/` is listed exactly once, under
+# `shown:` or under `not-shown:`, and under no other key; the check named
+# M41-AC1 in tests/run-tests.sh reads that against `git ls-files examples`, so
+# a fixture added later cannot slip in unlisted.
+#
+# A shown fixture is one the acceptance suite already holds a hand-derived
+# HTML index manifest for. That manifest is the gallery's oracle: the entries
+# it states must appear in the index of the fixture page each gallery page
+# embeds. Nothing here scans the fixture sources for their marks.
+#
+# `not-shown:` is a bare list. It carries no per-fixture reason, deliberately:
+# a rationale string for each of the 45 would couple every future fixture to
+# this file without telling a reader anything the fixture itself does not.
+#
+# The file's shape is read by tests/gallerycheck.py, which accepts only
+# `<key>:` at column 0 followed by `  - <value>` lines and refuses anything
+# else, so a shape it cannot read is an error rather than a silent empty list.
+
+shown:
+  - examples/demo.qmd
+  - examples/named-indexes.qmd
+  - examples/sortkey.qmd
+  - examples/sortkey-paths.qmd
+  - examples/letter-groups.qmd
+  - examples/marker.qmd
+  - examples/placement.qmd
+  - examples/xref-conflict.qmd
+  - examples/html-index.qmd
+  - examples/empty-levels.qmd
+
+not-shown:
+  - examples/_marker-position-part.qmd
+  - examples/content.qmd
+  - examples/control.qmd
+  - examples/dangling-xref.qmd
+  - examples/escaping.qmd
+  - examples/fold-xref-both.qmd
+  - examples/fold-xref-empty.qmd
+  - examples/fold-xref-self.qmd
+  - examples/fold-xref.qmd
+  - examples/id-collision.qmd
+  - examples/marker-misuse.qmd
+  - examples/marker-nomarks-twin.qmd
+  - examples/marker-nomarks.qmd
+  - examples/marker-position.qmd
+  - examples/marker-preloaded.qmd
+  - examples/marker-shapes.qmd
+  - examples/marker-sites.qmd
+  - examples/named-indexes-foldsecond.qmd
+  - examples/named-indexes-foldsite.qmd
+  - examples/named-indexes-misuse.qmd
+  - examples/named-indexes-order.qmd
+  - examples/named-indexes-rival.qmd
+  - examples/named-indexes-twin.qmd
+  - examples/principal-cases.qmd
+  - examples/principal-twin.qmd
+  - examples/principal.qmd
+  - examples/range-misuse.qmd
+  - examples/range-nested.qmd
+  - examples/range-position.qmd
+  - examples/range.qmd
+  - examples/references-twin.qmd
+  - examples/references.qmd
+  - examples/resolving-xref.qmd
+  - examples/self-xref.qmd
+  - examples/sort-escaping-twin.qmd
+  - examples/sort-escaping.qmd
+  - examples/sortkey-clamp-twin.qmd
+  - examples/sortkey-clamp.qmd
+  - examples/sortkey-misuse.qmd
+  - examples/sortkey-twin.qmd
+  - examples/state-reuse-empty.qmd
+  - examples/state-reuse-plain.qmd
+  - examples/state-reuse.qmd
+  - examples/unicode.qmd
+  - examples/xref-escaping.qmd

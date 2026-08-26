@@ -89,14 +89,14 @@ version does not fence the floor and must not read as closing KI79.
 - [x] T1. Create the `site/` project: `_quarto.yml` (website, `output-dir:
       _site`, navigation), `site/index.qmd`, the `site/_extensions` symlink,
       and `site/_site/` + `site/.quarto/` in `.gitignore`.
-- [ ] T2. Move the 17 headings and their prose from README.md into site pages,
+- [x] T2. Move the 17 headings and their prose from README.md into site pages,
       one page per `## ` section with its `### ` subsections intact, keeping
       every pinned sentence byte-identical to what the suite compares today.
-- [ ] T3. Rewrite README.md: pitch, `## Install`, the pre-release warning, the
+- [x] T3. Rewrite README.md: pitch, `## Install`, the pre-release warning, the
       docs link, and short `## Examples` / `## Tests` pointers.
 - [ ] T4. Write the prose-move bound of AC3 (the M27 four-character-word rule
       in `cairn/check-design.md`), stating its normalization in the check.
-- [ ] T5. Add the claim-container registry to `tests/run-tests.sh`: every
+- [x] T5. Add the claim-container registry to `tests/run-tests.sh`: every
       `README_*` container and `SUPPORTED_FORMS`, each tagged presence or
       absence and each naming the file it is compared against; add a check that
       the registry names every such container the file defines, so the domain
@@ -131,6 +131,8 @@ version does not fence the floor and must not read as closing KI79.
 - 2026-08-26: amendment gate — AC6 replaced and Scope's "the site file" widened to "the site file or files". AC6 as planned was unsatisfiable: `::: {.qi-index-here}` is documented on both the placing-the-index and books pages, as README documented it twice, and six presence containers span two or more pages. Two fresh-context [O] criteria audits ran in full mode (user-facing tier), one on the first replacement draft and one on the wording written; the first killed a draft that defined the promise by reference to the suite's own checks — two of which bound their search by a `### ` heading the move removes — and let the registry pick its own domain. Findings disposed here, none deferred. The user chose the replacement at the gate.
 - 2026-08-26: amendment gate — the recipe's home moves to the site and IP2's non-ASCII condition names it there; D-023 records it, IP2 and KI6 corrected in place and marked. Chosen by the user at the gate (RB tripwire: ip-touching, escalation offered and declined).
 - 2026-08-26: T7 gains one plant, a presence container mis-tagged absence, so AC6's domain cannot shrink by re-tagging.
+
+- 2026-08-26: T5 done, and T2/T3 tick with it: `CLAIM_CONTAINERS` in `tests/run-tests.sh` names all 17 containers, 14 presence and 3 absence, each presence row naming the site page or pages that hold it and each absence row `ALL` (every tracked page under `site/` plus README). `claim_text` concatenates a row's pages and every claim check reads that instead of README.md; the three section-anchored checks take their heading as a parameter and bound the section outside fenced blocks, which a bare regex got wrong on a `# References` line inside a copyable block. Registry completeness is compared against a scan of the suite's own source reading both the array and here-document definition shapes. Verify slot green: 382 checks, 564 with `--self-test`.
 
 - 2026-08-26: sizing tripwire also flags 8 acceptance criteria (>7). Not split: AC6 (presence containers) and AC7 (absence containers) are two domains with opposite promises, and the claim repoint cannot land in a later milestone than the prose move without leaving the suite red in between.
 

@@ -100,6 +100,7 @@ suite in CI → not planned; a candidate row.
 - 2026-08-26: T4 — `tests/pagescheck.py` added with three readers (`pin`, `built`, `contains`); the suite runs `pin` and `built` as standing checks and adds the AC5 clauses after the site render. Twenty planted cases and two discriminating controls, each clause planted on its own.
 - 2026-08-26: T6 (part) — README and the site's entry page name the published URL, and `tests/pagescheck.py url` binds both to the URL the `origin` remote implies and to the base path the suite's link check resolves against; the link check's base path moved from the empty string to the repository segment, which M40 left as the value this milestone sets. The CI-matrix candidate row now names the workflow file. Six more planted cases; the no-remote case first passed for the wrong reason, because `git -C` walks up out of a bare directory in the work tree into this checkout, and now plants a repository of its own.
 - 2026-08-26: suite green after those changes: `tests/run-tests.sh --self-test`, 649 checks, exit 0.
+- 2026-08-26: T2 (refined) — the workflow's `concurrency` group moved from the workflow onto the deploy job. At workflow level it made every branch's build queue behind every other branch's, including the five probe branches T5 runs; only the publishing step has a single target, so only it needs serializing.
 
 ## Decisions
 

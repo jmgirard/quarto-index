@@ -1,6 +1,6 @@
 # M41: The site shows each curated example's source, index and PDF
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M40
 - **Driving RR:** —
@@ -118,6 +118,8 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 - 2026-08-26: the gallery broke the residue sweeps' domain claim, and both halves are repaired here. See the milestone Decisions entry below. `tests/run-tests.sh --self-test` exits 0 at 618 checks, the two sweeps reading 141 captured pages against 100 before.
 
 - 2026-08-26: T7 done. The site's Examples page opens with a link to the gallery, and README's Examples section names it; both describe what the gallery shows procedurally, by what `shown:` declares, rather than by a count. DESIGN Architecture gains a paragraph on the gallery: the declaration, the pre-render step and why its scratch tree is at the repo root, the manifests as the oracle with no source scan, the LaTeX toolchain the site build now needs, and the residue sweeps' move to after the site render. `tests/run-tests.sh --self-test` exits 0 at 618 checks.
+
+- 2026-08-26: all seven tasks checked; `tests/run-tests.sh --self-test` exits 0 at 618 checks. Status set to review.
 
 ## Decisions
 

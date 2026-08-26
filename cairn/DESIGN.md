@@ -481,6 +481,25 @@ determines its output path. README is the pointer — pitch, install, the
 pre-release warning, a link to the site, and short Examples and Tests sections.
 `site/_extensions` symlinks to the extension, as `examples/_extensions` does.
 
+The site carries an example gallery (added M41). `site/gallery.yml` declares
+every `.qmd` directly under `examples/` under `shown:` or `not-shown:`, and
+`site/build_gallery.py` is the project's `pre-render` step: it copies each
+shown fixture, the extension and the fixture directory's shared assets into
+`.gallery-build/` at the REPO ROOT — outside `site/`, so Quarto does not walk
+up and render the fixture as a page of the website — renders the copy to a
+self-contained `.html` and to `.pdf` there, places both under
+`site/gallery/rendered/`, and writes one generated `site/gallery/<name>.qmd`
+per fixture carrying that source, a frame around the render and a link to the
+PDF. `examples/` is read and never written. The gallery's oracle is the
+acceptance suite's own hand-derived index manifests: a table in
+`tests/run-tests.sh` names each per-fixture manifest by fixture, kind and
+format and writes it out addressably, and `tests/gallerycheck.py` reads that
+registry — nothing scans the fixture sources. Because the site build renders
+fixtures, it needs the LaTeX toolchain the suite already requires: TinyTeX,
+`makeindex` and `pdftotext`, plus `stix2-otf` for the non-Latin-1 recipe
+fixtures. The whole-set residue sweeps run after the site render, since it is
+the last render the suite makes.
+
 The suite's pinned documentation sentences live in *claim containers*, and
 `CLAIM_CONTAINERS` in `tests/run-tests.sh` is the one enumeration of them: each
 row names a container, tags it presence or absence, and names the site page or

@@ -92,7 +92,7 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
       missing from an embedded index, a PDF link resolving to nothing, a PDF
       whose extraction drops one manifest entry, a shown-list shorter than its
       floor, and a render that writes into `examples/`.
-- [ ] T7. README/DESIGN: point the docs at the gallery; record the site build's
+- [x] T7. README/DESIGN: point the docs at the gallery; record the site build's
       toolchain requirement in DESIGN Architecture. Verify slot clean.
 
 ## Work log
@@ -116,6 +116,8 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 
 - 2026-08-26: T6 done. Fifteen planted cases, one per clause, each run against a check first shown green on the same unplanted fixture. Six mutate a copy of the declaration; six mutate a copy of the captured site (three of them through `tests/galleryplant.py`, which re-reads what it changed with the checks' own reader and refuses a mutation that landed elsewhere); three exercise AC5's comparison over a copy of `examples/`, one adding a file, one changing a fixture's bytes, one changing nothing. Two plants were wrong on their first run and were fixed: the one-character source plant landed in the highlighter's own `<span>` markup rather than in the block's text, and the dropped-entry plant's report said the entry count fell when the entry is renamed and the count holds.
 - 2026-08-26: the gallery broke the residue sweeps' domain claim, and both halves are repaired here. See the milestone Decisions entry below. `tests/run-tests.sh --self-test` exits 0 at 618 checks, the two sweeps reading 141 captured pages against 100 before.
+
+- 2026-08-26: T7 done. The site's Examples page opens with a link to the gallery, and README's Examples section names it; both describe what the gallery shows procedurally, by what `shown:` declares, rather than by a count. DESIGN Architecture gains a paragraph on the gallery: the declaration, the pre-render step and why its scratch tree is at the repo root, the manifests as the oracle with no source scan, the LaTeX toolchain the site build now needs, and the residue sweeps' move to after the site render. `tests/run-tests.sh --self-test` exits 0 at 618 checks.
 
 ## Decisions
 

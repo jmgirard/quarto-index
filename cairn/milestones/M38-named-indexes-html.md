@@ -93,55 +93,46 @@ collation rules — nothing here changes how one index is ordered or printed.
 
 ## Tasks
 
-<!-- T1-T10 were the original cut; each is done and its outcome is the work-log
-     line naming it, so the text here is compressed to what the task was.
-     T11-T17 were added at the 2026-08-25 review gate. -->
+<!-- T1-T17 are done and each one's outcome is the work-log line naming it, so
+     the text here is compressed to what the task was. T11-T17 were added at
+     the first review gate, T18-T24 at the second. -->
 
-- [x] T1: Read `indexes:` into an ordered name->title table, first name the
-      default, reporting a malformed, empty or repeating declaration; no
-      `indexes:` key keeps today's single unnamed index.
-- [x] T2: Read `index=` on a mark and on a placement marker; report a value
-      naming no declared index and file the mark in the default index.
-- [x] T3: Key the format-neutral accumulators per index — `marked_paths`,
-      `pending_xrefs`, `clamped_paths`, `sort_keys` and `pair_ranges`'
-      pending/waiting maps — with `reset` still emptying each in place.
-- [x] T4: Make `resolve_markers` and `place_index` per index: one surviving
-      marker per name, the duplicate report naming the index it repeats, and
-      `place_index` taking a per-index block map.
-- [x] T5: `html.lua`: one entry tree and one section per index in declared
-      order, section ids and entry ids minted from the shared `taken` set.
-- [x] T6: `latex.lua`/`index.lua` and `book.lua`: fold every named-index mark
-      into the default index, report each mark and marker, keep one
-      `\printindex` and one book index.
-- [x] T7: `examples/named-indexes.qmd` and its manifest, plus the single-index
-      twin whose captured output must not change.
-- [x] T8: The AC1-AC5 checks in `tests/run-tests.sh` and `tests/htmlindex.py`,
-      each over a captured artifact.
-- [x] T9: Self-test entries planting one defect per clause of each reader T8
-      adds, each shown red.
-- [x] T10: README's `### Named indexes` section, the DESIGN convention line,
-      and the ROADMAP row edits.
-- [x] T11: Validate a declared index name as an HTML id fragment: report a name
-      that cannot be one and refuse to build a section id from it, so no render
-      emits an invalid `id` silently (R1).
-- [x] T12: In `resolve_markers`, settle a marker's placement slot so a folded
-      marker naming a second index cannot take the default index's slot, and
-      the author's own default marker is never reported as its duplicate (R2).
-- [x] T13: Head a folded union index with something that does not claim to be
-      one declared index, matching the reason `section_id` keeps its id neutral
-      (R3). Correct `DESIGN.md`'s KI10 inventory in the same task, marked
-      `corrected M38`, to carry `indexes.lua`'s four cells (R13).
-- [x] T14: Report a second marker naming the same non-default index under fold,
-      rather than dropping it silently, so README's claim holds in PDF and in
-      books (R4).
-- [x] T15: Give the declared-order rule a fixture that marker order cannot
-      satisfy — the markerless append path, and a document whose marker order
-      differs from its declared order (R5).
-- [x] T16: Make AC6's command check read what the suite runs rather than
-      matching a substring of its text, and pin the `indexes:` declaration
-      block the criterion names (R6, R12's five-row comment).
-- [x] T17: Plant a section heading at the wrong level, so the section reader's
-      tag comparison is shown red on its own clause (R7).
+- [x] T1: Read `indexes:` into an ordered name->title table, first name the default.
+- [x] T2: Read `index=` on a mark and on a placement marker, reporting an undeclared value.
+- [x] T3: Key the format-neutral accumulators per index, `reset` still emptying each in place.
+- [x] T4: Make `resolve_markers` and `place_index` per index, one surviving marker per name.
+- [x] T5: `html.lua`: one entry tree and one section per index, ids from the shared `taken` set.
+- [x] T6: Fold every named-index mark into the default index in LaTeX and in books, reporting each.
+- [x] T7: `examples/named-indexes.qmd` and its manifest, plus the single-index twin.
+- [x] T8: The AC1-AC5 checks in `tests/run-tests.sh` and `tests/htmlindex.py`, each over a capture.
+- [x] T9: Self-test entries planting one defect per clause of each reader T8 adds.
+- [x] T10: README's `### Named indexes` section, the DESIGN convention line, the ROADMAP rows.
+- [x] T11: Validate a declared index name as an HTML id fragment, refusing one that is not (R1).
+- [x] T12: Settle a folded marker's placement slot so it cannot take the built index's (R2).
+- [x] T13: Head a folded union index neutrally, and correct KI10's inventory (R3, R13).
+- [x] T14: Report a second marker naming the same non-default index under fold (R4).
+- [x] T15: Give the declared-order rule a fixture that marker order cannot satisfy (R5).
+- [x] T16: Read AC6's "runs clean" off a ledger of what ran, and pin the declaration block (R6).
+- [x] T17: Plant a section heading at the wrong level, for the tag comparison's own clause (R7).
+- [ ] T18: Plant a defect for every clause `check_folded_site`,
+      `check_folded_second`, `check_folded_heading` and `check_readme_indexes`
+      state and no plant reaches, and correct the block's two under-counting
+      comments and its closing `pass` line to what the readers state (AC7).
+- [ ] T19: Make `check_folded_second` report a missing `\printindex` as a
+      finding rather than raise, and make `check_no_invalid_id`'s control a
+      control its reader can actually fail (AC7, F9).
+- [ ] T20: Narrow `NAME_SHAPE` so a declared name cannot mint a section id no
+      `#id` selector addresses, refused with its own report as an empty or
+      repeated name is, and widen the id sweep to the character it admits (F1).
+- [ ] T21: Make `check_html_index_links` report a wrong or missing section id
+      as a finding rather than a traceback (F8).
+- [ ] T22: `DESIGN.md`: add `indexes.lua` to the module list, correct
+      `passes.Reset`'s "the three" to the four it calls, and add `data-index`
+      to the pass-through residue enumeration, each marked `corrected M38`
+      (F5, F6).
+- [ ] T23: Correct `examples/book/last.qmd`'s prose about its third marker to
+      the report the shipped filter draws (F7).
+- [ ] T24: Correct README's "The last two" for the tenth form (F10).
 
 ## Work log
 
@@ -386,6 +377,8 @@ intentional change does not cover them.
 - R13 → fix now, with T11-T14, since the entry it corrects is about the state
   this milestone added.
 - 2026-08-25: review — PR #38 opened; `main` had not moved. All seven criteria passed with fresh evidence (full suite --self-test, exit 0, 520 checks) and the consistency gate was clean. Returned to in-progress at the merge gate under the return floor: the independent review found, and this session re-verified by probe, that a declared index name is never validated as an HTML id fragment so a name with a space emits an invalid `id` with no report (R1), and that in a folded render a marker naming a second index takes the default index's placement slot while the author's own default marker is reported as its duplicate (R2). R3, R4 and the three check gaps R5-R7 ride the same return. Defect return 1 for this milestone; no amendment return, no criterion reinterpreted. Requested changes logged as T11-T17 at the gate's direction.
+- 2026-08-25: the seven added tasks put the plan-owned body 14 lines over the cap; the Tasks section, the heaviest, was compressed in one rewrite — T11-T17 shortened to what each task was alongside T1-T10, their outcomes already standing in the work-log lines above.
+- 2026-08-25: maintainer triage at the return — the proposed set stands: the AC7 coverage gap plus F1, F5, F6, F7, F8 and F10 are fixed this round, logged as T18-T24; every other finding stays a follow-up as recorded above.
 - 2026-08-25: review round 2 — AC1-AC6 passed with fresh evidence (full suite --self-test, exit 0, 549 checks, plus direct reads of the captured artifacts) and the consistency gate was clean. AC7 FAILED at step 3 and returns the milestone to in-progress: the criterion binds a plant to each clause of each reader this milestone adds, and four of the five readers ship clauses no plant exercises — check_folded_site 3 of 4, check_folded_second 1 of 3, check_folded_heading 3 of 4, check_readme_indexes 6 of 10 — while check_folded_second's \printindex lookup raises ValueError rather than reporting a finding, and check_no_invalid_id's control cannot take its own failure branch. The three-lens review added F1 (a declared name may hold a `.`, minting a section id no `#id` selector can address) and five further defects inside intentional changes: F5, F6, F7, F8, F10. Defect return 2 for this milestone; no amendment return, no criterion reinterpreted.
 - 2026-08-25: the seven added tasks put the plan-owned body 4 lines over the cap; the Tasks section, the heaviest, was compressed in one rewrite — T1-T10 shortened to what each task was, their outcomes already standing in the work-log lines above. `cairn_validate` passes; the 17-task split tripwire is an advisory this milestone accepts, the seven added tasks being one round of gate-directed repair rather than new scope.
 

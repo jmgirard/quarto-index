@@ -1,0 +1,36 @@
+---
+pagetitle: "Examples"
+---
+
+# Examples
+
+`examples/book/` is a four-chapter book fixture — a shared term marked in
+three chapters, a chapter in a subdirectory, a cross-chapter cross-reference,
+and the marker in the last chapter — and `examples/book-nomarker/` is the same
+idea with no marker at all.
+`examples/demo.qmd` exercises every supported form and the full escaping
+probe set. `examples/escaping.qmd` and `examples/xref-escaping.qmd` are the
+character probes. `examples/placement.qmd` marks one term in a heading, a table
+cell and a footnote, where the renderer moves the mark away from where it was
+written. `examples/marker.qmd` puts the index between two sections with a
+placement marker; `examples/marker-misuse.qmd` and
+`examples/marker-nomarks.qmd` are its misuse cases. `examples/control.qmd` is
+a negative control: mark-like text inside code, which must never be indexed.
+`examples/dangling-xref.qmd` and `examples/resolving-xref.qmd` are a pair:
+every cross-reference target in the first names a term nothing indexes, and
+every target in the second resolves.
+`examples/named-indexes.qmd` declares two indexes and puts a cross-reference,
+a sort key, a range and a placement marker in each of them;
+`examples/named-indexes-twin.qmd` writes the same terms with no declaration at
+all.
+`examples/unicode.qmd` carries the recipe from
+[Terms outside Latin-1](terms-outside-latin-1.qmd) and marks eight terms under
+it — Greek, a second Greek term carrying a `sort=` key, Cyrillic, Polish,
+Vietnamese, a term written with a combining mark, one whose combining sequence
+has no precomposed form, and one plain ASCII term the suite's controls read as
+their positive signal.
+
+```bash
+quarto render examples/demo.qmd --to pdf
+quarto render examples/demo.qmd --to html
+```

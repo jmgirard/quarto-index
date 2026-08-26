@@ -25,4 +25,7 @@ examples/.quarto/
 examples/book*/_book/
 examples/book*/.quarto/
 /.quarto/
+# The docs website renders into its own output directory; site/.gitignore is
+# Quarto's own, and covers the project scratch directory beside it.
+site/_site/
 tests/.work/

@@ -1,0 +1,41 @@
+---
+pagetitle: "Syntax"
+---
+
+# Syntax
+
+There are exactly ten supported forms.
+
+| Form | Writes | Index entry |
+|---|---|---|
+| `[term]{.index}` | `term` | `term` |
+| `[term]{.index entry="Entry"}` | `term` | `Entry` |
+| `[term]{.index entry="Top!Sub"}` | `term` | `Top` → `Sub` |
+| `[]{.index entry="Entry"}` | nothing | `Entry` |
+| `[term]{.index see="Other"}` | `term` | `term`, *see* `Other` |
+| `[term]{.index see-also="Other"}` | `term` | `term`, *see also* `Other` |
+| `[term]{.index mention="principal"}` | `term` | `term`, its locator emphasized |
+| `[term]{.index range="open"}` | `term` | `term`, one locator spanning to its closing mark |
+| `[term]{.index range="close"}` | `term` | nothing of its own; it closes the range |
+| `[term]{.index index="authors"}` | `term` | `term`, in the index named `authors` |
+
+The visible text is always left exactly as written. The first form indexes a
+term under its own text; the second indexes it under something else; the
+third nests it under a parent heading; the fourth adds an entry with no
+visible mark on the page. The next two point the reader at a different entry
+instead of at a page. The seventh says which of a term's mentions is its
+principal one. The eighth and ninth mark where a discussion begins and where it
+ends, so the index prints one locator spanning them rather than a locator at
+each. The tenth says which of a document's declared indexes the mark belongs
+to.
+
+The forms have a page each:
+[sub-entry levels](sub-entry-levels.qmd),
+[cross-references](cross-references.qmd),
+[special characters](special-characters.qmd),
+[terms outside Latin-1](terms-outside-latin-1.qmd),
+[sorting an entry under something else](sorting.qmd),
+[the principal mention of a term](principal-mention.qmd),
+[a discussion that spans pages](page-ranges.qmd),
+[placing the index](placing-the-index.qmd) and
+[named indexes](named-indexes.qmd).

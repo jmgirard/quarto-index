@@ -1,0 +1,31 @@
+---
+pagetitle: "Letter groups in the HTML index"
+---
+
+# Letter groups in the HTML index
+
+The HTML index prints its top-level entries in groups, each introduced by a
+label of its own — one `Symbols` group, then one group per letter, A to Z.
+
+- **A group label comes from the string the entry files under**: its sort key
+  where it has one, and its printed text where it has none. If that string
+  begins with an ASCII letter the label is that letter, uppercased. Anything
+  else — a digit, a punctuation mark, or an accented or non-Latin letter —
+  files under `Symbols`. Nothing files under an empty string: a level that
+  would print nothing is dropped before it gets this far.
+- **The Symbols group comes first**, ahead of A, the way a printed index sets
+  it. A sort key is how you move an entry across that boundary, exactly as it
+  is how you move one within a group.
+- **Grouping is always on.** There is nothing to switch on and no threshold
+  below which it stops.
+- **Only the top level is grouped.** A sub-entry files under its parent rather
+  than under a letter of its own, so no label appears inside a nested list.
+
+Each label is a `div` carrying the class `qi-letter` and nothing else — a hook
+for your own CSS, and deliberately not a heading, so the alphabet does not
+land in your table of contents. As everywhere else here, the extension ships
+no stylesheet of its own.
+
+The extension's job ends at correct emitted output. Whether your toolchain
+then runs `makeindex` to build the index is up to your build setup; Quarto's
+default PDF pipeline does it for you.

@@ -133,7 +133,8 @@ _None yet — populated as the codebase takes shape._
   term: any characters in a visible term appear correctly in the index —
   non-ASCII included, on the condition that the document's PDF engine and
   main font can draw them, which for terms outside Latin-1 means the recipe
-  README's `### Terms outside Latin-1` section names (amended M33; D-016) —
+  the docs site's Terms outside Latin-1 page names (amended M33, D-016;
+  recipe home corrected M40, D-023) —
   and formats without an index back-end pass the
   visible text through untouched, with no artifacts. An escaping bug, a
   crash on exotic input, or garbage in a back-end-less format is the
@@ -148,8 +149,8 @@ _None yet — populated as the codebase takes shape._
 
 - GP1: **Community-grade, discoverable quality.** Docs, tests, and
   edge-case coverage are commitments user-facing work carries by default;
-  README and examples are discovery surface held to extension-listing
-  quality.
+  the documentation site, README and examples are discovery surface held to
+  extension-listing quality (site added M40).
 - GP2: **The contract ends at correct emitted output.** Per format, the job
   is correct output (e.g., valid `\index{}` LaTeX); whether the user's
   toolchain then builds the index is a documentation surface — known failure
@@ -473,6 +474,28 @@ trusted with it: `tests/movedefs.py` builds a scratch extension with the
 definitions relocated into a module, and `tests/plantdefect.py` plants a defect
 of the kind each check names, which the check must fail on, naming it.
 
+The documentation's home is `site/`, a Quarto website project (added M40): one
+page per topic, each carrying as a heading the text README's `##`/`###` section
+carried before the move, and no `output-file:` overrides, so a source path
+determines its output path. README is the pointer — pitch, install, the
+pre-release warning, a link to the site, and short Examples and Tests sections.
+`site/_extensions` symlinks to the extension, as `examples/_extensions` does.
+
+The suite's pinned documentation sentences live in *claim containers*, and
+`CLAIM_CONTAINERS` in `tests/run-tests.sh` is the one enumeration of them: each
+row names a container, tags it presence or absence, and names the site page or
+pages it is compared against — `ALL` for an absence container, meaning every
+tracked page under `site/` plus README, everywhere a reader could still meet a
+retired sentence. `claim_text` builds the text a check compares against out of
+that row, so no check names a documentation file itself. The registry is
+compared against a scan of the suite's own source in both the shapes a
+container is written in, so the set cannot half-empty. `tests/sitecheck.py`
+carries the website's own checks: the render writes a page for every tracked
+source, every link the site makes to its own content resolves, README is still
+the short pointer, and — for the migration itself, run against the merge base
+rather than standing in the suite — every moved heading landed and no prose was
+lost.
+
 ## Known issues
 
 What the extension and its acceptance suite do today that a reader should know
@@ -501,8 +524,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI5.** A registered principal page folded inside a makeindex page range is
   not emphasized: the typeset-time channel D-007 adopts looks a page up by
   string, and a range misses, printing it unemphasized and silently. — RR01
-- **KI6.** The engine-and-font recipe README's `### Terms outside Latin-1`
-  section names — xelatex plus a main font loaded by file — is proven by a
+- **KI6.** The engine-and-font recipe the docs site's Terms outside Latin-1
+  page names (corrected M40) — xelatex plus a main font loaded by file — is
+  proven by a
   typeset-print check for Greek, Cyrillic, and Latin beyond Latin-1 including
   terms written with combining marks. Every other script is unproven under it.
   CJK is unsupported: the font the recipe names does not cover it, and the
@@ -760,7 +784,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI60.** `book.lua`'s `role` field is written, validated and read with no
   book fixture exercising the round trip. — M20 review round 1 F5, round 2
   R2-F12
-- **KI61.** README's `\newcommand*` redefinition recipe is exercised in one
+- **KI61.** The docs' `\newcommand*` redefinition recipe (in README before M40,
+  on the LaTeX and PDF page since) is exercised in one
   header ordering only, where `\providecommand*` would be correct in both and
   `\newcommand*` hard-errors if the extension's definition ever lands first.
   — M20 review round 2 R2-F15
@@ -825,9 +850,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI72.** The example corpus's roughly 250 probe `see=`/`see-also=` targets do
   not all name terms the fixture indexes; M14 pins the expected report counts
   instead. — M14 plan gate
-- **KI73.** The README claim pins and the filter's warning literals are two
-  hand-maintained copies of the same strings, and the claim check asserts a
-  string is in README, never that the filter emits it. — M13 review F20
+- **KI73.** The documentation claim pins and the filter's warning literals are
+  two hand-maintained copies of the same strings, and the claim check asserts a
+  string is in the docs, never that the filter emits it. — M13 review F20,
+  corrected M40 when the claims moved out of README
 - **KI74.** That a registered page actually prints emphasized is exercised only
   by M20's T9 checks and by no acceptance criterion, the criteria set having
   been held rather than widened, so the last leg of that chain has no criterion
@@ -847,6 +873,7 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   boundary carries any information about what is API and what is internal.
   — M17 review I
 - **KI78.** Windows checkouts without symlink support break
-  `examples/_extensions`. — M01 review R18
+  `examples/_extensions`, and `site/_extensions` since M40. — M01 review R18,
+  extended M40
 - **KI79.** The Quarto version floor is an untested contract claim; a CI matrix
   at floor and latest is what would fence it. — M01 review R15

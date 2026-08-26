@@ -1,0 +1,41 @@
+---
+pagetitle: "Special characters"
+---
+
+# Special characters
+
+Everything in a visible term or an `entry=` level is literal text. You never
+escape for LaTeX yourself — the extension does it, including for characters
+that would otherwise break the build or act as index operators. Every
+printable ASCII character works in both places, including an unbalanced brace.
+`examples/escaping.qmd` puts each one in an index entry on its own, and
+`examples/xref-escaping.qmd` puts each one in a cross-reference target — a
+harder place, since a target travels through the index tool's encapsulation
+channel, where an unquoted `!` is rejected outright and the whole render
+fails. The test suite compiles both with the same engine your PDF build uses
+and checks that the index tool accepted every entry. It additionally confirms
+that the sixteen characters needing special handling — `% & # _ { } \ ~ ^ $ @
+| ! " < >` — actually typeset, in an entry and in a cross-reference alike.
+
+Two characters need care in `entry="…"`, because Quarto's markdown parser
+consumes one level of backslash escaping in a quoted attribute before the
+extension ever sees the value:
+
+| To get | Write |
+|---|---|
+| a literal `\` | `\\` |
+| a literal `"` | `\"` |
+| a literal `!` | `!!` |
+
+Note that `\!` is **not** an escape. The parser turns it into a plain `!`,
+which the extension then reads as a level separator — so `entry="A\!B"`
+produces the entry `A` with sub-entry `B`, not `A!B`. Use `!!`.
+
+The same two rules apply inside `see=` and `see-also=`, and inside `sort=`.
+
+`@`, `|` and `"` are ordinary literal characters here. Locator styling, which
+uses some of them in raw `makeindex` syntax, is not part of this syntax and
+will arrive later as a separate span attribute.
+
+All of that is about ASCII. A term written in another script needs one more
+thing from your document — see [Terms outside Latin-1](terms-outside-latin-1.qmd).

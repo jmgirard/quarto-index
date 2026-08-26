@@ -77,7 +77,7 @@ ran_clean() {
   local status=0
   "$@" > "$logfile" 2>&1 || status=$?
   printf '%d\t%s\n' "$status" "$*" >> "$RAN_LEDGER"
-  [ "$status" -eq 0 ] || { tail -30 "$logfile" >&2; fail "the documented command <<$*>> exited $status; a command the README shows must run clean"; }
+  [ "$status" -eq 0 ] || { tail -30 "$logfile" >&2; fail "the documented command <<$*>> exited $status; a command the docs show must run clean"; }
 }
 
 # ---------------------------------------------------------------------------
@@ -171,8 +171,11 @@ CAPTURE_ROOT="$WORK/cap"
 CAPTURE_EXTS="html tex md pdf epub aux idx ilg ind log"
 
 capture() {
-  local project=0
+  local project=0 site=0
   if [ "${1:-}" = "--project" ]; then project=1; shift; fi
+  # A website project writes a whole output directory rather than a document
+  # beside its source, so it is captured whole, exactly as a book's `_book` is.
+  if [ "${1:-}" = "--site" ]; then site=1; shift; fi
   local src="$1" fmt="$2" slug base stem srcdir dir f ext found=0
   base=$(basename "$src")
   stem="${base%.qmd}"
@@ -191,6 +194,12 @@ capture() {
   # render broken trees and read the wreckage in place) is not an error here.
   local under_examples=0
   case "$srcdir" in examples|examples/*) under_examples=1 ;; esac
+  if [ "$site" = "1" ]; then
+    [ -d "$src/_site" ] \
+      || fail "M24: the website render of $src produced no _site directory, so every check naming the slug <<$slug>> would read a capture holding nothing"
+    cp -R "$src/_site" "$dir/_site"
+    return 0
+  fi
   if [ "$project" = "1" ]; then
     if [ -d "$src/_book" ]; then
       cp -R "$src/_book" "$dir/_book"
@@ -282,10 +291,19 @@ run_scan() {
 }
 
 # ---------------------------------------------------------------------------
-# Supported forms (NORMATIVE). The README documents exactly these authoring
+# The claim containers. Each is a set of pinned documentation sentences or
+# exemplars, and each keeps the `README_` name it was written under: the
+# documentation moved out of README into the `site/` Quarto website at M40, and
+# the names are history, not addresses. Where a container's own comment below
+# says README, read it as the documentation of the day — the page each set is
+# compared against now is the `CLAIM_CONTAINERS` registry's row for it, which
+# is the one place any of these is pointed at a file.
+#
+# Supported forms (NORMATIVE). The documentation states exactly these authoring
 # forms — the mark spans, and the div that places the index — and no others.
 # Each row is <label><TAB><exemplar>: the exemplar is the exact
-# syntax, and the check below fails unless it appears verbatim in README.md.
+# syntax, and the check below fails unless it appears verbatim in the pages the
+# registry names for this container.
 # A form the extension grows must therefore be documented in the same change,
 # and a documented form cannot drift from the one this suite exercises.
 # ---------------------------------------------------------------------------
@@ -312,8 +330,8 @@ SUPPORTED_FORMS=(
 # behavior this suite exercises cannot drift apart.
 #
 # README_STALE names sentences that described a world with one back-end. Each
-# must be GONE, or the README is telling a reader that HTML passes marks
-# through untouched.
+# must be GONE from every site page and from README, or the documentation is
+# telling a reader that HTML passes marks through untouched.
 # ---------------------------------------------------------------------------
 README_STALE=(
   $'pass-through scope\tformats with no index back-end — HTML and beamer'
@@ -534,7 +552,7 @@ README_REFS_CLAIMS=(
 # a character the filter handles can never go unprobed.
 PROBE_CHARS='% & # _ { } \ ~ ^ $ @ | ! " < >'
 
-# M33-AC4 — the five things README's `### Terms outside Latin-1` section has to
+# M33-AC4 — the five things the Terms outside Latin-1 page has to
 # state, plus what the section says beyond them. Each row is a claim a reader
 # acts on, held verbatim below: a documented claim with no check beside it
 # drifts (M13). Most rows that describe a behavior name one the M33 renders
@@ -571,20 +589,20 @@ README_UNICODE_CLAIMS=(
 )
 
 # ---------------------------------------------------------------------------
-# The recipe block a reader COPIES out of README's `### Terms outside Latin-1`
+# The recipe block a reader COPIES out of the Terms outside Latin-1 page
 # section, stated here line for line.
 #
 # ORACLE RULE. These lines are stated by hand and are never read out of either
-# document. The block in README must equal this list exactly — same lines, same
+# document. The block on that page must equal this list exactly — same lines, same
 # order — and every line here must also appear in examples/unicode.qmd, which
 # is the fixture the typeset-print checks prove the recipe on. Holding the
 # block to the fixture ALONE, which is what this check used to do, only asks
-# that the README block's lines be a subset of the fixture: a README that
+# that the block's lines be a subset of the fixture: a page that
 # dropped `pdf-engine: xelatex` would still pass, because everything left was
 # still in the fixture, and a reader copying the shortened block would get the
 # silent failure the section is about. Stating the list is what closes that
 # direction, and it means a change to the recipe is a change a reader makes
-# here, in README, and in the fixture together.
+# here, on that page, and in the fixture together.
 README_RECIPE_LINES=(
   'pdf-engine: xelatex'
   'mainfont: STIXTwoText'
@@ -595,6 +613,90 @@ README_RECIPE_LINES=(
   '  - ItalicFont=*-Italic'
   '  - BoldItalicFont=*-BoldItalic'
 )
+
+# ---------------------------------------------------------------------------
+# Claim-container registry (NORMATIVE, M40). Every set of pinned documentation
+# sentences this file compares against the docs is a *claim container*, and
+# this is the one enumeration of them: <NAME><TAB><kind><TAB><domain>.
+#
+# kind is `presence` (every entry must appear) or `absence` (no entry may
+# appear anywhere a reader looks). `domain` for a presence container is the
+# space-separated site page or pages that hold its entries — the docs moved
+# out of README at M40, and six containers legitimately span more than one
+# page, so the domain is a list and not a file. `domain` for an absence
+# container is the literal `ALL`: every tracked page under `site/` plus
+# README.md, which is everywhere a reader could still meet the retired
+# sentence.
+#
+# The registry is what makes the domain countable. `check_claim_registry`
+# below scans this file's own source for container definitions in BOTH shapes
+# it uses — a `NAME=(` array and a `read -r -d '' NAME` here-document — and
+# fails when the two sets differ, so a container added, renamed or dropped
+# cannot slip out of the registry unseen, and a registry naming a container
+# this file does not define cannot stand in for one it does (M16, M17).
+# ---------------------------------------------------------------------------
+CLAIM_CONTAINERS=(
+  $'SUPPORTED_FORMS\tpresence\tsite/syntax.qmd site/sorting.qmd site/placing-the-index.qmd site/named-indexes.qmd site/books.qmd'
+  $'README_STALE\tabsence\tALL'
+  $'README_HTML_CLAIMS\tpresence\tsite/back-end-differences.qmd site/other-formats.qmd'
+  $'README_SORT_CLAIMS\tpresence\tsite/sorting.qmd site/sub-entry-levels.qmd'
+  $'README_EMPTY_CLAIMS\tpresence\tsite/sub-entry-levels.qmd'
+  $'README_PRINCIPAL_CLAIMS\tpresence\tsite/principal-mention.qmd'
+  $'README_STALEAUX_CLAIMS\tpresence\tsite/principal-mention.qmd site/latex-and-pdf.qmd'
+  $'README_RANGE_CLAIMS\tpresence\tsite/page-ranges.qmd site/latex-and-pdf.qmd'
+  $'README_LETTER_CLAIMS\tpresence\tsite/letter-groups.qmd'
+  $'README_REFS_STALE\tabsence\tALL'
+  $'README_REFS_CLAIMS\tpresence\tsite/placing-the-index.qmd site/latex-and-pdf.qmd'
+  $'README_UNICODE_CLAIMS\tpresence\tsite/terms-outside-latin-1.qmd'
+  $'README_RECIPE_LINES\tpresence\tsite/terms-outside-latin-1.qmd'
+  $'README_MISUSE_CLAIMS\tpresence\tsite/cross-references.qmd site/html.qmd site/placing-the-index.qmd site/latex-and-pdf.qmd'
+  $'README_MISUSE_STALE\tabsence\tALL'
+  $'README_INDEXES_CLAIMS\tpresence\tsite/named-indexes.qmd'
+  $'README_INDEXES_YAML\tpresence\tsite/named-indexes.qmd'
+)
+
+# The registry row for a container, or a hard failure naming the container —
+# a missing row is never a silently empty domain.
+claim_row() {
+  local name="$1" row
+  for row in "${CLAIM_CONTAINERS[@]}"; do
+    case "$row" in
+      "$name"$'\t'*) printf '%s' "$row"; return 0 ;;
+    esac
+  done
+  fail "M40: no claim-container registry row for $name"
+}
+
+claim_kind() { local r; r="$(claim_row "$1")"; r="${r#*$'\t'}"; printf '%s' "${r%%$'\t'*}"; }
+claim_domain() { local r; r="$(claim_row "$1")"; printf '%s' "${r##*$'\t'}"; }
+
+# The text a container is compared against: the registry's pages concatenated,
+# written to $WORK and read from there, so a check reads one file however many
+# pages hold the claims. `ALL` is every tracked page under `site/` plus
+# README.md. The enumeration is asserted non-empty at the point of use, never
+# assumed: a glob or a `git ls-files` that goes empty is the M16 shape.
+claim_text() {
+  local name="$1" domain out f n=0
+  domain="$(claim_domain "$name")"
+  out="$WORK/claim-${name}.txt"
+  : > "$out"
+  if [ "$domain" = "ALL" ]; then
+    for f in $(git ls-files 'site/*.qmd') README.md; do
+      [ -f "$f" ] || fail "M40: $name's domain names $f, which does not exist"
+      cat "$f" >> "$out"; printf '\n' >> "$out"; n=$((n + 1))
+    done
+    [ "$n" -ge 2 ] \
+      || fail "M40: $name's ALL domain enumerated $n file(s); it is every tracked page under site/ plus README.md, and one file means the enumeration went empty"
+  else
+    for f in $domain; do
+      [ -f "$f" ] || fail "M40: $name's registry domain names $f, which does not exist"
+      cat "$f" >> "$out"; printf '\n' >> "$out"; n=$((n + 1))
+    done
+    [ "$n" -ge 1 ] \
+      || fail "M40: $name's registry domain is empty"
+  fi
+  printf '%s' "$out"
+}
 
 # ---------------------------------------------------------------------------
 # Manifest 1 — expected \index{} entries in "$CAPTURE_ROOT/demo-latex/demo.tex" (AC1).
@@ -675,17 +777,17 @@ M33_GREEK=(θεωρία ψυχή)
 M33_ASCII=Ascii
 M33_ASCII_ENTRY="0:$M33_ASCII"
 M33_CJK=漢字
-# ORACLE RULE. This is the engine that README's `### Terms outside Latin-1`
-# third path names for a document which sets the font and leaves `pdf-engine:`
+# ORACLE RULE. This is the engine that the docs site's Terms outside Latin-1
+# page's third path names for a document which sets the font and leaves `pdf-engine:`
 # unset — stated here by hand from that paragraph, never read back out of a
 # render. The name only, not the version: a TeX Live update that bumps the
 # version says nothing about which engine ran, and a check that went red on it
 # would be red for no reason a reader could act on.
 #
 # Two hand statements, and nothing here asserts they agree. This value is
-# `LuaTeX`, the string LuaTeX writes into a PDF's Producer line; README's
+# `LuaTeX`, the string LuaTeX writes into a PDF's Producer line; the page's
 # paragraph says `lualatex`, the engine a reader would set. Neither is derived
-# from the other and no check compares them, so a README edit that changed the
+# from the other and no check compares them, so a docs edit that changed the
 # engine word would leave this line saying what it says now and control (d)
 # green — the correspondence is a maintainer's to keep, not something the suite
 # reports on. Said here rather than repaired: the two spellings are not the
@@ -1701,23 +1803,89 @@ printf '== filter source set (%s) ==\n' "$QI_EXT_DIR"
 printf '%s\n' "$FILTER_SOURCES" | sed 's/^/   /'
 printf '   %s file(s)\n\n' "$FILTER_SOURCE_COUNT"
 
+# ---------------------------------------------------------------------------
+# M40-AC6 — the registry names every claim container this file defines, and no
+# others. Without this the domain every check below sweeps can half-empty in
+# silence: a container added and not registered is compared against nothing,
+# and a registry row for a container that no longer exists reads exactly like
+# one that does (check-design, M16/M17). Two independent statements are
+# compared — the registry above, written by hand, against a scan of this
+# file's own source — so neither can be edited alone. The scan reads BOTH
+# definition shapes this file uses, because the repair for a hand list going
+# vacuous is itself vacuous one layer down if it sees only the array form:
+# README_INDEXES_CLAIMS and README_INDEXES_YAML are here-documents.
+# ---------------------------------------------------------------------------
+printf '%s\n' "${CLAIM_CONTAINERS[@]}" > "$WORK/claim-registry.txt"
+check_claim_registry() {
+python3 - "$1" "$2" <<'REGISTRYPY'
+import re
+import sys
+
+rows = [l.rstrip('\n').split('\t')
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+registered = {r[0]: r[1] for r in rows}
+if len(registered) != len(rows):
+    sys.exit('FAIL: M40-AC6: the claim-container registry names a container '
+             'twice, so one row is unreachable')
+
+source = open(sys.argv[2], encoding='utf-8').read()
+defined = set(re.findall(r'^(README_[A-Z_]+|SUPPORTED_FORMS)=\(', source, re.M))
+defined |= set(re.findall(r"^read -r -d '' (README_[A-Z_]+|SUPPORTED_FORMS) ",
+                          source, re.M))
+if not defined:
+    sys.exit('FAIL: M40-AC6: the scan of this suite\'s own source found no '
+             'claim container at all, so it certifies nothing')
+
+unregistered = sorted(defined - set(registered))
+stale = sorted(set(registered) - defined)
+if unregistered or stale:
+    for name in unregistered:
+        print(f'  defined here, not in the registry: {name}', file=sys.stderr)
+    for name in stale:
+        print(f'  in the registry, not defined here: {name}', file=sys.stderr)
+    sys.exit('FAIL: M40-AC6: the claim-container registry and the containers '
+             'this file defines are not the same set')
+
+kinds = sorted(set(registered.values()))
+if kinds != ['absence', 'presence']:
+    sys.exit(f'FAIL: M40-AC6: the registry tags containers {kinds}; every row '
+             f'is presence or absence')
+presence = sum(1 for k in registered.values() if k == 'presence')
+absence = len(registered) - presence
+# Pinned, not merely reported: AC6 promises over the presence containers, and
+# a presence container re-tagged absence would drop out of that promise with
+# every check still green.
+if (len(registered), presence, absence) != (17, 14, 3):
+    sys.exit(f'FAIL: M40-AC6: the registry holds {len(registered)} container(s), '
+             f'{presence} presence and {absence} absence; the criterion is '
+             f'over 17, 14 presence and 3 absence')
+print(f'ok   M40-AC6: the claim-container registry names all {len(registered)} '
+      f'containers this suite defines and no others, {presence} presence and '
+      f'{absence} absence, compared against a scan of the suite\'s own source '
+      f'reading both the array and here-document definition shapes')
+REGISTRYPY
+}
+check_claim_registry "$WORK/claim-registry.txt" tests/run-tests.sh \
+  || fail "M40-AC6: the claim-container registry and the containers this suite defines are not the same set (its own FAIL line is above)"
+
 # M02-AC6 — the docs and the normative list cannot drift apart. A count would
 # pass on a README that documented some other syntax; this compares the bytes.
 printf '%s\n' "${SUPPORTED_FORMS[@]}" > "$WORK/forms.txt"
-python3 - "$WORK/forms.txt" README.md <<'PY'
+python3 - "$WORK/forms.txt" "$(claim_text SUPPORTED_FORMS)" <<'PY'
 import sys
 rows = [l.rstrip('\n').split('\t', 1)
         for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
-readme = open(sys.argv[2], encoding='utf-8').read()
-missing = [(label, ex) for label, ex in rows if ex not in readme]
+docs = open(sys.argv[2], encoding='utf-8').read()
+missing = [(label, ex) for label, ex in rows if ex not in docs]
 if missing:
-    print('FAIL: M02-AC6: syntax exemplar(s) absent from README.md:',
+    print('FAIL: M02-AC6: syntax exemplar(s) absent from the site pages the '
+          'claim-container registry names for SUPPORTED_FORMS:',
           file=sys.stderr)
     for label, ex in missing:
         print(f'  {label}: <<{ex}>>', file=sys.stderr)
     sys.exit(1)
 print(f'ok   M02-AC6: all {len(rows)} normative syntax exemplars appear '
-      f'verbatim in README.md')
+      f'verbatim in the site pages the registry names for SUPPORTED_FORMS')
 PY
 
 # M03-AC7 — the README describes the back-end that now exists, and no longer
@@ -1726,7 +1894,8 @@ PY
 # sentence cannot hide behind a line break).
 printf '%s\n' "${README_STALE[@]}" > "$WORK/readme-stale.txt"
 printf '%s\n' "${README_HTML_CLAIMS[@]}" > "$WORK/readme-html.txt"
-python3 - "$WORK/readme-stale.txt" "$WORK/readme-html.txt" README.md <<'PY'
+check_claim_sets() {
+python3 - "$1" "$2" "$3" "$4" <<'PY'
 import sys
 
 def rows(path):
@@ -1737,28 +1906,37 @@ def flat(s):
     return ' '.join(s.split())
 
 stale, claims = rows(sys.argv[1]), rows(sys.argv[2])
-readme = flat(open(sys.argv[3], encoding='utf-8').read())
+# Two domains, not one: a retired sentence must be gone from everywhere a
+# reader looks (every site page and README), while a live claim need only be
+# on the page the registry names for it.
+everywhere = flat(open(sys.argv[3], encoding='utf-8').read())
+docs = flat(open(sys.argv[4], encoding='utf-8').read())
 
 bad = []
 for label, text in stale:
-    if flat(text) in readme:
+    if flat(text) in everywhere:
         bad.append(f'  still present ({label}): <<{text}>>')
 for label, text in claims:
-    if flat(text) not in readme:
+    if flat(text) not in docs:
         bad.append(f'  missing ({label}): <<{text}>>')
 if bad:
-    print('FAIL: M03-AC7: README.md does not describe the HTML back-end as '
+    print('FAIL: M03-AC7: the docs do not describe the HTML back-end as '
           'this suite exercises it:', file=sys.stderr)
     print('\n'.join(bad), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M03-AC7: all {len(stale)} stale pass-through sentences are gone '
-      f'and all {len(claims)} HTML claims appear in README.md')
+      f'from every site page and from README, and all {len(claims)} HTML '
+      f'claims appear on the site pages the registry names for them')
 PY
+}
+check_claim_sets "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
+  "$(claim_text README_STALE)" "$(claim_text README_HTML_CLAIMS)" \
+  || fail "M03-AC7: the docs do not describe the HTML back-end as this suite exercises it (its own FAIL line is above)"
 
 # M06-AC6 — the same discipline for the sort-key documentation. Separate from
 # the block above so a failure names which milestone's docs drifted.
 printf '%s\n' "${README_SORT_CLAIMS[@]}" > "$WORK/readme-sort.txt"
-python3 - "$WORK/readme-sort.txt" README.md <<'SORTDOCPY'
+python3 - "$WORK/readme-sort.txt" "$(claim_text README_SORT_CLAIMS)" <<'SORTDOCPY'
 import sys
 
 
@@ -1772,17 +1950,17 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 missing = [f'  missing ({label}): <<{text}>>'
            for label, text in rows if flat(text) not in readme]
 if missing:
-    print('FAIL: M06-AC6: README.md does not document sort keys as this suite '
+    print('FAIL: M06-AC6: the docs do not document sort keys as this suite '
           'exercises them:', file=sys.stderr)
     print('\n'.join(missing), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M06-AC6: all {len(rows)} documented sort-key behaviors appear '
-      f'verbatim in README.md')
+      f'verbatim in the docs')
 SORTDOCPY
 
 # M11-AC6 — and the same for what README says about an empty level.
 printf '%s\n' "${README_EMPTY_CLAIMS[@]}" > "$WORK/readme-empty.txt"
-python3 - "$WORK/readme-empty.txt" README.md <<'EMPTYDOCPY'
+python3 - "$WORK/readme-empty.txt" "$(claim_text README_EMPTY_CLAIMS)" <<'EMPTYDOCPY'
 import sys
 
 
@@ -1796,17 +1974,17 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 missing = [f'  missing ({label}): <<{text}>>'
            for label, text in rows if flat(text) not in readme]
 if missing:
-    print('FAIL: M11-AC6: README.md does not document empty levels as this '
+    print('FAIL: M11-AC6: the docs do not document empty levels as this '
           'suite exercises them:', file=sys.stderr)
     print('\n'.join(missing), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M11-AC6: all {len(rows)} documented empty-level behaviors appear '
-      f'verbatim in README.md')
+      f'verbatim in the docs')
 EMPTYDOCPY
 
 # M07-AC6 — and the same for the letter-group documentation.
 printf '%s\n' "${README_LETTER_CLAIMS[@]}" > "$WORK/readme-letter.txt"
-python3 - "$WORK/readme-letter.txt" README.md <<'LETTERDOCPY'
+python3 - "$WORK/readme-letter.txt" "$(claim_text README_LETTER_CLAIMS)" <<'LETTERDOCPY'
 import sys
 
 
@@ -1820,12 +1998,12 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 missing = [f'  missing ({label}): <<{text}>>'
            for label, text in rows if flat(text) not in readme]
 if missing:
-    print('FAIL: M07-AC6: README.md does not document letter groups as this '
+    print('FAIL: M07-AC6: the docs do not document letter groups as this '
           'suite exercises them:', file=sys.stderr)
     print('\n'.join(missing), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M07-AC6: all {len(rows)} documented letter-group behaviors appear '
-      f'verbatim in README.md')
+      f'verbatim in the docs')
 LETTERDOCPY
 
 # ---------------------------------------------------------------------------
@@ -1872,7 +2050,8 @@ README_MISUSE_STALE=(
 
 printf '%s\n' "${README_MISUSE_CLAIMS[@]}" > "$WORK/readme-misuse.txt"
 printf '%s\n' "${README_MISUSE_STALE[@]}" > "$WORK/readme-misuse-stale.txt"
-python3 - "$WORK/readme-misuse.txt" "$WORK/readme-misuse-stale.txt" README.md <<'MISUSEDOCPY'
+python3 - "$WORK/readme-misuse.txt" "$WORK/readme-misuse-stale.txt" \
+  "$(claim_text README_MISUSE_CLAIMS)" "$(claim_text README_MISUSE_STALE)" <<'MISUSEDOCPY'
 import sys
 
 
@@ -1886,19 +2065,22 @@ def rows(path):
 
 
 claims, stale = rows(sys.argv[1]), rows(sys.argv[2])
-readme = flat(open(sys.argv[3], encoding='utf-8').read())
+# Two domains: a live claim on the pages the registry names for it, a
+# falsified sentence gone from every site page and from README.
+docs = flat(open(sys.argv[3], encoding='utf-8').read())
+everywhere = flat(open(sys.argv[4], encoding='utf-8').read())
 bad = [f'  missing ({label}): <<{text}>>'
-       for label, text in claims if flat(text) not in readme]
+       for label, text in claims if flat(text) not in docs]
 bad += [f'  still present ({label}): <<{text}>>'
-        for label, text in stale if flat(text) in readme]
+        for label, text in stale if flat(text) in everywhere]
 if bad:
-    print('FAIL: M08: README.md does not document the misuse reports as this '
+    print('FAIL: M08: the docs do not document the misuse reports as this '
           'suite exercises them:', file=sys.stderr)
     print('\n'.join(bad), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M08: all {len(claims)} documented misuse behaviors appear '
-      f'verbatim in README.md, and the {len(stale)} sentence(s) this milestone '
-      f'falsified are gone')
+      f'verbatim in the docs, and the {len(stale)} sentence(s) this milestone '
+      f'falsified are gone from every site page and from README')
 MISUSEDOCPY
 
 # The probe set is pinned to the filter's own escape table, so a character the
@@ -4447,7 +4629,7 @@ m32_planted html "$M32_HTML" "$M32_HTML" \
 # references, full stop — is in README_STALE, so it cannot sit beside the
 # recipe telling a reader the opposite.
 printf '%s\n' "${README_REFS_CLAIMS[@]}" > "$WORK/readme-refs.txt"
-python3 - "$WORK/readme-refs.txt" README.md <<'M32DOCPY'
+python3 - "$WORK/readme-refs.txt" "$(claim_text README_REFS_CLAIMS)" <<'M32DOCPY'
 import sys
 
 
@@ -4461,21 +4643,21 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 missing = [f'  missing ({label}): <<{text}>>'
            for label, text in rows if flat(text) not in readme]
 if missing:
-    print('FAIL: M32: README.md does not document the bibliography recipe as '
+    print('FAIL: M32: the docs do not document the bibliography recipe as '
           'this suite exercises it:', file=sys.stderr)
     print('\n'.join(missing), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M32: all {len(rows)} documented claims about an index beside a '
-      f'bibliography appear verbatim in README.md')
+      f'bibliography appear verbatim in the docs')
 M32DOCPY
-pass "M32: README documents the empty #refs div recipe, why it works, what both back-ends do and what happens without it, each verbatim"
+pass "M32: the docs document the empty #refs div recipe, why it works, what both back-ends do and what happens without it, each verbatim"
 
 # The retired sentence, checked here under M32's own label rather than as a row
 # in README_STALE — that set is enforced under `M03-AC7` over the one-back-end
 # world, so a regression filed there would be reported as an M03 HTML failure
 # (review R2-F2).
 printf '%s\n' "${README_REFS_STALE[@]}" > "$WORK/readme-refs-stale.txt"
-python3 - "$WORK/readme-refs-stale.txt" README.md <<'M32STALEPY'
+python3 - "$WORK/readme-refs-stale.txt" "$(claim_text README_REFS_STALE)" <<'M32STALEPY'
 import sys
 
 
@@ -4489,42 +4671,59 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 still = [f'  still present ({label}): <<{text}>>'
          for label, text in rows if flat(text) in readme]
 if still:
-    print('FAIL: M32: README.md still states the bibliography order as fixed, '
+    print('FAIL: M32: the docs still state the bibliography order as fixed, '
           'beside the recipe that says it is the author\'s to set:',
           file=sys.stderr)
     print('\n'.join(still), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M32: all {len(rows)} retired claim(s) about a fixed index/'
-      f'references order are gone from README.md')
+      f'references order are gone from every site page and from README')
 M32STALEPY
-pass "M32: the retired sentence stating the index prints before the references is gone from README"
+pass "M32: the retired sentence stating the index prints before the references is gone from every site page and from README"
 
 # The block an author copies is the part of the recipe that has to be right,
 # and prose around it cannot hold it (review R2-F4). Every non-blank line of
 # the fenced `markdown` block must appear verbatim in the fixture that proves
 # the recipe works, so the two cannot drift apart — the M13 rule, applied to
 # the one piece of README a reader pastes.
-python3 - README.md examples/references.qmd <<'M32BLOCKPY'
+python3 - site/placing-the-index.qmd examples/references.qmd <<'M32BLOCKPY'
 import re
 import sys
 
-readme = open(sys.argv[1], encoding='utf-8').read()
+page = open(sys.argv[1], encoding='utf-8').read()
 fixture = open(sys.argv[2], encoding='utf-8').read()
 
+
+# The end of a section: the first heading line at `#` through `###` that is
+# not inside a fenced block. Bounding by a bare regex reads a `# References`
+# line INSIDE a copyable markdown block as the end of the section holding it,
+# which is how the M40 move first broke this check — README's sections were
+# bounded at `##` and down, and a `#` inside a fence was invisible to that.
+def section_end(text):
+    fence = False
+    off = 0
+    for line in text.splitlines(keepends=True):
+        if line.startswith('```'):
+            fence = not fence
+        elif not fence and re.match(r'#{1,3} ', line):
+            return off
+        off += len(line)
+    return len(text)
+
 anchor = '**Putting the index after a bibliography.**'
-if anchor not in readme:
+if anchor not in page:
     print(f'FAIL: M32: {sys.argv[1]} no longer carries the recipe section this '
           f'check reads its copyable block out of', file=sys.stderr)
     sys.exit(1)
 # Bounded to the recipe's own section: the search would otherwise run to the
 # end of the file and pick up every later fenced block.
-section = readme[readme.index(anchor):]
-# Bounded at the next heading of ANY depth from `##` down, not at `## ` alone:
-# the recipe sits inside a `###` section, so a later `###` is as much the end
-# of it as a later `##` is, and reading past one picks up that section's own
-# fenced blocks (M38 added the first `###` after it).
-end = re.search(r'^#{2,3} ', section, re.M)
-section = section[:end.start()] if end else section
+section = page[page.index(anchor):]
+# Bounded at the next heading of ANY depth from `#` down, not at `## ` alone:
+# in README the recipe sat inside a `###` section, so a later `###` ended it;
+# on the site page that moved it (M40) the page's own headings are `#`, so a
+# `#` is the end too, and reading past one picks up that section's fenced
+# blocks (M38 added the first `###` after it).
+section = section[:section_end(section)]
 blocks = re.findall(r'^```markdown\n(.*?)^```', section, re.S | re.M)
 if len(blocks) != 1:
     print(f'FAIL: M32: the recipe section carries {len(blocks)} fenced '
@@ -4546,11 +4745,11 @@ if missing:
 print(f'ok   M32: every one of the {len(lines)} line(s) an author copies out '
       f'of README\'s recipe block appears verbatim in examples/references.qmd')
 M32BLOCKPY
-pass "M32: the copyable recipe block in README is held line for line against the fixture that proves it works"
+pass "M32: the copyable recipe block on the Placing-the-index page is held line for line against the fixture that proves it works"
 
 # ---------------------------------------------------------------------------
 # M33 — a term outside Latin-1 PRINTS in the typeset index, under the engine
-# and main font README's `### Terms outside Latin-1` section names.
+# and main font the docs site's Terms outside Latin-1 page names.
 #
 # Compiling is not the question here and neither is makeindex acceptance: both
 # succeed on a Greek entry under a main font that carries no Greek, and the
@@ -4558,7 +4757,7 @@ pass "M32: the copyable recipe block in README is held line for line against the
 # printed entry line, read structurally through tests/pdfindex.py.
 #
 # The LaTeX log's `Missing character` line is NOT read as evidence anywhere in
-# this section, and the README section says so too: xelatex prints a
+# this section, and the docs section says so too: xelatex prints a
 # precomposed character its font lacks by falling back to the character's
 # canonical decomposition, so the line fires on text that typesets perfectly
 # and on a genuinely dropped glyph alike. Under M33's `stix` the recipe's own
@@ -4693,7 +4892,7 @@ M33CTLPY
   > "$WORK/m33-engine.log" 2>&1 && M33_ENGINE_RC=0 || M33_ENGINE_RC=$?
 capture "$M33C/engine.qmd" pdf "m33-engine"
 [ "$M33_ENGINE_RC" -ne 0 ] \
-  || fail "M33-AC3a: examples/unicode.qmd rendered at exit 0 under pdf-engine: pdflatex; the engine half of the recipe is not load-bearing and README documents a failure that does not happen"
+  || fail "M33-AC3a: examples/unicode.qmd rendered at exit 0 under pdf-engine: pdflatex; the engine half of the recipe is not load-bearing and the docs document a failure that does not happen"
 [ -f "$M33_ENGINE_LOG" ] \
   || fail "M33-AC3a: the pdflatex control left no LaTeX log to read, so its non-zero exit is not evidence about a character"
 python3 tests/unicodeprint.py stopped "$M33_ENGINE_LOG" "${M33_GREEK[@]}" \
@@ -4712,9 +4911,9 @@ python3 tests/unicodeprint.py absent "$CAPTURE_ROOT/m33-nofont/nofont.pdf" \
   || fail "M33-AC3b: with mainfont left at its default the Greek terms still print, or the control's index did not print at all (its own FAIL line is above)"
 pass "M33-AC3b: with mainfont left at its default the render exits 0, its index still prints the fixture's ASCII term at its stated level, and none of the fixture's Greek terms print at any level"
 
-# --- (c) the recipe's own limit. Everything the README names, plus one term in
+# --- (c) the recipe's own limit. Everything the docs page names, plus one term in
 #     a script the font does not cover: the same silent drop, which is why the
-#     README section states the recipe's proven set rather than promising
+#     docs section states the recipe's proven set rather than promising
 #     every script.
 ( cd "$M33C" && quarto render cjk.qmd --to pdf ) \
   > "$WORK/m33-cjk.log" 2>&1 \
@@ -4732,11 +4931,11 @@ pass "M33-AC3c: the fixture with one CJK term added renders at exit 0 under the 
 #     engine change that breaks one of them here cannot pass as an absence.
 ( cd "$M33C" && quarto render noengine.qmd --to pdf ) \
   > "$WORK/m33-noengine.log" 2>&1 \
-  || { tail -20 "$WORK/m33-noengine.log" >&2; fail "M34-AC4 control (d): the fixture failed to render with no pdf-engine set; README documents this as a build that SUCCEEDS with its index printing correctly, so a broken build is not the state it pins"; }
+  || { tail -20 "$WORK/m33-noengine.log" >&2; fail "M34-AC4 control (d): the fixture failed to render with no pdf-engine set; the docs document this as a build that SUCCEEDS with its index printing correctly, so a broken build is not the state it pins"; }
 capture "$M33C/noengine.qmd" pdf "m33-noengine"
 python3 tests/unicodeprint.py entries "$CAPTURE_ROOT/m33-noengine/noengine.pdf" \
   "${M33_TERMS[@]}" \
-  || fail "M34-AC4 control (d): with no pdf-engine set a term the fixture marks does not print as its own entry, so README's 'no engine set' paragraph states an index that prints correctly where this one does not (its own FAIL line is above)"
+  || fail "M34-AC4 control (d): with no pdf-engine set a term the fixture marks does not print as its own entry, so the docs' 'no engine set' paragraph states an index that prints correctly where this one does not (its own FAIL line is above)"
 # The index printing correctly is only half of what this control claims. The
 # other half is WHICH engine printed it: README's third path says Quarto's
 # default is lualatex and that the font, not the engine line, is doing the
@@ -4744,11 +4943,11 @@ python3 tests/unicodeprint.py entries "$CAPTURE_ROOT/m33-noengine/noengine.pdf" 
 # reading above green while that sentence went false, and nothing but the
 # capture's own Producer line can tell the two apart.
 pdf_producer_names "$CAPTURE_ROOT/m33-noengine/noengine.pdf" "$M33_NOENGINE_PRODUCER" \
-  || fail "M34-AC4 control (d): the no-engine capture was not produced by $M33_NOENGINE_PRODUCER, so README's 'no engine set' paragraph names an engine that is not the one Quarto defaulted to here (its own FAIL line is above)"
+  || fail "M34-AC4 control (d): the no-engine capture was not produced by $M33_NOENGINE_PRODUCER, so the docs' 'no engine set' paragraph names an engine that is not the one Quarto defaulted to here (its own FAIL line is above)"
 pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 0 under $M33_NOENGINE_PRODUCER — read from the capture's own Producer line — and all ${#M33_TERMS[@]} of the fixture's terms print as their own entry at the level the suite states in the typeset index"
 
 # ---------------------------------------------------------------------------
-# M33-AC4 — the README section a reader acts on. Two checks, because the
+# M33-AC4 — the docs section a reader acts on. Two checks, because the
 # section has two jobs. The claims are held verbatim (whitespace normalized on
 # both sides, so a rewrapped sentence still counts and a stale one cannot hide
 # behind a line break); the YAML block a reader COPIES is held to the line list
@@ -4759,8 +4958,8 @@ pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 
 # passes on a block with a line missing.
 # ---------------------------------------------------------------------------
 printf '%s\n' "${README_UNICODE_CLAIMS[@]}" > "$WORK/readme-unicode.txt"
-python3 - "$WORK/readme-unicode.txt" README.md <<'M33DOCPY' \
-  || fail "M33-AC4: README's `### Terms outside Latin-1` section does not state what this suite exercises (its own FAIL line is above)"
+python3 - "$WORK/readme-unicode.txt" "$(claim_text README_UNICODE_CLAIMS)" <<'M33DOCPY' \
+  || fail "M33-AC4: the docs site's Terms outside Latin-1 page does not state what this suite exercises (its own FAIL line is above)"
 import sys
 
 
@@ -4774,12 +4973,12 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 missing = [f'  missing ({label}): <<{text}>>'
            for label, text in rows if flat(text) not in readme]
 if missing:
-    print('FAIL: M33-AC4: README.md does not document the non-Latin-1 recipe '
+    print('FAIL: M33-AC4: the docs do not document the non-Latin-1 recipe '
           'as this suite exercises it:', file=sys.stderr)
     print('\n'.join(missing), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M33-AC4: all {len(rows)} documented claims about terms outside '
-      f'Latin-1 appear verbatim in README.md')
+      f'Latin-1 appear verbatim in the docs')
 M33DOCPY
 
 # The recipe block, held to the stated list in BOTH directions and to the
@@ -4796,13 +4995,14 @@ M33DOCPY
 # at all; the fixture's front matter is read for real by `recipe_font_files`
 # above and by the render the typeset-print check judges.
 check_recipe_block() {
-  local readme="$1" fixture="$2" stated="$WORK/recipe-lines.txt"
+  local page="$1" fixture="$2" stated="$WORK/recipe-lines.txt"
+  local anchor="${3:-# Terms outside Latin-1}"
   printf '%s\n' "${README_RECIPE_LINES[@]}" > "$stated"
-  python3 - "$readme" "$fixture" "$stated" <<'M33BLOCKPY'
+  python3 - "$page" "$fixture" "$stated" "$anchor" <<'M33BLOCKPY'
 import re
 import sys
 
-readme = open(sys.argv[1], encoding='utf-8').read()
+page = open(sys.argv[1], encoding='utf-8').read()
 fixture = open(sys.argv[2], encoding='utf-8').read()
 # The stated list is a literal array in this file, not a glob or a generated
 # artifact. Its non-emptiness is pinned by the self-test's plants below, each of
@@ -4814,16 +5014,34 @@ fixture = open(sys.argv[2], encoding='utf-8').read()
 stated = [l.rstrip('\n') for l in open(sys.argv[3], encoding='utf-8')
           if l.strip()]
 
-anchor = '### Terms outside Latin-1'
-if anchor not in readme:
+
+# The end of a section: the first heading line at `#` through `###` that is
+# not inside a fenced block. Bounding by a bare regex reads a `# References`
+# line INSIDE a copyable markdown block as the end of the section holding it,
+# which is how the M40 move first broke this check — README's sections were
+# bounded at `##` and down, and a `#` inside a fence was invisible to that.
+def section_end(text):
+    fence = False
+    off = 0
+    for line in text.splitlines(keepends=True):
+        if line.startswith('```'):
+            fence = not fence
+        elif not fence and re.match(r'#{1,3} ', line):
+            return off
+        off += len(line)
+    return len(text)
+
+anchor = sys.argv[4]
+if anchor not in page:
     print(f'FAIL: M33-AC4: {sys.argv[1]} carries no {anchor!r} section for '
           f'this check to read its copyable block out of', file=sys.stderr)
     sys.exit(1)
 # Bounded to the section itself: the search would otherwise run to the end of
-# the file and pick up every later fenced block.
-section = readme[readme.index(anchor) + len(anchor):]
-end = re.search(r'^#{2,3} ', section, re.M)
-section = section[:end.start()] if end else section
+# the file and pick up every later fenced block. Bounded at `#` and not at
+# `##` down, because M40 moved the recipe onto a site page whose own headings
+# are `#`.
+section = page[page.index(anchor) + len(anchor):]
+section = section[:section_end(section)]
 blocks = re.findall(r'^```yaml\n(.*?)^```', section, re.S | re.M)
 if len(blocks) != 1:
     print(f'FAIL: M33-AC4: the section carries {len(blocks)} fenced `yaml` '
@@ -4854,15 +5072,16 @@ if missing:
     print('\n'.join(f'  <<{l}>>' for l in missing), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M33-AC4: the {len(stated)} line(s) an author copies out of '
-      f'README\'s recipe block are exactly the lines this suite states, in '
+      f'{sys.argv[1]}\'s recipe block are exactly the lines this suite '
+      f'states, in '
       f'that order, and every one of them occurs somewhere in {sys.argv[2]} — '
       f'anywhere in the file, not necessarily in its front matter')
 M33BLOCKPY
 }
 
-check_recipe_block README.md examples/unicode.qmd \
-  || fail "M33-AC4: the recipe block a reader copies out of README is not the recipe this suite states, or a stated line is not in the fixture that proves it (its own FAIL line is above)"
-pass "M33-AC4: README's Terms outside Latin-1 section states the engine, the font, where to install it and the must-cover rule, both failure signatures, the third path where no engine is set, the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is exactly the ${#README_RECIPE_LINES[@]} lines this suite states, each of them occurring somewhere in the fixture"
+check_recipe_block site/terms-outside-latin-1.qmd examples/unicode.qmd \
+  || fail "M33-AC4: the recipe block a reader copies out of the Terms outside Latin-1 page is not the recipe this suite states, or a stated line is not in the fixture that proves it (its own FAIL line is above)"
+pass "M33-AC4: the docs site's Terms outside Latin-1 page states the engine, the font, where to install it and the must-cover rule, both failure signatures, the third path where no engine is set, the Missing character caveat, what sort= does, the proven set and the unsupported scripts — and its copyable block is exactly the ${#README_RECIPE_LINES[@]} lines this suite states, each of them occurring somewhere in the fixture"
 
 # ---------------------------------------------------------------------------
 # M03-AC5 — every printable ASCII character reaches a generated HTML index as
@@ -8971,16 +9190,17 @@ check_warning_count "$WORK/fold-xref-latex.log" ', of the' 0 \
   "M19-AC4 (no second count where nothing dropped)"
 # M19-AC3/AC6 negatives. Every pin above is a SUBSTRING count, so the retired
 # clause re-added as a trailing sentence would pass all of them; only a sweep
-# for the clause itself can fail on that. The filter source and README are read
-# rather than a render log, so the check holds for messages no fixture reaches.
+# for the clause itself can fail on that. The filter source and the docs (the
+# site pages and README) are read rather than a render log, so the check holds
+# for messages no fixture reaches.
 M19_RETIRED='before empty levels are dropped'
 # One recursive grep with its no-match exit absorbed, and the emptiness decided
 # by the comparison rather than by the pipeline's exit status: `grep ... && fail`
 # aborts a `set -e` run with no FAIL line when the grep finds nothing (M14).
-m19_retired_hits=$( { grep -rlF -- "$M19_RETIRED" _extensions README.md || true; } | tr '\n' ' ')
+m19_retired_hits=$( { grep -rlF -- "$M19_RETIRED" _extensions site README.md || true; } | tr '\n' ' ')
 [ -z "$(echo "$m19_retired_hits" | tr -d ' ')" ] \
   || fail "M19-AC3: the retired clause <<$M19_RETIRED>> survives in: $m19_retired_hits — it names a drop that touches neither count"
-pass "M19-AC3: the clause naming a drop that touches neither count is gone from the filter source and from README, asserted by a sweep rather than by the substring pins above"
+pass "M19-AC3: the clause naming a drop that touches neither count is gone from the filter source, from every page under site/ and from README, asserted by a sweep rather than by the substring pins above"
 
 pass "M19-AC4: the entry-fold report names both counts where a dropped level makes them differ and one where it does not, and the fixture with no empty level anywhere carries no second count at all"
 
@@ -9426,7 +9646,7 @@ pass "M20 T9: every locator of the printed index is marked exactly when the regi
 # README claim array: the bytes the extension documents are compared, so a
 # behavior that changes without its documentation fails here.
 printf '%s\n' "${README_PRINCIPAL_CLAIMS[@]}" > "$WORK/readme-principal.txt"
-python3 - "$WORK/readme-principal.txt" README.md <<'M20DOCPY'
+python3 - "$WORK/readme-principal.txt" "$(claim_text README_PRINCIPAL_CLAIMS)" <<'M20DOCPY'
 import sys
 
 
@@ -9440,17 +9660,17 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 missing = [f'  missing ({label}): <<{text}>>'
            for label, text in rows if flat(text) not in readme]
 if missing:
-    print('FAIL: M20: README.md does not document the principal mention as '
+    print('FAIL: M20: the docs do not document the principal mention as '
           'this suite exercises it:', file=sys.stderr)
     print('\n'.join(missing), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M20: all {len(rows)} documented claims about the principal '
-      f'mention appear verbatim in README.md')
+      f'mention appear verbatim in the docs')
 M20DOCPY
-pass "M20: every behavior the README documents for the principal mention is present verbatim, and its authoring form is in the suite's normative supported-forms list"
+pass "M20: every behavior the docs document for the principal mention is present verbatim, and its authoring form is in the suite's normative supported-forms list"
 
 printf '%s\n' "${README_RANGE_CLAIMS[@]}" > "$WORK/readme-range.txt"
-python3 - "$WORK/readme-range.txt" README.md <<'M21DOCPY'
+python3 - "$WORK/readme-range.txt" "$(claim_text README_RANGE_CLAIMS)" <<'M21DOCPY'
 import sys
 
 
@@ -9464,14 +9684,14 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 missing = [f'  missing ({label}): <<{text}>>'
            for label, text in rows if flat(text) not in readme]
 if missing:
-    print('FAIL: M21: README.md does not document the page range as this suite '
+    print('FAIL: M21: the docs do not document the page range as this suite '
           'exercises it:', file=sys.stderr)
     print('\n'.join(missing), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M21: all {len(rows)} documented claims about the page range appear '
-      f'verbatim in README.md')
+      f'verbatim in the docs')
 M21DOCPY
-pass "M21: every behavior the README documents for a page range is present verbatim, and both of its authoring forms are in the suite's normative supported-forms list"
+pass "M21: every behavior the docs document for a page range is present verbatim, and both of its authoring forms are in the suite's normative supported-forms list"
 
 # ---------------------------------------------------------------------------
 # M21 — a discussion spanning pages prints as one page range.
@@ -10128,7 +10348,7 @@ pass "M22-AC2: both no-subsystem variants and the zero-mark control carry exactl
 # claim with no check beside it drifts (M13), and this one's enforcement is
 # the AC1 probe above.
 printf '%s\n' "${README_STALEAUX_CLAIMS[@]}" > "$WORK/readme-staleaux.txt"
-python3 - "$WORK/readme-staleaux.txt" README.md <<'M22DOCPY'
+python3 - "$WORK/readme-staleaux.txt" "$(claim_text README_STALEAUX_CLAIMS)" <<'M22DOCPY'
 import sys
 
 
@@ -10142,14 +10362,14 @@ readme = flat(open(sys.argv[2], encoding='utf-8').read())
 missing = [f'  missing ({label}): <<{text}>>'
            for label, text in rows if flat(text) not in readme]
 if missing:
-    print('FAIL: M22/M31: README.md does not document the stale-build-file '
+    print('FAIL: M22/M31: the docs do not document the stale-build-file '
           'behavior as this suite exercises it:', file=sys.stderr)
     print('\n'.join(missing), file=sys.stderr)
     sys.exit(1)
 print(f'ok   M22/M31: all {len(rows)} documented claims about a stale build '
-      f'file appear verbatim in README.md')
+      f'file appear verbatim in the docs')
 M22DOCPY
-pass "M22/M31: README documents the leftover-build-file promise over both the .aux and the .ind, and the six preamble definitions a LaTeX render carries, each verbatim"
+pass "M22/M31: the docs document the leftover-build-file promise over both the .aux and the .ind, and the six preamble definitions a LaTeX render carries, each verbatim"
 
 # ---------------------------------------------------------------------------
 # M31 — a stale `.ind` outliving its marks still builds.
@@ -12253,17 +12473,37 @@ FOLDHEADPY
 # for line, the fixtures it names, and the commands it shows against the ledger
 # of what this run actually executed.
 check_readme_indexes() {
-python3 - "$1" "$2" "$3" "$4" "$5" <<'READMEPY'
+python3 - "$1" "$2" "$3" "$4" "$5" "${6:-# Named indexes}" <<'READMEPY'
 import os, re, sys
-readme_path, claims_path, yaml_path, ledger_path, label = sys.argv[1:6]
-body = open(readme_path, encoding='utf-8').read()
-head = '### Named indexes'
+
+
+# The end of a section: the first heading line at `#` through `###` that is
+# not inside a fenced block. Bounding by a bare regex reads a `# References`
+# line INSIDE a copyable markdown block as the end of the section holding it,
+# which is how the M40 move first broke this check — README's sections were
+# bounded at `##` and down, and a `#` inside a fence was invisible to that.
+def section_end(text):
+    fence = False
+    off = 0
+    for line in text.splitlines(keepends=True):
+        if line.startswith('```'):
+            fence = not fence
+        elif not fence and re.match(r'#{1,3} ', line):
+            return off
+        off += len(line)
+    return len(text)
+
+
+page_path, claims_path, yaml_path, ledger_path, label, head = sys.argv[1:7]
+body = open(page_path, encoding='utf-8').read()
 at = body.find('\n' + head + '\n')
 if at < 0:
-    sys.exit(f'FAIL: {label}: README.md has no {head!r} section')
+    sys.exit(f'FAIL: {label}: {page_path} has no {head!r} section')
 rest = body[at + len(head) + 2:]
-end = re.search(r'^#{2,3} ', rest, re.M)
-section = rest[:end.start()] if end else rest
+# `#` and not `##` down: M40 moved this section onto a site page whose own
+# headings are `#`, so a `#` ends the section as surely as a `###` did in
+# README.
+section = rest[:section_end(rest)]
 
 flat = ' '.join(section.split())
 claims = [l.rstrip('\n') for l in open(claims_path, encoding='utf-8')
@@ -12277,7 +12517,7 @@ for line in claims:
     if ' '.join(claim.split()) not in flat:
         bad.append(f'  {row}: <<{claim}>>')
 if bad:
-    print(f'FAIL: {label}: claim(s) absent from the README section:',
+    print(f'FAIL: {label}: claim(s) absent from the docs section:',
           file=sys.stderr)
     print('\n'.join(bad), file=sys.stderr)
     sys.exit(1)
@@ -12289,10 +12529,10 @@ want = open(yaml_path, encoding='utf-8').read().rstrip('\n').split('\n')
 fences = [f.rstrip('\n').split('\n')
           for f in re.findall(r'```yaml\n(.*?)```', section, re.S)]
 if not fences:
-    sys.exit(f'FAIL: {label}: the README section shows no yaml block at all, '
+    sys.exit(f'FAIL: {label}: the docs section shows no yaml block at all, '
              'so the declaration form the criterion names is pinned by nothing')
 if want not in fences:
-    print(f'FAIL: {label}: no yaml block in the README section is the '
+    print(f'FAIL: {label}: no yaml block in the docs section is the '
           'declaration form this check pins. want:', file=sys.stderr)
     print('\n'.join(want), file=sys.stderr)
     print('the section shows:', file=sys.stderr)
@@ -12302,18 +12542,18 @@ if want not in fences:
 
 paths = sorted(set(re.findall(r'examples/[A-Za-z0-9_./-]+\.qmd', section)))
 if not paths:
-    sys.exit(f'FAIL: {label}: the README section names no fixture at all, so '
+    sys.exit(f'FAIL: {label}: the docs section names no fixture at all, so '
              'this check would pass over an empty set')
 missing = [p for p in paths if not os.path.exists(p)]
 if missing:
-    sys.exit(f'FAIL: {label}: the README section names fixture(s) that do not '
+    sys.exit(f'FAIL: {label}: the docs section names fixture(s) that do not '
              'exist: ' + ', '.join(missing))
 
 commands = []
 for fence in re.findall(r'```bash\n(.*?)```', section, re.S):
     commands.extend(c for c in (l.strip() for l in fence.splitlines()) if c)
 if not commands:
-    sys.exit(f'FAIL: {label}: the README section shows no command at all, so '
+    sys.exit(f'FAIL: {label}: the docs section shows no command at all, so '
              'this check would pass over an empty set')
 # The ledger: one `<status><TAB><argv>` line per documented command this run
 # executed. A command is clean here only because THIS run ran it and it exited
@@ -12331,14 +12571,14 @@ if not ran:
              'command below would be reported unrun rather than checked')
 unrun = [c for c in commands if c not in ran]
 if unrun:
-    sys.exit(f'FAIL: {label}: the README section shows command(s) this run '
+    sys.exit(f'FAIL: {label}: the docs section shows command(s) this run '
              'never executed, so nothing here says they are clean: '
              + '; '.join(unrun))
 dirty = [f'{c} (exited {s})' for c in commands for s in ran[c] if s != 0]
 if dirty:
-    sys.exit(f'FAIL: {label}: the README section shows command(s) this run '
+    sys.exit(f'FAIL: {label}: the docs section shows command(s) this run '
              'executed and which did not exit 0: ' + '; '.join(dirty))
-print(f'ok   {label}: the README section states all {len(claims)} of its '
+print(f'ok   {label}: the docs section states all {len(claims)} of its '
       f'pinned claims and the declaration block line for line, names '
       f'{len(paths)} fixture(s) that exist, and shows {len(commands)} '
       f'command(s) this run executed, every one of them exiting 0')
@@ -12756,7 +12996,7 @@ check_warning_count "$WORK/book-html.log" "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" 1 
 pass "M38-AC5: an HTML book folds its named mark and its named marker into the one index it builds, reports each once, and lists the folded mark's term in that index"
 
 # ---------------------------------------------------------------------------
-# M38-AC6 — the README section that documents all of this.
+# M38-AC6 — the docs section that documents all of this.
 #
 # Its claims are compared as bytes (whitespace normalized, so a rewrap is not a
 # change); the `indexes:` declaration block it shows is compared line for line,
@@ -12795,7 +13035,7 @@ indexes:
 MANIFEST
 printf '%s\n' "$README_INDEXES_CLAIMS" > "$WORK/readme-indexes.txt"
 printf '%s\n' "$README_INDEXES_YAML" > "$WORK/readme-indexes-yaml.txt"
-check_readme_indexes README.md "$WORK/readme-indexes.txt" "$WORK/readme-indexes-yaml.txt" "$RAN_LEDGER" "M38-AC6"
+check_readme_indexes site/named-indexes.qmd "$WORK/readme-indexes.txt" "$WORK/readme-indexes-yaml.txt" "$RAN_LEDGER" "M38-AC6"
 
 # ---------------------------------------------------------------------------
 # M38-R3 — what heads the ONE section a folded render prints.
@@ -12915,6 +13155,351 @@ MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
     "$CAPTURE_ROOT/misuse-html/marker-misuse.html" \
     "$CAPTURE_ROOT/marker-nomarks-html/marker-nomarks.html" \
   || fail "M04-AC1/M04-AC4/M12: a removed marker left an empty div behind"
+
+# ---------------------------------------------------------------------------
+# M40 — the documentation website. Three standing checks: the render writes a
+# page for every tracked source, every link it makes to its own content
+# resolves, and README is still the short pointer that gets a reader to it.
+#
+# The other two modes of tests/sitecheck.py — `headings` and `prose` — are not
+# run here. Both compare the pre-move README against the site, and that
+# comparison is a one-time fact about the migration: once M40 is on the default
+# branch the pre-move README is not a state this suite can reach, and a check
+# whose domain is empty forever is one nobody notices going empty (M16). They
+# are run against the merge base for the milestone's own evidence, and their
+# discrimination is shown under --self-test below over fixtures built here.
+# ---------------------------------------------------------------------------
+quarto render site > "$WORK/site-render.log" 2>&1 \
+  || { tail -30 "$WORK/site-render.log" >&2; fail "M40-AC1: the documentation website failed to render"; }
+capture --site site html "docs-site"
+SITE_OUT="$CAPTURE_ROOT/docs-site/_site"
+
+python3 tests/sitecheck.py rendered site "$SITE_OUT" \
+  || fail "M40-AC1: a tracked page under site/ has no rendered output at the path its source names (its own FAIL line is above)"
+
+# The base path a link starting `/` is resolved against. The site declares none
+# today, so it is the empty string; M42 sets one when the site is published
+# under a path, and this is the one place that value enters the check.
+SITE_BASE_PATH=""
+python3 tests/sitecheck.py links "$SITE_OUT" "$SITE_BASE_PATH" \
+  || fail "M40-AC2: the rendered site makes a link to its own content that does not resolve (its own FAIL line is above)"
+
+python3 tests/sitecheck.py readme README.md site/index.qmd \
+  || fail "M40-AC5: README is not the short pointer that gets a reader to the documentation (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M40 T7 — a planted defect for each CLAUSE of each check M40 adds, not one
+  # per reader (check-design, M32). Each plant is built with one substitution
+  # and asserted to have changed the file, so a no-op mutation cannot leave a
+  # green plant behind (M29); each planted case is required to fail AND to fail
+  # by naming its own clause, so a reader dying on the fixture cannot be read
+  # as the clause firing.
+  # -------------------------------------------------------------------------
+  M40W="$WORK/m40probe"
+  rm -rf "$M40W"
+  mkdir -p "$M40W"
+
+  m40_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M40 self-test: the planted case ($label) passed, so this check's green says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M40 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    printf 'ok   self-test: the check fails on <<%s>>\n' "$label"
+  }
+
+  # --- rendered ------------------------------------------------------------
+  cp -R "$SITE_OUT" "$M40W/norender"
+  [ -f "$M40W/norender/syntax.html" ] \
+    || fail "M40 self-test: the captured site holds no syntax.html to remove, so the plant below would be about a page the render never wrote"
+  rm -f "$M40W/norender/syntax.html"
+  m40_planted 'a tracked page the render wrote no output for' \
+    'have no rendered output at the path their source names' \
+    python3 tests/sitecheck.py rendered site "$M40W/norender"
+  mkdir -p "$M40W/untracked-src"
+  m40_planted 'a site source directory git tracks no page under, over which the render check would sweep nothing' \
+    'enumerated no page' \
+    python3 tests/sitecheck.py rendered "$M40W/untracked-src" "$SITE_OUT"
+
+  # --- links ---------------------------------------------------------------
+  # One anchor spliced into a copy of the captured home page per clause. The
+  # snippet is required to be in the copy afterwards, so a substitution that
+  # matched nothing cannot hand the plant an unmutated page.
+  m40_plant_link() {
+    local name="$1" snippet="$2" dir="$M40W/$1"
+    rm -rf "$dir"
+    cp -R "$SITE_OUT" "$dir"
+    sed "s|</body>|$snippet</body>|" "$dir/index.html" > "$dir/index.planted"
+    mv "$dir/index.planted" "$dir/index.html"
+    grep -qF -- "$snippet" "$dir/index.html" \
+      || fail "M40 self-test: the link plant <<$snippet>> did not apply to $dir/index.html, so the case below would be about the unmutated page"
+  }
+
+  m40_plant_link linkpath '<a href="nosuch-page.html">x</a>'
+  m40_planted 'a relative href naming a page the render never wrote' \
+    'names no file under' \
+    python3 tests/sitecheck.py links "$M40W/linkpath" ""
+
+  m40_plant_link linkfrag '<a href="syntax.html#nosuch-fragment">x</a>'
+  m40_planted 'a fragment naming an id the page it points at does not carry' \
+    'names no element with that id in' \
+    python3 tests/sitecheck.py links "$M40W/linkfrag" ""
+
+  m40_plant_link linkself '<a href="#nosuch-local-fragment">x</a>'
+  m40_planted 'a same-page fragment naming an id the page carrying it does not have' \
+    'names no element with that id in the page carrying it' \
+    python3 tests/sitecheck.py links "$M40W/linkself" ""
+
+  # The base path is the one value the check reads from outside the render, so
+  # it is shown in BOTH directions on one artifact: the same root-relative href
+  # is a dangling link when no base path is configured and resolves when the
+  # base path it is written under is the one given.
+  m40_plant_link linkbase '<a href="/docs/syntax.html">x</a>'
+  m40_planted 'a root-relative href under a base path the check was not given' \
+    'names no file under' \
+    python3 tests/sitecheck.py links "$M40W/linkbase" ""
+  python3 tests/sitecheck.py links "$M40W/linkbase" "docs" > /dev/null \
+    || fail "M40 self-test: the same root-relative href is still unresolved when the base path it is written under IS given, so the check does not strip the base path at all"
+  printf 'ok   self-test: the root-relative href the check calls dangling with no base path resolves when the base path it is written under is given\n'
+
+  mkdir -p "$M40W/nopages"
+  m40_planted 'a captured render holding no page at all' \
+    'holds no rendered page at all' \
+    python3 tests/sitecheck.py links "$M40W/nopages" ""
+
+  mkdir -p "$M40W/nolinks"
+  printf '<html><body><a href="https://example.com/x">x</a></body></html>\n' \
+    > "$M40W/nolinks/index.html"
+  m40_planted 'a rendered page making no link to its own content, over which the link check would sweep nothing' \
+    'make no link to their own content at all' \
+    python3 tests/sitecheck.py links "$M40W/nolinks" ""
+
+  # --- headings and prose --------------------------------------------------
+  # The old README is stated here rather than read out of git: the pre-move
+  # README is reachable from this branch's merge base and from nowhere after
+  # the merge, and a self-test whose control disappears once the milestone
+  # ships is a self-test that stops running. The seventeen heading texts are
+  # the independent statement of what moved.
+  cat > "$M40W/old-README.md" <<'M40OLD'
+# quarto-index
+
+## Install
+
+## Syntax
+
+### Sub-entry levels
+
+### Cross-references
+
+### Special characters
+
+### Terms outside Latin-1
+
+### Sorting an entry under something else
+
+### The principal mention of a term
+
+### A discussion that spans pages
+
+### Placing the index
+
+### Named indexes
+
+## What it emits
+
+### LaTeX and PDF
+
+### HTML
+
+### Other formats
+
+### Where the two back-ends differ
+
+### Letter groups in the HTML index
+
+## Books
+
+## Examples
+
+## Tests
+M40OLD
+
+  python3 tests/sitecheck.py headings "$M40W/old-README.md" README.md site \
+    > /dev/null \
+    || fail "M40 self-test: the heading-move check is red on the unplanted pair, so no failure below is evidence of anything"
+  python3 tests/sitecheck.py prose "$M40W/old-README.md" README.md site \
+    > /dev/null \
+    || fail "M40 self-test: the prose-loss check is red on the unplanted pair, so no failure below is evidence of anything"
+
+  # A heading the move was meant to remove, still in the README that replaces it.
+  { cat README.md; printf '\n### Named indexes\n'; } > "$M40W/readme-keptheading.md"
+  cmp -s README.md "$M40W/readme-keptheading.md" \
+    && fail "M40 self-test: the kept-heading mutation changed nothing in README"
+  m40_planted 'a moved heading still carried by the README that replaces it' \
+    'still in' \
+    python3 tests/sitecheck.py headings "$M40W/old-README.md" \
+      "$M40W/readme-keptheading.md" site
+
+  # A moved heading whose text drifted on the page that now carries it. The
+  # overlay supplies the bytes; git still supplies the file list, so the
+  # reported path is the tracked one.
+  mkdir -p "$M40W/drift/site"
+  sed 's|^# Named indexes$|# Named indices|' site/named-indexes.qmd \
+    > "$M40W/drift/site/named-indexes.qmd"
+  cmp -s site/named-indexes.qmd "$M40W/drift/site/named-indexes.qmd" \
+    && fail "M40 self-test: the heading-drift mutation changed nothing in the page"
+  m40_planted 'a moved heading whose text drifted on the page that now carries it' \
+    'no heading under' \
+    python3 tests/sitecheck.py headings "$M40W/old-README.md" README.md site \
+      "$M40W/drift"
+
+  # The count guard: an old README that is not the document this check is about.
+  grep -v '^### Named indexes$' "$M40W/old-README.md" > "$M40W/old-16.md"
+  cmp -s "$M40W/old-README.md" "$M40W/old-16.md" \
+    && fail "M40 self-test: the heading-removing mutation changed nothing in the old README"
+  m40_planted 'an old README carrying sixteen of the seventeen headings the move is about' \
+    'M40 moves 17' \
+    python3 tests/sitecheck.py headings "$M40W/old-16.md" README.md site
+
+  mkdir -p "$M40W/untracked-site"
+  m40_planted 'a site directory git tracks no page under, over which the heading check would find no destination' \
+    'enumerated no page' \
+    python3 tests/sitecheck.py headings "$M40W/old-README.md" README.md \
+      "$M40W/untracked-site"
+
+  # Prose: a line dropped from the README whose words reach no page.
+  { cat "$M40W/old-README.md"
+    printf '\nA sentence about zzunreachablewordzz nobody moved anywhere.\n'
+  } > "$M40W/old-lostword.md"
+  cmp -s "$M40W/old-README.md" "$M40W/old-lostword.md" \
+    && fail "M40 self-test: the lost-word mutation changed nothing in the old README"
+  m40_planted 'a line dropped from the README carrying a word that reaches no page' \
+    'reach no page under' \
+    python3 tests/sitecheck.py prose "$M40W/old-lostword.md" README.md site
+
+  m40_planted 'a site directory git tracks no page under, over which the prose check would report every word lost' \
+    'enumerated no page' \
+    python3 tests/sitecheck.py prose "$M40W/old-README.md" README.md \
+      "$M40W/untracked-site"
+
+  printf 'a b c\nd e f\n' > "$M40W/old-short.md"
+  : > "$M40W/new-empty.md"
+  m40_planted 'dropped lines carrying no word of four or more characters, over which the prose check would compare nothing' \
+    'compared nothing' \
+    python3 tests/sitecheck.py prose "$M40W/old-short.md" "$M40W/new-empty.md" site
+
+  # --- readme --------------------------------------------------------------
+  mkdir -p "$M40W/lonely"
+  cp README.md "$M40W/lonely/README.md"
+  m40_planted 'a README linking to a site index that does not resolve from where the README sits' \
+    'does not resolve from' \
+    python3 tests/sitecheck.py readme "$M40W/lonely/README.md" \
+      "$M40W/lonely/site/index.qmd"
+
+  { cat README.md; for i in $(seq 1 120); do printf 'padding line %s\n' "$i"; done; } \
+    > "$M40W/readme-long.md"
+  m40_planted 'a README past the line cap the criterion states' \
+    'the criterion is under' \
+    python3 tests/sitecheck.py readme "$M40W/readme-long.md" site/index.qmd
+
+  grep -vF -- '**Pre-release: install at your own risk.**' README.md \
+    > "$M40W/readme-nowarning.md"
+  cmp -s README.md "$M40W/readme-nowarning.md" \
+    && fail "M40 self-test: the warning-removing mutation changed nothing in README"
+  m40_planted 'a README carrying no pre-release warning' \
+    'does not carry the pre-release warning' \
+    python3 tests/sitecheck.py readme "$M40W/readme-nowarning.md" site/index.qmd
+
+  grep -vF -- 'quarto add jmgirard/quarto-index' README.md \
+    > "$M40W/readme-noinstall.md"
+  cmp -s README.md "$M40W/readme-noinstall.md" \
+    && fail "M40 self-test: the install-line-removing mutation changed nothing in README"
+  m40_planted 'a README carrying no install line' \
+    'does not carry the install line' \
+    python3 tests/sitecheck.py readme "$M40W/readme-noinstall.md" site/index.qmd
+
+  sed 's|(site/index\.qmd)|(https://example.com/docs)|' README.md \
+    > "$M40W/readme-nolink.md"
+  cmp -s README.md "$M40W/readme-nolink.md" \
+    && fail "M40 self-test: the link-rewriting mutation changed nothing in README"
+  m40_planted 'a README whose docs link no longer names the site index' \
+    'no markdown link in it names' \
+    python3 tests/sitecheck.py readme "$M40W/readme-nolink.md" site/index.qmd
+
+  # --- the claim-container registry ----------------------------------------
+  M40REG="$M40W/registry.txt"
+  cp "$WORK/claim-registry.txt" "$M40REG"
+  check_claim_registry "$M40REG" tests/run-tests.sh > /dev/null \
+    || fail "M40 self-test: the registry check is red on an unplanted copy of the registry, so no failure below is evidence of anything"
+
+  grep -v '^README_LETTER_CLAIMS	' "$M40REG" > "$M40W/registry-missing.txt"
+  cmp -s "$M40REG" "$M40W/registry-missing.txt" \
+    && fail "M40 self-test: the row-removing mutation changed nothing in the registry"
+  m40_planted 'a container this suite defines that the registry does not name' \
+    'defined here, not in the registry' \
+    check_claim_registry "$M40W/registry-missing.txt" tests/run-tests.sh
+
+  { cat "$M40REG"; printf 'README_NO_SUCH_CLAIMS\tpresence\tsite/index.qmd\n'; } \
+    > "$M40W/registry-stale.txt"
+  m40_planted 'a registry row for a container this suite does not define' \
+    'in the registry, not defined here' \
+    check_claim_registry "$M40W/registry-stale.txt" tests/run-tests.sh
+
+  sed 's|^README_LETTER_CLAIMS	presence	|README_LETTER_CLAIMS	absence	|' \
+    "$M40REG" > "$M40W/registry-retagged.txt"
+  cmp -s "$M40REG" "$M40W/registry-retagged.txt" \
+    && fail "M40 self-test: the re-tagging mutation changed nothing in the registry"
+  m40_planted 'a presence container re-tagged absence, which would drop it out of the criterion the registry is the domain of' \
+    'the criterion is over 17, 14 presence and 3 absence' \
+    check_claim_registry "$M40W/registry-retagged.txt" tests/run-tests.sh
+
+  { cat "$M40REG"; grep '^README_LETTER_CLAIMS	' "$M40REG"; } \
+    > "$M40W/registry-dup.txt"
+  m40_planted 'a registry naming one container twice, so one of its two rows is unreachable' \
+    'names a container twice' \
+    check_claim_registry "$M40W/registry-dup.txt" tests/run-tests.sh
+
+  printf '# a suite source defining no claim container at all\n' \
+    > "$M40W/no-containers.sh"
+  m40_planted 'a suite source defining no claim container at all, over which the registry scan would certify nothing' \
+    'found no claim container at all' \
+    check_claim_registry "$M40REG" "$M40W/no-containers.sh"
+
+  # --- the claim sets themselves -------------------------------------------
+  M40DOCS="$M40W/docs.txt"
+  M40EVERY="$M40W/everywhere.txt"
+  cp "$(claim_text README_HTML_CLAIMS)" "$M40DOCS"
+  cp "$(claim_text README_STALE)" "$M40EVERY"
+  check_claim_sets "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
+    "$M40EVERY" "$M40DOCS" > /dev/null \
+    || fail "M40 self-test: the claim-set check is red on unplanted copies of this run's own domains, so no failure below is evidence of anything"
+
+  M40CLAIM=$(head -1 "$WORK/readme-html.txt" | cut -f2-)
+  [ -n "$M40CLAIM" ] \
+    || fail "M40 self-test: the first live HTML claim row is empty, so the plant below would remove nothing"
+  grep -vF -- "$M40CLAIM" "$M40DOCS" > "$M40W/docs-dropped.txt"
+  cmp -s "$M40DOCS" "$M40W/docs-dropped.txt" \
+    && fail "M40 self-test: the claim-removing mutation changed nothing in the docs text"
+  m40_planted 'a documented claim deleted from the site page the registry names for it' \
+    'missing (' \
+    check_claim_sets "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
+      "$M40EVERY" "$M40W/docs-dropped.txt"
+
+  M40STALE=$(head -1 "$WORK/readme-stale.txt" | cut -f2-)
+  [ -n "$M40STALE" ] \
+    || fail "M40 self-test: the first retired sentence row is empty, so the plant below would add nothing"
+  { cat "$M40EVERY"; printf '%s\n' "$M40STALE"; } > "$M40W/every-stale.txt"
+  m40_planted 'a retired sentence copied back onto a page a reader looks at' \
+    'still present (' \
+    check_claim_sets "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
+      "$M40W/every-stale.txt" "$M40DOCS"
+
+  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing warning, a missing install line and a link naming something else; the registry check on an unregistered container, a stale row, a presence container re-tagged absence, a duplicated row and a source defining nothing; and the claim-set check on a documented claim deleted from its page and a retired sentence copied back onto one"
+fi
 
 # ---------------------------------------------------------------------------
 # The sweeps' own discrimination (M24). A sweep over a set passes on a set it
@@ -13549,42 +14134,45 @@ M37BOUNDPY
     local out rc
     out=$(check_recipe_block "$readme" examples/unicode.qmd 2>&1) && rc=0 || rc=$?
     [ "$rc" -ne 0 ] \
-      || { printf '%s\n' "$out" >&2; fail "M35 self-test: the recipe-block check passed the planted case ($label), so its green over README says nothing"; }
+      || { printf '%s\n' "$out" >&2; fail "M35 self-test: the recipe-block check passed the planted case ($label), so its green over the page says nothing"; }
     printf '%s' "$out" | grep -qF -- "$want" \
       || { printf '%s\n' "$out" >&2; fail "M35 self-test: the recipe-block check failed the planted case ($label), but not with <<$want>> — that failure is not this clause catching this defect"; }
   }
 
-  check_recipe_block README.md examples/unicode.qmd > /dev/null \
-    || fail "M35 self-test: the recipe-block check is red on the unplanted README, so no failure below is evidence of anything"
+  check_recipe_block site/terms-outside-latin-1.qmd examples/unicode.qmd > /dev/null \
+    || fail "M35 self-test: the recipe-block check is red on the unplanted page, so no failure below is evidence of anything"
 
   # The direction the old containment test could not see: every line left in
   # the block is still in the fixture, so a subset test stays green while a
-  # reader copying the block gets the half-set recipe README's own third path
+  # reader copying the block gets the half-set recipe the page's own third path
   # is about.
-  sed '/^pdf-engine: xelatex$/d' README.md > "$M33W/dropped-engine.md"
-  cmp -s README.md "$M33W/dropped-engine.md" \
-    && fail "M35 self-test: the engine-line-dropping mutation changed nothing in README"
+  sed '/^pdf-engine: xelatex$/d' site/terms-outside-latin-1.qmd > "$M33W/dropped-engine.qmd"
+  cmp -s site/terms-outside-latin-1.qmd "$M33W/dropped-engine.qmd" \
+    && fail "M35 self-test: the engine-line-dropping mutation changed nothing in the Terms outside Latin-1 page"
   m35_block_planted 'the block with its `pdf-engine:` line dropped' \
     'stated, not in the block: <<pdf-engine: xelatex>>' \
-    "$M33W/dropped-engine.md"
+    "$M33W/dropped-engine.qmd"
 
-  python3 - README.md "$M33W/reordered.md" <<'M35REORDERPY' \
-    || fail "M35 self-test: the block-reordering mutation did not apply to README"
+  python3 - site/terms-outside-latin-1.qmd "$M33W/reordered.qmd" <<'M35REORDERPY' \
+    || fail "M35 self-test: the block-reordering mutation did not apply to the Terms outside Latin-1 page"
 import io, re, sys
 
 text = io.open(sys.argv[1], encoding='utf-8').read()
-# Bounded to the section this check reads, exactly as the check bounds itself:
-# README carries earlier fenced yaml blocks, and reordering one of those would
-# leave the recipe block untouched and the plant testing nothing.
-anchor = '### Terms outside Latin-1'
+# Bounded to the section this check reads, exactly as the check bounds itself.
+# It mattered in README, which carried earlier fenced yaml blocks: reordering
+# one of those would leave the recipe block untouched and the plant testing
+# nothing. M40 moved the recipe onto a page of its own, so the bound is
+# currently slack — kept because the page may grow a block above the recipe,
+# and a plant is not made safe by today's file.
+anchor = '# Terms outside Latin-1'
 if anchor not in text:
-    print(f'FAIL: M35 self-test: README carries no {anchor!r} section to '
+    print(f'FAIL: M35 self-test: {sys.argv[1]} carries no {anchor!r} section to '
           f'reorder a block in', file=sys.stderr)
     sys.exit(1)
 block = re.compile(r'^```yaml\n(.*?)^```', re.S | re.M)
 match = block.search(text, text.index(anchor))
 if match is None:
-    print('FAIL: M35 self-test: README carries no fenced yaml block to reorder',
+    print('FAIL: M35 self-test: the page carries no fenced yaml block to reorder',
           file=sys.stderr)
     sys.exit(1)
 lines = match.group(1).splitlines()
@@ -13598,9 +14186,9 @@ io.open(sys.argv[2], 'w', encoding='utf-8').write(
 M35REORDERPY
   m35_block_planted 'the same lines in a different order' \
     'same lines, different order' \
-    "$M33W/reordered.md"
+    "$M33W/reordered.qmd"
 
-  # The unstated-line insertion, bounded to the `### Terms outside Latin-1`
+  # The unstated-line insertion, bounded to the `# Terms outside Latin-1`
   # section the check reads — as its sibling reordering plant above already is.
   # M35 wrote this as a bare `awk` over the whole file, which would have
   # inserted the line at every `Extension=.otf` in README, wherever it sat.
@@ -13611,14 +14199,14 @@ import re
 import sys
 
 text = io.open(sys.argv[1], encoding='utf-8').read()
-anchor = '### Terms outside Latin-1'
+anchor = '# Terms outside Latin-1'
 if anchor not in text:
     print(f'FAIL: {sys.argv[1]} carries no {anchor!r} section for this '
           f'mutation to add a line inside, so it cannot build the input class '
           f'its label names', file=sys.stderr)
     sys.exit(1)
 start = text.index(anchor)
-after = re.search(r'^#{2,3} ', text[start + len(anchor):], re.M)
+after = re.search(r'^#{1,3} ', text[start + len(anchor):], re.M)
 end = start + len(anchor) + (after.start() if after else len(text) - start - len(anchor))
 section = text[start:end]
 target = re.search(r'^  - Extension=\.otf$', section, re.M)
@@ -13640,13 +14228,13 @@ M37EXTRAPY
       "$1" > "$2"
   }
 
-  m37_add_unstated_line README.md "$M33W/extra-line.md" \
-    || fail "M35 self-test: the extra-line mutation did not apply to README, so the plant below would test the unmutated document"
-  cmp -s README.md "$M33W/extra-line.md" \
-    && fail "M35 self-test: the extra-line mutation changed nothing in README"
+  m37_add_unstated_line site/terms-outside-latin-1.qmd "$M33W/extra-line.qmd" \
+    || fail "M35 self-test: the extra-line mutation did not apply to the Terms outside Latin-1 page, so the plant below would test the unmutated document"
+  cmp -s site/terms-outside-latin-1.qmd "$M33W/extra-line.qmd" \
+    && fail "M35 self-test: the extra-line mutation changed nothing in the Terms outside Latin-1 page"
   m35_block_planted 'a line in the block the suite does not state' \
     'in the block, not stated: <<  - SmallCapsFont=*-SmallCaps>>' \
-    "$M33W/extra-line.md"
+    "$M33W/extra-line.qmd"
 
   # --- M37: the same demonstration for the README insertion. The document
   # here carries a SECOND `  - Extension=.otf` line, in an appendix below every
@@ -13654,23 +14242,23 @@ M37EXTRAPY
   # line after that one too, leaving a plant that mutated a block this check
   # never reads. The bounded form touches only the section, and that is
   # asserted as an identity outside it.
-  { cat README.md
+  { cat site/terms-outside-latin-1.qmd
     printf '\n## An appendix this suite does not read\n\n```yaml\nmainfontoptions:\n  - Extension=.otf\n```\n'
   } > "$M33W/second-extension.md"
   m37_add_unstated_line_m35_form "$M33W/second-extension.md" "$M33W/second-extension-m35.md"
   m37_add_unstated_line "$M33W/second-extension.md" "$M33W/second-extension-m37.md" \
-    || fail "M37 self-test: the bounded extra-line mutation could not apply to a README carrying a second Extension line outside the section"
+    || fail "M37 self-test: the bounded extra-line mutation could not apply to a page carrying a second Extension line outside the section"
   python3 - "$M33W/second-extension.md" "$M33W/second-extension-m35.md" "$M33W/second-extension-m37.md" <<'M37EXTRABOUNDPY' \
-    || fail "M37 self-test: the extra-line mutation is not bounded to the \`### Terms outside Latin-1\` section (its own FAIL line is above)"
+    || fail "M37 self-test: the extra-line mutation is not bounded to the \`# Terms outside Latin-1\` section (its own FAIL line is above)"
 import io
 import re
 import sys
 
 src, m35, m37 = (io.open(p, encoding='utf-8').read() for p in sys.argv[1:4])
 added = '  - SmallCapsFont=*-SmallCaps'
-anchor = '### Terms outside Latin-1'
+anchor = '# Terms outside Latin-1'
 start = src.index(anchor)
-after = re.search(r'^#{2,3} ', src[start + len(anchor):], re.M)
+after = re.search(r'^#{1,3} ', src[start + len(anchor):], re.M)
 end = start + len(anchor) + (after.start() if after else len(src) - start - len(anchor))
 if m35.count(added) != 2:
     print(f'FAIL: the M35 form added {m35.count(added)} unstated line(s) to a '
@@ -13691,14 +14279,14 @@ M37EXTRABOUNDPY
 
   # And the loud failure: a document carrying no section of the kind the label
   # names.
-  grep -vF -- '### Terms outside Latin-1' README.md > "$M33W/nosection.md"
-  cmp -s README.md "$M33W/nosection.md" \
+  grep -vF -- '# Terms outside Latin-1' site/terms-outside-latin-1.qmd > "$M33W/nosection.qmd"
+  cmp -s site/terms-outside-latin-1.qmd "$M33W/nosection.qmd" \
     && fail "M37 self-test: removing the section heading changed nothing in README, so the demonstration below would be about the unmutated document"
-  M37_EXTRA_OUT=$(m37_add_unstated_line "$M33W/nosection.md" "$M33W/nosection-out.md" 2>&1) \
-    && fail "M37 self-test: the extra-line mutation reported success over a document carrying no \`### Terms outside Latin-1\` section, so it would hand a plant a line inserted somewhere else"
-  printf '%s' "$M37_EXTRA_OUT" | grep -qF -- "carries no '### Terms outside Latin-1' section" \
+  M37_EXTRA_OUT=$(m37_add_unstated_line "$M33W/nosection.qmd" "$M33W/nosection-out.qmd" 2>&1) \
+    && fail "M37 self-test: the extra-line mutation reported success over a document carrying no \`# Terms outside Latin-1\` section, so it would hand a plant a line inserted somewhere else"
+  printf '%s' "$M37_EXTRA_OUT" | grep -qF -- "carries no '# Terms outside Latin-1' section" \
     || { printf '%s\n' "$M37_EXTRA_OUT" >&2; fail "M37 self-test: the extra-line mutation failed over a document with no such section, but not by saying so — that failure is not this clause naming what it could not find"; }
-  pass "M37: the extra-line mutation is bounded to README's \`### Terms outside Latin-1\` section — on a document carrying a second \`Extension=.otf\` line in an appendix, where the M35 form inserted twice, it inserts once and leaves every byte outside the section unchanged — and it names what it could not find rather than inserting nowhere when there is no such section"
+  pass "M37: the extra-line mutation is bounded to the Terms outside Latin-1 page's own section — on a document carrying a second \`Extension=.otf\` line in an appendix, where the M35 form inserted twice, it inserts once and leaves every byte outside the section unchanged — and it names what it could not find rather than inserting nowhere when there is no such section"
 
   # The other direction: a stated line that no longer reaches the fixture. The
   # copy is of the FIXTURE, so README and the stated list still agree and only
@@ -13706,12 +14294,12 @@ M37EXTRABOUNDPY
   sed '/^pdf-engine: xelatex$/d' examples/unicode.qmd > "$M33W/dropped-fixture.qmd"
   cmp -s examples/unicode.qmd "$M33W/dropped-fixture.qmd" \
     && fail "M35 self-test: the engine-line-dropping mutation changed nothing in the fixture"
-  M35_BLOCK_OUT=$(check_recipe_block README.md "$M33W/dropped-fixture.qmd" 2>&1) \
+  M35_BLOCK_OUT=$(check_recipe_block site/terms-outside-latin-1.qmd "$M33W/dropped-fixture.qmd" 2>&1) \
     && fail "M35 self-test: the recipe-block check passed a fixture missing a stated recipe line, so the block it proves is not the document it proves it on"
   printf '%s' "$M35_BLOCK_OUT" | grep -qF -- 'these stated lines are not in the fixture' \
     || { printf '%s\n' "$M35_BLOCK_OUT" >&2; fail "M35 self-test: the recipe-block check rejected the shortened fixture, but not with <<these stated lines are not in the fixture>> — that failure is not this clause catching this defect"; }
 
-  pass "M35: the README recipe-block check holds the block to the ${#README_RECIPE_LINES[@]} lines this suite states in both directions and to the fixture in one, going red on a dropped line, a reordering, an unstated line, and a stated line the fixture no longer carries"
+  pass "M35: the recipe-block check holds the block to the ${#README_RECIPE_LINES[@]} lines this suite states in both directions and to the fixture in one, going red on a dropped line, a reordering, an unstated line, and a stated line the fixture no longer carries"
 
   # The two self-checks' own discrimination. Each reads the suite's own source
   # for a SHAPE, which is the reading M23's lesson names as certifying a
@@ -14008,73 +14596,74 @@ M30PLANTPY
   probe_defect "a folded book page carrying a second section the reader cannot read at all" \
     check_folded_heading "$M38R/book-twice.html" "M38 probe"
 
-  # README's section and the command ledger (R6). The claims, the declaration
-  # block, the fixtures, and the two ledger clauses — a documented command this
-  # run never executed, and one it executed that did not exit 0.
-  cp README.md "$M38R/README.md"
+  # The named-index docs page and the command ledger (R6). The claims, the
+  # declaration block, the fixtures, and the two ledger clauses — a documented
+  # command this run never executed, and one it executed that did not exit 0.
+  # The page is site/named-indexes.qmd since M40 moved the docs there.
+  cp site/named-indexes.qmd "$M38R/named-indexes.qmd"
   cp "$RAN_LEDGER" "$M38R/ledger.txt"
-  check_readme_indexes "$M38R/README.md" "$WORK/readme-indexes.txt" \
+  check_readme_indexes "$M38R/named-indexes.qmd" "$WORK/readme-indexes.txt" \
     "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" \
     "M38 self-test (control)" >/dev/null \
-    || fail "M38 self-test: the README reader fails on unplanted copies of this run's own README and ledger, so no failure below is evidence of anything"
-  probe_plant "$M38R/README.md" "$M38R/README-claim.md" \
+    || fail "M38 self-test: the named-index docs reader fails on unplanted copies of this run's own page and ledger, so no failure below is evidence of anything"
+  probe_plant "$M38R/named-indexes.qmd" "$M38R/named-indexes-claim.qmd" \
     's|A mark that names no index files in the first declared index|A mark that names no index is dropped|'
-  probe_defect "a README whose section no longer states a claim the criterion enumerates" \
-    check_readme_indexes "$M38R/README-claim.md" "$WORK/readme-indexes.txt" \
+  probe_defect "a docs page whose section no longer states a claim the criterion enumerates" \
+    check_readme_indexes "$M38R/named-indexes-claim.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
-  probe_plant "$M38R/README.md" "$M38R/README-yaml.md" \
+  probe_plant "$M38R/named-indexes.qmd" "$M38R/named-indexes-yaml.qmd" \
     's|^    title: Index of Names$|    title: Index of People|'
   probe_defect "a declaration block whose shown title is not the one pinned" \
-    check_readme_indexes "$M38R/README-yaml.md" "$WORK/readme-indexes.txt" \
+    check_readme_indexes "$M38R/named-indexes-yaml.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
-  probe_plant "$M38R/README.md" "$M38R/README-indent.md" \
+  probe_plant "$M38R/named-indexes.qmd" "$M38R/named-indexes-indent.qmd" \
     's|^  - name: main$|- name: main|'
   probe_defect "a declaration block whose indentation has collapsed, which a whitespace-normalized comparison would pass" \
-    check_readme_indexes "$M38R/README-indent.md" "$WORK/readme-indexes.txt" \
+    check_readme_indexes "$M38R/named-indexes-indent.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
-  probe_plant "$M38R/README.md" "$M38R/README-path.md" \
+  probe_plant "$M38R/named-indexes.qmd" "$M38R/named-indexes-path.qmd" \
     's|examples/named-indexes-twin.qmd|examples/no-such-fixture.qmd|'
-  probe_defect "a README section naming a fixture the repo does not carry" \
-    check_readme_indexes "$M38R/README-path.md" "$WORK/readme-indexes.txt" \
+  probe_defect "a docs section naming a fixture the repo does not carry" \
+    check_readme_indexes "$M38R/named-indexes-path.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
   probe_plant "$M38R/ledger.txt" "$M38R/ledger-missing.txt" \
     '\|--to latex$|d'
   probe_defect "a documented command this run never executed" \
-    check_readme_indexes "$M38R/README.md" "$WORK/readme-indexes.txt" \
+    check_readme_indexes "$M38R/named-indexes.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger-missing.txt" "M38 probe"
   probe_plant "$M38R/ledger.txt" "$M38R/ledger-dirty.txt" \
     's|^0\(\t.*--to latex\)$|1\1|'
   probe_defect "a documented command this run executed and which did not exit 0" \
-    check_readme_indexes "$M38R/README.md" "$WORK/readme-indexes.txt" \
+    check_readme_indexes "$M38R/named-indexes.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger-dirty.txt" "M38 probe"
   : > "$M38R/ledger-empty.txt"
   probe_defect "an empty ledger, which would report every documented command unrun" \
-    check_readme_indexes "$M38R/README.md" "$WORK/readme-indexes.txt" \
+    check_readme_indexes "$M38R/named-indexes.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger-empty.txt" "M38 probe"
   # The reader's four remaining clauses, each guarding a domain that can empty
   # silently: no section to read at all, and a section showing no yaml block, no
   # fixture path, or no command. A check that passes over an empty set reports
   # nothing and looks identical to one that passed over a full one, which is the
   # discrimination rule's own case (M38 T18).
-  probe_plant "$M38R/README.md" "$M38R/README-nosection.md" \
-    's|^### Named indexes$|### Named indices|'
-  probe_defect "a README carrying no named-index section at all" \
-    check_readme_indexes "$M38R/README-nosection.md" "$WORK/readme-indexes.txt" \
+  probe_plant "$M38R/named-indexes.qmd" "$M38R/named-indexes-nosection.qmd" \
+    's|^# Named indexes$|# Named indices|'
+  probe_defect "a docs page carrying no named-index section at all" \
+    check_readme_indexes "$M38R/named-indexes-nosection.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
-  probe_plant "$M38R/README.md" "$M38R/README-noyaml.md" \
+  probe_plant "$M38R/named-indexes.qmd" "$M38R/named-indexes-noyaml.qmd" \
     's|^```yaml$|```|'
   probe_defect "a section showing no yaml block, so the declaration form is pinned by nothing" \
-    check_readme_indexes "$M38R/README-noyaml.md" "$WORK/readme-indexes.txt" \
+    check_readme_indexes "$M38R/named-indexes-noyaml.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
-  probe_plant "$M38R/README.md" "$M38R/README-nopath.md" \
+  probe_plant "$M38R/named-indexes.qmd" "$M38R/named-indexes-nopath.qmd" \
     's|examples/named-indexes|EXAMPLES/named-indexes|g'
   probe_defect "a section naming no fixture at all, over which the path check would pass on an empty set" \
-    check_readme_indexes "$M38R/README-nopath.md" "$WORK/readme-indexes.txt" \
+    check_readme_indexes "$M38R/named-indexes-nopath.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
-  probe_plant "$M38R/README.md" "$M38R/README-nocmd.md" \
+  probe_plant "$M38R/named-indexes.qmd" "$M38R/named-indexes-nocmd.qmd" \
     's|^```bash$|```|'
   probe_defect "a section showing no command at all, over which the ledger check would pass on an empty set" \
-    check_readme_indexes "$M38R/README-nocmd.md" "$WORK/readme-indexes.txt" \
+    check_readme_indexes "$M38R/named-indexes-nocmd.qmd" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
 
   # The link reader's own new clause (T21). It is not shown with probe_defect,
@@ -14092,7 +14681,7 @@ M30PLANTPY
     || fail "M38 self-test: the link reader's finding does not name the id it could not find"
   printf 'ok   self-test: the check fails on <<a section id the page does not carry>>, reporting a finding that names it rather than raising\n'
 
-  pass "M38 self-test: each clause named below is planted on its own and shown red, while each reader passes on the same artifact unplanted — the page-wide id sweep on a space, a hash and an angle bracket, and its dotted-id sibling on the one character legal in an id and still refused; the folded-site reader on two of the one index, a site count the fixture does not write, an index at no site at all, and an index at the wrong site; the second-marker reader on none of the one index, labels that are not the fixture's two in order, and the index at the second marker; the folded-heading reader on an id naming one declared index, a heading below an h1, and a heading carrying one declaration's own title, its fourth clause — the section count — planted by nothing, since the plant written for it is refused as an unreadable page before the count is compared; the README reader on a missing claim, a declaration block whose title or indentation is not the one pinned, a fixture that does not exist, a command never executed or executed dirty, and each of the four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the link reader on a section id the page does not carry"
+  pass "M38 self-test: each clause named below is planted on its own and shown red, while each reader passes on the same artifact unplanted — the page-wide id sweep on a space, a hash and an angle bracket, and its dotted-id sibling on the one character legal in an id and still refused; the folded-site reader on two of the one index, a site count the fixture does not write, an index at no site at all, and an index at the wrong site; the second-marker reader on none of the one index, labels that are not the fixture's two in order, and the index at the second marker; the folded-heading reader on an id naming one declared index, a heading below an h1, and a heading carrying one declaration's own title, its fourth clause — the section count — planted by nothing, since the plant written for it is refused as an unreadable page before the count is compared; the named-index docs reader on a missing claim, a declaration block whose title or indentation is not the one pinned, a fixture that does not exist, a command never executed or executed dirty, and each of the four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the link reader on a section id the page does not carry"
 fi
 
 }

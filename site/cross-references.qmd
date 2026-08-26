@@ -1,0 +1,101 @@
+---
+pagetitle: "Cross-references"
+---
+
+# Cross-references
+
+`see=` sends the reader somewhere else instead of listing a page; `see-also=`
+points somewhere else as well. Both work on any of the mark forms on
+[Syntax](syntax.qmd):
+
+```markdown
+[cats]{.index see="Felines"}                → cats, see Felines
+[dogs]{.index see-also="Pets"}              → dogs, see also Pets
+[owls]{.index see="Birds!Owls"}             → owls, see Birds: Owls
+[]{.index entry="Ghosts" see-also="Spirits"}   → Ghosts, see also Spirits
+```
+
+The entry the cross-reference hangs off is `entry=` when the mark has one, and
+the visible text otherwise, exactly as for an ordinary mark.
+
+**A cross-reference replaces the locator.** A marked term carrying `see=` or
+`see-also=` gets no page number for that mark. For `see=` that is what a
+printed index does anyway, since "see Felines" means the entries are over
+there.
+
+For `see-also=` it is a current limitation, not the intent: a printed index
+normally writes `cats, 12, 47, see also Felines`, and this extension cannot
+produce that yet. Marking the term plainly elsewhere gets you the page numbers
+and the cross-reference on one entry, but in this extension's order — `cats,
+see also Felines, 12, 47` — not the printed convention above. On its own, a
+`see-also=` entry carries its cross-reference and no page numbers.
+
+**The target uses the same level syntax as `entry=`.** A single `!` separates
+levels and `!!` is a literal `!`, so `see="Birds!Owls"` points at the sub-entry
+`Owls` under `Birds` and prints as `Birds: Owls`. Levels join with `: ` rather
+than with `!`, because the target is a phrase a reader reads, not an index key.
+Levels join with a colon, so a level that itself contains a colon reads the
+same as a level boundary — `see="Note: on birds"` prints exactly like a
+two-level target. The value is ordinary literal text in every other respect:
+you never write LaTeX in it, and every printable ASCII character works, along
+with accented Latin-1 text, including the ones that would otherwise break the
+build.
+
+**A cross-reference to its own entry is dropped.** `see="Cats"` on the entry
+`Cats` prints as "Cats, see Cats" and, in an HTML index, links the entry to
+itself. The target is reported and dropped, and the term is then indexed
+normally, with its usual page numbers or links — dropping the mark instead
+would lose the term. A target is judged against what the entry *prints*, so a
+sort key does not make a self-reference into something else.
+
+**Both attributes on one mark** is almost always a mistake — "see" says the
+entries are elsewhere, "see also" says there are entries here too. Neither is
+dropped for being one of two: you get one entry carrying both targets, `see
+Aye; see also Bee`, and a warning. A target that names its own entry is still
+dropped for that reason, and the other one is then the only one emitted.
+
+**One term marked two different ways prints as one entry.** If `cats` gets a
+plain mark in one place and a cross-reference in another, you get a single
+entry carrying its page numbers and its cross-reference together: `cats, see
+Felines, 3, 7`. The cross-reference mark contributes no page number of its own,
+exactly as it does not when it stands alone.
+
+Two *different* cross-references on one term — a `see=` in one place and a
+`see-also=` in another — merge the same way, but into one entry carrying both
+targets and no page numbers at all, since neither mark contributes one: `cats,
+see Felines; see also Dogs`. Either way you get a warning naming the entry and
+saying which of the two it drew, because two marks describing one term
+differently is more often a slip than a plan.
+
+This used to fail the PDF build outright, and in a document that had never
+been built to PDF it could sit unnoticed for a long time: `makeindex` rejects
+two marks that share an index key and a printed page but describe it
+differently, and Quarto turns that rejection into a failed render. The
+extension no longer emits such a pair. Marking a term twice *the same* way was
+always fine, and still is.
+
+In an HTML index the target is a link when it names an entry that exists in the
+same index, and plain text when it does not. Whether it does is decided on the
+levels, not on the text a reader sees: `see="Note!on birds"` points at the
+sub-entry `on birds` under `Note`, while `see="Note: on birds"` is one level
+that merely prints the same way, and does not link.
+
+**A target that names no entry is reported.** A `see=` or `see-also=` naming a
+term nothing indexes sends a reader to an entry the index does not have. It is
+not dropped — what you wrote is yours — but you get a warning naming the mark
+and the target, once per mark per target, whatever you render to. A target
+resolves when its levels name an entry the document indexes, including a level
+that exists only because a deeper entry hangs from it: with
+`entry="Trees!Oak!Acorn"` marked somewhere, `see-also="Trees!Oak"` resolves.
+Where the three-level ceiling applies the judgement runs after folding, on both
+sides: in PDF a target is compared against the paths entries print, and in HTML
+against the levels you wrote. That is why a target spelling a folded path —
+`see="One!Two!Three, Four"` against `entry="One!Two!Three!Four"` — is understood
+in PDF and reported in an HTML render. In
+a book the whole book's marks are what a target is judged against, so a target
+naming a term another chapter marks is fine. A PDF book is one document by the
+time the extension runs, so nothing special happens there. An HTML book renders
+each chapter on its own, so the report is drawn once, by the last chapter in
+book order — which means a render that stops short of that chapter draws none,
+and a render whose other chapters have never been rendered has nothing recorded
+for them and will call their terms unindexed. Render the whole book.

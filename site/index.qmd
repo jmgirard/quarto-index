@@ -1,3 +1,7 @@
+---
+pagetitle: "quarto-index"
+---
+
 # quarto-index
 
 A Quarto extension for book-quality subject indexing. Mark index entries with
@@ -28,30 +32,20 @@ filters:
 Requires Quarto 1.4 or later. No other runtime dependencies: on the LaTeX
 side it uses `imakeidx`, which ships with mainstream TeX distributions.
 
-## Documentation
+## Where to go next
 
-The full documentation is a Quarto website in [`site/`](site/index.qmd): the
-supported marking forms, what each output format gets, where the two
-back-ends differ, and how a Quarto book gets one index.
-
-## Examples
-
-`examples/` is the fixture corpus the acceptance suite renders — a
-four-chapter book, every supported form, the escaping probes, the placement
-marker and its misuse cases, the cross-reference pairs, the named-index
-fixtures and the non-Latin-1 recipe. The [Examples](site/examples.qmd) page
-lists what each one exercises.
-
-```bash
-quarto render examples/demo.qmd --to pdf
-quarto render examples/demo.qmd --to html
-```
-
-## Tests
-
-```bash
-tests/run-tests.sh --self-test
-```
-
-The [Tests](site/tests.qmd) page says what the suite renders, what it compares
-the output against, and what it needs installed.
+- [Syntax](syntax.qmd) — the supported marking forms, and a page per topic:
+  [sub-entry levels](sub-entry-levels.qmd),
+  [cross-references](cross-references.qmd),
+  [special characters](special-characters.qmd),
+  [terms outside Latin-1](terms-outside-latin-1.qmd),
+  [sort keys](sorting.qmd),
+  [principal mentions](principal-mention.qmd),
+  [page ranges](page-ranges.qmd),
+  [placing the index](placing-the-index.qmd) and
+  [named indexes](named-indexes.qmd).
+- [What it emits](output.qmd) — what each output format gets, and where the
+  two back-ends differ.
+- [Books](books.qmd) — one index for a whole Quarto book.
+- [Examples](examples.qmd) and [Tests](tests.qmd) — the fixture corpus and the
+  acceptance suite.

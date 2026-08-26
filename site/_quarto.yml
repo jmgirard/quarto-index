@@ -1,0 +1,57 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "quarto-index"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: syntax.qmd
+        text: Syntax
+      - href: output.qmd
+        text: Output
+      - href: books.qmd
+        text: Books
+    right:
+      - icon: github
+        href: https://github.com/jmgirard/quarto-index
+        aria-label: GitHub
+  sidebar:
+    style: docked
+    search: true
+    contents:
+      - href: index.qmd
+        text: Home
+      - section: Syntax
+        href: syntax.qmd
+        contents:
+          - sub-entry-levels.qmd
+          - cross-references.qmd
+          - special-characters.qmd
+          - terms-outside-latin-1.qmd
+          - sorting.qmd
+          - principal-mention.qmd
+          - page-ranges.qmd
+          - placing-the-index.qmd
+          - named-indexes.qmd
+      - section: What it emits
+        href: output.qmd
+        contents:
+          - latex-and-pdf.qmd
+          - html.qmd
+          - other-formats.qmd
+          - back-end-differences.qmd
+          - letter-groups.qmd
+      - href: books.qmd
+        text: Books
+      - href: examples.qmd
+        text: Examples
+      - href: tests.qmd
+        text: Tests
+
+format:
+  html:
+    theme: cosmo
+    toc: true

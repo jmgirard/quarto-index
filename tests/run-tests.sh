@@ -13512,6 +13512,65 @@ python3 tests/gallerycheck.py listing "$GALLERY_YML" \
   || fail "M41-AC1: the gallery declaration and the fixture corpus are not the same set (its own FAIL line is above)"
 
 # ---------------------------------------------------------------------------
+# The per-fixture index manifests, addressable by fixture name (M41 T3). Not
+# one derived row is copied or re-derived here: each manifest stays the
+# variable it was derived into, beside the derivation that reasons about it,
+# and this table only NAMES it. The columns are
+#   <fixture>  <kind: html|pdf>  <format>  <variable>
+# and the four formats are the shapes those manifests already have:
+#   index     `letter\t<L>` group rows and `<level>\t<term>\t<count>[\t...]`
+#   sections  the same, with `section\t<id>\t...` rows above each index
+#   outline   `<level>\t<term>`, with no locator count
+#   terms     one printed term per line
+# A row whose variable this suite does not define, or defines empty, is a
+# failure here rather than an empty manifest file downstream — an empty
+# manifest is a check that judges nothing while still printing ok.
+# ---------------------------------------------------------------------------
+read -r -d '' GALLERY_MANIFEST_ROWS <<'GALLERYREG' || true
+demo	html	index	DEMO_HTML_INDEX
+demo	pdf	terms	PDF_TERMS
+empty-levels	html	index	EMPTY_LEVELS_HTML
+empty-levels	pdf	outline	EMPTY_LEVELS_PDF
+html-index	html	index	HTML_INDEX_MANIFEST
+letter-groups	html	index	LETTER_GROUPS_INDEX
+marker	html	index	MARKER_HTML_INDEX
+marker	pdf	terms	MARKER_PDF_TERMS
+named-indexes	html	sections	NAMED_INDEX_SECTIONS
+placement	html	index	PLACEMENT_HTML_INDEX
+sortkey	html	index	SORTKEY_HTML_INDEX
+sortkey	pdf	outline	SORTKEY_PDF_OUTLINE
+sortkey-paths	html	index	SORTKEY_PATHS_HTML_INDEX
+xref-conflict	html	index	XREF_HTML_INDEX
+xref-conflict	pdf	index	CONFLICT_PDF_INDEX
+GALLERYREG
+
+GALLERY_MANIFEST_DIR="$WORK/gallery-manifests"
+rm -rf "$GALLERY_MANIFEST_DIR"
+mkdir -p "$GALLERY_MANIFEST_DIR"
+GALLERY_MANIFEST_INDEX="$GALLERY_MANIFEST_DIR/registry.tsv"
+: > "$GALLERY_MANIFEST_INDEX"
+GALLERY_MANIFEST_COUNT=0
+while IFS=$'\t' read -r gm_fixture gm_kind gm_format gm_var; do
+  [ -n "$gm_fixture" ] || continue
+  [ -n "${!gm_var+set}" ] \
+    || fail "M41 T3: the manifest table names $gm_var for $gm_fixture ($gm_kind), and this suite defines no variable of that name"
+  [ -n "${!gm_var}" ] \
+    || fail "M41 T3: the manifest $gm_var, named for $gm_fixture ($gm_kind), is empty; a manifest with no row judges nothing"
+  gm_path="$GALLERY_MANIFEST_DIR/$gm_fixture.$gm_kind.txt"
+  printf '%s\n' "${!gm_var}" > "$gm_path"
+  printf '%s\t%s\t%s\t%s\t%s\n' \
+    "$gm_fixture" "$gm_kind" "$gm_format" "$gm_var" "$gm_path" \
+    >> "$GALLERY_MANIFEST_INDEX"
+  GALLERY_MANIFEST_COUNT=$((GALLERY_MANIFEST_COUNT + 1))
+done <<< "$GALLERY_MANIFEST_ROWS"
+[ "$GALLERY_MANIFEST_COUNT" -gt 0 ] \
+  || fail "M41 T3: the manifest table produced no addressable manifest at all"
+pass "M41 T3: $GALLERY_MANIFEST_COUNT per-fixture index manifest(s) are addressable by fixture name under $GALLERY_MANIFEST_DIR, each one the variable it was derived into"
+
+python3 tests/gallerycheck.py manifests "$GALLERY_YML" "$GALLERY_MANIFEST_INDEX" \
+  || fail "M41-AC3/AC4: the gallery's shown fixtures and the manifests addressable for them do not line up (its own FAIL line is above)"
+
+# ---------------------------------------------------------------------------
 # The sweeps' own discrimination (M24). A sweep over a set passes on a set it
 # never opens, which is exactly the vacuity the per-file checks it replaced
 # could not have had: three named files either exist and are read, or the run

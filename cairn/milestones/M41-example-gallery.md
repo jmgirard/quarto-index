@@ -79,7 +79,7 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
       into a scratch directory at the repo root, render it to HTML and to PDF
       there, and place the outputs under the site's output tree. Nothing it
       runs may name a path under `examples/` as a render target.
-- [ ] T3. Make the suite's per-fixture HTML and PDF index manifests addressable
+- [x] T3. Make the suite's per-fixture HTML and PDF index manifests addressable
       by fixture name, without changing a single derived row (the ORACLE RULE
       at `tests/run-tests.sh:8-22`).
 - [ ] T4. Build the gallery pages: source code block, embedded rendered
@@ -107,6 +107,8 @@ Book-project fixtures (the 9 chapters under `examples/*/`) → a candidate row.
 - 2026-08-26: T1 done. `site/gallery.yml` declares all 55 fixtures, 10 shown and 45 not; `tests/gallerycheck.py listing` reads the declaration against `git ls-files examples` and refuses any file shape but `<key>:` and `  - <value>`. Wired into the suite as M41-AC1. Verify slot clean, 386 checks.
 
 - 2026-08-26: T2 done. `site/build_gallery.py` is the site's `pre-render` step: it stages each shown fixture, the extension and the fixture directory's shared assets into `.gallery-build/<name>/` at the repo root, renders that copy to self-contained HTML and to PDF with Quarto's own project variables stripped from the child environment, and places both outputs under `site/gallery/rendered/`, declared as a project resource. `read_gallery` lives there and `tests/gallerycheck.py` imports it, so the build and the check read the declaration through one reader. All ten fixtures render to both formats; the suite's link check now sweeps 30 pages, 876 links, all resolving. Verify slot clean, 386 checks.
+
+- 2026-08-26: T3 done. A table in the suite names each per-fixture manifest by fixture, kind and format — 15 rows, 10 HTML and 5 PDF — and writes each variable's contents to `$WORK/gallery-manifests/<fixture>.<kind>.txt` with a registry beside it. No derived row was copied or re-derived; the table names variables. A row naming an undefined or empty variable fails there. `gallerycheck.py manifests` reads the registry and holds AC3's and AC4's coverage clauses: every shown fixture has an HTML manifest, `shown:` meets its floor of 8, at least 3 shown fixtures have a PDF manifest, and no manifest read for the gallery states zero entries. Verify slot clean, 388 checks.
 
 ## Decisions
 

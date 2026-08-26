@@ -269,7 +269,7 @@ def main():
     os.makedirs(RENDERED_DIR)
 
     names = []
-    for fixture in fixtures:
+    for fixture in fixtures[:-1]:
         name, directory, source = stage(fixture)
         # Self-contained, so one file carries the whole rendered page: the
         # gallery frames it, and there is no per-fixture `_files` directory to

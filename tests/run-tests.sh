@@ -3150,7 +3150,7 @@ WARN_INDEX_FOLD_MARKER_ELSEWHERE='which goes where this document already places 
 # The report for a declared name that cannot be an HTML id fragment (M38 R1).
 # Keyed on the clause that says what is wrong with the name, which no other
 # declaration report carries.
-WARN_INDEX_BADNAME='which cannot be an HTML id fragment'
+WARN_INDEX_BADNAME='which cannot be a section id a `#id` selector names'
 case "$WARN_MARKER_DUP" in
   *"$WARN_MARKER_DUP_STEM"*) ;;
   *) fail "M28: the duplicate-marker grep key no longer contains the stem passed to mark-report-keys, so the scan and the run would hold different messages" ;;
@@ -12310,8 +12310,25 @@ check_no_invalid_id() {
   local htmlfile="$1" label="$2"
   if grep -qE 'id="[^"]*[[:space:]#<>]' "$htmlfile"; then
     grep -oE 'id="[^"]*[[:space:]#<>][^"]*"' "$htmlfile" | head -5 >&2
-    fail "$label: the rendered page carries an id holding a character no HTML id fragment may hold"
+    printf 'FAIL: %s\n' "$label: the rendered page carries an id holding a character no HTML id fragment may hold" >&2
+    return 1
   fi
+  return 0
+}
+
+# No id this extension MINTS holds a dot. Scoped to the extension's own section
+# ids rather than swept page-wide: a dot is legal in an id and Quarto mints ids
+# holding one, so the page-wide sweep above must not read it. What a dot costs
+# is addressability -- `#qi-index-my.index` is a selector that parses, matches
+# an id this extension never minted, and reports nothing.
+check_no_dotted_section_id() {
+  local htmlfile="$1" label="$2"
+  if grep -qE "id=\"${HTML_SECTION_ID}[^\"]*\\.[^\"]*\"" "$htmlfile"; then
+    grep -oE "id=\"${HTML_SECTION_ID}[^\"]*\\.[^\"]*\"" "$htmlfile" | head -5 >&2
+    printf 'FAIL: %s\n' "$label: the rendered page carries a generated section id holding a dot, which no #id selector can name" >&2
+    return 1
+  fi
+  return 0
 }
 
 # ---------------------------------------------------------------------------
@@ -12489,11 +12506,19 @@ quarto render examples/named-indexes-misuse.qmd --to html \
   || { tail -30 "$WORK/named-indexes-misuse-html.log" >&2; fail "M38-R1: named-indexes-misuse.qmd failed to render to HTML"; }
 capture examples/named-indexes-misuse.qmd html "named-indexes-misuse-html"
 NAMED_MISUSE_HTML="$CAPTURE_ROOT/named-indexes-misuse-html/named-indexes-misuse.html"
-check_warning_count "$WORK/named-indexes-misuse-html.log" "$WARN_INDEX_BADNAME" 1 \
+# Two of the five entries are refused for the shape of their name, and each is
+# read by the name it refused: one carrying a space, which is invalid in an id
+# outright, and one carrying a dot, which is valid in an id and still refused
+# because `#qi-index-my.index` names the id `qi-index-my` carrying the class
+# `index` -- a selector that is valid, matches something else, and says nothing
+# (M38 review round 2).
+check_warning_count "$WORK/named-indexes-misuse-html.log" "$WARN_INDEX_BADNAME" 2 \
   "M38-R1"
-grep -F -- "$WARN_INDEX_BADNAME" "$WORK/named-indexes-misuse-html.log" \
-  | grep -qF '"my index"' \
-  || fail "M38-R1: the refused-name report does not name the name it refused"
+for refused in '"my index"' '"my.index"'; do
+  grep -F -- "$WARN_INDEX_BADNAME" "$WORK/named-indexes-misuse-html.log" \
+    | grep -qF -- "$refused" \
+    || fail "M38-R1: no refused-name report names $refused, so the entry declaring it was accepted in silence"
+done
 check_index_sections "$NAMED_MISUSE_HTML" "$NAMED_INDEX_MISUSE_SECTIONS" "M38-R1"
 # And the output itself: no id on the page holds a character an id may not, so
 # the refusal is what kept the invalid id out rather than the manifest above
@@ -12501,7 +12526,12 @@ check_index_sections "$NAMED_MISUSE_HTML" "$NAMED_INDEX_MISUSE_SECTIONS" "M38-R1
 # and Quarto's alike, since an id with a space in it is invalid wherever it came
 # from.
 check_no_invalid_id "$NAMED_MISUSE_HTML" "M38-R1"
-pass "M38-R1: a declared name that is no HTML id fragment is refused by name, the document keeps the indexes it declared usably, and the page carries no invalid id"
+# The dot is read separately and only over the ids this extension mints. It is
+# legal in an id, and Quarto mints ids holding one (a heading whose text names a
+# `.qmd` file), so a page-wide sweep for it would report Quarto's ids as this
+# extension's defect.
+check_no_dotted_section_id "$NAMED_MISUSE_HTML" "M38-R1"
+pass "M38-R1: a declared name that is no section id a selector can name is refused by name, whether it is invalid in an id or merely unnameable by a #id rule, the document keeps the indexes it declared usably, and the page carries neither an invalid id nor a dotted one of this extension's own"
 
 # ---------------------------------------------------------------------------
 # M38-R2 — which marker places the one index a folded back-end builds.

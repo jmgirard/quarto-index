@@ -8,19 +8,25 @@ indexes:
   - name: main
     title: A second main
   - name: people
+  - name: my.index
+    title: Index of Dots
 filters:
   - index
 ---
 
 # What this document declares
 
-Four entries are written under `indexes:`, and only two of them declare an
+Five entries are written under `indexes:`, and only two of them declare an
 index. The second names `my index`, which cannot be an HTML id fragment: the
 name reaches output as the section's id and as the fragment of every link to
 it, so a section carrying a space in its id is one no link resolves against.
 That entry is refused and says so, rather than emitting the invalid id in
 silence. The third repeats a name already declared, and the fourth gives no
-title, so its section is headed with its own name.
+title, so its section is headed with its own name. The fifth names
+`my.index`, which is an id a `#id` selector cannot name: a stylesheet or a
+`querySelector` reads `#qi-index-my.index` as the id `qi-index-my` carrying
+the class `index`, so a section under that id is one no rule and no script
+can address. It is refused for the same reason the space is.
 
 The document is therefore left with `main` and `people`, in that order.
 

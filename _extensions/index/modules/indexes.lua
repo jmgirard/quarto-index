@@ -38,9 +38,15 @@ local DEFAULT_TITLE = "Index"
 -- `#`, a `"` or a `<` each break the id, the URL fragment or both. The rule is
 -- stated positively rather than as a blacklist: an author reading the report
 -- learns what to write, and a character nobody thought of is refused rather
--- than emitted. A leading letter is required because an id starting with a
--- digit is a CSS selector no `#id` rule can name without escaping.
-local NAME_SHAPE = "^[A-Za-z][A-Za-z0-9._%-]*$"
+-- than emitted.
+-- Two characters an id may legally hold are refused anyway, both for the one
+-- reason: the id has to be nameable by a plain `#id` selector, which is how a
+-- stylesheet reaches the section and how a script finds it. A leading digit
+-- is a selector no `#id` rule can name without escaping. A dot is worse,
+-- because it does not fail loudly -- `#qi-index-my.index` parses as the id
+-- `qi-index-my` carrying the class `index`, so the selector is valid, matches
+-- something other than the section, and says nothing (M38 review round 2).
+local NAME_SHAPE = "^[A-Za-z][A-Za-z0-9_%-]*$"
 
 -- The name of the one index a document that declares nothing has. The empty
 -- string is not a name an author can write -- a declaration whose `name:` is
@@ -104,7 +110,7 @@ local function read_declaration(item, position, kept, seen)
     return
   end
   if not name:match(NAME_SHAPE) then
-    qi_core.warn(('entry %d of the %s: metadata declares the name "%s", which cannot be an HTML id fragment; a name holds ASCII letters, digits, hyphen, underscore or dot and begins with a letter, so this entry declares no index'):format(position, INDEXES_KEY, name))
+    qi_core.warn(('entry %d of the %s: metadata declares the name "%s", which cannot be a section id a `#id` selector names; a name holds ASCII letters, digits, hyphen and underscore and begins with a letter, so this entry declares no index'):format(position, INDEXES_KEY, name))
     return
   end
   if seen[name] then

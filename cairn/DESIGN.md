@@ -495,9 +495,10 @@ acceptance suite's own hand-derived index manifests: a table in
 `tests/run-tests.sh` names each per-fixture manifest by fixture, kind and
 format and writes it out addressably, and `tests/gallerycheck.py` reads that
 registry — nothing scans the fixture sources. Because the site build renders
-fixtures, it needs the LaTeX toolchain the suite already requires: TinyTeX,
-`makeindex` and `pdftotext`, plus `stix2-otf` for the non-Latin-1 recipe
-fixtures. The whole-set residue sweeps run after the site render, since it is
+fixtures, it needs a TeX installation: TinyTeX, which carries `makeindex`
+(corrected M42 — the site build reaches no further than that; `pdftotext` and
+`stix2-otf` are the acceptance suite's own requirements, and the Pages
+workflow renders the whole site, PDFs included, with TinyTeX alone). The whole-set residue sweeps run after the site render, since it is
 the last render the suite makes.
 
 The suite's pinned documentation sentences live in *claim containers*, and
@@ -514,6 +515,25 @@ source, every link the site makes to its own content resolves, README is still
 the short pointer, and — for the migration itself, run against the merge base
 rather than standing in the suite — every moved heading landed and no prose was
 lost.
+
+The site is published by `.github/workflows/pages.yml` (added M42), the repo's
+only workflow. Its build job runs on every branch: it installs an exactly
+pinned Quarto and TinyTeX, renders `site/`, runs `tests/sitecheck.py rendered`
+and `tests/pagescheck.py built` over the output, and uploads it as the Pages
+artifact. Its deploy job publishes that artifact and is gated on the
+repository's default branch, so on any other branch it reports skipped — the
+`github-pages` environment refuses a deployment from elsewhere, and a leg that
+could only fail there would say nothing about the render. `tests/pagescheck.py`
+carries the workflow's own checks: `pin` holds the pinned version against the
+`quarto-required` range `_extension.yml` declares, splitting both on `.` and
+comparing integer tuples; `built` is the completeness reader the workflow runs
+before it uploads, since a render can exit 0 having dropped a gallery page;
+`url` derives the published URL from the `origin` remote and requires README,
+the site's own entry page and the base path the link check resolves against to
+agree with it; and `contains` compares an unpacked Pages artifact against a
+reference render. The site is served under the repository's own path segment,
+which is why `SITE_BASE_PATH` in `tests/run-tests.sh` is that segment rather
+than the empty string M40 left.
 
 ## Known issues
 

@@ -82,10 +82,10 @@ suite in CI → not planned; a candidate row.
       verified against a real render rather than a literal path.
 - [x] T4. Write the checks for AC3 and AC5, including the version comparison
       procedure the criterion names.
-- [ ] T5. Run the five AC4 plants on probe branches, one substitution each so a
+- [x] T5. Run the five AC4 plants on probe branches, one substitution each so a
       no-op leaves the log unchanged (`check-design.md`, M29), and record each
       run URL and conclusion.
-- [ ] T6. Add the published URL to README and to the site; amend the CI-matrix
+- [x] T6. Add the published URL to README and to the site; amend the CI-matrix
       candidate row with a pointer to this workflow. Verify slot clean.
 
 ## Work log
@@ -102,6 +102,10 @@ suite in CI → not planned; a candidate row.
 - 2026-08-26: suite green after those changes: `tests/run-tests.sh --self-test`, 649 checks, exit 0.
 - 2026-08-26: T2 (refined) — the workflow's `concurrency` group moved from the workflow onto the deploy job. At workflow level it made every branch's build queue behind every other branch's, including the five probe branches T5 runs; only the publishing step has a single target, so only it needs serializing.
 - 2026-08-26: T5 round 1 — five probe branches run. Four failed at the step their plant is about; the broken-source probe instead died installing TinyTeX, on a 403 from the GitHub API, which `quarto install tinytex` calls unauthenticated to resolve the current release. Six runs started together share the runner network, and that is the rate limit. The setup step now passes the run's own token, and all five probes plus the branch run are re-run on the fixed workflow.
+- 2026-08-26: T5 — five probe branches re-run on the fixed workflow, each carrying one substitution and nothing else, each concluding `failure` at the step its plant is about: a broken include in `site/index.qmd` at the render (https://github.com/jmgirard/quarto-index/actions/runs/33013552310); an output directory renamed in `site/_quarto.yml` at the tracked-page check, which names all 20 pages (runs/33013553886); one shown fixture dropped from the gallery build's loop at the completeness check, which names that fixture's three paths (runs/33013555753); the Quarto pin at 1.10.999 at the install step, on a 404 for that download (runs/33013557204); and a render target that does not exist inside the `tee` pipeline at the render step, on Quarto's own error and not `tee`'s success (runs/33013558924).
+- 2026-08-26: AC1/AC2 evidence on commit cab7fdf — https://github.com/jmgirard/quarto-index/actions/runs/33013541670 concluded `success` with the deploy job skipped, and its `github-pages` artifact contains all 51 `.html`/`.pdf` paths a local render of the same commit produces, 10 of them PDFs.
+- 2026-08-26: T6 — DESIGN's Architecture gains the publishing workflow and `tests/pagescheck.py`; its sentence on the toolchain the site build needs is corrected in place and marked, since the workflow renders the whole site with TinyTeX alone.
+- 2026-08-26: verify slot clean after T5 and T6: `tests/run-tests.sh --self-test`, 649 checks, exit 0.
 
 ## Decisions
 

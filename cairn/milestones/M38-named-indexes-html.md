@@ -1,6 +1,6 @@
 # M38: Marks name which index they belong to, and the HTML back-end prints each
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -160,6 +160,8 @@ collation rules — nothing here changes how one index is ordered or printed.
 - 2026-08-25: T22 — DESIGN's Architecture section carried the module list and the reset count this milestone made stale. `indexes.lua` joins the module list, `passes.Reset` now reads "the four" it calls with `indexes.lua` first, and `data-index` joins the pass-through residue enumeration, each marked `corrected M38`. Checked against the code rather than recalled: `passes.lua:32-35` calls four resets and its own comment says "First of the four", and the captured gfm render carries `data-index="authors"`.
 - 2026-08-25: T23 and T24 — two prose claims the branch made false. `examples/book/last.qmd` said its third marker "places that one instead and says so"; the captured book log says the marker "places nothing", and the fixture's prose is oracle documentation, so it was rewritten to what the report draws. Verified against this run's capture: last.qmd writes the placing marker at line 13, the duplicate at line 20 which is reported as a second marker for the built index, and the `people` marker at line 28 which draws the fold report alone and no duplicate report — which is what the corrected prose now says. README's Syntax paragraph called forms eight and nine "The last two" after a tenth was appended; they are now named. `--self-test` green, 559 checks.
 - 2026-08-25: T18-T24 complete; status review. `tests/run-tests.sh --self-test` exit 0, 559 checks; the plain suite 378. Not carried by this round, per the return's triage: F2, F3, F11, F12, F13, F14, F15, F16, F17 and the three blame-history findings stay follow-ups.
+
+- 2026-08-25: review round 3 — AC1-AC6 passed with fresh evidence (full suite --self-test, exit 0, 559 checks, plus direct reads of the captured artifacts) and the consistency gate was clean. AC7 FAILED and returns the milestone to in-progress: `check_folded_heading`'s section-count clause — the one clause round 2 named — is still not shown red, because its plant inserts a heading-less section and `index_sections` raises `ValueError` before the count comparison, while `probe_defect` reads only the exit status; verified here by running the reader over a fabricated two-section page. The three-lens review added G2 (the same reader raises rather than reports) and G3 (three branch-added claims that the clause is planted), plus G5, a README that documents no rule for the name shape T20 tightened. Defect return 3 for this milestone; no amendment return, no criterion reinterpreted. The thrash rule fires on both triggers and the disposition goes to the maintainer.
 
 ## Decisions
 
@@ -586,3 +588,191 @@ return 2 for the milestone; no amendment return, no criterion reinterpreted.
   candidate rows or Known issues in the hygiene pass of whichever review merges
   this milestone. F12/F15/F16 and B1 are already-filed follow-ups (R14, R10,
   R11, KI10) and need no new row.
+
+### Round 3 — 2026-08-25
+
+Reviewed at 6654b40 on m038-named-indexes-html, PR #38 (draft, already open).
+`main` had not moved since the branch was cut, so no merge was needed. Fresh
+evidence: one full `tests/run-tests.sh --self-test` run, exit 0, 559 checks,
+plus direct reads of the captured artifacts named below. A first run of the
+suite was discarded: the blame-history reviewer ran the suite itself in this
+shared checkout, wiping `tests/.work` mid-run, and the re-run below was made
+with no other agent working.
+
+- AC1 — PASS. A direct `section_rows` read of the captured `named-indexes.html`
+  gives exactly two generated sections in document order: `qi-index-main` / h1 /
+  "Index" with top-level entries {Aardvark, Cantor, Neighbour, Hague}, then
+  `qi-index-authors` / h1 / "Index of Authors" with {Babbage, Cantor, Hague,
+  Stranger} — declared order, each heading tag, text and id as the fixture's
+  manifest states. The suite's `M38-AC1` matched all 18 manifest rows in order;
+  link and letter sweeps passed (4 and 3 links, 8 letter groups).
+- AC2 — PASS. The captured HTML render log carries exactly one dangling-target
+  report, and it names `see=` on entry "Stranger" pointing at "Aardvark", a term
+  only the first index carries. In the same capture `Neighbour`, whose `see=`
+  names that same target from within the first index, renders `see-link
+  Aardvark` (resolved) while `Stranger` renders `see-plain Aardvark`.
+- AC3 — PASS. Both halves off the same capture. Sort keys: `Hague` sits under
+  letter group Z in `qi-index-main`, where a mark writes `sort="Zebra"`, and
+  under H in `qi-index-authors`, where none does. Range pairing: the captured
+  log carries exactly one never-closed report and exactly one never-opened
+  report, both naming "Cantor", and each `Cantor` row in the section dump
+  carries a single ordinary locator, so neither half printed a range.
+- AC4 — PASS. Each section's `after` — the last author-written id before it — is
+  `site-main` for `qi-index-main` and `site-authors` for `qi-index-authors`, so
+  each index sits at its own marker. The captured log carries exactly one
+  duplicate-marker report (count 1), and it names the repeated index, "main".
+- AC5 — PASS, both halves. LaTeX: the captured `named-indexes.tex` carries 8
+  `\index{}` commands against the manifest's 7 rows, exactly one `\printindex`,
+  and no marker residue — the only `site-` occurrences are `\label{}`s on the
+  fixture's own author-written subsection headings, and the one `quarto-index`
+  occurrence is the extension's imakeidx preamble guard. Each named-index mark
+  carries the argument the default index gives it, including `Zebra@Hague` for
+  the second index's `Hague`, which writes no sort key of its own. The log
+  carries the fold reports for the named-index marks and the named-index marker,
+  each naming "authors". Book: the captured `book-html/_book/last.html` carries
+  exactly one generated section under the bare `qi-index` id, headed "Index",
+  listing `Turing` — the chapter's `index="people"` mark — among its 14 entries;
+  the book log carries one fold report naming `"people"` on term "Turing" and
+  one naming `"people"` on an index placement marker.
+- AC6 — PASS. Read directly from `README.md`'s `### Named indexes` section: it
+  shows the `indexes:` metadata form with `name`/`title` and says what each
+  does; shows `index=` on a mark and on a placement marker with an example each;
+  states that a mark or marker naming none takes the first declared index; and
+  states under its own subheading that a LaTeX or PDF render and an HTML book
+  each build one index for now. Both fixture paths it names exist, and this
+  run's ledger carries both documented commands with exit status 0.
+- AC7 — **FAIL.** `tests/run-tests.sh --self-test` exits 0 with 559 checks, and
+  the eleven clauses round 2 left unplanted are now planted: `check_folded_site`
+  4 of 4, `check_folded_second` 3 of 3, `check_readme_indexes` 10 of 10, and the
+  two id sweeps complete. But `check_folded_heading`'s first clause — the
+  section count its own comment names first, the one clause round 2 named — is
+  still not shown red. Its plant inserts an empty `<section
+  id="qi-index-extra">`, and `htmlindex.index_sections` raises `ValueError: the
+  generated index section 'qi-index-extra' carries no heading element` before
+  the `len(found) != 1` comparison is ever reached; `probe_defect` discards
+  output and reads only the exit status, so the traceback is scored as the
+  clause going red. Verified here by running the reader's own heredoc over a
+  fabricated two-section page: it exits 1 on the `ValueError` and never prints
+  the count finding. The criterion binds a planted defect for each clause shown
+  red, and this clause is shown red by a different failure than the one it
+  states.
+
+### Consistency gate (round 3)
+
+- `cairn_validate.py` exit 0 — every check PASS, every advisory OK except the
+  sizing tripwire (24 tasks), which this milestone's work log already accepts as
+  gate-directed repair rather than new scope. The `release window` advisory did
+  not fire.
+- Toolchain checks: the active `generic` profile names none, so this half is a
+  clean no-op.
+- `cairn_impact.py` not run: the diff changes no IP/GP principle line in
+  `DESIGN.md`.
+
+### Independent review (round 3)
+
+Three fresh-context reviewers on distinct evidence bases, spawned at the user's
+explicit direction (the session carries a standing directive against spawning
+subagents unless asked; put to the user at this round and they chose the full
+fan-out).
+
+- [S] prior-review-record lens: no findings. It read the archived `## Review`
+  records for the touched files, `LESSONS.md` and DESIGN's Known issues, and
+  probed the GitHub inline-comment surface, which returned empty, so the per-PR
+  walk was not paid for. It confirmed each round-2 fix present in code and each
+  deferred follow-up untouched.
+- [S] blame-history lens: no findings. It confirmed the `NAME_SHAPE` narrowing a
+  genuine tightening, the two raise-to-report changes not weakening what they
+  check, the corrected `last.qmd` prose matching a hand trace of `resolve_markers`
+  and `fold_slot`, `warn-distinct.py`'s pinned 64 matching live code, the M23
+  injectors re-anchored on `plan_range`'s new signature, and no D-entry or
+  principle contradicted.
+- [O] diff-bug lens: seventeen findings (G1-G17 below).
+
+Findings, ranked as reported, each with its disposition. G1, G2, G3 and G5 were
+re-verified in this session against the shipped readers and the captured
+artifacts, never against the reviewer's account.
+
+- G1: AC7 still fails — `check_folded_heading`'s section-count clause is not
+  shown red; its plant fires an uncaught `ValueError` from `index_sections`
+  instead. Confirmed by execution, as recorded under AC7 above.
+- G2: `check_folded_heading` raises rather than reports — the same
+  traceback-not-a-finding defect T19 and T21 repaired in its two sibling
+  readers, and which round 2's triage scoped as fix-now. Confirmed by read:
+  `tests/run-tests.sh:12195-12223` calls `htmlindex.index_sections` with no
+  `try/except ValueError`, while `check_index_sections` and
+  `check_html_index_links` both guard it. At its real call site a genuinely
+  malformed book page would produce a traceback naming neither the page nor what
+  was wanted.
+- G3: three branch-added claims the artifact does not bear out — the self-test's
+  closing `pass` line, the block comment above the plant, and the T18 work-log
+  line each assert the folded-heading reader is shown red on two sections, which
+  per G1 it is not. Confirmed by read and execution. The `pass` line separately
+  attributes to the folded-site reader a plant for "none of the one index" that
+  exists only for the second-marker reader; the folded-site reader's own count
+  clause is planted by the two-`\printindex` plant, so the clause is covered and
+  only the enumeration over-claims.
+- G4: the return-gate Decisions entry still states a declared name may hold a
+  `.`, which T20 made false.
+- G5: README documents nothing about the shape a declared name may take, so the
+  rule T20 tightened is undocumented — an author writing the perfectly ordinary
+  `name: my.index` gets a refusal with no rule behind it. Confirmed by reading
+  README's whole `### Named indexes` section, which says only that `name` is
+  "what a mark writes to file in that index".
+- G6: AC6's pinned-claim manifest still carries no row for README's `index=`-on-
+  a-mark sentence. This is R14 / F12, deferred both rounds.
+- G7: `latex.lua`'s `contested_keys` remains the one un-namespaced accumulator,
+  now with DESIGN's new convention bullet stating the general rule without a
+  pointer to the recorded exception. Restates R10 / F15.
+- G8: `index=""` accepted in silence in a non-declaring document. Restates
+  R8 / F2.
+- G9: no `DECISIONS.md` entry for the fold policy or the two return-gate
+  rulings. Restates F13 / B2.
+- G10: `contested` sorts by `.path` alone across per-index namespaces. Restates
+  B3, still speculative.
+- G11: the Coverage map is stale — AC7 maps to T9 alone though T17-T21 are all
+  AC7 work, T11-T16 and T22-T24 map to no criterion, and the Tasks comment still
+  says "T1-T17 are done". `cairn_validate`'s coverage check passes, since every
+  criterion still maps to an existing task.
+- G12: AC7's box is `- [ ]` while the status is `review`. Correct under AC
+  fencing — it failed round 2 and has not been re-verified.
+- G13: DESIGN's T22 edit breaks the paragraph's wrap (85 and 99 chars in a
+  paragraph otherwise near 76).
+- G14: `indexes.lua` sits after `latex.lua` in DESIGN's dependency-order module
+  list while the sentence added beside it says "`indexes.lua` first".
+- G15: `ran_clean`'s one failure clause has no plant. A runner rather than a
+  reader, but AC7's wording is over "each reader this milestone adds" and round
+  2 read that wording strictly.
+- G16: `tests/m29book.py`'s new `DUP_NAMED` alternative adds a matching clause
+  with no plant of its own. m29book is modified, not added.
+- G17: the two id sweeps are applied only to `named-indexes-misuse.qmd`, a
+  narrower domain than the readers' own prose ("No id anywhere on a page").
+
+### Triage and disposition (round 3)
+
+AC7 fails, so M38 returns to `in-progress` under step 4's exit. This is defect
+return 3 for the milestone; no amendment return, no criterion reinterpreted.
+
+The thrash rule fires on both triggers. (a) The third return: a mis-planned
+milestone, so no further retry is queued under the current plan and the
+disposition goes to the maintainer. (b) AC7 failing twice, each by a new
+mechanism of the same shape — round 2's clauses with no plant at all, round 3's
+clause whose plant is scored red by a different failure than the one it states.
+The plan gate recorded alternatives against four design choices (metadata
+declaration, HTML-first, warn-and-fold in books, first-declared default); none
+is an alternative to how AC7's per-clause proof is obtained, so (b)'s remedy is
+an offered escalation rather than a recorded alternative to reconsider. No
+re-plan or split has been spent on this milestone, so a same-objective re-cut
+remains a present but never-recommended option.
+
+- G1, G2, G3 → the AC7 gap and its two companions. Not carried this round: the
+  disposition is the maintainer's under the thrash rule, and any repair rides
+  whichever option they choose.
+- G4 → reject. The milestone-local Decisions section is history (IP4), never
+  edited; the T20 work-log line already supersedes the ruling.
+- G5 → follow-up, or fix-now inside a descope that keeps AC6. A user-facing
+  documentation gap this round's narrowing created.
+- G6, G7, G8, G9, G10, G16, G17 → follow-up, already-filed or newly filed in the
+  hygiene pass of whichever review merges this milestone.
+- G11, G13, G14 → follow-up. Tracking and wrap hygiene, no runtime surface.
+- G12 → reject. The unticked box is what AC fencing requires.
+- G15 → follow-up, folded into whatever answers G1.

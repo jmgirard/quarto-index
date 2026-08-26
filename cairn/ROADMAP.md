@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-25 (M38 planned; the 2026-08-16 "Multiple named ind
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M38 | Marks name which index they belong to, and the HTML back-end prints each | review | — | normal | milestones/M38-named-indexes-html.md |
+| M38 | Marks name which index they belong to, and the HTML back-end prints each | in-progress | — | normal | milestones/M38-named-indexes-html.md |
 | M37 | The non-Latin-1 guards report the cause they hit | done | M36 | normal | milestones/archive/M37-non-latin1-guard-causes.md |
 | M36 | The non-Latin-1 readers stop reading text that belongs to no error | done | — | normal | milestones/archive/M36-unicode-reader-claims.md |
 | M35 | The non-Latin-1 checks fail on the defects they claim to catch | done | — | normal | milestones/archive/M35-non-latin1-check-hardening.md |

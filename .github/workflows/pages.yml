@@ -32,8 +32,14 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
+      # `quarto install tinytex` asks the GitHub API which TinyTeX release is
+      # current, and unauthenticated that call is rate-limited per runner
+      # address: it answered 403 on one of six runs started together while
+      # this workflow was being proved. The run's own token authenticates it.
       - name: Install Quarto and TinyTeX
         uses: quarto-dev/quarto-actions/setup@v2
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           version: 1.10.18
           tinytex: true

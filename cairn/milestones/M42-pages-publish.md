@@ -101,6 +101,7 @@ suite in CI → not planned; a candidate row.
 - 2026-08-26: T6 (part) — README and the site's entry page name the published URL, and `tests/pagescheck.py url` binds both to the URL the `origin` remote implies and to the base path the suite's link check resolves against; the link check's base path moved from the empty string to the repository segment, which M40 left as the value this milestone sets. The CI-matrix candidate row now names the workflow file. Six more planted cases; the no-remote case first passed for the wrong reason, because `git -C` walks up out of a bare directory in the work tree into this checkout, and now plants a repository of its own.
 - 2026-08-26: suite green after those changes: `tests/run-tests.sh --self-test`, 649 checks, exit 0.
 - 2026-08-26: T2 (refined) — the workflow's `concurrency` group moved from the workflow onto the deploy job. At workflow level it made every branch's build queue behind every other branch's, including the five probe branches T5 runs; only the publishing step has a single target, so only it needs serializing.
+- 2026-08-26: T5 round 1 — five probe branches run. Four failed at the step their plant is about; the broken-source probe instead died installing TinyTeX, on a 403 from the GitHub API, which `quarto install tinytex` calls unauthenticated to resolve the current release. Six runs started together share the runner network, and that is the rate limit. The setup step now passes the run's own token, and all five probes plus the branch run are re-run on the fixed workflow.
 
 ## Decisions
 

@@ -114,17 +114,17 @@ collation rules — nothing here changes how one index is ordered or printed.
 - [x] T15: Give the declared-order rule a fixture that marker order cannot satisfy (R5).
 - [x] T16: Read AC6's "runs clean" off a ledger of what ran, and pin the declaration block (R6).
 - [x] T17: Plant a section heading at the wrong level, for the tag comparison's own clause (R7).
-- [ ] T18: Plant a defect for every clause `check_folded_site`,
+- [x] T18: Plant a defect for every clause `check_folded_site`,
       `check_folded_second`, `check_folded_heading` and `check_readme_indexes`
       state and no plant reaches, and correct the block's two under-counting
       comments and its closing `pass` line to what the readers state (AC7).
-- [ ] T19: Make `check_folded_second` report a missing `\printindex` as a
+- [x] T19: Make `check_folded_second` report a missing `\printindex` as a
       finding rather than raise, and make `check_no_invalid_id`'s control a
       control its reader can actually fail (AC7, F9).
 - [x] T20: Narrow `NAME_SHAPE` so a declared name cannot mint a section id no
       `#id` selector addresses, refused with its own report as an empty or
       repeated name is, and widen the id sweep to the character it admits (F1).
-- [ ] T21: Make `check_html_index_links` report a wrong or missing section id
+- [x] T21: Make `check_html_index_links` report a wrong or missing section id
       as a finding rather than a traceback (F8).
 - [ ] T22: `DESIGN.md`: add `indexes.lua` to the module list, correct
       `passes.Reset`'s "the three" to the four it calls, and add `data-index`
@@ -155,6 +155,8 @@ collation rules — nothing here changes how one index is ordered or printed.
 - 2026-08-25: T9 — eight plants for the section reader, each on a copy of this run's own captured page through the no-op-refusing helper: a section id, a section dropped out of the set, a heading turned into a non-heading element, a heading's text, the authored element a section follows, an entry's text, plus a manifest naming no section and an empty one; a control asserts the reader passes unplanted first. The reader now reports an unreadable section as a finding rather than a traceback. M23's `advance` and `resetmoved` splices were re-anchored on `plan_range`'s new signature. `tests/run-tests.sh --self-test` green, 519 checks.
 - 2026-08-25: T10 — README gained a `### Named indexes` section under `## Syntax`, a tenth supported form and a fixture line under Examples; DESIGN gained the per-index scoping convention. The AC6 check reads the section rather than a written-down list: its five claims are compared whitespace-normalized, every `examples/*.qmd` it names must exist, and every command it shows must appear in the suite that runs it. The bibliography-recipe check's section bound was widened from `^## ` to `^#{2,3} `, since the new `###` is the first heading after it. The two follow-up candidate rows the plan added stand as written. Suite green, 368 checks.
 - 2026-08-25: T20 — `NAME_SHAPE` drops the dot: `^[A-Za-z][A-Za-z0-9_%-]*$`. A dot is legal in an id and still refused, because `#qi-index-my.index` parses as the id `qi-index-my` carrying the class `index` — a selector that is valid, matches an id this extension never minted, and reports nothing, which is worse than the leading digit the rule already refused for the same reason. The report was reworded to what the rule now admits and its grep key with it. `examples/named-indexes-misuse.qmd` gained a fifth entry naming `my.index`; probed red first — the entry rendered with no report at all — and the M38-R1 check now reads both refusals by the name each refused and counts them 2. A second reader, `check_no_dotted_section_id`, reads the dot over this extension's own section ids alone: Quarto mints ids holding a dot (a heading whose text names a `.qmd`), so the page-wide sweep must not read it. `check_no_invalid_id` returns rather than exiting, which is what let the sibling reader be added beside it; T19 covers the control that change makes real. Suite green, 378 checks.
+- 2026-08-25: T19 and T21 — the two readers that raised rather than reported. `check_folded_second` counted its `\printindex` with a bare `str.index`, verified at the return to raise `ValueError: substring not found` naming neither the capture nor what was wanted; it now counts the command and reports a capture carrying anything but one. `check_html_index_links` handed `find_all` a `None` section when the id it was given is not on the page, raising `AttributeError` deep in the walk; it now reports the page and the id it could not find. `check_no_invalid_id` returns rather than calling `fail`, which is what makes its control a control — the reader used to exit the script itself, so the control's own failure branch was unreachable (F9).
+- 2026-08-25: T18 — a plant for every clause these readers state and none reached: the folded-site reader on an index standing before every placement site; the second-marker reader on a capture carrying none of the one index and on labels that are not the fixture's two in order; the folded-heading reader on a page carrying two sections; the README reader on each of its four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the new dotted-id reader on a dot in a section id, shown beside a control asserting the page-wide sweep stays quiet on the same page, since the two readers are only worth having apart. The link reader's new clause is read rather than probed: a traceback and a finding both exit non-zero, and the traceback is what the clause exists to stop, so the finding itself is asserted to name the id and to carry no traceback. The block's two comments now state the clause counts their readers state — four and four, not two and three — and the closing summary was rewritten to what is actually planted. `--self-test` green, 559 checks (was 549); the plain suite 378.
 
 ## Decisions
 

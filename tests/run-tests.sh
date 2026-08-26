@@ -1467,7 +1467,16 @@ if dupes:
     print(f'FAIL: {label}: duplicate id(s) in {html_path}: {dupes}',
           file=sys.stderr)
     sys.exit(1)
-section = H.find_id(doc, os.environ['HTML_SECTION_ID'])
+want = os.environ['HTML_SECTION_ID']
+section = H.find_id(doc, want)
+if section is None:
+    # A missing section is a finding, not a traceback: `find_all(None, ...)`
+    # raises deep inside the walk and says nothing about which page or which
+    # id, which is the shape T9 fixed for the section reader (M38 T21).
+    print(f'FAIL: {label}: {html_path} carries no element with the id '
+          f'{want!r}, so there is no generated index section to read links '
+          f'out of', file=sys.stderr)
+    sys.exit(1)
 links = H.find_all(section, 'a')
 dangling = sorted({a.attrs.get('href', '') for a in links
                    if a.attrs.get('href', '').startswith('#')
@@ -12160,7 +12169,13 @@ python3 - "$1" "$2" <<'FOLDSECONDPY'
 import re, sys
 tex = open(sys.argv[1], encoding='utf-8').read()
 label = sys.argv[2]
-at = tex.index('\\printindex')
+# A finding, not a traceback: a bare `str.index` raises `ValueError: substring
+# not found` and names neither the capture nor what was wanted (M38 T19).
+found = [m.start() for m in re.finditer(r'\\printindex', tex)]
+if len(found) != 1:
+    sys.exit(f'FAIL: {label}: the capture carries {len(found)} \\printindex, '
+             f'want the 1 a folded render prints')
+at = found[0]
 sites = [(m.start(), m.group(1))
          for m in re.finditer(r'\\label\{(site-[a-z]+)\}', tex)]
 if [name for pos, name in sites] != ['site-first', 'site-second']:
@@ -13794,11 +13809,25 @@ M30PLANTPY
     probe_defect "an id holding <<$bad>>, which no HTML id fragment may hold" \
       check_no_invalid_id "$M38R/badid.html" "M38 probe"
   done
+  # Its sibling, which reads the ONE character that is legal in an id and still
+  # refused. The page-wide sweep above must not fail on a dot -- Quarto mints
+  # ids holding one -- so the two readers are shown apart: this plant is a dot
+  # in a section id THIS extension mints, and the sweep above stays quiet on it.
+  check_no_dotted_section_id "$M38R/misuse.html" "M38 self-test (control)" \
+    || fail "M38 self-test: the dotted-id reader fails on an unplanted copy of this run's page, so no failure below is evidence of anything"
+  probe_plant "$M38R/misuse.html" "$M38R/dottedid.html" \
+    's|id="qi-index-people"|id="qi-index-my.people"|g'
+  probe_defect "a generated section id holding a dot, which no #id selector can name" \
+    check_no_dotted_section_id "$M38R/dottedid.html" "M38 probe"
+  check_no_invalid_id "$M38R/dottedid.html" "M38 self-test (control)" \
+    || fail "M38 self-test: the page-wide id sweep fails on a dot, which is legal in an id and which Quarto itself mints — the two readers are not separable"
 
-  # The folded placement site (R2), over the captured `.tex`. Two clauses: how
-  # many placement sites the capture carries, and which one the single index
-  # follows — the defect itself, an index that moved to the marker naming an
-  # index this back-end does not build.
+  # The folded placement site (R2), over the captured `.tex`. Four clauses: how
+  # many of the one index the capture carries, how many placement sites, whether
+  # any site precedes the index at all, and which site it follows — the defect
+  # itself, an index that moved to the marker naming an index this back-end does
+  # not build. Each is planted below; the count here is read off the reader
+  # rather than recalled (M38 T18).
   FOLDSITE_TEX="$CAPTURE_ROOT/named-indexes-foldsite-latex/named-indexes-foldsite.tex"
   cp "$FOLDSITE_TEX" "$M38R/foldsite.tex"
   check_folded_site "$M38R/foldsite.tex" "M38 self-test (control)" >/dev/null \
@@ -13815,6 +13844,13 @@ M30PLANTPY
     's|^\\printindex$|\\printindex\n\\printindex|'
   probe_defect "a capture carrying two of the one index a folded render prints" \
     check_folded_site "$M38R/foldsite-twice.tex" "M38 probe"
+  # The fourth clause: an index that stands before EVERY placement site, so it
+  # is at neither marker rather than at the wrong one. Distinct from the moved
+  # plant above, which leaves it at a site.
+  probe_plant "$M38R/foldsite.tex" "$M38R/foldsite-none.tex" \
+    -e 's|^\\printindex$||' -e 's|^\\begin{document}$|\\begin{document}\n\\printindex|'
+  probe_defect "the one index standing before every placement site, so it is at neither marker" \
+    check_folded_site "$M38R/foldsite-none.tex" "M38 probe"
 
   # The same reader's sibling (R4): with no marker for the built index, the
   # FIRST marker written places it.
@@ -13826,10 +13862,22 @@ M30PLANTPY
     -e 's|^\\printindex$||' -e 's|^\\label{site-second}$|\\label{site-second}\\printindex|'
   probe_defect "the one index standing at the second marker rather than the first" \
     check_folded_second "$M38R/foldsecond-moved.tex" "M38 probe"
+  # Its other two clauses. The first was a bare `str.index` until T19: a capture
+  # with no \printindex raised ValueError and named neither the capture nor what
+  # was wanted, so there was nothing here a plant could show red.
+  probe_plant "$M38R/foldsecond.tex" "$M38R/foldsecond-noindex.tex" \
+    's|^\\printindex$||'
+  probe_defect "a capture carrying none of the one index a folded render prints" \
+    check_folded_second "$M38R/foldsecond-noindex.tex" "M38 probe"
+  probe_plant "$M38R/foldsecond.tex" "$M38R/foldsecond-relabel.tex" \
+    's|site-second|site-zzz|g'
+  probe_defect "a capture whose placement-site labels are not the fixture's two in order" \
+    check_folded_second "$M38R/foldsecond-relabel.tex" "M38 probe"
 
-  # What heads the one section a folded book prints (R3). Three clauses: the
-  # number of sections, the id that section carries, and its heading — the
-  # defect itself, a union section headed with one declaration's own title.
+  # What heads the one section a folded book prints (R3). Four clauses: the
+  # number of sections, the id that section carries, the element its heading is,
+  # and the heading's text — the defect itself, a union section headed with one
+  # declaration's own title.
   cp "$CAPTURE_ROOT/book-html/_book/last.html" "$M38R/book.html"
   check_folded_heading "$M38R/book.html" "M38 self-test (control)" >/dev/null \
     || fail "M38 self-test: the folded-heading reader fails on an unplanted copy of this run's page, so no failure below is evidence of anything"
@@ -13845,6 +13893,13 @@ M30PLANTPY
     's|<h1 class="unnumbered">Index</h1>|<h2 class="unnumbered">Index</h2>|g'
   probe_defect "a folded union section headed one level below an h1" \
     check_folded_heading "$M38R/book-level.html" "M38 probe"
+  # The fourth clause: how many sections the page carries. A folded render
+  # prints one, and a page printing two would otherwise be read by whichever
+  # one came first.
+  probe_plant "$M38R/book.html" "$M38R/book-twice.html" \
+    's|<section id="qi-index"|<section id="qi-index-extra"></section><section id="qi-index"|'
+  probe_defect "a folded book page carrying two generated sections where a folded render prints one" \
+    check_folded_heading "$M38R/book-twice.html" "M38 probe"
 
   # README's section and the command ledger (R6). The claims, the declaration
   # block, the fixtures, and the two ledger clauses — a documented command this
@@ -13889,8 +13944,48 @@ M30PLANTPY
   probe_defect "an empty ledger, which would report every documented command unrun" \
     check_readme_indexes "$M38R/README.md" "$WORK/readme-indexes.txt" \
       "$WORK/readme-indexes-yaml.txt" "$M38R/ledger-empty.txt" "M38 probe"
+  # The reader's four remaining clauses, each guarding a domain that can empty
+  # silently: no section to read at all, and a section showing no yaml block, no
+  # fixture path, or no command. A check that passes over an empty set reports
+  # nothing and looks identical to one that passed over a full one, which is the
+  # discrimination rule's own case (M38 T18).
+  probe_plant "$M38R/README.md" "$M38R/README-nosection.md" \
+    's|^### Named indexes$|### Named indices|'
+  probe_defect "a README carrying no named-index section at all" \
+    check_readme_indexes "$M38R/README-nosection.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
+  probe_plant "$M38R/README.md" "$M38R/README-noyaml.md" \
+    's|^```yaml$|```|'
+  probe_defect "a section showing no yaml block, so the declaration form is pinned by nothing" \
+    check_readme_indexes "$M38R/README-noyaml.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
+  probe_plant "$M38R/README.md" "$M38R/README-nopath.md" \
+    's|examples/named-indexes|EXAMPLES/named-indexes|g'
+  probe_defect "a section naming no fixture at all, over which the path check would pass on an empty set" \
+    check_readme_indexes "$M38R/README-nopath.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
+  probe_plant "$M38R/README.md" "$M38R/README-nocmd.md" \
+    's|^```bash$|```|'
+  probe_defect "a section showing no command at all, over which the ledger check would pass on an empty set" \
+    check_readme_indexes "$M38R/README-nocmd.md" "$WORK/readme-indexes.txt" \
+      "$WORK/readme-indexes-yaml.txt" "$M38R/ledger.txt" "M38 probe"
 
-  pass "M38 self-test: each of the four readers this return round adds fails on every clause it states planted on its own — an id holding a space, a hash or an angle bracket; the one index moved to a marker naming an index the back-end does not build, or to the second marker of the one it does; a capture carrying the wrong number of placement sites or of indexes; a folded union section headed with one declaration's title, named after one declared index, or headed below an h1; and a README missing a claim, showing a declaration block whose title or indentation is not the one pinned, naming a fixture that does not exist, or showing a command this run never executed, executed dirty, or could not have executed at all — while each passes on the same artifact unplanted"
+  # The link reader's own new clause (T21). It is not shown with probe_defect,
+  # which reads only the exit status: a traceback and a finding both exit
+  # non-zero, and the traceback is exactly what this clause was added to stop.
+  # So the finding itself is read.
+  M38LINK="$M38R/link-missing.txt"
+  check_html_index_links "$M38R/misuse.html" "M38 probe" 'qi-index-nosuch' \
+    > "$M38LINK" 2>&1 && fail "M38 self-test: the link reader passed over a section id the page does not carry"
+  grep -q '^FAIL: ' "$M38LINK" \
+    || fail "M38 self-test: the link reader reported no finding for a section id the page does not carry"
+  grep -q 'Traceback' "$M38LINK" \
+    && fail "M38 self-test: the link reader raised rather than reporting a finding for a section id the page does not carry"
+  grep -q 'qi-index-nosuch' "$M38LINK" \
+    || fail "M38 self-test: the link reader's finding does not name the id it could not find"
+  printf 'ok   self-test: the check fails on <<a section id the page does not carry>>, reporting a finding that names it rather than raising\n'
+
+  pass "M38 self-test: every clause each of this milestone's readers states is planted on its own and shown red, while each reader passes on the same artifact unplanted — the page-wide id sweep on a space, a hash and an angle bracket, and its dotted-id sibling on the one character legal in an id and still refused; the folded-site reader on none of the one index, two of it, a site count the fixture does not write, an index at no site at all, and an index at the wrong site; the second-marker reader on none of the one index, labels that are not the fixture's two in order, and the index at the second marker; the folded-heading reader on two sections, an id naming one declared index, a heading below an h1, and a heading carrying one declaration's own title; the README reader on a missing claim, a declaration block whose title or indentation is not the one pinned, a fixture that does not exist, a command never executed or executed dirty, and each of the four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the link reader on a section id the page does not carry"
 fi
 
 }

@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-26 (M41 merged and archived — the docs site now carries a Gallery giving ten example fixtures a page each with their source, rendered index and PDF, built by a pre-render step that never writes into `examples/`; M36 pruned from the table under terminal-row retention. The suite-hardening candidate row extended with M41 review's twelve filed findings. One lesson added on substring sweeps over rendered markup, and M01's Pandoc-backslash line pruned to hold the 50-line cap — the escaping probe over all 94 printable ASCII characters now fails on that mistake.)_
+_Last hygiene check: 2026-08-26 (M42 merged and archived — the documentation site is published at https://jmgirard.github.io/quarto-index/ by the repo's first GitHub Actions workflow, whose build leg runs on every branch and whose deploy leg is gated on the default branch; the first deploy ran green and the live URL, its inner pages and a gallery PDF answer 200. M37 pruned from the table under terminal-row retention. The suite-hardening candidate row extended with M42 review's four filed findings, and the CI-matrix row now names the workflow file. One lesson added, on GitHub Actions fields that do not mean what their names suggest; M40's heading-regex line moved into check-design.md under the ownership exit, and that module gained three plant shapes M42 review found. Byte budgets hand-checked: ROADMAP 13,419, LESSONS 15,056, check-design 16,397 over 36 lines.)_
 
 ## Milestones
 
@@ -9,10 +9,9 @@ _Last hygiene check: 2026-08-26 (M41 merged and archived — the docs site now c
 |---|---|---|---|---|---|
 | M40 | The documentation moves into a Quarto website | done | — | normal | milestones/archive/M40-docs-website.md |
 | M41 | The site shows each curated example's source, index and PDF | done | M40 | normal | milestones/archive/M41-example-gallery.md |
-| M42 | GitHub Actions renders the site and publishes it to Pages | review | M41 | normal | milestones/M42-pages-publish.md |
+| M42 | GitHub Actions renders the site and publishes it to Pages | done | M41 | normal | milestones/archive/M42-pages-publish.md |
 | M39 | The sort-key rival and dangling-target reports name the index they judge | done | — | normal | milestones/archive/M39-report-index-scope.md |
 | M38 | Marks name which index they belong to, and the HTML back-end prints each | done | — | normal | milestones/archive/M38-named-indexes-html.md |
-| M37 | The non-Latin-1 guards report the cause they hit | done | M36 | normal | milestones/archive/M37-non-latin1-guard-causes.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

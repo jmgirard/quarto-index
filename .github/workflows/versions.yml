@@ -99,6 +99,20 @@ jobs:
           version: ${{ matrix.leg.version }}
           tinytex: true
 
+      # `imakeidx`, which the LaTeX back-end loads. It is installed HERE, with
+      # the runner's own TinyTeX, rather than left to Quarto's on-demand
+      # installer: Quarto 1.4.549 answers `compilation failed- no matching
+      # packages` when it goes looking for `imakeidx.sty` against today's TeX
+      # Live repository, which turned the floor leg red on two runs out of
+      # three while this workflow was being proved. Run on every leg and not
+      # only the floor one, so the legs differ in their Quarto version and in
+      # nothing else.
+      - name: Install the TeX packages the PDF fixtures load
+        run: |
+          set -euo pipefail
+          tlmgr install imakeidx
+          kpsewhich imakeidx.sty
+
       # `pdftotext`, which tests/pdfindex.py reads a printed index through.
       # TinyTeX does not carry it and the runner image is not relied on to.
       - name: Install poppler-utils

@@ -1,6 +1,6 @@
 # M46: The claim-container registry is retired, not widened
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -92,6 +92,7 @@ candidate row.
 - 2026-08-27: F14's first half — `git ls-files` is run without `check=True` and a non-zero exit is reported as a `FAIL:` line; a file in the domain the working tree cannot read is reported the same way rather than raising out of `open`.
 - 2026-08-27: F13 — the standing output-directory pin now prints a `pass` line naming what it held, so it appears in the run log and in the check count rather than passing silently.
 - 2026-08-27: full run at exit 0, 386 checks (385 before, the output-directory pin's new line); `--self-test` at exit 0, 698 checks (694 before: the two symlink cases, the C-quoted-path case, and that same pin line). Status set to review.
+- 2026-08-27: review round 3 returned the milestone to in-progress. AC4 fails: `tests/sitecheck.py links` resolves outside the captured site by a fourth containment mechanism — `index.html` is appended for a directory target after the containment test and never re-tested, so a link naming a directory whose `index.html` symlinks above the capture resolves outside it at exit 0. AC2 fails: only `OSError` is caught around the domain read, so a tracked page carrying a non-UTF-8 byte raises `UnicodeDecodeError` and aborts before any `FAIL:` line naming the offending file is printed. AC1, AC3, AC5, AC6 and AC7 verified on fresh evidence (suite 386 checks, self-test 698, both exit 0 on a clean sequential re-run; `cairn_validate` exit 0). Seven findings logged in the Review section; third defect return, and AC4's fourth failure by a containment mechanism of the same shape. Both thrash-rule triggers fire and compose; the disposition goes to the user.
 
 ## Decisions
 
@@ -344,3 +345,30 @@ and never called, no variable is assigned and never referenced, no surviving
 `pass` banner or comment describes a deleted check, and the only surviving
 `CLAIM_CONTAINERS` mention outside the milestone files is DESIGN.md's deliberate
 historical sentence.
+
+- **AC7** — verified, on a clean sequential re-run with no other suite invocation in flight. `tests/run-tests.sh` exits 0 and prints `All checks passed (386 checks).`; `tests/run-tests.sh --self-test` exits 0 at `All checks passed (698 checks).` Both run 2026-08-27 on this branch at 85024b0.
+
+#### Outcome
+
+**Returned to `in-progress`.** Two criteria fail on fresh evidence, each
+reproduced independently by this review and by the diff lens. AC4: the link
+check does not resolve only against files inside the captured site — a link
+naming a directory whose `index.html` is a symlink pointing above the capture
+resolves outside it at exit 0, the containment test running before the
+directory-index rewrite and never after. AC2: the check does not exit with a
+`FAIL:` line naming the offending file when the sentence is planted through the
+overlay handle and any tracked page in the domain carries a non-UTF-8 byte — the
+read raises a `UnicodeDecodeError`, which the surrounding `try` does not catch,
+before any report is printed. AC1, AC3, AC5, AC6 and AC7 hold. F19, F20, F21 and
+F23 ride with the repair; F22 is filed on the ROADMAP suite-readers row.
+
+This is the **third defect return** on M46, and the **fourth time AC4 has failed
+by a containment mechanism of the same shape**. Both thrash-rule triggers fire
+and compose: (a) the third return governs the disposition — no further retry
+under the current plan, descope-or-park recommended — while (b)'s diagnosis, that
+repairing the same predicate one mechanism at a time buys the next mechanism
+rather than a fix, carries into that decision. The plan gate recorded no
+alternative on the link check's approach, so escalation via `/milestone-brief` is
+what remains of (b) and is offered again, per instance. No `/milestone-plan`
+re-cut has been spent on this milestone, so a same-objective re-cut stays a
+present option — never the recommended one.

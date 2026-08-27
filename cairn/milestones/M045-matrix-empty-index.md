@@ -26,12 +26,16 @@ reads them.
 **In:** `tests/indexdump.py`'s `html_rows` (`:68-77`) fails when the rows it
 judges carry a section and no entry or letter-group row, where today it fails
 only on a wholly empty row list, so a one-row dump prints and two of them
-compare byte-identical. `tests/versioncheck.py`'s `check_compare` (`:158-162`)
-requires the baseline leg to carry at least one `*.pdf.txt` and every other leg
-to carry the same PDF fixture-name set, where today the set is printed with an
-explicit `or 'none'` branch and never judged. A hand-built fixture per new
-clause under `--self-test`, and the module prose that says the PDF extractions
-are only reported.
+compare byte-identical. `tests/htmlindex.py`'s `index_entries` (`:433-448`)
+reports the shape it found: an entry list carrying no entry is named as that,
+where today it is named as a list that is not a direct child of the index
+section, which is false of a page whose empty list is a direct child.
+`tests/versioncheck.py`'s `check_compare` (`:158-162`) requires the baseline
+leg to carry at least one `*.pdf.txt` and every other leg to carry the same PDF
+fixture-name set, where today the set is printed with an explicit `or 'none'`
+branch and never judged. A hand-built fixture per new clause under
+`--self-test`, and the module prose that says the PDF extractions are only
+reported.
 
 **Out:** the other ten findings on the version-matrix candidate row → they stay
 on that row. · Comparing PDF extraction *content* across legs → refused by
@@ -69,10 +73,12 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
 
 ## Tasks
 
-- [ ] T1 In `tests/indexdump.py`, make `html_rows` (`:68-77`) fail when the
+- [x] T1 In `tests/indexdump.py`, make `html_rows` (`:68-77`) fail when the
       rows carry a section row and no entry or letter-group row, naming the
       path and the section. Keep the existing wholly-empty clause, whose
-      message says something different.
+      message says something different. In `tests/htmlindex.py`, narrow
+      `index_entries`'s misplaced-list message to a list that really is not a
+      direct child, and report an entry list carrying no entry as that.
 - [ ] T2 In `tests/versioncheck.py`, make `check_compare` (`:158-162`) fail
       when the baseline leg carries no `*.pdf.txt`, and when a non-baseline
       leg's `.pdf.txt` name set differs from the baseline's — after the three
@@ -94,6 +100,8 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
 - 2026-08-26: plan gate chose hardening the two readers over simplifying or deleting the comparison, at the maintainer's direction after the checker-regress option was posed first, because the matrix is the only evidence behind the `>=1.4.0` floor `_extensions/index/_extension.yml` and README both declare; falsified by that floor claim being dropped or fenced somewhere else.
 - 2026-08-26: plan gate chose comparing PDF extraction NAME sets across legs over comparing their content, because M30 and M33 put engine and font differences in a PDF's text layer; falsified by an extraction shown engine-neutral across xelatex and lualatex.
 - 2026-08-26: /milestone-implement: status in-progress, branch `m045-matrix-empty-index` cut from main at 8d7ae92.
+- 2026-08-26: amendment (substantive, mini gate): Scope In grows by `tests/htmlindex.py`'s `index_entries`, whose empty-entry-list failure today names a placement that is false of the page; AC1 asks the failure to report no entry row and the message is written there. Criteria unchanged.
+- 2026-08-26: T1 — `html_rows` fails on a section row with nothing under it, naming each such section; `index_entries` names an empty direct-child entry list as that, and its misplaced-list message narrows to a list that really is not a direct child. Suite green (403 checks).
 
 ## Decisions
 

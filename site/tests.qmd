@@ -24,8 +24,10 @@ on the version the documentation site is built with; and, weekly and on demand,
 on Quarto's current release. The HTML index each leg emits is compared byte for
 byte against the index the pinned leg emits.
 
-The PDFs are not compared across legs. Each leg's PDF render is held to exiting
-0 with a non-empty printed index instead: two Quarto versions typeset through
-different TeX engines, and an engine difference lands in a PDF's text layer,
-where a comparison would be red about the engine rather than about this
-extension.
+Of the PDFs, the fixture names each leg extracted are compared across legs and
+the content deliberately is not: two Quarto versions typeset through different
+TeX engines, and an engine difference lands in a PDF's text layer, where a
+comparison of content would be red about the engine rather than about this
+extension. So a run in which no leg uploaded a PDF extraction is red, as is a
+leg whose set of PDF fixture names differs from the pinned leg's; and each
+leg's PDF render is held to exiting 0 with a non-empty printed index.

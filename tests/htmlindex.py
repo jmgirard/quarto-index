@@ -435,15 +435,29 @@ def index_entries(section):
         # A generated section always has entries — it is built only where
         # marks exist — so no entry record means the shape changed, and
         # silently returning nothing would let every set-shaped check pass by
-        # comparing two empty sets. Raise either way, naming which shape was
-        # found: before letter groups an empty index still emitted an empty
-        # list, so the misplaced-list case was the only one reachable; a
-        # grouped section can now carry no list at all, and that must not be
-        # the quieter failure. Headings alone do not clear this.
-        for node in walk(section):
-            if node.tag in LIST_TAGS:
-                raise ValueError('the index list is not a direct child of the '
-                                 'index section')
+        # comparing two empty sets. Raise either way, naming which of the
+        # three shapes was found: a list sitting where this function reads it
+        # and holding nothing, a list somewhere else in the section, and no
+        # list at all. Headings alone do not clear this. The empty direct
+        # child is named as itself and not as a misplaced list, which is what
+        # it was reported as before: a message that says a list is in the
+        # wrong place, about a list in the right place, sends a reader of the
+        # version matrix's own dump looking for a nesting change that is not
+        # there (M45).
+        direct = [n for n in section.children
+                  if isinstance(n, Node) and n.tag in LIST_TAGS]
+        # A list sitting somewhere this function does not read it is the
+        # louder finding of the two and is reported first: a page carrying
+        # BOTH an empty list where one belongs and the real one a level down
+        # would otherwise be reported as an empty index, which says nothing
+        # about the nesting that is the actual change.
+        if [n for n in walk(section)
+                if n.tag in LIST_TAGS and not any(n is d for d in direct)]:
+            raise ValueError('the index list is not a direct child of the '
+                             'index section')
+        if direct:
+            raise ValueError('the index section carries an entry list with no '
+                             'entry row in it')
         raise ValueError('the index section carries no entry list at all')
     return records
 

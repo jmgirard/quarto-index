@@ -29,7 +29,9 @@ entry point inherits by importing them.
 
 An artifact carrying no index is a loud failure and never an empty print: a
 comparison of two empty dumps would agree, and agreeing about nothing is the
-one answer this command must not be able to give.
+one answer this command must not be able to give. So is an artifact carrying
+an index section with nothing in it — a dump of section headers alone agrees
+with any other dump of section headers alone.
 
 Usage:  python3 tests/indexdump.py <mode> <artifact> [...]
 
@@ -66,8 +68,23 @@ def html_rows(rows, path):
         fail(f'{path}: carries no generated index section '
              f'(none with the id {SECTION_ID!r} or a name under it), so there '
              f'is nothing to compare')
-    sections = sum(1 for r in rows
-                   if r.startswith(htmlindex.SECTION_TOKEN + '\t'))
+    starts = [i for i, r in enumerate(rows)
+              if r.startswith(htmlindex.SECTION_TOKEN + '\t')]
+    sections = len(starts)
+    # A section header row and nothing under it is the empty-index shape in
+    # row form: two legs that both printed it would compare byte-identical
+    # while neither said anything about an index. The read above raises before
+    # this on every page it can parse, so the clause is reached by handing
+    # this function a row list of its own — which is why it is split out, the
+    # same reason `pdf_rows` below is (M45).
+    bare = [rows[start].split('\t')[1]
+            for start, end in zip(starts, starts[1:] + [len(rows)])
+            if end - start == 1]
+    if bare:
+        fail(f'{path}: the generated index section(s) '
+             f'{", ".join(repr(name) for name in bare)} carry no entry or '
+             f'letter-group row, so each contributes its header alone to this '
+             f'dump and compares equal against any other run\'s header for it')
     print(f'indexdump: {path}: {sections} index section(s), '
           f'{len(rows) - sections} entry/heading row(s)', file=sys.stderr)
     return rows

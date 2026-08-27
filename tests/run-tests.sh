@@ -15764,6 +15764,196 @@ M43ROWS
   pass "M43 self-test: each clause of tests/indexdump.py is planted on its own and shown red, while the same reader passes unplanted on this run's own captures — an index section the page does not carry, an index the reader cannot read at all, an artifact that does not exist, a heading the PDF does not print, a heading with no entry under it, and a column carrying no top-level entry"
 fi
 
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M45 T3 — the empty-index shapes, on HAND-WRITTEN pages rather than on a
+  # render. The filter builds an index section only where marks exist, so a
+  # section carrying nothing is unreachable by mutating one of this run's
+  # captures — and it is exactly the shape two legs of the version matrix
+  # would compare byte-identical while neither said anything about an index.
+  # The pages are written here, byte by byte, and the well-formed one is run
+  # FIRST: a plant whose control never passed says nothing about the clause it
+  # aims at.
+  #
+  # The pages are hand-written and no manifest is derived from them (the ORACLE
+  # RULE above): the expected dump below is written out here from the page's
+  # own markup, which is the only place either could come from.
+  # -------------------------------------------------------------------------
+  M45W="$WORK/m45pages"
+  rm -rf "$M45W"
+  mkdir -p "$M45W"
+
+  # <name> — one page written from stdin, asserted non-empty, so a heredoc
+  # that wrote nothing cannot leave a case about no page at all.
+  m45_page() {
+    cat > "$M45W/$1"
+    [ -s "$M45W/$1" ] \
+      || fail "M45 self-test: the hand-written page $1 came out empty, so the case below would be about no page at all"
+    return 0
+  }
+
+  m45_dump() {
+    HTML_SECTION_ID="$HTML_SECTION_ID" \
+    HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+    HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+    python3 tests/indexdump.py html "$1"
+  }
+
+  m45_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M45 self-test: the planted case ($label) passed, so this check's green says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M45 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    # The criteria each ask for a `FAIL:` LINE, so the prefix is asserted on
+    # the line carrying the message: a reader that printed the same sentence
+    # as a bare note would otherwise pass every plant here.
+    printf '%s\n' "$out" | grep -F -- "$want" | grep -q '^FAIL: ' \
+      || { printf '%s\n' "$out" >&2; fail "M45 self-test: the planted case ($label) named its finding on a line that does not begin FAIL:, which the criteria each ask for"; }
+    printf '%s' "$out" | grep -q 'Traceback' \
+      && { printf '%s\n' "$out" >&2; fail "M45 self-test: the planted case ($label) raised rather than reporting a finding, which exits non-zero for a reason nothing states"; }
+    printf 'ok   self-test: the dump fails on <<%s>>\n' "$label"
+  }
+
+  # The control: an index section carrying one entry row, on a page whose only
+  # authored id is the section the index follows.
+  m45_page one-entry.html <<HTMLPAGE
+<html><body>
+<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="$HTML_SECTION_ID" class="level1 unnumbered">
+<h1 class="unnumbered">Index</h1>
+<ul>
+<li><span id="${HTML_ENTRY_PREFIX}1" class="qi-term">Alpha</span>, <span class="qi-locators"><a href="#${HTML_ANCHOR_PREFIX}1">1</a></span></li>
+</ul>
+</section>
+</body></html>
+HTMLPAGE
+
+  # The same page with the entry taken out of the list, so the list is where
+  # the reader looks for it and holds nothing.
+  m45_page empty-list.html <<HTMLPAGE
+<html><body>
+<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="$HTML_SECTION_ID" class="level1 unnumbered">
+<h1 class="unnumbered">Index</h1>
+<ul>
+</ul>
+</section>
+</body></html>
+HTMLPAGE
+
+  # The same page with no list at all, the shape a section grouped into letter
+  # groups can reach.
+  m45_page no-list.html <<HTMLPAGE
+<html><body>
+<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="$HTML_SECTION_ID" class="level1 unnumbered">
+<h1 class="unnumbered">Index</h1>
+</section>
+</body></html>
+HTMLPAGE
+
+  # And the same page with its list nested one level down, which is the shape
+  # the placement message is about. Kept beside the two above because that
+  # message used to be what an empty direct-child list was reported as: this
+  # page is what makes the narrowing visible as a narrowing rather than as the
+  # clause going quiet.
+  m45_page misplaced-list.html <<HTMLPAGE
+<html><body>
+<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="$HTML_SECTION_ID" class="level1 unnumbered">
+<h1 class="unnumbered">Index</h1>
+<div class="wrapper">
+<ul>
+<li><span id="${HTML_ENTRY_PREFIX}1" class="qi-term">Alpha</span>, <span class="qi-locators"><a href="#${HTML_ANCHOR_PREFIX}1">1</a></span></li>
+</ul>
+</div>
+</section>
+</body></html>
+HTMLPAGE
+
+  # Both shapes on one page: an empty list where one belongs and the real one
+  # a level down. The placement finding is the louder of the two and must be
+  # the one reported — reporting the empty list here would say nothing about
+  # the nesting, which is the change that actually happened.
+  m45_page both-shapes.html <<HTMLPAGE
+<html><body>
+<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="$HTML_SECTION_ID" class="level1 unnumbered">
+<h1 class="unnumbered">Index</h1>
+<ul>
+</ul>
+<div class="wrapper">
+<ul>
+<li><span id="${HTML_ENTRY_PREFIX}1" class="qi-term">Alpha</span>, <span class="qi-locators"><a href="#${HTML_ANCHOR_PREFIX}1">1</a></span></li>
+</ul>
+</div>
+</section>
+</body></html>
+HTMLPAGE
+
+  M45OUT="$M45W/one-entry.out"
+  m45_dump "$M45W/one-entry.html" > "$M45OUT" 2>"$M45W/one-entry.err" \
+    || { cat "$M45W/one-entry.err" >&2; fail "M45-AC1: the dump failed on the hand-written page carrying one entry row, so no planted case below is evidence of anything"; }
+  printf 'section\t%s\th1\tIndex\tintro\n0\tAlpha\t#%s1\n' \
+    "$HTML_SECTION_ID" "$HTML_ANCHOR_PREFIX" > "$M45W/one-entry.want"
+  cmp -s "$M45OUT" "$M45W/one-entry.want" \
+    || { diff "$M45W/one-entry.want" "$M45OUT" >&2; fail "M45-AC1: the dump of the hand-written one-entry page is not the section row and the one entry row that page carries"; }
+  printf 'ok   M45-AC1: the dump of a hand-written page whose index section carries one entry row exits 0 and prints that section row and that entry row, and nothing else\n'
+
+  m45_planted 'a hand-written page whose index section carries an entry list with nothing in it, which is the empty index two legs would compare equal' \
+    'carries an entry list with no entry row in it' \
+    m45_dump "$M45W/empty-list.html"
+
+  m45_planted 'a hand-written page whose index section carries no entry list at all' \
+    'carries no entry list at all' \
+    m45_dump "$M45W/no-list.html"
+
+  m45_planted 'a hand-written page whose index list is nested inside the section rather than sitting in it, the shape the placement message is about' \
+    'the index list is not a direct child of the index section' \
+    m45_dump "$M45W/misplaced-list.html"
+
+  m45_planted 'a hand-written page carrying BOTH an empty list where one belongs and the real one a level down, where reporting the empty list would say nothing about the nesting' \
+    'the index list is not a direct child of the index section' \
+    m45_dump "$M45W/both-shapes.html"
+
+  # The clause in `html_rows` itself sits past the read: every page above is
+  # refused by the reader before any row is built, so the row-list shape is
+  # planted against the function directly — the same reason `pdf_rows` is
+  # split out and planted that way above.
+  m45_rows() {
+    python3 - "$1" <<'M45ROWS'
+import sys
+sys.path.insert(0, 'tests')
+import indexdump
+case = sys.argv[1]
+section = 'section\tqi-index\th1\tIndex\tintro'
+entry = '0\tAlpha\t#qi-mark-1'
+if case == 'bare':
+    rows = [section]
+else:
+    # A first section that is fine and a second that is not: a clause that
+    # looked at the row list as a whole would call this dump non-empty.
+    rows = [section, entry, 'section\tqi-index-names\th1\tNames\tqi-index']
+for line in indexdump.html_rows(rows, 'planted.html'):
+    print(line)
+M45ROWS
+  }
+
+  m45_planted 'a row list that is one index section header and nothing under it, which would compare equal against any other dump of section headers alone' \
+    "section(s) 'qi-index' carry no entry or letter-group row" \
+    m45_rows bare
+
+  m45_planted 'a row list whose SECOND index section header has nothing under it, where the dump as a whole is not empty' \
+    "section(s) 'qi-index-names' carry no entry or letter-group row" \
+    m45_rows second
+
+  pass "M45-AC1: the dump prints the section row and the entry row of a hand-written page carrying one entry, and each empty-index shape is planted on its own and shown red naming itself — an entry list holding nothing, no entry list at all, a list nested a level down, both of those on one page where the nesting is what is reported, one section header with nothing under it, and a second section header with nothing under it beside a first that is fine"
+fi
+
 # ---------------------------------------------------------------------------
 # M43 T3 — tests/versioncheck.py, the comparison job's own reader. The workflow
 # runs it against directories `actions/download-artifact` unpacked; here it is
@@ -15797,9 +15987,11 @@ for fixture in demo named-indexes book; do
 done
 grep -qF -- '3 comparison(s) over 3 fixture(s)' "$M43CMP" \
   || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not state that it compared the 3 HTML extractions it was given"; }
-grep -qF -- '1 PDF extraction(s) were uploaded and are not compared' "$M43CMP" \
-  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not say that the PDF extraction beside them was left uncompared, so a reader cannot tell it was excluded from one that was never there"; }
-pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the 3 fixtures it compared, while saying that the PDF extraction beside them is uploaded and deliberately not compared"
+grep -qF -- '1 PDF extraction(s) on the `pinned` leg (demo)' "$M43CMP" \
+  || { cat "$M43CMP" >&2; fail "M45: the comparison report does not state the size and names of the PDF domain it swept, so a reader cannot tell an excluded extraction from one that was never there"; }
+grep -qE '^ok +M43-AC2: each of floor carries the same `\*\.pdf\.txt` fixture name set as the `pinned` leg' "$M43CMP" \
+  || { cat "$M43CMP" >&2; fail "M45: the comparison report does not say the PDF fixture name set was judged across legs, only that it was printed"; }
+pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the 3 fixtures it compared, while holding the PDF extraction beside them to being present on every leg under the same fixture name and its content deliberately uncompared"
 
 # The matrix the workflow renders on: two exact versions on a push, and the
 # release channel added on a scheduled or manual run.
@@ -15917,6 +16109,96 @@ if [ "${1:-}" = "--self-test" ]; then
   printf 'ok   self-test: the version mode fails on <<a workflow naming a release channel where an exact pin is required>>, saying so on stderr and leaving stdout empty\n'
 
   pass "M43 T3 self-test: each clause of the comparison reader, the matrix builder and the version mode is planted on its own and shown red, while the same readers pass unplanted on this run's own extractions — a leg emitting a row the baseline does not, one leg alone, a missing baseline, a baseline with no HTML extraction, an empty extraction, two legs that rendered different fixtures, a path nothing was unpacked to, a matrix whose two exact legs are the same version, and a workflow whose pin is a channel"
+fi
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M45 T4 — the PDF side of the comparison, which until now was printed and
+  # never judged. Both legs trees are built from the control tree above, whose
+  # comparison ran green a few lines up, and each breaks exactly one thing
+  # about the PDF extractions. The HTML side of each tree is asserted intact
+  # first: these clauses sit after the whole HTML comparison, so a tree whose
+  # HTML had also been broken would go red for a reason that is not this one.
+  # -------------------------------------------------------------------------
+  M45V="$WORK/m45vprobe"
+  rm -rf "$M45V"
+  mkdir -p "$M45V"
+
+  # <name> — a copy of the control legs tree, with the HTML side asserted to
+  # be the equal, non-empty, no-empty-file shape the two criteria require of
+  # the tree they are handed.
+  m45_legs_copy() {
+    rm -rf "$M45V/$1"
+    cp -R "$M43L" "$M45V/$1"
+    local leg name count=0
+    for leg in pinned floor; do
+      local set_of=''
+      for name in "$M45V/$1/index-$leg"/*.html.txt; do
+        [ -s "$name" ] \
+          || fail "M45 self-test: $(basename "$name") is empty on the \`$leg\` leg of $1, so the empty-extraction clause would fire before the PDF clause this case is about"
+        set_of="$set_of $(basename "$name")"
+        count=$((count + 1))
+      done
+      [ -n "$set_of" ] \
+        || fail "M45 self-test: the \`$leg\` leg of $1 carries no HTML extraction, so the empty-set clause would fire before the PDF clause this case is about"
+      printf '%s\n' "$set_of" >> "$M45V/$1.htmlsets"
+    done
+    [ "$(sort -u "$M45V/$1.htmlsets" | wc -l)" -eq 1 ] \
+      || { cat "$M45V/$1.htmlsets" >&2; fail "M45 self-test: the two legs of $1 do not carry the same HTML extraction set, so the skew clause would fire before the PDF clause this case is about"; }
+    [ "$count" -eq 6 ] \
+      || fail "M45 self-test: $1 carries $count HTML extraction(s) across its two legs, expected 6 (3 fixtures on each), so the tree is not the control tree this case copies"
+    return 0
+  }
+
+  m45_legs_copy nopdf
+  rm -f "$M45V/nopdf/index-pinned"/*.pdf.txt "$M45V/nopdf/index-floor"/*.pdf.txt
+  m45_planted 'a matrix in which no leg uploaded a PDF extraction, whose name set was printed as `none` and exited 0' \
+    'the `pinned` leg carries no `*.pdf.txt` extraction' \
+    python3 tests/versioncheck.py compare "$M45V/nopdf" pinned
+
+  m45_legs_copy nopdfleg
+  rm -f "$M45V/nopdfleg/index-floor"/*.pdf.txt
+  m45_planted 'a non-baseline leg that rendered no PDF at all, which is not two legs rendering different fixtures and must not be reported as one' \
+    'the `floor` leg carries no `*.pdf.txt` extraction while the `pinned` leg carries' \
+    python3 tests/versioncheck.py compare "$M45V/nopdfleg" pinned
+
+  m45_legs_copy pdfskew
+  mv "$M45V/pdfskew/index-floor/demo.pdf.txt" \
+     "$M45V/pdfskew/index-floor/other.pdf.txt"
+  m45_planted 'two legs that did not render the same fixtures to PDF, whose differing name sets were printed side by side and never compared' \
+    'the two legs did not render the same fixtures to PDF' \
+    python3 tests/versioncheck.py compare "$M45V/pdfskew" pinned
+
+  # AC3 asks the report to name both legs and the fixture names they differ
+  # in: a red run that does not say which PDF went missing is a red run with
+  # no next step.
+  python3 tests/versioncheck.py compare "$M45V/pdfskew" pinned \
+    > "$M45V/pdfskew.txt" 2>&1 || true
+  grep -qF "the \`floor\` leg extracted the \`*.pdf.txt\` fixture(s) ['other'] and the \`pinned\` leg extracted ['demo']" "$M45V/pdfskew.txt" \
+    || { cat "$M45V/pdfskew.txt" >&2; fail "M45-AC3: the PDF skew is reported without naming both legs and what each of them extracted"; }
+  grep -qF "the 2 name(s) they differ in are ['demo', 'other']" "$M45V/pdfskew.txt" \
+    || { cat "$M45V/pdfskew.txt" >&2; fail "M45-AC3: the PDF skew is reported without naming the fixture names the two legs differ in"; }
+  printf 'ok   self-test: the PDF skew the comparison reports names both legs, what each extracted, and the fixture names they differ in\n'
+
+  # And the HTML side is still judged with the PDF side judged beside it: a
+  # tree broken in both must report both, not whichever clause returns first.
+  m45_legs_copy bothbroken
+  printf '0\tPlanted Term\t#qi-mark-99\n' >> "$M45V/bothbroken/index-floor/demo.html.txt"
+  rm -f "$M45V/bothbroken/index-pinned"/*.pdf.txt "$M45V/bothbroken/index-floor"/*.pdf.txt
+  python3 tests/versioncheck.py compare "$M45V/bothbroken" pinned \
+    > "$M45V/bothbroken.txt" 2>&1 \
+    && { cat "$M45V/bothbroken.txt" >&2; fail "M45 self-test: a tree whose HTML differs AND whose legs uploaded no PDF passed"; }
+  grep -qE '^FAIL: M43-AC2: demo — the `floor` leg emits a different index' "$M45V/bothbroken.txt" \
+    || { cat "$M45V/bothbroken.txt" >&2; fail "M45 self-test: the PDF finding hid the HTML difference beside it"; }
+  grep -qF 'the `pinned` leg carries no `*.pdf.txt` extraction' "$M45V/bothbroken.txt" \
+    || { cat "$M45V/bothbroken.txt" >&2; fail "M45 self-test: the HTML difference hid the PDF finding beside it"; }
+  grep -qF -- 'comparison(s) over 3 fixture(s)' "$M45V/bothbroken.txt" \
+    || { cat "$M45V/bothbroken.txt" >&2; fail "M45 self-test: a red run does not state the size of the HTML domain it swept, which is when a reader most needs to know whether the sweep was empty"; }
+  grep -qF -- '0 PDF extraction(s) on the `pinned` leg (none)' "$M45V/bothbroken.txt" \
+    || { cat "$M45V/bothbroken.txt" >&2; fail "M45 self-test: a red run does not state the size of the PDF domain it swept"; }
+  printf 'ok   self-test: a legs tree broken on both sides reports the HTML difference and the PDF finding, neither hiding the other, and still states the size of both domains it swept\n'
+
+  pass "M45-AC2/AC3: the PDF extractions' fixture names are judged and not only printed — a matrix whose legs uploaded none is red naming the baseline leg and the suffix it found no file under, a leg that rendered no PDF at all is red named as that rather than as a fixture disagreement, two legs that rendered different fixtures to PDF are red naming both legs and the names they differ in, and a tree broken on both sides reports both findings and still states the size of each domain it swept"
 fi
 
 # ---------------------------------------------------------------------------

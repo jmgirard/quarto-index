@@ -15093,6 +15093,24 @@ if [ "${1:-}" = "--self-test" ]; then
     'no such artifact' \
     python3 tests/indexdump.py html "$M43W/absent.html"
 
+  # The two minted prefixes the row form is not derived from (M48). A renamed
+  # anchor or entry prefix leaves every row printing exactly as before, so the
+  # only thing that can catch it is the page's own ids — which is what the
+  # reader now holds them against. One substitution per plant, each aimed at
+  # one prefix, so neither case can be passing on the other's mutation. The
+  # third member of the tuple, the section id, is the `nosection.html` case
+  # above: a page carrying no section under it dumps no row at all.
+  m43_plant staleanchor.html "$M43_DEMO_HTML" 's|id="qi-mark-|id="renamed-mark-|g'
+  m43_planted 'a render whose locator anchors carry a prefix other than the one this command was told the extension mints' \
+    "no id on the page begins with '$HTML_ANCHOR_PREFIX'" \
+    python3 tests/indexdump.py html "$M43W/staleanchor.html"
+
+  m43_plant staleentry.html "$M43_DEMO_HTML" 's|id="qi-entry-|id="renamed-entry-|g'
+  m43_planted 'a render whose index entries carry a prefix other than the one this command was told the extension mints' \
+    "no id on the page begins with '$HTML_ENTRY_PREFIX'" \
+    python3 tests/indexdump.py html "$M43W/staleentry.html"
+
+
   m43_planted 'a PDF printing no line that is the index heading, where the entry list starts' \
     'no index heading' \
     python3 tests/indexdump.py pdf "$M43_DEMO_PDF" 'Not The Index Heading'
@@ -15127,7 +15145,7 @@ M43ROWS
     'cannot read its indent levels' \
     m43_pdfrows nolevel0
 
-  pass "M43 self-test: each clause of tests/indexdump.py is planted on its own and shown red, while the same reader passes unplanted on this run's own captures — an index section the page does not carry, an index the reader cannot read at all, an artifact that does not exist, a heading the PDF does not print, a heading with no entry under it, and a column carrying no top-level entry"
+  pass "M43 self-test: each clause of tests/indexdump.py is planted on its own and shown red, while the same reader passes unplanted on this run's own captures — an index section the page does not carry, an index the reader cannot read at all, an artifact that does not exist, a heading the PDF does not print, a heading with no entry under it, a column carrying no top-level entry, and each of the two minted prefixes the row form is not derived from renamed in the render, which with the section-id case above is every member of the reader's minted tuple planted on its own"
 fi
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -15186,9 +15204,14 @@ if [ "${1:-}" = "--self-test" ]; then
 
   # The control: an index section carrying one entry row, on a page whose only
   # authored id is the section the index follows.
+  #
+  # Every page below carries the locator's own anchor in the body, as a render
+  # does: the entry links at `#<anchor prefix>1`, and a page linking at an
+  # anchor it does not carry is one the reader now refuses — it is a page whose
+  # ids are not the ones this command was told the extension mints (M48).
   m45_page one-entry.html <<HTMLPAGE
 <html><body>
-<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="intro"><h1>Intro</h1><p>Body <span id="${HTML_ANCHOR_PREFIX}1"></span>.</p></section>
 <section id="$HTML_SECTION_ID" class="level1 unnumbered">
 <h1 class="unnumbered">Index</h1>
 <ul>
@@ -15202,7 +15225,7 @@ HTMLPAGE
   # the reader looks for it and holds nothing.
   m45_page empty-list.html <<HTMLPAGE
 <html><body>
-<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="intro"><h1>Intro</h1><p>Body <span id="${HTML_ANCHOR_PREFIX}1"></span>.</p></section>
 <section id="$HTML_SECTION_ID" class="level1 unnumbered">
 <h1 class="unnumbered">Index</h1>
 <ul>
@@ -15215,7 +15238,7 @@ HTMLPAGE
   # groups can reach.
   m45_page no-list.html <<HTMLPAGE
 <html><body>
-<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="intro"><h1>Intro</h1><p>Body <span id="${HTML_ANCHOR_PREFIX}1"></span>.</p></section>
 <section id="$HTML_SECTION_ID" class="level1 unnumbered">
 <h1 class="unnumbered">Index</h1>
 </section>
@@ -15229,7 +15252,7 @@ HTMLPAGE
   # clause going quiet.
   m45_page misplaced-list.html <<HTMLPAGE
 <html><body>
-<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="intro"><h1>Intro</h1><p>Body <span id="${HTML_ANCHOR_PREFIX}1"></span>.</p></section>
 <section id="$HTML_SECTION_ID" class="level1 unnumbered">
 <h1 class="unnumbered">Index</h1>
 <div class="wrapper">
@@ -15247,7 +15270,7 @@ HTMLPAGE
   # the nesting, which is the change that actually happened.
   m45_page both-shapes.html <<HTMLPAGE
 <html><body>
-<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="intro"><h1>Intro</h1><p>Body <span id="${HTML_ANCHOR_PREFIX}1"></span>.</p></section>
 <section id="$HTML_SECTION_ID" class="level1 unnumbered">
 <h1 class="unnumbered">Index</h1>
 <ul>
@@ -15264,7 +15287,7 @@ HTMLPAGE
   M45OUT="$M45W/one-entry.out"
   m45_dump "$M45W/one-entry.html" > "$M45OUT" 2>"$M45W/one-entry.err" \
     || { cat "$M45W/one-entry.err" >&2; fail "M45-AC1: the dump failed on the hand-written page carrying one entry row, so no planted case below is evidence of anything"; }
-  printf 'section\t%s\th1\tIndex\tintro\n0\tAlpha\t#%s1\n' \
+  printf 'section\t%s\th1\tIndex\n0\tAlpha\t#%s1\n' \
     "$HTML_SECTION_ID" "$HTML_ANCHOR_PREFIX" > "$M45W/one-entry.want"
   cmp -s "$M45OUT" "$M45W/one-entry.want" \
     || { diff "$M45W/one-entry.want" "$M45OUT" >&2; fail "M45-AC1: the dump of the hand-written one-entry page is not the section row and the one entry row that page carries"; }
@@ -15296,14 +15319,14 @@ import sys
 sys.path.insert(0, 'tests')
 import indexdump
 case = sys.argv[1]
-section = 'section\tqi-index\th1\tIndex\tintro'
+section = 'section\tqi-index\th1\tIndex'
 entry = '0\tAlpha\t#qi-mark-1'
 if case == 'bare':
     rows = [section]
 else:
     # A first section that is fine and a second that is not: a clause that
     # looked at the row list as a whole would call this dump non-empty.
-    rows = [section, entry, 'section\tqi-index-names\th1\tNames\tqi-index']
+    rows = [section, entry, 'section\tqi-index-names\th1\tNames']
 for line in indexdump.html_rows(rows, 'planted.html'):
     print(line)
 M45ROWS

@@ -57,8 +57,11 @@ import pdfindex  # noqa: E402
 # The HTML back-end's minted identifiers. run-tests.sh pins these to the
 # filter's own constants and passes them in through the environment; the
 # defaults here are for a caller outside the suite (a workflow step), where a
-# filter that had renamed them would leave this command finding no section at
-# all — which is a loud failure below, not a quiet empty dump.
+# filter that had renamed them would leave this command reading the page
+# through names it no longer uses. Each of the three is held against the
+# rendered page — `SECTION_ID` by the no-section clause in `html_rows`, the
+# other two by `minted_carried` below — so a rename is a loud failure naming
+# the identifier that was not found, and never a dump two legs agree about.
 SECTION_ID = os.environ.get('HTML_SECTION_ID', 'qi-index')
 ANCHOR_PREFIX = os.environ.get('HTML_ANCHOR_PREFIX', 'qi-mark-')
 ENTRY_PREFIX = os.environ.get('HTML_ENTRY_PREFIX', 'qi-entry-')
@@ -99,17 +102,47 @@ def html_rows(rows, path):
     return rows
 
 
+def minted_carried(root, path):
+    """The identifiers this command was told the extension mints, held against
+    the ids the render actually carries.
+
+    A stale identifier is otherwise a quiet dump. `SECTION_ID` is loud already
+    — a page carrying no section under it dumps no row at all, which
+    `html_rows` above reports naming the id it looked for — but the other two
+    are not: with a renamed anchor or entry prefix the rows print exactly as
+    before, because nothing in a row is derived from either name. A caller
+    outside the suite runs on the defaults at the top of this file, so it is
+    exactly that caller a rename leaves reading a page through the old names.
+
+    An id and not an href: an href may point at an anchor an author wrote
+    (`one.html#gamma-anchor` in the book fixture), so "every locator names one
+    of ours" is false on a page this command must dump. What a rename cannot
+    leave behind is the id itself.
+    """
+    ids = htmlindex.all_ids(root)
+    for variable, prefix in (('HTML_ANCHOR_PREFIX', ANCHOR_PREFIX),
+                             ('HTML_ENTRY_PREFIX', ENTRY_PREFIX)):
+        if not any(ident.startswith(prefix) for ident in ids):
+            fail(f'{path}: no id on the page begins with {prefix!r}, the '
+                 f'prefix {variable} names, so the dump is being read through '
+                 f'an identifier this render does not use')
+
+
 def dump_html(path):
     """Every generated index section on the page, in href row form."""
     minted = (SECTION_ID, ANCHOR_PREFIX, ENTRY_PREFIX)
+    root = htmlindex.parse(path)
     try:
-        rows = htmlindex.section_rows(
-            htmlindex.parse(path), SECTION_ID, minted, hrefs=True)
+        rows = htmlindex.section_rows(root, SECTION_ID, minted, hrefs=True)
     except ValueError as bad:
         # A section this reader cannot read is a finding, not a traceback: a
         # crash exits non-zero for a reason nothing states.
         fail(f'{path}: {bad}')
-    return html_rows(rows, path)
+    rows = html_rows(rows, path)
+    # After the row judgements, so a page carrying no section at all is
+    # reported as that rather than as two missing prefixes.
+    minted_carried(root, path)
+    return rows
 
 
 def pdf_rows(entries, path, heading):

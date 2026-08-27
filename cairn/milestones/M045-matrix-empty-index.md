@@ -107,6 +107,8 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
 - 2026-08-26: T4 — two hand-built legs trees copied from the control tree, each asserted to carry the equal, non-empty, no-empty-file HTML side the two criteria require before the PDF clause is reached; a third tree broken on both sides shows the HTML difference and the PDF finding reported together.
 - 2026-08-26: T5 — `tests/run-tests.sh --self-test` green at 705 checks (693 before). T3-T5 landed in one commit; the three blocks are separate.
 - 2026-08-26: all tasks done, `tests/run-tests.sh --self-test` clean (705 checks); status review.
+- 2026-08-26: review correction to the T2 line above: `check_compare` reports a PDF finding alongside an HTML CONTENT difference; an HTML fixture-name skew still returns inside the leg loop, ahead of the PDF block, so a PDF finding beside that shape is not reached.
+- 2026-08-26: review fix-now round: F1 F2 F3 F4 F7 F8 F9 F10 F11 applied on the branch; F6 filed on the version-matrix hardening candidate row; F5 rejected. `tests/run-tests.sh --self-test` green at 707 checks.
 
 ## Decisions
 
@@ -197,3 +199,25 @@ criterion failing, so none met the return floor.
 - F11 (fix now) `tests/indexdump.py:78-79` — the `else` arm of the ternary
   cannot be taken, since `starts` is built from rows that start with the
   section token and a tab.
+
+### Fix-now round, 2026-08-26
+
+Applied on the branch after the gate, then re-verified: F1 — `site/tests.qmd`
+now says the PDF fixture names are compared and the content is not, and names
+both red cases. F2 — `index_entries` reports a list that is not a direct child
+before it reports an empty one, so a page carrying both names the nesting;
+planted. F3 — the bare-section message no longer claims the whole dump is
+section headers alone. F4 — both domain-size lines print before the verdict,
+asserted on a red run. F7 — corrected by the work-log line above. F8 —
+`m45_planted` asserts the `FAIL:` prefix on the line carrying the message. F9 —
+the control's label names what it guards. F10 — a leg that rendered no PDF at
+all gets its own message and its own plant. F11 — the dead ternary arm is gone.
+F5 rejected: the clause is a deliberate guard, reached by direct call, as T1
+scoped it. F6 filed on the version-matrix hardening candidate row.
+
+Re-verification: `tests/run-tests.sh --self-test` exit 0, "All checks passed
+(707 checks)" (705 before the round). AC1, AC2 and AC3 re-probed by hand on the
+same fixtures — the empty-list, no-list, misplaced-list and both-shapes pages
+each report their own shape, the one-entry page still prints exactly two rows,
+and the two legs-tree cases still fail with the wording each criterion asks for.
+

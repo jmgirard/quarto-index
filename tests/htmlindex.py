@@ -444,14 +444,20 @@ def index_entries(section):
         # wrong place, about a list in the right place, sends a reader of the
         # version matrix's own dump looking for a nesting change that is not
         # there (M45).
-        if [n for n in section.children
-                if isinstance(n, Node) and n.tag in LIST_TAGS]:
+        direct = [n for n in section.children
+                  if isinstance(n, Node) and n.tag in LIST_TAGS]
+        # A list sitting somewhere this function does not read it is the
+        # louder finding of the two and is reported first: a page carrying
+        # BOTH an empty list where one belongs and the real one a level down
+        # would otherwise be reported as an empty index, which says nothing
+        # about the nesting that is the actual change.
+        if [n for n in walk(section)
+                if n.tag in LIST_TAGS and not any(n is d for d in direct)]:
+            raise ValueError('the index list is not a direct child of the '
+                             'index section')
+        if direct:
             raise ValueError('the index section carries an entry list with no '
                              'entry row in it')
-        for node in walk(section):
-            if node.tag in LIST_TAGS:
-                raise ValueError('the index list is not a direct child of the '
-                                 'index section')
         raise ValueError('the index section carries no entry list at all')
     return records
 

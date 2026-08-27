@@ -172,6 +172,16 @@ def check_compare(directory, baseline):
             got_pdf = dumps_in(legs[leg], PDF_SUFFIX)
             if set(got_pdf) == set(want_pdf):
                 continue
+            if not got_pdf:
+                # Its own message: a leg that rendered no PDF at all is not
+                # two legs rendering different fixtures, and reporting it as
+                # a name set of `[]` names nothing a reader can act on.
+                pdf_findings.append(
+                    'the `%s` leg carries no `*%s` extraction while the `%s` '
+                    'leg carries %s, so that leg rendered no PDF at all and '
+                    'its half of the comparison would be over nothing'
+                    % (leg, PDF_SUFFIX, baseline, sorted(want_pdf)))
+                continue
             pdf_findings.append(
                 'the `%s` leg extracted the `*%s` fixture(s) %s and the `%s` '
                 'leg extracted %s; the two legs did not render the same '
@@ -181,6 +191,18 @@ def check_compare(directory, baseline):
                    len(set(got_pdf) ^ set(want_pdf)),
                    sorted(set(got_pdf) ^ set(want_pdf))))
 
+    # The domains, before the verdict and whatever the verdict is: the header
+    # promises every clause reports the size of what it swept, and a red run
+    # is exactly when a reader needs to know whether the sweep was empty.
+    print('     M43: %d comparison(s) over %d fixture(s) — %s — against the '
+          '`%s` leg, for each of %s'
+          % (compared, len(want), ', '.join(sorted(want)), baseline,
+             ', '.join(sorted(others))))
+    print('     M43: %d PDF extraction(s) on the `%s` leg (%s), with the '
+          'fixture names compared across legs and the content deliberately '
+          'not: two Quarto versions typeset through different TeX engines'
+          % (len(want_pdf), baseline, ', '.join(sorted(want_pdf)) or 'none'))
+
     if differed or pdf_findings:
         for fixture, leg, where in differed:
             print('FAIL: M43-AC2: %s — the `%s` leg emits a different index '
@@ -188,16 +210,10 @@ def check_compare(directory, baseline):
         for finding in pdf_findings:
             fail(finding)
         return 1
-    print('ok   M43-AC2: the `%s` leg carries %d PDF extraction(s) — %s — and '
-          'each of %s carries the same fixture name set; their content is '
-          'deliberately not compared, because two Quarto versions typeset '
-          'through different TeX engines'
-          % (baseline, len(want_pdf), ', '.join(sorted(want_pdf)),
-             ', '.join(sorted(others))))
-    print('ok   M43-AC2: %d comparison(s) over %d fixture(s) — %s — against '
-          'the `%s` leg, for each of %s; every one byte-identical'
-          % (compared, len(want), ', '.join(sorted(want)), baseline,
-             ', '.join(sorted(others))))
+    print('ok   M43-AC2: every one of the %d comparison(s) above is '
+          'byte-identical to the `%s` leg' % (compared, baseline))
+    print('ok   M43-AC2: each of %s carries the same `*%s` fixture name set '
+          'as the `%s` leg' % (', '.join(sorted(others)), PDF_SUFFIX, baseline))
     return 0
 
 

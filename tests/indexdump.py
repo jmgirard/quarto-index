@@ -77,15 +77,14 @@ def html_rows(rows, path):
     # this on every page it can parse, so the clause is reached by handing
     # this function a row list of its own — which is why it is split out, the
     # same reason `pdf_rows` below is (M45).
-    bare = [rows[start].split('\t')[1] if '\t' in rows[start] else rows[start]
+    bare = [rows[start].split('\t')[1]
             for start, end in zip(starts, starts[1:] + [len(rows)])
             if end - start == 1]
     if bare:
         fail(f'{path}: the generated index section(s) '
              f'{", ".join(repr(name) for name in bare)} carry no entry or '
-             f'letter-group row, so this dump is section headers alone and '
-             f'would compare equal against any other dump of section headers '
-             f'alone')
+             f'letter-group row, so each contributes its header alone to this '
+             f'dump and compares equal against any other run\'s header for it')
     print(f'indexdump: {path}: {sections} index section(s), '
           f'{len(rows) - sections} entry/heading row(s)', file=sys.stderr)
     return rows

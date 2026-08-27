@@ -83,10 +83,10 @@ Any version-marker or changelog change → none is owed; 0.1.0 shipped.
       it (`:329`) and the docstring line at `:26`.
 - [x] T4 Replace the M40 warning-removal plant (`tests/run-tests.sh:13462-13473`)
       with AC2's three restorations, each shown red naming the sentence.
-- [ ] T5 Amend IP3 in place — drop `(stated in the README)`, add the marker —
+- [x] T5 Amend IP3 in place — drop `(stated in the README)`, add the marker —
       correct the Architecture sentence at `cairn/DESIGN.md:481`, and append
       the D-entry recording the amendment. (RB tripwire: ip-touching)
-- [ ] T6 Run `tests/run-tests.sh --self-test`; fix what it names.
+- [x] T6 Run `tests/run-tests.sh --self-test`; fix what it names.
 
 ## Work log
 
@@ -96,6 +96,8 @@ Any version-marker or changelog change → none is owed; 0.1.0 shipped.
 - 2026-08-26: plan gate chose deleting the block with no replacement sentence over a post-release stability sentence, at the maintainer's direction; falsified by a reader asking whether the syntax is stable with the changelog and DESIGN in front of them.
 - 2026-08-26: implement gate chose stripping a leading blockquote marker from each line before flattening whitespace, over whitespace alone as AC1 words it: the retired block is a blockquote, so without it every `>` opening a continuation line lands mid-sentence and only the block's first sentence — the one occupying a whole line — could ever be found. AC2's re-wrapped plant is that case, and is shown red only under the stripping.
 - 2026-08-26: T1-T4 — blockquote deleted from README.md and site/index.qmd; `README_PRERELEASE_STALE` defined with the block's four sentences and registered `absence`/`ALL`, registry counts re-pinned to (18, 14, 4); `claim_text` now writes the swept file list beside the concatenation, and the new check reports the count from it; `tests/sitecheck.py`'s `WARNING` constant, its presence clause, its `ok` line and its docstring line retired; the M40 warning-removal plant replaced with AC2's three restorations, each shown red naming the container and the sentence. Committed as one checkpoint: the four are not independently green, since deleting the block reddens the retired clause until it is gone.
+- 2026-08-26: T5 — IP3 amended in place (the three words naming README dropped, marker `(amended M44, D-026)` added in the form IP2 carries for D-016) and the DESIGN Architecture sentence no longer lists the pre-release warning among what README carries. The task's third clause was already satisfied: D-026 was appended at plan time. Escalation was offered at the gate for the ip-touching tripwire and declined.
+- 2026-08-26: T6 — `tests/run-tests.sh --self-test` exits 0, 693 checks, on the tree carrying T1-T5.
 
 ## Decisions
 

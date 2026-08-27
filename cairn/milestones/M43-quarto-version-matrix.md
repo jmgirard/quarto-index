@@ -83,7 +83,7 @@ milestone; the gate's reasoning is in the work log.
       its index in a canonical comparable form — HTML through
       `tests/htmlindex.py`, PDF through `tests/pdfindex.py` — failing loudly
       rather than printing nothing when the artifact carries no index.
-- [ ] T2. `.github/workflows/versions.yml`: the leg matrix and its triggers,
+- [x] T2. `.github/workflows/versions.yml`: the leg matrix and its triggers,
       TinyTeX for the PDF fixtures, the renders, T1's extraction per artifact,
       and each leg's extractions uploaded as an artifact. Its header comment
       records the floor version, the query that returned it as the oldest
@@ -111,6 +111,7 @@ milestone; the gate's reasoning is in the work log.
 - 2026-08-26: implement gate — the extraction lives in its own `tests/indexdump.py` rather than as modes on the two reader modules; the HTML dump uses the locator-href row form rather than the count form; and the pinned leg's version is read out of `pages.yml` at run time rather than copied into `versions.yml`.
 - 2026-08-26: minor amendment — T3's reader is built before T2's workflow, because the workflow's plan job and its comparison job both run it; the task list's order is otherwise unchanged.
 - 2026-08-26: T3 — `tests/versioncheck.py`, `compare` (every leg's HTML extraction against the baseline leg's, byte for byte, naming each fixture and each leg pair, reporting the PDF extractions it deliberately leaves uncompared) and `legs` (the matrix JSON the workflow renders on). `tests/pagescheck.py` gained a `version` mode over `read_pin`, split out of `check_pin`, printing the pin to stdout alone. Suite: the comparison run over this run's own extractions, the matrix asserted per event, and nine planted clauses. 682 checks green.
+- 2026-08-26: T2 — `.github/workflows/versions.yml`. Three jobs: `plan` (reads the pin out of `pages.yml` and builds the matrix), `render` (per leg: Quarto + TinyTeX, poppler-utils, the four fixtures with each extraction taken immediately after its own render, uploaded as `index-<leg>`), `compare`. `fail-fast: false`, so a red leg does not cancel the others. Header records the floor 1.4.549, the `gh api` query that returned it as the oldest non-prerelease release satisfying `>=1.4.0`, and the date it ran. 682 checks green.
 - 2026-08-26: criteria audit ran in full mode (user-facing tier). It returned findings on all five drafted criteria: four bound a property of the checking machinery rather than of the deliverable (a recorded run URL, a log's fixture list, a message's wording, a header comment's content), which moved to T2, T4 and T5; AC1 let the workflow name its own fixture set, now named in the criterion; AC4's "oldest release satisfying the range" quantified over every Quarto release ever published, narrowed to the pinned 1.4.549 with the query kept as a dated observation in T2; AC5 promised README and the site agree with a fixture list nothing enumerates, narrowed to the floor version; and the equality comparison's relation to D-004 is now stated in Scope. Two findings went to the gate as questions — PDF comparability across engines, and one plant standing in for a family free in three axes.
 
 ## Decisions

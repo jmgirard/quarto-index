@@ -27,9 +27,9 @@ which Quarto rendered it?
       `<legs-dir>` holds one directory per leg, named `index-<leg>` — the
       shape `actions/download-artifact` unpacks the uploads into. Every leg's
       HTML extraction is compared, byte for byte, against the leg named
-      `<baseline>`. HTML is the whole of what the matrix renders and the whole
-      of what this compares; the workflow's render step records why it renders
-      nothing else, and what restoring a second format would wait on.
+      `<baseline>`. `*.html.txt` is the whole of what this compares; a leg's
+      other uploads, if it ever carries any, are not read here. The workflow's
+      render step records what the matrix renders and why.
 
 This is the same-tree comparison D-012 licenses and not the merge-base oracle
 D-004 refused: one tree, two sides differing only in an injected condition —

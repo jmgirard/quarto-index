@@ -14990,9 +14990,11 @@ fi
 # Four unplanted controls. Three are the artifact shapes the matrix renders: a
 # single document's index, a document declaring two indexes, and a book whose
 # locators point across pages. The fourth is a printed PDF index, which the
-# matrix stopped rendering at M47 and which is here as the unplanted control
-# the `pdf` mode's own planted clauses below are judged against. Each is read
-# from the CAPTURE (M24) and not from the working tree.
+# matrix stopped rendering at M47; it stays because `indexdump.py`'s `pdf` mode
+# is still the suite's reader of a printed index, and this run's own capture is
+# the unplanted control the mode's planted clauses under `--self-test` are
+# judged against. Each is read from the CAPTURE (M24) and not from the working
+# tree.
 # ---------------------------------------------------------------------------
 M43_DEMO_HTML="$CAPTURE_ROOT/demo-html/demo.html"
 M43_NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
@@ -15026,8 +15028,10 @@ m43_dump() {
 m43_dump html "$M43_DEMO_HTML" 1 "examples/demo.qmd (HTML)" > "$WORK/m43-demo-html.txt"
 m43_dump html "$M43_NAMED_HTML" 2 "examples/named-indexes.qmd (HTML)" > "$WORK/m43-named-html.txt"
 m43_dump html "$M43_BOOK_HTML" 1 "examples/book (HTML)" > "$WORK/m43-book-html.txt"
-m43_dump pdf "$M43_DEMO_PDF" - "examples/demo.qmd (PDF)" > "$WORK/m43-demo-pdf.txt"
-pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index — and reduces a printed PDF index, which the matrix no longer renders, to the entry lines the pdf mode's own planted clauses below are judged against"
+# Its rows are asserted by `m43_dump` itself and read by nothing else, so
+# the serialization goes nowhere.
+m43_dump pdf "$M43_DEMO_PDF" - "examples/demo.qmd (PDF)" > /dev/null
+pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index — and reduces a printed PDF index, which the matrix no longer renders, to a non-empty row form, which is both this control's own assertion and what the pdf mode's planted clauses under --self-test are judged against"
 
 # The href form is what the criterion asks for and the count form is what the
 # manifests above read; the two are the same function under one flag, so this
@@ -15407,7 +15411,14 @@ if [ "${1:-}" = "--self-test" ]; then
     || { cat "$M43V/differ.txt" >&2; fail "M43 self-test: the comparison reports a difference without naming the row that differs"; }
   grep -qE '^FAIL: M43-AC2: demo — the `floor` leg emits a different index' "$M43V/differ.txt" \
     || { cat "$M43V/differ.txt" >&2; fail "M43 self-test: the comparison reports a difference without naming the fixture it is in and the leg pair it is between"; }
-  printf 'ok   self-test: the difference the comparison reports names both the fixture and the row that differs\n'
+  # The domain size is read off THIS report and not only off the green control
+  # above: the reader's own comment promises the domain prints whatever the
+  # verdict is, and a red run is exactly when a reader needs to know whether
+  # the sweep was empty. Held here because M45's block, which was the only
+  # other reader of the line on a failing run, went with the PDF clauses (M47).
+  grep -qF -- 'comparison(s) over 3 fixture(s)' "$M43V/differ.txt" \
+    || { cat "$M43V/differ.txt" >&2; fail "M43 self-test: the red comparison does not state the size of the domain it swept, which is when a reader most needs to know whether the sweep was empty"; }
+  printf 'ok   self-test: the difference the comparison reports names both the fixture and the row that differs, and the red report still states the size of the domain it swept\n'
 
   m43_legs_copy oneleg
   rm -rf "$M43V/oneleg/index-floor"

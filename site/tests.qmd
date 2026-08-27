@@ -25,6 +25,10 @@ on Quarto's current release. The HTML index each leg emits is compared byte for
 byte against the index the pinned leg emits.
 
 The HTML index is the whole of what the matrix renders and compares. It renders
-no PDF: two Quarto versions typeset through different TeX engines, and an engine
-difference lands in a PDF's text layer, where a comparison would be red about
-the engine rather than about this extension.
+no PDF, because rendering one across versions means installing a TeX
+distribution and its packages on every push, and the comparison that install
+would serve cannot be had: two Quarto versions typeset through different TeX
+engines, and an engine difference lands in a PDF's text layer, where a
+comparison would be red about the engine rather than about this extension. The
+acceptance suite above renders and reads a printed PDF index on every run, on
+one Quarto version.

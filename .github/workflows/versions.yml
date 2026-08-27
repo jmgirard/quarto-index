@@ -107,15 +107,18 @@ jobs:
       # TeX engines, and the M30 and M33 lessons put engine and font
       # differences in a PDF's text layer, so a comparison of PDF content
       # would be red about the engine rather than about this extension.
-      # Comparing the fixture NAMES alone was tried (M45) and bought no
-      # coverage the render itself did not already have, while the renders it
-      # needed put a hardcoded third-party TeX repository and a self-updating
-      # TeX package manager on the every-push path (M47). Restoring a PDF leg
-      # waits on an extraction shown engine-neutral across lualatex and
-      # xelatex.
+      # Comparing the fixture NAMES alone was tried instead (M45), and bought
+      # no coverage beyond what the PDF render it needed was already giving.
+      # That render is what M47 removed: it put a hardcoded third-party TeX
+      # repository and a self-updating TeX package manager on the every-push
+      # path, and no leg has typeset a fixture since. Restoring a PDF leg waits
+      # on an extraction shown engine-neutral across lualatex and xelatex.
       #
-      # Each render is followed immediately by its extraction, before the next
-      # render can overwrite the artifact.
+      # Each render below is followed immediately by its extraction. With one
+      # format the four renders write four distinct paths and none can overtake
+      # another; the ordering is kept because a second format would render into
+      # a path an earlier one already wrote — the book renders into `_book`
+      # whatever the format — and the interleaving is what made that safe.
       #
       # `indexdump.py` is what makes each of these a check and not just a
       # render: it fails loudly on an artifact carrying no index, so a leg that

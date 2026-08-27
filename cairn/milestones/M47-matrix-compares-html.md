@@ -65,6 +65,8 @@ version-portability candidate row. Moving the floor version → not this milesto
 
 - 2026-08-27: review — AC1, AC2 and AC3 verified with fresh evidence; consistency gate clean; three fresh-context reviewers, nine findings, all from the diff-bug lens, none meeting the return floor.
 
+- 2026-08-27: gate directed fixing seven findings on the branch; F1-F6 and F8 fixed, F9 rejected, F7 routed to the version-portability candidate row at hygiene. Criteria re-verified after the fixes: AC1 and AC2 counts still 0, both suite legs green at 386 and 692.
+
 ## Decisions
 
 ## Review
@@ -155,5 +157,41 @@ implementation, not against the report.
 
 Return floor: none of the nine demonstrates an acceptance criterion failing,
 and none is a defect in what the extension does for its users — F1 is test
-coverage, the rest are prose accuracy. Status stays `review`.
+coverage, the rest are prose accuracy. Status stayed `review`.
+
+**Disposition, decided by the maintainer at the gate: fix F1-F6 and F8 on the
+branch, reject F9, route F7 to the standing candidate row at hygiene.**
+
+- F1 fixed. The `differ` self-test case now greps its own red report for the
+  `comparison(s) over 3 fixture(s)` line. Shown able to fail before being
+  trusted: against a scratch copy of `versioncheck.py` whose domain `print` was
+  moved into the success branch, the red run states no domain size and the grep
+  fires; against the real reader on the same planted legs tree the line is
+  present and it passes. It rides the case's existing `ok` line, so the check
+  count is unchanged.
+- F2 and F3 fixed. The workflow comment now says the render M45's name
+  comparison leaned on is what M47 removed and that no leg has typeset a
+  fixture since, and states why the render/extract interleaving is kept with
+  one format — a second format would render into a path an earlier one already
+  wrote, the book into `_book` whatever the format.
+- F4 fixed. `site/tests.qmd` now gives the install cost as the reason the
+  matrix renders no PDF, keeps the engine argument as the reason the comparison
+  that install would serve cannot be had, and says the acceptance suite still
+  reads a printed PDF index on one Quarto version.
+- F5 fixed. `tests/indexdump.py`'s header says the matrix calls `html` only and
+  that `pdf` is the acceptance suite's caller.
+- F6 fixed. The PDF control's serialization goes to `/dev/null`, and both the
+  block comment and the pass message state what the control asserts on a plain
+  run rather than crediting clauses that run only under `--self-test`.
+- F8 fixed. `versioncheck.py`'s header claims only what the module does — that
+  `*.html.txt` is the whole of what it compares — and leaves what the matrix
+  renders to the workflow.
+- F7 routed, not fixed here: the standing version-portability candidate row is
+  extended at post-merge hygiene to record that no Quarto version but a local
+  developer's now typesets the fixtures.
+- F9 rejected: a parameter whose domain narrowed to one value is residue, not a
+  defect, and the reviewer said as much.
+
+Re-verified after the fixes: AC1's five `grep -cF` counts are still 0, AC2 is
+still 0, and both suite legs are green again at 386 and 692 checks, exit 0.
 

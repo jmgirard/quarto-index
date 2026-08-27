@@ -10,7 +10,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M47 | The version matrix compares what it renders | planned | — | normal | milestones/M47-matrix-compares-html.md |
+| M47 | The version matrix compares what it renders | in-progress | — | normal | milestones/M47-matrix-compares-html.md |
 | M48 | The version matrix's readers say what they read | planned | M47 | normal | milestones/M48-matrix-readers.md |
 | M46 | The claim-container registry is retired, not widened | done | — | normal | milestones/archive/M46-retire-claim-registry.md |
 | M44 | Retire the pre-release warning | done | — | normal | milestones/archive/M44-retire-prerelease-warning.md |

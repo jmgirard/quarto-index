@@ -50,6 +50,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pagescheck  # noqa: E402
+
 # The prefix each leg's uploaded artifact carries, so a directory
 # `download-artifact` created for something else is not read as a leg.
 LEG_PREFIX = 'index-'
@@ -62,7 +65,11 @@ HTML_SUFFIX = '.html.txt'
 # when the query that returned it ran.
 FLOOR = re.compile(
     r'^\s+FLOOR:\s*(?P<quote>[\'"]?)(?P<value>[^\'"\s]+)(?P=quote)\s*$', re.M)
-EXACT = re.compile(r'^\d+\.\d+\.\d+$')
+# What counts as an exact dotted version is `pagescheck`'s to say — it is the
+# reader that judges the Pages workflow's pin, and the floor read below asks
+# the same question of the same kind of value. Imported rather than copied so
+# the two cannot drift apart (M48).
+EXACT = pagescheck.EXACT
 
 # The events on which the release-channel leg is rendered too.
 CHANNEL_EVENTS = ('schedule', 'workflow_dispatch')

@@ -15008,10 +15008,15 @@ M43_DEMO_PDF="$CAPTURE_ROOT/demo-pdf/demo.pdf"
 m43_dump() {
   local mode="$1" artifact="$2" want_sections="$3" label="$4"
   local out sections entries
+  # The reader's stderr is NOT discarded. It is where the dump names what it
+  # swept and, on a failure, which clause it found — and a control that threw
+  # that away reported "the dump failed" with the reason gone, which is a red
+  # run nobody can act on (M48). Only stdout is captured; stderr goes to the
+  # suite's own output.
   out=$(HTML_SECTION_ID="$HTML_SECTION_ID" \
         HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
         HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
-        python3 tests/indexdump.py "$mode" "$artifact" 2>/dev/null) \
+        python3 tests/indexdump.py "$mode" "$artifact") \
     || fail "M43-T1: the dump of $label failed on an artifact this run rendered and captured"
   [ -n "$out" ] \
     || fail "M43-T1: the dump of $label exited 0 and printed nothing, which is the one answer a cross-leg comparison must not be able to agree on"
@@ -15115,6 +15120,20 @@ if [ "${1:-}" = "--self-test" ]; then
   m43_planted 'an artifact that does not exist, over which the dump would otherwise sweep nothing' \
     'no such artifact' \
     python3 tests/indexdump.py html "$M43W/absent.html"
+
+  # M48 T5 — and the reader's finding survives the control that wraps it. Run
+  # here as the suite runs it, through `m43_dump`, with stdout and stderr
+  # together: the plants above run the command directly, so none of them says
+  # anything about what the suite's own output carries when a dump fails under
+  # it.
+  M48OUT=$(m43_dump html "$M43W/nosection.html" 1 "a planted page" 2>&1) \
+    && fail "M48-AC5: the suite's own dump control passed on a page carrying no generated index section"
+  printf '%s\n' "$M48OUT" | grep -F 'carries no generated index section' \
+    | grep -q '^FAIL: ' \
+    || { printf '%s\n' "$M48OUT" >&2; fail "M48-AC5: the dump failed under the suite's control, but the reader's own FAIL: line naming what it found is not on the output"; }
+  printf '%s\n' "$M48OUT" | grep -q '^FAIL: M43-T1: the dump of a planted page failed' \
+    || { printf '%s\n' "$M48OUT" >&2; fail "M48-AC5: the suite's control did not name the dump it was running when the reader failed"; }
+  printf 'ok   M48-AC5: a failing dump under the suite exits non-zero carrying both the reader'"'"'s own FAIL: line naming what it found and the control'"'"'s line naming which dump it was running\n'
 
   # The two minted prefixes the row form is not derived from (M48). A renamed
   # anchor or entry prefix leaves every row printing exactly as before, so the

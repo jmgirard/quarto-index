@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M43: A version matrix renders the fixtures on the oldest supported Quarto
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -116,21 +116,24 @@ milestone; the gate's reasoning is in the work log.
 - 2026-08-26: `m043-htmldiff`'s first attempt was red for an unrelated reason — TinyTeX's `tlmgr` answered "compilation failed- no matching packages" for `imakeidx.sty` on the floor leg, which is the package search and not the plant. Re-running the failed job alone was green on the pinned leg and red at the comparison, which is the plant. The AC1 run had already installed the same package on the same leg, so the failure is intermittent; noted for the review as a candidate rather than worked around here.
 - 2026-08-26: T5 — README and `site/tests.qmd` each name Quarto 1.4.549, written against the AC1 run's own output; `tests/versioncheck.py floor` holds both documents against the floor the workflow declares, so the number cannot move there while the documents keep the old one. Six planted clauses, including each document in turn dropping the version while the other keeps it. 690 checks green.
 - 2026-08-26: T2 fix — the floor leg went red on two runs out of three at `finding package for imakeidx.sty` → `compilation failed- no matching packages`, which is Quarto 1.4.549's own on-demand TeX installer failing against today's TeX Live repository and not the fixtures. The workflow now installs `imakeidx` with the runner's own TinyTeX before any render, on every leg rather than only the floor one, so the legs still differ in their Quarto version and in nothing else. Supersedes the earlier work-log line calling that failure intermittent.
+- 2026-08-26: T2 fix, three rounds, each round's failure read off the run it came from. `tlmgr` is not on the runner's PATH (`quarto install tinytex` puts the tree under `~/.TinyTeX` and Quarto locates it itself), so its bin directory is now found rather than named. The shipped `tlmgr` is older than the repository it talks to and refuses to install until it updates itself. And `mirror.ctan.org`'s redirect handed the two legs different mirrors, the floor leg's stale enough that `tlmgr` refused to run — the repository is now named, TinyTeX's own default, which the legs that worked were already on. Green on the branch head at 33028185399.
 - 2026-08-26: criteria audit ran in full mode (user-facing tier). It returned findings on all five drafted criteria: four bound a property of the checking machinery rather than of the deliverable (a recorded run URL, a log's fixture list, a message's wording, a header comment's content), which moved to T2, T4 and T5; AC1 let the workflow name its own fixture set, now named in the criterion; AC4's "oldest release satisfying the range" quantified over every Quarto release ever published, narrowed to the pinned 1.4.549 with the query kept as a dated observation in T2; AC5 promised README and the site agree with a fixture list nothing enumerates, narrowed to the floor version; and the equality comparison's relation to D-004 is now stated in Scope. Two findings went to the gate as questions — PDF comparability across engines, and one plant standing in for a family free in three axes.
 
 ## Decisions
 
 ## Review
 
-**AC1 run (green), on the milestone branch:**
-https://github.com/jmgirard/quarto-index/actions/runs/33025680092 — `plan`,
+**AC1 run (green), on the milestone branch's head commit b226d6d:**
+https://github.com/jmgirard/quarto-index/actions/runs/33028185399 — `plan`,
 `render (floor, 1.4.549)`, `render (pinned, 1.10.18)` and `compare` all
 success. Four HTML extractions per leg, and both PDF fixtures on both legs:
 `examples/demo.pdf: 39 printed entry line(s) under 'Index'` and
-`examples/book/_book/Index-Book-Fixture.pdf: 20 printed entry line(s)` on each
-(AC3). The comparison: `4 comparison(s) over 4 fixture(s) — book, demo,
-html-index, named-indexes — against the pinned leg, for each of floor; every
-one byte-identical` (AC2).
+`examples/book/_book/Index-Book-Fixture.pdf: 20 printed entry line(s) under
+'Index'` on each (AC3). The comparison: `4 comparison(s) over 4 fixture(s) —
+book, demo, html-index, named-indexes — against the pinned leg, for each of
+floor; every one byte-identical` (AC2). The first green run, on the workflow
+before the TeX-install fixes, was
+https://github.com/jmgirard/quarto-index/actions/runs/33025680092.
 
 **AC4 probes.** Two branches, one plant per compared path, both deleted and
 their commits kept under `refs/probes/` — outside `refs/heads` and `refs/tags`,
@@ -146,3 +149,8 @@ object naming its plant and its run.
   leg's pandoc, so the floor leg typesets at exit 0 with no printed index. Red
   at the **floor render leg**, `no index heading 'Index' in examples/demo.pdf`:
   https://github.com/jmgirard/quarto-index/actions/runs/33025975119
+
+Both probes ran on the workflow as it stood before the three TeX-install fixes
+above. Those fixes are in the install step and change nothing about either
+compared path, so what each probe shows red is what the workflow checks now;
+re-running them would exercise the same two checks over the same two plants.

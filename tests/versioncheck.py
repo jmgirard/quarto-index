@@ -27,16 +27,9 @@ which Quarto rendered it?
       `<legs-dir>` holds one directory per leg, named `index-<leg>` — the
       shape `actions/download-artifact` unpacks the uploads into. Every leg's
       HTML extraction is compared, byte for byte, against the leg named
-      `<baseline>`. Of the PDF extractions, the fixture NAMES are compared
-      across legs and the CONTENT deliberately is not: two Quarto versions
-      render PDF through different TeX engines, and the M30 and M33 lessons
-      put engine and font differences in a PDF's text layer, so a comparison
-      of content would be red about the engine rather than about this
-      extension. The baseline leg must carry at least one PDF extraction, so a
-      matrix in which every PDF leg failed to upload reads as that rather than
-      as agreement about a format nothing rendered. Each leg's PDF render is
-      held to exiting 0 with a non-empty index by `indexdump.py` on the leg
-      itself.
+      `<baseline>`. HTML is the whole of what the matrix renders and the whole
+      of what this compares; the workflow's render step records why it renders
+      nothing else, and what restoring a second format would wait on.
 
 This is the same-tree comparison D-012 licenses and not the merge-base oracle
 D-004 refused: one tree, two sides differing only in an injected condition —
@@ -60,10 +53,8 @@ import sys
 # The prefix each leg's uploaded artifact carries, so a directory
 # `download-artifact` created for something else is not read as a leg.
 LEG_PREFIX = 'index-'
-# The two extraction suffixes `indexdump.py` output is written under. Only the
-# first is compared across legs; see the header.
+# The extraction suffix `indexdump.py` output is written under.
 HTML_SUFFIX = '.html.txt'
-PDF_SUFFIX = '.pdf.txt'
 
 
 # `FLOOR: <version>` in the workflow's env block, quoted or not. The floor is
@@ -97,7 +88,7 @@ def legs_under(directory):
 
 
 def dumps_in(path, suffix):
-    """`{fixture: file path}` for every extraction of one kind in one leg."""
+    """`{fixture: file path}` for every `<fixture><suffix>` file in one leg."""
     return {name[:-len(suffix)]: os.path.join(path, name)
             for name in sorted(os.listdir(path)) if name.endswith(suffix)}
 
@@ -156,41 +147,6 @@ def check_compare(directory, baseline):
             differed.append((fixture, leg,
                              first_difference(left, right, baseline, leg)))
 
-    # The PDF side: the fixture NAMES are judged and the content is not. A set
-    # that is only printed is a set nothing is held to — a run whose PDF legs
-    # all failed to upload would print `none` and exit 0, which is the empty
-    # agreement this job exists to refuse (M45).
-    want_pdf = dumps_in(legs[baseline], PDF_SUFFIX)
-    pdf_findings = []
-    if not want_pdf:
-        pdf_findings.append(
-            'the `%s` leg carries no `*%s` extraction, so no leg rendered a '
-            'PDF the others could be held to and the PDF half of this matrix '
-            'would be enforced nowhere' % (baseline, PDF_SUFFIX))
-    else:
-        for leg in sorted(others):
-            got_pdf = dumps_in(legs[leg], PDF_SUFFIX)
-            if set(got_pdf) == set(want_pdf):
-                continue
-            if not got_pdf:
-                # Its own message: a leg that rendered no PDF at all is not
-                # two legs rendering different fixtures, and reporting it as
-                # a name set of `[]` names nothing a reader can act on.
-                pdf_findings.append(
-                    'the `%s` leg carries no `*%s` extraction while the `%s` '
-                    'leg carries %s, so that leg rendered no PDF at all and '
-                    'its half of the comparison would be over nothing'
-                    % (leg, PDF_SUFFIX, baseline, sorted(want_pdf)))
-                continue
-            pdf_findings.append(
-                'the `%s` leg extracted the `*%s` fixture(s) %s and the `%s` '
-                'leg extracted %s; the two legs did not render the same '
-                'fixtures to PDF, and the %d name(s) they differ in are %s'
-                % (leg, PDF_SUFFIX, sorted(got_pdf), baseline,
-                   sorted(want_pdf),
-                   len(set(got_pdf) ^ set(want_pdf)),
-                   sorted(set(got_pdf) ^ set(want_pdf))))
-
     # The domains, before the verdict and whatever the verdict is: the header
     # promises every clause reports the size of what it swept, and a red run
     # is exactly when a reader needs to know whether the sweep was empty.
@@ -198,22 +154,14 @@ def check_compare(directory, baseline):
           '`%s` leg, for each of %s'
           % (compared, len(want), ', '.join(sorted(want)), baseline,
              ', '.join(sorted(others))))
-    print('     M43: %d PDF extraction(s) on the `%s` leg (%s), with the '
-          'fixture names compared across legs and the content deliberately '
-          'not: two Quarto versions typeset through different TeX engines'
-          % (len(want_pdf), baseline, ', '.join(sorted(want_pdf)) or 'none'))
 
-    if differed or pdf_findings:
+    if differed:
         for fixture, leg, where in differed:
             print('FAIL: M43-AC2: %s — the `%s` leg emits a different index '
                   'from the `%s` leg: %s' % (fixture, leg, baseline, where))
-        for finding in pdf_findings:
-            fail(finding)
         return 1
     print('ok   M43-AC2: every one of the %d comparison(s) above is '
           'byte-identical to the `%s` leg' % (compared, baseline))
-    print('ok   M43-AC2: each of %s carries the same `*%s` fixture name set '
-          'as the `%s` leg' % (', '.join(sorted(others)), PDF_SUFFIX, baseline))
     return 0
 
 

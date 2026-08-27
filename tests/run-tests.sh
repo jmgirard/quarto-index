@@ -14987,10 +14987,12 @@ fi
 # rests on: an artifact carrying an index dumps rows, and an artifact carrying
 # none is a loud failure rather than an empty print two legs would agree about.
 #
-# Four unplanted controls, one per artifact shape the matrix renders: a single
-# document's index, a document declaring two indexes, a book whose locators
-# point across pages, and a printed PDF index. Each is read from the CAPTURE
-# (M24) and not from the working tree.
+# Four unplanted controls. Three are the artifact shapes the matrix renders: a
+# single document's index, a document declaring two indexes, and a book whose
+# locators point across pages. The fourth is a printed PDF index, which the
+# matrix stopped rendering at M47 and which is here as the unplanted control
+# the `pdf` mode's own planted clauses below are judged against. Each is read
+# from the CAPTURE (M24) and not from the working tree.
 # ---------------------------------------------------------------------------
 M43_DEMO_HTML="$CAPTURE_ROOT/demo-html/demo.html"
 M43_NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
@@ -15025,7 +15027,7 @@ m43_dump html "$M43_DEMO_HTML" 1 "examples/demo.qmd (HTML)" > "$WORK/m43-demo-ht
 m43_dump html "$M43_NAMED_HTML" 2 "examples/named-indexes.qmd (HTML)" > "$WORK/m43-named-html.txt"
 m43_dump html "$M43_BOOK_HTML" 1 "examples/book (HTML)" > "$WORK/m43-book-html.txt"
 m43_dump pdf "$M43_DEMO_PDF" - "examples/demo.qmd (PDF)" > "$WORK/m43-demo-pdf.txt"
-pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index, and the printed entry lines of the PDF"
+pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index — and reduces a printed PDF index, which the matrix no longer renders, to the entry lines the pdf mode's own planted clauses below are judged against"
 
 # The href form is what the criterion asks for and the count form is what the
 # manifests above read; the two are the same function under one flag, so this
@@ -15328,7 +15330,7 @@ M43L="$WORK/m43legs"
 rm -rf "$M43L"
 mkdir -p "$M43L/index-pinned" "$M43L/index-floor"
 for pair in "demo.html:m43-demo-html" "named-indexes.html:m43-named-html" \
-            "book.html:m43-book-html" "demo.pdf:m43-demo-pdf"; do
+            "book.html:m43-book-html"; do
   cp "$WORK/${pair#*:}.txt" "$M43L/index-pinned/${pair%%:*}.txt"
   cp "$WORK/${pair#*:}.txt" "$M43L/index-floor/${pair%%:*}.txt"
 done
@@ -15339,19 +15341,14 @@ python3 tests/versioncheck.py compare "$M43L" pinned > "$M43CMP" 2>&1 \
 # AC2 asks the comparison to name each fixture it compared, so the report is
 # read rather than the exit status alone: a reader that compared nothing and a
 # reader that compared three fixtures both exit 0.
-# The fixture name is the extraction's own, with the `.html.txt` suffix off,
-# so `demo.html.txt` and `demo.pdf.txt` are two formats of the one fixture.
+# The fixture name is the extraction's own, with the `.html.txt` suffix off.
 for fixture in demo named-indexes book; do
   grep -qE "^ok +M43-AC2: $fixture — the .* leg emits the index" "$M43CMP" \
     || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not name $fixture as a fixture it compared"; }
 done
 grep -qF -- '3 comparison(s) over 3 fixture(s)' "$M43CMP" \
   || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not state that it compared the 3 HTML extractions it was given"; }
-grep -qF -- '1 PDF extraction(s) on the `pinned` leg (demo)' "$M43CMP" \
-  || { cat "$M43CMP" >&2; fail "M45: the comparison report does not state the size and names of the PDF domain it swept, so a reader cannot tell an excluded extraction from one that was never there"; }
-grep -qE '^ok +M43-AC2: each of floor carries the same `\*\.pdf\.txt` fixture name set as the `pinned` leg' "$M43CMP" \
-  || { cat "$M43CMP" >&2; fail "M45: the comparison report does not say the PDF fixture name set was judged across legs, only that it was printed"; }
-pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the 3 fixtures it compared, while holding the PDF extraction beside them to being present on every leg under the same fixture name and its content deliberately uncompared"
+pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the 3 fixtures it compared"
 
 # The matrix the workflow renders on: two exact versions on a push, and the
 # release channel added on a scheduled or manual run.
@@ -15469,96 +15466,6 @@ if [ "${1:-}" = "--self-test" ]; then
   printf 'ok   self-test: the version mode fails on <<a workflow naming a release channel where an exact pin is required>>, saying so on stderr and leaving stdout empty\n'
 
   pass "M43 T3 self-test: each clause of the comparison reader, the matrix builder and the version mode is planted on its own and shown red, while the same readers pass unplanted on this run's own extractions — a leg emitting a row the baseline does not, one leg alone, a missing baseline, a baseline with no HTML extraction, an empty extraction, two legs that rendered different fixtures, a path nothing was unpacked to, a matrix whose two exact legs are the same version, and a workflow whose pin is a channel"
-fi
-
-if [ "${1:-}" = "--self-test" ]; then
-  # -------------------------------------------------------------------------
-  # M45 T4 — the PDF side of the comparison, which until now was printed and
-  # never judged. Both legs trees are built from the control tree above, whose
-  # comparison ran green a few lines up, and each breaks exactly one thing
-  # about the PDF extractions. The HTML side of each tree is asserted intact
-  # first: these clauses sit after the whole HTML comparison, so a tree whose
-  # HTML had also been broken would go red for a reason that is not this one.
-  # -------------------------------------------------------------------------
-  M45V="$WORK/m45vprobe"
-  rm -rf "$M45V"
-  mkdir -p "$M45V"
-
-  # <name> — a copy of the control legs tree, with the HTML side asserted to
-  # be the equal, non-empty, no-empty-file shape the two criteria require of
-  # the tree they are handed.
-  m45_legs_copy() {
-    rm -rf "$M45V/$1"
-    cp -R "$M43L" "$M45V/$1"
-    local leg name count=0
-    for leg in pinned floor; do
-      local set_of=''
-      for name in "$M45V/$1/index-$leg"/*.html.txt; do
-        [ -s "$name" ] \
-          || fail "M45 self-test: $(basename "$name") is empty on the \`$leg\` leg of $1, so the empty-extraction clause would fire before the PDF clause this case is about"
-        set_of="$set_of $(basename "$name")"
-        count=$((count + 1))
-      done
-      [ -n "$set_of" ] \
-        || fail "M45 self-test: the \`$leg\` leg of $1 carries no HTML extraction, so the empty-set clause would fire before the PDF clause this case is about"
-      printf '%s\n' "$set_of" >> "$M45V/$1.htmlsets"
-    done
-    [ "$(sort -u "$M45V/$1.htmlsets" | wc -l)" -eq 1 ] \
-      || { cat "$M45V/$1.htmlsets" >&2; fail "M45 self-test: the two legs of $1 do not carry the same HTML extraction set, so the skew clause would fire before the PDF clause this case is about"; }
-    [ "$count" -eq 6 ] \
-      || fail "M45 self-test: $1 carries $count HTML extraction(s) across its two legs, expected 6 (3 fixtures on each), so the tree is not the control tree this case copies"
-    return 0
-  }
-
-  m45_legs_copy nopdf
-  rm -f "$M45V/nopdf/index-pinned"/*.pdf.txt "$M45V/nopdf/index-floor"/*.pdf.txt
-  m45_planted 'a matrix in which no leg uploaded a PDF extraction, whose name set was printed as `none` and exited 0' \
-    'the `pinned` leg carries no `*.pdf.txt` extraction' \
-    python3 tests/versioncheck.py compare "$M45V/nopdf" pinned
-
-  m45_legs_copy nopdfleg
-  rm -f "$M45V/nopdfleg/index-floor"/*.pdf.txt
-  m45_planted 'a non-baseline leg that rendered no PDF at all, which is not two legs rendering different fixtures and must not be reported as one' \
-    'the `floor` leg carries no `*.pdf.txt` extraction while the `pinned` leg carries' \
-    python3 tests/versioncheck.py compare "$M45V/nopdfleg" pinned
-
-  m45_legs_copy pdfskew
-  mv "$M45V/pdfskew/index-floor/demo.pdf.txt" \
-     "$M45V/pdfskew/index-floor/other.pdf.txt"
-  m45_planted 'two legs that did not render the same fixtures to PDF, whose differing name sets were printed side by side and never compared' \
-    'the two legs did not render the same fixtures to PDF' \
-    python3 tests/versioncheck.py compare "$M45V/pdfskew" pinned
-
-  # AC3 asks the report to name both legs and the fixture names they differ
-  # in: a red run that does not say which PDF went missing is a red run with
-  # no next step.
-  python3 tests/versioncheck.py compare "$M45V/pdfskew" pinned \
-    > "$M45V/pdfskew.txt" 2>&1 || true
-  grep -qF "the \`floor\` leg extracted the \`*.pdf.txt\` fixture(s) ['other'] and the \`pinned\` leg extracted ['demo']" "$M45V/pdfskew.txt" \
-    || { cat "$M45V/pdfskew.txt" >&2; fail "M45-AC3: the PDF skew is reported without naming both legs and what each of them extracted"; }
-  grep -qF "the 2 name(s) they differ in are ['demo', 'other']" "$M45V/pdfskew.txt" \
-    || { cat "$M45V/pdfskew.txt" >&2; fail "M45-AC3: the PDF skew is reported without naming the fixture names the two legs differ in"; }
-  printf 'ok   self-test: the PDF skew the comparison reports names both legs, what each extracted, and the fixture names they differ in\n'
-
-  # And the HTML side is still judged with the PDF side judged beside it: a
-  # tree broken in both must report both, not whichever clause returns first.
-  m45_legs_copy bothbroken
-  printf '0\tPlanted Term\t#qi-mark-99\n' >> "$M45V/bothbroken/index-floor/demo.html.txt"
-  rm -f "$M45V/bothbroken/index-pinned"/*.pdf.txt "$M45V/bothbroken/index-floor"/*.pdf.txt
-  python3 tests/versioncheck.py compare "$M45V/bothbroken" pinned \
-    > "$M45V/bothbroken.txt" 2>&1 \
-    && { cat "$M45V/bothbroken.txt" >&2; fail "M45 self-test: a tree whose HTML differs AND whose legs uploaded no PDF passed"; }
-  grep -qE '^FAIL: M43-AC2: demo — the `floor` leg emits a different index' "$M45V/bothbroken.txt" \
-    || { cat "$M45V/bothbroken.txt" >&2; fail "M45 self-test: the PDF finding hid the HTML difference beside it"; }
-  grep -qF 'the `pinned` leg carries no `*.pdf.txt` extraction' "$M45V/bothbroken.txt" \
-    || { cat "$M45V/bothbroken.txt" >&2; fail "M45 self-test: the HTML difference hid the PDF finding beside it"; }
-  grep -qF -- 'comparison(s) over 3 fixture(s)' "$M45V/bothbroken.txt" \
-    || { cat "$M45V/bothbroken.txt" >&2; fail "M45 self-test: a red run does not state the size of the HTML domain it swept, which is when a reader most needs to know whether the sweep was empty"; }
-  grep -qF -- '0 PDF extraction(s) on the `pinned` leg (none)' "$M45V/bothbroken.txt" \
-    || { cat "$M45V/bothbroken.txt" >&2; fail "M45 self-test: a red run does not state the size of the PDF domain it swept"; }
-  printf 'ok   self-test: a legs tree broken on both sides reports the HTML difference and the PDF finding, neither hiding the other, and still states the size of both domains it swept\n'
-
-  pass "M45-AC2/AC3: the PDF extractions' fixture names are judged and not only printed — a matrix whose legs uploaded none is red naming the baseline leg and the suffix it found no file under, a leg that rendered no PDF at all is red named as that rather than as a fixture disagreement, two legs that rendered different fixtures to PDF are red naming both legs and the names they differ in, and a tree broken on both sides reports both findings and still states the size of each domain it swept"
 fi
 
 # ---------------------------------------------------------------------------

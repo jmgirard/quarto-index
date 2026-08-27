@@ -1,6 +1,6 @@
 # M46: The claim-container registry is retired, not widened
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -91,6 +91,7 @@ candidate row.
 - 2026-08-27: T3 rework, round 2's return — the pre-release domain is enumerated with `git ls-files -z -- 'site/*.qmd' 'README.md'` split on NUL, so a path git C-quotes carries its own bytes and the suffix filter that dropped it is gone. README.md is enumerated by that command rather than appended, which is also F14's second half: the reported domain size now counts nothing untracked, and a missing README.md is a `FAIL:` line. Discrimination in a throwaway repo of twelve tracked pages, one named `site/naïve.qmd` carrying the warning header: the pre-fix reader printed `ok … 11 file(s) swept` at exit 0, the repaired one exits 1 at 12 files naming that page. Planted as a standing case.
 - 2026-08-27: F14's first half — `git ls-files` is run without `check=True` and a non-zero exit is reported as a `FAIL:` line; a file in the domain the working tree cannot read is reported the same way rather than raising out of `open`.
 - 2026-08-27: F13 — the standing output-directory pin now prints a `pass` line naming what it held, so it appears in the run log and in the check count rather than passing silently.
+- 2026-08-27: full run at exit 0, 386 checks (385 before, the output-directory pin's new line); `--self-test` at exit 0, 698 checks (694 before: the two symlink cases, the C-quoted-path case, and that same pin line). Status set to review.
 
 ## Decisions
 

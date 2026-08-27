@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
-- **Branch/PR:** `m047-matrix-compares-html` (no PR yet)
+- **Branch/PR:** `m047-matrix-compares-html` / https://github.com/jmgirard/quarto-index/pull/47
 
 ## Goal
 
@@ -36,8 +36,8 @@ version-portability candidate row. Moving the floor version → not this milesto
 
 ## Acceptance criteria
 
-- [ ] AC1: `.github/workflows/versions.yml` contains none of the tokens `tinytex`, `tlmgr`, `poppler`, `--to pdf`, `indexdump.py pdf` — `grep -c` over that one file reports 0 for each.
-- [ ] AC2: `grep -ci pdf tests/versioncheck.py` reports 0.
+- [x] AC1: `.github/workflows/versions.yml` contains none of the tokens `tinytex`, `tlmgr`, `poppler`, `--to pdf`, `indexdump.py pdf` — `grep -c` over that one file reports 0 for each.
+- [x] AC2: `grep -ci pdf tests/versioncheck.py` reports 0.
 - [ ] AC3: `tests/run-tests.sh` completes at exit 0, and `tests/run-tests.sh --self-test` completes at exit 0.
 
 ## Coverage
@@ -66,3 +66,14 @@ version-portability candidate row. Moving the floor version → not this milesto
 ## Decisions
 
 ## Review
+
+Reviewed 2026-08-27 on branch `m047-matrix-compares-html`, PR
+https://github.com/jmgirard/quarto-index/pull/47. Diff against `main`: 6 files,
++50 / -242.
+
+### Acceptance-criteria evidence
+
+- AC1 — met. `grep -cF` over `.github/workflows/versions.yml` alone reports 0
+  for each of the five tokens: `tinytex` 0, `tlmgr` 0, `poppler` 0, `--to pdf` 0,
+  `indexdump.py pdf` 0.
+- AC2 — met. `grep -ci pdf tests/versioncheck.py` reports 0.

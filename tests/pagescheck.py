@@ -64,6 +64,9 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import versioncheck  # noqa: E402
+
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'site'))
 from build_gallery import read_gallery  # noqa: E402
@@ -99,12 +102,12 @@ SETUP_STEP = re.compile(
 # optional pair of surrounding quotes is stripped, as the range parser below
 # strips them, so the two readers in this file agree on YAML quoting.
 PIN = re.compile(r'^\s+version:\s*(?P<value>\S+)\s*$')
-# A full dotted release number and nothing else. Written here rather than in
-# every reader that needs one: the version matrix asks the same question of the
-# floor version it installs (`tests/versioncheck.py`), and two copies of this
-# pattern could come to disagree about what counts as a version a reader could
-# install (M48).
-EXACT = re.compile(r'^\d+\.\d+\.\d+$')
+# A full dotted release number and nothing else, defined once in
+# `tests/versioncheck.py` and imported here: the version matrix asks the same
+# question of the floor version it installs, and two copies of this pattern
+# could come to disagree about what counts as a version a reader could install
+# (M48).
+EXACT = versioncheck.EXACT
 REQUIRED = re.compile(r'^quarto-required:\s*"?(?P<range>[^"\n]+?)"?\s*$')
 
 

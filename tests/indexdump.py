@@ -56,12 +56,19 @@ import pdfindex  # noqa: E402
 
 # The HTML back-end's minted identifiers. run-tests.sh pins these to the
 # filter's own constants and passes them in through the environment; the
-# defaults here are for a caller outside the suite (a workflow step), where a
-# filter that had renamed them would leave this command reading the page
-# through names it no longer uses. Each of the three is held against the
-# rendered page — `SECTION_ID` by the no-section clause in `html_rows`, the
-# other two by `minted_carried` below — so a rename is a loud failure naming
-# the identifier that was not found, and never a dump two legs agree about.
+# defaults here are for a caller outside the suite (a workflow step), which a
+# filter that had renamed them would leave holding names the render no longer
+# carries. Each of the three is held against the rendered page — `SECTION_ID`
+# by the no-section clause in `html_rows`, the other two by `minted_carried`
+# below — so a rename is a loud failure naming the identifier that was not
+# found, and never a dump two legs agree about.
+#
+# Two bounds on that, neither of them the row form's: `ANCHOR_PREFIX` and
+# `ENTRY_PREFIX` reach no field this mode prints, so what they are held
+# against is the page's own ids and nothing in the output; and the section
+# clause fires on a renamed id only where the new name is not the old one
+# with a `-` suffix, which `index_sections` matches as the named-index shape
+# it is (M48).
 SECTION_ID = os.environ.get('HTML_SECTION_ID', 'qi-index')
 ANCHOR_PREFIX = os.environ.get('HTML_ANCHOR_PREFIX', 'qi-mark-')
 ENTRY_PREFIX = os.environ.get('HTML_ENTRY_PREFIX', 'qi-entry-')

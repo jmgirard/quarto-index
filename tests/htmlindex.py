@@ -273,7 +273,7 @@ def section_rows(root, prefix, minted=(), hrefs=False):
     own scaffold happens to carry — a value the cross-version comparison would
     read as this extension emitting a different index when what moved was
     Quarto's wrapper (M48). The count form is read by manifests written against
-    one Quarto version, where the field is the only evidence the suite has of
+    one Quarto version, where the field is what those manifests carry about
     WHERE on the page a generated section sits, so it stays there.
     """
     rows = []

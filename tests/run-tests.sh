@@ -15036,7 +15036,9 @@ m43_dump() {
 # sections it must carry, and the label a failure names. The names collected
 # here are what the workflow's own render step is held against below, so the
 # set this loop dumps and the set the matrix compares cannot come apart
-# silently (M48).
+# silently (M48). The dump reads from /dev/null rather than from the loop's
+# own stdin, so a step added inside the loop that reads stdin cannot eat the
+# remaining fixture rows and shrink every domain below it in lockstep.
 M43_HTML_FIXTURES="html-index|$CAPTURE_ROOT/html-index/html-index.html|1|examples/html-index.qmd (HTML)
 named-indexes|$M43_NAMED_HTML|2|examples/named-indexes.qmd (HTML)
 demo|$M43_DEMO_HTML|1|examples/demo.qmd (HTML)
@@ -15044,7 +15046,8 @@ book|$M43_BOOK_HTML|1|examples/book (HTML)"
 
 M43_COVERED=""
 while IFS='|' read -r m43name m43art m43sections m43label; do
-  m43_dump html "$m43art" "$m43sections" "$m43label" > "$WORK/m43-$m43name.txt"
+  m43_dump html "$m43art" "$m43sections" "$m43label" \
+    > "$WORK/m43-$m43name.txt" < /dev/null
   M43_COVERED="$M43_COVERED $m43name"
 done <<< "$M43_HTML_FIXTURES"
 [ -n "$M43_COVERED" ] \
@@ -15054,12 +15057,13 @@ done <<< "$M43_HTML_FIXTURES"
 m43_dump pdf "$M43_DEMO_PDF" - "examples/demo.qmd (PDF)" > /dev/null
 pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/html-index.qmd and one for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index — and reduces a printed PDF index, which the matrix no longer renders, to a non-empty row form, which is both this control's own assertion and what the pdf mode's planted clauses under --self-test are judged against"
 
-# M43-AC4 — and those are the fixtures the workflow renders, no more and no
+# M48-AC4 — and those are the fixtures the workflow extracts, no more and no
 # fewer. The names come from the table above rather than being written out
 # again here, so what is held against the workflow is the set this run
-# actually dumped.
+# actually dumped. Extracts and not renders: the reader reads the name each
+# dump is redirected into, never which artifact was rendered into it.
 python3 tests/versioncheck.py fixtures "$M43_VERSIONS_WF" $M43_COVERED \
-  || fail "M43-AC4: the version matrix renders a different set of fixtures from the one the suite dumps locally (its own FAIL line is above)"
+  || fail "M48-AC4: the version matrix extracts a different set of fixture names from the one the suite dumps locally (its own FAIL line is above)"
 
 # The href form is what the criterion asks for and the count form is what the
 # manifests above read; the two are the same function under one flag, so this
@@ -15151,7 +15155,6 @@ if [ "${1:-}" = "--self-test" ]; then
   m43_planted 'a render whose index entries carry a prefix other than the one this command was told the extension mints' \
     "no id on the page begins with '$HTML_ENTRY_PREFIX'" \
     python3 tests/indexdump.py html "$M43W/staleentry.html"
-
 
   m43_planted 'a PDF printing no line that is the index heading, where the entry list starts' \
     'no index heading' \
@@ -15640,7 +15643,20 @@ if [ "${1:-}" = "--self-test" ]; then
     'are not the same set' \
     python3 tests/versioncheck.py fixtures "$M43_VERSIONS_WF" $M43_COVERED no-such-fixture
 
-  pass "M48 T4 self-test: each clause of the fixture-set reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and this run's fixture table — a render step writing its extractions with another command, no fixture name to hold against it, a name missing from the suite's set, and a name in it the workflow does not extract"
+  # The invocation shape, which is the reader's own domain rather than one of
+  # its clauses: an extraction written with the redirect on the command's own
+  # line is one this check must see, and a reader that only matched a
+  # continued line would report agreement over a set missing it (M48).
+  { cat "$M43_VERSIONS_WF"
+    printf '        python3 tests/indexdump.py html examples/extra.qmd > "$OUT/extra.html.txt"\n'
+  } > "$M43F/oneline.yml"
+  cmp -s "$M43_VERSIONS_WF" "$M43F/oneline.yml" \
+    && fail "M48 T4 self-test: the same-line invocation added nothing to the workflow, so the case below is about the unplanted file"
+  m43_planted 'a workflow extracting a fixture with the redirect on the invocation own line, which a reader matching only a continued line would not see' \
+    'are not the same set' \
+    python3 tests/versioncheck.py fixtures "$M43F/oneline.yml" $M43_COVERED
+
+  pass "M48 T4 self-test: each clause of the fixture-set reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and this run's fixture table — a render step writing its extractions with another command, no fixture name to hold against it, a name missing from the suite's set, a name in it the workflow does not extract, and an invocation whose redirect is on its own line, which the reader must see"
 fi
 }
 

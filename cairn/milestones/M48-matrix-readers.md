@@ -76,6 +76,7 @@ so, and this milestone writes that comment.
 - 2026-08-27: criteria audit of the amended AC3 ran in reduced mode (internal tier), fresh-context [O], the reader having authored none of it. No finding on any of the three questions. Two cautions disposed here: the three-item gloss now reads "today the section id …" so a fourth member could not be read as already covered, and the loud-failure clause names `indexdump.py`'s own failure rather than the suite assertion's message text.
 - 2026-08-26: criteria audit ran in reduced mode (internal tier). It returned four findings on the draft these criteria come from — an unbounded "every HTML identifier this reader matches" domain, a disjunct satisfiable by editing a prose comment, helper-plumbing wording on the `FAIL:`-line criterion, and a green-CI-matrix promise spanning the environment boundary. All four were fixed before the criteria above were written: the domain is now the `minted` tuple, the header correction moved to T6 with no criterion bound to it, the `FAIL:` promise binds the suite's own exit and output, and the workflow runs became T7 evidence.
 - 2026-08-27: review — all six criteria verified with fresh evidence (387 checks, 702 under `--self-test`, both exit 0; `cairn_validate` clean; PR CI green). Three lenses: blame-history and prior-review found nothing, diff-bug returned seventeen ranked findings, none reaching the return floor.
+- 2026-08-27: gate — the eleven fix-now findings were applied on the branch and the five wider gaps filed; re-verified at 387 checks and 703 under `--self-test`, both exit 0.
 
 ## Decisions
 
@@ -144,7 +145,8 @@ implementation before triage; F1, F6, F7 and F10 were confirmed by running the
 code, F3 by dumping a page whose only locator points at an anchor it does not
 carry.
 
-Recommended **fix now** — defects in what this milestone shipped, each cheap:
+**Fixed at the gate**, at the maintainer's direction — defects in what this
+milestone shipped, each cheap:
 
 - F1: `EXTRACTION` requires a `\` line continuation between the `indexdump.py
   html` call and its redirect, so a fixture added to the render step on one line
@@ -181,7 +183,8 @@ Recommended **fix now** — defects in what this milestone shipped, each cheap:
   green.
 - F16: two consecutive blank lines between the new plants.
 
-Recommended **follow-up** — real gaps wider than this milestone:
+**Filed as follow-up** at the maintainer's direction — real gaps wider than
+this milestone:
 
 - F3: `minted_carried` is an existence test, so a dangling locator or a partial
   rename passes. Verified: a page carrying `qi-mark-1` whose only locator points
@@ -197,7 +200,7 @@ Recommended **follow-up** — real gaps wider than this milestone:
 - F12: the M43 plant helper checks exit status, message substring and absence of
   a traceback, but not that the message sits on a `FAIL: ` line.
 
-Recommended **reject**:
+**Rejected**:
 
 - F2 (behavior half): a renamed prefix reddening every leg is the loud failure
   AC3 asks for, not a false report of a version disagreement — the reader fails
@@ -205,6 +208,18 @@ Recommended **reject**:
 - F17: AC2 is enforced by no standing check. That is D-011's refusal of a
   source-shape scan, not a gap; the criterion is verified by reading at review,
   which is the evidence recorded above.
+
+The fixes: `EXACT` moved to `versioncheck.py` and is imported into
+`pagescheck.py`, so no reader the matrix runs loads the docs site's gallery
+builder; `EXTRACTION` matches a redirect on the invocation's own line as well
+as a continued one, with a plant that adds such an invocation and requires the
+reader to see it; the fixture-set check reports under `M48-AC4` and says it
+reads what each dump is redirected into rather than what was rendered; the
+workflow header, the reader's usage block, `version_named`'s docstring,
+`indexdump.py`'s identifier comment and `section_rows`' new paragraph each
+narrowed to what is true; the dump reads from `/dev/null` inside the fixture
+loop; one blank line dropped. Re-verified after the fixes: `tests/run-tests.sh`
+exit 0 at 387 checks, `--self-test` exit 0 at 703 (from 702, the added plant).
 
 No finding demonstrates an acceptance criterion failing: AC4's two sets are
 equal today (four names, verified), and AC3 asks that each member of `minted` be

@@ -31,10 +31,12 @@
 # Two narrow reads of this file run in the acceptance suite, and nothing else
 # here is checked. `tests/versioncheck.py floor` reads the `FLOOR:` line below
 # and holds README and the site's Tests page to the version it names.
-# `tests/versioncheck.py fixtures` reads the `indexdump.py html` invocations in
-# the render step and the extraction each is redirected into, and holds that
-# set of fixture names equal to the set the suite dumps locally. Each says in
-# its own header what it reads and what it does not.
+# `tests/versioncheck.py fixtures` reads every `indexdump.py html` invocation
+# in this file and the extraction each is redirected into, and holds that set
+# of fixture names equal to the set the suite dumps locally. It reads the file
+# whole rather than the render step alone, so an invocation of that shape in
+# any job joins the set. Each says in its own header what it reads and what it
+# does not.
 #
 # Nothing else about these steps is checked, and widening either read is
 # refused: D-011 declines a scan that pins names and shapes in a source file it

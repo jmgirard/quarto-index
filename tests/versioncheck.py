@@ -19,7 +19,9 @@ which Quarto rendered it?
   fixtures <workflow.yml> <name> [<name> ...]
       The workflow's render step reduces one rendered artifact per fixture
       with `tests/indexdump.py` and writes each extraction under its fixture's
-      own name. Those names are the domain `compare` below sweeps, and the
+      own name. The file is read whole: an invocation of that shape anywhere
+      in it counts, so a second job or a step outside the matrix carrying one
+      joins the set rather than being reported as sitting outside the step. Those names are the domain `compare` below sweeps, and the
       acceptance suite dumps the same fixtures locally so that the extraction
       the matrix rests on is exercised on every run. This holds the two sets
       equal: a fixture added to the workflow and not to the suite ships with
@@ -70,9 +72,6 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import pagescheck  # noqa: E402
-
 # The prefix each leg's uploaded artifact carries, so a directory
 # `download-artifact` created for something else is not read as a leg.
 LEG_PREFIX = 'index-'
@@ -85,21 +84,26 @@ HTML_SUFFIX = '.html.txt'
 # when the query that returned it ran.
 FLOOR = re.compile(
     r'^\s+FLOOR:\s*(?P<quote>[\'"]?)(?P<value>[^\'"\s]+)(?P=quote)\s*$', re.M)
-# What counts as an exact dotted version is `pagescheck`'s to say — it is the
-# reader that judges the Pages workflow's pin, and the floor read below asks
-# the same question of the same kind of value. Imported rather than copied so
-# the two cannot drift apart (M48).
-EXACT = pagescheck.EXACT
+# A full dotted release number and nothing else. One home for the two readers
+# that ask it: the floor read below, and the Pages workflow's pin in
+# `tests/pagescheck.py`, which imports this name rather than carrying a second
+# copy the two could come to disagree about (M48). It lives here, in the
+# module whose imports are the standard library alone, so a reader the version
+# matrix runs does not load the docs site's gallery builder to ask it.
+EXACT = re.compile(r'^\d+\.\d+\.\d+$')
 
-# The extraction target of one `indexdump.py html` invocation in the workflow's
-# render step: the command and the redirection it is continued onto, so a
-# `.html.txt` path written by anything else is not read as a fixture. This is
-# the whole of what the `fixtures` mode reads out of the workflow — it says
-# nothing about which artifact is rendered, in what order, or with what tool,
-# and a step rewritten so that no invocation matches reports an empty domain
-# rather than agreement (D-011 licenses a scan narrowed to what it reads).
+# The extraction target of one `indexdump.py html` invocation: the command and
+# the redirection that follows it, whether on the same line or continued onto
+# the next, so a `.html.txt` path written by anything else is not read as a
+# fixture and an invocation written without a line continuation is not missed
+# (M48). This is the whole of what the `fixtures` mode reads out of the
+# workflow — it says nothing about which artifact is rendered, in what order,
+# with what tool, or which job or step the invocation sits in, and it is a
+# scan of the WHOLE file rather than of the render step alone; a file
+# rewritten so that no invocation matches reports an empty domain rather than
+# agreement (D-011 licenses a scan narrowed to what it reads).
 EXTRACTION = re.compile(
-    r'python3 tests/indexdump\.py html [^\n]*\\\n\s*>\s*'
+    r'python3 tests/indexdump\.py html [^\n]*?(?:\\\n\s*)?>\s*'
     r'"[^"\n]*/(?P<name>[^"/\n]+)' + re.escape(HTML_SUFFIX) + r'"')
 
 # The events on which the release-channel leg is rendered too.
@@ -249,8 +253,10 @@ def version_named(body, version):
     A bare `version in body` reads `1.4.549` out of `1.4.5490` and out of
     `1.4.549.1`, so a document left naming a release the workflow has moved off
     could pass on a substring of the new number. The bound is over digits and
-    dots on either side: a sentence ending `… Quarto 1.4.549.` still names it,
-    and `v1.4.549` still names it.
+    dots on either side, and over those alone: a sentence ending
+    `… Quarto 1.4.549.` still names it, `v1.4.549` still names it, and so do
+    `1.4.549-rc1` and `1.4.549b` — a longer version whose extra part is not a
+    digit or a dot is not caught here (M48).
     """
     return re.search(r'(?<![\d.])%s(?!\.?\d)' % re.escape(version),
                      body) is not None
@@ -304,7 +310,7 @@ def check_fixtures(workflow, *names):
                     'matrix compares and the fixture this run dumps locally '
                     'are not the same set'
                     % (workflow, rendered, covered))
-    print('ok   M43-AC4: %s extracts %d fixture(s) — %s — and the suite dumps '
+    print('ok   M48-AC4: %s extracts %d fixture(s) — %s — and the suite dumps '
           'that same set locally'
           % (workflow, len(rendered), ', '.join(rendered)))
     return 0

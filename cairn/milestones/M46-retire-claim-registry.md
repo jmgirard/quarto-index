@@ -86,6 +86,7 @@ candidate row.
 - 2026-08-27: full run at exit 0, 385 checks; `--self-test` at exit 0, 694 checks. Status set to review.
 
 - 2026-08-27: review round 2 returned the milestone to in-progress. AC2 fails: `git ls-files` C-quotes a non-ASCII path and the `.qmd` suffix filter drops the quoted entry with no report, so a tracked page carrying a retired sentence is swept past at exit 0 (reproduced end to end in a twelve-page throwaway repo). AC4 fails again, by a third containment mechanism: `os.path.abspath` does not resolve symlinks, so a link through a symlink inside the capture reads a file above it at exit 0. AC1, AC3, AC5, AC6 and AC7 verified on fresh evidence (suite 385 checks, self-test 694, both exit 0; `cairn_validate` exit 0). Five findings logged in the Review section; second defect return, and AC4's second failure by a containment mechanism of the same shape.
+- 2026-08-27: the return also fired the thrash rule's same-criterion trigger, AC4 having failed twice by containment mechanisms of the same shape; the plan gate recorded no alternative on the link check's approach, so escalation to a review brief was offered per instance. The user chose the direct repair over escalation, over narrowing AC4, and over parking: resolve symlinks on both sides of the containment test, and enumerate the pre-release domain with `git ls-files -z` split on NUL.
 
 ## Decisions
 

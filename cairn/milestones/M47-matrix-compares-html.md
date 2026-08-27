@@ -38,7 +38,7 @@ version-portability candidate row. Moving the floor version → not this milesto
 
 - [x] AC1: `.github/workflows/versions.yml` contains none of the tokens `tinytex`, `tlmgr`, `poppler`, `--to pdf`, `indexdump.py pdf` — `grep -c` over that one file reports 0 for each.
 - [x] AC2: `grep -ci pdf tests/versioncheck.py` reports 0.
-- [ ] AC3: `tests/run-tests.sh` completes at exit 0, and `tests/run-tests.sh --self-test` completes at exit 0.
+- [x] AC3: `tests/run-tests.sh` completes at exit 0, and `tests/run-tests.sh --self-test` completes at exit 0.
 
 ## Coverage
 
@@ -63,6 +63,8 @@ version-portability candidate row. Moving the floor version → not this milesto
 - 2026-08-27: Scope amended at the implement gate, adding `site/tests.qmd`'s PDF-matrix paragraph to In: M45 wrote it to match the clauses T2 deletes, no check reads that page since M46 retired the claim-container registry, and neither M46 nor M48 takes it.
 - 2026-08-26: `cairn_validate`'s sizing tripwire fired at 8 acceptance criteria on the single-milestone draft; it was split here rather than trimmed, M48 taking the reader repairs.
 
+- 2026-08-27: review — AC1, AC2 and AC3 verified with fresh evidence; consistency gate clean; three fresh-context reviewers, nine findings, all from the diff-bug lens, none meeting the return floor.
+
 ## Decisions
 
 ## Review
@@ -77,3 +79,81 @@ https://github.com/jmgirard/quarto-index/pull/47. Diff against `main`: 6 files,
   for each of the five tokens: `tinytex` 0, `tlmgr` 0, `poppler` 0, `--to pdf` 0,
   `indexdump.py pdf` 0.
 - AC2 — met. `grep -ci pdf tests/versioncheck.py` reports 0.
+- AC3 — met. `tests/run-tests.sh` exits 0 at 386 checks; `tests/run-tests.sh
+  --self-test` exits 0 at 692. Both run fresh on this branch at review, run
+  sequentially per the `verify` slot's note.
+
+### Consistency gate
+
+`cairn_validate.py` exits 0, all 16 checks PASS and all 7 advisories OK,
+including `coverage complete` and `binding criteria`. No principle changed, so
+`cairn_impact.py` was not run. The `generic` profile's `consistency-gate` slot
+names no toolchain checks, so that half is a no-op. CI on PR #47 is green:
+build, plan, both render legs (floor 1.4.549 at 22s, pinned 1.10.18 at 28s) and
+compare.
+
+### Independent review
+
+Three fresh-context reviewers, distinct evidence bases, none having seen the
+implementation. The blame-history lens reported no findings: every deleted line
+traces to M43 (kept where declared) or M45 (fully retired), and the M43 review
+gate's own `if: always()` and `fail-fast: false` guards survive untouched. The
+prior-review lens reported no findings and no prior-review evidence on the
+touched files; its `gh api .../pulls/comments` probe returned `[]`, so no
+per-PR walk was made. The diff-bug lens reported nine, ranked below with the
+disposition each was given.
+
+### Findings and disposition
+
+Ranked as the diff-bug reviewer ranked them. Verified against the
+implementation, not against the report.
+
+- **F1 — the red-run domain-size assertion went with the deleted block.**
+  `tests/versioncheck.py`'s surviving comment promises the domain line prints
+  "whatever the verdict is", and its header promises every clause reports the
+  size of what it swept. The only assertion reading that line off a FAILING run
+  was the M45 T4 `bothbroken` case, deleted here; what remains
+  (`tests/run-tests.sh:15349`) greps it out of the green control alone.
+  Confirmed: moving the print into the success branch leaves both suite legs
+  green. Coverage lost by deletion.
+- **F2 — a retained rule whose reason was deleted.** The render step's "Each
+  render is followed immediately by its extraction, before the next render can
+  overwrite the artifact" kept its rule and lost its justifying clause (the
+  book rendering HTML and PDF into one `_book` directory). Confirmed: the four
+  surviving renders write four distinct paths, so nothing can overwrite
+  anything.
+- **F3 — a causal clause that credits a deleted render.** The same comment says
+  the name comparison "bought no coverage the render itself did not already
+  have"; that render is gone as of this commit. The paragraph opens by saying
+  no PDF is rendered, so the state is recoverable, but the clause reads as
+  though the render's coverage still stands.
+- **F4 — `site/tests.qmd` gives the wrong reason.** The published sentence
+  explains the missing PDF by the engine argument, which is a reason not to
+  COMPARE PDF content; the render was dropped for the TeX-install cost on the
+  every-push path, which is what the plan gate decided. No check reads this
+  page for this content since M46, so nothing would catch the drift.
+- **F5 — `tests/indexdump.py`'s header was not corrected.** It still frames
+  both modes as the version matrix's serialization; after this milestone the
+  matrix never invokes `pdf` mode and `tests/run-tests.sh` is its only caller.
+  Two other prose sites were corrected in this pass and this third was missed.
+- **F6 — a dead redirect and a claim true only under `--self-test`.**
+  `$WORK/m43-demo-pdf.txt` is written at `tests/run-tests.sh:15029` and read
+  nowhere now that the legs-tree loop dropped it. The `m43_dump pdf` call
+  itself is still load-bearing. The new pass message justifies the fourth
+  control as what "the `pdf` mode's own planted clauses below are judged
+  against", and those clauses sit inside the `--self-test` block, so the stated
+  reason does not hold on a plain run.
+- **F7 — the residual risk is recorded for the comparison, not the render.**
+  The standing version-portability candidate row still reads "M43 compares HTML
+  indexes only"; after this milestone no Quarto version other than a local
+  developer's is asked to typeset the fixtures at all.
+- **F8 — a cross-file claim the module cannot check.** `versioncheck.py`'s
+  header now asserts "HTML is the whole of what the matrix renders", a fact
+  about `versions.yml`, which the module never opens (correctly, per D-011).
+- **F9 — `dumps_in`'s `suffix` parameter now has a one-value domain.** The
+  reviewer noted it as residue and said it is fine to leave.
+
+Return floor: none of the nine demonstrates an acceptance criterion failing,
+and none is a defect in what the extension does for its users — F1 is test
+coverage, the rest are prose accuracy. Status stays `review`.
+

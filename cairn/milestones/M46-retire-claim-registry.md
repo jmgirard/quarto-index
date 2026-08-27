@@ -117,6 +117,7 @@ M46 could not hold", carrying F19, F20, F21 and F23.
 - 2026-08-27: the withdrawn clauses' home, chosen at the amendment gate over one row each and over a split milestone: one new ROADMAP candidate row, "Pre-release sweep and link containment, the clauses M46 could not hold", carrying F19, F20, F21 and F23. A split milestone would have committed to re-cutting around the same predicate, which is what the thrash rule's (b) diagnosis says buys the next mechanism rather than a fix; the row waits for a containment approach that tests the resolved path once, after every rewrite.
 - 2026-08-27: the new candidate row put ROADMAP at 60 lines against its <60 cap, so the two M32 review R2 rows — the marker-less plants' capture and the HTML-cost check's wrapper — were clustered into one row, no content dropped. Back to 59 lines / 16,333 bytes; `cairn_validate` exits 0 with every check passing.
 - 2026-08-27: verify slot re-run after the amendment — `tests/run-tests.sh` exits 0 at 386 checks and `tests/run-tests.sh --self-test` exits 0 at 698, unchanged from round 3 as expected: this session changed tracking files only. Status set to review; the narrowed criteria set goes back to `/milestone-review`.
+- 2026-08-27: review round 4 over the narrowed criteria set — AC1, AC3, AC5, AC6 and AC7 all verified on fresh evidence (suite 386 checks, self-test 698, both exit 0; `cairn_validate` exit 0; PR #46 CI green at 01fe435). Nine findings logged; none meets the return floor. F24, F25 and F26 — DESIGN.md, ROADMAP.md and D-027 each asserting a containment or reporting property the shipped code does not have — go to the gate as fix-now; F27 and F28 are filed on the descope's candidate row; F29-F32 rejected with reasons.
 
 ## Decisions
 
@@ -396,3 +397,82 @@ alternative on the link check's approach, so escalation via `/milestone-brief` i
 what remains of (b) and is offered again, per instance. No `/milestone-plan`
 re-cut has been spent on this milestone, so a same-objective re-cut stays a
 present option — never the recommended one.
+
+### Round 4 — the narrowed criteria set
+
+_Evidence gathered 2026-08-27 on branch `m046-retire-claim-registry` at 01fe435,
+against `origin/main` at 9a883e2 (unmoved since the branch was cut; no merge
+needed). PR #46, CI green on all six checks at this head (`deploy` skipped,
+`build`, `compare`, `plan`, `render (floor, 1.4.549)`, `render (pinned,
+1.10.18)` all success). This round reviews the five criteria the 2026-08-27
+descope amendment left binding — AC1, AC3, AC5, AC6, AC7. AC2 and AC4 assert
+nothing and are not evidence-gathered here._
+
+#### Acceptance criteria
+
+- **AC1** — verified. `grep -c 'CLAIM_CONTAINERS\|claim_row\|claim_kind\|claim_domain\|claim_text' tests/run-tests.sh` prints `0` (grep exits 1, no match). A repo-wide sweep over `tests/` for the same five identifiers returns nothing at all, so no `tests/*.py` reader carries one either. The diff lens independently extracted all thirty identifiers the diff deletes and grepped each back: the only survivor is `README_PRERELEASE_STALE` in the historical comment at run-tests.sh:1447, and no scan under `tests/scans/` was orphaned (all twelve still invoked).
+- **AC3** — verified. The eighteen container names in `CLAIM_CONTAINERS` at 9e6b567, extracted from `git show`, are set-identical to the eighteen rows of this file's T1 table (`diff` of the sorted name lists is empty, 18 against 18); every row carries a disposition. The three kept rows name live arrays and live checks: `README_RECIPE_LINES` (run-tests.sh:319) read by `check_recipe_block` (run-tests.sh:4403, four call sites), `README_INDEXES_CLAIMS`/`README_INDEXES_YAML` (run-tests.sh:12342, 12357) read by `check_readme_indexes` (run-tests.sh:11803, thirteen call sites). The diff lens re-derived the same eighteen-against-eighteen result independently.
+- **AC5** — verified. On a hand-built capture whose only link is `/syntax.html`, checked with base path `docs`: exit 1 with ``<</syntax.html>> is root-relative and carries no `docs` base segment``. Controls: the same link written `/docs/syntax.html` under base `docs` exits 0, and the bare `/syntax.html` with no base path given exits 0. The clause is live in the standing run — run-tests.sh:12576 passes `SITE_BASE_PATH="quarto-index"`.
+- **AC6** — verified. The standing render (run-tests.sh:12531-12538) runs `check_output_dir_pinned site/_quarto.yml`, then a `pass` line, then `rm -rf site/_site`, then `[ ! -e site/_site ] || fail`, then `quarto render site`. The pin discriminates on fresh evidence: against `site/_quarto.yml` it exits 0; against a copy whose `output-dir` is renamed to `_built` it exits 1 with its own `FAIL:` line naming the file. It is the only `quarto render site` in the suite, nothing reads `site/_site` before the removal, and the gallery is a Quarto `pre-render` so the removal cannot destroy it.
+- **AC7** — verified, on a clean sequential re-run with no other suite invocation in flight. `tests/run-tests.sh` exits 0 and prints `All checks passed (386 checks).`; `tests/run-tests.sh --self-test` exits 0 at `All checks passed (698 checks).` Both run 2026-08-27 on this branch at 01fe435, unchanged from round 3 as expected — the descope amendment touched tracking files only.
+
+#### Consistency gate
+
+- `cairn_validate.py` — exit 0, all checks passed (sixteen PASS, seven OK); the `release window` advisory did not fire.
+- `cairn_impact.py` — skipped. The header names IP3; `git diff origin/main..HEAD -- cairn/DESIGN.md` changes no `IP`/`GP` principle line.
+- Toolchain checks — the active profile is `generic`, whose `consistency-gate` slot names none. Clean no-op.
+
+#### Independent review
+
+Three fresh-context lenses, none having seen the implementation, each on a
+distinct evidence base, each told to run extracted copies of the checks in its
+own scratch directory and never the top-level suite (round 3's collision). Nine
+findings, numbers continuing round 3's.
+
+**[S] prior-review lens — one finding (F24).** Archived `## Review` sections on
+the touched files (M40, M42, M44) were the primary surface; the GitHub probe
+(`pulls/comments?per_page=1`) returned `[]`, so the per-PR walk was not paid
+for. It confirmed each finding of rounds 1-3 was fixed or filed rather than
+dropped, and that the descope reopens no closed shape.
+
+**[S] blame-history lens — two findings (F31, F32), both low.** It re-derived
+the eighteen-row disposition from `origin/main`, walked both file diffs hunk by
+hunk, grepped the post-diff tree for every deleted identifier, ran `bash -n`,
+checked for stale `pass` banners naming dropped checks, and confirmed IP3's text
+is untouched and `check_recipe_block`/`check_readme_indexes` are byte-for-byte
+unchanged but for their `pass` wording. It found nothing at the severity of
+"silently undid something" or "resurrected a fixed bug".
+
+**[O] diff-bug lens — seven findings (F24-F30), ranked.** It independently
+re-checked AC1, AC3, AC5 and AC6 and found all four met, and ran extracted
+copies of both repaired checks against hand-built repos and captures.
+
+| # | Finding | Disposition |
+|---|---|---|
+| F24 | `cairn/DESIGN.md` certifies a containment property the shipped code does not have: the rewritten architecture paragraph says every link resolves "only against files inside the captured directory", while the directory-index escape round 3 returned on (F17) is still live — containment is tested at sitecheck.py:269-282 and `index.html` appended at 283-285 after it, never re-tested. Found independently by both the prior-review and diff lenses, and reproduced by the diff lens on a capture whose `d/index.html` symlinks above it: exit 0, every link reported resolved. Verified against the implementation by this review. After AC4's withdrawal the DESIGN sentence is the only thing asserting the property — the record-certifies-what-no-check-asserts class round 1 named as F1/F3. | **Fix now.** |
+| F25 | `cairn/ROADMAP.md`'s publishing-workflow row says the fourth finding "was fixed at M46, which also percent-decodes a link's path part and confines resolution to the captured site" — stated as accomplished fact — one line below the new candidate row saying that same containment clause "failed by four mechanisms of the same shape" and "ships at M46 unpromised". A reader of the ROADMAP alone gets opposite answers. | **Fix now.** |
+| F26 | `cairn/DECISIONS.md` D-027's Decision clause records D-026's promise as kept by a check that "reports the size of the domain it swept, and names the offending file". Round 3 falsified the naming clause (F18: `UnicodeDecodeError` is a `ValueError`, not the `OSError` run-tests.sh:1545 catches) and the amendment withdrew it from AC2. D-027 is append-only and unchanged by this diff, but it is this milestone that made the sentence false. Distinct from F23, which is about the same entry's domain wording. | **Fix now**, by a superseding D-entry rather than an edit. |
+| F27 | `tests/sitecheck.py:249-257`: the base-segment comparison and the base strip both act on `stripped` before `os.path.normpath` at 257, so a link production serves correctly is reported as a failure. Reproduced under base `docs`: `/other/../docs/syntax.html` exits 1 claiming it carries no `docs` segment (production serves `/docs/syntax.html`), and `/docs/../docs/syntax.html` is reported as resolving outside the capture. False report only, never a false pass; today's rendered site emits no such link, and AC5 as worded — exit non-zero on a link carrying no base segment — is still met. | **Filed** on the ROADMAP row "Pre-release sweep and link containment, the clauses M46 could not hold", beside F22. |
+| F28 | `tests/run-tests.sh:1494-1501`: the malformed-row guard catches a row with no tab, but a row `label<TAB>` passes it, `flat('')` is `''`, and `'' in body` is true for every file, so the check turns red on its whole domain. Reproduced against an extracted copy: `FAIL: … swept 21 file(s):` naming all 21. False failure only, and a fifth unplanted clause in the check F19 already counts four in. | **Filed** on the same row, beside F19. |
+| F29 | `tests/run-tests.sh:12527`: the output-directory pin is a first-match `grep -q` with no exactly-one assertion, so a second `output-dir` declared later in the project file would go unremarked. Not reproduced — Quarto's YAML refuses a duplicate key at the same level, so the lens could not build the input class. | **Rejected** — no reachable input class; AC6 as worded is met. |
+| F30 | `tests/run-tests.sh:12528, 12532-12533`: the new pin's `FAIL:` and `pass` lines are labelled `M40-AC1` though the check is M46's. | **Rejected** — the suite labels a check by the criterion it descends from, not the milestone that last touched it; the implement gate settled the same question when it kept `M44-AC1` on the replacement pre-release check. |
+| F31 | The 2026-08-26 plan-gate work-log line cites M25 as the precedent for retiring rather than widening, but M25 narrowed six of its source scans and kept one outright — deletion was one disposition among several. The three kept containers here show M46 applied that same per-row judgment, so the outcome matches M25's actual precedent even where the one-line gloss overstates it. | **Rejected** — a characterization in a work-log line recording a gate already held; no code, criterion or decision is affected. |
+| F32 | The directory-index containment gap sits in code M46 wrote — `origin/main`'s `check_links` had no containment test at all — so it is an incomplete new protection, not a regression of deliberately-added protection. | **Rejected** — confirmation of F17, already withdrawn from AC4 and filed on the candidate row. |
+
+The diff lens also recorded, for the merge decision rather than as a finding,
+that AC2 and AC4 carry `[x]` ticks while their text says they assert nothing: a
+reader scanning the checkbox column alone reads seven verified criteria where
+five were verified. The rows explain themselves and the amendment was gated;
+carried into the gate presentation.
+
+#### Outcome
+
+**No criterion fails.** All five binding criteria — AC1, AC3, AC5, AC6, AC7 —
+verified on fresh evidence this round. No finding meets the return floor: none
+demonstrates a binding criterion failing, and none is a load-bearing defect in
+what the extension does for its users. F24, F25 and F26 are record-accuracy
+defects — three tracking files asserting a containment or reporting property the
+shipped code does not have — and go to the gate as fix-now. F27 and F28 are
+false-report-only defects in code that ships unpromised and are filed on the
+candidate row the descope created. F29, F30, F31 and F32 are rejected with
+reasons above.

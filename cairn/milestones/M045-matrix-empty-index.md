@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M045: The version matrix cannot agree about an empty index
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
-- **Branch/PR:** —
+- **Branch/PR:** `m045-matrix-empty-index`
 
 ## Goal
 
@@ -93,6 +93,7 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
 - 2026-08-26: criteria audit ran in REDUCED mode (declared tier internal), in a fresh-context [O] reader, twice; round 1 returned 1 finding and round 2 returned 4 over the revised wording, all disposed here, none deferred.
 - 2026-08-26: plan gate chose hardening the two readers over simplifying or deleting the comparison, at the maintainer's direction after the checker-regress option was posed first, because the matrix is the only evidence behind the `>=1.4.0` floor `_extensions/index/_extension.yml` and README both declare; falsified by that floor claim being dropped or fenced somewhere else.
 - 2026-08-26: plan gate chose comparing PDF extraction NAME sets across legs over comparing their content, because M30 and M33 put engine and font differences in a PDF's text layer; falsified by an extraction shown engine-neutral across xelatex and lualatex.
+- 2026-08-26: /milestone-implement: status in-progress, branch `m045-matrix-empty-index` cut from main at 8d7ae92.
 
 ## Decisions
 

@@ -15476,6 +15476,367 @@ M30PLANTPY
   pass "M38 self-test: each clause named below is planted on its own and shown red, while each reader passes on the same artifact unplanted — the page-wide id sweep on a space, a hash and an angle bracket, and its dotted-id sibling on the one character legal in an id and still refused; the folded-site reader on two of the one index, a site count the fixture does not write, an index at no site at all, and an index at the wrong site; the second-marker reader on none of the one index, labels that are not the fixture's two in order, and the index at the second marker; the folded-heading reader on an id naming one declared index, a heading below an h1, and a heading carrying one declaration's own title, its fourth clause — the section count — planted by nothing, since the plant written for it is refused as an unreadable page before the count is compared; the named-index docs reader on a missing claim, a declaration block whose title or indentation is not the one pinned, a fixture that does not exist, a command never executed or executed dirty, and each of the four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the link reader on a section id the page does not carry"
 fi
 
+
+# ---------------------------------------------------------------------------
+# M43 — tests/indexdump.py, the extraction the version matrix reduces each
+# rendered artifact to. The workflow runs it on a runner and compares two legs'
+# stdout byte for byte, so what is checked here is the property that comparison
+# rests on: an artifact carrying an index dumps rows, and an artifact carrying
+# none is a loud failure rather than an empty print two legs would agree about.
+#
+# Four unplanted controls, one per artifact shape the matrix renders: a single
+# document's index, a document declaring two indexes, a book whose locators
+# point across pages, and a printed PDF index. Each is read from the CAPTURE
+# (M24) and not from the working tree.
+# ---------------------------------------------------------------------------
+M43_DEMO_HTML="$CAPTURE_ROOT/demo-html/demo.html"
+M43_NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
+M43_BOOK_HTML="$CAPTURE_ROOT/book-html/_book/last.html"
+M43_DEMO_PDF="$CAPTURE_ROOT/demo-pdf/demo.pdf"
+
+# The dump's stdout is the comparison's whole subject, so a control asserts it
+# is non-empty AND that it carries both row kinds — a dump of section headers
+# with no entry under them would compare equal across two broken legs.
+m43_dump() {
+  local mode="$1" artifact="$2" want_sections="$3" label="$4"
+  local out sections entries
+  out=$(HTML_SECTION_ID="$HTML_SECTION_ID" \
+        HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+        HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+        python3 tests/indexdump.py "$mode" "$artifact" 2>/dev/null) \
+    || fail "M43-T1: the dump of $label failed on an artifact this run rendered and captured"
+  [ -n "$out" ] \
+    || fail "M43-T1: the dump of $label exited 0 and printed nothing, which is the one answer a cross-leg comparison must not be able to agree on"
+  entries=$(printf '%s\n' "$out" | grep -cE '^[0-9]	' || true)
+  [ "$entries" -gt 0 ] \
+    || fail "M43-T1: the dump of $label carries no entry row, so two legs printing only section headers would compare equal"
+  if [ "$want_sections" != "-" ]; then
+    sections=$(printf '%s\n' "$out" | grep -cE '^section	' || true)
+    [ "$sections" = "$want_sections" ] \
+      || fail "M43-T1: the dump of $label names $sections index section(s), expected $want_sections"
+  fi
+  printf '%s\n' "$out"
+}
+
+m43_dump html "$M43_DEMO_HTML" 1 "examples/demo.qmd (HTML)" > "$WORK/m43-demo-html.txt"
+m43_dump html "$M43_NAMED_HTML" 2 "examples/named-indexes.qmd (HTML)" > "$WORK/m43-named-html.txt"
+m43_dump html "$M43_BOOK_HTML" 1 "examples/book (HTML)" > "$WORK/m43-book-html.txt"
+m43_dump pdf "$M43_DEMO_PDF" - "examples/demo.qmd (PDF)" > "$WORK/m43-demo-pdf.txt"
+pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index, and the printed entry lines of the PDF"
+
+# The href form is what the criterion asks for and the count form is what the
+# manifests above read; the two are the same function under one flag, so this
+# asserts the flag reached the dump rather than trusting that it did. A book
+# locator points at another PAGE, which no count could ever say.
+grep -qE '^[0-9]	Beta	one\.html#' "$WORK/m43-book-html.txt" \
+  || fail "M43-T1: the book dump does not state WHERE a locator points (expected an entry row whose locator field names one.html), so the comparison is over locator counts and not over targets"
+pass "M43-T1: the dump states each locator's target and not its count — the book's Beta entry names the chapter page its locator points at"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M43 T1 — a planted defect per CLAUSE of the dump, not one per mode
+  # (check-design). Two clauses are reached with a mutated artifact; three
+  # cannot be reached by handing the command any PDF at all, so they are
+  # planted against the function the read hands its entries to, which is why
+  # that function is split out. Each planted case must fail AND name its own
+  # clause, so a reader dying on the fixture cannot be read as the clause
+  # firing.
+  # -------------------------------------------------------------------------
+  M43W="$WORK/m43probe"
+  rm -rf "$M43W"
+  mkdir -p "$M43W"
+
+  m43_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M43 self-test: the planted case ($label) passed, so this check's green says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M43 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    printf '%s' "$out" | grep -q 'Traceback' \
+      && { printf '%s\n' "$out" >&2; fail "M43 self-test: the planted case ($label) raised rather than reporting a finding, which exits non-zero for a reason nothing states"; }
+    printf 'ok   self-test: the dump fails on <<%s>>\n' "$label"
+  }
+
+  # <name> <source> <sed script> — one mutated copy at $M43W/<name>, asserted
+  # to differ from its source, so a no-op mutation cannot leave a green plant.
+  m43_plant() {
+    local name="$1" source="$2" script="$3"
+    sed "$script" "$source" > "$M43W/$name"
+    cmp -s "$source" "$M43W/$name" \
+      && fail "M43 self-test: the mutation for $name changed nothing in $source, so the case below is about the unplanted artifact"
+    return 0
+  }
+
+  m43_plant nosection.html "$M43_DEMO_HTML" "s|id=\"$HTML_SECTION_ID\"|id=\"not-the-index\"|"
+  m43_planted 'a page carrying no generated index section, whose empty dump two legs would compare equal' \
+    'carries no generated index section' \
+    python3 tests/indexdump.py html "$M43W/nosection.html"
+
+  m43_plant noterm.html "$M43_DEMO_HTML" 's|qi-term|qi-notterm|g'
+  m43_planted 'a page whose index entries carry no term span, which the reader cannot read at all' \
+    'term span(s), expected exactly 1' \
+    python3 tests/indexdump.py html "$M43W/noterm.html"
+
+  m43_planted 'an artifact that does not exist, over which the dump would otherwise sweep nothing' \
+    'no such artifact' \
+    python3 tests/indexdump.py html "$M43W/absent.html"
+
+  m43_planted 'a PDF printing no line that is the index heading, where the entry list starts' \
+    'no index heading' \
+    python3 tests/indexdump.py pdf "$M43_DEMO_PDF" 'Not The Index Heading'
+
+  # The two clauses below sit past the read: no PDF handed to this command
+  # reaches them, so each is planted against `pdf_rows` with an entry list of
+  # its own. The unplanted control is the PDF dump above, which ran green on
+  # this run's own capture through the same function.
+  m43_pdfrows() {
+    python3 - "$1" <<'M43ROWS'
+import sys
+sys.path.insert(0, 'tests')
+import indexdump
+import pdfindex
+case = sys.argv[1]
+if case == 'empty':
+    entries = []
+else:
+    # One entry, indented as a sub-entry, so its column carries no top-level
+    # entry and pdfindex's documented assumption is unmet.
+    entries = [pdfindex.Entry('Sub, 2', 1, 1, 0, 40.0, 100.0)]
+for line in indexdump.pdf_rows(entries, 'planted.pdf', 'Index'):
+    print(line)
+M43ROWS
+  }
+
+  m43_planted 'a PDF whose index heading is printed with no entry under it, which is an empty index and not an absent one' \
+    'no entry follows it' \
+    m43_pdfrows empty
+
+  m43_planted "a printed column carrying no top-level entry, where every level pdfindex reports in it is a level too shallow" \
+    'cannot read its indent levels' \
+    m43_pdfrows nolevel0
+
+  pass "M43 self-test: each clause of tests/indexdump.py is planted on its own and shown red, while the same reader passes unplanted on this run's own captures — an index section the page does not carry, an index the reader cannot read at all, an artifact that does not exist, a heading the PDF does not print, a heading with no entry under it, and a column carrying no top-level entry"
+fi
+
+# ---------------------------------------------------------------------------
+# M43 T3 — tests/versioncheck.py, the comparison job's own reader. The workflow
+# runs it against directories `actions/download-artifact` unpacked; here it is
+# run against a legs tree built out of THIS run's own extractions, so the
+# unplanted control is a comparison over real dumps of real renders rather than
+# over invented rows.
+#
+# Two legs of identical content is what a green matrix looks like, so the
+# control below is the shape the workflow reports on a healthy run.
+# ---------------------------------------------------------------------------
+M43L="$WORK/m43legs"
+rm -rf "$M43L"
+mkdir -p "$M43L/index-pinned" "$M43L/index-floor"
+for pair in "demo.html:m43-demo-html" "named-indexes.html:m43-named-html" \
+            "book.html:m43-book-html" "demo.pdf:m43-demo-pdf"; do
+  cp "$WORK/${pair#*:}.txt" "$M43L/index-pinned/${pair%%:*}.txt"
+  cp "$WORK/${pair#*:}.txt" "$M43L/index-floor/${pair%%:*}.txt"
+done
+
+M43CMP="$WORK/m43-compare.txt"
+python3 tests/versioncheck.py compare "$M43L" pinned > "$M43CMP" 2>&1 \
+  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison reader calls two legs holding the same extractions different"; }
+# AC2 asks the comparison to name each fixture it compared, so the report is
+# read rather than the exit status alone: a reader that compared nothing and a
+# reader that compared three fixtures both exit 0.
+# The fixture name is the extraction's own, with the `.html.txt` suffix off,
+# so `demo.html.txt` and `demo.pdf.txt` are two formats of the one fixture.
+for fixture in demo named-indexes book; do
+  grep -qE "^ok +M43-AC2: $fixture — the .* leg emits the index" "$M43CMP" \
+    || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not name $fixture as a fixture it compared"; }
+done
+grep -qF -- '3 comparison(s) over 3 fixture(s)' "$M43CMP" \
+  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not state that it compared the 3 HTML extractions it was given"; }
+grep -qF -- '1 PDF extraction(s) were uploaded and are not compared' "$M43CMP" \
+  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not say that the PDF extraction beside them was left uncompared, so a reader cannot tell it was excluded from one that was never there"; }
+pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the 3 fixtures it compared, while saying that the PDF extraction beside them is uploaded and deliberately not compared"
+
+# The matrix the workflow renders on: two exact versions on a push, and the
+# release channel added on a scheduled or manual run.
+M43LEGS_PUSH=$(python3 tests/versioncheck.py legs 1.4.549 1.10.18 push)
+printf '%s' "$M43LEGS_PUSH" | grep -qF '"name": "release"' \
+  && fail "M43-AC1: a push run's matrix carries the release-channel leg, whose red can trace to an upstream release rather than to a commit"
+for leg in floor pinned; do
+  printf '%s' "$M43LEGS_PUSH" | grep -qF "\"name\": \"$leg\"" \
+    || fail "M43-AC1: a push run's matrix carries no \`$leg\` leg"
+done
+M43LEGS_CRON=$(python3 tests/versioncheck.py legs 1.4.549 1.10.18 schedule)
+printf '%s' "$M43LEGS_CRON" | grep -qF '"name": "release"' \
+  || fail "M43-AC1: a scheduled run's matrix carries no release-channel leg"
+M43LEGS_HAND=$(python3 tests/versioncheck.py legs 1.4.549 1.10.18 workflow_dispatch)
+printf '%s' "$M43LEGS_HAND" | grep -qF '"name": "release"' \
+  || fail "M43-AC1: a manually dispatched run's matrix carries no release-channel leg"
+pass "M43-AC1: the matrix a push renders on is the floor and pinned legs alone, and a scheduled or manually dispatched run adds the release-channel leg"
+
+# The pinned leg's version is asked of pages.yml rather than written into
+# versions.yml, so this asserts the asking works and that its answer is the
+# pin the M42 check above judges — one reader, one pin, no second copy.
+M43PINNED=$(python3 tests/pagescheck.py version .github/workflows/pages.yml)
+grep -qF "version: $M43PINNED" .github/workflows/pages.yml \
+  || fail "M43-AC1: the version mode reports the Pages workflow pinning Quarto to $M43PINNED, which is not a version that file names"
+pass "M43-AC1: the pinned leg's version is read out of .github/workflows/pages.yml at run time ($M43PINNED) rather than copied into the version matrix"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M43 T3 — a planted defect per CLAUSE of the comparison reader, the matrix
+  # builder and the version mode. Each legs tree is built by copying the
+  # control tree above and breaking exactly one thing about it, so the reader
+  # that goes red below is the reader that ran green on the same tree unbroken.
+  # -------------------------------------------------------------------------
+  M43V="$WORK/m43vprobe"
+  rm -rf "$M43V"
+  mkdir -p "$M43V"
+
+  # <name> — a copy of the control legs tree at $M43V/<name>, for one clause
+  # to break.
+  m43_legs_copy() {
+    rm -rf "$M43V/$1"
+    cp -R "$M43L" "$M43V/$1"
+    [ -f "$M43V/$1/index-floor/demo.html.txt" ] \
+      || fail "M43 self-test: the copied legs tree holds no floor extraction of demo.html, so the case below is not about the tree the control read"
+  }
+
+  m43_legs_copy differ
+  printf '0\tPlanted Term\t#qi-mark-99\n' >> "$M43V/differ/index-floor/demo.html.txt"
+  m43_planted 'a leg emitting an index row the baseline leg does not, which is the difference this whole matrix exists to find' \
+    'the `floor` leg emits a different index from the `pinned` leg' \
+    python3 tests/versioncheck.py compare "$M43V/differ" pinned
+  # The report is read too: a difference nobody can locate is a red run with no
+  # next step.
+  python3 tests/versioncheck.py compare "$M43V/differ" pinned > "$M43V/differ.txt" 2>&1 || true
+  grep -qF 'Planted Term' "$M43V/differ.txt" \
+    || { cat "$M43V/differ.txt" >&2; fail "M43 self-test: the comparison reports a difference without naming the row that differs"; }
+  grep -qE '^FAIL: M43-AC2: demo — the `floor` leg emits a different index' "$M43V/differ.txt" \
+    || { cat "$M43V/differ.txt" >&2; fail "M43 self-test: the comparison reports a difference without naming the fixture it is in and the leg pair it is between"; }
+  printf 'ok   self-test: the difference the comparison reports names both the fixture and the row that differs\n'
+
+  m43_legs_copy oneleg
+  rm -rf "$M43V/oneleg/index-floor"
+  m43_planted 'a run in which only the baseline leg uploaded, which would otherwise be compared against itself' \
+    'this job would pass by comparing nothing' \
+    python3 tests/versioncheck.py compare "$M43V/oneleg" pinned
+
+  m43_legs_copy nobaseline
+  rm -rf "$M43V/nobaseline/index-pinned"
+  m43_planted 'a run in which the baseline leg itself never uploaded' \
+    'holds no `index-pinned` directory' \
+    python3 tests/versioncheck.py compare "$M43V/nobaseline" pinned
+
+  m43_legs_copy nohtml
+  rm -f "$M43V/nohtml/index-pinned"/*.html.txt
+  m43_planted 'a baseline leg carrying no HTML extraction, over which every leg would be compared on an empty set of fixtures' \
+    'would be compared over an empty set of fixtures' \
+    python3 tests/versioncheck.py compare "$M43V/nohtml" pinned
+
+  m43_legs_copy emptydump
+  : > "$M43V/emptydump/index-pinned/demo.html.txt"
+  : > "$M43V/emptydump/index-floor/demo.html.txt"
+  m43_planted 'two legs whose extraction of a fixture is empty, which compares equal while saying nothing about any index' \
+    'agrees with anything' \
+    python3 tests/versioncheck.py compare "$M43V/emptydump" pinned
+
+  m43_legs_copy skewed
+  rm -f "$M43V/skewed/index-floor/book.html.txt"
+  m43_planted 'two legs that did not render the same fixtures, whose intersection would report agreement about a fixture one never rendered' \
+    'did not render the same fixtures' \
+    python3 tests/versioncheck.py compare "$M43V/skewed" pinned
+
+  m43_planted 'a path the legs were never unpacked to' \
+    'is not a directory' \
+    python3 tests/versioncheck.py compare "$M43V/never-unpacked" pinned
+
+  m43_planted 'a matrix whose floor and pinned legs name the same Quarto version, which compares a version against itself' \
+    'compares a version against itself' \
+    python3 tests/versioncheck.py legs 1.10.18 1.10.18 push
+
+  # The version mode's own promise: stdout carries the version ALONE, so a
+  # workflow step can capture it into a matrix entry. Read on a workflow whose
+  # pin this reader refuses, where a diagnostic printed to stdout would be
+  # captured as if it were a version.
+  M43WF="$M43V/channel-pin.yml"
+  sed 's|version: 1.10.18|version: release|' .github/workflows/pages.yml > "$M43WF"
+  cmp -s .github/workflows/pages.yml "$M43WF" \
+    && fail "M43 self-test: the mutation for the channel pin changed nothing, so the case below is about the unplanted workflow"
+  M43OUT="$M43V/channel-pin.out"
+  python3 tests/pagescheck.py version "$M43WF" > "$M43OUT" 2>"$M43V/channel-pin.err" \
+    && fail "M43 self-test: the version mode reported a version for a workflow naming a release channel, which is not a pin"
+  [ ! -s "$M43OUT" ] \
+    || { cat "$M43OUT" >&2; fail "M43 self-test: the version mode printed to stdout while failing, so a workflow step would capture its diagnostic as the version"; }
+  grep -qF 'not an exact version string' "$M43V/channel-pin.err" \
+    || { cat "$M43V/channel-pin.err" >&2; fail "M43 self-test: the version mode failed on a channel pin, but not by saying it is not an exact version"; }
+  printf 'ok   self-test: the version mode fails on <<a workflow naming a release channel where an exact pin is required>>, saying so on stderr and leaving stdout empty\n'
+
+  pass "M43 T3 self-test: each clause of the comparison reader, the matrix builder and the version mode is planted on its own and shown red, while the same readers pass unplanted on this run's own extractions — a leg emitting a row the baseline does not, one leg alone, a missing baseline, a baseline with no HTML extraction, an empty extraction, two legs that rendered different fixtures, a path nothing was unpacked to, a matrix whose two exact legs are the same version, and a workflow whose pin is a channel"
+fi
+
+# ---------------------------------------------------------------------------
+# M43-AC5 — README and the site's Tests page each name the Quarto version the
+# floor leg installs. The version is not written into this check: it is read
+# out of the workflow that installs it, so the number cannot move there while
+# the two documents go on naming the old one.
+# ---------------------------------------------------------------------------
+M43_VERSIONS_WF=".github/workflows/versions.yml"
+python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md site/tests.qmd \
+  || fail "M43-AC5: README and the site's Tests page do not both name the Quarto version the version matrix's floor leg installs (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M43 T5 — a planted defect per clause of the floor reader. The workflow's
+  # side and each document's side, so neither half can go quiet.
+  # -------------------------------------------------------------------------
+  M43F="$WORK/m43floor"
+  rm -rf "$M43F"
+  mkdir -p "$M43F"
+
+  # <name> <source> <sed script> — a mutated copy, asserted to differ.
+  m43_floor_plant() {
+    sed "$3" "$2" > "$M43F/$1"
+    cmp -s "$2" "$M43F/$1" \
+      && fail "M43 self-test: the mutation for $1 changed nothing in $2, so the case below is about the unplanted file"
+    return 0
+  }
+
+  m43_floor_plant nofloor.yml "$M43_VERSIONS_WF" "s|FLOOR: |QUARTO_FLOOR: |"
+  m43_planted 'a workflow declaring no floor version at all, over which the two documents would be held against nothing' \
+    'declares 0 `FLOOR:` line(s)' \
+    python3 tests/versioncheck.py floor "$M43F/nofloor.yml" README.md site/tests.qmd
+
+  m43_floor_plant twofloors.yml "$M43_VERSIONS_WF" \
+    "s|^\(  *\)FLOOR: \(.*\)\$|\1FLOOR: \2\n\1FLOOR: \2|"
+  m43_planted 'a workflow declaring two floor versions, so which one the documents are held against is not a fact' \
+    'declares 2 `FLOOR:` line(s)' \
+    python3 tests/versioncheck.py floor "$M43F/twofloors.yml" README.md site/tests.qmd
+
+  m43_floor_plant channelfloor.yml "$M43_VERSIONS_WF" "s|FLOOR: '1.4.549'|FLOOR: 'release'|"
+  m43_planted 'a floor that is a channel name rather than a release a reader could install' \
+    'not an exact dotted version' \
+    python3 tests/versioncheck.py floor "$M43F/channelfloor.yml" README.md site/tests.qmd
+
+  m43_planted 'no document named at all, over which this check would sweep nothing' \
+    'would sweep nothing' \
+    python3 tests/versioncheck.py floor "$M43_VERSIONS_WF"
+
+  # Each document's own side, planted separately: a check green because it
+  # only ever reads the first document is a check the second is not held by.
+  m43_floor_plant readme-noversion.md README.md "s|1\.4\.549|1.4|g"
+  m43_planted 'a README that names the 1.4 line but not the release the floor leg installs' \
+    'readme-noversion.md does not name that version anywhere' \
+    python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" "$M43F/readme-noversion.md" site/tests.qmd
+
+  m43_floor_plant tests-noversion.qmd site/tests.qmd "s|1\.4\.549|1.4|g"
+  m43_planted "a Tests page that names the 1.4 line but not the release the floor leg installs" \
+    'tests-noversion.qmd does not name that version anywhere' \
+    python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md "$M43F/tests-noversion.qmd"
+
+  pass "M43 T5 self-test: each clause of the floor reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and documents — no floor declared, two floors declared, a floor that is a channel name, no document to hold against it, and each of the two documents in turn dropping the version while the other keeps it"
+fi
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

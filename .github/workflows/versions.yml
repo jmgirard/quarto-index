@@ -1,0 +1,231 @@
+# Renders the fixture corpus on several Quarto versions and compares the index
+# each one emits (M43).
+#
+# `_extensions/index/_extension.yml` declares `quarto-required: ">=1.4.0"` and
+# README says "Quarto 1.4 or later". Until this workflow existed that was a
+# claim nothing ran: `pages.yml` pins one exact version, which satisfies the
+# range trivially and fences nothing about its floor.
+#
+# THE FLOOR. `1.4.549`. A dated observation and not a standing claim: on
+# 2026-08-26 it was the oldest non-prerelease Quarto release satisfying
+# `>=1.4.0`, and `v1.4.0` is no release at all. The query that returned it:
+#
+#     gh api --paginate repos/quarto-dev/quarto-cli/releases \
+#       --jq '.[] | select(.prerelease | not) | .tag_name' \
+#       | sort -V | head -5
+#
+# Nothing here re-runs that query, and nothing checks that 1.4.549 is still the
+# oldest such release — an older one cannot appear, and a newer floor is a
+# decision, not a fact to be detected.
+#
+# This workflow is deliberately NOT part of `pages.yml`. A red floor render
+# there would block the site from publishing, and the floor's health has
+# nothing to do with whether the documentation is servable; here it reports
+# itself and stops.
+#
+# The release-channel leg runs weekly and on demand rather than on every push.
+# The floor and pinned legs are exact versions, so their red always traces to a
+# commit; a channel leg can go red on an upstream release alone, which is not a
+# signal a push is answerable for.
+#
+# Nothing checks this workflow's own steps. D-011 refuses a scan that pins
+# names and shapes in a source file it does not execute; the evidence that
+# these steps work is the runs themselves, including the deliberately red ones
+# recorded in the milestone's Review section, as it was for `pages.yml`.
+name: Versions
+
+on:
+  push:
+  schedule:
+    # Weekly, Mondays. The minute is off the hour: GitHub drops scheduled runs
+    # at popular times under load.
+    - cron: '37 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Which versions this run renders on. A job of its own because the pinned
+  # leg's version is not written here: it is read out of `pages.yml`, so that
+  # "the version the Pages workflow installs" stays true when that pin moves
+  # instead of leaving a second copy of the number here to drift.
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      legs: ${{ steps.legs.outputs.legs }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Work out which Quarto versions this run renders on
+        id: legs
+        shell: bash
+        env:
+          # The floor, stated once, in the file whose header records where it
+          # came from and when.
+          FLOOR: '1.4.549'
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          PINNED=$(python3 tests/pagescheck.py version .github/workflows/pages.yml)
+          # `versioncheck` writes its FAIL line to stdout, and stdout here is
+          # captured into the matrix rather than printed. Left as a bare
+          # capture, a refused matrix kills the step under `set -e` with the
+          # reason sitting unread in $LEGS; this puts it in the log.
+          if ! LEGS=$(python3 tests/versioncheck.py legs "$FLOOR" "$PINNED" "$EVENT"); then
+            printf '%s\n' "$LEGS" >&2
+            exit 1
+          fi
+          printf 'legs=%s\n' "$LEGS" >> "$GITHUB_OUTPUT"
+          printf 'rendering on: %s\n' "$LEGS"
+
+  render:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      # A red leg must not cancel the others: which legs agree is the whole
+      # question, and a cancelled leg uploads nothing for the comparison to
+      # read.
+      fail-fast: false
+      matrix:
+        leg: ${{ fromJSON(needs.plan.outputs.legs) }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # `quarto install tinytex` asks the GitHub API which TinyTeX release is
+      # current, and unauthenticated that call is rate-limited per runner
+      # address (pages.yml records a 403 on one of six runs started together).
+      # The run's own token authenticates it.
+      - name: Install Quarto ${{ matrix.leg.version }} and TinyTeX
+        uses: quarto-dev/quarto-actions/setup@v2
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: ${{ matrix.leg.version }}
+          tinytex: true
+
+      # `imakeidx`, which the LaTeX back-end loads. It is installed HERE, with
+      # the runner's own TinyTeX, rather than left to Quarto's on-demand
+      # installer: Quarto 1.4.549 answers `compilation failed- no matching
+      # packages` when it goes looking for `imakeidx.sty` against today's TeX
+      # Live repository, which turned the floor leg red on two runs out of
+      # three while this workflow was being proved. Run on every leg and not
+      # only the floor one, so the legs differ in their Quarto version and in
+      # nothing else.
+      #
+      # `tlmgr` is not on the runner's PATH: `quarto install tinytex` puts the
+      # distribution under `~/.TinyTeX` and Quarto locates it itself. Its bin
+      # directory is found rather than named — TeX Live's platform directory is
+      # `x86_64-linux` on one release and `universal-linux` on another — and a
+      # tree with no bin directory is a loud failure, never a silently skipped
+      # install. The PATH change is local to this step, so the render below
+      # still reaches TeX exactly the way Quarto arranges it.
+      - name: Install the TeX packages the PDF fixtures load
+        run: |
+          set -euo pipefail
+          TLBIN=$(find "$HOME/.TinyTeX/bin" -mindepth 1 -maxdepth 1 -type d \
+            | head -1)
+          if [ -z "$TLBIN" ]; then
+            echo "FAIL: no TeX Live bin directory under $HOME/.TinyTeX/bin" >&2
+            exit 1
+          fi
+          export PATH="$TLBIN:$PATH"
+          tlmgr --version | head -1
+          # The repository is named rather than left to `mirror.ctan.org`'s
+          # redirect: that redirect handed the two legs different mirrors on
+          # one run, and the floor leg's was stale enough that `tlmgr` refused
+          # to run at all ("seems to be older than the local installation").
+          # This is TinyTeX's own default repository, which the runs that
+          # worked were already using.
+          tlmgr option repository https://tlnet.yihui.org
+          # The installed tlmgr is older than the repository it talks to and
+          # refuses to install anything until it updates itself.
+          tlmgr update --self
+          tlmgr install imakeidx
+          kpsewhich imakeidx.sty
+
+      # `pdftotext`, which tests/pdfindex.py reads a printed index through.
+      # TinyTeX does not carry it and the runner image is not relied on to.
+      - name: Install poppler-utils
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+
+      # Each render is followed immediately by its extraction, before the next
+      # render can overwrite the artifact: the book renders HTML and PDF into
+      # the same `_book` directory, and the second render replaces the first.
+      #
+      # `indexdump.py` is what makes each of these a check and not just a
+      # render: it fails loudly on an artifact carrying no index, so a leg that
+      # rendered at exit 0 having printed nothing is red here rather than
+      # uploading an empty extraction for the comparison to agree with.
+      - name: Render the fixtures and extract each index
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/extract"
+          mkdir -p "$OUT"
+
+          quarto render examples/html-index.qmd --to html
+          python3 tests/indexdump.py html examples/html-index.html \
+            > "$OUT/html-index.html.txt"
+
+          quarto render examples/named-indexes.qmd --to html
+          python3 tests/indexdump.py html examples/named-indexes.html \
+            > "$OUT/named-indexes.html.txt"
+
+          quarto render examples/demo.qmd --to html
+          python3 tests/indexdump.py html examples/demo.html \
+            > "$OUT/demo.html.txt"
+
+          ( cd examples/book && quarto render --to html )
+          python3 tests/indexdump.py html examples/book/_book/last.html \
+            > "$OUT/book.html.txt"
+
+          quarto render examples/demo.qmd --to pdf
+          python3 tests/indexdump.py pdf examples/demo.pdf \
+            > "$OUT/demo.pdf.txt"
+
+          ( cd examples/book && quarto render --to pdf )
+          python3 tests/indexdump.py pdf \
+            examples/book/_book/Index-Book-Fixture.pdf \
+            > "$OUT/book.pdf.txt"
+
+          wc -l "$OUT"/*.txt
+
+      - name: Upload this leg's extractions
+        uses: actions/upload-artifact@v4
+        with:
+          name: index-${{ matrix.leg.name }}
+          path: ${{ runner.temp }}/extract
+          if-no-files-found: error
+
+  compare:
+    needs: [plan, render]
+    # `needs` gates on success by default, so one red leg would skip the job
+    # that reports the verdict — `fail-fast: false` keeps the other legs
+    # rendering and uploading, and then nobody is told whether they agreed.
+    # The comparison's own clauses report a leg that uploaded nothing as a leg
+    # that uploaded nothing, so running here over whatever landed is a reading
+    # and never a false green.
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Download every leg's extractions
+        uses: actions/download-artifact@v4
+        with:
+          path: legs
+          pattern: index-*
+
+      # The comparison's own reader, so that which fixture and which leg pair
+      # differed is in the log rather than in a bare `diff` exit status. It
+      # reports the size of every domain it sweeps, so a run whose legs failed
+      # to upload reads as legs missing and never as agreement.
+      - name: Compare each leg's HTML index against the pinned leg's
+        run: python3 tests/versioncheck.py compare legs pinned

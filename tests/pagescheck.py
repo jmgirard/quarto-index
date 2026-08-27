@@ -9,6 +9,12 @@
       other operator is an error rather than a comparison this reader guesses
       at.
 
+  version <workflow.yml>
+      Print, to stdout and alone, the exact Quarto version that workflow pins
+      — the same pin `pin` above locates, read through the same function. The
+      version matrix (M43) runs one leg on "the version pages.yml installs",
+      and asks this rather than carrying its own copy of the number.
+
   built <gallery.yml> <rendered-site>
       The rendered site carries the entry page a visitor lands on, and every
       fixture the gallery declaration shows has its gallery page, its rendered
@@ -106,13 +112,21 @@ def parts(version):
     return tuple(int(piece) for piece in version.split('.'))
 
 
-def check_pin(workflow, extension):
+def read_pin(workflow):
+    """The exact Quarto version `workflow` pins: `(version, None)`, or
+    `(None, message)` naming what stopped this reader.
+
+    Split out of `check_pin` so the version matrix can ASK a workflow which
+    Quarto it installs (the `version` mode) through the same reader that judges
+    the pin, rather than through a second pattern that could come to disagree
+    with this one about where the pin lives.
+    """
     text = open(workflow, encoding='utf-8').read()
     steps = list(SETUP_STEP.finditer(text))
     if len(steps) != 1:
-        return fail('%s declares %d step(s) using quarto-dev/quarto-actions/'
-                    'setup; the pin this check is about lives in exactly one'
-                    % (workflow, len(steps)))
+        return None, ('%s declares %d step(s) using quarto-dev/quarto-actions/'
+                      'setup; the pin this check is about lives in exactly one'
+                      % (workflow, len(steps)))
     step = steps[0]
     first = text[:step.start()].count('\n') + 1
     pins = []
@@ -121,16 +135,40 @@ def check_pin(workflow, extension):
         if match:
             pins.append((number, match.group('value')))
     if len(pins) != 1:
-        return fail('%s declares %d `version:` line(s) inside the step that '
-                    'uses quarto-dev/quarto-actions/setup; the pin this check '
-                    'is about is exactly one' % (workflow, len(pins)))
+        return None, ('%s declares %d `version:` line(s) inside the step that '
+                      'uses quarto-dev/quarto-actions/setup; the pin this '
+                      'check is about is exactly one' % (workflow, len(pins)))
     number, pinned = pins[0]
     if len(pinned) > 2 and pinned[0] == pinned[-1] and pinned[0] in '"\'':
         pinned = pinned[1:-1]
     if not EXACT.match(pinned):
-        return fail('%s line %d pins Quarto to %r, which is not an exact '
-                    'version string; a channel name or a partial version is '
-                    'not a pin' % (workflow, number, pinned))
+        return None, ('%s line %d pins Quarto to %r, which is not an exact '
+                      'version string; a channel name or a partial version is '
+                      'not a pin' % (workflow, number, pinned))
+    return pinned, None
+
+
+def check_version(workflow):
+    """Print the exact Quarto version `workflow` pins, and nothing else.
+
+    stdout carries the version alone, so a workflow step can capture it into a
+    matrix entry; anything this reader has to say goes to stderr. The version
+    matrix's pinned leg is defined as "the version pages.yml installs" (M43),
+    and reading it here at run time is what keeps that true when the pin moves,
+    instead of leaving a second copy of the number to drift.
+    """
+    pinned, bad = read_pin(workflow)
+    if bad is not None:
+        print('FAIL: M43: %s' % bad, file=sys.stderr)
+        return 1
+    print(pinned)
+    return 0
+
+
+def check_pin(workflow, extension):
+    pinned, bad = read_pin(workflow)
+    if bad is not None:
+        return fail(bad)
 
     ranges = []
     with open(extension, encoding='utf-8') as handle:
@@ -318,6 +356,7 @@ def check_output(status, ignored, tracked):
 
 MODES = {
     'pin': (check_pin, 2),
+    'version': (check_version, 1),
     'output': (check_output, 3),
     'url': (check_url, 3),
     'built': (check_built, 2),

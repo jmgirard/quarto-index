@@ -1,6 +1,6 @@
 # M46: The claim-container registry is retired, not widened
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -23,22 +23,41 @@ check that reads its domain through `claim_text`. Three registered containers �
 `README_RECIPE_LINES`, `README_INDEXES_CLAIMS`, `README_INDEXES_YAML` — are read
 by checks naming their own page and are kept with those checks; only their
 registry rows go. Replace `README_PRERELEASE_STALE` with a standalone check over
-`git ls-files 'site/*.qmd'` plus `README.md`. Repair `tests/sitecheck.py links`
-(percent-decoding, containment, the base-path clause) and make the standing site
-render clean its output directory. Append D-027.
+the tracked documentation pages; the branch carries it, and after the 2026-08-27
+descope no criterion promises its domain or its report. Repair
+`tests/sitecheck.py links`' base-path clause; the percent-decoding and
+containment repairs the branch also carries are promised by no criterion. Make
+the standing site render clean its output directory. Append D-027.
 
 **Out:** the version-matrix disposition → M47. Pinning documentation prose beyond
 the two retired pre-release sentences → the residual-risk candidate row D-027
 creates. Rewording any site page → not this milestone; the docs' text is
 untouched. Every remaining unplanted clause in the kept site checks → the same
-candidate row.
+candidate row. The pre-release check's report clause and the link check's
+containment clause, withdrawn from AC2 and AC4 on 2026-08-27 after three defect
+returns → the candidate row "Pre-release sweep and link containment, the clauses
+M46 could not hold", carrying F19, F20, F21 and F23.
 
 ## Acceptance criteria
 
 - [x] AC1: In `tests/run-tests.sh`, `grep -c 'CLAIM_CONTAINERS\|claim_row\|claim_kind\|claim_domain\|claim_text'` reports 0.
-- [ ] AC2: `tests/run-tests.sh` carries a check whose swept domain is `git ls-files 'site/*.qmd'` plus `README.md`, which reports that domain's size, and which exits non-zero with a `FAIL:` line naming the offending file when either retired pre-release sentence is present in a tracked page supplied through the suite's overlay handle.
+- [x] AC2: ~~withdrawn 2026-08-27~~ by the descope amendment (third defect
+  return) — this criterion now asserts nothing. It promised a check whose swept
+  domain is the tracked documentation pages, which reports that domain's size,
+  and which exits non-zero with a `FAIL:` line naming the offending file; that
+  promise left the milestone for the ROADMAP candidate row "Pre-release sweep
+  and link containment, the clauses M46 could not hold", and the check ships on
+  this branch unpromised. The tick records that nothing is outstanding, not that
+  anything was verified. The row is held rather than removed so the numbering
+  rounds 1-3 reviewed still reads.
 - [x] AC3: Every row of the `CLAIM_CONTAINERS` array as it stands at commit 9e6b567 is dispositioned in this file's Decisions section — still pinned by a named kept check, or deleted with the reason.
-- [ ] AC4: `tests/sitecheck.py links` percent-decodes each link's path part and resolves it only against files inside the captured site directory it was given.
+- [x] AC4: ~~withdrawn 2026-08-27~~ by the same amendment (AC4's fourth failure
+  by a containment mechanism of the same shape) — this criterion now asserts
+  nothing. It promised that `tests/sitecheck.py links` percent-decodes each
+  link's path part and resolves it only against files inside the captured site
+  directory it was given; that promise left the milestone for the same candidate
+  row. The repairs ship on this branch unpromised, and only AC5's base-path
+  clause still binds that reader. The tick and the held row read as AC2's do.
 - [x] AC5: `tests/sitecheck.py links`' base-path clause exits non-zero on a root-relative link carrying no base segment.
 - [x] AC6: The suite's standing site render removes its output directory before rendering into it.
 - [x] AC7: `tests/run-tests.sh` completes at exit 0 and prints its check count, and `tests/run-tests.sh --self-test` completes at exit 0.
@@ -46,9 +65,9 @@ candidate row.
 ## Coverage
 
 - AC1 → T2
-- AC2 → T3
+- AC2 → withdrawn 2026-08-27; no task binds it
 - AC3 → T1, T2
-- AC4 → T4
+- AC4 → withdrawn 2026-08-27; no task binds it
 - AC5 → T4
 - AC6 → T5
 - AC7 → T7
@@ -94,6 +113,10 @@ candidate row.
 - 2026-08-27: full run at exit 0, 386 checks (385 before, the output-directory pin's new line); `--self-test` at exit 0, 698 checks (694 before: the two symlink cases, the C-quoted-path case, and that same pin line). Status set to review.
 - 2026-08-27: review round 3 returned the milestone to in-progress. AC4 fails: `tests/sitecheck.py links` resolves outside the captured site by a fourth containment mechanism — `index.html` is appended for a directory target after the containment test and never re-tested, so a link naming a directory whose `index.html` symlinks above the capture resolves outside it at exit 0. AC2 fails: only `OSError` is caught around the domain read, so a tracked page carrying a non-UTF-8 byte raises `UnicodeDecodeError` and aborts before any `FAIL:` line naming the offending file is printed. AC1, AC3, AC5, AC6 and AC7 verified on fresh evidence (suite 386 checks, self-test 698, both exit 0 on a clean sequential re-run; `cairn_validate` exit 0). Seven findings logged in the Review section; third defect return, and AC4's fourth failure by a containment mechanism of the same shape. Both thrash-rule triggers fire and compose; the disposition goes to the user.
 - 2026-08-27: the user chose descope over parking, over escalation via `/milestone-brief`, and over a same-objective re-cut. M46 narrows to its verified criteria — AC1, AC3, AC5, AC6 and AC7 — via the gated criterion-amendment protocol (`/milestone-implement` step 6). AC2's `FAIL:`-line clause and AC4's containment clause leave the milestone; the amendment gate settles whether each exits to a candidate row or to a split milestone, and carries F19, F20, F21 and F23 with it. The narrowed set is then re-reviewed.
+- 2026-08-27: amendment (descope, gated) — AC2 and AC4 withdrawn; the criteria set narrows to AC1, AC3, AC5, AC6 and AC7. Both criteria stay in the list, struck through and restated as asserting nothing, with the numbering unchanged so rounds 1-3's evidence still points at something; they are held as ticked rows rather than removed because `cairn_validate`'s coverage check requires the criteria to run contiguously AC1..ACn, which removal would have satisfied only by renumbering the five survivors across three rounds of recorded evidence. Their ticks record that nothing is outstanding, not that anything was verified. Scope In no longer promises the pre-release check's domain or report, nor the link check's percent-decoding or containment; Scope Out names both withdrawn clauses and their home. Coverage loses AC2 → T3 and AC4 → T4; T3 and T4 stay checked, the code they wrote shipping unpromised. This narrows the criteria set, D-118's recommended direction; no criterion wording was added or widened, so no fresh-reader criteria audit was owed.
+- 2026-08-27: the withdrawn clauses' home, chosen at the amendment gate over one row each and over a split milestone: one new ROADMAP candidate row, "Pre-release sweep and link containment, the clauses M46 could not hold", carrying F19, F20, F21 and F23. A split milestone would have committed to re-cutting around the same predicate, which is what the thrash rule's (b) diagnosis says buys the next mechanism rather than a fix; the row waits for a containment approach that tests the resolved path once, after every rewrite.
+- 2026-08-27: the new candidate row put ROADMAP at 60 lines against its <60 cap, so the two M32 review R2 rows — the marker-less plants' capture and the HTML-cost check's wrapper — were clustered into one row, no content dropped. Back to 59 lines / 16,333 bytes; `cairn_validate` exits 0 with every check passing.
+- 2026-08-27: verify slot re-run after the amendment — `tests/run-tests.sh` exits 0 at 386 checks and `tests/run-tests.sh --self-test` exits 0 at 698, unchanged from round 3 as expected: this session changed tracking files only. Status set to review; the narrowed criteria set goes back to `/milestone-review`.
 
 ## Decisions
 

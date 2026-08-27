@@ -22,7 +22,8 @@ Bind `tests/indexdump.py`'s `minted` identifiers to a rendered fixture. Align th
 suite's local comparison control with the workflow's fixture set. Stop `m43_dump`
 discarding the reader's `FAIL:` line. Correct the workflow header's claim that
 nothing checks its own source, and state in `check_floor`'s own header what it
-reads and does not.
+reads and does not, narrowing its bare substring document test and closing its
+file handles in the same pass.
 
 **Out:** the PDF half of the matrix → M47, which this depends on because the
 control's fixture set is aligned against the render step M47 leaves behind.
@@ -55,7 +56,7 @@ so, and this milestone writes that comment.
 - [ ] T3: Assert each member of `minted` against a rendered fixture's dump; plant a changed value for each, one substitution per plant.
 - [ ] T4: Align the local control's fixture set with the render step M47 leaves — `html-index` currently has no unplanted control ([run-tests.sh:15664](tests/run-tests.sh:15664)).
 - [ ] T5: Stop `m43_dump` discarding the reader's stderr ([run-tests.sh:15643](tests/run-tests.sh:15643)); plant a failing dump and assert the `FAIL:` line reaches the suite's output.
-- [ ] T6: Correct the workflow header's "Nothing checks this workflow's own steps" sentence to name `check_floor`'s `FLOOR:` read ([versioncheck.py:260](tests/versioncheck.py:260)), and state in `check_floor`'s own header what it reads and does not.
+- [ ] T6: Correct the workflow header's "Nothing checks this workflow's own steps" sentence to name `check_floor`'s `FLOOR:` read ([versioncheck.py:260](tests/versioncheck.py:260)), and state in `check_floor`'s own header what it reads and does not. In the same pass narrow that reader's bare substring document test — `version not in body` matches `1.4.549` inside a longer version string — and close the file handles it leaves open.
 - [ ] T7: Full run plus `--self-test`; dispatch the Versions workflow and record the run URLs as evidence.
 
 ## Work log

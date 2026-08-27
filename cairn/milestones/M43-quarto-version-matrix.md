@@ -342,6 +342,14 @@ the run recorded under AC1.
   rather than re-verified.** Flagged in the milestone file itself rather than
   hidden.
 
+**After the gate-directed fixes.** Both fixes are in `versions.yml` alone.
+Run https://github.com/jmgirard/quarto-index/actions/runs/33030985730 on the
+fixed head: `plan`, both render legs and `compare` green, with the comparison
+still reporting `4 comparison(s) over 4 fixture(s)` byte-identical. What
+`if: always()` changes is only reachable with a red leg, so what this run
+shows is that the change costs the green path nothing; the skipped-comparison
+case it fixes is on record in probe run 33025975119.
+
 ### Triage
 
 Put to the maintainer at the merge gate as the ranked list above. Directed:

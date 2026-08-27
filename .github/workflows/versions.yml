@@ -126,6 +126,13 @@ jobs:
           fi
           export PATH="$TLBIN:$PATH"
           tlmgr --version | head -1
+          # The repository is named rather than left to `mirror.ctan.org`'s
+          # redirect: that redirect handed the two legs different mirrors on
+          # one run, and the floor leg's was stale enough that `tlmgr` refused
+          # to run at all ("seems to be older than the local installation").
+          # This is TinyTeX's own default repository, which the runs that
+          # worked were already using.
+          tlmgr option repository https://tlnet.yihui.org
           # The installed tlmgr is older than the repository it talks to and
           # refuses to install anything until it updates itself.
           tlmgr update --self

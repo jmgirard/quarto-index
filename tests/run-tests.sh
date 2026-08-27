@@ -14996,6 +14996,7 @@ fi
 # judged against. Each is read from the CAPTURE (M24) and not from the working
 # tree.
 # ---------------------------------------------------------------------------
+M43_VERSIONS_WF=".github/workflows/versions.yml"
 M43_DEMO_HTML="$CAPTURE_ROOT/demo-html/demo.html"
 M43_NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
 M43_BOOK_HTML="$CAPTURE_ROOT/book-html/_book/last.html"
@@ -15025,19 +15026,41 @@ m43_dump() {
   printf '%s\n' "$out"
 }
 
-m43_dump html "$M43_DEMO_HTML" 1 "examples/demo.qmd (HTML)" > "$WORK/m43-demo-html.txt"
-m43_dump html "$M43_NAMED_HTML" 2 "examples/named-indexes.qmd (HTML)" > "$WORK/m43-named-html.txt"
-m43_dump html "$M43_BOOK_HTML" 1 "examples/book (HTML)" > "$WORK/m43-book-html.txt"
+# One row per fixture the matrix renders: the name the workflow writes that
+# fixture's extraction under, the artifact THIS run captured, how many index
+# sections it must carry, and the label a failure names. The names collected
+# here are what the workflow's own render step is held against below, so the
+# set this loop dumps and the set the matrix compares cannot come apart
+# silently (M48).
+M43_HTML_FIXTURES="html-index|$CAPTURE_ROOT/html-index/html-index.html|1|examples/html-index.qmd (HTML)
+named-indexes|$M43_NAMED_HTML|2|examples/named-indexes.qmd (HTML)
+demo|$M43_DEMO_HTML|1|examples/demo.qmd (HTML)
+book|$M43_BOOK_HTML|1|examples/book (HTML)"
+
+M43_COVERED=""
+while IFS='|' read -r m43name m43art m43sections m43label; do
+  m43_dump html "$m43art" "$m43sections" "$m43label" > "$WORK/m43-$m43name.txt"
+  M43_COVERED="$M43_COVERED $m43name"
+done <<< "$M43_HTML_FIXTURES"
+[ -n "$M43_COVERED" ] \
+  || fail "M43-T1: the fixture table dumped nothing, so every clause below would be about an empty set"
 # Its rows are asserted by `m43_dump` itself and read by nothing else, so
 # the serialization goes nowhere.
 m43_dump pdf "$M43_DEMO_PDF" - "examples/demo.qmd (PDF)" > /dev/null
-pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index — and reduces a printed PDF index, which the matrix no longer renders, to a non-empty row form, which is both this control's own assertion and what the pdf mode's planted clauses under --self-test are judged against"
+pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/html-index.qmd and one for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index — and reduces a printed PDF index, which the matrix no longer renders, to a non-empty row form, which is both this control's own assertion and what the pdf mode's planted clauses under --self-test are judged against"
+
+# M43-AC4 — and those are the fixtures the workflow renders, no more and no
+# fewer. The names come from the table above rather than being written out
+# again here, so what is held against the workflow is the set this run
+# actually dumped.
+python3 tests/versioncheck.py fixtures "$M43_VERSIONS_WF" $M43_COVERED \
+  || fail "M43-AC4: the version matrix renders a different set of fixtures from the one the suite dumps locally (its own FAIL line is above)"
 
 # The href form is what the criterion asks for and the count form is what the
 # manifests above read; the two are the same function under one flag, so this
 # asserts the flag reached the dump rather than trusting that it did. A book
 # locator points at another PAGE, which no count could ever say.
-grep -qE '^[0-9]	Beta	one\.html#' "$WORK/m43-book-html.txt" \
+grep -qE '^[0-9]	Beta	one\.html#' "$WORK/m43-book.txt" \
   || fail "M43-T1: the book dump does not state WHERE a locator points (expected an entry row whose locator field names one.html), so the comparison is over locator counts and not over targets"
 pass "M43-T1: the dump states each locator's target and not its count — the book's Beta entry names the chapter page its locator points at"
 
@@ -15356,10 +15379,9 @@ fi
 M43L="$WORK/m43legs"
 rm -rf "$M43L"
 mkdir -p "$M43L/index-pinned" "$M43L/index-floor"
-for pair in "demo.html:m43-demo-html" "named-indexes.html:m43-named-html" \
-            "book.html:m43-book-html"; do
-  cp "$WORK/${pair#*:}.txt" "$M43L/index-pinned/${pair%%:*}.txt"
-  cp "$WORK/${pair#*:}.txt" "$M43L/index-floor/${pair%%:*}.txt"
+for m43name in $M43_COVERED; do
+  cp "$WORK/m43-$m43name.txt" "$M43L/index-pinned/$m43name.html.txt"
+  cp "$WORK/m43-$m43name.txt" "$M43L/index-floor/$m43name.html.txt"
 done
 
 M43CMP="$WORK/m43-compare.txt"
@@ -15367,15 +15389,18 @@ python3 tests/versioncheck.py compare "$M43L" pinned > "$M43CMP" 2>&1 \
   || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison reader calls two legs holding the same extractions different"; }
 # AC2 asks the comparison to name each fixture it compared, so the report is
 # read rather than the exit status alone: a reader that compared nothing and a
-# reader that compared three fixtures both exit 0.
-# The fixture name is the extraction's own, with the `.html.txt` suffix off.
-for fixture in demo named-indexes book; do
+# reader that compared every fixture both exit 0.
+# The fixture name is the extraction's own, with the `.html.txt` suffix off,
+# and the set swept is the table above rather than a list written again here.
+M43COUNT=0
+for fixture in $M43_COVERED; do
   grep -qE "^ok +M43-AC2: $fixture — the .* leg emits the index" "$M43CMP" \
     || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not name $fixture as a fixture it compared"; }
+  M43COUNT=$((M43COUNT + 1))
 done
-grep -qF -- '3 comparison(s) over 3 fixture(s)' "$M43CMP" \
-  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not state that it compared the 3 HTML extractions it was given"; }
-pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the 3 fixtures it compared"
+grep -qF -- "$M43COUNT comparison(s) over $M43COUNT fixture(s)" "$M43CMP" \
+  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not state that it compared the $M43COUNT HTML extractions it was given"; }
+pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the $M43COUNT fixtures it compared"
 
 # The matrix the workflow renders on: two exact versions on a push, and the
 # release channel added on a scheduled or manual run.
@@ -15439,7 +15464,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # verdict is, and a red run is exactly when a reader needs to know whether
   # the sweep was empty. Held here because M45's block, which was the only
   # other reader of the line on a failing run, went with the PDF clauses (M47).
-  grep -qF -- 'comparison(s) over 3 fixture(s)' "$M43V/differ.txt" \
+  grep -qF -- "comparison(s) over $M43COUNT fixture(s)" "$M43V/differ.txt" \
     || { cat "$M43V/differ.txt" >&2; fail "M43 self-test: the red comparison does not state the size of the domain it swept, which is when a reader most needs to know whether the sweep was empty"; }
   printf 'ok   self-test: the difference the comparison reports names both the fixture and the row that differs, and the red report still states the size of the domain it swept\n'
 
@@ -15508,7 +15533,6 @@ fi
 # out of the workflow that installs it, so the number cannot move there while
 # the two documents go on naming the old one.
 # ---------------------------------------------------------------------------
-M43_VERSIONS_WF=".github/workflows/versions.yml"
 python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md site/tests.qmd \
   || fail "M43-AC5: README and the site's Tests page do not both name the Quarto version the version matrix's floor leg installs (its own FAIL line is above)"
 
@@ -15562,6 +15586,34 @@ if [ "${1:-}" = "--self-test" ]; then
     python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md "$M43F/tests-noversion.qmd"
 
   pass "M43 T5 self-test: each clause of the floor reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and documents — no floor declared, two floors declared, a floor that is a channel name, no document to hold against it, and each of the two documents in turn dropping the version while the other keeps it"
+
+  # -------------------------------------------------------------------------
+  # M48 T4 — a planted defect per clause of the fixture-set reader. Its green
+  # above is over this repository's own workflow and this run's own fixture
+  # table, so each clause is shown able to go red on its own here.
+  # -------------------------------------------------------------------------
+  m43_floor_plant nodump.yml "$M43_VERSIONS_WF" "s|python3 tests/indexdump.py html|python3 tests/somethingelse.py html|"
+  m43_planted 'a render step whose extractions are written by something other than the dump this reader is about, over which it would hold the suite against an empty set' \
+    'carries no `indexdump.py html` invocation' \
+    python3 tests/versioncheck.py fixtures "$M43F/nodump.yml"
+
+  m43_planted 'no fixture name given at all, over which this check would sweep nothing' \
+    'would sweep nothing' \
+    python3 tests/versioncheck.py fixtures "$M43_VERSIONS_WF"
+
+  # Both directions, because the two are different defects: a fixture the
+  # matrix renders that no local control dumps ships with its extraction
+  # unexercised until a leg runs, and a control over an artifact no leg
+  # renders is a control about nothing the matrix compares.
+  m43_planted 'a suite covering one fixture fewer than the render step extracts' \
+    'are not the same set' \
+    python3 tests/versioncheck.py fixtures "$M43_VERSIONS_WF" demo named-indexes book
+
+  m43_planted 'a suite covering a fixture the render step does not extract' \
+    'are not the same set' \
+    python3 tests/versioncheck.py fixtures "$M43_VERSIONS_WF" $M43_COVERED no-such-fixture
+
+  pass "M48 T4 self-test: each clause of the fixture-set reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and this run's fixture table — a render step writing its extractions with another command, no fixture name to hold against it, a name missing from the suite's set, and a name in it the workflow does not extract"
 fi
 }
 

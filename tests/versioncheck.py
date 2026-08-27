@@ -16,6 +16,16 @@ which Quarto rendered it?
       always traces to a commit, while a channel leg can go red on an upstream
       release alone.
 
+  fixtures <workflow.yml> <name> [<name> ...]
+      The workflow's render step reduces one rendered artifact per fixture
+      with `tests/indexdump.py` and writes each extraction under its fixture's
+      own name. Those names are the domain `compare` below sweeps, and the
+      acceptance suite dumps the same fixtures locally so that the extraction
+      the matrix rests on is exercised on every run. This holds the two sets
+      equal: a fixture added to the workflow and not to the suite ships with
+      its dump unexercised until a leg runs, and one added to the suite alone
+      is a control over an artifact no leg renders.
+
   floor <workflow.yml> <doc> [<doc> ...]
       The workflow declares exactly one floor version, and every document
       named after it states that version. README and the site's Tests page
@@ -70,6 +80,17 @@ FLOOR = re.compile(
 # the same question of the same kind of value. Imported rather than copied so
 # the two cannot drift apart (M48).
 EXACT = pagescheck.EXACT
+
+# The extraction target of one `indexdump.py html` invocation in the workflow's
+# render step: the command and the redirection it is continued onto, so a
+# `.html.txt` path written by anything else is not read as a fixture. This is
+# the whole of what the `fixtures` mode reads out of the workflow — it says
+# nothing about which artifact is rendered, in what order, or with what tool,
+# and a step rewritten so that no invocation matches reports an empty domain
+# rather than agreement (D-011 licenses a scan narrowed to what it reads).
+EXTRACTION = re.compile(
+    r'python3 tests/indexdump\.py html [^\n]*\\\n\s*>\s*'
+    r'"[^"\n]*/(?P<name>[^"/\n]+)' + re.escape(HTML_SUFFIX) + r'"')
 
 # The events on which the release-channel leg is rendered too.
 CHANNEL_EVENTS = ('schedule', 'workflow_dispatch')
@@ -239,7 +260,33 @@ def check_floor(workflow, *docs):
     return 0
 
 
+def check_fixtures(workflow, *names):
+    with open(workflow, encoding='utf-8') as handle:
+        text = handle.read()
+    rendered = sorted(set(EXTRACTION.findall(text)))
+    if not rendered:
+        return fail('%s carries no `indexdump.py html` invocation writing a '
+                    '`*%s` extraction, so this check would hold the suite '
+                    'against an empty set of fixtures'
+                    % (workflow, HTML_SUFFIX))
+    if not names:
+        return fail('no fixture name was given to hold against the %d the %s '
+                    'render step extracts (%s), so this check would sweep '
+                    'nothing' % (len(rendered), workflow, ', '.join(rendered)))
+    covered = sorted(set(names))
+    if covered != rendered:
+        return fail('%s extracts %s and the suite covers %s; the fixture the '
+                    'matrix compares and the fixture this run dumps locally '
+                    'are not the same set'
+                    % (workflow, rendered, covered))
+    print('ok   M43-AC4: %s extracts %d fixture(s) — %s — and the suite dumps '
+          'that same set locally'
+          % (workflow, len(rendered), ', '.join(rendered)))
+    return 0
+
+
 MODES = {
+    'fixtures': (check_fixtures, 1),
     'floor': (check_floor, 1),
     'legs': (check_legs, 3),
     'compare': (check_compare, 2),

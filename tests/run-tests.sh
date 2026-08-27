@@ -15797,9 +15797,9 @@ for fixture in demo named-indexes book; do
 done
 grep -qF -- '3 comparison(s) over 3 fixture(s)' "$M43CMP" \
   || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not state that it compared the 3 HTML extractions it was given"; }
-grep -qF -- '1 PDF extraction(s) were uploaded and are not compared' "$M43CMP" \
-  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not say that the PDF extraction beside them was left uncompared, so a reader cannot tell it was excluded from one that was never there"; }
-pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the 3 fixtures it compared, while saying that the PDF extraction beside them is uploaded and deliberately not compared"
+grep -qE '^ok +M43-AC2: the `pinned` leg carries 1 PDF extraction\(s\) — demo — and each of floor carries the same fixture name set' "$M43CMP" \
+  || { cat "$M43CMP" >&2; fail "M45-AC3: the comparison report does not say that the PDF extraction beside them was found on every leg under the same fixture name, so a reader cannot tell the name set was judged rather than printed"; }
+pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the 3 fixtures it compared, while holding the PDF extraction beside them to being present on every leg under the same fixture name and its content deliberately uncompared"
 
 # The matrix the workflow renders on: two exact versions on a push, and the
 # release channel added on a scheduled or manual run.

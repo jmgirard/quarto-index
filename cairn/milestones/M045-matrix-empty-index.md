@@ -79,7 +79,7 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
       message says something different. In `tests/htmlindex.py`, narrow
       `index_entries`'s misplaced-list message to a list that really is not a
       direct child, and report an entry list carrying no entry as that.
-- [ ] T2 In `tests/versioncheck.py`, make `check_compare` (`:158-162`) fail
+- [x] T2 In `tests/versioncheck.py`, make `check_compare` (`:158-162`) fail
       when the baseline leg carries no `*.pdf.txt`, and when a non-baseline
       leg's `.pdf.txt` name set differs from the baseline's — after the three
       guards at `:101-129` that return first, so each new message is reachable.
@@ -102,6 +102,7 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
 - 2026-08-26: /milestone-implement: status in-progress, branch `m045-matrix-empty-index` cut from main at 8d7ae92.
 - 2026-08-26: amendment (substantive, mini gate): Scope In grows by `tests/htmlindex.py`'s `index_entries`, whose empty-entry-list failure today names a placement that is false of the page; AC1 asks the failure to report no entry row and the message is written there. Criteria unchanged.
 - 2026-08-26: T1 — `html_rows` fails on a section row with nothing under it, naming each such section; `index_entries` names an empty direct-child entry list as that, and its misplaced-list message narrows to a list that really is not a direct child. Suite green (403 checks).
+- 2026-08-26: T2 — `check_compare` fails when the baseline leg carries no `*.pdf.txt` and when another leg's PDF fixture-name set differs from it, reporting both findings alongside any HTML difference rather than returning on the first; the module header and the surviving report line now say the names are compared and the content is not, and the suite's own control reads the new line. Suite green (403 checks).
 
 ## Decisions
 

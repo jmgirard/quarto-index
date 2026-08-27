@@ -516,9 +516,13 @@ stood between eighteen such sentence sets and the pages they were compared
 against until M46 retired it (D-027, D-028), taking fourteen of the sets with
 it. `tests/sitecheck.py` carries the website's own checks: the render writes a
 page for every tracked source; every link the site makes to its own content
-resolves — its path part percent-decoded, resolved only against files inside the
-captured directory, and, where a base path is given, required to carry that
-segment, since the site is served under it; README is still the short pointer;
+resolves — its path part percent-decoded, resolved against files inside the
+captured directory in every shape but one, a link naming a directory whose
+`index.html` symlinks above the capture, which the containment test does not
+reach because `index.html` is appended after it (M46 left that escape open and
+withdrew the criterion promising otherwise; the candidate row carries it), and,
+where a base path is given, required to carry that segment, since the site is
+served under it; README is still the short pointer;
 and — for the migration itself, run against the merge base rather than standing
 in the suite — every moved heading landed and no prose was lost.
 

@@ -118,6 +118,7 @@ M46 could not hold", carrying F19, F20, F21 and F23.
 - 2026-08-27: the new candidate row put ROADMAP at 60 lines against its <60 cap, so the two M32 review R2 rows — the marker-less plants' capture and the HTML-cost check's wrapper — were clustered into one row, no content dropped. Back to 59 lines / 16,333 bytes; `cairn_validate` exits 0 with every check passing.
 - 2026-08-27: verify slot re-run after the amendment — `tests/run-tests.sh` exits 0 at 386 checks and `tests/run-tests.sh --self-test` exits 0 at 698, unchanged from round 3 as expected: this session changed tracking files only. Status set to review; the narrowed criteria set goes back to `/milestone-review`.
 - 2026-08-27: review round 4 over the narrowed criteria set — AC1, AC3, AC5, AC6 and AC7 all verified on fresh evidence (suite 386 checks, self-test 698, both exit 0; `cairn_validate` exit 0; PR #46 CI green at 01fe435). Nine findings logged; none meets the return floor. F24, F25 and F26 — DESIGN.md, ROADMAP.md and D-027 each asserting a containment or reporting property the shipped code does not have — go to the gate as fix-now; F27 and F28 are filed on the descope's candidate row; F29-F32 rejected with reasons.
+- 2026-08-27: gate triage — the maintainer chose fixing F24, F25 and F26 before merging over merging as-is. DESIGN.md's containment sentence and the ROADMAP publishing-workflow row now name the one shape that escapes, and D-029 supersedes D-027's report clause. Tracking files only; no file the suite reads was touched.
 
 ## Decisions
 
@@ -476,3 +477,23 @@ shipped code does not have — and go to the gate as fix-now. F27 and F28 are
 false-report-only defects in code that ships unpromised and are filed on the
 candidate row the descope created. F29, F30, F31 and F32 are rejected with
 reasons above.
+
+#### Fix-now work directed at the gate
+
+The maintainer chose, at the merge chip, to fix F24, F25 and F26 before merging.
+All three are record-accuracy corrections in tracking files; no file the
+acceptance suite reads was touched, so the AC7 evidence above stands unchanged.
+
+- **F24** — `cairn/DESIGN.md`'s architecture paragraph no longer says the link
+  check resolves "only against files inside the captured directory". It now
+  names the one shape that escapes — a link naming a directory whose
+  `index.html` symlinks above the capture, which the containment test does not
+  reach because `index.html` is appended after it — and says M46 left it open,
+  withdrew the criterion promising otherwise, and put it on the candidate row.
+- **F25** — `cairn/ROADMAP.md`'s publishing-workflow row now reads "confines
+  resolution to the captured site in every shape but a link naming a directory
+  whose `index.html` symlinks above it, which the row above carries", so it no
+  longer contradicts the candidate row one line above it.
+- **F26** — D-029 appended, superseding D-027's report clause: the pre-release
+  check names the offending file only where every swept page decodes, which
+  nothing asserts. D-027 is append-only and its text is untouched.

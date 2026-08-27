@@ -3,7 +3,10 @@
 The version matrix renders the same fixtures under several Quarto releases and
 asks whether the index each one emits is the same. That question needs ONE
 serialization both sides are reduced to, produced by a command a workflow step
-can run against a single file:
+can run against a single file. The matrix renders HTML only, so `html` below is
+the mode it calls; `pdf` is called by the acceptance suite, which reads a
+printed index on the one Quarto version it runs (M47).
+
 
   html <file.html> — every generated index section on the page, in
       `htmlindex.section_rows()` form with the locator HREF form of an entry

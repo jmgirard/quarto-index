@@ -94,69 +94,31 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      # `quarto install tinytex` asks the GitHub API which TinyTeX release is
-      # current, and unauthenticated that call is rate-limited per runner
-      # address (pages.yml records a 403 on one of six runs started together).
-      # The run's own token authenticates it.
-      - name: Install Quarto ${{ matrix.leg.version }} and TinyTeX
+      - name: Install Quarto ${{ matrix.leg.version }}
         uses: quarto-dev/quarto-actions/setup@v2
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           version: ${{ matrix.leg.version }}
-          tinytex: true
 
-      # `imakeidx`, which the LaTeX back-end loads. It is installed HERE, with
-      # the runner's own TinyTeX, rather than left to Quarto's on-demand
-      # installer: Quarto 1.4.549 answers `compilation failed- no matching
-      # packages` when it goes looking for `imakeidx.sty` against today's TeX
-      # Live repository, which turned the floor leg red on two runs out of
-      # three while this workflow was being proved. Run on every leg and not
-      # only the floor one, so the legs differ in their Quarto version and in
-      # nothing else.
+      # This matrix renders the fixtures to HTML and compares the HTML index
+      # each leg emits, and nothing else. It renders no PDF, and so installs
+      # no TeX and no extraction tool for one.
       #
-      # `tlmgr` is not on the runner's PATH: `quarto install tinytex` puts the
-      # distribution under `~/.TinyTeX` and Quarto locates it itself. Its bin
-      # directory is found rather than named — TeX Live's platform directory is
-      # `x86_64-linux` on one release and `universal-linux` on another — and a
-      # tree with no bin directory is a loud failure, never a silently skipped
-      # install. The PATH change is local to this step, so the render below
-      # still reaches TeX exactly the way Quarto arranges it.
-      - name: Install the TeX packages the PDF fixtures load
-        run: |
-          set -euo pipefail
-          TLBIN=$(find "$HOME/.TinyTeX/bin" -mindepth 1 -maxdepth 1 -type d \
-            | head -1)
-          if [ -z "$TLBIN" ]; then
-            echo "FAIL: no TeX Live bin directory under $HOME/.TinyTeX/bin" >&2
-            exit 1
-          fi
-          export PATH="$TLBIN:$PATH"
-          tlmgr --version | head -1
-          # The repository is named rather than left to `mirror.ctan.org`'s
-          # redirect: that redirect handed the two legs different mirrors on
-          # one run, and the floor leg's was stale enough that `tlmgr` refused
-          # to run at all ("seems to be older than the local installation").
-          # This is TinyTeX's own default repository, which the runs that
-          # worked were already using.
-          tlmgr option repository https://tlnet.yihui.org
-          # The installed tlmgr is older than the repository it talks to and
-          # refuses to install anything until it updates itself.
-          tlmgr update --self
-          tlmgr install imakeidx
-          kpsewhich imakeidx.sty
-
-      # `pdftotext`, which tests/pdfindex.py reads a printed index through.
-      # TinyTeX does not carry it and the runner image is not relied on to.
-      - name: Install poppler-utils
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y poppler-utils
-
-      # Each render is followed immediately by its extraction, before the next
-      # render can overwrite the artifact: the book renders HTML and PDF into
-      # the same `_book` directory, and the second render replaces the first.
+      # That is deliberate. Two Quarto releases typeset PDF through different
+      # TeX engines, and the M30 and M33 lessons put engine and font
+      # differences in a PDF's text layer, so a comparison of PDF content
+      # would be red about the engine rather than about this extension.
+      # Comparing the fixture NAMES alone was tried instead (M45), and bought
+      # no coverage beyond what the PDF render it needed was already giving.
+      # That render is what M47 removed: it put a hardcoded third-party TeX
+      # repository and a self-updating TeX package manager on the every-push
+      # path, and no leg has typeset a fixture since. Restoring a PDF leg waits
+      # on an extraction shown engine-neutral across lualatex and xelatex.
+      #
+      # Each render below is followed immediately by its extraction. With one
+      # format the four renders write four distinct paths and none can overtake
+      # another; the ordering is kept because a second format would render into
+      # a path an earlier one already wrote — the book renders into `_book`
+      # whatever the format — and the interleaving is what made that safe.
       #
       # `indexdump.py` is what makes each of these a check and not just a
       # render: it fails loudly on an artifact carrying no index, so a leg that
@@ -184,15 +146,6 @@ jobs:
           ( cd examples/book && quarto render --to html )
           python3 tests/indexdump.py html examples/book/_book/last.html \
             > "$OUT/book.html.txt"
-
-          quarto render examples/demo.qmd --to pdf
-          python3 tests/indexdump.py pdf examples/demo.pdf \
-            > "$OUT/demo.pdf.txt"
-
-          ( cd examples/book && quarto render --to pdf )
-          python3 tests/indexdump.py pdf \
-            examples/book/_book/Index-Book-Fixture.pdf \
-            > "$OUT/book.pdf.txt"
 
           wc -l "$OUT"/*.txt
 

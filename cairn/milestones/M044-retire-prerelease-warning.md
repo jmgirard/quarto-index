@@ -9,7 +9,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP3
-- **Branch/PR:** `m044-retire-prerelease-warning`
+- **Branch/PR:** `m044-retire-prerelease-warning` · https://github.com/jmgirard/quarto-index/pull/44
 
 ## Goal
 
@@ -40,23 +40,23 @@ Any version-marker or changelog change → none is owed; 0.1.0 shipped.
 
 ## Acceptance criteria
 
-- [ ] AC1 No file in the domain `git ls-files 'site/*.qmd'` plus `README.md`
+- [x] AC1 No file in the domain `git ls-files 'site/*.qmd'` plus `README.md`
       carries any of the four sentences of the retired pre-release block,
       compared with whitespace normalized on both sides; the check reporting
       it names the number of files it swept.
-- [ ] AC2 That check exits non-zero naming the restored sentence and its
+- [x] AC2 That check exits non-zero naming the restored sentence and its
       container, on each of three planted copies of that domain: the block's
       first sentence restored into `README.md`, restored into
       `site/index.qmd`, and restored into `site/index.qmd` re-wrapped across a
       line break at a different column.
-- [ ] AC3 `cairn/DESIGN.md`'s IP3 no longer names README as where the
+- [x] AC3 `cairn/DESIGN.md`'s IP3 no longer names README as where the
       at-your-own-risk statement lives, and carries an in-place amendment
       marker naming this milestone and its decision entry, in the form IP2
       carries for D-016.
-- [ ] AC4 `cairn/DESIGN.md`'s Architecture sentence describing README
+- [x] AC4 `cairn/DESIGN.md`'s Architecture sentence describing README
       (`cairn/DESIGN.md:481`) no longer lists the pre-release warning among
       what README carries.
-- [ ] AC5 `tests/run-tests.sh --self-test` is clean (the profile's `verify`
+- [x] AC5 `tests/run-tests.sh --self-test` is clean (the profile's `verify`
       slot, plus the fuller pre-review check it names).
 
 ## Coverage
@@ -102,3 +102,110 @@ Any version-marker or changelog change → none is owed; 0.1.0 shipped.
 ## Decisions
 
 ## Review
+
+Reviewed 2026-08-26 on `m044-retire-prerelease-warning` at PR #44, cut from
+`origin/main` unmoved since the branch (0 commits behind), tree clean.
+
+### Acceptance criteria
+
+- AC1 — met. `tests/run-tests.sh` emits `ok M44-AC1: all 4 sentence(s) of the
+  retired pre-release warning are absent from every one of the 21 file(s)
+  swept`. The 21 is the check's own count, read from the file list
+  `claim_text` wrote, and it matches an independent enumeration made here
+  (`git ls-files 'site/*.qmd'` = 20, plus `README.md`). An independent
+  fixed-string sweep of the same 21 files for each of the four sentences
+  found none present. The check's empty-domain guards were read: an empty
+  container and a swept list under two files each exit non-zero rather than
+  passing.
+- AC3 — met. `cairn/DESIGN.md:142-146` IP3 now reads "pre-release installs are
+  at-your-own-risk, with breaks recorded in the changelog (amended M44,
+  D-026)"; the three words `(stated in the README)` are gone and the marker
+  matches the form IP2 carries at `cairn/DESIGN.md:136` (`amended M33,
+  D-016`). D-026 exists at `cairn/DECISIONS.md:178` and names the amendment.
+- AC4 — met. `cairn/DESIGN.md:480-481` now reads "README is the pointer —
+  pitch, install, a link to the site, and short Examples and Tests sections";
+  the pre-release warning is no longer among what it lists.
+- AC2 — met. The `--self-test` run emits three `ok self-test: the check fails
+  on <<...>>` lines, one per planted restoration: into `README.md`, into the
+  site front page, and into the site front page re-wrapped across a line
+  break at a different column. Each plant asserts the check's own
+  `still present (README_PRERELEASE_STALE` output and each rebuilds the
+  domain from the file list the live check swept, with `m44_restore`
+  hard-failing if the target is not in that list or if the restoration
+  changed nothing. The "naming the restored sentence" half of the criterion
+  was verified here independently of the plants, by running the check's
+  Python against a re-wrapped restoration: it prints
+  `still present (README_PRERELEASE_STALE / warning header):
+  <<**Pre-release: install at your own risk.**>>` and exits 1.
+- AC5 — met. `tests/run-tests.sh --self-test` exits 0 with
+  `All checks passed (693 checks).` on the branch tip, run fresh at review.
+
+### Consistency gate
+
+- `cairn_validate.py` — exit 0, all checks passed, no advisory fired (the
+  `release window` advisory the last hygiene stamp expected reads OK here).
+- `cairn_impact.py --changed` — reports no changed principles, IP3's
+  amendment having landed in an earlier branch commit. Reconciled by hand
+  instead: every `IP3` reference under `cairn/` outside this milestone file is
+  either the principle itself (amended), append-only history
+  (`DECISIONS.md:26`, `D-026`, `reviews/archive/RB01`), or the ROADMAP hygiene
+  stamp replaced by this pass. No divergence.
+- Toolchain checks — the `generic` profile's `consistency-gate` slot names
+  none, so this half is a clean no-op. The suite it does name ran under AC5.
+
+### Independent review
+
+Three fresh-context lenses, none having seen the implementation, each on a
+distinct evidence base; the diff touches executable surface, so the full
+fan-out ran.
+
+- **[S] blame-history** — no findings. Traced each deletion to the commit that
+  added it (`22faf8e0` M01 for the README block, `5cff3467` M40 for the
+  `site/index.qmd` copy, the `sitecheck.py` `WARNING` clause and the
+  warning-removal plant) and judged each against D-026, which authorizes them
+  by name. Nothing deliberate is silently undone.
+- **[S] prior-PR-comments** — no prior-review evidence. Archived `## Review`
+  sections on the touched files carry nothing this diff reintroduces, and the
+  GitHub inline-comment probe found no real threads (as M13, M40, M42 and M43
+  each found before it). Zero findings, cleanly.
+- **[O] diff-bug** — seven findings, triaged below.
+
+### Findings and disposition
+
+- F1 (`tests/run-tests.sh:2007-2013`) — the failure never names the file
+  carrying the restored sentence: `everywhere` is the whole domain flattened
+  into one string, so AC2's README plant and its `site/index.qmd` plant
+  produce byte-identical output, and the code comment at :13637-13642 claims a
+  discrimination the check does not have. Disposition: follow-up.
+- F2 (`tests/run-tests.sh:13650, 13674-13700`) — only row 1 of the container's
+  four is ever planted; rows 2-4 are never shown red, so a typo in one would
+  forbid nothing while reading as enforced. All four rows were confirmed to
+  tile the deleted block exactly, so this is latent, not live. Disposition:
+  follow-up.
+- F3 (`tests/run-tests.sh:537-538`) — two forbidden rows are generic sentences
+  that are still true, the second nearly IP3's operative promise verbatim, so
+  a legitimate future stability sentence on a site page would be reported as
+  the retired warning coming back. Disposition: follow-up.
+- F4 (`tests/run-tests.sh:13676, 13682, 13698`) — the plants assert only
+  `still present (README_PRERELEASE_STALE`, the container half of AC2's
+  "naming the restored sentence and its container"; the sentence half is
+  untested by the plants. Verified here independently (AC2 evidence above),
+  so the criterion holds. Disposition: follow-up.
+- F5 (this file, AC1) — AC1 says "whitespace normalized on both sides" where
+  `flat()` also strips a leading blockquote marker per line. Rejected as a
+  criterion failure: marker-stripping only widens what can match, so absence
+  under it implies absence under whitespace alone, and AC1 as written is
+  satisfied. The widening was chosen and logged at the implement gate
+  (work log, 2026-08-26) and is stated in the code at :1970-1979.
+- F6 (`cairn/ROADMAP.md:4`) — the hygiene stamp still reads "M44 and M45
+  planned". Rejected: that stamp is the previous pass's, correct when written,
+  and this review's hygiene pass replaces it.
+- F7 (`cairn/DESIGN.md:481`) — a 56-character line mid-paragraph where its
+  neighbours run 71-79. Rejected as a pure style nitpick; the sentence itself
+  is correct per AC4.
+
+No finding meets the return floor: none demonstrates an acceptance criterion
+failing, and none is a load-bearing defect in what the suite does — the live
+check has no false-green path (its empty-container and empty-domain guards
+both exit non-zero), and F1/F2/F4 are plant- and diagnostic-strength gaps
+over a container whose four rows were verified correct.

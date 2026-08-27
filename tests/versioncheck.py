@@ -16,12 +16,34 @@ which Quarto rendered it?
       always traces to a commit, while a channel leg can go red on an upstream
       release alone.
 
+  fixtures <workflow.yml> <name> [<name> ...]
+      The workflow's render step reduces one rendered artifact per fixture
+      with `tests/indexdump.py` and writes each extraction under its fixture's
+      own name. The file is read whole: an invocation of that shape anywhere
+      in it counts, so a second job or a step outside the matrix carrying one
+      joins the set rather than being reported as sitting outside the step. Those names are the domain `compare` below sweeps, and the
+      acceptance suite dumps the same fixtures locally so that the extraction
+      the matrix rests on is exercised on every run. This holds the two sets
+      equal: a fixture added to the workflow and not to the suite ships with
+      its dump unexercised until a leg runs, and one added to the suite alone
+      is a control over an artifact no leg renders.
+
   floor <workflow.yml> <doc> [<doc> ...]
       The workflow declares exactly one floor version, and every document
       named after it states that version. README and the site's Tests page
       both tell a reader which Quarto the floor leg installs, and this is what
       stops the number moving in the workflow while the two documents go on
       naming the old one.
+
+      What it reads of the workflow is one `FLOOR:` line and the version on
+      it. It does not read which action installs that version, whether the leg
+      exists, what any step runs, or that the number is still the oldest
+      release the declared range admits — the workflow's own header records
+      where the number came from and when, and says that nothing re-derives
+      it. What it reads of each document is whether that exact version string
+      occurs in it, bounded so a longer version containing it does not count;
+      it does not read where in the document the version is named or what is
+      claimed about it there.
 
   compare <legs-dir> <baseline>
       `<legs-dir>` holds one directory per leg, named `index-<leg>` — the
@@ -62,7 +84,27 @@ HTML_SUFFIX = '.html.txt'
 # when the query that returned it ran.
 FLOOR = re.compile(
     r'^\s+FLOOR:\s*(?P<quote>[\'"]?)(?P<value>[^\'"\s]+)(?P=quote)\s*$', re.M)
+# A full dotted release number and nothing else. One home for the two readers
+# that ask it: the floor read below, and the Pages workflow's pin in
+# `tests/pagescheck.py`, which imports this name rather than carrying a second
+# copy the two could come to disagree about (M48). It lives here, in the
+# module whose imports are the standard library alone, so a reader the version
+# matrix runs does not load the docs site's gallery builder to ask it.
 EXACT = re.compile(r'^\d+\.\d+\.\d+$')
+
+# The extraction target of one `indexdump.py html` invocation: the command and
+# the redirection that follows it, whether on the same line or continued onto
+# the next, so a `.html.txt` path written by anything else is not read as a
+# fixture and an invocation written without a line continuation is not missed
+# (M48). This is the whole of what the `fixtures` mode reads out of the
+# workflow — it says nothing about which artifact is rendered, in what order,
+# with what tool, or which job or step the invocation sits in, and it is a
+# scan of the WHOLE file rather than of the render step alone; a file
+# rewritten so that no invocation matches reports an empty domain rather than
+# agreement (D-011 licenses a scan narrowed to what it reads).
+EXTRACTION = re.compile(
+    r'python3 tests/indexdump\.py html [^\n]*?(?:\\\n\s*)?>\s*'
+    r'"[^"\n]*/(?P<name>[^"/\n]+)' + re.escape(HTML_SUFFIX) + r'"')
 
 # The events on which the release-channel leg is rendered too.
 CHANNEL_EVENTS = ('schedule', 'workflow_dispatch')
@@ -205,8 +247,24 @@ def check_legs(floor, pinned, event):
     return 0
 
 
+def version_named(body, version):
+    """Whether `body` names `version` and not a longer version containing it.
+
+    A bare `version in body` reads `1.4.549` out of `1.4.5490` and out of
+    `1.4.549.1`, so a document left naming a release the workflow has moved off
+    could pass on a substring of the new number. The bound is over digits and
+    dots on either side, and over those alone: a sentence ending
+    `… Quarto 1.4.549.` still names it, `v1.4.549` still names it, and so do
+    `1.4.549-rc1` and `1.4.549b` — a longer version whose extra part is not a
+    digit or a dot is not caught here (M48).
+    """
+    return re.search(r'(?<![\d.])%s(?!\.?\d)' % re.escape(version),
+                     body) is not None
+
+
 def check_floor(workflow, *docs):
-    text = open(workflow, encoding='utf-8').read()
+    with open(workflow, encoding='utf-8') as handle:
+        text = handle.read()
     floors = FLOOR.findall(text)
     if len(floors) != 1:
         return fail('%s declares %d `FLOOR:` line(s); the floor version this '
@@ -220,8 +278,9 @@ def check_floor(workflow, *docs):
                     'declares, so this check would sweep nothing'
                     % (version, workflow))
     for doc in docs:
-        body = open(doc, encoding='utf-8').read()
-        if version not in body:
+        with open(doc, encoding='utf-8') as handle:
+            body = handle.read()
+        if not version_named(body, version):
             return fail('%s pins the floor leg to Quarto %s and %s does not '
                         'name that version anywhere, so a reader is not told '
                         'which Quarto the floor is actually run on'
@@ -232,7 +291,33 @@ def check_floor(workflow, *docs):
     return 0
 
 
+def check_fixtures(workflow, *names):
+    with open(workflow, encoding='utf-8') as handle:
+        text = handle.read()
+    rendered = sorted(set(EXTRACTION.findall(text)))
+    if not rendered:
+        return fail('%s carries no `indexdump.py html` invocation writing a '
+                    '`*%s` extraction, so this check would hold the suite '
+                    'against an empty set of fixtures'
+                    % (workflow, HTML_SUFFIX))
+    if not names:
+        return fail('no fixture name was given to hold against the %d the %s '
+                    'render step extracts (%s), so this check would sweep '
+                    'nothing' % (len(rendered), workflow, ', '.join(rendered)))
+    covered = sorted(set(names))
+    if covered != rendered:
+        return fail('%s extracts %s and the suite covers %s; the fixture the '
+                    'matrix compares and the fixture this run dumps locally '
+                    'are not the same set'
+                    % (workflow, rendered, covered))
+    print('ok   M48-AC4: %s extracts %d fixture(s) — %s — and the suite dumps '
+          'that same set locally'
+          % (workflow, len(rendered), ', '.join(rendered)))
+    return 0
+
+
 MODES = {
+    'fixtures': (check_fixtures, 1),
     'floor': (check_floor, 1),
     'legs': (check_legs, 3),
     'compare': (check_compare, 2),

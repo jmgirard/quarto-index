@@ -10,11 +10,17 @@ printed index on the one Quarto version it runs (M47).
 
   html <file.html> — every generated index section on the page, in
       `htmlindex.section_rows()` form with the locator HREF form of an entry
-      row: `section<TAB>id<TAB>heading tag<TAB>title<TAB>id it follows`, then
-      that section's entry and letter-group rows in rendered order. WHERE each
-      locator points and not how many there are, because a Quarto version that
-      repointed an anchor without changing the count is exactly the difference
-      this comparison exists to find.
+      row: `section<TAB>id<TAB>heading tag<TAB>title`, then that section's
+      entry and letter-group rows in rendered order. WHERE each locator points
+      and not how many there are, because a Quarto version that repointed an
+      anchor without changing the count is exactly the difference this
+      comparison exists to find.
+
+      The section row names no element the section follows. That field is in
+      `section_rows`' count form, which the acceptance suite reads on one
+      Quarto version; here it would carry a scaffold id on a page whose author
+      wrote none, and two legs disagreeing about Quarto's own wrapper would be
+      reported as this extension emitting a different index (M48).
 
   pdf <file.pdf> [heading] — the printed index, in the order
       `pdfindex.read()` reconstructs it: `level<TAB>term<TAB>printed line`, one
@@ -50,9 +56,19 @@ import pdfindex  # noqa: E402
 
 # The HTML back-end's minted identifiers. run-tests.sh pins these to the
 # filter's own constants and passes them in through the environment; the
-# defaults here are for a caller outside the suite (a workflow step), where a
-# filter that had renamed them would leave this command finding no section at
-# all — which is a loud failure below, not a quiet empty dump.
+# defaults here are for a caller outside the suite (a workflow step), which a
+# filter that had renamed them would leave holding names the render no longer
+# carries. Each of the three is held against the rendered page — `SECTION_ID`
+# by the no-section clause in `html_rows`, the other two by `minted_carried`
+# below — so a rename is a loud failure naming the identifier that was not
+# found, and never a dump two legs agree about.
+#
+# Two bounds on that, neither of them the row form's: `ANCHOR_PREFIX` and
+# `ENTRY_PREFIX` reach no field this mode prints, so what they are held
+# against is the page's own ids and nothing in the output; and the section
+# clause fires on a renamed id only where the new name is not the old one
+# with a `-` suffix, which `index_sections` matches as the named-index shape
+# it is (M48).
 SECTION_ID = os.environ.get('HTML_SECTION_ID', 'qi-index')
 ANCHOR_PREFIX = os.environ.get('HTML_ANCHOR_PREFIX', 'qi-mark-')
 ENTRY_PREFIX = os.environ.get('HTML_ENTRY_PREFIX', 'qi-entry-')
@@ -93,17 +109,47 @@ def html_rows(rows, path):
     return rows
 
 
+def minted_carried(root, path):
+    """The identifiers this command was told the extension mints, held against
+    the ids the render actually carries.
+
+    A stale identifier is otherwise a quiet dump. `SECTION_ID` is loud already
+    — a page carrying no section under it dumps no row at all, which
+    `html_rows` above reports naming the id it looked for — but the other two
+    are not: with a renamed anchor or entry prefix the rows print exactly as
+    before, because nothing in a row is derived from either name. A caller
+    outside the suite runs on the defaults at the top of this file, so it is
+    exactly that caller a rename leaves reading a page through the old names.
+
+    An id and not an href: an href may point at an anchor an author wrote
+    (`one.html#gamma-anchor` in the book fixture), so "every locator names one
+    of ours" is false on a page this command must dump. What a rename cannot
+    leave behind is the id itself.
+    """
+    ids = htmlindex.all_ids(root)
+    for variable, prefix in (('HTML_ANCHOR_PREFIX', ANCHOR_PREFIX),
+                             ('HTML_ENTRY_PREFIX', ENTRY_PREFIX)):
+        if not any(ident.startswith(prefix) for ident in ids):
+            fail(f'{path}: no id on the page begins with {prefix!r}, the '
+                 f'prefix {variable} names, so the dump is being read through '
+                 f'an identifier this render does not use')
+
+
 def dump_html(path):
     """Every generated index section on the page, in href row form."""
     minted = (SECTION_ID, ANCHOR_PREFIX, ENTRY_PREFIX)
+    root = htmlindex.parse(path)
     try:
-        rows = htmlindex.section_rows(
-            htmlindex.parse(path), SECTION_ID, minted, hrefs=True)
+        rows = htmlindex.section_rows(root, SECTION_ID, minted, hrefs=True)
     except ValueError as bad:
         # A section this reader cannot read is a finding, not a traceback: a
         # crash exits non-zero for a reason nothing states.
         fail(f'{path}: {bad}')
-    return html_rows(rows, path)
+    rows = html_rows(rows, path)
+    # After the row judgements, so a page carrying no section at all is
+    # reported as that rather than as two missing prefixes.
+    minted_carried(root, path)
+    return rows
 
 
 def pdf_rows(entries, path, heading):

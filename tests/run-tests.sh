@@ -14996,6 +14996,7 @@ fi
 # judged against. Each is read from the CAPTURE (M24) and not from the working
 # tree.
 # ---------------------------------------------------------------------------
+M43_VERSIONS_WF=".github/workflows/versions.yml"
 M43_DEMO_HTML="$CAPTURE_ROOT/demo-html/demo.html"
 M43_NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
 M43_BOOK_HTML="$CAPTURE_ROOT/book-html/_book/last.html"
@@ -15007,10 +15008,15 @@ M43_DEMO_PDF="$CAPTURE_ROOT/demo-pdf/demo.pdf"
 m43_dump() {
   local mode="$1" artifact="$2" want_sections="$3" label="$4"
   local out sections entries
+  # The reader's stderr is NOT discarded. It is where the dump names what it
+  # swept and, on a failure, which clause it found — and a control that threw
+  # that away reported "the dump failed" with the reason gone, which is a red
+  # run nobody can act on (M48). Only stdout is captured; stderr goes to the
+  # suite's own output.
   out=$(HTML_SECTION_ID="$HTML_SECTION_ID" \
         HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
         HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
-        python3 tests/indexdump.py "$mode" "$artifact" 2>/dev/null) \
+        python3 tests/indexdump.py "$mode" "$artifact") \
     || fail "M43-T1: the dump of $label failed on an artifact this run rendered and captured"
   [ -n "$out" ] \
     || fail "M43-T1: the dump of $label exited 0 and printed nothing, which is the one answer a cross-leg comparison must not be able to agree on"
@@ -15025,19 +15031,45 @@ m43_dump() {
   printf '%s\n' "$out"
 }
 
-m43_dump html "$M43_DEMO_HTML" 1 "examples/demo.qmd (HTML)" > "$WORK/m43-demo-html.txt"
-m43_dump html "$M43_NAMED_HTML" 2 "examples/named-indexes.qmd (HTML)" > "$WORK/m43-named-html.txt"
-m43_dump html "$M43_BOOK_HTML" 1 "examples/book (HTML)" > "$WORK/m43-book-html.txt"
+# One row per fixture the matrix renders: the name the workflow writes that
+# fixture's extraction under, the artifact THIS run captured, how many index
+# sections it must carry, and the label a failure names. The names collected
+# here are what the workflow's own render step is held against below, so the
+# set this loop dumps and the set the matrix compares cannot come apart
+# silently (M48). The dump reads from /dev/null rather than from the loop's
+# own stdin, so a step added inside the loop that reads stdin cannot eat the
+# remaining fixture rows and shrink every domain below it in lockstep.
+M43_HTML_FIXTURES="html-index|$CAPTURE_ROOT/html-index/html-index.html|1|examples/html-index.qmd (HTML)
+named-indexes|$M43_NAMED_HTML|2|examples/named-indexes.qmd (HTML)
+demo|$M43_DEMO_HTML|1|examples/demo.qmd (HTML)
+book|$M43_BOOK_HTML|1|examples/book (HTML)"
+
+M43_COVERED=""
+while IFS='|' read -r m43name m43art m43sections m43label; do
+  m43_dump html "$m43art" "$m43sections" "$m43label" \
+    > "$WORK/m43-$m43name.txt" < /dev/null
+  M43_COVERED="$M43_COVERED $m43name"
+done <<< "$M43_HTML_FIXTURES"
+[ -n "$M43_COVERED" ] \
+  || fail "M43-T1: the fixture table dumped nothing, so every clause below would be about an empty set"
 # Its rows are asserted by `m43_dump` itself and read by nothing else, so
 # the serialization goes nowhere.
 m43_dump pdf "$M43_DEMO_PDF" - "examples/demo.qmd (PDF)" > /dev/null
-pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index — and reduces a printed PDF index, which the matrix no longer renders, to a non-empty row form, which is both this control's own assertion and what the pdf mode's planted clauses under --self-test are judged against"
+pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/html-index.qmd and one for examples/demo.qmd, two for the fixture declaring two, one for the book's aggregated index — and reduces a printed PDF index, which the matrix no longer renders, to a non-empty row form, which is both this control's own assertion and what the pdf mode's planted clauses under --self-test are judged against"
+
+# M48-AC4 — and those are the fixtures the workflow extracts, no more and no
+# fewer. The names come from the table above rather than being written out
+# again here, so what is held against the workflow is the set this run
+# actually dumped. Extracts and not renders: the reader reads the name each
+# dump is redirected into, never which artifact was rendered into it.
+python3 tests/versioncheck.py fixtures "$M43_VERSIONS_WF" $M43_COVERED \
+  || fail "M48-AC4: the version matrix extracts a different set of fixture names from the one the suite dumps locally (its own FAIL line is above)"
 
 # The href form is what the criterion asks for and the count form is what the
 # manifests above read; the two are the same function under one flag, so this
 # asserts the flag reached the dump rather than trusting that it did. A book
 # locator points at another PAGE, which no count could ever say.
-grep -qE '^[0-9]	Beta	one\.html#' "$WORK/m43-book-html.txt" \
+grep -qE '^[0-9]	Beta	one\.html#' "$WORK/m43-book.txt" \
   || fail "M43-T1: the book dump does not state WHERE a locator points (expected an entry row whose locator field names one.html), so the comparison is over locator counts and not over targets"
 pass "M43-T1: the dump states each locator's target and not its count — the book's Beta entry names the chapter page its locator points at"
 
@@ -15093,6 +15125,37 @@ if [ "${1:-}" = "--self-test" ]; then
     'no such artifact' \
     python3 tests/indexdump.py html "$M43W/absent.html"
 
+  # M48 T5 — and the reader's finding survives the control that wraps it. Run
+  # here as the suite runs it, through `m43_dump`, with stdout and stderr
+  # together: the plants above run the command directly, so none of them says
+  # anything about what the suite's own output carries when a dump fails under
+  # it.
+  M48OUT=$(m43_dump html "$M43W/nosection.html" 1 "a planted page" 2>&1) \
+    && fail "M48-AC5: the suite's own dump control passed on a page carrying no generated index section"
+  printf '%s\n' "$M48OUT" | grep -F 'carries no generated index section' \
+    | grep -q '^FAIL: ' \
+    || { printf '%s\n' "$M48OUT" >&2; fail "M48-AC5: the dump failed under the suite's control, but the reader's own FAIL: line naming what it found is not on the output"; }
+  printf '%s\n' "$M48OUT" | grep -q '^FAIL: M43-T1: the dump of a planted page failed' \
+    || { printf '%s\n' "$M48OUT" >&2; fail "M48-AC5: the suite's control did not name the dump it was running when the reader failed"; }
+  printf 'ok   M48-AC5: a failing dump under the suite exits non-zero carrying both the reader'"'"'s own FAIL: line naming what it found and the control'"'"'s line naming which dump it was running\n'
+
+  # The two minted prefixes the row form is not derived from (M48). A renamed
+  # anchor or entry prefix leaves every row printing exactly as before, so the
+  # only thing that can catch it is the page's own ids — which is what the
+  # reader now holds them against. One substitution per plant, each aimed at
+  # one prefix, so neither case can be passing on the other's mutation. The
+  # third member of the tuple, the section id, is the `nosection.html` case
+  # above: a page carrying no section under it dumps no row at all.
+  m43_plant staleanchor.html "$M43_DEMO_HTML" 's|id="qi-mark-|id="renamed-mark-|g'
+  m43_planted 'a render whose locator anchors carry a prefix other than the one this command was told the extension mints' \
+    "no id on the page begins with '$HTML_ANCHOR_PREFIX'" \
+    python3 tests/indexdump.py html "$M43W/staleanchor.html"
+
+  m43_plant staleentry.html "$M43_DEMO_HTML" 's|id="qi-entry-|id="renamed-entry-|g'
+  m43_planted 'a render whose index entries carry a prefix other than the one this command was told the extension mints' \
+    "no id on the page begins with '$HTML_ENTRY_PREFIX'" \
+    python3 tests/indexdump.py html "$M43W/staleentry.html"
+
   m43_planted 'a PDF printing no line that is the index heading, where the entry list starts' \
     'no index heading' \
     python3 tests/indexdump.py pdf "$M43_DEMO_PDF" 'Not The Index Heading'
@@ -15127,7 +15190,7 @@ M43ROWS
     'cannot read its indent levels' \
     m43_pdfrows nolevel0
 
-  pass "M43 self-test: each clause of tests/indexdump.py is planted on its own and shown red, while the same reader passes unplanted on this run's own captures — an index section the page does not carry, an index the reader cannot read at all, an artifact that does not exist, a heading the PDF does not print, a heading with no entry under it, and a column carrying no top-level entry"
+  pass "M43 self-test: each clause of tests/indexdump.py is planted on its own and shown red, while the same reader passes unplanted on this run's own captures — an index section the page does not carry, an index the reader cannot read at all, an artifact that does not exist, a heading the PDF does not print, a heading with no entry under it, a column carrying no top-level entry, and each of the two minted prefixes the row form is not derived from renamed in the render, which with the section-id case above is every member of the reader's minted tuple planted on its own"
 fi
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -15186,9 +15249,14 @@ if [ "${1:-}" = "--self-test" ]; then
 
   # The control: an index section carrying one entry row, on a page whose only
   # authored id is the section the index follows.
+  #
+  # Every page below carries the locator's own anchor in the body, as a render
+  # does: the entry links at `#<anchor prefix>1`, and a page linking at an
+  # anchor it does not carry is one the reader now refuses — it is a page whose
+  # ids are not the ones this command was told the extension mints (M48).
   m45_page one-entry.html <<HTMLPAGE
 <html><body>
-<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="intro"><h1>Intro</h1><p>Body <span id="${HTML_ANCHOR_PREFIX}1"></span>.</p></section>
 <section id="$HTML_SECTION_ID" class="level1 unnumbered">
 <h1 class="unnumbered">Index</h1>
 <ul>
@@ -15202,7 +15270,7 @@ HTMLPAGE
   # the reader looks for it and holds nothing.
   m45_page empty-list.html <<HTMLPAGE
 <html><body>
-<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="intro"><h1>Intro</h1><p>Body <span id="${HTML_ANCHOR_PREFIX}1"></span>.</p></section>
 <section id="$HTML_SECTION_ID" class="level1 unnumbered">
 <h1 class="unnumbered">Index</h1>
 <ul>
@@ -15215,7 +15283,7 @@ HTMLPAGE
   # groups can reach.
   m45_page no-list.html <<HTMLPAGE
 <html><body>
-<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="intro"><h1>Intro</h1><p>Body <span id="${HTML_ANCHOR_PREFIX}1"></span>.</p></section>
 <section id="$HTML_SECTION_ID" class="level1 unnumbered">
 <h1 class="unnumbered">Index</h1>
 </section>
@@ -15229,7 +15297,7 @@ HTMLPAGE
   # clause going quiet.
   m45_page misplaced-list.html <<HTMLPAGE
 <html><body>
-<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="intro"><h1>Intro</h1><p>Body <span id="${HTML_ANCHOR_PREFIX}1"></span>.</p></section>
 <section id="$HTML_SECTION_ID" class="level1 unnumbered">
 <h1 class="unnumbered">Index</h1>
 <div class="wrapper">
@@ -15247,7 +15315,7 @@ HTMLPAGE
   # the nesting, which is the change that actually happened.
   m45_page both-shapes.html <<HTMLPAGE
 <html><body>
-<section id="intro"><h1>Intro</h1><p>Body.</p></section>
+<section id="intro"><h1>Intro</h1><p>Body <span id="${HTML_ANCHOR_PREFIX}1"></span>.</p></section>
 <section id="$HTML_SECTION_ID" class="level1 unnumbered">
 <h1 class="unnumbered">Index</h1>
 <ul>
@@ -15264,7 +15332,7 @@ HTMLPAGE
   M45OUT="$M45W/one-entry.out"
   m45_dump "$M45W/one-entry.html" > "$M45OUT" 2>"$M45W/one-entry.err" \
     || { cat "$M45W/one-entry.err" >&2; fail "M45-AC1: the dump failed on the hand-written page carrying one entry row, so no planted case below is evidence of anything"; }
-  printf 'section\t%s\th1\tIndex\tintro\n0\tAlpha\t#%s1\n' \
+  printf 'section\t%s\th1\tIndex\n0\tAlpha\t#%s1\n' \
     "$HTML_SECTION_ID" "$HTML_ANCHOR_PREFIX" > "$M45W/one-entry.want"
   cmp -s "$M45OUT" "$M45W/one-entry.want" \
     || { diff "$M45W/one-entry.want" "$M45OUT" >&2; fail "M45-AC1: the dump of the hand-written one-entry page is not the section row and the one entry row that page carries"; }
@@ -15296,14 +15364,14 @@ import sys
 sys.path.insert(0, 'tests')
 import indexdump
 case = sys.argv[1]
-section = 'section\tqi-index\th1\tIndex\tintro'
+section = 'section\tqi-index\th1\tIndex'
 entry = '0\tAlpha\t#qi-mark-1'
 if case == 'bare':
     rows = [section]
 else:
     # A first section that is fine and a second that is not: a clause that
     # looked at the row list as a whole would call this dump non-empty.
-    rows = [section, entry, 'section\tqi-index-names\th1\tNames\tqi-index']
+    rows = [section, entry, 'section\tqi-index-names\th1\tNames']
 for line in indexdump.html_rows(rows, 'planted.html'):
     print(line)
 M45ROWS
@@ -15333,10 +15401,9 @@ fi
 M43L="$WORK/m43legs"
 rm -rf "$M43L"
 mkdir -p "$M43L/index-pinned" "$M43L/index-floor"
-for pair in "demo.html:m43-demo-html" "named-indexes.html:m43-named-html" \
-            "book.html:m43-book-html"; do
-  cp "$WORK/${pair#*:}.txt" "$M43L/index-pinned/${pair%%:*}.txt"
-  cp "$WORK/${pair#*:}.txt" "$M43L/index-floor/${pair%%:*}.txt"
+for m43name in $M43_COVERED; do
+  cp "$WORK/m43-$m43name.txt" "$M43L/index-pinned/$m43name.html.txt"
+  cp "$WORK/m43-$m43name.txt" "$M43L/index-floor/$m43name.html.txt"
 done
 
 M43CMP="$WORK/m43-compare.txt"
@@ -15344,15 +15411,18 @@ python3 tests/versioncheck.py compare "$M43L" pinned > "$M43CMP" 2>&1 \
   || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison reader calls two legs holding the same extractions different"; }
 # AC2 asks the comparison to name each fixture it compared, so the report is
 # read rather than the exit status alone: a reader that compared nothing and a
-# reader that compared three fixtures both exit 0.
-# The fixture name is the extraction's own, with the `.html.txt` suffix off.
-for fixture in demo named-indexes book; do
+# reader that compared every fixture both exit 0.
+# The fixture name is the extraction's own, with the `.html.txt` suffix off,
+# and the set swept is the table above rather than a list written again here.
+M43COUNT=0
+for fixture in $M43_COVERED; do
   grep -qE "^ok +M43-AC2: $fixture — the .* leg emits the index" "$M43CMP" \
     || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not name $fixture as a fixture it compared"; }
+  M43COUNT=$((M43COUNT + 1))
 done
-grep -qF -- '3 comparison(s) over 3 fixture(s)' "$M43CMP" \
-  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not state that it compared the 3 HTML extractions it was given"; }
-pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the 3 fixtures it compared"
+grep -qF -- "$M43COUNT comparison(s) over $M43COUNT fixture(s)" "$M43CMP" \
+  || { cat "$M43CMP" >&2; fail "M43-AC2: the comparison report does not state that it compared the $M43COUNT HTML extractions it was given"; }
+pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte for byte and names each of the $M43COUNT fixtures it compared"
 
 # The matrix the workflow renders on: two exact versions on a push, and the
 # release channel added on a scheduled or manual run.
@@ -15416,7 +15486,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # verdict is, and a red run is exactly when a reader needs to know whether
   # the sweep was empty. Held here because M45's block, which was the only
   # other reader of the line on a failing run, went with the PDF clauses (M47).
-  grep -qF -- 'comparison(s) over 3 fixture(s)' "$M43V/differ.txt" \
+  grep -qF -- "comparison(s) over $M43COUNT fixture(s)" "$M43V/differ.txt" \
     || { cat "$M43V/differ.txt" >&2; fail "M43 self-test: the red comparison does not state the size of the domain it swept, which is when a reader most needs to know whether the sweep was empty"; }
   printf 'ok   self-test: the difference the comparison reports names both the fixture and the row that differs, and the red report still states the size of the domain it swept\n'
 
@@ -15485,7 +15555,6 @@ fi
 # out of the workflow that installs it, so the number cannot move there while
 # the two documents go on naming the old one.
 # ---------------------------------------------------------------------------
-M43_VERSIONS_WF=".github/workflows/versions.yml"
 python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md site/tests.qmd \
   || fail "M43-AC5: README and the site's Tests page do not both name the Quarto version the version matrix's floor leg installs (its own FAIL line is above)"
 
@@ -15538,7 +15607,56 @@ if [ "${1:-}" = "--self-test" ]; then
     'tests-noversion.qmd does not name that version anywhere' \
     python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md "$M43F/tests-noversion.qmd"
 
-  pass "M43 T5 self-test: each clause of the floor reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and documents — no floor declared, two floors declared, a floor that is a channel name, no document to hold against it, and each of the two documents in turn dropping the version while the other keeps it"
+  # The bound on that read (M48). A document naming a LONGER version that
+  # contains the floor names a release the workflow does not install, and a
+  # bare substring test read it as naming the floor.
+  m43_floor_plant readme-longer.md README.md "s|1\.4\.549|1.4.5490|g"
+  m43_planted 'a README naming a longer version the floor version is a substring of, which a bare substring test would read as naming the floor' \
+    'readme-longer.md does not name that version anywhere' \
+    python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" "$M43F/readme-longer.md" site/tests.qmd
+
+  pass "M43 T5 self-test: each clause of the floor reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and documents — no floor declared, two floors declared, a floor that is a channel name, no document to hold against it, each of the two documents in turn dropping the version while the other keeps it, and a document naming a longer version the floor is a substring of"
+
+  # -------------------------------------------------------------------------
+  # M48 T4 — a planted defect per clause of the fixture-set reader. Its green
+  # above is over this repository's own workflow and this run's own fixture
+  # table, so each clause is shown able to go red on its own here.
+  # -------------------------------------------------------------------------
+  m43_floor_plant nodump.yml "$M43_VERSIONS_WF" "s|python3 tests/indexdump.py html|python3 tests/somethingelse.py html|"
+  m43_planted 'a render step whose extractions are written by something other than the dump this reader is about, over which it would hold the suite against an empty set' \
+    'carries no `indexdump.py html` invocation' \
+    python3 tests/versioncheck.py fixtures "$M43F/nodump.yml"
+
+  m43_planted 'no fixture name given at all, over which this check would sweep nothing' \
+    'would sweep nothing' \
+    python3 tests/versioncheck.py fixtures "$M43_VERSIONS_WF"
+
+  # Both directions, because the two are different defects: a fixture the
+  # matrix renders that no local control dumps ships with its extraction
+  # unexercised until a leg runs, and a control over an artifact no leg
+  # renders is a control about nothing the matrix compares.
+  m43_planted 'a suite covering one fixture fewer than the render step extracts' \
+    'are not the same set' \
+    python3 tests/versioncheck.py fixtures "$M43_VERSIONS_WF" demo named-indexes book
+
+  m43_planted 'a suite covering a fixture the render step does not extract' \
+    'are not the same set' \
+    python3 tests/versioncheck.py fixtures "$M43_VERSIONS_WF" $M43_COVERED no-such-fixture
+
+  # The invocation shape, which is the reader's own domain rather than one of
+  # its clauses: an extraction written with the redirect on the command's own
+  # line is one this check must see, and a reader that only matched a
+  # continued line would report agreement over a set missing it (M48).
+  { cat "$M43_VERSIONS_WF"
+    printf '        python3 tests/indexdump.py html examples/extra.qmd > "$OUT/extra.html.txt"\n'
+  } > "$M43F/oneline.yml"
+  cmp -s "$M43_VERSIONS_WF" "$M43F/oneline.yml" \
+    && fail "M48 T4 self-test: the same-line invocation added nothing to the workflow, so the case below is about the unplanted file"
+  m43_planted 'a workflow extracting a fixture with the redirect on the invocation own line, which a reader matching only a continued line would not see' \
+    'are not the same set' \
+    python3 tests/versioncheck.py fixtures "$M43F/oneline.yml" $M43_COVERED
+
+  pass "M48 T4 self-test: each clause of the fixture-set reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and this run's fixture table — a render step writing its extractions with another command, no fixture name to hold against it, a name missing from the suite's set, a name in it the workflow does not extract, and an invocation whose redirect is on its own line, which the reader must see"
 fi
 }
 

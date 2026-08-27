@@ -144,6 +144,19 @@ event, run here against the code the `plan` job calls
 TeX-install fixes, was
 https://github.com/jmgirard/quarto-index/actions/runs/33025680092.
 
+The release-channel leg had no run behind it when review opened — every
+recorded run was a push, and a push renders two legs. Dispatched here on the
+branch, `workflow_dispatch` run
+https://github.com/jmgirard/quarto-index/actions/runs/33030424324 rendered
+three legs (`rendering on: [{"name": "floor", "version": "1.4.549"},
+{"name": "pinned", "version": "1.10.18"}, {"name": "release", "version":
+"release"}]`), all four jobs success, both PDFs carrying their index on all
+three legs, and the comparison `ok   M43-AC2: 8 comparison(s) over 4
+fixture(s) — book, demo, html-index, named-indexes — against the `pinned`
+leg, for each of floor, release; every one byte-identical`. The `workflow_dispatch`
+half of AC1 and the channel leg's own installation path are executed
+evidence, not a unit check over `legs`.
+
 **AC2 — the HTML indexes agree across legs, fixture by fixture.** The
 `compare` job of that run, verbatim:
 
@@ -201,3 +214,122 @@ declares — run fresh here, exit 0:
 1.4.549, and each of the 2 document(s) named after it says so (README.md,
 site/tests.qmd)`.
 
+### Consistency gate
+
+`cairn_validate.py` — all 16 checks PASS, all 7 advisories OK (including
+`release window`, which did not fire). The active profile is `generic`, whose
+`consistency-gate` slot names no toolchain checks. No `DESIGN.md` principle
+changed on the branch, so no Sync Impact Report was owed.
+
+### Independent review
+
+Three fresh-context reviewers, none having seen the implementation, each on a
+distinct evidence base.
+
+- **[S] blame-history** — no conflicts with recorded decisions, lessons, or
+  past-milestone intent. It confirmed `section_rows`'s new `hrefs` flag
+  defaults to the count form every pre-existing caller reads, that
+  `pagescheck.py`'s `read_pin`/`check_pin` split reproduces all three original
+  failure messages verbatim, and that `versioncheck compare` sits inside
+  D-012's licence rather than D-004's refusal. One finding, ranked low, is
+  **S1** below.
+- **[S] prior-review** — the `gh api .../pulls/comments` probe returned `[]`,
+  so no PR-thread walk was owed; against the archived `## Review` sections for
+  M40 and M42 it found no reintroduction or contradiction. Each of M42's
+  recorded workflow findings is either not applicable or correctly applied
+  here.
+- **[O] diff-bug** — fifteen findings, **O1**-**O15** below, ranked by the
+  reviewer.
+
+### Findings
+
+Verified against the implementation, not against the reviewer's account of it.
+O1, O2, O4 and O13 were reproduced by execution; O3 was answered by dispatching
+the run recorded under AC1.
+
+- **O1. `tests/indexdump.py:61-75` — a dump with an index section but no entry
+  rows passes, so two empty indexes compare equal.** `html_rows` only refuses
+  `not rows`; a lone `section\tqi-index\th2\tIndex\t-` row is non-empty, and
+  `check_compare`'s only emptiness guard is `os.path.getsize(path) == 0`, which
+  a one-line file passes. **Reproduced:** `html_rows(['section\tqi-index\th2\t
+  Index\t-'], 'x.html')` returns, printing `1 index section(s), 0 entry/heading
+  row(s)`. The module's own header says agreeing about nothing "is the one
+  answer this command must not be able to give"; `run-tests.sh` asserts the
+  entry-row clause, but only over local captures on the pinned toolchain.
+- **O2. `tests/versioncheck.py:155-160` — the PDF domain is allowed to be
+  empty and only printed, never failed.** Every other domain in the file
+  (`legs`, `others`, `want`) has a clause; `pdfs` has none. Delete the two
+  `--to pdf` blocks from `versions.yml` and AC3 has no enforcement left
+  anywhere. **Reproduced:** `check_compare` over a legs tree with HTML
+  extractions only returns 0, printing `0 PDF extraction(s) were uploaded and
+  are not compared across legs (none)`.
+- **O3. AC1's release-channel leg has no run behind it.** Every recorded run
+  was a push, and a push renders two legs, so the channel string, the leg's
+  TinyTeX path and its participation in the comparison had never executed.
+  **Answered by evidence:** the `workflow_dispatch` run recorded under AC1
+  above renders three legs green, all eight comparisons byte-identical.
+- **O4. `.github/workflows/versions.yml:200` — `compare` has no `if:
+  always()`, so one red leg suppresses the comparison entirely.** `needs:
+  [plan, render]` default-gates on success, so `fail-fast: false` lets the
+  other legs finish and upload while the job that reports the verdict never
+  runs. **Reproduced in the record:** probe run 33025975119 shows `compare ::
+  skipped` with the pinned leg green.
+- **O5. `tests/htmlindex.py` `section_rows` — the compared serialization
+  includes `after`, a field derived from Quarto's own DOM.** The section row's
+  fifth field is `preceding_authored_id()`, the last id on the page this
+  extension did not mint, so a future Quarto adding or renaming a wrapper id
+  ahead of the index section on one leg turns the matrix red about Quarto
+  rather than about this extension.
+- **O6. `tests/indexdump.py:51-53` — a third, unpinned copy of the filter's
+  HTML constants, and only one of the three fails loudly when wrong.** The
+  workflow sets none of `HTML_SECTION_ID`, `HTML_ANCHOR_PREFIX`,
+  `HTML_ENTRY_PREFIX`. The header's "loud failure" claim holds for
+  `SECTION_ID` alone; a renamed anchor prefix would silently change what the
+  `after` field means on every leg while the dump still compares equal.
+- **O7. `.github/workflows/versions.yml:121-137` — a hardcoded third-party TeX
+  repository and a self-updating `tlmgr` on the every-push path, with no
+  decision entry.** D-024 weighed exactly this question for CI dependencies
+  and its consequence says a future workflow follows the same split unless it
+  records a reason not to; nothing records this one.
+- **O8. `versions.yml:34-38` vs. `tests/versioncheck.py` `check_floor` — the
+  header's "Nothing checks this workflow's own steps" and Scope's "No check
+  reads the workflow's own source" are not literally true.** `check_floor`
+  compiles `^\s+FLOOR:` and reads it out of `versions.yml`, so moving the
+  floor into a workflow-level `env:` would turn the suite red on a
+  behavior-preserving edit.
+- **O9. `versions.yml:121-127` — the advertised "loud failure, never a
+  silently skipped install" branch is mostly unreachable, and the pipeline can
+  flake.** Under `set -euo pipefail` a missing `~/.TinyTeX/bin` kills the step
+  at the command substitution before `if [ -z "$TLBIN" ]` is evaluated; and
+  `find … | head -1` can hand `find` SIGPIPE if more than one platform
+  directory exists, which `pipefail` turns into a step failure.
+- **O10. `tests/run-tests.sh` `m43_dump` — `2>/dev/null` discards the reader's
+  own diagnostic on the path where it matters.** When a control goes red,
+  `indexdump.py`'s `FAIL:` line naming which clause fired has already been
+  thrown away. Every neighbouring block in the file `cat`s its log to stderr
+  before failing.
+- **O11. `README.md:28-29` — a standing claim where the workflow deliberately
+  keeps a dated observation.** README says 1.4.549 is "the oldest release of
+  that line" flatly; the workflow header is careful that this is a dated
+  observation.
+- **O12. `tests/versioncheck.py` `check_floor` — the document test is a bare
+  substring match, and the files are opened without closing.** `version not in
+  body` passes on any occurrence anywhere in the document, including inside an
+  unrelated code block, and would pass on `11.4.549`; `open(...).read()` leaks
+  handles where `check_compare` uses `with`.
+- **O13. `tests/versioncheck.py` `fail()` prints to stdout, and `legs`'s
+  stdout is captured.** `pagescheck.check_version` was deliberately changed in
+  this same diff to print its diagnostic to stderr for exactly this reason,
+  with a planted clause asserting it. **Reproduced:** `LEGS=$(python3
+  tests/versioncheck.py legs 1.4.549 1.4.549 push)` under `set -euo pipefail`
+  exits 1 with the `FAIL:` line swallowed into `$LEGS` and printed nowhere.
+- **O14. `tests/run-tests.sh` M43 T3 control compares 3 fixtures; the workflow
+  renders 4.** The local legs tree is built from `demo`, `named-indexes` and
+  `book`; `html-index`, named in AC1, has no unplanted local control.
+- **O15. `EXACT = re.compile(r'^\d+\.\d+\.\d+$')` is now defined twice**, in
+  `tests/versioncheck.py` and `tests/pagescheck.py` — two copies of one rule in
+  two readers the same workflow step chains together.
+- **S1 (blame-history, low). The AC4 probe evidence predates the T2
+  TeX-install fixes, and the claim that this does not matter is asserted
+  rather than re-verified.** Flagged in the milestone file itself rather than
+  hidden.

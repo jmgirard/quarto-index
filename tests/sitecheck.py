@@ -207,6 +207,7 @@ def check_links(captured, base_path=''):
         return fail(f'{captured} holds no rendered page at all, so the link '
                     f'check would sweep nothing')
 
+    root = os.path.abspath(captured)
     bad = []
     swept = 0
     for rel, page in pages.items():
@@ -226,7 +227,12 @@ def check_links(captured, base_path=''):
             path = urllib.parse.unquote(path)
             swept += 1
             if path:
-                if value.startswith('/'):
+                # The branch is chosen on the DECODED path. `%2Fetc%2Fpasswd`
+                # is a root-relative link written in escapes; deciding on the
+                # still-encoded text sent it down the relative branch, where
+                # `os.path.join` discarded the capture root against the
+                # absolute path decoding produced (M46).
+                if path.startswith('/'):
                     stripped = path.lstrip('/')
                     if base:
                         # The site is served UNDER the base path, so a
@@ -243,25 +249,27 @@ def check_links(captured, base_path=''):
                                        f'and not a page of this site')
                             continue
                         stripped = stripped[len(base):].lstrip('/')
-                    target = stripped
+                    target = os.path.normpath(stripped) if stripped else ''
                 else:
                     target = os.path.normpath(
                         os.path.join(os.path.dirname(rel), path))
                 # Resolution is confined to the capture. `../../notes.html`
-                # normalizes to a path that leaves it, and joining that onto
-                # the captured root reads a file the render never produced —
-                # the check would then call a link resolved on the strength of
-                # something outside the site it is about (M46).
-                if target == os.pardir \
-                        or target.startswith(os.pardir + os.sep):
-                    bad.append(f'  {rel}: <<{href}>> resolves to {target}, '
+                # leaves it, and joining that onto the captured root reads a
+                # file the render never produced — the check would then call a
+                # link resolved on the strength of something outside the site
+                # it is about (M46). The test is on the path the join actually
+                # reaches, not on the text of the target: a `..` sitting behind
+                # an existing segment (`/x/../../outside.html`) leaves no
+                # leading `../` for a textual test to match (M46).
+                on_disk = os.path.abspath(os.path.join(root, target))
+                if on_disk != root and not on_disk.startswith(root + os.sep):
+                    bad.append(f'  {rel}: <<{href}>> resolves to {on_disk}, '
                                f'which is outside the captured site under '
                                f'{captured}')
                     continue
-                on_disk = os.path.join(captured, target)
                 if os.path.isdir(on_disk):
                     target = os.path.join(target, 'index.html')
-                    on_disk = os.path.join(captured, target)
+                    on_disk = os.path.join(on_disk, 'index.html')
                 if not os.path.exists(on_disk):
                     bad.append(f'  {rel}: <<{href}>> names no file under '
                                f'{captured} (looked for {target})')

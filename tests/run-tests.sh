@@ -12636,6 +12636,46 @@ if [ "${1:-}" = "--self-test" ]; then
     'which is outside the captured site under' \
     python3 tests/sitecheck.py links "$M40W/linkescape" ""
 
+  # Containment, the root-relative shape, with and without a base path. The
+  # `..` sits BEHIND a segment, so the normalized path carries no leading
+  # `../` — which is the whole case: until M46's second pass the root-relative
+  # branch never normalized at all and the containment test was a textual
+  # prefix test this shape walked straight past, reading the file above the
+  # capture at exit 0. Under the base path the same escape is written after
+  # the segment, so it clears the base clause and reaches containment.
+  m40_plant_link linkescaperoot '<a href="/sub/../../outside.html">x</a>'
+  mkdir -p "$M40W/linkescaperoot/sub"
+  [ -d "$M40W/linkescaperoot/sub" ] \
+    || fail "M40 self-test: the segment the escaping href walks back through was not created, so the pre-M46 reader would have called the href dangling for the wrong reason"
+  m40_planted 'a root-relative href escaping the captured site with a `..` behind a segment' \
+    'which is outside the captured site under' \
+    python3 tests/sitecheck.py links "$M40W/linkescaperoot" ""
+  m40_plant_link linkescaperootbase '<a href="/docs/sub/../../outside.html">x</a>'
+  mkdir -p "$M40W/linkescaperootbase/sub"
+  [ -d "$M40W/linkescaperootbase/sub" ] \
+    || fail "M40 self-test: the segment the escaping href walks back through was not created, so the pre-M46 reader would have called the href dangling for the wrong reason"
+  m40_planted 'the same escape written after the base segment, under the base path' \
+    'which is outside the captured site under' \
+    python3 tests/sitecheck.py links "$M40W/linkescaperootbase" "docs"
+
+  # Containment, the percent-encoded absolute shape. `%2Fetc%2Fpasswd` decodes
+  # to an absolute path; until M46's second pass the branch was chosen on the
+  # still-encoded text, so it took the relative branch and `os.path.join`
+  # discarded the capture root against the absolute path — the check read
+  # /etc/passwd, found it, and called the link resolved at exit 0. The report
+  # is required to name the capture-confined target, not merely to be a
+  # failure: that is what says the path was resolved under the capture root
+  # rather than at the filesystem root.
+  [ -f /etc/passwd ] \
+    || fail "M40 self-test: /etc/passwd is absent, so the encoded absolute href below would be an ordinary dangling link either way"
+  m40_plant_link linkencodedabs '<a href="%2Fetc%2Fpasswd">x</a>'
+  m40_planted 'a percent-encoded absolute href, which decoding turns into a path outside the capture' \
+    'looked for etc/passwd' \
+    python3 tests/sitecheck.py links "$M40W/linkencodedabs" ""
+  m40_planted 'the same encoded absolute href under a base path, which it carries no segment of' \
+    'carries no `docs` base segment' \
+    python3 tests/sitecheck.py links "$M40W/linkencodedabs" "docs"
+
   # Percent-decoding, in both directions on one artifact. `s%79ntax.html` is
   # `syntax.html` percent-encoded at one character; the capture holds that page,
   # so the link resolves once the path is decoded and did not before. The

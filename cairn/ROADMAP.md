@@ -1,7 +1,8 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-26 (M44 done and archived: the pre-release blockquote is gone from README and the site front page with no replacement sentence, and a `README_PRERELEASE_STALE` absence claim container over every tracked site page plus README — 21 files, swept by `git ls-files` — reports it if it comes back; `tests/sitecheck.py`'s presence clause is retired and IP3 is amended in place per D-026. Suite at 693 checks. M44's four filed review findings were absorbed into the site-and-docs-checks row rather than opening a sixth findings row; that row now carries findings from two milestones, so the next pass about to extend it dispositions it rather than extending again. M39's terminal row was pruned to hold the 5-row retention. M44's blockquote-flattening lesson was folded into M41's line rather than added as a new one, LESSONS being at 49 of 50 lines. ROADMAP 58 lines / 16,234 bytes, LESSONS 49 / 16,954, check-design 36 / 16,397 — all under budget (`wc -l -c`). The `release window` advisory did not fire.)_
+_Last hygiene check: 2026-08-26 (M45 done and archived: the version matrix's two readers can no longer pass on nothing — an index section with an empty entry list or with nothing under its header is a loud failure that names the shape it found, and the PDF extractions' fixture names are judged across legs rather than printed. Suite at 707 checks. Nine of the review's eleven findings were fixed on the branch; one was rejected and one was appended to the version-matrix hardening row, which now carries findings from two milestones, so the next pass about to extend it dispositions it rather than extending again. The site-and-docs-checks row carries the same two-milestone flag from the previous pass. M40's terminal row was pruned to hold the 5-row retention. M45's two lessons were folded into the M41/M44 and M43 lines rather than added as new ones, LESSONS being at 49 of 50 lines. ROADMAP 57 lines / 16,585 bytes, LESSONS 49 / 17,788, check-design 36 / 16,397 — all under budget (`wc -l -c`). The `release window` advisory did not fire.)_
+
 
 _Released 0.1.0 2026-08-26._
 
@@ -10,9 +11,8 @@ _Released 0.1.0 2026-08-26._
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M44 | Retire the pre-release warning | done | — | normal | milestones/archive/M44-retire-prerelease-warning.md |
-| M45 | The version matrix cannot agree about an empty index | review | — | normal | milestones/M045-matrix-empty-index.md |
+| M45 | The version matrix cannot agree about an empty index | done | — | normal | milestones/archive/M45-matrix-empty-index.md |
 | M43 | A version matrix renders the fixtures on the oldest supported Quarto | done | — | normal | milestones/archive/M43-quarto-version-matrix.md |
-| M40 | The documentation moves into a Quarto website | done | — | normal | milestones/archive/M40-docs-website.md |
 | M41 | The site shows each curated example's source, index and PDF | done | M40 | normal | milestones/archive/M41-example-gallery.md |
 | M42 | GitHub Actions renders the site and publishes it to Pages | done | M41 | normal | milestones/archive/M42-pages-publish.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent

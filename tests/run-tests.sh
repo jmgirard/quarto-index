@@ -519,6 +519,25 @@ README_REFS_STALE=(
   $'bibliography order fixed\tIn a document with a bibliography the index currently prints before the references'
 )
 
+# Must be GONE (NORMATIVE, M44). The four sentences of the pre-release
+# blockquote README and the site's front page carried until 0.1.0 was tagged
+# on 2026-08-26. Its own set rather than a row in README_STALE for the reason
+# README_REFS_STALE is its own: that set is enforced under the `M03-AC7` label
+# over the one-back-end world, and a pre-release sentence filed there would be
+# reported as an HTML-back-end failure.
+#
+# Enforcement moved here from a `tests/sitecheck.py readme` clause requiring
+# README to CARRY the first of these sentences (M40-AC5). The clause named two
+# files by hand; this container's domain is the registry's `ALL` — every
+# tracked page under `site/` plus README.md, enumerated by `git ls-files` — so
+# a site page added later is swept without anyone remembering to add it.
+README_PRERELEASE_STALE=(
+  $'warning header\t**Pre-release: install at your own risk.**'
+  $'fluid syntax\tUntil the first tagged release the marking syntax is fluid and may change without a deprecation cycle.'
+  $'breaks in changelog\tBreaking changes are recorded in the changelog.'
+  $'deprecation from release\tFrom the first tagged release onward, documented syntax forms change only via deprecation.'
+)
+
 README_REFS_CLAIMS=(
   $'why the default\tQuarto appends a document\'s reference block after this extension has already placed the index'
   $'default order\tgets the index first and the references after'
@@ -651,6 +670,7 @@ CLAIM_CONTAINERS=(
   $'README_RECIPE_LINES\tpresence\tsite/terms-outside-latin-1.qmd'
   $'README_MISUSE_CLAIMS\tpresence\tsite/cross-references.qmd site/html.qmd site/placing-the-index.qmd site/latex-and-pdf.qmd'
   $'README_MISUSE_STALE\tabsence\tALL'
+  $'README_PRERELEASE_STALE\tabsence\tALL'
   $'README_INDEXES_CLAIMS\tpresence\tsite/named-indexes.qmd'
   $'README_INDEXES_YAML\tpresence\tsite/named-indexes.qmd'
 )
@@ -676,21 +696,28 @@ claim_domain() { local r; r="$(claim_row "$1")"; printf '%s' "${r##*$'\t'}"; }
 # README.md. The enumeration is asserted non-empty at the point of use, never
 # assumed: a glob or a `git ls-files` that goes empty is the M16 shape.
 claim_text() {
-  local name="$1" domain out f n=0
+  local name="$1" domain out swept f n=0
   domain="$(claim_domain "$name")"
   out="$WORK/claim-${name}.txt"
-  : > "$out"
+  # The same enumeration, one path per line, beside the concatenation it
+  # produced. A check that reports how many files it swept (M44-AC1) reads
+  # this rather than re-enumerating the domain, so the count it prints and the
+  # text it read can never be about different sets of files.
+  swept="$WORK/claim-${name}.files"
+  : > "$out"; : > "$swept"
   if [ "$domain" = "ALL" ]; then
     for f in $(git ls-files 'site/*.qmd') README.md; do
       [ -f "$f" ] || fail "M40: $name's domain names $f, which does not exist"
-      cat "$f" >> "$out"; printf '\n' >> "$out"; n=$((n + 1))
+      cat "$f" >> "$out"; printf '\n' >> "$out"
+      printf '%s\n' "$f" >> "$swept"; n=$((n + 1))
     done
     [ "$n" -ge 2 ] \
       || fail "M40: $name's ALL domain enumerated $n file(s); it is every tracked page under site/ plus README.md, and one file means the enumeration went empty"
   else
     for f in $domain; do
       [ -f "$f" ] || fail "M40: $name's registry domain names $f, which does not exist"
-      cat "$f" >> "$out"; printf '\n' >> "$out"; n=$((n + 1))
+      cat "$f" >> "$out"; printf '\n' >> "$out"
+      printf '%s\n' "$f" >> "$swept"; n=$((n + 1))
     done
     [ "$n" -ge 1 ] \
       || fail "M40: $name's registry domain is empty"
@@ -1860,10 +1887,10 @@ absence = len(registered) - presence
 # Pinned, not merely reported: AC6 promises over the presence containers, and
 # a presence container re-tagged absence would drop out of that promise with
 # every check still green.
-if (len(registered), presence, absence) != (17, 14, 3):
+if (len(registered), presence, absence) != (18, 14, 4):
     sys.exit(f'FAIL: M40-AC6: the registry holds {len(registered)} container(s), '
              f'{presence} presence and {absence} absence; the criterion is '
-             f'over 17, 14 presence and 3 absence')
+             f'over 18, 14 presence and 4 absence')
 print(f'ok   M40-AC6: the claim-container registry names all {len(registered)} '
       f'containers this suite defines and no others, {presence} presence and '
       f'{absence} absence, compared against a scan of the suite\'s own source '
@@ -1937,6 +1964,64 @@ PY
 check_claim_sets "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
   "$(claim_text README_STALE)" "$(claim_text README_HTML_CLAIMS)" \
   || fail "M03-AC7: the docs do not describe the HTML back-end as this suite exercises it (its own FAIL line is above)"
+
+# M44-AC1 — the pre-release warning is retired, and no page a reader meets may
+# carry it back. This replaces `tests/sitecheck.py readme`'s clause requiring
+# README to CARRY the first of these sentences: 0.1.0 was tagged 2026-08-26,
+# so a reader who meets any of them is being told something false.
+#
+# Normalization, stated here and nowhere else. Both sides are flattened to
+# single-spaced text, as check_claim_sets does — a sentence that comes back
+# re-wrapped at a different column is still the same sentence. Beyond that, a
+# leading blockquote marker is stripped from each line first, because the
+# retired block was a blockquote: without it every `>` starting a continuation
+# line lands mid-sentence in the flattened text, and only the one sentence
+# that occupied a whole line could ever be found. The plants below cover both
+# shapes.
+#
+# The swept count is read from the file list claim_text wrote beside the
+# concatenation, never re-enumerated: a domain that has gone empty must read
+# as empty rather than as a pass (M16).
+printf '%s\n' "${README_PRERELEASE_STALE[@]}" > "$WORK/readme-prerelease-stale.txt"
+check_prerelease_absent() {
+python3 - "$1" "$2" "$3" <<'M44PY'
+import re
+import sys
+
+
+def flat(text):
+    return ' '.join(re.sub(r'(?m)^[ \t]*>[ \t]?', '', text).split())
+
+
+rows = [l.rstrip('\n').split('\t', 1)
+        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
+everywhere = flat(open(sys.argv[2], encoding='utf-8').read())
+swept = [l.strip() for l in open(sys.argv[3], encoding='utf-8') if l.strip()]
+if not rows:
+    sys.exit('FAIL: M44-AC1: the README_PRERELEASE_STALE container is empty, '
+             'so this check forbids nothing')
+if len(swept) < 2:
+    sys.exit(f'FAIL: M44-AC1: the sweep enumerated {len(swept)} file(s); the '
+             f'domain is every tracked page under site/ plus README.md, and '
+             f'fewer than two means the enumeration went empty')
+still = [f'  still present (README_PRERELEASE_STALE / {label}): <<{text}>>'
+         for label, text in rows if flat(text) in everywhere]
+if still:
+    print(f'FAIL: M44-AC1: the retired pre-release warning is back on a page a '
+          f'reader meets; claim container README_PRERELEASE_STALE, swept over '
+          f'{len(swept)} file(s):', file=sys.stderr)
+    print('\n'.join(still), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M44-AC1: all {len(rows)} sentence(s) of the retired pre-release '
+      f'warning are absent from every one of the {len(swept)} file(s) swept — '
+      f'every tracked page under site/ plus README.md — compared with '
+      f'blockquote markers stripped and whitespace flattened on both sides')
+M44PY
+}
+check_prerelease_absent "$WORK/readme-prerelease-stale.txt" \
+  "$(claim_text README_PRERELEASE_STALE)" \
+  "$WORK/claim-README_PRERELEASE_STALE.files" \
+  || fail "M44-AC1: a page a reader meets carries a sentence of the retired pre-release warning (its own FAIL line is above)"
 
 # M06-AC6 — the same discipline for the sort-key documentation. Separate from
 # the block above so a failure names which milestone's docs drifted.
@@ -13464,14 +13549,6 @@ M40OLD
     'the criterion is under' \
     python3 tests/sitecheck.py readme "$M40W/readme-long.md" site/index.qmd
 
-  grep -vF -- '**Pre-release: install at your own risk.**' README.md \
-    > "$M40W/readme-nowarning.md"
-  cmp -s README.md "$M40W/readme-nowarning.md" \
-    && fail "M40 self-test: the warning-removing mutation changed nothing in README"
-  m40_planted 'a README carrying no pre-release warning' \
-    'does not carry the pre-release warning' \
-    python3 tests/sitecheck.py readme "$M40W/readme-nowarning.md" site/index.qmd
-
   grep -vF -- 'quarto add jmgirard/quarto-index' README.md \
     > "$M40W/readme-noinstall.md"
   cmp -s README.md "$M40W/readme-noinstall.md" \
@@ -13512,7 +13589,7 @@ M40OLD
   cmp -s "$M40REG" "$M40W/registry-retagged.txt" \
     && fail "M40 self-test: the re-tagging mutation changed nothing in the registry"
   m40_planted 'a presence container re-tagged absence, which would drop it out of the criterion the registry is the domain of' \
-    'the criterion is over 17, 14 presence and 3 absence' \
+    'the criterion is over 18, 14 presence and 4 absence' \
     check_claim_registry "$M40W/registry-retagged.txt" tests/run-tests.sh
 
   { cat "$M40REG"; grep '^README_LETTER_CLAIMS	' "$M40REG"; } \
@@ -13556,7 +13633,73 @@ M40OLD
     check_claim_sets "$WORK/readme-stale.txt" "$WORK/readme-html.txt" \
       "$M40W/every-stale.txt" "$M40DOCS"
 
-  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing warning, a missing install line and a link naming something else; the registry check on an unregistered container, a stale row, a presence container re-tagged absence, a duplicated row and a source defining nothing; and the claim-set check on a documented claim deleted from its page and a retired sentence copied back onto one"
+  # --- the retired pre-release warning (M44-AC2) ----------------------------
+  # The plant is a restoration, not a removal: this container forbids, so its
+  # defect class is the sentence coming BACK. Each plant rebuilds the domain's
+  # concatenation from the same file list the live check swept, appending the
+  # sentence to one named file's bytes — so "restored into README.md" and
+  # "restored into site/index.qmd" are different plants and not the same text
+  # twice, which a single concatenation could not tell apart.
+  M44FILES="$WORK/claim-README_PRERELEASE_STALE.files"
+  M44EVERY="$M40W/prerelease-everywhere.txt"
+  cp "$(claim_text README_PRERELEASE_STALE)" "$M44EVERY"
+  check_prerelease_absent "$WORK/readme-prerelease-stale.txt" "$M44EVERY" \
+    "$M44FILES" > /dev/null \
+    || fail "M44 self-test: the absence check is red on an unplanted copy of this run's own domain, so no failure below is evidence of anything"
+
+  M44SENTENCE=$(head -1 "$WORK/readme-prerelease-stale.txt" | cut -f2-)
+  [ -n "$M44SENTENCE" ] \
+    || fail "M44 self-test: the first retired sentence row is empty, so the plants below would restore nothing"
+
+  # <target-file> <restored-text> <output> — the domain rebuilt with the text
+  # appended to <target-file>'s bytes alone.
+  m44_restore() {
+    local target="$1" text="$2" out="$3" f found=0
+    : > "$out"
+    while read -r f; do
+      cat "$f" >> "$out"
+      if [ "$f" = "$target" ]; then
+        printf '%s\n' "$text" >> "$out"; found=1
+      fi
+      printf '\n' >> "$out"
+    done < "$M44FILES"
+    [ "$found" = 1 ] \
+      || fail "M44 self-test: $target is not in the domain this run swept, so the restoration below would plant nothing"
+    if cmp -s "$M44EVERY" "$out"; then
+      fail "M44 self-test: the restoration into $target changed nothing in the domain"
+    fi
+    return 0
+  }
+
+  m44_restore README.md "> $M44SENTENCE" "$M40W/prerelease-in-readme.txt"
+  m40_planted 'the retired pre-release warning restored into README.md' \
+    'still present (README_PRERELEASE_STALE' \
+    check_prerelease_absent "$WORK/readme-prerelease-stale.txt" \
+      "$M40W/prerelease-in-readme.txt" "$M44FILES"
+
+  m44_restore site/index.qmd "> $M44SENTENCE" "$M40W/prerelease-in-index.txt"
+  m40_planted 'the retired pre-release warning restored into the site front page' \
+    'still present (README_PRERELEASE_STALE' \
+    check_prerelease_absent "$WORK/readme-prerelease-stale.txt" \
+      "$M40W/prerelease-in-index.txt" "$M44FILES"
+
+  # The same sentence, wrapped across a line break at a column the retired
+  # block never broke it at, and quoted the way the block quoted it. This is
+  # the case whitespace flattening alone cannot see: without the blockquote
+  # marker being stripped first, the `>` opening the continuation line lands
+  # in the middle of the sentence.
+  M44WRAPPED=$(printf '> %s' "$M44SENTENCE" \
+    | sed 's|install at your own|install at your\
+> own|')
+  printf '%s' "$M44WRAPPED" | grep -q '^> own' \
+    || fail "M44 self-test: the re-wrapping mutation did not break the sentence across a line, so the plant below is the unwrapped case again"
+  m44_restore site/index.qmd "$M44WRAPPED" "$M40W/prerelease-rewrapped.txt"
+  m40_planted 'the retired pre-release warning restored into the site front page, re-wrapped across a line break at a different column' \
+    'still present (README_PRERELEASE_STALE' \
+    check_prerelease_absent "$WORK/readme-prerelease-stale.txt" \
+      "$M40W/prerelease-rewrapped.txt" "$M44FILES"
+
+  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; the registry check on an unregistered container, a stale row, a presence container re-tagged absence, a duplicated row and a source defining nothing; and the claim-set check on a documented claim deleted from its page and a retired sentence copied back onto one; and the pre-release absence check on that warning's first sentence restored into README, restored into the site front page, and restored into the site front page re-wrapped across a line break at a different column"
 fi
 
 # ---------------------------------------------------------------------------

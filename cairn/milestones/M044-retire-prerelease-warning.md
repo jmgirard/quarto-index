@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M044: Retire the pre-release warning
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP3
-- **Branch/PR:** —
+- **Branch/PR:** `m044-retire-prerelease-warning`
 
 ## Goal
 
@@ -69,19 +69,19 @@ Any version-marker or changelog change → none is owed; 0.1.0 shipped.
 
 ## Tasks
 
-- [ ] T1 Delete the blockquote at `README.md:7-10` and `site/index.qmd:16-19`,
+- [x] T1 Delete the blockquote at `README.md:7-10` and `site/index.qmd:16-19`,
       changing nothing else in either file.
-- [ ] T2 Define `README_PRERELEASE_STALE` with the block's four sentences, add
+- [x] T2 Define `README_PRERELEASE_STALE` with the block's four sentences, add
       its `absence`/`ALL` registry row at `tests/run-tests.sh:638`, and move
       the pinned registry counts at `tests/run-tests.sh:1863` from
       `(17, 14, 3)` to `(18, 14, 4)`.
-- [ ] T3 Add the check block that compares the container against
+- [x] T3 Add the check block that compares the container against
       `claim_text README_PRERELEASE_STALE`, normalizing whitespace both sides
       as `check_claim_sets` does (`tests/run-tests.sh:1908`), reporting the
       swept file count. Retire `tests/sitecheck.py`'s `WARNING` constant, its
       presence clause (`tests/sitecheck.py:296,309-311`), the `ok` line naming
       it (`:329`) and the docstring line at `:26`.
-- [ ] T4 Replace the M40 warning-removal plant (`tests/run-tests.sh:13462-13473`)
+- [x] T4 Replace the M40 warning-removal plant (`tests/run-tests.sh:13462-13473`)
       with AC2's three restorations, each shown red naming the sentence.
 - [ ] T5 Amend IP3 in place — drop `(stated in the README)`, add the marker —
       correct the Architecture sentence at `cairn/DESIGN.md:481`, and append
@@ -94,6 +94,8 @@ Any version-marker or changelog change → none is owed; 0.1.0 shipped.
 - 2026-08-26: criteria audit ran in FULL mode (declared tier user-facing), in a fresh-context [O] reader, twice; round 1 returned 8 findings and round 2 returned 9 over the revised wording, all disposed here, none deferred.
 - 2026-08-26: plan gate chose an absence claim-container over the `ALL` domain over an absence clause in `tests/sitecheck.py readme` over two named files, because the registry's domain is enumerated by `git ls-files` rather than hand-listed and it already normalizes whitespace; falsified by a reader-facing page the `ALL` domain does not reach.
 - 2026-08-26: plan gate chose deleting the block with no replacement sentence over a post-release stability sentence, at the maintainer's direction; falsified by a reader asking whether the syntax is stable with the changelog and DESIGN in front of them.
+- 2026-08-26: implement gate chose stripping a leading blockquote marker from each line before flattening whitespace, over whitespace alone as AC1 words it: the retired block is a blockquote, so without it every `>` opening a continuation line lands mid-sentence and only the block's first sentence — the one occupying a whole line — could ever be found. AC2's re-wrapped plant is that case, and is shown red only under the stripping.
+- 2026-08-26: T1-T4 — blockquote deleted from README.md and site/index.qmd; `README_PRERELEASE_STALE` defined with the block's four sentences and registered `absence`/`ALL`, registry counts re-pinned to (18, 14, 4); `claim_text` now writes the swept file list beside the concatenation, and the new check reports the count from it; `tests/sitecheck.py`'s `WARNING` constant, its presence clause, its `ok` line and its docstring line retired; the M40 warning-removal plant replaced with AC2's three restorations, each shown red naming the container and the sentence. Committed as one checkpoint: the four are not independently green, since deleting the block reddens the retired clause until it is gone.
 
 ## Decisions
 

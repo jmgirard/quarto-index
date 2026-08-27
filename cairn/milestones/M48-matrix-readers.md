@@ -1,6 +1,6 @@
 # M48: The version matrix's readers say what they read
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M47
 - **Driving RR:** —
@@ -57,7 +57,7 @@ so, and this milestone writes that comment.
 - [x] T4: Align the local control's fixture set with the render step M47 leaves — `html-index` currently has no unplanted control ([run-tests.sh:15664](tests/run-tests.sh:15664)).
 - [x] T5: Stop `m43_dump` discarding the reader's stderr ([run-tests.sh:15643](tests/run-tests.sh:15643)); plant a failing dump and assert the `FAIL:` line reaches the suite's output.
 - [x] T6: Correct the workflow header's "Nothing checks this workflow's own steps" sentence to name `check_floor`'s `FLOOR:` read ([versioncheck.py:260](tests/versioncheck.py:260)), and state in `check_floor`'s own header what it reads and does not. In the same pass narrow that reader's bare substring document test — `version not in body` matches `1.4.549` inside a longer version string — and close the file handles it leaves open.
-- [ ] T7: Full run plus `--self-test`; dispatch the Versions workflow and record the run URLs as evidence.
+- [x] T7: Full run plus `--self-test`; dispatch the Versions workflow and record the run URLs as evidence.
 
 ## Work log
 
@@ -70,6 +70,8 @@ so, and this milestone writes that comment.
 - 2026-08-27: T5 — `m43_dump` no longer sends the reader's stderr to /dev/null, so a failing dump puts `indexdump.py`'s own `FAIL:` line on the suite's output beside the control's. Proved under --self-test by running the control over the planted no-section page and reading both lines off its combined output. Suite green: 387 checks, 701 with --self-test.
 - 2026-08-27: correction — the T4 line above states 388 checks for the plain run. That figure was not measured; the plain run after T4 reported 387, as it does after T5. The --self-test figure it states, 700, is what that run reported.
 - 2026-08-27: T6 — the workflow header no longer says nothing checks its steps: it names the `FLOOR:` read and the render step's extraction-target read, says each states its own domain, and keeps D-011's refusal of a wider scan. `check_floor`'s header states what it reads of the workflow and of each document and what it does not; its document test is bounded over digits and dots, so `1.4.5490` no longer counts as naming `1.4.549`, with a plant for that bound; both file handles are closed. Suite green: 387 checks, 702 with --self-test.
+- 2026-08-27: T7 — `tests/run-tests.sh` exits 0 at 387 checks and `--self-test` exits 0 at 702. The Versions workflow ran on this branch twice, both green: the push run https://github.com/jmgirard/quarto-index/actions/runs/33122263299 (floor 1.4.549 and pinned 1.10.18) and a dispatched run https://github.com/jmgirard/quarto-index/actions/runs/33122267854, which adds the release-channel leg. The dispatched run's comparison reports 8 comparisons over 4 fixtures — book, demo, html-index, named-indexes — every one byte-identical to the pinned leg.
+- 2026-08-27: status set to review.
 - 2026-08-27: amendment gate — AC3 re-aimed from the dump's printed rows to the rendered fixture the dump reads. `qi-entry-` never reaches the printed rows (`htmlindex.row()` prints depth, term, locator hrefs and cross-reference targets, and no entry id), so the criterion as written was reachable only by adding a field to the href row form the hand-written book manifests also read. T3's wording follows the criterion.
 - 2026-08-27: criteria audit of the amended AC3 ran in reduced mode (internal tier), fresh-context [O], the reader having authored none of it. No finding on any of the three questions. Two cautions disposed here: the three-item gloss now reads "today the section id …" so a fourth member could not be read as already covered, and the loud-failure clause names `indexdump.py`'s own failure rather than the suite assertion's message text.
 - 2026-08-26: criteria audit ran in reduced mode (internal tier). It returned four findings on the draft these criteria come from — an unbounded "every HTML identifier this reader matches" domain, a disjunct satisfiable by editing a prose comment, helper-plumbing wording on the `FAIL:`-line criterion, and a green-CI-matrix promise spanning the environment boundary. All four were fixed before the criteria above were written: the domain is now the `minted` tuple, the header correction moved to T6 with no criterion bound to it, the `FAIL:` promise binds the suite's own exit and output, and the workflow runs became T7 evidence.

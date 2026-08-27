@@ -4,11 +4,6 @@ A Quarto extension for book-quality subject indexing. Mark index entries with
 a format-neutral span syntax; the extension emits the right thing per output
 format. Two back-ends ship: LaTeX/PDF and HTML.
 
-> **Pre-release: install at your own risk.** Until the first tagged release
-> the marking syntax is fluid and may change without a deprecation cycle.
-> Breaking changes are recorded in the changelog. From the first tagged
-> release onward, documented syntax forms change only via deprecation.
-
 ## Install
 
 ```bash

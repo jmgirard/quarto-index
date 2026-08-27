@@ -23,8 +23,10 @@
 
   readme <new-readme> <site-index>
       The README that replaces the documentation is short, and still carries the
-      pre-release warning, the install line, and a relative link to the site
-      index that resolves from the README's own directory.
+      install line and a relative link to the site index that resolves from the
+      README's own directory. It carried the pre-release warning too until 0.1.0
+      was tagged; that sentence is retired, and tests/run-tests.sh now forbids it
+      over every tracked page under site/ plus README (M44).
 
   prose <old-readme> <new-readme> <site-dir> [overlay]
       No documentation prose was lost in the move. For every line the old README
@@ -293,7 +295,6 @@ def check_headings(old_readme, new_readme, site_dir, overlay=None):
 # readme
 # ---------------------------------------------------------------------------
 README_LINE_CAP = 120
-WARNING = '**Pre-release: install at your own risk.**'
 INSTALL = 'quarto add jmgirard/quarto-index'
 
 
@@ -306,9 +307,6 @@ def check_readme(new_readme, site_index):
     if len(lines) >= README_LINE_CAP:
         bad.append(f'  it is {len(lines)} lines, and the criterion is under '
                    f'{README_LINE_CAP}')
-    if WARNING not in text:
-        bad.append(f'  it does not carry the pre-release warning '
-                   f'<<{WARNING}>>')
     if INSTALL not in text:
         bad.append(f'  it does not carry the install line <<{INSTALL}>>')
 
@@ -326,8 +324,8 @@ def check_readme(new_readme, site_index):
         return fail(f'{new_readme} is not the pointer M40 replaces the '
                     f'documentation with:\n' + '\n'.join(bad))
     print(f'ok   M40-AC5: {new_readme} is {len(lines)} lines, under '
-          f'{README_LINE_CAP}, and carries the pre-release warning, the '
-          f'install line and a relative link to {want} that resolves')
+          f'{README_LINE_CAP}, and carries the install line and a relative '
+          f'link to {want} that resolves')
     return 0
 
 

@@ -13,11 +13,6 @@ This site lives at <https://jmgirard.github.io/quarto-index/>. It is built from
 and republished by GitHub Actions on every push to the default branch, so the
 pages here describe the extension as that branch has it.
 
-> **Pre-release: install at your own risk.** Until the first tagged release
-> the marking syntax is fluid and may change without a deprecation cycle.
-> Breaking changes are recorded in the changelog. From the first tagged
-> release onward, documented syntax forms change only via deprecation.
-
 ## Install
 
 ```bash

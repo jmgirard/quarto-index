@@ -142,8 +142,8 @@ _None yet — populated as the codebase takes shape._
 - IP3: **Post-release syntax stability.** From the first tagged release
   onward, documented syntax forms change only via a deprecation cycle.
   Before that release the syntax is fluid: pre-release installs are
-  at-your-own-risk (stated in the README), with breaks recorded in the
-  changelog. The release line is the promise.
+  at-your-own-risk, with breaks recorded in the changelog (amended M44,
+  D-026). The release line is the promise.
 
 ### Guiding
 
@@ -477,8 +477,8 @@ of the kind each check names, which the check must fail on, naming it.
 The documentation's home is `site/`, a Quarto website project (added M40): one
 page per topic, each carrying as a heading the text README's `##`/`###` section
 carried before the move, and no `output-file:` overrides, so a source path
-determines its output path. README is the pointer — pitch, install, the
-pre-release warning, a link to the site, and short Examples and Tests sections.
+determines its output path. README is the pointer — pitch, install, a
+link to the site, and short Examples and Tests sections.
 `site/_extensions` symlinks to the extension, as `examples/_extensions` does.
 
 The site carries an example gallery (added M41). `site/gallery.yml` declares

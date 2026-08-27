@@ -85,13 +85,13 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
       guards at `:101-129` that return first, so each new message is reachable.
       Correct the module header (`:30-35`) and the surviving report line, which
       both say the PDF extractions are reported and not compared.
-- [ ] T3 Add the three hand-written HTML fixture pages AC1 names — empty entry
+- [x] T3 Add the three hand-written HTML fixture pages AC1 names — empty entry
       list, one entry row, and the existing no-entry-list control — and plant
       each under `--self-test`, red for the two failing cases.
-- [ ] T4 Add the two hand-built legs directories AC2 and AC3 name, each meeting
+- [x] T4 Add the two hand-built legs directories AC2 and AC3 name, each meeting
       the preconditions those criteria state so the new clause is the one that
       fires, and plant both under `--self-test`.
-- [ ] T5 Run `tests/run-tests.sh --self-test`; fix what it names.
+- [x] T5 Run `tests/run-tests.sh --self-test`; fix what it names.
 
 ## Work log
 
@@ -103,6 +103,9 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
 - 2026-08-26: amendment (substantive, mini gate): Scope In grows by `tests/htmlindex.py`'s `index_entries`, whose empty-entry-list failure today names a placement that is false of the page; AC1 asks the failure to report no entry row and the message is written there. Criteria unchanged.
 - 2026-08-26: T1 — `html_rows` fails on a section row with nothing under it, naming each such section; `index_entries` names an empty direct-child entry list as that, and its misplaced-list message narrows to a list that really is not a direct child. Suite green (403 checks).
 - 2026-08-26: T2 — `check_compare` fails when the baseline leg carries no `*.pdf.txt` and when another leg's PDF fixture-name set differs from it, reporting both findings alongside any HTML difference rather than returning on the first; the module header and the surviving report line now say the names are compared and the content is not, and the suite's own control reads the new line. Suite green (403 checks).
+- 2026-08-26: T3 — three hand-written pages under `--self-test` (an empty entry list, one entry row, no entry list) plus a fourth whose list is nested a level down, so the narrowed placement message is shown still firing; the one-entry page is the control, compared against the exact two rows it carries, and `html_rows`'s own clause is planted by direct call, once on a lone section header and once on a second header beside a first that is fine.
+- 2026-08-26: T4 — two hand-built legs trees copied from the control tree, each asserted to carry the equal, non-empty, no-empty-file HTML side the two criteria require before the PDF clause is reached; a third tree broken on both sides shows the HTML difference and the PDF finding reported together.
+- 2026-08-26: T5 — `tests/run-tests.sh --self-test` green at 705 checks (693 before). T3-T5 landed in one commit; the three blocks are separate.
 
 ## Decisions
 

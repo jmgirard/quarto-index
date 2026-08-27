@@ -126,6 +126,9 @@ jobs:
           fi
           export PATH="$TLBIN:$PATH"
           tlmgr --version | head -1
+          # The installed tlmgr is older than the repository it talks to and
+          # refuses to install anything until it updates itself.
+          tlmgr update --self
           tlmgr install imakeidx
           kpsewhich imakeidx.sty
 

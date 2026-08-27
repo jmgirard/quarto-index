@@ -264,8 +264,13 @@ end
 -- back-end's dual-target command prints them.
 local function entry_inlines(root, node)
   local inlines = pandoc.List()
-  inlines:insert(pandoc.Span(literal_inlines(node.key),
-                             pandoc.Attr(node.id, { "qi-term" })))
+  -- PLANTED DEFECT (M43 T4, AC4). The emitted index term carries the pandoc
+  -- version that rendered it, so the HTML index the floor leg emits differs
+  -- from the pinned leg's. This branch exists to show the version matrix's
+  -- comparison red; it is never merged.
+  inlines:insert(pandoc.Span(
+    literal_inlines(node.key .. " [pandoc " .. tostring(PANDOC_VERSION) .. "]"),
+    pandoc.Attr(node.id, { "qi-term" })))
 
   local tail = pandoc.List()
   if #node.locators > 0 then

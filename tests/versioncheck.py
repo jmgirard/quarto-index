@@ -16,6 +16,13 @@ which Quarto rendered it?
       always traces to a commit, while a channel leg can go red on an upstream
       release alone.
 
+  floor <workflow.yml> <doc> [<doc> ...]
+      The workflow declares exactly one floor version, and every document
+      named after it states that version. README and the site's Tests page
+      both tell a reader which Quarto the floor leg installs, and this is what
+      stops the number moving in the workflow while the two documents go on
+      naming the old one.
+
   compare <legs-dir> <baseline>
       `<legs-dir>` holds one directory per leg, named `index-<leg>` — the
       shape `actions/download-artifact` unpacks the uploads into. Every leg's
@@ -43,6 +50,7 @@ Exits non-zero with a `FAIL:` line naming what it found.
 
 import json
 import os
+import re
 import sys
 
 # The prefix each leg's uploaded artifact carries, so a directory
@@ -53,6 +61,13 @@ LEG_PREFIX = 'index-'
 HTML_SUFFIX = '.html.txt'
 PDF_SUFFIX = '.pdf.txt'
 
+
+# `FLOOR: <version>` in the workflow's env block, quoted or not. The floor is
+# stated once, in the file whose header records where the number came from and
+# when the query that returned it ran.
+FLOOR = re.compile(
+    r'^\s+FLOOR:\s*(?P<quote>[\'"]?)(?P<value>[^\'"\s]+)(?P=quote)\s*$', re.M)
+EXACT = re.compile(r'^\d+\.\d+\.\d+$')
 
 # The events on which the release-channel leg is rendered too.
 CHANNEL_EVENTS = ('schedule', 'workflow_dispatch')
@@ -196,7 +211,35 @@ def check_legs(floor, pinned, event):
     return 0
 
 
+def check_floor(workflow, *docs):
+    text = open(workflow, encoding='utf-8').read()
+    floors = FLOOR.findall(text)
+    if len(floors) != 1:
+        return fail('%s declares %d `FLOOR:` line(s); the floor version this '
+                    'check is about is exactly one' % (workflow, len(floors)))
+    version = floors[0][1]
+    if not EXACT.match(version):
+        return fail('%s declares the floor %r, which is not an exact dotted '
+                    'version a reader could install' % (workflow, version))
+    if not docs:
+        return fail('no document was named to hold against the %s floor %s '
+                    'declares, so this check would sweep nothing'
+                    % (version, workflow))
+    for doc in docs:
+        body = open(doc, encoding='utf-8').read()
+        if version not in body:
+            return fail('%s pins the floor leg to Quarto %s and %s does not '
+                        'name that version anywhere, so a reader is not told '
+                        'which Quarto the floor is actually run on'
+                        % (workflow, version, doc))
+    print('ok   M43-AC5: %s pins the floor leg to Quarto %s, and each of the '
+          '%d document(s) named after it says so (%s)'
+          % (workflow, version, len(docs), ', '.join(docs)))
+    return 0
+
+
 MODES = {
+    'floor': (check_floor, 1),
     'legs': (check_legs, 3),
     'compare': (check_compare, 2),
 }
@@ -207,7 +250,11 @@ def main(argv):
         raise SystemExit(__doc__)
     func, needed = MODES[argv[1]]
     args = argv[2:]
-    if len(args) != needed:
+    # `needed` is the least this mode takes; a mode declared with a `*rest`
+    # parameter accepts more, and every other mode is refused extra arguments
+    # rather than silently ignoring them.
+    variadic = bool(func.__code__.co_flags & 0x04)
+    if len(args) < needed or (not variadic and len(args) > needed):
         raise SystemExit(__doc__)
     return func(*args)
 

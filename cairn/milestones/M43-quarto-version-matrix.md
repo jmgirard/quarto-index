@@ -92,10 +92,10 @@ milestone; the gate's reasoning is in the work log.
 - [x] T3. The comparison job: download the legs' extractions, compare the HTML
       indexes of the non-pinned legs against the pinned leg's, and report which
       fixture and which leg pair differed.
-- [ ] T4. Prove both checks discriminating on a probe branch, one plant per
+- [x] T4. Prove both checks discriminating on a probe branch, one plant per
       path; record each red run's URL in the Review section and keep the probe
       commits under `refs/probes/`, as M42 did.
-- [ ] T5. Name the floor version in README and `site/tests.qmd`, written
+- [x] T5. Name the floor version in README and `site/tests.qmd`, written
       against the AC1 run's own output; record the AC1 run URL in the Review
       section; run the suite.
 
@@ -112,8 +112,36 @@ milestone; the gate's reasoning is in the work log.
 - 2026-08-26: minor amendment — T3's reader is built before T2's workflow, because the workflow's plan job and its comparison job both run it; the task list's order is otherwise unchanged.
 - 2026-08-26: T3 — `tests/versioncheck.py`, `compare` (every leg's HTML extraction against the baseline leg's, byte for byte, naming each fixture and each leg pair, reporting the PDF extractions it deliberately leaves uncompared) and `legs` (the matrix JSON the workflow renders on). `tests/pagescheck.py` gained a `version` mode over `read_pin`, split out of `check_pin`, printing the pin to stdout alone. Suite: the comparison run over this run's own extractions, the matrix asserted per event, and nine planted clauses. 682 checks green.
 - 2026-08-26: T2 — `.github/workflows/versions.yml`. Three jobs: `plan` (reads the pin out of `pages.yml` and builds the matrix), `render` (per leg: Quarto + TinyTeX, poppler-utils, the four fixtures with each extraction taken immediately after its own render, uploaded as `index-<leg>`), `compare`. `fail-fast: false`, so a red leg does not cancel the others. Header records the floor 1.4.549, the `gh api` query that returned it as the oldest non-prerelease release satisfying `>=1.4.0`, and the date it ran. 682 checks green.
+- 2026-08-26: T4 — both compared paths proved discriminating on their own probe branch, one plant each. `m043-htmldiff`: the HTML index term carries `tostring(PANDOC_VERSION)`, and the comparison job reported all four fixtures red, naming the leg pair and the row (`'0\tAlpha [pandoc 3.1.11]…' on the floor leg and '0\tAlpha [pandoc 3.10]…' on the pinned leg`). `m043-nopdfindex`: `\printindex` emitted only under the pinned leg's pandoc, and the floor render leg went red at `FAIL: examples/demo.pdf: no index heading 'Index'` with the render itself at exit 0. Both branches deleted, commits kept under `refs/probes/`.
+- 2026-08-26: `m043-htmldiff`'s first attempt was red for an unrelated reason — TinyTeX's `tlmgr` answered "compilation failed- no matching packages" for `imakeidx.sty` on the floor leg, which is the package search and not the plant. Re-running the failed job alone was green on the pinned leg and red at the comparison, which is the plant. The AC1 run had already installed the same package on the same leg, so the failure is intermittent; noted for the review as a candidate rather than worked around here.
+- 2026-08-26: T5 — README and `site/tests.qmd` each name Quarto 1.4.549, written against the AC1 run's own output; `tests/versioncheck.py floor` holds both documents against the floor the workflow declares, so the number cannot move there while the documents keep the old one. Six planted clauses, including each document in turn dropping the version while the other keeps it. 690 checks green.
 - 2026-08-26: criteria audit ran in full mode (user-facing tier). It returned findings on all five drafted criteria: four bound a property of the checking machinery rather than of the deliverable (a recorded run URL, a log's fixture list, a message's wording, a header comment's content), which moved to T2, T4 and T5; AC1 let the workflow name its own fixture set, now named in the criterion; AC4's "oldest release satisfying the range" quantified over every Quarto release ever published, narrowed to the pinned 1.4.549 with the query kept as a dated observation in T2; AC5 promised README and the site agree with a fixture list nothing enumerates, narrowed to the floor version; and the equality comparison's relation to D-004 is now stated in Scope. Two findings went to the gate as questions — PDF comparability across engines, and one plant standing in for a family free in three axes.
 
 ## Decisions
 
 ## Review
+
+**AC1 run (green), on the milestone branch:**
+https://github.com/jmgirard/quarto-index/actions/runs/33025680092 — `plan`,
+`render (floor, 1.4.549)`, `render (pinned, 1.10.18)` and `compare` all
+success. Four HTML extractions per leg, and both PDF fixtures on both legs:
+`examples/demo.pdf: 39 printed entry line(s) under 'Index'` and
+`examples/book/_book/Index-Book-Fixture.pdf: 20 printed entry line(s)` on each
+(AC3). The comparison: `4 comparison(s) over 4 fixture(s) — book, demo,
+html-index, named-indexes — against the pinned leg, for each of floor; every
+one byte-identical` (AC2).
+
+**AC4 probes.** Two branches, one plant per compared path, both deleted and
+their commits kept under `refs/probes/` — outside `refs/heads` and `refs/tags`,
+so neither is matched by the workflows' bare `on: push`. Fetch with
+`git fetch origin 'refs/probes/*:refs/probes/*'`; each ref is an annotated
+object naming its plant and its run.
+
+- `m043-htmldiff` b377cd0 — the emitted index term carries
+  `tostring(PANDOC_VERSION)`, so the two legs emit different index content.
+  Red at the **comparison job**, all four fixtures named:
+  https://github.com/jmgirard/quarto-index/actions/runs/33025964684
+- `m043-nopdfindex` 8b43042 — `\printindex` is emitted only under the pinned
+  leg's pandoc, so the floor leg typesets at exit 0 with no printed index. Red
+  at the **floor render leg**, `no index heading 'Index' in examples/demo.pdf`:
+  https://github.com/jmgirard/quarto-index/actions/runs/33025975119

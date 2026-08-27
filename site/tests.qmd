@@ -14,3 +14,18 @@ manifests. It needs TinyTeX (with `kpsewhich` on the path and TeX Live's
 `stix2-otf` package installed, which the non-Latin-1 renders load by file
 name), `makeindex` and `pdftotext`, and fails loudly rather than skipping if
 any is missing.
+
+## The Quarto version matrix
+
+`.github/workflows/versions.yml` renders four of the fixtures —
+`html-index.qmd`, `named-indexes.qmd`, `demo.qmd` and the book — on Quarto
+1.4.549, the oldest release the `>=1.4.0` range the extension declares admits;
+on the version the documentation site is built with; and, weekly and on demand,
+on Quarto's current release. The HTML index each leg emits is compared byte for
+byte against the index the pinned leg emits.
+
+The PDFs are not compared across legs. Each leg's PDF render is held to exiting
+0 with a non-empty printed index instead: two Quarto versions typeset through
+different TeX engines, and an engine difference lands in a PDF's text layer,
+where a comparison would be red about the engine rather than about this
+extension.

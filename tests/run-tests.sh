@@ -15775,6 +15775,68 @@ if [ "${1:-}" = "--self-test" ]; then
 
   pass "M43 T3 self-test: each clause of the comparison reader, the matrix builder and the version mode is planted on its own and shown red, while the same readers pass unplanted on this run's own extractions — a leg emitting a row the baseline does not, one leg alone, a missing baseline, a baseline with no HTML extraction, an empty extraction, two legs that rendered different fixtures, a path nothing was unpacked to, a matrix whose two exact legs are the same version, and a workflow whose pin is a channel"
 fi
+
+# ---------------------------------------------------------------------------
+# M43-AC5 — README and the site's Tests page each name the Quarto version the
+# floor leg installs. The version is not written into this check: it is read
+# out of the workflow that installs it, so the number cannot move there while
+# the two documents go on naming the old one.
+# ---------------------------------------------------------------------------
+M43_VERSIONS_WF=".github/workflows/versions.yml"
+python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md site/tests.qmd \
+  || fail "M43-AC5: README and the site's Tests page do not both name the Quarto version the version matrix's floor leg installs (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M43 T5 — a planted defect per clause of the floor reader. The workflow's
+  # side and each document's side, so neither half can go quiet.
+  # -------------------------------------------------------------------------
+  M43F="$WORK/m43floor"
+  rm -rf "$M43F"
+  mkdir -p "$M43F"
+
+  # <name> <source> <sed script> — a mutated copy, asserted to differ.
+  m43_floor_plant() {
+    sed "$3" "$2" > "$M43F/$1"
+    cmp -s "$2" "$M43F/$1" \
+      && fail "M43 self-test: the mutation for $1 changed nothing in $2, so the case below is about the unplanted file"
+    return 0
+  }
+
+  m43_floor_plant nofloor.yml "$M43_VERSIONS_WF" "s|FLOOR: |QUARTO_FLOOR: |"
+  m43_planted 'a workflow declaring no floor version at all, over which the two documents would be held against nothing' \
+    'declares 0 `FLOOR:` line(s)' \
+    python3 tests/versioncheck.py floor "$M43F/nofloor.yml" README.md site/tests.qmd
+
+  m43_floor_plant twofloors.yml "$M43_VERSIONS_WF" \
+    "s|^\(  *\)FLOOR: \(.*\)\$|\1FLOOR: \2\n\1FLOOR: \2|"
+  m43_planted 'a workflow declaring two floor versions, so which one the documents are held against is not a fact' \
+    'declares 2 `FLOOR:` line(s)' \
+    python3 tests/versioncheck.py floor "$M43F/twofloors.yml" README.md site/tests.qmd
+
+  m43_floor_plant channelfloor.yml "$M43_VERSIONS_WF" "s|FLOOR: '1.4.549'|FLOOR: 'release'|"
+  m43_planted 'a floor that is a channel name rather than a release a reader could install' \
+    'not an exact dotted version' \
+    python3 tests/versioncheck.py floor "$M43F/channelfloor.yml" README.md site/tests.qmd
+
+  m43_planted 'no document named at all, over which this check would sweep nothing' \
+    'would sweep nothing' \
+    python3 tests/versioncheck.py floor "$M43_VERSIONS_WF"
+
+  # Each document's own side, planted separately: a check green because it
+  # only ever reads the first document is a check the second is not held by.
+  m43_floor_plant readme-noversion.md README.md "s|1\.4\.549|1.4|g"
+  m43_planted 'a README that names the 1.4 line but not the release the floor leg installs' \
+    'readme-noversion.md does not name that version anywhere' \
+    python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" "$M43F/readme-noversion.md" site/tests.qmd
+
+  m43_floor_plant tests-noversion.qmd site/tests.qmd "s|1\.4\.549|1.4|g"
+  m43_planted "a Tests page that names the 1.4 line but not the release the floor leg installs" \
+    'tests-noversion.qmd does not name that version anywhere' \
+    python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md "$M43F/tests-noversion.qmd"
+
+  pass "M43 T5 self-test: each clause of the floor reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and documents — no floor declared, two floors declared, a floor that is a channel name, no document to hold against it, and each of the two documents in turn dropping the version while the other keeps it"
+fi
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

@@ -1501,9 +1501,25 @@ if malformed:
 rows = [l.split('\t', 1) for l in lines]
 overlay = sys.argv[2]
 
-listed = subprocess.run(['git', 'ls-files', 'site/*.qmd'], check=True,
-                        capture_output=True, text=True).stdout.split('\n')
-domain = [p for p in listed if p.endswith('.qmd')] + ['README.md']
+# `-z` and a NUL split, never the newline-separated default: `git ls-files`
+# C-quotes a path holding a non-ASCII byte or a newline, so a tracked
+# `site/naïve.qmd` printed as `"site/na\303\257ve.qmd"` and the suffix
+# filter that read the default output discarded it with no report — a page
+# carrying a retired sentence swept past at exit 0, and the printed count read
+# exactly as a complete sweep would (M46). `-z` writes the path's own bytes.
+# README.md is enumerated by the same command rather than appended, so the
+# reported domain size counts nothing the repository does not track.
+listed = subprocess.run(['git', 'ls-files', '-z', '--', 'site/*.qmd',
+                         'README.md'], capture_output=True, text=True)
+if listed.returncode != 0:
+    print(f'FAIL: M44-AC1: `git ls-files` exited {listed.returncode}, so the '
+          f'domain this check sweeps was never enumerated:', file=sys.stderr)
+    print(listed.stderr.rstrip('\n'), file=sys.stderr)
+    sys.exit(1)
+domain = [p for p in listed.stdout.split('\0') if p]
+if 'README.md' not in domain:
+    sys.exit('FAIL: M44-AC1: README.md is not tracked in this repository, so '
+             'the domain named by this check is not the domain it swept')
 # The enumeration is asserted non-empty rather than assumed: a `git ls-files`
 # that goes empty must read as empty and not as a pass (M16). The floor is a
 # stated number and not one read off the enumeration, which would be blind in
@@ -1517,13 +1533,28 @@ if len(domain) < FLOOR:
              f'fewer than {FLOOR} means the enumeration collapsed')
 
 still = []
+unreadable = []
 for path in domain:
     source = path
     if overlay and os.path.isfile(os.path.join(overlay, path)):
         source = os.path.join(overlay, path)
-    body = flat(open(source, encoding='utf-8').read())
+    # A tracked page git names but the working tree does not hold is reported,
+    # not raised: an OSError out of the read would abort naming no domain and
+    # no sentence, which is not this check's failure convention (M46).
+    try:
+        text_read = open(source, encoding='utf-8').read()
+    except OSError as exc:
+        unreadable.append(f'  {path}: {exc.strerror}')
+        continue
+    body = flat(text_read)
     still += [f'  {path} ({label}): <<{text}>>'
               for label, text in rows if flat(text) in body]
+if unreadable:
+    print(f'FAIL: M44-AC1: {len(unreadable)} of the {len(domain)} file(s) in '
+          f'the swept domain could not be read, so the sweep does not cover '
+          f'the domain it names:', file=sys.stderr)
+    print('\n'.join(unreadable), file=sys.stderr)
+    sys.exit(1)
 if still:
     print(f'FAIL: M44-AC1: the retired pre-release warning is back on a page a '
           f'reader meets; swept {len(domain)} file(s):', file=sys.stderr)
@@ -12499,6 +12530,7 @@ check_output_dir_pinned() {
 }
 check_output_dir_pinned site/_quarto.yml \
   || fail "M40-AC1: the site project file no longer names site/_site as its output directory (its own FAIL line is above)"
+pass "M40-AC1: site/_quarto.yml declares \`output-dir: _site\`, so the removal below clears the directory the render writes into and not some other one"
 rm -rf site/_site
 [ ! -e site/_site ] \
   || fail "M40-AC1: site/_site survived the removal above, so the render below would write into a directory holding an earlier run's pages"
@@ -12686,6 +12718,35 @@ if [ "${1:-}" = "--self-test" ]; then
   m40_planted 'the same escape written after the base segment, under the base path' \
     'which is outside the captured site under' \
     python3 tests/sitecheck.py links "$M40W/linkescaperootbase" "docs"
+
+  # Containment, the symlink shape. `os.path.abspath` normalizes text and does
+  # not follow links, so until M46's third pass a link through a symlink that
+  # sits INSIDE the capture and points above it read a file outside the site
+  # while the textual test saw a path under the capture root, and every link
+  # was reported resolved at exit 0 (M46). `capture` copies with `cp -R`,
+  # which preserves a link the render wrote.
+  m40_plant_link linkescapelink '<a href="above/outside.html">x</a>'
+  ln -s .. "$M40W/linkescapelink/above"
+  [ -L "$M40W/linkescapelink/above" ] \
+    || fail "M40 self-test: the symlink out of the capture was not created, so the href below would be an ordinary dangling link"
+  [ -f "$M40W/linkescapelink/above/outside.html" ] \
+    || fail "M40 self-test: the file the symlink reaches is absent, so the href below would be dangling rather than escaping"
+  m40_planted 'an href resolving through a symlink inside the capture to a file above it' \
+    'which is outside the captured site under' \
+    python3 tests/sitecheck.py links "$M40W/linkescapelink" ""
+
+  # And the direction the clause must stay SILENT in: a symlink inside the
+  # capture that points inside it resolves as it always did. Resolving both
+  # sides of the containment test is what keeps this green — the capture root
+  # is resolved too, so a checkout reached through a symlinked parent does not
+  # turn every link into an escape.
+  m40_plant_link linkinsidelink '<a href="alias/syntax.html">x</a>'
+  ln -s . "$M40W/linkinsidelink/alias"
+  [ -f "$M40W/linkinsidelink/alias/syntax.html" ] \
+    || fail "M40 self-test: the symlink inside the capture does not reach syntax.html, so the case below would be an ordinary dangling link"
+  python3 tests/sitecheck.py links "$M40W/linkinsidelink" "" > /dev/null \
+    || fail "M40 self-test: a link through a symlink that stays inside the capture is refused, so the containment clause refuses symlinks rather than escapes"
+  printf 'ok   self-test: a link through a symlink that stays inside the capture still resolves, so the containment clause refuses the escape and not the symlink\n'
 
   # Containment, the percent-encoded absolute shape. `%2Fetc%2Fpasswd` decodes
   # to an absolute path; until M46's second pass the branch was chosen on the
@@ -12949,6 +13010,28 @@ M40OLD
   [ -n "$M44SENTENCE" ] \
     || fail "M44 self-test: the first retired sentence row is empty, so the plants below would restore nothing"
 
+  # A tracked page whose name git C-quotes. `git ls-files` renders a non-ASCII
+  # byte as an octal escape inside double quotes, and reading that output line
+  # by line dropped the quoted entry with no report — the sentence on it swept
+  # past at exit 0, while the printed count read exactly as a complete sweep
+  # would (M46). The plant is the ENUMERATION rather than a page of this
+  # repository, so it is built in a throwaway one.
+  rm -rf "$M40W/quotedrepo"; mkdir -p "$M40W/quotedrepo/site"
+  M44QUOTED='site/naïve.qmd'
+  for i in 1 2 3 4 5 6 7 8 9 10 11; do
+    printf '# page %s\n' "$i" > "$M40W/quotedrepo/site/p$i.qmd"
+  done
+  printf '# readme\n' > "$M40W/quotedrepo/README.md"
+  printf '# page\n\n> %s\n' "$M44SENTENCE" > "$M40W/quotedrepo/$M44QUOTED"
+  ( cd "$M40W/quotedrepo" && git init -q . && git add -A \
+      && git -c user.email=t@t -c user.name=t commit -qm quoted ) > /dev/null
+  ( cd "$M40W/quotedrepo" && git ls-files 'site/*.qmd' ) | grep -q '^"site/' \
+    || fail "M44 self-test: git does not C-quote the non-ASCII page name in the throwaway repository, so the case below is not the shape that was dropped"
+  m44_sweep_quoted_repo() { ( cd "$M40W/quotedrepo" && check_prerelease_absent "$M44LIST" ); }
+  m40_planted 'a tracked page whose non-ASCII name git C-quotes, carrying the retired warning' \
+    "$M44QUOTED (warning header)" \
+    m44_sweep_quoted_repo
+
   m44_restore README.md "> $M44SENTENCE" "$M40W/prerelease-readme"
   m40_planted 'the retired pre-release warning restored into README.md' \
     'README.md (warning header)' \
@@ -12976,7 +13059,7 @@ M40OLD
   m40_planted 'the second retired sentence restored into the site front page, re-wrapped across a line break at a different column' \
     'site/index.qmd (fluid syntax)' \
     check_prerelease_absent "$WORK/prerelease-retired.txt" "$M40W/prerelease-wrapped"
-  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site by a leading `../`, a root-relative href escaping it with a `..` behind a real segment with and without a base path, a percent-encoded absolute href with and without one, a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green, plus a repository whose tracked documentation has collapsed to one page and a sentence row carrying no tab; and the site project file's output-directory pin on a copy whose output directory is renamed"
+  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site by a leading `../`, a root-relative href escaping it with a `..` behind a real segment with and without a base path, a percent-encoded absolute href with and without one, an href reaching above the capture through a symlink inside it (beside one through a symlink that stays inside, which must still resolve), a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green, plus a repository whose tracked documentation has collapsed to one page, a repository holding a tracked page whose non-ASCII name git C-quotes, and a sentence row carrying no tab; and the site project file's output-directory pin on a copy whose output directory is renamed"
 fi
 
 # ---------------------------------------------------------------------------

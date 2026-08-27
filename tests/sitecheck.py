@@ -208,6 +208,11 @@ def check_links(captured, base_path=''):
                     f'check would sweep nothing')
 
     root = os.path.abspath(captured)
+    # The containment test below compares resolved paths, so the root it
+    # compares against is resolved too: on a checkout reached through a
+    # symlinked parent (`/tmp` -> `/private/tmp`) an unresolved root would
+    # make every link inside the capture read as an escape.
+    real_root = os.path.realpath(root)
     bad = []
     swept = 0
     for rel, page in pages.items():
@@ -262,8 +267,16 @@ def check_links(captured, base_path=''):
                 # an existing segment (`/x/../../outside.html`) leaves no
                 # leading `../` for a textual test to match (M46).
                 on_disk = os.path.abspath(os.path.join(root, target))
-                if on_disk != root and not on_disk.startswith(root + os.sep):
-                    bad.append(f'  {rel}: <<{href}>> resolves to {on_disk}, '
+                # Both sides are resolved through their symlinks. `abspath`
+                # normalizes text only, so a link through a symlink that sits
+                # inside the capture and points above it reached a file
+                # outside the site while the textual test saw a path under
+                # the root (M46). `capture` copies with `cp -R`, which
+                # preserves a link the render wrote.
+                reached = os.path.realpath(on_disk)
+                if reached != real_root \
+                        and not reached.startswith(real_root + os.sep):
+                    bad.append(f'  {rel}: <<{href}>> resolves to {reached}, '
                                f'which is outside the captured site under '
                                f'{captured}')
                     continue

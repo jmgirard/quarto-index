@@ -254,7 +254,7 @@ SECTION_TOKEN = 'section'
 def section_rows(root, prefix, minted=(), hrefs=False):
     """The manifest form of every generated index section on a page.
 
-    One `section<TAB>id<TAB>heading tag<TAB>title<TAB>id it follows` row per
+    One `section<TAB>id<TAB>heading tag<TAB>title[<TAB>id it follows]` row per
     section, each followed by that section's own entry and letter-group rows in
     rendered order — the same `row()` form a single index's manifest uses, so
     the two cannot drift apart in what an entry row means. No entry row starts
@@ -266,11 +266,22 @@ def section_rows(root, prefix, minted=(), hrefs=False):
     hand-written manifests here read the count form, and the cross-version
     comparison (M43) reads the href form, where a locator that moved without
     changing in number is exactly the difference being looked for.
+
+    The trailing `id it follows` field is written in the COUNT form only. It
+    names the last element on the page this extension did not mint, which on a
+    page whose author wrote no id before the index is whatever the renderer's
+    own scaffold happens to carry — a value the cross-version comparison would
+    read as this extension emitting a different index when what moved was
+    Quarto's wrapper (M48). The count form is read by manifests written against
+    one Quarto version, where the field is the only evidence the suite has of
+    WHERE on the page a generated section sits, so it stays there.
     """
     rows = []
     for found in index_sections(root, prefix, minted):
-        rows.append('\t'.join((SECTION_TOKEN, found['ident'], found['tag'],
-                               found['title'], found['after'] or '-')))
+        fields = [SECTION_TOKEN, found['ident'], found['tag'], found['title']]
+        if not hrefs:
+            fields.append(found['after'] or '-')
+        rows.append('\t'.join(fields))
         rows.extend(row(r, hrefs) for r in found['records'])
     return rows
 

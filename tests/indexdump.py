@@ -10,11 +10,17 @@ printed index on the one Quarto version it runs (M47).
 
   html <file.html> — every generated index section on the page, in
       `htmlindex.section_rows()` form with the locator HREF form of an entry
-      row: `section<TAB>id<TAB>heading tag<TAB>title<TAB>id it follows`, then
-      that section's entry and letter-group rows in rendered order. WHERE each
-      locator points and not how many there are, because a Quarto version that
-      repointed an anchor without changing the count is exactly the difference
-      this comparison exists to find.
+      row: `section<TAB>id<TAB>heading tag<TAB>title`, then that section's
+      entry and letter-group rows in rendered order. WHERE each locator points
+      and not how many there are, because a Quarto version that repointed an
+      anchor without changing the count is exactly the difference this
+      comparison exists to find.
+
+      The section row names no element the section follows. That field is in
+      `section_rows`' count form, which the acceptance suite reads on one
+      Quarto version; here it would carry a scaffold id on a page whose author
+      wrote none, and two legs disagreeing about Quarto's own wrapper would be
+      reported as this extension emitting a different index (M48).
 
   pdf <file.pdf> [heading] — the printed index, in the order
       `pdfindex.read()` reconstructs it: `level<TAB>term<TAB>printed line`, one

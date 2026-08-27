@@ -33,6 +33,16 @@ which Quarto rendered it?
       stops the number moving in the workflow while the two documents go on
       naming the old one.
 
+      What it reads of the workflow is one `FLOOR:` line and the version on
+      it. It does not read which action installs that version, whether the leg
+      exists, what any step runs, or that the number is still the oldest
+      release the declared range admits — the workflow's own header records
+      where the number came from and when, and says that nothing re-derives
+      it. What it reads of each document is whether that exact version string
+      occurs in it, bounded so a longer version containing it does not count;
+      it does not read where in the document the version is named or what is
+      claimed about it there.
+
   compare <legs-dir> <baseline>
       `<legs-dir>` holds one directory per leg, named `index-<leg>` — the
       shape `actions/download-artifact` unpacks the uploads into. Every leg's
@@ -233,8 +243,22 @@ def check_legs(floor, pinned, event):
     return 0
 
 
+def version_named(body, version):
+    """Whether `body` names `version` and not a longer version containing it.
+
+    A bare `version in body` reads `1.4.549` out of `1.4.5490` and out of
+    `1.4.549.1`, so a document left naming a release the workflow has moved off
+    could pass on a substring of the new number. The bound is over digits and
+    dots on either side: a sentence ending `… Quarto 1.4.549.` still names it,
+    and `v1.4.549` still names it.
+    """
+    return re.search(r'(?<![\d.])%s(?!\.?\d)' % re.escape(version),
+                     body) is not None
+
+
 def check_floor(workflow, *docs):
-    text = open(workflow, encoding='utf-8').read()
+    with open(workflow, encoding='utf-8') as handle:
+        text = handle.read()
     floors = FLOOR.findall(text)
     if len(floors) != 1:
         return fail('%s declares %d `FLOOR:` line(s); the floor version this '
@@ -248,8 +272,9 @@ def check_floor(workflow, *docs):
                     'declares, so this check would sweep nothing'
                     % (version, workflow))
     for doc in docs:
-        body = open(doc, encoding='utf-8').read()
-        if version not in body:
+        with open(doc, encoding='utf-8') as handle:
+            body = handle.read()
+        if not version_named(body, version):
             return fail('%s pins the floor leg to Quarto %s and %s does not '
                         'name that version anywhere, so a reader is not told '
                         'which Quarto the floor is actually run on'

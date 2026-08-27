@@ -15604,7 +15604,15 @@ if [ "${1:-}" = "--self-test" ]; then
     'tests-noversion.qmd does not name that version anywhere' \
     python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md "$M43F/tests-noversion.qmd"
 
-  pass "M43 T5 self-test: each clause of the floor reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and documents — no floor declared, two floors declared, a floor that is a channel name, no document to hold against it, and each of the two documents in turn dropping the version while the other keeps it"
+  # The bound on that read (M48). A document naming a LONGER version that
+  # contains the floor names a release the workflow does not install, and a
+  # bare substring test read it as naming the floor.
+  m43_floor_plant readme-longer.md README.md "s|1\.4\.549|1.4.5490|g"
+  m43_planted 'a README naming a longer version the floor version is a substring of, which a bare substring test would read as naming the floor' \
+    'readme-longer.md does not name that version anywhere' \
+    python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" "$M43F/readme-longer.md" site/tests.qmd
+
+  pass "M43 T5 self-test: each clause of the floor reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and documents — no floor declared, two floors declared, a floor that is a channel name, no document to hold against it, each of the two documents in turn dropping the version while the other keeps it, and a document naming a longer version the floor is a substring of"
 
   # -------------------------------------------------------------------------
   # M48 T4 — a planted defect per clause of the fixture-set reader. Its green

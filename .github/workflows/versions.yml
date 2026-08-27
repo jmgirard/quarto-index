@@ -28,10 +28,20 @@
 # commit; a channel leg can go red on an upstream release alone, which is not a
 # signal a push is answerable for.
 #
-# Nothing checks this workflow's own steps. D-011 refuses a scan that pins
-# names and shapes in a source file it does not execute; the evidence that
-# these steps work is the runs themselves, including the deliberately red ones
-# recorded in the milestone's Review section, as it was for `pages.yml`.
+# Two narrow reads of this file run in the acceptance suite, and nothing else
+# here is checked. `tests/versioncheck.py floor` reads the `FLOOR:` line below
+# and holds README and the site's Tests page to the version it names.
+# `tests/versioncheck.py fixtures` reads the `indexdump.py html` invocations in
+# the render step and the extraction each is redirected into, and holds that
+# set of fixture names equal to the set the suite dumps locally. Each says in
+# its own header what it reads and what it does not.
+#
+# Nothing else about these steps is checked, and widening either read is
+# refused: D-011 declines a scan that pins names and shapes in a source file it
+# does not execute, because such a scan certifies a property it never asserts.
+# The evidence that the steps work is the runs themselves, including the
+# deliberately red ones recorded in the milestone's Review section, as it was
+# for `pages.yml`.
 name: Versions
 
 on:

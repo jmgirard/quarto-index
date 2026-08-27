@@ -119,6 +119,7 @@ milestone; the gate's reasoning is in the work log.
 - 2026-08-26: T2 fix, three rounds, each round's failure read off the run it came from. `tlmgr` is not on the runner's PATH (`quarto install tinytex` puts the tree under `~/.TinyTeX` and Quarto locates it itself), so its bin directory is now found rather than named. The shipped `tlmgr` is older than the repository it talks to and refuses to install until it updates itself. And `mirror.ctan.org`'s redirect handed the two legs different mirrors, the floor leg's stale enough that `tlmgr` refused to run — the repository is now named, TinyTeX's own default, which the legs that worked were already on. Green on the branch head at 33028185399.
 - 2026-08-26: criteria audit ran in full mode (user-facing tier). It returned findings on all five drafted criteria: four bound a property of the checking machinery rather than of the deliverable (a recorded run URL, a log's fixture list, a message's wording, a header comment's content), which moved to T2, T4 and T5; AC1 let the workflow name its own fixture set, now named in the criterion; AC4's "oldest release satisfying the range" quantified over every Quarto release ever published, narrowed to the pinned 1.4.549 with the query kept as a dated observation in T2; AC5 promised README and the site agree with a fixture list nothing enumerates, narrowed to the floor version; and the equality comparison's relation to D-004 is now stated in Scope. Two findings went to the gate as questions — PDF comparability across engines, and one plant standing in for a family free in three axes.
 - 2026-08-26: review checkpoint (in progress) — PR #43 opened as a draft; AC1-AC5 verified with fresh evidence off run 33028991449 on the branch head and ticked; consistency gate green (`cairn_validate` all checks passed, `generic` profile names no toolchain checks, no DESIGN principle changed). AC6's suite run and the three-lens fresh-context review are still outstanding.
+- 2026-08-26: review gate — the maintainer directed two fixes on the branch and follow-ups for the rest: `compare` now carries `if: always()`, so a red leg no longer skips the job that reports the verdict, and the `plan` step prints the matrix reader's refusal instead of capturing it into `$LEGS` unread. The other thirteen findings go to the acceptance-suite-hardening candidate row at hygiene.
 
 ## Decisions
 
@@ -340,3 +341,21 @@ the run recorded under AC1.
   TeX-install fixes, and the claim that this does not matter is asserted
   rather than re-verified.** Flagged in the milestone file itself rather than
   hidden.
+
+### Triage
+
+Put to the maintainer at the merge gate as the ranked list above. Directed:
+**fix now** — O4 and O13, both contained in `versions.yml` and both about a
+case that can happen today (a red leg skipping the comparison job; a refused
+matrix killing the `plan` step with its reason unprinted). **Answered by
+evidence, no action** — O3, closed by the three-leg `workflow_dispatch` run
+recorded under AC1. **Rejected** — O11: "1.4.549 is the oldest release of the
+1.4 line" is a claim about Quarto's releases, not about this repo's state, and
+an older release cannot appear, which the workflow header says in as many
+words; a dated observation is not owed. **Follow-up** — O1, O2, O5, O6, O7,
+O8, O9, O10, O12, O14, O15 and S1, filed on the acceptance-suite-hardening
+candidate row at the post-merge hygiene pass.
+
+Neither fix-now finding demonstrates an acceptance criterion failing, so
+neither is a return under the review floor; the maintainer judged both worth
+fixing before the merge rather than after.

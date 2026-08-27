@@ -69,7 +69,14 @@ jobs:
         run: |
           set -euo pipefail
           PINNED=$(python3 tests/pagescheck.py version .github/workflows/pages.yml)
-          LEGS=$(python3 tests/versioncheck.py legs "$FLOOR" "$PINNED" "$EVENT")
+          # `versioncheck` writes its FAIL line to stdout, and stdout here is
+          # captured into the matrix rather than printed. Left as a bare
+          # capture, a refused matrix kills the step under `set -e` with the
+          # reason sitting unread in $LEGS; this puts it in the log.
+          if ! LEGS=$(python3 tests/versioncheck.py legs "$FLOOR" "$PINNED" "$EVENT"); then
+            printf '%s\n' "$LEGS" >&2
+            exit 1
+          fi
           printf 'legs=%s\n' "$LEGS" >> "$GITHUB_OUTPUT"
           printf 'rendering on: %s\n' "$LEGS"
 
@@ -198,6 +205,13 @@ jobs:
 
   compare:
     needs: [plan, render]
+    # `needs` gates on success by default, so one red leg would skip the job
+    # that reports the verdict — `fail-fast: false` keeps the other legs
+    # rendering and uploading, and then nobody is told whether they agreed.
+    # The comparison's own clauses report a leg that uploaded nothing as a leg
+    # that uploaded nothing, so running here over whatever landed is a reading
+    # and never a false green.
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository

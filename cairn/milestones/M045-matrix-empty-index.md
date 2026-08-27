@@ -45,23 +45,23 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
 
 ## Acceptance criteria
 
-- [ ] AC1 `python3 tests/indexdump.py html <page>` exits non-zero with a
+- [x] AC1 `python3 tests/indexdump.py html <page>` exits non-zero with a
       `FAIL:` line naming the page and reporting that its index section carries
       no entry row, when handed a hand-written HTML fixture page — never a
       render output — whose index section carries an empty entry list; and
       exits 0, printing the section row and one entry row, when handed a
       hand-written page whose index section carries one entry row.
-- [ ] AC2 `python3 tests/versioncheck.py compare <dir> pinned` exits non-zero
+- [x] AC2 `python3 tests/versioncheck.py compare <dir> pinned` exits non-zero
       with a `FAIL:` line naming the `pinned` leg and the `.pdf.txt` suffix it
       found no file under, when handed a hand-built legs directory holding an
       `index-pinned` and an `index-floor` directory whose `*.html.txt` sets are
       equal, non-empty and hold no empty file, and in which neither leg carries
       a `.pdf.txt` file.
-- [ ] AC3 The same command exits non-zero with a `FAIL:` line naming both legs
+- [x] AC3 The same command exits non-zero with a `FAIL:` line naming both legs
       and the `.pdf.txt` fixture names they differ in, when handed a hand-built
       legs directory whose two legs' `*.html.txt` sets are equal, non-empty and
       hold no empty file, and whose `.pdf.txt` name sets are not equal.
-- [ ] AC4 `tests/run-tests.sh --self-test` is clean (the profile's `verify`
+- [x] AC4 `tests/run-tests.sh --self-test` is clean (the profile's `verify`
       slot, plus the fuller pre-review check it names).
 
 ## Coverage
@@ -111,3 +111,89 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
 ## Decisions
 
 ## Review
+
+Fresh evidence, 2026-08-26, on `m045-matrix-empty-index` at 4550791.
+PR: https://github.com/jmgirard/quarto-index/pull/45
+
+- AC1 — met. Two hand-written pages built fresh for this review under the
+  session scratchpad, neither a render output. The page whose index section
+  carries `<ul>\n</ul>` and nothing else: exit 1, `FAIL: <path>: the index
+  section carries an entry list with no entry row in it`. The page carrying
+  one `qi-term` list item: exit 0, stdout exactly two lines — the section row
+  `section\tqi-index\th1\tIndex\tintro` and the entry row
+  `0\tAlpha\t#qi-mark-1` — and nothing else.
+- AC2 — met. A hand-built legs directory holding `index-pinned` and
+  `index-floor`, each with the same two non-empty `*.html.txt` files (checked:
+  equal name sets, zero empty files) and no `*.pdf.txt` anywhere: exit 1,
+  `FAIL: M43: the \`pinned\` leg carries no \`*.pdf.txt\` extraction, so no leg
+  rendered a PDF the others could be held to and the PDF half of this matrix
+  would be enforced nowhere`. The two HTML comparisons pass above it, so the
+  clause that fired is this one.
+- AC3 — met. The same tree with `demo.pdf.txt` on the baseline leg and
+  `book.pdf.txt` on the other: exit 1, `FAIL: M43: the \`floor\` leg extracted
+  the \`*.pdf.txt\` fixture(s) ['book'] and the \`pinned\` leg extracted
+  ['demo']; the two legs did not render the same fixtures to PDF, and the 2
+  name(s) they differ in are ['book', 'demo']` — both legs and both names.
+- AC4 — met. `tests/run-tests.sh --self-test` exit 0, "All checks passed (705
+  checks)", run uncontended after an earlier attempt collided with a reviewer's
+  concurrent run over the shared `tests/.work` (that attempt's red is the
+  collision, not a defect). `cairn_validate.py` exit 0, all 16 checks PASS and
+  all 7 advisories OK. Profile `generic` names no toolchain consistency-gate
+  checks. PR #45 CI green: build, plan, both render legs, and the matrix's own
+  `compare` job.
+
+### Review findings
+
+Three fresh-context reviewers. The [S] blame-history and [S] prior-PR-comments
+lenses each reported zero findings (the latter's GitHub probe returned no
+inline review comments at all, so it read the archived `## Review` sections and
+the ROADMAP candidate rows). The [O] diff-bug lens reported eleven, ranked;
+each is recorded below with its disposition. None demonstrates an acceptance
+criterion failing, so none met the return floor.
+
+- F1 (fix now) `site/tests.qmd:27-31` still tells readers the PDFs are not
+  compared across legs. T2 corrected the module header and the report line but
+  not the public docs page: "The PDFs are not compared across legs. Each leg's
+  PDF render is held to exiting 0 with a non-empty printed index instead." A
+  dropped `book.pdf` on one leg now goes red with a failure the documented
+  contract says cannot happen.
+- F2 (fix now) `tests/htmlindex.py:448-452` — the new direct-child clause
+  preempts the misplaced-list walk. A section holding both an empty
+  direct-child list and the real entry list nested in a `div` now reports the
+  empty list and never mentions the nesting, which the old message named.
+  Confirmed by running such a page.
+- F3 (fix now) `tests/indexdump.py:80-86` — the message ends "so this dump is
+  section headers alone", which is false when only one of several sections is
+  bare; the suite plants exactly that case. Same misreport class this milestone
+  set out to fix in `htmlindex.py`.
+- F4 (fix now) `tests/versioncheck.py:183-195` — the PDF report line and the
+  `N comparison(s) over N fixture(s)` domain-size line are now printed only on
+  a clean run, so a red run says nothing about the domains it swept, against
+  the module header's own promise. Confirmed by running a tree whose HTML
+  differs and whose PDF side is fine.
+- F5 (reject) `tests/indexdump.py:71-86` — the clause is unreachable through
+  the command, because `index_entries` raises first on every page the reader
+  can parse. Deliberate: T1 scoped it as a guard against that raise being
+  removed, and the code comment says so. The plant reaches it by direct call,
+  the same shape `pdf_rows` uses.
+- F6 (follow-up) Both new PDF clauses are unreachable on the runner as
+  `.github/workflows/versions.yml` stands: the render step runs under
+  `set -euo pipefail` and the upload step has no `if: always()`, so a leg that
+  failed a PDF extraction uploads nothing and is caught by the missing-leg
+  clause first. Filed as a candidate row.
+- F7 (fix now) `tests/versioncheck.py:138-144` — the HTML name-set skew still
+  returns inside the leg loop, ahead of the PDF block, so T2's work-log claim
+  that findings report alongside any HTML difference holds for content
+  differences only. Corrected by a work-log line.
+- F8 (fix now) `tests/run-tests.sh` `m45_planted` asserts non-zero exit, the
+  message substring and no traceback, but never the `FAIL:` prefix AC1, AC2 and
+  AC3 each word.
+- F9 (fix now) `tests/run-tests.sh:15962` labels its failure `M45-AC3` although
+  the assertion it guards is the name-set-equal ok line, which is neither AC2
+  nor AC3 as worded.
+- F10 (fix now) No plant for a non-baseline leg carrying zero PDFs, where the
+  skew branch prints an empty list and calls it two legs rendering different
+  fixtures rather than a leg that uploaded no PDF at all.
+- F11 (fix now) `tests/indexdump.py:78-79` — the `else` arm of the ternary
+  cannot be taken, since `starts` is built from rows that start with the
+  section token and a tab.

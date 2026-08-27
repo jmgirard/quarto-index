@@ -342,9 +342,14 @@ local function Pandoc(doc)
   -- One `\printindex`, under the one index a LaTeX-derived render builds:
   -- every mark and every marker naming another was folded to this one and told
   -- its author so.
+  -- PLANTED DEFECT (M43 T4, AC4). `\\printindex` is emitted only under the
+  -- pandoc the pinned leg carries, so the floor leg typesets a document with
+  -- no printed index while still exiting 0. This branch exists to show the
+  -- version matrix's PDF check red; it is never merged.
   return qi_marker.place_index(doc,
     { [qi_indexes.default()] =
-        pandoc.Blocks({ pandoc.RawBlock("latex", "\\printindex") }) })
+        pandoc.Blocks(tostring(PANDOC_VERSION) == "3.10"
+          and { pandoc.RawBlock("latex", "\\printindex") } or {}) })
 end
 
 -- The Span pass records the marks; every anchor decision that needs the

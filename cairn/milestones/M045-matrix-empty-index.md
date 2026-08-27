@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M045: The version matrix cannot agree about an empty index
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -106,6 +106,7 @@ readable by a check → D-011 refuses it; the runs stay the evidence.
 - 2026-08-26: T3 — three hand-written pages under `--self-test` (an empty entry list, one entry row, no entry list) plus a fourth whose list is nested a level down, so the narrowed placement message is shown still firing; the one-entry page is the control, compared against the exact two rows it carries, and `html_rows`'s own clause is planted by direct call, once on a lone section header and once on a second header beside a first that is fine.
 - 2026-08-26: T4 — two hand-built legs trees copied from the control tree, each asserted to carry the equal, non-empty, no-empty-file HTML side the two criteria require before the PDF clause is reached; a third tree broken on both sides shows the HTML difference and the PDF finding reported together.
 - 2026-08-26: T5 — `tests/run-tests.sh --self-test` green at 705 checks (693 before). T3-T5 landed in one commit; the three blocks are separate.
+- 2026-08-26: all tasks done, `tests/run-tests.sh --self-test` clean (705 checks); status review.
 
 ## Decisions
 

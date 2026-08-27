@@ -10,7 +10,7 @@ _Released 0.1.0 2026-08-26._
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M44 | Retire the pre-release warning | done | — | normal | milestones/archive/M44-retire-prerelease-warning.md |
-| M45 | The version matrix cannot agree about an empty index | in-progress | — | normal | milestones/M045-matrix-empty-index.md |
+| M45 | The version matrix cannot agree about an empty index | review | — | normal | milestones/M045-matrix-empty-index.md |
 | M43 | A version matrix renders the fixtures on the oldest supported Quarto | done | — | normal | milestones/archive/M43-quarto-version-matrix.md |
 | M40 | The documentation moves into a Quarto website | done | — | normal | milestones/archive/M40-docs-website.md |
 | M41 | The site shows each curated example's source, index and PDF | done | M40 | normal | milestones/archive/M41-example-gallery.md |

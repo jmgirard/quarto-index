@@ -1483,22 +1483,38 @@ def flat(text):
     return ' '.join(re.sub(r'(?m)^[ \t]*>[ \t]?', '', text).split())
 
 
-rows = [l.rstrip('\n').split('\t', 1)
-        for l in open(sys.argv[1], encoding='utf-8') if l.strip()]
-if not rows:
+lines = [l.rstrip('\n') for l in open(sys.argv[1], encoding='utf-8')
+         if l.strip()]
+if not lines:
     sys.exit('FAIL: M44-AC1: the retired-sentence list is empty, so this '
              'check forbids nothing')
+# A row is `label<TAB>sentence`. One without the tab is reported, not raised:
+# unpacking it would abort with a ValueError naming no file and no sentence,
+# which is not this check's failure convention (M46).
+malformed = [l for l in lines if '\t' not in l]
+if malformed:
+    print('FAIL: M44-AC1: the retired-sentence list carries a row with no tab '
+          'separating its label from its sentence, so what it forbids is not '
+          'readable:', file=sys.stderr)
+    print('\n'.join(f'  <<{l}>>' for l in malformed), file=sys.stderr)
+    sys.exit(1)
+rows = [l.split('\t', 1) for l in lines]
 overlay = sys.argv[2]
 
 listed = subprocess.run(['git', 'ls-files', 'site/*.qmd'], check=True,
                         capture_output=True, text=True).stdout.split('\n')
 domain = [p for p in listed if p.endswith('.qmd')] + ['README.md']
 # The enumeration is asserted non-empty rather than assumed: a `git ls-files`
-# that goes empty must read as empty and not as a pass (M16).
-if len(domain) < 2:
+# that goes empty must read as empty and not as a pass (M16). The floor is a
+# stated number and not one read off the enumeration, which would be blind in
+# exactly the dimension it derives; eleven is ten documentation pages plus
+# README, well under the twenty-one the site carries, so ordinary page churn
+# never trips it and a collapsed enumeration does (M46).
+FLOOR = 11
+if len(domain) < FLOOR:
     sys.exit(f'FAIL: M44-AC1: the sweep enumerated {len(domain)} file(s); the '
              f'domain is every tracked page under site/ plus README.md, and '
-             f'fewer than two means the enumeration went empty')
+             f'fewer than {FLOOR} means the enumeration collapsed')
 
 still = []
 for path in domain:
@@ -12470,6 +12486,19 @@ examples_state examples > "$WORK/examples-before.txt"
 # recognize would leave the rendered-output check finding a page whose source
 # is gone. Removing the directory costs nothing and does not depend on which
 # Quarto ran.
+# The directory removed below is named here by hand; the render writes where
+# `output-dir` says. Pinning the key is what keeps the two the same name: an
+# output directory renamed in the project file would otherwise leave the
+# removal removing nothing and the absence guard below still green (M46). The
+# guard takes the config path as an argument so the self-test can hand it a
+# renamed copy.
+check_output_dir_pinned() {
+  grep -q '^  output-dir: _site$' "$1" && return 0
+  printf 'FAIL: M40-AC1: %s no longer declares `output-dir: _site`, so the removal of site/_site would clear a directory the render does not write into\n' "$1" >&2
+  return 1
+}
+check_output_dir_pinned site/_quarto.yml \
+  || fail "M40-AC1: the site project file no longer names site/_site as its output directory (its own FAIL line is above)"
 rm -rf site/_site
 [ ! -e site/_site ] \
   || fail "M40-AC1: site/_site survived the removal above, so the render below would write into a directory holding an earlier run's pages"
@@ -12867,6 +12896,42 @@ M40OLD
     || fail "M44 self-test: the check is red on an overlay holding an unmodified copy of a tracked page, so the failures below would be the overlay and not the restoration"
   printf 'ok   self-test: an overlay holding an unmodified copy of a tracked page leaves the pre-release check green\n'
 
+  # The domain floor. The sweep enumerates itself with `git ls-files`, so the
+  # collapse it guards against is planted by running the check inside a
+  # different repository — one holding a single tracked page plus README,
+  # which is a domain of two and passed the old `fewer than two` floor as
+  # healthy (M46).
+  rm -rf "$M40W/thinrepo"; mkdir -p "$M40W/thinrepo/site"
+  printf '# thin\n' > "$M40W/thinrepo/site/only.qmd"
+  printf '# thin\n' > "$M40W/thinrepo/README.md"
+  ( cd "$M40W/thinrepo" && git init -q . && git add -A \
+      && git -c user.email=t@t -c user.name=t commit -qm thin ) > /dev/null
+  [ "$(cd "$M40W/thinrepo" && git ls-files 'site/*.qmd' | wc -l | tr -d ' ')" = 1 ] \
+    || fail "M44 self-test: the thin repository does not track exactly one page under site/, so the collapsed-domain case below would be about a domain of another size"
+  M44LIST="$PWD/$WORK/prerelease-retired.txt"
+  m44_sweep_thin_repo() { ( cd "$M40W/thinrepo" && check_prerelease_absent "$M44LIST" ); }
+  m40_planted 'a repository whose tracked documentation has collapsed to one page, over which the sweep would report two files as a healthy domain' \
+    'the enumeration collapsed' \
+    m44_sweep_thin_repo
+
+  # A malformed row. Before M46 the unpack raised a ValueError naming neither
+  # the row nor a file; the check's convention is a FAIL line.
+  printf 'a row with no tab at all\n' > "$M40W/prerelease-untabbed.txt"
+  m40_planted 'a retired-sentence row with no tab separating its label from its sentence' \
+    'a row with no tab separating its label from its sentence' \
+    check_prerelease_absent "$M40W/prerelease-untabbed.txt"
+
+  # The output-directory pin, planted on a copy of the project file whose
+  # output directory is renamed — the shape that would leave the removal of
+  # site/_site clearing a directory the render does not write into.
+  sed 's|^  output-dir: _site$|  output-dir: _built|' site/_quarto.yml \
+    > "$M40W/quarto-renamed.yml"
+  grep -q '^  output-dir: _built$' "$M40W/quarto-renamed.yml" \
+    || fail "M40 self-test: the output-directory rename did not apply, so the case below is about the unmutated project file"
+  m40_planted 'a site project file whose output directory is renamed, which the removal of site/_site would no longer be about' \
+    'no longer declares `output-dir: _site`' \
+    check_output_dir_pinned "$M40W/quarto-renamed.yml"
+
   # <tracked-path> <restored-text> <overlay-dir>: the overlay holds that one
   # path, its bytes the repo's plus the sentence.
   m44_restore() {
@@ -12911,7 +12976,7 @@ M40OLD
   m40_planted 'the second retired sentence restored into the site front page, re-wrapped across a line break at a different column' \
     'site/index.qmd (fluid syntax)' \
     check_prerelease_absent "$WORK/prerelease-retired.txt" "$M40W/prerelease-wrapped"
-  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site, a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green"
+  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site by a leading `../`, a root-relative href escaping it with a `..` behind a real segment with and without a base path, a percent-encoded absolute href with and without one, a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green, plus a repository whose tracked documentation has collapsed to one page and a sentence row carrying no tab; and the site project file's output-directory pin on a copy whose output directory is renamed"
 fi
 
 # ---------------------------------------------------------------------------

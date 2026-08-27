@@ -1,6 +1,6 @@
 # M46: The claim-container registry is retired, not widened
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -80,6 +80,10 @@ candidate row.
 - 2026-08-27: T7 — `tests/run-tests.sh` exits 0 at 385 checks (403 before this milestone) and `tests/run-tests.sh --self-test` exits 0 at 687 (707 before). The plain run loses eighteen: thirteen documentation-comparison checks, the registry check, and four `pass` summaries; the self-test loses twenty, the seven registry and claim-set plants and the three pre-release plants it dropped exceeding the seven cases added by T3 and T4. Status set to review.
 - 2026-08-27: review returned the milestone to in-progress. AC4 fails: `tests/sitecheck.py links` resolves outside the captured site in two shapes, both reproduced at exit 0 — a root-relative link whose `..` sits behind an existing segment (`target = stripped` never normalized, so the `os.pardir` test is a textual prefix test), and a percent-encoded absolute path (`%2Fetc%2Fpasswd`), decoded after the branch was chosen, which `os.path.join` resolves against `/` rather than the capture. AC1, AC2, AC3, AC5, AC6 and AC7 verified on fresh evidence (suite 385 checks, self-test 687, both exit 0; `cairn_validate` exit 0). Eleven review findings logged in the Review section; first defect return.
 - 2026-08-27: T4 rework, from the review's defect return — the link check's containment test now runs on the path the join reaches rather than on the target's text, and the root-relative branch is chosen on the decoded path. Both escapes the review reproduced are closed: `/sub/../../outside.html` with a real segment behind the `..` and `%2Fetc%2Fpasswd` each exited 0 against the pre-fix reader and exit 1 now, the encoded one confined to `etc/passwd` under the capture. Four plants added — the root-relative escape with and without a base path, and the encoded absolute with and without one. Self-test 687 -> 691.
+- 2026-08-27: triage gate over the seven findings the review left for this phase, both answers at the recommendation — fix the four in this milestone's own new code, file the three about link shapes the site does not emit. The pre-release check's domain floor is a stated eleven (ten documentation pages plus README), not a number read off the enumeration.
+- 2026-08-27: F5/F6/F7 fixed — the standing render's removal is preceded by a pin on `output-dir: _site` in `site/_quarto.yml`, the pre-release sweep's floor is eleven files rather than two, and a sentence row carrying no tab reports a `FAIL:` line instead of raising at the unpack. Three plants added, each shown red on its own mutation: a project file whose output directory is renamed, a repository whose tracked documentation has collapsed to one page, and an untabbed row. Self-test 691 -> 694.
+- 2026-08-27: F9 fixed — the ROADMAP suite-readers row's residual-risk clause corrected in place: three of the fourteen dropped sets banned a sentence rather than requiring one, so a page may re-acquire a sentence false about today's behavior, which the earlier wording understated. F8, F10 and F11 recorded on the same row.
+- 2026-08-27: full run at exit 0, 385 checks; `--self-test` at exit 0, 694 checks. Status set to review.
 
 ## Decisions
 

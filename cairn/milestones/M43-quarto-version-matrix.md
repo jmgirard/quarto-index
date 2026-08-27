@@ -66,7 +66,7 @@ milestone; the gate's reasoning is in the work log.
       check.
 - [x] AC5. README and the site's Tests page each name the Quarto version the
       floor leg installs.
-- [ ] AC6. `tests/run-tests.sh --self-test` exits 0 on the branch.
+- [x] AC6. `tests/run-tests.sh --self-test` exits 0 on the branch.
 
 ## Coverage
 
@@ -213,6 +213,13 @@ declares — run fresh here, exit 0:
 `ok   M43-AC5: .github/workflows/versions.yml pins the floor leg to Quarto
 1.4.549, and each of the 2 document(s) named after it says so (README.md,
 site/tests.qmd)`.
+
+**AC6 — the acceptance suite is green on the branch.** `tests/run-tests.sh
+--self-test` run here against branch head `4ed947b`, exit 0:
+`All checks passed (690 checks)`, with no unplanted `FAIL:` line in the log.
+The run includes the milestone's own new controls and plants — T1's four
+unplanted dumps and six planted clauses, T3's comparison over this run's own
+extractions with nine planted clauses, and T5's floor reader with six.
 
 ### Consistency gate
 

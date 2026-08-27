@@ -31,6 +31,13 @@ The script fails loudly (`set -euo pipefail`) and refuses to skip its
 end-to-end PDF check: a missing TinyTeX, `makeindex`, or `pdftotext` is an
 error, never a silent pass.
 
+Run it SEQUENTIALLY — never two invocations at once. The script does
+`rm -rf "$WORK"` at startup, so a second run wipes the first's work directory
+mid-flight and the abort surfaces as an unrelated missing-artifact failure in
+whatever check reads next, not as a collision (M46 review round 3). A reviewer
+or subagent that needs one check's behavior extracts it into its own scratch
+directory instead of invoking the suite.
+
 ## consistency-gate
 Toolchain checks `/milestone-review` runs *in addition to* the universal
 cairn-file checks (`cairn_validate`, coverage completeness, `cairn_impact`).

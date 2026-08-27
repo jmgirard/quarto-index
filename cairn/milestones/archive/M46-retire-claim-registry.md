@@ -1,0 +1,11 @@
+# M46: The claim-container registry is retired, not widened
+
+**Status:** done (2026-08-27, PR #46 https://github.com/jmgirard/quarto-index/pull/46)
+
+**Goal:** Retire the claim-container registry and its eighteen containers rather than widen them, keep D-026's pre-release promise by a check that reads its own domain, and repair the three real defects in the site checks that stay.
+
+**Outcome:** `CLAIM_CONTAINERS`, `claim_row`/`claim_kind`/`claim_domain`/`claim_text`, `check_claim_registry` and `check_claim_sets` are gone, with the fourteen containers read through `claim_text` and the thirteen comparison checks reading them (`tests/run-tests.sh` 16,277 -> 15,396 lines). `README_RECIPE_LINES`, `README_INDEXES_CLAIMS` and `README_INDEXES_YAML` are kept, their checks naming their own page. `check_prerelease_absent` forbids the two retired sentences over `git ls-files -z -- 'site/*.qmd' 'README.md'`, reporting the domain size and taking an overlay directory. `tests/sitecheck.py links` gained a base-segment clause, path-part percent-decoding, and a containment test on the realpath the join reaches. The standing render pins `output-dir: _site` and removes the directory first. Twelve of the twenty tracked site pages are now named by no check — the disclosed cost. Suite 403 -> 386 checks, self-test 707 -> 698.
+
+**Decisions:** D-027, D-028, D-029. The eighteen-row disposition table is in git.
+
+**Review:** Four rounds, full three-lens fan-out each. Rounds 1-3 returned on defects: AC4 failed four times by containment mechanisms of the same shape (unnormalized root-relative path, percent-encoded absolute path, symlink inside the capture, directory `index.html` symlinked above it), AC2 twice on its report clause. Both thrash triggers fired and composed at round 3; the user chose descope, and the gated amendment withdrew AC2 and AC4 to a candidate row carrying F19-F21 and F23. Round 4 verified the narrowed set (AC1, AC3, AC5, AC6, AC7), no criterion failing. Of nine findings, F24-F26 were fixed at the gate — DESIGN.md, ROADMAP.md and D-029 no longer assert containment or reporting properties the code lacks — F27 and F28 filed on that row, F29-F32 rejected. KI73 struck; nothing retired at hygiene.

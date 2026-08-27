@@ -7,7 +7,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP6
-- **Branch/PR:** m043-quarto-version-matrix
+- **Branch/PR:** m043-quarto-version-matrix / https://github.com/jmgirard/quarto-index/pull/43
 
 ## Goal
 
@@ -47,24 +47,24 @@ milestone; the gate's reasoning is in the work log.
 
 ## Acceptance criteria
 
-- [ ] AC1. `.github/workflows/versions.yml` renders `examples/html-index.qmd`,
+- [x] AC1. `.github/workflows/versions.yml` renders `examples/html-index.qmd`,
       `examples/named-indexes.qmd`, `examples/demo.qmd` and `examples/book/` —
       HTML for all four, PDF for `demo.qmd` and `examples/book/` — on Quarto
       1.4.549 and on the version `.github/workflows/pages.yml` installs, on
       every push; and on Quarto's `release` channel on a weekly schedule and on
       `workflow_dispatch`. A run on the milestone branch is green.
-- [ ] AC2. For each HTML artifact that run rendered, the index the floor leg
+- [x] AC2. For each HTML artifact that run rendered, the index the floor leg
       emits is byte-identical to the index the pinned leg emits, in the
       serialization the extraction command produces, and the comparison step
       names each fixture it compared. It fails when any compared pair differs.
-- [ ] AC3. For each PDF artifact that run rendered, every leg's render exits 0
+- [x] AC3. For each PDF artifact that run rendered, every leg's render exits 0
       and the entry list `tests/pdfindex.py` reads from it is non-empty.
-- [ ] AC4. Two planted defects, one per compared path, each turn the workflow
+- [x] AC4. Two planted defects, one per compared path, each turn the workflow
       red: a filter change emitting different HTML index content under one
       Quarto version than another fails AC2's comparison, and a filter change
       suppressing the printed index under one Quarto version fails AC3's
       check.
-- [ ] AC5. README and the site's Tests page each name the Quarto version the
+- [x] AC5. README and the site's Tests page each name the Quarto version the
       floor leg installs.
 - [ ] AC6. `tests/run-tests.sh --self-test` exits 0 on the branch.
 
@@ -118,39 +118,86 @@ milestone; the gate's reasoning is in the work log.
 - 2026-08-26: T2 fix — the floor leg went red on two runs out of three at `finding package for imakeidx.sty` → `compilation failed- no matching packages`, which is Quarto 1.4.549's own on-demand TeX installer failing against today's TeX Live repository and not the fixtures. The workflow now installs `imakeidx` with the runner's own TinyTeX before any render, on every leg rather than only the floor one, so the legs still differ in their Quarto version and in nothing else. Supersedes the earlier work-log line calling that failure intermittent.
 - 2026-08-26: T2 fix, three rounds, each round's failure read off the run it came from. `tlmgr` is not on the runner's PATH (`quarto install tinytex` puts the tree under `~/.TinyTeX` and Quarto locates it itself), so its bin directory is now found rather than named. The shipped `tlmgr` is older than the repository it talks to and refuses to install until it updates itself. And `mirror.ctan.org`'s redirect handed the two legs different mirrors, the floor leg's stale enough that `tlmgr` refused to run — the repository is now named, TinyTeX's own default, which the legs that worked were already on. Green on the branch head at 33028185399.
 - 2026-08-26: criteria audit ran in full mode (user-facing tier). It returned findings on all five drafted criteria: four bound a property of the checking machinery rather than of the deliverable (a recorded run URL, a log's fixture list, a message's wording, a header comment's content), which moved to T2, T4 and T5; AC1 let the workflow name its own fixture set, now named in the criterion; AC4's "oldest release satisfying the range" quantified over every Quarto release ever published, narrowed to the pinned 1.4.549 with the query kept as a dated observation in T2; AC5 promised README and the site agree with a fixture list nothing enumerates, narrowed to the floor version; and the equality comparison's relation to D-004 is now stated in Scope. Two findings went to the gate as questions — PDF comparability across engines, and one plant standing in for a family free in three axes.
+- 2026-08-26: review checkpoint (in progress) — PR #43 opened as a draft; AC1-AC5 verified with fresh evidence off run 33028991449 on the branch head and ticked; consistency gate green (`cairn_validate` all checks passed, `generic` profile names no toolchain checks, no DESIGN principle changed). AC6's suite run and the three-lens fresh-context review are still outstanding.
 
 ## Decisions
 
 ## Review
 
-**AC1 run (green), on the milestone branch's head commit b226d6d:**
-https://github.com/jmgirard/quarto-index/actions/runs/33028185399 — `plan`,
+Reviewed 2026-08-26 against branch head `472dede`.
+PR: https://github.com/jmgirard/quarto-index/pull/43
+
+### Acceptance criteria
+
+**AC1 — legs, fixtures, triggers, and a green run on the branch.** Fresh run
+on the branch head `472dede`:
+https://github.com/jmgirard/quarto-index/actions/runs/33028991449 — `plan`,
 `render (floor, 1.4.549)`, `render (pinned, 1.10.18)` and `compare` all
-success. Four HTML extractions per leg, and both PDF fixtures on both legs:
-`examples/demo.pdf: 39 printed entry line(s) under 'Index'` and
-`examples/book/_book/Index-Book-Fixture.pdf: 20 printed entry line(s) under
-'Index'` on each (AC3). The comparison: `4 comparison(s) over 4 fixture(s) —
-book, demo, html-index, named-indexes — against the pinned leg, for each of
-floor; every one byte-identical` (AC2). The first green run, on the workflow
-before the TeX-install fixes, was
+success. Each render leg wrote six extractions from the four fixtures: HTML
+for `html-index` (21 rows), `named-indexes` (18), `demo` (55) and the book
+(26), and PDF for `demo` (39) and the book (20). `versions.yml` carries
+`on: push`, `schedule: '37 6 * * 1'` and `workflow_dispatch`; the leg set per
+event, run here against the code the `plan` job calls
+(`tests/versioncheck.py legs 1.4.549 1.10.18 <event>`), is floor+pinned on
+`push` and `pull_request`, and floor+pinned+release on `schedule` and on
+`workflow_dispatch`. The first green run, on the workflow before the
+TeX-install fixes, was
 https://github.com/jmgirard/quarto-index/actions/runs/33025680092.
 
-**AC4 probes.** Two branches, one plant per compared path, both deleted and
-their commits kept under `refs/probes/` — outside `refs/heads` and `refs/tags`,
-so neither is matched by the workflows' bare `on: push`. Fetch with
-`git fetch origin 'refs/probes/*:refs/probes/*'`; each ref is an annotated
-object naming its plant and its run.
+**AC2 — the HTML indexes agree across legs, fixture by fixture.** The
+`compare` job of that run, verbatim:
 
-- `m043-htmldiff` b377cd0 — the emitted index term carries
+- `ok   M43-AC2: book — the \`floor\` leg emits the index the \`pinned\` leg emits, byte for byte (26 row(s))`
+- `ok   M43-AC2: demo — … (55 row(s))`
+- `ok   M43-AC2: html-index — … (21 row(s))`
+- `ok   M43-AC2: named-indexes — … (18 row(s))`
+- `ok   M43-AC2: 4 comparison(s) over 4 fixture(s) — book, demo, html-index, named-indexes — against the \`pinned\` leg, for each of floor; every one byte-identical`
+
+It also reports the two PDF extractions it deliberately leaves uncompared, so
+the swept domain is stated rather than assumed. That it fails on a difference
+is AC4's first probe.
+
+**AC3 — every leg's PDF renders at exit 0 with a non-empty printed index.**
+Same run, both legs: `indexdump: examples/demo.pdf: 39 printed entry line(s)
+under 'Index'` and `indexdump:
+examples/book/_book/Index-Book-Fixture.pdf: 20 printed entry line(s) under
+'Index'` on the floor leg and on the pinned leg alike. A render that exits
+non-zero fails the step before the extraction runs (`set -euo pipefail`).
+
+**AC4 — both compared paths shown red on a plant.** Two probe branches, one
+plant each, both deleted; their commits are kept under `refs/probes/` on
+`origin` and locally (`refs/probes/m043-htmldiff` → `b377cd0`,
+`refs/probes/m043-nopdfindex` → `8b43042`, each an annotated object naming
+its plant and its run). Those refs are outside `refs/heads` and `refs/tags`,
+so neither is matched by the workflows' bare `on: push`. Fetch with
+`git fetch origin 'refs/probes/*:refs/probes/*'`.
+
+- `m043-htmldiff` `b377cd0` — the emitted index term carries
   `tostring(PANDOC_VERSION)`, so the two legs emit different index content.
-  Red at the **comparison job**, all four fixtures named:
+  Both render legs stayed green and the **comparison job** went red, naming
+  all four fixtures and the differing row —
+  `FAIL: M43-AC2: html-index — the \`floor\` leg emits a different index from
+  the \`pinned\` leg: row 3 is '0\tA [pandoc 3.1.11]\t' on the \`floor\` leg and
+  '0\tA [pandoc 3.10]\t' on the \`pinned\` leg`:
   https://github.com/jmgirard/quarto-index/actions/runs/33025964684
-- `m043-nopdfindex` 8b43042 — `\printindex` is emitted only under the pinned
-  leg's pandoc, so the floor leg typesets at exit 0 with no printed index. Red
-  at the **floor render leg**, `no index heading 'Index' in examples/demo.pdf`:
+- `m043-nopdfindex` `8b43042` — `\printindex` is emitted only under the pinned
+  leg's pandoc, so the floor leg typesets a PDF with no printed index. The
+  pinned leg stayed green; the **floor render leg** went red at
+  `FAIL: examples/demo.pdf: no index heading 'Index' in examples/demo.pdf`,
+  with `Output created: demo.pdf` in the same log — the render itself
+  succeeded and the extraction is what failed:
   https://github.com/jmgirard/quarto-index/actions/runs/33025975119
 
-Both probes ran on the workflow as it stood before the three TeX-install fixes
-above. Those fixes are in the install step and change nothing about either
-compared path, so what each probe shows red is what the workflow checks now;
-re-running them would exercise the same two checks over the same two plants.
+Both probes ran on the workflow as it stood before the three TeX-install
+fixes. Those fixes are confined to the `tlmgr`/`imakeidx` install step and
+change neither compared path; the fixes are what made the install reliable,
+not what either plant exercises.
+
+**AC5 — the floor version named in README and on the site's Tests page.**
+`README.md:29` and `site/tests.qmd:22` each name Quarto 1.4.549, and
+`tests/versioncheck.py floor` holds both against the floor `versions.yml`
+declares — run fresh here, exit 0:
+`ok   M43-AC5: .github/workflows/versions.yml pins the floor leg to Quarto
+1.4.549, and each of the 2 document(s) named after it says so (README.md,
+site/tests.qmd)`.
+

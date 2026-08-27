@@ -1,6 +1,6 @@
 # M46: The claim-container registry is retired, not widened
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -36,7 +36,7 @@ candidate row.
 ## Acceptance criteria
 
 - [x] AC1: In `tests/run-tests.sh`, `grep -c 'CLAIM_CONTAINERS\|claim_row\|claim_kind\|claim_domain\|claim_text'` reports 0.
-- [x] AC2: `tests/run-tests.sh` carries a check whose swept domain is `git ls-files 'site/*.qmd'` plus `README.md`, which reports that domain's size, and which exits non-zero with a `FAIL:` line naming the offending file when either retired pre-release sentence is present in a tracked page supplied through the suite's overlay handle.
+- [ ] AC2: `tests/run-tests.sh` carries a check whose swept domain is `git ls-files 'site/*.qmd'` plus `README.md`, which reports that domain's size, and which exits non-zero with a `FAIL:` line naming the offending file when either retired pre-release sentence is present in a tracked page supplied through the suite's overlay handle.
 - [x] AC3: Every row of the `CLAIM_CONTAINERS` array as it stands at commit 9e6b567 is dispositioned in this file's Decisions section — still pinned by a named kept check, or deleted with the reason.
 - [ ] AC4: `tests/sitecheck.py links` percent-decodes each link's path part and resolves it only against files inside the captured site directory it was given.
 - [x] AC5: `tests/sitecheck.py links`' base-path clause exits non-zero on a root-relative link carrying no base segment.
@@ -85,6 +85,8 @@ candidate row.
 - 2026-08-27: F9 fixed — the ROADMAP suite-readers row's residual-risk clause corrected in place: three of the fourteen dropped sets banned a sentence rather than requiring one, so a page may re-acquire a sentence false about today's behavior, which the earlier wording understated. F8, F10 and F11 recorded on the same row.
 - 2026-08-27: full run at exit 0, 385 checks; `--self-test` at exit 0, 694 checks. Status set to review.
 
+- 2026-08-27: review round 2 returned the milestone to in-progress. AC2 fails: `git ls-files` C-quotes a non-ASCII path and the `.qmd` suffix filter drops the quoted entry with no report, so a tracked page carrying a retired sentence is swept past at exit 0 (reproduced end to end in a twelve-page throwaway repo). AC4 fails again, by a third containment mechanism: `os.path.abspath` does not resolve symlinks, so a link through a symlink inside the capture reads a file above it at exit 0. AC1, AC3, AC5, AC6 and AC7 verified on fresh evidence (suite 385 checks, self-test 694, both exit 0; `cairn_validate` exit 0). Five findings logged in the Review section; second defect return, and AC4's second failure by a containment mechanism of the same shape.
+
 ## Decisions
 
 ### T1 — the eighteen registry rows, dispositioned (AC3)
@@ -119,10 +121,12 @@ defect lives in `claim_row` and goes with rows 1-12 and 14-16.
 
 ## Review
 
+### Round 1
+
 _Evidence gathered 2026-08-27 on branch `m046-retire-claim-registry` at 3d2383b,
 against `origin/main` at 9e6b567 (unmoved since the branch was cut). PR #46._
 
-### Acceptance criteria
+#### Acceptance criteria
 
 - **AC1** — verified. `grep -c 'CLAIM_CONTAINERS\|claim_row\|claim_kind\|claim_domain\|claim_text' tests/run-tests.sh` prints `0` (grep exits 1, no match).
 - **AC2** — verified. `check_prerelease_absent` (run-tests.sh:1474) enumerates its own domain with `git ls-files 'site/*.qmd'` plus `README.md` and refuses a domain under two files. Run standalone: clean, `ok` naming 2 sentences over 21 files swept; with an overlay restoring the warning header into `site/index.qmd`, exit 1 and `FAIL: ... swept 21 file(s): site/index.qmd (warning header)`; with an overlay restoring the fluid-syntax sentence into `README.md` re-wrapped across two blockquote lines, exit 1 naming `README.md (fluid syntax)`. Both the domain size and the offending file are in the report.
@@ -132,13 +136,13 @@ against `origin/main` at 9e6b567 (unmoved since the branch was cut). PR #46._
 - **AC7** — verified. `tests/run-tests.sh` exits 0 and prints `All checks passed (385 checks).`; `tests/run-tests.sh --self-test` exits 0 at `All checks passed (687 checks).` Both run 2026-08-27 on this branch.
 - **AC6** — verified by reading the standing render (run-tests.sh:12473-12477): `rm -rf site/_site` immediately precedes `quarto render site`, guarded by `[ ! -e site/_site ] || fail`, so a removal that did not take is a loud failure rather than a silent render into stale output.
 
-### Consistency gate
+#### Consistency gate
 
 - `cairn_validate.py` — exit 0, all checks passed; every advisory `OK`, the `release window` advisory did not fire.
 - `cairn_impact.py` — skipped. The header names IP3, but the diff changes no `IP`/`GP` principle text; `cairn/DESIGN.md`'s changes are the architecture paragraph and the KI73 strike.
 - Toolchain checks — the active profile is `generic`, whose `consistency-gate` slot names none. Clean no-op.
 
-### Independent review
+#### Independent review
 
 Three fresh-context lenses, none having seen the implementation, each on a
 distinct evidence base. Every reported finding is logged with its disposition.
@@ -186,7 +190,7 @@ the `linknobase`/`linkencoded`/`linkescape` plants discriminating against the
 pre-M46 reader in both directions, the T3 plants asserting file *and* sentence
 (closing M44's own gap), and nothing reading `site/_site` before the removal.
 
-### Outcome
+#### Outcome
 
 **Returned to `in-progress`.** AC4 is not met: `tests/sitecheck.py links` does
 not resolve only against files inside the captured site it was given. Two
@@ -196,3 +200,71 @@ the capture root. Six of the seven criteria hold on fresh evidence; AC4's
 percent-decoding half holds and its containment half does not. F3 and F4 ride
 with the repair. The remaining seven findings are logged above for triage in
 the implement phase. This is the first defect return on M46.
+
+### Round 2
+
+_Evidence gathered 2026-08-27 on branch `m046-retire-claim-registry` at 0d32e09,
+against `origin/main` at 9a883e2 (the branch already carries every commit on it).
+PR #46._
+
+#### Acceptance criteria
+
+- **AC1** — verified. `grep -c 'CLAIM_CONTAINERS\|claim_row\|claim_kind\|claim_domain\|claim_text' tests/run-tests.sh` prints `0`.
+- **AC2** — **FAILS.** The reported half holds: run against this repo the check enumerates its own domain and prints 21 files swept; an overlay restoring the warning header into `site/index.qmd` exits 1 naming `site/index.qmd (warning header)`, and one restoring the fluid-syntax sentence into `README.md` re-wrapped across two blockquote lines exits 1 naming `README.md (fluid syntax)`; an overlay changing nothing leaves it green. The domain does not. `git ls-files` C-quotes a path holding a non-ASCII byte, so a tracked `site/naïve.qmd` prints as `"site/na\303\257ve.qmd"`, which the `.qmd` suffix filter (run-tests.sh:1506) discards with no report. Reproduced end to end in a throwaway repo of twelve tracked pages, one of them non-ASCII-named and carrying the warning header verbatim: the check printed `ok … 12 file(s) swept` at exit 0, while the same sentence in an ASCII-named page of the same repo exited 1 naming the file. The swept count is no signal either — dropping one page and appending README made it read 12 exactly as a complete sweep would.
+- **AC3** — verified. The eighteen container names in `CLAIM_CONTAINERS` at 9e6b567, extracted from `git show`, are set-identical to the eighteen rows of this file's T1 table (`diff` of the sorted name lists is empty). The three kept rows name live checks: `check_recipe_block` (run-tests.sh:4372, called 4457) and `check_readme_indexes` (run-tests.sh:11772, called 12335), with their arrays at 319, 12311 and 12326.
+- **AC4** — **FAILS.** The two escapes round 1 reproduced are closed, each shown red against the pre-fix reader and green-to-red in the right direction: `/x/../../outside.html` exited 0 before and 1 now; `%2Fetc%2Fpasswd` exited 0 before and 1 now, confined to `etc/passwd` under the capture. Percent-decoding still resolves `s%79ntax.html` to a page the render wrote, and only the path part is decoded. A third containment shape resolves outside the capture at exit 0: a symlink inside the captured directory. `os.path.abspath` (sitecheck.py:271) normalizes text and does not follow links, so a capture holding `link -> ../real` and a page linking `link/secret.html` reads a file above the capture root and reports every link resolved. Reproduced 2026-08-27 on a hand-built capture. The site renders no symlink today (`find site/_site -type l` is empty) and `capture` copies with `cp -R`, which preserves them.
+- **AC5** — verified. A capture whose only link is `/syntax.html`, checked with base path `docs`, exits 1 with `is root-relative and carries no \`docs\` base segment`. Controls: the same link written `/docs/syntax.html` exits 0, and the bare `/syntax.html` with no base path given exits 0.
+- **AC6** — verified by reading the standing render (run-tests.sh:12495-12507): `check_output_dir_pinned site/_quarto.yml` holds the project file to `output-dir: _site`, then `rm -rf site/_site`, then `[ ! -e site/_site ] || fail`, then `quarto render site`. The pin fires on a renamed copy (`output-dir: _built` → the grep fails, the FAIL path is taken).
+- **AC7** — verified. `tests/run-tests.sh` exits 0 and prints `All checks passed (385 checks).`; `tests/run-tests.sh --self-test` exits 0 at `All checks passed (694 checks).` Both run 2026-08-27 on this branch at 0d32e09.
+
+#### Consistency gate
+
+- `cairn_validate.py` — exit 0, all checks passed; every advisory `OK`, the `release window` advisory did not fire.
+- `cairn_impact.py` — skipped. The header names IP3; the diff changes no `IP`/`GP` principle text (`git diff origin/main..HEAD -- cairn/DESIGN.md` matches no principle line).
+- Toolchain checks — the active profile is `generic`, whose `consistency-gate` slot names none. Clean no-op.
+
+#### Independent review
+
+Three fresh-context lenses, none having seen the implementation, each on a
+distinct evidence base. Finding numbers continue round 1's.
+
+**[S] prior-review lens — no findings.** Archived `## Review` sections on the
+touched files (M40, M42, M44) were the primary surface. Round 1's own findings
+were checked for regression: the AC4 rework matches round 1's diagnosis, the
+four new plants cover the shapes F4 named, F5/F6/F7 are fixed as described, and
+F8/F10/F11 are filed on the ROADMAP rather than dropped. The GitHub probe
+(`pulls/comments?per_page=1`) returned `[]`, so the per-PR walk was not paid for.
+
+**[S] blame-history lens — one finding (F16 below).** It re-derived the
+eighteen-row disposition from `git show 9e6b567` rather than trusting the table,
+grepped the tree for every deleted identifier and found no orphan reference or
+stale `pass` banner, confirmed M33-AC4's `pass` text was narrowed to match the
+one kept recipe claim, checked the D-026/D-027/D-028 chain for coherence, and
+reproduced both round-1 escapes as closed.
+
+**[O] diff-bug lens — five findings, ranked.** It tested twelve link shapes
+against the repaired reader and found the textual escapes closed; the real
+rendered site is green under base `quarto-index` (1877 links across 41 pages).
+
+| # | Finding | Disposition |
+|---|---|---|
+| F12 | `git ls-files` C-quotes a non-ASCII path, and the `.qmd` suffix filter (run-tests.sh:1506) drops the quoted entry with no report, so a tracked page carrying a retired sentence is swept past at exit 0. | **Return.** Reproduced end to end. AC2 fails inside its own named domain. |
+| F15 | Containment is textual: `os.path.abspath` (sitecheck.py:271) does not resolve symlinks, so a link through a symlink inside the capture reads a file outside it at exit 0. | **Return.** Reproduced. AC4 fails inside its own named domain, by a third containment mechanism. |
+| F14 | `check_prerelease_absent` keeps two traceback paths of the class F7 just fixed — `check=True` on `git ls-files` (run-tests.sh:1504) and `open(source)` on the unconditionally appended `README.md` (1681), which is also never confirmed tracked though the reported domain size counts it. | For the implement phase to triage with the return. |
+| F13 | The new standing output-dir pin reports nothing when it passes, so it is absent from the run log and from the `grep -cE '^ok '` check count; the suite's convention for a silent helper is a `pass` line naming it (run-tests.sh:12119-12125). | For the implement phase to triage with the return. |
+| F16 | AC4's checkbox is unticked while the status is `review`. | **Rejected.** Raised by both Sonnet lenses. Not a defect: AC fencing ticks a criterion only against fresh evidence recorded here, which is this round's job. AC4 stays unticked because it fails; AC2's tick is removed for the same reason. |
+
+Round 1's F8, F10 and F11 were confirmed still present and still correctly filed
+on the ROADMAP suite-readers row; the diff lens also recorded, without filing it,
+that `FLOOR = 11` against a live domain of 21 is the room F12's drop hides in.
+
+#### Outcome
+
+**Returned to `in-progress`.** Two criteria fail on fresh evidence. AC2: the
+check's swept domain is not `git ls-files 'site/*.qmd'` plus `README.md` — a
+tracked page whose name git C-quotes is dropped silently, and a retired sentence
+on it passes at exit 0. AC4: `tests/sitecheck.py links` does not resolve only
+against files inside the captured site — a symlink inside the capture reads a
+file above it at exit 0. AC1, AC3, AC5, AC6 and AC7 hold. F13 and F14 ride with
+the repair; F16 is rejected. This is the second defect return on M46, and the
+second time AC4 has failed by a containment mechanism of the same shape.

@@ -1,6 +1,6 @@
 # M46: The claim-container registry is retired, not widened
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -56,12 +56,12 @@ candidate row.
 ## Tasks
 
 - [x] T1: Enumerate the eighteen `CLAIM_CONTAINERS` rows ([run-tests.sh:657](tests/run-tests.sh:657)) and, for each, name the check that reads it and what its deletion drops; write the table into this file's Decisions section.
-- [ ] T2: Delete the registry and its helpers ([run-tests.sh:636-727](tests/run-tests.sh:636)), `check_claim_registry` and `check_claim_sets` (~1839-1970), the fourteen container arrays read through `claim_text`, and every comparison check reading them. `README_RECIPE_LINES`, `README_INDEXES_CLAIMS` and `README_INDEXES_YAML` keep their arrays and their checks. The `fail`-inside-a-command-substitution defect goes with `claim_row`.
-- [ ] T3: Write the standalone pre-release check: the two retired sentences verbatim, domain `git ls-files 'site/*.qmd'` plus `README.md`, swept count reported, offending file named. Drop the two generic rows M44 found — sentences still true, which would report a legitimate future stability sentence as the warning coming back. Plant each sentence through the overlay handle.
-- [ ] T4: Repair `tests/sitecheck.py links` — percent-decode the path part, confine resolution to the captured site root, fail a root-relative link with no base segment. One planted case each.
-- [ ] T5: Make the standing site render remove `$SITE_OUT` before rendering ([run-tests.sh:13302](tests/run-tests.sh:13302)).
-- [ ] T6: Append D-027; strike the DESIGN.md Known-issues entries this closes; rewrite the ROADMAP rows pointing at them.
-- [ ] T7: Full run plus `--self-test`; record the check count before and after.
+- [x] T2: Delete the registry and its helpers ([run-tests.sh:636-727](tests/run-tests.sh:636)), `check_claim_registry` and `check_claim_sets` (~1839-1970), the fourteen container arrays read through `claim_text`, and every comparison check reading them. `README_RECIPE_LINES`, `README_INDEXES_CLAIMS` and `README_INDEXES_YAML` keep their arrays and their checks. The `fail`-inside-a-command-substitution defect goes with `claim_row`.
+- [x] T3: Write the standalone pre-release check: the two retired sentences verbatim, domain `git ls-files 'site/*.qmd'` plus `README.md`, swept count reported, offending file named. Drop the two generic rows M44 found — sentences still true, which would report a legitimate future stability sentence as the warning coming back. Plant each sentence through the overlay handle.
+- [x] T4: Repair `tests/sitecheck.py links` — percent-decode the path part, confine resolution to the captured site root, fail a root-relative link with no base segment. One planted case each.
+- [x] T5: Make the standing site render remove `$SITE_OUT` before rendering ([run-tests.sh:13302](tests/run-tests.sh:13302)).
+- [x] T6: Append D-027; strike the DESIGN.md Known-issues entries this closes; rewrite the ROADMAP rows pointing at them.
+- [x] T7: Full run plus `--self-test`; record the check count before and after.
 
 ## Work log
 
@@ -71,6 +71,13 @@ candidate row.
 - 2026-08-26: criteria audit ran in reduced mode (internal tier). It returned two findings here — a work-log recording clause on the suite-run criterion, and plant-property wording ("red before the fix and green after") on the site-check repairs. Both were fixed before the criteria above were written: the recording clause was dropped, and the repairs are stated as assertions on the shipped checks.
 - 2026-08-27: implement gate settled four open choices, all at the recommendation: the link check's base-segment clause binds only when a base path is given (nine existing plants pass an empty one); an escaping link gets its own failure message rather than reusing "names no file"; percent-decoding covers the path part only, as AC4 states; and the replacement pre-release check keeps printing the `M44-AC1` label.
 - 2026-08-27: amendment — Scope In's deletion clause narrowed from "every per-container comparison check" to "every comparison check that reads its domain through `claim_text`", and T2's task wording with it. T1's enumeration found three registered containers the registry does not stand between: `check_recipe_block` and `check_readme_indexes` take their page as an argument. Deleting them would have dropped fifteen planted failure cases and M38-AC6's run-ledger clause, none of which the registry's defects were about. Chosen at a mini gate; recorded as D-028, which supersedes D-027's consequences clause on that one point.
+- 2026-08-27: T2 — deleted `CLAIM_CONTAINERS`, `claim_row`/`claim_kind`/`claim_domain`/`claim_text`, `check_claim_registry`, `check_claim_sets`, the fourteen containers read through `claim_text` and the thirteen comparison checks reading them, plus the supported-forms banner (the probe-character line it shared is kept under its own banner). `tests/run-tests.sh` 16,277 -> 15,396 lines; the AC1 grep reports 0.
+- 2026-08-27: T3 — the pre-release check now enumerates `git ls-files 'site/*.qmd'` plus `README.md` itself (21 files this run), reports that count, names the offending file and sentence, and takes an overlay directory. Two forbidden sentences, not four. Four self-test cases: the first sentence restored into README.md and into the site front page, the second restored re-wrapped across a line break, each asserting the file and sentence the report names, plus an overlay changing nothing that must leave the check green.
+- 2026-08-27: T4 — `tests/sitecheck.py links` percent-decodes the path part, refuses a target normalizing outside the captured site, and, where a base path is given, refuses a root-relative link carrying no base segment. Discrimination shown against the pre-fix reader on three hand-built captures: `/syntax.html` under base `docs` exited 0 before and 1 after; `../outside.html` naming a file that exists one directory up exited 0 before and 1 after; `s%79ntax.html` naming a page the render wrote exited 1 before and 0 after.
+- 2026-08-27: T5 — the standing site render removes `site/_site` first, with a guard that the removal took. Not a repair for a defect seen here: Quarto 1.10.18 clears the directory itself — a planted `orphan.html` and `leftover/old.html` were both gone after a render (observed 2026-08-27). It makes the guarantee the suite's rather than the renderer's, which matters on the version matrix's 1.4.549 floor leg.
+- 2026-08-27: T6 — D-027 was already appended at plan time; D-028 added. DESIGN's claim-container architecture paragraph rewritten to what the suite now does, and KI73 struck, the duplication it described having gone with the claim checks. Three ROADMAP rows rewritten: the gitignore row loses its claim-check half, the publishing-workflow row records its fourth finding fixed here, and the suite-readers row's residual-risk clause is narrowed per D-028.
+- 2026-08-27: the M24-AC3 render scan reads comment lines too, so the first wording of T5's comment quoted the render command and was reported as an uncaptured render; the comment names the render below it instead.
+- 2026-08-27: T7 — `tests/run-tests.sh` exits 0 at 385 checks (403 before this milestone) and `tests/run-tests.sh --self-test` exits 0 at 687 (707 before). The plain run loses eighteen: thirteen documentation-comparison checks, the registry check, and four `pass` summaries; the self-test loses twenty, the seven registry and claim-set plants and the three pre-release plants it dropped exceeding the seven cases added by T3 and T4. Status set to review.
 
 ## Decisions
 

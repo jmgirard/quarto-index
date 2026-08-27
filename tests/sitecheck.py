@@ -16,6 +16,15 @@
       an SVG symbol, not a document), and so is any value whose scheme is
       `http:`, `https:`, `mailto:`, `tel:`, `data:` or `javascript:`.
 
+      The path part is percent-DECODED before it is compared: `%20` is a space
+      on disk, not two characters of a filename. Resolution is confined to the
+      captured directory, so a path normalizing outside it is a failure and
+      never a file read from somewhere the render never wrote. With a BASE PATH
+      given, a root-relative link must carry that segment: the site is served
+      under it, so `/syntax.html` 404s in production however well it resolves
+      against the capture root. With no base path given there is no segment to
+      require and a root-relative link resolves against that root (M46).
+
   headings <old-readme> <new-readme> <site-dir> [overlay]
       Every `##`/`###` heading the old README carried, other than the three the
       move keeps, is gone from the new README and is carried as a heading — at
@@ -61,6 +70,7 @@ import os
 import re
 import subprocess
 import sys
+import urllib.parse
 from html.parser import HTMLParser
 
 # The three headings the move keeps in README, per M40's scope.
@@ -208,17 +218,46 @@ def check_links(captured, base_path=''):
                 continue
             path, _, fragment = value.partition('#')
             fragment = html.unescape(fragment)
+            # The path part of a link is percent-encoded — a space is `%20`,
+            # an accented letter its UTF-8 bytes — while the file on disk
+            # carries the decoded name. Comparing them undecoded reports a
+            # link that resolves perfectly well as dangling (M46). Only the
+            # path part: the fragment is left as the page wrote it.
+            path = urllib.parse.unquote(path)
             swept += 1
             if path:
                 if value.startswith('/'):
                     stripped = path.lstrip('/')
-                    if base and (stripped == base
-                                 or stripped.startswith(base + '/')):
+                    if base:
+                        # The site is served UNDER the base path, so a
+                        # root-relative link that does not carry that segment
+                        # names something else in production however well it
+                        # resolves against the capture root. Stripping the
+                        # segment where it is present and resolving what is
+                        # left passes exactly the link that would 404 (M46).
+                        if stripped != base \
+                                and not stripped.startswith(base + '/'):
+                            bad.append(f'  {rel}: <<{href}>> is root-relative '
+                                       f'and carries no `{base}` base segment, '
+                                       f'so in production it names /{stripped} '
+                                       f'and not a page of this site')
+                            continue
                         stripped = stripped[len(base):].lstrip('/')
                     target = stripped
                 else:
                     target = os.path.normpath(
                         os.path.join(os.path.dirname(rel), path))
+                # Resolution is confined to the capture. `../../notes.html`
+                # normalizes to a path that leaves it, and joining that onto
+                # the captured root reads a file the render never produced —
+                # the check would then call a link resolved on the strength of
+                # something outside the site it is about (M46).
+                if target == os.pardir \
+                        or target.startswith(os.pardir + os.sep):
+                    bad.append(f'  {rel}: <<{href}>> resolves to {target}, '
+                               f'which is outside the captured site under '
+                               f'{captured}')
+                    continue
                 on_disk = os.path.join(captured, target)
                 if os.path.isdir(on_disk):
                     target = os.path.join(target, 'index.html')

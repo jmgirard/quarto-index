@@ -502,20 +502,25 @@ workflow renders the whole site, PDFs included, with TinyTeX alone). The
 whole-set residue sweeps run after the site render, since it is
 the last render the suite makes.
 
-The suite's pinned documentation sentences live in *claim containers*, and
-`CLAIM_CONTAINERS` in `tests/run-tests.sh` is the one enumeration of them: each
-row names a container, tags it presence or absence, and names the site page or
-pages it is compared against — `ALL` for an absence container, meaning every
-tracked page under `site/` plus README, everywhere a reader could still meet a
-retired sentence. `claim_text` builds the text a check compares against out of
-that row, so no check names a documentation file itself. The registry is
-compared against a scan of the suite's own source in both the shapes a
-container is written in, so the set cannot half-empty. `tests/sitecheck.py`
-carries the website's own checks: the render writes a page for every tracked
-source, every link the site makes to its own content resolves, README is still
-the short pointer, and — for the migration itself, run against the merge base
-rather than standing in the suite — every moved heading landed and no prose was
-lost.
+The suite pins documentation sentences page by page, each check naming the page
+it reads. `check_recipe_block` holds the copyable settings block on the Terms
+outside Latin-1 page to the line list `README_RECIPE_LINES` states — equal, in
+order, in both directions, and every stated line also in the fixture that proves
+the recipe; `check_readme_indexes` holds the named-indexes page's claims and its
+copyable YAML block, reading this run's own ledger for the commands that section
+shows. One absence check forbids the two retired pre-release sentences over
+`git ls-files 'site/*.qmd'` plus README, a domain it enumerates itself and whose
+size it reports, and takes an overlay directory so the sentence can be planted
+into a tracked page without editing the repo. A `CLAIM_CONTAINERS` registry
+stood between eighteen such sentence sets and the pages they were compared
+against until M46 retired it (D-027, D-028), taking fourteen of the sets with
+it. `tests/sitecheck.py` carries the website's own checks: the render writes a
+page for every tracked source; every link the site makes to its own content
+resolves — its path part percent-decoded, resolved only against files inside the
+captured directory, and, where a base path is given, required to carry that
+segment, since the site is served under it; README is still the short pointer;
+and — for the migration itself, run against the merge base rather than standing
+in the suite — every moved heading landed and no prose was lost.
 
 The site is published by `.github/workflows/pages.yml` (added M42), the repo's
 only workflow. Its build job runs on every branch: it installs an exactly
@@ -890,10 +895,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI72.** The example corpus's roughly 250 probe `see=`/`see-also=` targets do
   not all name terms the fixture indexes; M14 pins the expected report counts
   instead. — M14 plan gate
-- **KI73.** The documentation claim pins and the filter's warning literals are
-  two hand-maintained copies of the same strings, and the claim check asserts a
-  string is in the docs, never that the filter emits it. — M13 review F20,
-  corrected M40 when the claims moved out of README
 - **KI74.** That a registered page actually prints emphasized is exercised only
   by M20's T9 checks and by no acceptance criterion, the criteria set having
   been held rather than widened, so the last leg of that chain has no criterion

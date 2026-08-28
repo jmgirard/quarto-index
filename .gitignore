@@ -24,6 +24,13 @@ examples/.quarto/
 # per-chapter store lives in Quarto's own scratch directory.
 examples/book*/_book/
 examples/book*/.quarto/
+# A PDF book builds every index the book declares (M49), and imakeidx writes
+# each named index's entry file, transcript and compiled index beside the
+# project rather than under its output directory -- where Quarto's own
+# latex-clean, which knows the main jobname alone, does not reach them.
+examples/book*/*.idx
+examples/book*/*.ilg
+examples/book*/*.ind
 /.quarto/
 # The docs website renders into its own output directory; site/.gitignore is
 # Quarto's own, and covers the project scratch directory beside it.

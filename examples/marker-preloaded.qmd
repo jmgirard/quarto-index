@@ -9,12 +9,13 @@ filters:
 
 # A document that loads the index package itself
 
-Quarto emits the extension's package load conditionally, so a document that
-has already loaded `imakeidx` keeps its own options — and without
-`noautomatic` the index file is closed at the marker, dropping every term
-marked below it. Nothing the filter emits can reach a load that already
-happened, so the case is made loud rather than fixed: the document renders,
-and LaTeX warns at begin-document that entries will be missing.
+Quarto emits the extension's package load conditionally, so a document that has
+already loaded `imakeidx` keeps its own options and nothing the filter emits
+can reach that load. What keeps the index file open past the marker is no
+longer a package option: it is a group around `\printindex` that sets
+`imakeidx`'s own switch for that one command, and a group works whoever loaded
+the package and however. So a term marked below the marker still reaches this
+document's index.
 
 One term is marked before the marker: [zeta]{.index}.
 
@@ -24,4 +25,4 @@ One term is marked before the marker: [zeta]{.index}.
 # After the marker
 
 One term is marked after it, [omega]{.index}, which is the term this document
-exists to show going missing.
+exists to show still reaching the index.

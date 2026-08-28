@@ -154,12 +154,30 @@ def _levels(edges):
             for edge in edges}
 
 
-def read(pdf_path, heading='Index'):
+def read(pdf_path, heading='Index', stop=()):
     """Read the printed index, in the order it is printed.
 
-    Returns a list of Entry, starting at the line after the index heading and
-    running to the end of the document. Raises LookupError if no line is
+    Returns a list of Entry, starting at the line after the index heading. With
+    no `stop` the read runs to the end of the document, which is right for the
+    one index a document usually ends with. Raises LookupError if no line is
     exactly the heading, so a check can never silently read an empty index.
+
+    `stop` bounds the read for a document that prints MORE than one index, or
+    that carries anything after the index at all. It is the set of line texts
+    that end this index's section — for a fixture, the headings that follow it,
+    stated by hand from the `.qmd` source like every other expectation here.
+    The read then stops at the first PAGE carrying such a line, and drops that
+    page entirely: an index is typeset in two columns, and this module orders
+    lines by page, then column, then down the column, so a full-width line
+    following the index sorts into column 0 ahead of the whole right column.
+    Stopping at the line rather than at its page would therefore lose the right
+    column, which is silent evidence loss of exactly the kind a bounded read
+    exists to prevent. A fixture accordingly gives each index a page of its own.
+
+    Raises LookupError when `stop` is given and no page carries any of its
+    lines: the caller asked for a bounded section and got an unbounded one, and
+    passing that back as a short list would read every later index as part of
+    this one.
     """
     pages = list(_pages(pdf_path))
     start = None
@@ -173,8 +191,23 @@ def read(pdf_path, heading='Index'):
     if start is None:
         raise LookupError(f'no index heading {heading!r} in {pdf_path}')
 
+    end = len(pages)
+    if stop:
+        wanted = set(stop)
+        for i, (_n, _w, lines) in enumerate(pages[start[0]:], start[0]):
+            if i == start[0]:
+                continue
+            if any(text in wanted for _x, _y, text in lines):
+                end = i
+                break
+        else:
+            raise LookupError(
+                f'no page after the {heading!r} heading in {pdf_path} carries '
+                f'any of the section-ending lines {sorted(wanted)!r}, so this '
+                f'read is unbounded and would run to the end of the document')
+
     collected = []
-    for i, (number, width, lines) in enumerate(pages[start[0]:], start[0]):
+    for i, (number, width, lines) in enumerate(pages[start[0]:end], start[0]):
         middle = width / 2.0
         for j, (x, y, text) in enumerate(lines):
             if (i, j) <= start:

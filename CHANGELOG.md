@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Output
+
+- A LaTeX or PDF render builds every index the document declares, each at its
+  own placement marker, instead of folding them all into one. The first
+  declared index is built by Quarto's PDF loop as before; every index after it
+  is built by `imakeidx`, which runs the index tool itself through TeX's
+  restricted shell escape — permitted for `makeindex` by a stock TeX Live or
+  TinyTeX. Where an installation withholds that permission, each index after
+  the first prints empty, which the [Named indexes](site/named-indexes.qmd)
+  page documents. An HTML book still builds a single index.
+- A mark filed in a named index and written below that index's own placement
+  marker is reported: `imakeidx` closes that index's entry file where the
+  index is printed, so those entries reach no index at all. The first declared
+  index is unaffected — its entry file is held open past the place it is
+  printed.
+- Every per-index judgement a LaTeX render makes now names the index it was
+  made in, as the HTML back-end's already did: a cross-reference target that
+  resolves against nothing, a rival sort key, a range that pairs in neither
+  index, an entry marked both as a plain locator and as a cross-reference, and
+  two entries that print in one place and file under two keys.
+
 ### Project
 
 - The extension ships editor metadata beside its manifest:

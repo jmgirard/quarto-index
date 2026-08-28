@@ -4,11 +4,12 @@ filters:
   - index
 ---
 
-The same terms as `named-indexes.qmd`, written by a document that declares no
-indexes at all and names none on any mark. It is the shape this milestone
-leaves untouched: one index, headed `Index`, under the section id this
-extension has always minted, with every judgement made across the whole
-document because the whole document is one index.
+The core shapes of `named-indexes.qmd` — the same terms, targets, sort key and
+range — written by a document that declares no indexes at all and names none on
+any mark. It is the shape a declaration leaves untouched: one index, headed
+`Index`, under the section id this extension has always minted, with every
+judgement made across the whole document because the whole document is one
+index.
 
 A mark that names no index: [Aardvark]{.index}. A second one:
 [Babbage]{.index}.

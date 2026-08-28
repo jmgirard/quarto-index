@@ -1,0 +1,39 @@
+---
+title: "quarto-index named indexes in a document that loads imakeidx itself"
+from: markdown-smart
+header-includes: |
+  \usepackage[noautomatic]{imakeidx}
+indexes:
+  - name: main
+    title: Index
+  - name: authors
+    title: Index of Authors
+filters:
+  - index
+---
+
+# A document that loads the index package with noautomatic
+
+Two indexes are declared. The first is built by Quarto's own PDF loop; every
+one after it is built by `imakeidx`, which runs the index tool itself — and
+`noautomatic` is the package option that turns that run off, for every index at
+once. This document loads `imakeidx` with it before the extension's own load
+runs, so nothing the filter emits can reach that decision, and the second index
+would print empty.
+
+That is the one preamble collision this extension cannot repair, so it is made
+loud instead: a begin-document check says what will be missing and why. It
+warns rather than erroring, because a marked-up document must still render.
+
+One term files in each: [Alpha]{.index} and
+[Babbage]{.index index="authors"}.
+
+# Where the first index goes {#site-main}
+
+::: {.qi-index-here}
+:::
+
+# Where the second index goes {#site-authors}
+
+::: {.qi-index-here index="authors"}
+:::

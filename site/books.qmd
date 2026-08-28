@@ -4,8 +4,10 @@ pagetitle: "Books"
 
 # Books
 
-A Quarto book gets one index for the whole book, not one per chapter. Write
-the placement marker in the chapter that should hold it:
+A Quarto book gets one index for the whole book, not one per chapter. In an
+HTML book that is one index however many the book declares — see
+[Named indexes](named-indexes.qmd) for why, and for what a PDF book does with
+several. Write the placement marker in the chapter that should hold it:
 
 ```markdown
 ::: {.qi-index-here}

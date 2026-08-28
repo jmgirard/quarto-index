@@ -57,16 +57,18 @@ DUP_NAMED = re.compile(
 # one index the book builds, and each is told so.
 FOLD_MARK = ('index="people" on term "Turing" names a second index, and this '
              'output has one index only, so the mark is indexed in that one '
-             'index instead; more than one index prints in a single HTML '
-             'document today')
+             'index instead; an HTML book aggregates its chapters through a '
+             'per-chapter record carrying no index name, which is why it '
+             'builds one')
 # The marker shape is the one for a marker that does NOT hold the single
 # index's place: last.qmd writes an unnamed marker before this one, and the
 # author's own marker for the index the book builds is where it goes (M38 R2).
 FOLD_MARKER = ('index="people" on an index placement marker names a second '
                'index, and this output has one index only, which goes where '
                'this document already places it, so this marker places '
-               'nothing; more than one index prints in a single HTML '
-               'document today')
+               'nothing; an HTML book aggregates its chapters through a '
+               'per-chapter record carrying no index name, which is why it '
+               'builds one')
 
 NESTED = ('index placement marker below the top level of the document places '
           'nothing; write it as a top-level block')
@@ -92,13 +94,14 @@ OTHER = {
         FOLD_MARK,
         FOLD_MARKER,
     },
+    # A merged PDF book builds every index the book declares (M49), so it
+    # folds nothing -- neither fold report is drawn -- and every per-index
+    # judgement names the index it was made in rather than the document.
     'book-pdf': {
         NESTED,
-        'see= on term "Epsilon" points at "No Such Entry", which no index mark '
-        'in this document indexes; a reader following the cross-reference '
-        'finds no such entry, so mark that term somewhere or correct the target',
-        FOLD_MARK,
-        FOLD_MARKER,
+        'see= on term "Epsilon" points at "No Such Entry", which no mark of '
+        'index "main" indexes; a reader following the cross-reference finds no '
+        'such entry, so mark that term in index "main" or correct the target',
     },
     'misuse': {
         NESTED,

@@ -12,10 +12,10 @@ filters:
 # What this document is for
 
 Two markers are written and both name the second index; no marker names the
-first. A back-end that keeps one index builds the first index only, and with
-no marker naming it the first marker of any name is where it goes — so the
-first marker here places it and says so. The second is a second marker for the
-index it names, which used to be dropped with nothing said at all.
+first. The second index is placed at the first marker naming it, and the first
+index, which no marker names, goes at the end of the document. The second
+marker is a second marker for the index it names, which used to be dropped with
+nothing said at all.
 
 One term files in each: [Alpha]{.index} and
 [Babbage]{.index index="authors"}.

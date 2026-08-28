@@ -129,7 +129,7 @@ local function CollectKeys(span)
   local source, printed_path, _, kept =
     qi_latex.latex_plan(levels, qi_sortkeys.sort_for(index_name, levels),
                         surviving, context, false, nil, entry_written)
-  qi_latex.record_contest(source, printed_path, kept)
+  qi_latex.record_contest(index_name, source, printed_path, kept)
   -- Which keys carry a principal mention is a fact about the whole document
   -- too, and for the same reason: EVERY locator mark of such a key has to
   -- encapsulate with the key's ordinal, and one mark cannot know that another
@@ -146,7 +146,7 @@ local function CollectKeys(span)
                                      #blockers > 0 and { attrs = blockers } or nil,
                                      false)
   if role == "principal" then
-    qi_latex.record_principal(source)
+    qi_latex.record_principal(index_name, source)
   end
   return nil
 end
@@ -252,7 +252,7 @@ end
 -- reaches this: a mark carrying a cross-reference had its role dropped and
 -- reported before the back-end branch, and a cross-reference mark of a
 -- contested key emits no command at all.
-local function locator_encap(source, range)
+local function locator_encap(index, source, range)
   -- makeindex's range delimiters live at the head of the encapsulation
   -- channel, before whatever encapsulator follows, and the two ends must agree
   -- on everything after the delimiter or the tool logs an inconsistent-range
@@ -262,7 +262,7 @@ local function locator_encap(source, range)
   if range ~= nil then
     delim = range.ending == "open" and "(" or ")"
   end
-  local id = qi_latex.principal_ordinal(source)
+  local id = qi_latex.principal_ordinal(index, source)
   if id == nil then
     return delim == "" and "" or ("|" .. delim)
   end
@@ -273,7 +273,7 @@ end
 -- The principal mark's own registration, which is where the role actually
 -- travels: emitted beside the `\index` command so both whatsits ship on one
 -- page and the page they name cannot disagree. Nil for every other mark.
-local function register_inline(role, source, range)
+local function register_inline(index, role, source, range)
   -- A range registers BOTH of its ends, and the role it registers under is the
   -- RANGE's — `range.principal`, settled once by the pairing from whichever
   -- end the author wrote it on — never the end's own `role`. Two ends of one
@@ -285,7 +285,7 @@ local function register_inline(role, source, range)
     if not range.principal then
       return nil
     end
-    local id = qi_latex.principal_ordinal(source)
+    local id = qi_latex.principal_ordinal(index, source)
     if id == nil then
       return nil
     end
@@ -300,7 +300,7 @@ local function register_inline(role, source, range)
   if role ~= "principal" then
     return nil
   end
-  local id = qi_latex.principal_ordinal(source)
+  local id = qi_latex.principal_ordinal(index, source)
   if id == nil then
     return nil
   end
@@ -546,6 +546,12 @@ local function Span(span)
   -- as a locator mark would.
   qi_marks.record_clamped(index_name, printed_path, filing_path)
 
+  -- Which command this mark's index emits, read once for the four sites
+  -- below: the bare `\index` for the default index, imakeidx's optional
+  -- argument for a named one, which routes the entry to that index's own
+  -- `.idx` (M49).
+  local command = qi_latex.index_command(index_name)
+
   local result = pandoc.List(span.content)
 
   -- A key more than one mark describes differently. Every mark of it emits the
@@ -553,7 +559,7 @@ local function Span(span)
   -- WHERE the cross-references go depends on whether the entry has a locator,
   -- because makeindex's term delimiter is printed either way. See "Contested
   -- keys" above.
-  local seen = qi_latex.contested_keys[source]
+  local seen = qi_latex.contested_for(index_name)[source]
   if qi_latex.is_contested(seen) then
     if seen.plain then
       -- Some mark of this key is a plain locator mark, so the entry prints
@@ -567,8 +573,8 @@ local function Span(span)
         local folded = select(1, qi_latex.latex_plan(levels, sort, xrefs, context,
                                             false, qi_latex.fold_xrefs(seen)))
         result:insert(pandoc.RawInline("latex",
-          "\\index{" .. folded .. locator_encap(source, range) .. "}"))
-        local register = register_inline(role, source, range)
+          command .. "{" .. folded .. locator_encap(index_name, source, range) .. "}"))
+        local register = register_inline(index_name, role, source, range)
         if register then
           result:insert(register)
         end
@@ -582,7 +588,7 @@ local function Span(span)
     -- rendered by one command over the key's whole list so that every mark
     -- carries the same string.
     result:insert(pandoc.RawInline("latex",
-      "\\index{" .. source .. "|" .. qi_core.XREF_LIST_COMMAND ..
+      command .. "{" .. source .. "|" .. qi_core.XREF_LIST_COMMAND ..
       "{" .. qi_latex.fold_xrefs(seen) .. "}}"))
     return result
   end
@@ -602,14 +608,14 @@ local function Span(span)
   local encap = qi_latex.mark_encap(xrefs)
   if encap == "" then
     result:insert(pandoc.RawInline("latex",
-      "\\index{" .. source .. locator_encap(source, range) .. "}"))
-    local register = register_inline(role, source, range)
+      command .. "{" .. source .. locator_encap(index_name, source, range) .. "}"))
+    local register = register_inline(index_name, role, source, range)
     if register then
       result:insert(register)
     end
   else
     result:insert(pandoc.RawInline("latex",
-      "\\index{" .. source .. "|" .. encap .. "}"))
+      command .. "{" .. source .. "|" .. encap .. "}"))
   end
   return result
 end

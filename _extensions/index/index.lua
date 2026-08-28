@@ -54,10 +54,65 @@ local qi_html = require("./modules/html")
 local qi_marker = require("./modules/marker")
 local qi_book = require("./modules/book")
 
--- `intoc` lists the index in the table of contents, as printed books normally
--- do. imakeidx only runs makeindex itself under `-shell-escape`, which Quarto
--- does not enable; what actually builds the index is Quarto's own PDF loop
--- reacting to the emitted `.idx` file (GP2: we emit correct output and stop).
+-- `intoc` lists each index in the table of contents, as printed books normally
+-- do. WHO builds each one differs (M49). Quarto's own PDF loop reacts to the
+-- emitted `.idx` file, and it builds the MAIN one only, so the default index
+-- is left to it. imakeidx builds every other declared index itself, by calling
+-- makeindex on that index's own `.idx`; that call goes through TeX's shell
+-- escape, which is restricted rather than disabled in a stock TeX Live or
+-- TinyTeX and lists `makeindex` among the commands it permits. Where an
+-- installation withholds that permission, imakeidx says so in the LaTeX log
+-- and every index after the first prints empty -- a toolchain condition this
+-- extension documents rather than detects (GP2: we emit correct output and
+-- stop).
+--
+-- The below-marker report, and the preamble each index needs.
+local function report_below_marker(doc)
+  -- Only a named index closes anything: the default index's `\printindex` is
+  -- wrapped in a group that suppresses imakeidx's close, so a mark below the
+  -- default marker still reaches the file Quarto's loop builds from.
+  local names = qi_indexes.names()
+  if #names < 2 then
+    return
+  end
+  local marker_at = {}
+  for position, block in ipairs(doc.blocks) do
+    if qi_marker.is_marker(block) then
+      -- Silently: `resolve_markers` has already reported this marker's value,
+      -- and left at most one marker per index behind.
+      local name =
+        qi_indexes.marker_index(block.attributes[qi_indexes.INDEX_ATTR], false)
+      if marker_at[name] == nil then
+        marker_at[name] = position
+      end
+    end
+  end
+  -- Counted off the commands this render actually emitted, not off the marks
+  -- the collecting passes saw: a cross-reference mark of a contested key emits
+  -- nothing at all, and counting it would name entries that were never at risk.
+  local below = {}
+  for position, block in ipairs(doc.blocks) do
+    block:walk({
+      RawInline = function(raw)
+        if raw.format ~= "latex" then
+          return nil
+        end
+        local name = raw.text:match("^\\index%[([^%]]+)%]")
+        if name ~= nil and marker_at[name] ~= nil
+           and position > marker_at[name] then
+          below[name] = (below[name] or 0) + 1
+        end
+        return nil
+      end,
+    })
+  end
+  for _, name in ipairs(names) do
+    if below[name] ~= nil then
+      qi_core.warn(('%d index command(s) for the index named "%s" are written below that index\'s own placement marker (top-level block %d); imakeidx closes that index\'s entry file where the index is printed, so those entries reach no index at all — move that marker below the last mark filed in it. Block positions are %s'):format(below[name], name, marker_at[name], qi_marker.POSITION_BASIS))
+    end
+  end
+end
+
 local function Pandoc(doc)
   -- Before any back-end branch: the marker is the author's syntax, so its
   -- misuse is diagnosed in every format and its residue removed in every
@@ -209,19 +264,42 @@ local function Pandoc(doc)
   -- with a plain mark keeps its page numbers, and a key with none has never
   -- had any. One message covering both would tell the author of a `see=`
   -- against a `see-also=` that their entry prints page numbers it does not.
+  --
+  -- One index at a time, and the report says which (D-021): each declared
+  -- index writes its own `.idx`, so two marks of one key in two indexes never
+  -- meet, and telling an author their entry carries both shapes without saying
+  -- where sends them looking through an index whose entry is fine.
   local conflicting = {}
-  for _, seen in pairs(qi_latex.contested_keys) do
-    if qi_latex.is_contested(seen) then
-      conflicting[#conflicting + 1] = { printed = seen.printed,
-                                        plain = seen.plain }
+  for _, name in ipairs(qi_indexes.names()) do
+    for _, seen in pairs(qi_latex.contested_keys[name] or {}) do
+      if qi_latex.is_contested(seen) then
+        conflicting[#conflicting + 1] = { printed = seen.printed,
+                                          plain = seen.plain, index = name }
+      end
     end
   end
-  table.sort(conflicting, function(a, b) return a.printed < b.printed end)
+  table.sort(conflicting, function(a, b)
+    if a.printed ~= b.printed then
+      return a.printed < b.printed
+    end
+    return a.index < b.index
+  end)
   for _, clash in ipairs(conflicting) do
+    -- Four literals rather than two with a spliced clause, for the reason
+    -- sortkeys.lua states: the scope sits in the MIDDLE of each message, so
+    -- neither shape's unscoped form is a prefix of its scoped one and a grep
+    -- for the shorter cannot match both.
+    local scope = qi_indexes.scope_phrase(clash.index, "document")
     if clash.plain then
-      qi_core.warn(('index entry %s carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(clash.printed))
-    else
+      if scope == "document" then
+        qi_core.warn(('index entry %s carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(clash.printed))
+      else
+        qi_core.warn(('index entry %s in %s carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(clash.printed, scope))
+      end
+    elseif scope == "document" then
       qi_core.warn(('index entry %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant'):format(clash.printed))
+    else
+      qi_core.warn(('index entry %s in %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant'):format(clash.printed, scope))
     end
   end
 
@@ -241,11 +319,16 @@ local function Pandoc(doc)
       end
       if #keys > 1 then
         table.sort(keys)
-        contested[#contested + 1] = { path = path, keys = keys }
+        contested[#contested + 1] = { path = path, keys = keys, index = name }
       end
     end
   end
-  table.sort(contested, function(a, b) return a.path < b.path end)
+  table.sort(contested, function(a, b)
+    if a.path ~= b.path then
+      return a.path < b.path
+    end
+    return a.index < b.index
+  end)
   for _, clash in ipairs(contested) do
     local named = {}
     for i, key in ipairs(clash.keys) do
@@ -261,11 +344,18 @@ local function Pandoc(doc)
       end
     end
     local last = table.remove(named)
-    qi_core.warn(('index entries printed as "%s" file under more than one key (%s), '
-          .. 'so the index tool stores one key each and prints that entry '
-          .. 'once per key, in as many places; give them one sort key, or '
-          .. 'write them as one entry')
-         :format(clash.path, table.concat(named, ", ") .. " and " .. last))
+    -- Judged inside one index, and named where there is more than one to
+    -- judge in (D-021), by the same two-literal discipline as above.
+    local scope = qi_indexes.scope_phrase(clash.index, "document")
+    if scope == "document" then
+      qi_core.warn(('index entries printed as "%s" file under more than one key (%s), '
+            .. 'so the index tool stores one key each and prints that entry '
+            .. 'once per key, in as many places; give them one sort key, or '
+            .. 'write them as one entry')
+           :format(clash.path, table.concat(named, ", ") .. " and " .. last))
+    else
+      qi_core.warn(('index entries printed as "%s" in %s file under more than one key (%s), so the index tool stores one key each and prints that entry once per key, in as many places; give them one sort key, or write them as one entry'):format(clash.path, scope, table.concat(named, ", ") .. " and " .. last))
+    end
   end
   if not (quarto and quarto.doc and quarto.doc.use_latex_package
           and quarto.doc.include_text) then
@@ -276,38 +366,64 @@ local function Pandoc(doc)
     return qi_marker.place_index(doc, nil)
   end
 
-  if marker then
+  -- Loaded with NO package-wide option (M49). `noautomatic` there suppresses
+  -- imakeidx's own makeindex run for EVERY index, and a named index has no
+  -- other builder: Quarto's PDF loop runs makeindex on the main `.idx` alone,
+  -- so a package-wide suppression would print every index after the first
+  -- empty. The default index keeps the option as a per-index key instead,
+  -- which is exactly the effect it had before.
+  quarto.doc.use_latex_package("imakeidx")
+  if #qi_indexes.names() > 1 then
     -- Quarto emits the package load as
-    -- `\@ifpackageloaded{imakeidx}{}{\usepackage[noautomatic]{imakeidx}}`, so a
-    -- document whose template or header-includes loads imakeidx FIRST takes
-    -- the empty branch and never gets the option — and then every mark below
-    -- the marker is dropped from the index, which is the silent corruption the
-    -- option exists to prevent. Nothing emitted here can reach a load that
-    -- already happened, so the unfixable case is made loud instead: a
-    -- begin-document check that says what will be missing and why. It warns
+    -- `\@ifpackageloaded{imakeidx}{}{\usepackage{imakeidx}}`, so a document
+    -- whose template or header-includes loads imakeidx FIRST decides how it is
+    -- loaded, and nothing emitted here can reach that load. The one shape that
+    -- still loses an index in silence is a load carrying `noautomatic`: it
+    -- turns off the automatic run this document's named indexes are built by,
+    -- and each of them then prints empty. So the unfixable case is made loud —
+    -- a begin-document check that says what will be missing and why. It warns
     -- rather than erroring, because a marked-up document must still render
     -- (IP2). `\PassOptionsToPackage` is deliberately NOT emitted alongside it:
-    -- it registers the option on the already-loaded package, which would make
-    -- this check report success on exactly the document it exists to catch.
+    -- it registers an option on the already-loaded package, which would make
+    -- this check report on a document it should be silent about.
     quarto.doc.include_text("in-header",
       "\\makeatletter\\AtBeginDocument{\\@ifpackagewith{imakeidx}{noautomatic}"
-      .. "{}{\\PackageWarning{quarto-index}{This document loads imakeidx "
-      .. "itself without the noautomatic option, so terms marked after the "
-      .. "index placement marker will be missing from the index}}}"
+      .. "{\\PackageWarning{quarto-index}{This document loads imakeidx itself "
+      .. "with the noautomatic option, so every index this document declares "
+      .. "after the first will be empty}}{}}"
       .. "\\makeatother")
+  end
+  -- One `\makeindex` per declared index. The default index carries `intoc`
+  -- and, where a marker made it necessary, `noautomatic` — as a per-index key
+  -- now rather than a package option, so it stops imakeidx running makeindex
+  -- on the main `.idx` (Quarto's loop does that) without stopping it running
+  -- on any other. A declared title is passed for every index including the
+  -- default: it is the heading a reader sees, and AC3's book declares one for
+  -- its first index that is not `Index`. Braced, so a title holding a comma or
+  -- an `=` is one value rather than two keys.
+  local default_name = qi_indexes.default()
+  local default_options = "intoc"
+  if marker then
     -- `\printindex` closes the `.idx` file it has just read, so every `\index`
     -- written after it goes to the log instead — silently, and only the marks
     -- BELOW the marker are lost, which is exactly the corruption IP2 forbids.
-    -- imakeidx skips that close under `noautomatic`, which costs a document
-    -- nothing here: the automatic run needs `-shell-escape`, which Quarto does
-    -- not enable, so the index was always built by Quarto's own PDF loop
-    -- (GP2). The option is emitted only where a marker made it necessary, so a
-    -- document without one keeps the preamble it has always had.
-    quarto.doc.use_latex_package("imakeidx", "noautomatic")
-  else
-    quarto.doc.use_latex_package("imakeidx")
+    -- imakeidx skips that close under the PACKAGE-level switch, which the
+    -- default index's own `\printindex` sets inside a group below.
+    default_options = default_options .. ",noautomatic"
   end
-  quarto.doc.include_text("in-header", "\\makeindex[intoc]")
+  if qi_indexes.is_declared() then
+    default_options = default_options .. ",title={"
+      .. qi_latex.escape_title(qi_indexes.title(default_name)) .. "}"
+  end
+  quarto.doc.include_text("in-header",
+    "\\makeindex[" .. default_options .. "]")
+  for _, name in ipairs(qi_indexes.names()) do
+    if name ~= default_name then
+      quarto.doc.include_text("in-header",
+        "\\makeindex[intoc,name=" .. name .. ",title={"
+        .. qi_latex.escape_title(qi_indexes.title(name)) .. "}]")
+    end
+  end
   -- Unconditional, not gated on this document emitting the command (M31).
   -- Both cross-reference commands reach the compiled `.ind`, which outlives
   -- the marks that wrote it exactly as the `.aux` does, so a document that has
@@ -339,12 +455,37 @@ local function Pandoc(doc)
     quarto.doc.include_text("in-header", qi_core.PRINCIPAL_GOBBLERS)
   end
 
-  -- One `\printindex`, under the one index a LaTeX-derived render builds:
-  -- every mark and every marker naming another was folded to this one and told
-  -- its author so.
-  return qi_marker.place_index(doc,
-    { [qi_indexes.default()] =
-        pandoc.Blocks({ pandoc.RawBlock("latex", "\\printindex") }) })
+  -- One `\printindex` per declared index, each at its own marker (M49).
+  --
+  -- The default index's is wrapped in a group that sets imakeidx's
+  -- package-level `disableautomatic` switch, which is what that package reads
+  -- before closing an index's `.idx` file. Set inside the group, the close is
+  -- skipped for this index and for no other, so a mark written below the
+  -- default marker still reaches the file Quarto's loop builds from, while a
+  -- named index's file is closed at its own `\printindex` and makeindex reads
+  -- a complete one. `\ifcsname` rather than a bare call: a version of imakeidx
+  -- without that internal must render rather than abort (IP2). On that
+  -- version the default index's file IS closed here, and a mark written below
+  -- the default marker is lost with no report: `report_below_marker` above
+  -- covers the named indexes alone, which are the ones every shipped imakeidx
+  -- closes.
+  local printindex = "\\printindex"
+  if marker then
+    printindex = "\\begingroup\\makeatletter"
+      .. "\\ifcsname imki@disableautomatictrue\\endcsname"
+      .. "\\imki@disableautomatictrue\\fi\\makeatother"
+      .. "\\printindex\\endgroup"
+  end
+  local by_index = { [default_name] =
+    pandoc.Blocks({ pandoc.RawBlock("latex", printindex) }) }
+  for _, name in ipairs(qi_indexes.names()) do
+    if name ~= default_name then
+      by_index[name] = pandoc.Blocks({
+        pandoc.RawBlock("latex", "\\printindex[" .. name .. "]") })
+    end
+  end
+  report_below_marker(doc)
+  return qi_marker.place_index(doc, by_index)
 end
 
 -- The Span pass records the marks; every anchor decision that needs the

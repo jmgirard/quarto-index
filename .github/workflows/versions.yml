@@ -28,6 +28,15 @@
 # commit; a channel leg can go red on an upstream release alone, which is not a
 # signal a push is answerable for.
 #
+# The PDF job below is off the push path for the same shape of reason and a
+# different cause: it installs a TeX distribution and a package from a named
+# third-party repository, and that install's red traces to upstream mirror
+# state rather than to a commit (M51). Which events it runs on is not written
+# as an `if:` naming them here — `tests/versioncheck.py pdf` decides, the
+# `plan` job captures the answer, and the job gates on that output, so all
+# three answers are readable in the acceptance suite instead of costing one
+# dispatched run apiece.
+#
 # Two narrow reads of this file run in the acceptance suite, and nothing else
 # here is checked. `tests/versioncheck.py floor` reads the `FLOOR:` line below
 # and holds README and the site's Tests page to the version it names.
@@ -66,6 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       legs: ${{ steps.legs.outputs.legs }}
+      pdf: ${{ steps.legs.outputs.pdf }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -91,6 +101,17 @@ jobs:
           fi
           printf 'legs=%s\n' "$LEGS" >> "$GITHUB_OUTPUT"
           printf 'rendering on: %s\n' "$LEGS"
+          # The PDF job's gate. Its reader writes any diagnostic to stderr and
+          # leaves stdout empty, so a bare capture here cannot pick one up as
+          # the answer; `set -e` and the explicit test below stop the run
+          # rather than letting an empty output read as `not true`.
+          PDF=$(python3 tests/versioncheck.py pdf "$EVENT")
+          if [ "$PDF" != true ] && [ "$PDF" != false ]; then
+            echo "FAIL: the PDF gate answered <<$PDF>>, which is neither" >&2
+            exit 1
+          fi
+          printf 'pdf=%s\n' "$PDF" >> "$GITHUB_OUTPUT"
+          printf 'rendering PDF: %s\n' "$PDF"
 
   render:
     needs: plan
@@ -111,20 +132,19 @@ jobs:
         with:
           version: ${{ matrix.leg.version }}
 
-      # This matrix renders the fixtures to HTML and compares the HTML index
-      # each leg emits, and nothing else. It renders no PDF, and so installs
-      # no TeX and no extraction tool for one.
+      # This job renders the fixtures to HTML, and the comparison below is
+      # over that HTML alone. It renders no PDF and installs no TeX; the PDF
+      # job at the end of this file does that, on its own schedule.
       #
+      # Nothing here compares a PDF, and the PDF job compares nothing either.
       # That is deliberate. Two Quarto releases typeset PDF through different
       # TeX engines, and the M30 and M33 lessons put engine and font
       # differences in a PDF's text layer, so a comparison of PDF content
       # would be red about the engine rather than about this extension.
       # Comparing the fixture NAMES alone was tried instead (M45), and bought
       # no coverage beyond what the PDF render it needed was already giving.
-      # That render is what M47 removed: it put a hardcoded third-party TeX
-      # repository and a self-updating TeX package manager on the every-push
-      # path, and no leg has typeset a fixture since. Restoring a PDF leg waits
-      # on an extraction shown engine-neutral across lualatex and xelatex.
+      # A cross-leg PDF comparison waits on an extraction shown engine-neutral
+      # across lualatex and xelatex, and is no part of what M51 restored.
       #
       # Each render below is followed immediately by its extraction. With one
       # format the four renders write four distinct paths and none can overtake
@@ -194,3 +214,135 @@ jobs:
       # to upload reads as legs missing and never as agreement.
       - name: Compare each leg's HTML index against the pinned leg's
         run: python3 tests/versioncheck.py compare legs pinned
+
+  # The PDF leg. It renders the two PDF fixtures on every version this run
+  # planned and fails when either prints no index — nothing more. It compares
+  # nothing across legs and uploads nothing: its extractions are written under
+  # a directory of its own, outside the one the render job's upload names, so
+  # a step added here cannot join that upload and be read by the comparison as
+  # a leg's HTML extraction.
+  #
+  # WHAT IT CHECKS. That `quarto render --to pdf` succeeds on both fixtures
+  # under this leg's Quarto, and that `tests/indexdump.py pdf` finds a printed
+  # index with at least one entry in each rendered PDF. The render alone is
+  # not the check: a PDF that typesets at exit 0 while the index prints empty
+  # is exactly the break this job exists to catch, and `indexdump.py` is what
+  # makes the difference between the two visible.
+  #
+  # WHAT IT DELIBERATELY DOES NOT CHECK. Whether two legs print the SAME
+  # index — see the render job's note above on why a PDF comparison would be
+  # red about the TeX engine. The extension's own named-index fixture, whose
+  # second index is built under TeX's restricted shell escape (D-031) and
+  # whose failure mode would be an installation's rather than a Quarto
+  # version's. And the acceptance suite, which pins a PDF engine and so
+  # cannot run green on the floor leg at all.
+  #
+  # It runs only where `tests/versioncheck.py pdf` said so, which the `plan`
+  # job captured — a scheduled or manually dispatched run, and not a push.
+  # These steps ran on every push until M47 removed them; what M51 restores is
+  # the renders, not the schedule they ran on.
+  #
+  # It needs no ordering against the render job: the two share no artifact,
+  # and running them together is what keeps a scheduled run's wall clock the
+  # slower of the two rather than their sum.
+  pdf:
+    needs: plan
+    if: needs.plan.outputs.pdf == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      # Same reason as the render job: which legs typeset is the question, and
+      # a cancelled leg answers it for nobody.
+      fail-fast: false
+      matrix:
+        leg: ${{ fromJSON(needs.plan.outputs.legs) }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # `quarto install tinytex` asks the GitHub API which TinyTeX release is
+      # current, and unauthenticated that call is rate-limited per runner
+      # address (pages.yml records a 403 on one of six runs started together).
+      # The run's own token authenticates it.
+      - name: Install Quarto ${{ matrix.leg.version }} and TinyTeX
+        uses: quarto-dev/quarto-actions/setup@v2
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: ${{ matrix.leg.version }}
+          tinytex: true
+
+      # `imakeidx`, which the LaTeX back-end loads. It is installed HERE, with
+      # the runner's own TinyTeX, rather than left to Quarto's on-demand
+      # installer: Quarto 1.4.549 answers `compilation failed- no matching
+      # packages` when it goes looking for `imakeidx.sty` against today's TeX
+      # Live repository, which turned the floor leg red on two runs out of
+      # three while this workflow was first being proved. Run on every leg and
+      # not only the floor one, so the legs differ in their Quarto version and
+      # in nothing else.
+      #
+      # `tlmgr` is not on the runner's PATH: `quarto install tinytex` puts the
+      # distribution under `~/.TinyTeX` and Quarto locates it itself. Its bin
+      # directory is found rather than named — TeX Live's platform directory is
+      # `x86_64-linux` on one release and `universal-linux` on another — and a
+      # tree with no bin directory is a loud failure, never a silently skipped
+      # install. The PATH change is local to this step, so the renders below
+      # still reach TeX exactly the way Quarto arranges it.
+      - name: Install the TeX packages the PDF fixtures load
+        run: |
+          set -euo pipefail
+          TLBIN=$(find "$HOME/.TinyTeX/bin" -mindepth 1 -maxdepth 1 -type d \
+            | head -1)
+          if [ -z "$TLBIN" ]; then
+            echo "FAIL: no TeX Live bin directory under $HOME/.TinyTeX/bin" >&2
+            exit 1
+          fi
+          export PATH="$TLBIN:$PATH"
+          tlmgr --version | head -1
+          # The repository is named rather than left to `mirror.ctan.org`'s
+          # redirect: that redirect handed the two legs different mirrors on
+          # one run, and the floor leg's was stale enough that `tlmgr` refused
+          # to run at all ("seems to be older than the local installation").
+          # This is TinyTeX's own default repository, which the runs that
+          # worked were already using.
+          tlmgr option repository https://tlnet.yihui.org
+          # The installed tlmgr is older than the repository it talks to and
+          # refuses to install anything until it updates itself.
+          tlmgr update --self
+          tlmgr install imakeidx
+          kpsewhich imakeidx.sty
+
+      # `pdftotext`, which tests/pdfindex.py reads a printed index through.
+      # TinyTeX does not carry it and the runner image is not relied on to.
+      - name: Install poppler-utils
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+
+      # `$RUNNER_TEMP/pdf`, not the `$RUNNER_TEMP/extract` the render job
+      # uploads: this job's extractions are read by the step that writes them
+      # and by nothing else, and a shared directory would invite a later step
+      # to upload one of them under a leg's artifact name, where the
+      # comparison reads `*.html.txt` and would find a file it never rendered.
+      #
+      # Each render is followed immediately by its extraction, before the next
+      # render can overwrite the artifact: the book renders into `_book`
+      # whatever the format, so a second render into that directory replaces
+      # the first.
+      - name: Render the PDF fixtures and extract each printed index
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/pdf"
+          mkdir -p "$OUT"
+
+          quarto render examples/demo.qmd --to pdf
+          python3 tests/indexdump.py pdf examples/demo.pdf \
+            > "$OUT/demo.pdf.txt"
+
+          ( cd examples/book && quarto render --to pdf )
+          python3 tests/indexdump.py pdf \
+            examples/book/_book/Index-Book-Fixture.pdf \
+            > "$OUT/book.pdf.txt"
+
+          wc -l "$OUT"/*.txt

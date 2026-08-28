@@ -92,7 +92,7 @@ D-entry this milestone writes is the record of it.
       removed, as a job of their own gated on a `plan` output carrying T1's
       answer; write its extractions outside the upload directory, and record
       in the job's header what it checks and what it deliberately does not.
-- [ ] T3: Append the `cairn/DECISIONS.md` entry recording the CI dependency
+- [x] T3: Append the `cairn/DECISIONS.md` entry recording the CI dependency
       re-add — TinyTeX, `imakeidx` from a named repository, `poppler-utils`
       — and why the job stays off the push path (annotates D-025).
 - [ ] T4: Rewrite the matrix paragraphs in `README.md` and `site/tests.qmd`.
@@ -115,6 +115,7 @@ D-entry this milestone writes is the record of it.
 - 2026-08-28: implement gate confirmed the CI dependency re-add as planned (TinyTeX, `imakeidx` from `https://tlnet.yihui.org`, `poppler-utils`), chose a `pdf <event>` mode printing `true`/`false` over folding the answer into `legs`, and chose running the PDF job beside the render job rather than after it.
 - 2026-08-28: T1 — `tests/versioncheck.py` gains `pdf <event>`, answering from `PDF_EVENTS`, declared apart from `CHANNEL_EVENTS` because the two sets coincide for different reasons; an event outside the workflow's declared three is refused on stderr with stdout empty rather than answered `false`, which would skip the job silently. The suite asserts all three answers on every run and, under `--self-test`, plants `push` into `PDF_EVENTS` to show that assertion able to fail. `tests/run-tests.sh --self-test` clean, 794 checks.
 - 2026-08-28: T2 — `.github/workflows/versions.yml` gains a `pdf` job carrying the four steps `50899b9` removed (TinyTeX with the run's token, `imakeidx` from `https://tlnet.yihui.org`, `poppler-utils`, the two renders each followed by its `indexdump.py pdf` extraction), over the same leg matrix, `needs: plan` only, gated on `needs.plan.outputs.pdf == 'true'` and naming no event. Extractions go to `$RUNNER_TEMP/pdf`, outside the `$RUNNER_TEMP/extract` the render job uploads; the job adds no upload. The render job's comment no longer says the matrix renders no PDF. `versioncheck.py fixtures` and `floor` still pass against the rewritten file; `tests/run-tests.sh --self-test` clean, 794 checks.
+- 2026-08-28: T3 — D-032 appended, recording the re-add of TinyTeX, `imakeidx` from the named repository and `poppler-utils`, the weekly-and-on-demand path, and the gate living in the reader rather than in an `if:` naming events; annotates D-025.
 - 2026-08-28: plan gate chose restoring only the two fixtures `50899b9` removed over adding M49's two-index fixture, because that fixture's second index depends on TeX's restricted shell escape (D-031) and adding it widens the restore into new coverage; falsified by the two-index PDF path breaking on a Quarto version while the restored leg stays green. Deferred to a candidate row, not rejected.
 
 ## Decisions

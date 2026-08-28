@@ -125,6 +125,7 @@ D-entry this milestone writes is the record of it.
 - 2026-08-28: plan gate chose restoring only the two fixtures `50899b9` removed over adding M49's two-index fixture, because that fixture's second index depends on TeX's restricted shell escape (D-031) and adding it widens the restore into new coverage; falsified by the two-index PDF path breaking on a Quarto version while the restored leg stays green. Deferred to a candidate row, not rejected.
 
 - 2026-08-28: review — every criterion verified with fresh evidence (workflow read, `versioncheck.py pdf` run here, the three cited runs re-read job- and step-wise, both docs paragraphs read); `cairn_validate` all checks passed, suite clean at 794 checks; three fresh-context lenses returned ten findings, none demonstrating a criterion failing.
+- 2026-08-28: gate triage — findings 1, 3, 5, 6 and 7 fixed on the branch (two docs sentences, three comment claims, one `find` pipeline), finding 2 filed as a follow-up at hygiene, findings 4, 8, 9 and 10 rejected; suite clean after the fixes at 794 checks.
 
 ## Decisions
 
@@ -231,3 +232,27 @@ criterion failing, so none returns the milestone (return floor).
     package manager costs the default six hours per leg. The `render` job has
     none either.
 
+**Triage at the gate (2026-08-28).** The maintainer chose fix-now for findings
+1, 3, 5, 6 and 7, a follow-up for 2, and rejection for the rest. Applied on the
+branch before approval:
+
+- 1 — the `find` is now `2>/dev/null | head -1 || true`, so a missing or empty
+  bin directory both reach the named `FAIL:` line and a closed pipe cannot
+  redden a good install; the step's comment says so.
+- 3 — the suite's pass line no longer calls its three rows "the events the
+  version workflow declares"; it says the table names them and that catching a
+  trigger added to the workflow is the reader's refusal of a fourth name.
+- 5 — the plan step's comment now credits `set -e` with stopping a refused
+  reader and calls the explicit test a belt on top of it.
+- 6 — README now says the run "also adds Quarto's current release and typesets
+  two of the fixtures to PDF on each version it renders on".
+- 7 — `site/tests.qmd` regains the sentence that the acceptance suite renders
+  and reads a printed PDF index on every run, on one Quarto version.
+
+Finding 2 is filed as a follow-up at the post-merge hygiene pass. Findings 4,
+8, 9 and 10 rejected: 4 is the design D-011 called for and the milestone
+planned; 8 is style with identical behavior; 9 leaves the cited evidence
+reachable; 10 is pre-existing and consistent with the render job.
+
+`tests/run-tests.sh --self-test` clean after the fixes, 794 checks; the
+workflow parses and no line grew past 80 columns.

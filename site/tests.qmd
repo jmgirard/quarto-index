@@ -35,4 +35,5 @@ No PDF is compared across legs. Two Quarto versions typeset through different
 TeX engines, and an engine difference lands in a PDF's text layer, where a
 comparison would be red about the engine rather than about this extension. The
 byte-for-byte comparison is over the HTML index alone; what the PDF leg asks
-of each version is that an index printed at all.
+of each version is that an index printed at all. The acceptance suite above
+renders and reads a printed PDF index on every run, on one Quarto version.

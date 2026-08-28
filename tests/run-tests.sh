@@ -16089,8 +16089,8 @@ while IFS='|' read -r m51event m51want m51label; do
   M51PDFN=$((M51PDFN + 1))
 done <<< "$M51_PDF_ANSWERS"
 [ "$M51PDFN" = 3 ] \
-  || fail "M51-AC2: the event table answered $M51PDFN event(s), not the three the workflow declares, so the clause above swept less than it names"
-pass "M51-AC2: tests/versioncheck.py answers whether the PDF job runs for each of the $M51PDFN events the version workflow declares — false on a push, true on the scheduled and manually dispatched runs"
+  || fail "M51-AC2: the event table answered $M51PDFN event(s) where it names three, so the clause above swept less than it names"
+pass "M51-AC2: tests/versioncheck.py answers whether the PDF job runs for each of the $M51PDFN events this table names — false on a push, true on the scheduled and manually dispatched runs. That these three are the events the workflow declares is not read out of the workflow here; the reader's own refusal of a fourth name is what catches a trigger added there"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------

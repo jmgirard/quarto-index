@@ -103,8 +103,9 @@ jobs:
           printf 'rendering on: %s\n' "$LEGS"
           # The PDF job's gate. Its reader writes any diagnostic to stderr and
           # leaves stdout empty, so a bare capture here cannot pick one up as
-          # the answer; `set -e` and the explicit test below stop the run
-          # rather than letting an empty output read as `not true`.
+          # the answer; `set -e` stops the run on a reader that refused, and
+          # the test below is a belt on top of it, refusing any answer that is
+          # neither word rather than letting one read as `not true`.
           PDF=$(python3 tests/versioncheck.py pdf "$EVENT")
           if [ "$PDF" != true ] && [ "$PDF" != false ]; then
             echo "FAIL: the PDF gate answered <<$PDF>>, which is neither" >&2
@@ -282,16 +283,20 @@ jobs:
       #
       # `tlmgr` is not on the runner's PATH: `quarto install tinytex` puts the
       # distribution under `~/.TinyTeX` and Quarto locates it itself. Its bin
-      # directory is found rather than named — TeX Live's platform directory is
-      # `x86_64-linux` on one release and `universal-linux` on another — and a
+      # directory is found rather than named (TeX Live's platform directory is
+      # `x86_64-linux` on one release and `universal-linux` on another) and a
       # tree with no bin directory is a loud failure, never a silently skipped
-      # install. The PATH change is local to this step, so the renders below
-      # still reach TeX exactly the way Quarto arranges it.
+      # install. The `find` is allowed to fail into an empty capture rather
+      # than killing the step under `pipefail`, so that failure is the named
+      # one below whether the directory is missing or merely empty, and so a
+      # `find` that `head` closed the pipe on cannot redden a good install.
+      # The PATH change is local to this step, so the renders below still
+      # reach TeX exactly the way Quarto arranges it.
       - name: Install the TeX packages the PDF fixtures load
         run: |
           set -euo pipefail
           TLBIN=$(find "$HOME/.TinyTeX/bin" -mindepth 1 -maxdepth 1 -type d \
-            | head -1)
+            2>/dev/null | head -1 || true)
           if [ -z "$TLBIN" ]; then
             echo "FAIL: no TeX Live bin directory under $HOME/.TinyTeX/bin" >&2
             exit 1

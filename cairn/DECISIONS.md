@@ -206,3 +206,11 @@
 **Decision:** D-027's report clause is withdrawn. The check ships forbidding the two sentences over a domain it enumerates itself and whose size it reports; it names the offending file only where every page in that domain decodes as UTF-8, which is true of all 21 files in today's domain and is asserted by nothing. The forbidding and the domain-size clauses stand as D-027 states them.
 
 **Consequences:** the withdrawn clause moves to the ROADMAP candidate row "Pre-release sweep and link containment, the clauses M46 could not hold", together with `tests/sitecheck.py links`' containment clause, which the same amendment withdrew from AC4. Restoring the naming promise takes a superseding entry and a check that reports rather than raises on a page it cannot decode. Falsified by a tracked documentation page carrying a non-UTF-8 byte and a retired sentence at once, which today aborts the run naming neither.
+
+### D-030 (2026-08-27): the acceptance suite reads YAML with PyYAML, and says so when it is missing
+
+**Context:** M50 ships `_extensions/index/_schema.yml`, whose class and attribute declarations an acceptance check has to read three levels deep. The suite has no third-party Python dependency today: `tests/pagescheck.py` reads the publishing workflow with an indentation-aware regex, which is what a YAML-shaped read has cost until now.
+
+**Decision:** `tests/editormeta.py` reads the schema with PyYAML, and prints a `FAIL:` line naming the package when the import raises rather than a traceback. Rejected: an indentation parser of the suite's own, which would hold the schema against this suite's idea of YAML rather than against the parse an editor performs, and could go green on a file a real reader sees differently.
+
+**Consequences:** running `tests/run-tests.sh` now requires PyYAML on the `python3` that runs it — the suite's first third-party Python dependency, beside the TinyTeX, `makeindex`, `pdftotext` and `pdfinfo` it already refuses to skip. No CI job takes the dependency: both workflows run individual modules and neither runs this one. Falsified by a contributor whose environment cannot install it.

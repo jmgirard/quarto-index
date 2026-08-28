@@ -1377,6 +1377,11 @@ require_pdf_tools() {
   # die at the pipeline with a bare shell error rather than naming the tool.
   command -v shasum >/dev/null 2>&1 \
     || fail "shasum not found on PATH (M41-AC5 hashes examples/ with it). AC6 must never pass unrun."
+  # M50's schema reader parses YAML with PyYAML (D-030), whose own import
+  # guard sits at the end of a ~15-minute run. Named here so a machine
+  # without it learns so before paying for every render.
+  python3 -c 'import yaml' >/dev/null 2>&1 \
+    || fail "PyYAML not found on this python3 (tests/editormeta.py reads _schema.yml with it, D-030; install it with: python3 -m pip install pyyaml). AC6 must never pass unrun."
 
   # The recipe names a main font by file, so every face it names has to be
   # findable the same way fontspec finds it. Without this the four M33 renders
@@ -15658,6 +15663,584 @@ if [ "${1:-}" = "--self-test" ]; then
 
   pass "M48 T4 self-test: each clause of the fixture-set reader is planted on its own and shown red, while it passes unplanted on this repository's own workflow and this run's fixture table — a render step writing its extractions with another command, no fixture name to hold against it, a name missing from the suite's set, a name in it the workflow does not extract, and an invocation whose redirect is on its own line, which the reader must see"
 fi
+# ---------------------------------------------------------------------------
+# M50 — the editor-metadata files. `_schema.yml` and `_snippets.json` tell an
+# editor what this extension's marking syntax is, and no render reads either:
+# shipped wrong they complete an author into syntax the filter does not accept
+# and every check in this suite still passes. So both are held against the
+# syntax the docs site documents, which is the domain D-011 permits — what the
+# docs DOCUMENT, never a widened scan of what the filter's source accepts.
+#
+# The swept domain is the TRACKED site pages, taken from git rather than from
+# a glob: a scratch page an earlier run left in the tree would otherwise join
+# the set and could carry any attribute at all.
+# ---------------------------------------------------------------------------
+M50_SCHEMA="_extensions/index/_schema.yml"
+M50_SNIPPETS="_extensions/index/_snippets.json"
+M50_SYNTAX="site/syntax.qmd"
+M50_PAGES=$(git ls-files 'site/*.qmd')
+[ -n "$M50_PAGES" ] \
+  || fail "M50: git tracks no site/*.qmd page, so every comparison below would hold the editor metadata against an empty set"
+M50_PAGE_COUNT=$(printf '%s\n' "$M50_PAGES" | wc -l | tr -d ' ')
+[ -f "$M50_SYNTAX" ] \
+  || fail "M50: $M50_SYNTAX does not exist, so the values the form table writes could not be read"
+
+python3 tests/editormeta.py snippets "$M50_SNIPPETS" \
+  || fail "M50-AC1: the snippet file does not parse, or an entry of it is not fully written (its own FAIL line is above)"
+
+python3 tests/editormeta.py schema "$M50_SCHEMA" "$M50_SYNTAX" $M50_PAGES \
+  || fail "M50-AC2: the schema's classes, per-class attribute names or enumerated values are not those the $M50_PAGE_COUNT tracked site page(s) document (its own FAIL line is above)"
+
+python3 tests/editormeta.py bodies "$M50_SNIPPETS" $M50_PAGES \
+  || fail "M50-AC3: the snippet bodies do not write the attribute set the $M50_PAGE_COUNT tracked site page(s) document, or write one they do not (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M50 T3 — one planted defect per clause of the two readers above, each
+  # judged the way M43's are: the planted case must fail, must fail by naming
+  # its own clause, and must report rather than raise. Every plant is asserted
+  # to have changed its source, so a no-op mutation cannot leave a green plant
+  # behind (M29).
+  # -------------------------------------------------------------------------
+  M50W="$WORK/m50probe"
+  rm -rf "$M50W"; mkdir -p "$M50W"
+
+  m50_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M50 self-test: the planted case ($label) passed, so this check's green says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M50 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    printf '%s' "$out" | grep -q 'Traceback' \
+      && { printf '%s\n' "$out" >&2; fail "M50 self-test: the planted case ($label) raised rather than reporting a finding, which exits non-zero for a reason nothing states"; }
+    printf 'ok   self-test: the editor-metadata reader fails on <<%s>>\n' "$label"
+  }
+
+  # Each mutation is written by python3 rather than sed: the schema nests three
+  # levels deep and a block moved between classes is not a line substitution.
+  # Every one asserts it changed its source before writing, so the cases below
+  # cannot be about the unplanted file.
+  python3 - "$M50W" "$M50_SCHEMA" "$M50_SNIPPETS" "$M50_SYNTAX" <<'M50PLANTPY' \
+    || fail "M50 T3 self-test: the planted variants could not be written (their own FAIL line is above)"
+import json, sys
+
+out, schema_path, snippets_path, syntax_path = sys.argv[1:5]
+
+
+def write(name, text, source):
+    if text == source:
+        print(f'FAIL: M50 T3 self-test: the mutation for {name} changed '
+              f'nothing, so the case below is about the unplanted file',
+              file=sys.stderr)
+        sys.exit(1)
+    with open(f'{out}/{name}', 'w', encoding='utf-8') as handle:
+        handle.write(text)
+
+
+schema = open(schema_path, encoding='utf-8').read()
+snippets = open(snippets_path, encoding='utf-8').read()
+syntax = open(syntax_path, encoding='utf-8').read()
+
+# A third class declared beside the two the filter reads.
+write('thirdclass.yml', schema.replace(
+    'classes:\n  index:',
+    'classes:\n  callout-index:\n    description: "A third class."\n'
+    '  index:', 1), schema)
+
+# A value added to an enumeration the form table fixes.
+write('enumplus.yml', schema.replace(
+    '        - open\n        - close\n',
+    '        - open\n        - close\n        - middle\n', 1), schema)
+
+# One attribute declared on the wrong class: `sort=` moved off the mark and
+# onto the placement marker, which is a schema completing an author into a
+# marker attribute nothing reads.
+block = schema[schema.index('    sort:'):schema.index('    mention:')]
+moved = schema.replace(block, '', 1).replace(
+    '  qi-index-here:\n    index:', '  qi-index-here:\n' + block + '    index:',
+    1)
+write('wrongclass.yml', moved, schema)
+
+# An attribute whose description an editor would show as nothing on hover.
+write('nodesc.yml', schema.replace(
+    '      title: Sort key\n      description: >-\n', '      title: Sort key\n'
+    '      description: ""\n      unused: >-\n', 1), schema)
+
+# A form table one row short, over which the enumerated values below would be
+# read off a table that is not the one the check is about.
+rows = [line for line in syntax.splitlines(True)
+        if line.startswith('| `[term]{.index mention=')]
+if len(rows) != 1:
+    print('FAIL: M50 T3 self-test: the form table does not write exactly one '
+          'mention= row, so the short-table plant is not the mutation it '
+          'claims to be', file=sys.stderr)
+    sys.exit(1)
+write('shorttable.qmd', syntax.replace(rows[0], '', 1), syntax)
+
+entries = json.loads(snippets)
+
+# A snippet whose description is written but empty.
+plant = {k: dict(v) for k, v in entries.items()}
+plant['Index mark with a sort key']['description'] = ''
+write('emptydesc.json', json.dumps(plant, indent=2), snippets)
+
+# A snippet dropped, leaving an attribute the docs document with no snippet.
+plant = {k: dict(v) for k, v in entries.items()
+         if k != 'Index mark with a sort key'}
+write('dropped.json', json.dumps(plant, indent=2), snippets)
+
+# A body writing an attribute no page documents, which an editor would offer.
+# Written on the sort-key snippet and not on the bare mark: the bare mark is
+# one of the three shapes judged before this clause, and a mark that grew an
+# attribute would be reported as that missing shape instead.
+plant = {k: dict(v) for k, v in entries.items()}
+plant['Index mark with a sort key']['body'] = (
+    '[${1:The Hague}]{.index sort="${2:Hague}" colour="${3:red}"}')
+write('undocumented.json', json.dumps(plant, indent=2), snippets)
+
+# Each of the three shapes AC3 names, dropped on its own. The marker that
+# names an index becomes a bare one; the bare marker grows a name; the bare
+# mark's snippet goes, every attribute it writes being written elsewhere.
+plant = {k: dict(v) for k, v in entries.items()}
+plant['Named index placement']['body'] = ['::: {.qi-index-here}', ':::']
+write('noshape.json', json.dumps(plant, indent=2), snippets)
+
+plant = {k: dict(v) for k, v in entries.items()}
+plant['Index placement']['body'] = ['::: {.qi-index-here index="authors"}',
+                                    ':::']
+write('nobaremarker.json', json.dumps(plant, indent=2), snippets)
+
+plant = {k: dict(v) for k, v in entries.items() if k != 'Index mark'}
+write('nobaremark.json', json.dumps(plant, indent=2), snippets)
+
+# A snippet file that parses as JSON but is not the object the format is.
+write('notobject.json', json.dumps([entries]), snippets)
+
+# A page carrying no construct at all, over which the per-class attribute sets
+# would be compared empty.
+write('nocons.qmd', '# A page with no marked term\n\nJust prose.\n', '')
+M50PLANTPY
+
+  m50_planted 'a schema declaring a third class beside the two the filter reads' \
+    'a class declared here and read nowhere' \
+    python3 tests/editormeta.py schema "$M50W/thirdclass.yml" "$M50_SYNTAX" $M50_PAGES
+
+  m50_planted 'a schema offering a range= value the form table does not write' \
+    'and the form table in' \
+    python3 tests/editormeta.py schema "$M50W/enumplus.yml" "$M50_SYNTAX" $M50_PAGES
+
+  m50_planted 'an attribute declared on the wrong class, off the mark and onto the placement marker' \
+    'the two sets are not equal' \
+    python3 tests/editormeta.py schema "$M50W/wrongclass.yml" "$M50_SYNTAX" $M50_PAGES
+
+  m50_planted 'an attribute an editor would show nothing on hover for' \
+    'carries no description' \
+    python3 tests/editormeta.py schema "$M50W/nodesc.yml" "$M50_SYNTAX" $M50_PAGES
+
+  m50_planted 'a form table one row short, which is not the table the enumerated values are read off' \
+    'supported forms' \
+    python3 tests/editormeta.py schema "$M50_SCHEMA" "$M50W/shorttable.qmd" $M50_PAGES
+
+  m50_planted 'no document to sweep, over which the schema would be held against an empty set' \
+    'would hold the schema against an empty set' \
+    python3 tests/editormeta.py schema "$M50_SCHEMA" "$M50_SYNTAX"
+
+  m50_planted 'a swept page carrying no construct at all, over which a class set would be compared empty' \
+    'so the attribute set for that class would be compared empty' \
+    python3 tests/editormeta.py schema "$M50_SCHEMA" "$M50_SYNTAX" "$M50W/nocons.qmd"
+
+  m50_planted 'a snippet whose description is written and empty' \
+    "carries an empty 'description'" \
+    python3 tests/editormeta.py snippets "$M50W/emptydesc.json"
+
+  m50_planted 'a snippet file that is not JSON at all' \
+    'does not parse as JSON' \
+    python3 tests/editormeta.py snippets "$M50_SYNTAX"
+
+  m50_planted 'a snippet file that parses but is a list, not the object the format is' \
+    'at the top level' \
+    python3 tests/editormeta.py snippets "$M50W/notobject.json"
+
+  m50_planted 'a dropped snippet, leaving an attribute the docs document with no snippet of its own' \
+    'no snippet body writes sort= on class' \
+    python3 tests/editormeta.py bodies "$M50W/dropped.json" $M50_PAGES
+
+  m50_planted 'a snippet body writing an attribute no page documents' \
+    'which no swept document documents' \
+    python3 tests/editormeta.py bodies "$M50W/undocumented.json" $M50_PAGES
+
+  m50_planted 'a snippet file with no marker naming an index, one of the three shapes that must each have a snippet' \
+    'no snippet body writes a placement marker naming an index' \
+    python3 tests/editormeta.py bodies "$M50W/noshape.json" $M50_PAGES
+
+  m50_planted 'a snippet file whose only placement marker names an index, leaving the bare marker with no snippet' \
+    'no snippet body writes the bare placement marker' \
+    python3 tests/editormeta.py bodies "$M50W/nobaremarker.json" $M50_PAGES
+
+  m50_planted 'a snippet file with no bare mark, every attribute it writes being written elsewhere' \
+    'no snippet body writes the bare mark' \
+    python3 tests/editormeta.py bodies "$M50W/nobaremark.json" $M50_PAGES
+
+  m50_planted 'no document to sweep, over which the bodies would be held against an empty attribute set' \
+    'would be empty' \
+    python3 tests/editormeta.py bodies "$M50_SNIPPETS"
+
+  pass "M50 T3 self-test: each clause of the schema and snippet readers is planted on its own and shown red, while both pass unplanted on this repository's own files — a third class, an added enumerated value, an attribute moved to the wrong class, an attribute with no description, a form table one row short, no document to sweep and a swept page carrying no construct; an empty description, a snippet file that is not JSON, a snippet file that is a list, a dropped snippet, a body writing an undocumented attribute, each of the three required shapes dropped on its own, and no document to sweep"
+fi
+
+# ---------------------------------------------------------------------------
+# M50 T4 — the snippets rendered. Held against the docs alone, a snippet can
+# still be wrong in the way that matters most: a body an editor inserts that
+# the filter does not act on. So every snippet becomes a document, the SAME
+# snippets become a control in which every mark is bare, and each attribute is
+# read as the difference between the two indexes — a claim about the attribute
+# and not about a manifest row.
+#
+# The effect comparisons are read in HTML. One of them cannot be read anywhere
+# else: mention= prints its locator in bold, which is a font and not a
+# character, and no text extraction of a PDF can see it. The PDF's own clause
+# is the one AC4 states for it — one index carrying both declared indexes'
+# entries, which is what a LaTeX render does today.
+# ---------------------------------------------------------------------------
+M50FX="$WORK/m50fixture"
+rm -rf "$M50FX"; mkdir -p "$M50FX"
+cp -R _extensions "$M50FX/_extensions"
+python3 tests/editorfixture.py generate "$M50_SNIPPETS" \
+    "$M50FX/fixture.qmd" "$M50FX/control.qmd" \
+  || fail "M50-AC4: the fixture and its bare-mark control could not be generated from the snippet file (its own FAIL line is above)"
+
+for M50_DOC in fixture control; do
+  ( cd "$M50FX" && quarto render $M50_DOC.qmd --to html ) \
+      > "$WORK/m50-$M50_DOC-html.log" 2>&1 \
+    || { tail -20 "$WORK/m50-$M50_DOC-html.log" >&2; fail "M50-AC4: the generated $M50_DOC document failed to render to HTML"; }
+  capture "$M50FX/$M50_DOC.qmd" html "m50-$M50_DOC-html"
+done
+pass "M50-AC4: the document built from every snippet, and its bare-mark control, both render to HTML at exit 0"
+
+( cd "$M50FX" && quarto render fixture.qmd --to pdf ) \
+    > "$WORK/m50-fixture-pdf.log" 2>&1 \
+  || { tail -20 "$WORK/m50-fixture-pdf.log" >&2; fail "M50-AC4: the generated fixture failed to render to PDF"; }
+capture "$M50FX/fixture.qmd" pdf "m50-fixture-pdf"
+pass "M50-AC4: the same document renders to PDF at exit 0"
+
+M50_FIX_HTML="$CAPTURE_ROOT/m50-fixture-html/fixture.html"
+M50_CTL_HTML="$CAPTURE_ROOT/m50-control-html/control.html"
+M50_FIX_PDF="$CAPTURE_ROOT/m50-fixture-pdf/fixture.pdf"
+M50_ROWS="$WORK/m50-fixture-pdf-rows.txt"
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
+  python3 tests/editorfixture.py effects "$M50_SNIPPETS" "$M50_FIX_HTML" "$M50_CTL_HTML" \
+  || fail "M50-AC4: an attribute the snippets write shows no effect in the rendered index that the bare-mark control does not (its own FAIL line is above)"
+
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+  HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+  python3 tests/indexdump.py pdf "$M50_FIX_PDF" > "$M50_ROWS" \
+  || fail "M50-AC4: the fixture's PDF carries no printed index to read the fold off (its own FAIL line is above)"
+
+python3 tests/editorfixture.py folded "$M50_SNIPPETS" "$M50_ROWS" \
+  || fail "M50-AC4: the fixture's PDF does not print the one index a LaTeX render folds every declared index into (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M50 T4 — a planted defect per clause of the effect comparison, on both
+  # sides of it: an effect missing from the fixture and an effect present in
+  # the control are different defects, and a comparison that caught only the
+  # first would pass on a control that is not a bare-mark document at all.
+  #
+  # Each mutation is applied inside the generated index section(s) alone. The
+  # marked terms appear in the document body too, and a plant that hit the
+  # body would be about the page rather than about the index.
+  # -------------------------------------------------------------------------
+  M50P="$M50W/effects"
+  mkdir -p "$M50P"
+  python3 - "$M50P" "$M50_FIX_HTML" "$M50_CTL_HTML" "$M50_ROWS" <<'M50FXPLANTPY' \
+    || fail "M50 T4 self-test: the planted variants could not be written (their own FAIL line is above)"
+import re
+import sys
+
+out, fixture, control, rows = sys.argv[1:5]
+
+FIXTURE = open(fixture, encoding='utf-8').read()
+CONTROL = open(control, encoding='utf-8').read()
+ROWS = open(rows, encoding='utf-8').read()
+ANCHOR = '<section id="qi-index'
+
+
+def die(name, why):
+    print(f'FAIL: M50 T4 self-test: the mutation for {name} {why}, so the '
+          f'case below is about the unplanted artifact', file=sys.stderr)
+    sys.exit(1)
+
+
+def write(name, text):
+    with open(f'{out}/{name}', 'w', encoding='utf-8') as handle:
+        handle.write(text)
+
+
+def plant(name, source, pattern, replacement, sites=1):
+    """`pattern` substituted inside the index section(s) of `source`."""
+    if ANCHOR not in source:
+        die(name, 'found no generated index section to mutate')
+    head, tail = source.split(ANCHOR, 1)
+    tail = ANCHOR + tail
+    hit = len(re.findall(pattern, tail))
+    if hit != sites:
+        die(name, f'matched {hit} site(s) in the index, where it must match '
+                  f'{sites}')
+    mutated = head + re.sub(pattern, replacement, tail, count=sites)
+    if mutated == source:
+        die(name, 'changed nothing')
+    write(name, mutated)
+
+
+def plant_rows(name, kept):
+    text = '\n'.join(line for line in ROWS.splitlines() if kept(line))
+    text = text + '\n' if text else ''
+    if text == ROWS:
+        die(name, 'changed nothing')
+    write(name, text)
+
+
+# --- the two documents' own shape.
+plant('nosection.html', FIXTURE, r'id="qi-index', 'id="not-an-index',
+      sites=2)
+
+# --- entry=: the levels the value writes, and the marked term that must go.
+plant('noleaf.html', FIXTURE, r'>Kestrel</span>', '>Kestrels</span>')
+plant('termkept.html', FIXTURE, r'>Birds</span>', '>kestrel</span>')
+plant('noplainterm.html', CONTROL, r'>kestrel</span>', '>kestrels</span>')
+
+# --- see= and see-also=: the target, and the locator each replaces.
+plant('seetarget.html', FIXTURE,
+      r'(qi-see"><em>see</em> <span class="qi-target"><a href="[^"]*">)cats<',
+      r'\1dogs<')
+plant('alsotarget.html', FIXTURE,
+      r'(also</em> <span class="qi-target"><a href="[^"]*">)cats<', r'\1dogs<')
+plant('xreflocator.html', FIXTURE, r'(>puss</span>, )(<span class="qi-xref)',
+      r'\1<span class="qi-locators"><a href="#qi-mark-3">1</a></span>\2')
+plant('barexref.html', CONTROL,
+      r'(>puss</span>), <span class="qi-locators">.*?</span>', r'\1')
+
+# --- sort=: the letter group each document files the entry under.
+plant('sortgroup.html', FIXTURE, r'"qi-letter">\nH\n', '"qi-letter">\nT\n')
+plant('plaingroup.html', CONTROL, r'"qi-letter">\nT\n', '"qi-letter">\nH\n')
+
+# --- mention=: the emphasis, its class, and the control's lack of both.
+plant('noemph.html', FIXTURE, r'(class="qi-principal">)<strong>1</strong>',
+      r'\g<1>1')
+plant('noprincipal.html', FIXTURE, r' class="qi-principal"', '')
+plant('plainemph.html', CONTROL,
+      r'(>mitochondria</span>, <span class="qi-locators"><a href="[^"]*")>'
+      r'(\d+)</a>', r'\1 class="qi-principal"><strong>\2</strong></a>')
+
+# --- range=: one locator in the fixture, two in the control.
+plant('twolocators.html', FIXTURE,
+      r'(>tides</span>, <span class="qi-locators"><a href="[^"]*">1</a>)',
+      r'\1, <a href="#qi-mark-6">2</a>')
+plant('onelocator.html', CONTROL,
+      r'(>tides</span>, <span class="qi-locators"><a href="[^"]*">1</a>), '
+      r'<a href="[^"]*">2</a>', r'\1')
+
+# --- index=: the named section, and the entry filed in one index alone.
+plant('nonamed.html', FIXTURE, r'id="qi-index-authors"',
+      'id="qi-index-other"')
+plant('bothindexes.html', FIXTURE,
+      r'(<li><span id="qi-entry-3" class="qi-term">cats</span>)',
+      r'<li><span id="qi-entry-30" class="qi-term">Ada Lovelace</span></li>\n'
+      r'\1')
+plant('noplainnamed.html', CONTROL, r'>Ada Lovelace</span>',
+      '>Ada Byron</span>')
+
+# --- the printed index the PDF folds both declared indexes into.
+plant_rows('nofolded.txt', lambda line: 'Ada Lovelace' not in line)
+plant_rows('namedonly.txt', lambda line: 'Ada Lovelace' in line)
+plant_rows('norows.txt', lambda line: False)
+M50FXPLANTPY
+
+  # The two identifiers the comparison reads are passed through `env` rather
+  # than as a prefix on the function call: a bash assignment prefixing a
+  # function outlives the call, and these two would then be set for everything
+  # after it.
+  m50_effects() {
+    local label="$1" want="$2" fix="$3" ctl="$4"
+    m50_planted "$label" "$want" \
+      env HTML_SECTION_ID="$HTML_SECTION_ID" \
+          HTML_PRINCIPAL_CLASS="$HTML_PRINCIPAL_CLASS" \
+      python3 tests/editorfixture.py effects "$M50_SNIPPETS" "$fix" "$ctl"
+  }
+
+  m50_effects 'a fixture carrying no generated index section at all' \
+    'carries no generated index section' "$M50P/nosection.html" "$M50_CTL_HTML"
+  m50_effects 'a control carrying two index sections, which is not the bare-mark document this compares against' \
+    'where a document declaring none has exactly one' "$M50_FIX_HTML" "$M50_FIX_HTML"
+
+  m50_effects 'a fixture whose entry= did not split into its deepest level' \
+    "carries no entry 'Kestrel' at depth 1" "$M50P/noleaf.html" "$M50_CTL_HTML"
+  m50_effects 'a fixture still carrying the marked term entry= indexes away from' \
+    'indexed it under its own text after all' "$M50P/termkept.html" "$M50_CTL_HTML"
+  m50_effects 'a control carrying no entry for the term entry= indexes away from' \
+    'so entry= has nothing to differ from' "$M50_FIX_HTML" "$M50P/noplainterm.html"
+
+  m50_effects 'a fixture whose see= points at a target the snippet does not write' \
+    "prints one 'see' cross-reference to 'cats'" "$M50P/seetarget.html" "$M50_CTL_HTML"
+  m50_effects 'a fixture whose see-also= points at a target the snippet does not write' \
+    "prints one 'see also' cross-reference to 'cats'" "$M50P/alsotarget.html" "$M50_CTL_HTML"
+  m50_effects 'a fixture whose cross-referenced entry still prints a locator' \
+    'still prints a locator, so see= did not replace it' "$M50P/xreflocator.html" "$M50_CTL_HTML"
+  m50_effects 'a control whose bare mark prints no locator, so the cross-reference replaces nothing' \
+    'where a bare mark prints one locator and no cross-reference' "$M50_FIX_HTML" "$M50P/barexref.html"
+
+  m50_effects 'a fixture filing the sort-keyed entry under its own text after all' \
+    'files under the letter group' "$M50P/sortgroup.html" "$M50_CTL_HTML"
+  m50_effects 'a control filing the bare mark under the sort key it does not carry' \
+    'where its own text files it under' "$M50_FIX_HTML" "$M50P/plaingroup.html"
+
+  m50_effects 'a fixture whose principal locator carries the class and no emphasis element' \
+    'but no emphasis element' "$M50P/noemph.html" "$M50_CTL_HTML"
+  m50_effects 'a fixture emphasizing no locator at all' \
+    'emphasizes exactly one' "$M50P/noprincipal.html" "$M50_CTL_HTML"
+  m50_effects 'a control emphasizing a locator, which a document of bare marks does not' \
+    'where a document of bare marks emphasizes none' "$M50_FIX_HTML" "$M50P/plainemph.html"
+
+  m50_effects 'a fixture printing two locators for the range, where the pair prints one' \
+    'where an opening and its closing print one' "$M50P/twolocators.html" "$M50_CTL_HTML"
+  m50_effects 'a control printing one locator for the two bare marks that replace the range' \
+    'where its two bare marks print two' "$M50_FIX_HTML" "$M50P/onelocator.html"
+
+  m50_effects 'a fixture carrying no section for the index the snippet names' \
+    'where index="authors" prints one' "$M50P/nonamed.html" "$M50_CTL_HTML"
+  m50_effects 'a fixture filing the named entry in both indexes' \
+    'filed it in more than one index' "$M50P/bothindexes.html" "$M50_CTL_HTML"
+  m50_effects 'a control carrying no entry for the term index= files elsewhere' \
+    'has no single-index render to differ from' "$M50_FIX_HTML" "$M50P/noplainnamed.html"
+
+  m50_planted 'a printed index carrying nothing of the second declared index, which a fold would carry' \
+    'a PDF render folds every declared index into one' \
+    python3 tests/editorfixture.py folded "$M50_SNIPPETS" "$M50P/nofolded.txt"
+  m50_planted 'a printed index carrying the named index alone, which is not the fold of both' \
+    'rather than the fold of both' \
+    python3 tests/editorfixture.py folded "$M50_SNIPPETS" "$M50P/namedonly.txt"
+  m50_planted 'a printed index with no entry row at all, over which the fold would be read off nothing' \
+    'carries no printed entry row' \
+    python3 tests/editorfixture.py folded "$M50_SNIPPETS" "$M50P/norows.txt"
+
+  pass "M50 T4 self-test: each clause of the effect comparison is planted on its own and shown red, on both sides — an effect missing from the fixture and the same effect present in the control being different defects — while both readers pass unplanted on this run's own renders: no index section, a control with two; entry='s deepest level, its marked term kept, and the control's own entry gone; each cross-reference's target, the locator it must replace, and the control's bare locator; the sort key's letter group in each document; the principal locator's emphasis, its class, and the control emphasizing one; the range's locator count in each document; the named section, an entry filed in two indexes, and the control's single-index entry; and the printed index folding neither, one, or nothing"
+fi
+
+# ---------------------------------------------------------------------------
+# M50 T5 — the files travel. Both live inside `_extensions/index/`, which is
+# the directory `quarto add` copies, and the acceptance suite renders through
+# the `examples/_extensions` symlink — so nothing above proves either file is
+# even tracked, let alone that it reaches somebody who installs the extension.
+# An archive of what git tracks, installed into a project of its own, is what
+# does: a file git does not track is not in the archive and does not arrive.
+# ---------------------------------------------------------------------------
+M50INST="$WORK/m50install"
+rm -rf "$M50INST"; mkdir -p "$M50INST/project"
+git archive HEAD _extensions --format=zip -o "$M50INST/ext.zip" \
+  || fail "M50-AC5: git archive could not build an archive of the tracked extension, so nothing below says what an install carries"
+# `quarto add` is run from inside the scratch project, so the archive is
+# named by an absolute path rather than by one relative to this repository.
+M50_ARCHIVE="$PWD/$M50INST/ext.zip"
+( cd "$M50INST/project" && quarto add --no-prompt "$M50_ARCHIVE" ) \
+    > "$WORK/m50-add.log" 2>&1 \
+  || { tail -20 "$WORK/m50-add.log" >&2; fail "M50-AC5: quarto add refused an archive of what git tracks"; }
+
+python3 tests/editormeta.py installed "$M50INST/project" _schema.yml _snippets.json \
+  || fail "M50-AC5: an editor-metadata file is missing from the extension an archive of what git tracks installs (its own FAIL line is above)"
+
+# ---------------------------------------------------------------------------
+# M50 T6 — the documentation says the files ship. Read out of the CAPTURED
+# site (M24) rather than the source, so what is held is the page a reader gets.
+# ---------------------------------------------------------------------------
+python3 tests/editormeta.py docs "$SITE_OUT/index.html" README.md \
+    _schema.yml _snippets.json \
+  || fail "M50-AC6: the site's entry page or README does not name an editor-metadata file the extension ships (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M50 T5/T6 — a planted defect per clause of the install probe and of the
+  # documentation reader. The install plant rebuilds the ARCHIVE without one
+  # of the two files rather than deleting the file after the install: what
+  # AC5 is about is what the archive carries, and a file removed afterwards
+  # would prove only that the reader can see a missing file.
+  # -------------------------------------------------------------------------
+  M50I="$M50W/install"
+  mkdir -p "$M50I/noschema"
+  python3 - "$M50INST/ext.zip" "$M50I/ext-noschema.zip" <<'M50ZIPPY' \
+    || fail "M50 T5 self-test: the archive missing one editor-metadata file could not be built (its own FAIL line is above)"
+import sys
+import zipfile
+
+source, target = sys.argv[1:3]
+with zipfile.ZipFile(source) as archive:
+    names = archive.namelist()
+    dropped = [name for name in names if name.endswith('/_schema.yml')]
+    if len(dropped) != 1:
+        print(f'FAIL: M50 T5 self-test: {source} carries {len(dropped)} '
+              f'_schema.yml entr(y/ies), where the archive of the tracked '
+              f'extension carries exactly one; the case below would not be '
+              f'the archive this plant claims to build', file=sys.stderr)
+        sys.exit(1)
+    with zipfile.ZipFile(target, 'w') as out:
+        for name in names:
+            if name in dropped:
+                continue
+            out.writestr(archive.getinfo(name), archive.read(name))
+M50ZIPPY
+
+  M50_ARCHIVE_NOSCHEMA="$PWD/$M50I/ext-noschema.zip"
+  ( cd "$M50I/noschema" && quarto add --no-prompt "$M50_ARCHIVE_NOSCHEMA" ) \
+      > "$WORK/m50-add-noschema.log" 2>&1 \
+    || { tail -20 "$WORK/m50-add-noschema.log" >&2; fail "M50 T5 self-test: quarto add refused the archive with one file removed, so the case below is about the refusal rather than about the missing file"; }
+
+  m50_planted 'an extension installed from an archive that does not carry one of the two files' \
+    'does not carry _schema.yml' \
+    python3 tests/editormeta.py installed "$M50I/noschema" _schema.yml _snippets.json
+
+  m50_planted 'a project with no installed extension in it at all' \
+    'where the archive installs exactly one' \
+    python3 tests/editormeta.py installed "$M50W" _schema.yml
+
+  m50_planted 'no file named to look for, over which the install probe would pass on an empty set' \
+    'would pass over an empty set' \
+    python3 tests/editormeta.py installed "$M50INST/project"
+
+  python3 - "$M50I" "$SITE_OUT/index.html" README.md <<'M50DOCPY' \
+    || fail "M50 T6 self-test: the documentation variants could not be written (their own FAIL line is above)"
+import sys
+
+out, page, readme = sys.argv[1:4]
+for label, path, dropped in (('page.html', page, '_snippets.json'),
+                             ('README.md', readme, '_schema.yml')):
+    body = open(path, encoding='utf-8').read()
+    if dropped not in body:
+        print(f'FAIL: M50 T6 self-test: {path} does not name {dropped}, so '
+              f'removing it changes nothing and the case below is about the '
+              f'unplanted document', file=sys.stderr)
+        sys.exit(1)
+    with open(f'{out}/{label}', 'w', encoding='utf-8') as handle:
+        handle.write(body.replace(dropped, 'a file it does not ship'))
+M50DOCPY
+
+  m50_planted 'a rendered entry page that no longer names the snippet file' \
+    'does not name _snippets.json' \
+    python3 tests/editormeta.py docs "$M50I/page.html" README.md _schema.yml _snippets.json
+
+  m50_planted 'a README that no longer names the schema file' \
+    'does not name _schema.yml' \
+    python3 tests/editormeta.py docs "$SITE_OUT/index.html" "$M50I/README.md" _schema.yml _snippets.json
+
+  m50_planted 'no filename to look for, over which the documentation reader would pass on an empty set' \
+    'where this check needs at least one of each' \
+    python3 tests/editormeta.py docs "$SITE_OUT/index.html" README.md
+
+  pass "M50 T5/T6 self-test: each clause of the install probe and of the documentation reader is planted on its own and shown red, while both pass unplanted on this run's own archive and this repository's own pages — an archive rebuilt without one of the two files, a project with no extension installed, and no file named to look for; a rendered page and a README each with one filename removed, and no filename to look for"
+fi
+
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

@@ -35,6 +35,15 @@ gets one index. Its source is the Quarto website in
 [`site/`](site/index.qmd), which GitHub Actions renders and publishes on every
 push to the default branch.
 
+## Editor support
+
+Two files ship inside the extension for editors to read. `_schema.yml` is its
+Quarto Wizard schema, declaring the two classes the filter reads and every
+attribute each one carries, with a description apiece. `_snippets.json` is
+VS Code-format snippets, one per marking form. Editors supporting those
+formats read them for completion and hover text; nothing in a render reads
+either file. The [Syntax](site/syntax.qmd) page has the forms themselves.
+
 ## Examples
 
 `examples/` is the fixture corpus the acceptance suite renders — a

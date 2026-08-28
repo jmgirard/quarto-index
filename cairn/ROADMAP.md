@@ -9,7 +9,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M53 | The workflows' actions come up to date | planned | — | normal | milestones/M53-action-versions.md |
+| M53 | The workflows' actions come up to date | review | — | normal | milestones/M53-action-versions.md |
 | M52 | EPUB gets an index back-end | done | — | normal | milestones/archive/M52-epub-back-end.md |
 | M51 | The version matrix typesets a PDF again | done | — | normal | milestones/archive/M51-matrix-pdf-leg.md |
 | M50 | Editors complete and document the marking syntax | done | — | normal | milestones/archive/M50-editor-metadata.md |

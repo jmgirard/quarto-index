@@ -2,12 +2,12 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M53: The workflows' actions come up to date
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP6
-- **Branch/PR:** —
+- **Branch/PR:** `m053-action-versions` / https://github.com/jmgirard/quarto-index/pull/53
 
 ## Goal
 
@@ -56,7 +56,7 @@ after merge; the revert is one line.
 
 ## Acceptance criteria
 
-- [ ] AC1 — Over the action references
+- [x] AC1 — Over the action references
       `grep -nE '^[[:space:]]*(-[[:space:]]+)?uses:' .github/workflows/pages.yml
       .github/workflows/versions.yml` returns — an enumeration asserted
       non-empty, and matching both the mapping-key and the list-item form a
@@ -66,21 +66,28 @@ after merge; the revert is one line.
       `actions/upload-pages-artifact@v5` ×1, `actions/deploy-pages@v5` ×1,
       and no other reference appears. Stated as a multiset, not a set and a
       count, so one step's action swapped for another approved one fails.
-- [ ] AC2 — The `versions.yml` run this branch's own push triggers completes
+- [x] AC2 — The `versions.yml` run this branch's own push triggers completes
       with its `plan`, `render (floor, 1.4.549)`, `render (pinned, <version>)`
       and `compare` jobs all green, and the `compare` job's log states the
       same per-leg fixture counts as the most recent pre-bump `versions.yml`
       run on the default branch states. This is what holds the
       `upload-artifact@v7` → `download-artifact@v8` round trip: the comparison
       reads only what the download produced.
-- [ ] AC3 — The `pages.yml` run this branch's own push triggers completes its
+- [x] AC3 — The `pages.yml` run this branch's own push triggers completes its
       `build` job green through `upload-pages-artifact@v5`, and the artifact
-      that run produced, fetched and unpacked, carries every relative path a
-      `quarto render site` of the same commit produces — compared over the
-      whole tree by relative path and not by file type, so a stylesheet, a
-      script, an image or a dotfile dropped by the v4 exclusion is a
-      difference and not a silence.
-- [ ] AC4 — `tests/run-tests.sh --self-test` clean (the `verify` slot's fuller
+      that run produced, fetched and unpacked, carries — each comparison over
+      the whole tree by relative path and not by file type, every path set
+      asserted non-empty — exactly the relative paths a `quarto render site`
+      of that run's commit produces, but for basenames Quarto builds from a
+      content hash of the file, which differ by render environment; and, in a
+      one-time comparison made inside GitHub's one-day artifact retention,
+      exactly the relative paths the pre-bump `@v3` artifact of run
+      33210582962 (commit f121733) carried, that commit's `site/` sources
+      shown identical to this branch's by `git diff`. The second comparison
+      is what a file class dropped by the v4 exclusion would redden, the two
+      artifacts coming from different action majors; the site tree writes no
+      dotfile, so the exclusion has nothing here to drop.
+- [x] AC4 — `tests/run-tests.sh --self-test` clean (the `verify` slot's fuller
       pre-review check).
 
 ## Coverage
@@ -92,25 +99,26 @@ after merge; the revert is one line.
 
 ## Tasks
 
-- [ ] T1 — `.github/workflows/pages.yml`: `actions/checkout@v4` → `@v7`
+- [x] T1 — `.github/workflows/pages.yml`: `actions/checkout@v4` → `@v7`
       (line 33), `actions/upload-pages-artifact@v3` → `@v5` (line 69),
       `actions/deploy-pages@v4` → `@v5` (line 100). Leave
       `quarto-dev/quarto-actions/setup@v2` (line 40) and the exact Quarto pin
       alone.
-- [ ] T2 — `.github/workflows/versions.yml`: `actions/checkout@v4` → `@v7`
+- [x] T2 — `.github/workflows/versions.yml`: `actions/checkout@v4` → `@v7`
       (lines 81, 129, 204, 261), `actions/upload-artifact@v4` → `@v7`
       (line 186), `actions/download-artifact@v4` → `@v8` (line 207). Leave
       both `quarto-dev/quarto-actions/setup@v2` (lines 132, 268) alone.
-- [ ] T3 — push, then read the two runs the push triggers. Record in the work
+- [x] T3 — push, then read the two runs the push triggers. Record in the work
       log: each job's result, the `compare` job's per-leg fixture counts
       beside the counts the last pre-bump run on the default branch states,
       and both run URLs.
-- [ ] T4 — fetch the Pages artifact that run produced (`gh run download`),
-      unpack it, and compare its file tree against a `quarto render site` of
-      the same commit by relative path over the whole tree. Record both path
-      counts and any difference. A local render is the reference because the
-      artifact is the only thing the bump can change.
-- [ ] T5 — the `DECISIONS.md` entry: the re-pin of five dependencies under
+- [x] T4 — fetch the Pages artifact that run produced (`gh run download`),
+      unpack it, and compare its file tree by relative path over the whole
+      tree against both a `quarto render site` of the same commit and the
+      pre-bump `@v3` artifact of the last default-branch run, while that one
+      is still inside retention. Record every path count and any difference,
+      naming a path the artifacts and the local render name differently.
+- [x] T5 — the `DECISIONS.md` entry: the re-pin of five dependencies under
       D-024's major-tag rule, naming what each bump changes behaviorally and
       what would falsify the choice.
 
@@ -121,7 +129,121 @@ after merge; the revert is one line.
 - 2026-08-28: criteria audit ran in FULL mode (user-facing tier) in a fresh-context [O] reader, at the maintainer's selection lifting this session's standing no-subagent instruction for the audit. It returned ten findings. Five fixed before the criteria were written: the drafted AC1 grep missed the `- uses:` list-item form; its allowlist-plus-count passed a step whose action was swapped for another approved one, so it became a multiset; the drafted AC3 leaned on `pagescheck.py contains`, which walks `.html` and `.pdf` only and would not see a dropped stylesheet or dotfile, so it became a whole-tree path comparison; a drafted AC4 requiring the `deploy` job to report skipped held identically at the merge base and verified nothing, so it was dropped; and three instrument-bound clauses (where the check lives, that plants exist, that run URLs are recorded) moved into the tasks. One became this round's gate question — the standing refusal of a workflow-file scan — and one was accepted as repo precedent: AC4's suite self-test is the profile's own `verify` slot and every milestone here carries it.
 - 2026-08-28: plan gate chose the workflow runs as the evidence over a check pinning the twelve references in the two files, on the maintainer's selection after `versions.yml`'s own header was quoted refusing exactly that ("widening either read is refused: D-011 declines a scan that pins names and shapes in a source file it does not execute"); superseding that refusal stays available and was the alternative weighed. Falsified by a silent downgrade of an action reference reaching the default branch and going unnoticed until a run failed.
 - 2026-08-28: plan gate chose bumping `actions/deploy-pages` unexercised, verified on the first default-branch run after merge, over leaving it at v4 until it can be tested, because the `github-pages` environment refuses a deployment from a non-default branch and no branch run can reach the step; the revert is one line. Falsified by that first post-merge run failing to publish.
+- 2026-08-28: implement gate approved the re-pin of all five actions as scoped (dependency changes are never unilateral); the three narrower options — holding the publish step, holding the upload/download pair, stopping — were the weighed alternatives.
+- 2026-08-28: T1+T2 — twelve `uses:` references now read `actions/checkout@v7` x5, `quarto-dev/quarto-actions/setup@v2` x3, `actions/upload-artifact@v7`, `actions/download-artifact@v8`, `actions/upload-pages-artifact@v5`, `actions/deploy-pages@v5`, and nothing else (AC1's grep, counted as a multiset). One `tests/run-tests.sh` run covers both edits, both being YAML-only: 422 checks, all passed.
+- 2026-08-28: pre-bump baseline for AC2, read from the last default-branch `versions.yml` run (33210583098, `plan` / `render (pinned, 1.10.18)` / `render (floor, 1.4.549)` / `compare` all success, `pdf` skipped): the `compare` job states book 26 rows, demo 55, html-index 21, named-indexes 41 — 4 comparisons over 4 fixtures against the `pinned` leg.
+- 2026-08-28: T3 — the push at 9b8146e triggered both workflows. Versions (https://github.com/jmgirard/quarto-index/actions/runs/33211320047): `plan` success, `render (pinned, 1.10.18)` success, `render (floor, 1.4.549)` success, `compare` success, `pdf` skipped. The `compare` job states book 26 row(s), demo 55, html-index 21, named-indexes 41 — 4 comparisons over 4 fixtures — the same counts as the pre-bump run 33210583098. Pages (https://github.com/jmgirard/quarto-index/actions/runs/33211320021): `build` success through `upload-pages-artifact@v5`, `deploy` skipped, the branch not being the default one.
+- 2026-08-28: T4 — the Pages artifact unpacks to 79 relative paths; a clean local `quarto render site` at Quarto 1.10.18 (the workflow's own pin, `site/_site` removed first) produces 79. One path differs: the artifact names the bootstrap bundle `bootstrap-d5382f61a7c05c0e60b360404eaa31c2.min.css`, the local render `bootstrap-629c56ba100745318e9dcb35146191d0.min.css`. The two files are 499,317 bytes each and carry the same rules in a different block order, so the content hash Quarto names them by differs by render environment. The pre-bump `@v3` artifact (run 33210582962, at f121733, whose `site/` is identical to this branch's by `git diff`) unpacks to the same 79 paths as the `@v5` artifact, byte-identical as a path set — so the one difference is the local reference and not the bump. The render writes no dotfile at all (0 found), so the v4 dotfile exclusion has nothing here to exclude.
+- 2026-08-28: substantive amendment at a mini gate — AC3's reference changed. As planned it bound the artifact to a render on this machine, and that comparison reports one difference the bump does not cause: Quarto names a bootstrap bundle by a content hash of a 499,317-byte stylesheet whose block order is not stable across render environments (both sides 79 paths, 78 identical). The maintainer chose comparing the two artifacts over keeping the wording, over normalizing the hashed basename, and over stopping. AC3 is the only criterion amended; no criterion was added and none of the others changed.
+- 2026-08-28: criteria audit of the amended AC3 ran in FULL mode (user-facing tier) in a fresh-context [O] reader that authored none of the wording, at the maintainer's selection lifting this session's default of not spawning agents. It returned four findings, all with one clear repair and all narrowing, and all four were applied before the text was written: the drafted `@v3` referent was a moving one whose artifact expires 2026-08-29 (`expires_at` read from the API on both runs, and no post-merge run can produce a `@v3` artifact again), so it is pinned to run 33210582962 at f121733 and named as a one-time comparison inside retention; the dotfile clause promised a probe of a class the site produces none of, so it now says the exclusion has nothing here to drop; the local-render side had degraded to a bare path count, which a compensating add-and-drop satisfies, so it is a set relation again with content-hash basenames named as the exception; and the closing "named in the evidence" clause bound a recording act rather than the artifact, so it moved into T4. The reader also recorded that no principle or prior decision blocks the wording, that comparing two artifacts from different action majors is what gives the check a way to fail, and that a later escalation from paths to file contents would need its own superseding entry — noted for T5.
+- 2026-08-28: the amended AC3 measured against what T3 and T4 produced, every clause holding: 79 paths in the `@v5` artifact, 79 in the local render, 79 in the `@v3` artifact; the `@v5` and `@v3` path sets identical raw; the `@v5` and local sets identical once a trailing 32-hex basename segment is normalized, their one raw difference being `site_libs/bootstrap/bootstrap-d5382f61a7c05c0e60b360404eaa31c2.min.css` against `bootstrap-629c56ba100745318e9dcb35146191d0.min.css`; and `git diff f121733 9b8146e -- site/` empty. The criterion's box stays unticked — review ticks it against its own evidence.
+- 2026-08-28: T5 — D-033 records the re-pin of the five actions under D-024's major-tag rule, naming what each bump changes behaviorally, that the publish step ships unexercised, and that a path comparison escalating to file contents would take its own superseding entry.
+- 2026-08-28: `tests/run-tests.sh --self-test` clean at the branch head — 824 checks, all passed. Status to `review`.
+- 2026-08-28: review — all four criteria met with fresh evidence at `bff6991`, the consistency gate clean, and three fresh-context reviewers returning three findings, none failing a criterion; awaiting the merge gate.
+- 2026-08-28: merge gate — approved. F1 and F2 filed onto the version-matrix-readers candidate row; F3 rejected, the coverage map being incomplete rather than wrong and the mechanical check passing. No fix-now work directed.
 
 ## Decisions
 
 ## Review
+
+Fresh evidence, 2026-08-28, at branch head `bff6991`. PR
+https://github.com/jmgirard/quarto-index/pull/53 (draft).
+
+- **AC1 — met.** The criterion's grep over the two workflow files returns 12
+  references, a non-empty enumeration, its pattern admitting both the
+  `uses:` and `- uses:` forms. Counted as a multiset the 12 are
+  `actions/checkout@v7` x5 (pages.yml:33; versions.yml:81, 129, 204, 261),
+  `quarto-dev/quarto-actions/setup@v2` x3 (pages.yml:40; versions.yml:132,
+  268), `actions/upload-artifact@v7` x1 (versions.yml:186),
+  `actions/download-artifact@v8` x1 (versions.yml:207),
+  `actions/upload-pages-artifact@v5` x1 (pages.yml:69) and
+  `actions/deploy-pages@v5` x1 (pages.yml:100). No other reference appears.
+- **AC2 — met.** The `versions.yml` run this branch's head push triggered
+  (33212797981, at `bff6991`) completed with `plan`, `render (floor,
+  1.4.549)`, `render (pinned, 1.10.18)` and `compare` all success (`pdf`
+  skipped, its events being the weekly schedule and dispatch). Its `compare`
+  log states book 26 row(s), demo 55, html-index 21, named-indexes 41, and
+  4 comparison(s) over 4 fixture(s) against the `pinned` leg. The most
+  recent pre-bump `versions.yml` run on the default branch (33210583098, at
+  `f121733`, success) states the same four counts and the same
+  4-over-4 line, read from its own log at review. The earlier branch run
+  (33211320047, at `9b8146e`) states them too.
+- **AC4 — met.** `tests/run-tests.sh --self-test` run fresh at the branch head
+  during review: exit 0, "All checks passed (824 checks)", the three planted
+  self-test defects each shown red.
+- **AC3 — met.** The `pages.yml` run this branch's head push triggered
+  (33212797940, at `bff6991`) completed its `build` job success, its
+  `Upload the rendered site as the Pages artifact` step
+  (`upload-pages-artifact@v5`) among the successful ones; `deploy` skipped,
+  the branch not being the default one. Its artifact, fetched and unpacked
+  at review, holds 70 files under 9 directories — a non-empty set, compared
+  over the whole tree by relative path and not by file type. A clean
+  `quarto render site` of that same commit on Quarto 1.10.18 (the workflow's
+  own pin; `site/_site` removed first) produces 70 files. The two path sets
+  differ in exactly one entry, the bootstrap bundle Quarto names from a
+  content hash — `site_libs/bootstrap/bootstrap-d5382f61a7c05c0e60b360404eaa31c2.min.css`
+  in the artifact against `bootstrap-629c56ba100745318e9dcb35146191d0.min.css`
+  locally, both 499,317 bytes — and are identical once a trailing 32-hex
+  basename segment is normalized, which is the criterion's stated exception.
+  The pre-bump `@v3` artifact of run 33210582962 (at `f121733`), fetched
+  inside its retention window (expiring 2026-08-29), holds 70 files whose
+  path set is identical to the `@v5` artifact's raw, with no normalization —
+  the comparison across two action majors that a dropped file class would
+  redden. `git diff f121733 bff6991 -- site/` is empty, so the two artifacts
+  rest on the same sources. Neither artifact nor the local render writes a
+  dotfile (0 in each), so the v4 exclusion has nothing here to drop.
+
+**Consistency gate.** `cairn_validate.py` exit 0, every check PASS and every
+advisory OK — the `release window` advisory did not fire. No `DESIGN.md`
+principle changed, so `cairn_impact.py` is not run. The `generic` profile's
+`consistency-gate` slot names no toolchain checks, so that half is a no-op.
+
+**Independent review.** Three fresh-context reviewers, none having authored
+the change, at the maintainer's selection lifting this session's standing
+no-subagent instruction. The declared tier is user-facing and the diff touches
+the workflow files a runner executes, so the full three-lens fan-out ran. The
+[S] blame-history lens and the [S] prior-review lens each returned no
+findings: the first found nothing in `git log`/`git blame`, `DECISIONS.md` or
+`LESSONS.md` tying any of the five old pins to a deliberate workaround the
+bump would undo; the second found M42's two `pages.yml` fixes (the deploy gate
+reading `github.ref`, the deploy job's `contents: read`) still present and
+untouched, and its GitHub PR-comment probe returned an empty array, so that
+secondary surface was skipped. The [O] diff-bug lens returned three findings,
+ranked:
+
+- F1 (rank 1) — `download-artifact@v8` flattens a single matched artifact,
+  changing the `compare` job's degraded-mode reading.
+  `.github/workflows/versions.yml:207` against `tests/versioncheck.py`'s
+  `legs_under`. Verified at review against the action's own source rather than
+  the reviewer's account: `v4`'s download path is
+  `isSingleArtifactDownload || inputs.mergeMultiple ? resolvedPath : join(...)`
+  and `v8`'s adds `|| artifacts.length === 1`. With `pattern: index-*` and
+  `merge-multiple` unset, a run where exactly one leg uploaded now lands that
+  leg's files directly in `legs/` instead of `legs/index-<leg>/`, so
+  `legs_under` finds no leg at all. Reachable whenever one push leg goes red,
+  `fail-fast: false` and `if: always()` keeping the job running. The
+  comparison still fails — never a false green — but reports "0 leg(s)
+  unpacked there" where it used to name the surviving leg, and
+  `versioncheck.py`'s docstring sentence that `<legs-dir>` holds one directory
+  per leg is now true only for two or more surviving legs. AC2's green run
+  exercised the two-artifact path only.
+- F2 (rank 2) — the scope block and D-033 both enumerate three behavior
+  changes carried by the bumps and omit the one with a live consumer in this
+  repository, F1's. The three named are accurate and each was shown inert
+  here; the records are incomplete rather than false.
+- F3 (rank 3) — the Coverage map omits T3 from AC3 (the task that produces the
+  run whose artifact AC3 reads) and T3/T4 from AC4. Tracking-only.
+
+None of the three demonstrates an acceptance criterion failing, and none is a
+load-bearing defect in what the extension does for its readers — F1 degrades a
+diagnostic in a mode that stays red. No return floor is reached; the three go
+to the maintainer at the merge gate.
+
+**Triage at the gate (2026-08-28).** The maintainer approved the merge and
+disposed of the three findings: F1 and F2 → follow-up, extending the existing
+"Version-matrix readers" candidate row, which already carries M48's and M51's
+findings on this same reader, rather than a new row (search-first). F3 →
+rejected: every criterion maps to at least one existing task, `cairn_validate`'s
+`coverage complete` check passes, and amending a plan-owned section for a
+mapping that is incomplete rather than wrong costs a return round for no gain
+in verification. No fix-now work was directed.

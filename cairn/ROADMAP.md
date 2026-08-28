@@ -10,6 +10,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M50 | Editors complete and document the marking syntax | planned | — | normal | milestones/M50-editor-metadata.md |
 | M49 | A PDF render builds every index the document declares | planned | — | normal | milestones/M49-named-indexes-pdf.md |
 | M48 | The version matrix's readers say what they read | done | M47 | normal | milestones/archive/M48-matrix-readers.md |
 | M47 | The version matrix compares what it renders | done | — | normal | milestones/archive/M47-matrix-compares-html.md |
@@ -22,11 +23,12 @@ _Released 0.1.0 2026-08-26._
 ## Candidates
 <!-- proposed work only; one line each: idea — added YYYY-MM-DD — links.
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- An EPUB index, or whatever one can be: today every format but the LaTeX-derived ones and HTML passes a marked term's visible text through untouched (DESIGN Architecture), and EPUB is the format a book author is likeliest to want next; promote on a reading of what an EPUB reader can do with an index and of what Pandoc's EPUB writer will carry — added 2026-08-27 — user request
 - Dedupe `examples/.gitignore` against the root ignore — added 2026-08-19 — M13 review F16 — KI75 (the claim-check half went with the claim-container registry at M46; KI73 struck)
 - Reconcile the example corpus so its probe `see=`/`see-also=` targets name terms the fixture indexes — added 2026-08-19 — M14 plan gate — KI72
 - Settle whether the emptied-place reports for a callout, a tabset and a captioned figure should keep depending on Quarto's scaffold wrapping; promote on an upstream change surfacing as a manifest mismatch — added 2026-08-19, narrowed 2026-08-23 when M28/M29 took the naming half — M12 review F12 — KI23
 - Rewrap the filter source under 80 columns, and narrow each module's exports to what is reached from outside — added 2026-08-20 — M17 review J/I — KI76, KI77
-- Release bundle (clustered 2026-08-23), gated on one user-declared window and never agent-proposed — added 2026-08-16; window declared 2026-08-26, when the first tagged release (0.1.0) and the MIT LICENSE both landed on the default branch, leaving only the submission to the Quarto extension listing, opened 2026-08-26 as quarto-dev/quarto-web#2162 against `docs/extensions/listings/shortcodes-and-filters.yml` and upstream's to merge
+- Release bundle (clustered 2026-08-23), gated on one user-declared window and never agent-proposed — added 2026-08-16; window declared 2026-08-26, when the first tagged release (0.1.0) and the MIT LICENSE both landed on the default branch, leaving only the submission to the Quarto extension listing, opened 2026-08-26, now mcanouil/quarto-extensions#369 (corrected 2026-08-27: the listing lives in that repo's `extensions/quarto-extensions.csv`, not in quarto-web), whose check asked for repository topics, added 2026-08-27, and for the editor metadata M50 plans; upstream's to re-run and merge
 - Chapter-based locator labels in the book HTML index (e.g. 2.1 instead of 1, 2, 3) — added 2026-08-17 — M05 gate kept numeric locators; promote on reader evidence that numeric locators fail in long books
 - Locator-control follow-ups (clustered): roles beyond `principal` for a locator (a defining passage, an illustration), promoted on evidence an author wants a second role; an author-written id pairing two overlapping ranges of one term, which pairing by entry cannot tell apart, promoted on evidence that authors write them; author control over the range dash; and emphasizing a principal page folded inside a page range — added 2026-08-21 — M20/M21 Scope Out, RR01, M20 amendment gate — KI5, KI74
 - Pair a range spanning two chapters of an HTML book; promote on a per-chapter record that separates what the author wrote from what a chapter concluded, never on the feature being wanted, and on a derivation path that reads the mark's rewritten content — added 2026-08-22 — M21 review rounds 1-3, D-009 — KI19, KI20

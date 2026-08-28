@@ -101,11 +101,11 @@ after merge; the revert is one line.
       (lines 81, 129, 204, 261), `actions/upload-artifact@v4` → `@v7`
       (line 186), `actions/download-artifact@v4` → `@v8` (line 207). Leave
       both `quarto-dev/quarto-actions/setup@v2` (lines 132, 268) alone.
-- [ ] T3 — push, then read the two runs the push triggers. Record in the work
+- [x] T3 — push, then read the two runs the push triggers. Record in the work
       log: each job's result, the `compare` job's per-leg fixture counts
       beside the counts the last pre-bump run on the default branch states,
       and both run URLs.
-- [ ] T4 — fetch the Pages artifact that run produced (`gh run download`),
+- [x] T4 — fetch the Pages artifact that run produced (`gh run download`),
       unpack it, and compare its file tree against a `quarto render site` of
       the same commit by relative path over the whole tree. Record both path
       counts and any difference. A local render is the reference because the
@@ -124,6 +124,8 @@ after merge; the revert is one line.
 - 2026-08-28: implement gate approved the re-pin of all five actions as scoped (dependency changes are never unilateral); the three narrower options — holding the publish step, holding the upload/download pair, stopping — were the weighed alternatives.
 - 2026-08-28: T1+T2 — twelve `uses:` references now read `actions/checkout@v7` x5, `quarto-dev/quarto-actions/setup@v2` x3, `actions/upload-artifact@v7`, `actions/download-artifact@v8`, `actions/upload-pages-artifact@v5`, `actions/deploy-pages@v5`, and nothing else (AC1's grep, counted as a multiset). One `tests/run-tests.sh` run covers both edits, both being YAML-only: 422 checks, all passed.
 - 2026-08-28: pre-bump baseline for AC2, read from the last default-branch `versions.yml` run (33210583098, `plan` / `render (pinned, 1.10.18)` / `render (floor, 1.4.549)` / `compare` all success, `pdf` skipped): the `compare` job states book 26 rows, demo 55, html-index 21, named-indexes 41 — 4 comparisons over 4 fixtures against the `pinned` leg.
+- 2026-08-28: T3 — the push at 9b8146e triggered both workflows. Versions (https://github.com/jmgirard/quarto-index/actions/runs/33211320047): `plan` success, `render (pinned, 1.10.18)` success, `render (floor, 1.4.549)` success, `compare` success, `pdf` skipped. The `compare` job states book 26 row(s), demo 55, html-index 21, named-indexes 41 — 4 comparisons over 4 fixtures — the same counts as the pre-bump run 33210583098. Pages (https://github.com/jmgirard/quarto-index/actions/runs/33211320021): `build` success through `upload-pages-artifact@v5`, `deploy` skipped, the branch not being the default one.
+- 2026-08-28: T4 — the Pages artifact unpacks to 79 relative paths; a clean local `quarto render site` at Quarto 1.10.18 (the workflow's own pin, `site/_site` removed first) produces 79. One path differs: the artifact names the bootstrap bundle `bootstrap-d5382f61a7c05c0e60b360404eaa31c2.min.css`, the local render `bootstrap-629c56ba100745318e9dcb35146191d0.min.css`. The two files are 499,317 bytes each and carry the same rules in a different block order, so the content hash Quarto names them by differs by render environment. The pre-bump `@v3` artifact (run 33210582962, at f121733, whose `site/` is identical to this branch's by `git diff`) unpacks to the same 79 paths as the `@v5` artifact, byte-identical as a path set — so the one difference is the local reference and not the bump. The render writes no dotfile at all (0 found), so the v4 dotfile exclusion has nothing here to exclude.
 
 ## Decisions
 

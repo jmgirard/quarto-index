@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M54: The candidate backlog comes back under D-013
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -93,7 +93,7 @@ checker-regress shape, and `cairn_validate` owns tracking validation.
 - [x] T7. Write the D-entry annotating D-013 — the row shape (work, promotion
       condition, `KI<n>` pointers, no restatement) and the 400-byte cap — and
       rewrite the `## Candidates` comment to name it.
-- [ ] T8. Run the AC1-AC3 sweeps and `cairn_validate`, and record the figures
+- [x] T8. Run the AC1-AC3 sweeps and `cairn_validate`, and record the figures
       (row count, largest row, section total) in the work log.
 
 ## Work log
@@ -109,6 +109,7 @@ checker-regress shape, and `cairn_validate` owns tracking validation.
 - 2026-08-28: T4-T6 rewrote all 36 rows to work, promotion condition and pointers: 36 rows, 8,854 bytes, largest exactly 400, none over. T6 replaced the `KI24, KI27-KI74` range — 49 labels, 292 bytes of tokens against a 400-byte row — with the two acceptance-suite known-issue subheadings named in prose, at the implement mini gate, which took that over enumerating the labels and raising the cap or splitting the row into three (ROADMAP is at 59 of 60 lines, so a split has nowhere to go); the `KI73 struck` mention is gone with row 5's history. 104 pointer tokens, all resolving; no range and no struck mention remain.
 - 2026-08-28: T3's conservation check ran over the 36 removed rows against the rewritten rows plus `## Known issues`, words of four or more characters, stop set: dates, `added`/`Promote` and their inflections, milestone/finding/decision ids, row-only bookkeeping (split, cluster and compression notes, row titles, counts of findings), inflectional and possessive variants of a word present in the destination, and history the gate chose to drop (the release row's dated corrections, M51's restoration note, M49's repaired-`folded` correction, row 26's fixed-fourth-finding note, row 5's claim-container note). Three residues survived that reading as real loss and were repaired: the M36 clause's capture condition, folded into KI117; the overlapping-ranges pairing gap, which pairing by entry cannot tell apart, written as KI163 and pointed at from the locator-control row along with its restored `(a defining passage, an illustration)`; and M30's typeset print proof not reaching the cross-reference and sort-key probes, written as KI164 and pointed at from the suite-readers row. Re-run clean of all three.
 - 2026-08-28: T7 appended D-034 to `cairn/DECISIONS.md`, annotating D-013 with the row shape (work, promotion condition, dates and sources, `KI<n>` pointers, nothing else) and the 400-byte per-row cap, and naming the subheading form for a row whose motivating set is a whole subheading and the refusal of a label range; the `## Candidates` comment in `cairn/ROADMAP.md` now names it, still two lines so the file stays at 59 of its 60.
+- 2026-08-28: T8 swept: 36 rows, section total 8,854 bytes, largest 400 (AC1 pass, cap 400 and 12,000); 104 pointer tokens, none unresolved, no label range, no struck mention (AC2 pass); 157 `- **KI<n>.**` entry headings, no label twice (AC3 pass). Each sweep was shown able to fail before its green was trusted — a 451-byte row reddens AC1 alone, a `KI999` token and a `KI76-KI77` range and a `KI73 struck` mention each redden AC2 alone, and a second `- **KI2.**` heading reddens AC3 (and AC2, the token it displaced no longer resolving). `cairn_validate` clean, 16 PASS and 7 OK, `weight caps` among them: ROADMAP 59 lines / 11,139 bytes, down from 59 / 24,053, which was over the 24,000 budget. The suite was not run: no file it reads changed (AC5).
 
 ## Decisions
 ## Review

@@ -366,9 +366,12 @@ Three back-ends ship:
   empty span emitted just after the heading.
 - **EPUB** (`FORMAT` containing `epub`, which covers `epub2` and `epub3`): the
   HTML back-end's index, unchanged (added M52). `builds_ast_index` routes the
-  three sites that build an index in the AST — the fold reports' `builds_index`,
-  the per-mark record in `passes.lua`, and the back-end branch in `index.lua` —
-  so the same blocks are built and the same ids minted. `is_html` stays the
+  three sites gated on the AST back-ends — the per-mark record in `passes.lua`
+  and the back-end branch in `index.lua`, which are what build the index, and
+  the fold reports' `builds_index`, which an EPUB render never reaches because
+  `folded` stays on `is_html` (corrected M52: the earlier wording read as
+  though an EPUB render could draw a fold report) — so the same blocks are
+  built and the same ids minted. `is_html` stays the
   sole gate on the sidecar store, the fold and the chapter-scope wording,
   because Quarto renders an EPUB book in ONE Pandoc process, as it renders a
   PDF one: no chapter file reaches this filter as a chapter, so nothing folds,

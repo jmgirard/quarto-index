@@ -42,36 +42,36 @@ back-end forces.
 
 ## Acceptance criteria
 
-- [ ] AC1 — `examples/demo.qmd` rendered to EPUB carries exactly one section
+- [x] AC1 — `examples/demo.qmd` rendered to EPUB carries exactly one section
       with id `qi-index` across the XHTML documents its `content.opf` manifest
       lists, and the entry rows `tests/htmlindex.py` returns from that section —
       level, term text, locator count, cross-reference kind and target, in
       document order — are identical to the rows the same reader returns from
       the HTML render of the same fixture, which `tests/run-tests.sh` manifest 1e
       already pins by hand from the `.qmd` source.
-- [ ] AC2 — for every locator link the reader collects from that EPUB's index
+- [x] AC2 — for every locator link the reader collects from that EPUB's index
       section, the href's `<file>` part names an XHTML document listed in the
       EPUB's `content.opf` manifest and that document carries an element with
       the href's `<id>`. Unresolved links: zero, over the links the reader
       collected.
-- [ ] AC3 — `examples/book/` rendered to EPUB carries one section per name its
+- [x] AC3 — `examples/book/` rendered to EPUB carries one section per name its
       `indexes:` metadata declares (`qi-index-main`, `qi-index-people`), each
       headed with that declaration's own title; the book's `index="people"` mark
       files under `qi-index-people` and its term appears in no other index
       section; and a sweep of the render's captured warning stream finds no
       occurrence of the fold sentence `this output has one index only`.
-- [ ] AC4 — a `gfm` and a `revealjs` render of `examples/demo.qmd` carry no
+- [x] AC4 — a `gfm` and a `revealjs` render of `examples/demo.qmd` carry no
       index section and no `qi-` identifier: a grep of each rendered file for
       `qi-` returns nothing outside any run of that string the fixture's own
       prose puts there, which the check states as a literal exclusion list
       derived from the fixture source, not from the render.
-- [ ] AC5 — `site/epub.qmd` exists and states both ways EPUB differs from HTML
+- [x] AC5 — `site/epub.qmd` exists and states both ways EPUB differs from HTML
       (one Pandoc process, so nothing folds and every declared index prints;
       locators are per-entry sequence numbers, not pages), pinned by a
       `tests/sitecheck.py` clause naming that page; and a sweep of `README.md`
       and the tracked `.qmd` files under `site/` for the string `two back-ends`
       returns nothing.
-- [ ] AC6 — `tests/run-tests.sh --self-test` clean (the `verify` slot's fuller
+- [x] AC6 — `tests/run-tests.sh --self-test` clean (the `verify` slot's fuller
       pre-review check).
 
 ## Coverage
@@ -169,3 +169,185 @@ pinned keys at zero occurrences each, so a reworded sentence fails at the pin
 rather than leaving the sweep looking for text nothing writes.
 
 ## Review
+
+Evidence is fresh, gathered 2026-08-28 on branch `m052-epub-back-end` at
+`c4ace1a` from one `tests/run-tests.sh --self-test` run (820 checks, exit 0)
+and from commands run beside it. Summaries only; the run's own output is not
+pasted here.
+
+### Acceptance criteria
+
+- **AC1 — met.** `examples/demo.qmd` renders to EPUB at exit 0.
+  `tests/epubcheck.py sections` finds exactly one generated index section
+  across the manifest-listed XHTML documents — `qi-index`, titled `Index`, in
+  `EPUB/text/ch005.xhtml` — and its 54 entry and letter rows match the
+  manifest. `tests/epubcheck.py same` then finds those 54 rows identical to
+  the rows the same reader returns from the HTML render of the fixture, and
+  both identical to manifest 1e (`DEMO_HTML_INDEX`), which is hand-derived
+  from the `.qmd` source. Planted red: the AST routing reverted in the filter,
+  so the EPUB carries no section.
+
+- **AC2 — met.** `tests/epubcheck.py links` collected 25 locator links inside
+  the demo EPUB's generated index section; all 25 resolve — each names one
+  of the 3 manifest-listed documents and an element that document carries.
+  Unresolved: zero. Planted red: one link target removed from a rendered
+  container.
+
+- **AC3 — met.** `examples/book/` renders to EPUB at exit 0 and carries two
+  generated sections, one per declared name, each under its declaration's own
+  title: `qi-index-main` (Index of Subjects) in `EPUB/text/ch005.xhtml` and
+  `qi-index-people` (Index of People) in `EPUB/text/ch006.xhtml`. Their 25 rows
+  match manifest 10, which is exhaustive per section and derived by hand from
+  the `.qmd` sources — so `Turing`, the book's `index="people"` term, appearing
+  in the main section would fail as an extra row. The sweep of the render's
+  captured warning stream (29 lines) found no occurrence of `this output has
+  one index only`. Planted red: the fold predicate widened for EPUB — and the
+  folded render is separately shown to write the sentence the sweep looks for,
+  so the sweep is not looking for text nothing writes.
+
+- **AC4 — met.** The exclusion list is derived from `examples/demo.qmd`, which
+  writes no run of `qi-` of its own, so the list is empty and every occurrence
+  in a render would be the filter's. The revealjs render
+  (`demo-revealjs/demo.html`) and the gfm render (`demo-gfm/demo.md`) each
+  carry no occurrence of `qi-` outside those 0 strings. The swept token is
+  taken off the pinned section id rather than written down, and the run refuses
+  an empty token. Planted red: a `qi-` identifier injected into a rendered
+  pass-through file.
+
+- **AC5 — met as written.** `site/epub.qmd` exists (44 lines) and
+  `tests/sitecheck.py claims` holds it to 4 hand-written claims, all present,
+  including both differences the criterion names: a book is one Pandoc process
+  so nothing folds and every declared index prints, and locators are per-entry
+  sequence numbers rather than pages. `tests/sitecheck.py phrase-absent` swept
+  22 files — every tracked `.qmd` under `site/` plus `README.md`, enumerated by
+  `git ls-files` against a stated floor — and found no occurrence of `two
+  back-ends`; the same sweep run by hand at review returns nothing. Both
+  clauses planted red (a claim removed from the page; an overlay page carrying
+  the phrase), each with its vacuous-list guard planted too, and the sweep has
+  a passing overlay control. Finding F1 below reports that the sweep is
+  case-sensitive and two reader-facing sentences still read `Two back-ends
+  ship`; that is a defect in the docs, not a failure of this criterion as
+  written.
+
+- **AC6 — met.** `tests/run-tests.sh --self-test` ran to completion at exit 0,
+  820 checks, all passed. Run fresh at review on this branch head.
+
+### Consistency gate
+
+- `cairn_validate.py` — exit 0. 16 PASS, 7 advisories OK; `release window` did
+  not fire.
+- `cairn_impact.py --changed` — skipped: this milestone changed no `DESIGN.md`
+  IP/GP principle. The `DESIGN.md` edits are Architecture prose only.
+- Toolchain checks — the `generic` profile's `consistency-gate` slot names
+  none, so this half is a clean no-op. The `verify` slot's command is AC6.
+- Default-branch sync — `git fetch` then compare: branch 0 behind
+  `origin/main`, `main` 0 ahead of `origin/main`; no merge needed.
+
+### Independent review
+
+Three fresh-context reviewers, distinct evidence bases, none having seen the
+implementation. The standing no-subagent instruction was lifted for this phase
+at the maintainer's selection (work log above).
+
+- **[S] blame-history** — zero findings. Cleared five candidates, each traced
+  to this milestone's own recorded scope or `## Decisions`: the deliberate
+  `is_html`/`builds_ast_index` split, the `RENAMED_HEADINGS` map against M40's
+  invariant, the behavior-preserving `htmlindex.parse` refactor, the reworded
+  `is_html` comment, and the book's `epub:` format entry.
+- **[S] prior-review record** — one finding (F14). Read the archived review
+  records and `LESSONS.md`; ran no GitHub probe, reporting that this repo's
+  findings record lives in the archive rather than in PR threads. Ruled out one
+  candidate itself: the new readers catch `OSError` and not `UnicodeDecodeError`,
+  which is parity with the sibling sweep's deliberately unfixed baseline (D-029),
+  not a regression.
+- **[O] diff-bug** — thirteen findings (F1-F13). Found no functional defect in
+  the filter routing; verified the three AST sites are reached and the five
+  `is_html` sites are not.
+
+### Findings
+
+Ranked as reported, most severe first. Each verified at review against the
+implementation, not against the reporter's account of it. Dispositions are
+proposals put to the maintainer at the gate; the gate's decision is recorded
+below it.
+- **F1 — `README.md:5` and `site/index.qmd:9` still read "Two back-ends ship:
+  LaTeX/PDF and HTML", and AC5's sweep is case-sensitive so it cannot see
+  them.** Confirmed: the same `git ls-files` sweep with `-i` returns both
+  lines; without it, nothing. These are the first paragraph of the repository
+  front page and of the documentation landing page, and they name EPUB
+  nowhere. The milestone's own T6 header is "the docs describe a third
+  back-end". Proposed disposition at the gate: **fix before merge.**
+- **F2 — `site/books.qmd` states the HTML per-chapter model as what "a Quarto
+  book" gets, which this branch makes false for an EPUB book.** Confirmed: the
+  page qualifies the PDF book explicitly ("The PDF book needs none of this")
+  and has no such qualification for EPUB, so "Put that chapter last", "Render
+  the whole book when you publish" and "Each chapter records its marks in
+  `.quarto/quarto-index/`" all read as applying to an EPUB book, where none of
+  them is true. `site/epub.qmd` sends the reader to this page for the
+  aggregation. T6 did not list `books.qmd`. Proposed disposition at the gate: **fix before
+  merge.**
+- **F3 — AC2's `<file>`-part arm is not shown to run over a non-empty
+  domain.** Confirmed in `tests/epubindex.py:203`
+  (`name = link['file'] or link['document']`): a bare same-file fragment falls
+  back to its own document, which is in the manifest by construction, so the
+  manifest-membership arm is vacuous for such a link and the plant exercises
+  the id arm only. Measured at review: all 25 demo links carry a non-empty
+  file part today, so the arm is exercised now — nothing asserts it stays so.
+  Proposed disposition at the gate: **file** (the repo's silently-emptying-domain doctrine).
+- **F4 — the book EPUB's locator links are never resolution-checked, though
+  `site/epub.qmd` and `CHANGELOG.md` both claim they resolve inside the
+  book.** Confirmed: `run-tests.sh:17115` runs `epubcheck.py links` on the
+  demo capture only; the book capture is read for sections and never for
+  links. `examples/book/sub/` is a subdirectory chapter, the case where a
+  relative href could differ. Measured by hand at review: the book EPUB's 14
+  links all carry file parts and all resolve, so the shipped claim is true —
+  it is the check that is missing. Proposed disposition at the gate: **fix before merge** (one
+  added invocation).
+- **F5 — `site/placing-the-index.qmd:15` and `site/sorting.qmd:85` say "both
+  back-ends".** Confirmed. Each sentence is true of EPUB as well, so the
+  content is right and the count is wrong. Proposed disposition at the gate: **fix before
+  merge.**
+- **F6 — `indexes.builds_index`'s new EPUB arm is unreachable in production,
+  and `DESIGN.md:369` and the Scope section describe it as a site an EPUB
+  render builds an index at.** Confirmed: `builds_index()` is called only at
+  `indexes.lua:279` and `:323`, both under `if folded and ...`, and `folded`
+  requires `is_html()`. The routing is harmless and defensive; the prose
+  overstates. Proposed disposition at the gate: **file.**
+- **F7 — `epubcheck.cmd_same`'s third comparison cannot fail.** Confirmed at
+  `tests/epubcheck.py:138`: `epub_rows` and `html_rows` have both already been
+  compared equal to `expected`. AC1's headline clause is carried by the two
+  manifest comparisons; the call that names it adds no discrimination. Over-
+  determined, not under-determined. Proposed disposition at the gate: **file.**
+- **F8 — `sitecheck.py`'s `phrase-absent` duplicates the inline M44 sweep line
+  for line rather than the M44 sweep being routed through the new module.**
+  Confirmed. Two copies of one domain definition, each printing an `ok` line
+  naming "every tracked page under site/ plus README.md". Proposed disposition at the gate:
+  **file.**
+- **F9 — `epubindex.section_rows` is reached by no check, and its docstring
+  claims a form manifest 10 does not use.** Confirmed: it delegates to
+  `htmlindex.section_rows`, which appends a trailing field manifest 10 omits;
+  `epubcheck.py` uses its own 4-field rows. Proposed disposition at the gate: **file.**
+- **F10 — `cmd_absent`'s two allowed-string guards have never executed**, both
+  living inside `for text in allowed` and every call site passing an empty
+  list. Confirmed. Proposed disposition at the gate: **file.**
+- **F11 — `RENAMED_HEADINGS` is an unverified assertion that no page was
+  lost.** Confirmed at `tests/sitecheck.py:374`: `want` is substituted
+  unconditionally, nothing checks the old heading is genuinely absent or that
+  the new one is on the same page, and no self-test plants a map entry over a
+  heading that was actually deleted. Proposed disposition at the gate: **file.**
+- **F12 — `epubindex.read` raises rather than reporting on a member it cannot
+  decode or address** (`tests/epubindex.py:112`), which the suite's own plant
+  helper treats as a disqualifying outcome elsewhere. Confirmed by reading.
+  Proposed disposition at the gate: **file.**
+- **F13 — `epubindex.links` would report an external href as unresolved**,
+  joining it onto the document's directory. Confirmed by reading; not reachable
+  today. Proposed disposition at the gate: **file.**
+- **F14 — `tests/sitecheck.py`'s `flatten` omits the blockquote-marker strip
+  its sibling has, regressing a lesson M41 taught and M45 extended.**
+  Confirmed: `tests/run-tests.sh:1497` strips `^[ \t]*>[ \t]?` per line before
+  flattening and says so in its ok line and in a comment block giving the
+  reason; `tests/sitecheck.py:474` is `' '.join(text.split())` with no strip,
+  doing the same job over the same domain. Latent: no page in the swept domain
+  carries a blockquote line today (measured at review). No plant covers the
+  shape. Proposed disposition at the gate: **fix before merge.**
+

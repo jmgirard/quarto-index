@@ -7,7 +7,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP1, GP6
-- **Branch/PR:** `m052-epub-back-end`
+- **Branch/PR:** `m052-epub-back-end` / https://github.com/jmgirard/quarto-index/pull/52
 
 ## Goal
 
@@ -133,6 +133,7 @@ back-end forces.
 - 2026-08-28: T5/T4 — T5 written before T4, which needs its manifest: a minor reorder. Manifest 10 states the book's two EPUB index sections in locator COUNTS, not hrefs — an EPUB's link targets are the files Pandoc's writer split the book into, which is not derived from the `.qmd` sources — and it matched the artifact on the first comparison, the merged-process range pairing (`Ranged Term` one locator here, two in the HTML book) included. The AC1-AC4 checks live in a new `tests/epubcheck.py` beside the reader, so the plants can run the same clause against a broken artifact; each of the four is planted in a different form and place — routing removed from the filter, a link target removed from a rendered container, the fold predicate widened in the filter, an identifier added to a rendered file — and shown red, and the folded render is shown to write the sentence the AC3 sweep looks for. Two plant renders needed a `capture` call after them (M24-AC3), and the folded book's scratch tree needed its `_extensions` symlink removed before the spliced copy went in, or it rendered through the repository's own filter. `run-tests.sh --self-test` green, 811 checks.
 - 2026-08-28: T6/T7 — `site/epub.qmd` is new and the site nav, `site/output.qmd` and `site/index.qmd` link it; `site/back-end-differences.qmd` is retitled "Where the back-ends differ" and says at the top that every "in HTML" row below is true of EPUB, with the two places EPUB parts company on the new page; `site/principal-mention.qmd` and `site/other-formats.qmd`, `README.md`, `CHANGELOG.md` and `cairn/DESIGN.md` (the `core.lua` bullet's format tests, a third back-end bullet, and the pass-through sentence, which no longer names epub) follow. `tests/sitecheck.py` gains two modes — `claims`, holding a named page to a hand-written list, and `phrase-absent`, sweeping the tracked `site/` pages plus README for a forbidden phrase over the same enumerated domain and stated floor the retired-sentence sweep uses — each planted and shown red, with a passing overlay control for the sweep. `run-tests.sh --self-test` green, 820 checks.
 - 2026-08-28: T6 fallout — retitling the back-end page broke the M40 heading-move self-test, whose pre-move README fixture carries `### Where the two back-ends differ` and which requires every moved heading to be carried under `site/`. The fixture is a record of what that README said, so it is not edited; `sitecheck.py` gains a `RENAMED_HEADINGS` map instead (see this file's Decisions), and the check's own ok line now says how many it treats as renamed.
+- 2026-08-28: review opened — branch pushed, draft PR #52 opened, `cairn_validate` clean (16 PASS, 7 advisories OK, `release window` did not fire). At the maintainer's selection the three-lens fresh-context fan-out was authorised for this phase, lifting for review the standing no-subagent instruction the plan and implement phases logged.
 
 ## Decisions
 

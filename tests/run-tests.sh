@@ -15788,15 +15788,28 @@ plant = {k: dict(v) for k, v in entries.items()
 write('dropped.json', json.dumps(plant, indent=2), snippets)
 
 # A body writing an attribute no page documents, which an editor would offer.
+# Written on the sort-key snippet and not on the bare mark: the bare mark is
+# one of the three shapes judged before this clause, and a mark that grew an
+# attribute would be reported as that missing shape instead.
 plant = {k: dict(v) for k, v in entries.items()}
-plant['Index mark']['body'] = '[${1:cats}]{.index colour="${2:red}"}'
+plant['Index mark with a sort key']['body'] = (
+    '[${1:The Hague}]{.index sort="${2:Hague}" colour="${3:red}"}')
 write('undocumented.json', json.dumps(plant, indent=2), snippets)
 
-# A body dropping one of the three shapes AC3 names: the placement marker that
-# names an index becomes a bare one, which the class sweep still sees.
+# Each of the three shapes AC3 names, dropped on its own. The marker that
+# names an index becomes a bare one; the bare marker grows a name; the bare
+# mark's snippet goes, every attribute it writes being written elsewhere.
 plant = {k: dict(v) for k, v in entries.items()}
 plant['Named index placement']['body'] = ['::: {.qi-index-here}', ':::']
 write('noshape.json', json.dumps(plant, indent=2), snippets)
+
+plant = {k: dict(v) for k, v in entries.items()}
+plant['Index placement']['body'] = ['::: {.qi-index-here index="authors"}',
+                                    ':::']
+write('nobaremarker.json', json.dumps(plant, indent=2), snippets)
+
+plant = {k: dict(v) for k, v in entries.items() if k != 'Index mark'}
+write('nobaremark.json', json.dumps(plant, indent=2), snippets)
 
 # A snippet file that parses as JSON but is not the object the format is.
 write('notobject.json', json.dumps([entries]), snippets)
@@ -15858,11 +15871,19 @@ M50PLANTPY
     'no snippet body writes a placement marker naming an index' \
     python3 tests/editormeta.py bodies "$M50W/noshape.json" $M50_PAGES
 
+  m50_planted 'a snippet file whose only placement marker names an index, leaving the bare marker with no snippet' \
+    'no snippet body writes the bare placement marker' \
+    python3 tests/editormeta.py bodies "$M50W/nobaremarker.json" $M50_PAGES
+
+  m50_planted 'a snippet file with no bare mark, every attribute it writes being written elsewhere' \
+    'no snippet body writes the bare mark' \
+    python3 tests/editormeta.py bodies "$M50W/nobaremark.json" $M50_PAGES
+
   m50_planted 'no document to sweep, over which the bodies would be held against an empty attribute set' \
     'would be empty' \
     python3 tests/editormeta.py bodies "$M50_SNIPPETS"
 
-  pass "M50 T3 self-test: each clause of the schema and snippet readers is planted on its own and shown red, while both pass unplanted on this repository's own files — a third class, an added enumerated value, an attribute moved to the wrong class, an attribute with no description, a form table one row short, no document to sweep and a swept page carrying no construct; an empty description, a snippet file that is not JSON, a snippet file that is a list, a dropped snippet, a body writing an undocumented attribute, a missing required shape, and no document to sweep"
+  pass "M50 T3 self-test: each clause of the schema and snippet readers is planted on its own and shown red, while both pass unplanted on this repository's own files — a third class, an added enumerated value, an attribute moved to the wrong class, an attribute with no description, a form table one row short, no document to sweep and a swept page carrying no construct; an empty description, a snippet file that is not JSON, a snippet file that is a list, a dropped snippet, a body writing an undocumented attribute, each of the three required shapes dropped on its own, and no document to sweep"
 fi
 
 # ---------------------------------------------------------------------------

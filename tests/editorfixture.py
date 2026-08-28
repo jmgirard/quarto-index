@@ -17,11 +17,17 @@ identifier can make vacuously true.
       belong. Tab stops are replaced by their placeholder default text, the
       substitution `tests/editormeta.py` documents.
 
-      The control is the same document under two rules: every mark loses its
-      attributes, and every construct naming a declared index is dropped —
-      the control declares no index, so a marker naming one would name
-      nothing. Nothing else differs, so a difference between the two indexes
-      is an attribute's doing and not the documents'.
+      The control is the same document under three rules: every mark loses
+      its attributes; the snippet placing a declared index by name is omitted
+      whole, the control having no such index for it to place; and the
+      metadata snippets go with the declarations they carry. Nothing else
+      differs, so a difference between the two indexes is an attribute's
+      doing and not the documents'.
+
+      Both documents write the placement snippets last, sharing one lead
+      sentence: a sentence standing after the index a PDF prints at the first
+      marker is read by a text extraction of that PDF as one more line of the
+      printed index.
 
   effects <snippets.json> <fixture.html> <control.html>
       Each attribute's effect, read from the two rendered indexes. Read in

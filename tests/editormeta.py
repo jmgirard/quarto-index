@@ -352,6 +352,17 @@ def check_bodies(snippets_path, *qmds):
             for attribute, _value in item['attrs']:
                 in_bodies[item['cls']].setdefault(attribute, []).append(name)
 
+    # The three named shapes are judged FIRST. On a class the docs document
+    # exactly one attribute for, the shape "a construct of that class carrying
+    # an attribute" and the clause "that attribute is written somewhere" are
+    # true together, and whichever runs first is the only one a plant can
+    # reach. Ordering the shapes ahead of the coverage clauses puts one plant
+    # within reach of each: a marker that stops naming an index reaches the
+    # shape, and a MARK snippet dropped reaches the coverage clause.
+    for label, cls, attributed in REQUIRED_SHAPES:
+        if not shapes[cls][attributed]:
+            return fail(f'{snippets_path}: no snippet body writes {label}')
+
     for cls in CLASSES:
         for attribute in documented[cls]:
             if attribute not in in_bodies[cls]:
@@ -366,16 +377,11 @@ def check_bodies(snippets_path, *qmds):
                             f'document documents; an editor would complete '
                             f'an author into it')
 
-    for label, cls, attributed in REQUIRED_SHAPES:
-        if not shapes[cls][attributed]:
-            return fail(f'{snippets_path}: no snippet body writes {label}')
-
     counts = '; '.join(f'{len(in_bodies[cls])} on {cls}' for cls in CLASSES)
-    print(f'ok   M50-AC3: every attribute the {len(qmds)} swept document(s) '
-          f'write is written by a snippet body on its own class ({counts}), '
-          f'no body writes one they do not, and the bare mark, the bare '
-          f'placement marker and a marker naming an index each have a '
-          f'snippet')
+    print(f'ok   M50-AC3: the bare mark, the bare placement marker and a '
+          f'marker naming an index each have a snippet; every attribute the '
+          f'{len(qmds)} swept document(s) write is written by a snippet body '
+          f'on its own class ({counts}); and no body writes one they do not')
     return 0
 
 

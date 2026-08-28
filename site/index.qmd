@@ -38,10 +38,9 @@ The extension ships two files an editor reads. `_schema.yml` is its Quarto
 Wizard schema: it declares the two classes the filter reads, `index` and
 `qi-index-here`, and every attribute each one carries, with a description
 apiece. `_snippets.json` is VS Code-format snippets, one per marking form,
-with example terms to type over. Editors supporting those formats — Quarto
-Wizard in VS Code and Positron — read them for completion and hover text, and
-insert a snippet on its own prefix. Nothing in a render reads either file, so
-an editor that does not know them changes nothing about what you get.
+with example terms to type over. Editors supporting those formats read them
+for completion and hover text. Nothing in a render reads either file, so an
+editor that does not know them changes nothing about what you get.
 
 ## Where to go next
 

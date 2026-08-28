@@ -80,6 +80,11 @@ def fail(message):
     return 1
 
 
+class Unreadable(Exception):
+    """A rendered section this module cannot read. Carried to `main`, which
+    reports it as a finding rather than letting it out as a traceback."""
+
+
 def levels(value):
     """One attribute value split into index levels.
 
@@ -317,7 +322,15 @@ def sections(path):
     for node in htmlindex.walk(root):
         ident = node.attrs.get('id', '')
         if ident == SECTION_ID or ident.startswith(SECTION_ID + '-'):
-            out.append((ident, node, htmlindex.index_entries(node)))
+            try:
+                records = htmlindex.index_entries(node)
+            except ValueError as bad:
+                # A section this reader cannot read is a finding, not a
+                # traceback: a crash exits non-zero for a reason nothing
+                # states. `tests/indexdump.py` catches the same ValueError on
+                # the same ground. Review F4.
+                raise Unreadable(f'{path}: section {ident!r}: {bad}')
+            out.append((ident, node, records))
     return out
 
 
@@ -553,7 +566,10 @@ def main(argv):
     args = argv[2:]
     if len(args) != needed:
         raise SystemExit(__doc__)
-    return func(*args)
+    try:
+        return func(*args)
+    except Unreadable as bad:
+        return fail(str(bad))
 
 
 if __name__ == '__main__':

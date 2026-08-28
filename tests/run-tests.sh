@@ -1377,6 +1377,11 @@ require_pdf_tools() {
   # die at the pipeline with a bare shell error rather than naming the tool.
   command -v shasum >/dev/null 2>&1 \
     || fail "shasum not found on PATH (M41-AC5 hashes examples/ with it). AC6 must never pass unrun."
+  # M50's schema reader parses YAML with PyYAML (D-030), whose own import
+  # guard sits at the end of a ~15-minute run. Named here so a machine
+  # without it learns so before paying for every render.
+  python3 -c 'import yaml' >/dev/null 2>&1 \
+    || fail "PyYAML not found on this python3 (tests/editormeta.py reads _schema.yml with it, D-030; install it with: python3 -m pip install pyyaml). AC6 must never pass unrun."
 
   # The recipe names a main font by file, so every face it names has to be
   # findable the same way fontspec finds it. Without this the four M33 renders

@@ -267,6 +267,14 @@ reintroducing them. Diff-bug reported thirteen, ranked; all logged below.
   The unquoted expansion is the file's own idiom for passing N paths and no
   tracked page path carries a space — **rejected**; the rest **follow-up**.
 
+Fix-now work, and the criteria re-run over it: `editorfixture.sections()`
+raises a module `Unreadable` that `main` reports as a `FAIL:` line (F4);
+`require_pdf_tools` names PyYAML, so a machine without it learns so before the
+renders rather than after them (F5); and `site/index.qmd`'s editor paragraph
+drops the two named editors and the prefix-insertion claim, keeping what AC6
+sanctions (F9). Both verify legs re-run over the amended tree: 397 checks and
+760 checks, both exit 0, AC6's reader green on the rewritten page.
+
 Return floor: none of the thirteen demonstrates an acceptance criterion
 failing — AC4's fold clause was verified directly against the captured PDF —
 and none is a defect in what the shipped extension does for an author, the two

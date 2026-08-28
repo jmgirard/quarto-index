@@ -16973,6 +16973,500 @@ M50DOCPY
   pass "M50 T5/T6 self-test: each clause of the install probe and of the documentation reader is planted on its own and shown red, while both pass unplanted on this run's own archive and this repository's own pages — an archive rebuilt without one of the two files, a project with no extension installed, and no file named to look for; a rendered page and a README each with one filename removed, and no filename to look for"
 fi
 
+# ---------------------------------------------------------------------------
+# M52 T2 — the EPUB renders. Three of the four artifacts the M52 checks read
+# are rendered here; the fourth is the gfm capture M03-AC6 already makes
+# ($CAPTURE_ROOT/demo-gfm/demo.md), read rather than re-rendered because a
+# second render of the same document and format would need a slug of its own
+# and would assert nothing the first does not.
+#
+# The book render's log is kept under its own name: AC3 sweeps the warning
+# stream this render wrote, and a log shared with another render would let a
+# fold sentence drawn elsewhere decide that check.
+# ---------------------------------------------------------------------------
+quarto render examples/demo.qmd --to epub > "$WORK/demo-epub.log" 2>&1 \
+  || { tail -20 "$WORK/demo-epub.log" >&2; fail "M52-AC1: demo.qmd failed to render to EPUB"; }
+capture examples/demo.qmd epub "demo-epub"
+M52_DEMO_EPUB="$CAPTURE_ROOT/demo-epub/demo.epub"
+[ -s "$M52_DEMO_EPUB" ] || fail "M52-AC1: $M52_DEMO_EPUB is empty"
+pass "M52-AC1: examples/demo.qmd renders to EPUB at exit 0"
+
+quarto render examples/demo.qmd --to revealjs > "$WORK/demo-revealjs.log" 2>&1 \
+  || { tail -20 "$WORK/demo-revealjs.log" >&2; fail "M52-AC4: demo.qmd failed to render to revealjs"; }
+capture examples/demo.qmd revealjs "demo-revealjs"
+M52_DEMO_REVEALJS="$CAPTURE_ROOT/demo-revealjs/demo.html"
+[ -s "$M52_DEMO_REVEALJS" ] || fail "M52-AC4: $M52_DEMO_REVEALJS is empty"
+pass "M52-AC4: examples/demo.qmd renders to revealjs at exit 0"
+
+( cd "$BOOK_DIR" && quarto render --to epub ) > "$WORK/book-epub.log" 2>&1 \
+  || { tail -30 "$WORK/book-epub.log" >&2; fail "M52-AC3: the book fixture failed to render to EPUB"; }
+capture --project "$BOOK_DIR" epub "book-epub"
+M52_BOOK_EPUB=$(find "$CAPTURE_ROOT/book-epub/_book" -maxdepth 1 -name '*.epub' | head -1)
+[ -n "$M52_BOOK_EPUB" ] && [ -s "$M52_BOOK_EPUB" ] \
+  || fail "M52-AC3: the book's EPUB render left no .epub under $CAPTURE_ROOT/book-epub/_book"
+pass "M52-AC3: examples/book/ renders to EPUB at exit 0"
+
+# ---------------------------------------------------------------------------
+# Manifest 10 — the two index sections the book fixture renders into its EPUB
+# (M52-AC3). EXHAUSTIVE per section, and stated in locator COUNTS rather than
+# hrefs: an EPUB's link targets are the files Pandoc's writer split the book
+# into (`text/ch005.xhtml`), which is a property of the writer and not of the
+# `.qmd` sources this manifest is derived from. AC2 is what holds those links
+# to resolving, over the demo's EPUB, where the same writer splits the same
+# way.
+#
+# Row shapes: a SECTION row is `section<TAB><id><TAB><heading tag><TAB><title>`
+# and opens the section's own rows; entry and letter rows are manifest 1e's,
+# unchanged. The section row carries no trailing "id it follows" field —
+# manifest 1e's has one, and what precedes a section in an EPUB is whatever
+# the writer's split left at the top of that file, which is not derived from
+# the source either.
+#
+# Same oracle rule as manifest 1e, with the merged-book layers derived by hand
+# from examples/book/_quarto.yml and the four chapter sources:
+#  12. Quarto renders an EPUB book as ONE Pandoc process, the way it renders a
+#      PDF one. Nothing folds (M49), so each declared index prints a section of
+#      its own, in declared order, headed with that declaration's own title:
+#      `main` / "Index of Subjects", then `people` / "Index of People". The
+#      section ids are the extension's minted prefix and the declared name.
+#  13. `Turing` is written `index="people"` in one.qmd, so it is the people
+#      section's one entry and appears in no other section. Every other mark
+#      is written with no `index=`, so it files in `main`.
+#  14. A range pairs within one Pandoc process (D-009), and the merged book is
+#      one: BOTH `Chapter Range` (two marks in last.qmd) and `Ranged Term`
+#      (opening in one.qmd, closing in sub/two.qmd) pair here and contribute
+#      ONE locator each. This is where the merged book differs from the HTML
+#      one, whose per-chapter processes leave `Ranged Term` unpaired with a
+#      locator per end (manifest 5, layer 11).
+#  15. Locator counts otherwise: one per locator-contributing mark on that
+#      entry, over the whole book. `Shared Term` is marked in three chapters,
+#      so it carries three; a cross-reference mark contributes none.
+#  16. `Delta`'s `see=` target `Alpha` is contributed by index.qmd, so it is
+#      linked; `Epsilon`'s names no entry any chapter contributes and is
+#      plain. Both are judged inside `main`, the index their own marks file in.
+#  17. Order is manifest 1e's, per section: `Shared Term` files under its
+#      `sort="Common Term"` key, so it sits in the C group after
+#      `Chapter Range`.
+# ---------------------------------------------------------------------------
+read -r -d '' BOOK_EPUB_INDEX <<'MANIFEST' || true
+section	qi-index-main	h1	Index of Subjects
+letter	A
+0	Alpha	1
+letter	B
+0	Beacon	1
+0	Beta	1
+letter	C
+0	Chapter Range	1
+0	Shared Term	3
+letter	D
+0	Delta	0	see-link Alpha
+letter	E
+0	Epsilon	0	see-plain No Such Entry
+letter	G
+0	Gamma	1
+letter	I
+0	Invisible Entry	1
+letter	K
+0	Kappa	0
+1	Sub Level	1
+letter	R
+0	Ranged Term	1
+letter	Z
+0	Zeta	1
+section	qi-index-people	h1	Index of People
+letter	T
+0	Turing	1
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# M52 T4 — the EPUB back-end's checks. Each reads a capture through
+# tests/epubcheck.py rather than inline here, so the self-test below can run
+# the same clause against a deliberately broken artifact: a comparison written
+# inline can be run on this run's output and on nothing else.
+#
+# The `qi-` token AC4 sweeps for is derived from the pinned section id rather
+# than written down, so a namespace change reaches this sweep the way it
+# reaches every other identifier check.
+# ---------------------------------------------------------------------------
+case "$HTML_SECTION_ID" in
+  *index) M52_QI="${HTML_SECTION_ID%index}" ;;
+  *) fail "M52-AC4: the pinned section id <<$HTML_SECTION_ID>> does not end in 'index', so the namespace token this sweep is derived from cannot be taken off it" ;;
+esac
+[ -n "$M52_QI" ] \
+  || fail "M52-AC4: the namespace token derived from <<$HTML_SECTION_ID>> is empty, and a sweep for the empty string matches every file"
+
+# AC1. The manifest is manifest 1e — the hand-derived rows of this fixture's
+# HTML index — under a section row stating the one section an EPUB of a
+# document declaring no indexes carries, headed with the default title.
+{ printf 'section\t%s\th1\tIndex\n' "$HTML_SECTION_ID"
+  printf '%s\n' "$DEMO_HTML_INDEX"; } > "$WORK/demo-epub-index.txt"
+printf '%s\n' "$DEMO_HTML_INDEX" > "$WORK/demo-html-index.txt"
+
+python3 tests/epubcheck.py sections "$M52_DEMO_EPUB" "$HTML_SECTION_ID" \
+    "$WORK/demo-epub-index.txt" "$HTML_SECTION_ID" \
+  || fail "M52-AC1: the demo's EPUB does not carry the one index section manifest 1e states, or its rows differ (its own FAIL line is above)"
+
+python3 tests/epubcheck.py same "$M52_DEMO_EPUB" \
+    "$CAPTURE_ROOT/demo-html/demo.html" "$HTML_SECTION_ID" \
+    "$WORK/demo-html-index.txt" \
+  || fail "M52-AC1: the demo's EPUB and HTML renders do not carry the same index rows (its own FAIL line is above)"
+
+# AC2.
+python3 tests/epubcheck.py links "$M52_DEMO_EPUB" "$HTML_SECTION_ID" \
+  || fail "M52-AC2: a link inside the demo EPUB's index section names nothing in the publication (its own FAIL line is above)"
+
+# AC3. Two sections, each headed with its own declared title, and the people
+# term in neither the main section nor anywhere else: the manifest is
+# exhaustive per section, so a term appearing twice fails as an extra row.
+printf '%s\n' "$BOOK_EPUB_INDEX" > "$WORK/book-epub-index.txt"
+python3 tests/epubcheck.py sections "$M52_BOOK_EPUB" "$HTML_SECTION_ID" \
+    "$WORK/book-epub-index.txt" \
+  || fail "M52-AC3: the book's EPUB does not carry the two declared index sections manifest 10 states, or their rows differ (its own FAIL line is above)"
+
+# AC2 over the BOOK too (M52 review F4). The demo's EPUB is one chapterless
+# document; the book is several, one of them in a subdirectory
+# (examples/book/sub/), which is where a relative href across files could
+# differ. site/epub.qmd and CHANGELOG.md both say the links resolve inside the
+# book, and until this line only the demo was measured.
+python3 tests/epubcheck.py links "$M52_BOOK_EPUB" "$HTML_SECTION_ID" \
+  || fail "M52-AC2: a link inside the book EPUB's index sections names nothing in the publication (its own FAIL line is above)"
+
+# The sentence every fold report shares. It is NOT a mark-report-keys grep key
+# and cannot be one: that scan holds a key to matching exactly one filter
+# warning, and this deliberately matches all three fold reports, which is what
+# makes a sweep for it a sweep for "did anything fold at all". Held to the
+# filter's own wording here instead, through the same source set the scans read
+# — a reworded report would otherwise leave this sweep looking for a sentence
+# nothing writes any more and finding nothing forever.
+M52_FOLD_SENTENCE='this output has one index only'
+M52_FOLD_OWNERS=$(M52_FOLD_SENTENCE="$M52_FOLD_SENTENCE" python3 -c "
+import os, sys; sys.path.insert(0, 'tests'); import filtersrc
+print(filtersrc.text().count(os.environ['M52_FOLD_SENTENCE']))") \
+  || fail "M52-AC3: the filter source set could not be read, so the fold sentence this sweep looks for is pinned to nothing"
+[ "$M52_FOLD_OWNERS" = "3" ] \
+  || fail "M52-AC3: the fold sentence <<$M52_FOLD_SENTENCE>> occurs $M52_FOLD_OWNERS time(s) in the filter source, where the three fold reports write it; a sweep for a sentence the filter no longer writes finds nothing forever"
+
+if grep -qF -- "$M52_FOLD_SENTENCE" "$WORK/book-epub.log"; then
+  grep -nF -- "$M52_FOLD_SENTENCE" "$WORK/book-epub.log" >&2
+  fail "M52-AC3: the book's EPUB render reported that this output has one index only, which is the HTML book's per-chapter fold and not this render's — an EPUB book is one Pandoc process and folds nothing"
+fi
+# The three fold reports by their own pinned keys as well, each held to one
+# filter warning by the mark-report-keys scan: the shared sentence says nothing
+# folded, and these say which report in particular did not fire.
+check_warning_count "$WORK/book-epub.log" "$WARN_INDEX_FOLD_MARK" 0 "M52-AC3"
+check_warning_count "$WORK/book-epub.log" "$WARN_INDEX_FOLD_MARKER" 0 "M52-AC3"
+check_warning_count "$WORK/book-epub.log" "$WARN_INDEX_FOLD_MARKER_ELSEWHERE" 0 "M52-AC3"
+pass "M52-AC3: the book's EPUB render draws no fold report — no occurrence of <<$M52_FOLD_SENTENCE>>, the sentence all three of them share and the filter writes in 3 places, in the $(wc -l < "$WORK/book-epub.log" | tr -d ' ') line(s) it wrote"
+
+# AC4. The exclusion list is DERIVED from the fixture source and is empty:
+# examples/demo.qmd writes no run of the namespace token in its own prose. The
+# derivation is asserted rather than assumed, so a fixture that later prints
+# one reaches this check as a refusal to sweep instead of as a leaked
+# identifier (the M41/M44/M45 residue lesson).
+if grep -qF -- "$M52_QI" examples/demo.qmd; then
+  grep -nF -- "$M52_QI" examples/demo.qmd >&2
+  fail "M52-AC4: examples/demo.qmd now writes <<$M52_QI>> in its own prose. The exclusion list the sweeps below are given is derived from that source and is empty; state the prose strings here before this fixture can tell its own text from a leaked identifier."
+fi
+pass "M52-AC4: the exclusion list for the residue sweeps is derived from examples/demo.qmd, which writes no run of <<$M52_QI>> of its own, so the list is empty and every occurrence in a render is the filter's"
+
+for M52_PASSTHROUGH in "$M52_DEMO_REVEALJS" "$CAPTURE_ROOT/demo-gfm/demo.md"; do
+  python3 tests/epubcheck.py absent "$M52_PASSTHROUGH" "$M52_QI" \
+    || fail "M52-AC4: a format with no index back-end carries a namespace identifier (its own FAIL line is above)"
+done
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M52 T4 — one planted defect per criterion, each of a DIFFERENT form and in
+  # a different place, so a green here cannot rest on one mutation the four
+  # checks all happen to notice: the routing removed from the filter (AC1), a
+  # link target removed from the rendered container (AC2), the fold predicate
+  # widened in the filter (AC3), and an identifier added to a rendered file
+  # (AC4). Two of the four are re-renders and two are artifact rewrites.
+  # -------------------------------------------------------------------------
+  M52W="$WORK/m52"
+  mkdir -p "$M52W"
+
+  m52_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M52 self-test: the planted case ($label) passed, so this check's green says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M52 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    printf '%s' "$out" | grep -q 'Traceback' \
+      && { printf '%s\n' "$out" >&2; fail "M52 self-test: the planted case ($label) raised rather than reporting a finding, which exits non-zero for a reason nothing states"; }
+    printf 'ok   self-test: an M52 check fails on <<%s>>\n' "$label"
+  }
+
+  # A scratch project carrying a COPY of the extension with one splice in it.
+  # The splice refuses to be a no-op: a mutation aimed at text the tree does
+  # not carry would leave the render unbroken and the case below would be
+  # reported as the check failing to discriminate, when the fault is the
+  # mutation's.
+  m52_tree() {   # <name> <relative file> <perl expr>
+    local name="$1" rel="$2" expr="$3"
+    local P="$M52W/$name"
+    mkdir -p "$P/_extensions"
+    cp -R "$QI_EXT_DIR" "$P/_extensions/index"
+    perl -0777 -pe "$expr" "$P/_extensions/index/$rel" > "$P/spliced"
+    if cmp -s "$P/_extensions/index/$rel" "$P/spliced"; then
+      fail "M52 self-test: the splice aimed at $name/$rel planted nothing — the render that follows would be reported as failing to discriminate when the fault is this mutation's"
+    fi
+    mv "$P/spliced" "$P/_extensions/index/$rel"
+  }
+
+  # (1) AC1 — the routing reverted. `builds_ast_index` answers for HTML alone
+  # again, which is what this milestone changed, so the EPUB render builds no
+  # index section at all.
+  m52_tree noroute modules/core.lua \
+    's{  return is_html\(\) or is_epub\(\)\n}{  return is_html()\n}'
+  cp examples/demo.qmd "$M52W/noroute/demo.qmd"
+  ( cd "$M52W/noroute" && quarto render demo.qmd --to epub ) \
+      > "$WORK/m52-noroute.log" 2>&1 \
+    || { tail -20 "$WORK/m52-noroute.log" >&2; fail "M52 T4 self-test: the unrouted demo failed to render at all, so the case below is about a broken render rather than about a missing index section"; }
+  capture "$M52W/noroute/demo.qmd" epub "m52-noroute-epub"
+  M52_NOROUTE_EPUB="$CAPTURE_ROOT/m52-noroute-epub/demo.epub"
+  [ -s "$M52_NOROUTE_EPUB" ] \
+    || fail "M52 T4 self-test: the unrouted render left no demo.epub to read"
+  m52_planted 'an EPUB whose filter routes the AST index path for HTML alone' \
+    'section(s) carry the id' \
+    python3 tests/epubcheck.py sections "$M52_NOROUTE_EPUB" \
+      "$HTML_SECTION_ID" "$WORK/demo-epub-index.txt" "$HTML_SECTION_ID"
+
+  # (2) AC2 — one locator link repointed at an id no document in the
+  # publication carries. The container is rewritten rather than the source:
+  # what AC2 is about is whether the links in a shipped EPUB resolve, and a
+  # filter change would also move the rows AC1 reads.
+  python3 - "$M52_DEMO_EPUB" "$M52W/dangling.epub" "$HTML_ANCHOR_PREFIX" \
+      <<'M52ZIPPY' \
+    || fail "M52 T4 self-test: the EPUB with one dangling locator could not be built (its own FAIL line is above)"
+import sys
+import zipfile
+
+source, target, prefix = sys.argv[1:4]
+needle = f'#{prefix}'
+with zipfile.ZipFile(source) as archive:
+    names = archive.namelist()
+    hit = None
+    for name in names:
+        if not name.endswith('.xhtml'):
+            continue
+        body = archive.read(name).decode('utf-8')
+        if needle in body:
+            hit = name
+            break
+    if hit is None:
+        print(f'FAIL: M52 T4 self-test: no XHTML member of {source} writes a '
+              f'link to {needle}, so repointing one would change nothing and '
+              f'the case below would not be the artifact this plant claims to '
+              f'build', file=sys.stderr)
+        sys.exit(1)
+    with zipfile.ZipFile(target, 'w') as out:
+        for name in names:
+            data = archive.read(name)
+            if name == hit:
+                text = data.decode('utf-8').replace(
+                    needle, f'#{prefix}nowhere-in-this-publication', 1)
+                data = text.encode('utf-8')
+            out.writestr(archive.getinfo(name), data)
+M52ZIPPY
+
+  m52_planted 'an EPUB one of whose locator links names an id no document carries' \
+    'name nothing in the publication' \
+    python3 tests/epubcheck.py links "$M52W/dangling.epub" "$HTML_SECTION_ID"
+
+  # (3) AC3 — the fold widened to the EPUB. The predicate deciding that a
+  # render aggregates through the per-chapter store now answers for both AST
+  # back-ends, which folds the book's two declared indexes into one.
+  # The fixture first, then the spliced extension over it: examples/book
+  # reaches the filter through an `_extensions` SYMLINK, which `cp -R`
+  # preserves, and a scratch copy still pointing at the repository's own tree
+  # would render through the unspliced filter.
+  rm -rf "$M52W/fold"
+  cp -R examples/book "$M52W/fold"
+  rm -f "$M52W/fold/_extensions"
+  rm -rf "$M52W/fold/_book" "$M52W/fold/.quarto"
+  [ ! -e "$M52W/fold/_extensions" ] \
+    || fail "M52 T4 self-test: the scratch book still carries an _extensions entry of its own, so the render below would read a filter this plant did not splice"
+  m52_tree fold modules/indexes.lua \
+    's{folded = qi_core\.is_html\(\)}{folded = qi_core.builds_ast_index()}'
+  ( cd "$M52W/fold" && quarto render --to epub ) \
+      > "$WORK/m52-fold.log" 2>&1 \
+    || { tail -20 "$WORK/m52-fold.log" >&2; fail "M52 T4 self-test: the folded book failed to render at all, so the case below is about a broken render rather than about a folded index"; }
+  capture --project "$M52W/fold" epub "m52-fold-epub"
+  M52_FOLD_EPUB=$(find "$CAPTURE_ROOT/m52-fold-epub/_book" -maxdepth 1 -name '*.epub' | head -1)
+  [ -n "$M52_FOLD_EPUB" ] \
+    || fail "M52 T4 self-test: the folded book render left no .epub to read"
+  m52_planted 'an EPUB book whose two declared indexes were folded into one' \
+    'does not match the manifest' \
+    python3 tests/epubcheck.py sections "$M52_FOLD_EPUB" "$HTML_SECTION_ID" \
+      "$WORK/book-epub-index.txt"
+  # ...and the sweep's own token, shown present exactly where the fold is. The
+  # green above says the rows differ; this says the sentence the AC3 sweep
+  # looks for is one a folded render actually writes, so its absence on the
+  # real render is a fact about that render and not about the sentence.
+  grep -qF -- "$M52_FOLD_SENTENCE" "$WORK/m52-fold.log" \
+    || { tail -20 "$WORK/m52-fold.log" >&2; fail "M52 T4 self-test: the folded book render did not write <<$M52_FOLD_SENTENCE>>, so the AC3 sweep for it would find nothing on a folded render either and its green over the real one says nothing"; }
+  pass "M52 T4 self-test: a folded EPUB book writes the fold sentence the AC3 sweep looks for, which the unfolded render does not"
+
+  # (4) AC4 — a namespace identifier added to a rendered pass-through file.
+  python3 - "$CAPTURE_ROOT/demo-gfm/demo.md" "$M52W/residue.md" \
+      "$HTML_ANCHOR_PREFIX" <<'M52GFMPY' \
+    || fail "M52 T4 self-test: the gfm variant carrying an identifier could not be written (its own FAIL line is above)"
+import sys
+
+source, target, prefix = sys.argv[1:4]
+body = open(source, encoding='utf-8').read()
+if prefix in body:
+    print(f'FAIL: M52 T4 self-test: {source} already carries {prefix!r}, so '
+          f'adding one changes nothing and the case below would not be the '
+          f'file this plant claims to write', file=sys.stderr)
+    sys.exit(1)
+with open(target, 'w', encoding='utf-8') as handle:
+    handle.write(body.replace('\n\n', f'\n\n<span id="{prefix}1"></span>\n\n', 1))
+M52GFMPY
+
+  m52_planted 'a pass-through render carrying a namespace identifier' \
+    'outside the 0 allowed string(s)' \
+    python3 tests/epubcheck.py absent "$M52W/residue.md" "$M52_QI"
+
+  pass "M52 T4 self-test: each of the four EPUB criteria is planted on its own and shown red, in a different form and a different place each time — the AST routing removed from the filter, a link target removed from a rendered container, the fold predicate widened in the filter, and an identifier added to a rendered file"
+fi
+
+# ---------------------------------------------------------------------------
+# M52 T7 — the documentation clause. Two hand-written lists, both read through
+# tests/sitecheck.py so the plants below can run the same clause against a
+# page that has lost a claim and a domain that has gained a forbidden phrase.
+#
+# The CLAIMS are the two ways an EPUB index differs from an HTML one, which is
+# what a reader consulting the page needs and what AC5 names. The FORBIDDEN
+# phrase is the count a third back-end makes wrong: "two back-ends" was true
+# of every page until this milestone, and a sentence carrying it now tells a
+# reader there are two.
+# ---------------------------------------------------------------------------
+M52_DOC_PAGE="site/epub.qmd"
+cat > "$WORK/epub-claims.txt" <<'M52CLAIMS'
+one process	all the chapters go through a single Pandoc process
+every index prints	each name your `indexes:` metadata declares gets a section of its own, headed with that declaration's own title. Nothing folds.
+no pages	An EPUB has no pages: what a reader sees depends on their device and their type size, so there is no page number to print.
+sequence locators	An entry's locators are the numbered links HTML uses
+M52CLAIMS
+python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
+  || fail "M52-AC5: $M52_DOC_PAGE does not state a claim this check holds it to (its own FAIL line is above)"
+
+# The Books page's own claim (M52 review F2). Its per-chapter model — put the
+# marker last, render the whole book, each chapter keeps a record — is true of
+# the HTML book alone, and this milestone made an EPUB book a case that reads
+# the page and must not follow it. The page scopes the model and names the
+# merged formats; these rows are what holds it there.
+cat > "$WORK/books-claims.txt" <<'M52BOOKS'
+scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
+merged formats named	A PDF book and an EPUB book need none of the above.
+merged means one process	Quarto renders each as one merged document, so the extension sees every chapter's marks at once
+M52BOOKS
+python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
+  || fail "M52-AC5: site/books.qmd no longer scopes its per-chapter model to the HTML book, so it tells an EPUB author to follow a model that is not theirs (its own FAIL line is above)"
+
+cat > "$WORK/backend-count.txt" <<'M52PHRASES'
+back-end count	two back-ends
+M52PHRASES
+python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+  || fail "M52-AC5: a page a reader meets still says the extension has two back-ends (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M52 T7 — a planted defect per clause. The claim clause is shown red on a
+  # page with one claim removed and on a list holding no claim at all; the
+  # sweep is shown red on an OVERLAY page carrying the forbidden phrase (the
+  # sitecheck handle: a check over a tracked set is shown to fail on the defect
+  # it names only if that defect can be put into the set without editing the
+  # repository) and on a list forbidding nothing.
+  # -------------------------------------------------------------------------
+  M52D="$WORK/m52docs"
+  rm -rf "$M52D"
+  mkdir -p "$M52D/overlay/site" "$M52D/overcase/site" "$M52D/overquote/site"
+
+  python3 - "$M52_DOC_PAGE" "$M52D/nopclaim.qmd" "$M52D/overlay/site/epub.qmd" \
+      "$M52D/overcase/site/epub.qmd" "$M52D/overquote/site/epub.qmd" \
+      <<'M52DOCPY' \
+    || fail "M52 T7 self-test: the documentation variants could not be written (their own FAIL line is above)"
+import sys
+
+page, stripped, overlay, overcase, overquote = sys.argv[1:6]
+body = open(page, encoding='utf-8').read()
+gone = 'An EPUB has no pages:'
+if gone not in body:
+    print(f'FAIL: M52 T7 self-test: {page} does not carry {gone!r}, so '
+          f'removing it changes nothing and the case below is about the '
+          f'unplanted page', file=sys.stderr)
+    sys.exit(1)
+with open(stripped, 'w', encoding='utf-8') as handle:
+    handle.write(body.replace(gone, 'An EPUB is a zip container:'))
+# Each overlay page is the tracked page with one sentence ADDED, so the sweeps
+# below are shown to fail on a page that is otherwise exactly what the
+# repository holds -- not on a file that differs from it in any other way.
+# Three shapes, because the sweep normalizes three ways and a shape no plant
+# carries is an arm nothing has run: the phrase as written, the phrase opening
+# a sentence and so capitalized (M52 review F1), and the phrase wrapped in a
+# blockquote across a continuation line, where an unstripped `>` would land
+# mid-phrase (M52 review F14).
+with open(overlay, 'w', encoding='utf-8') as handle:
+    handle.write(body + '\nThe marking syntax means the same thing in the '
+                        'two back-ends.\n')
+with open(overcase, 'w', encoding='utf-8') as handle:
+    handle.write(body + '\nTwo back-ends ship: LaTeX/PDF and HTML.\n')
+# The line break falls INSIDE the phrase, not beside it: wrapped anywhere else
+# the `>` lands between two words the phrase does not span and an unstripped
+# sweep still finds it, so the plant would pass either way and prove nothing.
+with open(overquote, 'w', encoding='utf-8') as handle:
+    handle.write(body + '\n> The marking syntax means the same thing in the '
+                        'two\n> back-ends.\n')
+M52DOCPY
+
+  m52_planted 'a documentation page that has lost one of the claims it is held to' \
+    'does not state 1 of the 4 claim(s)' \
+    python3 tests/sitecheck.py claims "$M52D/nopclaim.qmd" "$WORK/epub-claims.txt"
+
+  : > "$M52D/noclaims.txt"
+  m52_planted 'a claim list holding the page to nothing at all' \
+    'holds the page to nothing' \
+    python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$M52D/noclaims.txt"
+
+  # The passing CONTROL first: an overlay holding an unmodified copy of the
+  # page must leave the sweep green, or the failure below would be the overlay
+  # mechanism and not the sentence planted in it.
+  mkdir -p "$M52D/clean/site"
+  cp "$M52_DOC_PAGE" "$M52D/clean/site/epub.qmd"
+  python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+      "$M52D/clean" \
+    || fail "M52 T7 self-test: the sweep is red on an overlay holding an unmodified copy of a tracked page, so the failure below would be the overlay and not the sentence planted in it"
+  pass "M52 T7 self-test: an overlay holding an unmodified copy of a tracked page leaves the back-end-count sweep green"
+
+  m52_planted 'a tracked documentation page that says the extension has two back-ends' \
+    'site/epub.qmd (back-end count)' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+      "$M52D/overlay"
+
+  m52_planted 'a tracked page opening a sentence with the forbidden phrase, so it is capitalized' \
+    'site/epub.qmd (back-end count)' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+      "$M52D/overcase"
+
+  m52_planted 'a tracked page carrying the forbidden phrase wrapped in a blockquote' \
+    'site/epub.qmd (back-end count)' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+      "$M52D/overquote"
+
+  : > "$M52D/nophrases.txt"
+  m52_planted 'a phrase list that forbids nothing' \
+    'forbids nothing' \
+    python3 tests/sitecheck.py phrase-absent "$M52D/nophrases.txt"
+
+  pass "M52 T7 self-test: both documentation clauses are planted on their own and shown red — a page with a claim removed, a claim list holding it to nothing, a phrase list forbidding nothing, and an overlay page carrying the forbidden phrase in each of the three shapes the sweep normalizes for: as written, capitalized at the start of a sentence, and wrapped across two lines of a blockquote — while both pass unplanted over this repository's own tracked pages"
+fi
+
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

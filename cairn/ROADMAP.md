@@ -9,7 +9,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M52 | EPUB gets an index back-end | planned | — | normal | milestones/M52-epub-back-end.md |
+| M52 | EPUB gets an index back-end | review | — | normal | milestones/M52-epub-back-end.md |
 | M51 | The version matrix typesets a PDF again | done | — | normal | milestones/archive/M51-matrix-pdf-leg.md |
 | M50 | Editors complete and document the marking syntax | done | — | normal | milestones/archive/M50-editor-metadata.md |
 | M49 | A PDF render builds every index the document declares | done | — | normal | milestones/archive/M49-named-indexes-pdf.md |

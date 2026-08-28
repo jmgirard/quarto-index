@@ -84,7 +84,7 @@ local folded = false
 -- index is built: in a format with no back-end nothing is indexed either way,
 -- and the sentence would be a claim about output that does not exist.
 local function builds_index()
-  return qi_core.is_latex_derived() or qi_core.is_html()
+  return qi_core.is_latex_derived() or qi_core.builds_ast_index()
 end
 
 -- One declaration's `name:`/`title:`, appended to `kept` in declared order, or

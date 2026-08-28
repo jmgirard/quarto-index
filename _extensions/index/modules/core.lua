@@ -413,11 +413,29 @@ local function is_latex_derived()
   return FORMAT:match("latex") ~= nil
 end
 
--- HTML is the second back-end. The match is on `html` alone, so revealjs,
--- epub and every other format keep passing through: none of them carries
--- `html` in FORMAT, and each would need an index shape of its own anyway.
+-- HTML is the second back-end. The match is on `html` alone, so revealjs and
+-- every other format with no back-end keeps passing through: none of them
+-- carries `html` in FORMAT, and each would need an index shape of its own
+-- anyway. This predicate stays narrower than "builds an index in the AST"
+-- (`builds_ast_index` below): it is also what decides that a chapter file
+-- means a chapter, which is true of the HTML book alone.
 local function is_html()
   return FORMAT:match("html") ~= nil
+end
+
+-- EPUB is the third back-end. Pandoc spells the format `epub`, `epub2` and
+-- `epub3`, and all three carry `epub` in FORMAT; nothing else does.
+local function is_epub()
+  return FORMAT:match("epub") ~= nil
+end
+
+-- The back-ends that build their index in the Pandoc AST, as opposed to the
+-- LaTeX-derived one that emits commands for a typeset-time subsystem. HTML
+-- and EPUB print the same entry tree from the same blocks; what separates
+-- them is how a BOOK reaches this filter, which is `is_html`'s question and
+-- not this one's.
+local function builds_ast_index()
+  return is_html() or is_epub()
 end
 
 -- The HTML back-end's pinned identifiers. They are the only names a reader's
@@ -473,6 +491,8 @@ M["namespace"] = namespace
 M["warn"] = warn
 M["is_latex_derived"] = is_latex_derived
 M["is_html"] = is_html
+M["is_epub"] = is_epub
+M["builds_ast_index"] = builds_ast_index
 M["HTML_SECTION_ID"] = HTML_SECTION_ID
 M["HTML_ANCHOR_PREFIX"] = HTML_ANCHOR_PREFIX
 M["HTML_ENTRY_PREFIX"] = HTML_ENTRY_PREFIX

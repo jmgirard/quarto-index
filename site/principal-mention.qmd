@@ -61,13 +61,14 @@ locator, so `mention="principal"` on a mark that also carries `see=` or
 `see-also=` has nothing to emphasize. The role is reported and dropped, and the
 mark indexes exactly as it would without it.
 
-There is one exception, and it can differ between the two back-ends. A target
+There is one exception, and it can differ between the back-ends. A target
 naming the entry it is written on says nothing, so it is dropped — and the mark
 then does have a locator, and keeps its role. The PDF index stores three levels
 and folds anything deeper into the third, so a target can match the entry only
-once folded: there the target is dropped and the role applies, while in HTML,
-which folds nothing, the same target stands and the role is dropped. The same
-mark can therefore be emphasized in the PDF and plain in HTML. The reports say
+once folded: there the target is dropped and the role applies, while in HTML
+and EPUB, which fold nothing, the same target stands and the role is dropped.
+The same mark can therefore be emphasized in the PDF and plain in the other
+two. The reports say
 which happened in each render.
 
 **Only `principal` is recognized.** Any other value is reported and the mark

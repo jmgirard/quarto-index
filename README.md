@@ -2,7 +2,7 @@
 
 A Quarto extension for book-quality subject indexing. Mark index entries with
 a format-neutral span syntax; the extension emits the right thing per output
-format. Two back-ends ship: LaTeX/PDF and HTML.
+format. Three back-ends ship: LaTeX/PDF, HTML and EPUB.
 
 ## Install
 
@@ -34,7 +34,7 @@ which ships with mainstream TeX distributions.
 
 The full documentation is published at
 <https://jmgirard.github.io/quarto-index/>: the supported marking forms, what
-each output format gets, where the two back-ends differ, and how a Quarto book
+each output format gets, where the back-ends differ, and how a Quarto book
 gets one index. Its source is the Quarto website in
 [`site/`](site/index.qmd), which GitHub Actions renders and publishes on every
 push to the default branch.

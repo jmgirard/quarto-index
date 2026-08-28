@@ -6,6 +6,7 @@ pagetitle: "What it emits"
 
 - [LaTeX and PDF](latex-and-pdf.qmd)
 - [HTML](html.qmd)
+- [EPUB](epub.qmd)
 - [Other formats](other-formats.qmd)
-- [Where the two back-ends differ](back-end-differences.qmd)
+- [Where the back-ends differ](back-end-differences.qmd)
 - [Letter groups in the HTML index](letter-groups.qmd)

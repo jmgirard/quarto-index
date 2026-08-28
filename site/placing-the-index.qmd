@@ -12,7 +12,7 @@ else, write an empty div where you want it:
 :::
 ```
 
-Both back-ends honour the same marker: the HTML index section and the LaTeX
+Every back-end honours the same marker: the HTML index section and the LaTeX
 `\printindex` each land where you wrote it. A format with no index back-end
 drops the marker and leaves nothing in its place.
 

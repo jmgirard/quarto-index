@@ -183,8 +183,10 @@ and bound under a `qi_` name so that no local can shadow a module — `levels`,
 `marks` and `marker` are all ordinary local names in this filter (added M17).
 The modules, in dependency order:
 
-- `core.lua` — the shared constants, the `warn` channel, and the two format
-  tests. It requires nothing; every other module requires it.
+- `core.lua` — the shared constants, the `warn` channel, and the format
+  tests: `is_latex_derived`, `is_html`, `is_epub`, and `builds_ast_index`
+  (`is_html` or `is_epub`) for the two back-ends that build their index in the
+  AST (M52). It requires nothing; every other module requires it.
 - `levels.lua` — what an `entry=`, `see=` or `sort=` value means as a list of
   levels: the parse, the empty-level drop, the three-level clamp, and the
   level path a sort key is declared against.
@@ -301,10 +303,10 @@ of them.
 
 One further misuse is reported rather than edited away (corrected M08): the marker class written where it cannot place an index — any block that is not a div, and any inline carrying attributes at all, a span, inline code, a link or an image among them — which leaves that element exactly as the author wrote it, class included. It is read from the document's blocks alone, never its metadata, so a class written in the title or the abstract is reported nowhere — and a marker written there is not resolved either, and survives into output (ROADMAP). One shared
 function then puts a back-end's index at the surviving marker, or at the end of
-the document when there is none, so the two back-ends cannot drift apart on
+the document when there is none, so no back-end can drift apart from another on
 where an index goes.
 
-Two back-ends ship:
+Three back-ends ship:
 
 - **LaTeX** (`FORMAT` containing `latex`, which covers PDF): an `\index{…}`
   command at each mark, `imakeidx` and `\makeindex[intoc]` injected into the
@@ -362,8 +364,21 @@ Two back-ends ship:
   Quarto copies a heading's inlines into the table of contents and the id would
   then appear twice; a heading mark's anchor — author id or minted — sits on an
   empty span emitted just after the heading.
+- **EPUB** (`FORMAT` containing `epub`, which covers `epub2` and `epub3`): the
+  HTML back-end's index, unchanged (added M52). `builds_ast_index` routes the
+  three sites that build an index in the AST — the fold reports' `builds_index`,
+  the per-mark record in `passes.lua`, and the back-end branch in `index.lua` —
+  so the same blocks are built and the same ids minted. `is_html` stays the
+  sole gate on the sidecar store, the fold and the chapter-scope wording,
+  because Quarto renders an EPUB book in ONE Pandoc process, as it renders a
+  PDF one: no chapter file reaches this filter as a chapter, so nothing folds,
+  every declared index prints under its own title, and a range opened in one
+  chapter and closed in another pairs. Pandoc's EPUB writer then splits the
+  document at its top-level headings and rewrites each locator link across the
+  resulting XHTML files, so a locator href carries a file part the HTML
+  back-end's has only in a book.
 
-Every other format — beamer, revealjs, epub, gfm — takes neither branch: no
+Every other format — beamer, revealjs, gfm — takes neither branch: no
 index, no anchors, no back-end tokens, and the visible text exactly as
 written. What such a format does carry is the mark's own attributes, which
 Pandoc passes through on the span as `data-entry`, `data-see`,

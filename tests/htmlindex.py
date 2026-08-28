@@ -78,17 +78,28 @@ class _Builder(HTMLParser):
         self.stack[-1].children.append(f'&#{name};')
 
 
+def parse_text(markup, decode=True):
+    """Parse markup already in hand into a Node tree.
+
+    The path-taking `parse` below is the same reading; this form exists for a
+    document that is not a file on disk — an XHTML member read out of an EPUB
+    container (tests/epubindex.py). One builder, so the two forms cannot come
+    to disagree about what the markup says.
+    """
+    builder = _Builder(decode=decode)
+    builder.feed(markup)
+    builder.close()
+    return builder.root
+
+
 def parse(path, decode=True):
     """Parse a file into a Node tree rooted at a synthetic `#document`.
 
     With `decode` false, character entities are left as written — see
     _Builder for which manifest layer wants which.
     """
-    builder = _Builder(decode=decode)
     with open(path, encoding='utf-8') as fh:
-        builder.feed(fh.read())
-    builder.close()
-    return builder.root
+        return parse_text(fh.read(), decode=decode)
 
 
 def walk(node):

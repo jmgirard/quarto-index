@@ -4,7 +4,8 @@ pagetitle: "Other formats"
 
 # Other formats
 
-In beamer, and in any other format with no index back-end, marks pass through:
+In beamer, in reveal.js, and in any other format with no index back-end,
+marks pass through:
 the visible text is preserved exactly as written, no index is generated, and
 no LaTeX or index markup is emitted. The mark itself is still a span, so in a
 format that can carry span attributes — GitHub-flavoured markdown does,

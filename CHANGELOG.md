@@ -4,6 +4,19 @@
 
 ### Output
 
+- An EPUB render gets a real index instead of passing its marks through. It is
+  the index the HTML back-end builds, out of the same document nodes: the same
+  section id and classes, the same letter groups and entry tree, numbered
+  locator links and cross-references. Pandoc's EPUB writer splits the document
+  into an XHTML file per top-level heading, so a locator link crosses files;
+  the links resolve inside the book. Two things differ from HTML, both
+  documented on the [EPUB](site/epub.qmd) page: Quarto renders an EPUB book in
+  one Pandoc process, so nothing folds and every index the book declares
+  prints under its own title, and a page range opened in one chapter and
+  closed in another pairs there where an HTML book cannot see both ends; and
+  an EPUB has no pages, so locators are the per-entry sequence numbers HTML
+  uses. beamer, reveal.js, `gfm` and every other format still pass marks
+  through unchanged.
 - A LaTeX or PDF render builds every index the document declares, each at its
   own placement marker, instead of folding them all into one. The first
   declared index is built by Quarto's PDF loop as before; every index after it

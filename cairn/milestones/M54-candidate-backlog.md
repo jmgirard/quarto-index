@@ -110,6 +110,7 @@ checker-regress shape, and `cairn_validate` owns tracking validation.
 - 2026-08-28: T3's conservation check ran over the 36 removed rows against the rewritten rows plus `## Known issues`, words of four or more characters, stop set: dates, `added`/`Promote` and their inflections, milestone/finding/decision ids, row-only bookkeeping (split, cluster and compression notes, row titles, counts of findings), inflectional and possessive variants of a word present in the destination, and history the gate chose to drop (the release row's dated corrections, M51's restoration note, M49's repaired-`folded` correction, row 26's fixed-fourth-finding note, row 5's claim-container note). Three residues survived that reading as real loss and were repaired: the M36 clause's capture condition, folded into KI117; the overlapping-ranges pairing gap, which pairing by entry cannot tell apart, written as KI163 and pointed at from the locator-control row along with its restored `(a defining passage, an illustration)`; and M30's typeset print proof not reaching the cross-reference and sort-key probes, written as KI164 and pointed at from the suite-readers row. Re-run clean of all three.
 - 2026-08-28: T7 appended D-034 to `cairn/DECISIONS.md`, annotating D-013 with the row shape (work, promotion condition, dates and sources, `KI<n>` pointers, nothing else) and the 400-byte per-row cap, and naming the subheading form for a row whose motivating set is a whole subheading and the refusal of a label range; the `## Candidates` comment in `cairn/ROADMAP.md` now names it, still two lines so the file stays at 59 of its 60.
 - 2026-08-28: T8 swept: 36 rows, section total 8,854 bytes, largest 400 (AC1 pass, cap 400 and 12,000); 104 pointer tokens, none unresolved, no label range, no struck mention (AC2 pass); 157 `- **KI<n>.**` entry headings, no label twice (AC3 pass). Each sweep was shown able to fail before its green was trusted — a 451-byte row reddens AC1 alone, a `KI999` token and a `KI76-KI77` range and a `KI73 struck` mention each redden AC2 alone, and a second `- **KI2.**` heading reddens AC3 (and AC2, the token it displaced no longer resolving). `cairn_validate` clean, 16 PASS and 7 OK, `weight caps` among them: ROADMAP 59 lines / 11,139 bytes, down from 59 / 24,053, which was over the 24,000 budget. The suite was not run: no file it reads changed (AC5).
+- 2026-08-28: review corrections to three earlier records, superseding them. T2's line says the moved text was "carried verbatim"; over the twelve rows many clauses are one-clause condensations rather than verbatim carries, T3's word-conservation check being the guard that actually ran. T2's line also says row 21's "Also open" list "becomes pointers at" KI66-KI71; the rewritten row carries no such token, and the list's `entry=`-shape item is KI24, restored to the row at the review gate. The Scope's 21,777 bytes and 14-rows-over-cap for `## Candidates` do not reproduce: the T1 sweep, re-run at review against `origin/main`, measures the same 36 rows at 22,001 bytes with 15 over the 400-byte cap. The sweep figure is the one the criteria were verified against; where the Scope's came from is not recoverable, and the Scope text stands as written.
 
 ## Decisions
 ## Review
@@ -161,8 +162,10 @@ meets the return floor.
 - F1. The suite-readers row's subheading pointer covers 122 entries, about 55
   of them the work of six sibling rows, so nothing in `## Candidates`
   distinguishes what that row is for. Disposition: fixed in part (F3's
-  rewording names the file and the two subheadings); the residual over-claim
-  is inherent to the subheading form D-034 blessed and goes to a candidate row.
+  rewording names the file); the residual over-claim is inherent to the
+  subheading form D-034 blessed, and `ROADMAP.md` at 59 of its 60 lines has no
+  room for a row about it, so it is recorded as an accepted limitation in
+  `cairn/DESIGN.md`'s Known issues at the post-merge hygiene pass.
 - F2. `KI24` was in the old row's `KI24, KI27-KI74` set but lives under
   Reports and messages, which neither named subheading covers, so it is now
   motivated by nothing; the T2 work-log line's claim that the "Also open" list
@@ -205,3 +208,13 @@ meets the return floor.
   the M35/M36/M46/M50 Review sections. Disposition: rejected — the provenance
   survives in the KI entries' own suffixes, and this is the compression T4/T5
   planned.
+
+Fix-now work directed at the gate landed after the pre-gate checkpoint: `KI24`
+restored to the suite-readers row and its subheading reference rewritten to
+name `cairn/DESIGN.md` (F2, F3); KI164's provenance corrected to M30, recovered
+by M54 T3 (F4); promotion conditions written for the gallery-checks and
+publishing-workflow rows (F5); the `## Candidates` comment's stray comma
+removed (F10); and one superseding work-log line covering F6, F11 and F2's
+account of the "Also open" list. The AC1-AC3 sweeps were re-run over the fixed
+files: 36 rows, 9,051 bytes, largest 400; 105 pointer tokens, all resolving;
+157 headings, none twice. `cairn_validate` re-run clean.

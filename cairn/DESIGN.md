@@ -1148,7 +1148,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   probe runs being the evidence instead. — M42 review
 
 - **KI164.** M30's typeset print proof is not extended to the cross-reference
-  and sort-key probes, which still assert compile-and-accept only. — M35/M36/M46/M50
+  and sort-key probes, which still assert compile-and-accept only. — M30,
+  recovered by M54 T3
 
 ### The repo and its packaging
 

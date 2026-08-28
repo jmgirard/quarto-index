@@ -382,3 +382,25 @@ not judge one a load-bearing defect requiring a return — F1 was the closest
 and was directed to a fix at the gate. No amendment return; no criterion was
 reinterpreted. Defect-return count for this milestone: 0.
 
+### Re-verification after the gate fixes
+
+`tests/run-tests.sh --self-test` re-run over the five repairs: **824 checks,
+exit 0** (820 before; the four added are the book EPUB's link check, the
+`books.qmd` claims clause, and the two new sweep plants). The added evidence:
+
+- AC2 now measured over the book as well — all 14 links inside its two index
+  sections resolve, each naming one of the 5 manifest-listed documents and an
+  element it carries.
+- `site/books.qmd` states all 3 claims holding its per-chapter model to the
+  HTML book.
+- The back-end-count sweep is red on all three shapes and green unplanted over
+  the repository's 22 tracked pages: the phrase as written, capitalized at the
+  start of a sentence, and split across two lines of a blockquote. Each of the
+  two new shapes was shown at review to pass the pre-fix comparison, so each
+  plant discriminates the repair it fences.
+
+CI on PR #52 after the fixes: `plan`, both `render` legs, `compare` and `build`
+green; `pdf` and `deploy` skip by design. One earlier `render (floor, 1.4.549)`
+leg failed and did not reproduce — recorded in the work log and filed rather
+than investigated, at the maintainer's selection.
+

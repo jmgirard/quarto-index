@@ -16067,6 +16067,67 @@ printf '%s' "$M43LEGS_HAND" | grep -qF '"name": "release"' \
   || fail "M43-AC1: a manually dispatched run's matrix carries no release-channel leg"
 pass "M43-AC1: the matrix a push renders on is the floor and pinned legs alone, and a scheduled or manually dispatched run adds the release-channel leg"
 
+# ---------------------------------------------------------------------------
+# M51-AC2 — whether the PDF job runs is decided here and not by an `if:`
+# naming events in the workflow, so all three answers are readable on every
+# run of this suite instead of costing one dispatched run apiece.
+#
+# The three declared events, each asserted by its own answer. A fourth name
+# is refused rather than answered `false`, because `false` skips the job: a
+# trigger added to the workflow without being taught to the reader would stop
+# the PDF renders silently.
+# ---------------------------------------------------------------------------
+M51_PDF_ANSWERS="push|false|a push, whose red must trace to a commit and not to a TeX install
+schedule|true|the weekly scheduled run
+workflow_dispatch|true|a manually dispatched run"
+M51PDFN=0
+while IFS='|' read -r m51event m51want m51label; do
+  m51got=$(python3 tests/versioncheck.py pdf "$m51event") \
+    || fail "M51-AC2: the pdf mode failed on the declared event $m51event"
+  [ "$m51got" = "$m51want" ] \
+    || fail "M51-AC2: the pdf mode answers <<$m51got>> for $m51event ($m51label) where the workflow's PDF job is gated to run on exactly $m51want"
+  M51PDFN=$((M51PDFN + 1))
+done <<< "$M51_PDF_ANSWERS"
+[ "$M51PDFN" = 3 ] \
+  || fail "M51-AC2: the event table answered $M51PDFN event(s), not the three the workflow declares, so the clause above swept less than it names"
+pass "M51-AC2: tests/versioncheck.py answers whether the PDF job runs for each of the $M51PDFN events the version workflow declares — false on a push, true on the scheduled and manually dispatched runs"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M51 T1 — the pdf mode's two clauses, each shown able to fail. The event
+  # table above is judged against a copy of the reader with `push` spliced
+  # into the set of events that render PDF: if that mutation did not change
+  # the push answer, the table is asserting nothing.
+  # -------------------------------------------------------------------------
+  M51V="$WORK/m51pdf"
+  rm -rf "$M51V"
+  mkdir -p "$M51V"
+
+  sed "s/^PDF_EVENTS = ('schedule', 'workflow_dispatch')\$/PDF_EVENTS = ('push', 'schedule', 'workflow_dispatch')/" \
+    tests/versioncheck.py > "$M51V/versioncheck.py"
+  cmp -s tests/versioncheck.py "$M51V/versioncheck.py" \
+    && fail "M51 self-test: the splice adding push to the PDF event set changed nothing, so the case below is about the unplanted reader"
+  M51SPLICED=$(python3 "$M51V/versioncheck.py" pdf push) \
+    || fail "M51 self-test: the spliced reader failed on a push rather than answering it, so the case below would be red for the wrong reason"
+  [ "$M51SPLICED" = true ] \
+    || fail "M51 self-test: with push spliced into the PDF event set the reader still answers <<$M51SPLICED>> for a push, so the event table above would pass on a reader that puts TeX on the every-push path"
+  printf 'ok   self-test: the pdf mode answers <<true>> for a push on <<a reader with push spliced into the set of events that render PDF>>, which the event table above holds it to <<false>> for\n'
+
+  # The undeclared event: a loud refusal on stderr, and stdout left empty so
+  # a workflow step capturing the answer cannot capture the diagnostic as one.
+  M51OUT="$M51V/undeclared.out"
+  M51ERR="$M51V/undeclared.err"
+  python3 tests/versioncheck.py pdf pull_request > "$M51OUT" 2>"$M51ERR" \
+    && fail "M51 self-test: the pdf mode answered for an event the workflow does not declare, so a trigger added above would silently skip the PDF job"
+  [ ! -s "$M51OUT" ] \
+    || { cat "$M51OUT" >&2; fail "M51 self-test: the pdf mode printed to stdout while failing, so a workflow step would capture its diagnostic as the answer"; }
+  grep -qF 'is not one of the 3 event(s) the version workflow declares' "$M51ERR" \
+    || { cat "$M51ERR" >&2; fail "M51 self-test: the pdf mode failed on an undeclared event, but not by saying the event is not one the workflow declares"; }
+  printf 'ok   self-test: the pdf mode refuses <<an event the workflow does not declare>>, saying so on stderr and leaving stdout empty\n'
+
+  pass "M51 T1 self-test: each clause of the pdf mode is shown able to fail — the push answer changes under a reader with push spliced into the PDF event set, and an undeclared event is refused on stderr with stdout empty"
+fi
+
 # The pinned leg's version is asked of pages.yml rather than written into
 # versions.yml, so this asserts the asking works and that its answer is the
 # pin the M42 check above judges — one reader, one pin, no second copy.

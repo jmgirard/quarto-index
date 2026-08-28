@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M51: The version matrix typesets a PDF again
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
-- **Branch/PR:** —
+- **Branch/PR:** `m051-matrix-pdf-leg`
 
 ## Goal
 
@@ -84,7 +84,7 @@ D-entry this milestone writes is the record of it.
 
 ## Tasks
 
-- [ ] T1: Add to `tests/versioncheck.py` the mode that answers, for one
+- [x] T1: Add to `tests/versioncheck.py` the mode that answers, for one
       event name, whether the PDF job runs, beside `legs` and its
       `CHANNEL_EVENTS`; cover `push`, `schedule` and `workflow_dispatch`
       under `--self-test`.
@@ -112,6 +112,8 @@ D-entry this milestone writes is the record of it.
 - 2026-08-28: plan gate chose restoring the PDF renders over leaving the matrix HTML-only because M47's objection was to the every-push path rather than to PDF rendering, and nothing but a developer's own machine has typeset a fixture since; falsified by the restored job going red on upstream TeX-mirror state rather than on this repository's output.
 - 2026-08-28: plan gate chose the weekly-and-on-demand path over every-push because the two push legs are exact versions whose red traces to a commit while a TeX install's red does not, the trade D-025 already made for the release-channel leg; falsified by a PDF break reaching the default branch and users before the weekly run reports it.
 - 2026-08-28: plan gate chose M43's TinyTeX-plus-named-repository install over a published TeX Live setup action because the action is unproven against the 1.4.549 floor leg, which is where M43's install pain was; falsified by the named repository going unreachable or stale enough that the floor leg cannot install `imakeidx`.
+- 2026-08-28: implement gate confirmed the CI dependency re-add as planned (TinyTeX, `imakeidx` from `https://tlnet.yihui.org`, `poppler-utils`), chose a `pdf <event>` mode printing `true`/`false` over folding the answer into `legs`, and chose running the PDF job beside the render job rather than after it.
+- 2026-08-28: T1 — `tests/versioncheck.py` gains `pdf <event>`, answering from `PDF_EVENTS`, declared apart from `CHANNEL_EVENTS` because the two sets coincide for different reasons; an event outside the workflow's declared three is refused on stderr with stdout empty rather than answered `false`, which would skip the job silently. The suite asserts all three answers on every run and, under `--self-test`, plants `push` into `PDF_EVENTS` to show that assertion able to fail. `tests/run-tests.sh --self-test` clean, 794 checks.
 - 2026-08-28: plan gate chose restoring only the two fixtures `50899b9` removed over adding M49's two-index fixture, because that fixture's second index depends on TeX's restricted shell escape (D-031) and adding it widens the restore into new coverage; falsified by the two-index PDF path breaking on a Quarto version while the restored leg stays green. Deferred to a candidate row, not rejected.
 
 ## Decisions

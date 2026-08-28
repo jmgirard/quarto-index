@@ -16,6 +16,23 @@ which Quarto rendered it?
       always traces to a commit, while a channel leg can go red on an upstream
       release alone.
 
+  pdf <event>
+      Print `true` or `false`: whether the workflow's PDF job renders on this
+      run. The rule lives here rather than in an `if:` naming events, so the
+      three answers are readable — and plantable — without dispatching a run
+      per event (M51). `true` on the same two events the release-channel leg
+      rides, for a different reason: D-025 keeps the channel leg off pushes
+      because an upstream release can redden it, and the PDF job is off pushes
+      because a TeX install can. The two sets are declared separately below so
+      that moving one does not move the other.
+
+      An event the workflow's own `on:` block does not declare is a loud
+      failure and never a `false`: `false` skips the PDF job, so a trigger
+      added above without being taught to this reader would silently stop the
+      PDF renders rather than say so. stdout carries the answer alone —
+      anything this reader has to say goes to stderr — so a workflow step can
+      capture it into a job output.
+
   fixtures <workflow.yml> <name> [<name> ...]
       The workflow's render step reduces one rendered artifact per fixture
       with `tests/indexdump.py` and writes each extraction under its fixture's
@@ -108,6 +125,15 @@ EXTRACTION = re.compile(
 
 # The events on which the release-channel leg is rendered too.
 CHANNEL_EVENTS = ('schedule', 'workflow_dispatch')
+# The events on which the PDF job runs. Equal to CHANNEL_EVENTS today and
+# declared apart from it on purpose: the channel leg is off pushes because an
+# upstream release can turn it red (D-025), and the PDF job is off pushes
+# because a TeX install can. Either could move without the other.
+PDF_EVENTS = ('schedule', 'workflow_dispatch')
+# Every event the workflow's `on:` block declares. The `pdf` mode refuses a
+# name outside this set rather than answering `false` for it — see its entry
+# in the module docstring.
+DECLARED_EVENTS = ('push', 'schedule', 'workflow_dispatch')
 # The leg every other leg's HTML extraction is compared against, and the name
 # `compare` is handed below. Named here so the workflow and this reader cannot
 # come to disagree about which leg is the baseline.
@@ -232,6 +258,19 @@ def first_difference(left, right, baseline, leg):
     return 'the two differ in bytes that are not rows'
 
 
+def check_pdf(event):
+    """Print whether the PDF job runs on `event`, and nothing else."""
+    if event not in DECLARED_EVENTS:
+        print('FAIL: M51: %r is not one of the %d event(s) the version '
+              'workflow declares (%s); answering `false` for it would skip '
+              'the PDF job on a trigger this reader was never taught'
+              % (event, len(DECLARED_EVENTS), ', '.join(DECLARED_EVENTS)),
+              file=sys.stderr)
+        return 1
+    print('true' if event in PDF_EVENTS else 'false')
+    return 0
+
+
 def check_legs(floor, pinned, event):
     if floor == pinned:
         # The matrix exists to render on two different Quarto versions. Equal
@@ -320,6 +359,7 @@ MODES = {
     'fixtures': (check_fixtures, 1),
     'floor': (check_floor, 1),
     'legs': (check_legs, 3),
+    'pdf': (check_pdf, 1),
     'compare': (check_compare, 2),
 }
 

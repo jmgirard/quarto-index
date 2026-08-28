@@ -1169,3 +1169,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   extended M40
 - **KI79.** The Quarto version floor is an untested contract claim; a CI matrix
   at floor and latest is what would fence it. — M01 review R15
+
+- **KI165.** The suite-readers candidate row points at `cairn/DESIGN.md`'s two
+  acceptance-suite subheadings, which M54 grew from 47 entries to 122 by moving
+  six other rows' findings into them, so that pointer now names a superset of
+  six sibling rows' work and nothing in `## Candidates` distinguishes what the
+  row is for. Accepted at M54's review gate: the row cannot enumerate ~55
+  labels under D-034's 400-byte cap, and `ROADMAP.md` at 59 of its 60 lines has
+  no room for a split. — M54 review F1

@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP2
-- **Branch/PR:** `m049-named-indexes-pdf`
+- **Branch/PR:** `m049-named-indexes-pdf` / https://github.com/jmgirard/quarto-index/pull/50
 
 ## Goal
 
@@ -39,31 +39,31 @@ candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1: Rendering `examples/named-indexes.qmd` to PDF on the toolchain
+- [x] AC1: Rendering `examples/named-indexes.qmd` to PDF on the toolchain
       `tests/run-tests.sh` runs exits 0, and the produced PDF prints two index
       sections headed `Index` and `Index of Authors` whose entry sets are each
       exactly the set that index's own marks derive. A new acceptance-suite
       check states each derived set and compares it against the section's
       extracted entries in both directions.
-- [ ] AC2: `examples/named-indexes.qmd` carries all four below-marker cells —
+- [x] AC2: `examples/named-indexes.qmd` carries all four below-marker cells —
       a mark for a named index below that index's own marker, a mark for the
       default index below the default marker, a mark for the default index
       below a named index's marker, and a mark for a named index below the
       default index's marker. On the same toolchain, each of those terms is
       present in or absent from its own printed index exactly as a new check
       states cell by cell.
-- [ ] AC3: Rendering `examples/book/` to PDF exits 0, and the extracted text
+- [x] AC3: Rendering `examples/book/` to PDF exits 0, and the extracted text
       carries one printed section per index that book declares, headed with that
       index's declared title, each section carrying at least one stated entry
       that only that index's own marks can produce.
-- [ ] AC4: Each of the four per-index judgements — cross-reference resolution,
+- [x] AC4: Each of the four per-index judgements — cross-reference resolution,
       sort-key rivalry, range pairing, and the printed-path collision the
       three-level fold produces — draws at least one report in each of
       `examples/named-indexes.qmd`'s two indexes; the reports a LaTeX render of
       that fixture draws are exactly the set a new check states verbatim; and
       each of those eight reports names the index its judgement was made in
       rather than the word "document".
-- [ ] AC5: No tracked page under `site/` carries the string
+- [x] AC5: No tracked page under `site/` carries the string
       `A LaTeX or PDF render builds a single index` or the string
       `Quarto's PDF loop builds only the main entry file`, over a domain a new
       check enumerates itself and whose size it reports. `site/named-indexes.qmd`
@@ -72,7 +72,7 @@ candidate row.
       after the first to be built and what happens where it does not.
       `site/books.qmd` and `examples/book/_quarto.yml`'s declaration comment
       scope their one-index-per-book claim to the HTML book.
-- [ ] AC6: `tests/run-tests.sh` is clean.
+- [x] AC6: `tests/run-tests.sh` is clean.
 
 ## Coverage
 
@@ -115,6 +115,8 @@ candidate row.
 
 ## Work log
 
+- 2026-08-28: review — PR #50 opened; suite 406 checks clean, 790 under `--self-test`; `cairn_validate` exit 0; all six criteria met with fresh evidence.
+
 - 2026-08-27: created by /milestone-plan.
 - 2026-08-27: criteria audit re-ran in FULL mode over the two criteria the gate changed and returned nine findings across five, all with one clear answer and all fixed before implement: the extracted side of AC1's comparison now normalizes too; AC1's NFC/NFD-differing term is dropped rather than forcing the fixture to carry the D-016 engine-and-font recipe, which put its own criterion out of reach; AC1, AC2 and AC5 each stop binding an instrument's shape and bind the deliverable; AC2 gains the fourth below-marker cell, a named-index mark below the default marker, which is the one T5 does not imply; AC4 requires each judgement to draw a report in each index, the succeeding side drawing none; AC5 names the HTML-book claim rather than a sentence whose "too" is anaphoric on a retired one, and reaches `site/books.qmd` and the book fixture's declaration comment, which AC3 makes stale. AC3 passed all six; AC6 is instrument-bound by construction as the tier-wide regression criterion.
 - 2026-08-27: criteria audit ran in FULL mode (user-facing tier); the fresh-context [O] reader returned twelve findings — ten fixed at the gate and reported in chat, two raised as gate questions (the filter warning against GP2/D-016, and IP2 versus GP2 as the condition's home).
@@ -142,3 +144,58 @@ candidate row.
 ## Decisions
 
 ## Review
+
+Evidence gathered 2026-08-28 on the branch at c5007ad, from a full
+`tests/run-tests.sh` run (406 checks, exit 0) and a `--self-test` run
+(790 checks, exit 0). Toolchain: Quarto 1.10.18, lualatex, TinyTeX.
+
+- **AC1 — met.** `M49-AC1`: the PDF render of `examples/named-indexes.qmd`
+  exits 0 and its two printed sections, headed `Index` and `Index of Authors`
+  in the hand-written manifest, carry exactly the 20 entry lines their own
+  marks derive and no other; `tests/namedpdf.py entries` compares in both
+  directions. Six planted defects under `--self-test` show each clause red on
+  its own (an entry stated and not printed, one printed and not stated, a
+  heading with no section, a missing section-ending line, an orphan manifest
+  row, a manifest naming no section).
+- **AC2 — met.** `M49-AC2`: the fixture carries all four below-marker cells and
+  each reads as the manifest states it, cell by cell — Underwood (default index,
+  below the default marker), Vesalius (default index, below a named marker) and
+  Ockham (named index, below the default marker) present in their own printed
+  index; Petrarch (named index, below that index's own marker) absent from it.
+  Two plants show the reader red on a flipped side and on a one-kind manifest.
+- **AC3 — met.** `M49-AC3`: `examples/book/` renders to PDF at exit 0 and the
+  extracted text carries two sections, one per declared index, each headed with
+  the title its declaration gives it (`Index of Subjects`, `Index of People`)
+  and each carrying a stated entry only that index's own marks produce, and not
+  the other index's.
+- **AC4 — met.** `M49-AC4`: the LaTeX render draws exactly the 13 reports the
+  manifest states, verbatim and no other; and over that same stated set, each of
+  the four per-index judgements — cross-reference resolution, sort-key rivalry,
+  range pairing, printed-path collision — draws exactly one report in each of
+  the two indexes (eight reports), each naming its index (`in this index
+  "main"` / `"authors"`) rather than the word "document". Three plants show the
+  reader red on a report drawn and not stated, one stated and not drawn, and a
+  pattern file reading no report at all.
+- **AC5 — met.** `M49-AC5`: the sweep enumerates its own domain from
+  `git ls-files` and reports its size — 20 tracked `.qmd` pages under `site/` —
+  and none carries either retired sentence. Read directly at review:
+  `site/named-indexes.qmd` states the HTML book's fold and why (the per-chapter
+  record carries no index name), and states that every index after the first is
+  built by imakeidx through TeX's restricted shell escape, that a stock TeX Live
+  or TinyTeX permits it, and that an installation withholding it prints those
+  indexes empty with imakeidx saying so in the log and the extension neither
+  detecting nor working around it. `site/books.qmd` scopes its declaration-count
+  claim to the HTML book and points at that page for what a PDF book does;
+  `examples/book/_quarto.yml`'s declaration comment scopes its fold to the HTML
+  book and records that a PDF book prints both declarations.
+- **AC6 — met.** `tests/run-tests.sh` exits 0 at 406 checks; `--self-test` exits
+  0 at 790.
+
+### Consistency gate
+
+`cairn_validate.py` exits 0 — every check PASS, every advisory OK, including
+`coverage complete` and `scaffold present`; the `release window` advisory did
+not fire. `cairn_impact.py` skipped: no `DESIGN.md` principle text changed (GP2
+is annotated by D-031, not amended). The active profile is `generic`, whose
+`consistency-gate` slot names no toolchain checks, so that half is a clean
+no-op.

@@ -9,7 +9,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
-- **Branch/PR:** `m051-matrix-pdf-leg`
+- **Branch/PR:** `m051-matrix-pdf-leg` / https://github.com/jmgirard/quarto-index/pull/51
 
 ## Goal
 
@@ -44,30 +44,30 @@ D-entry this milestone writes is the record of it.
 
 ## Acceptance criteria
 
-- [ ] AC1: `.github/workflows/versions.yml` carries a job that installs
+- [x] AC1: `.github/workflows/versions.yml` carries a job that installs
       TinyTeX and `imakeidx` from a repository the file names, installs
       `poppler-utils`, renders `examples/demo.qmd` and `examples/book/` to
       PDF, and pipes each rendered artifact through `python3
       tests/indexdump.py pdf`; reading the file, that job writes each
       extraction to a path outside the directory named in the render job's
       `upload-artifact` step, and adds no upload of its own.
-- [ ] AC2: `tests/versioncheck.py` is where the rule deciding whether the
+- [x] AC2: `tests/versioncheck.py` is where the rule deciding whether the
       PDF job runs lives, and it prints its answer for each of `push`,
       `schedule` and `workflow_dispatch`; reading
       `.github/workflows/versions.yml` top to bottom, the PDF job's `if:`
       names no event and gates on the `plan` job's output instead.
-- [ ] AC3: one `workflow_dispatch` run, cited by URL in the Review section,
+- [x] AC3: one `workflow_dispatch` run, cited by URL in the Review section,
       has the PDF job green on every leg that run planned, each leg's log
       carrying `indexdump.py`'s printed-entry-count line with a non-zero
       count for both fixtures.
-- [ ] AC4: one run of a probe commit kept under `refs/probes/`, cited by
+- [x] AC4: one run of a probe commit kept under `refs/probes/`, cited by
       URL, has the PDF job red at the extraction of a fixture that printed
       no index, with that fixture's own `quarto render` step at exit 0 — so
       the job's green is shown to rest on an index being printed and not on
       the render alone.
-- [ ] AC5: one push-event run, cited by URL, shows the PDF job skipped and
+- [x] AC5: one push-event run, cited by URL, shows the PDF job skipped and
       the render and compare jobs green.
-- [ ] AC6: the matrix paragraph in `README.md` and the one in
+- [x] AC6: the matrix paragraph in `README.md` and the one in
       `site/tests.qmd` each state that the matrix renders PDF weekly and on
       demand rather than on every push, and that PDF content is not compared
       across legs; and `site/tests.qmd`'s paragraph, which today says the
@@ -124,6 +124,110 @@ D-entry this milestone writes is the record of it.
 - 2026-08-28: T7 — `tests/run-tests.sh --self-test` clean at the gate, 794 checks; `cairn_validate` all checks passed. One earlier invocation aborted at an unrelated pre-existing check whose read of `quarto list tools` returned no TinyTeX status, a network-dependent column; the tool reports `Up to date` and the re-run is the clean one recorded here.
 - 2026-08-28: plan gate chose restoring only the two fixtures `50899b9` removed over adding M49's two-index fixture, because that fixture's second index depends on TeX's restricted shell escape (D-031) and adding it widens the restore into new coverage; falsified by the two-index PDF path breaking on a Quarto version while the restored leg stays green. Deferred to a candidate row, not rejected.
 
+- 2026-08-28: review — every criterion verified with fresh evidence (workflow read, `versioncheck.py pdf` run here, the three cited runs re-read job- and step-wise, both docs paragraphs read); `cairn_validate` all checks passed, suite clean at 794 checks; three fresh-context lenses returned ten findings, none demonstrating a criterion failing.
+
 ## Decisions
 
 ## Review
+
+Reviewed 2026-08-28 on branch `m051-matrix-pdf-leg`, PR
+https://github.com/jmgirard/quarto-index/pull/51. `origin/main` at `85cdf2e`
+with no commits the branch lacks, so no merge-in was needed.
+
+### Acceptance-criteria evidence
+
+- AC1 — read `.github/workflows/versions.yml` at HEAD: the `pdf` job installs
+  TinyTeX (`quarto-actions/setup@v2`, `tinytex: true`, authenticated with the
+  run's token), installs `imakeidx` after `tlmgr option repository
+  https://tlnet.yihui.org`, installs `poppler-utils`, renders
+  `examples/demo.qmd` and `examples/book/` to PDF, and pipes each rendered
+  artifact through `python3 tests/indexdump.py pdf`. Both extractions are
+  redirected under `$RUNNER_TEMP/pdf`, outside the `$RUNNER_TEMP/extract` the
+  render job's `upload-artifact` step names; `grep -n upload-artifact` over the
+  file returns one hit, in the render job.
+- AC2 — `python3 tests/versioncheck.py pdf <event>` run here answers `false`
+  for `push` and `true` for `schedule` and `workflow_dispatch`; an undeclared
+  event (`release`) is refused on stderr at exit 1 with stdout empty. The
+  workflow's only `if:` lines are `always()` on `compare` and
+  `needs.plan.outputs.pdf == 'true'` on `pdf` — the PDF job's gate names no
+  event.
+- AC3 — dispatch run
+  https://github.com/jmgirard/quarto-index/actions/runs/33190906035, re-read
+  here: `pdf` green on all three legs the run planned (floor 1.4.549, pinned
+  1.10.18, release). Each leg's log carries `39 printed entry line(s) under
+  'Index'` for `examples/demo.pdf` and `19 printed entry line(s) under 'Index
+  of Subjects'` for the book.
+- AC4 — probe run
+  https://github.com/jmgirard/quarto-index/actions/runs/33190963909 on commit
+  `4a7e781`, parked at `refs/probes/m051-noindex` (present on origin). Per-step
+  conclusions re-read here: on each of the three legs `Render examples/demo.qmd
+  to PDF` is `success` and `Extract the index printed in examples/demo.pdf` is
+  `failure`, the log line reading `FAIL: examples/demo.pdf: no index heading
+  'Index'`.
+- AC5 — push run
+  https://github.com/jmgirard/quarto-index/actions/runs/33190654491: `pdf`
+  skipped, both render legs and `compare` green.
+- AC6 — README's matrix paragraph says the run "also typesets two of the
+  fixtures to PDF" "Weekly and on demand rather than on every push" and that
+  "no PDF is compared across versions". `site/tests.qmd` says the same run
+  renders the two fixtures to PDF "Weekly and on demand — not on every push",
+  and a paragraph of its own opens "No PDF is compared across legs." Its
+  former "It renders no PDF" sentence is gone; `grep -i "no PDF"` over both
+  files returns only the two comparison sentences.
+
+### Consistency gate
+
+`cairn_validate.py` exit 0, all checks passed, every advisory OK including
+`release window`. The active profile is `generic`, whose `consistency-gate`
+slot names no toolchain checks. No `DESIGN.md` principle changed in this diff,
+so `cairn_impact.py` was not run. `tests/run-tests.sh --self-test` clean at
+the gate, 794 checks.
+
+### Independent review
+
+Three fresh-context lenses, none having authored the work. [S]
+prior-review-record reported no prior-review evidence (no `## Review` sections
+in the archive touching these files; `gh api .../pulls/comments` empty) and
+zero findings. [S] blame-history reported no findings: the restore matches
+`50899b9` apart from the deliberate step split and the M49 heading fix, M43's
+dead PDF-comparison scaffolding stays gone, and the scope matches what M47's
+removal objected to. [O] diff-bug reported ten findings, ranked below with
+their dispositions.
+
+### Findings and dispositions
+
+Ranked as the [O] lens ranked them. No finding demonstrates an acceptance
+criterion failing, so none returns the milestone (return floor).
+
+1. The TeX-bin discovery step's `FAIL: no TeX Live bin directory` branch is
+   largely unreachable: under `set -euo pipefail`, a missing `~/.TinyTeX/bin`
+   kills the step at the assignment before the test runs (the branch does
+   still fire on a present-but-empty directory), and `find | head -1` can in
+   principle redden a working leg on SIGPIPE. Restored verbatim from
+   `50899b9`, and the failure is loud either way.
+2. `DECLARED_EVENTS` in `tests/versioncheck.py` is a hand-kept copy of the
+   workflow's `on:` block that nothing reads the workflow to check; adding a
+   trigger would fail the `plan` job and so skip `render` and `compare` too,
+   stopping the HTML matrix over a PDF-gating question.
+3. `tests/run-tests.sh`'s `M51_PDF_ANSWERS` check counts its own table's rows,
+   while its pass line says "each of the $M51PDFN events the version workflow
+   declares" — a claim about the workflow the check does not establish.
+4. AC2's second clause (the PDF job's `if:` names no event) has no automated
+   hold; a later edit naming events there would leave the suite green.
+5. The plan step's comment credits its `!= true && != false` test with work
+   `set -e` already does — a failing reader kills the step at the capture.
+6. README says the run typesets PDF "on each of those versions" after
+   enumerating only the floor and pinned legs, but the PDF job takes the same
+   three-leg matrix, release leg included. `site/tests.qmd`, which names the
+   weekly release leg first, is accurate.
+7. `site/tests.qmd` lost a true sentence AC6 did not ask it to lose — that the
+   acceptance suite renders and reads a printed PDF index on every run, on one
+   Quarto version — which the new job's own header comment leans on.
+8. Two of the new job's seven run steps omit `shell: bash` that the other five
+   declare; behavior is identical on `ubuntu-latest`.
+9. `refs/probes/m051-noindex` is a plain commit ref where `m042-*` and
+   `m043-*` are annotated tags. The AC4 evidence is reachable either way.
+10. The `pdf` job has no `timeout-minutes`, so a hang at the self-updating
+    package manager costs the default six hours per leg. The `render` job has
+    none either.
+

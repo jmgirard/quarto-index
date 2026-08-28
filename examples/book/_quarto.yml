@@ -18,6 +18,7 @@ book:
 format:
   html: default
   pdf: default
+  epub: default
 
 # Two declared indexes (M38), for the two properties a book has to show about
 # them. An HTML book aggregates its chapters through a sidecar store whose

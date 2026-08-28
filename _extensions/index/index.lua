@@ -194,7 +194,7 @@ local function Pandoc(doc)
   end
   qi_marks.report_ranges(range_scope)
 
-  if qi_core.is_html() then
+  if qi_core.builds_ast_index() then
     -- Anchors are assigned before either path decides what to place: they are
     -- what a locator links back to, and in a book they are read by whichever
     -- chapter builds the index rather than by this one. A page with no marks

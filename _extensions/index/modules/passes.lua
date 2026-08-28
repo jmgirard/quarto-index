@@ -494,7 +494,7 @@ local function Span(span)
         resolve = xref.levels, context = context, index = index_name }
   end
 
-  if qi_core.is_html() then
+  if qi_core.builds_ast_index() then
     -- Two range fields, because they answer different questions. `range` is
     -- the end the AUTHOR wrote, which is what lets the book's report name a
     -- would-be pair split across two chapters — nothing pairs on it (D-009).

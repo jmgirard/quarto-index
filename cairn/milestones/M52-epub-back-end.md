@@ -2,12 +2,12 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M52: EPUB gets an index back-end
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP1, GP6
-- **Branch/PR:** —
+- **Branch/PR:** `m052-epub-back-end`
 
 ## Goal
 
@@ -47,7 +47,7 @@ back-end forces.
       lists, and the entry rows `tests/htmlindex.py` returns from that section —
       level, term text, locator count, cross-reference kind and target, in
       document order — are identical to the rows the same reader returns from
-      the HTML render of the same fixture, which `tests/run-tests.sh` manifest 2
+      the HTML render of the same fixture, which `tests/run-tests.sh` manifest 1e
       already pins by hand from the `.qmd` source.
 - [ ] AC2 — for every locator link the reader collects from that EPUB's index
       section, the href's `<file>` part names an XHTML document listed in the
@@ -68,8 +68,9 @@ back-end forces.
 - [ ] AC5 — `site/epub.qmd` exists and states both ways EPUB differs from HTML
       (one Pandoc process, so nothing folds and every declared index prints;
       locators are per-entry sequence numbers, not pages), pinned by a
-      `tests/sitecheck.py` clause naming that page; and a sweep of tracked
-      `.qmd` and `.md` files for the string `two back-ends` returns nothing.
+      `tests/sitecheck.py` clause naming that page; and a sweep of `README.md`
+      and the tracked `.qmd` files under `site/` for the string `two back-ends`
+      returns nothing.
 - [ ] AC6 — `tests/run-tests.sh --self-test` clean (the `verify` slot's fuller
       pre-review check).
 
@@ -84,7 +85,7 @@ back-end forces.
 
 ## Tasks
 
-- [ ] T1 — `core.lua`: add `is_epub` (matching FORMAT `epub`, `epub2`, `epub3`)
+- [x] T1 — `core.lua`: add `is_epub` (matching FORMAT `epub`, `epub2`, `epub3`)
       and `builds_ast_index` (`is_html` or `is_epub`); export both. Route
       `indexes.lua:87`, `passes.lua:497` and `index.lua:197` through
       `builds_ast_index`; leave `index.lua:133/135/166/192` and
@@ -112,7 +113,9 @@ back-end forces.
       `site/index.qmd`, `site/output.qmd`, `site/back-end-differences.qmd`,
       `site/other-formats.qmd`; `CHANGELOG.md`; `cairn/DESIGN.md` Architecture
       (the format tests in the `core.lua` bullet, and line 366's "Every other
-      format — beamer, revealjs, epub, gfm" sentence).
+      format — beamer, revealjs, epub, gfm" sentence). `site/principal-mention.qmd`
+      joins the swept pages: its "between the two back-ends" sentence is one of
+      the six AC5 binds.
 - [ ] T7 — the `tests/sitecheck.py` clause for `epub.qmd`'s two claims and the
       `two back-ends` sweep, each with a planted defect showing it red.
 
@@ -123,6 +126,9 @@ back-end forces.
 - 2026-08-28: plan gate chose a distinct `builds_ast_index` predicate over widening `is_html()` to match epub because a scratch probe showed the widening engages the sidecar store on a merged single-process book, folding both declared indexes and drawing three reports that say "an HTML book aggregates its chapters through a per-chapter record", which is false of EPUB; falsified by evidence that Quarto renders an EPUB book per chapter rather than in one Pandoc process.
 - 2026-08-28: plan gate chose a thin `epubindex.py` over `htmlindex.py` rather than a standalone EPUB reader because the EPUB's XHTML parses with the existing structural reader and the demo's 41 entry rows came back identical to the HTML render's; falsified by an EPUB writer change producing markup `htmlindex.py` mis-parses.
 - 2026-08-28: plan gate chose a hand-derived manifest over comparing the EPUB index against the PDF book's index because the M30 and M33 lessons put engine and font differences in a PDF's text layer; falsified by an extraction shown engine-neutral, which is the existing version-portability row's own promotion condition.
+- 2026-08-28: amendment — AC1's citation of `run-tests.sh` "manifest 2" named the control-token manifest (`run-tests.sh:632`); the demo's HTML index rows are pinned by manifest 1e (`DEMO_HTML_INDEX`, `run-tests.sh:439`). Corrected at the implement question gate on the maintainer's selection; the criterion's promise is unchanged. Amended wording was not read by a fresh-context [O] reader: this session carries a standing instruction not to spawn subagents.
+- 2026-08-28: amendment — AC5's sweep domain narrowed from all tracked `.qmd`/`.md` files to `README.md` and the tracked `.qmd` files under `site/`, on the maintainer's selection at the same gate. As written the criterion could not pass: `two back-ends` occurs in `cairn/DESIGN.md:304` and twice in this milestone file, where AC5 itself states the string. Six reader-facing sentences still bind (README.md:37, site/index.qmd:58, site/back-end-differences.qmd:2 and :5, site/output.qmd:10, site/principal-mention.qmd:64); `DESIGN.md`'s is fixed under T6 without the criterion binding it.
+- 2026-08-28: T1 — `core.lua` gains `is_epub` (matching `epub` in FORMAT, which covers `epub`, `epub2` and `epub3`) and `builds_ast_index` (`is_html` or `is_epub`), both exported; `indexes.builds_index`, `passes.lua`'s per-mark HTML record branch and `index.lua`'s AST back-end branch route through it, while the book context, the degraded-book warning, the dangling-report gate, the range-scope word and `folded` stay on `is_html`. The `is_html` comment no longer says epub passes through. `tests/run-tests.sh` green, 407 checks.
 
 ## Decisions
 

@@ -35,12 +35,15 @@ identifier can make vacuously true.
       `mention=` prints its locator in bold, which is a font and not a
       character, and no text extraction of a PDF can see it.
 
-  folded <snippets.json> <pdf-rows>
-      The PDF's printed index, given as the rows `tests/indexdump.py pdf`
-      dumps: one index carrying the entries of both declared ones, which is
-      what a LaTeX render does today and what the docs site says it does.
-      Rows rather than the PDF itself, so this clause can be planted without
-      typesetting a second document.
+  split <snippets.json> <first-index-rows> <second-index-rows>
+      The PDF's printed indexes, given as the rows `tests/indexdump.py pdf`
+      dumps for each: since M49 a LaTeX render builds every declared index, so
+      the term `index=` files in the second is in the second section and in
+      neither the first, and the terms marked outside it are in the first and
+      in neither the second. The declared headings are read from the snippet
+      file itself, never written down a second time here. Rows rather than the
+      PDF itself, so these clauses can be planted without typesetting a second
+      document.
 
 Every mode refuses a domain that emptied: a snippet set with no mark in it, an
 index section that is not there, an entry the comparison is about that neither
@@ -515,47 +518,102 @@ def check_effects(snippets_path, fixture_html, control_html):
     return 0
 
 
-def check_folded(snippets_path, rows_path):
-    """The PDF's one printed index, carrying both declared indexes' entries."""
+def declared_indexes(snippets):
+    """The `name:`/`title:` pairs the metadata snippets declare, in order.
+
+    Read from the snippet file the fixture is built from, so the headings this
+    mode looks for in the PDF are the ones an editor would actually insert --
+    never a second copy of them written down here. Read with PyYAML (D-030),
+    which the suite already requires.
+    """
+    try:
+        import yaml
+    except ImportError:
+        return None, ('PyYAML is not installed, so the index declarations the '
+                      'fixture front matter carries cannot be read')
+    pairs = []
+    for snippet in snippets:
+        if not is_metadata(snippet):
+            continue
+        try:
+            block = yaml.safe_load(snippet['text'])
+        except yaml.YAMLError as bad:
+            return None, (f'the metadata snippet {snippet["name"]!r} does not '
+                          f'parse as YAML ({bad})')
+        if not isinstance(block, dict):
+            continue
+        for entry in block.get('indexes') or ():
+            if isinstance(entry, dict) and entry.get('name') \
+                    and entry.get('title'):
+                pairs.append((str(entry['name']), str(entry['title'])))
+    return pairs, None
+
+
+def check_split(snippets_path, default_rows, named_rows):
+    """Each declared index printed on its own, carrying its own marks alone."""
     snippets = load(snippets_path)
     sites = attribute_sites(snippets)
     if 'index' not in sites:
         return fail(f'{snippets_path}: no snippet writes index=, so there is '
-                    f'no second index for the PDF to fold')
+                    f'no second index for the PDF to print')
     named = sites['index']['term']
     bare_terms = [term for snippet in snippets for term in snippet['marks']
                   if not any(name == 'index' for item in snippet['constructs']
                              for name, _value in item['attrs'])]
     if not bare_terms:
         return fail(f'{snippets_path}: no snippet marks a term outside a '
-                    f'named index, so a folded index could not be told from '
-                    f'the named one alone')
-    printed = [line.split('\t')[1] for line in
-               editormeta.read(rows_path).splitlines() if '\t' in line]
-    if not printed:
-        return fail(f'{rows_path}: carries no printed entry row, so the fold '
-                    f'below would be read off an empty index')
-    if named not in printed:
-        return fail(f'{rows_path}: the printed index carries no entry for '
-                    f'{named!r}, which index="{sites["index"]["value"]}" '
-                    f'files in the second declared index; a PDF render folds '
-                    f'every declared index into one')
-    outside = [term for term in bare_terms if term in printed]
-    if not outside:
-        return fail(f'{rows_path}: the printed index carries none of the '
-                    f'{len(bare_terms)} term(s) marked outside the named '
-                    f'index, so it is that index alone rather than the fold '
-                    f'of both')
-    print(f'ok   M50-AC4: the PDF prints one index of {len(printed)} entry '
-          f'line(s) carrying both {named!r}, filed in the second declared '
-          f'index, and {len(outside)} term(s) filed in the first')
+                    f'named index, so the second index could not be told from '
+                    f'the first')
+    declared, bad = declared_indexes(snippets)
+    if declared is None:
+        return fail(f'{snippets_path}: {bad}')
+    if len(declared) < 2:
+        return fail(f'{snippets_path}: the metadata snippets declare '
+                    f'{len(declared)} index/indexes, so there is no second '
+                    f'declared index for the rows below to be about')
+    titles = [title for _name, title in declared[:2]]
+
+    printed = {}
+    for label, path in (('first', default_rows), ('second', named_rows)):
+        rows = [line.split('\t')[1] for line in
+                editormeta.read(path).splitlines() if '\t' in line]
+        if not rows:
+            return fail(f'{path}: carries no printed entry row, so the '
+                        f'{label} declared index would be read off an empty '
+                        f'section')
+        printed[label] = rows
+
+    if named in printed['first']:
+        return fail(f'{default_rows}: the section headed {titles[0]!r} carries '
+                    f'an entry for {named!r}, which index='
+                    f'"{sites["index"]["value"]}" files in the second declared '
+                    f'index; a PDF render prints each declared index on its '
+                    f'own')
+    if named not in printed['second']:
+        return fail(f'{named_rows}: the section headed {titles[1]!r} carries '
+                    f'no entry for {named!r}, which index='
+                    f'"{sites["index"]["value"]}" files in it')
+    inside = [term for term in bare_terms if term in printed['first']]
+    if not inside:
+        return fail(f'{default_rows}: the section headed {titles[0]!r} carries '
+                    f'none of the {len(bare_terms)} term(s) marked outside the '
+                    f'named index, so it is not the index those marks file in')
+    strayed = sorted(term for term in bare_terms if term in printed['second'])
+    if strayed:
+        return fail(f'{named_rows}: the section headed {titles[1]!r} carries '
+                    f'term(s) marked outside it ({", ".join(strayed)}), so the '
+                    f'two indexes are not each their own marks alone')
+    print(f'ok   M50-AC4: the PDF prints the two declared indexes on their '
+          f'own -- {titles[1]!r} carrying {named!r}, filed there by index=, '
+          f'and nothing marked outside it, and {titles[0]!r} carrying '
+          f'{len(inside)} term(s) filed in it and not {named!r}')
     return 0
 
 
 MODES = {
     'generate': (check_generate, 3),
     'effects': (check_effects, 3),
-    'folded': (check_folded, 2),
+    'split': (check_split, 3),
 }
 
 

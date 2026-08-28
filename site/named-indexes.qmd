@@ -54,16 +54,33 @@ a warning that a target names nothing indexed is telling you nothing in *that*
 index carries the term — the term may well be marked elsewhere in the document,
 in another index.
 
-**One index outside HTML, for now.** A LaTeX or PDF render builds a single
-index. Quarto's PDF loop builds only the main entry file, so a second index
-would print empty with nothing said, and refusing that is worth more than the
-feature. An HTML book builds a single index too: its chapters are aggregated
-through a per-chapter record that carries no index name. In both, every mark
-and every marker naming another index is folded into the one index that is
-built, and each is reported by the index it named — nothing is dropped, and
-nothing is silent. The one index is placed at your own marker for it, wherever
-that marker stands; only where no marker names it does the first marker of any
-name place it.
+**Every index in a PDF.** A LaTeX or PDF render builds every index you
+declare, each at its own marker. Two different things build them. The first
+declared index is built by Quarto's own PDF loop, which runs the index tool on
+the main entry file. Every index after it is built by `imakeidx`, the LaTeX
+package this extension loads, which runs the index tool itself — and that run
+goes through TeX's restricted shell escape. A stock TeX Live or TinyTeX
+permits `makeindex` there, so a normal installation needs nothing from you.
+An installation that withholds that permission builds no index after the
+first: each of them prints empty, `imakeidx` says so in the LaTeX log, and
+this extension neither detects that nor works around it.
+
+**Mark above the marker, in a named index.** `imakeidx` closes an index's
+entry file where that index is printed, so a mark below the placement marker
+for its own index reaches no index at all. The extension reports how many such
+marks a render found and which block the marker stands in; move the marker
+below the last mark filed in that index. The first declared index has no such
+limit — its entry file is held open past the place it is printed, so a mark
+written below the first marker still reaches the first index, and a mark filed
+in the first index is unaffected by where any other index's marker stands.
+
+**One index in an HTML book.** An HTML book builds a single index: its
+chapters are aggregated through a per-chapter record that carries no index
+name. There every mark and every marker naming another index is folded into
+the one index that is built, and each is reported by the index it named —
+nothing is dropped, and nothing is silent. The one index is placed at your own
+marker for it, wherever that marker stands; only where no marker names it does
+the first marker of any name place it.
 
 `examples/named-indexes.qmd` declares two indexes and writes every one of
 those judgements across both; `examples/named-indexes-twin.qmd` is the same

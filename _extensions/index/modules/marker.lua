@@ -428,6 +428,7 @@ end
 -- scans take the FIRST match for `NAME =` over the whole source set, and
 -- the M16-AC3 probe relocates a definition into another file — a plain
 -- `NAME =` line left behind here would then mask it (M16 review F3).
+M["POSITION_BASIS"] = POSITION_BASIS
 M["is_marker"] = is_marker
 M["MARKER_SITE_NAMES"] = MARKER_SITE_NAMES
 M["report_marker_sites"] = report_marker_sites

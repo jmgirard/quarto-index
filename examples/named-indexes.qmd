@@ -12,37 +12,82 @@ filters:
 Two indexes are declared in this document's metadata. Every mark below either
 names one of them or files in the first, and every judgement this extension
 makes about a mark — which entry it indexes, which target it resolves against,
-which sort key it files under, which range it pairs with — is made inside the
-one index the mark belongs to.
+which sort key it files under, which range it pairs with, and which other entry
+it collides with once the LaTeX back-end has folded it — is made inside the one
+index the mark belongs to. Each of those judgements is written wrongly here in
+BOTH indexes, so this fixture is a document of mistakes rather than one to
+copy: what it demonstrates is that the report names the index its judgement was
+made in.
 
 A mark that names no index files in the first declared one:
 [Aardvark]{.index}. A mark that names the second files there:
 [Babbage]{.index index="authors"}.
 
-A sort key is written for one index and not for the other. The Hague files
-under Z in the first, where a mark writes one: [Hague]{.index sort="Zebra"}.
-The same term files under H in the second, where no mark writes one:
-[Hague]{.index index="authors"}.
+## A cross-reference resolves inside its own index
 
-A cross-reference resolves inside its own index. This target names a term the
-first index carries: [near]{.index entry="Neighbour" see="Aardvark"}. This one
-names the same term from the second index, which does not carry it:
-[far]{.index index="authors" entry="Stranger" see="Aardvark"}.
+This target names a term the first index carries, and resolves:
+[near]{.index entry="Neighbour" see="Aardvark"}. This one names, from the
+second index, the same term the second does not carry:
+[far]{.index index="authors" entry="Stranger" see="Aardvark"}. And this one
+names, from the first index, a term only the second carries:
+[remote]{.index entry="Outsider" see="Babbage"}.
 
-A range does not pair across two indexes. This opening is in the first index:
-[Cantor]{.index range="open"}, and this closing is in the second:
-[Cantor]{.index index="authors" range="close"}. Neither has a counterpart
-inside its own index, so each indexes as an ordinary page number.
+## A sort key files a term in its own index only
+
+The Hague files under Z in the first index, where a mark writes that key, and
+under Q in the second, where a mark writes another: [Hague]{.index sort="Zebra"}
+and [Hague]{.index index="authors" sort="Quebec"}. A second mark in each index
+writes a rival key for the same printed entry, which the first key wins:
+[Hague]{.index sort="Yankee"} and [Hague]{.index index="authors" sort="Romeo"}.
+
+## Two entries print in one place and file under two keys
+
+The index tool stores three levels, so an entry written deeper is folded into
+its third. Two entries whose paths differ before the fold can be identical
+after it, and a sort key written against the path the author wrote then files
+the one printed entry twice. The first index writes that collision:
+[Delta]{.index entry="alpha!beta!gamma!delta" sort="alpha!beta!Zed"} and
+[Gamma, delta]{.index entry="alpha!beta!gamma, delta" sort="alpha!beta!Ada"}.
+The second index writes its own, out of two different tails:
+[Eff]{.index index="authors" entry="ada!bee!cee!dee!eff" sort="ada!bee!Wye"} and
+[Dee, eff]{.index index="authors" entry="ada!bee!cee, dee!eff" sort="ada!bee!Vee"}.
+
+## A range does not pair across two indexes
+
+This opening is in the first index: [Cantor]{.index range="open"}, and this
+closing is in the second: [Cantor]{.index index="authors" range="close"}.
+Neither has a counterpart inside its own index, so each indexes as an ordinary
+page number.
 
 ## Where the first index goes {#site-main}
 
 ::: {.qi-index-here}
 :::
 
+{{< pagebreak >}}
+
+## Below the first index {#site-below-main}
+
+Two marks stand below the first index's placement marker, and both still reach
+their index. [Underwood]{.index} files in the first, whose entry file this
+extension holds open past the place the index is printed;
+[Ockham]{.index index="authors"} files in the second, whose own marker is
+further down the page.
+
 ## Where the second index goes {#site-authors}
 
 ::: {.qi-index-here index="authors"}
 :::
+
+{{< pagebreak >}}
+
+## Below the second index {#site-below-authors}
+
+[Vesalius]{.index} files in the first index and still reaches it, though it
+stands below the second index's marker. [Petrarch]{.index index="authors"} is
+below its OWN index's marker: the index tool closed that index's entry file
+where the index was printed, so this term reaches no index at all, and the
+extension says so.
 
 ## A second marker for the first index {#site-again}
 

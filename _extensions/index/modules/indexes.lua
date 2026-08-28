@@ -71,10 +71,12 @@ local titles = { [UNNAMED] = DEFAULT_TITLE }
 -- author wrote.
 local declared = false
 -- Does the running back-end keep ONE index whatever the marks name? True for
--- every LaTeX-derived render -- Quarto's PDF loop builds only the main `.idx`,
--- so a second index would print empty at exit 0 -- and true for an HTML book,
--- whose sidecar store carries no per-record index name yet. Both fold, and
--- both say so out loud rather than dropping a named mark in silence (IP2).
+-- an HTML book alone, whose sidecar store carries no per-record index name
+-- yet, so every chapter's record folds to the reading chapter's default. It
+-- says so out loud rather than dropping a named mark in silence (IP2).
+-- A LaTeX-derived render no longer folds (M49): it writes one `.idx` per
+-- declared index and imakeidx builds each of the named ones itself, under the
+-- restricted shell escape a TeX installation grants `makeindex` by default.
 local folded = false
 
 -- Does this render build an index at all? The fold reports say a mark was
@@ -186,13 +188,16 @@ local function reset(doc)
   order[1] = UNNAMED
   titles[UNNAMED] = DEFAULT_TITLE
   -- An HTML book renders a chapter per Pandoc process and aggregates through
-  -- the sidecar store, whose record format carries no index name; a merged
-  -- LaTeX book and a single PDF both reach one `.idx`. `doc.meta.book` is the
-  -- same test index.lua uses for "this looks like a book", and it is available
-  -- here, which the resolved chapter context is not -- that is computed in the
-  -- final Pandoc pass, long after the first mark has been recorded.
-  folded = not qi_core.is_html() or (doc ~= nil and doc.meta ~= nil
-                                     and doc.meta.book ~= nil)
+  -- the sidecar store, whose record format carries no index name, so every
+  -- record folds to the reading chapter's default and the book prints one
+  -- section. Every other render -- a single HTML page, and every LaTeX-derived
+  -- one, a merged book included -- keeps the indexes their author declared.
+  -- `doc.meta.book` is the same test index.lua uses for "this looks like a
+  -- book", and it is available here, which the resolved chapter context is not
+  -- -- that is computed in the final Pandoc pass, long after the first mark has
+  -- been recorded.
+  folded = qi_core.is_html() and doc ~= nil and doc.meta ~= nil
+           and doc.meta.book ~= nil
   if doc ~= nil then
     read(doc.meta)
   end
@@ -272,7 +277,7 @@ local function mark_index(value, context, report)
   end
   if folded and name ~= order[1] then
     if report and builds_index() then
-      qi_core.warn(('%s="%s" on %s names a second index, and this output has one index only, so the mark is indexed in that one index instead; more than one index prints in a single HTML document today'):format(INDEX_ATTR, value, context))
+      qi_core.warn(('%s="%s" on %s names a second index, and this output has one index only, so the mark is indexed in that one index instead; an HTML book aggregates its chapters through a per-chapter record carrying no index name, which is why it builds one'):format(INDEX_ATTR, value, context))
     end
     return order[1]
   end
@@ -317,9 +322,9 @@ local function marker_index(value, report, fold)
   if folded and name ~= order[1] then
     if report and builds_index() and fold ~= FOLD_QUIET then
       if fold == FOLD_PLACES then
-        qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output has one index only, so the marker places that one index instead; more than one index prints in a single HTML document today'):format(INDEX_ATTR, value))
+        qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output has one index only, so the marker places that one index instead; an HTML book aggregates its chapters through a per-chapter record carrying no index name, which is why it builds one'):format(INDEX_ATTR, value))
       else
-        qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output has one index only, which goes where this document already places it, so this marker places nothing; more than one index prints in a single HTML document today'):format(INDEX_ATTR, value))
+        qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output has one index only, which goes where this document already places it, so this marker places nothing; an HTML book aggregates its chapters through a per-chapter record carrying no index name, which is why it builds one'):format(INDEX_ATTR, value))
       end
     end
     return order[1], true

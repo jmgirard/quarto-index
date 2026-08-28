@@ -4,9 +4,11 @@
 #
 # READS: every warn() call's message text, with the fragments a message is
 # concatenated from joined back together.
-# ASSERTS: exactly one message carries each of the two shapes of the replacement
-# report, and no message tells an author a render can fail from rival
-# encapsulations — the claim M15 made untrue.
+# ASSERTS: each of the two shapes of the replacement report is carried by
+# exactly two messages — the plain one and the one naming the index the
+# judgement was made in, which M49 added when a LaTeX render stopped folding
+# every declared index into one — and no message tells an author a render can
+# fail from rival encapsulations, the claim M15 made untrue.
 # DOES NOT ASSERT: that either report ever fires, or that its numbers are right.
 # The rendered-log pins are what say that. Text built outside the warn() call —
 # a helper's return handed in as a format argument — is outside what it reads.
@@ -28,6 +30,13 @@ REPLACEMENT = (
      'carrying both targets and, since neither mark contributes one, no page '
      'numbers at all, so check that is the entry you meant'),
 )
+# The two heads each shape is written under (M49). A judgement about a mark is
+# made inside ONE index, and where a document declares more than one the report
+# says which — as one literal per shape rather than a clause spliced in, so the
+# plain form is not a prefix of the scoped one and a grep for the shorter
+# cannot match both. Both heads are required, so a repair that dropped the
+# scoped form, or that made one message serve both, fails here.
+HEADS = ('index entry %s ', 'index entry %s in %s ')
 
 src = filtersrc.text()
 
@@ -69,18 +78,27 @@ if not messages:
           'absence below is the scanner finding nothing, not the filter '
           'saying nothing', file=sys.stderr)
     sys.exit(1)
-# Exactly one message each, not merely one somewhere: a shape found in two
-# messages is a report the filter draws twice, and a presence test reads that as
-# the passing control it is not.
-miscounted = [(r, sum(1 for message in messages if r in message))
-              for r in REPLACEMENT]
-wrong = [(r, n) for r, n in miscounted if n != 1]
+# Exactly one message per shape and HEAD, not merely one somewhere: a shape
+# found twice under one head is a report the filter draws twice, and a presence
+# test reads that as the passing control it is not. Matched as head PLUS shape
+# and not by prefix, because the plain head is a prefix of the scoped one --
+# read by prefix, one message would answer for both and a dropped scoped form
+# would go unnoticed.
+wrong = []
+for r in REPLACEMENT:
+    carrying = [message for message in messages if r in message]
+    for head in HEADS:
+        n = sum(1 for message in carrying if message == head + r)
+        if n != 1:
+            wrong.append((head + r, n))
+    if len(carrying) != len(HEADS):
+        wrong.append((r, len(carrying)))
 if wrong:
-    print(f'FAIL: M15-AC5: {len(wrong)} of the {len(REPLACEMENT)} shapes of the '
-          f'replacement report is carried by other than exactly one of the '
-          f'{len(messages)} joined warn() messages this scanner read, so either '
-          f'the filter draws it twice or this scanner is reading the file '
-          f'wrongly:', file=sys.stderr)
+    print(f'FAIL: M15-AC5: a shape of the replacement report is not carried by '
+          f'exactly one of the {len(messages)} joined warn() messages this '
+          f'scanner read under each of its {len(HEADS)} heads, so either the '
+          f'filter draws one twice, or a head is missing, or this scanner is '
+          f'reading the file wrongly:', file=sys.stderr)
     for r, n in wrong:
         print(f'  {n} message(s) carry <<{r}>>', file=sys.stderr)
     sys.exit(1)
@@ -95,4 +113,6 @@ if guilty:
 print(f'ok   M15-AC5: none of the {len(messages)} joined warn() messages in '
       f'the filter claims a render can fail from rival encapsulations, and '
       f'each of the {len(REPLACEMENT)} shapes of the replacement report is '
-      f'carried by exactly one of them')
+      f'carried by exactly one of them under each of its {len(HEADS)} heads '
+      f'-- the plain one and the one naming the index the judgement was made '
+      f'in')

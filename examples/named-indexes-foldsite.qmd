@@ -12,12 +12,12 @@ filters:
 # What this document is for
 
 Two indexes are declared, and the marker for the second is written before the
-marker for the first. A back-end that keeps one index — a LaTeX or PDF render,
-or an HTML book — builds only the first, and the place the author asked for it
-is their own marker for it. That marker stands second here, which is the shape
-that used to put the one index under the other marker's heading and then
-report the author's own marker as a second marker for an index they wrote one
-marker for.
+marker for the first, so marker order and declared order disagree. Each index
+is placed at the first marker naming it, whichever order the markers stand in,
+which is what this document is written to show. An HTML book still keeps one
+index — its chapters are aggregated through a per-chapter record carrying no
+index name — and there the second index's marker, standing first, must not
+take the place of the index the book does build.
 
 One term files in each: [Alpha]{.index} and
 [Babbage]{.index index="authors"}.

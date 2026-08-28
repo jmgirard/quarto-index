@@ -22,9 +22,11 @@ printed index on the one Quarto version it runs (M47).
       wrote none, and two legs disagreeing about Quarto's own wrapper would be
       reported as this extension emitting a different index (M48).
 
-  pdf <file.pdf> [heading] — the printed index, in the order
+  pdf <file.pdf> [heading] [stop] — the printed index, in the order
       `pdfindex.read()` reconstructs it: `level<TAB>term<TAB>printed line`, one
-      row per entry. `heading` is the line the index starts after, `Index` by
+      row per entry. `stop` is the line that ends the section, for a document
+      printing more than one index; without it the read runs to the end of the
+      document. `heading` is the line the index starts after, `Index` by
       default.
 
 The serialization goes to stdout and nothing else does, so a caller can
@@ -171,10 +173,17 @@ def pdf_rows(entries, path, heading):
     return [f'{e.level}\t{e.term}\t{e.text}' for e in entries]
 
 
-def dump_pdf(path, heading='Index'):
-    """The printed index, in the order it is printed."""
+def dump_pdf(path, heading='Index', stop=None):
+    """The printed index, in the order it is printed.
+
+    `stop` is the line that ends this index's section, for a document that
+    prints more than one (M49) or that carries anything after the index at all;
+    `pdfindex.read` states what it does with it. Without one the read runs to
+    the end of the document, which is right for the one index a document
+    usually ends with -- and wrong, silently, for the first of two.
+    """
     try:
-        entries = pdfindex.read(path, heading)
+        entries = pdfindex.read(path, heading, (stop,) if stop else ())
     except LookupError as bad:
         fail(f'{path}: {bad}')
     return pdf_rows(entries, path, heading)
@@ -182,7 +191,7 @@ def dump_pdf(path, heading='Index'):
 
 MODES = {
     'html': (dump_html, 1, 1),
-    'pdf': (dump_pdf, 1, 2),
+    'pdf': (dump_pdf, 1, 3),
 }
 
 

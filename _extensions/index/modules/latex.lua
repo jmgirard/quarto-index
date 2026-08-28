@@ -9,10 +9,40 @@
 -- document.
 
 local qi_core = require("./core")
+local qi_indexes = require("./indexes")
 local qi_levels = require("./levels")
 local qi_sortkeys = require("./sortkeys")
 
 local M = {}
+
+-- The command one index's marks emit. The default index keeps the bare
+-- `\index`, which is what every document that declares nothing has always
+-- emitted and what Quarto's own PDF loop builds; a named index takes
+-- imakeidx's optional argument, which routes the entry to that index's own
+-- `.idx` file. The name is safe unescaped: `NAME_SHAPE` admits only ASCII
+-- letters, digits, hyphen and underscore, none of which is special to LaTeX,
+-- to makeindex, or to imakeidx's own key parsing.
+local function index_command(index)
+  if index == qi_indexes.default() then
+    return "\\index"
+  end
+  return "\\index[" .. index .. "]"
+end
+
+-- A declared title, made literal for LaTeX. `qi_levels.escape_level` is the
+-- wrong tool here even though the character set is nearly the same: it quotes
+-- `!` and `@` with makeindex's own quote character, and a title is typeset
+-- text that no index tool ever reads, so a quoted `!` would print as `"!`.
+-- Derived from the one literal table rather than from a second copy of it, so
+-- a character added there is escaped here too.
+local function escape_title(text)
+  return (text:gsub(".", function(c)
+    if c == "!" or c == "@" then
+      return c
+    end
+    return qi_core.LATEX_LITERAL[c] or c
+  end))
+end
 
 -- Build the `\index{...}` argument from literal levels, joining with the
 -- unquoted `!` that makeindex reads as a level separator. With a sort key,
@@ -113,10 +143,23 @@ end
 -- why repairing this sits inside GP2 rather than trading against it).
 -- ---------------------------------------------------------------------------
 
--- Emitted argument -> what the document's marks do with that key: whether any
--- of them is a plain locator mark, and every distinct cross-reference target
--- written on it, in a fixed order. Module-level, like the other accumulators.
+-- Index name -> emitted argument -> what THAT INDEX's marks do with that key:
+-- whether any of them is a plain locator mark, and every distinct
+-- cross-reference target written on it, in a fixed order. Module-level, like
+-- the other accumulators.
+--
+-- One namespace per index (M49), for the reason the sort registry has one:
+-- contestation is a fact about what one index tool run sees, and since each
+-- declared index writes its own `.idx`, two marks of one key in two indexes
+-- never meet. Keyed globally they did meet -- a plain mark in one index made
+-- the other index's cross-reference mark fold its targets into the printed
+-- text, repairing a conflict neither index had.
 local contested_keys = {}
+
+-- This index's share of the map, created on first use.
+local function contested_for(index)
+  return qi_core.namespace(contested_keys, index)
+end
 -- The typeset-time channel's commands, the range half included:
 -- one flag, because the whole subsystem is injected together (qi_core explains
 -- why the range commands cannot be conditional on a range).
@@ -137,6 +180,11 @@ M["principal_emitted"] = false
 -- Assigned in document order by the pass that already collects keys, so the
 -- ordinal is a property of the document rather than of a traversal order.
 -- Module-level, like the other accumulators.
+-- Namespaced per index (M49) for the same reason `contested_keys` is: one key
+-- marked principally in two indexes is two entries, each with its own locator
+-- to emphasize. The COUNTER stays document-wide, so the ids two indexes hand
+-- out stay distinct -- they are read back at typeset time from one `.aux`,
+-- which knows nothing about which index registered them.
 local principal_keys = {}
 local principal_ordinals = 0
 
@@ -144,12 +192,13 @@ local principal_ordinals = 0
 -- principally in two places (which the author is told about nowhere, since it
 -- is not an error — the later registration simply adds a second emphasized
 -- page) still has one ordinal.
-local function record_principal(source)
-  if principal_keys[source] == nil then
+local function record_principal(index, source)
+  local keys = qi_core.namespace(principal_keys, index)
+  if keys[source] == nil then
     principal_ordinals = principal_ordinals + 1
-    principal_keys[source] = qi_core.LOCATOR_ID_PREFIX .. principal_ordinals
+    keys[source] = qi_core.LOCATOR_ID_PREFIX .. principal_ordinals
   end
-  return principal_keys[source]
+  return keys[source]
 end
 
 -- The ordinal a key's locator marks encapsulate with, or nil for a key no mark
@@ -159,8 +208,9 @@ end
 -- every LaTeX-derived document this subsystem is not injected into and that
 -- Quarto gives a preamble channel — under plain pandoc there is none, and
 -- neither block is injected.
-local function principal_ordinal(source)
-  return principal_keys[source]
+local function principal_ordinal(index, source)
+  local keys = principal_keys[index]
+  return keys ~= nil and keys[source] or nil
 end
 
 -- One mark's LaTeX shape, from levels the caller has already derived. `report`
@@ -269,8 +319,9 @@ end
 -- print convention has it, and first appearance within a kind — because every
 -- mark of a contested key must emit the SAME text or the index tool sees two
 -- entries where the author wrote one.
-local function record_contest(source, printed, xrefs)
-  local seen = contested_keys[source]
+local function record_contest(index, source, printed, xrefs)
+  local keys = contested_for(index)
+  local seen = keys[source]
   if not seen then
     seen = { plain = false, encaps = {}, distinct = 0, xrefs = {}, listed = {},
              -- The entry path this key PRINTS, carried alongside the emitted
@@ -281,7 +332,7 @@ local function record_contest(source, printed, xrefs)
              -- emits one argument and derives this path from the same clamped
              -- levels, so whichever mark arrives first records the same value.
              printed = printed }
-    contested_keys[source] = seen
+    keys[source] = seen
   end
   local encap = mark_encap(xrefs)
   if not seen.encaps[encap] then
@@ -350,6 +401,9 @@ end
 M["reset"] = reset
 M["index_argument"] = index_argument
 M["contested_keys"] = contested_keys
+M["contested_for"] = contested_for
+M["index_command"] = index_command
+M["escape_title"] = escape_title
 M["latex_plan"] = latex_plan
 M["mark_encap"] = mark_encap
 M["record_contest"] = record_contest

@@ -85,32 +85,32 @@ candidate row.
 
 ## Tasks
 
-- [ ] T1: Extend `examples/named-indexes.qmd` — the four below-marker cells AC2
+- [x] T1: Extend `examples/named-indexes.qmd` — the four below-marker cells AC2
       names, and marks drawing each of the four per-index judgements in each
       index. Derive every expected entry from the marks, never from a rendered
       artifact (M30).
-- [ ] T2: Lift the fold — `qi_indexes.reset` sets `folded` for an HTML book
+- [x] T2: Lift the fold — `qi_indexes.reset` sets `folded` for an HTML book
       alone (`_extensions/index/modules/indexes.lua:194`); `title` and
       `scope_phrase` follow.
-- [ ] T3: Emit `\index[<name>]{...}` at the four sites in `passes.lua`, the
+- [x] T3: Emit `\index[<name>]{...}` at the four sites in `passes.lua`, the
       default index keeping the bare form.
-- [ ] T4: Namespace `latex.lua`'s `contested_keys`, `principal_keys` and the
+- [x] T4: Namespace `latex.lua`'s `contested_keys`, `principal_keys` and the
       printed-path collision map per index; `reset` empties each.
-- [ ] T5: Preamble and the close — `\makeindex[intoc,noautomatic]` plus one
+- [x] T5: Preamble and the close — `\makeindex[intoc,noautomatic]` plus one
       `\makeindex[name=,title=]` per named index in `index.lua`, and the default
       index's `\printindex` wrapped in a group setting imakeidx's
       `disableautomatic` flag, guarded by `\ifcsname` so a version without that
       internal renders rather than errors (IP2).
-- [ ] T6: `place_index` places each index at its own marker
+- [x] T6: `place_index` places each index at its own marker
       (`modules/marker.lua`), named indexes keeping M38's per-index first-marker
       rule.
-- [ ] T7: Report a mark of index X written below X's own placement marker, which
+- [x] T7: Report a mark of index X written below X's own placement marker, which
       imakeidx's close drops; one `warn()` literal, distinct from every other.
-- [ ] T8: Rewrite `site/named-indexes.qmd`'s "One index outside HTML, for now"
+- [x] T8: Rewrite `site/named-indexes.qmd`'s "One index outside HTML, for now"
       section; scope `site/books.qmd`'s and `examples/book/_quarto.yml`'s
       one-index claims to the HTML book; add the self-enumerating sweep check
       for the two retired strings; append the D-entry annotating GP2.
-- [ ] T9: Acceptance-suite checks for AC1-AC4, each reading a captured artifact
+- [x] T9: Acceptance-suite checks for AC1-AC4, each reading a captured artifact
       (M24) and each fenced by a planted defect.
 
 ## Work log
@@ -127,6 +127,13 @@ candidate row.
 - 2026-08-27: implement gate chose to flip the begin-document imakeidx guard rather than retire it: it now reports a template that loaded imakeidx in a mode disabling the automatic index build in a document declaring more than one index, which is the preamble collision that now loses an index silently.
 - 2026-08-27: implement gate chose to restate M50's `folded` PDF clause as the two-section claim — the term written for the second index prints in that index's own section and the plain terms in the first — rather than drop it, keeping M50-AC4's PDF evidence.
 - 2026-08-27: minor amendment — T2 through T6 ship in one commit, no intermediate state among them rendering a document (lifting the fold without the preamble emits two `\printindex` against one `.idx`); each keeps its own checkbox and the suite is run clean before all five are ticked.
+- 2026-08-27: T2-T6 — `qi_indexes.reset` folds for an HTML book alone; `latex.lua` gained `index_command` (bare `\index` for the default index, `\index[<name>]` for a named one) and `escape_title`, and namespaced `contested_keys` and `principal_keys` per index with the ordinal counter left document-wide so two indexes cannot mint one id; `index.lua` writes `\makeindex[intoc[,noautomatic][,title={…}]]` for the default index and one `\makeindex[intoc,name=,title={…}]` per named one, loads imakeidx with no package-wide option, wraps the default index's `\printindex` in an `\ifcsname`-guarded group setting `\imki@disableautomatictrue`, and emits one `\printindex` per declared index through the `place_index` map M38 already built. Suite clean.
+- 2026-08-27: T7 — `report_below_marker` counts the `\index[<name>]` commands standing below each named index's surviving marker and reports them once per index, naming the marker's top-level block and the shared position basis.
+- 2026-08-27: implement gate's flipped guard shipped: the begin-document check now fires on an imakeidx preloaded WITH `noautomatic` in a document declaring more than one index, held by the new `examples/named-indexes-preloaded.qmd` (the warning fires, `authors.idx` is written and no `authors.ind` is built) and by `examples/marker-preloaded.qmd`, whose term below the marker now survives because the close is suppressed by a group rather than by a package option.
+- 2026-08-27: T1 — `examples/named-indexes.qmd` extended: AC2's four below-marker cells (Underwood, Vesalius, Ockham present; Petrarch absent) and all four per-index judgements written wrongly in BOTH indexes, so a LaTeX render draws eight index-naming reports. Each index gets a page of its own so a bounded PDF read is possible.
+- 2026-08-27: T9 — `tests/namedpdf.py` (entries/cells/reports) over the captured PDF and LaTeX log, each clause fenced by a planted manifest under `--self-test`; `pdfindex.read` gained a `stop` bound that refuses an unbounded read when one was asked for, `tests/indexdump.py pdf` a matching third argument, and `tests/run-tests.sh`'s `index_args` now reads `\index[<name>]{}` too. AC3 reads the book PDF's two sections; AC5 sweeps the tracked `site/*.qmd` pages it enumerates from `git ls-files`.
+- 2026-08-27: minor amendment — M50's `folded` clause became `split`, reading one row dump per declared index, and its three plants became five; M04-AC2/AC4, M21-AC5, M29's book-pdf partition, M32's LaTeX plant mutations, M38-R2/R4 (`check_folded_site`/`check_folded_second` → `check_split_site`/`check_split_second`), M38-AC5, M39-AC3, M15's joined-message scan and `warn-distinct`'s EXPECTED (66 → 70) all follow the lifted fold.
+- 2026-08-27: T8 — `site/named-indexes.qmd`'s one-index section replaced by three: who builds each index and what the TeX installation must permit, the below-marker rule, and the HTML book's fold. `site/books.qmd` and `examples/book/_quarto.yml` scope their one-index claims to the HTML book; the docs claim manifest gained seven rows; D-031 annotates GP2; CHANGELOG gained an Output section.
 
 ## Decisions
 

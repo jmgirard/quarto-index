@@ -22,11 +22,15 @@ format:
 # Two declared indexes (M38), for the two properties a book has to show about
 # them. An HTML book aggregates its chapters through a sidecar store whose
 # record format carries no index name, so every named mark and every named
-# marker is folded into the one index the book builds, and each is told so.
-# And the FIRST declared title is deliberately not "Index": the one section a
-# folded book prints holds every declared index's marks, so it is headed with
-# the neutral title rather than with this one, which would claim the section is
-# the subject index alone (M38 R3).
+# marker is folded into the one index the HTML book builds, and each is told
+# so. And the FIRST declared title is deliberately not "Index": the one section
+# a folded HTML book prints holds every declared index's marks, so it is headed
+# with the neutral title rather than with this one, which would claim the
+# section is the subject index alone (M38 R3).
+#
+# A PDF book is one Pandoc process and folds nothing (M49): it prints both
+# declarations, each under its own title, so the same file is also the fixture
+# for a book that builds every index it declares.
 indexes:
   - name: main
     title: Index of Subjects

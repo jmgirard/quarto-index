@@ -509,11 +509,21 @@ def _bookpdf(argv):
     is the LaTeX layout's business, and the criterion is about the count.
     """
     text = open(argv[0], encoding='utf-8').read()
-    term = argv[1]
-    m = re.search(r'^\s*Index\s*$', text, re.MULTILINE)
+    term, heading, stop = argv[1], argv[2], argv[3]
+    # Bounded (M49): the book declares two indexes and a PDF book prints both,
+    # so an unbounded read would count locators over a region no single index
+    # printed. Both headings are the caller's, derived by hand from the book's
+    # own declaration.
+    m = re.search(r'^\s*' + re.escape(heading) + r'\s*$', text, re.MULTILINE)
     if not m:
-        _fail('M21-AC5: no "Index" heading in the book PDF')
-    region = ' '.join(text[m.end():].split())
+        _fail('M21-AC5: no %r heading in the book PDF' % heading)
+    rest = text[m.end():]
+    end = re.search(r'^\s*' + re.escape(stop) + r'\s*$', rest, re.MULTILINE)
+    if not end:
+        _fail('M21-AC5: no %r heading follows %r in the book PDF, so this read '
+              'is unbounded and would take the second index as part of the '
+              'first' % (stop, heading))
+    region = ' '.join(rest[:end.start()].split())
     found = re.search(r'(?<![\w])' + re.escape(term) + r'(?![\w])'
                       r'((?:,\s\d+(?:[-\u2013\u2014]\d+)?)*)', region)
     if found is None:

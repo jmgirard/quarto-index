@@ -148,3 +148,60 @@ in the diff, so `cairn_impact.py --changed` is skipped. The active profile is
 half of the gate is a clean no-op.
 
 ### Findings
+
+One fresh-context reviewer was spawned, per the internal tier and a diff that
+touches only markdown tracking files: the [O] diff-bug lens over
+`git diff origin/main..HEAD` against the criteria, `cairn/DESIGN.md` and
+`cairn/DECISIONS.md`. It re-ran the AC1-AC3 sweeps independently and agreed
+with the figures above, and confirmed no plan-owned milestone text was
+altered. Thirteen findings, ranked by the reviewer, with the disposition each
+took at the gate. None demonstrates an acceptance criterion failing, so none
+meets the return floor.
+
+- F1. The suite-readers row's subheading pointer covers 122 entries, about 55
+  of them the work of six sibling rows, so nothing in `## Candidates`
+  distinguishes what that row is for. Disposition: fixed in part (F3's
+  rewording names the file and the two subheadings); the residual over-claim
+  is inherent to the subheading form D-034 blessed and goes to a candidate row.
+- F2. `KI24` was in the old row's `KI24, KI27-KI74` set but lives under
+  Reports and messages, which neither named subheading covers, so it is now
+  motivated by nothing; the T2 work-log line's claim that the "Also open" list
+  became pointers at KI66-KI71 is not true of the rewritten row.
+  Disposition: fix now — `KI24` restored to the row's token list, and a
+  work-log line correcting the T2 account.
+- F3. "this document's two acceptance-suite known-issue subheadings", read
+  inside `ROADMAP.md`, names the wrong document and neither subheading by
+  title, which is the resolvability D-034 banned ranges to get.
+  Disposition: fix now.
+- F4. KI164 carries `— M35/M36/M46/M50`, copied from the row's source field;
+  the finding is M30's. Disposition: fix now.
+- F5. The gallery-checks and publishing-workflow rows, both rewritten by
+  T4/T5, state no promotion condition, which D-034's own Decision paragraph
+  requires. Disposition: fix now.
+- F6. "text carried verbatim" overstates what happened: many moved clauses are
+  one-clause condensations rather than verbatim carries. Disposition: fix now
+  as a superseding work-log line; the T2 line itself is history and stands.
+- F7. KI117 absorbed the M36 clause's per-finding promotion condition, which
+  D-013 and D-034 place in the row. Disposition: rejected — the cluster row
+  carries one promotion condition by design, and KI117 as written states a
+  coverage gap, not a condition.
+- F8. The release row's "both since supplied" is unsourced, and the rewrite
+  drops the corrected `extensions/quarto-extensions.csv` location.
+  Disposition: rejected — topics were recorded added 2026-08-27 and M50 is
+  archived done, so the claim is derived, not composed; the PR number in the
+  row is the pointer to the file's location.
+- F9. Rewritten row 43 and untouched rows still restate behavior.
+  Disposition: rejected — the untouched rows are pre-existing and out of this
+  diff, and row 43's clause states the proposed work's consequence.
+- F10. The `## Candidates` comment is one 305-byte line with a stray comma
+  before an em dash. Disposition: the comma fixed now; the unwrapped line
+  stands, ROADMAP being at 59 of its 60 lines.
+- F11. Scope says 21,777 bytes and the T1 sweep says 22,001, unreconciled.
+  Disposition: fix now, folded into F6's work-log line.
+- F12. KI157 states that some prose is unchanged rather than naming a defect.
+  Disposition: rejected — it carries its row clause faithfully, and retiring
+  findings as stale was Scope Out.
+- F13. Two source fields lost "M20 amendment gate" and the archive path for
+  the M35/M36/M46/M50 Review sections. Disposition: rejected — the provenance
+  survives in the KI entries' own suffixes, and this is the compression T4/T5
+  planned.

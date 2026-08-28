@@ -1,0 +1,127 @@
+<!-- Section ownership + write-modes: see tracking-rules.md "Milestone-file
+     section ownership". A phase skill never rewrites another phase's section. -->
+# M53: The workflows' actions come up to date
+
+- **Status:** planned
+- **Priority:** normal
+- **Depends on:** —
+- **Driving RR:** —
+- **Principles touched:** GP1, GP6
+- **Branch/PR:** —
+
+## Goal
+
+The five GitHub Actions the two workflows pin move to their current major
+tags, so the deprecation warnings stop and neither workflow is left on a
+runtime the runner images are retiring.
+
+Surface tier: **user-facing**. One of the two workflows publishes the
+documentation site readers read, so a bump that breaks it is a break a reader
+meets.
+
+## Scope
+
+**In:** `actions/checkout` v4 → v7 (five sites), `actions/upload-artifact`
+v4 → v7, `actions/download-artifact` v4 → v8,
+`actions/upload-pages-artifact` v3 → v5, `actions/deploy-pages` v4 → v5,
+across `.github/workflows/pages.yml` and `.github/workflows/versions.yml`.
+A `DECISIONS.md` entry recording the re-pin. Evidence is the workflow runs the
+branch's own push triggers, never a scan of the YAML.
+
+Three of the bumps carry behavior changes and not only a Node runtime move:
+`upload-pages-artifact@v4` stopped including dotfiles in the artifact;
+`upload-artifact@v7` and `download-artifact@v8` are a producer/consumer pair
+across two different major numbers, and v8 makes a digest mismatch an error
+rather than a warning; `checkout@v5` and later require runner v2.327.1, which
+GitHub-hosted runners carry.
+
+`actions/deploy-pages` is the one step no run on a branch can reach: it
+publishes through the `github-pages` environment, which refuses a deployment
+from any branch but the default one, which is why `pages.yml` gates that job.
+Its bump therefore ships unexercised, verified on the first default-branch run
+after merge; the revert is one line.
+
+**Out:**
+- A check holding the workflow files to these versions → refused at the plan
+  gate. `versions.yml`'s own header refuses a widened scan of a source file
+  the tests do not execute, and the maintainer chose to leave that refusal
+  standing rather than supersede it. The runs are the evidence.
+- Automated dependency updates (Dependabot or equivalent) → a candidate
+  ROADMAP row; this milestone is a one-time catch-up.
+- `quarto-dev/quarto-actions/setup@v2` — already the current major; unchanged.
+- The exact Quarto version pin — D-024 keeps it exact and this milestone does
+  not touch it.
+- An EPUB or PDF leg change, a new workflow, or any change to which events
+  either workflow runs on.
+
+## Acceptance criteria
+
+- [ ] AC1 — Over the action references
+      `grep -nE '^[[:space:]]*(-[[:space:]]+)?uses:' .github/workflows/pages.yml
+      .github/workflows/versions.yml` returns — an enumeration asserted
+      non-empty, and matching both the mapping-key and the list-item form a
+      step may write — the multiset of references is exactly
+      `actions/checkout@v7` ×5, `quarto-dev/quarto-actions/setup@v2` ×3,
+      `actions/upload-artifact@v7` ×1, `actions/download-artifact@v8` ×1,
+      `actions/upload-pages-artifact@v5` ×1, `actions/deploy-pages@v5` ×1,
+      and no other reference appears. Stated as a multiset, not a set and a
+      count, so one step's action swapped for another approved one fails.
+- [ ] AC2 — The `versions.yml` run this branch's own push triggers completes
+      with its `plan`, `render (floor, 1.4.549)`, `render (pinned, <version>)`
+      and `compare` jobs all green, and the `compare` job's log states the
+      same per-leg fixture counts as the most recent pre-bump `versions.yml`
+      run on the default branch states. This is what holds the
+      `upload-artifact@v7` → `download-artifact@v8` round trip: the comparison
+      reads only what the download produced.
+- [ ] AC3 — The `pages.yml` run this branch's own push triggers completes its
+      `build` job green through `upload-pages-artifact@v5`, and the artifact
+      that run produced, fetched and unpacked, carries every relative path a
+      `quarto render site` of the same commit produces — compared over the
+      whole tree by relative path and not by file type, so a stylesheet, a
+      script, an image or a dotfile dropped by the v4 exclusion is a
+      difference and not a silence.
+- [ ] AC4 — `tests/run-tests.sh --self-test` clean (the `verify` slot's fuller
+      pre-review check).
+
+## Coverage
+
+- AC1 → T1, T2
+- AC2 → T1, T2, T3
+- AC3 → T1, T4
+- AC4 → T1, T2, T5
+
+## Tasks
+
+- [ ] T1 — `.github/workflows/pages.yml`: `actions/checkout@v4` → `@v7`
+      (line 33), `actions/upload-pages-artifact@v3` → `@v5` (line 69),
+      `actions/deploy-pages@v4` → `@v5` (line 100). Leave
+      `quarto-dev/quarto-actions/setup@v2` (line 40) and the exact Quarto pin
+      alone.
+- [ ] T2 — `.github/workflows/versions.yml`: `actions/checkout@v4` → `@v7`
+      (lines 81, 129, 204, 261), `actions/upload-artifact@v4` → `@v7`
+      (line 186), `actions/download-artifact@v4` → `@v8` (line 207). Leave
+      both `quarto-dev/quarto-actions/setup@v2` (lines 132, 268) alone.
+- [ ] T3 — push, then read the two runs the push triggers. Record in the work
+      log: each job's result, the `compare` job's per-leg fixture counts
+      beside the counts the last pre-bump run on the default branch states,
+      and both run URLs.
+- [ ] T4 — fetch the Pages artifact that run produced (`gh run download`),
+      unpack it, and compare its file tree against a `quarto render site` of
+      the same commit by relative path over the whole tree. Record both path
+      counts and any difference. A local render is the reference because the
+      artifact is the only thing the bump can change.
+- [ ] T5 — the `DECISIONS.md` entry: the re-pin of five dependencies under
+      D-024's major-tag rule, naming what each bump changes behaviorally and
+      what would falsify the choice.
+
+## Work log
+
+- 2026-08-28: created by /milestone-plan, promoting the candidate row added at the M52 review gate (2026-08-28) from the maintainer's report of deprecation warnings; the row is absorbed and removed.
+- 2026-08-28: the five current majors were read from each action's own releases (`gh api repos/<owner>/<repo>/releases`) on 2026-08-28, not from recollection — checkout v7.0.1, upload-artifact v7.0.1, download-artifact v8.0.1, upload-pages-artifact v5.0.0, deploy-pages v5.0.0, quarto-actions v2.2.0. A dated observation: a newer major is a decision, not a fact to be detected.
+- 2026-08-28: criteria audit ran in FULL mode (user-facing tier) in a fresh-context [O] reader, at the maintainer's selection lifting this session's standing no-subagent instruction for the audit. It returned ten findings. Five fixed before the criteria were written: the drafted AC1 grep missed the `- uses:` list-item form; its allowlist-plus-count passed a step whose action was swapped for another approved one, so it became a multiset; the drafted AC3 leaned on `pagescheck.py contains`, which walks `.html` and `.pdf` only and would not see a dropped stylesheet or dotfile, so it became a whole-tree path comparison; a drafted AC4 requiring the `deploy` job to report skipped held identically at the merge base and verified nothing, so it was dropped; and three instrument-bound clauses (where the check lives, that plants exist, that run URLs are recorded) moved into the tasks. One became this round's gate question — the standing refusal of a workflow-file scan — and one was accepted as repo precedent: AC4's suite self-test is the profile's own `verify` slot and every milestone here carries it.
+- 2026-08-28: plan gate chose the workflow runs as the evidence over a check pinning the twelve references in the two files, on the maintainer's selection after `versions.yml`'s own header was quoted refusing exactly that ("widening either read is refused: D-011 declines a scan that pins names and shapes in a source file it does not execute"); superseding that refusal stays available and was the alternative weighed. Falsified by a silent downgrade of an action reference reaching the default branch and going unnoticed until a run failed.
+- 2026-08-28: plan gate chose bumping `actions/deploy-pages` unexercised, verified on the first default-branch run after merge, over leaving it at v4 until it can be tested, because the `github-pages` environment refuses a deployment from a non-default branch and no branch run can reach the step; the revert is one line. Falsified by that first post-merge run failing to publish.
+
+## Decisions
+
+## Review

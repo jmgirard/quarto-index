@@ -9,6 +9,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M54 | The candidate backlog comes back under D-013 | planned | — | normal | milestones/M54-candidate-backlog.md |
 | M53 | The workflows' actions come up to date | done | — | normal | milestones/archive/M53-action-versions.md |
 | M52 | EPUB gets an index back-end | done | — | normal | milestones/archive/M52-epub-back-end.md |
 | M51 | The version matrix typesets a PDF again | done | — | normal | milestones/archive/M51-matrix-pdf-leg.md |

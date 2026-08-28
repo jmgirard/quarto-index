@@ -1,11 +1,11 @@
 # M49: A PDF render builds every index the document declares
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP2
-- **Branch/PR:** —
+- **Branch/PR:** `m049-named-indexes-pdf`
 
 ## Goal
 
@@ -122,6 +122,11 @@ candidate row.
 - 2026-08-27: plan gate chose a D-entry annotating GP2 over amending IP2, because IP2's promise is about a marked term's characters printing correctly and contains no clause about which indexes get built; falsified by a mark whose index never prints being read as the silent corruption IP2 forbids.
 - 2026-08-27: plan gate chose reporting the below-marker close hazard over placing named indexes at the end of the document, because the marker is the author's own syntax and M38's per-index first-marker rule is already shipped and documented; falsified by the report proving unactionable — an author who cannot move the marker below the last mark.
 - 2026-08-27: plan gate chose the probe-D preamble (per-index `noautomatic` on the default index, auto-run left on for named ones, the close suppressed by a group-local flag) over suppressing the close package-wide, because probe C showed a package-wide suppression lets the auto-run read an unflushed `.idx` and overwrite a good `.ind` with an empty one; falsified by an imakeidx release moving or renaming the `imki@disableautomatic` flag.
+- 2026-08-27: implement gate confirmed the plan's preamble on this toolchain (Quarto 1.10.18, lualatex, TinyTeX): imakeidx loaded with no package-wide option, `\makeindex[intoc,noautomatic]` for the default index and `\makeindex[name=,title=]` per named index prints both indexes, the named one built by imakeidx's own makeindex call under TeX's RESTRICTED shell escape, which TeX Live and TinyTeX permit by shipping makeindex on `shell_escape_commands`; no `-shell-escape` is needed, and that permission is the toolchain condition AC5's docs state. The default index's `\printindex` wrapped in a group setting `\imki@disableautomatictrue` leaves its `.idx` open, so a mark below the default marker still reaches the index, while a named index's `.idx` is closed at its own `\printindex` and a mark of that index below that marker is dropped.
+- 2026-08-27: implement gate chose to build M49 now rather than first promote the candidate row of M50 check gaps, because the one gap M49 falsifies — `tests/editorfixture.py`'s `folded` clause, which claims a two-index document prints one merged index — is repaired inside M49, and the other four are latent and touch files this milestone does not.
+- 2026-08-27: implement gate chose to flip the begin-document imakeidx guard rather than retire it: it now reports a template that loaded imakeidx in a mode disabling the automatic index build in a document declaring more than one index, which is the preamble collision that now loses an index silently.
+- 2026-08-27: implement gate chose to restate M50's `folded` PDF clause as the two-section claim — the term written for the second index prints in that index's own section and the plain terms in the first — rather than drop it, keeping M50-AC4's PDF evidence.
+- 2026-08-27: minor amendment — T2 through T6 ship in one commit, no intermediate state among them rendering a document (lifting the fold without the preamble emits two `\printindex` against one `.idx`); each keeps its own checkbox and the suite is run clean before all five are ticked.
 
 ## Decisions
 

@@ -604,6 +604,18 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   the recipe now names (corrected M34; D-018). — M01 review R7/R9, narrowed
   M33 (D-016)
 
+- **KI106.** `\makeindex[name=X]` makes imakeidx write `X.idx`, `X.ilg` and
+  `X.ind` named for the index and not the job, so a declared name equal to the
+  jobname collides with the default index's files and a stale `.ind` from an
+  earlier render is what `\printindex[X]` reads if a later makeindex call
+  fails, which would print a WRONG index where D-031's shell-escape failure
+  documents an empty one. — M49 review F3
+- **KI107.** `passes.lua` emits `\index[<name>]{...}` whenever the format is
+  LaTeX-derived while the preamble making that syntax legal rides Quarto's
+  preamble channel, so under plain pandoc `-t latex` the `[<name>]` typesets
+  into the body where the pre-M49 uniform `\index{...}` was harmless — the
+  extension documents no plain-pandoc support anywhere. — M49 review F4
+
 ### Entries, levels and sort keys
 
 - **KI7.** Sort-key level paths are keyed on unclamped levels while the LaTeX
@@ -706,6 +718,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   never consumed (an unmatched range opening, which makeindex logs and Quarto
   fails the render on). — M23 review F7
 
+- **KI115.** `html.lua`'s emitting loop iterates the declared names alone and
+  drops a mark group whose key is not one of them with no report —
+  unreachable only while every record folds to the reading chapter's default.
+  — M38 review round 4, O7
+
+- **KI163.** Pairing by entry cannot tell two overlapping ranges of one term
+  apart, so an author-written id is what would separate them and none exists.
+  — M20/M21 Scope Out, RR01
+
 ### Reports and messages
 
 - **KI21.** No fixture exercises a reported block position where Quarto injects
@@ -745,6 +766,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   (`Index`, and the `Symbols` group label) with no `lang` policy in this
   document. Distinct from KI6, which is about what an author writes. — M07
   review F6
+
+- **KI105.** `report_below_marker` reads marker positions off `doc.blocks`
+  after `resolve_markers` rebuilt it while the message promises the document as
+  received, so an ignored or duplicate marker standing above a named index's
+  marker shifts the cited block number down. The comparison is sound, so this
+  is a wrong number in a report and never a missed or spurious one, and
+  fencing it needs a fixture with an ignored marker above. — M49 review F2
 
 ### The acceptance suite: what it reads and what it holds
 
@@ -799,6 +827,87 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   suite edits where the filter takes one. Drift fails loudly in all four, so
   this is cost, not a hole; it is the price of not reading the expectation out
   of the filter's source (D-011). — M28 review F10, count corrected M29
+
+- **KI93.** `tests/sitecheck.py`'s `phrase-absent` duplicates the inline M44
+  sweep rather than the M44 sweep routing through it, so two copies of one
+  domain each print an ok line naming it. — M52 review F8
+- **KI94.** `epubindex.section_rows` is reached by no check and its docstring
+  claims a row form manifest 10 does not use. — M52 review F9
+- **KI97.** `epubindex.read` raises rather than reporting on a member it cannot
+  decode or address. — M52 review F12
+- **KI98.** `epubindex.links` would report an external href as unresolved.
+  — M52 review F13
+- **KI102.** `pdfindex.read`'s `stop` bound drops the whole stop page, so an
+  index running onto it loses entries silently and an `absent` cell reads a
+  truncated entry identically to a dropped one, which is the distinction
+  M49-AC2 exists to make. — M49 review F6
+- **KI103.** `editorfixture.check_split` reads its titles from the snippet YAML
+  while the row files come from a call site naming the headings separately, so
+  nothing ties a row file to the title a failure message names and the plants
+  pass row files positionally. — M49 review F7
+- **KI104.** `namedpdf.check_reports` splits manifest rows on tab and re-joins
+  them, so a row with trailing whitespace fails as "stated, not drawn" rather
+  than as a malformed manifest. — M49 review F9
+- **KI108.** The marker-less plants read the render's working copy rather than
+  the captured artifact, so M24's capture rule is met in letter and not in
+  intent. — M32 review R2-F9
+- **KI110.** `tests/run-tests.sh` pins `M33_NOENGINE_PRODUCER=LuaTeX`, and
+  Quarto 1.4.549 renders PDF through xelatex, so the suite cannot run green on
+  M43's floor leg until its engine-dependent checks say which Quarto they are
+  about. — M43 plan gate probes
+- **KI114.** One `render (floor, 1.4.549)` leg failed and did not reproduce:
+  the book's HTML index placed at `sub/two.qmd`'s marker, not `last.qmd`'s,
+  leaving `last.html` with nothing to extract, while identical code passed the
+  three runs around it. — M52 review
+- **KI117.** The `stopped` reading depends on TeX's fatal-error line ending the
+  engine log; no capture whose rejection is the log's last `! ` line exists to
+  exercise it. — M36
+- **KI120.** `%2F%2Fevil.com` is skipped by neither the `//` nor the scheme
+  guard and is resolved as a local path, a false report only. — M46 review
+- **KI122.** `check_docs` reclassifies a missing captured page into a name to
+  look for. — M50 review
+- **KI124.** `parse_attrs` stops at the first `"` in a value. — M50 review
+- **KI125.** `attribute_sites` pairs constructs and marks positionally past a
+  skip. — M50 review
+- **KI127.** Both sides of the version matrix's fixture-set comparison are
+  sets, so two render targets written to one extraction name read as agreement
+  while one extraction is silently overwritten. — M48 review
+- **KI131.** `DECLARED_EVENTS` in `tests/versioncheck.py` copies the workflow's
+  `on:` block by hand and nothing reads the workflow to check it; its refusal
+  fires inside `plan`, so a trigger added to the workflow fails `plan` and
+  skips `render` and `compare` — the HTML matrix stopping over a PDF-gating
+  question. — M51 review F2
+- **KI132.** `actions/download-artifact` from v5 on unpacks to the download
+  path itself whenever exactly one artifact matches the `pattern`, so a run
+  with one leg red lands that leg's files flat in `legs/` and `legs_under`
+  finds no `index-<leg>` directory — still red, never a false green, but
+  reporting no leg unpacked rather than naming the survivor, and the reader's
+  docstring holds only for two or more surviving legs. D-033 and the M53 scope
+  block omit this among the bumps' behavior changes. — M53 review F1-F2
+- **KI134.** The section-end regex matches one character into a `####`
+  heading. — M37 review
+- **KI135.** Mutation anchors are matched anywhere in the file. — M37 review
+- **KI138.** `check_folded_heading` raises rather than reporting. — M38 review
+  round 3
+- **KI140.** The gallery's AC4 extracts with plain `pdftotext` where the
+  suite's own module documents column interleaving. — M41 review
+- **KI144.** The gallery entry comparison discards level and which named index
+  printed the entry. — M41 review
+- **KI145.** The structural `pending` sweep no longer sees the attribute in a
+  comment or in script data. — M41 review
+- **KI147.** `.gallery-build/` is left populated. — M41 review
+- **KI148.** The gallery's frame and PDF targets are never confined to the
+  captured site. — M41 review
+- **KI149.** The coupling between `shown:` and the marker sweep's kept-marker
+  map is undocumented. — M41 review
+- **KI150.** The gallery's shortcode escape is unanchored. — M41 review
+- **KI151.** The gallery build carries a dead `has_pdf` parameter. — M41 review
+- **KI156.** `text=True` decodes a non-UTF-8 tracked path strictly. — M46
+  review F21
+- **KI157.** The domain wording in D-027 and in this document's prose stands
+  as M46 wrote it, its report clause corrected by D-029. — M46 review F23
+- **KI158.** The base-segment comparison runs before `os.path.normpath`, a
+  false report only. — M46 review F27
 
 ### The acceptance suite: coverage gaps
 
@@ -930,6 +1039,117 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   one the filter has stopped accepting can stay in it, with the suite green in
   both directions. The plan gate chose this over a scan of the Lua source
   (M50 work log). Found at M50 T1.
+
+- **KI91.** M52-AC2's `<file>`-part arm is not shown to run over a non-empty
+  domain, `epubindex.links` falling back to the link's own document, which the
+  manifest holds by construction. — M52 review F3
+- **KI92.** `epubcheck.cmd_same`'s third comparison cannot fail, both sides
+  having been compared equal to the manifest. — M52 review F7
+- **KI95.** `cmd_absent`'s two allowed-string guards have never executed, every
+  call site passing an empty list. — M52 review F10
+- **KI96.** `RENAMED_HEADINGS` is substituted unconditionally, so nothing
+  checks the old heading is absent or the new one on the same page, and no
+  plant covers a heading actually deleted. — M52 review F11
+- **KI99.** `editorfixture.py generate`'s seven refusal clauses have no plant
+  at all. — M50 review
+- **KI100.** About ten `editormeta.py` clauses have no plant either: the
+  empty-object and non-dict snippet files, `prefix`/`body` empty as distinct
+  from `description`, a YAML parse failure, a non-mapping top level, a missing
+  `classes:`/`attributes:` section, the `attributes:`-side class mismatch, an
+  empty per-class attribute block, a missing `enum:`, and `check_bodies`'
+  no-attribute guard. — M50 review
+- **KI101.** Nothing holds `_extensions/index/_schema.yml` against the Quarto
+  Wizard schema it declares, which is the property deciding whether an editor
+  reads the file at all — the file conforms today, verified at M50 review
+  against the published v1 schema. Distinct from KI90, which is about the
+  attribute set the filter accepts. — M50 review
+- **KI109.** The HTML-cost check reads "the fixture carries no
+  `#quarto-appendix` at all" rather than the bibliography's own wrapper, so a
+  fixture that later grows a footnote or a Citation block would turn it red
+  while README stays true. — M32 review R2-F14
+- **KI111.** M43 compares HTML indexes only, because the M30 and M33 lessons
+  put engine and font differences in a PDF's text layer. — M43 Scope Out
+- **KI112.** M49's two-index fixture is deferred out of the version matrix, its
+  second index depending on TeX's restricted shell escape (D-031). — M51 Scope
+  Out
+- **KI113.** The version matrix has no EPUB leg, whose render target Pandoc's
+  EPUB writer moves with each Quarto version. — M52 plan gate
+- **KI116.** Lifting the LaTeX fold left `marker.lua`'s `fold_slot` reachable
+  only from an HTML book, and the two fixtures that held its non-trivial
+  branches (`named-indexes-foldsite.qmd`, `named-indexes-foldsecond.qmd`) now
+  render to LaTeX unfolded, so nothing checks that the author's own marker for
+  the built index holds the slot wherever it stands, nor that the first marker
+  of any name holds it where no marker names that index; `examples/book/`
+  exercises only the trivial case, its first marker naming the index the book
+  builds. — M49
+- **KI118.** Documentation prose is pinned only where a check names its own
+  page (D-027, narrowed by D-028), and three of the dropped sets banned a
+  sentence rather than required one, so a page may also re-acquire a sentence
+  false about today's behavior. — M46
+- **KI119.** Three link-check shapes stay unsettled: a bare `/` under a base
+  path, percent-decoding of `%3F`/`%23` and of a non-UTF-8 escape, and a
+  blockquote stripper that strips a leading `>` from any line, fenced code
+  included. — M46 review
+- **KI121.** `SYNTAX_FORMS = 10` is pinned by nothing and narrowed on a ground
+  untrue of the swept domain. — M50 review
+- **KI123.** README and `site/index.qmd` promise a description on every class
+  where `check_schema` requires one only under `attributes:`. — M50 review
+- **KI126.** `minted_carried` is an existence test, so a page whose only
+  locator points at an anchor it does not carry dumps at exit 0 and a partial
+  rename passes. — M48 review
+- **KI128.** The version-matrix comparison report's count assertion is derived
+  from the same list that produced the files it counts, where it was an
+  independent literal. — M48 review
+- **KI129.** The anchor clause couples each fixture's dump to that fixture
+  carrying a mark, so removing the book's one mark would redden the matrix with
+  a false reason. — M48 review
+- **KI130.** The M43 plant helper checks exit status, message substring and
+  absence of a traceback, but not that the message sits on a `FAIL: ` line.
+  — M48 review
+- **KI133.** A bound assertion recomputes its bound with the builder's own
+  regex. — M37 review
+- **KI136.** The loud-failure fixture is hand-written rather than derived.
+  — M37 review
+- **KI137.** `check_folded_heading`'s section-count clause has a plant that
+  fires an unrelated `ValueError` before the count is ever compared. — M38
+  review round 3
+- **KI139.** `ran_clean` has one unplanted failure clause. — M38 Scope Out
+- **KI141.** The gallery's AC5 comparison and several named clauses have no
+  plant. — M41 review
+- **KI142.** A gallery PDF plant substitutes a whole different document.
+  — M41 review
+- **KI143.** `rstrip` widens the gallery's AC2 trailing-newline clause. — M41
+  review
+- **KI146.** A gallery plant helper discards its mutation's exit status. — M41
+  review
+- **KI152.** The pre-release check's report clause — a `FAIL:` line naming the
+  offending file for every tracked page its domain admits — is unheld: a
+  non-UTF-8 byte still aborts before printing. The repair ships unpromised.
+  — M46 descope amendment, M46 review rounds 1-4
+- **KI153.** `tests/sitecheck.py links`' containment clause failed by four
+  mechanisms of one shape: unnormalized root-relative path, percent-encoded
+  absolute path, symlink inside the capture, and directory `index.html`
+  symlinked above it. The repair ships unpromised. — M46 descope amendment,
+  M46 review rounds 1-4
+- **KI154.** Four clauses of the pre-release sweep are unplanted. — M46 review
+  F19
+- **KI155.** `FLOOR = 11` stands against a live domain of 21, pinned by
+  nothing. — M46 review F20
+- **KI159.** A retired-sentence row with an empty sentence reddens the whole
+  domain, a fifth unplanted clause. — M46 review F28
+- **KI160.** The published URL is derived from the remote by convention, so a
+  custom domain would leave README and the site's entry page naming a URL the
+  deploy job does not publish to with the suite green. — M42 review
+- **KI161.** The artifact containment compares only `.html` and `.pdf`, so an
+  upload dropping `site_libs/` would publish an unstyled site and pass, which
+  is M42-AC1's own wording. — M42 review
+- **KI162.** The publishing workflow's own steps are bound by no standing
+  check, D-011 refusing the source-shape scan that would bind them and the
+  probe runs being the evidence instead. — M42 review
+
+- **KI164.** M30's typeset print proof is not extended to the cross-reference
+  and sort-key probes, which still assert compile-and-accept only. — M30,
+  recovered by M54 T3
 
 ### The repo and its packaging
 

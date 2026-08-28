@@ -9,7 +9,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
-- **Branch/PR:** `m054-candidate-backlog`
+- **Branch/PR:** `m054-candidate-backlog` / https://github.com/jmgirard/quarto-index/pull/54
 
 ## Goal
 
@@ -42,20 +42,20 @@ checker-regress shape, and `cairn_validate` owns tracking validation.
 
 ## Acceptance criteria
 
-- [ ] AC1. Every row in `cairn/ROADMAP.md`'s `## Candidates`, enumerated by a
+- [x] AC1. Every row in `cairn/ROADMAP.md`'s `## Candidates`, enumerated by a
       python sweep over the lines beginning `- ` in that section, is at most
       400 bytes, and the swept rows sum to at most 12,000 bytes.
-- [ ] AC2. Every `KI<n>` token in `## Candidates`, enumerated by that same
+- [x] AC2. Every `KI<n>` token in `## Candidates`, enumerated by that same
       sweep, matches a `- **KI<n>.**` entry heading in `cairn/DESIGN.md`, and
       the sweep finds no label range (`KI<n>-KI<m>`) and no struck-label
       mention in any row.
-- [ ] AC3. No `KI<n>` label appears twice as a `- **KI<n>.**` entry heading in
+- [x] AC3. No `KI<n>` label appears twice as a `- **KI<n>.**` entry heading in
       `cairn/DESIGN.md`, over the entries a sweep of that file enumerates.
-- [ ] AC4. `cairn/DECISIONS.md` holds a dated entry annotating D-013 that
+- [x] AC4. `cairn/DECISIONS.md` holds a dated entry annotating D-013 that
       states the candidate-row shape and the per-row cap, and the
       `## Candidates` HTML comment in `cairn/ROADMAP.md` names that entry by
       its `D-0NN` id.
-- [ ] AC5. `cairn_validate` is clean. The profile's `verify` slot
+- [x] AC5. `cairn_validate` is clean. The profile's `verify` slot
       (`tests/run-tests.sh`) is not required: this milestone changes no file
       the suite reads.
 
@@ -113,3 +113,38 @@ checker-regress shape, and `cairn_validate` owns tracking validation.
 
 ## Decisions
 ## Review
+
+Evidence gathered 2026-08-28 on `m054-candidate-backlog` at the pre-gate
+checkpoint, against `origin/main`; the AC1-AC3 sweep is a scratch python
+script over `cairn/ROADMAP.md` and `cairn/DESIGN.md`, re-run here rather than
+read from the work log.
+
+- AC1. The sweep enumerates 36 rows beginning `- ` in `## Candidates`: largest
+  400 bytes, none over the cap, 8,854 bytes summed against the 12,000 cap.
+  Planting a 400-character tail on one row reddens AC1 and neither other
+  criterion.
+- AC2. The same sweep finds 104 `KI<n>` tokens across those rows, every one
+  matching a `- **KI<n>.**` entry heading in `cairn/DESIGN.md`; no label range
+  and no struck-label mention. Planting `KI999` reddens AC2 alone, as does
+  planting `KI76-KI77 and KI73 struck`.
+- AC3. A sweep of `cairn/DESIGN.md` enumerates 157 `- **KI<n>.**` entry
+  headings with no label used twice. Planting a second `- **KI2.**` heading
+  reddens AC3.
+- AC4. `cairn/DECISIONS.md` holds `### D-034 (2026-08-28)`, headed as
+  annotating D-013; its Decision paragraph states the row shape (work,
+  promotion condition, dates and sources, `KI<n>` labels, nothing else) and
+  the 400-byte per-row cap. The `## Candidates` HTML comment in
+  `cairn/ROADMAP.md` names `D-034` on its first line.
+- AC5. `cairn_validate.py` exits 0: 16 PASS, 7 OK, no FAIL and no WARN; the
+  `release window` advisory did not fire. The `verify` slot was not run, per
+  the criterion: the diff touches only `cairn/` tracking files, none of which
+  the acceptance suite reads.
+
+### Consistency gate
+
+`cairn_validate` clean, as above. No `DESIGN.md` IP/GP principle line changed
+in the diff, so `cairn_impact.py --changed` is skipped. The active profile is
+`generic`, whose `consistency-gate` slot names no toolchain checks, so that
+half of the gate is a clean no-op.
+
+### Findings

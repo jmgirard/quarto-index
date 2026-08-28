@@ -78,7 +78,7 @@ jobs:
       pdf: ${{ steps.legs.outputs.pdf }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Work out which Quarto versions this run renders on
         id: legs
@@ -126,7 +126,7 @@ jobs:
         leg: ${{ fromJSON(needs.plan.outputs.legs) }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Quarto ${{ matrix.leg.version }}
         uses: quarto-dev/quarto-actions/setup@v2
@@ -183,7 +183,7 @@ jobs:
           wc -l "$OUT"/*.txt
 
       - name: Upload this leg's extractions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: index-${{ matrix.leg.name }}
           path: ${{ runner.temp }}/extract
@@ -201,10 +201,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download every leg's extractions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: legs
           pattern: index-*
@@ -258,7 +258,7 @@ jobs:
         leg: ${{ fromJSON(needs.plan.outputs.legs) }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # `quarto install tinytex` asks the GitHub API which TinyTeX release is
       # current, and unauthenticated that call is rate-limited per runner

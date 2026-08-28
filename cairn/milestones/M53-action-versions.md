@@ -2,12 +2,12 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M53: The workflows' actions come up to date
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP6
-- **Branch/PR:** —
+- **Branch/PR:** `m053-action-versions`
 
 ## Goal
 
@@ -92,12 +92,12 @@ after merge; the revert is one line.
 
 ## Tasks
 
-- [ ] T1 — `.github/workflows/pages.yml`: `actions/checkout@v4` → `@v7`
+- [x] T1 — `.github/workflows/pages.yml`: `actions/checkout@v4` → `@v7`
       (line 33), `actions/upload-pages-artifact@v3` → `@v5` (line 69),
       `actions/deploy-pages@v4` → `@v5` (line 100). Leave
       `quarto-dev/quarto-actions/setup@v2` (line 40) and the exact Quarto pin
       alone.
-- [ ] T2 — `.github/workflows/versions.yml`: `actions/checkout@v4` → `@v7`
+- [x] T2 — `.github/workflows/versions.yml`: `actions/checkout@v4` → `@v7`
       (lines 81, 129, 204, 261), `actions/upload-artifact@v4` → `@v7`
       (line 186), `actions/download-artifact@v4` → `@v8` (line 207). Leave
       both `quarto-dev/quarto-actions/setup@v2` (lines 132, 268) alone.
@@ -121,6 +121,9 @@ after merge; the revert is one line.
 - 2026-08-28: criteria audit ran in FULL mode (user-facing tier) in a fresh-context [O] reader, at the maintainer's selection lifting this session's standing no-subagent instruction for the audit. It returned ten findings. Five fixed before the criteria were written: the drafted AC1 grep missed the `- uses:` list-item form; its allowlist-plus-count passed a step whose action was swapped for another approved one, so it became a multiset; the drafted AC3 leaned on `pagescheck.py contains`, which walks `.html` and `.pdf` only and would not see a dropped stylesheet or dotfile, so it became a whole-tree path comparison; a drafted AC4 requiring the `deploy` job to report skipped held identically at the merge base and verified nothing, so it was dropped; and three instrument-bound clauses (where the check lives, that plants exist, that run URLs are recorded) moved into the tasks. One became this round's gate question — the standing refusal of a workflow-file scan — and one was accepted as repo precedent: AC4's suite self-test is the profile's own `verify` slot and every milestone here carries it.
 - 2026-08-28: plan gate chose the workflow runs as the evidence over a check pinning the twelve references in the two files, on the maintainer's selection after `versions.yml`'s own header was quoted refusing exactly that ("widening either read is refused: D-011 declines a scan that pins names and shapes in a source file it does not execute"); superseding that refusal stays available and was the alternative weighed. Falsified by a silent downgrade of an action reference reaching the default branch and going unnoticed until a run failed.
 - 2026-08-28: plan gate chose bumping `actions/deploy-pages` unexercised, verified on the first default-branch run after merge, over leaving it at v4 until it can be tested, because the `github-pages` environment refuses a deployment from a non-default branch and no branch run can reach the step; the revert is one line. Falsified by that first post-merge run failing to publish.
+- 2026-08-28: implement gate approved the re-pin of all five actions as scoped (dependency changes are never unilateral); the three narrower options — holding the publish step, holding the upload/download pair, stopping — were the weighed alternatives.
+- 2026-08-28: T1+T2 — twelve `uses:` references now read `actions/checkout@v7` x5, `quarto-dev/quarto-actions/setup@v2` x3, `actions/upload-artifact@v7`, `actions/download-artifact@v8`, `actions/upload-pages-artifact@v5`, `actions/deploy-pages@v5`, and nothing else (AC1's grep, counted as a multiset). One `tests/run-tests.sh` run covers both edits, both being YAML-only: 422 checks, all passed.
+- 2026-08-28: pre-bump baseline for AC2, read from the last default-branch `versions.yml` run (33210583098, `plan` / `render (pinned, 1.10.18)` / `render (floor, 1.4.549)` / `compare` all success, `pdf` skipped): the `compare` job states book 26 rows, demo 55, html-index 21, named-indexes 41 — 4 comparisons over 4 fixtures against the `pinned` leg.
 
 ## Decisions
 

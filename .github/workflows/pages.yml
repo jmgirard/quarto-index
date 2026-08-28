@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # `quarto install tinytex` asks the GitHub API which TinyTeX release is
       # current, and unauthenticated that call is rate-limited per runner
@@ -66,7 +66,7 @@ jobs:
         run: python3 tests/pagescheck.py built site/gallery.yml site/_site
 
       - name: Upload the rendered site as the Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: site/_site
 
@@ -97,4 +97,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

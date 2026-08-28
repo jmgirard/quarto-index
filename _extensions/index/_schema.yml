@@ -1,0 +1,99 @@
+# Schema for the index extension: the two classes its filter reads and the
+# attributes each carries. Editors that read this file (Quarto Wizard) offer
+# the names below as completions and show each description as hover text.
+#
+# Version 1 of the schema vocabulary is declared rather than version 2 because
+# nothing here is written with a keyword whose spelling differs between the
+# two, so version 1 is what every reader of this format accepts.
+#
+# There is no `options:` block: that section describes settings written under
+# an `extensions:` heading, and this extension's one metadata key, `indexes:`,
+# is a top-level document key.
+$schema: https://m.canouil.dev/quarto-wizard/assets/schema/v1/extension-schema.json
+
+classes:
+  index:
+    description: >-
+      Marks the term it wraps for the index. Carrying no attribute, the term
+      indexes under its own text, and its visible text is left as written.
+  qi-index-here:
+    description: >-
+      An empty div marking where the index is printed. It means this on a
+      top-level empty div alone; written anywhere else it places nothing and
+      is reported.
+
+attributes:
+  index:
+    entry:
+      type: string
+      title: Index entry
+      description: >-
+        Index the term under this text rather than under its own. A single `!`
+        separates sub-entry levels and `!!` is a literal `!`.
+      examples:
+        - Entry
+        - Top!Sub
+    see:
+      type: string
+      title: See cross-reference
+      description: >-
+        Point the reader at this entry instead of at a page: the term prints a
+        *see* cross-reference and no locator. `!` separates the target's
+        levels.
+      examples:
+        - Other
+        - Birds!Owls
+    see-also:
+      type: string
+      title: See-also cross-reference
+      description: >-
+        Point the reader at a further entry: the term prints a *see also*
+        cross-reference and no locator. `!` separates the target's levels.
+      examples:
+        - Other
+    sort:
+      type: string
+      title: Sort key
+      description: >-
+        File the entry at this key's position rather than at its printed
+        text's. It uses the same level syntax `entry=` does and lines up with
+        it level by level; an empty level files under its own printed text.
+      examples:
+        - Hague
+        - "!Neumann"
+    mention:
+      type: string
+      title: Mention role
+      enum:
+        - principal
+      description: >-
+        Say which of a term's mentions is its principal one. That mention's
+        locator is emphasized where the output format can emphasize it.
+    range:
+      type: string
+      title: Range end
+      enum:
+        - open
+        - close
+      description: >-
+        Mark where a discussion begins and where it ends. The pair prints one
+        locator spanning them rather than a locator at each; the closing mark
+        contributes no locator of its own.
+    index:
+      type: string
+      title: Index name
+      description: >-
+        File the mark in the declared index of this name. A mark naming none
+        files in the first declared index.
+      examples:
+        - authors
+  qi-index-here:
+    index:
+      type: string
+      title: Index name
+      description: >-
+        Place the declared index of this name here. A marker naming none
+        places the first declared index, and a second marker for one index
+        places nothing and is reported.
+      examples:
+        - authors

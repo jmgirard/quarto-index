@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M50: Editors complete and document the marking syntax
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** GP1, GP3   <!-- owner: plan · create/amend-via-gate -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create -->
+- **Branch/PR:** m050-editor-metadata   <!-- owner: implement (branch) / review (PR URL) · create -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -99,7 +99,7 @@ since a source-shape scan is what D-011 refuses.
 ## Tasks
 <!-- owner: plan (create) / implement (check-off, minor edits) -->
 
-- [ ] T1 Author `_extensions/index/_schema.yml`: the `classes` block for
+- [x] T1 Author `_extensions/index/_schema.yml`: the `classes` block for
       `index` and `qi-index-here`, and an `attributes` block keyed by each
       class name, every attribute carrying a type and a description, with
       `mention` and `range` enumerating their values. Attribute names as
@@ -107,8 +107,9 @@ since a source-shape scan is what D-011 refuses.
       mention, range, index.
 - [ ] T2 Author `_extensions/index/_snippets.json`: one snippet per attribute
       per class, plus the bare mark, both placement divs and the `indexes:`
-      metadata block. Placeholder defaults match the terms the
-      `site/syntax.qmd` table writes.
+      metadata block. Each snippet's placeholder defaults are its own terms,
+      distinct from every other snippet's, so AC4's per-attribute effects land
+      on entries of their own.
 - [ ] T3 Add `tests/editormeta.py` — parses both files, scans `site/*.qmd` for
       the constructs, and runs AC1-AC3's clauses — and wire it into
       `tests/run-tests.sh`. One plant per clause: a dropped snippet, an
@@ -134,6 +135,11 @@ since a source-shape scan is what D-011 refuses.
 - 2026-08-27: plan gate chose describing the marking syntax alone over also teaching the filter to read `extensions: index:` because the second changes filter behavior for the one key the schema format cannot describe; falsified by an author reporting their `indexes:` block gets no editor support.
 - 2026-08-27: plan gate chose holding the schema against the attribute set the docs document over a scan of the filter's Lua constants because D-011 refuses widening a source-shape scan and prescribes a render instead; falsified by an attribute the filter accepts and no page documents reaching a release.
 - 2026-08-27: plan gate chose archiving and installing the extension over resting on the `examples/_extensions` symlink because that symlink makes the travel question vacuous; falsified by `quarto add` from a local archive diverging from what a GitHub install copies. Probe run at plan time: `git archive HEAD _extensions` + `quarto add --no-prompt` installs on Quarto 1.10.18 at exit 0.
+- 2026-08-27: implement gate chose declaring version 1 of the schema vocabulary over version 2 or none, the file being written with no keyword whose spelling differs between the two; falsified by a keyword the file needs that version 1 does not carry.
+- 2026-08-27: implement gate chose a distinct example term per snippet over the repeated terms of the `site/syntax.qmd` table, since AC4's per-attribute effects merge into one entry where two snippets mark the same term; T2's wording amended to match.
+- 2026-08-27: implement gate chose reading AC4's seven effect comparisons in the HTML render alone, `mention=`'s effect being emphasis that leaves no trace in a PDF's text layer; the PDF is held to exit 0 and to the single folded index AC4 names.
+- 2026-08-27: implement gate chose PyYAML for the schema read over an indentation parser of the suite's own — D-030.
+- 2026-08-27: T1 done. `_extensions/index/_schema.yml` declares the two classes and the seven/one attributes each carries, `mention` and `range` enumerating their values.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

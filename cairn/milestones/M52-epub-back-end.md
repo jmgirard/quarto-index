@@ -91,10 +91,10 @@ back-end forces.
       `builds_ast_index`; leave `index.lua:133/135/166/192` and
       `indexes.lua:199` (`folded`) on `is_html`. Correct `core.lua:417`'s
       comment, which says epub passes through.
-- [ ] T2 — add `epub:` to `examples/demo.qmd`'s and `examples/book/_quarto.yml`'s
+- [x] T2 — add `epub:` to `examples/demo.qmd`'s and `examples/book/_quarto.yml`'s
       formats; render both in `tests/run-tests.sh`; `.epub` is already in
       `CAPTURE_EXTS` (`run-tests.sh:171`).
-- [ ] T3 — `tests/epubindex.py`: open an `.epub` with `zipfile`, read
+- [x] T3 — `tests/epubindex.py`: open an `.epub` with `zipfile`, read
       `META-INF/container.xml` → `content.opf` → the manifest's XHTML
       documents, hand each to `htmlindex.parse`, and expose the index sections,
       entry rows and locator hrefs the checks read. Its header says where it
@@ -129,6 +129,7 @@ back-end forces.
 - 2026-08-28: amendment — AC1's citation of `run-tests.sh` "manifest 2" named the control-token manifest (`run-tests.sh:632`); the demo's HTML index rows are pinned by manifest 1e (`DEMO_HTML_INDEX`, `run-tests.sh:439`). Corrected at the implement question gate on the maintainer's selection; the criterion's promise is unchanged. Amended wording was not read by a fresh-context [O] reader: this session carries a standing instruction not to spawn subagents.
 - 2026-08-28: amendment — AC5's sweep domain narrowed from all tracked `.qmd`/`.md` files to `README.md` and the tracked `.qmd` files under `site/`, on the maintainer's selection at the same gate. As written the criterion could not pass: `two back-ends` occurs in `cairn/DESIGN.md:304` and twice in this milestone file, where AC5 itself states the string. Six reader-facing sentences still bind (README.md:37, site/index.qmd:58, site/back-end-differences.qmd:2 and :5, site/output.qmd:10, site/principal-mention.qmd:64); `DESIGN.md`'s is fixed under T6 without the criterion binding it.
 - 2026-08-28: T1 — `core.lua` gains `is_epub` (matching `epub` in FORMAT, which covers `epub`, `epub2` and `epub3`) and `builds_ast_index` (`is_html` or `is_epub`), both exported; `indexes.builds_index`, `passes.lua`'s per-mark HTML record branch and `index.lua`'s AST back-end branch route through it, while the book context, the degraded-book warning, the dangling-report gate, the range-scope word and `folded` stay on `is_html`. The `is_html` comment no longer says epub passes through. `tests/run-tests.sh` green, 407 checks.
+- 2026-08-28: T2/T3 — one checkpoint for both, verified by one suite run rather than two: `run-tests.sh` does `rm -rf "$WORK"` at startup and refuses concurrent invocations, so a per-task run costs a further 8.5 minutes and asserts nothing the combined one does not. `run-tests.sh` renders `examples/demo.qmd` to EPUB and to revealjs and `examples/book/` to EPUB, each captured under a slug of its own; `demo.qmd` declares no formats, so only the book's `_quarto.yml` needed an `epub:` entry, and AC4's gfm half reads the `demo-gfm` capture M03-AC6 already makes rather than rendering a second time. `tests/epubindex.py` reads the container, the package document and the manifest's XHTML members through `htmlindex.parse_text` — a new entry point `htmlindex.parse` now calls, so one builder serves both — and exposes the sections, rows, links and unresolved links. Suite green, 410 checks.
 
 ## Decisions
 

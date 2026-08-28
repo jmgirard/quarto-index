@@ -16973,6 +16973,39 @@ M50DOCPY
   pass "M50 T5/T6 self-test: each clause of the install probe and of the documentation reader is planted on its own and shown red, while both pass unplanted on this run's own archive and this repository's own pages — an archive rebuilt without one of the two files, a project with no extension installed, and no file named to look for; a rendered page and a README each with one filename removed, and no filename to look for"
 fi
 
+# ---------------------------------------------------------------------------
+# M52 T2 — the EPUB renders. Three of the four artifacts the M52 checks read
+# are rendered here; the fourth is the gfm capture M03-AC6 already makes
+# ($CAPTURE_ROOT/demo-gfm/demo.md), read rather than re-rendered because a
+# second render of the same document and format would need a slug of its own
+# and would assert nothing the first does not.
+#
+# The book render's log is kept under its own name: AC3 sweeps the warning
+# stream this render wrote, and a log shared with another render would let a
+# fold sentence drawn elsewhere decide that check.
+# ---------------------------------------------------------------------------
+quarto render examples/demo.qmd --to epub > "$WORK/demo-epub.log" 2>&1 \
+  || { tail -20 "$WORK/demo-epub.log" >&2; fail "M52-AC1: demo.qmd failed to render to EPUB"; }
+capture examples/demo.qmd epub "demo-epub"
+M52_DEMO_EPUB="$CAPTURE_ROOT/demo-epub/demo.epub"
+[ -s "$M52_DEMO_EPUB" ] || fail "M52-AC1: $M52_DEMO_EPUB is empty"
+pass "M52-AC1: examples/demo.qmd renders to EPUB at exit 0"
+
+quarto render examples/demo.qmd --to revealjs > "$WORK/demo-revealjs.log" 2>&1 \
+  || { tail -20 "$WORK/demo-revealjs.log" >&2; fail "M52-AC4: demo.qmd failed to render to revealjs"; }
+capture examples/demo.qmd revealjs "demo-revealjs"
+M52_DEMO_REVEALJS="$CAPTURE_ROOT/demo-revealjs/demo.html"
+[ -s "$M52_DEMO_REVEALJS" ] || fail "M52-AC4: $M52_DEMO_REVEALJS is empty"
+pass "M52-AC4: examples/demo.qmd renders to revealjs at exit 0"
+
+( cd "$BOOK_DIR" && quarto render --to epub ) > "$WORK/book-epub.log" 2>&1 \
+  || { tail -30 "$WORK/book-epub.log" >&2; fail "M52-AC3: the book fixture failed to render to EPUB"; }
+capture --project "$BOOK_DIR" epub "book-epub"
+M52_BOOK_EPUB=$(find "$CAPTURE_ROOT/book-epub/_book" -maxdepth 1 -name '*.epub' | head -1)
+[ -n "$M52_BOOK_EPUB" ] && [ -s "$M52_BOOK_EPUB" ] \
+  || fail "M52-AC3: the book's EPUB render left no .epub under $CAPTURE_ROOT/book-epub/_book"
+pass "M52-AC3: examples/book/ renders to EPUB at exit 0"
+
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

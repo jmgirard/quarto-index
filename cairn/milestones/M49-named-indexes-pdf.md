@@ -1,6 +1,6 @@
 # M49: A PDF render builds every index the document declares
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -134,6 +134,9 @@ candidate row.
 - 2026-08-27: T9 — `tests/namedpdf.py` (entries/cells/reports) over the captured PDF and LaTeX log, each clause fenced by a planted manifest under `--self-test`; `pdfindex.read` gained a `stop` bound that refuses an unbounded read when one was asked for, `tests/indexdump.py pdf` a matching third argument, and `tests/run-tests.sh`'s `index_args` now reads `\index[<name>]{}` too. AC3 reads the book PDF's two sections; AC5 sweeps the tracked `site/*.qmd` pages it enumerates from `git ls-files`.
 - 2026-08-27: minor amendment — M50's `folded` clause became `split`, reading one row dump per declared index, and its three plants became five; M04-AC2/AC4, M21-AC5, M29's book-pdf partition, M32's LaTeX plant mutations, M38-R2/R4 (`check_folded_site`/`check_folded_second` → `check_split_site`/`check_split_second`), M38-AC5, M39-AC3, M15's joined-message scan and `warn-distinct`'s EXPECTED (66 → 70) all follow the lifted fold.
 - 2026-08-27: T8 — `site/named-indexes.qmd`'s one-index section replaced by three: who builds each index and what the TeX installation must permit, the below-marker rule, and the HTML book's fold. `site/books.qmd` and `examples/book/_quarto.yml` scope their one-index claims to the HTML book; the docs claim manifest gained seven rows; D-031 annotates GP2; CHANGELOG gained an Output section.
+- 2026-08-28: `escape_title` gained a case: `examples/named-indexes-foldsite.qmd`'s second declared title now carries an `&` and a comma, and `check_split_site` holds the emitted `\makeindex[intoc,name=authors,title={Index of Authors \& Editors, Second}]` line, so the brace and the escape are held by a render rather than by reading.
+- 2026-08-28: self-test repairs found by running it — M15's joined-message scan asserts the absence claim before its head-and-shape control, so M16-AC3's plant reaches the clause it is about; the M38 placement plants were rewritten for the split readers (five and four clauses, each verified to fire its own), and the readers now count each index's command so a duplicate cannot collapse into one; the M49 entries plant that emptied every `index` row was split into an orphan-row case and an empty manifest; the M49-AC5 sweep plant appends the retired sentence rather than substituting across a line break; M50's `nonamed` plant substitutes a term rather than emptying the section, and a sixth plant holds the strayed-term clause; `examples/named-indexes-preloaded.qmd` was declared under `site/gallery.yml`'s `not-shown:`.
+- 2026-08-28: `tests/run-tests.sh` clean at 406 checks; `--self-test` clean at 790.
 
 ## Decisions
 

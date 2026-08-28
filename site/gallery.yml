@@ -11,8 +11,8 @@
 # embeds. Nothing here scans the fixture sources for their marks.
 #
 # `not-shown:` is a bare list. It carries no per-fixture reason, deliberately:
-# a rationale string for each of the 45 would couple every future fixture to
-# this file without telling a reader anything the fixture itself does not.
+# a rationale string for each entry would couple every future fixture to this
+# file without telling a reader anything the fixture itself does not.
 #
 # The file's shape is read by tests/gallerycheck.py, which accepts only
 # `<key>:` at column 0 followed by `  - <value>` lines and refuses anything
@@ -52,6 +52,7 @@ not-shown:
   - examples/named-indexes-foldsite.qmd
   - examples/named-indexes-misuse.qmd
   - examples/named-indexes-order.qmd
+  - examples/named-indexes-preloaded.qmd
   - examples/named-indexes-rival.qmd
   - examples/named-indexes-twin.qmd
   - examples/principal-cases.qmd

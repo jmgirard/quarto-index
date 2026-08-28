@@ -11836,18 +11836,29 @@ label = sys.argv[2]
 # The default index's command and a named index's are told apart by the
 # optional argument, not by position: `\printindex` is a prefix of
 # `\printindex[authors]`, so a scan for the bare form alone finds both.
-found = {m.group(1) or '': m.start()
-         for m in re.finditer(r'\\printindex(?:\[([^\]]*)\])?', tex)}
-if sorted(found) != ['', 'authors']:
-    sys.exit(f'FAIL: {label}: the capture prints the index/indexes '
-             f'{sorted(found)!r}, want the fixture\'s two -- the default one '
-             f'and the one named `authors`')
+printed = [(m.group(1) or '', m.start())
+           for m in re.finditer(r'\\printindex(?:\[([^\]]*)\])?', tex)]
+names = sorted(name for name, _at in printed)
+if names != ['', 'authors']:
+    sys.exit(f'FAIL: {label}: the capture prints the index/indexes {names!r}, '
+             f'want the fixture\'s two, once each -- the default one and the '
+             f'one named `authors`')
+found = dict(printed)
 sites = [(m.start(), m.group(1))
          for m in re.finditer(r'\\label\{(site-[a-z]+)\}', tex)]
 if [name for _pos, name in sites] != ['site-authors', 'site-main']:
     sys.exit(f'FAIL: {label}: the capture carries the placement-site labels '
              f'{[n for _, n in sites]}, not the fixture\'s two in the order it '
              f'writes them -- the second index\'s marker first')
+# The declared title reaches the preamble as a braced, LaTeX-escaped value.
+# The fixture's second title carries an `&` and a comma on purpose: unescaped
+# the ampersand is a LaTeX alignment character, and unbraced the comma ends
+# imakeidx's `title` value and starts a key of its own.
+TITLE = r'\makeindex[intoc,name=authors,title={Index of Authors \& Editors, Second}]'
+if TITLE not in tex:
+    sys.exit(f'FAIL: {label}: the capture does not carry {TITLE!r}; the second '
+             f'index\'s declared title is not passed to imakeidx braced and '
+             f'with its LaTeX special escaped')
 want = {'': 'site-main', 'authors': 'site-authors'}
 for name, at in sorted(found.items()):
     before = [site for pos, site in sites if pos < at]
@@ -11859,7 +11870,9 @@ for name, at in sorted(found.items()):
         sys.exit(f'FAIL: {label}: {printed} follows {before[-1]!r} rather than '
                  f'{want[name]!r}, the marker its own author wrote for it')
 print(f'ok   {label}: each declared index stands at the first marker naming '
-      f'it, though the fixture writes the second index\'s marker first')
+      f'it, though the fixture writes the second index\'s marker first, and '
+      f'the second index\'s declared title reaches imakeidx braced with its '
+      f'LaTeX special escaped')
 SPLITSITEPY
 }
 
@@ -11873,11 +11886,13 @@ tex = open(sys.argv[1], encoding='utf-8').read()
 label = sys.argv[2]
 # A finding, not a traceback: a bare `str.index` raises `ValueError: substring
 # not found` and names neither the capture nor what was wanted (M38 T19).
-found = {m.group(1) or '': m.start()
-         for m in re.finditer(r'\\printindex(?:\[([^\]]*)\])?', tex)}
-if sorted(found) != ['', 'authors']:
-    sys.exit(f'FAIL: {label}: the capture prints the index/indexes '
-             f'{sorted(found)!r}, want the fixture\'s two')
+printed = [(m.group(1) or '', m.start())
+           for m in re.finditer(r'\\printindex(?:\[([^\]]*)\])?', tex)]
+names = sorted(name for name, _at in printed)
+if names != ['', 'authors']:
+    sys.exit(f'FAIL: {label}: the capture prints the index/indexes {names!r}, '
+             f'want the fixture\'s two, once each')
+found = dict(printed)
 sites = [(m.start(), m.group(1))
          for m in re.finditer(r'\\label\{(site-[a-z]+)\}', tex)]
 if [name for _pos, name in sites] != ['site-first', 'site-second']:
@@ -12694,7 +12709,12 @@ if [ "${1:-}" = "--self-test" ]; then
     'this read is unbounded' \
     python3 tests/namedpdf.py entries "$NAMED_PDF" "$M49W/nostop.txt" M49-probe
 
-  m49_plant noindexrow.txt "$WORK/m49-entries.txt" $'/^index\t/d'
+  m49_plant orphanrow.txt "$WORK/m49-entries.txt" $'/^index\tIndex\t/d'
+  m49_planted 'a manifest whose first entry rows belong to no section, the row naming theirs having gone' \
+    'belongs to no section' \
+    python3 tests/namedpdf.py entries "$NAMED_PDF" "$M49W/orphanrow.txt" M49-probe
+
+  : > "$M49W/noindexrow.txt"
   m49_planted 'a manifest naming no index section at all, which any PDF would satisfy' \
     'names no index section at all' \
     python3 tests/namedpdf.py entries "$NAMED_PDF" "$M49W/noindexrow.txt" M49-probe
@@ -12729,7 +12749,7 @@ if [ "${1:-}" = "--self-test" ]; then
     python3 tests/namedpdf.py reports "$WORK/named-indexes-latex.log" \
       "$M49W/nopatterns.txt" "$WORK/m49-reports.txt" M49-probe
 
-  pass "M49 T9 self-test: each clause of tests/namedpdf.py is planted on its own and shown red, while the same readers pass unplanted on this run's own capture and log — an entry stated and not printed, one printed and not stated, an index heading the PDF has no section for, a section-ending line it never prints (which would read the second index as part of the first), a manifest naming no section at all, a cell stating the wrong side of present/absent, a cell manifest of one kind only, a report drawn and not stated, one stated and not drawn, and a pattern file that would read no report at all"
+  pass "M49 T9 self-test: each clause of tests/namedpdf.py is planted on its own and shown red, while the same readers pass unplanted on this run's own capture and log — an entry stated and not printed, one printed and not stated, an index heading the PDF has no section for, a section-ending line it never prints (which would read the second index as part of the first), a manifest whose entry rows belong to no section, a manifest naming no section at all, a cell stating the wrong side of present/absent, a cell manifest of one kind only, a report drawn and not stated, one stated and not drawn, and a pattern file that would read no report at all"
 fi
 
 # M38-AC5's second half — a book chapter. examples/book/ declares two indexes
@@ -12907,8 +12927,13 @@ if [ "${1:-}" = "--self-test" ]; then
   M49S="$WORK/m49sweep"
   rm -rf "$M49S"
   mkdir -p "$M49S"
-  sed 's|A LaTeX or PDF render builds every index you declare|A LaTeX or PDF render builds a single index|' \
-    site/named-indexes.qmd > "$M49S/reinstated.qmd"
+  # Appended rather than substituted: the sentence this milestone retired was
+  # rewritten across a line break, so no single-line substitution reaches it,
+  # and what the sweep is about is a page CARRYING the sentence however it got
+  # there.
+  { cat site/named-indexes.qmd
+    printf '\n%s\n' 'A LaTeX or PDF render builds a single index.'
+  } > "$M49S/reinstated.qmd"
   cmp -s site/named-indexes.qmd "$M49S/reinstated.qmd" \
     && fail "M49 self-test: the mutation reinstating a retired sentence changed nothing, so the case below is about the unplanted page"
   printf '%s\n' "$M49S/reinstated.qmd" > "$M49S/pages.txt"
@@ -15392,57 +15417,74 @@ M30PLANTPY
   check_no_invalid_id "$M38R/dottedid.html" "M38 self-test (control)" \
     || fail "M38 self-test: the page-wide id sweep fails on a dot, which is legal in an id and which Quarto itself mints — the two readers are not separable"
 
-  # The folded placement site (R2), over the captured `.tex`. Four clauses: how
-  # many of the one index the capture carries, how many placement sites, whether
-  # any site precedes the index at all, and which site it follows — the defect
-  # itself, an index that moved to the marker naming an index this back-end does
-  # not build. Each is planted below; the count here is read off the reader
-  # rather than recalled (M38 T18).
+  # The per-index placement site (R2), over the captured `.tex`. Four clauses:
+  # which indexes the capture prints and how many of each, how many placement
+  # sites and in which order, whether an index precedes every site, and which
+  # site each index follows -- the defect itself, an index printed at the
+  # marker naming the OTHER index. Each is planted below; the count here is
+  # read off the reader rather than recalled (M38 T18).
   FOLDSITE_TEX="$CAPTURE_ROOT/named-indexes-foldsite-latex/named-indexes-foldsite.tex"
   cp "$FOLDSITE_TEX" "$M38R/foldsite.tex"
-  check_folded_site "$M38R/foldsite.tex" "M38 self-test (control)" >/dev/null \
-    || fail "M38 self-test: the folded-site reader fails on an unplanted copy of this run's capture, so no failure below is evidence of anything"
+  check_split_site "$M38R/foldsite.tex" "M38 self-test (control)" >/dev/null \
+    || fail "M38 self-test: the per-index placement reader fails on an unplanted copy of this run's capture, so no failure below is evidence of anything"
+  # The default index's command is a whole line since M49 -- the group that
+  # suppresses imakeidx's close wraps it -- so every plant that MOVES it moves
+  # the line and reinserts a bare command, which is the same command as far as
+  # this reader's own pattern is concerned.
   probe_plant "$M38R/foldsite.tex" "$M38R/foldsite-moved.tex" \
-    -e 's|^\\printindex$||' -e 's|^\\label{site-authors}$|\\label{site-authors}\\printindex|'
-  probe_defect "the one index standing at the marker naming an index this back-end does not build" \
-    check_folded_site "$M38R/foldsite-moved.tex" "M38 probe"
+    -e 's|^.*\\printindex\\endgroup$||' -e 's|\\label{site-authors}$|\\label{site-authors}\n\\printindex|'
+  probe_defect "the default index standing at the marker naming the other one" \
+    check_split_site "$M38R/foldsite-moved.tex" "M38 probe"
   probe_plant "$M38R/foldsite.tex" "$M38R/foldsite-onesite.tex" \
     's|\\label{site-authors}||g'
   probe_defect "a capture carrying fewer placement sites than the fixture writes" \
-    check_folded_site "$M38R/foldsite-onesite.tex" "M38 probe"
+    check_split_site "$M38R/foldsite-onesite.tex" "M38 probe"
   probe_plant "$M38R/foldsite.tex" "$M38R/foldsite-twice.tex" \
-    's|^\\printindex$|\\printindex\n\\printindex|'
-  probe_defect "a capture carrying two of the one index a folded render prints" \
-    check_folded_site "$M38R/foldsite-twice.tex" "M38 probe"
-  # The fourth clause: an index that stands before EVERY placement site, so it
-  # is at neither marker rather than at the wrong one. Distinct from the moved
-  # plant above, which leaves it at a site.
+    's|^\\printindex\[authors\]$|\\printindex[authors]\n\\printindex[authors]|'
+  probe_defect "a capture printing one declared index twice" \
+    check_split_site "$M38R/foldsite-twice.tex" "M38 probe"
+  # The clause for an index that stands before EVERY placement site, so it is
+  # at no marker rather than at the wrong one. Distinct from the moved plant
+  # above, which leaves it at a site.
   probe_plant "$M38R/foldsite.tex" "$M38R/foldsite-none.tex" \
-    -e 's|^\\printindex$||' -e 's|^\\begin{document}$|\\begin{document}\n\\printindex|'
-  probe_defect "the one index standing before every placement site, so it is at neither marker" \
-    check_folded_site "$M38R/foldsite-none.tex" "M38 probe"
+    -e 's|^.*\\printindex\\endgroup$||' -e 's|^\\begin{document}$|\\begin{document}\n\\printindex|'
+  probe_defect "the default index standing before every placement site, so it is at no marker" \
+    check_split_site "$M38R/foldsite-none.tex" "M38 probe"
+  # And the title clause: the declared title reaches imakeidx braced and
+  # escaped, which is what a comma and a LaTeX special in it depend on.
+  probe_plant "$M38R/foldsite.tex" "$M38R/foldsite-title.tex" \
+    's|title={Index of Authors \\& Editors, Second}|title=Index of Authors \\& Editors, Second|'
+  probe_defect "a declared title reaching imakeidx unbraced, so its comma would start a key of its own" \
+    check_split_site "$M38R/foldsite-title.tex" "M38 probe"
 
-  # The same reader's sibling (R4): with no marker for the built index, the
-  # FIRST marker written places it.
+  # The same reader's sibling (R4): two markers naming one index and none
+  # naming the other, so that index is placed at the first marker naming it and
+  # the other is appended at the end of the document.
   FOLDSECOND_TEX="$CAPTURE_ROOT/named-indexes-foldsecond-latex/named-indexes-foldsecond.tex"
   cp "$FOLDSECOND_TEX" "$M38R/foldsecond.tex"
-  check_folded_second "$M38R/foldsecond.tex" "M38 self-test (control)" >/dev/null \
+  check_split_second "$M38R/foldsecond.tex" "M38 self-test (control)" >/dev/null \
     || fail "M38 self-test: the second-marker reader fails on an unplanted copy of this run's capture, so no failure below is evidence of anything"
   probe_plant "$M38R/foldsecond.tex" "$M38R/foldsecond-moved.tex" \
-    -e 's|^\\printindex$||' -e 's|^\\label{site-second}$|\\label{site-second}\\printindex|'
-  probe_defect "the one index standing at the second marker rather than the first" \
-    check_folded_second "$M38R/foldsecond-moved.tex" "M38 probe"
-  # Its other two clauses. The first was a bare `str.index` until T19: a capture
+    -e 's|^\\printindex\[authors\]$||' -e 's|\\label{site-second}$|\\label{site-second}\n\\printindex[authors]|'
+  probe_defect "the twice-named index standing at the second marker rather than the first" \
+    check_split_second "$M38R/foldsecond-moved.tex" "M38 probe"
+  # Its other clauses. The first was a bare `str.index` until T19: a capture
   # with no \printindex raised ValueError and named neither the capture nor what
   # was wanted, so there was nothing here a plant could show red.
   probe_plant "$M38R/foldsecond.tex" "$M38R/foldsecond-noindex.tex" \
-    's|^\\printindex$||'
-  probe_defect "a capture carrying none of the one index a folded render prints" \
-    check_folded_second "$M38R/foldsecond-noindex.tex" "M38 probe"
+    's|^\\printindex\[authors\]$||'
+  probe_defect "a capture printing none of the index two of its markers name" \
+    check_split_second "$M38R/foldsecond-noindex.tex" "M38 probe"
   probe_plant "$M38R/foldsecond.tex" "$M38R/foldsecond-relabel.tex" \
     's|site-second|site-zzz|g'
   probe_defect "a capture whose placement-site labels are not the fixture's two in order" \
-    check_folded_second "$M38R/foldsecond-relabel.tex" "M38 probe"
+    check_split_second "$M38R/foldsecond-relabel.tex" "M38 probe"
+  # The clause M49 added: the index NO marker names is appended at the end of
+  # the document, not printed among the markers.
+  probe_plant "$M38R/foldsecond.tex" "$M38R/foldsecond-early.tex" \
+    -e 's|^.*\\printindex\\endgroup$||' -e 's|^\\begin{document}$|\\begin{document}\n\\printindex|'
+  probe_defect "the index no marker names standing among the markers rather than after the last of them" \
+    check_split_second "$M38R/foldsecond-early.tex" "M38 probe"
 
   # What heads the one section a folded book prints (R3). Four clauses: the
   # number of sections, the id that section carries, the element its heading is,
@@ -15560,7 +15602,7 @@ M30PLANTPY
     || fail "M38 self-test: the link reader's finding does not name the id it could not find"
   printf 'ok   self-test: the check fails on <<a section id the page does not carry>>, reporting a finding that names it rather than raising\n'
 
-  pass "M38 self-test: each clause named below is planted on its own and shown red, while each reader passes on the same artifact unplanted — the page-wide id sweep on a space, a hash and an angle bracket, and its dotted-id sibling on the one character legal in an id and still refused; the folded-site reader on two of the one index, a site count the fixture does not write, an index at no site at all, and an index at the wrong site; the second-marker reader on none of the one index, labels that are not the fixture's two in order, and the index at the second marker; the folded-heading reader on an id naming one declared index, a heading below an h1, and a heading carrying one declaration's own title, its fourth clause — the section count — planted by nothing, since the plant written for it is refused as an unreadable page before the count is compared; the named-index docs reader on a missing claim, a declaration block whose title or indentation is not the one pinned, a fixture that does not exist, a command never executed or executed dirty, and each of the four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the link reader on a section id the page does not carry"
+  pass "M38 self-test: each clause named below is planted on its own and shown red, while each reader passes on the same artifact unplanted — the page-wide id sweep on a space, a hash and an angle bracket, and its dotted-id sibling on the one character legal in an id and still refused; the per-index placement reader on one declared index printed twice, a site count the fixture does not write, an index at no site at all, an index at the marker naming the other one, and a declared title reaching imakeidx unbraced; the second-marker reader on none of the index two markers name, labels that are not the fixture's two in order, that index at the second marker rather than the first, and the index no marker names standing among the markers rather than after the last of them; the folded-heading reader on an id naming one declared index, a heading below an h1, and a heading carrying one declaration's own title, its fourth clause — the section count — planted by nothing, since the plant written for it is refused as an unreadable page before the count is compared; the named-index docs reader on a missing claim, a declaration block whose title or indentation is not the one pinned, a fixture that does not exist, a command never executed or executed dirty, and each of the four domains that can empty in silence — no section, no yaml block, no fixture path, no command; and the link reader on a section id the page does not carry"
 fi
 
 
@@ -16654,7 +16696,11 @@ plant('noplainnamed.html', CONTROL, r'>Ada Lovelace</span>',
       '>Ada Byron</span>')
 
 # --- each declared index printed on its own, carrying its own marks alone.
-plant_rows('nonamed.txt', 'second', lambda line: 'Ada Lovelace' not in line)
+# A NON-EMPTY second section carrying a different term: dropping its only row
+# would empty the section, and the empty-section clause would fire instead of
+# the one this case is about.
+plant_rows('nonamed.txt', 'second', lambda line: False,
+           ['0\tSomeone Else\tSomeone Else, 1'])
 # The first index's own rows with the named term's row added: the shape a fold
 # produces, and the one a bounded read would otherwise never distinguish.
 NAMED_ROW = [line for line in ROWS['second'].splitlines()
@@ -16667,6 +16713,13 @@ plant_rows('norows.txt', 'first', lambda line: False)
 plant_rows('nonamedrows.txt', 'second', lambda line: False)
 plant_rows('firstemptied.txt', 'first', lambda line: False,
            ['0\tzzz unmarked\tzzz unmarked, 1'])
+# The other direction: the second index carrying a term marked outside it,
+# which is the same fold read from the other side.
+BARE_ROW = [line for line in ROWS['first'].splitlines() if '\tcats\t' in line]
+if len(BARE_ROW) != 1:
+    die('namedabsorbed.txt', f'found {len(BARE_ROW)} row(s) for a term marked '
+                             f'outside the named index, where it must find 1')
+plant_rows('namedabsorbed.txt', 'second', lambda line: True, BARE_ROW)
 M50FXPLANTPY
 
   # The two identifiers the comparison reads are passed through `env` rather
@@ -16741,8 +16794,11 @@ M50FXPLANTPY
   m50_planted 'a first declared index carrying none of the terms marked outside the named one' \
     'so it is not the index those marks file in' \
     python3 tests/editorfixture.py split "$M50_SNIPPETS" "$M50P/firstemptied.txt" "$M50_ROWS_NAMED"
+  m50_planted 'a second declared index carrying a term marked outside it' \
+    'so the two indexes are not each their own marks alone' \
+    python3 tests/editorfixture.py split "$M50_SNIPPETS" "$M50_ROWS" "$M50P/namedabsorbed.txt"
 
-  pass "M50 T4 self-test: each clause of the effect comparison is planted on its own and shown red, on both sides — an effect missing from the fixture and the same effect present in the control being different defects — while both readers pass unplanted on this run's own renders: no index section, a control with two; entry='s deepest level, its marked term kept, and the control's own entry gone; each cross-reference's target, the locator it must replace, and the control's bare locator; the sort key's letter group in each document; the principal locator's emphasis, its class, and the control emphasizing one; the range's locator count in each document; the named section, an entry filed in two indexes, and the control's single-index entry; and each declared index printed on its own -- a second index missing the term index= files in it, a first index printing that term as a fold would, either section dumped empty, and a first index carrying none of the terms marked outside the named one"
+  pass "M50 T4 self-test: each clause of the effect comparison is planted on its own and shown red, on both sides — an effect missing from the fixture and the same effect present in the control being different defects — while both readers pass unplanted on this run's own renders: no index section, a control with two; entry='s deepest level, its marked term kept, and the control's own entry gone; each cross-reference's target, the locator it must replace, and the control's bare locator; the sort key's letter group in each document; the principal locator's emphasis, its class, and the control emphasizing one; the range's locator count in each document; the named section, an entry filed in two indexes, and the control's single-index entry; and each declared index printed on its own -- a second index missing the term index= files in it, a first index printing that term as a fold would, either section dumped empty, a first index carrying none of the terms marked outside the named one, and a second index carrying one of them"
 fi
 
 # ---------------------------------------------------------------------------

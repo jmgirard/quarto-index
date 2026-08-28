@@ -4,7 +4,7 @@ indexes:
   - name: main
     title: Index
   - name: authors
-    title: Index of Authors
+    title: Index of Authors & Editors, Second
 filters:
   - index
 ---
@@ -18,6 +18,11 @@ which is what this document is written to show. An HTML book still keeps one
 index — its chapters are aggregated through a per-chapter record carrying no
 index name — and there the second index's marker, standing first, must not
 take the place of the index the book does build.
+
+The second index's declared title also carries the two characters a title has
+to survive on its way into the LaTeX preamble: an `&`, which is a LaTeX
+special, and a comma, which would end the value of `imakeidx`'s `title` key and
+start a key of its own if the value were not braced.
 
 One term files in each: [Alpha]{.index} and
 [Babbage]{.index index="authors"}.

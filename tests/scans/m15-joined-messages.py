@@ -78,6 +78,20 @@ if not messages:
           'absence below is the scanner finding nothing, not the filter '
           'saying nothing', file=sys.stderr)
     sys.exit(1)
+# The absence claim runs FIRST, and the passing control below it. Both are
+# asserted either way; what the order decides is which finding a reader sees
+# when a message has been reworded to carry the retired claim -- the retired
+# claim itself, rather than the head-and-shape control noticing that the same
+# message no longer matches its template (M16-AC3's plant is exactly that
+# rewording).
+guilty = [message for message in messages if GONE in message]
+if guilty:
+    print(f'FAIL: M15-AC5: {len(guilty)} joined warn() message(s) still tell '
+          f'an author <<{GONE}>>, which the emission no longer risks:',
+          file=sys.stderr)
+    for message in guilty:
+        print(f'  <<{message}>>', file=sys.stderr)
+    sys.exit(1)
 # Exactly one message per shape and HEAD, not merely one somewhere: a shape
 # found twice under one head is a report the filter draws twice, and a presence
 # test reads that as the passing control it is not. Matched as head PLUS shape
@@ -101,14 +115,6 @@ if wrong:
           f'reading the file wrongly:', file=sys.stderr)
     for r, n in wrong:
         print(f'  {n} message(s) carry <<{r}>>', file=sys.stderr)
-    sys.exit(1)
-guilty = [message for message in messages if GONE in message]
-if guilty:
-    print(f'FAIL: M15-AC5: {len(guilty)} joined warn() message(s) still tell '
-          f'an author <<{GONE}>>, which the emission no longer risks:',
-          file=sys.stderr)
-    for message in guilty:
-        print(f'  <<{message}>>', file=sys.stderr)
     sys.exit(1)
 print(f'ok   M15-AC5: none of the {len(messages)} joined warn() messages in '
       f'the filter claims a render can fail from rival encapsulations, and '

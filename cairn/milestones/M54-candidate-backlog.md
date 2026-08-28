@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M54: The candidate backlog comes back under D-013
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
-- **Branch/PR:** —
+- **Branch/PR:** `m054-candidate-backlog`
 
 ## Goal
 
@@ -69,7 +69,7 @@ checker-regress shape, and `cairn_validate` owns tracking validation.
 
 ## Tasks
 
-- [ ] T1. Enumerate `## Candidates` with the python sweep and record, in the
+- [x] T1. Enumerate `## Candidates` with the python sweep and record, in the
       work log, a disposition for each of the 36 rows — kept, merged into
       which row, or dropped — with a one-clause reason. The sweep is the
       enumeration; no row is disposed off a hand list.
@@ -103,6 +103,7 @@ checker-regress shape, and `cairn_validate` owns tracking validation.
 - 2026-08-28: plan gate chose fixing the record before burning down its substance, over repairing two or three reader clusters first, because the clusters cannot be prioritized against each other while nine of them are illegible prose in one section; falsified by a triage that finds most rows dead, which would make the compression work wasted.
 - 2026-08-28: plan gate chose moving the finding prose verbatim to `## Known issues` over compressing and striking the stale on the way, because D-013's own rule is a move and M27's precedent dropped nothing; falsified by `cairn/DESIGN.md` acquiring a weight cap that the ~12KB addition would breach.
 - 2026-08-28: plan gate chose a D-entry plus a row-shape comment plus a byte cap over a repo-local checker over the cairn files, the checker being the checker-regress shape while D-011 governs source-shape scans and `cairn_validate` already owns tracking validation; falsified by a fourth regression under the stated shape, which would say prose does not hold it.
+- 2026-08-28: T1 disposition, off the python sweep (36 rows, 22,001 bytes, largest 2,341, 14 over the 400-byte cap): none dropped and none merged — every row proposes work someone would still do, and no two rows propose the same work. Twelve are kept with their finding prose moved out and the row compressed — rows 2 (EPUB readers), 3 (M50/M49 editor-metadata readers), 4 (named-index LaTeX edges), 16 (M32 check follow-ups), 17 (version portability), 20 (named indexes across chapters), 21 (suite readers), 22 (version-matrix readers), 23 (guards and per-clause proofs), 24 (gallery checks), 25 (pre-release sweep and link containment), 26 (publishing-workflow checks); rows 17, 20 and 21 join the nine the Scope named because they restate findings too and cannot reach the cap without losing that text, taken to the implement gate, which chose moving theirs as well. Three are kept and compressed with nothing to move — row 9 (release bundle, its dated correction history dropped to git at the gate's choice), 11 (locator-control follow-ups), 36 (index output follow-ups, 3 bytes over). The remaining twenty-one are kept as they stand, all under the cap, row 5 only losing its struck-label mention at T6.
 
 ## Decisions
 ## Review

@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M50: Editors complete and document the marking syntax
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -105,25 +105,25 @@ since a source-shape scan is what D-011 refuses.
       `mention` and `range` enumerating their values. Attribute names as
       `passes.lua` and `indexes.lua` read them: entry, see, see-also, sort,
       mention, range, index.
-- [ ] T2 Author `_extensions/index/_snippets.json`: one snippet per attribute
+- [x] T2 Author `_extensions/index/_snippets.json`: one snippet per attribute
       per class, plus the bare mark, both placement divs and the `indexes:`
       metadata block. Each snippet's placeholder defaults are its own terms,
       distinct from every other snippet's, so AC4's per-attribute effects land
       on entries of their own.
-- [ ] T3 Add `tests/editormeta.py` — parses both files, scans `site/*.qmd` for
+- [x] T3 Add `tests/editormeta.py` — parses both files, scans `site/*.qmd` for
       the constructs, and runs AC1-AC3's clauses — and wire it into
       `tests/run-tests.sh`. One plant per clause: a dropped snippet, an
       attribute declared on the wrong class, an added enum value, an
       undocumented attribute name in a body, an empty description, a third
       class.
-- [ ] T4 Add the fixture generator and its render leg for AC4: the generated
+- [x] T4 Add the fixture generator and its render leg for AC4: the generated
       `.qmd` (front matter declaring the index the `index=` snippet names), the
       bare-mark control document, both renders captured per M24's rule, and
       one plant per effect clause.
-- [ ] T5 Add the install probe for AC5: `git archive` into `$WORK`, `quarto add
+- [x] T5 Add the install probe for AC5: `git archive` into `$WORK`, `quarto add
       --no-prompt`, read the installed path. Plant: an archive built without
       one of the two files.
-- [ ] T6 Docs and records: the editor-metadata paragraph in `site/index.qmd`
+- [x] T6 Docs and records: the editor-metadata paragraph in `site/index.qmd`
       and `README.md`, its reader for AC6, a `CHANGELOG.md` entry under the
       dev heading, and a DESIGN.md Known issues entry recording that no check
       holds the schema against the attribute set the filter accepts.
@@ -142,6 +142,9 @@ since a source-shape scan is what D-011 refuses.
 - 2026-08-27: T1 done. `_extensions/index/_schema.yml` declares the two classes and the seven/one attributes each carries, `mention` and `range` enumerating their values.
 - 2026-08-27: T2-T6 written and wired in one checkpoint, boxes left unticked — the acceptance suite takes about fifteen minutes a run, so one `--self-test` run verifies all five rather than five runs verifying one each; the ticks follow that run's result.
 - 2026-08-27: DESIGN.md Known issues gains KI90, that no check holds the schema against the attribute set the filter accepts, which the plan gate chose (T6).
+- 2026-08-27: T3's three required-shape clauses moved ahead of the per-class coverage clauses: on `qi-index-here` the docs document one attribute, so the shape and the coverage clause were true together and only the first could be reached by a plant; each of the three shapes now has a plant of its own and the coverage clause keeps one.
+- 2026-08-27: T6's README paragraph links the Syntax page rather than the published URL — M42's self-test plant substitutes exactly one occurrence of that URL in README and the paragraph had added a second.
+- 2026-08-27: T2-T6 verified in one run each of the profile's two legs after a session crash lost an earlier run: `tests/run-tests.sh` 397 checks, `tests/run-tests.sh --self-test` 760, both exit 0. 44 planted defects across the M50 readers, each shown red on its own clause.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

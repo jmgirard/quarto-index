@@ -723,6 +723,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   unreachable only while every record folds to the reading chapter's default.
   — M38 review round 4, O7
 
+- **KI163.** Pairing by entry cannot tell two overlapping ranges of one term
+  apart, so an author-written id is what would separate them and none exists.
+  — M20/M21 Scope Out, RR01
+
 ### Reports and messages
 
 - **KI21.** No fixture exercises a reported block position where Quarto injects
@@ -856,7 +860,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   leaving `last.html` with nothing to extract, while identical code passed the
   three runs around it. — M52 review
 - **KI117.** The `stopped` reading depends on TeX's fatal-error line ending the
-  engine log. — M36
+  engine log; no capture whose rejection is the log's last `! ` line exists to
+  exercise it. — M36
 - **KI120.** `%2F%2Fevil.com` is skipped by neither the `//` nor the scheme
   guard and is resolved as a local path, a false report only. — M46 review
 - **KI122.** `check_docs` reclassifies a missing captured page into a name to
@@ -1141,6 +1146,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI162.** The publishing workflow's own steps are bound by no standing
   check, D-011 refusing the source-shape scan that would bind them and the
   probe runs being the evidence instead. — M42 review
+
+- **KI164.** M30's typeset print proof is not extended to the cross-reference
+  and sort-key probes, which still assert compile-and-accept only. — M35/M36/M46/M50
 
 ### The repo and its packaging
 

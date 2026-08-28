@@ -77,17 +77,17 @@ checker-regress shape, and `cairn_validate` owns tracking validation.
       `- **KI<n>.**` entry under the matching `## Known issues` subheading in
       `cairn/DESIGN.md`, text carried verbatim, labels assigned in order from
       KI91 up and never reused.
-- [ ] T3. Bound T2 with M27's conservation check: every word of four or more
+- [x] T3. Bound T2 with M27's conservation check: every word of four or more
       characters in each line removed from `## Candidates` must appear in
       `## Known issues`, minus a stop set written down in the work log for
       row-only tokens (dates, `added`, `Promote`, milestone and finding ids).
       Read every residue by hand before accepting it — the check separates
       reflow from loss, it does not decide it.
-- [ ] T4. Rewrite the nine reader rows to work, promotion condition, and
+- [x] T4. Rewrite the nine reader rows to work, promotion condition, and
       `KI<n>` pointers, each under 400 bytes.
-- [ ] T5. Compress the remaining rows to the cap and drop those T1 disposed
+- [x] T5. Compress the remaining rows to the cap and drop those T1 disposed
       as dead proposals, each with its reason already in the work log.
-- [ ] T6. Normalize the pointers: expand the `KI24, KI27-KI74` range into its
+- [x] T6. Normalize the pointers: expand the `KI24, KI27-KI74` range into its
       labels, delete the `KI73 struck` mention, and confirm every remaining
       token resolves.
 - [ ] T7. Write the D-entry annotating D-013 — the row shape (work, promotion
@@ -106,6 +106,8 @@ checker-regress shape, and `cairn_validate` owns tracking validation.
 - 2026-08-28: T1 disposition, off the python sweep (36 rows, 22,001 bytes, largest 2,341, 14 over the 400-byte cap): none dropped and none merged — every row proposes work someone would still do, and no two rows propose the same work. Twelve are kept with their finding prose moved out and the row compressed — rows 2 (EPUB readers), 3 (M50/M49 editor-metadata readers), 4 (named-index LaTeX edges), 16 (M32 check follow-ups), 17 (version portability), 20 (named indexes across chapters), 21 (suite readers), 22 (version-matrix readers), 23 (guards and per-clause proofs), 24 (gallery checks), 25 (pre-release sweep and link containment), 26 (publishing-workflow checks); rows 17, 20 and 21 join the nine the Scope named because they restate findings too and cannot reach the cap without losing that text, taken to the implement gate, which chose moving theirs as well. Three are kept and compressed with nothing to move — row 9 (release bundle, its dated correction history dropped to git at the gate's choice), 11 (locator-control follow-ups), 36 (index output follow-ups, 3 bytes over). The remaining twenty-one are kept as they stand, all under the cap, row 5 only losing its struck-label mention at T6.
 - 2026-08-28: T2 moved 72 finding clauses out of twelve rows into `cairn/DESIGN.md` `## Known issues` as KI91-KI162, text carried verbatim with a provenance suffix added: two under The LaTeX back-end (KI106, KI107), one under The HTML back-end and books (KI115), one under Reports and messages (KI105), 32 under the suite's what-it-reads-and-holds (a finding about a reader's own behavior — what it reads, what it holds, what it would report), 36 under the suite's coverage gaps (a clause unproven, unplanted or uncovered). Row 21's M35 clause names no finding and stays a pointer to the archived Review section; its "Also open" list restates KI66-KI71 and becomes pointers at those. Row 3's schema clause is distinct from KI90 and takes KI101, which says so. Label sweep: 155 entries, no label used twice, KI91-KI162 contiguous.
 - 2026-08-28: minor amendment — T3's conservation check runs after T4-T6 rather than before, because it reads the lines actually removed from `## Candidates` and no line is removed until those tasks rewrite the rows. No criterion or scope text changes.
+- 2026-08-28: T4-T6 rewrote all 36 rows to work, promotion condition and pointers: 36 rows, 8,854 bytes, largest exactly 400, none over. T6 replaced the `KI24, KI27-KI74` range — 49 labels, 292 bytes of tokens against a 400-byte row — with the two acceptance-suite known-issue subheadings named in prose, at the implement mini gate, which took that over enumerating the labels and raising the cap or splitting the row into three (ROADMAP is at 59 of 60 lines, so a split has nowhere to go); the `KI73 struck` mention is gone with row 5's history. 104 pointer tokens, all resolving; no range and no struck mention remain.
+- 2026-08-28: T3's conservation check ran over the 36 removed rows against the rewritten rows plus `## Known issues`, words of four or more characters, stop set: dates, `added`/`Promote` and their inflections, milestone/finding/decision ids, row-only bookkeeping (split, cluster and compression notes, row titles, counts of findings), inflectional and possessive variants of a word present in the destination, and history the gate chose to drop (the release row's dated corrections, M51's restoration note, M49's repaired-`folded` correction, row 26's fixed-fourth-finding note, row 5's claim-container note). Three residues survived that reading as real loss and were repaired: the M36 clause's capture condition, folded into KI117; the overlapping-ranges pairing gap, which pairing by entry cannot tell apart, written as KI163 and pointed at from the locator-control row along with its restored `(a defining passage, an illustration)`; and M30's typeset print proof not reaching the cross-reference and sort-key probes, written as KI164 and pointed at from the suite-readers row. Re-run clean of all three.
 
 ## Decisions
 ## Review

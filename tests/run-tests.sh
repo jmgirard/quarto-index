@@ -17189,7 +17189,7 @@ if [ "${1:-}" = "--self-test" ]; then
       || { printf '%s\n' "$out" >&2; fail "M52 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
     printf '%s' "$out" | grep -q 'Traceback' \
       && { printf '%s\n' "$out" >&2; fail "M52 self-test: the planted case ($label) raised rather than reporting a finding, which exits non-zero for a reason nothing states"; }
-    printf 'ok   self-test: the EPUB checks fail on <<%s>>\n' "$label"
+    printf 'ok   self-test: an M52 check fails on <<%s>>\n' "$label"
   }
 
   # A scratch project carrying a COPY of the extension with one splice in it.
@@ -17325,6 +17325,100 @@ M52GFMPY
     python3 tests/epubcheck.py absent "$M52W/residue.md" "$M52_QI"
 
   pass "M52 T4 self-test: each of the four EPUB criteria is planted on its own and shown red, in a different form and a different place each time — the AST routing removed from the filter, a link target removed from a rendered container, the fold predicate widened in the filter, and an identifier added to a rendered file"
+fi
+
+# ---------------------------------------------------------------------------
+# M52 T7 — the documentation clause. Two hand-written lists, both read through
+# tests/sitecheck.py so the plants below can run the same clause against a
+# page that has lost a claim and a domain that has gained a forbidden phrase.
+#
+# The CLAIMS are the two ways an EPUB index differs from an HTML one, which is
+# what a reader consulting the page needs and what AC5 names. The FORBIDDEN
+# phrase is the count a third back-end makes wrong: "two back-ends" was true
+# of every page until this milestone, and a sentence carrying it now tells a
+# reader there are two.
+# ---------------------------------------------------------------------------
+M52_DOC_PAGE="site/epub.qmd"
+cat > "$WORK/epub-claims.txt" <<'M52CLAIMS'
+one process	all the chapters go through a single Pandoc process
+every index prints	each name your `indexes:` metadata declares gets a section of its own, headed with that declaration's own title. Nothing folds.
+no pages	An EPUB has no pages: what a reader sees depends on their device and their type size, so there is no page number to print.
+sequence locators	An entry's locators are the numbered links HTML uses
+M52CLAIMS
+python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
+  || fail "M52-AC5: $M52_DOC_PAGE does not state a claim this check holds it to (its own FAIL line is above)"
+
+cat > "$WORK/backend-count.txt" <<'M52PHRASES'
+back-end count	two back-ends
+M52PHRASES
+python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+  || fail "M52-AC5: a page a reader meets still says the extension has two back-ends (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M52 T7 — a planted defect per clause. The claim clause is shown red on a
+  # page with one claim removed and on a list holding no claim at all; the
+  # sweep is shown red on an OVERLAY page carrying the forbidden phrase (the
+  # sitecheck handle: a check over a tracked set is shown to fail on the defect
+  # it names only if that defect can be put into the set without editing the
+  # repository) and on a list forbidding nothing.
+  # -------------------------------------------------------------------------
+  M52D="$WORK/m52docs"
+  rm -rf "$M52D"; mkdir -p "$M52D/overlay/site"
+
+  python3 - "$M52_DOC_PAGE" "$M52D/nopclaim.qmd" "$M52D/overlay/site/epub.qmd" \
+      <<'M52DOCPY' \
+    || fail "M52 T7 self-test: the documentation variants could not be written (their own FAIL line is above)"
+import sys
+
+page, stripped, overlay = sys.argv[1:4]
+body = open(page, encoding='utf-8').read()
+gone = 'An EPUB has no pages:'
+if gone not in body:
+    print(f'FAIL: M52 T7 self-test: {page} does not carry {gone!r}, so '
+          f'removing it changes nothing and the case below is about the '
+          f'unplanted page', file=sys.stderr)
+    sys.exit(1)
+with open(stripped, 'w', encoding='utf-8') as handle:
+    handle.write(body.replace(gone, 'An EPUB is a zip container:'))
+# The overlay page is the tracked page with one sentence ADDED, so the sweep
+# below is shown to fail on a page that is otherwise exactly what the
+# repository holds -- not on a file that differs from it in any other way.
+with open(overlay, 'w', encoding='utf-8') as handle:
+    handle.write(body + '\nThe marking syntax means the same thing in the '
+                        'two back-ends.\n')
+M52DOCPY
+
+  m52_planted 'a documentation page that has lost one of the claims it is held to' \
+    'does not state 1 of the 4 claim(s)' \
+    python3 tests/sitecheck.py claims "$M52D/nopclaim.qmd" "$WORK/epub-claims.txt"
+
+  : > "$M52D/noclaims.txt"
+  m52_planted 'a claim list holding the page to nothing at all' \
+    'holds the page to nothing' \
+    python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$M52D/noclaims.txt"
+
+  # The passing CONTROL first: an overlay holding an unmodified copy of the
+  # page must leave the sweep green, or the failure below would be the overlay
+  # mechanism and not the sentence planted in it.
+  mkdir -p "$M52D/clean/site"
+  cp "$M52_DOC_PAGE" "$M52D/clean/site/epub.qmd"
+  python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+      "$M52D/clean" \
+    || fail "M52 T7 self-test: the sweep is red on an overlay holding an unmodified copy of a tracked page, so the failure below would be the overlay and not the sentence planted in it"
+  pass "M52 T7 self-test: an overlay holding an unmodified copy of a tracked page leaves the back-end-count sweep green"
+
+  m52_planted 'a tracked documentation page that says the extension has two back-ends' \
+    'site/epub.qmd (back-end count)' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+      "$M52D/overlay"
+
+  : > "$M52D/nophrases.txt"
+  m52_planted 'a phrase list that forbids nothing' \
+    'forbids nothing' \
+    python3 tests/sitecheck.py phrase-absent "$M52D/nophrases.txt"
+
+  pass "M52 T7 self-test: both documentation clauses are planted on their own and shown red — a page with a claim removed, a claim list holding it to nothing, an overlay page carrying the forbidden phrase, and a phrase list forbidding nothing — while both pass unplanted over this repository's own tracked pages"
 fi
 
 }

@@ -1,0 +1,44 @@
+---
+pagetitle: "EPUB"
+---
+
+# EPUB
+
+For EPUB the extension builds the same index it builds for HTML, out of the
+same document nodes: an unnumbered level-one heading, a section carrying the
+`qi-index` id, letter groups, the nested entry list, numbered locator links
+and cross-references, with the same classes on the same pieces. Everything on
+the [HTML](html.qmd) page applies here, including how anchors are minted and
+how a heading mark's anchor is moved. No stylesheet is added.
+
+What differs is not the index but the container it is written into. Pandoc's
+EPUB writer splits the document at its top-level headings and writes each
+piece as an XHTML file of its own inside the EPUB, so the index lands in a
+file of its own and a locator link crosses files —
+`text/ch003.xhtml#qi-mark-7` rather than `#qi-mark-7`. That is the writer's
+doing and needs nothing from you; the links resolve inside the book.
+
+Two differences are worth knowing about before you render.
+
+**A book is one process, so every declared index prints.** Quarto renders an
+EPUB book the way it renders a PDF one: all the chapters go through a single
+Pandoc process. So the extension sees the whole book at once, and each name
+your `indexes:` metadata declares gets a section of its own, headed with that
+declaration's own title. Nothing folds. An HTML book is the other case — it
+renders a chapter per process and aggregates through a per-chapter record
+that carries no index name, so it builds one index and tells you so. The
+[Named indexes](named-indexes.qmd) page describes the declaration; the
+[Books](books.qmd) page describes the aggregation.
+
+One process is also the scope a page range pairs in, so a range you open in
+one chapter and close in another pairs in an EPUB book and contributes a
+single locator, where the same two marks in an HTML book cannot see each
+other and index on their own.
+
+**Locators are sequence numbers, not pages.** An EPUB has no pages: what a
+reader sees depends on their device and their type size, so there is no page
+number to print. An entry's locators are the numbered links HTML uses —
+`1`, `2`, `3` for the first, second and third time the term is marked,
+restarting at `1` for each entry — and each one takes the reader to the
+passage rather than naming where it sits. If you want page numbers you want
+the [LaTeX and PDF](latex-and-pdf.qmd) back-end.

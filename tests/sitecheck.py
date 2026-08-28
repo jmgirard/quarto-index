@@ -37,6 +37,20 @@
       was tagged; that sentence is retired, and tests/run-tests.sh now forbids it
       over every tracked page under site/ plus README (M44).
 
+  claims <page> <claims-file>
+      A documentation page exists and states each claim a hand-written list
+      holds it to. A row is `label<TAB>claim`; both sides are compared with
+      whitespace flattened, so a claim rewrapped at a different column is
+      still the same claim. An empty list is refused rather than swept.
+
+  phrase-absent <phrase-file> [overlay]
+      No tracked page a reader meets carries any phrase a hand-written list
+      forbids. Same `label<TAB>phrase` rows and the same flattening as
+      `claims`, over the same domain the retired-sentence sweep uses — every
+      tracked `.qmd` under site/ plus README.md, enumerated by `git ls-files`
+      rather than written down, and asserted non-empty so a collapsed
+      enumeration reads as collapsed and not as a pass.
+
   prose <old-readme> <new-readme> <site-dir> [overlay]
       No documentation prose was lost in the move. For every line the old README
       carried and the new one does not, every run of four or more ASCII
@@ -76,15 +90,32 @@ from html.parser import HTMLParser
 # The three headings the move keeps in README, per M40's scope.
 KEPT_HEADINGS = ('## Install', '## Examples', '## Tests')
 
+# Headings the move carried onto a site page that has since been RENAMED.
+# The migration invariant this check states is that no documentation was lost,
+# and a renamed page lost none: what M40's heading landed as is recorded here
+# rather than edited into the pre-move fixture, which is a record of what that
+# README said and not a live claim. Old heading text -> the text now carried.
+RENAMED_HEADINGS = {
+    # M52 made EPUB a third back-end, so the page counting them was wrong.
+    'Where the two back-ends differ': 'Where the back-ends differ',
+}
+
 NON_LOCAL_SCHEMES = ('http:', 'https:', 'mailto:', 'tel:', 'data:',
                      'javascript:')
+
+# The floor the site/README sweep holds its own enumeration to. Stated, never
+# read off the enumeration it guards.
+DOMAIN_FLOOR = 11
 
 WORD = re.compile(r'[A-Za-z0-9]{4,}')
 HEADING = re.compile(r'^(#{1,6})\s+(.*?)\s*$')
 
 
-def fail(message):
-    print('FAIL: M40: ' + message, file=sys.stderr)
+def fail(message, label='M40'):
+    # M40 is this module's own milestone and the label its five original modes
+    # report under. The modes M52 added report under theirs: a FAIL line naming
+    # the wrong milestone sends a reader to the wrong criterion.
+    print(f'FAIL: {label}: ' + message, file=sys.stderr)
     return 1
 
 
@@ -340,14 +371,19 @@ def check_headings(old_readme, new_readme, site_dir, overlay=None):
         text = re.sub(r'^#+\s*', '', line).strip()
         if line in new.split('\n'):
             bad.append(f'  still in {new_readme}: <<{line}>>')
-        if text not in site_headings:
-            bad.append(f'  no heading under {site_dir} reads <<{text}>>')
+        want = RENAMED_HEADINGS.get(text, text)
+        if want not in site_headings:
+            renamed = '' if want == text else f' (renamed from <<{text}>>)'
+            bad.append(f'  no heading under {site_dir} reads '
+                       f'<<{want}>>{renamed}')
     if bad:
         return fail(f'the heading move is incomplete:\n' + '\n'.join(bad))
     print(f'ok   M40-AC4: each of the {len(moved)} `##`/`###` heading(s) the '
           f'old README carried other than {", ".join(KEPT_HEADINGS)} is gone '
-          f'from {new_readme} and is carried, with its text identical, by a '
-          f'heading in one of the {files} tracked page(s) under {site_dir}')
+          f'from {new_readme} and is carried by a heading in one of the '
+          f'{files} tracked page(s) under {site_dir} — with its text '
+          f'identical, but for the {len(RENAMED_HEADINGS)} this module records '
+          f'as renamed since the move')
     return 0
 
 
@@ -435,12 +471,130 @@ def check_prose(old_readme, new_readme, site_dir, overlay=None):
     return 0
 
 
+def flatten(text):
+    """One space between words, so a rewrap is not a difference."""
+    return ' '.join(text.split())
+
+
+def read_rows(path, what):
+    """`label<TAB>text` rows from a file, or (None, message) on a bad list.
+
+    A row with no tab is REPORTED rather than unpacked: a ValueError out of
+    the split would abort naming no file and no phrase, which is not this
+    module's failure convention.
+    """
+    lines = [l.rstrip('\n') for l in open(path, encoding='utf-8') if l.strip()]
+    if not lines:
+        return None, f'the {what} list at {path} is empty, so this check ' \
+                     f'{"holds the page to nothing" if what == "claim" else "forbids nothing"}'
+    malformed = [l for l in lines if '\t' not in l]
+    if malformed:
+        return None, (f'the {what} list at {path} carries a row with no tab '
+                      f'separating its label from its text, so what it names '
+                      f'is not readable:\n'
+                      + '\n'.join(f'  <<{l}>>' for l in malformed))
+    return [l.split('\t', 1) for l in lines], None
+
+
+def swept_domain():
+    """Every tracked `.qmd` under site/ plus README.md, or (None, message).
+
+    `-z` and a NUL split, never the newline-separated default: `git ls-files`
+    C-quotes a path holding a non-ASCII byte or a newline, and a suffix filter
+    reading the default output would discard it with no report (M46).
+    """
+    listed = subprocess.run(['git', 'ls-files', '-z', '--', 'site/*.qmd',
+                             'README.md'], capture_output=True, text=True)
+    if listed.returncode != 0:
+        return None, (f'`git ls-files` exited {listed.returncode}, so the '
+                      f'domain this check sweeps was never enumerated:\n'
+                      + listed.stderr.rstrip('\n'))
+    domain = [p for p in listed.stdout.split('\0') if p]
+    if 'README.md' not in domain:
+        return None, ('README.md is not tracked in this repository, so the '
+                      'domain named by this check is not the domain it swept')
+    # A stated floor, not one read off the enumeration, which would be blind
+    # in exactly the dimension it derives. Eleven is ten documentation pages
+    # plus README, well under the twenty-one the site carries, so ordinary
+    # page churn never trips it and a collapsed enumeration does (M46).
+    if len(domain) < DOMAIN_FLOOR:
+        return None, (f'the sweep enumerated {len(domain)} file(s); the '
+                      f'domain is every tracked page under site/ plus '
+                      f'README.md, and fewer than {DOMAIN_FLOOR} means the '
+                      f'enumeration collapsed')
+    return domain, None
+
+
+def fail_m52(message):
+    return fail(message, 'M52')
+
+
+def check_claims(page, claims_path):
+    """A page states every claim a hand-written list holds it to."""
+    rows, problem = read_rows(claims_path, 'claim')
+    if problem:
+        return fail_m52(problem)
+    try:
+        body = flatten(open(page, encoding='utf-8').read())
+    except OSError as exc:
+        return fail_m52(f'{page} could not be read, so the {len(rows)} claim(s) '
+                    f'this check holds it to were compared against nothing: '
+                    f'{exc.strerror}')
+    absent = [f'  {label}: <<{claim}>>' for label, claim in rows
+              if flatten(claim) not in body]
+    if absent:
+        return fail_m52(f'{page} does not state {len(absent)} of the '
+                    f'{len(rows)} claim(s) this check holds it to:\n'
+                    + '\n'.join(absent))
+    print(f'ok   M52: {page} states all {len(rows)} of the claim(s) this '
+          f'check holds it to, compared with whitespace flattened on both '
+          f'sides')
+    return 0
+
+
+def check_phrase_absent(phrase_path, overlay=None):
+    """No page a reader meets carries a phrase the list forbids."""
+    rows, problem = read_rows(phrase_path, 'phrase')
+    if problem:
+        return fail_m52(problem)
+    domain, problem = swept_domain()
+    if problem:
+        return fail_m52(problem)
+    still, unreadable = [], []
+    for path in domain:
+        source = path
+        if overlay and os.path.isfile(os.path.join(overlay, path)):
+            source = os.path.join(overlay, path)
+        try:
+            text_read = open(source, encoding='utf-8').read()
+        except OSError as exc:
+            unreadable.append(f'  {path}: {exc.strerror}')
+            continue
+        body = flatten(text_read)
+        still += [f'  {path} ({label}): <<{phrase}>>'
+                  for label, phrase in rows if flatten(phrase) in body]
+    if unreadable:
+        return fail_m52(f'{len(unreadable)} of the {len(domain)} file(s) in the '
+                    f'swept domain could not be read, so the sweep does not '
+                    f'cover the domain it names:\n' + '\n'.join(unreadable))
+    if still:
+        return fail_m52(f'a page a reader meets carries a forbidden phrase; '
+                    f'swept {len(domain)} file(s):\n' + '\n'.join(still))
+    print(f'ok   M52: none of the {len(rows)} forbidden phrase(s) is present '
+          f'in any of the {len(domain)} file(s) swept — every tracked page '
+          f'under site/ plus README.md, enumerated by `git ls-files` — '
+          f'compared with whitespace flattened on both sides')
+    return 0
+
+
 MODES = {
     'rendered': (check_rendered, 2),
     'links': (check_links, 1),
     'headings': (check_headings, 3),
     'readme': (check_readme, 2),
     'prose': (check_prose, 3),
+    'claims': (check_claims, 2),
+    'phrase-absent': (check_phrase_absent, 1),
 }
 
 

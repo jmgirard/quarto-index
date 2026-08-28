@@ -47,6 +47,7 @@ website:
         contents:
           - latex-and-pdf.qmd
           - html.qmd
+          - epub.qmd
           - other-formats.qmd
           - back-end-differences.qmd
           - letter-groups.qmd

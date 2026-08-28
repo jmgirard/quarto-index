@@ -1,11 +1,17 @@
 ---
-pagetitle: "Where the two back-ends differ"
+pagetitle: "Where the back-ends differ"
 ---
 
-# Where the two back-ends differ
+# Where the back-ends differ
 
-The marking syntax means the same thing in both. What the two indexes can do
-differs, because the tools underneath them do:
+Three back-ends ship: LaTeX (and the PDF it typesets), HTML, and EPUB. The
+marking syntax means the same thing in all of them. What the indexes can do
+differs, because the tools underneath them do.
+
+EPUB and HTML build the same index out of the same document nodes, so every
+row below that says "in HTML" is true of EPUB too. The two places EPUB parts
+company with HTML — a book is one Pandoc process there, and its locators are
+sequence numbers with no pages behind them — are on the [EPUB](epub.qmd) page.
 
 1. **No level ceiling in HTML.** Sub-entries nest as deep as you write them.
    The three-level ceiling described on [Sub-entry
@@ -27,12 +33,12 @@ differs, because the tools underneath them do:
 5. **Cross-reference targets are hyperlinked in HTML** when the target names an
    entry in the same index, and are plain text otherwise. A printed index
    cannot link at all.
-6. **A cross-reference carries no locator in either back-end.** The `see also`
+6. **A cross-reference carries no locator in any back-end.** The `see also`
    limitation described on [Cross-references](cross-references.qmd) is the
-   same in both.
-7. **The principal mention is emphasized in both**, but by different means: the
-   LaTeX back-end wraps the page number in a command you can redefine, and the
-   HTML back-end marks the link with a class and a `<strong>`.
+   same in all of them.
+7. **The principal mention is emphasized everywhere**, but by different means:
+   the LaTeX back-end wraps the page number in a command you can redefine, and
+   the HTML back-end marks the link with a class and a `<strong>`.
 8. **A page range is a page range only in LaTeX.** `makeindex` prints one span
    of pages, `12--15`; HTML has no pages, so a range there is one numbered link
    at the opening mark. Both are one locator where you wrote two marks, which

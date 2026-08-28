@@ -55,7 +55,7 @@ editor that does not know them changes nothing about what you get.
   [placing the index](placing-the-index.qmd) and
   [named indexes](named-indexes.qmd).
 - [What it emits](output.qmd) — what each output format gets, and where the
-  two back-ends differ.
+  back-ends differ.
 - [Books](books.qmd) — one index for a whole Quarto book.
 - [Examples](examples.qmd) and [Tests](tests.qmd) — the fixture corpus and the
   acceptance suite.

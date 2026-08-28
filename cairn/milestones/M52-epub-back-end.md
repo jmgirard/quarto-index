@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M52: EPUB gets an index back-end
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -109,14 +109,14 @@ back-end forces.
 - [x] T5 — the hand-derived manifest for the book's two EPUB index sections,
       from the `.qmd` sources under `run-tests.sh`'s ORACLE RULE, never from
       the rendered artifact.
-- [ ] T6 — docs: new `site/epub.qmd` + `site/_quarto.yml` nav; edit README,
+- [x] T6 — docs: new `site/epub.qmd` + `site/_quarto.yml` nav; edit README,
       `site/index.qmd`, `site/output.qmd`, `site/back-end-differences.qmd`,
       `site/other-formats.qmd`; `CHANGELOG.md`; `cairn/DESIGN.md` Architecture
       (the format tests in the `core.lua` bullet, and line 366's "Every other
       format — beamer, revealjs, epub, gfm" sentence). `site/principal-mention.qmd`
       joins the swept pages: its "between the two back-ends" sentence is one of
       the six AC5 binds.
-- [ ] T7 — the `tests/sitecheck.py` clause for `epub.qmd`'s two claims and the
+- [x] T7 — the `tests/sitecheck.py` clause for `epub.qmd`'s two claims and the
       `two back-ends` sweep, each with a planted defect showing it red.
 
 ## Work log
@@ -131,8 +131,26 @@ back-end forces.
 - 2026-08-28: T1 — `core.lua` gains `is_epub` (matching `epub` in FORMAT, which covers `epub`, `epub2` and `epub3`) and `builds_ast_index` (`is_html` or `is_epub`), both exported; `indexes.builds_index`, `passes.lua`'s per-mark HTML record branch and `index.lua`'s AST back-end branch route through it, while the book context, the degraded-book warning, the dangling-report gate, the range-scope word and `folded` stay on `is_html`. The `is_html` comment no longer says epub passes through. `tests/run-tests.sh` green, 407 checks.
 - 2026-08-28: T2/T3 — one checkpoint for both, verified by one suite run rather than two: `run-tests.sh` does `rm -rf "$WORK"` at startup and refuses concurrent invocations, so a per-task run costs a further 8.5 minutes and asserts nothing the combined one does not. `run-tests.sh` renders `examples/demo.qmd` to EPUB and to revealjs and `examples/book/` to EPUB, each captured under a slug of its own; `demo.qmd` declares no formats, so only the book's `_quarto.yml` needed an `epub:` entry, and AC4's gfm half reads the `demo-gfm` capture M03-AC6 already makes rather than rendering a second time. `tests/epubindex.py` reads the container, the package document and the manifest's XHTML members through `htmlindex.parse_text` — a new entry point `htmlindex.parse` now calls, so one builder serves both — and exposes the sections, rows, links and unresolved links. Suite green, 410 checks.
 - 2026-08-28: T5/T4 — T5 written before T4, which needs its manifest: a minor reorder. Manifest 10 states the book's two EPUB index sections in locator COUNTS, not hrefs — an EPUB's link targets are the files Pandoc's writer split the book into, which is not derived from the `.qmd` sources — and it matched the artifact on the first comparison, the merged-process range pairing (`Ranged Term` one locator here, two in the HTML book) included. The AC1-AC4 checks live in a new `tests/epubcheck.py` beside the reader, so the plants can run the same clause against a broken artifact; each of the four is planted in a different form and place — routing removed from the filter, a link target removed from a rendered container, the fold predicate widened in the filter, an identifier added to a rendered file — and shown red, and the folded render is shown to write the sentence the AC3 sweep looks for. Two plant renders needed a `capture` call after them (M24-AC3), and the folded book's scratch tree needed its `_extensions` symlink removed before the spliced copy went in, or it rendered through the repository's own filter. `run-tests.sh --self-test` green, 811 checks.
+- 2026-08-28: T6/T7 — `site/epub.qmd` is new and the site nav, `site/output.qmd` and `site/index.qmd` link it; `site/back-end-differences.qmd` is retitled "Where the back-ends differ" and says at the top that every "in HTML" row below is true of EPUB, with the two places EPUB parts company on the new page; `site/principal-mention.qmd` and `site/other-formats.qmd`, `README.md`, `CHANGELOG.md` and `cairn/DESIGN.md` (the `core.lua` bullet's format tests, a third back-end bullet, and the pass-through sentence, which no longer names epub) follow. `tests/sitecheck.py` gains two modes — `claims`, holding a named page to a hand-written list, and `phrase-absent`, sweeping the tracked `site/` pages plus README for a forbidden phrase over the same enumerated domain and stated floor the retired-sentence sweep uses — each planted and shown red, with a passing overlay control for the sweep. `run-tests.sh --self-test` green, 820 checks.
+- 2026-08-28: T6 fallout — retitling the back-end page broke the M40 heading-move self-test, whose pre-move README fixture carries `### Where the two back-ends differ` and which requires every moved heading to be carried under `site/`. The fixture is a record of what that README said, so it is not edited; `sitecheck.py` gains a `RENAMED_HEADINGS` map instead (see this file's Decisions), and the check's own ok line now says how many it treats as renamed.
 
 ## Decisions
+
+### A heading renamed after the documentation move is recorded, not backfilled (2026-08-28)
+
+`tests/sitecheck.py`'s `headings` mode states a migration invariant: every
+`##`/`###` heading the pre-move README carried is gone from README and is
+carried by a heading under `site/`. Its pre-move README is a fixture inside
+`run-tests.sh`, and it names `### Where the two back-ends differ` — a page
+title this milestone had to change, EPUB making the count wrong and AC5
+forbidding the phrase on any page a reader meets.
+
+Editing the fixture would make it a record of a README that never existed, and
+the invariant is about loss, which a rename is not. So the module carries a
+`RENAMED_HEADINGS` map instead — one entry, from the old heading text to the
+text now carried — and looks for the replacement where the map has one. The
+fixture keeps saying what the old README said; the map says what became of it.
+
 
 ### The fold sentence is held to the filter's wording in the run, not by a source scan (2026-08-28)
 

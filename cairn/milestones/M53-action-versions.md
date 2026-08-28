@@ -75,11 +75,18 @@ after merge; the revert is one line.
       reads only what the download produced.
 - [ ] AC3 — The `pages.yml` run this branch's own push triggers completes its
       `build` job green through `upload-pages-artifact@v5`, and the artifact
-      that run produced, fetched and unpacked, carries every relative path a
-      `quarto render site` of the same commit produces — compared over the
-      whole tree by relative path and not by file type, so a stylesheet, a
-      script, an image or a dotfile dropped by the v4 exclusion is a
-      difference and not a silence.
+      that run produced, fetched and unpacked, carries — each comparison over
+      the whole tree by relative path and not by file type, every path set
+      asserted non-empty — exactly the relative paths a `quarto render site`
+      of that run's commit produces, but for basenames Quarto builds from a
+      content hash of the file, which differ by render environment; and, in a
+      one-time comparison made inside GitHub's one-day artifact retention,
+      exactly the relative paths the pre-bump `@v3` artifact of run
+      33210582962 (commit f121733) carried, that commit's `site/` sources
+      shown identical to this branch's by `git diff`. The second comparison
+      is what a file class dropped by the v4 exclusion would redden, the two
+      artifacts coming from different action majors; the site tree writes no
+      dotfile, so the exclusion has nothing here to drop.
 - [ ] AC4 — `tests/run-tests.sh --self-test` clean (the `verify` slot's fuller
       pre-review check).
 
@@ -106,10 +113,11 @@ after merge; the revert is one line.
       beside the counts the last pre-bump run on the default branch states,
       and both run URLs.
 - [x] T4 — fetch the Pages artifact that run produced (`gh run download`),
-      unpack it, and compare its file tree against a `quarto render site` of
-      the same commit by relative path over the whole tree. Record both path
-      counts and any difference. A local render is the reference because the
-      artifact is the only thing the bump can change.
+      unpack it, and compare its file tree by relative path over the whole
+      tree against both a `quarto render site` of the same commit and the
+      pre-bump `@v3` artifact of the last default-branch run, while that one
+      is still inside retention. Record every path count and any difference,
+      naming a path the artifacts and the local render name differently.
 - [ ] T5 — the `DECISIONS.md` entry: the re-pin of five dependencies under
       D-024's major-tag rule, naming what each bump changes behaviorally and
       what would falsify the choice.
@@ -126,6 +134,9 @@ after merge; the revert is one line.
 - 2026-08-28: pre-bump baseline for AC2, read from the last default-branch `versions.yml` run (33210583098, `plan` / `render (pinned, 1.10.18)` / `render (floor, 1.4.549)` / `compare` all success, `pdf` skipped): the `compare` job states book 26 rows, demo 55, html-index 21, named-indexes 41 — 4 comparisons over 4 fixtures against the `pinned` leg.
 - 2026-08-28: T3 — the push at 9b8146e triggered both workflows. Versions (https://github.com/jmgirard/quarto-index/actions/runs/33211320047): `plan` success, `render (pinned, 1.10.18)` success, `render (floor, 1.4.549)` success, `compare` success, `pdf` skipped. The `compare` job states book 26 row(s), demo 55, html-index 21, named-indexes 41 — 4 comparisons over 4 fixtures — the same counts as the pre-bump run 33210583098. Pages (https://github.com/jmgirard/quarto-index/actions/runs/33211320021): `build` success through `upload-pages-artifact@v5`, `deploy` skipped, the branch not being the default one.
 - 2026-08-28: T4 — the Pages artifact unpacks to 79 relative paths; a clean local `quarto render site` at Quarto 1.10.18 (the workflow's own pin, `site/_site` removed first) produces 79. One path differs: the artifact names the bootstrap bundle `bootstrap-d5382f61a7c05c0e60b360404eaa31c2.min.css`, the local render `bootstrap-629c56ba100745318e9dcb35146191d0.min.css`. The two files are 499,317 bytes each and carry the same rules in a different block order, so the content hash Quarto names them by differs by render environment. The pre-bump `@v3` artifact (run 33210582962, at f121733, whose `site/` is identical to this branch's by `git diff`) unpacks to the same 79 paths as the `@v5` artifact, byte-identical as a path set — so the one difference is the local reference and not the bump. The render writes no dotfile at all (0 found), so the v4 dotfile exclusion has nothing here to exclude.
+- 2026-08-28: substantive amendment at a mini gate — AC3's reference changed. As planned it bound the artifact to a render on this machine, and that comparison reports one difference the bump does not cause: Quarto names a bootstrap bundle by a content hash of a 499,317-byte stylesheet whose block order is not stable across render environments (both sides 79 paths, 78 identical). The maintainer chose comparing the two artifacts over keeping the wording, over normalizing the hashed basename, and over stopping. AC3 is the only criterion amended; no criterion was added and none of the others changed.
+- 2026-08-28: criteria audit of the amended AC3 ran in FULL mode (user-facing tier) in a fresh-context [O] reader that authored none of the wording, at the maintainer's selection lifting this session's default of not spawning agents. It returned four findings, all with one clear repair and all narrowing, and all four were applied before the text was written: the drafted `@v3` referent was a moving one whose artifact expires 2026-08-29 (`expires_at` read from the API on both runs, and no post-merge run can produce a `@v3` artifact again), so it is pinned to run 33210582962 at f121733 and named as a one-time comparison inside retention; the dotfile clause promised a probe of a class the site produces none of, so it now says the exclusion has nothing here to drop; the local-render side had degraded to a bare path count, which a compensating add-and-drop satisfies, so it is a set relation again with content-hash basenames named as the exception; and the closing "named in the evidence" clause bound a recording act rather than the artifact, so it moved into T4. The reader also recorded that no principle or prior decision blocks the wording, that comparing two artifacts from different action majors is what gives the check a way to fail, and that a later escalation from paths to file contents would need its own superseding entry — noted for T5.
+- 2026-08-28: the amended AC3 measured against what T3 and T4 produced, every clause holding: 79 paths in the `@v5` artifact, 79 in the local render, 79 in the `@v3` artifact; the `@v5` and `@v3` path sets identical raw; the `@v5` and local sets identical once a trailing 32-hex basename segment is normalized, their one raw difference being `site_libs/bootstrap/bootstrap-d5382f61a7c05c0e60b360404eaa31c2.min.css` against `bootstrap-629c56ba100745318e9dcb35146191d0.min.css`; and `git diff f121733 9b8146e -- site/` empty. The criterion's box stays unticked — review ticks it against its own evidence.
 
 ## Decisions
 

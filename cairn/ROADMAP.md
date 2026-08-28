@@ -19,7 +19,7 @@ _Released 0.1.0 2026-08-26._
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
-<!-- proposed work only; one line each: idea — added YYYY-MM-DD — links.
+<!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition, — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
 - Repair the readers and checks M52's EPUB back-end added; promote on any of them turning a run red for a reason that is not the defect it names — added 2026-08-28 — M52 review F3, F7-F13 — KI91, KI92, KI93, KI94, KI95, KI96, KI97, KI98

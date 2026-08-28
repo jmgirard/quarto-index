@@ -9,6 +9,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M55 | An HTML book builds every index its chapters declare | planned | — | normal | milestones/M55-book-named-indexes.md |
 | M54 | The candidate backlog comes back under D-013 | done | — | normal | milestones/archive/M54-candidate-backlog.md |
 | M53 | The workflows' actions come up to date | done | — | normal | milestones/archive/M53-action-versions.md |
 | M52 | EPUB gets an index back-end | done | — | normal | milestones/archive/M52-epub-back-end.md |
@@ -39,7 +40,6 @@ _Released 0.1.0 2026-08-26._
 - Make the acceptance suite and its PDF comparison version-portable, and give the matrix its missing legs; promote the comparison on an extraction shown engine-neutral across the two engines, the legs with it or sooner on the restored PDF leg running a clean schedule cycle, the unreproduced floor-leg failure on a recurrence — added 2026-08-26 — M43/M51/M52 — KI110, KI111, KI112, KI113, KI114
 - Print an RTL index term correctly: the plan gate's probe shows it unshaped with the locator comma on the wrong side of the entry, which a covering font does not fix; promote on a bidi path that also settles locator placement — added 2026-08-24 — M33 Scope Out — KI6
 - A `site/gallery/` page for the two-index PDF fixture; promote with any other gallery extension, the gallery build's own checks (M41) needing extending — added 2026-08-27 — M49 Scope Out
-- Multiple named indexes across a book's chapters, the sidecar store carrying a per-record index name, whose version bump invalidates every other chapter's record; promotable since M38 landed. Port the two `fold_slot` fixtures to an HTML book, or retire `fold_slot` with the fold this row would remove — added 2026-08-25 — M38 Scope Out, M38 review round 4, M49 — KI115, KI116
 - Suite readers: repair where each check reads from and what it holds, over `cairn/DESIGN.md`'s two acceptance-suite subheadings; promote on any turning a run red for a reason that is not the defect it names, or on a documented sentence drifting from the extension's behavior — added 2026-08-16 — M35/M36/M46/M50 — KI24, KI117, KI118, KI119, KI120, KI121, KI122, KI123, KI124, KI125, KI164
 - Repair the version-matrix readers; promote on any of them turning a run red for a reason that is not the defect it names, or on the workflow gaining a trigger — added 2026-08-28 — M48 review, M51 review F2, M53 review F1-F2 — KI126, KI127, KI128, KI129, KI130, KI131, KI132
 - Repair the guards and bounded mutations M37 shipped, and prove the clauses M38 descoped; promote with the readers they bind in hand — added 2026-08-25 — M37 review, M38 Scope Out, M38 review round 3 — KI133, KI134, KI135, KI136, KI137, KI138, KI139

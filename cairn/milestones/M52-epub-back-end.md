@@ -100,13 +100,13 @@ back-end forces.
       entry rows and locator hrefs the checks read. Its header says where it
       reads from and what it holds, per the suite-readers doctrine; it produces
       no expected values.
-- [ ] T4 — the AC1–AC4 checks, each proven able to fail by a planted defect
+- [x] T4 — the AC1–AC4 checks, each proven able to fail by a planted defect
       that varies form as well as location: T1's routing reverted (no section);
       a locator href pointed at an id no document carries (AC2); `folded`
       forced true for EPUB (AC3); a `qi-` id injected into the gfm render
       (AC4). Watch the M41/M44/M45 residue lesson on AC4 — the demo's prose
       prints filter strings as content a reader is meant to see.
-- [ ] T5 — the hand-derived manifest for the book's two EPUB index sections,
+- [x] T5 — the hand-derived manifest for the book's two EPUB index sections,
       from the `.qmd` sources under `run-tests.sh`'s ORACLE RULE, never from
       the rendered artifact.
 - [ ] T6 — docs: new `site/epub.qmd` + `site/_quarto.yml` nav; edit README,
@@ -130,7 +130,23 @@ back-end forces.
 - 2026-08-28: amendment — AC5's sweep domain narrowed from all tracked `.qmd`/`.md` files to `README.md` and the tracked `.qmd` files under `site/`, on the maintainer's selection at the same gate. As written the criterion could not pass: `two back-ends` occurs in `cairn/DESIGN.md:304` and twice in this milestone file, where AC5 itself states the string. Six reader-facing sentences still bind (README.md:37, site/index.qmd:58, site/back-end-differences.qmd:2 and :5, site/output.qmd:10, site/principal-mention.qmd:64); `DESIGN.md`'s is fixed under T6 without the criterion binding it.
 - 2026-08-28: T1 — `core.lua` gains `is_epub` (matching `epub` in FORMAT, which covers `epub`, `epub2` and `epub3`) and `builds_ast_index` (`is_html` or `is_epub`), both exported; `indexes.builds_index`, `passes.lua`'s per-mark HTML record branch and `index.lua`'s AST back-end branch route through it, while the book context, the degraded-book warning, the dangling-report gate, the range-scope word and `folded` stay on `is_html`. The `is_html` comment no longer says epub passes through. `tests/run-tests.sh` green, 407 checks.
 - 2026-08-28: T2/T3 — one checkpoint for both, verified by one suite run rather than two: `run-tests.sh` does `rm -rf "$WORK"` at startup and refuses concurrent invocations, so a per-task run costs a further 8.5 minutes and asserts nothing the combined one does not. `run-tests.sh` renders `examples/demo.qmd` to EPUB and to revealjs and `examples/book/` to EPUB, each captured under a slug of its own; `demo.qmd` declares no formats, so only the book's `_quarto.yml` needed an `epub:` entry, and AC4's gfm half reads the `demo-gfm` capture M03-AC6 already makes rather than rendering a second time. `tests/epubindex.py` reads the container, the package document and the manifest's XHTML members through `htmlindex.parse_text` — a new entry point `htmlindex.parse` now calls, so one builder serves both — and exposes the sections, rows, links and unresolved links. Suite green, 410 checks.
+- 2026-08-28: T5/T4 — T5 written before T4, which needs its manifest: a minor reorder. Manifest 10 states the book's two EPUB index sections in locator COUNTS, not hrefs — an EPUB's link targets are the files Pandoc's writer split the book into, which is not derived from the `.qmd` sources — and it matched the artifact on the first comparison, the merged-process range pairing (`Ranged Term` one locator here, two in the HTML book) included. The AC1-AC4 checks live in a new `tests/epubcheck.py` beside the reader, so the plants can run the same clause against a broken artifact; each of the four is planted in a different form and place — routing removed from the filter, a link target removed from a rendered container, the fold predicate widened in the filter, an identifier added to a rendered file — and shown red, and the folded render is shown to write the sentence the AC3 sweep looks for. Two plant renders needed a `capture` call after them (M24-AC3), and the folded book's scratch tree needed its `_extensions` symlink removed before the spliced copy went in, or it rendered through the repository's own filter. `run-tests.sh --self-test` green, 811 checks.
 
 ## Decisions
+
+### The fold sentence is held to the filter's wording in the run, not by a source scan (2026-08-28)
+
+AC3 sweeps the book's EPUB warning stream for `this output has one index only`,
+the sentence all three fold reports share. It cannot be a `mark-report-keys`
+grep key: that scan holds a key to matching exactly one filter warning, and
+matching all three is what makes a sweep for this sentence a sweep for "did
+anything fold at all". A scan of its own under `tests/scans/` would be the
+M16-doctrinal home, and would also owe `movedefs.py` and `plantdefect.py` an
+entry apiece for a single sentence. It is pinned inline instead, through the
+same `filtersrc` source set the scans read, by requiring the sentence to occur
+in the filter source exactly three times — where the three fold reports write
+it. Beside it the run sweeps the same log for the three fold reports' own
+pinned keys at zero occurrences each, so a reworded sentence fails at the pin
+rather than leaving the sweep looking for text nothing writes.
 
 ## Review

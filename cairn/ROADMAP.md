@@ -9,7 +9,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M51 | The version matrix typesets a PDF again | in-progress | — | normal | milestones/M51-matrix-pdf-leg.md |
+| M51 | The version matrix typesets a PDF again | review | — | normal | milestones/M51-matrix-pdf-leg.md |
 | M50 | Editors complete and document the marking syntax | done | — | normal | milestones/archive/M50-editor-metadata.md |
 | M49 | A PDF render builds every index the document declares | done | — | normal | milestones/archive/M49-named-indexes-pdf.md |
 | M48 | The version matrix's readers say what they read | done | M47 | normal | milestones/archive/M48-matrix-readers.md |

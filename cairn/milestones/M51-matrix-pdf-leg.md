@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M51: The version matrix typesets a PDF again
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -101,7 +101,7 @@ D-entry this milestone writes is the record of it.
 - [x] T6: Plant a fixture printing no index on a commit under `refs/probes/`,
       run the workflow against it, record the red run, and leave the probe
       ref in place.
-- [ ] T7: `tests/run-tests.sh --self-test` clean before review — the
+- [x] T7: `tests/run-tests.sh --self-test` clean before review — the
       profile's `verify` slot, run per task and again at the review gate; it
       is this milestone's gate procedure and not one of its promises.
 
@@ -121,6 +121,7 @@ D-entry this milestone writes is the record of it.
 - 2026-08-28: T2 defect found by the first dispatch, not by a local check: the book extraction restored from `50899b9` asks `indexdump.py pdf` for a heading named `Index`, which the book has not printed since M49 gave it two declared titles, so the PDF job was red on all three legs at the book step with the demo step already green. Fixed by naming `Index of Subjects` as the heading and `Index of People` as the stop line, the hand-read the acceptance suite makes at its own book-PDF probe; the second declared index is deliberately not read here (D-031).
 - 2026-08-28: T5 — dispatch run https://github.com/jmgirard/quarto-index/actions/runs/33190906035 green on all three legs, each printing `39 printed entry line(s) under 'Index'` for `examples/demo.pdf` and `19 printed entry line(s) under 'Index of Subjects'` for the book. Push run https://github.com/jmgirard/quarto-index/actions/runs/33190654491: `pdf` skipped, both render legs and compare green.
 - 2026-08-28: T6 — probe commit `4a7e781`, every `{.index` in `examples/demo.qmd` renamed to a class the filter does not read; run https://github.com/jmgirard/quarto-index/actions/runs/33190963909 has the PDF job red on all three legs with `Render examples/demo.qmd to PDF` at success and `Extract the index printed in examples/demo.pdf` at failure. The commit is parked at `refs/probes/m051-noindex` and its branch deleted. The plant also reddens the HTML render and compare jobs, since a demo carrying no mark has no HTML index either; AC4 is about the PDF job's two steps.
+- 2026-08-28: T7 — `tests/run-tests.sh --self-test` clean at the gate, 794 checks; `cairn_validate` all checks passed. One earlier invocation aborted at an unrelated pre-existing check whose read of `quarto list tools` returned no TinyTeX status, a network-dependent column; the tool reports `Up to date` and the re-run is the clean one recorded here.
 - 2026-08-28: plan gate chose restoring only the two fixtures `50899b9` removed over adding M49's two-index fixture, because that fixture's second index depends on TeX's restricted shell escape (D-031) and adding it widens the restore into new coverage; falsified by the two-index PDF path breaking on a Quarto version while the restored leg stays green. Deferred to a candidate row, not rejected.
 
 ## Decisions

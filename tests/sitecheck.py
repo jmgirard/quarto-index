@@ -40,13 +40,16 @@
   claims <page> <claims-file>
       A documentation page exists and states each claim a hand-written list
       holds it to. A row is `label<TAB>claim`; both sides are compared with
-      whitespace flattened, so a claim rewrapped at a different column is
-      still the same claim. An empty list is refused rather than swept.
+      blockquote markers stripped and whitespace flattened, so a claim
+      rewrapped at a different column, or wrapped in a blockquote, is still
+      the same claim. An empty list is refused rather than swept.
 
   phrase-absent <phrase-file> [overlay]
       No tracked page a reader meets carries any phrase a hand-written list
-      forbids. Same `label<TAB>phrase` rows and the same flattening as
-      `claims`, over the same domain the retired-sentence sweep uses — every
+      forbids. Same `label<TAB>phrase` rows and the same normalization as
+      `claims`, case folded as well because a forbidden fragment opening a
+      sentence is capitalized, over the same domain the retired-sentence
+      sweep uses — every
       tracked `.qmd` under site/ plus README.md, enumerated by `git ls-files`
       rather than written down, and asserted non-empty so a collapsed
       enumeration reads as collapsed and not as a pass.
@@ -472,8 +475,16 @@ def check_prose(old_readme, new_readme, site_dir, overlay=None):
 
 
 def flatten(text):
-    """One space between words, so a rewrap is not a difference."""
-    return ' '.join(text.split())
+    """One space between words, and no blockquote markers.
+
+    A rewrap at a different column is not a difference. Neither is the markup
+    the prose was wrapped in: a leading `>` is stripped from each line first,
+    because without it every `>` opening a continuation line lands mid-sentence
+    in the flattened text and only a sentence occupying a whole line could ever
+    be found (the M41 lesson, extended M45; the same normalization the inline
+    pre-release sweep in tests/run-tests.sh states for the same reason).
+    """
+    return ' '.join(re.sub(r'(?m)^[ \t]*>[ \t]?', '', text).split())
 
 
 def read_rows(path, what):
@@ -547,8 +558,8 @@ def check_claims(page, claims_path):
                     f'{len(rows)} claim(s) this check holds it to:\n'
                     + '\n'.join(absent))
     print(f'ok   M52: {page} states all {len(rows)} of the claim(s) this '
-          f'check holds it to, compared with whitespace flattened on both '
-          f'sides')
+          f'check holds it to, compared with blockquote markers stripped and '
+          f'whitespace flattened on both sides')
     return 0
 
 
@@ -570,9 +581,14 @@ def check_phrase_absent(phrase_path, overlay=None):
         except OSError as exc:
             unreadable.append(f'  {path}: {exc.strerror}')
             continue
-        body = flatten(text_read)
+        # Case-folded: a forbidden phrase is a fragment of a sentence, and
+        # the same fragment opening one is capitalized. A case-SENSITIVE
+        # sweep for `two back-ends` read `Two back-ends ship` as clean, on
+        # the first line of README.md and of the site's landing page (M52
+        # review F1).
+        body = flatten(text_read).lower()
         still += [f'  {path} ({label}): <<{phrase}>>'
-                  for label, phrase in rows if flatten(phrase) in body]
+                  for label, phrase in rows if flatten(phrase).lower() in body]
     if unreadable:
         return fail_m52(f'{len(unreadable)} of the {len(domain)} file(s) in the '
                     f'swept domain could not be read, so the sweep does not '
@@ -583,7 +599,8 @@ def check_phrase_absent(phrase_path, overlay=None):
     print(f'ok   M52: none of the {len(rows)} forbidden phrase(s) is present '
           f'in any of the {len(domain)} file(s) swept — every tracked page '
           f'under site/ plus README.md, enumerated by `git ls-files` — '
-          f'compared with whitespace flattened on both sides')
+          f'compared with blockquote markers stripped, whitespace flattened '
+          f'and case folded on both sides')
     return 0
 
 

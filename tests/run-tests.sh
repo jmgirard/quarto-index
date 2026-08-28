@@ -17123,6 +17123,14 @@ python3 tests/epubcheck.py sections "$M52_BOOK_EPUB" "$HTML_SECTION_ID" \
     "$WORK/book-epub-index.txt" \
   || fail "M52-AC3: the book's EPUB does not carry the two declared index sections manifest 10 states, or their rows differ (its own FAIL line is above)"
 
+# AC2 over the BOOK too (M52 review F4). The demo's EPUB is one chapterless
+# document; the book is several, one of them in a subdirectory
+# (examples/book/sub/), which is where a relative href across files could
+# differ. site/epub.qmd and CHANGELOG.md both say the links resolve inside the
+# book, and until this line only the demo was measured.
+python3 tests/epubcheck.py links "$M52_BOOK_EPUB" "$HTML_SECTION_ID" \
+  || fail "M52-AC2: a link inside the book EPUB's index sections names nothing in the publication (its own FAIL line is above)"
+
 # The sentence every fold report shares. It is NOT a mark-report-keys grep key
 # and cannot be one: that scan holds a key to matching exactly one filter
 # warning, and this deliberately matches all three fold reports, which is what
@@ -17348,6 +17356,19 @@ M52CLAIMS
 python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
   || fail "M52-AC5: $M52_DOC_PAGE does not state a claim this check holds it to (its own FAIL line is above)"
 
+# The Books page's own claim (M52 review F2). Its per-chapter model — put the
+# marker last, render the whole book, each chapter keeps a record — is true of
+# the HTML book alone, and this milestone made an EPUB book a case that reads
+# the page and must not follow it. The page scopes the model and names the
+# merged formats; these rows are what holds it there.
+cat > "$WORK/books-claims.txt" <<'M52BOOKS'
+scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
+merged formats named	A PDF book and an EPUB book need none of the above.
+merged means one process	Quarto renders each as one merged document, so the extension sees every chapter's marks at once
+M52BOOKS
+python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
+  || fail "M52-AC5: site/books.qmd no longer scopes its per-chapter model to the HTML book, so it tells an EPUB author to follow a model that is not theirs (its own FAIL line is above)"
+
 cat > "$WORK/backend-count.txt" <<'M52PHRASES'
 back-end count	two back-ends
 M52PHRASES
@@ -17364,14 +17385,16 @@ if [ "${1:-}" = "--self-test" ]; then
   # repository) and on a list forbidding nothing.
   # -------------------------------------------------------------------------
   M52D="$WORK/m52docs"
-  rm -rf "$M52D"; mkdir -p "$M52D/overlay/site"
+  rm -rf "$M52D"
+  mkdir -p "$M52D/overlay/site" "$M52D/overcase/site" "$M52D/overquote/site"
 
   python3 - "$M52_DOC_PAGE" "$M52D/nopclaim.qmd" "$M52D/overlay/site/epub.qmd" \
+      "$M52D/overcase/site/epub.qmd" "$M52D/overquote/site/epub.qmd" \
       <<'M52DOCPY' \
     || fail "M52 T7 self-test: the documentation variants could not be written (their own FAIL line is above)"
 import sys
 
-page, stripped, overlay = sys.argv[1:4]
+page, stripped, overlay, overcase, overquote = sys.argv[1:6]
 body = open(page, encoding='utf-8').read()
 gone = 'An EPUB has no pages:'
 if gone not in body:
@@ -17381,12 +17404,25 @@ if gone not in body:
     sys.exit(1)
 with open(stripped, 'w', encoding='utf-8') as handle:
     handle.write(body.replace(gone, 'An EPUB is a zip container:'))
-# The overlay page is the tracked page with one sentence ADDED, so the sweep
-# below is shown to fail on a page that is otherwise exactly what the
+# Each overlay page is the tracked page with one sentence ADDED, so the sweeps
+# below are shown to fail on a page that is otherwise exactly what the
 # repository holds -- not on a file that differs from it in any other way.
+# Three shapes, because the sweep normalizes three ways and a shape no plant
+# carries is an arm nothing has run: the phrase as written, the phrase opening
+# a sentence and so capitalized (M52 review F1), and the phrase wrapped in a
+# blockquote across a continuation line, where an unstripped `>` would land
+# mid-phrase (M52 review F14).
 with open(overlay, 'w', encoding='utf-8') as handle:
     handle.write(body + '\nThe marking syntax means the same thing in the '
                         'two back-ends.\n')
+with open(overcase, 'w', encoding='utf-8') as handle:
+    handle.write(body + '\nTwo back-ends ship: LaTeX/PDF and HTML.\n')
+# The line break falls INSIDE the phrase, not beside it: wrapped anywhere else
+# the `>` lands between two words the phrase does not span and an unstripped
+# sweep still finds it, so the plant would pass either way and prove nothing.
+with open(overquote, 'w', encoding='utf-8') as handle:
+    handle.write(body + '\n> The marking syntax means the same thing in the '
+                        'two\n> back-ends.\n')
 M52DOCPY
 
   m52_planted 'a documentation page that has lost one of the claims it is held to' \
@@ -17413,12 +17449,22 @@ M52DOCPY
     python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
       "$M52D/overlay"
 
+  m52_planted 'a tracked page opening a sentence with the forbidden phrase, so it is capitalized' \
+    'site/epub.qmd (back-end count)' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+      "$M52D/overcase"
+
+  m52_planted 'a tracked page carrying the forbidden phrase wrapped in a blockquote' \
+    'site/epub.qmd (back-end count)' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+      "$M52D/overquote"
+
   : > "$M52D/nophrases.txt"
   m52_planted 'a phrase list that forbids nothing' \
     'forbids nothing' \
     python3 tests/sitecheck.py phrase-absent "$M52D/nophrases.txt"
 
-  pass "M52 T7 self-test: both documentation clauses are planted on their own and shown red — a page with a claim removed, a claim list holding it to nothing, an overlay page carrying the forbidden phrase, and a phrase list forbidding nothing — while both pass unplanted over this repository's own tracked pages"
+  pass "M52 T7 self-test: both documentation clauses are planted on their own and shown red — a page with a claim removed, a claim list holding it to nothing, a phrase list forbidding nothing, and an overlay page carrying the forbidden phrase in each of the three shapes the sweep normalizes for: as written, capitalized at the start of a sentence, and wrapped across two lines of a blockquote — while both pass unplanted over this repository's own tracked pages"
 fi
 
 }

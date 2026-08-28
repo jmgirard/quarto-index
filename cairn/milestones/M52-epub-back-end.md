@@ -134,6 +134,7 @@ back-end forces.
 - 2026-08-28: T6/T7 — `site/epub.qmd` is new and the site nav, `site/output.qmd` and `site/index.qmd` link it; `site/back-end-differences.qmd` is retitled "Where the back-ends differ" and says at the top that every "in HTML" row below is true of EPUB, with the two places EPUB parts company on the new page; `site/principal-mention.qmd` and `site/other-formats.qmd`, `README.md`, `CHANGELOG.md` and `cairn/DESIGN.md` (the `core.lua` bullet's format tests, a third back-end bullet, and the pass-through sentence, which no longer names epub) follow. `tests/sitecheck.py` gains two modes — `claims`, holding a named page to a hand-written list, and `phrase-absent`, sweeping the tracked `site/` pages plus README for a forbidden phrase over the same enumerated domain and stated floor the retired-sentence sweep uses — each planted and shown red, with a passing overlay control for the sweep. `run-tests.sh --self-test` green, 820 checks.
 - 2026-08-28: T6 fallout — retitling the back-end page broke the M40 heading-move self-test, whose pre-move README fixture carries `### Where the two back-ends differ` and which requires every moved heading to be carried under `site/`. The fixture is a record of what that README said, so it is not edited; `sitecheck.py` gains a `RENAMED_HEADINGS` map instead (see this file's Decisions), and the check's own ok line now says how many it treats as renamed.
 - 2026-08-28: review opened — branch pushed, draft PR #52 opened, `cairn_validate` clean (16 PASS, 7 advisories OK, `release window` did not fire). At the maintainer's selection the three-lens fresh-context fan-out was authorised for this phase, lifting for review the standing no-subagent instruction the plan and implement phases logged.
+- 2026-08-28: review gate — the maintainer directed fix-now repairs for F1, F2, F4 and F14 (F5 included with F1), and filing for the other nine; the repairs are committed on the branch before the approval marker, and `tests/run-tests.sh --self-test` re-run over them.
 
 ## Decisions
 
@@ -276,7 +277,10 @@ below it.
   lines; without it, nothing. These are the first paragraph of the repository
   front page and of the documentation landing page, and they name EPUB
   nowhere. The milestone's own T6 header is "the docs describe a third
-  back-end". Proposed disposition at the gate: **fix before merge.**
+  back-end". **Fixed at the gate.** Both sentences now read "Three back-ends
+  ship: LaTeX/PDF, HTML and EPUB", and `check_phrase_absent` compares case
+  folded, with a plant carrying the phrase capitalized at the start of a
+  sentence — a shape shown to have passed the case-sensitive comparison.
 - **F2 — `site/books.qmd` states the HTML per-chapter model as what "a Quarto
   book" gets, which this branch makes false for an EPUB book.** Confirmed: the
   page qualifies the PDF book explicitly ("The PDF book needs none of this")
@@ -284,8 +288,12 @@ below it.
   the whole book when you publish" and "Each chapter records its marks in
   `.quarto/quarto-index/`" all read as applying to an EPUB book, where none of
   them is true. `site/epub.qmd` sends the reader to this page for the
-  aggregation. T6 did not list `books.qmd`. Proposed disposition at the gate: **fix before
-  merge.**
+  aggregation. T6 did not list `books.qmd`. **Fixed at the gate.** The page
+  now says at the top of the per-chapter material that everything below it is
+  about the HTML book, drops the PDF aside, and ends with a section naming the
+  merged formats: a PDF book and an EPUB book need none of it, the marker may
+  go in any chapter, and an EPUB book prints every declared index and pairs a
+  cross-chapter range. Three `sitecheck.py claims` rows hold it there.
 - **F3 — AC2's `<file>`-part arm is not shown to run over a non-empty
   domain.** Confirmed in `tests/epubindex.py:203`
   (`name = link['file'] or link['document']`): a bare same-file fragment falls
@@ -293,7 +301,7 @@ below it.
   manifest-membership arm is vacuous for such a link and the plant exercises
   the id arm only. Measured at review: all 25 demo links carry a non-empty
   file part today, so the arm is exercised now — nothing asserts it stays so.
-  Proposed disposition at the gate: **file** (the repo's silently-emptying-domain doctrine).
+  **Filed** at the gate (the repo's silently-emptying-domain doctrine).
 - **F4 — the book EPUB's locator links are never resolution-checked, though
   `site/epub.qmd` and `CHANGELOG.md` both claim they resolve inside the
   book.** Confirmed: `run-tests.sh:17115` runs `epubcheck.py links` on the
@@ -301,47 +309,49 @@ below it.
   links. `examples/book/sub/` is a subdirectory chapter, the case where a
   relative href could differ. Measured by hand at review: the book EPUB's 14
   links all carry file parts and all resolve, so the shipped claim is true —
-  it is the check that is missing. Proposed disposition at the gate: **fix before merge** (one
-  added invocation).
+  it is the check that is missing. **Fixed at the gate:** `epubcheck.py links`
+  now runs over the book capture as well as the demo's (one added
+  invocation).
 - **F5 — `site/placing-the-index.qmd:15` and `site/sorting.qmd:85` say "both
   back-ends".** Confirmed. Each sentence is true of EPUB as well, so the
-  content is right and the count is wrong. Proposed disposition at the gate: **fix before
-  merge.**
+  content is right and the count is wrong. **Fixed at the gate**, alongside F1
+  as the same defect class — the maintainer's selection named four findings and
+  this fifth is two words of the same correction, included and reported as
+  such: both sentences now say "every back-end".
 - **F6 — `indexes.builds_index`'s new EPUB arm is unreachable in production,
   and `DESIGN.md:369` and the Scope section describe it as a site an EPUB
   render builds an index at.** Confirmed: `builds_index()` is called only at
   `indexes.lua:279` and `:323`, both under `if folded and ...`, and `folded`
   requires `is_html()`. The routing is harmless and defensive; the prose
-  overstates. Proposed disposition at the gate: **file.**
+  overstates. **Filed** at the gate.
 - **F7 — `epubcheck.cmd_same`'s third comparison cannot fail.** Confirmed at
   `tests/epubcheck.py:138`: `epub_rows` and `html_rows` have both already been
   compared equal to `expected`. AC1's headline clause is carried by the two
   manifest comparisons; the call that names it adds no discrimination. Over-
-  determined, not under-determined. Proposed disposition at the gate: **file.**
+  determined, not under-determined. **Filed** at the gate.
 - **F8 — `sitecheck.py`'s `phrase-absent` duplicates the inline M44 sweep line
   for line rather than the M44 sweep being routed through the new module.**
   Confirmed. Two copies of one domain definition, each printing an `ok` line
-  naming "every tracked page under site/ plus README.md". Proposed disposition at the gate:
-  **file.**
+  naming "every tracked page under site/ plus README.md". **Filed** at the gate.
 - **F9 — `epubindex.section_rows` is reached by no check, and its docstring
   claims a form manifest 10 does not use.** Confirmed: it delegates to
   `htmlindex.section_rows`, which appends a trailing field manifest 10 omits;
-  `epubcheck.py` uses its own 4-field rows. Proposed disposition at the gate: **file.**
+  `epubcheck.py` uses its own 4-field rows. **Filed** at the gate.
 - **F10 — `cmd_absent`'s two allowed-string guards have never executed**, both
   living inside `for text in allowed` and every call site passing an empty
-  list. Confirmed. Proposed disposition at the gate: **file.**
+  list. Confirmed. **Filed** at the gate.
 - **F11 — `RENAMED_HEADINGS` is an unverified assertion that no page was
   lost.** Confirmed at `tests/sitecheck.py:374`: `want` is substituted
   unconditionally, nothing checks the old heading is genuinely absent or that
   the new one is on the same page, and no self-test plants a map entry over a
-  heading that was actually deleted. Proposed disposition at the gate: **file.**
+  heading that was actually deleted. **Filed** at the gate.
 - **F12 — `epubindex.read` raises rather than reporting on a member it cannot
   decode or address** (`tests/epubindex.py:112`), which the suite's own plant
   helper treats as a disqualifying outcome elsewhere. Confirmed by reading.
-  Proposed disposition at the gate: **file.**
+  **Filed** at the gate.
 - **F13 — `epubindex.links` would report an external href as unresolved**,
   joining it onto the document's directory. Confirmed by reading; not reachable
-  today. Proposed disposition at the gate: **file.**
+  today. **Filed** at the gate.
 - **F14 — `tests/sitecheck.py`'s `flatten` omits the blockquote-marker strip
   its sibling has, regressing a lesson M41 taught and M45 extended.**
   Confirmed: `tests/run-tests.sh:1497` strips `^[ \t]*>[ \t]?` per line before
@@ -349,5 +359,25 @@ below it.
   reason; `tests/sitecheck.py:474` is `' '.join(text.split())` with no strip,
   doing the same job over the same domain. Latent: no page in the swept domain
   carries a blockquote line today (measured at review). No plant covers the
-  shape. Proposed disposition at the gate: **fix before merge.**
+  shape. **Fixed at the gate.** `flatten` now strips a leading blockquote
+  marker per line, as its sibling does and for the reason the sibling states,
+  and a plant carries the forbidden phrase split across a blockquote
+  continuation — shown at review to have passed the unstripped comparison,
+  after a first plant that did not discriminate (the `>` fell beside the
+  phrase rather than inside it) was corrected.
+
+### Gate
+
+Presented 2026-08-28 with the six criteria's evidence, the consistency gate,
+the fourteen ranked findings and a 22-file diffstat. The maintainer chose
+**fix the four named findings, then merge**: F1, F2, F4 and F14 repaired on the
+branch, the remaining findings filed. F5 was included in the F1 repair as the
+same defect class and two words wide, reported as an inclusion rather than
+made silently.
+
+No return-floor finding: none of the fourteen demonstrated an acceptance
+criterion failing inside its named procedure's domain, and the maintainer did
+not judge one a load-bearing defect requiring a return — F1 was the closest
+and was directed to a fix at the gate. No amendment return; no criterion was
+reinterpreted. Defect-return count for this milestone: 0.
 

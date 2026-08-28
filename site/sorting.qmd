@@ -82,6 +82,6 @@ index, and the two orderings need not agree. In HTML the ordering is the
 extension's own — ASCII case folded, then character code. In PDF it is
 `makeindex`'s, which groups punctuation ahead of letters and reads the key in
 the escaped form the back-end writes for it. Sort keys of plain letters and
-digits order the same way in both back-ends; one built out of punctuation may
+digits order the same way in every back-end; one built out of punctuation may
 not, and neither will a key written past the three-level ceiling, which HTML
 honors and LaTeX drops with the level it was written for.

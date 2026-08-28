@@ -140,6 +140,7 @@ after merge; the revert is one line.
 - 2026-08-28: T5 — D-033 records the re-pin of the five actions under D-024's major-tag rule, naming what each bump changes behaviorally, that the publish step ships unexercised, and that a path comparison escalating to file contents would take its own superseding entry.
 - 2026-08-28: `tests/run-tests.sh --self-test` clean at the branch head — 824 checks, all passed. Status to `review`.
 - 2026-08-28: review — all four criteria met with fresh evidence at `bff6991`, the consistency gate clean, and three fresh-context reviewers returning three findings, none failing a criterion; awaiting the merge gate.
+- 2026-08-28: merge gate — approved. F1 and F2 filed onto the version-matrix-readers candidate row; F3 rejected, the coverage map being incomplete rather than wrong and the mechanical check passing. No fix-now work directed.
 
 ## Decisions
 
@@ -237,3 +238,12 @@ None of the three demonstrates an acceptance criterion failing, and none is a
 load-bearing defect in what the extension does for its readers — F1 degrades a
 diagnostic in a mode that stays red. No return floor is reached; the three go
 to the maintainer at the merge gate.
+
+**Triage at the gate (2026-08-28).** The maintainer approved the merge and
+disposed of the three findings: F1 and F2 → follow-up, extending the existing
+"Version-matrix readers" candidate row, which already carries M48's and M51's
+findings on this same reader, rather than a new row (search-first). F3 →
+rejected: every criterion maps to at least one existing task, `cairn_validate`'s
+`coverage complete` check passes, and amending a plan-owned section for a
+mapping that is incomplete rather than wrong costs a return round for no gain
+in verification. No fix-now work was directed.

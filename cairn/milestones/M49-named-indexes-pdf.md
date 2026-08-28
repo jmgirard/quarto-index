@@ -39,44 +39,45 @@ candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1: `examples/named-indexes.qmd` gains at least one term per declared
-      index whose NFC and NFD spellings differ. Rendering it to PDF on the
-      toolchain `tests/run-tests.sh` runs exits 0, and the text extracted from
-      the produced PDF carries two index sections headed `Index` and
-      `Index of Authors`. A new acceptance-suite check states each section's full
-      entry list in NFC precomposed form and compares each section's extracted
-      entries against its stated list in both directions.
-- [ ] AC2: `examples/named-indexes.qmd` carries, for each declared index, at
-      least one mark written below that index's own placement marker, and at
-      least one mark for the default index written below a marker naming the
-      other index. On the same toolchain, every one of those terms that the
-      close does not drop appears in its own printed index; the check states
-      those terms and the expected presence or absence of each, and the milestone
-      states what the guard path in T5 does with them where imakeidx's
-      close internal is absent.
+- [ ] AC1: Rendering `examples/named-indexes.qmd` to PDF on the toolchain
+      `tests/run-tests.sh` runs exits 0, and the produced PDF prints two index
+      sections headed `Index` and `Index of Authors` whose entry sets are each
+      exactly the set that index's own marks derive. A new acceptance-suite
+      check states each derived set and compares it against the section's
+      extracted entries in both directions.
+- [ ] AC2: `examples/named-indexes.qmd` carries all four below-marker cells —
+      a mark for a named index below that index's own marker, a mark for the
+      default index below the default marker, a mark for the default index
+      below a named index's marker, and a mark for a named index below the
+      default index's marker. On the same toolchain, each of those terms is
+      present in or absent from its own printed index exactly as a new check
+      states cell by cell.
 - [ ] AC3: Rendering `examples/book/` to PDF exits 0, and the extracted text
       carries one printed section per index that book declares, headed with that
       index's declared title, each section carrying at least one stated entry
       that only that index's own marks can produce.
-- [ ] AC4: The reports a LaTeX render of `examples/named-indexes.qmd` draws are
-      exactly the set a new check states verbatim, the fixture exercises all four
-      per-index judgements in both indexes (cross-reference resolution, sort-key
-      rivalry, range pairing, and the printed-path collision the three-level fold
-      produces), and each of those reports names the index the judgement was made
-      in rather than the word "document".
-- [ ] AC5: `site/named-indexes.qmd` carries neither the string
-      `A LaTeX or PDF render builds a single index` nor the string
-      `Quarto's PDF loop builds only the main entry file`, retains its sentence
-      about an HTML book building a single index, and states both what a PDF
-      render must have from the author's TeX installation for each index after
-      the first to be built and what happens where it does not. The check sweeps
-      the tracked pages under `site/` for the two retired strings.
+- [ ] AC4: Each of the four per-index judgements — cross-reference resolution,
+      sort-key rivalry, range pairing, and the printed-path collision the
+      three-level fold produces — draws at least one report in each of
+      `examples/named-indexes.qmd`'s two indexes; the reports a LaTeX render of
+      that fixture draws are exactly the set a new check states verbatim; and
+      each of those eight reports names the index its judgement was made in
+      rather than the word "document".
+- [ ] AC5: No tracked page under `site/` carries the string
+      `A LaTeX or PDF render builds a single index` or the string
+      `Quarto's PDF loop builds only the main entry file`, over a domain a new
+      check enumerates itself and whose size it reports. `site/named-indexes.qmd`
+      still states that an HTML book builds a single index and why, and states
+      what a PDF render needs from the author's TeX installation for each index
+      after the first to be built and what happens where it does not.
+      `site/books.qmd` and `examples/book/_quarto.yml`'s declaration comment
+      scope their one-index-per-book claim to the HTML book.
 - [ ] AC6: `tests/run-tests.sh` is clean.
 
 ## Coverage
 
 - AC1 → T1, T2, T3, T5, T6, T9
-- AC2 → T1, T5, T7, T9
+- AC2 → T1, T5, T6, T7, T9
 - AC3 → T2, T5, T6, T9
 - AC4 → T1, T4, T9
 - AC5 → T8
@@ -84,10 +85,10 @@ candidate row.
 
 ## Tasks
 
-- [ ] T1: Extend `examples/named-indexes.qmd` — a term per index whose NFC and
-      NFD spellings differ, the three below-marker marks AC2 names, and marks
-      exercising all four per-index judgements in both indexes. Derive every
-      expected entry from the marks, never from a rendered artifact (M30).
+- [ ] T1: Extend `examples/named-indexes.qmd` — the four below-marker cells AC2
+      names, and marks drawing each of the four per-index judgements in each
+      index. Derive every expected entry from the marks, never from a rendered
+      artifact (M30).
 - [ ] T2: Lift the fold — `qi_indexes.reset` sets `folded` for an HTML book
       alone (`_extensions/index/modules/indexes.lua:194`); `title` and
       `scope_phrase` follow.
@@ -106,14 +107,16 @@ candidate row.
 - [ ] T7: Report a mark of index X written below X's own placement marker, which
       imakeidx's close drops; one `warn()` literal, distinct from every other.
 - [ ] T8: Rewrite `site/named-indexes.qmd`'s "One index outside HTML, for now"
-      section; add the sweep check for the two retired strings; append the
-      D-entry annotating GP2.
+      section; scope `site/books.qmd`'s and `examples/book/_quarto.yml`'s
+      one-index claims to the HTML book; add the self-enumerating sweep check
+      for the two retired strings; append the D-entry annotating GP2.
 - [ ] T9: Acceptance-suite checks for AC1-AC4, each reading a captured artifact
       (M24) and each fenced by a planted defect.
 
 ## Work log
 
 - 2026-08-27: created by /milestone-plan.
+- 2026-08-27: criteria audit re-ran in FULL mode over the two criteria the gate changed and returned nine findings across five, all with one clear answer and all fixed before implement: the extracted side of AC1's comparison now normalizes too; AC1's NFC/NFD-differing term is dropped rather than forcing the fixture to carry the D-016 engine-and-font recipe, which put its own criterion out of reach; AC1, AC2 and AC5 each stop binding an instrument's shape and bind the deliverable; AC2 gains the fourth below-marker cell, a named-index mark below the default marker, which is the one T5 does not imply; AC4 requires each judgement to draw a report in each index, the succeeding side drawing none; AC5 names the HTML-book claim rather than a sentence whose "too" is anaphoric on a retired one, and reaches `site/books.qmd` and the book fixture's declaration comment, which AC3 makes stale. AC3 passed all six; AC6 is instrument-bound by construction as the tier-wide regression criterion.
 - 2026-08-27: criteria audit ran in FULL mode (user-facing tier); the fresh-context [O] reader returned twelve findings — ten fixed at the gate and reported in chat, two raised as gate questions (the filter warning against GP2/D-016, and IP2 versus GP2 as the condition's home).
 - 2026-08-27: plan gate chose docs-only for the toolchain condition over a filter warning on every multi-index PDF render, because GP2 makes a toolchain failure a documentation surface "never detected or managed" and D-016 settled the matching font case the same way; falsified by an author report that the short second index was unattributable from the docs alone.
 - 2026-08-27: plan gate chose a D-entry annotating GP2 over amending IP2, because IP2's promise is about a marked term's characters printing correctly and contains no clause about which indexes get built; falsified by a mark whose index never prints being read as the silent corruption IP2 forbids.

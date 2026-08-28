@@ -65,6 +65,11 @@ An installation that withholds that permission builds no index after the
 first: each of them prints empty, `imakeidx` says so in the LaTeX log, and
 this extension neither detects that nor works around it.
 
+`imakeidx` names each index's working files after the index rather than after
+the document, so a render leaves `<name>.idx`, `<name>.ilg` and `<name>.ind`
+beside your project for every index after the first. Quarto's own cleanup
+knows only the main document's files, so these stay behind.
+
 **Mark above the marker, in a named index.** `imakeidx` closes an index's
 entry file where that index is printed, so a mark below the placement marker
 for its own index reaches no index at all. The extension reports how many such
@@ -83,7 +88,8 @@ marker for it, wherever that marker stands; only where no marker names it does
 the first marker of any name place it.
 
 `examples/named-indexes.qmd` declares two indexes and writes every one of
-those judgements across both; `examples/named-indexes-twin.qmd` is the same
+those judgements across both — deliberately wrongly, so that a render of it
+draws each report in each index; `examples/named-indexes-twin.qmd` is the same
 terms in a document that declares none.
 
 ```bash

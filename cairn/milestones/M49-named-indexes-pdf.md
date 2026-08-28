@@ -199,3 +199,63 @@ not fire. `cairn_impact.py` skipped: no `DESIGN.md` principle text changed (GP2
 is annotated by D-031, not amended). The active profile is `generic`, whose
 `consistency-gate` slot names no toolchain checks, so that half is a clean
 no-op.
+
+### Independent review
+
+Three fresh-context lenses, distinct evidence bases. **[S] blame-history:** no
+findings — every touched line traces to M49's declared intent, and no recorded
+decision or past fix is contradicted. **[S] prior-review:** no findings; the
+GitHub inline-comment probe came back empty, as every prior probe in this repo
+has, and the archived `## Review` sections on the touched files (M04, M15, M16,
+M29, M38, M39, M50) record four points this diff honors rather than regresses.
+**[O] diff-bug:** ten findings, ranked; dispositions below.
+
+- F1 (fix now): `index.lua`'s comment above the wrapped `\printindex` claimed
+  `report_below_marker` "has already told the author about for every index this
+  can lose an entry from". False — the reporter covers named indexes alone and
+  returns early below two declared indexes, so on an imakeidx without
+  `imki@disableautomatictrue` a mark below the DEFAULT marker is lost unreported.
+  Comment corrected to say so.
+- F2 (follow-up): `report_below_marker` reads marker positions off `doc.blocks`
+  after `resolve_markers` rebuilt it, while the message ends in `POSITION_BASIS`,
+  which promises the document as received. An ignored or duplicate marker above
+  the named index's marker shifts the cited block number down. The comparison
+  itself is sound — both sides are read off the same list — so this is a wrong
+  number in a report, not a missed or spurious report.
+- F3 (follow-up): `\makeindex[name=X]` makes imakeidx write `X.idx/.ilg/.ind`,
+  named for the index and not the job. Confirmed on disk after this run
+  (`examples/authors.ind`, `examples/book/people.ind`). Two unguarded shapes: a
+  declared name equal to the jobname collides with the default index's files,
+  and a stale `.ind` from an earlier render is what `\printindex[X]` reads if a
+  later makeindex call fails — the shell-escape failure D-031 documents would
+  then print a WRONG index rather than an empty one.
+- F4 (follow-up): `passes.lua` emits `\index[<name>]{…}` whenever the format is
+  LaTeX-derived, but the preamble making that syntax legal rides Quarto's
+  preamble channel. Under plain pandoc `-t latex` there is no channel, kernel
+  `\index` takes no optional argument, and `[<name>]` typesets into the body.
+  The extension documents no plain-pandoc support anywhere, and the previous
+  uniform `\index{…}` was harmless there.
+- F5 (fix now): `site/named-indexes.qmd` said nothing about the per-index side
+  files an author will find beside their project. A paragraph now names them and
+  says Quarto's cleanup does not reach them.
+- F6 (follow-up): `pdfindex.read`'s `stop` bound drops the whole stop page, so an
+  index running onto it loses entries silently; `check_entries` would catch that,
+  but an `absent` cell in `check_cells` reads a truncated entry identically to a
+  dropped one — the distinction AC2 exists to make.
+- F7 (follow-up): `editorfixture.check_split` reads its titles from the snippet
+  YAML while the row files come from a `run-tests.sh` call site that names the
+  headings separately; nothing ties a row file to the title the failure message
+  names, and the self-test plants pass row files positionally.
+- F8 (rejected): `site/books.qmd`'s leading sentence, "A Quarto book gets one
+  index for the whole book, not one per chapter", is read as unscoped. It stays
+  true of a PDF book — the indexes are the book's, not a chapter's — and the
+  declaration-count claim beside it is scoped to HTML, which is what AC5 asks.
+- F9 (follow-up): `namedpdf.check_reports` splits manifest rows on tab and
+  re-joins them, so a row with trailing whitespace fails as "stated, not drawn"
+  rather than as a malformed manifest — a reader naming the wrong cause.
+- F10 (fix now): `site/named-indexes.qmd` introduced `examples/named-indexes.qmd`
+  as the worked example without saying its judgements are written wrongly on
+  purpose. The sentence now says so.
+
+Fix-now work re-verified: `tests/run-tests.sh` clean at 406 checks after the
+three edits.

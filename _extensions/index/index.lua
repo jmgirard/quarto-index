@@ -464,9 +464,11 @@ local function Pandoc(doc)
   -- default marker still reaches the file Quarto's loop builds from, while a
   -- named index's file is closed at its own `\printindex` and makeindex reads
   -- a complete one. `\ifcsname` rather than a bare call: a version of imakeidx
-  -- without that internal must render rather than abort (IP2), and it would
-  -- then close the file — which `report_below_marker` above has already told
-  -- the author about for every index this can lose an entry from.
+  -- without that internal must render rather than abort (IP2). On that
+  -- version the default index's file IS closed here, and a mark written below
+  -- the default marker is lost with no report: `report_below_marker` above
+  -- covers the named indexes alone, which are the ones every shipped imakeidx
+  -- closes.
   local printindex = "\\printindex"
   if marker then
     printindex = "\\begingroup\\makeatletter"

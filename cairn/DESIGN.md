@@ -904,6 +904,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   been held rather than widened, so the last leg of that chain has no criterion
   binding it. — M20 amendment gate
 
+- **KI90.** Nothing holds `_extensions/index/_schema.yml` against the attribute
+  set the FILTER accepts. `tests/editormeta.py schema` compares it with the
+  set the tracked pages under `site/` document, which is the domain D-011
+  permits; the filter's own constants are read by no check, so an attribute
+  the filter accepts and no page documents can be missing from the schema, and
+  one the filter has stopped accepting can stay in it, with the suite green in
+  both directions. The plan gate chose this over a scan of the Lua source
+  (M50 work log). Found at M50 T1.
+
 ### The repo and its packaging
 
 - **KI75.** `examples/.gitignore` duplicates the root ignore's

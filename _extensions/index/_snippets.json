@@ -1,0 +1,75 @@
+{
+  "Index mark": {
+    "prefix": "index",
+    "body": "[${1:cats}]{.index}",
+    "description": "Mark a term for the index under its own text."
+  },
+  "Index mark with an entry": {
+    "prefix": "index-entry",
+    "body": "[${1:kestrel}]{.index entry=\"${2:Birds!Kestrel}\"}",
+    "description": "Mark a term and index it under different text. A single ! separates sub-entry levels."
+  },
+  "Index mark with a see cross-reference": {
+    "prefix": "index-see",
+    "body": "[${1:puss}]{.index see=\"${2:cats}\"}",
+    "description": "Point the reader at another entry instead of at a page."
+  },
+  "Index mark with a see-also cross-reference": {
+    "prefix": "index-see-also",
+    "body": "[${1:kittens}]{.index see-also=\"${2:cats}\"}",
+    "description": "Point the reader at a further entry instead of at a page."
+  },
+  "Index mark with a sort key": {
+    "prefix": "index-sort",
+    "body": "[${1:The Hague}]{.index sort=\"${2:Hague}\"}",
+    "description": "File the entry at a key's position rather than at its printed text's."
+  },
+  "Index mark of a principal mention": {
+    "prefix": "index-mention",
+    "body": "[${1:mitochondria}]{.index mention=\"${2:principal}\"}",
+    "description": "Say which of a term's mentions is its principal one, so its locator is emphasized."
+  },
+  "Index marks around a page range": {
+    "prefix": "index-range",
+    "body": [
+      "[${1:tides}]{.index range=\"open\"}",
+      "",
+      "${2:The discussion this range spans.}",
+      "",
+      "[${1:tides}]{.index range=\"close\"}"
+    ],
+    "description": "Mark where a discussion begins and ends, so the index prints one locator spanning them."
+  },
+  "Index mark in a named index": {
+    "prefix": "index-named",
+    "body": "[${1:Ada Lovelace}]{.index index=\"${2:authors}\"}",
+    "description": "File the mark in a declared index other than the first."
+  },
+  "Index placement": {
+    "prefix": "index-here",
+    "body": [
+      "::: {.qi-index-here}",
+      ":::"
+    ],
+    "description": "Place the first declared index here."
+  },
+  "Named index placement": {
+    "prefix": "index-here-named",
+    "body": [
+      "::: {.qi-index-here index=\"${1:authors}\"}",
+      ":::"
+    ],
+    "description": "Place the declared index of this name here."
+  },
+  "Index declarations": {
+    "prefix": "indexes",
+    "body": [
+      "indexes:",
+      "  - name: ${1:main}",
+      "    title: ${2:Index}",
+      "  - name: ${3:authors}",
+      "    title: ${4:Index of Authors}"
+    ],
+    "description": "Declare a document's indexes in metadata, in the order they print."
+  }
+}

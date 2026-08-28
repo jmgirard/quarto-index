@@ -140,6 +140,8 @@ since a source-shape scan is what D-011 refuses.
 - 2026-08-27: implement gate chose reading AC4's seven effect comparisons in the HTML render alone, `mention=`'s effect being emphasis that leaves no trace in a PDF's text layer; the PDF is held to exit 0 and to the single folded index AC4 names.
 - 2026-08-27: implement gate chose PyYAML for the schema read over an indentation parser of the suite's own — D-030.
 - 2026-08-27: T1 done. `_extensions/index/_schema.yml` declares the two classes and the seven/one attributes each carries, `mention` and `range` enumerating their values.
+- 2026-08-27: T2-T6 written and wired in one checkpoint, boxes left unticked — the acceptance suite takes about fifteen minutes a run, so one `--self-test` run verifies all five rather than five runs verifying one each; the ticks follow that run's result.
+- 2026-08-27: DESIGN.md Known issues gains KI90, that no check holds the schema against the attribute set the filter accepts, which the plan gate chose (T6).
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local -->

@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Project
+
+- The extension ships editor metadata beside its manifest:
+  `_extensions/index/_schema.yml`, a Quarto Wizard schema declaring the
+  `index` and `qi-index-here` classes and the attributes each carries, and
+  `_extensions/index/_snippets.json`, VS Code-format snippets for every
+  marking form. Editors supporting those formats read them for completion and
+  hover text; a render reads neither.
+
 ## 0.1.0 (2026-08-26)
 
 First tagged release. Earlier development is in the git history.

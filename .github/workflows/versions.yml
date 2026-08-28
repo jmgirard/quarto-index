@@ -361,12 +361,25 @@ jobs:
           set -euo pipefail
           ( cd examples/book && quarto render --to pdf )
 
+      # The two headings are the book's own declared titles, read by hand off
+      # `examples/book/_quarto.yml` — the same hand-read the acceptance suite
+      # makes at its own book-PDF probe. `indexdump.py pdf` defaults to a
+      # heading of `Index`, which this book has not printed since M49 gave it
+      # two named indexes with titles of their own; the second title is passed
+      # as the stop line so the first index's entries are read and the second
+      # index's are not folded in after them.
+      #
+      # This reads the FIRST declared index and not both. The question here is
+      # whether a Quarto version typesets the book and prints an index in it;
+      # what a second declared index does under TeX's restricted shell escape
+      # is D-031's subject and no part of what this job asks.
       - name: Extract the index printed in the book's PDF
         shell: bash
         run: |
           set -euo pipefail
           python3 tests/indexdump.py pdf \
             examples/book/_book/Index-Book-Fixture.pdf \
+            'Index of Subjects' 'Index of People' \
             > "$RUNNER_TEMP/pdf/book.pdf.txt"
 
       - name: Report what this leg extracted

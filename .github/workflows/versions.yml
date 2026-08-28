@@ -325,24 +325,50 @@ jobs:
       # to upload one of them under a leg's artifact name, where the
       # comparison reads `*.html.txt` and would find a file it never rendered.
       #
-      # Each render is followed immediately by its extraction, before the next
-      # render can overwrite the artifact: the book renders into `_book`
-      # whatever the format, so a second render into that directory replaces
-      # the first.
-      - name: Render the PDF fixtures and extract each printed index
+      # Each render is a step and each extraction is the step after it, rather
+      # than one step running all four commands. That is what makes a red
+      # readable: a fixture that typesets and prints no index is the break
+      # this job exists to catch, and it shows here as a green render step
+      # followed by a red extraction step. Run together under `set -e` the
+      # same break is one red step, which a reader cannot tell from a render
+      # that failed to typeset at all.
+      #
+      # The order is render, extract, render, extract, and not both renders
+      # then both extractions: the book renders into `_book` whatever the
+      # format, so a second render into that directory replaces the first, and
+      # keeping each extraction beside its own render is what survives a
+      # second format being added here.
+      - name: Make the directory this job's extractions are written to
+        shell: bash
+        run: mkdir -p "$RUNNER_TEMP/pdf"
+
+      - name: Render examples/demo.qmd to PDF
         shell: bash
         run: |
           set -euo pipefail
-          OUT="$RUNNER_TEMP/pdf"
-          mkdir -p "$OUT"
-
           quarto render examples/demo.qmd --to pdf
-          python3 tests/indexdump.py pdf examples/demo.pdf \
-            > "$OUT/demo.pdf.txt"
 
+      - name: Extract the index printed in examples/demo.pdf
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/indexdump.py pdf examples/demo.pdf \
+            > "$RUNNER_TEMP/pdf/demo.pdf.txt"
+
+      - name: Render examples/book to PDF
+        shell: bash
+        run: |
+          set -euo pipefail
           ( cd examples/book && quarto render --to pdf )
+
+      - name: Extract the index printed in the book's PDF
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 tests/indexdump.py pdf \
             examples/book/_book/Index-Book-Fixture.pdf \
-            > "$OUT/book.pdf.txt"
+            > "$RUNNER_TEMP/pdf/book.pdf.txt"
 
-          wc -l "$OUT"/*.txt
+      - name: Report what this leg extracted
+        shell: bash
+        run: wc -l "$RUNNER_TEMP/pdf"/*.txt

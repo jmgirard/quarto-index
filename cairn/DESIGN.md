@@ -1217,3 +1217,66 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   path on its spelling — landed at the review gate with no regression test:
   no fixture reaches a record that splits its marks between a declared and an
   undeclared index while both carry a key for one printed path. — M55 review F2
+- **KI172.** M40's self-test summary `pass` message in `tests/run-tests.sh`
+  writes backtick-quoted tokens inside a double-quoted string, so the shell
+  runs one as a command substitution: the run log carries
+  `line 13996: ..: command not found` and the tokens vanish from the message a
+  reader sees. The check itself is unaffected — the substitution is in the
+  message, not in the comparison. Found while adding M56's own, which is
+  written with single quotes for this reason. — M56 T4
+
+- **KI173.** `read_labels` refuses only a value that stringifies to the empty
+  string, so `see: " "` installs a word of spaces: the HTML index emits an
+  emphasized run of whitespace and the reader sees the target with no word in
+  front of it. The empty-value report's own words — "no word a reader can
+  read" — describe this case, and it draws none. — M56 review F3
+- **KI174.** An author's `symbols:` word that is itself a single ASCII letter
+  prints two identically headed groups: the sentinel keeps the non-letter
+  group's identity and rank, so it neither merges nor re-ranks, but a reader
+  of `symbols: "A"` sees an `A` heading over the non-letter entries and a
+  second over the real A group, with no report. — M56 review F13
+- **KI175.** A value under one label key that is itself a map — the likely
+  over-indentation error, since the surface is a nested map — is stringified
+  to its concatenated leaf values and installed as the printed word, with no
+  report. Consistent with `title:`, whose behavior this follows. — M56 review
+  F11
+- **KI176.** A per-index `index-labels:` written in an `indexes:` entry that
+  `read_declaration` refuses for any other reason is dropped with no message
+  of its own: every refusal returns before the `read_labels` call, so an
+  author who repeats an index name and writes a correct label map in the
+  second entry is told about the name and nothing about the map. — M56 review
+  F8
+- **KI177.** No check binds the ordering `read` deliberately has: reading
+  `index-labels:` before the `indexes:` early returns, so a document that
+  declares no index can still set the words. All three M56 fixtures declare
+  `indexes:`, so moving that call below the early return turns nothing red.
+  — M56 review F4
+- **KI178.** The label-form manifest row folds the printed word and the target
+  into one space-joined field (`tests/htmlindex.py:541`), and both can contain
+  spaces, so a render printing `siehe` in front of `auch Kestrel` yields the
+  row a render printing `siehe auch` in front of `Kestrel` yields. The two are
+  read independently and lose that independence in the row. — M56 review F5
+- **KI179.** The state-reuse comment's cell counts ("seventeen", "fourteen")
+  are stale after M56 added `doc_labels` and `index_labels`, and more than the
+  prose is stale: `tests/state-pollute.lua` never calls `qi_indexes.read`, so
+  deleting either new cell from `reset` turns nothing red. In a reused Lua
+  state a second document's index would print the first's declared words.
+  — M56 review F7
+- **KI180.** AC6's `.tex` comparison is proved able to fail by a plant that
+  re-implements the comparison inline rather than calling the real check, so
+  an inverted condition or swapped paths in the real check would still let the
+  self-test print its pass line. Every other M56 plant goes through
+  `m56_planted`. — M56 review F9
+- **KI181.** Nothing pins the total extension-warning count for
+  `examples/index-labels.qmd` in either format — the twin's logs are pinned at
+  zero and the misuse needles are pinned absent, but a valid `index-labels:`
+  drawing a spurious report, in LaTeX especially where it would not touch the
+  `.tex`, passes the whole M56 block. — M56 review F10
+- **KI182.** `m56_derive` ends a block at the first blank line, but a blank
+  line inside an `index-labels:` map is legal YAML; with one present the
+  derivation check fails with "drifted apart" on a fixture pair that is in
+  fact correct, naming the wrong cause. — M56 review F12
+- **KI183.** The unknown-key and empty-value reports are exercised only at the
+  document level: the misuse fixture writes both per-key shapes there and only
+  the not-a-map shape per index, so a defect in how those two messages name an
+  index goes unseen. — M56 review F14

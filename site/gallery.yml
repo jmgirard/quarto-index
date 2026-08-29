@@ -41,6 +41,9 @@ not-shown:
   - examples/fold-xref-self.qmd
   - examples/fold-xref.qmd
   - examples/id-collision.qmd
+  - examples/index-labels-misuse.qmd
+  - examples/index-labels-twin.qmd
+  - examples/index-labels.qmd
   - examples/marker-misuse.qmd
   - examples/marker-nomarks-twin.qmd
   - examples/marker-nomarks.qmd

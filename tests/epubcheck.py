@@ -15,8 +15,10 @@ already pinned one of them.
 
 Subcommands, each printing its own `ok`/`FAIL` line and exiting 0/1:
 
-  sections <epub> <prefix> <manifest> [<sole-id>]
+  sections <epub> <prefix> <manifest> [<sole-id>] [--labels]
       The generated index sections and their rows, against the manifest.
+      `--labels` states the word each cross-reference prints as well as its
+      kind (M56).
   same <epub> <html> <prefix> <manifest>
       The EPUB's entry rows against the HTML render's, both first held to the
       manifest that pins them.
@@ -34,13 +36,18 @@ import htmlindex
 SECTION_TOKEN = 'section'
 
 
-def _rows(sections):
-    """Manifest rows for a list of sections, section row then its own rows."""
+def _rows(sections, labels=False):
+    """Manifest rows for a list of sections, section row then its own rows.
+
+    `labels` is `htmlindex.row()`'s own flag, passed straight through: it puts
+    the word a cross-reference prints into its field, which is what a fixture
+    whose subject is that word (M56) has to state.
+    """
     rows = []
     for found in sections:
         rows.append('\t'.join([SECTION_TOKEN, found['ident'], found['tag'],
                                found['title']]))
-        rows.extend(htmlindex.row(r) for r in found['records'])
+        rows.extend(htmlindex.row(r, labels=labels) for r in found['records'])
     return rows
 
 
@@ -74,9 +81,11 @@ def cmd_sections(argv):
     documents its content.opf manifest lists". Counted over the sections this
     reader found, which are the ones inside manifest-listed documents.
     """
+    labels = '--labels' in argv
+    argv = [a for a in argv if a != '--labels']
     if len(argv) not in (3, 4):
         print('usage: epubcheck.py sections <epub> <prefix> <manifest> '
-              '[<sole-id>]', file=sys.stderr)
+              '[<sole-id>] [--labels]', file=sys.stderr)
         return 2
     path, prefix, manifest_path = argv[0], argv[1], argv[2]
     sole = argv[3] if len(argv) == 4 else None
@@ -93,7 +102,7 @@ def cmd_sections(argv):
                   file=sys.stderr)
             return 1
     expected = htmlindex.read_manifest(manifest_path)
-    status = _compare(_rows(sections), expected, label,
+    status = _compare(_rows(sections, labels), expected, label,
                       f'the {len(sections)} generated section(s)')
     if status:
         return status

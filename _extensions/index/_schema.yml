@@ -7,8 +7,10 @@
 # two, so version 1 is what every reader of this format accepts.
 #
 # There is no `options:` block: that section describes settings written under
-# an `extensions:` heading, and this extension's one metadata key, `indexes:`,
-# is a top-level document key.
+# an `extensions:` heading, and this extension's two metadata keys — `indexes:`
+# and `index-labels:` — are top-level document keys, which this vocabulary has
+# no place for. The snippets file beside this one is where an editor offers
+# them.
 $schema: https://m.canouil.dev/quarto-wizard/assets/schema/v1/extension-schema.json
 
 classes:

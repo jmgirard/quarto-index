@@ -21,9 +21,15 @@ local MARKER_CLASS = "qi-index-here"
 -- `command` is the LaTeX back-end's encap command; `label` is the words a
 -- reader sees, which the LaTeX back-end gets from `\seename`/`\alsoname`
 -- instead so a document loading babel keeps its translations.
+-- `label_key` is the key an author overrides this word under in the
+-- `index-labels:` map (D-036, renamed by D-039). It is spelled out rather than reused from `attr`, which happens
+-- to be the same string: the attribute names a cross-reference TARGET and the
+-- key names the word printed in front of one, and a later rename of either
+-- must not silently move the other.
 local XREF_KINDS = {
-  { attr = "see", command = "see", label = "see" },
-  { attr = "see-also", command = "seealso", label = "see also" },
+  { attr = "see", command = "see", label = "see", label_key = "see" },
+  { attr = "see-also", command = "seealso", label = "see also",
+    label_key = "see-also" },
 }
 
 -- The same kinds by attribute name. A book's store holds an attribute name

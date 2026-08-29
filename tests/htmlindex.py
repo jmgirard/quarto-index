@@ -262,7 +262,7 @@ def index_sections(root, prefix, minted=()):
 SECTION_TOKEN = 'section'
 
 
-def section_rows(root, prefix, minted=(), hrefs=False):
+def section_rows(root, prefix, minted=(), hrefs=False, labels=False):
     """The manifest form of every generated index section on a page.
 
     One `section<TAB>id<TAB>heading tag<TAB>title[<TAB>id it follows]` row per
@@ -293,7 +293,7 @@ def section_rows(root, prefix, minted=(), hrefs=False):
         if not hrefs:
             fields.append(found['after'] or '-')
         rows.append('\t'.join(fields))
-        rows.extend(row(r, hrefs) for r in found['records'])
+        rows.extend(row(r, hrefs, labels) for r in found['records'])
     return rows
 
 
@@ -392,7 +392,12 @@ def index_entries(section):
     Two record kinds, distinguished by `kind`. An `entry` record is a dict:
     `depth` (0 for a top-level entry), `term` (the entry's own text),
     `locators` (the href of each numbered link, in order), and `xrefs` (one
-    tuple per cross-reference: kind, target text, linked, href or None). A
+    tuple per cross-reference: kind, target text, linked, href or None, and
+    the WORD printed in front of the target). The kind is read from the class
+    the back-end writes and the word from the text it prints, so the two are
+    independent readings: an override that changed the class, or a class that
+    printed the wrong word, is visible as a disagreement rather than folded
+    into one field. A
     `heading` record is a letter-group heading: `label`, the text it shows.
 
     Headings and lists are read from the section's own children in the order
@@ -432,8 +437,17 @@ def index_entries(section):
                         f'cross-reference has {len(targets)} target span(s), '
                         f'expected exactly 1')
                 links = find_all(targets[0], 'a')
+                # The label word is the emphasized run in front of the
+                # target, which is what the back-end emits and the only text
+                # in the span that is not the target itself.
+                words = [n for n in own_nodes(span) if n.tag == 'em']
+                if len(words) != 1:
+                    raise ValueError(
+                        f'cross-reference has {len(words)} label word(s), '
+                        f'expected exactly 1')
                 xrefs.append((kind, text(targets[0]), bool(links),
-                              links[0].attrs.get('href') if links else None))
+                              links[0].attrs.get('href') if links else None,
+                              text(words[0]).strip()))
             records.append({
                 'kind': 'entry',
                 'depth': depth,
@@ -495,7 +509,7 @@ def entry_records(section):
     return [r for r in index_entries(section) if r['kind'] == 'entry']
 
 
-def row(record, hrefs=False):
+def row(record, hrefs=False, labels=False):
     """The manifest form of one entry record. The format is defined here so
     the hand-written rows and the extraction cannot drift apart.
 
@@ -508,14 +522,24 @@ def row(record, hrefs=False):
 
     A letter-group heading is its own row shape, `letter<TAB><label>`, which
     no entry row can collide with: an entry row starts with a depth digit.
+
+    `labels` puts the WORD a cross-reference prints into its field, between
+    the kind token and the target — `see-link cf. Cats` rather than
+    `see-link Cats`. Off by default, so every manifest written before the
+    words became overridable (M56) keeps the rows it was derived with; on for
+    the fixtures whose subject is the word itself, where the kind token alone
+    would read the same whatever word the page printed. The group-heading row
+    needs no flag: it has always carried the text its heading shows.
     """
     if record['kind'] == 'heading':
         return f'{LETTER_TOKEN}\t{record["label"]}'
     fields = [str(record['depth']), record['term'],
               ' '.join(record['locators']) if hrefs
               else str(len(record['locators']))]
-    for kind, target, linked, _href in record['xrefs']:
-        fields.append(f'{XREF_TOKEN[(kind, linked)]} {target}')
+    for kind, target, linked, _href, word in record['xrefs']:
+        token = XREF_TOKEN[(kind, linked)]
+        fields.append(f'{token} {word} {target}' if labels
+                      else f'{token} {target}')
     return '\t'.join(fields)
 
 

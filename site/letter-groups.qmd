@@ -29,3 +29,32 @@ no stylesheet of its own.
 The extension's job ends at correct emitted output. Whether your toolchain
 then runs `makeindex` to build the index is up to your build setup; Quarto's
 default PDF pipeline does it for you.
+
+## Setting the words the index prints itself
+
+Three of the words a reader sees are the extension's own rather than yours:
+this `Symbols` heading, and the `see` and `see also` in front of a
+cross-reference. Set any of them under `index-labels:`, whose three keys are
+`symbols`, `see` and `see-also`:
+
+```yaml
+index-labels:
+  symbols: "Zeichen"
+  see: "siehe"
+  see-also: "siehe auch"
+```
+
+Write the map in two places. At a document's top level it covers every index
+that document has; inside one entry of `indexes:` it covers that index alone.
+Where both name a key the index's own wins, key by key — an index that resets
+`see` keeps the document's `symbols` and `see-also` — and a key you write
+nowhere keeps its English default.
+
+The map is `index-labels:` and not `labels:` because a top-level `labels:` is
+Quarto's own map, the one holding the words for its title block, and this
+extension does not read it.
+
+These words reach the HTML and EPUB indexes only. A LaTeX index takes `see`
+and `see also` from babel, which sets them from your document's `lang:`; it has
+no letter groups and so prints no `Symbols` heading at all, which is why
+`symbols:` has nothing to override there.

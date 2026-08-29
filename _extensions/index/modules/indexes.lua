@@ -29,6 +29,45 @@ local TITLE_FIELD = "title"
 -- always printed.
 local DEFAULT_TITLE = "Index"
 
+-- The metadata key an author writes the reader-facing words under, and the
+-- three words one map may set. A nested map rather than three fields beside
+-- `title:` because a flat `see:` would spell the mark attribute `see=` one
+-- indentation level away, where the same word names a cross-reference TARGET
+-- rather than the word printed in front of one (D-036). The map's name says
+-- what kind of value its keys hold, so the keys keep matching the attribute
+-- names without inheriting their meaning.
+--
+-- `index-labels` and not the bare `labels` D-036 first chose: `labels:` at a
+-- document's top level is QUARTO's own key, and it puts nine title-block
+-- strings of its own there -- `abstract`, `authors`, `keywords` and the rest --
+-- in every document, written or not. Reading it would mean reporting nine
+-- unknown keys on a document that declared nothing, and would leave a future
+-- Quarto label spelled `see` silently setting a word this extension prints
+-- (D-039). The same name is used at both levels, though only the top one
+-- collides, so an author writes one key rather than two.
+--
+-- The keys are listed rather than derived from the two sites that print these
+-- words: `symbols` is the HTML back-end's group heading and the other two are
+-- the cross-reference kinds, and a module below this one cannot ask either of
+-- them what it prints. What this module owns is which keys are writable and
+-- what an unusable one does; the ENGLISH word each falls back to stays at the
+-- site that has always printed it, so no word acquires a second copy.
+local LABELS_KEY = "index-labels"
+local LABEL_KEYS = { "symbols", "see", "see-also" }
+local LABEL_KEY_SET = {}
+for _, key in ipairs(LABEL_KEYS) do
+  LABEL_KEY_SET[key] = true
+end
+
+-- How a report names the level an `index-labels:` map was written at. The
+-- document level is one phrase; an index's own names the index, which is the
+-- only thing that tells two per-index maps apart in a log.
+local DOCUMENT_LEVEL = "in this document's metadata"
+
+local function index_level(name)
+  return ('in the entry declaring the index named "%s"'):format(name)
+end
+
 -- What a declared name may be. The name reaches output as the section's HTML
 -- id (`section_id` below) and as the fragment of every link to it, so a name
 -- that is no id fragment is a section no link resolves against -- a space, a
@@ -67,6 +106,62 @@ local titles = { [UNNAMED] = DEFAULT_TITLE }
 -- section it always has, and the second prints an index named after what its
 -- author wrote.
 local declared = false
+-- The words an author declared, per level: the document's own map, and one map
+-- per index that wrote one. Two cells rather than one keyed by index name,
+-- because the document level applies to every index and the unnamed index's
+-- name is the empty string -- a single table would have to reserve a key no
+-- index can have, and this way the nearest-wins lookup below is two reads.
+local doc_labels = {}
+local index_labels = {}
+
+-- One `index-labels:` map, at whichever level it was written. Returns the
+-- words it usably sets, or nil where it sets none.
+--
+-- The discipline is `read_declaration`'s: anything unusable is reported and
+-- falls back, never half-installed. The unit that falls back is the KEY, as
+-- the unit there is the entry -- a map whose `see:` is empty still sets its
+-- `symbols:`, exactly as an index whose `title:` is empty still declares its
+-- name. What falls back falls to the next level out and then to the English
+-- word the printing site has always used, so an unusable map can only ever
+-- leave a reader with the words this extension printed before it was written.
+local function read_labels(value, where)
+  if value == nil then
+    return nil
+  end
+  if pandoc.utils.type(value) ~= "table" then
+    qi_core.warn(("%s: %s is not a map of label keys to the words to print; it sets no word, so each word falls back to the next level it is written at and then to the English one"):format(LABELS_KEY, where))
+    return nil
+  end
+  -- The unknown keys are collected and sorted before any is reported: `pairs`
+  -- gives no order, so two unknown keys in one map would otherwise be
+  -- reported in whichever order the table happened to hold them, and a log is
+  -- something a check reads.
+  local unknown = {}
+  for key in pairs(value) do
+    if not LABEL_KEY_SET[key] then
+      unknown[#unknown + 1] = key
+    end
+  end
+  table.sort(unknown)
+  for _, key in ipairs(unknown) do
+    qi_core.warn(('%s: %s sets the key "%s", which names no word this extension prints; the keys are %s, so this key sets nothing'):format(LABELS_KEY, where, key, table.concat(LABEL_KEYS, ", ")))
+  end
+  local words = {}
+  for _, key in ipairs(LABEL_KEYS) do
+    if value[key] ~= nil then
+      local word = pandoc.utils.stringify(value[key])
+      if word == UNNAMED then
+        qi_core.warn(('%s: %s gives the key "%s" an empty value, which is no word a reader can read; that word falls back to the next level it is written at and then to the English one'):format(LABELS_KEY, where, key))
+      else
+        words[key] = word
+      end
+    end
+  end
+  if next(words) == nil then
+    return nil
+  end
+  return words
+end
 -- One declaration's `name:`/`title:`, appended to `kept` in declared order, or
 -- nothing where the entry is unusable. Reported rather than skipped in
 -- silence: a declaration the author wrote and this filter ignored is an index
@@ -110,7 +205,8 @@ local function read_declaration(item, position, kept, seen)
     end
   end
   seen[name] = true
-  kept[#kept + 1] = { name = name, title = title }
+  kept[#kept + 1] = { name = name, title = title,
+                      labels = read_labels(item[LABELS_KEY], index_level(name)) }
 end
 
 -- Read the declaration. Anything unusable leaves the document with the one
@@ -118,6 +214,15 @@ end
 -- today's behavior -- never with no index to file marks in, and never with a
 -- partly installed declaration.
 local function read(meta)
+  -- Read BEFORE the declaration and outside its early returns: a document that
+  -- declares no index is exactly the document most likely to write `index-labels:`
+  -- at all, since it has no index entry to write one in (D-036).
+  local words = read_labels(meta and meta[LABELS_KEY] or nil, DOCUMENT_LEVEL)
+  if words ~= nil then
+    for key, word in pairs(words) do
+      doc_labels[key] = word
+    end
+  end
   local value = meta and meta[INDEXES_KEY] or nil
   if value == nil then
     return
@@ -149,6 +254,7 @@ local function read(meta)
   for i, entry in ipairs(kept) do
     order[i] = entry.name
     titles[entry.name] = entry.title
+    index_labels[entry.name] = entry.labels
   end
   declared = true
 end
@@ -164,6 +270,8 @@ end
 local function reset(doc)
   qi_core.empty(order)
   qi_core.empty(titles)
+  qi_core.empty(doc_labels)
+  qi_core.empty(index_labels)
   declared = false
   order[1] = UNNAMED
   titles[UNNAMED] = DEFAULT_TITLE
@@ -180,6 +288,25 @@ end
 -- the neutral one for a document that declared nothing.
 local function title(name)
   return titles[name] or DEFAULT_TITLE
+end
+
+-- The word this index prints for `key`: the nearest one an author declared --
+-- the index's own map first, then the document's -- and `fallback` where
+-- neither level names it. Nearest wins KEY BY KEY rather than map by map, so a
+-- per-index map resetting one word keeps the document's other two (D-036).
+--
+-- `fallback` is the English word the calling site has always printed, passed in
+-- rather than held here: this module owns which keys exist and what an
+-- unusable one does, and the words themselves stay where they are printed.
+local function label(name, key, fallback)
+  local mine = name ~= nil and index_labels[name] or nil
+  if mine ~= nil and mine[key] ~= nil then
+    return mine[key]
+  end
+  if doc_labels[key] ~= nil then
+    return doc_labels[key]
+  end
+  return fallback
 end
 
 local function default()
@@ -281,12 +408,15 @@ M["INDEXES_KEY"] = INDEXES_KEY
 M["NAME_FIELD"] = NAME_FIELD
 M["TITLE_FIELD"] = TITLE_FIELD
 M["DEFAULT_TITLE"] = DEFAULT_TITLE
+M["LABELS_KEY"] = LABELS_KEY
+M["LABEL_KEYS"] = LABEL_KEYS
 M["NAME_SHAPE"] = NAME_SHAPE
 M["UNNAMED"] = UNNAMED
 M["reset"] = reset
 M["read"] = read
 M["names"] = names
 M["title"] = title
+M["label"] = label
 M["default"] = default
 M["scope_phrase"] = scope_phrase
 M["is_declared"] = is_declared

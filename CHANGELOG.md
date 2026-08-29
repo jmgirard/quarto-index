@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Marking syntax
+
+- Three words the HTML and EPUB index prints itself — the `Symbols` heading
+  over the entries that file under no letter, and the `see` and `see also` in
+  front of a cross-reference — can be set by the author under `index-labels:`,
+  whose keys are `symbols`, `see` and `see-also`. The map is written at a
+  document's top level, where it covers every index, and inside one `indexes:`
+  entry, where it covers that index alone; where both name a key the index's
+  own wins, key by key, and a key written nowhere keeps its English default.
+  It is `index-labels:` and not `labels:` because a top-level `labels:` is
+  Quarto's own map, which this extension does not read. A LaTeX index is
+  unaffected: it takes these words from babel, which sets them from the
+  document's `lang:`.
+
 ### Output
 
 - An EPUB render gets a real index instead of passing its marks through. It is

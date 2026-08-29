@@ -1,0 +1,47 @@
+---
+title: "Index labels"
+indexes:
+  - name: main
+    title: Index
+  - name: authors
+    title: Index of Authors
+filters:
+  - index
+---
+
+Three of the words a printed index carries are not written by the author at
+all: the heading over the entries that file under no letter, and the two words
+in front of a cross-reference. This document and its twin write the same marks
+and differ only in whether the metadata above declares those words — so what a
+reader sees here is whatever that metadata says, and English wherever it says
+nothing.
+
+Nothing below writes a label word. Every mark here is an ordinary one.
+
+## The first index {#site-first}
+
+A term filing under a letter: [Kestrel]{.index}. A term filing under none,
+which is what puts a group heading over it: [#numerals]{.index}.
+
+A cross-reference pointing at the first: [Falcon]{.index see="Kestrel"}, and
+one pointing further: [Merlin]{.index see-also="Kestrel"}.
+
+## The second index {#site-second}
+
+A term filing under a letter: [Zeppelin]{.index index="authors"}. One filing
+under none: [~wavelet]{.index index="authors"}.
+
+Its own two cross-references: [Blimp]{.index index="authors" see="Zeppelin"}
+and [Dirigible]{.index index="authors" see-also="Zeppelin"}.
+
+## Where the first index goes {#site-main}
+
+::: {.qi-index-here}
+:::
+
+{{< pagebreak >}}
+
+## Where the second index goes {#site-authors}
+
+::: {.qi-index-here index="authors"}
+:::

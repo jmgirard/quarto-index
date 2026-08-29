@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-28 (M55 done and archived: an HTML book now prints every index its chapters declare, each at the first marker naming it and an index no marker names after them, at store version 4; `fold_slot` and the three fold reports are deleted. Three fresh-context reviewers; the diff-bug lens returned nine findings, none failing a criterion — four fixed on the branch, three deferred as KI167-KI169 with a candidate row, two rejected as KI166 and KI170, and KI171 recording the sort-key merge-order fix shipping untested. M50's terminal row was pruned. No lesson retired; check-design gained a nineteenth shape, on a fixture holding an axis constant. ROADMAP 58 lines / 11,423 bytes, LESSONS 49 / 19,003, check-design 37 / 17,699 — all under budget (`wc -l -c`). `tests/run-tests.sh` 426 checks and `--self-test` 838, both exit 0. The `release window` advisory did not fire.)_
+_Last hygiene check: 2026-08-28 (a plan gate on the clustered index-output follow-ups found two of the three already shipped: M09 reports the folded-path key collision KI7 said went unreported, and KI8's empty tree is guarded twice over — both entries corrected in DESIGN.md. The third, KI26, went to a Fable review as RB02/RR02, which chose a shipped translation table keyed on `lang:` over author-declared strings and rejected both table sources the brief posed; D-035, D-036 and D-037 record it, and KI26's enumeration was corrected from two strings to four. M56 and M57 planned; the graduated candidate row was replaced by RR02's locator-punctuation finding. M51's terminal row was pruned to hold the line cap. Two fresh-context readers ran: the Fable reviewer and one criteria auditor. ROADMAP 59 lines / 11,525 bytes, LESSONS 49 / 19,003 — under budget (`wc -l -c`). No suite run: nothing outside `cairn/` changed. The `release window` advisory did not fire.)_
 
 _Released 0.1.0 2026-08-26._
 
@@ -9,11 +9,12 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M56 | An author sets the words the index back-end picks itself | planned | — | normal | milestones/M056-index-label-override.md |
+| M57 | A non-English document gets a non-English index | planned | M56 | normal | milestones/M057-index-label-language.md |
 | M55 | An HTML book builds every index its chapters declare | done | — | normal | milestones/archive/M55-book-named-indexes.md |
 | M54 | The candidate backlog comes back under D-013 | done | — | normal | milestones/archive/M54-candidate-backlog.md |
 | M53 | The workflows' actions come up to date | done | — | normal | milestones/archive/M53-action-versions.md |
 | M52 | EPUB gets an index back-end | done | — | normal | milestones/archive/M52-epub-back-end.md |
-| M51 | The version matrix typesets a PDF again | done | — | normal | milestones/archive/M51-matrix-pdf-leg.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -54,5 +55,5 @@ _Released 0.1.0 2026-08-26._
 - Restore byte-level evidence that `resolve_markers` is output-neutral; D-004 refused the merge-base oracle and D-012 licenses a same-tree one — added 2026-08-17 — M04 review F12 — KI12, KI52
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Handle a chapter filename containing `#` or `?` — added 2026-08-17 — M05 review F11 — KI14
-- Adopt a policy for the reader-facing words the filter picks itself: `Symbols` and the two cross-reference labels, English in HTML and EPUB where the LaTeX back-end leaves them to babel; promote on the escalated approach question coming back answered — added 2026-08-18, narrowed 2026-08-28 when a plan gate found the two clustered beside it already shipped — M07 review F6 — KI26
+- Localize the locator punctuation an index prints — the entry comma and the cross-reference semicolon, which an Arabic index sets differently; promote on the label map M56 ships proving it wants a fourth key, or on an author reporting the punctuation as wrong — added 2026-08-28 — RR02 B2
 - Repair the HTML book's index placement and the reports around it: which chapter builds an index no marker names on a first render, the stale-name report's per-chapter count, a record whose `xrefs` is not a table, and the untested sort-key merge order; promote on any reaching an author or turning a run red for a reason that is not the defect it names — added 2026-08-28 — M55 review F1, F2, F4, F8 — KI167, KI168, KI169, KI171

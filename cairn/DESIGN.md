@@ -772,10 +772,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   visible text. The number is one the author wrote, so D-006 holds, but no
   fixture carries the shape (`entry="!" sort="a!b!c"`) and no check covers it.
   — M19 review F1
-- **KI26.** Reader-facing strings the filter emits are hard-coded English
-  (`Index`, and the `Symbols` group label) with no `lang` policy in this
-  document. Distinct from KI6, which is about what an author writes. — M07
-  review F6
+- **KI26.** Reader-facing strings the filter emits are hard-coded English —
+  four of them, not the two this entry named until now: `Index`, the `Symbols`
+  group label, and the `see` and `see also` cross-reference labels
+  (`core.lua:24-27`, emitted at `html.lua:296`). HTML and EPUB only: the LaTeX
+  back-end emits `\see`, `\seealso` and an untitled `\printindex`, so babel
+  supplies all four words per the document's language. Distinct from KI6,
+  which is about what an author writes. The policy is settled — D-035, D-036
+  and D-037 — and unimplemented. — M07 review F6; enumeration corrected
+  2026-08-28 from RR02 B1
 
 - **KI105.** `report_below_marker` reads marker positions off `doc.blocks`
   after `resolve_markers` rebuilt it while the message promises the document as

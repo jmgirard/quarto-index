@@ -1308,3 +1308,25 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   single documents, so the aggregated book index — several Pandoc processes in
   HTML, one in EPUB — takes no language path in the suite. The Italian row's
   four words are exercised by no fixture at all. — M57 review F2, F11
+- **KI190.** `entry_separators` (`tests/htmlindex.py`) reads `item.children`
+  where the record builder beside it reads `own_nodes(item)`, which recurses
+  through non-list children. A Pandoc version emitting the index list loose,
+  wrapping each entry line in a `<p>`, would leave `locators` and `xrefs`
+  reading correctly while `separators` came back empty — a failure attributed
+  to the extension rather than to the reader. — M58 review F6
+- **KI191.** `tests/sepcheck.py` raises `ValueError` on a malformed manifest
+  where its own docstring promises a `FAIL:` line and exit 1, so a bad slot
+  name or a stray space instead of a tab is reported by `check_separators` as
+  a rendering defect, with a traceback where a diagnosis should be. The
+  self-test's no-section probe matches its marker inside that traceback. —
+  M58 review F7
+- **KI192.** `derive_labels_twin` counts the `index-labels:` blocks it deletes,
+  never the keys inside them, so M58's AC2 premise — that the block sets
+  `separator` and `xref-separator` and no other key — is fenced by nothing: a
+  third key added to the fixture's block leaves every check green. — M58
+  review F8
+- **KI193.** `tests/sepcheck.py`'s `ok` line and the AC1 pass message both say
+  "exactly one space" where the check accepts any single whitespace character,
+  deliberately, so an HTML writer's newline passes. The docstring states this;
+  the two green lines do not, and a U+00A0 after a separator would be reported
+  as "exactly one space". — M58 review F11

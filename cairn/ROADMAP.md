@@ -9,7 +9,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M55 | An HTML book builds every index its chapters declare | planned | — | normal | milestones/M55-book-named-indexes.md |
+| M55 | An HTML book builds every index its chapters declare | review | — | normal | milestones/M55-book-named-indexes.md |
 | M54 | The candidate backlog comes back under D-013 | done | — | normal | milestones/archive/M54-candidate-backlog.md |
 | M53 | The workflows' actions come up to date | done | — | normal | milestones/archive/M53-action-versions.md |
 | M52 | EPUB gets an index back-end | done | — | normal | milestones/archive/M52-epub-back-end.md |
@@ -56,3 +56,4 @@ _Released 0.1.0 2026-08-26._
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Handle a chapter filename containing `#` or `?` — added 2026-08-17 — M05 review F11 — KI14
 - Index output follow-ups (clustered): key sort-key level paths on the levels the back-end prints (KI7); report an empty entry tree rather than rendering a bare heading (KI8); adopt a `lang` policy for the reader-facing strings the filter emits (KI26) — added 2026-08-18, clustered 2026-08-28 — M06 review pass 2 F9, M07 review F3/F6
+- Repair the HTML book's index placement and the reports around it: which chapter builds an index no marker names on a first render, the stale-name report's per-chapter count, a record whose `xrefs` is not a table, and the untested sort-key merge order; promote on any reaching an author or turning a run red for a reason that is not the defect it names — added 2026-08-28 — M55 review F1, F2, F4, F8 — KI167, KI168, KI169, KI171

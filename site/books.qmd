@@ -4,10 +4,10 @@ pagetitle: "Books"
 
 # Books
 
-A Quarto book gets one index for the whole book, not one per chapter. In an
-HTML book that is one index however many the book declares — see
-[Named indexes](named-indexes.qmd) for why, and for what a PDF book does with
-several. Write the placement marker in the chapter that should hold it:
+A Quarto book gets one index for the whole book, not one per chapter — and
+every index the book declares, in every format, each printed where its own
+marker stands. See [Named indexes](named-indexes.qmd) for how a book declares
+more than one. Write the placement marker in the chapter that should hold it:
 
 ```markdown
 ::: {.qi-index-here}
@@ -34,6 +34,14 @@ the index chapter sits. A cross-reference links to its target entry whenever
 some chapter in the book contributes it, so `see=` works across chapters
 exactly as it does inside one document.
 
+A book that declares several indexes prints each index some chapter files a
+mark in, each at the first marker naming it — in whichever chapter that marker
+stands — and any index no marker names after them, in declared order. Every
+judgement the extension makes across chapters is made inside one index, so a
+`see=` written in one index that names a term only another index marks is
+reported as naming nothing indexed, and the report says which index it was
+judged in.
+
 Two things worth knowing:
 
 - **Render the whole book when you publish.** Rendering a single chapter
@@ -54,7 +62,9 @@ If a chapter's record cannot be written or read back — a read-only project
 tree, a stale file where the directory belongs, a record left by an older
 version of this extension — the book still renders, and the extension names
 the chapter whose terms are missing from the index. Rendering that chapter
-again is the fix.
+again is the fix. A record that names an index you have since removed from
+`indexes:` costs nothing: its marks are filed in the first index the book
+still declares, and the report names the chapter and the name.
 
 ## The merged books: PDF and EPUB
 

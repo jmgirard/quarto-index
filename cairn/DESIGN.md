@@ -95,15 +95,12 @@ _None yet — populated as the codebase takes shape._
   than sending the author to the document at large (extended M39). One
   format-neutral accumulator is outside that rule:
   `latex.lua`'s `contested_keys`, which `passes.CollectKeys` fills in every
-  format but whose two consumers both sit after the HTML early return, so it is
-  only ever read where the back-end folds to one index and has one namespace to
-  see. WHICH index a mark files
-  in is the running back-end's answer, exactly as the printed path a target is
-  judged against is (D-005): a back-end that keeps one index resolves every
-  mark to that one and says so per mark and per marker, which is what a
-  LaTeX-derived render and an HTML book both do — the first because Quarto's
-  PDF loop builds only the main `.idx`, the second because the sidecar store's
-  record format carries no index name.
+  format but whose two consumers both sit after the HTML early return. No
+  back-end folds any more (corrected M55): a LaTeX-derived render builds every
+  declared index through `imakeidx` (M49) and an HTML book aggregates through a
+  per-chapter record carrying the index each mark files in (M55), so WHICH
+  index a mark files in is what its author wrote, in every format, and the
+  three reports that once said otherwise are gone.
 - **A reported position or count names the sequence it is over** (added M28). A
   warning that reports a position or a count over a sequence says which
   sequence. A top-level block position is counted over the document as the
@@ -192,9 +189,9 @@ The modules, in dependency order:
   level path a sort key is declared against.
 - `indexes.lua` — the indexes a document declares: the ordered name-to-title
   table read out of `indexes:` metadata, the shape a declared name may be, and
-  which index a mark or a placement marker files in, folded to the one index a
-  back-end that builds one has (added M38; listed here corrected M38, and
-  moved above `sortkeys.lua` M39, which now requires it).
+  which index a mark or a placement marker files in (added M38; listed here
+  corrected M38, moved above `sortkeys.lua` M39, which now requires it, and the
+  fold retired M55).
 - `sortkeys.lua` — the registry mapping a printed level path to the first sort
   key declared for it, and the report drawn when two marks disagree about it.
 - `latex.lua` — the LaTeX back-end: the `\index{...}` argument, the
@@ -213,8 +210,8 @@ The modules, in dependency order:
   out of them.
 - `marker.lua` — recognizing the placement marker, reporting its misuse, and
   putting the index where it stood.
-- `book.lua` — the per-chapter sidecar store, and the one index the chapter
-  carrying the marker builds out of it.
+- `book.lua` — the per-chapter sidecar store, and each declared index built
+  out of it by the chapter whose marker places that index (corrected M55).
 
 The document-wide accumulators are module-level and are returned to their
 initial values once per document. Each of `indexes.lua`, `marks.lua`, `latex.lua` and
@@ -366,17 +363,15 @@ Three back-ends ship:
   empty span emitted just after the heading.
 - **EPUB** (`FORMAT` containing `epub`, which covers `epub2` and `epub3`): the
   HTML back-end's index, unchanged (added M52). `builds_ast_index` routes the
-  three sites gated on the AST back-ends — the per-mark record in `passes.lua`
-  and the back-end branch in `index.lua`, which are what build the index, and
-  the fold reports' `builds_index`, which an EPUB render never reaches because
-  `folded` stays on `is_html` (corrected M52: the earlier wording read as
-  though an EPUB render could draw a fold report) — so the same blocks are
-  built and the same ids minted. `is_html` stays the
-  sole gate on the sidecar store, the fold and the chapter-scope wording,
+  two sites gated on the AST back-ends — the per-mark record in `passes.lua`
+  and the back-end branch in `index.lua`, which are what build the index — so
+  the same blocks are built and the same ids minted (corrected M55, which retired
+  the fold reports the third site used to be). `is_html` stays the
+  sole gate on the sidecar store and the chapter-scope wording,
   because Quarto renders an EPUB book in ONE Pandoc process, as it renders a
-  PDF one: no chapter file reaches this filter as a chapter, so nothing folds,
-  every declared index prints under its own title, and a range opened in one
-  chapter and closed in another pairs. Pandoc's EPUB writer then splits the
+  PDF one: no chapter file reaches this filter as a chapter, so every declared
+  index is built from marks the one process has already seen, and a range
+  opened in one chapter and closed in another pairs. Pandoc's EPUB writer then splits the
   document at its top-level headings and rewrites each locator link across the
   resulting XHTML files, so a locator href carries a file part the HTML
   back-end's has only in a book.
@@ -427,8 +422,14 @@ see another's. Each chapter therefore writes what it found — levels,
 cross-reference targets, the mention role where a mark declares one, anchor
 ids, its own output page — to a sidecar store
 under the project's `.quarto/` scratch directory, keyed by chapter source path,
-and the chapter carrying the placement marker reads the whole store back in
-book order and builds the one index the book gets. Every chapter still assigns
+and the chapter carrying a placement marker reads the whole store back in book
+order and builds each index that marker places; an index no marker names is
+built by the last chapter that places one, after the indexes it places
+(corrected M55). Each record carries the index every mark files in and each
+index's own declared sort keys, so every judgement the book makes across its
+chapters is made inside one index (D-021); a name the reading chapter does not
+declare is a stale record's, and its marks are filed in the first declared
+index with the chapter and the name reported. Every chapter still assigns
 its anchors, because they are what the index links to. The store is read
 through the current chapter list, so a chapter dropped from the book cannot
 contribute a stale record; a chapter *rendered* stale can, which makes a full
@@ -659,9 +660,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   mechanism stronger: the module split moved every one of these out of the
   filter chunk's own locals and into module tables `require` caches in
   `package.loaded`, so a reused state no longer re-initializes them on the next
-  execution the way re-running the chunk did. M38 added the last four:
-  `indexes.lua`'s `order`, `titles`, `declared` and `folded`, the declared
-  indexes and what the running back-end does with them. They are the first that
+  execution the way re-running the chunk did. M38 added three more:
+  `indexes.lua`'s `order`, `titles` and `declared`, the indexes a document
+  declares (a fourth, `folded`, went with the fold at M55). They are the first that
   must be settled BEFORE any mark is recorded — every other accumulator is
   keyed by the index a mark files in — which is why `indexes.reset` is a
   `Pandoc` hook taking the document rather than an element one, and why it
@@ -1074,14 +1075,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   Out
 - **KI113.** The version matrix has no EPUB leg, whose render target Pandoc's
   EPUB writer moves with each Quarto version. — M52 plan gate
-- **KI116.** Lifting the LaTeX fold left `marker.lua`'s `fold_slot` reachable
-  only from an HTML book, and the two fixtures that held its non-trivial
-  branches (`named-indexes-foldsite.qmd`, `named-indexes-foldsecond.qmd`) now
-  render to LaTeX unfolded, so nothing checks that the author's own marker for
-  the built index holds the slot wherever it stands, nor that the first marker
-  of any name holds it where no marker names that index; `examples/book/`
-  exercises only the trivial case, its first marker naming the index the book
-  builds. — M49
 - **KI118.** Documentation prose is pinned only where a check names its own
   page (D-027, narrowed by D-028), and three of the dropped sets banned a
   sentence rather than required one, so a page may also re-acquire a sentence
@@ -1177,3 +1170,36 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   row is for. Accepted at M54's review gate: the row cannot enumerate ~55
   labels under D-034's 400-byte cap, and `ROADMAP.md` at 59 of its 60 lines has
   no room for a split. — M54 review F1
+- **KI166.** In a book that declares several indexes, a chapter's own pairing
+  reports now name the index rather than the chapter — "closes a range this
+  index "main" never opens" where they read "this chapter" before. D-021
+  requires the index word wherever the judgement's set is one index of several,
+  and the pairing scope is a chapter's share of that index, which no single
+  scope word carries; an author reading the report is no longer told that the
+  scope is one chapter, which is the fact that explains why a range spanning
+  two chapters does not pair. Reaching the pair of words takes a second message
+  shape and a superseding entry against D-021. — M55
+- **KI167.** An HTML book decides which chapter builds an index no marker
+  names from the records written so far, so on a first render an early placing
+  chapter believes it is the last one that places anything and adopts every
+  unplaced index. A book whose markers sit in different chapters therefore
+  ships a duplicate index section in the wrong chapter on its first render; a
+  second render clears it. `examples/book/` puts every marker in one chapter,
+  so no fixture reaches it. — M55 review F1
+- **KI168.** The stale-index-name report is drawn by every chapter that
+  renders while a stale record stands, not once per placing chapter, so one
+  stale record can draw the report several times in one `quarto render`. The
+  count is asserted nowhere. — M55 review F4
+- **KI169.** `valid_record` iterates `mark.xrefs` before testing that it is a
+  table, so a record whose `xrefs` is a number raises outside any `pcall` and
+  takes the render down, which is the IP2 break the function exists to
+  prevent. Predates M55. — M55 review F8
+- **KI170.** The duplicate-marker report a book with one namespace draws still
+  ends "and a book has a single index". It is drawn only for a book declaring
+  nothing or one index, where it is true, but it is now the only sentence in
+  the extension still stating it as a general fact. — M55 review F7
+- **KI171.** M55's fix for the sort-key merge order — the destination index's
+  own keys taken before a folded name's, so a stale name cannot win a shared
+  path on its spelling — landed at the review gate with no regression test:
+  no fixture reaches a record that splits its marks between a declared and an
+  undeclared index while both carry a key for one printed path. — M55 review F2

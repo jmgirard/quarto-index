@@ -24,7 +24,19 @@
   restricted shell escape — permitted for `makeindex` by a stock TeX Live or
   TinyTeX. Where an installation withholds that permission, each index after
   the first prints empty, which the [Named indexes](site/named-indexes.qmd)
-  page documents. An HTML book still builds a single index.
+  page documents.
+- An HTML book builds every index its chapters declare, each printed at the
+  first marker naming it and an index no marker names after them, instead of
+  folding them all into one. Each chapter's stored record now carries the
+  index every mark files in and each index's own sort keys, so the three
+  judgements a book makes across its chapters — a cross-reference target no
+  chapter indexes, a rival sort key, and a range left unpaired — are each made
+  inside one index and named over it. The record format changed with it: a
+  record written by an earlier version is refused with the report it has
+  always drawn, costing that chapter's terms until it is rendered again, and a
+  record naming an index the book no longer declares has its marks filed in
+  the first index it does declare, with the chapter and the name reported. The
+  [Books](site/books.qmd) page documents both.
 - A mark filed in a named index and written below that index's own placement
   marker is reported: `imakeidx` closes that index's entry file where the
   index is printed, so those entries reach no index at all. The first declared

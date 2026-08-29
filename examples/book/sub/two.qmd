@@ -21,6 +21,10 @@ range this chapter never opens — and the role it declares emphasizes its own
 locator, not the other chapter's:
 [Ranged Term]{.index range="close" mention="principal"}.
 
+A mark naming the third declared index, which no placement marker in this
+book asks for: its section is appended after the two that markers do place,
+in declared order. [Lisbon]{.index index="places"}.
+
 A placement marker written below the top level of a book chapter, alone in the
 blockquote it was written in: the marker places nothing and is removed, so the
 report about the emptied place has to say which chapter's block it counted.

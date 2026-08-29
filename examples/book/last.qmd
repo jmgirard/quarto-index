@@ -20,10 +20,9 @@ the index and this one is reported as ignored, naming this chapter.
 ::: {.qi-index-here}
 :::
 
-A third placement marker, this one naming the second declared index. A book
-builds one index, and this chapter already writes a marker for it above, so
-this marker places nothing and says so; it is not also reported as a second
-marker for the index it does not name.
+A third placement marker, this one naming the second declared index. Each
+index is placed where the first marker naming it stands, so this one places
+the index of people rather than repeating the index the markers above place.
 
 ::: {.qi-index-here index="people"}
 :::

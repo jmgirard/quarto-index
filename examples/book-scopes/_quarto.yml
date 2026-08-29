@@ -1,0 +1,31 @@
+# The cross-chapter judgement fixture (M55). An HTML book makes three
+# judgements no single chapter can make — a cross-reference target no chapter
+# indexes, a sort-key rivalry, and a range left unpaired — and each is made
+# inside ONE index (D-021).
+#
+# Every shape here is a pair. The judgement itself is written in the SECOND
+# declared index, so its report must name that index; its confusable twin is
+# written in the FIRST, and is the mark an accumulator merged across the two
+# indexes would reach instead. Without the twin, a per-index and a merged
+# implementation emit the same output on this fixture and the criterion is
+# unfalsifiable.
+project:
+  type: book
+
+book:
+  title: "Index Book Scopes Fixture"
+  chapters:
+    - index.qmd
+    - last.qmd
+
+indexes:
+  - name: first
+    title: Index of the First Kind
+  - name: second
+    title: Index of the Second Kind
+
+format:
+  html: default
+
+filters:
+  - index

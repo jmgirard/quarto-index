@@ -1,0 +1,21 @@
+# Back matter
+
+The second index's cross-reference, whose target only the first index marks:
+[Solute]{.index index="second" see="Solvent"}.
+
+The rival key for the printed path the second index already files under
+`Aaa`: [Rival]{.index index="second" sort="Zzz"}.
+
+The closing of the range the opening chapter opened in the second index, which
+is the one pair this book has to name:
+[Bridge]{.index index="second" range="close"}.
+
+The closing of the twin range, written in the second index while its opening
+was written in the first:
+[Crossed]{.index index="second" range="close"}.
+
+::: {.qi-index-here}
+:::
+
+::: {.qi-index-here index="second"}
+:::

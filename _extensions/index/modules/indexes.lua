@@ -26,10 +26,7 @@ local NAME_FIELD = "name"
 local TITLE_FIELD = "title"
 
 -- The heading a document that declares nothing prints, which is what it has
--- always printed. It is also what a FOLDED render heads its single section
--- with, for the reason `section_id` keeps that section's id bare: the section
--- holds every declared index's marks, so heading it with one declared index's
--- title would claim it is that index rather than the union it is.
+-- always printed.
 local DEFAULT_TITLE = "Index"
 
 -- What a declared name may be. The name reaches output as the section's HTML
@@ -70,23 +67,6 @@ local titles = { [UNNAMED] = DEFAULT_TITLE }
 -- section it always has, and the second prints an index named after what its
 -- author wrote.
 local declared = false
--- Does the running back-end keep ONE index whatever the marks name? True for
--- an HTML book alone, whose sidecar store carries no per-record index name
--- yet, so every chapter's record folds to the reading chapter's default. It
--- says so out loud rather than dropping a named mark in silence (IP2).
--- A LaTeX-derived render no longer folds (M49): it writes one `.idx` per
--- declared index and imakeidx builds each of the named ones itself, under the
--- restricted shell escape a TeX installation grants `makeindex` by default.
-local folded = false
-
--- Does this render build an index at all? The fold reports say a mark was
--- indexed in the document's one index instead, which is only true where an
--- index is built: in a format with no back-end nothing is indexed either way,
--- and the sentence would be a claim about output that does not exist.
-local function builds_index()
-  return qi_core.is_latex_derived() or qi_core.builds_ast_index()
-end
-
 -- One declaration's `name:`/`title:`, appended to `kept` in declared order, or
 -- nothing where the entry is unusable. Reported rather than skipped in
 -- silence: a declaration the author wrote and this filter ignored is an index
@@ -187,17 +167,6 @@ local function reset(doc)
   declared = false
   order[1] = UNNAMED
   titles[UNNAMED] = DEFAULT_TITLE
-  -- An HTML book renders a chapter per Pandoc process and aggregates through
-  -- the sidecar store, whose record format carries no index name, so every
-  -- record folds to the reading chapter's default and the book prints one
-  -- section. Every other render -- a single HTML page, and every LaTeX-derived
-  -- one, a merged book included -- keeps the indexes their author declared.
-  -- `doc.meta.book` is the same test index.lua uses for "this looks like a
-  -- book", and it is available here, which the resolved chapter context is not
-  -- -- that is computed in the final Pandoc pass, long after the first mark has
-  -- been recorded.
-  folded = qi_core.is_html() and doc ~= nil and doc.meta ~= nil
-           and doc.meta.book ~= nil
   if doc ~= nil then
     read(doc.meta)
   end
@@ -207,15 +176,9 @@ local function names()
   return order
 end
 
--- The heading this index's section carries. A folded render prints ONE section
--- holding every declared index's marks, so it is headed with the neutral title
--- rather than with the first declared index's -- the same reason `section_id`
--- keeps that section's id bare, and the same heading a document that declares
--- nothing has always printed.
+-- The heading this index's section carries: the title its author declared, or
+-- the neutral one for a document that declared nothing.
 local function title(name)
-  if declared and folded then
-    return DEFAULT_TITLE
-  end
   return titles[name] or DEFAULT_TITLE
 end
 
@@ -231,14 +194,12 @@ end
 -- advice that does not fix anything (review O1/O2).
 -- `outer` is the word the caller would otherwise have used -- "document",
 -- "book", "chapter" -- and is kept wherever there is genuinely one namespace:
--- a document that declares nothing or declares one index, and any back-end
--- that folds, which resolved every mark to the one index before these
--- judgements ran.
+-- a document that declares nothing, or declares one index.
 local function scope_phrase(name, outer)
   -- A caller with no index in hand -- a finding whose message names no scope
   -- at all -- gets the outer word back untouched, so this is safe to call on
   -- every finding rather than only on the ones that print a scope.
-  if name == nil or not declared or folded or #order < 2 then
+  if name == nil or not declared or #order < 2 then
     return outer
   end
   return ('index "%s"'):format(name)
@@ -248,15 +209,11 @@ local function is_declared()
   return declared
 end
 
-local function folds()
-  return folded
-end
-
--- The index a mark naming `value` belongs to, before the back-end folds
--- anything: the one it names, or the default where it names none. A value
--- naming no declared index is reported in EVERY format, like every other
--- judgement about what the author wrote -- a mark filed somewhere other than
--- where its author said is a defect wherever the document is rendered.
+-- The index a mark naming `value` belongs to: the one it names, or the default
+-- where it names none. A value naming no declared index is reported in EVERY
+-- format, like every other judgement about what the author wrote -- a mark
+-- filed somewhere other than where its author said is a defect wherever the
+-- document is rendered.
 local function declared_for(value)
   if value == nil or titles[value] == nil then
     return nil
@@ -275,21 +232,14 @@ local function mark_index(value, context, report)
     end
     return order[1]
   end
-  if folded and name ~= order[1] then
-    if report and builds_index() then
-      qi_core.warn(('%s="%s" on %s names a second index, and this output has one index only, so the mark is indexed in that one index instead; an HTML book aggregates its chapters through a per-chapter record carrying no index name, which is why it builds one'):format(INDEX_ATTR, value, context))
-    end
-    return order[1]
-  end
   return name
 end
 
--- The index a mark or a marker names as its author wrote it, before any
--- back-end folds anything: the declared index it names, or the default where it
--- names none, or names one this document never declared. Silent, because the
--- reports about what the author wrote are drawn once by the emitting pass; this
--- is for the caller that has to know which index the AUTHOR meant even where
--- the running back-end will not build it.
+-- The index a mark or a marker names: the declared index it names, or the
+-- default where it names none, or names one this document never declared.
+-- Silent, because the reports about what the author wrote are drawn once by
+-- the emitting pass; this is for the caller that only has to know which index
+-- the value resolves to.
 local function authored_index(value)
   return declared_for(value) or order[1]
 end
@@ -298,38 +248,15 @@ end
 -- with a composed noun: the message-distinctness scan reads the string
 -- literals INSIDE a `warn()` call, so a message built elsewhere and handed in
 -- is text no such scan can see.
---
--- `fold` says what became of this marker under a back-end that keeps one index,
--- which only the caller can know: under fold there is one index and one place
--- to put it, and which marker holds that place is a question about the whole
--- document rather than about this marker. `"places"` is the marker that holds
--- it, `"elsewhere"` one that lost it to the marker naming the index this
--- back-end does build, and `"quiet"` one whose own report is drawn by the
--- caller instead -- a second marker for the same index, whose duplicate report
--- says everything this one would and says which marker took the place.
-local FOLD_PLACES = "places"
-local FOLD_ELSEWHERE = "elsewhere"
-local FOLD_QUIET = "quiet"
-
-local function marker_index(value, report, fold)
+local function marker_index(value, report)
   local name = declared_for(value)
   if name == nil then
     if value ~= nil and report then
       qi_core.warn(('%s="%s" on an index placement marker names no index this document declares; declare it under %s: in the metadata, or the marker places the first index the document has'):format(INDEX_ATTR, value, INDEXES_KEY))
     end
-    return order[1], false
+    return order[1]
   end
-  if folded and name ~= order[1] then
-    if report and builds_index() and fold ~= FOLD_QUIET then
-      if fold == FOLD_PLACES then
-        qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output has one index only, so the marker places that one index instead; an HTML book aggregates its chapters through a per-chapter record carrying no index name, which is why it builds one'):format(INDEX_ATTR, value))
-      else
-        qi_core.warn(('%s="%s" on an index placement marker names a second index, and this output has one index only, which goes where this document already places it, so this marker places nothing; an HTML book aggregates its chapters through a per-chapter record carrying no index name, which is why it builds one'):format(INDEX_ATTR, value))
-      end
-    end
-    return order[1], true
-  end
-  return name, false
+  return name
 end
 
 -- The id the section for this index carries. A document that declared nothing
@@ -339,13 +266,7 @@ end
 -- Whether the id is actually free is `mint_section_id`'s question, not this
 -- one's: this says what to ask for.
 local function section_id(name)
-  -- A document that declared nothing keeps the bare name, so its readers'
-  -- links still resolve. So does a render that FOLDS: there is exactly one
-  -- section there and it holds every index's marks, so naming it after one of
-  -- the declared indexes would claim it is that index rather than the union it
-  -- is. Only where the sections are actually one-per-index is each named after
-  -- the index it holds.
-  if not declared or folded then
+  if not declared then
     return qi_core.HTML_SECTION_ID
   end
   return qi_core.HTML_SECTION_ID .. "-" .. name
@@ -369,14 +290,9 @@ M["title"] = title
 M["default"] = default
 M["scope_phrase"] = scope_phrase
 M["is_declared"] = is_declared
-M["folds"] = folds
-M["builds_index"] = builds_index
 M["declared_for"] = declared_for
 M["authored_index"] = authored_index
 M["mark_index"] = mark_index
-M["FOLD_PLACES"] = FOLD_PLACES
-M["FOLD_ELSEWHERE"] = FOLD_ELSEWHERE
-M["FOLD_QUIET"] = FOLD_QUIET
 M["marker_index"] = marker_index
 M["section_id"] = section_id
 

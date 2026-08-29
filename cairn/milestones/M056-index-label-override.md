@@ -63,10 +63,12 @@ already and gains nothing here.
       message asserted whole rather than by substring, and its manifest showing
       the fallback words.
 - [ ] AC6. No `labels:` declaration reaches the LaTeX back-end: the complete
-      `diff` of the labels fixture's `.tex` against its no-labels twin's is
-      empty. Evidence: the diff itself, which enumerates every difference
-      exhaustively rather than sampling emission sites; a non-empty diff fails
-      the criterion whatever the differing lines say.
+      `diff` of the labels fixture's `.tex` against the `.tex` of a twin that
+      is the same file with only its two `labels:` blocks removed is empty.
+      Evidence: the diff itself, which enumerates every difference exhaustively
+      rather than sampling emission sites, and the derivation check of T4
+      proving the twin is that file; a non-empty diff fails the criterion
+      whatever the differing lines say.
 - [ ] AC7. `site/letter-groups.qmd`, `site/cross-references.qmd` and
       `site/back-end-differences.qmd` each state the `labels:` map, its three
       keys, the two levels it is written at, and that it reaches HTML and EPUB
@@ -100,7 +102,11 @@ already and gains nothing here.
       shapes. Give each new mark a term no other mark in its file indexes.
 - [ ] T4. Suite: HTML manifest rows for both new fixtures, the EPUB read, the
       LaTeX twin comparison, the message-whole warning assertions, and a
-      planted defect proving each new check can go red.
+      planted defect proving each new check can go red. Include a derivation
+      check that fails when the twin is not the labels fixture with its
+      `labels:` blocks deleted, on the model of M04-AC4's
+      (`tests/run-tests.sh:3810-3831`) — without it AC6's empty diff can fail
+      for drift unrelated to `labels:`.
 - [ ] T5. Add `labels:` and its three keys to `_extensions/index/_schema.yml`
       and `_snippets.json`.
 - [ ] T6. Documentation: the three site pages named in AC7, plus a
@@ -110,6 +116,7 @@ already and gains nothing here.
 
 - 2026-08-28: created by /milestone-plan, after RB02/RR02 settled the approach.
 - 2026-08-28: criteria audit ran in FULL mode (declared tier user-facing), one fresh-context [O] reader over both files' criteria; it returned six findings across the two, all fixed at the gate — instrument-bound promises in this file's AC4 and in M057's AC5, an unsatisfiable message wording in this file's AC5, unbounded universals in this file's AC6 and M057's AC7, and a set-level gap in M057 where no criterion bound the shipped words' correctness. Its seventh point, that the suite-green AC is instrument-bound, was left standing as a template-mandated criterion. A re-audit of the changed wording was commissioned and had not returned when this was committed.
+- 2026-08-28: the re-audit returned; this file's AC4, AC5 and AC6 were clean, and its one finding here — that AC6's twin was never required to be the labels fixture minus its `labels:` blocks, so an empty diff could fail for unrelated drift — is fixed in AC6 and T4.
 - 2026-08-28: plan gate chose a nested `labels:` map over three flat fields beside `title:` because a flat `see:` collides with the mark attribute `see=`, where the same word names a target rather than a label (D-036); falsified by an author needing a per-index word these three keys cannot express.
 - 2026-08-28: plan gate chose two declaration levels over per-index only because an undeclared document cannot override without inventing an index name, which moves the section id and breaks inbound links; falsified by the two levels proving indistinguishable in practice.
 - 2026-08-28: plan gate chose splitting the override surface from the shipped table over one milestone because the surface is a permanent naming decision and the table is a data asset, each reviewable alone; falsified by the split forcing a rework of the resolver when M057 wires `lang:` beneath it.

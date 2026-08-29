@@ -621,11 +621,20 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 - **KI7.** Sort-key level paths are keyed on unclamped levels while the LaTeX
   back-end prints clamped ones, so a 4-level entry and a 3-level entry spelling
-  the folded form collide under two makeindex keys with no report. The
-  printed-text collision itself predates sort keys. — M06 review pass 2 F9
+  the folded form file under two makeindex keys and print twice, in two places,
+  identically. The printed-text collision itself predates sort keys. The filter
+  does not choose between the two keys — which one the author meant is not
+  recoverable from the document — so it reports the pair instead: M09's
+  `clamped_paths` registry is keyed on the clamped printed path and warns
+  `index entries printed as "…" file under more than one key (…)`, asserted
+  message-whole in the suite over `examples/sortkey-clamp.qmd`. The "with no
+  report" this entry claimed was written three milestones before that report
+  shipped. — M06 review pass 2 F9; corrected 2026-08-28 at a plan gate
 - **KI8.** An empty entry tree would render the index as a bare `Index` heading
-  with no list and no warning. Unreachable today: every path that builds the
-  section is gated on a mark with at least one level. — M07 review F3
+  with no list and no warning. Unreachable today, and guarded twice over: the
+  HTML back-end builds a section only for an index some mark files in, and
+  `place_index` emits nothing for an index it holds no blocks for. — M07 review
+  F3; second guard recorded 2026-08-28 at a plan gate
 - **KI9.** see-also entries keep their locators in both back-ends — M03's gate
   chose LaTeX-aligned no-locator semantics and M15 keeps that semantics for a
   contested key — and the extension prints `see One Way; see Another Way` where

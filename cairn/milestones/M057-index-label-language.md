@@ -148,6 +148,7 @@ to English rather than guessed.
 - 2026-08-29: checkpoint — all seven tasks are written and the suite is mid-run at 376 checks with no failure; the plain and `--self-test` runs the completion gate needs have not both returned, so this commit is honest work-in-progress and the status stays `in-progress`.
 - 2026-08-29: the first full run failed on one check only — `site/gallery.yml` requires every `examples/*.qmd` be declared `shown:` or `not-shown:`, and the ten new fixtures were neither; declared under `not-shown:`, and `site/examples.qmd` now names them and the M56 label fixtures it had also never described.
 - 2026-08-29: tasks complete, suite green twice over the final tree: 465 checks plain and 899 with `--self-test`, both exit 0. All eleven planted defects go red and report themselves as what they are. Status to `review`.
+- 2026-08-29: review — all eight criteria verified with fresh evidence, gate clean, three lenses run (13 findings); at the gate the maintainer chose to fix three false claims and merge.
 
 ## Decisions
 
@@ -309,3 +310,33 @@ than against the reviewer's account of it.
   does not call `qi_indexes.read`, so the new `language_words` cell sits outside
   that cross-document leak probe as `doc_labels` and `index_labels` already do.
   `reset` does clear it (`indexes.lua:298`), so no leak is demonstrated.
+
+### Triage at the gate
+
+The maintainer chose to fix the three false claims on the branch and merge,
+filing the rest as known issues.
+
+- **F1 — fixed at the gate.** `CHANGELOG.md` now says the restore is written in
+  an `indexes:` entry rather than the front matter, that a front-matter `title:`
+  is the document's own and this extension never reads it, and that declaring an
+  index moves the index section's id from `qi-index` to `qi-index-<name>`. AC6
+  still holds: the changelog still says writing `title: Index` restores the old
+  word.
+- **F2, F10 — fixed at the gate.** The ledger's Disposition bullet 4 no longer
+  claims every shipped word appears in a manifest row; it names the Italian row
+  as the one covered by no fixture, marked `corrected M057`. The Provenance line
+  now says six source notes, which is how many it lists. The Italian coverage
+  gap itself is deferred.
+- **F3, F4, F5, F6, F7, F11, F12, F13 — deferred** to known issues behind a
+  candidate row; none demonstrates a criterion failing and none is reachable
+  today.
+- **F8 — rejected**, as partly refuted above: Quarto rejects a non-string
+  `lang:` before this filter runs, so the input class is unreachable.
+- **F9 — rejected** as an intentional change the plan called for: the
+  parts-versus-phrase rule is stated in the ledger's own Method section and is
+  what D-035's decision entry applies.
+
+The three gate fixes touch `CHANGELOG.md` and one `cairn/references/` page,
+neither of which the suite reads (`grep CHANGELOG tests/run-tests.sh` finds
+only a comment), so the green runs recorded under AC8 stand over the merged
+tree.

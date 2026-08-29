@@ -32,7 +32,11 @@
   index heading, and only where the language's word differs from `Index`: a
   Spanish document is now headed `Índice alfabético` and an Italian one
   `Indice analitico`, where French and German still print `Index`. Writing
-  `title: Index` restores the old heading. Only the heading of an index the
+  `title: Index` restores the old heading, in an `indexes:` entry rather than
+  in the front matter — a front-matter `title:` is the document's own title and
+  this extension never reads it. Declaring an index that way also moves the
+  index section's id from `qi-index` to `qi-index-<name>`, so a link written
+  against the old id has to be updated with it. Only the heading of an index the
   document never declared changes; an index declared under `indexes:` with no
   `title:` is still headed by its own `name`. A LaTeX index is unaffected,
   as before: it takes its words from babel, which already sets them from

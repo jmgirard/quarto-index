@@ -1,6 +1,6 @@
 # The four index words, per language, against two references each (M057)
 
-**Provenance.** Ingested 2026-08-29 by M057 from the five source notes beside
+**Provenance.** Ingested 2026-08-29 by M057 from the six source notes beside
 it — `babel-locale.md`, `cldr-character-labels.md`, `duden.md`, `treccani.md`,
 `tlfi.md` and `wiktionary.md` — no source of its own.
 Pagination: —.
@@ -114,8 +114,11 @@ been printed, and the table is only ever consulted after they are not enough.
   or shell out to `pandoc` at render time is `D-035`, taken before this page
   existed; nothing here reopens it.
 - The tests that lock these strings are the fixture manifests in
-  `tests/run-tests.sh` under the M057 heading — each shipped word appears in a
-  manifest row derived by hand from this ledger, never from a render.
+  `tests/run-tests.sh` under the M057 heading — a manifest row is derived by
+  hand from this ledger, never from a render. The Spanish, French and German
+  rows are each covered by a fixture; the Italian row's four words are covered
+  by none, since M057 shipped no `lang: it` fixture (corrected M057 — this
+  bullet had claimed every shipped word appears in a manifest row).
 
 ## Open questions
 

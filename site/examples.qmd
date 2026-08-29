@@ -37,6 +37,13 @@ back to its language, a tag the table does not cover, and a value that is no
 language tag — plus a language the table covers only in part and one where an
 author's own word sits beside the table's, each of the first four with a twin
 that is itself with the `lang:` line removed.
+`examples/index-separators.qmd` declares the punctuation the index prints
+inside an entry — the mark before and between an entry's locators and the mark
+between two cross-references — and `examples/index-separators-twin.qmd` is the
+same document with that declaration deleted;
+`examples/index-separators-scoped.qmd` declares two indexes and resets one of
+the two marks inside the second, so the nearer declaration wins for that mark
+while the document's still supplies the other.
 `examples/unicode.qmd` carries the recipe from
 [Terms outside Latin-1](terms-outside-latin-1.qmd) and marks eight terms under
 it — Greek, a second Greek term carrying a `sort=` key, Cyrillic, Polish,

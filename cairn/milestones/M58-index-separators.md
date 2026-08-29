@@ -114,16 +114,16 @@ mistake.
 
 ## Tasks
 
-- [ ] T1. Add `separator` and `xref-separator` to `LABEL_KEYS`
+- [x] T1. Add `separator` and `xref-separator` to `LABEL_KEYS`
       (`indexes.lua:61`), which also extends the unknown-key report's key list
       at `indexes.lua:157`. No new validation branch: the empty-value branch at
       `:163` covers both new keys unchanged.
-- [ ] T2. Write `examples/index-separators.qmd`, its `-twin.qmd` and
+- [x] T2. Write `examples/index-separators.qmd`, its `-twin.qmd` and
       `-scoped.qmd`, giving every new term a spelling no other example indexes
       (the M13 sort-key-collision lesson), and register them in
       `site/gallery.yml` and `site/examples.qmd` alongside the `index-labels`
       family.
-- [ ] T3. Thread `qi_indexes.label(name, …)` through `entry_inlines`'s three
+- [x] T3. Thread `qi_indexes.label(name, …)` through `entry_inlines`'s three
       literal punctuation sites (`html.lua:287`, `html.lua:317`), keeping each
       `pandoc.Space()` where it is; `name` is already in scope at
       `html.lua:277`.
@@ -147,6 +147,8 @@ mistake.
 
 - 2026-08-29: created by /milestone-plan.
 - 2026-08-29: /milestone-implement started; branch m058-index-separators cut from main, status in-progress.
+- 2026-08-29: gate chose a separate hand-written punctuation manifest and its own check over extending the entry-row format the label and language fixtures read; code-point notation (`U+060C`) over the literal glyph in that manifest; and no `lang:` on the Arabic-punctuation fixture, since right-to-left index layout is an unfixed known issue this milestone does not touch.
+- 2026-08-29: T1-T3 verified as one suite run and committed together: T1 alone changes no printed output, T2's fixtures render nothing new without T3, and T3 is what makes T1 visible. Suite green, 465 checks, exit 0.
 - 2026-08-29: criteria audit ran in FULL mode (user-facing tier), two passes over a fresh-context [O] reader. Pass 1 returned 15 findings across 6 of 8 drafted criteria; pass 2, over the revised set, returned 11 across 6 of 8. Both disposed at the gate: the manifest-completeness and plant-matrix promises were instrument-bound and moved to the tasks (AC8 of the draft deleted outright), AC1 and AC7 gained row-count closure, AC3 gained distinct glyphs and a mark inventory, AC6 replaced a 1:1 `\index` rule its own required fixture would falsify with a hand-derived count, and AC4/AC8's trailing-whitespace refusal was deleted as a guard for a class the host never delivers.
 - 2026-08-29: plan gate chose two new keys inside the existing `index-labels:` map over a separate punctuation map, because GP5 prefers extending one mechanism to adding a parallel syntax and `label()`'s ladder already resolves per-index-then-document; falsified by an author needing punctuation resolved on a different ladder from the words, or by the two surfaces needing different validation.
 - 2026-08-29: plan gate chose author-override alone over shipping an `ar` row in `languages.lua`, because the table's method demands two independent references agreeing on the string and "an Arabic index separates locators with U+060C" is an index-specific claim Unicode alone does not settle — M57 withheld German's `Symbols` on that same test; falsified by two references of different kinds agreeing on Arabic index punctuation.

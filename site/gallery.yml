@@ -54,6 +54,9 @@ not-shown:
   - examples/index-lang-miss-twin.qmd
   - examples/index-lang-miss.qmd
   - examples/index-lang-override.qmd
+  - examples/index-separators-scoped.qmd
+  - examples/index-separators-twin.qmd
+  - examples/index-separators.qmd
   - examples/marker-misuse.qmd
   - examples/marker-nomarks-twin.qmd
   - examples/marker-nomarks.qmd

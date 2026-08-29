@@ -8331,6 +8331,16 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #   index-labels-misuse  4 attributes, the same shape in its own two indexes,
 #                  every target a term that index marks. An unusable
 #                  `index-labels:` changes no target. 0.
+#   index-separators  3 attributes: a `see=` and a `see-also=` on the term
+#                  that is two pointers and a `see-also=` on the term that is
+#                  both plainly marked and cross-referenced, each naming a term
+#                  the file marks. 0.
+#   index-separators-twin  the same three attributes: the twin removes the one
+#                  `index-labels:` block and nothing else. 0.
+#   index-separators-scoped  4 attributes: a `see=` and a `see-also=` on one
+#                  term in each of the two indexes it declares, each naming a
+#                  term marked in its own index. gfm folds the two indexes into
+#                  one, so every target resolves there as it does in HTML. 0.
 #   resolving-xref 3 attributes, all three resolving by construction. 0.
 #   state-reuse    2 attributes: `see="Alpha"` on the cross-reference mark of
 #                  the contested `Gamma` key, which resolves because the file
@@ -8370,6 +8380,9 @@ examples/index-lang-malformed-twin.qmd	0
 examples/index-lang-miss.qmd	0
 examples/index-lang-miss-twin.qmd	0
 examples/index-lang-override.qmd	0
+examples/index-separators-scoped.qmd	0
+examples/index-separators-twin.qmd	0
+examples/index-separators.qmd	0
 examples/named-indexes-twin.qmd	0
 examples/named-indexes.qmd	0
 examples/placement.qmd	0
@@ -18201,7 +18214,7 @@ python3 tests/epubcheck.py links "$M56_EPUB" "$HTML_SECTION_ID" \
 
 # AC5 — the misuse fixture. Four writings, four messages, each asserted WHOLE:
 # a prefix would let the half that names the key or the level be reworded away.
-M56_MISUSE_UNKNOWN='index-labels: in this document'"'"'s metadata sets the key "symbol", which names no word this extension prints; the keys are symbols, see, see-also, so this key sets nothing'
+M56_MISUSE_UNKNOWN='index-labels: in this document'"'"'s metadata sets the key "symbol", which names no word this extension prints; the keys are symbols, see, see-also, separator, xref-separator, so this key sets nothing'
 M56_MISUSE_EMPTY='index-labels: in this document'"'"'s metadata gives the key "see" an empty value, which is no word a reader can read; that word falls back to the next level it is written at and then to the English one'
 M56_MISUSE_SCALAR='index-labels: in the entry declaring the index named "notes" is not a map of label keys to the words to print; it sets no word, so each word falls back to the next level it is written at and then to the English one'
 M56_MISUSE_SEQUENCE='index-labels: in the entry declaring the index named "sources" is not a map of label keys to the words to print; it sets no word, so each word falls back to the next level it is written at and then to the English one'

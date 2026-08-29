@@ -111,7 +111,7 @@ in a rendered book or a failed render.
 
 ## Tasks
 
-- [ ] T1. Add `examples/book-placement/`: four chapters, markers in the first
+- [x] T1. Add `examples/book-placement/`: four chapters, markers in the first
       and third, a marker-free fourth, and three declared indexes of which one
       is named by no marker. Give every mark a term no other mark in the
       fixture indexes, so no sort-key path is shared by accident.
@@ -145,6 +145,7 @@ in a rendered book or a failed render.
 - 2026-08-29: criteria audit ran in FULL mode (user-facing tier), fresh-context [O] reader; returned twelve findings, ten applied to the criteria before writing (fixture shape stated in AC1; section identity replacing counts in AC1/AC2; "places an index" in AC2; instrument-bound oracle clause dropped and two stale-record positions added in AC4; store version read from the constant, unplanted copy proven, single-deletion probe in AC5; observable named in AC6; the untouched-fixture clause added to AC1), one moved to T2 (value-free scan stem), one accepted as stated (AC5's function name dropped).
 - 2026-08-29: plan gate chose deferring the unplaced-index section to a later render over always placing it in the book's final chapter, because the latter reverses M55's rule that every index section sits in a chapter its author asked for one in; falsified by an author reporting the missing first-render section as worse than a section in a chapter they did not mark.
 - 2026-08-29: implementation gate chose recording, in each chapter's own stored record, whether the store held a record for every other chapter when it rendered — the book's last chapter reads the placing chapter's value rather than inferring a first render — and chose running AC4's two stale-record positions as one whole-book render and one single-chapter render, so the report count equals the chapters that build an index in both.
+- 2026-08-29: T1 — `examples/book-placement/` added: four chapters, markers in the first and third, a marker-free fourth, three declared indexes of which `gamma` is named by no marker, and eight terms no two of which share a printed path. Rendered from an empty store against the current filter it reproduces the defect: `index.html` carries sections for `alpha`, `beta` and `gamma`, and a second render leaves `alpha` alone there.
 
 ## Decisions
 

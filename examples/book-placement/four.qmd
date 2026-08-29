@@ -1,0 +1,7 @@
+# Back matter
+
+The last chapter of the book, carrying no placement marker: it grows no index
+section, and it is the one chapter that has seen every other chapter's record,
+so it is where a deferred index section is reported.
+
+A second term for the index no marker names: [Dovetail]{.index index="gamma"}.

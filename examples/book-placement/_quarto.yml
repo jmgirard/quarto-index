@@ -1,0 +1,40 @@
+# The first-render placement fixture (M60). Everything here is a shape
+# examples/book/ deliberately does not have:
+#   - the placement markers sit in DIFFERENT chapters, so the chapter that
+#     takes on an index no marker names is not the book's last one;
+#   - the book ends with a chapter carrying no marker at all, which is the
+#     chapter that reports a deferred index section;
+#   - one declared index is named by no marker anywhere, so a render has to
+#     decide where it goes rather than read it off a marker;
+#   - no chapter carries a second marker, so nothing here is about the
+#     duplicate-marker rule examples/book/ already covers.
+#
+# HTML alone: a PDF book is one Pandoc process and has no first-render
+# placement question to ask.
+project:
+  type: book
+
+book:
+  title: "Index Book Placement Fixture"
+  chapters:
+    - index.qmd
+    - two.qmd
+    - three.qmd
+    - four.qmd
+
+# Three declared indexes. `alpha` is placed by the marker in the FIRST chapter,
+# which names no index and so places the first declared one; `beta` by the
+# marker in the THIRD chapter, which names it; and `gamma` by no marker at all.
+# The first declared title is deliberately not "Index", for the reason
+# examples/book/ gives: a section still headed "Index" could not tell a
+# declared title from the neutral one.
+indexes:
+  - name: alpha
+    title: Index of Alpha
+  - name: beta
+    title: Index of Beta
+  - name: gamma
+    title: Index of Gamma
+
+filters:
+  - index

@@ -1,0 +1,19 @@
+# Opening
+
+Every term in this book is marked once and in one index, so no two marks share
+a printed level path and no sort key is in question here.
+
+A term filed in the first declared index: [Aardvark]{.index}.
+
+A term filed in the index the THIRD chapter's marker places, so this chapter
+holds a mark for an index it does not place: [Cardamom]{.index index="beta"}.
+
+A term filed in the index no marker in this book names, so this chapter holds
+a mark for an index nobody asked for: [Gantry]{.index index="gamma"}.
+
+The marker below names no index, so it places the first declared one. Three
+chapters come after it, which is what makes this book's index sections depend
+on what an earlier render recorded.
+
+::: {.qi-index-here}
+:::

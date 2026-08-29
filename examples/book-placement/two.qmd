@@ -1,0 +1,8 @@
+# Second chapter
+
+This chapter carries no placement marker, so it grows no index section of its
+own whatever the chapters around it place.
+
+A second term for the first declared index: [Bramble]{.index}.
+
+A term for the index no marker in this book names: [Gondola]{.index index="gamma"}.

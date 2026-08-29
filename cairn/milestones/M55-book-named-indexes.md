@@ -1,6 +1,6 @@
 # M55: An HTML book builds every index its chapters declare
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -131,6 +131,7 @@ row, unchanged by this milestone.
 - 2026-08-28: T6 planted AC3's three cases (a name no declaration carries, a key the declaration syntax refuses, and — in a scratch copy whose declaration is deleted between renders — a name a declaration removed) and AC5's superseded-version case, which also reads the section ids off the page: refusing one.qmd's record leaves `people` with no marks and no section, while `main` and `places` still print. Two readers were added, `check_section_ids` and `check_section_carries`, and every clause of both plus the section manifest's five and AC4's four is planted and shown red under `--self-test`.
 - 2026-08-28: T7 rewrote the "One index in an HTML book" section of `site/named-indexes.qmd` as "Every index in an HTML book", added the several-index and stale-name paragraphs to `site/books.qmd`, dropped `site/epub.qmd`'s "Nothing folds" contrast, and replaced the CHANGELOG's "An HTML book still builds a single index" with the entry for what a book now does. `M49_RETIRED` gained the two sentences the HTML book's fold left behind, and `check_readme_indexes` and the books-page claims gained rows for the new promises. `cairn/DESIGN.md` was corrected where it described the fold, and KI116 retired with `fold_slot`.
 - 2026-08-28: recorded KI166: with the fold gone, a book chapter's own pairing reports name the index rather than the chapter, which D-021 requires and which drops the "a chapter is the pairing scope" fact from those two messages.
+- 2026-08-28: all seven tasks done; `tests/run-tests.sh` exits 0 at 426 checks and `--self-test` at 838. Status set to review.
 - 2026-08-28: plan gate chose one milestone over two in sequence, because the halfway state prints several indexes while still judging cross-chapter targets, sort keys and ranges across all of them at once, which D-021 forbids; falsified by the branch outgrowing one reviewable PR.
 
 ## Decisions

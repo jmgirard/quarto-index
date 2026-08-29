@@ -29,6 +29,35 @@
   punctuation comes from `makeindex` and from the LaTeX the extension emits
   around a cross-reference.
 
+- An `index-labels:` value a reader could not read is now refused and reported
+  rather than printed. Three shapes join the empty value that was already
+  refused: a value made only of characters that print nothing — a non-breaking
+  space, a zero-width space, one of the typographic spaces — and a value
+  written as a nested map or as a list, which is what over-indenting the map by
+  one level produces. Each names its own key and the level it was written at,
+  and the key falls back exactly as an unwritten one does: to the next level
+  out, then — for the three words, the two marks following no language — to the
+  document's `lang:`, and then to the English word or the ASCII mark. Without
+  this a `see-also: "&nbsp;"` printed an emphasized non-breaking space in front
+  of a target and a nested map printed its joined leaf values, both in silence; `tests/run-tests.sh` fails at `M59-AC1/AC2` without it.
+
+- An `indexes:` entry that is refused as a declaration — no `name:`, an empty
+  one, a name that is no section id, a name already declared — now draws a
+  second message where it also writes an `index-labels:` key, saying that key
+  sets no word. Its value is not read: the entry declares no index, so there is
+  nothing for its words to be the words of. Without this an author who repeated
+  an index name and wrote a correct label map in the second entry was told
+  about the name and nothing about the map; `tests/run-tests.sh` fails at
+  `M59-AC3` without it.
+
+- An index whose `symbols:` word one of its own letter groups is also headed by
+  — `symbols: "A"` in an index that files a term under `A` — now draws a report
+  naming the word and the index. What prints is unchanged: both groups are
+  still there, in their own places, under the one heading. The report is drawn
+  where the index is printed, so it fires for HTML and EPUB and not for a
+  format with no letter groups; `tests/run-tests.sh` fails at `M59-AC4`
+  without it.
+
 ### Output
 
 - **Changed default.** The four words the HTML and EPUB index prints for

@@ -74,6 +74,55 @@ for _, key in ipairs(LABEL_KEYS) do
   LABEL_KEY_SET[key] = true
 end
 
+-- The characters this extension counts as printing nothing. A label value made
+-- only of these is a value a reader cannot read, exactly as an empty one is,
+-- and it is refused for the same reason -- `see-also: "&nbsp;"` printed an
+-- emphasized non-breaking space in front of a target, so the reader saw a
+-- cross-reference with no word saying what kind it was (M56 review F3).
+--
+-- Written out here as the one site that says what "blank" means, rather than
+-- derived from a character property: the Lua Pandoc embeds has no Unicode
+-- category tables, and `%s` follows the C locale, which decides nothing about
+-- U+2007 on one machine and something else on another. Spelled with `\u{}`
+-- escapes so this source file stays ASCII.
+--
+-- ASCII space and tab are on the list for completeness rather than for reach:
+-- Pandoc parses a metadata value holding only those to empty inlines, so they
+-- arrive as the empty string and are refused a line earlier.
+local BLANKS = {
+  "\u{0009}", "\u{000A}", "\u{000D}", "\u{0020}", -- tab, newline, return, space
+  "\u{00A0}",                                     -- no-break space
+  "\u{00AD}",                                     -- soft hyphen
+  "\u{2000}", "\u{2001}", "\u{2002}", "\u{2003}", -- en quad, em quad, en space, em space
+  "\u{2004}", "\u{2005}", "\u{2006}",            -- three-, four- and six-per-em space
+  "\u{2007}", "\u{2008}", "\u{2009}", "\u{200A}", -- figure, punctuation, thin, hair space
+  "\u{200B}", "\u{200C}", "\u{200D}",            -- zero-width space, non-joiner, joiner
+  "\u{2028}", "\u{2029}",                        -- line separator, paragraph separator
+  "\u{202F}",                                     -- narrow no-break space
+  "\u{205F}",                                     -- medium mathematical space
+  "\u{2060}",                                     -- word joiner
+  "\u{3000}",                                     -- ideographic space
+  "\u{FEFF}",                                     -- zero-width no-break space (byte-order mark)
+}
+local BLANK_SET = {}
+for _, blank in ipairs(BLANKS) do
+  BLANK_SET[blank] = true
+end
+
+-- Does this string hold a character a reader can see? The string is walked one
+-- UTF-8 character at a time -- a lead byte and the continuation bytes after it
+-- -- rather than byte by byte, since every blank above outside ASCII is two or
+-- three bytes and a byte-wise test would call the second byte of one a
+-- character of its own.
+local function has_visible(text)
+  for character in text:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+    if not BLANK_SET[character] then
+      return true
+    end
+  end
+  return false
+end
+
 -- How a report names the level an `index-labels:` map was written at. The
 -- document level is one phrase; an index's own names the index, which is the
 -- only thing that tells two per-index maps apart in a log.
@@ -169,11 +218,25 @@ local function read_labels(value, where)
   local words = {}
   for _, key in ipairs(LABEL_KEYS) do
     if value[key] ~= nil then
-      local word = pandoc.utils.stringify(value[key])
-      if word == UNNAMED then
-        qi_core.warn(('%s: %s gives the key "%s" an empty value, which is no word a reader can read; that word falls back to the next level it is written at and then to the English one'):format(LABELS_KEY, where, key))
+      -- A key whose own value is a map or a list, before the value is
+      -- stringified: `pandoc.utils.stringify` joins a nested map's leaf values
+      -- into one string, so over-indenting the whole map by one level used to
+      -- install "siehesiehe auch" as a printed word with nothing said (M56
+      -- review F11). The shape the author wrote is named back to them, since
+      -- the two mistakes are written differently and are fixed differently.
+      local shape = pandoc.utils.type(value[key])
+      if shape == "table" or shape == "List" then
+        qi_core.warn(('%s: %s gives the key "%s" a value written as a %s, where one word belongs; it sets no word, so that word falls back to the next level it is written at and then to the English one'):format(LABELS_KEY, where, key, shape == "table" and "map" or "list"))
       else
-        words[key] = word
+        local word = pandoc.utils.stringify(value[key])
+        -- One report for the empty value and the blank-only one: they are the
+        -- same fact about the same reader, and the empty report's own words
+        -- always described both.
+        if not has_visible(word) then
+          qi_core.warn(('%s: %s gives the key "%s" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'):format(LABELS_KEY, where, key))
+        else
+          words[key] = word
+        end
       end
     end
   end
@@ -182,6 +245,29 @@ local function read_labels(value, where)
   end
   return words
 end
+
+-- The one further message a refused `indexes:` entry that also wrote an
+-- `index-labels:` key draws. The key's own value is never looked at, so the
+-- message names the key and not the shape written under it: an entry refused
+-- as a declaration may carry a string or a list there just as readily as the
+-- map the surface asks for. Every refusal below returns before the
+-- `read_labels` call at the foot of `read_declaration`, so without this an
+-- author who repeated an index name and wrote a correct label map in the
+-- second entry was told about the name and nothing about the map (M56 review
+-- F8). The map is not read: the entry declares no index, so there is no index
+-- for its words to be the words of, and reporting the map's own mistakes
+-- beside a declaration that has to be fixed first is noise.
+--
+-- One call site reached from every refusal branch rather than a message per
+-- branch: the four emitted lines differ by the entry position they name, which
+-- is what tells them apart in a log, and one literal is one message the
+-- distinctness scan can read whole at the site that emits it.
+local function report_dropped_labels(item, position)
+  if item[LABELS_KEY] ~= nil then
+    qi_core.warn(("entry %d of the %s: metadata also writes an %s: key, which sets no word: the entry declares no index, so there is nothing for it to set the words of"):format(position, INDEXES_KEY, LABELS_KEY))
+  end
+end
+
 -- One declaration's `name:`/`title:`, appended to `kept` in declared order, or
 -- nothing where the entry is unusable. Reported rather than skipped in
 -- silence: a declaration the author wrote and this filter ignored is an index
@@ -199,19 +285,23 @@ local function read_declaration(item, position, kept, seen)
   end
   if item[NAME_FIELD] == nil then
     qi_core.warn(("entry %d of the %s: metadata has no %s:, so there is nothing for a mark to name it by and it declares no index"):format(position, INDEXES_KEY, NAME_FIELD))
+    report_dropped_labels(item, position)
     return
   end
   local name = pandoc.utils.stringify(item[NAME_FIELD])
   if name == UNNAMED then
     qi_core.warn(("entry %d of the %s: metadata has an empty %s:, which no mark can name, so it declares no index"):format(position, INDEXES_KEY, NAME_FIELD))
+    report_dropped_labels(item, position)
     return
   end
   if not name:match(NAME_SHAPE) then
     qi_core.warn(('entry %d of the %s: metadata declares the name "%s", which cannot be a section id a `#id` selector names; a name holds ASCII letters, digits, hyphen and underscore and begins with a letter, so this entry declares no index'):format(position, INDEXES_KEY, name))
+    report_dropped_labels(item, position)
     return
   end
   if seen[name] then
     qi_core.warn(('entry %d of the %s: metadata declares the name "%s" a second time; one name is one index, so this entry is ignored and the first declaration of that name is the one that prints'):format(position, INDEXES_KEY, name))
+    report_dropped_labels(item, position)
     return
   end
   local title = name

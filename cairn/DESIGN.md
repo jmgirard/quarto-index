@@ -188,10 +188,13 @@ The modules, in dependency order:
   levels: the parse, the empty-level drop, the three-level clamp, and the
   level path a sort key is declared against.
 - `indexes.lua` — the indexes a document declares: the ordered name-to-title
-  table read out of `indexes:` metadata, the shape a declared name may be, and
-  which index a mark or a placement marker files in (added M38; listed here
-  corrected M38, moved above `sortkeys.lua` M39, which now requires it, and the
-  fold retired M55).
+  table read out of `indexes:` metadata, the shape a declared name may be,
+  which index a mark or a placement marker files in, and the reader-facing
+  words and marks an author writes under `index-labels:` — which keys are
+  writable, which values are refused as unreadable, and the
+  per-index-then-document ladder a key resolves on (added M38; listed here
+  corrected M38, moved above `sortkeys.lua` M39, which now requires it, the
+  fold retired M55, and the label clause added M59).
 - `sortkeys.lua` — the registry mapping a printed level path to the first sort
   key declared for it, and the report drawn when two marks disagree about it.
 - `latex.lua` — the LaTeX back-end: the `\index{...}` argument, the
@@ -1225,33 +1228,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   message, not in the comparison. Found while adding M56's own, which is
   written with single quotes for this reason. — M56 T4
 
-- **KI173** (corrected M59). `read_labels` refuses only a value that
-  stringifies to the empty string, so a value that is invisible without being
-  empty installs as the printed word: `see-also: "&nbsp;"` emits an emphasized
-  non-breaking space and the reader sees the target with no word in front of
-  it, and a zero-width space under `symbols:` heads a group with nothing
-  (rendered 2026-08-29, Quarto 1.10.18). The trigger this entry first recorded
-  — `see: " "` — is not one: Pandoc parses a whitespace-only metadata value to
-  empty inlines, so a space, a tab and a space-only `separator:` all draw the
-  empty-value report already. The empty-value report's own words — "no word a
-  reader can read" — describe the invisible case, and it draws none.
-  — M56 review F3
-- **KI174.** An author's `symbols:` word that is itself a single ASCII letter
-  prints two identically headed groups: the sentinel keeps the non-letter
-  group's identity and rank, so it neither merges nor re-ranks, but a reader
-  of `symbols: "A"` sees an `A` heading over the non-letter entries and a
-  second over the real A group, with no report. — M56 review F13
-- **KI175.** A value under one label key that is itself a map — the likely
-  over-indentation error, since the surface is a nested map — is stringified
-  to its concatenated leaf values and installed as the printed word, with no
-  report. Consistent with `title:`, whose behavior this follows. — M56 review
-  F11
-- **KI176.** A per-index `index-labels:` written in an `indexes:` entry that
-  `read_declaration` refuses for any other reason is dropped with no message
-  of its own: every refusal returns before the `read_labels` call, so an
-  author who repeats an index name and writes a correct label map in the
-  second entry is told about the name and nothing about the map. — M56 review
-  F8
 - **KI177.** No check binds the ordering `read` deliberately has: reading
   `index-labels:` before the `indexes:` early returns, so a document that
   declares no index can still set the words. All three M56 fixtures declare

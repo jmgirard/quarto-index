@@ -60,6 +60,25 @@ The map is `index-labels:` and not `labels:` because a top-level `labels:` is
 Quarto's own map, the one holding the words for its title block, and this
 extension does not read it.
 
+A value a reader could not read is refused rather than printed, and the
+extension says so. Four shapes are refused: an empty value; a value made only
+of characters that print nothing, such as a non-breaking space, a zero-width
+space or one of the typographic spaces; a value written as a nested map; and
+one written as a list. The last two are what over-indenting the map by a level
+produces. A refused key falls back exactly as a key you never wrote does — to
+the same key at the document's top level where an index's own map wrote it,
+then to your `lang:` for the three words, and then to the English word or, for
+the two marks, which follow no language at all, straight back to `,` and `;` —
+so a mistake here can only ever leave a reader with what this extension printed
+before you wrote anything. An `index-labels:` written inside an `indexes:`
+entry that is itself refused as a declaration sets no word either, and that is
+reported beside the reason the entry was refused.
+
+Naming this heading after a letter one of the index's own groups is already
+headed by — `symbols: "A"` in an index that files a term under `A` — is
+reported too, but not refused: the page still prints both groups, in their own
+places, under the one heading you gave it.
+
 You only need this where the extension's own choice is wrong for you. Left
 alone, the three words follow your document's `lang:`: Spanish, French, German
 and Italian are covered, German for `see` and `see also` but not for this

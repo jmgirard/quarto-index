@@ -8,7 +8,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M59 | The words an author writes are refused when a reader cannot read them | planned | — | normal | milestones/M59-index-label-refusals.md |
+| M59 | The words an author writes are refused when a reader cannot read them | review | — | normal | milestones/M59-index-label-refusals.md |
 | M58 | An author sets the punctuation the index prints inside an entry | done | — | normal | milestones/archive/M58-index-separators.md |
 | M56 | An author sets the words the index back-end picks itself | done | — | normal | milestones/archive/M56-index-label-override.md |
 | M57 | A non-English document gets a non-English index | done | M56 | normal | milestones/archive/M57-index-label-language.md |

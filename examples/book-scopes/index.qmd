@@ -1,0 +1,34 @@
+# Opening
+
+## The cross-reference twin
+
+The first index marks a term the second index's cross-reference points at,
+two chapters further on. A target is resolved against the marks of its own
+index, so that one dangles; an accumulator merged across both indexes would
+resolve it against this mark and say nothing at all.
+[Solvent]{.index}.
+
+A cross-reference of the first index's own, whose target the first index does
+mark: it resolves, and must draw no report.
+[Reagent]{.index see="Solvent"}.
+
+## The sort-key twin
+
+The same printed path, keyed once in each index. A sort key written in one
+index says nothing about where the same printed text files in the other, so
+this key is no rival of the second index's two.
+[Rival]{.index sort="Mmm"}.
+
+The second index's own first key for that path, which is the one that wins:
+[Rival]{.index index="second" sort="Aaa"}.
+
+## The range twin
+
+A range opened in the first index and closed in the second, in the next
+chapter. The two never face each other, because a range pairs inside one
+index, so the book names neither of them; a merged pairing map would name
+both as a pair split across chapters.
+[Crossed]{.index range="open"}.
+
+The second index's own opening, whose closing is in the next chapter and in
+that same index: [Bridge]{.index index="second" range="open"}.

@@ -1158,6 +1158,63 @@ print(f'ok   {label}: {len(sections)} generated index section(s) and all '
 SECTIONPY
 }
 
+# The generated index sections a page carries, by id and in document order
+# (M55). Stated as ids rather than as a count: two sections both named after
+# one declared index is exactly what a merged aggregation produces, and a count
+# cannot tell that from one section per declaration.
+check_section_ids() {
+  local htmlfile="$1" label="$2" want="$3"
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$htmlfile" "$label" "$want" <<'IDSPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+html_path, label, want = sys.argv[1:4]
+expected = want.split()
+if not expected:
+    print(f'FAIL: {label}: no section id was asked for, so a page printing '
+          f'none would match', file=sys.stderr)
+    sys.exit(1)
+try:
+    actual = [f['ident'] for f in
+              H.index_sections(H.parse(html_path), os.environ['HTML_SECTION_ID'])]
+except ValueError as bad:
+    print(f'FAIL: {label}: {bad}', file=sys.stderr)
+    sys.exit(1)
+if actual != expected:
+    print(f'FAIL: {label}: {html_path} carries index section(s) {actual}, '
+          f'expected {expected}, in that order', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: the page carries index section(s) {actual}, in order')
+IDSPY
+}
+
+# One named section of a page carries a named entry (M55). Two clauses, and
+# both are the point: a page with no such section at all, and a section that
+# has one but not this term. Read out of the section's own entry list rather
+# than off the page, so a term surviving somewhere else on the page — in the
+# chapter body it was marked in, say — is not read as an index entry.
+check_section_carries() {
+  local htmlfile="$1" section="$2" term="$3" label="$4"
+  QI_SECTION="$section" python3 - "$htmlfile" "$term" "$label" <<'CARRIESPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+path, term, label = sys.argv[1:4]
+want = os.environ['QI_SECTION']
+section = H.find_id(H.parse(path), want)
+if section is None:
+    print(f'FAIL: {label}: {path} carries no {want!r} section, so there is '
+          f'no index for {term!r} to be filed in', file=sys.stderr)
+    sys.exit(1)
+terms = [r['term'] for r in H.index_entries(section) if r['kind'] == 'entry']
+if term not in terms:
+    print(f'FAIL: {label}: the {want!r} section carries {terms}, which does '
+          f'not include {term!r}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: the {want!r} section carries the entry {term!r}')
+CARRIESPY
+}
+
 # A WHOLE-DOCUMENT sweep for the letter-group heading class (M07-AC3). The
 # expected labels are hand-derived, one per line, in the order the page must
 # show them; the sweep reads the entire document rather than the index
@@ -5865,8 +5922,20 @@ check_warning_count "$WORK/book-stale.log" "$WARN_STORE_STALE" 1 \
   "M06 (stale store record)"
 check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE" 0 \
   "M06 (stale store record)"
+# M55-AC5 — and the report names the chapter whose record was refused, which
+# is the only thing that tells the author which one to render again.
+{ grep -F -- "$WARN_STORE_STALE" "$WORK/book-stale.log" | grep -qF 'one.qmd'; } \
+  || fail "M55-AC5: the stale-record report does not name the chapter whose record was refused"
+# ...and the rest of the book still prints every index the SURVIVING records
+# file marks in. `one.qmd` carries this book's only `people` mark, so refusing
+# its record leaves `people` with nothing to print and no section — while
+# `main` and `places`, whose marks are in the other three chapters, are printed
+# as usual. Stated as ids rather than as a count: two sections both headed
+# `main` is exactly what a merged aggregation produces.
+check_section_ids "$CAPTURE_ROOT/book-stale/_book/last.html" \
+  "M55-AC5" "$HTML_SECTION_ID-main $HTML_SECTION_ID-places"
 cp "$WORK/one-record.json" "$CORRUPT"
-pass "M06: a record from an older extension version is reported as stale rather than as unreadable, and the render survives"
+pass "M06/M55-AC5: a record written at the superseded store version is refused, the report names the chapter it came from rather than calling it unreadable, and the book still prints each declared index the remaining chapters' records file marks in"
 
 # M14 (review F9) — a record whose cross-reference lost its levels. Two
 # consumers read these now, and the newer of them runs on every last-chapter
@@ -5904,6 +5973,107 @@ grep -qF 'Legacy Term' "$CAPTURE_ROOT/book-nocontext/_book/last.html" \
   || fail "M14 (review F4): the chapter's term is missing from the index, so the record was rejected after all"
 cp "$WORK/one-record.json" "$CORRUPT"
 pass "M14: a record predating the per-mark naming string is accepted, keeps its chapter's terms in the index, and its report names the chapter it came from"
+
+# ---------------------------------------------------------------------------
+# M55-AC3 — a stored record naming an index the reading chapter does not
+# declare. `indexes:` is book metadata, so this is always a record left behind
+# by a render made before the declaration was edited; dropping its marks would
+# cost an author a whole chapter's terms for an edit they made somewhere else
+# (IP2), so they are filed in the first index the book does declare and both
+# the chapter and the name are named.
+#
+# Three cases, varying the KEY'S FORM as well as its story, because the three
+# reach `declared_for` by three different routes and a check written over one
+# form says nothing about the others.
+# ---------------------------------------------------------------------------
+m55_stale_name() {   # <slug> <label> <index value> <what the run must report>
+  local slug="$1" label="$2" value="$3" named="$4"
+  QI_STALE_INDEX="$value" python3 - "$WORK/one-record.json" "$CORRUPT" <<'STALEPY'
+import json, os, sys
+record = json.load(open(sys.argv[1], encoding='utf-8'))
+before = {mark.get('index') for mark in record['marks']}
+value = os.environ['QI_STALE_INDEX']
+if before == {value}:
+    sys.exit(f'FAIL: M55-AC3: this chapter\'s record already names {value!r} '
+             f'on every mark, so the mutation plants nothing and the render '
+             f'below would be about the unplanted record')
+for mark in record['marks']:
+    mark['index'] = value
+# The sort keys move with them, or the case would be about marks alone while
+# the report speaks for both.
+merged = {}
+for keys in record.get('sorts', {}).values():
+    merged.update(keys)
+record['sorts'] = {value: merged} if merged else {}
+json.dump(record, open(sys.argv[2], 'w', encoding='utf-8'))
+STALEPY
+  ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+    > "$WORK/book-$slug.log" 2>&1 \
+    || { tail -30 "$WORK/book-$slug.log" >&2; fail "M55-AC3 ($label): a record naming an index the book does not declare took the render down; IP2 forbids it"; }
+  capture --project "$BOOK_DIR" html "book-$slug"
+  # Never dropped in silence, and never refused either: the report is the
+  # stale-name one, not the unreadable-record one.
+  check_warning_count "$WORK/book-$slug.log" "$WARN_INDEX_STALE_NAME" 1 \
+    "M55-AC3 ($label)"
+  check_warning_count "$WORK/book-$slug.log" "$WARN_STORE_UNREADABLE" 0 \
+    "M55-AC3 ($label, reported rather than refused)"
+  { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/book-$slug.log" \
+    | grep -qF -- "$named"; } \
+    || { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/book-$slug.log" >&2; fail "M55-AC3 ($label): the report does not carry <<$named>>, so it names neither the chapter the record came from nor the index name it carries"; }
+  # The marks are printed, in the FIRST declared index: `Beta` is one.qmd's
+  # own term, and reading it out of the main section is what says the marks
+  # were filed there rather than merely surviving somewhere on the page.
+  check_section_carries "$CAPTURE_ROOT/book-$slug/_book/last.html" \
+    "$HTML_SECTION_ID-main" Beta "M55-AC3 ($label)"
+  cp "$WORK/one-record.json" "$CORRUPT"
+}
+
+m55_stale_name stalename-ghost 'a name no declaration in the book carries' \
+  'ghostindex' 'the recorded index marks for one.qmd name the index "ghostindex"'
+m55_stale_name stalename-badshape 'a key the declaration syntax refuses' \
+  '2nd.index' 'the recorded index marks for one.qmd name the index "2nd.index"'
+pass "M55-AC3: a stored record naming an index this book does not declare has its marks filed in the first index it does declare, and the report names the chapter and the name — for a name no declaration carries and for one the declaration syntax refuses"
+
+# The third case, whose story a mutated record cannot tell: a name a
+# declaration REMOVED. The store is populated by a book that declares it, the
+# declaration is then deleted, and the marker chapter alone is re-rendered —
+# which is what an author does when they edit `_quarto.yml` and rebuild.
+M55W="$WORK/m55"
+rm -rf "$M55W/removed"
+mkdir -p "$M55W"
+# The whole fixture, store and all, then the extension over it: examples/book
+# reaches the filter through an `_extensions` SYMLINK, which `cp -R` preserves,
+# and a scratch copy still pointing at the repository's own tree would be a
+# fixture this scratch _quarto.yml no longer governs.
+cp -R "$BOOK_DIR" "$M55W/removed"
+rm -f "$M55W/removed/_extensions"
+rm -rf "$M55W/removed/_book"
+mkdir -p "$M55W/removed/_extensions"
+cp -R "$QI_EXT_DIR" "$M55W/removed/_extensions/index"
+[ -d "$M55W/removed/.quarto/$STORE_DIR" ] \
+  || fail "M55-AC3: the copied book carries no store, so the removal case below would be about a book with no records rather than about a stale name"
+python3 - "$M55W/removed/_quarto.yml" <<'REMOVEPY'
+import sys
+path = sys.argv[1]
+text = open(path, encoding='utf-8').read()
+gone = text.replace('  - name: people\n    title: Index of People\n', '')
+if gone == text:
+    sys.exit('FAIL: M55-AC3: the people declaration was not found in the '
+             'copied _quarto.yml, so removing it planted nothing')
+open(path, 'w', encoding='utf-8').write(gone)
+REMOVEPY
+( cd "$M55W/removed" && quarto render last.qmd --to html ) \
+  > "$WORK/book-removed.log" 2>&1 \
+  || { tail -30 "$WORK/book-removed.log" >&2; fail "M55-AC3: a record naming a declaration the book has since removed took the render down; IP2 forbids it"; }
+capture --project "$M55W/removed" html "book-removed"
+check_warning_count "$WORK/book-removed.log" "$WARN_INDEX_STALE_NAME" 1 \
+  "M55-AC3 (a name a declaration removed)"
+{ grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/book-removed.log" \
+  | grep -qF 'the recorded index marks for one.qmd name the index "people"'; } \
+  || { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/book-removed.log" >&2; fail "M55-AC3: the report does not name the chapter and the removed declaration's name"; }
+grep -qF 'Turing' "$CAPTURE_ROOT/book-removed/_book/last.html" \
+  || fail "M55-AC3: the removed index's term is missing from the page, so the record's marks were dropped rather than filed in the first declared index"
+pass "M55-AC3: a record naming a declaration the book has since removed keeps its chapter's terms, filed in the first index the book still declares, and the report names that chapter and that name"
 
 # ---------------------------------------------------------------------------
 # The ordering fixture: marker in the first chapter, a second marker in the
@@ -6088,6 +6258,75 @@ check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" \
   "$ORDER_CHAPTERS" "M05 hardening"
 rm -f "$ORDER_DIR/.quarto/$STORE_DIR"
 pass "M05 hardening: a store that cannot be written is reported per chapter and the book still renders"
+
+# ---------------------------------------------------------------------------
+# M55-AC4 — each of the three judgements an HTML book makes across chapters is
+# made inside ONE index, and its report names that index (D-021).
+#
+# examples/book-scopes/ declares `first` and `second` and writes each judgement
+# in `second`, with its confusable twin in `first`. The twins are the whole
+# point: without them a per-index accumulator and one merged across the two
+# indexes emit the same output on this fixture, and every green below would be
+# green under either.
+#
+# ORACLE — read off the two chapter sources by hand.
+#  1. `Solute`, in `second`, points at `Solvent`, which only `first` marks. A
+#     target resolves against its own index's marks, so it dangles and the
+#     report names `second`. The twin is `first`'s own `Reagent`, whose target
+#     IS `Solvent` and which resolves: a merged path set would resolve both and
+#     report neither.
+#  2. `Rival` is keyed `Aaa` in index.qmd and `Zzz` in last.qmd, both in
+#     `second`: one rivalry, reported naming `second`, the first in book order
+#     winning. The twin is `first`'s own `Mmm` for the same printed path, which
+#     is a rival of neither — a merged registry would report it against `Aaa`.
+#  3. `Bridge` opens in index.qmd and closes in last.qmd, both in `second`: one
+#     pair split across chapters, reported naming `second`. The twin is
+#     `Crossed`, opened in `first` and closed in `second`, whose two ends never
+#     face each other and which the book therefore names not at all — a merged
+#     pairing map would name it as a second split pair.
+# ---------------------------------------------------------------------------
+SCOPES_DIR="examples/book-scopes"
+rm -rf "$SCOPES_DIR/_book" "$SCOPES_DIR/.quarto"
+( cd "$SCOPES_DIR" && quarto render --to html ) > "$WORK/book-scopes.log" 2>&1 \
+  || { tail -30 "$WORK/book-scopes.log" >&2; fail "M55-AC4: the cross-chapter judgement fixture failed to render to HTML"; }
+capture --project "$SCOPES_DIR" html "book-scopes"
+
+# (1) the cross-reference target.
+check_warning_count "$WORK/book-scopes.log" \
+  "$(dangling_report_index see 'term "Solute" in last.qmd' Solvent second)" 1 \
+  "M55-AC4 (the target dangles inside the index its own mark files in, and the report names it)"
+check_warning_count "$WORK/book-scopes.log" "$WARN_DANGLING" 0 \
+  "M55-AC4 (never in the shape a book with one namespace draws)"
+check_warning_count "$WORK/book-scopes.log" 'on term "Reagent"' 0 \
+  "M55-AC4 (and the twin, whose target its own index marks, draws nothing)"
+
+# (2) the sort-key rivalry.
+check_warning_count "$WORK/book-scopes.log" "$WARN_BOOK_SORT_CONFLICT_NAMED" 1 \
+  "M55-AC4 (one rivalry, inside the index both keys are written in)"
+check_warning_count "$WORK/book-scopes.log" "$WARN_BOOK_SORT_CONFLICT" 0 \
+  "M55-AC4 (never in the shape a book with one namespace draws)"
+m55_rivalry_names() {
+  { grep -F -- "$WARN_BOOK_SORT_CONFLICT_NAMED" "$1" \
+    | grep -qF 'both keys are written in index "second"'; } \
+    || fail "M55-AC4: the rivalry report in $1 does not name the index the two rival keys are written in"
+}
+m55_rivalry_names "$WORK/book-scopes.log"
+check_warning_count "$WORK/book-scopes.log" 'Mmm' 0 \
+  "M55-AC4 (and the twin key, written in the other index, is no rival of either)"
+
+# (3) the range left unpaired.
+check_warning_count "$WORK/book-scopes.log" "$R_BOOKUNPAIRED_NAMED" 1 \
+  "M55-AC4 (one split pair, inside the index both its ends are written in)"
+check_warning_count "$WORK/book-scopes.log" "$R_BOOKUNPAIRED" 0 \
+  "M55-AC4 (never in the shape a book with one namespace draws)"
+for mark in 'term "Bridge" in index.qmd' 'term "Bridge" in last.qmd'; do
+  check_warning_count "$WORK/book-scopes.log" "$mark" 1 \
+    "M55-AC4 (naming both ends of the pair it found)"
+done
+{ grep -F -- "$R_BOOKUNPAIRED_NAMED" "$WORK/book-scopes.log" \
+  | grep -qvF 'Crossed'; } \
+  || fail "M55-AC4: the book's range report names the twin range, whose two ends are in different indexes and so face each other in neither"
+pass "M55-AC4: each of the three cross-chapter judgements is made inside one index and its report names that index, and the twin written in the other index draws none of the three"
 
 # ---------------------------------------------------------------------------
 # M06-AC1 — sort keys, end to end in the PDF.
@@ -8070,6 +8309,8 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 read -r -d '' DANGLING_CORPUS <<'MANIFEST' || true
 examples/book-order/index.qmd	0
 examples/book-order/later chapter.qmd	1
+examples/book-scopes/index.qmd	0
+examples/book-scopes/last.qmd	1
 examples/book/sub/two.qmd	1
 examples/content.qmd	0
 examples/dangling-xref.qmd	7
@@ -8134,17 +8375,19 @@ done <<< "$DANGLING_CORPUS"
 
 # The book chapters' rows are per chapter, but the report is drawn once for
 # the whole book, so what they must add up to is what each book render emits.
-# Two books carry targets and each reports one, which is what the sum states.
+# Three books carry targets and each reports one, which is what the sum states.
 # The SHAPE differs between them, and that is the point of reading both:
 # examples/book declares three indexes, so its target is judged inside one of
 # them and the report names it; examples/book-order declares none, has one
 # namespace, and keeps the wording it has always drawn (D-021).
-[ "$BOOK_EXPECTED_TOTAL" = "2" ] \
-  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but the two book fixtures report one each"
+[ "$BOOK_EXPECTED_TOTAL" = "3" ] \
+  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but the three book fixtures report one each"
 check_warning_count "$WORK/book-html.log" "$WARN_DANGLING_INDEX" 1 "M14/M55-AC4 (corpus, examples/book)"
 check_warning_count "$WORK/book-html.log" "$WARN_DANGLING" 0 "M14/M55-AC4 (corpus, examples/book, not the one-namespace shape)"
 check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING" 1 "M14 (corpus, examples/book-order)"
 check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING_INDEX" 0 "M14 (corpus, examples/book-order, which declares no index to name)"
+check_warning_count "$WORK/book-scopes.log" "$WARN_DANGLING_INDEX" 1 "M14 (corpus, examples/book-scopes)"
+check_warning_count "$WORK/book-scopes.log" "$WARN_DANGLING" 0 "M14 (corpus, examples/book-scopes, not the one-namespace shape)"
 pass "M14: every example's dangling-target report count matches its pinned expectation, in a format with no index back-end, and the book chapters' counts add up to what their books report"
 
 # The fold fixtures render here, ahead of M15's residue sweep: one of them has
@@ -15569,6 +15812,54 @@ M30PLANTPY
     's|"sub/two.html#qi-mark-4"|"one.html#qi-mark-4"|g'
   probe_defect "a locator pointing at the wrong chapter's page, which a locator count cannot see" \
     m55_sections "$M38R/book-href.html" "M55 probe"
+
+  # The two readers M55 adds beside that manifest, each clause planted on its
+  # own. `check_section_ids` states WHICH sections a page carries and in what
+  # order; `check_section_carries` states that one named section holds a named
+  # entry, which is how the stale-name cases say the marks were filed in the
+  # first declared index rather than merely surviving on the page.
+  probe_defect "a section-id reader asked for no section at all, which a page printing none would match" \
+    check_section_ids "$M38R/book.html" "M55 probe" ""
+  probe_defect "a page carrying an index section the id list does not name" \
+    check_section_ids "$M38R/book.html" "M55 probe" \
+      "$HTML_SECTION_ID-main $HTML_SECTION_ID-people"
+  probe_defect "a page whose index sections are the named ones in the wrong order" \
+    check_section_ids "$M38R/book.html" "M55 probe" \
+      "$HTML_SECTION_ID-main $HTML_SECTION_ID-places $HTML_SECTION_ID-people"
+  probe_defect "a section the page does not carry at all" \
+    check_section_carries "$M38R/book.html" "$HTML_SECTION_ID-nowhere" Beta \
+      "M55 probe"
+  probe_defect "a term the named section does not carry" \
+    check_section_carries "$M38R/book.html" "$HTML_SECTION_ID-people" Beta \
+      "M55 probe"
+  # `Turing` IS on that page, in another section: the reader reads one
+  # section's own entry list, so a term filed elsewhere is not read as this
+  # section's, which is the whole of what the stale-name cases assert.
+  probe_defect "a term on the page but filed in another index's section" \
+    check_section_carries "$M38R/book.html" "$HTML_SECTION_ID-places" Turing \
+      "M55 probe"
+
+  # M55-AC4's three needles, planted in a copy of the fixture's own log. Each
+  # plant is the shape a merged accumulator would produce: the report drawn in
+  # the one-namespace wording, the rivalry named over the wrong index, and the
+  # twin range named as a pair split across chapters.
+  cp "$WORK/book-scopes.log" "$M38R/scopes.log"
+  probe_plant "$M38R/scopes.log" "$M38R/scopes-flat.log" \
+    's|, and these marks are in index "second", so each indexes on its own|, so each of these marks indexes on its own|'
+  probe_defect "the book's range report drawn in the wording a book with one namespace uses" \
+    check_warning_count "$M38R/scopes-flat.log" "$R_BOOKUNPAIRED_NAMED" 1 "M55 probe"
+  probe_plant "$M38R/scopes.log" "$M38R/scopes-twin.log" \
+    's|term "Bridge" in last.qmd\.|term "Bridge" in last.qmd; term "Crossed" in last.qmd.|'
+  probe_defect "the book's range report naming the twin range, whose two ends are in different indexes" \
+    check_warning_count "$M38R/scopes-twin.log" 'term "Crossed" in' 0 "M55 probe"
+  probe_plant "$M38R/scopes.log" "$M38R/scopes-wrongindex.log" \
+    's|both keys are written in index "second"|both keys are written in index "first"|'
+  probe_defect "the rivalry report naming an index other than the one both keys are written in" \
+    m55_rivalry_names "$M38R/scopes-wrongindex.log"
+  probe_plant "$M38R/scopes.log" "$M38R/scopes-flatdangling.log" \
+    's|which no mark of index "second" indexes; a reader following the cross-reference finds no such entry, so mark that term in index "second" or correct the target|which no index mark in this book indexes; a reader following the cross-reference finds no such entry, so mark that term somewhere or correct the target|'
+  probe_defect "the dangling-target report drawn in the wording a book with one namespace uses" \
+    check_warning_count "$M38R/scopes-flatdangling.log" "$WARN_DANGLING_INDEX" 1 "M55 probe"
 
   # The named-index docs page and the command ledger (R6). The claims, the
   # declaration block, the fixtures, and the two ledger clauses — a documented

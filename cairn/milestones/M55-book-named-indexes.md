@@ -106,7 +106,7 @@ row, unchanged by this milestone.
       heading arguments, the letter sweep, `BOOK_WARNINGS`, `m29book.py`'s
       partition sets and the `book|…|1|` row at `tests/run-tests.sh:15671`
       follow; the AC4 judgement fixture is written.
-- [ ] **T6.** Hardening cases and self-test plants for AC3 and AC5, each
+- [x] **T6.** Hardening cases and self-test plants for AC3 and AC5, each
       reading `STORE_VERSION` from the artifact rather than writing it down,
       and each plant proven non-empty before its clause is trusted.
 - [ ] **T7.** Docs and changelog: the "One index in an HTML book" section of
@@ -127,6 +127,8 @@ row, unchanged by this milestone.
 - 2026-08-28: implementation gate chose, for an index no marker names, the end of the last chapter that places one over the end of the book's last chapter, so no chapter whose author wrote no marker grows an index section; chose one stale-records warning per placing chapter over one for the book, each sentence then being exactly true and the common one-marker-chapter book still drawing one; and chose a committed `examples/book-scopes/` for the cross-chapter judgement fixture over one written into scratch at run time.
 - 2026-08-28: T4 minor amendment — the undeclared-name report moved from `html.lua` to `book.lua`'s new `fold_undeclared`, which is the only site that knows which chapter the record came from, and which settles every name before any judgement is made about a mark; `html.lua` keeps the mechanical half, resolving a group key so no group is dropped in silence.
 - 2026-08-28: the book's sort-key rivalry report moved from the placing chapter to the last chapter in book order, beside the other two book-wide reports: an index per marker means several placing chapters, and the rivalry is one fact about the book. `examples/book-order` now draws it on the first render as well as the second, which the suite asserts per render.
+- 2026-08-28: T5's cross-chapter judgement fixture is `examples/book-scopes/`: two chapters, two declared indexes, each of the three judgements written in the second and its confusable twin in the first. Its render draws each report naming index "second" and none for a twin.
+- 2026-08-28: T6 planted AC3's three cases (a name no declaration carries, a key the declaration syntax refuses, and — in a scratch copy whose declaration is deleted between renders — a name a declaration removed) and AC5's superseded-version case, which also reads the section ids off the page: refusing one.qmd's record leaves `people` with no marks and no section, while `main` and `places` still print. Two readers were added, `check_section_ids` and `check_section_carries`, and every clause of both plus the section manifest's five and AC4's four is planted and shown red under `--self-test`.
 - 2026-08-28: plan gate chose one milestone over two in sequence, because the halfway state prints several indexes while still judging cross-chapter targets, sort keys and ranges across all of them at once, which D-021 forbids; falsified by the branch outgrowing one reviewable PR.
 
 ## Decisions

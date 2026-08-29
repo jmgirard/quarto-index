@@ -781,9 +781,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   (`core.lua:24-27`, emitted at `html.lua:296`). HTML and EPUB only: the LaTeX
   back-end emits `\see`, `\seealso` and an untitled `\printindex`, so babel
   supplies all four words per the document's language. Distinct from KI6,
-  which is about what an author writes. The policy is settled — D-035, D-036
-  and D-037 — and unimplemented. — M07 review F6; enumeration corrected
-  2026-08-28 from RR02 B1
+  which is about what an author writes. The policy — D-035, D-036 and D-037 —
+  is settled and, since M56-M58, implemented: all four words now resolve
+  through an author's `index-labels:` map and then the shipped language table,
+  and the English strings are what is left when neither supplies one, which is
+  what remains of this entry. — M07 review F6; enumeration corrected 2026-08-28
+  from RR02 B1; unimplemented clause corrected M59
 
 - **KI105.** `report_below_marker` reads marker positions off `doc.blocks`
   after `resolve_markers` rebuilt it while the message promises the document as
@@ -1312,3 +1315,19 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   deliberately, so an HTML writer's newline passes. The docstring states this;
   the two green lines do not, and a U+00A0 after a separator would be reported
   as "exactly one space". — M58 review F11
+- **KI194.** Ten of the twelve zero-expectation controls M59 added cannot fail.
+  The needles name the index `strata`, `minerals`, `fossils` and entries 5-8 of
+  an `indexes:` list, none of which `examples/index-labels.qmd` declares, so no
+  filter behavior could put those strings in its log; only the two
+  document-level controls discriminate. — M59 review F1
+- **KI195.** No planted defect fences the silence half of the letter-clash
+  report: neither the zero-count on the message the `fossils` index would draw
+  nor the clash render's total of 1 has been shown red. — M59 review F9
+- **KI196.** The changelog says the letter-clash report fires for HTML and
+  EPUB. The dispatch supports it — `builds_ast_index` is `is_html() or
+  is_epub()` — but `examples/index-labels-clash.qmd` is rendered to HTML only,
+  so nothing would catch that sentence becoming false. — M59 review F3
+- **KI197.** 25 of the 27 entries in `BLANKS` are unexercised by any render;
+  only U+00A0 and U+200B reach one. A transposed code point in the list — say
+  `\u{2007}` written as `\u{2070}`, a visible glyph — would ship silently.
+  — M59 review F6

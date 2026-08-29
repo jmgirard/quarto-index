@@ -109,7 +109,7 @@ row, unchanged by this milestone.
 - [x] **T6.** Hardening cases and self-test plants for AC3 and AC5, each
       reading `STORE_VERSION` from the artifact rather than writing it down,
       and each plant proven non-empty before its clause is trusted.
-- [ ] **T7.** Docs and changelog: the "One index in an HTML book" section of
+- [x] **T7.** Docs and changelog: the "One index in an HTML book" section of
       `site/named-indexes.qmd:82-88`, the opening paragraph of
       `site/books.qmd:7-9`, the retired sentences swept the way `M49_RETIRED`
       sweeps `git ls-files 'site/*.qmd'`, `check_readme_indexes`' pinned claim
@@ -129,6 +129,8 @@ row, unchanged by this milestone.
 - 2026-08-28: the book's sort-key rivalry report moved from the placing chapter to the last chapter in book order, beside the other two book-wide reports: an index per marker means several placing chapters, and the rivalry is one fact about the book. `examples/book-order` now draws it on the first render as well as the second, which the suite asserts per render.
 - 2026-08-28: T5's cross-chapter judgement fixture is `examples/book-scopes/`: two chapters, two declared indexes, each of the three judgements written in the second and its confusable twin in the first. Its render draws each report naming index "second" and none for a twin.
 - 2026-08-28: T6 planted AC3's three cases (a name no declaration carries, a key the declaration syntax refuses, and — in a scratch copy whose declaration is deleted between renders — a name a declaration removed) and AC5's superseded-version case, which also reads the section ids off the page: refusing one.qmd's record leaves `people` with no marks and no section, while `main` and `places` still print. Two readers were added, `check_section_ids` and `check_section_carries`, and every clause of both plus the section manifest's five and AC4's four is planted and shown red under `--self-test`.
+- 2026-08-28: T7 rewrote the "One index in an HTML book" section of `site/named-indexes.qmd` as "Every index in an HTML book", added the several-index and stale-name paragraphs to `site/books.qmd`, dropped `site/epub.qmd`'s "Nothing folds" contrast, and replaced the CHANGELOG's "An HTML book still builds a single index" with the entry for what a book now does. `M49_RETIRED` gained the two sentences the HTML book's fold left behind, and `check_readme_indexes` and the books-page claims gained rows for the new promises. `cairn/DESIGN.md` was corrected where it described the fold, and KI116 retired with `fold_slot`.
+- 2026-08-28: recorded KI166: with the fold gone, a book chapter's own pairing reports name the index rather than the chapter, which D-021 requires and which drops the "a chapter is the pairing scope" fact from those two messages.
 - 2026-08-28: plan gate chose one milestone over two in sequence, because the halfway state prints several indexes while still judging cross-chapter targets, sort keys and ranges across all of them at once, which D-021 forbids; falsified by the branch outgrowing one reviewable PR.
 
 ## Decisions

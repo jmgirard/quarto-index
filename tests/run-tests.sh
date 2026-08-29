@@ -13149,8 +13149,11 @@ the toolchain condition	that run goes through TeX's restricted shell escape. A s
 what happens without it	An installation that withholds that permission builds no index after the first: each of them prints empty, `imakeidx` says so in the LaTeX log, and this extension neither detects that nor works around it
 below a named marker	a mark below the placement marker for its own index reaches no index at all
 below the first marker	a mark written below the first marker still reaches the first index
-one index in a book	An HTML book builds a single index: its chapters are aggregated through a per-chapter record that carries no index name
-where the folded index goes	The one index is placed at your own marker for it, wherever that marker stands
+every index in a book	An HTML book builds every index its chapters declare, the same as every other format
+how a book aggregates	its chapters are aggregated through a per-chapter record that carries the index each mark files in
+where a book's indexes go	Each index is placed at the first marker naming it, in whichever chapter that marker stands
+where an unasked-for index goes	an index no marker names is printed after them, in declared order, at the end of the last chapter that places one
+a stale declared name	its marks are filed in the first index the book does declare, and the report names the chapter and the name
 MANIFEST
 # The declaration form the criterion names, line for line. Written out here
 # rather than normalized into a claim row: `indexes:` is a list of two-field
@@ -13164,7 +13167,9 @@ indexes:
     title: Index of Names
 MANIFEST
 # ---------------------------------------------------------------------------
-# M49-AC5 — the two sentences the fold retired are gone from the docs site.
+# M49-AC5 / M55-AC1 — the sentences a retired fold left behind are gone from
+# the docs site: M49's two, and M55's two, which the HTML book's own fold took
+# with it.
 #
 # Swept over the tracked pages under site/, enumerated by the check itself from
 # `git ls-files` rather than from a written-down list: a page added later joins
@@ -13174,6 +13179,8 @@ MANIFEST
 read -r -d '' M49_RETIRED <<'MANIFEST' || true
 A LaTeX or PDF render builds a single index
 Quarto's PDF loop builds only the main entry file
+An HTML book builds a single index
+carries no index name
 MANIFEST
 printf '%s\n' "$M49_RETIRED" > "$WORK/m49-retired.txt"
 git ls-files 'site/*.qmd' > "$WORK/m49-site-pages.txt"
@@ -17671,7 +17678,7 @@ fi
 M52_DOC_PAGE="site/epub.qmd"
 cat > "$WORK/epub-claims.txt" <<'M52CLAIMS'
 one process	all the chapters go through a single Pandoc process
-every index prints	each name your `indexes:` metadata declares gets a section of its own, headed with that declaration's own title. Nothing folds.
+every index prints	each name your `indexes:` metadata declares gets a section of its own, headed with that declaration's own title
 no pages	An EPUB has no pages: what a reader sees depends on their device and their type size, so there is no page number to print.
 sequence locators	An entry's locators are the numbered links HTML uses
 M52CLAIMS
@@ -17687,9 +17694,11 @@ cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
 merged means one process	Quarto renders each as one merged document, so the extension sees every chapter's marks at once
+every index in a book	A book that declares several indexes prints each of them, each at the first marker naming it
+a stale declared name	its marks are filed in the first index the book still declares, and the report names the chapter and the name
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
-  || fail "M52-AC5: site/books.qmd no longer scopes its per-chapter model to the HTML book, so it tells an EPUB author to follow a model that is not theirs (its own FAIL line is above)"
+  || fail "M52-AC5/M55: site/books.qmd no longer scopes its per-chapter model to the HTML book, or no longer says what a book that declares several indexes does (its own FAIL line is above)"
 
 cat > "$WORK/backend-count.txt" <<'M52PHRASES'
 back-end count	two back-ends

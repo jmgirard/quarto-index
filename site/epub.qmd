@@ -20,20 +20,19 @@ doing and needs nothing from you; the links resolve inside the book.
 
 Two differences are worth knowing about before you render.
 
-**A book is one process, so every declared index prints.** Quarto renders an
-EPUB book the way it renders a PDF one: all the chapters go through a single
-Pandoc process. So the extension sees the whole book at once, and each name
-your `indexes:` metadata declares gets a section of its own, headed with that
-declaration's own title. Nothing folds. An HTML book is the other case — it
-renders a chapter per process and aggregates through a per-chapter record
-that carries no index name, so it builds one index and tells you so. The
+**A book is one process.** Quarto renders an EPUB book the way it renders a
+PDF one: all the chapters go through a single Pandoc process. So the extension
+sees the whole book at once, and each name your `indexes:` metadata declares
+gets a section of its own, headed with that declaration's own title — as it
+does in an HTML book too, which reaches the same result by another route,
+aggregating a chapter per process through a per-chapter record. The
 [Named indexes](named-indexes.qmd) page describes the declaration; the
 [Books](books.qmd) page describes the aggregation.
 
-One process is also the scope a page range pairs in, so a range you open in
-one chapter and close in another pairs in an EPUB book and contributes a
-single locator, where the same two marks in an HTML book cannot see each
-other and index on their own.
+Where one process does make a difference is the scope a page range pairs in:
+a range you open in one chapter and close in another pairs in an EPUB book and
+contributes a single locator, where the same two marks in an HTML book cannot
+see each other and index on their own.
 
 **Locators are sequence numbers, not pages.** An EPUB has no pages: what a
 reader sees depends on their device and their type size, so there is no page

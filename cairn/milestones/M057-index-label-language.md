@@ -1,6 +1,6 @@
 # M057: A non-English document gets a non-English index
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M056
 - **Driving RR:** —
@@ -146,6 +146,8 @@ to English rather than guessed.
 - 2026-08-29: T5, T6 — six fixtures and four twins, six hand-derived manifests, an EPUB comparison, the four `.tex` twin comparisons with a derivation check per pair and an eight-entry ledger classifying every differing line, and eleven planted defects.
 - 2026-08-29: T7 — the changelog entry for the changed heading, a tenth row on the back-end-differences page, and the covered-language list on the letter-groups, cross-references and HTML pages.
 - 2026-08-29: checkpoint — all seven tasks are written and the suite is mid-run at 376 checks with no failure; the plain and `--self-test` runs the completion gate needs have not both returned, so this commit is honest work-in-progress and the status stays `in-progress`.
+- 2026-08-29: the first full run failed on one check only — `site/gallery.yml` requires every `examples/*.qmd` be declared `shown:` or `not-shown:`, and the ten new fixtures were neither; declared under `not-shown:`, and `site/examples.qmd` now names them and the M56 label fixtures it had also never described.
+- 2026-08-29: tasks complete, suite green twice over the final tree: 465 checks plain and 899 with `--self-test`, both exit 0. All eleven planted defects go red and report themselves as what they are. Status to `review`.
 
 ## Decisions
 

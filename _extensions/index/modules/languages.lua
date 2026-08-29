@@ -22,18 +22,14 @@
 
 local M = {}
 
--- The four keys a row may set. The first three are the keys an author writes
--- under `index-labels:`, spelled the same so one lookup serves both surfaces.
--- The fourth is NOT such a key: an author who wants a particular heading
--- writes `title:`, which wins outright, so `title` here names only the default
--- an undeclared document falls back to (D-038).
+-- The table, and the four keys a row may set. Three of them -- `symbols`,
+-- `see` and `see-also` -- are the keys an author writes under
+-- `index-labels:`, spelled the same so one lookup serves both surfaces. The
+-- fourth, `title`, is NOT such a key: an author who wants a particular heading
+-- writes `title:`, which wins outright, so it names only the default an
+-- undeclared document falls back to (D-038).
 --
--- Listed rather than derived from `indexes.LABEL_KEYS`: that list is what an
--- author may write, this one is what the table may hold, and the fourth key
--- belongs to exactly one of them. A module below `indexes` also cannot read it.
-local WORD_KEYS = { "symbols", "see", "see-also", "title" }
-
--- The table. Keyed by the lowercased BCP-47 tag the row covers -- a primary
+-- Keyed by the lowercased BCP-47 tag the row covers -- a primary
 -- subtag here, since no row covers a region -- and holding only the words that
 -- ship. A key a row omits is not a gap to report: it is a word two references
 -- did not agree on, and it falls through to the English one, which is why a
@@ -158,24 +154,10 @@ local function resolve(value)
   return nil, "miss"
 end
 
--- The tags the table holds, sorted. For a report or a documentation check that
--- has to name the covered languages without hard-coding the list a second time.
-local function tags()
-  local out = {}
-  for tag in pairs(WORDS) do
-    out[#out + 1] = tag
-  end
-  table.sort(out)
-  return out
-end
-
 -- Exported through the bracket form for the reason indexes.lua's own export
--- block states.
-M["WORD_KEYS"] = WORD_KEYS
-M["WORDS"] = WORDS
-M["OUTCOMES"] = OUTCOMES
-M["well_formed"] = well_formed
+-- block states. One function only: the table, the outcome tokens and the
+-- well-formedness test are this module's own workings, and an export nothing
+-- reads is surface to keep in step for nobody (GP5).
 M["resolve"] = resolve
-M["tags"] = tags
 
 return M

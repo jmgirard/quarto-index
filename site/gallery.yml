@@ -44,6 +44,16 @@ not-shown:
   - examples/index-labels-misuse.qmd
   - examples/index-labels-twin.qmd
   - examples/index-labels.qmd
+  - examples/index-lang-de.qmd
+  - examples/index-lang-es-twin.qmd
+  - examples/index-lang-es.qmd
+  - examples/index-lang-frca-twin.qmd
+  - examples/index-lang-frca.qmd
+  - examples/index-lang-malformed-twin.qmd
+  - examples/index-lang-malformed.qmd
+  - examples/index-lang-miss-twin.qmd
+  - examples/index-lang-miss.qmd
+  - examples/index-lang-override.qmd
   - examples/marker-misuse.qmd
   - examples/marker-nomarks-twin.qmd
   - examples/marker-nomarks.qmd

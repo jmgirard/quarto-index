@@ -28,6 +28,15 @@ every target in the second resolves.
 a sort key, a range and a placement marker in each of them;
 `examples/named-indexes-twin.qmd` writes the same terms with no declaration at
 all.
+`examples/index-labels.qmd` declares the words the index prints for itself and
+`examples/index-labels-twin.qmd` is the same document with those declarations
+deleted; `examples/index-labels-misuse.qmd` writes every unusable shape of
+them. The ten `examples/index-lang-*.qmd` fixtures are the language table's:
+one per outcome the tag resolver has — an exact tag, a regional tag falling
+back to its language, a tag the table does not cover, and a value that is no
+language tag — plus a language the table covers only in part and one where an
+author's own word sits beside the table's, each of the first four with a twin
+that is itself with the `lang:` line removed.
 `examples/unicode.qmd` carries the recipe from
 [Terms outside Latin-1](terms-outside-latin-1.qmd) and marks eight terms under
 it — Greek, a second Greek term carrying a `sort=` key, Cyrillic, Polish,

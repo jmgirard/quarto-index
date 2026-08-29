@@ -9,7 +9,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, IP3, GP1
-- **Branch/PR:** m059-index-label-refusals
+- **Branch/PR:** m059-index-label-refusals — https://github.com/jmgirard/quarto-index/pull/59
 
 ## Goal
 
@@ -138,6 +138,8 @@ index `title:` key keeps flattening a map, since nothing here reads it.
 - 2026-08-29: T8 — the refusal sentences added to `site/letter-groups.qmd` and `site/cross-references.qmd` and three `CHANGELOG.md` entries, each naming the check that fails without it, all written against the two renders T4 and T5 produce.
 - 2026-08-29: T9 — KI173, KI174, KI175 and KI176 removed from `cairn/DESIGN.md` as closed, and the `indexes.lua` architecture line extended to name the label surface it owns. Suite green over the branch: 486 checks plain, 934 with `--self-test`, both exit 0; the default branch has not moved since the branch was cut, so this tree is the merged tree.
 - 2026-08-29: noticed out of scope and not touched — DESIGN.md's KI26 still says the reader-facing-words policy is "settled and unimplemented", which M56-M58 falsified.
+
+- 2026-08-29: review opened — branch pushed, draft PR #59, consistency gate green (`cairn_validate` exit 0, no principle change so no impact report, `generic` profile names no toolchain checks). Acceptance evidence and the three review lenses in flight.
 
 ## Decisions
 

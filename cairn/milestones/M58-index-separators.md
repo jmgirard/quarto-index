@@ -1,6 +1,6 @@
 # M058: An author sets the punctuation the index prints inside an entry
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Branch:** m058-index-separators
@@ -158,6 +158,8 @@ mistake.
 - 2026-08-29: plan gate chose author-override alone over shipping an `ar` row in `languages.lua`, because the table's method demands two independent references agreeing on the string and "an Arabic index separates locators with U+060C" is an index-specific claim Unicode alone does not settle — M57 withheld German's `Symbols` on that same test; falsified by two references of different kinds agreeing on Arabic index punctuation.
 - 2026-08-29: plan gate chose two keys over one per printed site, because no convention found distinguishes S1 from S2 or S3 and five keys would cost three more rows in every docs table; falsified by an author wanting term→locators set differently from locator→locator.
 - 2026-08-29: plan gate chose to leave the `pandoc.Space()` with the filter over having the author write it into the value, because a value written without it would silently glue a locator to its term in a render that stays green; falsified by an author needing no space at all after a separator.
+
+- 2026-08-29: all nine tasks done; suite green plain (480 checks) and with `--self-test` (922 checks), both exit 0. Status review.
 
 ## Decisions
 

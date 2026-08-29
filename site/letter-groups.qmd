@@ -67,10 +67,11 @@ space or one of the typographic spaces; a value written as a nested map; and
 one written as a list. The last two are what over-indenting the map by a level
 produces. A refused key falls back exactly as a key you never wrote does — to
 the same key at the document's top level where an index's own map wrote it,
-then to your `lang:`, then to the English word or the ASCII mark — so a mistake
-here can only ever leave a reader with what this extension printed before you
-wrote anything. A whole `index-labels:` map written inside an `indexes:` entry
-that is itself refused as a declaration sets no word either, and that is
+then to your `lang:` for the three words, and then to the English word or, for
+the two marks, which follow no language at all, straight back to `,` and `;` —
+so a mistake here can only ever leave a reader with what this extension printed
+before you wrote anything. An `index-labels:` written inside an `indexes:`
+entry that is itself refused as a declaration sets no word either, and that is
 reported beside the reason the entry was refused.
 
 Naming this heading after a letter one of the index's own groups is already

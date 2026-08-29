@@ -245,18 +245,12 @@ local function read_labels(value, where)
   end
   return words
 end
--- One declaration's `name:`/`title:`, appended to `kept` in declared order, or
--- nothing where the entry is unusable. Reported rather than skipped in
--- silence: a declaration the author wrote and this filter ignored is an index
--- whose marks all land somewhere else (IP2).
---
--- `kept` is a local of the read below rather than the module's own table,
--- because a declaration that yields nothing usable must leave the document
--- with exactly the single unnamed index it started with -- half a declaration
--- installed over that would be a document with an index its author never
--- named.
+
 -- The one further message a refused `indexes:` entry that also wrote an
--- `index-labels:` map draws. Every refusal below returns before the
+-- `index-labels:` key draws. The key's own value is never looked at, so the
+-- message names the key and not the shape written under it: an entry refused
+-- as a declaration may carry a string or a list there just as readily as the
+-- map the surface asks for. Every refusal below returns before the
 -- `read_labels` call at the foot of `read_declaration`, so without this an
 -- author who repeated an index name and wrote a correct label map in the
 -- second entry was told about the name and nothing about the map (M56 review
@@ -270,10 +264,20 @@ end
 -- distinctness scan can read whole at the site that emits it.
 local function report_dropped_labels(item, position)
   if item[LABELS_KEY] ~= nil then
-    qi_core.warn(("entry %d of the %s: metadata also writes an %s: map, which sets no word: the entry declares no index, so there is nothing for that map to set the words of"):format(position, INDEXES_KEY, LABELS_KEY))
+    qi_core.warn(("entry %d of the %s: metadata also writes an %s: key, which sets no word: the entry declares no index, so there is nothing for it to set the words of"):format(position, INDEXES_KEY, LABELS_KEY))
   end
 end
 
+-- One declaration's `name:`/`title:`, appended to `kept` in declared order, or
+-- nothing where the entry is unusable. Reported rather than skipped in
+-- silence: a declaration the author wrote and this filter ignored is an index
+-- whose marks all land somewhere else (IP2).
+--
+-- `kept` is a local of the read below rather than the module's own table,
+-- because a declaration that yields nothing usable must leave the document
+-- with exactly the single unnamed index it started with -- half a declaration
+-- installed over that would be a document with an index its author never
+-- named.
 local function read_declaration(item, position, kept, seen)
   if pandoc.utils.type(item) ~= "table" then
     qi_core.warn(("entry %d of the %s: metadata is not a map with a %s: and a %s:; it declares no index, so marks naming one are filed in the first index this document does declare"):format(position, INDEXES_KEY, NAME_FIELD, TITLE_FIELD))

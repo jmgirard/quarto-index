@@ -36,15 +36,15 @@
   written as a nested map or as a list, which is what over-indenting the map by
   one level produces. Each names its own key and the level it was written at,
   and the key falls back exactly as an unwritten one does: to the next level
-  out, then to the document's `lang:`, then to the English word or the ASCII
-  mark. Without this a `see-also: "&nbsp;"` printed an emphasized non-breaking
-  space in front of a target and a nested map printed its joined leaf values,
-  both in silence; `tests/run-tests.sh` fails at `M59-AC1/AC2` without it.
+  out, then — for the three words, the two marks following no language — to the
+  document's `lang:`, and then to the English word or the ASCII mark. Without
+  this a `see-also: "&nbsp;"` printed an emphasized non-breaking space in front
+  of a target and a nested map printed its joined leaf values, both in silence; `tests/run-tests.sh` fails at `M59-AC1/AC2` without it.
 
 - An `indexes:` entry that is refused as a declaration — no `name:`, an empty
   one, a name that is no section id, a name already declared — now draws a
-  second message where it also writes an `index-labels:` map, saying that map
-  sets no word. The map is not read: the entry declares no index, so there is
+  second message where it also writes an `index-labels:` key, saying that key
+  sets no word. Its value is not read: the entry declares no index, so there is
   nothing for its words to be the words of. Without this an author who repeated
   an index name and wrote a correct label map in the second entry was told
   about the name and nothing about the map; `tests/run-tests.sh` fails at

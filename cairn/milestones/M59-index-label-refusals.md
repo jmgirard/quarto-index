@@ -46,33 +46,33 @@ index `title:` key keeps flattening a map, since nothing here reads it.
 
 ## Acceptance criteria
 
-- [ ] AC1. The two invisible values `examples/index-labels-misuse.qmd` adds —
+- [x] AC1. The two invisible values `examples/index-labels-misuse.qmd` adds —
       a `&nbsp;` under `see-also:` at the document level and a zero-width
       space under `symbols:` in one `indexes:` entry — each draw the report an
       empty value draws, naming their own key and their own level, and each
       word prints as the English one. The characters counted as invisible are
       listed at one site in `_extensions/index/modules/indexes.lua`.
       (RB tripwire: ip-touching)
-- [ ] AC2. The two flattened values that fixture adds — a `see:` written as a
+- [x] AC2. The two flattened values that fixture adds — a `see:` written as a
       nested map and a `symbols:` written as a list — each draw a report
       naming their own key and their own level, and each word prints as the
       English one. Today the map case installs the map's joined leaf values
       with no report (`read_labels`, `indexes.lua`).
-- [ ] AC3. For each of the four ways an `indexes:` entry is refused that can
+- [x] AC3. For each of the four ways an `indexes:` entry is refused that can
       still carry a label map — no `name:`, an empty `name:`, a name of the
       wrong shape, a repeated name — the fixture writes one such entry
       carrying an `index-labels:` map, and each draws, beside the entry's own
       refusal message, one further message saying that map sets no word. The
       four messages are asserted whole, not by prefix.
-- [ ] AC4. On a new fixture, an index whose `symbols:` word a printed letter
+- [x] AC4. On a new fixture, an index whose `symbols:` word a printed letter
       group also heads draws a report naming the word and the index, and
       still prints both groups; a second index in the same fixture, whose
       `symbols:` word heads no letter group, draws no such report.
-- [ ] AC5. `site/letter-groups.qmd` and `site/cross-references.qmd` each state
+- [x] AC5. `site/letter-groups.qmd` and `site/cross-references.qmd` each state
       which label values are refused — empty, invisible, a map, a list — and
       what a refused value falls back to; `CHANGELOG.md` carries one entry per
       behavior change, each naming a test that fails without it.
-- [ ] AC6. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit
+- [x] AC6. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit
       0 over the merged tree.
 
 ## Coverage
@@ -140,6 +140,7 @@ index `title:` key keeps flattening a map, since nothing here reads it.
 - 2026-08-29: noticed out of scope and not touched — DESIGN.md's KI26 still says the reader-facing-words policy is "settled and unimplemented", which M56-M58 falsified.
 
 - 2026-08-29: review opened — branch pushed, draft PR #59, consistency gate green (`cairn_validate` exit 0, no principle change so no impact report, `generic` profile names no toolchain checks). Acceptance evidence and the three review lenses in flight.
+- 2026-08-29: review — three lenses ran; blame-history and prior-review found nothing, the diff-bug lens nine, none meeting the return floor. Four fixed at the gate: a refused entry's further message asserting a shape the code never reads, a fallback ladder running the two punctuation marks through `lang:` in the changelog and on both pages, a stale count of six in a live self-test comment, and a docblock left on the wrong function. One rejected, four deferred. Suite re-run over the fixed tree: 486 plain, 934 with `--self-test`, both exit 0.
 
 ## Decisions
 
@@ -148,3 +149,132 @@ index `title:` key keeps flattening a map, since nothing here reads it.
 - 2026-08-29 (T3): the letter clash is compared character for character, not case-insensitively. A letter group always heads a capital, so `symbols: "a"` prints a heading a reader can tell from the `A` group's and draws nothing.
 
 ## Review
+
+Reviewed 2026-08-29 against PR #59. Every figure below is from a run over the
+tree that ships — the suite was re-run after the gate fixes recorded further
+down, and the earlier run's figures are superseded by these. No `Driving RR:`,
+so no projection to juxtapose.
+
+### Acceptance criteria
+
+- AC1 — green. `M59-AC1/AC2` counts the whole `see-also` message naming this
+  document's own metadata and the whole `symbols` message naming the entry
+  declaring `strata` at exactly 1 each in the misuse render's log, and at 0
+  each in `examples/index-labels.qmd`'s. The fallback half is the
+  `M59-AC1/AC2 (fallback)` manifest: 4 index sections, all 31 rows in order,
+  `strata` heading its non-letter group `Symbols` and printing `see` in front
+  of its one target, so neither the non-breaking space nor the zero-width one
+  reached a reader. The invisible characters are listed at one site,
+  `BLANKS` in `_extensions/index/modules/indexes.lua`, 27 entries.
+
+- AC2 — green. The same `M59-AC1/AC2` block counts the whole `symbols` message
+  naming this document's metadata and a value written as a list, and the whole
+  `see` message naming the entry declaring `strata` and a value written as a
+  map, at exactly 1 each in the misuse log and 0 each in the control fixture's.
+  Both words print as the English ones, on the same 31-row manifest AC1 reads:
+  the map case in particular used to install `vergleiche` from its joined leaf
+  values with nothing said.
+
+- AC3 — green. `M59-AC3` asserts eight whole messages, each at 1 in the misuse
+  log and 0 in the control: the four refusal messages for entries 5-8 (no
+  `name:`, an empty one, the name `2nd index`, a repeated `notes`) and, beside
+  each, the further message that its `index-labels:` sets no word. None is
+  matched by prefix. The whole-render pin `M59-AC1/AC2/AC3 (total)` holds that
+  render to 18 extension warnings, the figure the block's per-writing-site
+  oracle table derives. One qualification: the gate fix for finding F2 below
+  reworded that further message from "an index-labels: map" to "an
+  index-labels: key", because the code never looks at the value's shape; for
+  all four fixture entries, which write maps, the message still says the map
+  the author wrote sets no word.
+
+- AC4 — green, on the new `examples/index-labels-clash.qmd`. `M59-AC4` counts
+  the whole report naming the word `A` and the index `minerals` at exactly 1;
+  `M59-AC4 (silence)` counts the report the `fossils` index would draw, spelled
+  out in full, at 0, so a report firing on every declared word fails there; the
+  render's own total is pinned at 1. `M59-AC4 (print)` holds the page to a
+  10-row manifest across 2 sections, which shows both `A` groups still printed
+  in their own places and both `fossils` groups likewise. The two clash needles
+  also count 0 on both other label fixtures.
+
+- AC5 — green, by reading the three files. `site/letter-groups.qmd` and
+  `site/cross-references.qmd` each name the four refused shapes — empty,
+  a value made only of characters that print nothing, a nested map, a list —
+  and each states the fallback ladder a refused key takes; both ladder
+  sentences were narrowed at the gate (finding F5) because they ran the two
+  punctuation marks through `lang:`, which no language row holds.
+  `CHANGELOG.md` carries three entries, one per behavior change, naming
+  `M59-AC1/AC2`, `M59-AC3` and `M59-AC4` as the checks that fail without them.
+
+- AC6 — green over the tree that ships. `tests/run-tests.sh` reports "All
+  checks passed (486 checks)" and exits 0; `tests/run-tests.sh --self-test`
+  reports 934 and exits 0. Both were re-run after the four gate fixes, and the
+  six M59 T7 plants each ran red for their own named reason inside that second
+  self-test run. `main` has not moved since the branch was cut (`git rev-list
+  --left-right --count main...HEAD` is 0 ahead on the left), so this tree is
+  the merged tree.
+
+### Consistency gate
+
+`python3 cairn_validate.py` — exit 0, every check PASS, every advisory OK; the
+`release window` advisory did not fire. No `DESIGN.md` principle changed (the
+diff touches the architecture module list and the Known-issues section only),
+so no Sync Impact Report was owed. The `generic` profile's `consistency-gate`
+slot names no toolchain checks, so that half is a clean no-op.
+
+### Independent review
+
+Three fresh-context lenses, each on its own evidence base. The blame-history
+lens reported no findings: it traced the reworded empty-value report, the
+74 -> 77 `warn-distinct` pin, the four closed Known-issues entries and the M56
+total pin moving into the M59 block, and found each a documented supersession
+rather than a silent regression. The prior-review lens reported no findings:
+the four archived findings its subject matter overlaps — the read ordering
+KI177 names, the per-index message coverage KI183 names, the whole-render pin
+KI181 names and the plant-reimplementation lesson KI180 taught — are each
+aligned with rather than reintroduced. The diff-bug lens reported nine, ranked;
+it also re-ran the filter under plain pandoc in its own scratch copy and
+independently reproduced the 18-warning and 1-warning totals and the two-`A`
+clash page.
+
+Four fixed at the gate:
+
+- F2. `report_dropped_labels` emitted "also writes an `index-labels:` map"
+  without looking at the value's shape, so an entry refused as a declaration
+  that wrote a string or a list there was told about a map it never wrote.
+  Fixed: the message names the key, not the shape. The four whole-message
+  needles, the changelog entry and both documentation pages moved with it.
+- F5. The fallback-ladder sentence this branch added to `CHANGELOG.md`,
+  `site/letter-groups.qmd` and `site/cross-references.qmd` ran a refused value
+  for either punctuation key through the document's `lang:`. No language row
+  holds either key — which the M58 changelog entry and a later paragraph of
+  `site/letter-groups.qmd` both already say. Fixed: each sentence now sends the
+  two marks straight back to `,` and `;`.
+- F4. A live self-test comment and its plant label still said the misuse
+  fixture "reports six times"; this branch made that eighteen. Fixed, and the
+  figure now cites the M59 block's own derivation rather than restating a count.
+- F8. `read_declaration`'s docblock was left above the newly inserted
+  `report_dropped_labels`, so it read as documenting that function. Fixed by
+  moving the block to sit on `read_declaration` again.
+
+One rejected:
+
+- F7. The clash report names "this document" rather than an index in a document
+  declaring fewer than two indexes, because it goes through `scope_phrase`.
+  That is the repo's established convention for a scoped report (D-021, D-022),
+  it is not a line this diff modified, and AC4's fixture declares two indexes.
+
+Four deferred as Known-issues entries behind the existing candidate row for the
+checks fencing the label surface, which this pass extends to name M59:
+
+- F1. Ten of the twelve new zero-expectation controls cannot fail: the needles
+  name `strata`, `minerals`, `fossils` and entries 5-8, none of which the
+  control fixture declares, so no filter behavior could put those strings in
+  its log. Only the two document-level controls discriminate.
+- F9. No T7 plant fences the silence half of AC4 — the `M59_NOCLASH` zero-count
+  and the clash render's total of 1 have not been shown red.
+- F3. The changelog says the clash report fires for HTML and EPUB. The dispatch
+  read supports it (`builds_ast_index` is `is_html() or is_epub()`), but the
+  clash fixture is rendered to HTML only, so nothing would catch the sentence
+  becoming false.
+- F6. 25 of the 27 `BLANKS` entries are unexercised by any render; a transposed
+  codepoint in the list would ship silently.

@@ -143,10 +143,11 @@ typographic spaces; a value written as a nested map; and one written as a list,
 the last two being what over-indenting the map by a level produces. Each is
 reported where it was written, and the key then falls back the way a key you
 never wrote does — to the document's top-level map where an index's own wrote
-it, then to your `lang:`, then to the English word or the ASCII mark. A whole
-`index-labels:` map written inside an `indexes:` entry that is itself refused
-as a declaration sets no word either, and that is reported beside the reason
-the entry was refused.
+it, then to your `lang:` for the three words, and then to the English word or,
+for the two marks, which follow no language at all, straight back to `,` and
+`;`. An `index-labels:` written inside an `indexes:` entry that is itself
+refused as a declaration sets no word either, and that is reported beside the
+reason the entry was refused.
 
 Set them only where the extension's own choice is wrong for you. Left alone
 they follow your document's `lang:` — Spanish, French, German and Italian are

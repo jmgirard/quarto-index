@@ -18788,9 +18788,9 @@ if [ "${1:-}" = "--self-test" ]; then
       "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" "M57 probe"
 
   # The silence assertions, against a log that is not silent: the misuse
-  # fixture M56 ships reports six times, so a warning count blind to its own
-  # log would pass here.
-  m57_planted 'a log carrying six messages held to a count of zero' \
+  # fixture reports eighteen times, the total the M59 block below derives per
+  # writing site, so a warning count blind to its own log would pass here.
+  m57_planted 'a log carrying eighteen messages held to a count of zero' \
     'expected 0 warning(s)' \
     check_extension_warning_count "$WORK/index-labels-misuse-html.log" 0 \
       "M57 probe"
@@ -19186,10 +19186,10 @@ M59_NONAME='entry 5 of the indexes: metadata has no name:, so there is nothing f
 M59_EMPTYNAME='entry 6 of the indexes: metadata has an empty name:, which no mark can name, so it declares no index'
 M59_BADNAME='entry 7 of the indexes: metadata declares the name "2nd index", which cannot be a section id a `#id` selector names; a name holds ASCII letters, digits, hyphen and underscore and begins with a letter, so this entry declares no index'
 M59_REPEATED='entry 8 of the indexes: metadata declares the name "notes" a second time; one name is one index, so this entry is ignored and the first declaration of that name is the one that prints'
-M59_DROPPED_5='entry 5 of the indexes: metadata also writes an index-labels: map, which sets no word: the entry declares no index, so there is nothing for that map to set the words of'
-M59_DROPPED_6='entry 6 of the indexes: metadata also writes an index-labels: map, which sets no word: the entry declares no index, so there is nothing for that map to set the words of'
-M59_DROPPED_7='entry 7 of the indexes: metadata also writes an index-labels: map, which sets no word: the entry declares no index, so there is nothing for that map to set the words of'
-M59_DROPPED_8='entry 8 of the indexes: metadata also writes an index-labels: map, which sets no word: the entry declares no index, so there is nothing for that map to set the words of'
+M59_DROPPED_5='entry 5 of the indexes: metadata also writes an index-labels: key, which sets no word: the entry declares no index, so there is nothing for it to set the words of'
+M59_DROPPED_6='entry 6 of the indexes: metadata also writes an index-labels: key, which sets no word: the entry declares no index, so there is nothing for it to set the words of'
+M59_DROPPED_7='entry 7 of the indexes: metadata also writes an index-labels: key, which sets no word: the entry declares no index, so there is nothing for it to set the words of'
+M59_DROPPED_8='entry 8 of the indexes: metadata also writes an index-labels: key, which sets no word: the entry declares no index, so there is nothing for it to set the words of'
 
 for needle in "$M59_NONAME" "$M59_EMPTYNAME" "$M59_BADNAME" "$M59_REPEATED" \
               "$M59_DROPPED_5" "$M59_DROPPED_6" "$M59_DROPPED_7" \

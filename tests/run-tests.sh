@@ -18889,8 +18889,11 @@ MANIFEST
 # U+007E. So the first index prints the document's mark at every position it
 # reaches, and the second prints its OWN mark where `separator` is consulted
 # and still the DOCUMENT's between its two cross-references — which is the
-# key-by-key claim, and would read as U+00B7 at both of the second index's
-# `separator` positions under a map-by-map fold.
+# key-by-key claim. A map-by-map fold would take the `alloys` map whole and
+# read the document's not at all, so that index would print U+007E where it
+# prints it now and the English U+003B — not the document's U+002F — between
+# its two cross-references; the manifest below discriminates against that fold
+# and against a document-wins one alike.
 read -r -d '' M58_SCOPED <<'MANIFEST' || true
 section	qi-index-minerals
 0	Jadeite	S1=U+00B7
@@ -19021,8 +19024,9 @@ fi
 #              so nothing is folded into a printed field and
 #              each mark emits the same agreed command       2
 M58_TEX_INDEXES=6
-m58_found=$(grep -c '\\index{' \
-  "$CAPTURE_ROOT/index-separators-latex/index-separators.tex" || true)
+m58_found=$(grep -o '\\index{' \
+  "$CAPTURE_ROOT/index-separators-latex/index-separators.tex" | wc -l \
+  | tr -d ' ')
 [ "$m58_found" = "$M58_TEX_INDEXES" ] \
   || fail "M58-AC6: the separators fixture's .tex carries $m58_found \\index command(s), where its seven marks and the contested-key rule derive $M58_TEX_INDEXES"
 pass "M58-AC6: the separators fixture and its twin render byte-for-byte identical .tex, over a file carrying the $M58_TEX_INDEXES \\index command(s) its marks derive, so no declared separator reaches the LaTeX back-end"

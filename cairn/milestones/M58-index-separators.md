@@ -162,6 +162,7 @@ mistake.
 
 - 2026-08-29: all nine tasks done; suite green plain (480 checks) and with `--self-test` (922 checks), both exit 0. Status review.
 - 2026-08-29: /milestone-review; PR #58 opened as a draft, CI green on all five checks. All nine criteria verified with fresh evidence and ticked; consistency gate passed (`cairn_validate` exit 0, one sizing advisory). The blame-history and prior-review lenses reported no findings; the diff-bug lens was still running at this checkpoint.
+- 2026-08-29: /milestone-review diff-bug lens returned eleven findings; none met the return floor. Six fixed at the gate (three false or incomplete docs claims about where LaTeX's cross-reference semicolon lives and what `separator` governs, a line-count standing in for a command count in AC6, a wrong counterfactual in the AC3 comment, and a candidate row that did not cover the `TARGET_JOIN` half its Scope Out defers to it), one rejected as a misreading, four deferred to Known issues and a candidate row at hygiene. Suite re-run green over the fixed tree: 480 plain, 922 with `--self-test`.
 
 ## Decisions
 
@@ -245,4 +246,99 @@ ran, each lens fresh-context and on its own evidence base.
   touched files (M56, M57 and M08 archived `## Review` sections); the
   `gh api .../pulls/comments` existence probe returned empty, so no per-PR
   thread walk was made.
-- [O] diff-bug — pending at this checkpoint.
+- [O] diff-bug — eleven findings, ranked, below. It confirmed the Lua change
+  separately: `entry_inlines` resolves both keys once per entry and applies
+  them at exactly the five sites with every `pandoc.Space()` untouched, and a
+  grep of `_extensions/index/modules/*.lua` for punctuation literals in printed
+  output leaves `html.lua:282`/`:284` the only ones, so no printing site was
+  missed.
+
+Return floor: none of the eleven demonstrates an acceptance criterion failing
+inside its named procedure's domain, and none is a load-bearing defect in what
+the extension does for an author — the printing behavior is correct. So no
+finding returned the milestone; the actioned ones were fixed at the gate, on
+the branch, before the approval marker.
+
+F1 (fix-now, done). `site/back-end-differences.qmd` said what stands between
+two cross-references in a LaTeX index "is fixed inside the command the
+extension defines for a term carrying both". For the shipped fixture it is
+not: the captured `.tex` holds
+`\index{Dolomite|quartoindexxrefs{\see{Azurite}{}; \seealso{Beryl}{}}}`, whose
+`; ` comes from `latex.lua:381`, `fold_xrefs`'s `table.concat(parts, "; ")`,
+which sits inside no command definition. `site/cross-references.qmd` and
+`CHANGELOG.md` were wrong the same way. Verified at the gate: both semicolon
+sites are reached by that one fixture — its `.tex` carries one
+`quartoindexseeboth` (Beryl, the contested key with a plain mark) and the
+`quartoindexxrefs` fold (Dolomite). All three now say the semicolon is written
+into the LaTeX this extension emits, naming both places rather than one.
+
+F2 (fix-now, done). No doc said `separator` is also the mark in front of a
+first cross-reference where no locator precedes it — the ordinary shape of a
+`see=`-only entry. All three described it as the mark before and between
+locators, and the changelog added only the locators-to-cross-reference
+position. An author setting `xref-separator` alone would find every `see`-only
+entry still printing `,` with nothing explaining why. The three docs pages and
+the changelog now name that position.
+
+F3 (fix-now, done). `tests/run-tests.sh` counted AC6's `\index` commands with
+`grep -c`, which counts matching LINES, under a message claiming a count of
+commands; the repo's own convention for this measurement is
+`grep -o … | wc -l` (`run-tests.sh:2167`). It read 6 only because pandoc
+happens to emit one `\index` per line here. Now `grep -o '\\index{' | wc -l`.
+
+F4 (fix-now, done). The copyable YAML on two pages paired German words with
+Arabic punctuation, and `cairn/DESIGN.md` KI6 records that RTL index layout is
+unsupported — "the comma between an entry and its locators lands on the wrong
+side of the entry". Both pages now say the Arabic marks are the case these
+keys exist for and that writing them does not make a right-to-left index come
+out right.
+
+F5 (rejected). The lens read `examples/index-separators.qmd:21`'s "Nothing
+below declares punctuation" as contradicting the fixture's own front matter.
+Read against the file, "below" is the body, contrasted with "the metadata
+above" two paragraphs earlier; the sentence says the index marks below are
+ordinary ones, which is true in the fixture and in the twin alike.
+
+F6 (deferred). `tests/htmlindex.py:402` — `entry_separators` reads
+`item.children` where the record builder beside it reads `own_nodes(item)`,
+which recurses through non-list children. A Pandoc version emitting the index
+list loose would leave `locators` and `xrefs` reading correctly while
+`separators` came back empty. Loud, not silent, but the two readers disagree
+about what an entry's markup is.
+
+F7 (deferred). `tests/sepcheck.py` raises `ValueError` on a malformed manifest
+where its own docstring promises a `FAIL:` line and exit 1, so a manifest
+error is reported by `check_separators` as a rendering defect, with a
+traceback where a diagnosis should be.
+
+F8 (deferred). `derive_labels_twin` counts deleted blocks, not the keys in
+them, so AC2's stated premise — that the block sets these two keys and no
+other — is unfenced: adding a third key to the fixture's block would leave
+every check green and the premise silently false.
+
+F9 (fix-now, done). The AC3 comment's counterfactual said a map-by-map fold
+"would read as U+00B7 at both of the second index's `separator` positions".
+Under a map-by-map fold the `alloys` map wins whole, so that index would print
+U+007E where it prints it now and the English U+003B between its two
+cross-references; U+00B7 is what a document-wins fold would give. The manifest
+discriminated against both folds already — only the comment was wrong, and it
+now states what each fold would print.
+
+F10 (fix-now, done). The Scope Out sends `levels.lua`'s `TARGET_JOIN` "→ the
+candidate row above", but that row was about following `lang:` for the
+punctuation this milestone made settable and named no level join, so the
+deferred item had no record. The row now carries it, recompressed to 386 bytes
+against the 400-byte per-row cap. The Scope Out's own wording is plan-owned
+and was left as written.
+
+F11 (deferred). `sepcheck.py`'s `ok` line and AC1's pass message both say
+"exactly one space" where the check accepts any single whitespace character —
+deliberately, so an HTML writer's newline passes. The docstring states this;
+the two green lines do not.
+
+Deferred findings F6, F7, F8 and F11 are all about what the checks fencing
+this milestone hold today; they take Known-issues entries and one candidate
+row at the post-merge hygiene pass, per D-013.
+
+Suite re-run over the fixed tree: 480 checks plain and 922 with `--self-test`,
+both exit 0.

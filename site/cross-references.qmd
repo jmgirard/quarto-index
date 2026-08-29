@@ -105,7 +105,9 @@ for them and will call their terms unindexed. Render the whole book.
 `see` and `see also` are the extension's own words, and so is the `Symbols`
 heading over the entries that file under no letter. So is the punctuation an
 entry carries: the mark in front of an entry's locators and between one locator
-and the next, and the mark between two cross-references. Set any of the five
+and the next — and in front of a cross-reference where no other mark has been
+printed yet, which is what an entry that is only a `see=` prints — and the mark
+between two cross-references. Set any of the five
 under `index-labels:`, whose keys are `symbols`, `see`, `see-also`, `separator`
 and `xref-separator`:
 
@@ -120,6 +122,12 @@ index-labels:
 A separator key sets the glyph alone. The space after it is the extension's
 own, written whatever you set, so an entry can never come out with its locator
 run into the term in front of it.
+
+The Arabic marks above are what these two keys exist for — no language table
+supplies them, so a document wanting them writes them here. Setting them does
+not make a right-to-left index come out right on its own: that is a known
+limitation of this extension, and a `lang: ar` document meets it whatever it
+writes under `index-labels:`.
 
 The map goes at a document's top level, covering every index it has, or inside
 one entry of `indexes:`, covering that index alone; where both name a key, the
@@ -136,5 +144,5 @@ cover keeps the English words.
 
 This reaches the HTML and EPUB indexes only: a LaTeX index gets the two words
 from babel, which sets them from your document's `lang:`, and takes its
-punctuation from `makeindex` and from the `\see` and `\seealso` commands,
-which neither separator key touches.
+punctuation from `makeindex` and from the LaTeX this extension emits around
+`\see` and `\seealso`, which neither separator key touches.

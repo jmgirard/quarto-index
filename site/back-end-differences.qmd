@@ -55,8 +55,10 @@ sequence numbers with no pages behind them — are on the [EPUB](epub.qmd) page.
    has no letter groups at all, so it prints no `Symbols` heading for
    `symbols:` to override. Neither separator key reaches it either: what stands
    between a term and its page numbers there is `makeindex`'s own delimiter,
-   and what stands between two cross-references is fixed inside the command the
-   extension defines for a term carrying both.
+   and what stands between two cross-references is written into the LaTeX this
+   extension emits — in two places, the command it defines for a term carrying
+   both kinds and the join it writes when a term's targets ride the
+   encapsulation channel instead.
 10. **All three back-ends follow `lang:`, and share nothing else about it.**
     Every back-end picks its own words from your document's language, and
     that language is the whole of what they have in common: LaTeX asks babel,

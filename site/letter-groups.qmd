@@ -34,8 +34,9 @@ default PDF pipeline does it for you.
 
 Some of what a reader sees is the extension's own rather than yours: this
 `Symbols` heading, the `see` and `see also` in front of a cross-reference, and
-the punctuation inside an entry — the mark in front of an entry's locators and
-between one locator and the next (`separator`), and the mark between two
+the punctuation inside an entry — the mark in front of an entry's locators,
+between one locator and the next, and in front of the first cross-reference,
+whether locators precede it or not (`separator`), and the mark between two
 cross-references (`xref-separator`). Set any of them under `index-labels:`,
 whose five keys are `symbols`, `see`, `see-also`, `separator` and
 `xref-separator`:
@@ -66,7 +67,9 @@ heading, and every other language keeps the English words. So a `lang: es`
 document heads this group `Símbolos` with nothing written under
 `index-labels:` at all. The two marks do not follow `lang:` at all: written
 nowhere they stay `,` and `;`, so a document wanting other punctuation writes
-it out here.
+it out here. The Arabic marks above are the case they exist for; writing them
+does not make a right-to-left index come out right, which is a known limitation
+of this extension and not something these keys reach.
 
 These words and marks reach the HTML and EPUB indexes only. A LaTeX index takes
 `see` and `see also` from babel, which sets them from your document's `lang:`;

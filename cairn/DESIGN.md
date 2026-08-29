@@ -1255,7 +1255,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   into one space-joined field (`tests/htmlindex.py:541`), and both can contain
   spaces, so a render printing `siehe` in front of `auch Kestrel` yields the
   row a render printing `siehe auch` in front of `Kestrel` yields. The two are
-  read independently and lose that independence in the row. — M56 review F5
+  read independently and lose that independence in the row. Live rather than
+  hypothetical since M57: three of the four languages it ships spell `see also`
+  as two words, so every non-English manifest it added carries the fold
+  (corrected M057). — M56 review F5, M57 review F12
 - **KI179.** The state-reuse comment's cell counts ("seventeen", "fourteen")
   are stale after M56 added `doc_labels` and `index_labels`, and more than the
   prose is stale: `tests/state-pollute.lua` never calls `qi_indexes.read`, so
@@ -1280,3 +1283,28 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   document level: the misuse fixture writes both per-key shapes there and only
   the not-a-map shape per index, so a defect in how those two messages name an
   index goes unseen. — M56 review F14
+- **KI184.** `languages.lua`'s `OUTCOMES` table is read by nothing — not the
+  module, the suite or the site. Its comment justifies it as what stops a check
+  from naming its own outcomes while a fourth goes unexercised, but the suite's
+  coverage is `M57_RESOLVER_FIXTURES`, four strings hard-coded in shell with no
+  link to it, so adding a fifth outcome to the resolver fails no check. — M57
+  review F3
+- **KI185.** `well_formed` matches subtags with `%a` and `%w`, against the
+  convention `html.lua:69-70` states verbatim: `[A-Za-z]` rather than `%a`,
+  whose meaning follows the C locale. Both outcomes print English, so nothing
+  visible diverges; the `miss`/`malformed` distinction the module treats as
+  load-bearing becomes machine-dependent. — M57 review F4
+- **KI186.** `m57_tex_ledger` filters diff headers by prefix, so a differing
+  line whose own body is `--` or `++` arrives as `---`/`+++` and is discarded
+  unclassified. No LaTeX preamble line has that shape today. — M57 review F5
+- **KI187.** `indexes.lua` exports `TITLE_KEY`, which nothing outside the module
+  reads — the surface `languages.lua:158-161` argues against in the same diff.
+  — M57 review F6
+- **KI188.** `label()` consults the language row for whatever key it is handed,
+  and `TITLE_KEY`'s string value shares a table with the three label keys. No
+  call site passes `"title"` today, so a future printing site adding a `title`
+  label key would silently pick up the index heading. — M57 review F7
+- **KI189.** No book fixture declares `lang:`. All six language fixtures are
+  single documents, so the aggregated book index — several Pandoc processes in
+  HTML, one in EPUB — takes no language path in the suite. The Italian row's
+  four words are exercised by no fixture at all. — M57 review F2, F11

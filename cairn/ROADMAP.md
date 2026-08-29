@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-29 (M56 merged and archived: authors set the three words the HTML and EPUB index prints itself, through an `index-labels:` map read at a document's top level and inside one `indexes:` entry. Three fresh-context lenses ran; only the diff-bug lens found anything — 15 findings, plus 1 from the session. Three fixed at the gate: two false claims about babel and the `symbols` word in the site pages, the stale manifest-1e row-format definition, and four code comments still naming the map `labels:` after D-039 renamed it. Eleven deferred as KI173-KI183 behind one new candidate row; two rejected. To hold the 60-line cap for that row, the M52 and M49/M50 reader-repair rows were clustered into one. M56's lesson folded into M13's as an extension rather than taking a new line. ROADMAP 59 lines / 11,860 bytes, LESSONS 49 / 19,541, check-design.md 37 / 17,699 against its own 40 / 18,000 — all under budget (`wc -l -c`). Suite green twice over the final tree: 441 checks plain, 863 with `--self-test`, both exit 0. The `release window` advisory did not fire.)_
+_Last hygiene check: 2026-08-29 (M57 merged and archived: the four words the HTML and EPUB index prints for itself now follow the document's `lang:`, against a table this repo authors covering Spanish, French, German and Italian, with `index-labels:` still winning key by key and no localized word reaching LaTeX. Three fresh-context lenses ran; blame-history found nothing, the diff-bug lens eleven and the prior-review lens two. Three false claims fixed at the gate: the changelog's `title: Index` restore advice, which a render showed does not work from the front matter, the reference ledger's claim that every shipped word has a fixture, and a provenance line miscounting its own sources. Eight deferred as KI184-KI189 behind one new candidate row, two rejected; KI178 corrected in place, where M57's two-word labels made it live. M52's terminal row pruned to hold the five-row retention. M57's lesson folded into M13's as a second extension. ROADMAP 59 lines / 12,253 bytes, LESSONS 49 / 19,912, check-design.md 37 / 17,699 against its own 40 / 18,000, PROFILE 87 / 120 lines, the CLAUDE.md cairn section 25 / 30 — all under budget (`wc -l -c`). Suite green twice over the merged tree: 465 checks plain, 899 with `--self-test`, both exit 0. The `release window` advisory did not fire.)_
 
 _Released 0.1.0 2026-08-26._
 
@@ -10,11 +10,10 @@ _Released 0.1.0 2026-08-26._
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M56 | An author sets the words the index back-end picks itself | done | — | normal | milestones/archive/M56-index-label-override.md |
-| M57 | A non-English document gets a non-English index | review | M56 | normal | milestones/M057-index-label-language.md |
+| M57 | A non-English document gets a non-English index | done | M56 | normal | milestones/archive/M57-index-label-language.md |
 | M55 | An HTML book builds every index its chapters declare | done | — | normal | milestones/archive/M55-book-named-indexes.md |
 | M54 | The candidate backlog comes back under D-013 | done | — | normal | milestones/archive/M54-candidate-backlog.md |
 | M53 | The workflows' actions come up to date | done | — | normal | milestones/archive/M53-action-versions.md |
-| M52 | EPUB gets an index back-end | done | — | normal | milestones/archive/M52-epub-back-end.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -55,5 +54,6 @@ _Released 0.1.0 2026-08-26._
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Handle a chapter filename containing `#` or `?` — added 2026-08-17 — M05 review F11 — KI14
 - Repair the label surface M56 shipped and the checks fencing it: words a report should refuse but installs, a per-index map dropped with a refused entry, seven check weaknesses; promote the behavior half on an author reaching an edge, the check half on any check turning a run red for a reason that is not the defect it names — added 2026-08-29 — M56 review — KI173-KI183
+- Repair the language table M57 shipped and the checks fencing it; promote the behavior half on an author reaching an edge, the check half on any check turning a run red for a reason that is not the defect it names — added 2026-08-29 — M57 review — KI184-KI189
 - Localize the locator punctuation an index prints — the entry comma and the cross-reference semicolon, which an Arabic index sets differently; promote on the label map M56 ships proving it wants a fourth key, or on an author reporting the punctuation as wrong — added 2026-08-28 — RR02 B2
 - Repair the HTML book's index placement and the reports around it: which chapter builds an index no marker names on a first render, the stale-name report's per-chapter count, a record whose `xrefs` is not a table, and the untested sort-key merge order; promote on any reaching an author or turning a run red for a reason that is not the defect it names — added 2026-08-28 — M55 review F1, F2, F4, F8 — KI167, KI168, KI169, KI171

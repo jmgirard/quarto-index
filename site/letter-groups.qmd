@@ -54,5 +54,7 @@ The map is `index-labels:` and not `labels:` because a top-level `labels:` is
 Quarto's own map, the one holding the words for its title block, and this
 extension does not read it.
 
-These words reach the HTML and EPUB indexes only. A LaTeX index takes them
-from babel, which sets them from your document's `lang:`.
+These words reach the HTML and EPUB indexes only. A LaTeX index takes `see`
+and `see also` from babel, which sets them from your document's `lang:`; it has
+no letter groups and so prints no `Symbols` heading at all, which is why
+`symbols:` has nothing to override there.

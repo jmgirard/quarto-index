@@ -152,6 +152,8 @@ already and gains nothing here.
 
 - 2026-08-28: review — PR #56 opened as a draft, CI green. Default branch had not moved. cairn_validate exit 0 (two advisory sizing WARNs only); no IP/GP change, so cairn_impact skipped; the generic profile names no toolchain checks. The eight criterion boxes arrived ticked with an empty Review section, so all eight were reset and are being re-ticked against fresh evidence: AC1-AC7 verified and recorded. AC8 awaits the in-flight `--self-test` run; the three fresh-context reviewers are still out. Checkpoint, not a finished review.
 
+- 2026-08-28: review — three fresh-context lenses ran; blame-history and prior-PR-comments returned no findings, the [O] diff-bug lens returned 15. Three items fixed at the gate (two false babel/`symbols` claims in the site pages, the stale manifest-1e row-format definition, and four code comments still naming the map `labels:` after D-039), eleven deferred as KI173-KI183, two rejected. No finding demonstrates a criterion failing, so status stays in review. Both suites re-running over the fixed tree for AC8; checkpoint, not a finished review.
+
 ## Decisions
 
 - **What falls back is the key, not the map.** A map whose `see:` is empty
@@ -209,3 +211,86 @@ so no merge was needed. Suite evidence is from one sequential
   `letter-groups.qmd` and `cross-references.qmd` — state the rename clause, that
   the map is `index-labels:` rather than `labels:` because a top-level `labels:`
   is Quarto's own.
+
+### Consistency gate
+
+`cairn_validate.py` exit 0 — every check PASS, two advisory sizing WARNs
+(M056 and M057 each carry 8 acceptance criteria, over the 7 tripwire), which
+are advisories and not gate failures. No `DESIGN.md` principle changed — the
+diff adds a Known-issues entry only — so `cairn_impact.py` was not run. The
+active profile is `generic`, whose `consistency-gate` slot names no toolchain
+checks, so that half is a clean no-op.
+
+### Independent fresh-context review
+
+Declared tier is user-facing and the diff touches executable surface, so the
+full three-lens fan-out ran, each lens fresh-context and none having authored
+the implementation.
+
+- **[S] blame-history** — no findings. It confirmed `group_label`/`group_rank`
+  are untouched by the diff, the LaTeX/babel path is left alone as `core.lua`'s
+  standing comment intends, D-037/D-038 are not contradicted, and every
+  `xrefs` unpack was widened.
+- **[S] prior-PR-comments** — no findings. The GitHub existence probe found no
+  inline review comments on this repo at all, so that surface was skipped; the
+  archived `## Review` sections for M52, M38, M39, M25 and M50 were read
+  against the touched files and no prior review point is regressed.
+- **[O] diff-bug** — 15 findings, ranked. Dispositions below; the maintainer
+  sees the full ranked text at the gate.
+
+Findings and dispositions, in the reviewer's own severity order:
+
+- **F1. A usable `index-labels:` is silently ignored in LaTeX, with no report.**
+  *Rejected — the intentional scope decision this milestone's plan called for.*
+  Scope Out names the LaTeX back-end, which localizes through babel; IP1 makes
+  a format that does not realize a feature degrade gracefully rather than
+  report, and all three site pages state the HTML/EPUB-only reach.
+- **F2. Two site pages state something false about babel and the `symbols`
+  word.** *Fixed now.* babel supplies `\seename` and `\alsoname` only, and a
+  LaTeX index has no letter groups at all, so there is no third word for
+  `symbols:` to override there. Both sentences rewritten; verified against
+  `latex.lua`, which emits no letter-group heading.
+- **F3. A whitespace-only word is accepted as a printed word.** *Follow-up —
+  KI173.*
+- **F4. The `read`-ordering the comment exists for is untested.** *Follow-up —
+  KI177.*
+- **F5. The labeled manifest field folds word and target into one ambiguous
+  string.** *Follow-up — KI178.* Verified at `tests/htmlindex.py:541`.
+- **F6. The canonical row-format definition was not updated for the new
+  shape.** *Fixed now* — manifest 1e's definition now states the label form and
+  that the eight manifests referring back to it mean the plain form.
+- **F7. M26's cell inventory is stale and the two new cells are unbound by any
+  reset probe.** *Follow-up — KI179.* The stale count was not corrected here:
+  the comment's "seventeen" does not reproduce from a read of the four `reset`
+  bodies, so a guessed number would be a fresh derived-figure defect.
+- **F8. A per-index map on a refused entry vanishes with no message.**
+  *Follow-up — KI176.*
+- **F9. The `.tex` planted defect re-implements the check.** *Follow-up —
+  KI180.*
+- **F10. The labels fixture's own render logs are never held to a warning
+  count.** *Follow-up — KI181.*
+- **F11. A nested map under a label key stringifies to a word.** *Follow-up —
+  KI175.*
+- **F12. `m56_derive` ends a block at a blank line.** *Follow-up — KI182.*
+- **F13. A single-ASCII-letter `symbols:` word prints two identically headed
+  groups.** *Follow-up — KI174.*
+- **F14. The two per-key messages are only exercised at the document level.**
+  *Follow-up — KI183.*
+- **F15. Two dead exports (`LABELS_KEY`, `LABEL_KEYS`, `SYMBOLS_KEY`).**
+  *Rejected — a style point no behavior rests on, and the out-of-scope
+  taxonomy's linter-or-nitpick member.*
+
+One further finding came from the review session itself, not from a lens:
+
+- **M1. Four code comments still named the map `labels:` after D-039 renamed it
+  to `index-labels:`** (`core.lua:24`, `indexes.lua:62`, `:117`, `:218`).
+  *Fixed now.* The one remaining `labels:` mention, `indexes.lua:40`, is the
+  deliberate explanation of why the name is not that.
+
+**Return floor.** No actioned finding demonstrates an acceptance criterion
+failing, and none is a load-bearing defect in what the extension does for its
+users: the three fixed items are two prose corrections and a stale-comment
+sweep, and the eleven deferred ones are edges and check weaknesses, each
+recorded as a Known-issues entry with a candidate row to promote from. Status
+stays in review.
+

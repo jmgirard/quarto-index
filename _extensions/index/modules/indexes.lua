@@ -59,9 +59,9 @@ for _, key in ipairs(LABEL_KEYS) do
   LABEL_KEY_SET[key] = true
 end
 
--- How a report names the level a `labels:` map was written at. The document
--- level is one phrase; an index's own names the index, which is the only thing
--- that tells two per-index maps apart in a log.
+-- How a report names the level an `index-labels:` map was written at. The
+-- document level is one phrase; an index's own names the index, which is the
+-- only thing that tells two per-index maps apart in a log.
 local DOCUMENT_LEVEL = "in this document's metadata"
 
 local function index_level(name)
@@ -114,8 +114,8 @@ local declared = false
 local doc_labels = {}
 local index_labels = {}
 
--- One `labels:` map, at whichever level it was written. Returns the words it
--- usably sets, or nil where it sets none.
+-- One `index-labels:` map, at whichever level it was written. Returns the
+-- words it usably sets, or nil where it sets none.
 --
 -- The discipline is `read_declaration`'s: anything unusable is reported and
 -- falls back, never half-installed. The unit that falls back is the KEY, as
@@ -215,7 +215,7 @@ end
 -- partly installed declaration.
 local function read(meta)
   -- Read BEFORE the declaration and outside its early returns: a document that
-  -- declares no index is exactly the document most likely to write `labels:`
+  -- declares no index is exactly the document most likely to write `index-labels:`
   -- at all, since it has no index entry to write one in (D-036).
   local words = read_labels(meta and meta[LABELS_KEY] or nil, DOCUMENT_LEVEL)
   if words ~= nil then

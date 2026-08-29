@@ -442,8 +442,12 @@ HTML_PRINCIPAL_CLASS='qi-principal'
 # Two row shapes. An ENTRY row is
 # <depth><TAB><entry text><TAB><locator count>[<TAB><cross-reference>]…
 # where a cross-reference is `see-plain`/`see-link`/`also-plain`/`also-link`,
-# a space, and the target as a reader sees it. A letter-group HEADING row is
-# `letter`<TAB><label>; an entry row always opens with a depth digit, so the
+# a space, and the target as a reader sees it. A manifest built with the label
+# form of that field -- the M56 block's, and only that block's -- puts the word
+# the back-end prints in front of the target between the two: token, space,
+# printed word, space, target. Every manifest below saying "same row format as
+# manifest 1e" means the plain form, without the word.
+# A letter-group HEADING row is `letter`<TAB><label>; an entry row always opens with a depth digit, so the
 # two shapes cannot be confused. Rows appear in rendered order, headings
 # among the entries they introduce.
 # Same oracle rule as manifest 1, with the HTML back-end's own layers derived

@@ -49,6 +49,7 @@ sequence numbers with no pages behind them — are on the [EPUB](epub.qmd) page.
    `index-labels:` — keys `symbols`, `see` and `see-also`, written at a
    document's top level or inside one `indexes:` entry, the nearer setting
    winning key by key — sets them for the HTML and EPUB indexes. It reaches
-   the LaTeX back-end nowhere: that one emits `\see`, `\seealso` and an
-   untitled `\printindex`, and babel supplies all three words from your
-   document's `lang:`.
+   the LaTeX back-end nowhere: that one emits `\see` and `\seealso`, whose
+   two words babel supplies from your document's `lang:`. There is no third
+   word to set there — a LaTeX index has no letter groups at all, so it prints
+   no `Symbols` heading for `symbols:` to override.

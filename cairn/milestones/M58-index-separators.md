@@ -136,7 +136,7 @@ mistake.
 - [x] T6. Write the HTML manifest reader and its row-count assertion, and the
       scoped-resolution check.
 - [x] T7. Extend `tests/epubindex.py` to read the separators from the spine.
-- [ ] T8. Rewrite the three docs pages and the changelog entry.
+- [x] T8. Rewrite the three docs pages and the changelog entry.
 - [x] T9. Plant the defect matrix through `tests/plantdefect.py`, varying FORM
       as well as location: glyph swapped at one site, separator dropped
       entirely, the trailing `pandoc.Space()` lost, the wrong key consulted at a
@@ -148,6 +148,7 @@ mistake.
 - 2026-08-29: created by /milestone-plan.
 - 2026-08-29: /milestone-implement started; branch m058-index-separators cut from main, status in-progress.
 - 2026-08-29: gate chose a separate hand-written punctuation manifest and its own check over extending the entry-row format the label and language fixtures read; code-point notation (`U+060C`) over the literal glyph in that manifest; and no `lang:` on the Arabic-punctuation fixture, since right-to-left index layout is an unfixed known issue this milestone does not touch.
+- 2026-08-29: T8's changelog sentence that neither key follows `lang:` got a check of its own, holding examples/index-lang-es.qmd -- whose four printed words the shipped table supplies -- to ASCII punctuation at every position its entries reach.
 - 2026-08-29: the four fixtures file each two-cross-reference term as two marks rather than one mark carrying both attributes: a single both-attributes mark draws the "probably a mistake" report in every format, which a gallery example should not ship. The LaTeX renders draw two contested-key reports instead, equal in fixture and twin, which AC2 now asserts as equal counts rather than as silence.
 - 2026-08-29: T5 landed in a new tests/sepcheck.py rather than in tests/indexdump.py, and T7 in that same module's `epub` subcommand rather than in tests/epubindex.py: epubindex already returns the records tests/htmlindex.py builds, so the punctuation reading it needed was the field added there and one shared decider serves both back-ends.
 - 2026-08-29: one suite run failed with quarto exiting 139 rendering examples/named-indexes.qmd, a fixture this branch does not touch; the same tree ran green on the next invocation and on every one after.

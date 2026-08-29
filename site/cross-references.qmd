@@ -100,17 +100,26 @@ book order — which means a render that stops short of that chapter draws none,
 and a render whose other chapters have never been rendered has nothing recorded
 for them and will call their terms unindexed. Render the whole book.
 
-## The words in front of a target
+## The words and marks the index prints itself
 
 `see` and `see also` are the extension's own words, and so is the `Symbols`
-heading over the entries that file under no letter. Set any of the three under
-`index-labels:`, whose keys are `symbols`, `see` and `see-also`:
+heading over the entries that file under no letter. So is the punctuation an
+entry carries: the mark in front of an entry's locators and between one locator
+and the next, and the mark between two cross-references. Set any of the five
+under `index-labels:`, whose keys are `symbols`, `see`, `see-also`, `separator`
+and `xref-separator`:
 
 ```yaml
 index-labels:
   see: "siehe"
   see-also: "siehe auch"
+  separator: "،"
+  xref-separator: "؛"
 ```
+
+A separator key sets the glyph alone. The space after it is the extension's
+own, written whatever you set, so an entry can never come out with its locator
+run into the term in front of it.
 
 The map goes at a document's top level, covering every index it has, or inside
 one entry of `indexes:`, covering that index alone; where both name a key, the
@@ -126,4 +135,6 @@ written under `index-labels:` at all, and a language the extension does not
 cover keeps the English words.
 
 This reaches the HTML and EPUB indexes only: a LaTeX index gets the two words
-from babel, which sets them from your document's `lang:`.
+from babel, which sets them from your document's `lang:`, and takes its
+punctuation from `makeindex` and from the `\see` and `\seealso` commands,
+which neither separator key touches.

@@ -16,6 +16,18 @@
   unaffected: it takes these words from babel, which sets them from the
   document's `lang:`.
 
+- Two punctuation marks the HTML and EPUB index prints inside an entry can be
+  set by the author under the same `index-labels:` map: `separator`, printed
+  in front of an entry's locators, between one locator and the next, and
+  between an entry's locators and its first cross-reference, and
+  `xref-separator`, printed between two cross-references. Both default to what
+  they have always been, `,` and `;`, and both resolve on the ladder the words
+  resolve on — an index's own map, then the document's, key by key. A key sets
+  the glyph alone; the space after it is the extension's own. Neither key
+  follows the document's `lang:`, and neither reaches a LaTeX index, whose
+  punctuation comes from `makeindex` and from the commands the extension
+  defines for a cross-reference.
+
 ### Output
 
 - **Changed default.** The four words the HTML and EPUB index prints for

@@ -30,18 +30,23 @@ The extension's job ends at correct emitted output. Whether your toolchain
 then runs `makeindex` to build the index is up to your build setup; Quarto's
 default PDF pipeline does it for you.
 
-## Setting the words the index prints itself
+## Setting the words and marks the index prints itself
 
-Three of the words a reader sees are the extension's own rather than yours:
-this `Symbols` heading, and the `see` and `see also` in front of a
-cross-reference. Set any of them under `index-labels:`, whose three keys are
-`symbols`, `see` and `see-also`:
+Some of what a reader sees is the extension's own rather than yours: this
+`Symbols` heading, the `see` and `see also` in front of a cross-reference, and
+the punctuation inside an entry — the mark in front of an entry's locators and
+between one locator and the next (`separator`), and the mark between two
+cross-references (`xref-separator`). Set any of them under `index-labels:`,
+whose five keys are `symbols`, `see`, `see-also`, `separator` and
+`xref-separator`:
 
 ```yaml
 index-labels:
   symbols: "Zeichen"
   see: "siehe"
   see-also: "siehe auch"
+  separator: "،"
+  xref-separator: "؛"
 ```
 
 Write the map in two places. At a document's top level it covers every index
@@ -55,12 +60,16 @@ Quarto's own map, the one holding the words for its title block, and this
 extension does not read it.
 
 You only need this where the extension's own choice is wrong for you. Left
-alone, these words follow your document's `lang:`: Spanish, French, German and
-Italian are covered, German for `see` and `see also` but not for this heading,
-and every other language keeps the English words. So a `lang: es` document
-heads this group `Símbolos` with nothing written under `index-labels:` at all.
+alone, the three words follow your document's `lang:`: Spanish, French, German
+and Italian are covered, German for `see` and `see also` but not for this
+heading, and every other language keeps the English words. So a `lang: es`
+document heads this group `Símbolos` with nothing written under
+`index-labels:` at all. The two marks do not follow `lang:` at all: written
+nowhere they stay `,` and `;`, so a document wanting other punctuation writes
+it out here.
 
-These words reach the HTML and EPUB indexes only. A LaTeX index takes `see`
-and `see also` from babel, which sets them from your document's `lang:`; it has
-no letter groups and so prints no `Symbols` heading at all, which is why
-`symbols:` has nothing to override there.
+These words and marks reach the HTML and EPUB indexes only. A LaTeX index takes
+`see` and `see also` from babel, which sets them from your document's `lang:`;
+it has no letter groups and so prints no `Symbols` heading at all, which is why
+`symbols:` has nothing to override there; and its punctuation comes from
+`makeindex`, which neither separator key reaches.

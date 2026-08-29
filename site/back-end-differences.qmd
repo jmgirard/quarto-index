@@ -43,16 +43,20 @@ sequence numbers with no pages behind them — are on the [EPUB](epub.qmd) page.
    of pages, `12--15`; HTML has no pages, so a range there is one numbered link
    at the opening mark. Both are one locator where you wrote two marks, which
    is what the syntax means.
-9. **The extension's own words are settable in HTML and EPUB.** The
-   `Symbols` group heading and the `see` and `see also` in front of a
-   cross-reference are the extension's words rather than yours, and
-   `index-labels:` — keys `symbols`, `see` and `see-also`, written at a
-   document's top level or inside one `indexes:` entry, the nearer setting
-   winning key by key — sets them for the HTML and EPUB indexes. It reaches
-   the LaTeX back-end nowhere: that one emits `\see` and `\seealso`, whose
-   two words babel supplies from your document's `lang:`. There is no third
-   word to set there — a LaTeX index has no letter groups at all, so it prints
-   no `Symbols` heading for `symbols:` to override.
+9. **The extension's own words and marks are settable in HTML and EPUB.** The
+   `Symbols` group heading, the `see` and `see also` in front of a
+   cross-reference, and the punctuation inside an entry are the extension's
+   rather than yours, and `index-labels:` — keys `symbols`, `see`, `see-also`,
+   `separator` and `xref-separator`, written at a document's top level or
+   inside one `indexes:` entry, the nearer setting winning key by key — sets
+   them for the HTML and EPUB indexes. It reaches the LaTeX back-end nowhere:
+   that one emits `\see` and `\seealso`, whose two words babel supplies from
+   your document's `lang:`. There is no third word to set there — a LaTeX index
+   has no letter groups at all, so it prints no `Symbols` heading for
+   `symbols:` to override. Neither separator key reaches it either: what stands
+   between a term and its page numbers there is `makeindex`'s own delimiter,
+   and what stands between two cross-references is fixed inside the command the
+   extension defines for a term carrying both.
 10. **All three back-ends follow `lang:`, and share nothing else about it.**
     Every back-end picks its own words from your document's language, and
     that language is the whole of what they have in common: LaTeX asks babel,

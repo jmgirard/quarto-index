@@ -18950,6 +18950,23 @@ check_extension_warning_count "$WORK/index-separators-twin-latex.log" 2 \
   "M58-AC2 (twin, LaTeX)"
 pass "M58-AC2: the twin prints the ASCII comma and semicolon over the same positions, draws nothing in HTML though Quarto writes a labels: map into its metadata, and draws the same two contested-key reports in LaTeX that the declaring fixture draws"
 
+# T8's changelog entry says neither punctuation key follows the document's
+# `lang:`, and this is what holds that sentence. No row of the shipped language
+# table holds either key, so a document the table DOES localize still prints the
+# ASCII marks: examples/index-lang-es.qmd is that document -- all four of its
+# printed words are Spanish, which M57-AC1 above pins -- and its four entries
+# reach the term-to-locators and term-to-cross-reference positions.
+read -r -d '' M58_LANG <<'MANIFEST' || true
+section	qi-index
+0	#numerals	S1=U+002C
+0	Falcon	S4=U+002C
+0	Kestrel	S1=U+002C
+0	Merlin	S4=U+002C
+MANIFEST
+
+check_separators html "$(m57_html index-lang-es)" "$M58_LANG" "M58 T8 (lang)"
+pass "M58 T8: a document whose four printed words the shipped language table supplies still prints the ASCII comma at every position its entries reach, so neither punctuation key follows lang:"
+
 check_separators html "$M58_SCOPED_HTML" "$M58_SCOPED" "M58-AC3"
 check_extension_warning_count "$WORK/index-separators-scoped-html.log" 0 \
   "M58-AC3 (silence)"

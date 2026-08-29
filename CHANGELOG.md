@@ -18,6 +18,30 @@
 
 ### Output
 
+- **Changed default.** The four words the HTML and EPUB index prints for
+  itself now follow the document's `lang:` instead of always being English:
+  the `Symbols` heading, the `see` and `see also` in front of a
+  cross-reference, and the heading of an index the document did not declare.
+  Spanish, French, German and Italian are covered; German covers three of the
+  four and keeps the English `Symbols`. Any other language, and a `lang:` this
+  extension cannot read, keeps all four English words and says nothing. The
+  words come from a table this extension ships, checked against two published
+  references per word; `index-labels:` still beats it, key by key.
+
+  The one visible change to a document that sets no words of its own is the
+  index heading, and only where the language's word differs from `Index`: a
+  Spanish document is now headed `Índice alfabético` and an Italian one
+  `Indice analitico`, where French and German still print `Index`. Writing
+  `title: Index` restores the old heading, in an `indexes:` entry rather than
+  in the front matter — a front-matter `title:` is the document's own title and
+  this extension never reads it. Declaring an index that way also moves the
+  index section's id from `qi-index` to `qi-index-<name>`, so a link written
+  against the old id has to be updated with it. Only the heading of an index the
+  document never declared changes; an index declared under `indexes:` with no
+  `title:` is still headed by its own `name`. A LaTeX index is unaffected,
+  as before: it takes its words from babel, which already sets them from
+  `lang:`.
+
 - An EPUB render gets a real index instead of passing its marks through. It is
   the index the HTML back-end builds, out of the same document nodes: the same
   section id and classes, the same letter groups and entry tree, numbered

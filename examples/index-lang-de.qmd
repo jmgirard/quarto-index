@@ -1,0 +1,27 @@
+---
+title: "Index language: a partly covered language"
+lang: de
+filters:
+  - index
+---
+
+Four of the words a printed index carries are not written by the author at all:
+the heading over the entries that file under no letter, the two words in front
+of a cross-reference, and the heading of the index itself. This document
+declares none of them, so each is whatever the document's language says, and
+English wherever it says nothing.
+
+Nothing below writes a label word. Every mark here is an ordinary one.
+
+## Terms {#site-terms}
+
+A term filing under a letter: [Kestrel]{.index}. A term filing under none,
+which is what puts a group heading over it: [#numerals]{.index}.
+
+A cross-reference pointing at the first: [Falcon]{.index see="Kestrel"}, and
+one pointing further: [Merlin]{.index see-also="Kestrel"}.
+
+## Where the index goes {#site-index}
+
+::: {.qi-index-here}
+:::

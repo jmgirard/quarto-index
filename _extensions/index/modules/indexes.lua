@@ -8,6 +8,7 @@
 -- why this module's `reset` takes the document.
 
 local qi_core = require("./core")
+local qi_languages = require("./languages")
 
 local M = {}
 
@@ -26,8 +27,12 @@ local NAME_FIELD = "name"
 local TITLE_FIELD = "title"
 
 -- The heading a document that declares nothing prints, which is what it has
--- always printed.
+-- always printed, and the key the language table holds its own heading under.
+-- The English word stays here rather than in that table for the reason the
+-- table's own comment gives: it is not a translation, it is the word this
+-- extension has printed since its first release.
 local DEFAULT_TITLE = "Index"
+local TITLE_KEY = "title"
 
 -- The metadata key an author writes the reader-facing words under, and the
 -- three words one map may set. A nested map rather than three fields beside
@@ -113,6 +118,11 @@ local declared = false
 -- index can have, and this way the nearest-wins lookup below is two reads.
 local doc_labels = {}
 local index_labels = {}
+-- The row of the shipped language table this document's `lang:` resolves to,
+-- or nil where it resolves to none. One cell rather than a lookup per word:
+-- the resolution is a fact about the document, settled once when the metadata
+-- is read, and a per-word lookup would re-answer it for every entry printed.
+local language_words = nil
 
 -- One `index-labels:` map, at whichever level it was written. Returns the
 -- words it usably sets, or nil where it sets none.
@@ -217,6 +227,19 @@ local function read(meta)
   -- Read BEFORE the declaration and outside its early returns: a document that
   -- declares no index is exactly the document most likely to write `index-labels:`
   -- at all, since it has no index entry to write one in (D-036).
+  -- The language table, before anything else the metadata says: the untitled
+  -- heading installed below is one of its words, and it has to be in place
+  -- before a declaration can replace the whole title table.
+  language_words = qi_languages.resolve(meta and meta.lang or nil)
+  if language_words ~= nil and language_words[TITLE_KEY] ~= nil then
+    -- ONLY the heading an undeclared document falls back to. A declared index
+    -- with no `title:` is headed by its own `name`, which is text its author
+    -- wrote, and the `qi_core.empty(titles)` below throws this cell away the
+    -- moment a declaration takes (D-038). That is also why no word of this
+    -- table can reach LaTeX: `\makeindex[title={...}]` is written only when
+    -- `is_declared()`, and this heading exists only when it is not.
+    titles[UNNAMED] = language_words[TITLE_KEY]
+  end
   local words = read_labels(meta and meta[LABELS_KEY] or nil, DOCUMENT_LEVEL)
   if words ~= nil then
     for key, word in pairs(words) do
@@ -272,6 +295,7 @@ local function reset(doc)
   qi_core.empty(titles)
   qi_core.empty(doc_labels)
   qi_core.empty(index_labels)
+  language_words = nil
   declared = false
   order[1] = UNNAMED
   titles[UNNAMED] = DEFAULT_TITLE
@@ -295,6 +319,12 @@ end
 -- neither level names it. Nearest wins KEY BY KEY rather than map by map, so a
 -- per-index map resetting one word keeps the document's other two (D-036).
 --
+-- Below both author levels sits the shipped table for the document's `lang:`,
+-- and below that the English word: an author who wrote nothing gets their own
+-- language, and an author who wrote one word keeps the table's other three
+-- (D-035). Per key here too -- a language covering three of the four words
+-- leaves the fourth to English rather than dropping its whole row.
+--
 -- `fallback` is the English word the calling site has always printed, passed in
 -- rather than held here: this module owns which keys exist and what an
 -- unusable one does, and the words themselves stay where they are printed.
@@ -305,6 +335,9 @@ local function label(name, key, fallback)
   end
   if doc_labels[key] ~= nil then
     return doc_labels[key]
+  end
+  if language_words ~= nil and language_words[key] ~= nil then
+    return language_words[key]
   end
   return fallback
 end
@@ -408,6 +441,7 @@ M["INDEXES_KEY"] = INDEXES_KEY
 M["NAME_FIELD"] = NAME_FIELD
 M["TITLE_FIELD"] = TITLE_FIELD
 M["DEFAULT_TITLE"] = DEFAULT_TITLE
+M["TITLE_KEY"] = TITLE_KEY
 M["LABELS_KEY"] = LABELS_KEY
 M["LABEL_KEYS"] = LABEL_KEYS
 M["NAME_SHAPE"] = NAME_SHAPE

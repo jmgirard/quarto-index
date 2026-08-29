@@ -6,7 +6,8 @@ pagetitle: "HTML"
 
 For HTML the extension adds an index of its own at the end of the body, or at
 your placement marker if the document has one: an
-unnumbered level-one **Index** heading, in a section whose id is `qi-index`
+unnumbered level-one heading — **Index**, or your document language's word for
+it where the extension covers that language — in a section whose id is `qi-index`
 where the document has not taken that name and a minted one where it has (see
 below), listed in the table of contents, followed by a nested bullet list of
 the entries. It is built out of Pandoc's own document nodes rather than out

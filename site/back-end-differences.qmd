@@ -53,3 +53,15 @@ sequence numbers with no pages behind them — are on the [EPUB](epub.qmd) page.
    two words babel supplies from your document's `lang:`. There is no third
    word to set there — a LaTeX index has no letter groups at all, so it prints
    no `Symbols` heading for `symbols:` to override.
+10. **All three back-ends follow `lang:`, and share nothing else about it.**
+    Every back-end picks its own words from your document's language, and
+    that language is the whole of what they have in common: LaTeX asks babel,
+    HTML and EPUB read a table this extension ships. Two consequences follow.
+    The languages covered are not the same — babel covers hundreds, this
+    extension covers Spanish, French, German and Italian, and German only in
+    part, so a document in a language babel knows and this table does not gets
+    a localized PDF and an English HTML index. And `index-labels:` is read by
+    the HTML and EPUB back-ends alone, so a word you set there changes those
+    two indexes and never the PDF, where babel's word stands. Setting a word
+    for both means writing `index-labels:` for HTML and EPUB and redefining
+    `\seename` or `\alsoname` for LaTeX.

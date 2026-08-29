@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** m055-book-named-indexes
+- **Branch/PR:** m055-book-named-indexes / https://github.com/jmgirard/quarto-index/pull/55
 
 ## Goal
 
@@ -32,26 +32,26 @@ row, unchanged by this milestone.
 
 ## Acceptance criteria
 
-- [ ] **AC1.** An HTML render of `examples/book/` prints one index section per
+- [x] **AC1.** An HTML render of `examples/book/` prints one index section per
       declared index that some chapter's marks file in, and no other index
       section, read by the suite's whole-page `check_index_sections` over the
       rendered `last.html`; each section carries exactly the entries, levels,
       cross-reference forms and locator hrefs a new hand-derived manifest
       states for it.
-- [ ] **AC2.** Each declared index that a marker names prints at that marker,
+- [x] **AC2.** Each declared index that a marker names prints at that marker,
       and a declared index that no marker names prints after them, in declared
       order. Evidence: the index section ids read from `last.html` in document
       order against an expected order derived by hand from the markers in
       `examples/book/last.qmd` and the declaration order in
       `examples/book/_quarto.yml`, which after this milestone declares one
       index no marker names.
-- [ ] **AC3.** A stored chapter record naming an index the reading chapter does
+- [x] **AC3.** A stored chapter record naming an index the reading chapter does
       not declare has its marks printed in the first declared index and draws a
       warning naming that chapter and that name — never dropped in silence — in
       each of three planted cases that vary the key's form as well as its
       story: a name no declaration in the book carries, a name a declaration
       removed, and a key the declaration syntax refuses.
-- [ ] **AC4.** Each of the three judgements an HTML book makes across chapters
+- [x] **AC4.** Each of the three judgements an HTML book makes across chapters
       — a cross-reference target no chapter indexes, a sort-key rivalry, and a
       range left unpaired — is made inside one index and its report names that
       index. Evidence: a book fixture that writes each judgement in the second
@@ -60,11 +60,11 @@ row, unchanged by this milestone.
       key for the same printed path across both, and a range opened in one and
       closed in the other — whose render draws each report naming its own index
       and draws none for the twins.
-- [ ] **AC5.** A chapter record written at the superseded store version is
+- [x] **AC5.** A chapter record written at the superseded store version is
       refused, the existing per-chapter warning names that chapter, and the
       book still prints each declared index the remaining chapters' records
       file marks in.
-- [ ] **AC6.** `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both
+- [x] **AC6.** `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both
       exit 0, and each check this milestone adds has a planted defect, one per
       clause, shown red before its green is trusted.
 
@@ -137,3 +137,124 @@ row, unchanged by this milestone.
 ## Decisions
 
 ## Review
+
+Reviewed 2026-08-28 on `m055-book-named-indexes` at PR #55, branch level with
+`origin/main` (0 commits behind). Evidence is this session's own runs.
+
+### Acceptance criteria
+
+- **AC1.** `tests/run-tests.sh` cold-renders `examples/book/` to HTML
+  (`.quarto` and the output directory removed first) and reads the captured
+  `last.html` with `check_index_sections` against `BOOK_HTML_INDEX`: three
+  generated index sections — `qi-index-main`, `qi-index-people`,
+  `qi-index-places` — and all 30 manifest rows match, in order, hrefs
+  included. The whole-page sweep beside it finds index sections on `last.html`
+  and no other of the four rendered pages, no entry markup on a page holding
+  no index, and all 15 locators resolving to a real anchor. The stale-name
+  report is drawn zero times over that render.
+
+- **AC2.** The same whole-page reader states the section ids of `last.html` in
+  document order and compares them with `['qi-index-main', 'qi-index-people',
+  'qi-index-places']` written out in the check — the order derived from
+  `last.qmd`'s two markers (the one naming nothing, then the one naming
+  `people`) and `_quarto.yml`'s declaration order, which now declares `places`
+  with no marker naming it. They match, so the unnamed index prints after the
+  two markers place theirs. The second-marker-for-a-named-index report is
+  drawn zero times over the render. Under `--self-test` the reader is shown
+  red on a book page printing its declared indexes out of declared order and
+  on one printing no section for a declared index.
+- **AC3.** Three planted cases run in the suite. For a name no declaration in
+  the book carries and for a key the declaration syntax refuses,
+  `check_section_carries` finds the entry `Beta` in the `qi-index-main`
+  section of the re-rendered page and the report names the chapter and the
+  name. For a name a declaration removed — a scratch copy whose `places:`
+  declaration is deleted between renders — the chapter's terms are kept, filed
+  in the first index the book still declares, and the report names that
+  chapter and that name. No case drops a mark.
+- **AC4.** `examples/book-scopes/` renders: each of the three cross-chapter
+  judgements — a cross-reference target no chapter indexes, a sort-key
+  rivalry, and a range left unpaired — is drawn once naming the index
+  `second`, and the confusable twin written in the first index draws none of
+  the three. Under `--self-test` all four clauses are shown red on their own:
+  the range report in the one-namespace wording, the range report naming the
+  twin range, the rivalry report naming another index, and the dangling-target
+  report in the one-namespace wording.
+- **AC5.** A chapter record rewritten at the superseded store version — the
+  version read off the artifact, not written down — is refused, the existing
+  per-chapter warning names the chapter it came from rather than calling the
+  record unreadable, and `check_section_ids` reads the re-rendered page as
+  carrying `['qi-index-main', 'qi-index-places']` in order: `people`, whose
+  only marks were in the refused record, prints no section while the other two
+  still print. Under `--self-test` the id reader is shown red on a page
+  carrying an unnamed section, on the named sections in the wrong order, on a
+  section the page does not carry, and on an empty id list.
+- **AC6.** `tests/run-tests.sh` exits 0 at 426 checks; `tests/run-tests.sh
+  --self-test` exits 0 at 838. The self-test run shows red, one clause at a
+  time, every clause of the two readers this milestone adds
+  (`check_section_ids`: an unnamed section on the page, the named sections out
+  of order, a section the page does not carry, an empty id list;
+  `check_section_carries`: a term the named section does not carry, a term on
+  the page filed in another index's section), the section manifest's clauses
+  including a book page printing no section for a declared index and one
+  printing them out of declared order, and AC4's four judgement clauses.
+
+### Consistency gate
+
+`cairn_validate.py` exits 0, every check PASS and every advisory OK; the
+`release window` advisory did not fire. No `DESIGN.md` principle text changed,
+so `cairn_impact.py` was not run. The `generic` profile names no toolchain
+checks, so the universal cairn-file checks are the whole gate.
+
+### Review findings
+
+Three fresh-context reviewers ran. The blame-history lens returned no
+violations, reporting that `fold_slot` had one caller which this diff also
+deletes, that KI116 is retired in the same diff that removes the code it
+described, and that the deleted suite checks are renamed per-index siblings
+rather than lost coverage. The prior-review lens found no regressions; its
+probe of GitHub inline review comments returned an empty list, so the archived
+`## Review` sections were the whole surface. The diff-bug lens returned nine
+findings, ranked; F1, F2, F4, F5, F6, F8 and F9 were checked against the
+implementation in this session.
+
+- **F1** (confirmed by probe). An index no marker names is built by the last
+  chapter known to place one, and that set is read from the records written so
+  far, so on a cold render an early placing chapter believes it is the last.
+  A three-chapter probe book declaring `main`, `people`, `places`, with the
+  `main` marker in chapter 1, the `people` marker in chapter 3, no marker for
+  `places`, and a `places` mark in chapter 1, renders `qi-index-places` onto
+  both chapter 1 and chapter 3 on the first render; the second render drops
+  chapter 1's copy. `examples/book/` cannot show it — all its markers are in
+  one chapter — and AC1 and AC2 are scoped to that fixture, so neither fails.
+- **F2** (confirmed by read). `fold_undeclared` walks a record's index names in
+  `table.sort` order when merging sort keys into the destination index, so a
+  stale name sorting before the destination's own name wins a shared path
+  under first-one-wins — the opposite of the rule the function's own comment
+  states. A term then files under the stale key silently; the stale-name
+  warning says nothing about a key being overridden.
+- **F3.** With the fold gone, a chapter's own range-pairing report says
+  `in this index "main"` rather than naming the chapter. Already recorded as
+  KI166 in `DESIGN.md`.
+- **F4** (confirmed by probe). `fold_undeclared` runs in every rendering
+  chapter's process, so a stale record belonging to a late chapter draws its
+  warning once per chapter rendered before it heals. The probe drew one, the
+  stale record's own chapter being second of three. The count is unasserted
+  either way.
+- **F5** (confirmed by read). `DESIGN.md` says `builds_ast_index` routes
+  "three sites" and then names `index.lua` twice with the clause duplicated;
+  two sites remain.
+- **F6** (confirmed by read). Comments describing an index fold that no longer
+  exists: `marks.lua:170` ("chapters that have all folded to one index"),
+  `marks.lua:192` ("the book's own aggregated report, which names no index"),
+  `index.lua:178` ("any folded back-end"), `passes.lua:76` ("an unfolded
+  back-end").
+- **F7.** The one-namespace duplicate-marker message still reads "a book has a
+  single index". Text unchanged by this diff; it is drawn only for a book
+  declaring nothing or one index, where it is true.
+- **F8** (confirmed by read, pre-existing). `valid_record` runs
+  `ipairs(mark.xrefs or {})` before its `type(mark.xrefs) ~= "table"` test, so
+  a record whose `xrefs` is a number raises outside any `pcall`. The line is
+  byte-identical on `origin/main`.
+- **F9** (confirmed by read). `site/books.qmd` says a book declaring several
+  indexes "prints each of them", with no condition; a declared index no mark
+  files in prints no section, which is what AC5's own evidence asserts.

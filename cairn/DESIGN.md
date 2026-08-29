@@ -1225,11 +1225,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   message, not in the comparison. Found while adding M56's own, which is
   written with single quotes for this reason. — M56 T4
 
-- **KI173.** `read_labels` refuses only a value that stringifies to the empty
-  string, so `see: " "` installs a word of spaces: the HTML index emits an
-  emphasized run of whitespace and the reader sees the target with no word in
-  front of it. The empty-value report's own words — "no word a reader can
-  read" — describe this case, and it draws none. — M56 review F3
+- **KI173** (corrected M59). `read_labels` refuses only a value that
+  stringifies to the empty string, so a value that is invisible without being
+  empty installs as the printed word: `see-also: "&nbsp;"` emits an emphasized
+  non-breaking space and the reader sees the target with no word in front of
+  it, and a zero-width space under `symbols:` heads a group with nothing
+  (rendered 2026-08-29, Quarto 1.10.18). The trigger this entry first recorded
+  — `see: " "` — is not one: Pandoc parses a whitespace-only metadata value to
+  empty inlines, so a space, a tab and a space-only `separator:` all draw the
+  empty-value report already. The empty-value report's own words — "no word a
+  reader can read" — describe the invisible case, and it draws none.
+  — M56 review F3
 - **KI174.** An author's `symbols:` word that is itself a single ASCII letter
   prints two identically headed groups: the sentinel keeps the non-letter
   group's identity and rank, so it neither merges nor re-ranks, but a reader

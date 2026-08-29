@@ -8,6 +8,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M59 | The words an author writes are refused when a reader cannot read them | planned | — | normal | milestones/M59-index-label-refusals.md |
 | M58 | An author sets the punctuation the index prints inside an entry | done | — | normal | milestones/archive/M58-index-separators.md |
 | M56 | An author sets the words the index back-end picks itself | done | — | normal | milestones/archive/M56-index-label-override.md |
 | M57 | A non-English document gets a non-English index | done | M56 | normal | milestones/archive/M57-index-label-language.md |
@@ -22,6 +23,7 @@ _Released 0.1.0 2026-08-26._
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
 - Repair the readers and checks the EPUB back-end, the editor metadata and the named-index work added; promote on any of them turning a run red for a reason that is not the defect it names — added 2026-08-27, clustered 2026-08-29 — M52 review F3, F7-F13; M50 review F1, F2, F3, F6; M49 review F6, F7, F9 — KI91-KI104
 - Fence the three unguarded edges of the named-index LaTeX behavior M49 shipped; promote the first two on an author report or a fixture reaching either edge, the third on the extension claiming a plain-pandoc path at all — added 2026-08-28 — M49 review F2, F3, F4 — KI105, KI106, KI107
+- A way for an author to ask for no word at all in front of a cross-reference target, which M59 removes by refusing an invisible label value; promote on an author reporting they wrote one for that reason, or on a second reference agreeing an index prints a bare target — added 2026-08-29 — M59 plan gate
 - Dedupe `examples/.gitignore` against the root ignore — added 2026-08-19 — M13 review F16 — KI75
 - Reconcile the example corpus so its probe `see=`/`see-also=` targets name terms the fixture indexes — added 2026-08-19 — M14 plan gate — KI72
 - Settle whether the emptied-place reports for a callout, a tabset and a captioned figure should keep depending on Quarto's scaffold wrapping; promote on an upstream change surfacing as a manifest mismatch — added 2026-08-19, narrowed 2026-08-23 when M28/M29 took the naming half — M12 review F12 — KI23
@@ -52,7 +54,5 @@ _Released 0.1.0 2026-08-26._
 - Restore byte-level evidence that `resolve_markers` is output-neutral; D-004 refused the merge-base oracle and D-012 licenses a same-tree one — added 2026-08-17 — M04 review F12 — KI12, KI52
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Handle a chapter filename containing `#` or `?` — added 2026-08-17 — M05 review F11 — KI14
-- Repair the label surface M56 shipped and the checks fencing it: words a report should refuse but installs, a per-index map dropped with a refused entry, seven check weaknesses; promote the behavior half on an author reaching an edge, the check half on any check turning a run red for a reason that is not the defect it names — added 2026-08-29 — M56 review — KI173-KI183
-- Repair the language table M57 shipped and the checks fencing it; promote the behavior half on an author reaching an edge, the check half on any check turning a run red for a reason that is not the defect it names — added 2026-08-29 — M57 review — KI184-KI189
-- Repair the checks fencing the punctuation surface M58 shipped: two readers disagreeing about an entry's markup, a manifest error reported as a rendering defect, an unfenced twin premise, two green lines overstating what they hold; promote on any turning a run red for a reason that is not the defect it names — added 2026-08-29 — M58 review — KI190-KI193
+- Repair the language table M57 shipped and the checks fencing the label, language and punctuation surface M56-M58 shipped; promote the table half on an author reaching an edge, the check half on any check turning a run red for a reason that is not the defect it names — added 2026-08-29, clustered 2026-08-29 when M59 took the behavior half — M56/M57/M58 reviews — KI177-KI193
 - Repair the HTML book's index placement and the reports around it: which chapter builds an index no marker names on a first render, the stale-name report's per-chapter count, a record whose `xrefs` is not a table, and the untested sort-key merge order; promote on any reaching an author or turning a run red for a reason that is not the defect it names — added 2026-08-28 — M55 review F1, F2, F4, F8 — KI167, KI168, KI169, KI171

@@ -4,6 +4,7 @@
 - **Priority:** normal
 - **Depends on:** —
 - **Branch:** m058-index-separators
+- **PR:** https://github.com/jmgirard/quarto-index/pull/58
 - **Driving RR:** —
 - **Principles touched:** IP3, GP4, GP5
 
@@ -52,7 +53,7 @@ mistake.
 
 ## Acceptance criteria
 
-- [ ] AC1. Rendering `examples/index-separators.qmd` to HTML, every entry the
+- [x] AC1. Rendering `examples/index-separators.qmd` to HTML, every entry the
       rendered index prints carries the document's declared `separator` at each
       of S1–S4 it reaches and the declared `xref-separator` at S5, checked entry
       by entry against a hand-derived manifest whose row count the check asserts
@@ -60,44 +61,44 @@ mistake.
       indexes at least one entry with two locators, one with locators and one
       cross-reference, one with no locators and one cross-reference, and one
       with two cross-references, so all five sites are reached.
-- [ ] AC2. `examples/index-separators-twin.qmd` — the same document with its
+- [x] AC2. `examples/index-separators-twin.qmd` — the same document with its
       `index-labels:` block deleted, that block setting `separator` and
       `xref-separator` and no other key — prints `,` at S1–S4 and `;` at S5 over
       the same manifest of site slots, in the same suite run.
-- [ ] AC3. `examples/index-separators-scoped.qmd` declares two indexes, sets
+- [x] AC3. `examples/index-separators-scoped.qmd` declares two indexes, sets
       both keys at the document level and `separator` alone under the second
       index, gives the three declared values three distinct glyphs, and files
       two cross-references on one term in each index. One render prints the
       second index's own `separator` and the document's `xref-separator` within
       that index, and the document's values for both keys in the first.
-- [ ] AC4. `examples/index-labels-misuse.qmd` gains one further per-index
+- [x] AC4. `examples/index-labels-misuse.qmd` gains one further per-index
       `index-labels:` map giving `separator` and `xref-separator` an empty
       value each; the render emits, for each, `indexes.lua:163`'s empty-value
       report with the key named, asserted message-whole, and the index prints
       `,` and `;` at the sites those keys name.
-- [ ] AC5. `indexes.lua`'s unknown-key report names all five keys: rendering
+- [x] AC5. `indexes.lua`'s unknown-key report names all five keys: rendering
       `examples/index-labels-misuse.qmd`, the message its existing `symbol` key
       draws is asserted message-whole and lists `symbols, see, see-also,
       separator, xref-separator`.
-- [ ] AC6. `examples/index-separators.qmd` declares U+060C and U+061B. Rendered
+- [x] AC6. `examples/index-separators.qmd` declares U+060C and U+061B. Rendered
       to LaTeX its `.tex` is byte-identical to `examples/index-separators-twin.qmd`'s
       — a same-tree comparison under D-012, not the merge-base oracle D-004
       refused — and that `.tex` holds the `\index` commands a hand-derived count
       states, the count deriving from the fixture's marks and `latex.lua`'s
       contested-key fold, which merges a term that is both plainly marked and
       cross-referenced.
-- [ ] AC7. `examples/index-separators.qmd` rendered to EPUB prints the declared
+- [x] AC7. `examples/index-separators.qmd` rendered to EPUB prints the declared
       values at S1–S5, checked against AC1's manifest over the spine document
       holding the index rather than over the HTML render, with the same
       row-count assertion.
-- [ ] AC8. `site/cross-references.qmd`, `site/letter-groups.qmd` and
+- [x] AC8. `site/cross-references.qmd`, `site/letter-groups.qmd` and
       `site/back-end-differences.qmd` each name all five `index-labels:` keys
       where they today name three (`cross-references.qmd:107`,
       `letter-groups.qmd:37`, `back-end-differences.qmd:49`);
       `back-end-differences.qmd` states that neither new key reaches LaTeX; and
       one of the three states that the space after a separator is the
       extension's own, so a key sets the glyph alone.
-- [ ] AC9. `tests/run-tests.sh` is green plain and with `--self-test`, both
+- [x] AC9. `tests/run-tests.sh` is green plain and with `--self-test`, both
       exit 0, over the merged tree.
 
 ## Coverage
@@ -160,7 +161,88 @@ mistake.
 - 2026-08-29: plan gate chose to leave the `pandoc.Space()` with the filter over having the author write it into the value, because a value written without it would silently glue a locator to its term in a render that stays green; falsified by an author needing no space at all after a separator.
 
 - 2026-08-29: all nine tasks done; suite green plain (480 checks) and with `--self-test` (922 checks), both exit 0. Status review.
+- 2026-08-29: /milestone-review; PR #58 opened as a draft, CI green on all five checks. All nine criteria verified with fresh evidence and ticked; consistency gate passed (`cairn_validate` exit 0, one sizing advisory). The blame-history and prior-review lenses reported no findings; the diff-bug lens was still running at this checkpoint.
 
 ## Decisions
 
 ## Review
+
+Evidence gathered 2026-08-29 on branch `m058-index-separators` at 6a6eda1, over a
+tree whose `origin/main` was unmoved since the branch was cut (`git rev-list
+--left-right --count main...origin/main` → `0 0`), so no merge preceded it. All
+suite figures below come from one `tests/run-tests.sh` run (480 checks, exit 0)
+and one `tests/run-tests.sh --self-test` run (922 checks, exit 0), run
+sequentially as the profile requires.
+
+- AC1 — met. `M58-AC1` compares the rendered `examples/index-separators.qmd`
+  index against the hand-derived manifest `M58_SEPARATORS`: 4 entry lines in 1
+  section, the declared glyph at all 7 printed positions, each followed by
+  exactly one whitespace character. `tests/sepcheck.py:compare` makes the
+  row-count assertion before comparing any row (render entry lines vs manifest
+  rows), so a short manifest fails rather than passing over what it omits. The
+  fixture's four terms reach all five sites: Azurite two locators (S1, S2),
+  Beryl locator plus cross-reference (S1, S3), Cinnabar no locator and one
+  cross-reference (S4), Dolomite two cross-references (S4, S5). `M58-AC1
+  (silence)` holds the render's report count at 0.
+- AC2 — met. `M58-AC2 (derivation)` asserts `examples/index-separators-twin.qmd`
+  is the fixture with its 1 `index-labels:` block deleted and nothing else.
+  `M58-AC2 (twin)` reads the same 4 entries and 7 positions against
+  `M58_ENGLISH` (U+002C at S1–S4, U+003B at S5) in the same suite run, with 0
+  HTML reports; the two LaTeX renders each report 2 contested keys, asserted
+  equal rather than zero.
+- AC3 — met. `M58-AC3` reads `examples/index-separators-scoped.qmd` — three
+  distinct declared glyphs (document `·` U+00B7 and `/` U+002F, the `alloys`
+  index `~` U+007E), two cross-references filed on one term in each index — as
+  4 entry lines across 2 sections at 6 positions: `minerals` takes the
+  document's `·` at S1/S4 and `/` at S5, `alloys` its own `~` at S1/S4 and the
+  document's `/` at S5. One render, 0 reports.
+- AC4 — met. `examples/index-labels-misuse.qmd` gained a per-index map under
+  `figures` giving both keys an empty value; `check_warning_count` asserts each
+  of the two empty-value messages message-whole, once in that render and zero
+  times in the separators fixture's (the control). `M58-AC4 (fallback)` then
+  reads 11 entry lines across that document's 3 index sections at 14 positions
+  as U+002C and U+003B throughout.
+- AC5 — met. `M58-AC5` asserts, message-whole, the unknown-key report the
+  fixture's `symbol` key draws, whose key list reads `symbols, see, see-also,
+  separator, xref-separator`.
+- AC6 — met. The fixture declares `separator: "،"` (U+060C) and
+  `xref-separator: "؛"` (U+061B). `M58-AC6` compares the fixture's and the
+  twin's `.tex` from the same tree byte for byte and finds them identical, and
+  asserts the fixture's `.tex` carries 6 `\index` commands against the count
+  hand-derived in `run-tests.sh` from the fixture's seven marks and
+  `latex.lua`'s contested-key fold (Azurite 2, Beryl 1, Cinnabar 1, Dolomite 2).
+- AC7 — met. `M58-AC7` runs `tests/sepcheck.py epub` over the spine document of
+  the EPUB render against the same `M58_SEPARATORS` manifest AC1 uses — 4 entry
+  lines, 1 section, all 7 positions — with `compare`'s row-count assertion.
+- AC8 — met, read on disk. `site/cross-references.qmd:109-110`,
+  `site/letter-groups.qmd:40-41` and `site/back-end-differences.qmd:49-50` each
+  name all five keys. `back-end-differences.qmd:56` states neither separator key
+  reaches LaTeX (`letter-groups.qmd:74-75` says the same of makeindex's
+  punctuation). `cross-references.qmd:120` states a separator key sets the glyph
+  alone and the space after it is the extension's.
+- AC9 — met. `tests/run-tests.sh` exit 0, 480 checks; `tests/run-tests.sh
+  --self-test` exit 0, 922 checks. Both over this tree, which contains
+  `origin/main` unchanged.
+
+### Consistency gate
+
+- `cairn_validate.py` exit 0, all checks PASS. One advisory: `sizing (split
+  tripwires)` WARNs that M58 has 9 acceptance criteria against the >7 tripwire —
+  an advisory, not a gate failure, and the milestone is one PR of one mechanism.
+- `coverage complete` PASS — every criterion maps to an existing task.
+- `cairn_impact.py` not run: the diff touches no `cairn/DESIGN.md` principle.
+- Toolchain checks: the active profile is `generic`, whose `consistency-gate`
+  slot names none. Clean no-op.
+
+### Review findings
+
+Routing: the milestone declares a user-facing surface tier and the diff touches
+executable surface (`_extensions/`, `tests/`), so the full three-lens fan-out
+ran, each lens fresh-context and on its own evidence base.
+
+- [S] blame-history — no findings.
+- [S] prior-PR-comments — no findings. Prior-review evidence exists on the
+  touched files (M56, M57 and M08 archived `## Review` sections); the
+  `gh api .../pulls/comments` existence probe returned empty, so no per-PR
+  thread walk was made.
+- [O] diff-bug — pending at this checkpoint.

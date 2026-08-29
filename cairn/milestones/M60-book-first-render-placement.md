@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M60: An HTML book's first render places each index where its author asked
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP1
-- **Branch/PR:** —
+- **Branch/PR:** `m060-book-first-render-placement`
 
 ## Goal
 
@@ -144,6 +144,7 @@ in a rendered book or a failed render.
 - 2026-08-29: created by /milestone-plan.
 - 2026-08-29: criteria audit ran in FULL mode (user-facing tier), fresh-context [O] reader; returned twelve findings, ten applied to the criteria before writing (fixture shape stated in AC1; section identity replacing counts in AC1/AC2; "places an index" in AC2; instrument-bound oracle clause dropped and two stale-record positions added in AC4; store version read from the constant, unplanted copy proven, single-deletion probe in AC5; observable named in AC6; the untouched-fixture clause added to AC1), one moved to T2 (value-free scan stem), one accepted as stated (AC5's function name dropped).
 - 2026-08-29: plan gate chose deferring the unplaced-index section to a later render over always placing it in the book's final chapter, because the latter reverses M55's rule that every index section sits in a chapter its author asked for one in; falsified by an author reporting the missing first-render section as worse than a section in a chapter they did not mark.
+- 2026-08-29: implementation gate chose recording, in each chapter's own stored record, whether the store held a record for every other chapter when it rendered — the book's last chapter reads the placing chapter's value rather than inferring a first render — and chose running AC4's two stale-record positions as one whole-book render and one single-chapter render, so the report count equals the chapters that build an index in both.
 
 ## Decisions
 

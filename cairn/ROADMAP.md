@@ -7,7 +7,7 @@ _Last hygiene check: 2026-08-29 (M59 merged and archived: every unusable `index-
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M60 | An HTML book's first render places each index where its author asked | planned | — | normal | milestones/M60-book-first-render-placement.md |
+| M60 | An HTML book's first render places each index where its author asked | in-progress | — | normal | milestones/M60-book-first-render-placement.md |
 | M59 | The words an author writes are refused when a reader cannot read them | done | — | normal | milestones/archive/M59-index-label-refusals.md |
 | M58 | An author sets the punctuation the index prints inside an entry | done | — | normal | milestones/archive/M58-index-separators.md |
 | M56 | An author sets the words the index back-end picks itself | done | — | normal | milestones/archive/M56-index-label-override.md |

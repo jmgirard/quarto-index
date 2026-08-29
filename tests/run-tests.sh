@@ -8316,6 +8316,11 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #   named-indexes-twin  the same two attributes: the twin declares no indexes
 #                  and names none, so its targets resolve here for the reason
 #                  they resolve in every format. 0.
+#   index-lang-*   2 attributes each, across the six language fixtures and the
+#                  four twins: a `see=` and a `see-also=` on marks naming
+#                  `Kestrel`, which every one of those files marks, so both
+#                  resolve. The ten differ only in the `lang:` line and, in one,
+#                  an `index-labels:` block; none of that touches a target. 0.
 #   index-labels   4 attributes: a `see=` and a `see-also=` in each of the two
 #                  indexes it declares, each naming a term marked in its own
 #                  index. gfm folds the two indexes into one, so every target
@@ -8355,6 +8360,16 @@ examples/html-index.qmd	1
 examples/index-labels-misuse.qmd	0
 examples/index-labels-twin.qmd	0
 examples/index-labels.qmd	0
+examples/index-lang-de.qmd	0
+examples/index-lang-es.qmd	0
+examples/index-lang-es-twin.qmd	0
+examples/index-lang-frca.qmd	0
+examples/index-lang-frca-twin.qmd	0
+examples/index-lang-malformed.qmd	0
+examples/index-lang-malformed-twin.qmd	0
+examples/index-lang-miss.qmd	0
+examples/index-lang-miss-twin.qmd	0
+examples/index-lang-override.qmd	0
 examples/named-indexes-twin.qmd	0
 examples/named-indexes.qmd	0
 examples/placement.qmd	0
@@ -18315,6 +18330,439 @@ if [ "${1:-}" = "--self-test" ]; then
       || fail "M56 T4 self-test: a misuse message matches the log of the fixture that writes no unusable shape $out time(s)"
   done
   pass "M56 T4 self-test: none of the four whole messages matches the log of the fixture that writes no unusable shape"
+fi
+
+
+# ---------------------------------------------------------------------------
+# M57 — the same four words, picked from the document's own language.
+#
+# M56 let an author set three of them. This picks all four — those three plus
+# the heading of an index the document never declared — from a table this repo
+# ships, keyed on `lang:`, with the author's own `index-labels:` still winning
+# and English still the floor (D-035, D-037, D-038).
+#
+# Six fixtures, one per outcome the resolver enumerates plus the two coverage
+# cases, and the four resolver fixtures each have a twin that is itself with
+# only the `lang:` line removed:
+#
+#   index-lang-es          `lang: es` — the tag names a row outright
+#   index-lang-frca        `lang: fr-CA` — only its primary subtag does
+#   index-lang-miss        `lang: sw` — a well-formed tag naming no row
+#   index-lang-malformed   `lang: "es ES"` — no language tag at all
+#   index-lang-de          a row that covers three of the four words
+#   index-lang-override    `lang: es` and an author word for one of them
+#
+# ORACLE — every manifest row below is derived by hand from the fixture source
+# and `cairn/references/index-words-by-language.md`, never copied from a
+# render. The six documents carry the SAME four marks and the same one
+# placement marker, so every manifest differs from every other only in the
+# words this extension picks — which is what makes a wrong word visible as a
+# row rather than as an absence.
+#
+# Derived per fixture, from that ledger's shipped strings:
+#   `#numerals` files under no ASCII letter and so heads the Symbols group;
+#   `Kestrel` files under K and carries the one locator; `Falcon` and `Merlin`
+#   carry no locator and each names `Kestrel`, which the document marks, so
+#   each prints as a link behind the word its language gives.
+# The German fixture prints three German words and the English `Symbols`: the
+# ledger withholds that one word for German (row W-DE4), so a partly covered
+# language is what this fixture is here to show.
+# ---------------------------------------------------------------------------
+
+# The derivation, before any comparison reads either file. Without it an
+# emptied or shrunken `.tex` diff could be two files that drifted apart
+# together, and AC7 would pass for a reason it does not state.
+m57_derive() {
+  python3 - "$1" "$2" "$3" <<'M57DERIVEPY'
+import sys
+fixture_path, twin_path, label = sys.argv[1:4]
+fixture = open(fixture_path, encoding='utf-8').read().splitlines(True)
+twin = open(twin_path, encoding='utf-8').read()
+# The `lang:` line is a top-level scalar key: one line, nothing indented under
+# it. So the deletion the criterion names is the removal of exactly the lines
+# beginning `lang:`, and this states how many it found rather than trusting
+# that it found one.
+kept = [line for line in fixture if not line.startswith('lang:')]
+dropped = len(fixture) - len(kept)
+if dropped != 1:
+    print(f'FAIL: {label}: {fixture_path} carries {dropped} top-level `lang:` '
+          f'line(s), where the fixture is written with exactly one',
+          file=sys.stderr)
+    sys.exit(1)
+if ''.join(kept) != twin:
+    print(f'FAIL: {label}: {twin_path} is not {fixture_path} with its `lang:` '
+          f'line deleted; the two have drifted apart and a comparison of their '
+          f'renders would compare two different documents', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: {twin_path} is {fixture_path} with its one `lang:` line '
+      f'deleted, and nothing else')
+M57DERIVEPY
+}
+
+M57_RESOLVER_FIXTURES="index-lang-es index-lang-frca index-lang-miss index-lang-malformed"
+for f in $M57_RESOLVER_FIXTURES; do
+  m57_derive "examples/$f.qmd" "examples/$f-twin.qmd" "M57-AC7 (derivation, $f)" \
+    || fail "M57-AC7: examples/$f-twin.qmd is not its fixture minus the lang: line (its own FAIL line is above)"
+done
+
+for f in $M57_RESOLVER_FIXTURES index-lang-de index-lang-override; do
+  quarto render "examples/$f.qmd" --to html > "$WORK/$f-html.log" 2>&1 \
+    || { tail -20 "$WORK/$f-html.log" >&2; fail "M57: $f.qmd failed to render to HTML"; }
+  capture "examples/$f.qmd" html "$f-html"
+done
+for f in $M57_RESOLVER_FIXTURES; do
+  for g in "$f" "$f-twin"; do
+    quarto render "examples/$g.qmd" --to latex > "$WORK/$g-latex.log" 2>&1 \
+      || { tail -20 "$WORK/$g-latex.log" >&2; fail "M57-AC7: $g.qmd failed to render to LaTeX"; }
+    capture "examples/$g.qmd" latex "$g-latex"
+  done
+done
+quarto render examples/index-lang-es.qmd --to epub \
+  > "$WORK/index-lang-es-epub.log" 2>&1 \
+  || { tail -20 "$WORK/index-lang-es-epub.log" >&2; fail "M57-AC1: index-lang-es.qmd failed to render to EPUB"; }
+capture examples/index-lang-es.qmd epub "index-lang-es-epub"
+
+m57_html() { printf '%s' "$CAPTURE_ROOT/$1-html/$1.html"; }
+
+# AC1 — the exact-tag hit. All four words are Spanish, and the index heading is
+# one of them: the document declares no index, so the heading it falls back to
+# is the one the table supplies (D-038).
+read -r -d '' M57_ES <<'MANIFEST' || true
+section	qi-index	h1	Índice alfabético	site-index
+letter	Símbolos
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link véase Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link véase también Kestrel
+MANIFEST
+
+# The same document with its one `lang:` line gone: every word is the English
+# one this extension has always printed, and every other row is identical. The
+# two manifests side by side are what say the language is what changed the
+# words -- neither alone can.
+read -r -d '' M57_ENGLISH <<'MANIFEST' || true
+section	qi-index	h1	Index	site-index
+letter	Symbols
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link see Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link see also Kestrel
+MANIFEST
+
+# AC2 — the primary-subtag hit. `fr-CA` names no row; `fr` does, and its three
+# other words print. The heading is `Index` in French AND in English, so this
+# manifest's heading row is the one row here that does not discriminate; the
+# other three do.
+read -r -d '' M57_FRCA <<'MANIFEST' || true
+section	qi-index	h1	Index	site-index
+letter	Symboles
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link voir Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link voir aussi Kestrel
+MANIFEST
+
+# AC3 — the partly covered row. Three German words and the English `Symbols`,
+# in one index and with no message: a withheld word is a normal state, not
+# something to report (D-035).
+read -r -d '' M57_DE <<'MANIFEST' || true
+section	qi-index	h1	Index	site-index
+letter	Symbols
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link siehe Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link siehe auch Kestrel
+MANIFEST
+
+# AC4 — the author's own word beside the table's. `see` is the author's,
+# `see also`, the group heading and the index heading are the table's: the
+# nearest setting wins KEY BY KEY, and a map-by-map fold would print English
+# for the other three.
+read -r -d '' M57_OVERRIDE <<'MANIFEST' || true
+section	qi-index	h1	Índice alfabético	site-index
+letter	Símbolos
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link compárese Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link véase también Kestrel
+MANIFEST
+
+# The EPUB form of the Spanish manifest. Same rows; the section row carries no
+# `after` field, which is the shape epubcheck.py's own reader produces.
+read -r -d '' M57_ES_EPUB <<'MANIFEST' || true
+section	qi-index	h1	Índice alfabético
+letter	Símbolos
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link véase Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link véase también Kestrel
+MANIFEST
+
+# The English form of the EPUB manifest, written out rather than derived from
+# the one above: it is what the planted defect below holds the EPUB comparison
+# to, and a manifest produced by editing another manifest would be an
+# expectation this suite computed rather than derived (the ORACLE RULE).
+read -r -d '' M57_ENGLISH_EPUB <<'MANIFEST' || true
+section	qi-index	h1	Index
+letter	Symbols
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link see Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link see also Kestrel
+MANIFEST
+
+check_index_sections "$(m57_html index-lang-es)" "$M57_ES" "M57-AC1" \
+  counts labels
+check_html_index_links "$(m57_html index-lang-es)" "M57-AC1 (links)" \
+  "$HTML_SECTION_ID"
+pass 'M57-AC1: a document declaring lang: es and no words of its own prints the four Spanish strings the shipped table holds, over an exhaustive manifest of its whole index'
+
+printf '%s\n' "$M57_ES_EPUB" > "$WORK/index-lang-es-epub-index.txt"
+python3 tests/epubcheck.py sections \
+    "$CAPTURE_ROOT/index-lang-es-epub/index-lang-es.epub" "$HTML_SECTION_ID" \
+    "$WORK/index-lang-es-epub-index.txt" --labels \
+  || fail "M57-AC1: the EPUB render does not print the Spanish words where the HTML render prints them (its own FAIL line is above)"
+pass "M57-AC1: the EPUB back-end prints the same four Spanish words, so the two back-ends this table reaches agree"
+
+check_index_sections "$(m57_html index-lang-frca)" "$M57_FRCA" "M57-AC2 (subtag)" \
+  counts labels
+check_index_sections "$(m57_html index-lang-miss)" "$M57_ENGLISH" "M57-AC2 (miss)" \
+  counts labels
+check_index_sections "$(m57_html index-lang-malformed)" "$M57_ENGLISH" \
+  "M57-AC2 (malformed)" counts labels
+check_extension_warning_count "$WORK/index-lang-miss-html.log" 0 \
+  "M57-AC2 (miss, silent)"
+check_extension_warning_count "$WORK/index-lang-malformed-html.log" 0 \
+  "M57-AC2 (malformed, silent)"
+pass "M57-AC2: fr-CA prints the fr row, and a tag naming no row and a value that is no tag each print the four English defaults and draw no message at all"
+
+check_index_sections "$(m57_html index-lang-de)" "$M57_DE" "M57-AC3" \
+  counts labels
+check_extension_warning_count "$WORK/index-lang-de-html.log" 0 "M57-AC3 (silent)"
+pass "M57-AC3: a language the table covers in part prints its three words and the English fourth, in one index, with no message"
+
+check_index_sections "$(m57_html index-lang-override)" "$M57_OVERRIDE" "M57-AC4" \
+  counts labels
+check_extension_warning_count "$WORK/index-lang-override-html.log" 0 \
+  "M57-AC4 (silent)"
+pass "M57-AC4: an author word beats the table for its own key and leaves the table's other three standing"
+
+# The twin of the Spanish fixture, held to the English manifest. This is the
+# control the five manifests above rest on: it is the same marks with the same
+# reader, and it says the words came from `lang:` rather than from anything
+# else in the file.
+quarto render examples/index-lang-es-twin.qmd --to html \
+  > "$WORK/index-lang-es-twin-html.log" 2>&1 \
+  || { tail -20 "$WORK/index-lang-es-twin-html.log" >&2; fail "M57-AC1: index-lang-es-twin.qmd failed to render to HTML"; }
+capture examples/index-lang-es-twin.qmd html "index-lang-es-twin-html"
+check_index_sections "$(m57_html index-lang-es-twin)" "$M57_ENGLISH" \
+  "M57-AC1 (twin)" counts labels
+check_extension_warning_count "$WORK/index-lang-es-twin-html.log" 0 \
+  "M57-AC1 (twin, silent)"
+pass "M57-AC1: the same document with its lang: line removed prints the English words in every position and draws no message"
+
+# ---------------------------------------------------------------------------
+# AC7 — no word this table supplies reaches the LaTeX back-end, across every
+# outcome the resolver enumerates.
+#
+# Each fixture's whole `.tex` against its twin's, which the derivations above
+# proved is that same file minus one line. The diff is NOT expected to be
+# empty: Quarto emits its own furniture for a document language — a babel
+# option, the babel and selnolig blocks, its caption names, `pdflang`. What the
+# criterion asks is that EVERY differing line is one of those and none is a
+# line this filter writes.
+#
+# The ledger below is that classification, and it is what makes the claim
+# checkable rather than eyeballed: a differing line matching no entry fails,
+# naming the line. An empty diff fails too — a pair that did not differ at all
+# would mean the `lang:` line changed nothing in LaTeX, and the criterion would
+# be satisfied by a document that never exercised the language path.
+# ---------------------------------------------------------------------------
+m57_tex_ledger() {
+  python3 - "$1" "$2" "$3" <<'M57TEXPY'
+import difflib, re, sys
+fixture_tex, twin_tex, label = sys.argv[1:4]
+
+# Each entry: id, the shape, and why a line of that shape is Quarto's own.
+# Derived by reading the four diffs this milestone produces (M57 T6); an entry
+# is added only for a line one of them actually carries.
+LEDGER = [
+    ('Q1', r'^  (spanish|french|german|ngerman|italian),$',
+     "the babel language name Quarto puts in the \\documentclass options"),
+    ('Q2', r'^(\\ifLuaTeX|\\else|\\fi)$',
+     'the conditional wrapping the babel and selnolig loads'),
+    ('Q3', r'^\\usepackage\[bidi=(basic|default),shorthands=off\]\{babel\}$',
+     'the babel load itself, which Quarto emits only for a document language'),
+    ('Q4', r'^  \\usepackage\{selnolig\} % disable illegal ligatures$',
+     'the ligature package Quarto loads beside babel under LuaTeX'),
+    ('Q5', r'^\s*\\(re)?newcommand\*?\\(contentsname|listfigurename'
+           r'|listtablename|figurename|tablename)\{.*\}$',
+     "pandoc's own caption names, translated for the document language"),
+    ('Q6', r'^\\floatname\{codelisting\}\{.*\}$',
+     'the listings float name, translated the same way'),
+    ('Q7', r'^\\newcommand\*\\listoflistings\{\\listof\{codelisting\}\{.*\}\}$',
+     'the list-of-listings heading, translated the same way'),
+    ('Q8', r'^  pdflang=\{.*\},$',
+     'the PDF language property Quarto passes to hyperref'),
+]
+compiled = [(i, re.compile(p), why) for i, p, why in LEDGER]
+
+left = open(fixture_tex, encoding='utf-8').read().splitlines()
+right = open(twin_tex, encoding='utf-8').read().splitlines()
+differing = [line for line in difflib.unified_diff(left, right, n=0)
+             if line[:1] in '+-' and not line.startswith(('---', '+++'))]
+if not differing:
+    print(f'FAIL: {label}: {fixture_tex} and {twin_tex} are identical, so the '
+          f'lang: line changed nothing in LaTeX at all and this comparison '
+          f'would hold for a filter that never read it', file=sys.stderr)
+    sys.exit(1)
+fired, unclassified = {}, []
+for line in differing:
+    body = line[1:]
+    for ident, pattern, _why in compiled:
+        if pattern.match(body):
+            fired[ident] = fired.get(ident, 0) + 1
+            break
+    else:
+        unclassified.append(line)
+if unclassified:
+    print(f'FAIL: {label}: {len(unclassified)} differing line(s) of '
+          f'{fixture_tex} against {twin_tex} match no ledger entry, so a line '
+          f'this filter writes may have reached the LaTeX back-end:',
+          file=sys.stderr)
+    for line in unclassified[:10]:
+        print(f'  <<{line}>>', file=sys.stderr)
+    sys.exit(1)
+order = ', '.join(f'{i}x{fired[i]}' for i, _p, _w in compiled if i in fired)
+print(f'ok   {label}: all {len(differing)} differing line(s) are Quarto\'s own '
+      f'language furniture ({order}) and none is a line this filter writes')
+M57TEXPY
+}
+
+for f in $M57_RESOLVER_FIXTURES; do
+  m57_tex_ledger "$CAPTURE_ROOT/$f-latex/$f.tex" \
+    "$CAPTURE_ROOT/$f-twin-latex/$f-twin.tex" "M57-AC7 ($f)" \
+    || fail "M57-AC7: a differing line of $f.tex against its twin is not Quarto's own (its own FAIL line is above)"
+done
+pass "M57-AC7: across the exact hit, the subtag hit, the miss and the malformed value, every line the language adds to the .tex is Quarto's and none is this filter's"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M57 T6 — a planted defect per new check, each shown red on an artifact or
+  # an input carrying exactly the defect the check names.
+  # -------------------------------------------------------------------------
+  m57_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || fail "M57 T6 self-test: the check passed $label, so its green above says nothing"
+    case "$out" in
+      *"$want"*) pass "M57 T6 self-test: the check catches $label, and reports it as that" ;;
+      *) fail "M57 T6 self-test: the check failed $label, but not for that reason (<<$out>>)" ;;
+    esac
+  }
+
+  M57W="$WORK/m57-planted"
+  rm -rf "$M57W"
+  mkdir -p "$M57W"
+
+  # The derivation, on a twin that has drifted by a line, on one that is a byte
+  # copy of the fixture, and on a fixture carrying no `lang:` line at all.
+  cp examples/index-lang-es-twin.qmd "$M57W/drifted.qmd"
+  printf '\nA sentence the fixture does not carry.\n' >> "$M57W/drifted.qmd"
+  m57_planted 'a twin that has drifted from the fixture by a line' \
+    'drifted apart' \
+    m57_derive examples/index-lang-es.qmd "$M57W/drifted.qmd" "M57 probe"
+  cp examples/index-lang-es.qmd "$M57W/copy.qmd"
+  m57_planted 'a twin that is a byte copy of the fixture, lang: line and all' \
+    'drifted apart' \
+    m57_derive examples/index-lang-es.qmd "$M57W/copy.qmd" "M57 probe"
+  m57_planted 'a fixture carrying no lang: line at all' \
+    'carries 0 top-level `lang:` line' \
+    m57_derive examples/index-lang-es-twin.qmd examples/index-lang-es-twin.qmd \
+      "M57 probe"
+
+  # The manifests, each against the page the other states. A comparison blind
+  # to the printed word would pass both.
+  m57_planted 'a render printing the English words where the manifest states the Spanish ones' \
+    'do not match the manifest' \
+    check_index_sections "$(m57_html index-lang-es-twin)" "$M57_ES" \
+      "M57 probe" counts labels
+  m57_planted 'a render printing the Spanish words where the manifest states the English ones' \
+    'do not match the manifest' \
+    check_index_sections "$(m57_html index-lang-es)" "$M57_ENGLISH" \
+      "M57 probe" counts labels
+  # And the two that separate one covered language from another, and a fully
+  # covered row from a partly covered one.
+  m57_planted 'a French render held to the Spanish manifest' \
+    'do not match the manifest' \
+    check_index_sections "$(m57_html index-lang-frca)" "$M57_ES" \
+      "M57 probe" counts labels
+  m57_planted 'a German render held to a manifest whose group heading is German' \
+    'do not match the manifest' \
+    check_index_sections "$(m57_html index-lang-de)" "$M57_FRCA" \
+      "M57 probe" counts labels
+  # The author-word manifest against the render that writes no author word:
+  # this is what says AC4's row reads the author's `see` and not the table's.
+  m57_planted 'a render with no author word held to the manifest that states one' \
+    'do not match the manifest' \
+    check_index_sections "$(m57_html index-lang-es)" "$M57_OVERRIDE" \
+      "M57 probe" counts labels
+
+  # The EPUB comparison, against the English rows.
+  printf '%s\n' "$M57_ENGLISH_EPUB" > "$M57W/english-epub.txt"
+  m57_planted 'an EPUB printing the Spanish words where the manifest states the English ones' \
+    'does not match the manifest' \
+    python3 tests/epubcheck.py sections \
+      "$CAPTURE_ROOT/index-lang-es-epub/index-lang-es.epub" "$HTML_SECTION_ID" \
+      "$M57W/english-epub.txt" --labels
+
+  # The `.tex` ledger, on a pair differing by a line this filter would write —
+  # the defect class the whole criterion is about — and on a pair that does not
+  # differ at all, which is the vacuous pass it must also refuse.
+  cp "$CAPTURE_ROOT/index-lang-es-twin-latex/index-lang-es-twin.tex" \
+    "$M57W/filtered.tex"
+  printf '\\makeindex[intoc,title={\\'"'"'Indice alfab\\'"'"'etico}]\n' \
+    >> "$M57W/filtered.tex"
+  m57_planted 'a .tex carrying a line this filter writes' \
+    'match no ledger entry' \
+    m57_tex_ledger "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" \
+      "$M57W/filtered.tex" "M57 probe"
+  m57_planted 'a pair whose two .tex files are identical' \
+    'are identical' \
+    m57_tex_ledger "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" \
+      "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" "M57 probe"
+
+  # The silence assertions, against a log that is not silent: the misuse
+  # fixture M56 ships reports four times, so a warning count blind to its own
+  # log would pass here.
+  m57_planted 'a log carrying four messages held to a count of zero' \
+    'expected 0 warning(s)' \
+    check_extension_warning_count "$WORK/index-labels-misuse-html.log" 0 \
+      "M57 probe"
 fi
 
 }

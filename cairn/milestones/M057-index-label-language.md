@@ -1,11 +1,11 @@
 # M057: A non-English document gets a non-English index
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M056
 - **Driving RR:** —
 - **Principles touched:** IP2, IP3, GP3, GP4
-- **Branch/PR:** —
+- **Branch/PR:** `m057-index-label-language`
 
 ## Goal
 
@@ -98,7 +98,7 @@ to English rather than guessed.
 
 ## Tasks
 
-- [ ] T1. Choose at least two independent reference sources per language,
+- [x] T1. Choose at least two independent reference sources per language,
       ingest each as a `cairn/references/` source note with its `INDEX.md`
       line, and write one synthesis note holding each language's four words
       with both references' quoted extracts and each reference's kind beside
@@ -107,28 +107,28 @@ to English rather than guessed.
       independent rather than two restatements of one source. A word the two
       disagree on is not shipped; a language reaching fewer than two kinds is
       left out.
-- [ ] T2. The table module and its resolver: exact tag, then primary subtag,
+- [x] T2. The table module and its resolver: exact tag, then primary subtag,
       then English, reading `lang:` from the document metadata; a malformed or
       absent value misses silently, since an author writing `lang:` for Quarto
       did not address this filter (IP2).
-- [ ] T3. Wire the resolver beneath M056's override so the order is per-index
+- [x] T3. Wire the resolver beneath M056's override so the order is per-index
       `labels:`, then document `labels:`, then the table, then English —
       resolved per key, never per map.
-- [ ] T4. Resolve the untitled index heading through the same table in
+- [x] T4. Resolve the untitled index heading through the same table in
       `indexes.lua`'s `title`, replacing the `DEFAULT_TITLE` fallback only: a
       declared index with no `title:` keeps falling back to its own `name`, so
       the `\makeindex[title={...}]` LaTeX path (`index.lua:419-430`) stays
       unreached. A declared `title:` wins outright.
-- [ ] T5. Fixtures, one per resolver outcome plus the two coverage cases:
+- [x] T5. Fixtures, one per resolver outcome plus the two coverage cases:
       `lang: es` (exact hit), `lang: fr-CA` (subtag), a language the table
       lacks (miss), a malformed `lang:` value, a partly covered language, and a
       `lang: es` document that also writes `labels:`. Each of the four resolver
       fixtures gets a twin that is itself with only the `lang:` line removed.
-- [ ] T6. Suite rows for each fixture, the four LaTeX twin comparisons with a
+- [x] T6. Suite rows for each fixture, the four LaTeX twin comparisons with a
       derivation check per pair on the model of M04-AC4's
       (`tests/run-tests.sh:3810-3831`), and a planted defect proving each new
       check can go red.
-- [ ] T7. `CHANGELOG.md` and `site/back-end-differences.qmd` per AC6, plus the
+- [x] T7. `CHANGELOG.md` and `site/back-end-differences.qmd` per AC6, plus the
       covered-language list wherever the site names what an author can expect.
 
 ## Work log
@@ -140,6 +140,17 @@ to English rather than guessed.
 - 2026-08-28: plan gate chose a shipped table over reading the files at render time through `pandoc.pipe` because Quarto's pandoc need not be on PATH, so two machines would render one document with different words; falsified by a render-time lookup shown to give one answer on every supported install.
 - 2026-08-28: plan gate chose localizing the untitled heading in this release over holding it one release behind the labels because that halfway state is the worst of the three (D-037); falsified by an author reporting a link or cross-reference that depended on the English heading text.
 
+- 2026-08-29: implement gate chose four languages (es, fr, de, it) over two or six, babel's per-language locale data as the typographic reference the words are checked against, and leaving a word English wherever no authority backs it.
+- 2026-08-29: T1 — six `cairn/references/` pages: babel's installed `.ini` locale data and Unicode CLDR's character labels as the typographic and editorial references, Duden, Treccani, the TLFi via the CNRTL and Wiktionary as the lexical ones, and one synthesis note holding the 16-row per-word ledger. The RAE refuses automated requests, so the Spanish lexical leg is Wikcionario alone, recorded on the page rather than glossed over.
+- 2026-08-29: T2, T3, T4 — `modules/languages.lua` holds the table and the resolver; `indexes.lua` consults it beneath both author levels and above the English word, and installs its heading only where the document declared no index.
+- 2026-08-29: T5, T6 — six fixtures and four twins, six hand-derived manifests, an EPUB comparison, the four `.tex` twin comparisons with a derivation check per pair and an eight-entry ledger classifying every differing line, and eleven planted defects.
+- 2026-08-29: T7 — the changelog entry for the changed heading, a tenth row on the back-end-differences page, and the covered-language list on the letter-groups, cross-references and HTML pages.
+- 2026-08-29: checkpoint — all seven tasks are written and the suite is mid-run at 376 checks with no failure; the plain and `--self-test` runs the completion gate needs have not both returned, so this commit is honest work-in-progress and the status stays `in-progress`.
+
 ## Decisions
+
+- 2026-08-29: **A word two references do not spell the same way is not shipped, and German's Symbols heading is the one that falls.** The rule AC5 states is applied as a string comparison, not a judgement: Unicode's locale data heads that category `Zeichen` in German while a German dictionary's word for a symbol is `Symbol`, plural `Symbole`. Those are two different strings, and this repo has no standing to pick between them in a language its maintainer does not read, so the German row ships three words and a German document prints the English `Symbols`. Spanish, French and Italian pass the same test because their locale label is the plural of the same dictionary headword. Recorded because the rule, not the German language, is what produced the gap — a later language will be judged the same way. Falsified by a German reader reporting `Symbols` as the wrong heading where `Zeichen` would have been right.
+
+- 2026-08-29: **`es_ES` resolves as `es-ES`; a value with a space in it does not resolve at all.** Rendering `lang: es_ES` to LaTeX put `spanish` in the `\documentclass` options and `Tabla de contenidos` in the preamble, so Quarto reads the underscore spelling as Spanish and localizes the whole document from it. Refusing it here would have left the index the one part of that document still in English, which is the split this table exists to close, so `_` is read as a separator. The boundary stays sharp everywhere else: the primary subtag is two to eight letters and every subtag after it one to eight letters or digits, and anything else — `lang: "es ES"`, the fixture this milestone uses — resolves to nothing and prints English silently. Falsified by a spelling Quarto localizes from that this resolver still refuses.
 
 ## Review

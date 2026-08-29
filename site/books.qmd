@@ -34,12 +34,13 @@ the index chapter sits. A cross-reference links to its target entry whenever
 some chapter in the book contributes it, so `see=` works across chapters
 exactly as it does inside one document.
 
-A book that declares several indexes prints each of them, each at the first
-marker naming it — in whichever chapter that marker stands — and any index no
-marker names after them, in declared order. Every judgement the extension
-makes across chapters is made inside one index, so a `see=` written in one
-index that names a term only another index marks is reported as naming nothing
-indexed, and the report says which index it was judged in.
+A book that declares several indexes prints each index some chapter files a
+mark in, each at the first marker naming it — in whichever chapter that marker
+stands — and any index no marker names after them, in declared order. Every
+judgement the extension makes across chapters is made inside one index, so a
+`see=` written in one index that names a term only another index marks is
+reported as naming nothing indexed, and the report says which index it was
+judged in.
 
 Two things worth knowing:
 

@@ -363,10 +363,9 @@ Three back-ends ship:
   empty span emitted just after the heading.
 - **EPUB** (`FORMAT` containing `epub`, which covers `epub2` and `epub3`): the
   HTML back-end's index, unchanged (added M52). `builds_ast_index` routes the
-  three sites gated on the AST back-ends — the per-mark record in `passes.lua`
-  and the back-end branch in `index.lua`, which are what build the index, and
-  the back-end branch in `index.lua`, which are what build the index — so the
-  same blocks are built and the same ids minted (corrected M55, which retired
+  two sites gated on the AST back-ends — the per-mark record in `passes.lua`
+  and the back-end branch in `index.lua`, which are what build the index — so
+  the same blocks are built and the same ids minted (corrected M55, which retired
   the fold reports the third site used to be). `is_html` stays the
   sole gate on the sidecar store and the chapter-scope wording,
   because Quarto renders an EPUB book in ONE Pandoc process, as it renders a
@@ -1180,3 +1179,27 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   scope is one chapter, which is the fact that explains why a range spanning
   two chapters does not pair. Reaching the pair of words takes a second message
   shape and a superseding entry against D-021. — M55
+- **KI167.** An HTML book decides which chapter builds an index no marker
+  names from the records written so far, so on a first render an early placing
+  chapter believes it is the last one that places anything and adopts every
+  unplaced index. A book whose markers sit in different chapters therefore
+  ships a duplicate index section in the wrong chapter on its first render; a
+  second render clears it. `examples/book/` puts every marker in one chapter,
+  so no fixture reaches it. — M55 review F1
+- **KI168.** The stale-index-name report is drawn by every chapter that
+  renders while a stale record stands, not once per placing chapter, so one
+  stale record can draw the report several times in one `quarto render`. The
+  count is asserted nowhere. — M55 review F4
+- **KI169.** `valid_record` iterates `mark.xrefs` before testing that it is a
+  table, so a record whose `xrefs` is a number raises outside any `pcall` and
+  takes the render down, which is the IP2 break the function exists to
+  prevent. Predates M55. — M55 review F8
+- **KI170.** The duplicate-marker report a book with one namespace draws still
+  ends "and a book has a single index". It is drawn only for a book declaring
+  nothing or one index, where it is true, but it is now the only sentence in
+  the extension still stating it as a general fact. — M55 review F7
+- **KI171.** M55's fix for the sort-key merge order — the destination index's
+  own keys taken before a folded name's, so a stale name cannot win a shared
+  path on its spelling — landed at the review gate with no regression test:
+  no fixture reaches a record that splits its marks between a declared and an
+  undeclared index while both carry a key for one printed path. — M55 review F2

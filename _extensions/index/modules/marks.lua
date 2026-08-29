@@ -167,8 +167,8 @@ end
 
 -- One index's pending targets, in document order. `report_dangling` still
 -- takes a flat path set and a flat target list, so the book's own report --
--- which aggregates chapters that have all folded to one index -- calls it
--- exactly as it always did.
+-- which now aggregates one index at a time (M55) -- calls it with the pair it
+-- has drawn for that index.
 local function xrefs_for(index)
   local out = {}
   for _, xref in ipairs(pending_xrefs) do
@@ -188,8 +188,8 @@ end
 -- dangles only inside its own index would go looking for a mark they have
 -- already written (review O1). `qi_indexes.scope_phrase` is what turns the
 -- index name into the words for it, and hands back `outer` untouched wherever
--- there is genuinely one namespace — the book's own aggregated report, which
--- names no index, included.
+-- there is genuinely one namespace — a book declaring nothing or one index
+-- included, its aggregated report then naming none (M55).
 --
 -- The per-index shape is a second message rather than the first with a clause
 -- swapped in, because its REMEDY differs too: where the set is one index of

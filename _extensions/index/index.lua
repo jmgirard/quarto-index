@@ -174,8 +174,8 @@ local function Pandoc(doc)
       -- which is this ONE index wherever the document declares several
       -- (review O1): "this document" there is a set no judgement was made
       -- over, and the term it says nothing indexes may be marked two sections
-      -- up, in the other index. A document declaring nothing or one, and any
-      -- folded back-end, keep the "document" they have always printed.
+      -- up, in the other index. A document declaring nothing or one keeps the
+      -- "document" it has always printed.
       qi_marks.report_dangling(qi_marks.marked_paths[name] or {},
                                qi_marks.xrefs_for(name),
                                "document", name)

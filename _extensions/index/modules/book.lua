@@ -360,12 +360,26 @@ local function fold_undeclared(records)
     if record.sorts ~= nil then
       -- A fixed order for the same reason `book_sort_keys` sorts its paths:
       -- `pairs` walks a Lua table however it likes, and which of two folded
-      -- keys reaches a path first must not change between renders.
-      local names = {}
+      -- keys reaches a path first must not change between renders. Sorting the
+      -- names alone is not enough: first-one-wins would then hand a shared path
+      -- to whichever name sorts first, so a stale name could beat the
+      -- destination index's own key on nothing but its spelling (review F2).
+      -- The names this book still declares go first, each keeping its own keys;
+      -- the folded ones follow, filling only the paths left over.
+      local kept, folded = {}, {}
       for name in pairs(record.sorts) do
+        if qi_indexes.declared_for(name) ~= nil then
+          kept[#kept + 1] = name
+        else
+          folded[#folded + 1] = name
+        end
+      end
+      table.sort(kept)
+      table.sort(folded)
+      local names = kept
+      for _, name in ipairs(folded) do
         names[#names + 1] = name
       end
-      table.sort(names)
       local rebuilt = {}
       for _, name in ipairs(names) do
         local into = fold(name)

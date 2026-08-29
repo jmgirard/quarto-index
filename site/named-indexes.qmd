@@ -80,9 +80,10 @@ written below the first marker still reaches the first index, and a mark filed
 in the first index is unaffected by where any other index's marker stands.
 
 **Every index in an HTML book.** An HTML book builds every index its chapters
-declare, the same as every other format: its chapters are aggregated through a
-per-chapter record that carries the index each mark files in. Each index is
-placed at the first marker naming it, in whichever chapter that marker stands;
+declare and file a mark in, the same as every other format: its chapters are
+aggregated through a per-chapter record that carries the index each mark files
+in. Each index is placed at the first marker naming it, in whichever chapter
+that marker stands;
 an index no marker names is printed after them, in declared order, at the end
 of the last chapter that places one.
 

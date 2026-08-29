@@ -258,3 +258,33 @@ implementation in this session.
 - **F9** (confirmed by read). `site/books.qmd` says a book declaring several
   indexes "prints each of them", with no condition; a declared index no mark
   files in prints no section, which is what AC5's own evidence asserts.
+
+### Triage and dispositions
+
+Triaged at the merge gate; the maintainer chose to fix the cheap findings on
+the branch and defer the rest.
+
+- **F2 — fixed on the branch.** `fold_undeclared` now takes the names this
+  book still declares before the folded ones, so a folded name fills only the
+  paths the destination index left empty. No fixture reaches a record that
+  splits its marks between a declared and an undeclared index while both carry
+  a key for one printed path, so the fix ships without a regression test —
+  recorded as KI171 and carried by the new candidate row.
+- **F5 — fixed on the branch.** `DESIGN.md` now says two sites and names each
+  once.
+- **F6 — fixed on the branch.** The four comments now describe the per-index
+  aggregation that replaced the fold.
+- **F9 — fixed on the branch.** `site/books.qmd` and the same claim in
+  `site/named-indexes.qmd` now say a book prints each index some chapter files
+  a mark in; both pinned claim rows follow.
+- **F1, F4, F8 — follow-up.** Recorded as KI167, KI168 and KI169, and carried
+  by a new candidate row for the HTML book's placement and the reports around
+  it. F1 is a first-render-only wrong placement no fixture reaches; F4 is an
+  unasserted report count; F8 predates this branch byte for byte.
+- **F3 — rejected, already dispositioned.** Recorded as KI166 during
+  implementation.
+- **F7 — rejected as an unmodified line.** The sentence is drawn only where it
+  is true; recorded as KI170 so the claim is not lost.
+
+After the fixes, `tests/run-tests.sh` exits 0 at 426 checks and
+`tests/run-tests.sh --self-test` at 838 — the same counts as before them.

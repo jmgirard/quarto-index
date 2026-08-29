@@ -13149,7 +13149,7 @@ the toolchain condition	that run goes through TeX's restricted shell escape. A s
 what happens without it	An installation that withholds that permission builds no index after the first: each of them prints empty, `imakeidx` says so in the LaTeX log, and this extension neither detects that nor works around it
 below a named marker	a mark below the placement marker for its own index reaches no index at all
 below the first marker	a mark written below the first marker still reaches the first index
-every index in a book	An HTML book builds every index its chapters declare, the same as every other format
+every index in a book	An HTML book builds every index its chapters declare and file a mark in, the same as every other format
 how a book aggregates	its chapters are aggregated through a per-chapter record that carries the index each mark files in
 where a book's indexes go	Each index is placed at the first marker naming it, in whichever chapter that marker stands
 where an unasked-for index goes	an index no marker names is printed after them, in declared order, at the end of the last chapter that places one
@@ -17694,7 +17694,7 @@ cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
 merged means one process	Quarto renders each as one merged document, so the extension sees every chapter's marks at once
-every index in a book	A book that declares several indexes prints each of them, each at the first marker naming it
+every index in a book	A book that declares several indexes prints each index some chapter files a mark in, each at the first marker naming it
 a stale declared name	its marks are filed in the first index the book still declares, and the report names the chapter and the name
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \

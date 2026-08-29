@@ -115,7 +115,7 @@ in a rendered book or a failed render.
       and third, a marker-free fourth, and three declared indexes of which one
       is named by no marker. Give every mark a term no other mark in the
       fixture indexes, so no sort-key path is shared by accident.
-- [ ] T2. In `html_book` (`book.lua:745`), gate the unplaced-index adoption
+- [x] T2. In `html_book` (`book.lua:745`), gate the unplaced-index adoption
       block (`book.lua:275-286` within it) on the store holding a current record
       for every file in `ctx.chapters`; draw the deferral report from the book's
       final chapter, which is the one chapter that always has the picture.
@@ -146,6 +146,7 @@ in a rendered book or a failed render.
 - 2026-08-29: plan gate chose deferring the unplaced-index section to a later render over always placing it in the book's final chapter, because the latter reverses M55's rule that every index section sits in a chapter its author asked for one in; falsified by an author reporting the missing first-render section as worse than a section in a chapter they did not mark.
 - 2026-08-29: implementation gate chose recording, in each chapter's own stored record, whether the store held a record for every other chapter when it rendered — the book's last chapter reads the placing chapter's value rather than inferring a first render — and chose running AC4's two stale-record positions as one whole-book render and one single-chapter render, so the report count equals the chapters that build an index in both.
 - 2026-08-29: T1 — `examples/book-placement/` added: four chapters, markers in the first and third, a marker-free fourth, three declared indexes of which `gamma` is named by no marker, and eight terms no two of which share a printed path. Rendered from an empty store against the current filter it reproduces the defect: `index.html` carries sections for `alpha`, `beta` and `gamma`, and a second render leaves `alpha` alone there.
+- 2026-08-29: T2 — a chapter takes on an index no marker names only when the store already holds a usable record for every chapter after it, read before the chapter writes its own and carried in that record as `later`; the book's last chapter reads the placing chapter's value and reports a deferred section once. The gate asks only about the chapters that render after, so a refused record in an earlier chapter no longer costs the section M55-AC5 requires. warn-distinct's message count 77 → 78. `examples/book-placement/` renders `alpha` and `beta` alone with one report on the first render and `gamma` on the third chapter on the second; `examples/book/` is unchanged. Suite green, 486 checks.
 
 ## Decisions
 

@@ -9,7 +9,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M58 | An author sets the punctuation the index prints inside an entry | planned | — | normal | milestones/M58-index-separators.md |
+| M58 | An author sets the punctuation the index prints inside an entry | in-progress | — | normal | milestones/M58-index-separators.md |
 | M56 | An author sets the words the index back-end picks itself | done | — | normal | milestones/archive/M56-index-label-override.md |
 | M57 | A non-English document gets a non-English index | done | M56 | normal | milestones/archive/M57-index-label-language.md |
 | M55 | An HTML book builds every index its chapters declare | done | — | normal | milestones/archive/M55-book-named-indexes.md |

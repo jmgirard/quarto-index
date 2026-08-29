@@ -1,8 +1,9 @@
 # M058: An author sets the punctuation the index prints inside an entry
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
+- **Branch:** m058-index-separators
 - **Driving RR:** —
 - **Principles touched:** IP3, GP4, GP5
 
@@ -145,6 +146,7 @@ mistake.
 ## Work log
 
 - 2026-08-29: created by /milestone-plan.
+- 2026-08-29: /milestone-implement started; branch m058-index-separators cut from main, status in-progress.
 - 2026-08-29: criteria audit ran in FULL mode (user-facing tier), two passes over a fresh-context [O] reader. Pass 1 returned 15 findings across 6 of 8 drafted criteria; pass 2, over the revised set, returned 11 across 6 of 8. Both disposed at the gate: the manifest-completeness and plant-matrix promises were instrument-bound and moved to the tasks (AC8 of the draft deleted outright), AC1 and AC7 gained row-count closure, AC3 gained distinct glyphs and a mark inventory, AC6 replaced a 1:1 `\index` rule its own required fixture would falsify with a hand-derived count, and AC4/AC8's trailing-whitespace refusal was deleted as a guard for a class the host never delivers.
 - 2026-08-29: plan gate chose two new keys inside the existing `index-labels:` map over a separate punctuation map, because GP5 prefers extending one mechanism to adding a parallel syntax and `label()`'s ladder already resolves per-index-then-document; falsified by an author needing punctuation resolved on a different ladder from the words, or by the two surfaces needing different validation.
 - 2026-08-29: plan gate chose author-override alone over shipping an `ar` row in `languages.lua`, because the table's method demands two independent references agreeing on the string and "an Arabic index separates locators with U+060C" is an index-specific claim Unicode alone does not settle — M57 withheld German's `Symbols` on that same test; falsified by two references of different kinds agreeing on Arabic index punctuation.

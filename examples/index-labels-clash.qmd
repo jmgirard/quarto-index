@@ -1,0 +1,46 @@
+---
+title: "Index label letter clash"
+indexes:
+  - name: minerals
+    title: Index of Minerals
+    index-labels:
+      symbols: "A"
+  - name: fossils
+    title: Index of Fossils
+    index-labels:
+      symbols: "Z"
+filters:
+  - index
+---
+
+Both indexes here name the heading over the entries that file under no letter,
+and both write a single capital letter as that name. The difference is what
+else each index prints. The first also files a term under `A`, so a reader sees
+two groups headed `A` — the entries filing under no letter, and the real `A`
+group — and this document draws a report saying so. The second files nothing
+under `Z`, so its one `Z` heading is the only one on the page and the report
+stays silent. Neither index has its groups merged or reordered: what a `symbols:`
+word can change is the heading printed over the non-letter group and nothing
+else.
+
+## Minerals {#site-minerals}
+
+A term filing under a letter: [Azurite]{.index index="minerals"}. One filing
+under none: [%pyrite]{.index index="minerals"}.
+
+## Fossils {#site-fossils}
+
+A term filing under a letter: [Belemnite]{.index index="fossils"}. One filing
+under none: [+trilobite]{.index index="fossils"}.
+
+## Where the first index goes {#site-mineral-index}
+
+::: {.qi-index-here index="minerals"}
+:::
+
+{{< pagebreak >}}
+
+## Where the second index goes {#site-fossil-index}
+
+::: {.qi-index-here index="fossils"}
+:::

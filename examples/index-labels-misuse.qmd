@@ -3,6 +3,10 @@ title: "Index label misuse"
 index-labels:
   symbol: "Zeichen"
   see: ""
+  see-also: "&nbsp;"
+  symbols:
+    - "Zeichen"
+    - "Marken"
 indexes:
   - name: notes
     title: Index of Notes
@@ -16,19 +20,46 @@ indexes:
     index-labels:
       separator: ""
       xref-separator: ""
+  - name: strata
+    title: Index of Strata
+    index-labels:
+      symbols: "\u200B"
+      see:
+        target: "vergleiche"
+  - title: Index of Nothing
+    index-labels:
+      see: "siehe"
+  - name: ""
+    title: Index of the Nameless
+    index-labels:
+      see: "siehe"
+  - name: "2nd index"
+    title: Index of Bad Names
+    index-labels:
+      see: "siehe"
+  - name: notes
+    title: Index of Notes Again
+    index-labels:
+      see: "siehe"
 filters:
   - index
 ---
 
 Every `index-labels:` written in this document is written wrongly, and each
-place writes a different mistake: the document's own map names a key this
-extension does not print and gives a key it does print an empty value, two of
-the three indexes write no map at all — the first a string where a map belongs
-and the second a list — and the third writes a map whose two punctuation keys
-are both empty. So this is a document of mistakes rather than one to copy: what
-it demonstrates is that each is reported where it was written, and that every
-word and every mark falls back to the English one this extension has always
-printed.
+place writes a different mistake. The document's own map names a key this
+extension does not print, gives a key it does print an empty value, gives
+another a non-breaking space — a character a reader cannot see — and writes a
+third as a list. Of the four indexes it declares, the first two write no map at
+all, the first a string where a map belongs and the second a list; the third
+writes a map whose two punctuation keys are both empty; and the fourth writes a
+zero-width space under one key and a nested map under another. The four entries
+after those are refused as declarations — one has no `name:`, one an empty one,
+one a name that is no section id, and one repeats a name already declared — and
+each of them writes a label map that therefore sets nothing.
+
+So this is a document of mistakes rather than one to copy: what it demonstrates
+is that each is reported where it was written, and that every word and every
+mark falls back to the English one this extension has always printed.
 
 ## The first index {#site-first}
 
@@ -61,6 +92,14 @@ place the mark between two of them is printed:
 [Siltstone]{.index index="figures" see="Quartzite"} and
 [Siltstone]{.index index="figures" see-also="Rhyolite"}.
 
+## The fourth index {#site-fourth}
+
+A term filing under a letter: [Tillite]{.index index="strata"}. One filing
+under none: [=equals]{.index index="strata"}.
+
+A cross-reference pointing at the first:
+[Turbidite]{.index index="strata" see="Tillite"}.
+
 ## Where the first index goes {#site-notes}
 
 ::: {.qi-index-here}
@@ -78,4 +117,11 @@ place the mark between two of them is printed:
 ## Where the third index goes {#site-figures}
 
 ::: {.qi-index-here index="figures"}
+:::
+
+{{< pagebreak >}}
+
+## Where the fourth index goes {#site-strata}
+
+::: {.qi-index-here index="strata"}
 :::

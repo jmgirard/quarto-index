@@ -31,7 +31,10 @@ all.
 `examples/index-labels.qmd` declares the words the index prints for itself and
 `examples/index-labels-twin.qmd` is the same document with those declarations
 deleted; `examples/index-labels-misuse.qmd` writes every unusable shape of
-them. The ten `examples/index-lang-*.qmd` fixtures are the language table's:
+them, and `examples/index-labels-clash.qmd` declares two indexes that each name
+the heading over their non-letter entries after a single letter, one of them a
+letter its own index also heads a group with. The ten
+`examples/index-lang-*.qmd` fixtures are the language table's:
 one per outcome the tag resolver has — an exact tag, a regional tag falling
 back to its language, a tag the table does not cover, and a value that is no
 language tag — plus a language the table covers only in part and one where an

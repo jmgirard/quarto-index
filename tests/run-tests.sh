@@ -8328,10 +8328,10 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #   index-labels-twin  the same four attributes: the twin removes the two
 #                  `index-labels:` blocks and nothing else, so its target set is
 #                  identical. 0.
-#   index-labels-misuse  7 attributes, the same shape in the first two of its
-#                  three indexes and three more in the third, every target a
-#                  term that index marks. An unusable `index-labels:` changes
-#                  no target. 0.
+#   index-labels-misuse  8 attributes: the same shape in the first two of
+#                  its four indexes, three more in the third and a `see=` in
+#                  the fourth, every target a term that index marks. An
+#                  unusable `index-labels:` changes no target. 0.
 #   index-separators  4 attributes: a `see=` and a `see-also=` on the two
 #                  marks of the term that is two pointers, a `see=` on the term
 #                  that is only a pointer, and a `see-also=` on the term that is
@@ -18095,6 +18095,12 @@ letter	R
 0	Rhyolite	1	also-link see also Quartzite
 letter	S
 0	Siltstone	0	see-link see Quartzite	also-link see also Rhyolite
+section	qi-index-strata	h1	Index of Strata	site-strata
+letter	Symbols
+0	=equals	1
+letter	T
+0	Tillite	1
+0	Turbidite	0	see-link see Tillite
 MANIFEST
 
 check_index_sections "$M56_HTML" "$M56_LABELS_SECTIONS" "M56-AC1/AC2" \
@@ -18226,7 +18232,7 @@ python3 tests/epubcheck.py links "$M56_EPUB" "$HTML_SECTION_ID" \
 # AC5 — the misuse fixture. Four writings, four messages, each asserted WHOLE:
 # a prefix would let the half that names the key or the level be reworded away.
 M56_MISUSE_UNKNOWN='index-labels: in this document'"'"'s metadata sets the key "symbol", which names no word this extension prints; the keys are symbols, see, see-also, separator, xref-separator, so this key sets nothing'
-M56_MISUSE_EMPTY='index-labels: in this document'"'"'s metadata gives the key "see" an empty value, which is no word a reader can read; that word falls back to the next level it is written at and then to the English one'
+M56_MISUSE_EMPTY='index-labels: in this document'"'"'s metadata gives the key "see" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
 M56_MISUSE_SCALAR='index-labels: in the entry declaring the index named "notes" is not a map of label keys to the words to print; it sets no word, so each word falls back to the next level it is written at and then to the English one'
 M56_MISUSE_SEQUENCE='index-labels: in the entry declaring the index named "sources" is not a map of label keys to the words to print; it sets no word, so each word falls back to the next level it is written at and then to the English one'
 
@@ -18240,11 +18246,9 @@ for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY" \
   check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
     "M56-AC5 (control)"
 done
-check_extension_warning_count "$WORK/index-labels-misuse-html.log" 6 \
-  "M56-AC5 (total)"
 check_index_sections "$M56_MISUSE_HTML" "$M56_MISUSE_SECTIONS" \
   "M56-AC5 (fallback)" counts labels
-pass "M56-AC5: each of the four unusable writings draws exactly its own whole message and none of them, those four and the two empty punctuation values M58 added are the whole of what that render reports, and every word falls back to the English one"
+pass "M56-AC5: each of the four unusable writings draws exactly its own whole message and none of them, and every word falls back to the English one — the pin on the WHOLE of what that render reports is in the M59 block below, which reads the same log"
 
 # AC6 — no declaration reaches the LaTeX back-end. The whole `.tex` of the
 # fixture against the whole `.tex` of the twin, which the derivation above
@@ -18923,6 +18927,10 @@ section	qi-index-figures
 0	Quartzite	S1=U+002C	S2=U+002C
 0	Rhyolite	S1=U+002C	S3=U+002C
 0	Siltstone	S4=U+002C	S5=U+003B
+section	qi-index-strata
+0	=equals	S1=U+002C
+0	Tillite	S1=U+002C
+0	Turbidite	S4=U+002C
 MANIFEST
 
 check_separators() {
@@ -18979,8 +18987,8 @@ pass "M58-AC3: one render prints the second index's own separator inside that in
 # naming the key or the level be reworded away. The control is the fixture that
 # writes no unusable shape, without which a filter reporting every document
 # would satisfy both counts.
-M58_MISUSE_EMPTY_SEP='index-labels: in the entry declaring the index named "figures" gives the key "separator" an empty value, which is no word a reader can read; that word falls back to the next level it is written at and then to the English one'
-M58_MISUSE_EMPTY_XREF='index-labels: in the entry declaring the index named "figures" gives the key "xref-separator" an empty value, which is no word a reader can read; that word falls back to the next level it is written at and then to the English one'
+M58_MISUSE_EMPTY_SEP='index-labels: in the entry declaring the index named "figures" gives the key "separator" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
+M58_MISUSE_EMPTY_XREF='index-labels: in the entry declaring the index named "figures" gives the key "xref-separator" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
 for needle in "$M58_MISUSE_EMPTY_SEP" "$M58_MISUSE_EMPTY_XREF"; do
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 "M58-AC4"
   check_warning_count "$WORK/index-separators-html.log" "$needle" 0 \
@@ -19108,6 +19116,234 @@ if [ "${1:-}" = "--self-test" ]; then
     'where the manifest states' \
     python3 tests/sepcheck.py html "$M58_HTML" "$HTML_SECTION_ID" \
       "$M58W/english.txt" "M58 probe"
+fi
+
+# ---------------------------------------------------------------------------
+# M59 — every unusable `index-labels:` value is reported and falls back
+#
+# Four shapes used to install or vanish in silence: a value holding no visible
+# character, a value written as a nested map or as a list, a label map inside an
+# `indexes:` entry refused for some other reason, and a `symbols:` word that a
+# printed letter group of the same index also heads.
+#
+# Two fixtures. examples/index-labels-misuse.qmd carries the first three, at
+# both levels an author can write at, beside the shapes M56 and M58 already
+# pinned; examples/index-labels-clash.qmd carries the fourth twice over, once
+# where a letter group clashes and once where none does, which is the pair that
+# makes the report a judgement rather than an announcement.
+#
+# ORACLE — every count and every manifest row below is derived by hand from the
+# fixture source and the documented semantics, never read off a render. The
+# misuse fixture's total is derived per writing site:
+#   document map     an unknown key `symbol`, an empty `see`, a `see-also`
+#                    that is a non-breaking space, a `symbols` written as a
+#                    list                                                    4
+#   entry 1 notes    the whole map written as a string                       1
+#   entry 2 sources  the whole map written as a list                         1
+#   entry 3 figures  two empty punctuation values                            2
+#   entry 4 strata   a `symbols` that is a zero-width space, a `see` written
+#                    as a nested map                                         2
+#   entries 5-8      four entries refused as declarations -- no `name:`, an
+#                    empty one, a name that is no section id, a repeated
+#                    name -- each drawing its own refusal and the further
+#                    message that its label map sets no word            4 x 2
+#                                                                    total 18
+# ---------------------------------------------------------------------------
+
+# AC1 — a value holding no visible character, at both levels. Asserted WHOLE:
+# a prefix would let the half naming the key or the level be reworded away.
+M59_INVIS_SEEALSO='index-labels: in this document'"'"'s metadata gives the key "see-also" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
+M59_INVIS_SYMBOLS='index-labels: in the entry declaring the index named "strata" gives the key "symbols" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
+# AC2 — a value written as a map, and one written as a list. The report names
+# the shape the author wrote, since the two are written differently and fixed
+# differently.
+M59_LIST_SYMBOLS='index-labels: in this document'"'"'s metadata gives the key "symbols" a value written as a list, where one word belongs; it sets no word, so that word falls back to the next level it is written at and then to the English one'
+M59_MAP_SEE='index-labels: in the entry declaring the index named "strata" gives the key "see" a value written as a map, where one word belongs; it sets no word, so that word falls back to the next level it is written at and then to the English one'
+
+for needle in "$M59_INVIS_SEEALSO" "$M59_INVIS_SYMBOLS" \
+              "$M59_LIST_SYMBOLS" "$M59_MAP_SEE"; do
+  check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
+    "M59-AC1/AC2"
+  # The control: the same message over the fixture that writes no unusable
+  # shape. Without it a filter that reported every document would satisfy the
+  # four counts above.
+  check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
+    "M59-AC1/AC2 (control)"
+done
+# And the fallback half of both criteria, over the manifest that states the
+# word each cross-reference prints as well as its kind: `strata` heads its
+# non-letter group `Symbols` and prints `see` in front of its one target, so
+# neither the zero-width space nor the nested map reached a reader.
+check_index_sections "$M56_MISUSE_HTML" "$M56_MISUSE_SECTIONS" \
+  "M59-AC1/AC2 (fallback)" counts labels
+pass "M59-AC1/AC2: a value with no visible character and a value written as a map or a list each draw exactly their own whole message, naming the key and the level they were written at, and every one of those words prints as the English one"
+
+# AC3 — the four `indexes:` entries refused for some other reason that still
+# carry a label map. Each entry's own refusal and the further message about its
+# map are both asserted whole, since the criterion is that the second arrives
+# BESIDE the first rather than instead of it.
+M59_NONAME='entry 5 of the indexes: metadata has no name:, so there is nothing for a mark to name it by and it declares no index'
+M59_EMPTYNAME='entry 6 of the indexes: metadata has an empty name:, which no mark can name, so it declares no index'
+M59_BADNAME='entry 7 of the indexes: metadata declares the name "2nd index", which cannot be a section id a `#id` selector names; a name holds ASCII letters, digits, hyphen and underscore and begins with a letter, so this entry declares no index'
+M59_REPEATED='entry 8 of the indexes: metadata declares the name "notes" a second time; one name is one index, so this entry is ignored and the first declaration of that name is the one that prints'
+M59_DROPPED_5='entry 5 of the indexes: metadata also writes an index-labels: map, which sets no word: the entry declares no index, so there is nothing for that map to set the words of'
+M59_DROPPED_6='entry 6 of the indexes: metadata also writes an index-labels: map, which sets no word: the entry declares no index, so there is nothing for that map to set the words of'
+M59_DROPPED_7='entry 7 of the indexes: metadata also writes an index-labels: map, which sets no word: the entry declares no index, so there is nothing for that map to set the words of'
+M59_DROPPED_8='entry 8 of the indexes: metadata also writes an index-labels: map, which sets no word: the entry declares no index, so there is nothing for that map to set the words of'
+
+for needle in "$M59_NONAME" "$M59_EMPTYNAME" "$M59_BADNAME" "$M59_REPEATED" \
+              "$M59_DROPPED_5" "$M59_DROPPED_6" "$M59_DROPPED_7" \
+              "$M59_DROPPED_8"; do
+  check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
+    "M59-AC3"
+  check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
+    "M59-AC3 (control)"
+done
+pass "M59-AC3: each of the four refusal branches an indexes: entry carrying a label map can reach draws its own whole refusal message and, beside it, the whole further message saying that map sets no word"
+
+# The total, which is what makes the counts above a statement about the WHOLE
+# render rather than about eighteen lines somewhere in it. Derived in the
+# table at the head of this block.
+check_extension_warning_count "$WORK/index-labels-misuse-html.log" 18 \
+  "M59-AC1/AC2/AC3 (total)"
+pass "M59-AC1/AC2/AC3: those eighteen messages are the whole of what the misuse render reports"
+
+# AC4 — the letter clash, and the index in the same document that has none.
+quarto render examples/index-labels-clash.qmd --to html \
+  > "$WORK/index-labels-clash-html.log" 2>&1 \
+  || { tail -20 "$WORK/index-labels-clash-html.log" >&2; fail "M59-AC4: index-labels-clash.qmd failed to render to HTML"; }
+capture examples/index-labels-clash.qmd html "index-labels-clash-html"
+M59_CLASH_HTML="$CAPTURE_ROOT/index-labels-clash-html/index-labels-clash.html"
+
+M59_CLASH='index-labels: the word "A" heads the entries filing under no letter in index "minerals" and is also the heading of one of its letter groups, so a reader sees two groups under one heading; a word that is not a letter this index files a term under heads one group'
+M59_NOCLASH='index-labels: the word "Z" heads the entries filing under no letter in index "fossils" and is also the heading of one of its letter groups, so a reader sees two groups under one heading; a word that is not a letter this index files a term under heads one group'
+check_warning_count "$WORK/index-labels-clash-html.log" "$M59_CLASH" 1 \
+  "M59-AC4"
+# The silent half of the criterion, which is the whole of what makes the report
+# a judgement: the second index names its non-letter group `Z`, files nothing
+# under Z, and draws nothing. Spelled as the message that index WOULD draw, so
+# a report firing on every declared word fails here.
+check_warning_count "$WORK/index-labels-clash-html.log" "$M59_NOCLASH" 0 \
+  "M59-AC4 (silence)"
+# And the whole render's total: one report, from one of the two indexes.
+check_extension_warning_count "$WORK/index-labels-clash-html.log" 1 \
+  "M59-AC4 (total)"
+# The zero-expectation control on the fixtures that write no clashing word at
+# all -- the misuse fixture declares `symbols:` at both levels and every one of
+# them falls back to `Symbols`, which no letter group can head.
+for needle in "$M59_CLASH" "$M59_NOCLASH"; do
+  check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 0 \
+    "M59-AC4 (control)"
+  check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
+    "M59-AC4 (control)"
+done
+
+# What prints is unchanged: both groups are still there, in their own places,
+# the non-letter one still leading its index. A manifest and not a search for
+# two headings -- the claim is that the clash changed nothing else either.
+read -r -d '' M59_CLASH_SECTIONS <<'MANIFEST' || true
+section	qi-index-minerals	h1	Index of Minerals	site-mineral-index
+letter	A
+0	%pyrite	1
+letter	A
+0	Azurite	1
+section	qi-index-fossils	h1	Index of Fossils	site-fossil-index
+letter	Z
+0	+trilobite	1
+letter	B
+0	Belemnite	1
+MANIFEST
+check_index_sections "$M59_CLASH_HTML" "$M59_CLASH_SECTIONS" "M59-AC4 (print)"
+pass "M59-AC4: the index whose non-letter word one of its own letter groups also heads draws exactly one whole report naming that word and that index, the index in the same document whose word heads no letter group draws none, and both indexes still print both of their groups"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M59 T7 — a planted defect per new clause. Each is a SINGLE substitution on
+  # a copy of an artifact this run produced, and each is shown red before the
+  # green it already showed above on the real one is trusted.
+  # -------------------------------------------------------------------------
+  m59_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || fail "M59 T7 self-test: the check passed $label, so its green above says nothing"
+    case "$out" in
+      *"$want"*) pass "M59 T7 self-test: the check catches $label, and reports it as that" ;;
+      *) fail "M59 T7 self-test: the check failed $label, but not for that reason (<<$out>>)" ;;
+    esac
+  }
+
+  # One line of a captured log removed, which is exactly the filter that never
+  # drew that report. `grep -vF` and not an edit: the substitution is the
+  # deletion of that one message and nothing else.
+  m59_drop_message() {
+    local src="$1" out="$2" needle="$3"
+    grep -vF -- "$needle" "$src" > "$out" \
+      || fail "M59 T7 self-test: removing <<$needle>> from $src left no file"
+    [ "$(wc -l < "$src")" -gt "$(wc -l < "$out")" ] \
+      || fail "M59 T7 self-test: removing <<$needle>> from $src removed no line, so the plant is not the defect it names"
+  }
+
+  M59W="$WORK/m59-planted"
+  rm -rf "$M59W"
+  mkdir -p "$M59W"
+
+  m59_drop_message "$WORK/index-labels-misuse-html.log" "$M59W/invisible.log" \
+    "$M59_INVIS_SEEALSO"
+  m59_planted 'a render that installed an invisible value without reporting it' \
+    'expected 1 occurrence' \
+    check_warning_count "$M59W/invisible.log" "$M59_INVIS_SEEALSO" 1 "M59 probe"
+
+  m59_drop_message "$WORK/index-labels-misuse-html.log" "$M59W/flattened.log" \
+    "$M59_MAP_SEE"
+  m59_planted 'a render that flattened a nested map without reporting it' \
+    'expected 1 occurrence' \
+    check_warning_count "$M59W/flattened.log" "$M59_MAP_SEE" 1 "M59 probe"
+
+  m59_drop_message "$WORK/index-labels-misuse-html.log" "$M59W/dropped.log" \
+    "$M59_DROPPED_8"
+  m59_planted 'a render that dropped a refused entry'"'"'s label map in silence' \
+    'expected 1 occurrence' \
+    check_warning_count "$M59W/dropped.log" "$M59_DROPPED_8" 1 "M59 probe"
+
+  m59_drop_message "$WORK/index-labels-clash-html.log" "$M59W/clash.log" \
+    "$M59_CLASH"
+  m59_planted 'a render that printed two groups under one heading in silence' \
+    'expected 1 occurrence' \
+    check_warning_count "$M59W/clash.log" "$M59_CLASH" 1 "M59 probe"
+
+  # The total, against a log carrying one warning of this extension's more than
+  # the fixture derives: a pin read off the render rather than derived would
+  # move with it.
+  cp "$WORK/index-labels-misuse-html.log" "$M59W/extra.log"
+  printf '%s\n' "(W) $M59_INVIS_SEEALSO" >> "$M59W/extra.log"
+  m59_planted 'a render reporting one message more than the fixture derives' \
+    'expected 18 warning(s)' \
+    check_extension_warning_count "$M59W/extra.log" 18 "M59 probe"
+
+  # The printed-heading manifest, against a page whose non-letter group is
+  # headed `Symbols` after all -- the render a back-end that ignored the
+  # author's word would produce, and the one the report is about.
+  python3 - "$M59_CLASH_HTML" "$M59W/ignored.html" <<'M59PLANTPY'
+import sys
+src, out = sys.argv[1:3]
+html = open(src, encoding='utf-8').read()
+needle = '"qi-letter">\nA\n'
+if html.count(needle) != 2:
+    print(f'FAIL: M59 T7 self-test: {src} carries {html.count(needle)} '
+          f'`A` group heading(s), where the clash fixture prints 2',
+          file=sys.stderr)
+    sys.exit(1)
+open(out, 'w', encoding='utf-8').write(
+    html.replace(needle, '"qi-letter">\nSymbols\n', 1))
+M59PLANTPY
+  [ -s "$M59W/ignored.html" ] \
+    || fail "M59 T7 self-test: planting the ignored-word defect wrote no page (its own FAIL line is above)"
+  m59_planted 'a page heading its non-letter group Symbols where the author named it A' \
+    'do not match the manifest' \
+    check_index_sections "$M59W/ignored.html" "$M59_CLASH_SECTIONS" "M59 probe"
 fi
 
 }

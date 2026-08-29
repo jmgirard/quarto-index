@@ -7,6 +7,7 @@ _Last hygiene check: 2026-08-29 (M59 merged and archived: every unusable `index-
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M60 | An HTML book's first render places each index where its author asked | planned | — | normal | milestones/M60-book-first-render-placement.md |
 | M59 | The words an author writes are refused when a reader cannot read them | done | — | normal | milestones/archive/M59-index-label-refusals.md |
 | M58 | An author sets the punctuation the index prints inside an entry | done | — | normal | milestones/archive/M58-index-separators.md |
 | M56 | An author sets the words the index back-end picks itself | done | — | normal | milestones/archive/M56-index-label-override.md |
@@ -53,4 +54,3 @@ _Last hygiene check: 2026-08-29 (M59 merged and archived: every unusable `index-
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Handle a chapter filename containing `#` or `?` — added 2026-08-17 — M05 review F11 — KI14
 - Repair the language table M57 shipped and the checks fencing the label, language and punctuation surface M56-M59 shipped; promote the table half on an author reaching an edge, the check half on any check turning a run red for a reason that is not the defect it names — added 2026-08-29, extended 2026-08-29 — M56-M59 reviews — KI177-KI197
-- Repair the HTML book's index placement and the reports around it: which chapter builds an index no marker names on a first render, the stale-name report's per-chapter count, a record whose `xrefs` is not a table, and the untested sort-key merge order; promote on any reaching an author or turning a run red for a reason that is not the defect it names — added 2026-08-28 — M55 review F1, F2, F4, F8 — KI167, KI168, KI169, KI171

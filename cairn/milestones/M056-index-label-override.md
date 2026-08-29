@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, GP4, GP5
-- **Branch/PR:** m056-index-label-override
+- **Branch/PR:** m056-index-label-override — https://github.com/jmgirard/quarto-index/pull/56
 
 ## Goal
 
@@ -88,7 +88,7 @@ already and gains nothing here.
       EPUB only; and at least one of them states that the map is named
       `index-labels:` rather than `labels:` because a top-level `labels:` is
       Quarto's own. Evidence: a read of the three pages against that list.
-- [x] AC8. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit
+- [ ] AC8. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit
       0.
 
 ## Coverage
@@ -150,6 +150,8 @@ already and gains nothing here.
 - 2026-08-28: verify ran twice green after the work was complete, sequentially as PROFILE requires: `tests/run-tests.sh` 441 checks and `tests/run-tests.sh --self-test` 863 checks, both exit 0. Three earlier runs failed for reasons the work list did not hold and were fixed as found — the warn-count pin, the `xrefs` tuple width, and the fixtures being untracked, which the gallery's `git ls-files` enumeration reads. One run died on a Quarto segfault rendering `examples/content.qmd`, an unrelated fixture the next run rendered fine.
 - 2026-08-28: the `--self-test` run surfaced a defect that is not this milestone's: M40's self-test summary writes backtick-quoted tokens inside a double-quoted `pass` message, so the shell runs one as a command substitution and the run log carries `line 13996: ..: command not found`. Recorded as KI172; M56's own summary is single-quoted for the same reason, after the first run showed it eating the word it quoted.
 
+- 2026-08-28: review — PR #56 opened as a draft, CI green. Default branch had not moved. cairn_validate exit 0 (two advisory sizing WARNs only); no IP/GP change, so cairn_impact skipped; the generic profile names no toolchain checks. The eight criterion boxes arrived ticked with an empty Review section, so all eight were reset and are being re-ticked against fresh evidence: AC1-AC7 verified and recorded. AC8 awaits the in-flight `--self-test` run; the three fresh-context reviewers are still out. Checkpoint, not a finished review.
+
 ## Decisions
 
 - **What falls back is the key, not the map.** A map whose `see:` is empty
@@ -160,3 +162,50 @@ already and gains nothing here.
   all sets nothing, because there is nothing in it to read key by key.
 
 ## Review
+
+Evidence gathered 2026-08-28 on branch `m056-index-label-override` at the
+pre-gate checkpoint, against PR #56. The default branch had not moved since the
+branch was cut (`git rev-list --left-right --count origin/main...HEAD` → `0 2`),
+so no merge was needed. Suite evidence is from one sequential
+`tests/run-tests.sh` run and one `tests/run-tests.sh --self-test` run.
+
+### Acceptance criteria
+
+- **AC1 — pass.** The labels fixture's exhaustive HTML manifest matched all 18
+  rows over both generated sections, in order; a further check asserted the
+  three declared words print in the positions the extension words itself; and
+  the sweep check reported none of the three English words printed in any of
+  the 12 positions the extension words. Link integrity held in both sections
+  (4 links each, every id unique).
+- **AC2 — pass.** The same manifest run covered both sections of the two-index
+  fixture, and the paired check reported the second index printing its own
+  `see` word beside the document's other two, the first printing all three of
+  the document's.
+- **AC3 — pass.** `tests/epubcheck.py sections … --labels`
+  (`tests/run-tests.sh:18177`) read the built EPUB and matched all 16 rows of
+  the hand-derived label-aware manifest over both generated sections
+  (`qi-index-main`, `qi-index-authors`); all 8 links inside those sections
+  resolved.
+- **AC4 — pass.** The twin fixture matched all 18 manifest rows and the check
+  reported it printing `Symbols`, `see` and `see also` and drawing no message
+  at all, though Quarto writes a `labels:` map into its metadata.
+  `examples/letter-groups.qmd`'s existing manifest passed at 14 rows with no
+  row edited by this branch (`git diff main...HEAD -- tests/run-tests.sh`
+  touches no manifest row of it, only an added comment). The hand-derived
+  `examples/resolving-xref.qmd` manifest matched all 16 rows in order.
+- **AC5 — pass.** The misuse fixture's manifest matched all 18 rows, and the
+  message check reported each of the four unusable writings drawing exactly its
+  own whole message and none of the others, those four being the whole of what
+  the render reports, and every word falling back to English.
+- **AC6 — pass.** The labels fixture and its twin rendered byte-for-byte
+  identical `.tex`, so the complete diff is empty; the T4 derivation check
+  separately confirmed the twin is `examples/index-labels.qmd` with its two
+  `index-labels:` blocks deleted and nothing else.
+- **AC7 — pass.** Read of the three site pages against the list.
+  `site/letter-groups.qmd`, `site/cross-references.qmd` and
+  `site/back-end-differences.qmd` each state the `index-labels:` map, its three
+  keys (`symbols`, `see`, `see-also`), both levels with the nearer setting
+  winning key by key, and that it reaches HTML and EPUB only. Two of them —
+  `letter-groups.qmd` and `cross-references.qmd` — state the rename clause, that
+  the map is `index-labels:` rather than `labels:` because a top-level `labels:`
+  is Quarto's own.

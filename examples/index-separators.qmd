@@ -1,0 +1,52 @@
+---
+title: "Index separators"
+index-labels:
+  separator: "،"
+  xref-separator: "؛"
+filters:
+  - index
+---
+
+An index prints punctuation its author never writes: a mark between a term and
+its locators, another between one locator and the next, and a third between two
+cross-references filed on one term. English print convention makes the first
+two a comma and the third a semicolon. This document and its twin write the
+same marks and differ only in whether the metadata above declares those two
+marks — so what a reader sees here is whatever that metadata says, and the
+English punctuation wherever it says nothing.
+
+A declaration sets the glyph alone. The space after it is this extension's, so
+a value written without one cannot glue a locator to the term in front of it.
+
+Nothing below declares punctuation. Every mark here is an ordinary one, and the
+four entries between them reach every position an index prints punctuation at.
+
+## Two locators on one term {#site-first}
+
+A term marked once here — [Azurite]{.index} — and again on the page below, so
+its entry carries two locators, with punctuation between them as well as in
+front of them.
+
+{{< pagebreak >}}
+
+The second mark on that term: [Azurite]{.index}.
+
+## A term with both a locator and a cross-reference {#site-second}
+
+A term marked plainly, [Beryl]{.index}, and marked again pointing further on:
+[Beryl]{.index see-also="Azurite"}. Its entry prints a locator and then a
+cross-reference, so punctuation stands in front of each.
+
+## Cross-references with no locator {#site-third}
+
+A term that is only a pointer, so the first punctuation its entry prints stands
+between the term and the cross-reference: [Cinnabar]{.index see="Azurite"}.
+
+A term that is two pointers, marked once for each, which is the one place the
+cross-reference punctuation is printed: [Dolomite]{.index see="Azurite"} and
+[Dolomite]{.index see-also="Beryl"}.
+
+## Where the index goes {#site-index}
+
+::: {.qi-index-here}
+:::

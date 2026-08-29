@@ -1,0 +1,49 @@
+---
+title: "Index separators, per index"
+index-labels:
+  separator: "·"
+  xref-separator: "/"
+indexes:
+  - name: minerals
+    title: Index of Minerals
+  - name: alloys
+    title: Index of Alloys
+    index-labels:
+      separator: "~"
+filters:
+  - index
+---
+
+Punctuation is declared for a document and again inside one index's own
+declaration, and the nearer declaration wins key by key. This document writes
+three different glyphs to say so: the document sets both keys, the second index
+resets one of them, and so that index prints its own mark between a term and
+its cross-references while still printing the document's mark between two
+cross-references.
+
+Each index files two cross-references on one term, which is the entry that
+prints both marks in one line.
+
+## The first index {#site-first}
+
+A term to point at: [Jadeite]{.index index="minerals"}. The term that points at
+it twice, marked once for each pointer: [Nephrite]{.index index="minerals"
+see="Jadeite"} and [Nephrite]{.index index="minerals" see-also="Jadeite"}.
+
+## The second index {#site-second}
+
+A term to point at: [Electrum]{.index index="alloys"}. The term that points at
+it twice, marked once for each pointer: [Pewter]{.index index="alloys"
+see="Electrum"} and [Pewter]{.index index="alloys" see-also="Electrum"}.
+
+## Where the first index goes {#site-minerals}
+
+::: {.qi-index-here index="minerals"}
+:::
+
+{{< pagebreak >}}
+
+## Where the second index goes {#site-alloys}
+
+::: {.qi-index-here index="alloys"}
+:::

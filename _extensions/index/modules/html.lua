@@ -269,22 +269,46 @@ local function target_span(root, xref)
   return pandoc.Span(inlines, pandoc.Attr("", { "qi-target" }))
 end
 
+-- The punctuation an entry prints between its own parts, and the ASCII mark
+-- each falls back to. Two keys and not one per printed position: no
+-- convention found distinguishes the mark before a term's locators from the
+-- one between two locators, and a key per position would cost three more rows
+-- in every documentation table for a distinction nobody writes (M58).
+--
+-- Only the GLYPH is the author's. The `pandoc.Space()` after it stays this
+-- module's, so a value written without one cannot silently glue a locator to
+-- the term in front of it in a render that stays green.
+local SEPARATOR_KEY = "separator"
+local SEPARATOR = ","
+local XREF_SEPARATOR_KEY = "xref-separator"
+local XREF_SEPARATOR = ";"
+
 -- One entry's line: the term, then its numbered locator links, then its
 -- cross-references. The separators follow print convention — locators and the
 -- first cross-reference are set off from the term with a comma, and two
 -- cross-references are separated with a semicolon, exactly as the LaTeX
--- back-end's dual-target command prints them.
+-- back-end's dual-target command prints them. Both marks are what an author
+-- overrides under `separator:` and `xref-separator:`, resolved on the same
+-- per-index-then-document ladder the printed words use; the LaTeX back-end
+-- reads neither, because makeindex owns its own delimiter (M58).
 local function entry_inlines(root, node, name)
   local inlines = pandoc.List()
   inlines:insert(pandoc.Span(literal_inlines(node.key),
                              pandoc.Attr(node.id, { "qi-term" })))
+
+  -- Resolved once for the whole entry rather than per position: the ladder
+  -- answers a question about this index, not about where in a line the mark
+  -- sits, and re-asking it per locator would re-answer it for every entry.
+  local separator = qi_indexes.label(name, SEPARATOR_KEY, SEPARATOR)
+  local xref_separator =
+    qi_indexes.label(name, XREF_SEPARATOR_KEY, XREF_SEPARATOR)
 
   local tail = pandoc.List()
   if #node.locators > 0 then
     local locators = pandoc.List()
     for i, locator in ipairs(node.locators) do
       if i > 1 then
-        locators:insert(pandoc.Str(","))
+        locators:insert(pandoc.Str(separator))
         locators:insert(pandoc.Space())
       end
       -- The principal locator is emphasized with a Pandoc node and marked
@@ -316,7 +340,8 @@ local function entry_inlines(root, node, name)
 
   local previous_was_xref = false
   for _, item in ipairs(tail) do
-    inlines:insert(pandoc.Str(previous_was_xref and ";" or ","))
+    inlines:insert(pandoc.Str(previous_was_xref and xref_separator
+                                                 or separator))
     inlines:insert(pandoc.Space())
     inlines:insert(item.span)
     previous_was_xref = item.xref

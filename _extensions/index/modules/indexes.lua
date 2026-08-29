@@ -34,13 +34,21 @@ local TITLE_FIELD = "title"
 local DEFAULT_TITLE = "Index"
 local TITLE_KEY = "title"
 
--- The metadata key an author writes the reader-facing words under, and the
--- three words one map may set. A nested map rather than three fields beside
--- `title:` because a flat `see:` would spell the mark attribute `see=` one
+-- The metadata key an author writes the reader-facing text under, and the
+-- five keys one map may set. A nested map rather than fields beside `title:`
+-- because a flat `see:` would spell the mark attribute `see=` one
 -- indentation level away, where the same word names a cross-reference TARGET
 -- rather than the word printed in front of one (D-036). The map's name says
 -- what kind of value its keys hold, so the keys keep matching the attribute
 -- names without inheriting their meaning.
+--
+-- Three of the five are words -- the group heading and the two
+-- cross-reference words -- and two are punctuation: `separator`, the mark
+-- between a term and its locators and between one locator and the next, and
+-- `xref-separator`, the mark between two cross-references. Punctuation joins
+-- the same map rather than getting one of its own because it resolves on the
+-- same ladder the words do, an index's own map and then the document's, and a
+-- second map would be a second syntax for one question (M58).
 --
 -- `index-labels` and not the bare `labels` D-036 first chose: `labels:` at a
 -- document's top level is QUARTO's own key, and it puts nine title-block
@@ -51,14 +59,16 @@ local TITLE_KEY = "title"
 -- (D-039). The same name is used at both levels, though only the top one
 -- collides, so an author writes one key rather than two.
 --
--- The keys are listed rather than derived from the two sites that print these
--- words: `symbols` is the HTML back-end's group heading and the other two are
--- the cross-reference kinds, and a module below this one cannot ask either of
--- them what it prints. What this module owns is which keys are writable and
--- what an unusable one does; the ENGLISH word each falls back to stays at the
--- site that has always printed it, so no word acquires a second copy.
+-- The keys are listed rather than derived from the sites that print them:
+-- `symbols` is the HTML back-end's group heading, `see` and `see-also` are the
+-- cross-reference kinds, and the two separators are punctuation `entry_inlines`
+-- writes between an entry's parts -- and a module below this one cannot ask
+-- any of them what it prints. What this module owns is which keys are writable
+-- and what an unusable one does; the ENGLISH word or ASCII mark each falls
+-- back to stays at the site that has always printed it, so nothing printed
+-- acquires a second copy.
 local LABELS_KEY = "index-labels"
-local LABEL_KEYS = { "symbols", "see", "see-also" }
+local LABEL_KEYS = { "symbols", "see", "see-also", "separator", "xref-separator" }
 local LABEL_KEY_SET = {}
 for _, key in ipairs(LABEL_KEYS) do
   LABEL_KEY_SET[key] = true
@@ -314,20 +324,23 @@ local function title(name)
   return titles[name] or DEFAULT_TITLE
 end
 
--- The word this index prints for `key`: the nearest one an author declared --
+-- The text this index prints for `key`: the nearest one an author declared --
 -- the index's own map first, then the document's -- and `fallback` where
 -- neither level names it. Nearest wins KEY BY KEY rather than map by map, so a
--- per-index map resetting one word keeps the document's other two (D-036).
+-- per-index map resetting one key keeps the document's others (D-036).
 --
 -- Below both author levels sits the shipped table for the document's `lang:`,
 -- and below that the English word: an author who wrote nothing gets their own
--- language, and an author who wrote one word keeps the table's other three
+-- language, and an author who wrote one word keeps the table's others
 -- (D-035). Per key here too -- a language covering three of the four words
--- leaves the fourth to English rather than dropping its whole row.
+-- leaves the fourth to English rather than dropping its whole row. The table
+-- holds words only, so a punctuation key falls straight past it to `fallback`
+-- on every document: no row localizes the separators (M58).
 --
--- `fallback` is the English word the calling site has always printed, passed in
--- rather than held here: this module owns which keys exist and what an
--- unusable one does, and the words themselves stay where they are printed.
+-- `fallback` is the English word or ASCII mark the calling site has always
+-- printed, passed in rather than held here: this module owns which keys exist
+-- and what an unusable one does, and what is printed stays where it is
+-- printed.
 local function label(name, key, fallback)
   local mine = name ~= nil and index_labels[name] or nil
   if mine ~= nil and mine[key] ~= nil then

@@ -525,13 +525,22 @@ local function mint_section_id(taken, wanted)
 end
 
 -- This document's marks, split into the index each files in, each list still
--- in document order. A mark carrying no index at all is the book's: its record
--- format holds no index name, so every chapter's marks belong to the one index
--- a book has.
+-- in document order.
+--
+-- A key that is no declared name files in the first index this document does
+-- declare, rather than in a group the loop below never reaches and so never
+-- prints. Both callers settle their own names before they get here — a single
+-- document's marks through `mark_index` as each is read, a book's records
+-- through `fold_undeclared` as they are read back — and each reports what it
+-- resolved, which is why nothing is reported again here. This is the floor
+-- under both: a mark that reached the builder is a mark that prints, and a
+-- group silently dropped would be an author's term missing from the index
+-- with nothing said about it (IP2).
 local function marks_by_index(marks)
   local grouped = {}
   for _, mark in ipairs(marks) do
-    local list = qi_core.namespace(grouped, mark.index or qi_indexes.default())
+    local list = qi_core.namespace(grouped,
+      qi_indexes.authored_index(mark.index or qi_indexes.default()))
     list[#list + 1] = mark
   end
   return grouped

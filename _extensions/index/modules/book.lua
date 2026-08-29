@@ -36,7 +36,7 @@ local STORE_SUFFIX = ".qi.json"
 -- version that wrote it: nothing prunes it, and a project keeps rendering
 -- across extension upgrades. A record whose version is not this one is
 -- ignored rather than read as if its fields still meant what they did.
-local STORE_VERSION = 3
+local STORE_VERSION = 4
 
 -- Paths from Quarto are the host's; hrefs are always `/`-separated.
 local function as_href(path)
@@ -134,9 +134,16 @@ local function store_write(ctx, marker)
       -- inside itself, which is exactly the scope a range pairs in. What no
       -- longer happens is the BOOK re-deriving a pairing across chapters from
       -- these fields, which produced one defect in each of three review rounds.
+      -- `index` is the index this mark files in, as this chapter resolved it.
+      -- A book aggregates chapters that each read the same book-wide
+      -- `indexes:` metadata, so the name a chapter wrote down is a name the
+      -- reading chapter normally declares too; where it is not — a record left
+      -- by a render made before the declaration was edited — the reading
+      -- chapter says so and files the mark in its first declared index
+      -- (`fold_undeclared` below) rather than dropping the term.
       { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor,
         context = mark.context, role = mark.role, range = mark.range,
-        paired = mark.paired }
+        paired = mark.paired, index = mark.index }
   end
   -- The chapter's DECLARED sort keys, one per printed level path, rather than
   -- a resolved key per mark. A mark's resolved key already has this chapter's
@@ -144,12 +151,20 @@ local function store_write(ctx, marker)
   -- key once written down — so the book would read one chapter's fallback as
   -- a rival to another chapter's real key, and, being first in book order,
   -- let the fallback win.
-  -- The default index's namespace, which in a book is the only one there is:
-  -- the store's record format carries no index name, so every chapter's marks
-  -- were resolved to that one index before they were recorded (M38).
+  -- One namespace per index, exactly as the in-document registry is keyed:
+  -- two indexes of one book are two indexes, so a sort key written in one says
+  -- nothing about where the same printed text files in the other (D-021).
   local sorts = {}
-  for path, seen in pairs(qi_sortkeys.for_index(qi_indexes.default())) do
-    sorts[path] = seen.sort
+  for _, name in ipairs(qi_indexes.names()) do
+    local declared_keys = {}
+    local any = false
+    for path, seen in pairs(qi_sortkeys.for_index(name)) do
+      declared_keys[path] = seen.sort
+      any = true
+    end
+    if any then
+      sorts[name] = declared_keys
+    end
   end
   -- Every step here can fail on an ordinary machine — a stale file where the
   -- directory belongs, a read-only project tree, a full disk — and none of
@@ -194,6 +209,22 @@ local function valid_record(data, file)
   if data.file ~= file or type(data.href) ~= "string"
      or type(data.marks) ~= "table" then
     return false
+  end
+  -- The indexes this chapter carries a surviving placement marker for, in the
+  -- order the chapter places them. A list rather than the boolean version 3
+  -- wrote, because one chapter can place several indexes and the book has to
+  -- know which; a chapter with no marker writes an empty one. Validated here
+  -- rather than trusted, because `marker_chapter` walks it before any marker
+  -- logic runs and a non-list would take the render down with it (IP2).
+  if data.marker ~= nil then
+    if type(data.marker) ~= "table" then
+      return false
+    end
+    for _, name in ipairs(data.marker) do
+      if type(name) ~= "string" then
+        return false
+      end
+    end
   end
   for _, mark in ipairs(data.marks) do
     if type(mark) ~= "table" or type(mark.levels) ~= "table"
@@ -258,21 +289,101 @@ local function valid_record(data, file)
     if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
       return false
     end
+    -- Required rather than optional, unlike the four fields above: this is the
+    -- field the version bump to 4 is for. A record with no index name is one
+    -- whose marks were all resolved to a single index by a version that could
+    -- not express any other, and reading it as if every mark belonged in the
+    -- reading chapter's first index is exactly the silent misfiling the bump
+    -- exists to refuse. The empty string is a name — it is the one a book
+    -- declaring nothing has — so the test is the type, not the length.
+    if type(mark.index) ~= "string" then
+      return false
+    end
   end
-  -- The chapter's declared sort keys: a printed level path to the key filed
-  -- under it, both strings. A record with none is ordinary — most chapters
-  -- declare no sort key at all.
+  -- The chapter's declared sort keys: an index name to that index's own map of
+  -- printed level path to the key filed under it, all strings. A record with
+  -- none is ordinary — most chapters declare no sort key at all — and so is an
+  -- index with none.
   if data.sorts ~= nil then
     if type(data.sorts) ~= "table" then
       return false
     end
-    for path, key in pairs(data.sorts) do
-      if type(path) ~= "string" or type(key) ~= "string" then
+    for name, keys in pairs(data.sorts) do
+      if type(name) ~= "string" or type(keys) ~= "table" then
         return false
+      end
+      for path, key in pairs(keys) do
+        if type(path) ~= "string" or type(key) ~= "string" then
+          return false
+        end
       end
     end
   end
   return true
+end
+
+-- A stored record names the index each of its marks files in, and the READING
+-- chapter is the one that says whether that name is an index this book has:
+-- `indexes:` is book metadata, so a name the reading chapter does not declare
+-- is one that WAS declared when the record was written and is not now — a
+-- record left behind by a render made before the declaration was edited, or by
+-- an entry the declaration syntax has since refused. Dropping those marks
+-- would cost an author a whole chapter's terms for an edit they made somewhere
+-- else entirely (IP2), so they are filed in the first index this book does
+-- declare and both the chapter and the name are named.
+--
+-- The chapter's sort keys for that name move with its marks, for the reason a
+-- key travels at all: the term files under the key its author wrote, and
+-- leaving the key behind would file it under its printed text in silence. A
+-- key arriving at a path the destination index already has one for loses, the
+-- same first-one-wins rule the in-document registry follows.
+--
+-- Every name is settled here, before any judgement is made about a mark, so
+-- the aggregation below never sees an index name this book does not have.
+local function fold_undeclared(records)
+  local default = qi_indexes.default()
+  for _, record in ipairs(records) do
+    local reported = {}
+    local function fold(name)
+      if qi_indexes.declared_for(name) ~= nil then
+        return name
+      end
+      if not reported[name] then
+        reported[name] = true
+        qi_core.warn(('the recorded index marks for %s name the index "%s", which this book does not declare; they are filed in the first index it does declare, and their sort keys with them — render that chapter again, or render the whole book, once the %s: metadata is settled'):format(record.file, tostring(name), qi_indexes.INDEXES_KEY))
+      end
+      return default
+    end
+    for _, mark in ipairs(record.marks or {}) do
+      mark.index = fold(mark.index)
+    end
+    if record.sorts ~= nil then
+      -- A fixed order for the same reason `book_sort_keys` sorts its paths:
+      -- `pairs` walks a Lua table however it likes, and which of two folded
+      -- keys reaches a path first must not change between renders.
+      local names = {}
+      for name in pairs(record.sorts) do
+        names[#names + 1] = name
+      end
+      table.sort(names)
+      local rebuilt = {}
+      for _, name in ipairs(names) do
+        local into = fold(name)
+        local target = qi_core.namespace(rebuilt, into)
+        local paths = {}
+        for path in pairs(record.sorts[name]) do
+          paths[#paths + 1] = path
+        end
+        table.sort(paths)
+        for _, path in ipairs(paths) do
+          if target[path] == nil then
+            target[path] = record.sorts[name][path]
+          end
+        end
+      end
+      record.sorts = rebuilt
+    end
+  end
 end
 
 local function store_read(ctx)
@@ -317,32 +428,63 @@ end
 -- and so the only place the conflict can be found. First in BOOK order wins,
 -- which is the same rule a single document uses and, unlike "last one seen",
 -- does not depend on which chapter Quarto happened to render last.
-local function book_sort_keys(records)
+--
+-- One namespace per index (D-021): a rivalry is a rivalry inside ONE index,
+-- and the same printed path in another index of the book files under a key of
+-- its own. The report says which index wherever the book declares several, for
+-- the reason the in-document rival report does — an author told only the two
+-- chapters would go looking for a rivalry that is not in the index they read.
+--
+-- `report` is what separates the two callers: the rivalry is a book-wide
+-- judgement and is reported once, by the last chapter in book order — the only
+-- one that has seen every record, and the same chapter the other two book-wide
+-- reports are drawn by. Every chapter that BUILDS an index needs the same
+-- merged registry to file its entries with, and asks for it silently.
+local function book_sort_keys(records, report)
   local resolved = {}
   for _, record in ipairs(records) do
-    -- One chapter's paths in a fixed order. `pairs` walks a Lua table in
-    -- whatever order it likes, and two chapters each declaring two rival keys
-    -- would otherwise report them in an order that changed between renders.
-    local paths = {}
-    for path in pairs(record.sorts or {}) do
-      paths[#paths + 1] = path
+    -- One chapter's indexes and paths in a fixed order. `pairs` walks a Lua
+    -- table in whatever order it likes, and two chapters each declaring two
+    -- rival keys would otherwise report them in an order that changed between
+    -- renders.
+    local names = {}
+    for name in pairs(record.sorts or {}) do
+      names[#names + 1] = name
     end
-    table.sort(paths)
-    for _, path in ipairs(paths) do
-      local key = record.sorts[path]
-      local seen = resolved[path]
-      if seen == nil then
-        resolved[path] = { sort = key, file = record.file, reported = {} }
-      elseif seen.sort ~= key and not seen.reported[key] then
-        -- Once per RIVAL KEY at this path, the same rule the in-document
-        -- report follows: a term marked in three chapters under one rival key
-        -- is one thing for the author to fix, while a second, different rival
-        -- is a second thing and names a key the first report never mentions.
-        seen.reported[key] = true
-        qi_core.warn(('index entry "%s" is sorted as "%s" in %s and as "%s" in %s; '
-              .. 'one entry cannot file in two places, so the first in book '
-              .. 'order wins')
-             :format(path, seen.sort, seen.file, key, record.file))
+    table.sort(names)
+    for _, name in ipairs(names) do
+      local registry = qi_core.namespace(resolved, name)
+      local paths = {}
+      for path in pairs(record.sorts[name]) do
+        paths[#paths + 1] = path
+      end
+      table.sort(paths)
+      for _, path in ipairs(paths) do
+        local key = record.sorts[name][path]
+        local seen = registry[path]
+        if seen == nil then
+          registry[path] = { sort = key, file = record.file, reported = {} }
+        elseif report and seen.sort ~= key and not seen.reported[key] then
+          -- Once per RIVAL KEY at this path, the same rule the in-document
+          -- report follows: a term marked in three chapters under one rival key
+          -- is one thing for the author to fix, while a second, different rival
+          -- is a second thing and names a key the first report never mentions.
+          seen.reported[key] = true
+          local scope = qi_indexes.scope_phrase(name, "book")
+          if scope == "book" then
+            qi_core.warn(('index entry "%s" is sorted as "%s" in %s and as "%s" in %s; '
+                  .. 'one entry cannot file in two places, so the first in book '
+                  .. 'order wins')
+                 :format(path, seen.sort, seen.file, key, record.file))
+          else
+            -- One literal. The scope clause sits between the two chapters and
+            -- the tail, and the tail itself differs by one word, so neither
+            -- message is a substring of the other and each has a
+            -- placeholder-free clause of its own for the run to grep by
+            -- (D-022).
+            qi_core.warn(('index entry "%s" is sorted as "%s" in %s and as "%s" in %s, and both keys are written in %s; one entry cannot file in two places there, so the first in book order wins'):format(path, seen.sort, seen.file, key, record.file, scope))
+          end
+        end
       end
     end
   end
@@ -350,8 +492,8 @@ local function book_sort_keys(records)
 end
 
 -- The book counterpart of `qi_sortkeys.sort_for`: the same level-path lookup with the
--- same printed-text fallback, reading the book's merged registry rather than
--- this chapter's.
+-- same printed-text fallback, reading one index's share of the book's merged
+-- registry rather than this chapter's own.
 local function book_sort_for(keys, levels)
   local resolved, any = {}, false
   for i = 1, #levels do
@@ -392,40 +534,57 @@ end
 -- the dangling-target report is: it is the only chapter that has seen every other one's
 -- record. One report for the book, naming every mark it found, rather than one per mark —
 -- the author's fix is a single decision about the book, not a decision per mark.
+-- One pairing namespace per index (D-021): an opening in one index and a
+-- closing in another are two unpaired marks, not a split pair, so each index's
+-- leftovers are matched against its own alone and the report says which index
+-- it is about wherever the book declares several.
 local function report_book_ranges(records)
   local named, pending = {}, {}
   for at, record in ipairs(records) do
     for _, mark in ipairs(record.marks or {}) do
       if qi_core.RANGE_ENDS[mark.range or ""] and mark.paired == nil then
+        local open_here = qi_core.namespace(pending, mark.index)
         local key = qi_levels.levels_key(mark.levels)
         -- Named with its chapter, for the reason the book's dangling-target report names
         -- one: the reader of this warning has a book open, not a file.
         local name = (mark.context or "a mark") .. " in " .. record.file
         if mark.range == "open" then
-          if pending[key] == nil then
-            pending[key] = { chapter = at, name = name }
+          if open_here[key] == nil then
+            open_here[key] = { chapter = at, name = name }
           end
-        elseif pending[key] ~= nil then
+        elseif open_here[key] ~= nil then
           -- A counterpart in the SAME chapter cannot arise — the chapter
           -- would have paired the two itself — but the guard keeps this
           -- report's promise independent of that.
-          if pending[key].chapter ~= at then
-            named[#named + 1] = pending[key].name
-            named[#named + 1] = name
+          if open_here[key].chapter ~= at then
+            local list = qi_core.namespace(named, mark.index)
+            list[#list + 1] = open_here[key].name
+            list[#list + 1] = name
           end
-          pending[key] = nil
+          open_here[key] = nil
         end
       end
     end
   end
-  if #named == 0 then
-    return
+  -- In declared order, so a book with two indexes reports them in the order it
+  -- prints them rather than in whatever order `pairs` walks.
+  for _, index in ipairs(qi_indexes.names()) do
+    local list = named[index]
+    if list ~= nil and #list > 0 then
+      local scope = qi_indexes.scope_phrase(index, "book")
+      if scope == "book" then
+        qi_core.warn(('%s= is not paired across the chapters of an HTML book, so each of these marks indexes on its own rather than as one end of a range: %s. A range whose two marks are in one chapter, and a range in a PDF book, are both paired as usual'):format(qi_core.RANGE_ATTR, table.concat(list, "; ")))
+      else
+        -- The scope clause sits before the list rather than after it, so
+        -- neither shape is a prefix of the other (D-022).
+        qi_core.warn(('%s= is not paired across the chapters of an HTML book, and these marks are in %s, so each indexes on its own rather than as one end of a range: %s. A range whose two marks are in one chapter, and a range in a PDF book, are both paired as usual'):format(qi_core.RANGE_ATTR, scope, table.concat(list, "; ")))
+      end
+    end
   end
-  qi_core.warn(('%s= is not paired across the chapters of an HTML book, so each of these marks indexes on its own rather than as one end of a range: %s. A range whose two marks are in one chapter, and a range in a PDF book, are both paired as usual'):format(qi_core.RANGE_ATTR, table.concat(named, "; ")))
 end
 
 local function book_marks(ctx, records)
-  local book_keys = book_sort_keys(records)
+  local book_keys = book_sort_keys(records, false)
   local marks = {}
   for _, record in ipairs(records) do
     for _, mark in ipairs(record.marks or {}) do
@@ -438,12 +597,20 @@ local function book_marks(ctx, records)
       end
       marks[#marks + 1] = {
         levels = mark.levels,
+        -- Which index this mark files in, as its own chapter resolved it and
+        -- `fold_undeclared` settled against what this book declares now. It is
+        -- what splits the book's marks into sections, exactly as a single
+        -- document's own `index=` does.
+        index = mark.index,
         -- The book's keys for this mark's levels, not this chapter's own: a
         -- term marked in three chapters with a sort key written in one of
         -- them files under that key everywhere, exactly as it does inside one
         -- document — and a level's key applies wherever that level appears,
-        -- alone or as some sub-entry's parent.
-        sort = book_sort_for(book_keys, mark.levels),
+        -- alone or as some sub-entry's parent. Read from that mark's own
+        -- index's share of the registry: a key written for a printed path in
+        -- one index says nothing about the same path in another (D-021).
+        sort = book_sort_for(qi_core.namespace(book_keys, mark.index),
+                             mark.levels),
         xrefs = xrefs,
         anchor = mark.anchor,
         -- The chapter's own resolved role, which is all a book needs now that
@@ -471,7 +638,12 @@ end
 -- The book's counterpart of the in-document dangling-target report: the path
 -- set is every chapter's marks and the targets are every chapter's too, so a
 -- target naming a term another chapter indexes resolves, exactly as a reader
--- following it in the book's one index would find it.
+-- following it in the book's index would find it.
+--
+-- One namespace per index (D-021), and one report pass per index in declared
+-- order: a target written in one index that names a term only the other index
+-- marks is the dangling target it is to a reader, who has one index section in
+-- front of them and not the union of two.
 --
 -- Drawn by the last chapter in book order alone (its caller decides), which is
 -- the only chapter that has seen every other one's record — a book whose
@@ -482,20 +654,22 @@ local function report_book_dangling(records)
   local paths, xrefs = {}, {}
   for _, record in ipairs(records) do
     for _, mark in ipairs(record.marks or {}) do
+      local set = qi_core.namespace(paths, mark.index)
       for i = 1, #mark.levels do
-        paths[qi_levels.level_path(mark.levels, i)] = true
+        set[qi_levels.level_path(mark.levels, i)] = true
       end
     end
   end
   for _, record in ipairs(records) do
     for _, mark in ipairs(record.marks or {}) do
+      local list = qi_core.namespace(xrefs, mark.index)
       for _, xref in ipairs(mark.xrefs or {}) do
         -- The same filter `book_marks` applies before the entry tree is
         -- built: an attribute name this version does not know never reaches
         -- the index, so reporting on it would name a cross-reference no
         -- reader will ever see (review F8).
         if qi_core.XREF_KIND_BY_ATTR[xref.attr] then
-          xrefs[#xrefs + 1] = {
+          list[#list + 1] = {
             attr = xref.attr,
             levels = xref.levels,
             -- Which chapter the mark is in, joined onto how the mark names
@@ -510,16 +684,37 @@ local function report_book_dangling(records)
       end
     end
   end
-  qi_marks.report_dangling(paths, xrefs, "book")
+  for _, name in ipairs(qi_indexes.names()) do
+    -- The scope the report names is the set the target was judged against,
+    -- which is this ONE index wherever the book declares several;
+    -- `scope_phrase` hands the outer word back where there is genuinely one
+    -- namespace, and the report reads exactly as it always did.
+    qi_marks.report_dangling(paths[name] or {}, xrefs[name] or {}, "book", name)
+  end
 end
 
--- The first chapter in book order that carries a marker, by position, or nil.
+-- The first chapter in book order that carries a marker for each declared
+-- index, by position. One index, one placement site, resolved across the book
+-- the same way `resolve_markers` resolves it inside one chapter.
+--
+-- A stored marker naming an index this book no longer declares places nothing:
+-- it is a stale record's leftover, and folding it to the first declared index
+-- would let it take the placement site away from the marker the author has
+-- actually written for that index in some other chapter. Its own chapter's
+-- marks are reported by `fold_undeclared`, which is the report that tells the
+-- author the record is stale.
 local function marker_chapter(ctx, records)
-  local first = nil
+  local first = {}
   for _, record in ipairs(records) do
     local position = ctx.positions[record.file]
-    if record.marker and position and (first == nil or position < first) then
-      first = position
+    if position then
+      for _, name in ipairs(record.marker or {}) do
+        local index = qi_indexes.declared_for(name)
+        if index ~= nil
+           and (first[index] == nil or position < first[index]) then
+          first[index] = position
+        end
+      end
     end
   end
   return first
@@ -535,36 +730,103 @@ local function any_marks(records)
 end
 
 -- One chapter of a book. Anchors are assigned here whatever this chapter is,
--- because they are what the book's index links back to; the index itself is
--- built by one chapter only.
+-- because they are what the book's index links back to; an index itself is
+-- built by the one chapter that places it.
+--
+-- `marker` is the list of index names this chapter has a surviving placement
+-- marker for, in the order it places them.
 local function html_book(doc, ctx, marker, taken)
   store_write(ctx, marker)
   local records = store_read(ctx)
+  -- Before any judgement is made about a mark: an index name this book no
+  -- longer declares is settled against what it declares now, so every
+  -- accumulator below sees only names this book has.
+  fold_undeclared(records)
   -- Before anything about the marker: a broken cross-reference is a defect
   -- whether or not this book places an index, and the last chapter is the one
   -- that can see the whole book's marks (report_book_dangling). A book whose
   -- last chapter is not rendered gets no report — the same partial-render
-  -- limit every cross-chapter judgement here already carries.
+  -- limit every cross-chapter judgement here already carries. The sort-key
+  -- rivalry is the third book-wide judgement and is drawn here for the same
+  -- reason, rather than by whichever chapter happens to build an index: with
+  -- an index per marker there can be several of those, and the rivalry is one
+  -- fact about the book rather than one per section.
   if ctx.position == #ctx.chapters then
     report_book_dangling(records)
     report_book_ranges(records)
+    book_sort_keys(records, true)
   end
-  -- Whether THIS chapter carries the marker is known here, and is never read
-  -- back from the store: a chapter whose own record failed to write would
-  -- otherwise conclude that some other chapter holds the marker, build no
-  -- index, and report a chapter that does not exist.
+  -- Which chapter places each index. What THIS chapter carries is known here,
+  -- and is never read back from the store: a chapter whose own record failed
+  -- to write would otherwise conclude that some other chapter holds its
+  -- marker, build no index, and report a chapter that does not exist.
   local placing = marker_chapter(ctx, records)
-  if marker and (placing == nil or placing > ctx.position) then
-    placing = ctx.position
+  for _, name in ipairs(marker) do
+    if placing[name] == nil or placing[name] > ctx.position then
+      placing[name] = ctx.position
+    end
   end
 
-  if marker and placing == ctx.position then
+  -- The indexes THIS chapter builds, and where the book's placement sites
+  -- begin and end. `first` draws the reports that are about the book rather
+  -- than about one section, so a book placing three indexes in three chapters
+  -- still reports each of them once.
+  local mine, first, last = {}, nil, nil
+  for _, name in ipairs(qi_indexes.names()) do
+    local at = placing[name]
+    if at ~= nil then
+      if first == nil or at < first then first = at end
+      if last == nil or at > last then last = at end
+      if at == ctx.position then
+        mine[name] = true
+      end
+    end
+  end
+  -- An index no marker names goes after the ones markers do place: it is
+  -- handed to the LAST chapter that places anything, where `place_index`
+  -- appends it below that chapter's own markers, in declared order. A chapter
+  -- whose author wrote no marker at all therefore never grows an index
+  -- section, and every section of the book sits in a chapter its author asked
+  -- for one in — which is the single document's rule read for a book.
+  -- Each of this chapter's markers for an index some EARLIER chapter marks a
+  -- place for. Reported before anything is built, because a chapter can both
+  -- build one index and lose another to a chapter ahead of it.
+  for _, name in ipairs(marker) do
+    if placing[name] ~= ctx.position then
+      -- One index is placed once, the same rule `resolve_markers` applies
+      -- inside one chapter, read across the book.
+      if qi_indexes.scope_phrase(name, "book") == "book" then
+        qi_core.warn(("index placement marker in %s is ignored; %s comes first in book "
+              .. "order and carries one too, and a book has a single index")
+             :format(ctx.file, ctx.chapters[placing[name]]))
+      else
+        -- The index name sits between the two chapters rather than after them,
+        -- so neither shape is a prefix of the other (D-022).
+        qi_core.warn(('index placement marker in %s for the index named "%s" is ignored; %s comes first in book order and carries a marker for that index too, and each index of a book is placed where the first marker naming it stands'):format(ctx.file, name, ctx.chapters[placing[name]]))
+      end
+    end
+  end
+
+  local builds = next(mine) ~= nil
+  if first ~= nil and ctx.position == last then
+    for _, name in ipairs(qi_indexes.names()) do
+      if placing[name] == nil then
+        mine[name] = true
+        builds = true
+      end
+    end
+  end
+
+  if builds then
     if not any_marks(records) then
       -- The book path's counterpart to the single-document no-marks warning,
       -- which cannot be asked of one chapter. Without it a marker in a book
-      -- that marks nothing renders an empty index section.
-      qi_core.warn("index placement marker in a book whose chapters have no index "
-           .. "marks; there is no index to place")
+      -- that marks nothing renders an empty index section. Drawn by the first
+      -- placing chapter alone: it is one fact about the book.
+      if ctx.position == first then
+        qi_core.warn("index placement marker in a book whose chapters have no index "
+             .. "marks; there is no index to place")
+      end
       return qi_marker.place_index(doc, nil)
     end
     local later = {}
@@ -576,12 +838,16 @@ local function html_book(doc, ctx, marker, taken)
       -- run yet in this render: what the index shows for it is whatever an
       -- earlier render recorded, which may name terms that chapter no longer
       -- marks and link to anchors its page no longer has.
+      -- Drawn once per PLACING chapter rather than once for the book: with an
+      -- index per marker the chapters after one placing chapter are not the
+      -- chapters after another, and each sentence is a fact about the one
+      -- chapter it names.
       -- The count names the sequence it is over (D-014), which for a book is
       -- the render list rather than the files on disk: a part heading with no
       -- file of its own is not a chapter and is not counted, and a file the
       -- book does not render is not in the sequence at all.
-      qi_core.warn(("the index placement marker is in %s, and %d chapter(s) come "
-            .. "after it (%s); the index is built where the marker is, so "
+      qi_core.warn(("an index placement marker is in %s, and %d chapter(s) come "
+            .. "after it (%s); an index is built where its marker is, so "
             .. "those chapters are represented by what an earlier render "
             .. "recorded — entries and links for them can be out of date or "
             .. "dead. Put the marker chapter last in the book. The chapter "
@@ -589,19 +855,19 @@ local function html_book(doc, ctx, marker, taken)
             .. "book's render list gives them")
            :format(ctx.file, #later, table.concat(later, ", ")))
     end
-    -- Under the default index: the store's record format carries no index
-    -- name, so a book has the one index every chapter's marks were folded
-    -- into (M38).
+    -- Only the marks of the indexes this chapter builds. Another chapter's
+    -- section is built in that chapter's own process, out of the same records.
+    local mine_marks = {}
+    for _, mark in ipairs(book_marks(ctx, records)) do
+      if mine[mark.index] then
+        mine_marks[#mine_marks + 1] = mark
+      end
+    end
     return qi_marker.place_index(doc,
-      qi_html.html_index_blocks(book_marks(ctx, records), taken))
+      qi_html.html_index_blocks(mine_marks, taken))
   end
 
-  if marker then
-    qi_core.warn(("index placement marker in %s is ignored; %s comes first in book "
-          .. "order and carries one too, and a book has a single index")
-         :format(ctx.file, ctx.chapters[placing]))
-  elseif ctx.position == #ctx.chapters and placing == nil
-         and any_marks(records) then
+  if ctx.position == #ctx.chapters and first == nil and any_marks(records) then
     -- Reported by the last chapter in book order, which is the only chapter
     -- that can know no other one asked for the index: every earlier chapter
     -- has written its record by the time this one runs. One full render
@@ -629,6 +895,7 @@ M["relative_href"] = relative_href
 M["store_path"] = store_path
 M["store_write"] = store_write
 M["valid_record"] = valid_record
+M["fold_undeclared"] = fold_undeclared
 M["store_read"] = store_read
 M["book_sort_keys"] = book_sort_keys
 M["book_sort_for"] = book_sort_for

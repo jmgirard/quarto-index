@@ -20,23 +20,24 @@ format:
   pdf: default
   epub: default
 
-# Two declared indexes (M38), for the two properties a book has to show about
-# them. An HTML book aggregates its chapters through a sidecar store whose
-# record format carries no index name, so every named mark and every named
-# marker is folded into the one index the HTML book builds, and each is told
-# so. And the FIRST declared title is deliberately not "Index": the one section
-# a folded HTML book prints holds every declared index's marks, so it is headed
-# with the neutral title rather than with this one, which would claim the
-# section is the subject index alone (M38 R3).
+# Three declared indexes, for the three properties a book has to show about
+# them (M55). `main` is placed by the marker that names none, `people` by the
+# marker that names it — both in last.qmd — and `places` by no marker at all,
+# so it is appended after them and pins where an unasked-for index goes. The
+# FIRST declared title is deliberately not "Index": a book heads each section
+# with the title its author declared, so a first index still headed "Index"
+# could not tell a declared title from the neutral one.
 #
-# A PDF book is one Pandoc process and folds nothing (M49): it prints both
-# declarations, each under its own title, so the same file is also the fixture
-# for a book that builds every index it declares.
+# The same declaration serves every format: a PDF book is one Pandoc process
+# and an HTML book aggregates its chapters through a sidecar store that carries
+# the index each mark files in, so both build every index declared here.
 indexes:
   - name: main
     title: Index of Subjects
   - name: people
     title: Index of People
+  - name: places
+    title: Index of Places
 
 filters:
   - index

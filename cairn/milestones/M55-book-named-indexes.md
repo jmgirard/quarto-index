@@ -1,11 +1,11 @@
 # M55: An HTML book builds every index its chapters declare
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** —
+- **Branch/PR:** m055-book-named-indexes
 
 ## Goal
 
@@ -79,26 +79,26 @@ row, unchanged by this milestone.
 
 ## Tasks
 
-- [ ] **T1.** `book.lua`: the per-mark record carries the index it files in
+- [x] **T1.** `book.lua`: the per-mark record carries the index it files in
       (`book.lua:137-139`), `sorts` becomes a per-index map
       (`book.lua:150-153`, today `qi_sortkeys.for_index(qi_indexes.default())`
       alone), `valid_record` shape-checks both, and `STORE_VERSION`
       (`book.lua:39`) bumps to 4.
-- [ ] **T2.** `book.lua` aggregates per index: `book_marks`, `book_sort_keys`,
+- [x] **T2.** `book.lua` aggregates per index: `book_marks`, `book_sort_keys`,
       `book_sort_for`, `report_book_dangling` (`book.lua:481-514`, today one
       flat path set) and `report_book_ranges` (`book.lua:395-425`, today keyed
       by level path alone) are namespaced by index name, and `marker_chapter`
       (`book.lua:516-526`) resolves a placing chapter per index.
-- [ ] **T3.** `indexes.lua:199-200` stops setting `folded`; the three fold
+- [x] **T3.** `indexes.lua:199-200` stops setting `folded`; the three fold
       reports, `folds()`, the fold branches of `title`, `section_id` and
       `scope_phrase`, and `marker.lua`'s `fold_slot` (`marker.lua:293-303`,
       whose only caller is `marker.lua:308`) are deleted. The suite's
       fold-sentence pin (`tests/run-tests.sh:17141-17166`) and the fold-report
       zero-counts on the EPUB book go with them; the two
       `named-indexes-fold*.qmd` fixtures stay as LaTeX marker-placement probes.
-- [ ] **T4.** `html.lua:548-567`: a mark group whose key is no declared name is
+- [x] **T4.** `html.lua:548-567`: a mark group whose key is no declared name is
       reported and printed in the first declared index rather than skipped.
-- [ ] **T5.** Fixtures and manifests: `examples/book/_quarto.yml` gains a third
+- [x] **T5.** Fixtures and manifests: `examples/book/_quarto.yml` gains a third
       declared index no marker names, with one mark for it; `BOOK_HTML_INDEX`
       becomes section-aware and its derivation comment states, per layer, which
       chapter page and anchor each locator links to; `BOOK_EPUB_INDEX`, the
@@ -123,6 +123,10 @@ row, unchanged by this milestone.
 - 2026-08-28: plan gate chose bumping the store record version over an optional index-name field with a default-index fallback, because a stale record then costs a chapter's terms loudly rather than filing its named marks in the wrong index silently; falsified by an author reporting the re-render cost as worse than a misfiled term.
 - 2026-08-28: plan gate chose changing the rendered output outright over adding a setting that keeps one folded index, because a book declaring several indexes is already warned today that its named marks are being folded away; falsified by an author depending on the bare `qi-index` section id a book page prints today.
 - 2026-08-28: plan gate chose adding a third declared index to `examples/book/` over dropping the promise about where an index no marker names is placed, because that promise is otherwise stated and never checked; falsified by the third index's manifest churn exceeding the coverage it buys.
+- 2026-08-28: implementation began; T1 and T2 were committed together, since the record shape T1 writes is the shape only T2's readers can read, and T3 was taken with T5 for the same reason.
+- 2026-08-28: implementation gate chose, for an index no marker names, the end of the last chapter that places one over the end of the book's last chapter, so no chapter whose author wrote no marker grows an index section; chose one stale-records warning per placing chapter over one for the book, each sentence then being exactly true and the common one-marker-chapter book still drawing one; and chose a committed `examples/book-scopes/` for the cross-chapter judgement fixture over one written into scratch at run time.
+- 2026-08-28: T4 minor amendment — the undeclared-name report moved from `html.lua` to `book.lua`'s new `fold_undeclared`, which is the only site that knows which chapter the record came from, and which settles every name before any judgement is made about a mark; `html.lua` keeps the mechanical half, resolving a group key so no group is dropped in silence.
+- 2026-08-28: the book's sort-key rivalry report moved from the placing chapter to the last chapter in book order, beside the other two book-wide reports: an index per marker means several placing chapters, and the rivalry is one fact about the book. `examples/book-order` now draws it on the first render as well as the second, which the suite asserts per render.
 - 2026-08-28: plan gate chose one milestone over two in sequence, because the halfway state prints several indexes while still judging cross-chapter targets, sort keys and ranges across all of them at once, which D-021 forbids; falsified by the branch outgrowing one reviewable PR.
 
 ## Decisions

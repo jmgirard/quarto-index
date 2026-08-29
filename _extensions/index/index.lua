@@ -131,7 +131,12 @@ local function Pandoc(doc)
   -- book renders a chapter per Pandoc process, so every other format reaches
   -- the no-chapter wording by the path a single document takes.
   local book = qi_core.is_html() and qi_book.book_context(doc) or nil
-  local marker = qi_marker.resolve_markers(doc, book and book.file or nil)
+  -- `marker` is whether any placement site survived, which is the question
+  -- every format asks; `marker_places` names the index each surviving site
+  -- places, which only a book chapter needs — it is what its record hands the
+  -- chapter that builds each section.
+  local marker, marker_places =
+    qi_marker.resolve_markers(doc, book and book.file or nil)
   if qi_core.is_html() and book == nil and doc.meta.book ~= nil then
     -- Falling back to a per-chapter index is not a safe default in a book: it
     -- is the shipped-before-M05 defect, one index per chapter and none of them
@@ -208,7 +213,7 @@ local function Pandoc(doc)
       doc = qi_html.assign_anchors(doc, taken)
     end
     if book then
-      return qi_book.html_book(doc, book, marker, taken)
+      return qi_book.html_book(doc, book, marker_places, taken)
     end
     -- A document with no marks gets no section. (The LaTeX path keeps three
     -- preamble lines even then — the gobbling stand-ins, whose reason is a

@@ -9,7 +9,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M55 | An HTML book builds every index its chapters declare | planned | — | normal | milestones/M55-book-named-indexes.md |
+| M55 | An HTML book builds every index its chapters declare | in-progress | — | normal | milestones/M55-book-named-indexes.md |
 | M54 | The candidate backlog comes back under D-013 | done | — | normal | milestones/archive/M54-candidate-backlog.md |
 | M53 | The workflows' actions come up to date | done | — | normal | milestones/archive/M53-action-versions.md |
 | M52 | EPUB gets an index back-end | done | — | normal | milestones/archive/M52-epub-back-end.md |

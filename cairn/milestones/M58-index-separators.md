@@ -127,17 +127,17 @@ mistake.
       literal punctuation sites (`html.lua:287`, `html.lua:317`), keeping each
       `pandoc.Space()` where it is; `name` is already in scope at
       `html.lua:277`.
-- [ ] T4. Add the empty-value per-index map to `examples/index-labels-misuse.qmd`
+- [x] T4. Add the empty-value per-index map to `examples/index-labels-misuse.qmd`
       without disturbing the string-valued and list-valued maps AC5 and the
       existing checks depend on.
-- [ ] T5. Extend `tests/indexdump.py` (or the reader `run-tests.sh` already uses
+- [x] T5. Extend `tests/indexdump.py` (or the reader `run-tests.sh` already uses
       for the `index-labels` pair's `.tex` comparison) to cover the new pair,
       and hand-derive the `\index` count AC6 states from the fixture's marks.
-- [ ] T6. Write the HTML manifest reader and its row-count assertion, and the
+- [x] T6. Write the HTML manifest reader and its row-count assertion, and the
       scoped-resolution check.
-- [ ] T7. Extend `tests/epubindex.py` to read the separators from the spine.
+- [x] T7. Extend `tests/epubindex.py` to read the separators from the spine.
 - [ ] T8. Rewrite the three docs pages and the changelog entry.
-- [ ] T9. Plant the defect matrix through `tests/plantdefect.py`, varying FORM
+- [x] T9. Plant the defect matrix through `tests/plantdefect.py`, varying FORM
       as well as location: glyph swapped at one site, separator dropped
       entirely, the trailing `pandoc.Space()` lost, the wrong key consulted at a
       site, and a per-index map ignored — each shown to redden a named check
@@ -148,6 +148,9 @@ mistake.
 - 2026-08-29: created by /milestone-plan.
 - 2026-08-29: /milestone-implement started; branch m058-index-separators cut from main, status in-progress.
 - 2026-08-29: gate chose a separate hand-written punctuation manifest and its own check over extending the entry-row format the label and language fixtures read; code-point notation (`U+060C`) over the literal glyph in that manifest; and no `lang:` on the Arabic-punctuation fixture, since right-to-left index layout is an unfixed known issue this milestone does not touch.
+- 2026-08-29: the four fixtures file each two-cross-reference term as two marks rather than one mark carrying both attributes: a single both-attributes mark draws the "probably a mistake" report in every format, which a gallery example should not ship. The LaTeX renders draw two contested-key reports instead, equal in fixture and twin, which AC2 now asserts as equal counts rather than as silence.
+- 2026-08-29: T5 landed in a new tests/sepcheck.py rather than in tests/indexdump.py, and T7 in that same module's `epub` subcommand rather than in tests/epubindex.py: epubindex already returns the records tests/htmlindex.py builds, so the punctuation reading it needed was the field added there and one shared decider serves both back-ends.
+- 2026-08-29: one suite run failed with quarto exiting 139 rendering examples/named-indexes.qmd, a fixture this branch does not touch; the same tree ran green on the next invocation and on every one after.
 - 2026-08-29: T1-T3 verified as one suite run and committed together: T1 alone changes no printed output, T2's fixtures render nothing new without T3, and T3 is what makes T1 visible. Suite green, 465 checks, exit 0.
 - 2026-08-29: criteria audit ran in FULL mode (user-facing tier), two passes over a fresh-context [O] reader. Pass 1 returned 15 findings across 6 of 8 drafted criteria; pass 2, over the revised set, returned 11 across 6 of 8. Both disposed at the gate: the manifest-completeness and plant-matrix promises were instrument-bound and moved to the tasks (AC8 of the draft deleted outright), AC1 and AC7 gained row-count closure, AC3 gained distinct glyphs and a mark inventory, AC6 replaced a 1:1 `\index` rule its own required fixture would falsify with a hand-derived count, and AC4/AC8's trailing-whitespace refusal was deleted as a guard for a class the host never delivers.
 - 2026-08-29: plan gate chose two new keys inside the existing `index-labels:` map over a separate punctuation map, because GP5 prefers extending one mechanism to adding a parallel syntax and `label()`'s ladder already resolves per-index-then-document; falsified by an author needing punctuation resolved on a different ladder from the words, or by the two surfaces needing different validation.

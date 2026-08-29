@@ -386,14 +386,79 @@ def letter_label(node):
     return text(node).strip()
 
 
+# The five positions a generated entry line prints punctuation at, named as
+# the milestone that made them author-settable names them (M58). The name is
+# read off the STRUCTURE around the punctuation -- which spans it sits between
+# and what came before it -- never off the character printed, so a manifest
+# stating the wrong glyph at the right position and one stating the right
+# glyph at the wrong position fail differently.
+SEP_TERM_LOCATORS = 'S1'      # term -> its locators
+SEP_LOCATOR_LOCATOR = 'S2'    # one locator -> the next
+SEP_LOCATORS_XREF = 'S3'      # locators -> the first cross-reference
+SEP_TERM_XREF = 'S4'          # term -> the first cross-reference, no locators
+SEP_XREF_XREF = 'S5'          # one cross-reference -> the next
+
+
+def entry_separators(item):
+    """The punctuation one entry line prints between its parts, in order.
+
+    One `(site, text)` pair per position, where `site` is one of the five
+    constants above and `text` is the run of characters between the two spans
+    EXACTLY as the page holds it -- glyph and trailing whitespace both. The
+    whitespace is not stripped here: whether a separator is followed by the
+    space this extension writes is the question a check asks of it, and a
+    reader that stripped it could not be asked.
+
+    Read from the item's own children in document order, so the sequence is
+    the order a reader meets the marks in: the run in front of the locators
+    span, then the runs inside it between one numbered link and the next, then
+    the run in front of each cross-reference span.
+    """
+    pairs = []
+    pending = None
+    seen_locators = False
+    seen_xref = False
+    for child in item.children:
+        if isinstance(child, str):
+            pending = (pending or '') + child
+            continue
+        if not isinstance(child, Node):
+            continue
+        cls = classes(child)
+        if 'qi-locators' in cls:
+            pairs.append((SEP_TERM_LOCATORS, pending or ''))
+            inner, first = None, True
+            for sub in child.children:
+                if isinstance(sub, str):
+                    inner = (inner or '') + sub
+                elif isinstance(sub, Node):
+                    if not first:
+                        pairs.append((SEP_LOCATOR_LOCATOR, inner or ''))
+                    first = False
+                    inner = None
+            seen_locators = True
+        elif 'qi-xref' in cls:
+            if seen_xref:
+                site = SEP_XREF_XREF
+            elif seen_locators:
+                site = SEP_LOCATORS_XREF
+            else:
+                site = SEP_TERM_XREF
+            pairs.append((site, pending or ''))
+            seen_xref = True
+        pending = None
+    return pairs
+
+
 def index_entries(section):
     """Flatten the generated index section into records, in rendered order.
 
     Two record kinds, distinguished by `kind`. An `entry` record is a dict:
     `depth` (0 for a top-level entry), `term` (the entry's own text),
-    `locators` (the href of each numbered link, in order), and `xrefs` (one
+    `locators` (the href of each numbered link, in order), `xrefs` (one
     tuple per cross-reference: kind, target text, linked, href or None, and
-    the WORD printed in front of the target). The kind is read from the class
+    the WORD printed in front of the target), and `separators` (the
+    punctuation between the line's parts, see entry_separators). The kind is read from the class
     the back-end writes and the word from the text it prints, so the two are
     independent readings: an override that changed the class, or a class that
     printed the wrong word, is visible as a disagreement rather than folded
@@ -454,6 +519,7 @@ def index_entries(section):
                 'term': text(terms[0]),
                 'locators': locators,
                 'xrefs': xrefs,
+                'separators': entry_separators(item),
                 'id': terms[0].attrs.get('id', ''),
             })
             for nested in item.children:

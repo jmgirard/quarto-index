@@ -11,6 +11,7 @@ died for some other reason cannot be read as the scan catching this.
 Usage:  python3 tests/plantdefect.py <scratch-ext-dir> <scan-name>
         python3 tests/plantdefect.py --duplicate <scratch-ext-dir> <scan-name>
         python3 tests/plantdefect.py --html <captured-page> <residue-kind>
+        python3 tests/plantdefect.py --separator <captured-page> <kind>
 
 Prints the expected failure marker. An aimed-at text the module does not carry
 is an error rather than a no-op: a defect that planted nothing would leave the
@@ -205,6 +206,60 @@ HTML_DEFECTS = {
 }
 
 
+# The separator defects (M58), planted in a captured index page. Each names a
+# FORM of failure and not just a place: a glyph swapped for the English one, a
+# separator gone entirely, the space after it lost, the wrong key consulted at
+# a printed position, and a per-index declaration ignored in favour of the
+# document's. A matrix that varied only the position would be five copies of
+# one probe.
+#
+# The aimed-at text is the markup around ONE printed position, so a plant that
+# matched several would be reported as this probe's fault rather than as the
+# check's. Each marker is the substring the check prints for that form, without
+# the label the caller passes in — the caller knows which page it planted into.
+SEPARATOR_DEFECTS = {
+    'glyph': (
+        '<span id="qi-entry-1" class="qi-term">Azurite</span>\u060c ',
+        '<span id="qi-entry-1" class="qi-term">Azurite</span>, ',
+        "prints ',' at S1, where the manifest states"),
+    'dropped': (
+        'Azurite</span>\u060c <span class="qi-locators">',
+        'Azurite</span><span class="qi-locators">',
+        "prints '' at S1, where the manifest states"),
+    'spacing': (
+        'Azurite</span>\u060c <span class="qi-locators">',
+        'Azurite</span>\u060c<span class="qi-locators">',
+        "follows the S1 mark with ''"),
+    'wrongkey': (
+        '\u061b <span class="qi-xref qi-see-also">',
+        '\u060c <span class="qi-xref qi-see-also">',
+        "prints '\u060c' at S5, where the manifest states"),
+    'scoped': (
+        '<span id="qi-entry-3" class="qi-term">Electrum</span>~ ',
+        '<span id="qi-entry-3" class="qi-term">Electrum</span>\u00b7 ',
+        "prints '\u00b7' at S1, where the manifest states"),
+}
+
+
+def plant_separator(path, kind):
+    """Plant one separator defect in a captured index page; print its marker."""
+    if kind not in SEPARATOR_DEFECTS:
+        raise SystemExit('FAIL: plantdefect: no separator defect named %r'
+                         % kind)
+    old, new, marker = SEPARATOR_DEFECTS[kind]
+    src = open(path, encoding='utf-8').read()
+    found = src.count(old)
+    if found != 1:
+        raise SystemExit(
+            'FAIL: plantdefect: %s carries %d occurrence(s) of <<%s>>, where '
+            'the %r defect aims at exactly one; it plants nothing or plants in '
+            'more than one place, and the check that follows would be reported '
+            'as failing to discriminate when the fault is this mutation\'s'
+            % (path, found, old, kind))
+    open(path, 'w', encoding='utf-8').write(src.replace(old, new, 1))
+    print(marker)
+
+
 def plant_html(path, kind):
     """Plant one residue defect in a captured HTML page; print its marker."""
     if kind not in HTML_DEFECTS:
@@ -225,6 +280,8 @@ def plant_html(path, kind):
 
 
 def main(argv):
+    if len(argv) == 4 and argv[1] == '--separator':
+        return plant_separator(argv[2], argv[3])
     if len(argv) == 4 and argv[1] == '--html':
         return plant_html(argv[2], argv[3])
     if len(argv) == 4 and argv[1] == '--duplicate':

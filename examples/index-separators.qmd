@@ -42,8 +42,9 @@ cross-reference, so punctuation stands in front of each.
 A term that is only a pointer, so the first punctuation its entry prints stands
 between the term and the cross-reference: [Cinnabar]{.index see="Azurite"}.
 
-A term that is two pointers, which is the one place the cross-reference
-punctuation is printed: [Dolomite]{.index see="Azurite" see-also="Beryl"}.
+A term that is two pointers, marked once for each, which is the one place the
+cross-reference punctuation is printed: [Dolomite]{.index see="Azurite"} and
+[Dolomite]{.index see-also="Beryl"}.
 
 ## Where the index goes {#site-index}
 

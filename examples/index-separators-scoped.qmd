@@ -27,13 +27,14 @@ prints both marks in one line.
 ## The first index {#site-first}
 
 A term to point at: [Jadeite]{.index index="minerals"}. The term that points at
-it twice: [Nephrite]{.index index="minerals" see="Jadeite"
-see-also="Jadeite"}.
+it twice, marked once for each pointer: [Nephrite]{.index index="minerals"
+see="Jadeite"} and [Nephrite]{.index index="minerals" see-also="Jadeite"}.
 
 ## The second index {#site-second}
 
 A term to point at: [Electrum]{.index index="alloys"}. The term that points at
-it twice: [Pewter]{.index index="alloys" see="Electrum" see-also="Electrum"}.
+it twice, marked once for each pointer: [Pewter]{.index index="alloys"
+see="Electrum"} and [Pewter]{.index index="alloys" see-also="Electrum"}.
 
 ## Where the first index goes {#site-minerals}
 

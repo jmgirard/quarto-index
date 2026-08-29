@@ -11,18 +11,24 @@ indexes:
     title: Index of Sources
     index-labels:
       - see: "siehe"
+  - name: figures
+    title: Index of Figures
+    index-labels:
+      separator: ""
+      xref-separator: ""
 filters:
   - index
 ---
 
 Every `index-labels:` written in this document is written wrongly, and each
 place writes a different mistake: the document's own map names a key this
-extension does not print and gives a key it does print an empty value, and
-neither index writes a map at all — the first writes a string where a map
-belongs and the second a list. So this is a document of mistakes rather than
-one to copy: what it demonstrates is that each is reported where it was
-written, and that every word falls back to the English one this extension has
-always printed.
+extension does not print and gives a key it does print an empty value, two of
+the three indexes write no map at all — the first a string where a map belongs
+and the second a list — and the third writes a map whose two punctuation keys
+are both empty. So this is a document of mistakes rather than one to copy: what
+it demonstrates is that each is reported where it was written, and that every
+word and every mark falls back to the English one this extension has always
+printed.
 
 ## The first index {#site-first}
 
@@ -40,6 +46,21 @@ under none: [+plussign]{.index index="sources"}.
 Its own two cross-references: [Fulmar]{.index index="sources" see="Kittiwake"}
 and [Petrel]{.index index="sources" see-also="Kittiwake"}.
 
+## The third index {#site-third}
+
+A term marked twice, so its entry carries two locators with a mark between them
+as well as one in front: [Quartzite]{.index index="figures"}, and again here:
+[Quartzite]{.index index="figures"}.
+
+A term with both a locator and a cross-reference:
+[Rhyolite]{.index index="figures"} and
+[Rhyolite]{.index index="figures" see-also="Quartzite"}.
+
+A term that is two cross-references, marked once for each, which is the one
+place the mark between two of them is printed:
+[Siltstone]{.index index="figures" see="Quartzite"} and
+[Siltstone]{.index index="figures" see-also="Rhyolite"}.
+
 ## Where the first index goes {#site-notes}
 
 ::: {.qi-index-here}
@@ -50,4 +71,11 @@ and [Petrel]{.index index="sources" see-also="Kittiwake"}.
 ## Where the second index goes {#site-sources}
 
 ::: {.qi-index-here index="sources"}
+:::
+
+{{< pagebreak >}}
+
+## Where the third index goes {#site-figures}
+
+::: {.qi-index-here index="figures"}
 :::

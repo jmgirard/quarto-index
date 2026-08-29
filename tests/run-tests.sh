@@ -8328,14 +8328,16 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #   index-labels-twin  the same four attributes: the twin removes the two
 #                  `index-labels:` blocks and nothing else, so its target set is
 #                  identical. 0.
-#   index-labels-misuse  4 attributes, the same shape in its own two indexes,
-#                  every target a term that index marks. An unusable
-#                  `index-labels:` changes no target. 0.
-#   index-separators  3 attributes: a `see=` and a `see-also=` on the term
-#                  that is two pointers and a `see-also=` on the term that is
+#   index-labels-misuse  7 attributes, the same shape in the first two of its
+#                  three indexes and three more in the third, every target a
+#                  term that index marks. An unusable `index-labels:` changes
+#                  no target. 0.
+#   index-separators  4 attributes: a `see=` and a `see-also=` on the two
+#                  marks of the term that is two pointers, a `see=` on the term
+#                  that is only a pointer, and a `see-also=` on the term that is
 #                  both plainly marked and cross-referenced, each naming a term
 #                  the file marks. 0.
-#   index-separators-twin  the same three attributes: the twin removes the one
+#   index-separators-twin  the same four attributes: the twin removes the one
 #                  `index-labels:` block and nothing else. 0.
 #   index-separators-scoped  4 attributes: a `see=` and a `see-also=` on one
 #                  term in each of the two indexes it declares, each naming a
@@ -17901,10 +17903,11 @@ fi
 # the labels fixture with its two `index-labels:` blocks deleted, and nothing
 # else. Without this an empty `.tex` diff could be two files that drifted apart
 # together, and the criterion would pass for a reason it does not state.
-m56_derive() {
-  python3 - "$1" "$2" "$3" <<'M56DERIVEPY'
+derive_labels_twin() {
+  python3 - "$1" "$2" "$3" "$4" <<'M56DERIVEPY'
 import re, sys
-fixture_path, twin_path, label = sys.argv[1:4]
+fixture_path, twin_path, wanted, label = sys.argv[1:5]
+wanted = int(wanted)
 fixture = open(fixture_path, encoding='utf-8').read()
 twin = open(twin_path, encoding='utf-8').read()
 # A `index-labels:` block is the key line and every line indented deeper than
@@ -17924,24 +17927,24 @@ for line in fixture.splitlines(True):
         blocks += 1
         continue
     out.append(line)
-if blocks != 2:
+if blocks != wanted:
     print(f'FAIL: {label}: {fixture_path} carries {blocks} `index-labels:` '
-          f'block(s), where the fixture is written with two -- one at the '
-          f'document level and one inside an index declaration', file=sys.stderr)
-    sys.exit(1)
-if ''.join(out) != twin:
-    print(f'FAIL: {label}: {twin_path} is not {fixture_path} with its two '
-          f'`index-labels:` blocks deleted; the two have drifted apart and a '
-          f'comparison of their renders would compare two different documents',
+          f'block(s), where the fixture is written with {wanted}',
           file=sys.stderr)
     sys.exit(1)
-print(f'ok   {label}: {twin_path} is {fixture_path} with its two '
-      f'`index-labels:` blocks deleted, and nothing else')
+if ''.join(out) != twin:
+    print(f'FAIL: {label}: {twin_path} is not {fixture_path} with its '
+          f'{wanted} `index-labels:` block(s) deleted; the two have drifted '
+          f'apart and a comparison of their renders would compare two '
+          f'different documents', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: {twin_path} is {fixture_path} with its {wanted} '
+      f'`index-labels:` block(s) deleted, and nothing else')
 M56DERIVEPY
 }
 
-m56_derive examples/index-labels.qmd examples/index-labels-twin.qmd \
-  "M56-AC6 (derivation)" \
+derive_labels_twin examples/index-labels.qmd examples/index-labels-twin.qmd \
+  2 "M56-AC6 (derivation)" \
   || fail "M56-AC6: the twin is not the labels fixture with its `index-labels:` blocks removed (its own FAIL line is above)"
 
 for f in index-labels index-labels-twin; do
@@ -18062,9 +18065,10 @@ letter	Z
 MANIFEST
 
 # Every `index-labels:` this document writes is unusable, so every word falls
-# back: the document's map sets nothing usable, neither index's is a map at
-# all, and what prints is the English this extension has always printed. The
-# marker naming no index places the first declared one, `notes`.
+# back: the document's map sets nothing usable, the first two indexes' are no
+# map at all, the third's gives both punctuation keys an empty value, and what
+# prints is the English this extension has always printed. The marker naming no
+# index places the first declared one, `notes`.
 read -r -d '' M56_MISUSE_SECTIONS <<'MANIFEST' || true
 section	qi-index-notes	h1	Index of Notes	site-notes
 letter	Symbols
@@ -18084,6 +18088,13 @@ letter	K
 0	Kittiwake	1
 letter	P
 0	Petrel	0	also-link see also Kittiwake
+section	qi-index-figures	h1	Index of Figures	site-figures
+letter	Q
+0	Quartzite	2
+letter	R
+0	Rhyolite	1	also-link see also Quartzite
+letter	S
+0	Siltstone	0	see-link see Quartzite	also-link see also Rhyolite
 MANIFEST
 
 check_index_sections "$M56_HTML" "$M56_LABELS_SECTIONS" "M56-AC1/AC2" \
@@ -18229,11 +18240,11 @@ for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY" \
   check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
     "M56-AC5 (control)"
 done
-check_extension_warning_count "$WORK/index-labels-misuse-html.log" 4 \
+check_extension_warning_count "$WORK/index-labels-misuse-html.log" 6 \
   "M56-AC5 (total)"
 check_index_sections "$M56_MISUSE_HTML" "$M56_MISUSE_SECTIONS" \
   "M56-AC5 (fallback)" counts labels
-pass "M56-AC5: each of the four unusable writings draws exactly its own whole message and none of them, the four are the whole of what that render reports, and every word falls back to the English one"
+pass "M56-AC5: each of the four unusable writings draws exactly its own whole message and none of them, those four and the two empty punctuation values M58 added are the whole of what that render reports, and every word falls back to the English one"
 
 # AC6 — no declaration reaches the LaTeX back-end. The whole `.tex` of the
 # fixture against the whole `.tex` of the twin, which the derivation above
@@ -18278,15 +18289,18 @@ if [ "${1:-}" = "--self-test" ]; then
   printf '\nA sentence the fixture does not carry.\n' >> "$M56W/drifted.qmd"
   m56_planted 'a twin that has drifted from the fixture by a line' \
     'drifted apart' \
-    m56_derive examples/index-labels.qmd "$M56W/drifted.qmd" "M56 probe"
+    derive_labels_twin examples/index-labels.qmd "$M56W/drifted.qmd" 2 \
+      "M56 probe"
   cp examples/index-labels.qmd "$M56W/copy.qmd"
   m56_planted 'a twin that is a byte copy of the fixture, declarations and all' \
     'drifted apart' \
-    m56_derive examples/index-labels.qmd "$M56W/copy.qmd" "M56 probe"
+    derive_labels_twin examples/index-labels.qmd "$M56W/copy.qmd" 2 \
+      "M56 probe"
   # And on a fixture that no longer writes two declarations, which is the half
   # that says the deletion above deleted what the criterion names.
-  m56_derive examples/index-labels-twin.qmd examples/index-labels-twin.qmd \
-    "M56 probe" > "$M56W/noblocks.out" 2>&1 && rc=0 || rc=$?
+  derive_labels_twin examples/index-labels-twin.qmd \
+    examples/index-labels-twin.qmd 2 "M56 probe" \
+    > "$M56W/noblocks.out" 2>&1 && rc=0 || rc=$?
   [ "${rc:-0}" -ne 0 ] \
     || fail "M56 T4 self-test: the derivation passed a fixture carrying no index-labels: block at all"
   grep -q 'carries 0 `index-labels:` block' "$M56W/noblocks.out" \
@@ -18770,12 +18784,309 @@ if [ "${1:-}" = "--self-test" ]; then
       "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" "M57 probe"
 
   # The silence assertions, against a log that is not silent: the misuse
-  # fixture M56 ships reports four times, so a warning count blind to its own
+  # fixture M56 ships reports six times, so a warning count blind to its own
   # log would pass here.
-  m57_planted 'a log carrying four messages held to a count of zero' \
+  m57_planted 'a log carrying six messages held to a count of zero' \
     'expected 0 warning(s)' \
     check_extension_warning_count "$WORK/index-labels-misuse-html.log" 0 \
       "M57 probe"
+fi
+
+
+# ---------------------------------------------------------------------------
+# M58 — the punctuation the HTML and EPUB back-ends print INSIDE an entry, set
+# by the author.
+#
+# Two marks, not three: `separator` stands between a term and its locators,
+# between one locator and the next, and between an entry's locators and its
+# first cross-reference; `xref-separator` stands between two cross-references.
+# An author writes them under `index-labels:`, at the document's top level and
+# inside an `indexes:` entry, the nearer setting winning key by key — the same
+# ladder the printed WORDS resolve on (D-036, D-039).
+#
+# Three fixtures, and the pair is what makes the claim: examples/index-separators.qmd
+# declares Arabic punctuation, examples/index-separators-twin.qmd is that same
+# file with its one `index-labels:` block deleted and nothing else, and
+# examples/index-separators-scoped.qmd resets one of the two keys inside its
+# second index. A check that only ever saw the first would pass on a back-end
+# printing those marks unconditionally; one that only ever saw the twin would
+# pass on a back-end ignoring the metadata entirely.
+#
+# ORACLE — every row below is derived by hand from the fixture source and the
+# documented semantics, never copied from a render. The manifests are
+# tests/sepcheck.py's own form: one row per printed entry, its slots in printed
+# order, each slot naming the POSITION by what it sits between and the glyph by
+# its code point. The position is read off the structure and the glyph off the
+# text, so a render printing the right mark in the wrong place and one printing
+# the wrong mark in the right place fail differently — and a manifest holding
+# the Arabic comma as a character would turn on two marks a reader of this file
+# cannot tell apart.
+#
+# Derived per entry, for examples/index-separators.qmd, whose four marks reach
+# all five positions:
+#   Azurite    marked twice, so the term is set off from its locators (S1) and
+#              the two locators from each other (S2)
+#   Beryl      marked plainly and again with a see-also, so its line carries a
+#              locator (S1) and then a cross-reference (S3)
+#   Cinnabar   a see with no plain mark, so the first thing after the term is
+#              the cross-reference (S4)
+#   Dolomite   a see mark and a see-also mark, so two cross-references follow
+#              the term (S4) one after the other (S5)
+# ---------------------------------------------------------------------------
+
+for f in index-separators index-separators-twin; do
+  for fmt in html latex; do
+    quarto render examples/$f.qmd --to $fmt > "$WORK/$f-$fmt.log" 2>&1 \
+      || { tail -20 "$WORK/$f-$fmt.log" >&2; fail "M58: $f.qmd failed to render to $fmt"; }
+    capture examples/$f.qmd $fmt "$f-$fmt"
+  done
+done
+quarto render examples/index-separators.qmd --to epub \
+  > "$WORK/index-separators-epub.log" 2>&1 \
+  || { tail -20 "$WORK/index-separators-epub.log" >&2; fail "M58-AC7: index-separators.qmd failed to render to EPUB"; }
+capture examples/index-separators.qmd epub "index-separators-epub"
+quarto render examples/index-separators-scoped.qmd --to html \
+  > "$WORK/index-separators-scoped-html.log" 2>&1 \
+  || { tail -20 "$WORK/index-separators-scoped-html.log" >&2; fail "M58-AC3: index-separators-scoped.qmd failed to render to HTML"; }
+capture examples/index-separators-scoped.qmd html "index-separators-scoped-html"
+
+M58_HTML="$CAPTURE_ROOT/index-separators-html/index-separators.html"
+M58_TWIN_HTML="$CAPTURE_ROOT/index-separators-twin-html/index-separators-twin.html"
+M58_SCOPED_HTML="$CAPTURE_ROOT/index-separators-scoped-html/index-separators-scoped.html"
+M58_EPUB="$CAPTURE_ROOT/index-separators-epub/index-separators.epub"
+
+# AC2's derivation, before any comparison reads either file: the twin is the
+# separators fixture with its one `index-labels:` block deleted, and nothing
+# else. Without this an agreeing pair of renders could be two files that
+# drifted apart together, and the criterion would pass for a reason it does not
+# state.
+derive_labels_twin examples/index-separators.qmd \
+  examples/index-separators-twin.qmd 1 "M58-AC2 (derivation)" \
+  || fail "M58-AC2: the twin is not the separators fixture with its \`index-labels:\` block removed (its own FAIL line is above)"
+
+read -r -d '' M58_SEPARATORS <<'MANIFEST' || true
+section	qi-index
+0	Azurite	S1=U+060C	S2=U+060C
+0	Beryl	S1=U+060C	S3=U+060C
+0	Cinnabar	S4=U+060C
+0	Dolomite	S4=U+060C	S5=U+061B
+MANIFEST
+
+# The same document with the declaration deleted: every mark is the ASCII one
+# this extension has always printed, and every other field is identical to the
+# manifest above. The two manifests side by side are what say the declaration
+# is what changed the punctuation — neither alone can.
+read -r -d '' M58_ENGLISH <<'MANIFEST' || true
+section	qi-index
+0	Azurite	S1=U+002C	S2=U+002C
+0	Beryl	S1=U+002C	S3=U+002C
+0	Cinnabar	S4=U+002C
+0	Dolomite	S4=U+002C	S5=U+003B
+MANIFEST
+
+# AC3, derived from the scoped fixture's three declared values: the document
+# sets U+00B7 and U+002F, and the `alloys` index resets `separator` alone to
+# U+007E. So the first index prints the document's mark at every position it
+# reaches, and the second prints its OWN mark where `separator` is consulted
+# and still the DOCUMENT's between its two cross-references — which is the
+# key-by-key claim, and would read as U+00B7 at both of the second index's
+# `separator` positions under a map-by-map fold.
+read -r -d '' M58_SCOPED <<'MANIFEST' || true
+section	qi-index-minerals
+0	Jadeite	S1=U+00B7
+0	Nephrite	S4=U+00B7	S5=U+002F
+section	qi-index-alloys
+0	Electrum	S1=U+007E
+0	Pewter	S4=U+007E	S5=U+002F
+MANIFEST
+
+# AC4, over the misuse fixture's whole index. Its third declaration gives both
+# punctuation keys an empty value, so both fall back and every position in
+# every one of its three indexes prints the ASCII mark. The first two indexes'
+# rows are here for the row-count assertion, which is what makes this a claim
+# about the whole render rather than about the section that changed.
+read -r -d '' M58_MISUSE <<'MANIFEST' || true
+section	qi-index-notes
+0	%percent	S1=U+002C
+0	Goshawk	S4=U+002C
+0	Harrier	S4=U+002C
+0	Osprey	S1=U+002C
+section	qi-index-sources
+0	+plussign	S1=U+002C
+0	Fulmar	S4=U+002C
+0	Kittiwake	S1=U+002C
+0	Petrel	S4=U+002C
+section	qi-index-figures
+0	Quartzite	S1=U+002C	S2=U+002C
+0	Rhyolite	S1=U+002C	S3=U+002C
+0	Siltstone	S4=U+002C	S5=U+003B
+MANIFEST
+
+check_separators() {
+  local mode="$1" artifact="$2" manifest="$3" label="$4"
+  printf '%s\n' "$manifest" > "$WORK/m58-manifest.txt"
+  python3 tests/sepcheck.py "$mode" "$artifact" "$HTML_SECTION_ID" \
+      "$WORK/m58-manifest.txt" "$label" \
+    || fail "$label: the render does not print the declared punctuation where the manifest states it (its own FAIL line is above)"
+}
+
+check_separators html "$M58_HTML" "$M58_SEPARATORS" "M58-AC1"
+check_extension_warning_count "$WORK/index-separators-html.log" 0 \
+  "M58-AC1 (silence)"
+pass "M58-AC1: the declared Arabic comma and semicolon print at all five positions the fixture's four entries reach, and the HTML render reports nothing"
+
+check_separators html "$M58_TWIN_HTML" "$M58_ENGLISH" "M58-AC2 (twin)"
+check_extension_warning_count "$WORK/index-separators-twin-html.log" 0 \
+  "M58-AC2 (twin, HTML)"
+# The two LaTeX renders report the SAME number, and not zero: the fixture marks
+# one key both plainly and with a cross-reference and another with two, and the
+# back-end says so about each, in both documents. Equal counts are the claim —
+# a declaration that reached a report would move one of them — and a zero here
+# would be a fixture that never contested a key at all. The HTML pair above is
+# zero because those two reports are the LaTeX back-end's own.
+check_extension_warning_count "$WORK/index-separators-latex.log" 2 \
+  "M58-AC2 (declaring, LaTeX)"
+check_extension_warning_count "$WORK/index-separators-twin-latex.log" 2 \
+  "M58-AC2 (twin, LaTeX)"
+pass "M58-AC2: the twin prints the ASCII comma and semicolon over the same positions, draws nothing in HTML though Quarto writes a labels: map into its metadata, and draws the same two contested-key reports in LaTeX that the declaring fixture draws"
+
+check_separators html "$M58_SCOPED_HTML" "$M58_SCOPED" "M58-AC3"
+check_extension_warning_count "$WORK/index-separators-scoped-html.log" 0 \
+  "M58-AC3 (silence)"
+pass "M58-AC3: one render prints the second index's own separator inside that index and the document's cross-reference separator in both, so the nearer declaration wins key by key rather than map by map"
+
+# AC4 — the two empty values, each asserted WHOLE: a prefix would let the half
+# naming the key or the level be reworded away. The control is the fixture that
+# writes no unusable shape, without which a filter reporting every document
+# would satisfy both counts.
+M58_MISUSE_EMPTY_SEP='index-labels: in the entry declaring the index named "figures" gives the key "separator" an empty value, which is no word a reader can read; that word falls back to the next level it is written at and then to the English one'
+M58_MISUSE_EMPTY_XREF='index-labels: in the entry declaring the index named "figures" gives the key "xref-separator" an empty value, which is no word a reader can read; that word falls back to the next level it is written at and then to the English one'
+for needle in "$M58_MISUSE_EMPTY_SEP" "$M58_MISUSE_EMPTY_XREF"; do
+  check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 "M58-AC4"
+  check_warning_count "$WORK/index-separators-html.log" "$needle" 0 \
+    "M58-AC4 (control)"
+done
+check_separators html "$M56_MISUSE_HTML" "$M58_MISUSE" "M58-AC4 (fallback)"
+pass "M58-AC4: each empty punctuation value draws exactly its own whole message, naming the key and the index it was written in, and every position in all three of that document's indexes falls back to the ASCII mark"
+
+# AC5 — the unknown-key report names all five keys. Asserted whole here as well
+# as in the M56 block above: that block's needle is the report's own, and this
+# is the claim that the list it carries is the whole set an author may write.
+M58_UNKNOWN='index-labels: in this document'"'"'s metadata sets the key "symbol", which names no word this extension prints; the keys are symbols, see, see-also, separator, xref-separator, so this key sets nothing'
+check_warning_count "$WORK/index-labels-misuse-html.log" "$M58_UNKNOWN" 1 \
+  "M58-AC5"
+pass "M58-AC5: the unknown-key report lists all five writable keys, the two new ones last"
+
+# AC6 — no declaration reaches the LaTeX back-end. The whole `.tex` of the
+# fixture against the whole `.tex` of the twin, which the derivation above
+# proved is that same file with only its `index-labels:` block removed. `diff`
+# and not a search for the declared glyphs: a difference anywhere in the file
+# fails this, whatever the differing lines say. A same-tree comparison of two
+# documents, which is not the merge-base refactor oracle D-004 refused (D-012).
+if ! diff -u "$CAPTURE_ROOT/index-separators-latex/index-separators.tex" \
+             "$CAPTURE_ROOT/index-separators-twin-latex/index-separators-twin.tex" \
+             > "$WORK/index-separators-tex.diff" 2>&1; then
+  head -40 "$WORK/index-separators-tex.diff" >&2
+  fail "M58-AC6: the separators fixture's .tex differs from its twin's, so an index-labels: declaration reached the LaTeX back-end"
+fi
+# And the count that says the comparison ran over a file with index commands in
+# it, so an empty diff cannot come of two documents that index nothing.
+# Derived from the fixture's seven marks and latex.lua's contested-key rule,
+# which folds a contested key's cross-references into the PRINTED FIELD of the
+# entry its plain marks emit, leaving the cross-reference mark emitting nothing
+# of its own (`fold_xrefs`, `is_contested`):
+#   Azurite    two plain marks, neither contested            2
+#   Beryl      a plain mark and a see-also mark: the key is
+#              contested, the plain mark carries the fold,
+#              the cross-reference mark emits nothing        1
+#   Cinnabar   one see mark, uncontested                     1
+#   Dolomite   two cross-reference marks and no plain one,
+#              so nothing is folded into a printed field and
+#              each mark emits the same agreed command       2
+M58_TEX_INDEXES=6
+m58_found=$(grep -c '\\index{' \
+  "$CAPTURE_ROOT/index-separators-latex/index-separators.tex" || true)
+[ "$m58_found" = "$M58_TEX_INDEXES" ] \
+  || fail "M58-AC6: the separators fixture's .tex carries $m58_found \\index command(s), where its seven marks and the contested-key rule derive $M58_TEX_INDEXES"
+pass "M58-AC6: the separators fixture and its twin render byte-for-byte identical .tex, over a file carrying the $M58_TEX_INDEXES \\index command(s) its marks derive, so no declared separator reaches the LaTeX back-end"
+
+# AC7 — the same fixture as an EPUB, read through tests/epubindex.py, which
+# resolves the publication's own manifest and spine rather than opening a file
+# and calling it the document. The manifest is AC1's, unedited: the two
+# back-ends print the same marks in the same positions or one of them is wrong.
+check_separators epub "$M58_EPUB" "$M58_SEPARATORS" "M58-AC7"
+pass "M58-AC7: the EPUB render prints the declared punctuation where the HTML render prints it, over the manifest that pins the HTML"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M58 T9 — a planted defect per FORM of failure, not per position: a glyph
+  # swapped for the English one, a separator gone entirely, the space after it
+  # lost, the wrong key consulted at a position, and a per-index declaration
+  # ignored in favour of the document's. Each is shown red on a copy of a
+  # captured page, and shown red FOR THAT REASON — the marker
+  # tests/plantdefect.py prints is the text the failure is required to carry,
+  # so a check that died for some other cause cannot be read as catching this.
+  # -------------------------------------------------------------------------
+  m58_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || fail "M58 T9 self-test: the check passed $label, so its green above says nothing"
+    case "$out" in
+      *"$want"*) pass "M58 T9 self-test: the check catches $label, and reports it as that" ;;
+      *) fail "M58 T9 self-test: the check failed $label, but not for that reason (<<$out>>)" ;;
+    esac
+  }
+
+  M58W="$WORK/m58-planted"
+  rm -rf "$M58W"
+  mkdir -p "$M58W"
+  printf '%s\n' "$M58_SEPARATORS" > "$M58W/declared.txt"
+  printf '%s\n' "$M58_SCOPED" > "$M58W/scoped.txt"
+
+  for kind in glyph dropped spacing wrongkey; do
+    cp "$M58_HTML" "$M58W/$kind.html"
+    m58_marker=$(python3 tests/plantdefect.py --separator "$M58W/$kind.html" \
+      "$kind") \
+      || fail "M58 T9 self-test: planting the $kind defect failed (its own FAIL line is above)"
+    m58_planted "a page whose printed punctuation carries the $kind defect" \
+      "$m58_marker" \
+      python3 tests/sepcheck.py html "$M58W/$kind.html" "$HTML_SECTION_ID" \
+        "$M58W/declared.txt" "M58 probe"
+  done
+
+  cp "$M58_SCOPED_HTML" "$M58W/scoped.html"
+  m58_marker=$(python3 tests/plantdefect.py --separator "$M58W/scoped.html" \
+    scoped) \
+    || fail "M58 T9 self-test: planting the scoped defect failed (its own FAIL line is above)"
+  m58_planted 'a page printing the document mark inside the index that resets it' \
+    "$m58_marker" \
+    python3 tests/sepcheck.py html "$M58W/scoped.html" "$HTML_SECTION_ID" \
+      "$M58W/scoped.txt" "M58 probe"
+
+  # The two vacuity refusals, which no plant in a page can produce: a manifest
+  # that does not reach every printed entry, and one that states nothing at
+  # all. Both would otherwise be a green over an unexamined render.
+  head -4 "$M58W/declared.txt" > "$M58W/short.txt"
+  m58_planted 'a manifest one entry short of what the render prints' \
+    'does not cover every printed entry' \
+    python3 tests/sepcheck.py html "$M58_HTML" "$HTML_SECTION_ID" \
+      "$M58W/short.txt" "M58 probe"
+  : > "$M58W/empty.txt"
+  m58_planted 'a manifest stating no section at all' \
+    'states no section at all' \
+    python3 tests/sepcheck.py html "$M58_HTML" "$HTML_SECTION_ID" \
+      "$M58W/empty.txt" "M58 probe"
+
+  # And the twin's manifest against the declaring render, which is the
+  # comparison a check blind to the printed glyph would pass.
+  printf '%s\n' "$M58_ENGLISH" > "$M58W/english.txt"
+  m58_planted 'a render printing the declared marks held to the manifest that states the ASCII ones' \
+    'where the manifest states' \
+    python3 tests/sepcheck.py html "$M58_HTML" "$HTML_SECTION_ID" \
+      "$M58W/english.txt" "M58 probe"
 fi
 
 }

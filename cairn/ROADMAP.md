@@ -9,7 +9,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M56 | An author sets the words the index back-end picks itself | planned | — | normal | milestones/M056-index-label-override.md |
+| M56 | An author sets the words the index back-end picks itself | in-progress | — | normal | milestones/M056-index-label-override.md |
 | M57 | A non-English document gets a non-English index | planned | M56 | normal | milestones/M057-index-label-language.md |
 | M55 | An HTML book builds every index its chapters declare | done | — | normal | milestones/archive/M55-book-named-indexes.md |
 | M54 | The candidate backlog comes back under D-013 | done | — | normal | milestones/archive/M54-candidate-backlog.md |

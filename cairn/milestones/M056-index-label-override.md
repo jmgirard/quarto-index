@@ -1,11 +1,11 @@
 # M056: An author sets the words the index back-end picks itself
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, GP4, GP5
-- **Branch/PR:** —
+- **Branch/PR:** m056-index-label-override
 
 ## Goal
 
@@ -120,6 +120,7 @@ already and gains nothing here.
 - 2026-08-28: plan gate chose a nested `labels:` map over three flat fields beside `title:` because a flat `see:` collides with the mark attribute `see=`, where the same word names a target rather than a label (D-036); falsified by an author needing a per-index word these three keys cannot express.
 - 2026-08-28: plan gate chose two declaration levels over per-index only because an undeclared document cannot override without inventing an index name, which moves the section id and breaks inbound links; falsified by the two levels proving indistinguishable in practice.
 - 2026-08-28: plan gate chose splitting the override surface from the shipped table over one milestone because the surface is a permanent naming decision and the table is a data asset, each reviewable alone; falsified by the split forcing a rework of the resolver when M057 wires `lang:` beneath it.
+- 2026-08-28: implement question gate, four choices, every recommendation taken. (1) The printed cross-reference word reaches the manifest through a new `labels` flag on `htmlindex.row()`, off for every existing manifest so all 36 existing xref rows stay byte-identical, on for this milestone's fixtures — the field the class alone decides today (`see-link Aardvark`) becomes `see-link cf. Aardvark`. (2) AC4 names a `resolving-xref` manifest the suite does not have, so one is hand-derived in the label-aware form rather than AC4 being amended; no row of it is edited because it has none. (3) The author's symbols word is what the heading PRINTS and not the group's identity: `group_label`/`group_rank` keep the internal sentinel, so a word that is a single ASCII letter cannot merge with that letter's group and a word sorting after `A` cannot re-rank the group. (4) The English fallbacks stay where they are — `Symbols` at `html.lua`, the two words in `core.lua`'s `XREF_KINDS` — and the resolver takes the fallback from its call site, so no word gets a second copy.
 
 ## Decisions
 

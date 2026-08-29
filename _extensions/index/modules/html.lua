@@ -42,7 +42,19 @@ local function collate(a, b)
   return a < b
 end
 
+-- The group every entry that files under no ASCII letter belongs to, and the
+-- English word its heading prints.
+--
+-- These are two different jobs, and the constant is BOTH only as long as
+-- nobody overrides the word. The string is the group's IDENTITY -- what
+-- `group_label` returns, what `group_rank` ranks first, and what tells a run
+-- of non-letter entries from the letter groups -- and an author's own word is
+-- substituted where the heading is printed and nowhere else (`grouped_blocks`).
+-- Letting the author's word be the identity would make a word that is a single
+-- ASCII letter merge with that letter's group, and a word sorting after `A`
+-- re-rank the group out of the lead.
 local SYMBOLS_LABEL = "Symbols"
+local SYMBOLS_KEY = "symbols"
 
 -- The group a top-level entry belongs to, named by the label its heading
 -- shows. The argument is the string the entry FILES under — its sort key
@@ -262,7 +274,7 @@ end
 -- first cross-reference are set off from the term with a comma, and two
 -- cross-references are separated with a semicolon, exactly as the LaTeX
 -- back-end's dual-target command prints them.
-local function entry_inlines(root, node)
+local function entry_inlines(root, node, name)
   local inlines = pandoc.List()
   inlines:insert(pandoc.Span(literal_inlines(node.key),
                              pandoc.Attr(node.id, { "qi-term" })))
@@ -293,7 +305,8 @@ local function entry_inlines(root, node)
   end
   for _, xref in ipairs(node.xrefs) do
     local body = pandoc.List()
-    body:insert(pandoc.Emph(literal_inlines(xref.kind.label)))
+    body:insert(pandoc.Emph(literal_inlines(
+      qi_indexes.label(name, xref.kind.label_key, xref.kind.label))))
     body:insert(pandoc.Space())
     body:insert(target_span(root, xref))
     tail:insert({ xref = true,
@@ -316,21 +329,21 @@ end
 -- sorted keys — while every level below it is built whole.
 local entry_list
 
-local function entry_items(root, node, keys)
+local function entry_items(root, node, keys, name)
   local items = pandoc.List()
   for _, key in ipairs(keys) do
     local child = node.children[key]
-    local blocks = pandoc.List({ pandoc.Plain(entry_inlines(root, child)) })
+    local blocks = pandoc.List({ pandoc.Plain(entry_inlines(root, child, name)) })
     if #child.sorted > 0 then
-      blocks:insert(entry_list(root, child))
+      blocks:insert(entry_list(root, child, name))
     end
     items:insert(blocks)
   end
   return items
 end
 
-function entry_list(root, node)
-  return pandoc.BulletList(entry_items(root, node, node.sorted))
+function entry_list(root, node, name)
+  return pandoc.BulletList(entry_items(root, node, node.sorted, name))
 end
 
 -- The top level: one heading, then one list, per group.
@@ -341,16 +354,23 @@ end
 -- headings to avoid — and a minted heading id would enter the same namespace
 -- an author's own ids live in. A Div carries the class an author styles with
 -- and nothing else (GP4: a hook, not a stylesheet).
-local function grouped_blocks(root)
+local function grouped_blocks(root, name)
   local blocks = pandoc.Blocks({})
   local pending = {}
   local label = nil
 
   local function flush()
     if #pending > 0 then
-      blocks:insert(pandoc.Div(pandoc.Plain(literal_inlines(label)),
+      -- The only place the Symbols group's own word is read: every letter
+      -- group prints the letter it is, and the non-letter group prints
+      -- whatever this index calls it.
+      local heading = label
+      if heading == SYMBOLS_LABEL then
+        heading = qi_indexes.label(name, SYMBOLS_KEY, SYMBOLS_LABEL)
+      end
+      blocks:insert(pandoc.Div(pandoc.Plain(literal_inlines(heading)),
                                pandoc.Attr("", { qi_core.HTML_LETTER_CLASS })))
-      blocks:insert(pandoc.BulletList(entry_items(root, root, pending)))
+      blocks:insert(pandoc.BulletList(entry_items(root, root, pending, name)))
       pending = {}
     end
   end
@@ -568,7 +588,7 @@ local function html_index_blocks(marks, taken)
         pandoc.Header(1, literal_inlines(qi_indexes.title(name)),
                       pandoc.Attr(section_id, { "unnumbered" })),
       })
-      blocks:extend(grouped_blocks(root))
+      blocks:extend(grouped_blocks(root, name))
       by_index[name] = blocks
     end
   end
@@ -582,6 +602,7 @@ end
 M["fold_case"] = fold_case
 M["collate"] = collate
 M["SYMBOLS_LABEL"] = SYMBOLS_LABEL
+M["SYMBOLS_KEY"] = SYMBOLS_KEY
 M["group_label"] = group_label
 M["group_rank"] = group_rank
 M["target_text"] = target_text

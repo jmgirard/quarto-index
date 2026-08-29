@@ -1217,3 +1217,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   path on its spelling — landed at the review gate with no regression test:
   no fixture reaches a record that splits its marks between a declared and an
   undeclared index while both carry a key for one printed path. — M55 review F2
+- **KI172.** M40's self-test summary `pass` message in `tests/run-tests.sh`
+  writes backtick-quoted tokens inside a double-quoted string, so the shell
+  runs one as a command substitution: the run log carries
+  `line 13996: ..: command not found` and the tokens vanish from the message a
+  reader sees. The check itself is unaffected — the substitution is in the
+  message, not in the comparison. Found while adding M56's own, which is
+  written with single quotes for this reason. — M56 T4

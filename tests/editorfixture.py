@@ -416,7 +416,7 @@ def check_effects(snippets_path, fixture_html, control_html):
         if marked['locators']:
             return fail(f'{fixture_html}: the entry {site["term"]!r} still '
                         f'prints a locator, so {name}= did not replace it')
-        kinds = [(kind, target) for kind, target, _linked, _href
+        kinds = [(kind, target) for kind, target, _linked, _href, _word
                  in marked['xrefs']]
         if kinds != [(shown, site['value'])]:
             return fail(f'{fixture_html}: the entry {site["term"]!r} prints '

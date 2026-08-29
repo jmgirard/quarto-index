@@ -1054,10 +1054,19 @@ PY
 # Compare a rendered file's generated index section against an EXHAUSTIVE row
 # manifest (format: see manifest 1e). Rows are compared in order, so a
 # collation failure is reported as one rather than swallowed by set equality.
+#
+# A fifth argument of `labels` states the WORD each cross-reference prints as
+# well as its kind, which is `row()`'s own flag and the only form that can hold
+# a fixture whose subject is that word (M56): the kind token is read off the
+# class the back-end writes, so it reads the same whatever word the page
+# printed. Every manifest written before the words became overridable passes
+# the argument's default and keeps the rows it was derived with.
 check_html_index_manifest() {
-  local htmlfile="$1" manifest="$2" label="$3" hrefs="${4:-count}"
+  local htmlfile="$1" manifest="$2" label="$3" hrefs="${4:-count}" \
+        labels="${5:-plain}"
   printf '%s\n' "$manifest" > "$WORK/html-index.txt"
-  HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ROW_HREFS="$hrefs" python3 - \
+  HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ROW_HREFS="$hrefs" \
+  HTML_ROW_LABELS="$labels" python3 - \
     "$htmlfile" "$WORK/html-index.txt" "$label" <<'PY'
 import os, sys
 sys.path.insert(0, 'tests')
@@ -1065,6 +1074,7 @@ import htmlindex as H
 html_path, manifest_path, label = sys.argv[1:4]
 section_id = os.environ['HTML_SECTION_ID']
 hrefs = os.environ.get('HTML_ROW_HREFS') == 'hrefs'
+labels = os.environ.get('HTML_ROW_LABELS') == 'labels'
 
 doc = H.parse(html_path)
 found = H.count_id(doc, section_id)
@@ -1072,7 +1082,7 @@ if found != 1:
     print(f'FAIL: {label}: expected exactly one generated index section '
           f'(id={section_id!r}) in {html_path}, found {found}', file=sys.stderr)
     sys.exit(1)
-actual = [H.row(r, hrefs=hrefs)
+actual = [H.row(r, hrefs=hrefs, labels=labels)
           for r in H.index_entries(H.find_id(doc, section_id))]
 expected = H.read_manifest(manifest_path)
 if not expected:
@@ -1106,6 +1116,9 @@ PY
 # `after` field skips every id this extension wrote and lands on the heading an
 # author put the marker under.
 #
+# A fifth argument of `labels` states the word each cross-reference prints, for
+# the reason the single-index comparison above states.
+#
 # A fourth argument of `hrefs` states WHERE each locator points instead of how
 # many an entry has, which is `row()`'s own flag and the only form that can
 # hold a BOOK to account (M55): three locators on one entry is exactly what a
@@ -1113,10 +1126,12 @@ PY
 # chapter. The href form carries no `after` field, for the reason `section_rows`
 # states.
 check_index_sections() {
-  local htmlfile="$1" manifest="$2" label="$3" hrefs="${4:-counts}"
+  local htmlfile="$1" manifest="$2" label="$3" hrefs="${4:-counts}" \
+        labels="${5:-plain}"
   printf '%s\n' "$manifest" > "$WORK/index-sections.txt"
   HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
-  HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" HTML_ROW_HREFS="$hrefs" python3 - \
+  HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" HTML_ROW_HREFS="$hrefs" \
+  HTML_ROW_LABELS="$labels" python3 - \
     "$htmlfile" "$WORK/index-sections.txt" "$label" <<'SECTIONPY'
 import os, sys
 sys.path.insert(0, 'tests')
@@ -1125,9 +1140,10 @@ html_path, manifest_path, label = sys.argv[1:4]
 minted = (os.environ['HTML_SECTION_ID'], os.environ['HTML_ANCHOR_PREFIX'],
           os.environ['HTML_ENTRY_PREFIX'])
 hrefs = os.environ.get('HTML_ROW_HREFS') == 'hrefs'
+labels = os.environ.get('HTML_ROW_LABELS') == 'labels'
 try:
     actual = H.section_rows(H.parse(html_path), os.environ['HTML_SECTION_ID'],
-                            minted, hrefs=hrefs)
+                            minted, hrefs=hrefs, labels=labels)
 except ValueError as bad:
     # A section this reader cannot read at all is a finding, not a crash: it
     # would otherwise reach a probe as a traceback, which is a non-zero exit
@@ -3624,7 +3640,7 @@ else:
     if dogs['locators']:
         errs.append("entry 'Dogs' carries a locator though it still has a "
                     "cross-reference")
-    targets = [target for _kind, target, _linked, _href in dogs['xrefs']]
+    targets = [target for _kind, target, _linked, _href, _word in dogs['xrefs']]
     if targets != ['Cats']:
         errs.append(f"entry 'Dogs' should carry exactly its surviving see-also "
                     f"target, carries {targets}")
@@ -3632,7 +3648,7 @@ else:
 lynxes = by_term.get('Lynxes')
 if lynxes is None:
     errs.append("entry 'Lynxes' is not in the index")
-elif [t for _k, t, _l, _h in lynxes['xrefs']] != ['Cats']:
+elif [t for _k, t, _l, _h, _w in lynxes['xrefs']] != ['Cats']:
     errs.append("the cross-reference to a different entry did not survive; "
                 "this check cannot tell a self-reference from any reference")
 
@@ -3642,7 +3658,7 @@ for record in records:
     if not own:
         continue
     hrefs = list(record['locators'])
-    hrefs += [href for _k, _t, _l, href in record['xrefs'] if href]
+    hrefs += [href for _k, _t, _l, href, _w in record['xrefs'] if href]
     if ('#' + own) in hrefs:
         errs.append(f'entry {record["term"]!r} links to itself')
 
@@ -3787,7 +3803,7 @@ for parent, depth, want in (('D', 4, 'A: B: C, D'),
     # survive (M18 review F4). They are unlinked because HTML folds nothing,
     # so the folded path each names is a path no mark in this file indexes —
     # the same fact the format-neutral report draws in this format.
-    targets = [(t, h) for _k, t, _l, h in rec['xrefs']]
+    targets = [(t, h) for _k, t, _l, h, _w in rec['xrefs']]
     if targets != [(want, None)]:
         errs.append(f'entry {parent!r} should keep its target {want!r} as plain '
                     f'text with no link, has {targets}')
@@ -5669,7 +5685,7 @@ for source, target in rows:
         bad.append(f'  {source!r} -> {target!r}: entry missing from the index')
         continue
     want = '#' + by_term[target]['id']
-    got = [href for _kind, _text, _linked, href in by_term[source]['xrefs']]
+    got = [href for _kind, _text, _linked, href, _word in by_term[source]['xrefs']]
     if want not in got:
         bad.append(f'  {source!r} links to {got}, expected {want!r} (the id '
                    f'of the {target!r} entry)')
@@ -8122,7 +8138,8 @@ for log, page, label in ((sys.argv[1], sys.argv[2], 'dangling'),
     reported = sorted({printed(m.group(1)) for m in REPORTED.finditer(text)})
     records = H.entry_records(H.index_section(H.parse(page)))
     targets = [(target, linked)
-               for r in records for _kind, target, linked, _href in r['xrefs']]
+               for r in records
+               for _kind, target, linked, _href, _word in r['xrefs']]
     if not targets:
         errs.append(f'{label}: the rendered index carries no cross-reference '
                     f'at all, so this check compares nothing')
@@ -8295,6 +8312,16 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #   named-indexes-twin  the same two attributes: the twin declares no indexes
 #                  and names none, so its targets resolve here for the reason
 #                  they resolve in every format. 0.
+#   index-labels   4 attributes: a `see=` and a `see-also=` in each of the two
+#                  indexes it declares, each naming a term marked in its own
+#                  index. gfm folds the two indexes into one, so every target
+#                  resolves there as it does in HTML. 0.
+#   index-labels-twin  the same four attributes: the twin removes the two
+#                  `index-labels:` blocks and nothing else, so its target set is
+#                  identical. 0.
+#   index-labels-misuse  4 attributes, the same shape in its own two indexes,
+#                  every target a term that index marks. An unusable
+#                  `index-labels:` changes no target. 0.
 #   resolving-xref 3 attributes, all three resolving by construction. 0.
 #   state-reuse    2 attributes: `see="Alpha"` on the cross-reference mark of
 #                  the contested `Gamma` key, which resolves because the file
@@ -8321,6 +8348,9 @@ examples/fold-xref-empty.qmd	0
 examples/fold-xref-self.qmd	1
 examples/fold-xref.qmd	1
 examples/html-index.qmd	1
+examples/index-labels-misuse.qmd	0
+examples/index-labels-twin.qmd	0
+examples/index-labels.qmd	0
 examples/named-indexes-twin.qmd	0
 examples/named-indexes.qmd	0
 examples/placement.qmd	0
@@ -9098,7 +9128,7 @@ got = []
 for rec in H.entry_records(H.index_section(H.parse(sys.argv[1]))):
     got.append((rec['depth'], rec['term'],
                 tuple(f'{kind}|{text}|' + ('linked' if href else 'plain')
-                      for kind, text, resolved, href in rec['xrefs'])))
+                      for kind, text, resolved, href, _word in rec['xrefs'])))
 if got != want:
     print('FAIL: M18: the HTML index of fold-xref.qmd is not what the manifest '
           'holds', file=sys.stderr)
@@ -17796,6 +17826,491 @@ M52DOCPY
     python3 tests/sitecheck.py phrase-absent "$M52D/nophrases.txt"
 
   pass "M52 T7 self-test: both documentation clauses are planted on their own and shown red — a page with a claim removed, a claim list holding it to nothing, a phrase list forbidding nothing, and an overlay page carrying the forbidden phrase in each of the three shapes the sweep normalizes for: as written, capitalized at the start of a sentence, and wrapped across two lines of a blockquote — while both pass unplanted over this repository's own tracked pages"
+fi
+
+
+# ---------------------------------------------------------------------------
+# M56 — the three words the HTML and EPUB back-ends print themselves, set by
+# the author.
+#
+# The words are the heading over the entries that file under no letter and the
+# two words in front of a cross-reference. An author sets them under
+# `index-labels:`, at the document's top level and inside one `indexes:` entry,
+# the nearer setting winning key by key (D-036, key name amended by D-039).
+#
+# Three fixtures, and the pair is what makes the claim: examples/index-labels.qmd
+# declares the words, examples/index-labels-twin.qmd is that same file with its
+# two `index-labels:` blocks deleted and nothing else, and
+# examples/index-labels-misuse.qmd writes every unusable shape. A check that
+# only ever saw the first would pass on a back-end that printed those words
+# unconditionally; one that only ever saw the twin would pass on a back-end
+# that ignored the metadata entirely.
+#
+# ORACLE — every row below is derived by hand from the fixture source and the
+# documented semantics, never copied from a render. The manifests are the
+# `sections` form (see check_index_sections) with the M56 `labels` argument,
+# which states the WORD each cross-reference prints as well as its kind: the
+# kind token is read off the class the back-end writes, so it reads the same
+# whatever word the page printed, and a manifest without the word could not
+# tell a correct render from one that ignored the metadata.
+#
+# Derived per section, for examples/index-labels.qmd:
+#   The document sets all three words, and the `authors` index resets `see`
+#   alone. So `main` prints the document's three, and `authors` prints its own
+#   `see` word beside the document's `see also` and the document's group
+#   heading -- which is the key-by-key claim, and would read as the English
+#   defaults for two of the three under a map-by-map fold.
+#   `#numerals` and `~wavelet` file under no ASCII letter and so head the
+#   Symbols group of their own index; the four cross-reference marks carry no
+#   locator, and each target is a term its own index carries, so each is a link.
+# ---------------------------------------------------------------------------
+
+# AC6/T4 — the derivation, before any comparison reads either file: the twin is
+# the labels fixture with its two `index-labels:` blocks deleted, and nothing
+# else. Without this an empty `.tex` diff could be two files that drifted apart
+# together, and the criterion would pass for a reason it does not state.
+m56_derive() {
+  python3 - "$1" "$2" "$3" <<'M56DERIVEPY'
+import re, sys
+fixture_path, twin_path, label = sys.argv[1:4]
+fixture = open(fixture_path, encoding='utf-8').read()
+twin = open(twin_path, encoding='utf-8').read()
+# A `index-labels:` block is the key line and every line indented deeper than
+# it -- the shape a YAML map takes at either level -- so this deletion is the
+# one the criterion names and not a line-by-line filter that could also drop an
+# unrelated line.
+out, inside = [], None
+blocks = 0
+for line in fixture.splitlines(True):
+    opened = re.match(r'^(\s*)index-labels:\s*$', line)
+    if inside is not None:
+        if line.strip() and (len(line) - len(line.lstrip())) > inside:
+            continue
+        inside = None
+    if opened:
+        inside = len(opened.group(1))
+        blocks += 1
+        continue
+    out.append(line)
+if blocks != 2:
+    print(f'FAIL: {label}: {fixture_path} carries {blocks} `index-labels:` '
+          f'block(s), where the fixture is written with two -- one at the '
+          f'document level and one inside an index declaration', file=sys.stderr)
+    sys.exit(1)
+if ''.join(out) != twin:
+    print(f'FAIL: {label}: {twin_path} is not {fixture_path} with its two '
+          f'`index-labels:` blocks deleted; the two have drifted apart and a '
+          f'comparison of their renders would compare two different documents',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: {twin_path} is {fixture_path} with its two '
+      f'`index-labels:` blocks deleted, and nothing else')
+M56DERIVEPY
+}
+
+m56_derive examples/index-labels.qmd examples/index-labels-twin.qmd \
+  "M56-AC6 (derivation)" \
+  || fail "M56-AC6: the twin is not the labels fixture with its `index-labels:` blocks removed (its own FAIL line is above)"
+
+for f in index-labels index-labels-twin; do
+  for fmt in html latex; do
+    quarto render examples/$f.qmd --to $fmt > "$WORK/$f-$fmt.log" 2>&1 \
+      || { tail -20 "$WORK/$f-$fmt.log" >&2; fail "M56: $f.qmd failed to render to $fmt"; }
+    capture examples/$f.qmd $fmt "$f-$fmt"
+  done
+done
+quarto render examples/index-labels.qmd --to epub \
+  > "$WORK/index-labels-epub.log" 2>&1 \
+  || { tail -20 "$WORK/index-labels-epub.log" >&2; fail "M56-AC3: index-labels.qmd failed to render to EPUB"; }
+capture examples/index-labels.qmd epub "index-labels-epub"
+quarto render examples/index-labels-misuse.qmd --to html \
+  > "$WORK/index-labels-misuse-html.log" 2>&1 \
+  || { tail -20 "$WORK/index-labels-misuse-html.log" >&2; fail "M56-AC5: index-labels-misuse.qmd failed to render to HTML"; }
+capture examples/index-labels-misuse.qmd html "index-labels-misuse-html"
+
+M56_HTML="$CAPTURE_ROOT/index-labels-html/index-labels.html"
+M56_TWIN_HTML="$CAPTURE_ROOT/index-labels-twin-html/index-labels-twin.html"
+M56_MISUSE_HTML="$CAPTURE_ROOT/index-labels-misuse-html/index-labels-misuse.html"
+M56_EPUB="$CAPTURE_ROOT/index-labels-epub/index-labels.epub"
+
+read -r -d '' M56_LABELS_SECTIONS <<'MANIFEST' || true
+section	qi-index-main	h1	Index	site-main
+letter	Zeichen
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link siehe Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link siehe auch Kestrel
+section	qi-index-authors	h1	Index of Authors	site-authors
+letter	Zeichen
+0	~wavelet	1
+letter	B
+0	Blimp	0	see-link vergleiche Zeppelin
+letter	D
+0	Dirigible	0	also-link siehe auch Zeppelin
+letter	Z
+0	Zeppelin	1
+MANIFEST
+
+# The same document with the two declarations deleted: every word is the
+# English one this extension has always printed, and every other row is
+# identical to the manifest above. The two manifests side by side are what say
+# the declaration is what changed the words -- neither alone can.
+read -r -d '' M56_TWIN_SECTIONS <<'MANIFEST' || true
+section	qi-index-main	h1	Index	site-main
+letter	Symbols
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link see Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link see also Kestrel
+section	qi-index-authors	h1	Index of Authors	site-authors
+letter	Symbols
+0	~wavelet	1
+letter	B
+0	Blimp	0	see-link see Zeppelin
+letter	D
+0	Dirigible	0	also-link see also Zeppelin
+letter	Z
+0	Zeppelin	1
+MANIFEST
+
+# The EPUB form of the labels manifest. The rows are the same rows; the section
+# row carries no `after` field, which is the shape epubcheck.py's own reader
+# produces (a publication's sections are split across documents, so the id a
+# section follows is not a fact about one file).
+read -r -d '' M56_LABELS_EPUB <<'MANIFEST' || true
+section	qi-index-main	h1	Index
+letter	Zeichen
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link siehe Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link siehe auch Kestrel
+section	qi-index-authors	h1	Index of Authors
+letter	Zeichen
+0	~wavelet	1
+letter	B
+0	Blimp	0	see-link vergleiche Zeppelin
+letter	D
+0	Dirigible	0	also-link siehe auch Zeppelin
+letter	Z
+0	Zeppelin	1
+MANIFEST
+
+# The English form of the same EPUB manifest, written out rather than derived
+# from the one above: it is what the planted defect below holds the EPUB
+# comparison to, and a manifest produced by editing another manifest would be
+# an expectation this suite computed rather than derived (the ORACLE RULE).
+read -r -d '' M56_TWIN_EPUB <<'MANIFEST' || true
+section	qi-index-main	h1	Index
+letter	Symbols
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link see Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link see also Kestrel
+section	qi-index-authors	h1	Index of Authors
+letter	Symbols
+0	~wavelet	1
+letter	B
+0	Blimp	0	see-link see Zeppelin
+letter	D
+0	Dirigible	0	also-link see also Zeppelin
+letter	Z
+0	Zeppelin	1
+MANIFEST
+
+# Every `index-labels:` this document writes is unusable, so every word falls
+# back: the document's map sets nothing usable, neither index's is a map at
+# all, and what prints is the English this extension has always printed. The
+# marker naming no index places the first declared one, `notes`.
+read -r -d '' M56_MISUSE_SECTIONS <<'MANIFEST' || true
+section	qi-index-notes	h1	Index of Notes	site-notes
+letter	Symbols
+0	%percent	1
+letter	G
+0	Goshawk	0	also-link see also Osprey
+letter	H
+0	Harrier	0	see-link see Osprey
+letter	O
+0	Osprey	1
+section	qi-index-sources	h1	Index of Sources	site-sources
+letter	Symbols
+0	+plussign	1
+letter	F
+0	Fulmar	0	see-link see Kittiwake
+letter	K
+0	Kittiwake	1
+letter	P
+0	Petrel	0	also-link see also Kittiwake
+MANIFEST
+
+check_index_sections "$M56_HTML" "$M56_LABELS_SECTIONS" "M56-AC1/AC2" \
+  counts labels
+check_html_index_links "$M56_HTML" "M56-AC1 (links, first index)" \
+  "$HTML_SECTION_ID-main"
+check_html_index_links "$M56_HTML" "M56-AC1 (links, second index)" \
+  "$HTML_SECTION_ID-authors"
+pass 'M56-AC1/AC2: the declared words print in both sections, the second index'"'"'s own `see` word beside the document'"'"'s other two'
+
+# AC1's other half, and the one the manifest cannot state: NO word this
+# extension picks itself is still English on that page. The manifest states
+# what each word is; this states that none of the three defaults survived
+# anywhere in either section, which is what "and none of Symbols, see, see
+# also" asks for. Read off the printed positions rather than off the file:
+# the manifest's own cross-reference token contains the letters `see`, so a
+# text search over either would fail on a correct render.
+check_index_label_words() {
+  local htmlfile="$1" label="$2" forbidden="$3"
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$htmlfile" "$label" \
+      "$forbidden" <<'M56WORDSPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+html_path, label, forbidden = sys.argv[1:4]
+banned = [w for w in forbidden.split('\n') if w]
+if not banned:
+    print(f'FAIL: {label}: no word was forbidden, so any page would pass',
+          file=sys.stderr)
+    sys.exit(1)
+sections = H.index_sections(H.parse(html_path), os.environ['HTML_SECTION_ID'])
+if not sections:
+    print(f'FAIL: {label}: {html_path} carries no generated index section, so '
+          f'there is no printed word here to hold', file=sys.stderr)
+    sys.exit(1)
+seen, bad = 0, []
+for found in sections:
+    for record in found['records']:
+        if record['kind'] == 'heading':
+            seen += 1
+            if record['label'] in banned:
+                bad.append(f"{found['ident']}: a group heading reads "
+                           f"{record['label']!r}")
+        else:
+            for _kind, target, _linked, _href, word in record['xrefs']:
+                seen += 1
+                if word in banned:
+                    bad.append(f"{found['ident']}: the cross-reference to "
+                               f"{target!r} reads {word!r}")
+if not seen:
+    print(f'FAIL: {label}: {html_path} prints no group heading and no '
+          f'cross-reference at all, so no word of this extension\'s own is '
+          f'under test', file=sys.stderr)
+    sys.exit(1)
+if bad:
+    print(f'FAIL: {label}: ' + '; '.join(bad), file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: none of the {len(banned)} forbidden word(s) is printed '
+      f'in any of the {seen} position(s) this extension words itself')
+M56WORDSPY
+}
+
+check_index_label_words "$M56_HTML" "M56-AC1 (no English word survives)" \
+  $'Symbols\nsee\nsee also' \
+  || fail "M56-AC1: a word this extension picks itself is still the English default on a page that declared all three (its own FAIL line is above)"
+
+# AC4 — the twin. The words are the English ones, and the log is silent: Quarto
+# puts a `labels:` map of its own into EVERY document's metadata (nine
+# title-block strings), so a back-end that read that key rather than
+# `index-labels:` would report nine unknown keys here while still printing
+# correct English (D-039).
+check_index_sections "$M56_TWIN_HTML" "$M56_TWIN_SECTIONS" "M56-AC4 (twin)" \
+  counts labels
+check_extension_warning_count "$WORK/index-labels-twin-html.log" 0 \
+  "M56-AC4 (twin, HTML)"
+check_extension_warning_count "$WORK/index-labels-twin-latex.log" 0 \
+  "M56-AC4 (twin, LaTeX)"
+pass "M56-AC4: the twin prints Symbols, see and see also and draws no message at all, though Quarto writes a labels: map into its metadata"
+
+# AC4's other half — a fixture that declares nothing renders exactly the index
+# it rendered before this milestone. examples/letter-groups.qmd is held to
+# LETTER_GROUPS_INDEX above, unchanged and with no row edited.
+# examples/resolving-xref.qmd had no index manifest at all, so one is derived
+# here, by hand from the fixture source under the ORACLE RULE: three targets,
+# each resolving, so each prints as a link, and the two words in front of them
+# are the English defaults on a document that declares no `index-labels:`.
+# Derived per entry:
+#   `Robins` and `Wrens`      the exact single-level match and its source
+#   `Birds!Owls!Barn`         the multi-level path, three nodes deep, and
+#   `Finches`                 the source naming the whole path, joined `: `
+#   `Trees!Oak!Acorn`         the deep entry whose middle level exists only as
+#   `Sap`                     a parent, and the see-also naming that parent
+# Only the deepest node of each path carries a locator: no mark writes the
+# levels above it as an entry of its own.
+read -r -d '' M56_RESOLVING_INDEX <<'MANIFEST' || true
+letter	B
+0	Birds	0
+1	Owls	0
+2	Barn	1
+letter	F
+0	Finches	0	see-link see Birds: Owls: Barn
+letter	R
+0	Robins	1
+letter	S
+0	Sap	0	also-link see also Trees: Oak
+letter	T
+0	Trees	0
+1	Oak	0
+2	Acorn	1
+letter	W
+0	Wrens	0	see-link see Robins
+MANIFEST
+
+check_html_index_manifest \
+  "$CAPTURE_ROOT/resolving-html/resolving-xref.html" \
+  "$M56_RESOLVING_INDEX" "M56-AC4 (resolving-xref)" count labels
+pass "M56-AC4: a fixture declaring no index-labels: prints the English words in every position, over an exhaustive manifest of its whole index"
+
+# AC3 — the same fixture as an EPUB. Read through tests/epubindex.py, which
+# resolves the publication's own manifest and spine rather than opening a file
+# and calling it the document.
+printf '%s\n' "$M56_LABELS_EPUB" > "$WORK/index-labels-epub-index.txt"
+python3 tests/epubcheck.py sections "$M56_EPUB" "$HTML_SECTION_ID" \
+    "$WORK/index-labels-epub-index.txt" --labels \
+  || fail "M56-AC3: the EPUB render does not print the declared words where the HTML render prints them (its own FAIL line is above)"
+python3 tests/epubcheck.py links "$M56_EPUB" "$HTML_SECTION_ID" \
+  || fail "M56-AC3: a link inside a generated index section of the EPUB does not resolve (its own FAIL line is above)"
+
+# AC5 — the misuse fixture. Four writings, four messages, each asserted WHOLE:
+# a prefix would let the half that names the key or the level be reworded away.
+M56_MISUSE_UNKNOWN='index-labels: in this document'"'"'s metadata sets the key "symbol", which names no word this extension prints; the keys are symbols, see, see-also, so this key sets nothing'
+M56_MISUSE_EMPTY='index-labels: in this document'"'"'s metadata gives the key "see" an empty value, which is no word a reader can read; that word falls back to the next level it is written at and then to the English one'
+M56_MISUSE_SCALAR='index-labels: in the entry declaring the index named "notes" is not a map of label keys to the words to print; it sets no word, so each word falls back to the next level it is written at and then to the English one'
+M56_MISUSE_SEQUENCE='index-labels: in the entry declaring the index named "sources" is not a map of label keys to the words to print; it sets no word, so each word falls back to the next level it is written at and then to the English one'
+
+for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY" \
+              "$M56_MISUSE_SCALAR" "$M56_MISUSE_SEQUENCE"; do
+  check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
+    "M56-AC5"
+  # The control: the same message over the fixture that writes NO unusable
+  # shape. Without it a filter that reported every document would satisfy the
+  # four counts above.
+  check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
+    "M56-AC5 (control)"
+done
+check_extension_warning_count "$WORK/index-labels-misuse-html.log" 4 \
+  "M56-AC5 (total)"
+check_index_sections "$M56_MISUSE_HTML" "$M56_MISUSE_SECTIONS" \
+  "M56-AC5 (fallback)" counts labels
+pass "M56-AC5: each of the four unusable writings draws exactly its own whole message and none of them, the four are the whole of what that render reports, and every word falls back to the English one"
+
+# AC6 — no declaration reaches the LaTeX back-end. The whole `.tex` of the
+# fixture against the whole `.tex` of the twin, which the derivation above
+# proved is that same file with only its two `index-labels:` blocks removed.
+# `diff` and not a search for the declared words: a difference anywhere in the
+# file fails this, whatever the differing lines say.
+if ! diff -u "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
+             "$CAPTURE_ROOT/index-labels-twin-latex/index-labels-twin.tex" \
+             > "$WORK/index-labels-tex.diff" 2>&1; then
+  head -40 "$WORK/index-labels-tex.diff" >&2
+  fail "M56-AC6: the labels fixture's .tex differs from its twin's, so an index-labels: declaration reached the LaTeX back-end"
+fi
+pass "M56-AC6: the labels fixture and its twin render byte-for-byte identical .tex, so no index-labels: declaration reaches the LaTeX back-end"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M56 T4 — a planted defect per new check. Each is shown red on an artifact
+  # or an input carrying exactly the defect the check names, beside the green
+  # it already showed above on the real ones.
+  # -------------------------------------------------------------------------
+  m56_planted() {
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || fail "M56 T4 self-test: the check passed $label, so its green above says nothing"
+    case "$out" in
+      *"$want"*) pass "M56 T4 self-test: the check catches $label, and reports it as that" ;;
+      *) fail "M56 T4 self-test: the check failed $label, but not for that reason (<<$out>>)" ;;
+    esac
+  }
+
+  M56W="$WORK/m56-planted"
+  rm -rf "$M56W"
+  mkdir -p "$M56W"
+
+  # The derivation, on a twin that is not the fixture minus its blocks: one
+  # that has drifted by a line, and one that is a byte copy of the fixture with
+  # both declarations still in it.
+  cp examples/index-labels-twin.qmd "$M56W/drifted.qmd"
+  printf '\nA sentence the fixture does not carry.\n' >> "$M56W/drifted.qmd"
+  m56_planted 'a twin that has drifted from the fixture by a line' \
+    'drifted apart' \
+    m56_derive examples/index-labels.qmd "$M56W/drifted.qmd" "M56 probe"
+  cp examples/index-labels.qmd "$M56W/copy.qmd"
+  m56_planted 'a twin that is a byte copy of the fixture, declarations and all' \
+    'drifted apart' \
+    m56_derive examples/index-labels.qmd "$M56W/copy.qmd" "M56 probe"
+  # And on a fixture that no longer writes two declarations, which is the half
+  # that says the deletion above deleted what the criterion names.
+  m56_derive examples/index-labels-twin.qmd examples/index-labels-twin.qmd \
+    "M56 probe" > "$M56W/noblocks.out" 2>&1 && rc=0 || rc=$?
+  [ "${rc:-0}" -ne 0 ] \
+    || fail "M56 T4 self-test: the derivation passed a fixture carrying no index-labels: block at all"
+  grep -q 'carries 0 `index-labels:` block' "$M56W/noblocks.out" \
+    || { cat "$M56W/noblocks.out" >&2; fail "M56 T4 self-test: the derivation failed a fixture with no declaration, but not for that reason"; }
+  pass "M56 T4 self-test: the derivation catches a fixture that writes no index-labels: block, and reports it as that"
+
+  # The labels manifest, against the artifact that prints the English words:
+  # the twin's own page. A comparison blind to the printed word would pass this.
+  m56_planted 'a render printing the English words where the manifest states the declared ones' \
+    'do not match the manifest' \
+    check_index_sections "$M56_TWIN_HTML" "$M56_LABELS_SECTIONS" \
+      "M56 probe" counts labels
+  # And the converse, so neither manifest is merely being compared to itself.
+  m56_planted 'a render printing the declared words where the manifest states the English ones' \
+    'do not match the manifest' \
+    check_index_sections "$M56_HTML" "$M56_TWIN_SECTIONS" \
+      "M56 probe" counts labels
+
+  # The word sweep, on the page that prints all three English words.
+  m56_planted 'a page whose group heading and cross-reference words are the English defaults' \
+    'a group heading reads' \
+    check_index_label_words "$M56_TWIN_HTML" "M56 probe" \
+      $'Symbols\nsee\nsee also'
+  m56_planted 'a sweep forbidding no word at all' \
+    'no word was forbidden' \
+    check_index_label_words "$M56_HTML" "M56 probe" ''
+
+  # The EPUB comparison, against the twin's rows: the EPUB reader is shown to
+  # read the printed word rather than the class the kind is taken from.
+  printf '%s\n' "$M56_TWIN_EPUB" > "$M56W/twin-epub.txt"
+  m56_planted 'an EPUB printing the declared words where the manifest states the English ones' \
+    'does not match the manifest' \
+    python3 tests/epubcheck.py sections "$M56_EPUB" "$HTML_SECTION_ID" \
+      "$M56W/twin-epub.txt" --labels
+
+  # The `.tex` comparison, on a pair that differs by one line.
+  cp "$CAPTURE_ROOT/index-labels-twin-latex/index-labels-twin.tex" \
+    "$M56W/drifted.tex"
+  printf '%% a line the fixture does not carry\n' >> "$M56W/drifted.tex"
+  if diff -q "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
+             "$M56W/drifted.tex" > /dev/null 2>&1; then
+    fail "M56 T4 self-test: the .tex comparison passed a twin carrying an extra line, so its green above says nothing"
+  fi
+  pass "M56 T4 self-test: the .tex comparison catches a twin differing by one line"
+
+  # Each whole-message assertion, against the log of the fixture that writes no
+  # unusable shape: a message asserted by a prefix short enough to match
+  # anything would pass here.
+  for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY" \
+                "$M56_MISUSE_SCALAR" "$M56_MISUSE_SEQUENCE"; do
+    out=$( { grep -oF -- "$needle" "$WORK/index-labels-html.log" || true; } \
+           | wc -l | tr -d ' ')
+    [ "$out" = "0" ] \
+      || fail "M56 T4 self-test: a misuse message matches the log of the fixture that writes no unusable shape $out time(s)"
+  done
+  pass "M56 T4 self-test: none of the four whole messages matches the log of the fixture that writes no unusable shape"
 fi
 
 }

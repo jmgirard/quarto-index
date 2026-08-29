@@ -1,0 +1,53 @@
+---
+title: "Index label misuse"
+index-labels:
+  symbol: "Zeichen"
+  see: ""
+indexes:
+  - name: notes
+    title: Index of Notes
+    index-labels: "siehe"
+  - name: sources
+    title: Index of Sources
+    index-labels:
+      - see: "siehe"
+filters:
+  - index
+---
+
+Every `index-labels:` written in this document is written wrongly, and each
+place writes a different mistake: the document's own map names a key this
+extension does not print and gives a key it does print an empty value, and
+neither index writes a map at all — the first writes a string where a map
+belongs and the second a list. So this is a document of mistakes rather than
+one to copy: what it demonstrates is that each is reported where it was
+written, and that every word falls back to the English one this extension has
+always printed.
+
+## The first index {#site-first}
+
+A term filing under a letter: [Osprey]{.index}. One filing under none:
+[%percent]{.index}.
+
+A cross-reference pointing at the first: [Harrier]{.index see="Osprey"}, and
+one pointing further: [Goshawk]{.index see-also="Osprey"}.
+
+## The second index {#site-second}
+
+A term filing under a letter: [Kittiwake]{.index index="sources"}. One filing
+under none: [+plussign]{.index index="sources"}.
+
+Its own two cross-references: [Fulmar]{.index index="sources" see="Kittiwake"}
+and [Petrel]{.index index="sources" see-also="Kittiwake"}.
+
+## Where the first index goes {#site-notes}
+
+::: {.qi-index-here}
+:::
+
+{{< pagebreak >}}
+
+## Where the second index goes {#site-sources}
+
+::: {.qi-index-here index="sources"}
+:::

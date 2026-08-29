@@ -43,3 +43,12 @@ sequence numbers with no pages behind them — are on the [EPUB](epub.qmd) page.
    of pages, `12--15`; HTML has no pages, so a range there is one numbered link
    at the opening mark. Both are one locator where you wrote two marks, which
    is what the syntax means.
+9. **The extension's own words are settable in HTML and EPUB.** The
+   `Symbols` group heading and the `see` and `see also` in front of a
+   cross-reference are the extension's words rather than yours, and
+   `index-labels:` — keys `symbols`, `see` and `see-also`, written at a
+   document's top level or inside one `indexes:` entry, the nearer setting
+   winning key by key — sets them for the HTML and EPUB indexes. It reaches
+   the LaTeX back-end nowhere: that one emits `\see`, `\seealso` and an
+   untitled `\printindex`, and babel supplies all three words from your
+   document's `lang:`.

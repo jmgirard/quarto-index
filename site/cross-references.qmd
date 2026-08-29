@@ -99,3 +99,25 @@ each chapter on its own, so the report is drawn once, by the last chapter in
 book order — which means a render that stops short of that chapter draws none,
 and a render whose other chapters have never been rendered has nothing recorded
 for them and will call their terms unindexed. Render the whole book.
+
+## The words in front of a target
+
+`see` and `see also` are the extension's own words, and so is the `Symbols`
+heading over the entries that file under no letter. Set any of the three under
+`index-labels:`, whose keys are `symbols`, `see` and `see-also`:
+
+```yaml
+index-labels:
+  see: "siehe"
+  see-also: "siehe auch"
+```
+
+The map goes at a document's top level, covering every index it has, or inside
+one entry of `indexes:`, covering that index alone; where both name a key, the
+index's own wins key by key, and a key written in neither place keeps its
+English default. It is `index-labels:` rather than `labels:` because `labels:`
+at a document's top level is Quarto's own map and this extension leaves it
+alone.
+
+This reaches the HTML and EPUB indexes only: a LaTeX index gets the two words
+from babel, which sets them from your document's `lang:`.

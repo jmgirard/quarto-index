@@ -61,6 +61,16 @@
     ],
     "description": "Place the declared index of this name here."
   },
+  "Index label words": {
+    "prefix": "index-labels",
+    "body": [
+      "index-labels:",
+      "  symbols: ${1:Symbols}",
+      "  see: ${2:see}",
+      "  see-also: ${3:see also}"
+    ],
+    "description": "Set the three words the HTML and EPUB index prints itself. Written at a document's top level, or inside one indexes: entry for that index alone."
+  },
   "Index declarations": {
     "prefix": "indexes",
     "body": [

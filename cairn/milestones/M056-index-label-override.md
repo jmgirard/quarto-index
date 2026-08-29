@@ -1,6 +1,6 @@
 # M056: An author sets the words the index back-end picks itself
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -18,62 +18,77 @@ for one index.
 Surface tier: **user-facing** — the deliverable is a metadata surface authors
 write and words a reader sees in a published index.
 
-**In:** a `labels:` map holding `symbols`, `see` and `see-also`, read at the
-document's top level and inside one `indexes:` entry, the nearer setting
-winning key by key and English the fallback (D-036); the three words resolved
-through it in `html.lua` and `core.lua`; reports for a `labels:` that is not a
-map, an unknown key in one, and a key whose value is empty, each falling back
-rather than half-installing; the editor schema and snippets; fixtures, suite
-rows and documentation.
+**In:** an `index-labels:` map holding `symbols`, `see` and `see-also`, read at
+the document's top level and inside one `indexes:` entry, the nearer setting
+winning key by key and English the fallback (D-036, key name amended by D-039);
+the three words resolved through it in `html.lua` and `core.lua`; reports for an
+`index-labels:` that is not a map, an unknown key in one, and a key whose value
+is empty, each falling back rather than half-installing; the editor snippets;
+fixtures, suite rows and documentation.
 
 **Out:** the shipped translation table and any reading of `lang:` → M057, which
-depends on this. The untitled heading's default → M057 (D-037); `title:`
+depends on this. The editor schema, whose vocabulary has no place for a
+top-level metadata key at all (its own comment says so). The untitled heading's default → M057 (D-037); `title:`
 already overrides it and is untouched here. Locator punctuation as a fourth
 label → candidate row. The LaTeX back-end, which localizes through babel
 already and gains nothing here.
 
 ## Acceptance criteria
 
-- [ ] AC1. A document writing a top-level `labels:` with all three keys
+- [x] AC1. A document writing a top-level `index-labels:` with all three keys
       renders to HTML with the non-letter group heading and the two
       cross-reference labels printing exactly those three strings. Evidence:
       the suite's exhaustive HTML index manifest for the fixture, which
       enumerates every group heading and every entry line of the section,
-      carries the three declared strings and none of `Symbols`, `see`,
-      `see also`.
-- [ ] AC2. A per-index `labels:` overrides the document-level one key by key,
-      not map by map: in a fixture declaring two indexes where the document
-      sets all three keys and one index resets only `see`, that index prints
-      its own `see` word with the document's other two, and the second index
-      prints all three of the document's. Evidence: the same manifest over
-      both sections.
-- [ ] AC3. The same fixture rendered to EPUB prints the same words in the same
-      places. Evidence: `tests/epubindex.py` over the built EPUB.
-- [ ] AC4. The keys stay optional and English stays the default: a twin
-      fixture carrying the same marks and no `labels:` anywhere prints
-      `Symbols`, `see` and `see also`, and `examples/letter-groups.qmd` and
+      states the three declared strings in the positions those words print,
+      and a sweep of the rendered sections finding no group heading reading
+      `Symbols` and no cross-reference word reading `see` or `see also`.
+- [x] AC2. A per-index `index-labels:` overrides the document-level one key by
+      key, not map by map: in a fixture declaring two indexes where the
+      document sets all three keys and one index resets only `see`, that index
+      prints its own `see` word with the document's other two, and the second
+      index prints all three of the document's. Evidence: the same manifest
+      over both sections.
+- [x] AC3. The same fixture rendered to EPUB prints the same words in the same
+      places. Evidence: `tests/epubcheck.py sections --labels`, which reads the
+      built EPUB through `tests/epubindex.py`, against a hand-derived manifest
+      stating the word each cross-reference prints.
+- [x] AC4. The keys stay optional, English stays the default, and Quarto's own
+      `labels:` metadata is not read: a twin fixture carrying the same marks
+      and no `index-labels:` anywhere prints `Symbols`, `see` and `see also`
+      and draws no message about a label word, though Quarto injects a
+      `labels:` map into it; and `examples/letter-groups.qmd` and
       `examples/resolving-xref.qmd` render the same index output they render
-      today. Evidence: the twin's manifest, and the two existing fixtures'
-      manifests passing with no row edited.
-- [ ] AC5. Each of three unusable shapes draws one message and leaves the
-      words falling back to the next level and then to English: a `labels:`
-      that is not a map is reported naming the level it was written at, and an
-      unknown key inside one and a key whose value is empty are each reported
-      naming that key and its level. Evidence: the misuse fixture's log, each
-      message asserted whole rather than by substring, and its manifest showing
-      the fallback words.
-- [ ] AC6. No `labels:` declaration reaches the LaTeX back-end: the complete
-      `diff` of the labels fixture's `.tex` against the `.tex` of a twin that
-      is the same file with only its two `labels:` blocks removed is empty.
-      Evidence: the diff itself, which enumerates every difference exhaustively
-      rather than sampling emission sites, and the derivation check of T4
-      proving the twin is that file; a non-empty diff fails the criterion
-      whatever the differing lines say.
-- [ ] AC7. `site/letter-groups.qmd`, `site/cross-references.qmd` and
-      `site/back-end-differences.qmd` each state the `labels:` map, its three
-      keys, the two levels it is written at, and that it reaches HTML and EPUB
-      only. Evidence: a read of the three pages against that list.
-- [ ] AC8. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit
+      today. Evidence: the twin's manifest and its render log;
+      `examples/letter-groups.qmd`'s existing manifest passing with no row
+      edited; and, for `examples/resolving-xref.qmd`, which the suite holds no
+      index manifest for, a manifest derived by hand from the `.qmd` under the
+      suite's ORACLE RULE rather than read off the render.
+- [x] AC5. Each unusable shape draws one message and leaves the words falling
+      back to the next level and then to English. The misuse fixture writes
+      four: at the document level, one map carrying both an unknown key and a
+      key whose value is empty; and at the per-index level, an `index-labels:`
+      that is not a map in each of its two forms, a scalar and a sequence. The
+      two per-key messages name their key and the document level, and the two
+      not-a-map messages each name the index it was written in. Evidence: the
+      misuse fixture's log, each of the four messages asserted whole rather
+      than by substring, this extension's total message count over that render
+      being exactly four, and the fixture's manifest showing `Symbols`, `see`
+      and `see also`.
+- [x] AC6. No `index-labels:` declaration reaches the LaTeX back-end: the
+      complete `diff` of the labels fixture's `.tex` against the `.tex` of a
+      twin that is the same file with only its two `index-labels:` blocks
+      removed is empty. Evidence: the diff itself, which enumerates every
+      difference exhaustively rather than sampling emission sites, and the
+      derivation check of T4 proving the twin is that file; a non-empty diff
+      fails the criterion whatever the differing lines say.
+- [x] AC7. `site/letter-groups.qmd`, `site/cross-references.qmd` and
+      `site/back-end-differences.qmd` each state the `index-labels:` map, its
+      three keys, the two levels it is written at, and that it reaches HTML and
+      EPUB only; and at least one of them states that the map is named
+      `index-labels:` rather than `labels:` because a top-level `labels:` is
+      Quarto's own. Evidence: a read of the three pages against that list.
+- [x] AC8. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit
       0.
 
 ## Coverage
@@ -89,27 +104,30 @@ already and gains nothing here.
 
 ## Tasks
 
-- [ ] T1. Read and validate `labels:` in `_extensions/index/modules/indexes.lua`
+- [x] T1. Read and validate `index-labels:` in `_extensions/index/modules/indexes.lua`
       at both levels, following `read_declaration`'s existing report-and-fall-
       back discipline (lines 80–116); export a resolver taking an index name
       and a key and returning the nearer declared string or the English
       default.
-- [ ] T2. Point `html.lua:45`'s group heading and `core.lua:24-27`'s two
+- [x] T2. Point `html.lua:45`'s group heading and `core.lua:24-27`'s two
       `XREF_KINDS` labels at that resolver, leaving `latex.lua`'s use of the
       same rows untouched.
-- [ ] T3. Fixtures: a two-index document declaring `labels:` at both levels, a
-      twin declaring none, and a misuse document carrying the three unusable
-      shapes. Give each new mark a term no other mark in its file indexes.
-- [ ] T4. Suite: HTML manifest rows for both new fixtures, the EPUB read, the
+- [x] T3. Fixtures: a two-index document declaring `index-labels:` at both
+      levels, a twin declaring none, and a misuse document carrying the four
+      unusable writings AC5 enumerates. Give each new mark a term no other mark
+      in its file indexes.
+- [x] T4. Suite: HTML manifest rows for both new fixtures, the EPUB read, the
       LaTeX twin comparison, the message-whole warning assertions, and a
       planted defect proving each new check can go red. Include a derivation
       check that fails when the twin is not the labels fixture with its
-      `labels:` blocks deleted, on the model of M04-AC4's
+      `index-labels:` blocks deleted, on the model of M04-AC4's
       (`tests/run-tests.sh:3810-3831`) — without it AC6's empty diff can fail
       for drift unrelated to `labels:`.
-- [ ] T5. Add `labels:` and its three keys to `_extensions/index/_schema.yml`
-      and `_snippets.json`.
-- [ ] T6. Documentation: the three site pages named in AC7, plus a
+- [x] T5. Add an `index-labels:` snippet and its three keys to
+      `_extensions/index/_snippets.json`, and correct the now-stale sentence in
+      `_extensions/index/_schema.yml` naming `indexes:` as this extension's one
+      metadata key.
+- [x] T6. Documentation: the three site pages named in AC7, plus a
       `CHANGELOG.md` entry naming the new metadata surface.
 
 ## Work log
@@ -122,6 +140,23 @@ already and gains nothing here.
 - 2026-08-28: plan gate chose splitting the override surface from the shipped table over one milestone because the surface is a permanent naming decision and the table is a data asset, each reviewable alone; falsified by the split forcing a rework of the resolver when M057 wires `lang:` beneath it.
 - 2026-08-28: implement question gate, four choices, every recommendation taken. (1) The printed cross-reference word reaches the manifest through a new `labels` flag on `htmlindex.row()`, off for every existing manifest so all 36 existing xref rows stay byte-identical, on for this milestone's fixtures — the field the class alone decides today (`see-link Aardvark`) becomes `see-link cf. Aardvark`. (2) AC4 names a `resolving-xref` manifest the suite does not have, so one is hand-derived in the label-aware form rather than AC4 being amended; no row of it is edited because it has none. (3) The author's symbols word is what the heading PRINTS and not the group's identity: `group_label`/`group_rank` keep the internal sentinel, so a word that is a single ASCII letter cannot merge with that letter's group and a word sorting after `A` cannot re-rank the group. (4) The English fallbacks stay where they are — `Symbols` at `html.lua`, the two words in `core.lua`'s `XREF_KINDS` — and the resolver takes the fallback from its call site, so no word gets a second copy.
 
+- 2026-08-28: BLOCKING DISCOVERY, and the substantive amendment it forced. The first render of the labels fixture showed `labels:` is Quarto's own top-level key: it injects a nine-key title-block map into every document, so the new unknown-key report fired nine times on the twin, which declares nothing. The map is renamed `index-labels:` at both levels at the user's selection, over nesting `labels:` inside a new `index:` map and over staying inside Quarto's; D-039 records it and amends D-036, whose every other clause stands.
+- 2026-08-28: the amended acceptance-criterion wording went to a fresh-context [O] criteria audit in FULL mode (declared tier user-facing) before it was written; the reader authored none of it. Nine findings, all disposed at the mini gate. Six are folded into the criteria: AC1's "carries none of `Symbols`, `see`, `see also`" was unsatisfiable, because the manifest's own xref token contains `see`, and now binds the positions those words print plus a sweep of the rendered sections; AC3 named `tests/epubindex.py`, a hand tool that cannot report a printed word, and now names `tests/epubcheck.py sections --labels`; AC4 split its two fixtures' evidence, since only one of them has a manifest today, and grew the promise that binds the motivating defect — Quarto's injected `labels:` is not read, evidenced by the twin's log; AC5 pins both not-a-map forms and both level phrases across four writings; AC7 gained the rename's discoverability clause. Three were disposed without changing a criterion: the per-index override exercising only `see` stands, because the key axis is covered at the document level by AC1 and the resolver's lookup is key-agnostic; T5's schema half is descoped, the schema vocabulary having no place for a top-level metadata key by its own comment; and the record repairs are D-039 and this pass's rename through Scope and the tasks.
+
+- 2026-08-28: T1/T2 — `index-labels:` is read and validated in `indexes.lua` at both levels, and `html.lua` resolves the group heading and the two cross-reference words through `qi_indexes.label(index, key, fallback)`. `core.lua`'s `XREF_KINDS` rows gained a `label_key` field spelled out rather than reused from `attr`, so a later rename of either cannot move the other; `latex.lua` reads the same rows and is untouched.
+- 2026-08-28: T3 — three fixtures, and `examples/index-labels-twin.qmd` is generated from `examples/index-labels.qmd` by the same deletion the suite's derivation check asserts. Both fixtures' prose is written to read truthfully in either file, since the twin carries it verbatim.
+- 2026-08-28: T4 — the suite gained the M56 block, `htmlindex.row()` a `labels` flag (off by default, so all 36 existing cross-reference rows stay byte-identical), `check_html_index_manifest`/`check_index_sections` a fifth argument passing it, and `epubcheck.py sections` a `--labels` option. Three suite-wide readers needed the new tuple field: seven 4-tuple unpacks of a record's `xrefs` in `run-tests.sh` and one in `editorfixture.py`, each widened by a name; `tests/scans/warn-distinct.py`'s exact warn-message count went 71 → 74. The new fixtures were registered in `site/gallery.yml` (not-shown) and in M14's dangling-target corpus, each with the count derived from its own marks.
+- 2026-08-28: T5/T6 — the `index-labels` snippet, the schema comment corrected to name two top-level metadata keys and say the vocabulary has no place for either, the three site pages, and a CHANGELOG entry under Marking syntax naming the collision by name.
+- 2026-08-28: verify ran twice green after the work was complete, sequentially as PROFILE requires: `tests/run-tests.sh` 441 checks and `tests/run-tests.sh --self-test` 863 checks, both exit 0. Three earlier runs failed for reasons the work list did not hold and were fixed as found — the warn-count pin, the `xrefs` tuple width, and the fixtures being untracked, which the gallery's `git ls-files` enumeration reads. One run died on a Quarto segfault rendering `examples/content.qmd`, an unrelated fixture the next run rendered fine.
+- 2026-08-28: the `--self-test` run surfaced a defect that is not this milestone's: M40's self-test summary writes backtick-quoted tokens inside a double-quoted `pass` message, so the shell runs one as a command substitution and the run log carries `line 13996: ..: command not found`. Recorded as KI172; M56's own summary is single-quoted for the same reason, after the first run showed it eating the word it quoted.
+
 ## Decisions
+
+- **What falls back is the key, not the map.** A map whose `see:` is empty
+  still sets its `symbols:`, exactly as an index declaration whose `title:` is
+  empty still declares its `name:`. The alternative — one unusable key voiding
+  the whole map — would make a typo change words the author wrote correctly,
+  which is the half-install the scope forbids. Only a value that is no map at
+  all sets nothing, because there is nothing in it to read key by key.
 
 ## Review

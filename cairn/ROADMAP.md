@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-28 (a plan gate on the clustered index-output follow-ups found two of the three already shipped: M09 reports the folded-path key collision KI7 said went unreported, and KI8's empty tree is guarded twice over — both entries corrected in DESIGN.md. The third, KI26, went to a Fable review as RB02/RR02, which chose a shipped translation table keyed on `lang:` over author-declared strings and rejected both table sources the brief posed; D-035, D-036 and D-037 record it, and KI26's enumeration was corrected from two strings to four. M56 and M57 planned; the graduated candidate row was replaced by RR02's locator-punctuation finding. M51's terminal row was pruned to hold the line cap. Two fresh-context readers ran: the Fable reviewer, and one criteria auditor over two rounds — six findings then four, all ten fixed at the gate; D-038 came out of the tenth. ROADMAP 59 lines / 11,525 bytes, LESSONS 49 / 19,003 — under budget (`wc -l -c`). No suite run: nothing outside `cairn/` changed. The `release window` advisory did not fire.)_
+_Last hygiene check: 2026-08-29 (M56 merged and archived: authors set the three words the HTML and EPUB index prints itself, through an `index-labels:` map read at a document's top level and inside one `indexes:` entry. Three fresh-context lenses ran; only the diff-bug lens found anything — 15 findings, plus 1 from the session. Three fixed at the gate: two false claims about babel and the `symbols` word in the site pages, the stale manifest-1e row-format definition, and four code comments still naming the map `labels:` after D-039 renamed it. Eleven deferred as KI173-KI183 behind one new candidate row; two rejected. To hold the 60-line cap for that row, the M52 and M49/M50 reader-repair rows were clustered into one. M56's lesson folded into M13's as an extension rather than taking a new line. ROADMAP 59 lines / 11,860 bytes, LESSONS 49 / 19,541, check-design.md 37 / 17,699 against its own 40 / 18,000 — all under budget (`wc -l -c`). Suite green twice over the final tree: 441 checks plain, 863 with `--self-test`, both exit 0. The `release window` advisory did not fire.)_
 
 _Released 0.1.0 2026-08-26._
 
@@ -9,7 +9,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M56 | An author sets the words the index back-end picks itself | review | — | normal | milestones/M056-index-label-override.md |
+| M56 | An author sets the words the index back-end picks itself | done | — | normal | milestones/archive/M56-index-label-override.md |
 | M57 | A non-English document gets a non-English index | planned | M56 | normal | milestones/M057-index-label-language.md |
 | M55 | An HTML book builds every index its chapters declare | done | — | normal | milestones/archive/M55-book-named-indexes.md |
 | M54 | The candidate backlog comes back under D-013 | done | — | normal | milestones/archive/M54-candidate-backlog.md |
@@ -22,8 +22,7 @@ _Released 0.1.0 2026-08-26._
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
-- Repair the readers and checks M52's EPUB back-end added; promote on any of them turning a run red for a reason that is not the defect it names — added 2026-08-28 — M52 review F3, F7-F13 — KI91, KI92, KI93, KI94, KI95, KI96, KI97, KI98
-- Repair the editor-metadata readers M50 added and the readers M49 added; promote on any of them turning a run red for a reason that is not the defect it names — added 2026-08-27, extended 2026-08-28 — M50 review F1, F2, F3, F6; M49 review F6, F7, F9 — KI99, KI100, KI101, KI102, KI103, KI104
+- Repair the readers and checks the EPUB back-end, the editor metadata and the named-index work added; promote on any of them turning a run red for a reason that is not the defect it names — added 2026-08-27, clustered 2026-08-29 — M52 review F3, F7-F13; M50 review F1, F2, F3, F6; M49 review F6, F7, F9 — KI91-KI104
 - Fence the three unguarded edges of the named-index LaTeX behavior M49 shipped; promote the first two on an author report or a fixture reaching either edge, the third on the extension claiming a plain-pandoc path at all — added 2026-08-28 — M49 review F2, F3, F4 — KI105, KI106, KI107
 - Dedupe `examples/.gitignore` against the root ignore — added 2026-08-19 — M13 review F16 — KI75
 - Reconcile the example corpus so its probe `see=`/`see-also=` targets name terms the fixture indexes — added 2026-08-19 — M14 plan gate — KI72
@@ -55,5 +54,6 @@ _Released 0.1.0 2026-08-26._
 - Restore byte-level evidence that `resolve_markers` is output-neutral; D-004 refused the merge-base oracle and D-012 licenses a same-tree one — added 2026-08-17 — M04 review F12 — KI12, KI52
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Handle a chapter filename containing `#` or `?` — added 2026-08-17 — M05 review F11 — KI14
+- Repair the label surface M56 shipped and the checks fencing it: words a report should refuse but installs, a per-index map dropped with a refused entry, seven check weaknesses; promote the behavior half on an author reaching an edge, the check half on any check turning a run red for a reason that is not the defect it names — added 2026-08-29 — M56 review — KI173-KI183
 - Localize the locator punctuation an index prints — the entry comma and the cross-reference semicolon, which an Arabic index sets differently; promote on the label map M56 ships proving it wants a fourth key, or on an author reporting the punctuation as wrong — added 2026-08-28 — RR02 B2
 - Repair the HTML book's index placement and the reports around it: which chapter builds an index no marker names on a first render, the stale-name report's per-chapter count, a record whose `xrefs` is not a table, and the untested sort-key merge order; promote on any reaching an author or turning a run red for a reason that is not the defect it names — added 2026-08-28 — M55 review F1, F2, F4, F8 — KI167, KI168, KI169, KI171

@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-08-28 (M54 done and archived: 72 finding clauses moved out of twelve candidate rows into `cairn/DESIGN.md`'s `## Known issues` as KI91-KI162, plus KI163 and KI164 recovered by the conservation check; all 36 rows rewritten under D-034's 400-byte cap, 22,001 -> 9,051 bytes in the section. One diff-bug reviewer returned 13 findings, none failing a criterion: six fixed on the branch, seven rejected, and F1's residual accepted as KI165. M49's terminal row was pruned. No lesson retired; the check-discrimination family in check-design gained an eighteenth shape, on a pointer sweep being blind to a pointer that was removed. ROADMAP 58 lines / 11,273 bytes, LESSONS 49 / 19,003, check-design 36 / 17,280 — all under budget (`wc -l -c`). The `release window` advisory did not fire.)_
+_Last hygiene check: 2026-08-28 (M55 done and archived: an HTML book now prints every index its chapters declare, each at the first marker naming it and an index no marker names after them, at store version 4; `fold_slot` and the three fold reports are deleted. Three fresh-context reviewers; the diff-bug lens returned nine findings, none failing a criterion — four fixed on the branch, three deferred as KI167-KI169 with a candidate row, two rejected as KI166 and KI170, and KI171 recording the sort-key merge-order fix shipping untested. M50's terminal row was pruned. No lesson retired; check-design gained a nineteenth shape, on a fixture holding an axis constant. ROADMAP 58 lines / 11,423 bytes, LESSONS 49 / 19,003, check-design 37 / 17,699 — all under budget (`wc -l -c`). `tests/run-tests.sh` 426 checks and `--self-test` 838, both exit 0. The `release window` advisory did not fire.)_
 
 _Released 0.1.0 2026-08-26._
 
@@ -9,12 +9,11 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M55 | An HTML book builds every index its chapters declare | review | — | normal | milestones/M55-book-named-indexes.md |
+| M55 | An HTML book builds every index its chapters declare | done | — | normal | milestones/archive/M55-book-named-indexes.md |
 | M54 | The candidate backlog comes back under D-013 | done | — | normal | milestones/archive/M54-candidate-backlog.md |
 | M53 | The workflows' actions come up to date | done | — | normal | milestones/archive/M53-action-versions.md |
 | M52 | EPUB gets an index back-end | done | — | normal | milestones/archive/M52-epub-back-end.md |
 | M51 | The version matrix typesets a PDF again | done | — | normal | milestones/archive/M51-matrix-pdf-leg.md |
-| M50 | Editors complete and document the marking syntax | done | — | normal | milestones/archive/M50-editor-metadata.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

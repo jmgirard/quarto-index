@@ -106,6 +106,7 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 ## Work log
 
 - 2026-08-30: created by /milestone-plan.
+- 2026-08-30: review — the two fix-now findings landed and all six criteria re-verified on the fixed tree: 519 checks plain, 981 with `--self-test`, both exit 0, the M062-AC1/AC2/AC3 counts and the AC5 claim pair unchanged. Six deferred findings filed as KI208-KI213. Merge approved at the gate for PR #62.
 - 2026-08-30: review — all six criteria verified with fresh evidence and ticked; suite green twice over the branch (519 plain, 981 with `--self-test`, both exit 0); consistency gate clean. Eight diff-bug findings recorded, pending triage at the gate.
 - 2026-08-30: review — AC1-AC4 verified against one plain suite run (519 checks, exit 0) and ticked; AC5/AC6 await the `--self-test` run. Three lenses ran: blame-history and prior-review found nothing, the diff-bug lens eight, pending triage at the gate.
 - 2026-08-30: review opened — branch pushed, draft PR #62; `cairn_validate` passes (exit 0), the generic profile's consistency-gate slot names no toolchain checks, and no DESIGN principle changed so `cairn_impact` is skipped. Suite runs and the three review lenses are in flight.

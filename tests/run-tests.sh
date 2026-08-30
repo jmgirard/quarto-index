@@ -283,7 +283,7 @@ run_scan() {
         "$WARN_MARKER_DUP_NAMED" "$WARN_INDEX_BADNAME" \
         "$WARN_INDEX_STALE_NAME" "$WARN_BOOK_MARKER_SECOND_NAMED" \
         "$WARN_BOOK_SORT_CONFLICT" "$WARN_BOOK_SORT_CONFLICT_NAMED" \
-        "$WARN_DEFER" ;;
+        "$WARN_DEFER" "$WARN_DOUBLED" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -869,6 +869,9 @@ WARN_STORE_STALE='were written by a different version of this extension and were
 # removed — a chapter whose record can never be written makes that promise
 # false on every render forever. Held to a live message by the report-key scan.
 WARN_DEFER='A chapter takes on an index no marker names only once it has read a usable record for every chapter after it'
+# The doubled-section report (M061), keyed on its value-free tail. Everything
+# before it names the index and the chapters carrying a section for it.
+WARN_DOUBLED='a render made before every chapter has read the new marker builds the section in each of them'
 WARN_STORE_UNWRITABLE='could not record index marks for'
 WARN_MARKER_NOT_LAST='chapter(s) come after it'
 WARN_MARKER_SECOND='comes first in book order and carries one too'

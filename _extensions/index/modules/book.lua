@@ -1032,6 +1032,28 @@ local function html_book(doc, ctx, marker, taken)
         end
       end
     end
+
+    -- ...and the other way round: an index with a section in more than one
+    -- chapter. Read off the same recorded adoptions, because that is the only
+    -- place a chapter's own conclusion survives its process — nothing on this
+    -- render's pages tells the last chapter what an earlier one printed. Named
+    -- in book order, once per index, by the one chapter that has seen every
+    -- record. A record with no `adopted` field is a chapter that says nothing
+    -- about what it built, and a chapter that says nothing is not counted as
+    -- one of two.
+    local built = {}
+    for _, other in ipairs(records) do
+      for _, name in ipairs(other.adopted or {}) do
+        local carrying = qi_core.namespace(built, name)
+        carrying[#carrying + 1] = other.file
+      end
+    end
+    for _, name in ipairs(qi_indexes.names()) do
+      local carrying = built[name] or {}
+      if #carrying > 1 then
+        qi_core.warn(('the index "%s" has a section in more than one chapter of this book — %s. A chapter builds a section for an index its own marker places, and the last chapter that places any index also builds one for each index no marker names; a placement marker added between two renders changes which chapter that is, and a render made before every chapter has read the new marker builds the section in each of them'):format(name, table.concat(carrying, ", ")))
+      end
+    end
   end
 
   if builds then

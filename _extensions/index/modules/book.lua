@@ -114,9 +114,11 @@ local function store_path(ctx, file)
 end
 
 -- One chapter's record: what it marked, where those marks are anchored on its
--- own page, whether it carries the placement marker, and whether the store
--- already held a record for every chapter after this one when it rendered.
-local function store_write(ctx, marker, later)
+-- own page, and whether it carries the placement marker. What the chapter
+-- CONCLUDED — which chapters after it it could not read, and which indexes it
+-- took on — is filled in by `html_book` once it knows, and this table is the
+-- one written to disk.
+local function build_record(ctx, marker)
   local marks = {}
   for _, mark in ipairs(qi_marks.html_marks) do
     local xrefs = {}
@@ -167,10 +169,36 @@ local function store_write(ctx, marker, later)
       sorts[name] = declared_keys
     end
   end
-  -- Every step here can fail on an ordinary machine — a stale file where the
-  -- directory belongs, a read-only project tree, a full disk — and none of
-  -- them may take the render down with it: a marked-up document always
-  -- renders (IP2). The whole write is one guarded unit, reported once.
+  return { version = STORE_VERSION, file = ctx.file, href = ctx.href,
+           marker = marker, marks = marks, sorts = sorts }
+end
+
+-- The aggregation reads this chapter's own record alongside every other one,
+-- and `fold_undeclared` rewrites what it reads: an index name this book no
+-- longer declares is folded to the first one it does. A copy is what goes into
+-- that aggregation, because the table `build_record` returned is also the one
+-- written to disk, and a folded name written down is a name the record can
+-- never report again. Only the fields the fold touches are copied deeply —
+-- each mark, because the fold rewrites `mark.index`; `sorts` is replaced
+-- wholesale by a table of its own and its nested maps are only read.
+local function record_for_reading(record)
+  local marks = {}
+  for i, mark in ipairs(record.marks) do
+    local copy = {}
+    for key, value in pairs(mark) do
+      copy[key] = value
+    end
+    marks[i] = copy
+  end
+  return { version = record.version, file = record.file, href = record.href,
+           marker = record.marker, marks = marks, sorts = record.sorts }
+end
+
+-- Every step here can fail on an ordinary machine — a stale file where the
+-- directory belongs, a read-only project tree, a full disk — and none of
+-- them may take the render down with it: a marked-up document always
+-- renders (IP2). The whole write is one guarded unit, reported once.
+local function store_write(ctx, record)
   local path = store_path(ctx, ctx.file)
   local ok, err = pcall(function()
     pandoc.system.make_directory(pandoc.path.directory(path), true)
@@ -178,15 +206,7 @@ local function store_write(ctx, marker, later)
     if not fh then
       error(tostring(open_err), 0)
     end
-    local written, write_err = fh:write(pandoc.json.encode(
-      -- `later` is this chapter's answer to a question only it can answer: did
-      -- the store already hold a usable record for every chapter after this
-      -- one? Chapters render in book order and each rewrites its own record as
-      -- it goes, so no later chapter can reconstruct what an earlier one saw —
-      -- and the book's last chapter has to know it, because it is the chapter
-      -- that reports an index section deferred to a further render.
-      { version = STORE_VERSION, file = ctx.file, href = ctx.href,
-        marker = marker, marks = marks, sorts = sorts, later = later }))
+    local written, write_err = fh:write(pandoc.json.encode(record))
     fh:close()
     if not written then
       error(tostring(write_err), 0)
@@ -223,15 +243,39 @@ local function valid_record(data, file)
   -- know which; a chapter with no marker writes an empty one. Validated here
   -- rather than trusted, because `marker_chapter` walks it before any marker
   -- logic runs and a non-list would take the render down with it (IP2).
-  -- Optional on the same terms as the four per-mark fields below: a record
-  -- written before this field existed simply does not say what its chapter
-  -- saw. Absent is not `false`: only a version of this extension without the
-  -- field writes no field, and such a record is never one this render wrote,
-  -- so reading it as "did not have the picture" would report a deferral for a
-  -- section already printed. Absent is read as no answer, and no answer draws
-  -- no report.
+  -- M60's boolean, which no version now writes: `unseen` below says what it
+  -- said and says WHICH chapters. Still accepted rather than refused, because
+  -- a record M60 wrote is otherwise a perfectly good record and refusing it
+  -- would cost its chapter's terms until the whole book rendered again — and
+  -- nothing reads it, so a record carrying it says nothing about what its
+  -- chapter took on, exactly as one carrying neither new field does.
   if data.later ~= nil and type(data.later) ~= "boolean" then
     return false
+  end
+  -- What the chapter CONCLUDED, as against what it saw. `adopted` is the
+  -- indexes it built a section for, in declared order; `unseen` the chapters
+  -- after it whose record it could not use. Both are read by the two reports
+  -- the book's last chapter draws and by nothing that reaches an index, so
+  -- both are optional on exactly the terms the per-mark fields below are: a
+  -- record written before they existed is a perfectly good record, and
+  -- refusing it would cost an author a whole chapter's terms for a field only
+  -- a report reads. Absent is NOT the empty list — a chapter that adopted
+  -- nothing writes an empty list, and only a version without the field writes
+  -- none, so absent is read as no answer and no answer draws no report.
+  -- Validated here rather than trusted, because both are walked with `ipairs`
+  -- before any report logic runs and a non-list would take the render down
+  -- with it (IP2).
+  for _, list in ipairs({ "adopted", "unseen" }) do
+    if data[list] ~= nil then
+      if type(data[list]) ~= "table" then
+        return false
+      end
+      for _, name in ipairs(data[list]) do
+        if type(name) ~= "string" then
+          return false
+        end
+      end
+    end
   end
   if data.marker ~= nil then
     if type(data.marker) ~= "table" then
@@ -421,73 +465,75 @@ local function fold_undeclared(records)
   end
 end
 
--- Does the store already hold a record this version can use for every chapter
--- that renders AFTER this one? That is the half of the store a chapter cannot
--- see for itself: chapters render in book order, so the ones before it have
--- just written, and the ones after it have written nothing this render. A
--- chapter that answers no cannot yet tell whether some later chapter places an
--- index, and so cannot conclude it is the last chapter that places anything.
+-- Returns the usable records in book order, the chapters whose record this
+-- version refused for being written by another one — the caller's to report —
+-- and the chapters AFTER this one whose record this render could not use.
 --
--- The chapters BEFORE it are deliberately not asked about: one of them missing
--- or refused hides a marker at a position this chapter already stands after,
--- which cannot make this chapter the last placer when it is not.
+-- That last list is the half of the store a chapter cannot see for itself:
+-- chapters render in book order, so the ones before it have just written, and
+-- the ones after it have written nothing this render. A chapter with a name in
+-- that list cannot yet tell whether some later chapter places an index, and so
+-- cannot conclude it is the last chapter that places anything. The chapters
+-- BEFORE it are deliberately not listed: one of them missing or refused hides
+-- a marker at a position this chapter already stands after, which cannot make
+-- this chapter the last placer when it is not.
 --
--- Read before this chapter writes its own record, which is the only moment
--- these files still say what the render found them saying. Silent by design:
--- `store_read` walks the same files a moment later and draws every report
--- there is to draw about them, so warning here would double each one.
-local function later_recorded(ctx)
-  for position = ctx.position + 1, #ctx.chapters do
-    local file = ctx.chapters[position]
-    local fh = io.open(store_path(ctx, file), "r")
-    if not fh then
-      return false
-    end
-    local text = fh:read("a")
-    fh:close()
-    local ok, data = pcall(pandoc.json.decode, text, false)
-    if not (ok and valid_record(data, file)) then
-      return false
-    end
-  end
-  return true
-end
-
--- Returns the usable records in book order, and the chapters whose record this
--- version refused for being written by another one — the caller's to report.
-local function store_read(ctx)
-  local records, stale = {}, {}
-  for _, file in ipairs(ctx.chapters) do
-    local fh = io.open(store_path(ctx, file), "r")
-    if fh then
-      local text = fh:read("a")
-      fh:close()
-      local ok, data = pcall(pandoc.json.decode, text, false)
-      if ok and valid_record(data, file) then
-        records[#records + 1] = data
-      else
-        -- Never silent: the cost of a record this version cannot use is a
-        -- chapter missing from the index, and the fix is the same either way
-        -- — render that chapter again. WHY it could not be used is not: a
-        -- record left by an older version of this extension is perfectly
-        -- readable and simply stale, and calling that unreadable sends an
-        -- author looking for a corrupt file that is not there.
-        if ok and type(data) == "table" and data.version ~= STORE_VERSION then
-          -- Handed back rather than reported here: a version-skewed record
-          -- costs the chapters that BUILD an index their share of that
-          -- chapter's terms, and every other chapter of the book reads the
-          -- store without printing anything out of it. Reported by the caller,
-          -- once per chapter that builds (M55).
-          stale[#stale + 1] = file
+-- One pass. M60 asked the same files a second question in a second walk, which
+-- opened, decoded and validated every later record twice over.
+--
+-- `own` is this chapter's own record, built in memory and spliced in at this
+-- chapter's own position rather than read back off the disk: the store is read
+-- BEFORE this chapter writes, which is the only moment these files still say
+-- what the render found them saying, and a chapter reading its own file back
+-- would see the state some earlier render left. It is also why nothing here
+-- reports on this chapter's own file — there is no stale or unreadable record
+-- of its own for it to find, whatever the write does afterwards.
+local function store_read(ctx, own)
+  local records, stale, unseen = {}, {}, {}
+  for position, file in ipairs(ctx.chapters) do
+    if file == ctx.file then
+      records[#records + 1] = own
+    else
+      local usable = false
+      local fh = io.open(store_path(ctx, file), "r")
+      if fh then
+        local text = fh:read("a")
+        fh:close()
+        local ok, data = pcall(pandoc.json.decode, text, false)
+        if ok and valid_record(data, file) then
+          records[#records + 1] = data
+          usable = true
         else
-          qi_core.warn(("the recorded index marks for %s could not be read and were "
-                .. "ignored; render that chapter again, or render the whole "
-                .. "book, to put its terms back in the index"):format(file))
+          -- Never silent: the cost of a record this version cannot use is a
+          -- chapter missing from the index, and the fix is the same either way
+          -- — render that chapter again. WHY it could not be used is not: a
+          -- record left by an older version of this extension is perfectly
+          -- readable and simply stale, and calling that unreadable sends an
+          -- author looking for a corrupt file that is not there.
+          if ok and type(data) == "table" and data.version ~= STORE_VERSION then
+            -- Handed back rather than reported here: a version-skewed record
+            -- costs the chapters that BUILD an index their share of that
+            -- chapter's terms, and every other chapter of the book reads the
+            -- store without printing anything out of it. Reported by the caller,
+            -- once per chapter that builds (M55).
+            stale[#stale + 1] = file
+          else
+            qi_core.warn(("the recorded index marks for %s could not be read and were "
+                  .. "ignored; render that chapter again, or render the whole "
+                  .. "book, to put its terms back in the index"):format(file))
+          end
         end
+      end
+      -- Missing, refused for its version, refused for its shape: all three leave
+      -- this render without a record it can use, which is the one question the
+      -- chapters after this one are asked. Why it could not be used is the
+      -- reports' business above, not this list's.
+      if not usable and position > ctx.position then
+        unseen[#unseen + 1] = file
       end
     end
   end
-  return records, stale
+  return records, stale, unseen
 end
 
 -- Every chapter's marks as the entry builder wants them: the kind tables
@@ -821,11 +867,23 @@ end
 -- `marker` is the list of index names this chapter has a surviving placement
 -- marker for, in the order it places them.
 local function html_book(doc, ctx, marker, taken)
-  -- Before the write, or a chapter would be reading its own record back as
-  -- the state some earlier render left.
-  local later = later_recorded(ctx)
-  store_write(ctx, marker, later)
-  local records, stale = store_read(ctx)
+  -- Built before the store is read and written after every judgement is made:
+  -- this chapter's record carries what it CONCLUDED as well as what it saw,
+  -- and what it concluded is not known until the placement below is settled.
+  -- The copy is what the aggregation reads, because `fold_undeclared` rewrites
+  -- the record it walks (`record_for_reading`).
+  local record = build_record(ctx, marker)
+  local reading = record_for_reading(record)
+  local records, stale, unseen = store_read(ctx, reading)
+  -- This chapter's answer to a question only it can answer: which chapters
+  -- after this one had no record this render could use? Chapters render in
+  -- book order and each rewrites its own record as it goes, so no later
+  -- chapter can reconstruct what an earlier one saw — and the book's last
+  -- chapter has to know it, because it is the chapter that reports an index
+  -- section left unplaced, and names there what stood in the way.
+  record.unseen = unseen
+  reading.unseen = unseen
+  local later = #unseen == 0
   -- Before any judgement is made about a mark: an index name this book no
   -- longer declares is settled against what it declares now, so every
   -- accumulator below sees only names this book has.
@@ -912,6 +970,27 @@ local function html_book(doc, ctx, marker, taken)
     end
   end
 
+  -- Which indexes this chapter built a section for, in declared order —
+  -- whether its own marker placed one or it took on an index no marker names.
+  -- Recorded rather than re-derived, because the chapter that reports on it
+  -- renders later and cannot see the store as this one found it. The two
+  -- causes are deliberately not told apart here: what the reports are about is
+  -- how many chapters printed a section, and which of them a marker sent
+  -- there is a question `marker_chapter` answers from the same records.
+  local adopted = {}
+  for _, name in ipairs(qi_indexes.names()) do
+    if mine[name] then
+      adopted[#adopted + 1] = name
+    end
+  end
+  record.adopted = adopted
+  reading.adopted = adopted
+
+  -- Everything this chapter concluded is settled, so the record goes to disk
+  -- here rather than before the store was read: one write, after the last
+  -- judgement, and the aggregation above ran over the copy of it.
+  store_write(ctx, record)
+
   -- Drawn by the last chapter in book order alone, the same chapter the three
   -- book-wide reports are drawn by: it is the only one that has seen every
   -- record, so it is the only one that can say an index is named by no marker
@@ -919,25 +998,65 @@ local function html_book(doc, ctx, marker, taken)
   -- off that chapter's own record, which it wrote as it rendered; a chapter
   -- that renders later cannot see what an earlier one saw.
   if ctx.position == #ctx.chapters and first ~= nil then
-    -- The book's last chapter has no chapter after it, so where it is itself
-    -- the last placing chapter it always had the picture and always adopted.
-    local adopted = last == ctx.position
-    if not adopted then
-      for _, record in ipairs(records) do
-        if record.file == ctx.chapters[last] then
-          -- `~= false` rather than `== true`: a record with no `later` field
-          -- at all was written before the field existed and says nothing
-          -- either way, and a report drawn on its silence is a report about a
-          -- section that is on the page.
-          adopted = record.later ~= false
+    -- The record of the chapter an index no marker names is owed to. It is
+    -- read for what that chapter CONCLUDED — the sections it built, and the
+    -- chapters it could not read — rather than for a picture re-derived here
+    -- from the store as it stands now, which is not the store that chapter
+    -- saw. `records` always holds it: `last` is a position `marker_chapter`
+    -- read out of these same records.
+    local placer = nil
+    for _, other in ipairs(records) do
+      if other.file == ctx.chapters[last] then
+        placer = other
+      end
+    end
+    -- A record with neither field was written by a version that had neither,
+    -- and says nothing about what its chapter took on. A report drawn on that
+    -- silence is a report about a section that may well be on the page, so
+    -- silence draws none.
+    if placer ~= nil and placer.adopted ~= nil then
+      local took = {}
+      for _, name in ipairs(placer.adopted) do
+        took[name] = true
+      end
+      -- Named where there are any, and "none" where there are not: a chapter
+      -- can have read every record and still not have taken the section on,
+      -- when the store it read named a LATER chapter as the last placer —
+      -- a marker that chapter has since lost, or a record left claiming one.
+      local blocked = #(placer.unseen or {}) > 0
+        and table.concat(placer.unseen, ", ") or "none"
+      for _, name in ipairs(qi_indexes.names()) do
+        if placing[name] == nil and not took[name]
+           and marks_in(records, name) then
+          qi_core.warn(('no placement marker in this book names the index "%s", so its section goes to %s, the last chapter of the book that places one — and when that chapter rendered it did not take the section on. Chapters whose record it could not read then: %s. A chapter takes on an index no marker names only once it has read a usable record for every chapter after it'):format(name, ctx.chapters[last], blocked))
         end
       end
     end
-    if not adopted then
-      for _, name in ipairs(qi_indexes.names()) do
-        if placing[name] == nil and marks_in(records, name) then
-          qi_core.warn(('no placement marker in this book names the index "%s", so its section goes to the last chapter that places one — and on this render that chapter had not yet seen a record for every chapter of the book. Render the book again and the section will be placed'):format(name))
-        end
+
+    -- ...and the other way round: an index with a section in more than one
+    -- chapter. Read off the same recorded adoptions, because that is the only
+    -- place a chapter's own conclusion survives its process — nothing on this
+    -- render's pages tells the last chapter what an earlier one printed. Named
+    -- in book order, once per index, by the one chapter that has seen every
+    -- record. A record with no `adopted` field is a chapter that says nothing
+    -- about what it built, and a chapter that says nothing is not counted as
+    -- one of two.
+    local built = {}
+    for _, other in ipairs(records) do
+      for _, name in ipairs(other.adopted or {}) do
+        local carrying = qi_core.namespace(built, name)
+        carrying[#carrying + 1] = other.file
+      end
+    end
+    for _, name in ipairs(qi_indexes.names()) do
+      local carrying = built[name] or {}
+      -- `adopted` is what a chapter DECIDED to build, and a declared index no
+      -- mark files in is decided for and then printed nowhere: an index with
+      -- no marks anywhere in the book has no section to have twice. Guarded
+      -- on the same `marks_in` the unplaced-section report above is guarded
+      -- on, and for the same reason (M061 review F1).
+      if #carrying > 1 and marks_in(records, name) then
+        qi_core.warn(('the index "%s" has a section in more than one chapter of this book — %s. A chapter builds a section for an index its own marker places, and the last chapter that places any index also builds one for each index no marker names; a placement marker added between two renders changes which chapter that is, and a render made before every chapter has read the new marker builds the section in each of them'):format(name, table.concat(carrying, ", ")))
       end
     end
   end
@@ -1031,10 +1150,11 @@ M["strip_prefix"] = strip_prefix
 M["book_context"] = book_context
 M["relative_href"] = relative_href
 M["store_path"] = store_path
+M["build_record"] = build_record
+M["record_for_reading"] = record_for_reading
 M["store_write"] = store_write
 M["valid_record"] = valid_record
 M["fold_undeclared"] = fold_undeclared
-M["later_recorded"] = later_recorded
 M["store_read"] = store_read
 M["book_sort_keys"] = book_sort_keys
 M["book_sort_for"] = book_sort_for

@@ -149,6 +149,27 @@
   the record check exists to prevent; `tests/run-tests.sh` fails at
   `M60-AC5` without the fix.
 
+- The report an HTML book draws for an index section it did not place now
+  names the chapter that section was owed to and the chapters whose record
+  that chapter could not read, and no longer says a further render will place
+  it. A chapter whose record can never be written — something else holds the
+  path it needs, the project tree is read-only — leaves that section unplaced
+  on every render, and the old sentence promised otherwise every time.
+
+- An HTML book whose index section is printed in two chapters now says so
+  once, naming the index and both chapters. It happens when a chapter after
+  the last one already placing an index gains a placement marker between two
+  renders: the chapters before it still read that chapter's earlier record,
+  one of them takes the index on, and the chapter with the new marker prints
+  it too. The render after that prints the section in the marker's chapter
+  alone.
+
+- A chapter's stored record now says which indexes that chapter built a
+  section for and which chapters after it it could not read. Both are read
+  only by the two reports above, so a record written before they existed is
+  still a good record and draws neither report rather than being read as a
+  chapter that took nothing on.
+
 ### Project
 
 - The extension ships editor metadata beside its manifest:

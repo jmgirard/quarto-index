@@ -16,7 +16,7 @@ Every back-end honours the same marker: the HTML index section and the LaTeX
 `\printindex` each land where you wrote it. A format with no index back-end
 drops the marker and leaves nothing in its place.
 
-Six rules, each of which warns rather than breaking your build:
+Seven rules, each of which warns rather than breaking your build:
 
 - **Top level only.** A marker inside a callout, a list or another div places
   nothing: a printed index inside a LaTeX group or environment is a render
@@ -32,6 +32,13 @@ Six rules, each of which warns rather than breaking your build:
 - **The marker is empty.** Write anything inside it and your content stays
   where the marker was, with a warning. Nothing you wrote is deleted.
 - **A marker in a document with no index marks** places nothing, and says so.
+- **An index no marker names, in an HTML book**, goes at the end of the last
+  chapter that places one, and a first render can leave it out. The book's
+  last chapter says so once, naming the index, the chapter its section was
+  owed to and the chapters whose record that chapter could not read. Give some
+  later chapter a marker for that index between two renders and the section
+  prints in two chapters instead, which the same chapter reports once by name.
+  The [Books](books.qmd) page has the whole of it.
 - **A nested marker that was the only thing there** empties the place it was
   written in, and that is reported by the number of the top-level block it sat
   under — with the chapter that number was counted in, in an HTML book. (A lone

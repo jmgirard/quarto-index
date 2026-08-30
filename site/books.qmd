@@ -47,9 +47,23 @@ chapter that prints it has to have seen every other chapter's marks before it
 can know it is the last chapter that places anything, and on a book's first
 render the chapters after it have written nothing yet. So where the last
 marker of the book is not in its last chapter, a first render leaves that
-index out and says so once, naming it; the next render prints it. A book whose
-markers all sit in its last chapter never meets this, and every index a marker
-does name is printed at that marker on the first render like any other.
+index out, and the book's last chapter says so once: the report names the
+index, the chapter its section was owed to, and the chapters whose record that
+chapter could not read. Usually those chapters have a record by the next
+render and the section is printed then. Where one of them can never write one
+— something else already holds the path its record needs, the project tree is
+read-only — every render draws that same report, and the chapter it names is
+where to look. A book whose markers all sit in its last chapter never meets
+this, and every index a marker does name is printed at that marker on the
+first render like any other.
+
+Giving a marker for that index to a chapter that comes after the last one
+already placing something goes the other way. The chapters before it still
+read that chapter's pre-marker record, so one of them takes the index on, and
+the chapter with the new marker prints it too: the section appears twice, in
+both chapters. The book's last chapter reports that once, naming the index and
+every chapter carrying a section for it, and the render after that prints the
+section in the marker's chapter alone.
 
 Two things worth knowing:
 

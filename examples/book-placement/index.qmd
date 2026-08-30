@@ -11,7 +11,7 @@ holds a mark for an index it does not place: [Cardamom]{.index index="beta"}.
 A term filed in the index no marker in this book names, so this chapter holds
 a mark for an index nobody asked for: [Gantry]{.index index="gamma"}.
 
-The marker below names no index, so it places the first declared one. Three
+The marker below names no index, so it places the first declared one. Four
 chapters come after it, which is what makes this book's index sections depend
 on what an earlier render recorded.
 

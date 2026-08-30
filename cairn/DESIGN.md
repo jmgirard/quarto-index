@@ -444,13 +444,24 @@ known locally and never read back from the store, so a chapter whose own record
 failed to write still knows what it is. Nothing about the store may break a
 render (IP2): the write is one guarded unit, a record is validated against a
 version and a shape before it is read, and every failure costs that chapter's
-entries and says so. Five cases are reported rather than guessed at: a book
-whose chapters mark terms but whose author wrote no marker anywhere (reported
-by the last chapter, the only one that can know), a marker in a book that marks
-nothing, a second marker chapter (the first in book order builds the index), a
-marker with chapters after it (whose entries are one render behind), and a page
+entries and says so. Seven cases are reported rather than guessed at (corrected M061,
+which added the last of them and found the deferral M60 added missing here): a
+book whose chapters mark terms but whose author wrote no marker anywhere
+(reported by the last chapter, the only one that can know), a marker in a book
+that marks nothing, a second marker chapter (the first in book order builds the
+index), a marker with chapters after it (whose entries are one render behind),
+an index no marker names whose section the last placing chapter did not take
+on, that same index taken on by two chapters at once, and a page
 Quarto presents as a book chapter without the metadata this needs — which falls
 back to indexing that page alone, the pre-M05 defect, and so is never silent.
+The last two are read off what each chapter RECORDED concluding — the indexes
+it built a section for, and the chapters after it whose record it could not use
+— rather than re-derived by the reading chapter from a store it did not see
+(M061): a chapter renders in its own process, and only its own record survives
+it. Both fields are optional, so a record written before them says nothing
+about what its chapter took on and draws neither report. The store is read once
+per chapter, before that chapter writes, with the chapter's own record built in
+memory and spliced in at its own position (M061).
 
 Shared between them: the level parse and its empty-level drop, the
 cross-reference target parse and its `: ` join, and every warning about the
@@ -1319,30 +1330,44 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   only U+00A0 and U+200B reach one. A transposed code point in the list — say
   `\u{2007}` written as `\u{2070}`, a visible glyph — would ship silently.
   — M59 review F6
-- **KI198.** The book's last chapter decides whether the deferred-section
-  report is due by reading the last placing chapter's `later` flag, not by
-  reading what that chapter actually took on. The two differ when a chapter's
-  stored record still claims a placement marker its source no longer has: the
-  placing chapter then sees a later placer and does not adopt, while the last
-  chapter computes a different last placer, reads its `later` as true and stays
-  silent. The section is absent for that render with no report, and returns on
-  the next one. — M60 review F1
-- **KI199.** Two chapters can both adopt the same unplaced index when a chapter
-  after the last placer gains a marker between renders: the earlier one still
-  sees that chapter's pre-marker record and believes it is last. Both print the
-  section, with no report. Predates M60 and reproduces identically without it.
-  — M60 review F3
+- **KI199.** Two chapters can both print a section for the same unplaced index
+  when a chapter after the last placer gains a marker between renders: the
+  earlier one still sees that chapter's pre-marker record and believes it is
+  last. Both print the section; the book's last chapter now reports it once by
+  name (corrected M061), and preventing it needs a way for a chapter to see a
+  marker a later chapter has not yet recorded (ROADMAP). Predates M60 and
+  reproduces identically without it. — M60 review F3
+- **KI205.** A chapter whose record can never be written leaves an index
+  section that is never printed, on every render: the chapters before it never
+  see a record for it, so none of them takes the unnamed index on. M061 made
+  the render say so once per render and name the chapter, and did not make the
+  section printable. The KI203 entry M061 struck carried this half as well as
+  the false promise M061 removed; restored here as its own entry, since only
+  the promise was fixed. — M60 review F11, corrected M061 review F4
+- **KI206.** M061-AC3's warning-count assertion expects 7 anchored `(W)`
+  matches because Quarto writes a colour-reset escape at the head of the
+  write-failure report's line, which `tests/scans/warn-distinct.py`'s
+  `^\(W\) ` patterns then miss. Nothing sets or asserts that escape, so an
+  uncoloured log makes the count 8 and the check red for a reason that is not
+  the extension's. The raw warning-line count asserted beside it is the stable
+  half. — M061 review F2
+- **KI207.** `valid_record`'s `data.later` branch, which keeps a record written
+  by the M60-era version readable, is reached by no check: no version writes
+  the field and nothing plants a record carrying it, so the compatibility it
+  states is asserted nowhere. — M061 review F6
 - **KI200.** A record written by a superseded version is now reported only by a
   chapter that builds an index, so a book where no chapter builds one — no
   placement marker anywhere, or no marks — reports it zero times, where it was
   reported once per rendered chapter before. — M60 review F5
-- **KI201.** `later_recorded` opens, decodes and fully validates every record
-  after the current chapter, on top of `store_read`'s own pass over all of
-  them, so a book's store read is quadratic in chapter count. — M60 review F9
 - **KI202.** Both count assertions on the report KI168 names sit behind
   single-chapter renders, where 1 is the answer under either counting rule, so
   neither would catch the count KI168 describes. — M60 review F10
-- **KI203.** A chapter after the last placer whose record is never written —
-  its `store_write` failed and only warned — leaves `later_recorded` false on
-  every future render, so an index no marker names is deferred forever under a
-  report saying the next render will place it. — M60 review F11
+- **KI204.** `store_write`'s open-failure guard does not stop the write. With
+  the record's store path held by a directory, the render logs
+  `ERROR ([C]:-1) <path>: Is a directory` — the text `io.open` hands back — and
+  then draws its own write-failure report whose stated cause is
+  `book.lua:209: attempt to index a nil value (local 'fh')`, the line AFTER the
+  guard, so execution passed the guard's `error()` without unwinding. The
+  render survives and reports once, so IP2 holds; what the author is shown is
+  the second failure rather than the first, beside an ERROR line the extension
+  did not mean to print. Observed 2026-08-30 on M061-AC3's render. — M061 T8

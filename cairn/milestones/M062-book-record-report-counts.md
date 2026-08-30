@@ -64,10 +64,10 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
       no-marker-chapter report at the count M05 pinned over its re-derived three chapters;
       and `examples/book-placement/`'s two planted-superseded-record runs at their
       version-refused counts of 2 and 1. Each render exits 0.
-- [ ] AC5. `tests/sitecheck.py claims` holds `site/books.qmd` to a claim naming when a book
+- [x] AC5. `tests/sitecheck.py claims` holds `site/books.qmd` to a claim naming when a book
       repeats its report about a chapter record it could not use, and fails on a copy of that
       page with the claim removed.
-- [ ] AC6. `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test` passes.
+- [x] AC6. `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test` passes.
 
 ## Coverage
 
@@ -106,6 +106,7 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 ## Work log
 
 - 2026-08-30: created by /milestone-plan.
+- 2026-08-30: review — all six criteria verified with fresh evidence and ticked; suite green twice over the branch (519 plain, 981 with `--self-test`, both exit 0); consistency gate clean. Eight diff-bug findings recorded, pending triage at the gate.
 - 2026-08-30: review — AC1-AC4 verified against one plain suite run (519 checks, exit 0) and ticked; AC5/AC6 await the `--self-test` run. Three lenses ran: blame-history and prior-review found nothing, the diff-bug lens eight, pending triage at the gate.
 - 2026-08-30: review opened — branch pushed, draft PR #62; `cairn_validate` passes (exit 0), the generic profile's consistency-gate slot names no toolchain checks, and no DESIGN principle changed so `cairn_impact` is skipped. Suite runs and the three review lenses are in flight.
 - 2026-08-30: criteria audit ran in FULL mode (user-facing tier) over M061's and M062's criteria together in one fresh-context [O] reader; its M062 findings and their disposal are recorded in M061's work log.
@@ -148,4 +149,54 @@ otherwise; 519 checks, exit 0.
   report), `examples/book-nomarker/`'s missing-marker report at M05's count of 1 over the
   re-derived three chapters (`M05-AC6`), and `examples/book-placement/`'s two
   planted-superseded-record version-refused counts of 2 and 1 (`M60-AC4`). Each render exits 0.
+- AC5 — `M52: site/books.qmd states all 9 of the claim(s) this check holds it to` passes with the
+  new claim in the list, and the `--self-test` run's planted variant
+  `the books page with its repeated-report claim removed` is red, as required. Exit 0.
+- AC6 — `tests/run-tests.sh` passes (519 checks, exit 0) and `tests/run-tests.sh --self-test`
+  passes (981 checks, exit 0), both over the branch at 3ec1b9d.
+
+Consistency gate: `cairn_validate.py` exits 0, all checks pass, no advisory fired (the `release
+window` advisory did not fire). The `generic` profile's `consistency-gate` slot names no
+toolchain checks. No DESIGN principle changed — only Known-issues entries — so `cairn_impact`
+is skipped.
+
+### Findings
+
+Three fresh-context lenses ran. Blame-history: no findings. Prior-PR-comments: no findings; the
+`gh api .../pulls/comments` probe returned empty, so the GitHub thread surface was not walked,
+and the archived `## Review` record shows this diff resolving KI168, KI200 and KI202 rather than
+regressing them. The diff-bug lens reported eight, ranked below with its own ranking kept.
+
+- F1. `if builds or first == nil` reaches more than a marker-less book. `first` comes from the
+  records this chapter could read, so a book whose only marker sits in its last chapter has
+  `first == nil` in every chapter ahead of it while that chapter's record is stale — and each
+  reports every stale record it read. Verified by hand: a scratch three-chapter book with its
+  only marker in `two.qmd` and every record bumped to the superseded version draws the
+  version-refused report 3 times, naming `two.qmd` twice; the same shape at 40 chapters draws
+  780. On `main` it draws 0, which is the KI200 this milestone fixes. No acceptance criterion
+  fails — AC2 and the Scope name this rule in these words.
+- F2. The prose added to `site/books.qmd` and `CHANGELOG.md` says the extra reports come in "a
+  book with no placement marker anywhere". The scratch render above is a book with a marker and
+  it drew them, so the sentence states a narrower rule than the code implements. The AC5 claim
+  pins only the once-per-building-chapter half, so the second sentence is unguarded.
+- F3. AC3's "the marks still print" check cannot fail on the defect it names: `two.html` is
+  rendered from `two.qmd`'s own source, so `Nomark Three` prints whether or not the plant refiles
+  anything. This fixture builds no index section, so there is nowhere in it a refiled mark is
+  observable.
+- F4. AC3's count of 2 does not separate the shipped rule from the one it replaces for the
+  refiled-name report: with the report back inside `fold_undeclared` the same three-chapter
+  render gives 2. It does catch a revert of the gate to `if builds then` (0), which is what T6
+  probed; the block's header comment claims the wider separation.
+- F5. `nomarker_named` and `place_undeclared`'s `named=` use `grep -cF`, counting lines, where
+  `check_warning_count` deliberately uses `grep -oF | wc -l` and says why — two reports on one
+  line would count 2 there and 1 here, failing with a message about the report's wording.
+- F6. AC1's single-chapter run separates nothing: one chapter rendered, one reading, one section,
+  one book all give 1. It is a valid control; the criterion's text calls it more.
+- F7. AC3's plant renames `mark['index']` only, where AC1's plant also re-keys `record['sorts']`
+  and says why. `examples/book-nomarker/` carries no sort keys today and the check has no guard,
+  so the key half of `fold_undeclared`'s rebuild would silently stop being covered if it gained
+  one.
+- F8. KI200 is struck, but the behavior that replaced it (F1) is recorded nowhere, and
+  `DESIGN.md`'s store paragraph enumerates the reported cases without stating the counting rule
+  for the two store reports — the one place a reader would catch F1 by inspection.
 

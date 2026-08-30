@@ -6493,6 +6493,157 @@ NOADOPTPY
 fi
 
 # ---------------------------------------------------------------------------
+# M061-AC2 — a chapter AFTER the last placing chapter gains a placement marker
+# between two renders. Chapters render in book order, so three.qmd reads
+# four.qmd's PRE-marker record, still concludes it is the last chapter that
+# places anything, and takes `gamma` on; four.qmd then renders, sees its own
+# marker, and builds `gamma` too. Two chapters, one index, two sections.
+#
+# Derived by hand from the fixture and the store the run above left:
+#
+#   render 1 (four.qmd has just gained the marker)
+#     index.qmd  builds `alpha`; four.qmd's stored record carries no marker
+#                yet, so `gamma` is placed by nobody. One marker-position
+#                report (four chapters after it).
+#     three.qmd  reads that same pre-marker record, is the last placing
+#                chapter, has read every later record, and so builds `beta`
+#                AND takes `gamma` on. One marker-position report (two after).
+#     four.qmd   its own marker names `gamma`, so it builds that section. One
+#                marker-position report (one after: five.qmd).
+#     five.qmd   builds nothing, and is the chapter that has seen every
+#                record: three.qmd and four.qmd both recorded taking `gamma`
+#                on, so it draws the doubled-section report once.
+#     Four extension warnings; `gamma` on three.html and on four.html.
+#
+#   render 2 (nothing edited)
+#     index.qmd and three.qmd now read four.qmd's record WITH its marker, so
+#     `gamma` is placed at four.qmd and three.qmd takes nothing on. Three
+#     marker-position reports, no doubled-section report, `gamma` on
+#     four.html alone.
+#
+# Between the two, one chapter is rendered on its own each way, which is what
+# says WHICH chapter draws the report: five.qmd alone draws it, and four.qmd —
+# the chapter that gained the marker and prints a section for it — draws none.
+# ---------------------------------------------------------------------------
+read -r -d '' PLACE_SECTIONS_DOUBLED <<'MANIFEST' || true
+five.html	-
+four.html	qi-index-gamma	Index of Gamma
+index.html	qi-index-alpha	Index of Alpha
+three.html	qi-index-beta	Index of Beta
+three.html	qi-index-gamma	Index of Gamma
+two.html	-
+MANIFEST
+read -r -d '' PLACE_SECTIONS_MARKED <<'MANIFEST' || true
+five.html	-
+four.html	qi-index-gamma	Index of Gamma
+index.html	qi-index-alpha	Index of Alpha
+three.html	qi-index-beta	Index of Beta
+two.html	-
+MANIFEST
+
+# The marker appended to a chapter's source, with the chapter's own bytes kept
+# aside for the restore. Guarded: a chapter that already carries a marker for
+# that index would make the append a no-op and the runs below a story about
+# nothing.
+m061_add_marker() {   # <chapter file> <index name> <label>
+  local chapter="$1" name="$2" label="$3"
+  cp "$PLACE_DIR/$chapter" "$WORK/m061-$chapter.orig"
+  python3 - "$PLACE_DIR/$chapter" "$name" "$label" <<'ADDPY'
+import sys
+path, name, label = sys.argv[1:4]
+body = open(path, encoding='utf-8').read()
+opener = '::: {.qi-index-here'
+if opener in body:
+    sys.exit(f'FAIL: {label}: {path} already carries a placement marker, so '
+             f'appending one changes nothing this check can be about')
+with open(path, 'w', encoding='utf-8') as handle:
+    handle.write(body + f'\n::: {{.qi-index-here index="{name}"}}\n:::\n')
+ADDPY
+}
+
+m061_add_marker four.qmd gamma "M061-AC2"
+place_render place-doubled "M061-AC2 (the render made just after the marker was added)"
+check_book_sections "$CAPTURE_ROOT/place-doubled/_book" "M061-AC2" \
+  "$PLACE_SECTIONS_DOUBLED"
+check_warning_count "$WORK/place-doubled.log" "$WARN_DOUBLED" 1 "M061-AC2"
+{ grep -F -- "$WARN_DOUBLED" "$WORK/place-doubled.log" | grep -qF 'the index "gamma"'; } \
+  || { grep -F -- "$WARN_DOUBLED" "$WORK/place-doubled.log" >&2; fail "M061-AC2: the doubled-section report does not name gamma, the index printed twice"; }
+{ grep -F -- "$WARN_DOUBLED" "$WORK/place-doubled.log" | grep -qF 'three.qmd, four.qmd'; } \
+  || { grep -F -- "$WARN_DOUBLED" "$WORK/place-doubled.log" >&2; fail "M061-AC2: the doubled-section report does not name three.qmd and four.qmd, the two chapters carrying a section, in book order"; }
+check_warning_count "$WORK/place-doubled.log" "$WARN_DEFER" 0 \
+  "M061-AC2 (the section is on two pages, so nothing is unplaced)"
+check_extension_warning_count "$WORK/place-doubled.log" 4 \
+  "M061-AC2 (the doubling render emitted a warning this suite cannot name; its four are the three marker-position reports and the doubled-section report)"
+
+# WHICH chapter draws it, over that same doubled store. five.qmd builds no
+# index section at all and draws the report; four.qmd builds one of the two
+# and draws none.
+place_render place-doubled-fifth "M061-AC2 (five.qmd alone)" five.qmd
+check_warning_count "$WORK/place-doubled-fifth.log" "$WARN_DOUBLED" 1 \
+  "M061-AC2 (five.qmd alone draws it)"
+place_render place-doubled-fourth "M061-AC2 (four.qmd alone)" four.qmd
+check_warning_count "$WORK/place-doubled-fourth.log" "$WARN_DOUBLED" 0 \
+  "M061-AC2 (four.qmd is not the last chapter of the book, so it draws none)"
+
+place_render place-marked "M061-AC2 (the render after that)"
+check_book_sections "$CAPTURE_ROOT/place-marked/_book" "M061-AC2" \
+  "$PLACE_SECTIONS_MARKED"
+check_warning_count "$WORK/place-marked.log" "$WARN_DOUBLED" 0 \
+  "M061-AC2 (every chapter has read the new marker, so one section is printed)"
+check_warning_count "$WORK/place-marked.log" "$WARN_DEFER" 0 \
+  "M061-AC2 (the marker places the section, so nothing is unplaced)"
+pass "M061-AC2: where a chapter after the last placing one gains a placement marker between two renders, the next render prints that index in both chapters and the book's last chapter — neither of them — reports it once by name, and the render after that prints it in the marker's chapter alone and reports nothing"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M061 T7 — the same edit against a filter with the doubled-section report
+  # suppressed, and nothing else changed. The two sections are still printed,
+  # so what the case shows is the report doing the work rather than the edit
+  # failing to double anything.
+  # -------------------------------------------------------------------------
+  m061_mutant nodouble \
+    's{      if #carrying > 1 then\n}{      if false then\n}' \
+    "M061 T7 self-test"
+  python3 - "$M061W/nodouble/four.qmd" <<'NODOUBLEPY' \
+    || fail "M061 T7 self-test: the marker could not be appended to the copied chapter (its own FAIL line is above)"
+import sys
+path = sys.argv[1]
+body = open(path, encoding='utf-8').read()
+if '::: {.qi-index-here' in body:
+    sys.exit('FAIL: M061 T7 self-test: the copied chapter already carries a '
+             'placement marker, so appending one changes nothing')
+open(path, 'w', encoding='utf-8').write(
+    body + '\n::: {.qi-index-here index="gamma"}\n:::\n')
+NODOUBLEPY
+  ( cd "$M061W/nodouble" && quarto render --to html ) \
+    > "$WORK/m061-nodouble.log" 2>&1 \
+    || { tail -30 "$WORK/m061-nodouble.log" >&2; fail "M061 T7 self-test: the mutated render failed; the case below is about a report it draws, not about a broken render"; }
+  capture --project "$M061W/nodouble" html "m061-nodouble"
+  check_book_sections "$CAPTURE_ROOT/m061-nodouble/_book" "M061 T7 self-test" \
+    "$PLACE_SECTIONS_DOUBLED"
+  check_warning_count "$WORK/m061-nodouble.log" "$WARN_DOUBLED" 0 \
+    "M061 T7 self-test (the report is suppressed)"
+  pass "M061 T7 self-test: with the doubled-section report suppressed and nothing else changed, the same edit still prints the index in two chapters and the book says nothing — which is the silence the report turns into a finding"
+fi
+
+# The fixture goes back to what the repository holds, and the store with it:
+# the render after the restore still reads four.qmd's marker out of its stored
+# record, so it takes a second whole-book render to settle, and that one is
+# held to the ordinary second-render manifest rather than assumed.
+cp "$WORK/m061-four.qmd.orig" "$PLACE_DIR/four.qmd"
+cmp -s "$WORK/m061-four.qmd.orig" "$PLACE_DIR/four.qmd" \
+  || fail "M061-AC2: four.qmd was not restored to the bytes this check copied aside"
+place_render place-restored "M061-AC2 (the first render after the restore)"
+place_render place-rewarm "M061-AC2 (the second render after the restore)"
+check_book_sections "$CAPTURE_ROOT/place-rewarm/_book" "M061-AC2 (restored)" \
+  "$PLACE_SECTIONS_SECOND"
+check_warning_count "$WORK/place-rewarm.log" "$WARN_DOUBLED" 0 \
+  "M061-AC2 (restored)"
+check_warning_count "$WORK/place-rewarm.log" "$WARN_DEFER" 0 \
+  "M061-AC2 (restored)"
+pass "M061-AC2: with four.qmd restored, two further renders put the fixture back to the sections and the silence an ordinary second render prints"
+
+# ---------------------------------------------------------------------------
 # M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_record`
 # runs outside any `pcall`, and it used to walk that field with `ipairs` before
 # testing its type, so such a record raised and took the render down — through

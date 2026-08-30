@@ -282,8 +282,7 @@ run_scan() {
         "$WARN_MARKER_EMPTIED" "$WARN_MARKER_NOT_LAST" "$WARN_MARKER_DUP_STEM" \
         "$WARN_MARKER_DUP_NAMED" "$WARN_INDEX_BADNAME" \
         "$WARN_INDEX_STALE_NAME" "$WARN_BOOK_MARKER_SECOND_NAMED" \
-        "$WARN_BOOK_SORT_CONFLICT" "$WARN_BOOK_SORT_CONFLICT_NAMED" \
-        "$WARN_DEFER" "$WARN_DOUBLED" ;;
+        "$WARN_BOOK_SORT_CONFLICT" "$WARN_BOOK_SORT_CONFLICT_NAMED" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -863,16 +862,15 @@ MANIFEST
 # guarantee unproven.
 WARN_STORE_UNREADABLE='could not be read and were ignored'
 WARN_STORE_STALE='were written by a different version of this extension and were ignored'
-# The unplaced-section report, keyed on its value-free tail: everything before
-# it names the index, the chapter the section was owed to, and the chapters
-# that chapter could not read, all of which differ per book. M60 keyed it on a
-# sentence promising a further render would place the section, which M061
-# removed — a chapter whose record can never be written makes that promise
-# false on every render forever. Held to a live message by the report-key scan.
-WARN_DEFER='A chapter takes on an index no marker names only once it has read a usable record for every chapter after it'
-# The doubled-section report (M061), keyed on its value-free tail. Everything
-# before it names the index and the chapters carrying a section for it.
-WARN_DOUBLED='a render made before every chapter has read the new marker builds the section in each of them'
+# The unplaced-section report (M60/M061) and the doubled-section report (M061)
+# had their keys here. M063 hands an index no marker names to the book's last
+# chapter unconditionally, so no render can leave such a section unplaced or
+# print it in two chapters, and both reports were deleted with the recorded
+# state they read. The two sentences below are what those keys held, kept here
+# as the text M063-AC2 shows matching no warning this filter emits — a key is
+# not deleted quietly when a check is asserting its absence.
+RETIRED_DEFER='A chapter takes on an index no marker names only once it has read a usable record for every chapter after it'
+RETIRED_DOUBLED='a render made before every chapter has read the new marker builds the section in each of them'
 WARN_STORE_UNWRITABLE='could not record index marks for'
 WARN_MARKER_NOT_LAST='chapter(s) come after it'
 WARN_MARKER_SECOND='comes first in book order and carries one too'
@@ -3587,23 +3585,26 @@ if [ "${1:-}" = "--self-test" ]; then
   # key no warning in the filter contains, passed alongside a key that IS
   # live: the run must die naming the dead key, so what is shown is the scan
   # separating the two rather than refusing its whole argument list.
+  # The live key was the unplaced-section report's until M063 deleted that
+  # report; the stale-name key stands in its place, and is passed to the scan
+  # by the invocation above for the same reason.
   # -------------------------------------------------------------------------
   M061_DEADKEY='a sentence no warning this filter emits contains anywhere'
   if grep -RqF -- "$M061_DEADKEY" "$QI_EXT_DIR"; then
     fail "M061 T3 self-test: the filter carries the string this plant calls dead, so the scan would be right to accept it and the case below proves nothing"
   fi
   M061_KEYS_RC=0
-  python3 "$SCAN_DIR/mark-report-keys.py" "$WARN_DEFER" "$M061_DEADKEY" \
+  python3 "$SCAN_DIR/mark-report-keys.py" "$WARN_INDEX_STALE_NAME" "$M061_DEADKEY" \
     > "$WORK/m061-deadkey.log" 2>&1 || M061_KEYS_RC=$?
   [ "$M061_KEYS_RC" -ne 0 ] \
     || { cat "$WORK/m061-deadkey.log" >&2; fail "M061 T3 self-test: the report-key scan accepted a key matching no filter warning, so its green over the live keys says nothing"; }
   grep -qF "key <<$M061_DEADKEY>> matches 0 filter warnings" "$WORK/m061-deadkey.log" \
     || { cat "$WORK/m061-deadkey.log" >&2; fail "M061 T3 self-test: the scan failed, but not for the dead key this plant added — that failure is not the one being shown"; }
-  if grep -qF "$WARN_DEFER" "$WORK/m061-deadkey.log"; then
+  if grep -qF "$WARN_INDEX_STALE_NAME" "$WORK/m061-deadkey.log"; then
     cat "$WORK/m061-deadkey.log" >&2
-    fail "M061 T3 self-test: the scan also complained about the live unplaced-section key, so the failure is not the plant's alone"
+    fail "M061 T3 self-test: the scan also complained about the live stale-name key, so the failure is not the plant's alone"
   fi
-  pass "M061 T3 self-test: the report-key scan is red on a key matching no filter warning and names that key alone, so its green over the unplaced-section report's key holds that key to a live message"
+  pass "M061 T3 self-test: the report-key scan is red on a key matching no filter warning and names that key alone, so its green over the live keys holds each of them to a live message"
 fi
 
 python3 - "$CAPTURE_ROOT/self-xref-latex/self-xref.tex" <<'PY'
@@ -6266,10 +6267,10 @@ grep -qF 'Turing' "$CAPTURE_ROOT/book-removed/_book/last.html" \
 pass "M55-AC3: a record naming a declaration the book has since removed keeps its chapter's terms, filed in the first index the book still declares, and the report names that chapter and that name"
 
 # ---------------------------------------------------------------------------
-# M60 — where an HTML book's index sections land on a FIRST render.
+# M063 — where an HTML book's index sections land, on every render.
 # examples/book/ puts every marker in its last chapter, so it never asks this
-# fixture's question: which chapter takes on an index no marker names, when the
-# chapter that would take it on has not yet seen the chapters after it.
+# fixture's question: which chapter takes on an index no marker names, when it
+# is not the chapter the markers are in.
 # ---------------------------------------------------------------------------
 PLACE_DIR="examples/book-placement"
 
@@ -6328,82 +6329,74 @@ PLACEPY
 
 # ORACLE — derived by hand from examples/book-placement/. The book renders five
 # chapters, in the order index.qmd, two.qmd, three.qmd, four.qmd, five.qmd, and
-# declares `alpha`, `beta` and `gamma`; the marker in index.qmd names no index
-# and so places the first declared one, the marker in three.qmd names `beta`,
-# and no marker anywhere names `gamma`. On a FIRST render three.qmd is the last
-# chapter that places anything but has not yet seen four.qmd's or five.qmd's
-# record, so it does not take `gamma` on and no page carries that section —
-# even though index.qmd, two.qmd, four.qmd and five.qmd all mark a term that
-# files in it. The rows are in the order the sweep walks the rendered pages,
-# which is every `.html` under the book's output directory sorted as a string:
-# `five` before `four` (`i` before `o`), both before `index`, then `three`,
-# then `two`.
-read -r -d '' PLACE_SECTIONS_FIRST <<'MANIFEST' || true
-five.html	-
+# declares FOUR indexes: `alpha`, `beta`, `gamma` and `delta`. The marker in
+# index.qmd names no index and so places the first declared one, `alpha`; the
+# marker in three.qmd names `beta`; no marker anywhere names `gamma` or
+# `delta`, and nothing in the book marks a term in `delta`.
+#
+# Under M063's rule an index no marker names goes to the book's LAST chapter,
+# five.qmd, whatever any record says — so `gamma`'s section is on five.html on
+# the first render and on every render after it, and `delta`, which nothing
+# marks, prints no section anywhere however it is placed. five.qmd carries no
+# placement marker of its own, so `place_index` appends that section at the end
+# of the chapter's body.
+#
+# One manifest, not two: M60 needed a first-render manifest and a second-render
+# one because the chapter taking `gamma` on was read off the store, which the
+# first render had not written yet (KI199). Two renders matching ONE manifest
+# is the property this milestone adds, so both legs below are compared against
+# this.
+#
+# The rows are in the order the sweep walks the rendered pages, which is every
+# `.html` under the book's output directory sorted as a string: `five` before
+# `four` (`i` before `o`), both before `index`, then `three`, then `two`.
+read -r -d '' PLACE_SECTIONS <<'MANIFEST' || true
+five.html	qi-index-gamma	Index of Gamma
 four.html	-
 index.html	qi-index-alpha	Index of Alpha
 three.html	qi-index-beta	Index of Beta
-two.html	-
-MANIFEST
-# ...and on a SECOND render three.qmd has seen every chapter's record, so it
-# takes `gamma` on, after the index its own marker places and on that one page.
-read -r -d '' PLACE_SECTIONS_SECOND <<'MANIFEST' || true
-five.html	-
-four.html	-
-index.html	qi-index-alpha	Index of Alpha
-three.html	qi-index-beta	Index of Beta
-three.html	qi-index-gamma	Index of Gamma
 two.html	-
 MANIFEST
 
 rm -rf "$PLACE_DIR/_book" "$PLACE_DIR/.quarto"
 ( cd "$PLACE_DIR" && quarto render --to html ) > "$WORK/place-first.log" 2>&1 \
-  || { tail -30 "$WORK/place-first.log" >&2; fail "M60-AC1: the placement fixture failed to render to HTML from an empty store"; }
+  || { tail -30 "$WORK/place-first.log" >&2; fail "M063-AC2: the placement fixture failed to render to HTML from an empty store"; }
 capture --project "$PLACE_DIR" html "place-first"
-check_book_sections "$CAPTURE_ROOT/place-first/_book" "M60-AC1" \
-  "$PLACE_SECTIONS_FIRST"
-
-# M60-AC3 — and the book says so, once, naming the index it did not place.
-# Drawn by five.qmd, the last chapter in book order: it is the only chapter
-# that has seen every record, so it is the only one that can know no marker
-# anywhere names `gamma`.
-check_warning_count "$WORK/place-first.log" "$WARN_DEFER" 1 "M60-AC3"
-{ grep -F -- "$WARN_DEFER" "$WORK/place-first.log" | grep -qF 'the index "gamma"'; } \
-  || { grep -F -- "$WARN_DEFER" "$WORK/place-first.log" >&2; fail "M60-AC3: the deferral report does not name the index that was not placed"; }
-# Every warning this first render emits is one this suite can name: the two
-# marker-position reports the fixture's own shape draws (a marker in index.qmd
-# with four chapters after it, and one in three.qmd with two) and the unplaced-
-# section report above. A record refused, an index folded, a target dangling or
-# a section doubled would each be a fourth.
-check_extension_warning_count "$WORK/place-first.log" 3 \
-  "M60-AC1/AC3 (the placement fixture's first render emitted a warning this suite cannot name; its three are the two marker-position reports and the unplaced-section report)"
-pass "M60-AC1/AC3: rendered from an empty store, the placement fixture prints an index section only where a marker in that chapter places one, prints none for the index no marker names, and reports that index once by name"
+check_book_sections "$CAPTURE_ROOT/place-first/_book" "M063-AC2 (from an empty store)" \
+  "$PLACE_SECTIONS"
+# Every warning this render emits is one this suite can name: the two
+# marker-position reports the fixture's own shape draws — a marker in index.qmd
+# with four chapters after it, and one in three.qmd with two. five.qmd builds
+# `gamma`'s section and has no chapter after it, so it draws none. A record
+# refused, an index folded or a target dangling would each be a third.
+check_extension_warning_count "$WORK/place-first.log" 2 \
+  "M063-AC2 (the placement fixture's first render emitted a warning this suite cannot name; its two are the marker-position reports)"
 
 ( cd "$PLACE_DIR" && quarto render --to html ) > "$WORK/place-second.log" 2>&1 \
-  || { tail -30 "$WORK/place-second.log" >&2; fail "M60-AC2: the placement fixture failed its second render"; }
+  || { tail -30 "$WORK/place-second.log" >&2; fail "M063-AC2: the placement fixture failed its second render"; }
 capture --project "$PLACE_DIR" html "place-second"
-check_book_sections "$CAPTURE_ROOT/place-second/_book" "M60-AC2" \
-  "$PLACE_SECTIONS_SECOND"
-check_warning_count "$WORK/place-second.log" "$WARN_DEFER" 0 \
-  "M60-AC2 (the section was placed, so nothing defers it)"
+check_book_sections "$CAPTURE_ROOT/place-second/_book" "M063-AC2 (the render after it)" \
+  "$PLACE_SECTIONS"
 check_extension_warning_count "$WORK/place-second.log" 2 \
-  "M60-AC2 (the placement fixture's second render emitted a warning this suite cannot name; its two are the marker-position reports)"
-check_warning_count "$WORK/place-second.log" "$WARN_DOUBLED" 0 \
-  "M60-AC2/M061 (one chapter took the section on, so nothing is doubled)"
-check_warning_count "$WORK/place-first.log" "$WARN_DOUBLED" 0 \
-  "M60-AC1/M061 (no chapter took the section on, so nothing is doubled)"
-pass "M60-AC2: a second render over the store the first left places the index no marker names in the last chapter that places one, on that page alone, and draws no deferral report"
+  "M063-AC2 (the placement fixture's second render emitted a warning this suite cannot name; its two are the marker-position reports)"
 
-# M60-AC1's other half: the fixture whose markers are all in its LAST chapter
-# is unchanged by any of this. That chapter has no chapter after it, so it has
-# the whole picture on a first render and takes `places` on exactly as it did.
-# Read off the first render captured at the top of this section.
-check_section_ids "$CAPTURE_ROOT/book-html/_book/last.html" \
-  "M60-AC1 (examples/book, rendered from an empty store)" \
-  "$HTML_SECTION_ID-main $HTML_SECTION_ID-people $HTML_SECTION_ID-places"
-check_warning_count "$WORK/book-html.log" "$WARN_DEFER" 0 \
-  "M60-AC1 (examples/book defers nothing)"
-pass "M60-AC1: examples/book/, whose markers are all in its last chapter, still carries its three declared sections in last.html on a first render and defers nothing"
+# ...and neither render draws either of the two reports M063 retired. Asserted
+# against the sentences those reports carried rather than against a key still
+# in the run, because the point is that no warning the filter emits contains
+# them any more: the scan that holds a live key to a live message cannot say
+# anything about a message that is gone.
+for M063_RETIRED in "$RETIRED_DEFER" "$RETIRED_DOUBLED"; do
+  if grep -RqF -- "$M063_RETIRED" "$QI_EXT_DIR"; then
+    fail "M063-AC2: the filter still carries <<$M063_RETIRED>>, one of the two report sentences this milestone retired"
+  fi
+  for M063_LOG in place-first place-second; do
+    if grep -qF -- "$M063_RETIRED" "$WORK/$M063_LOG.log"; then
+      grep -F -- "$M063_RETIRED" "$WORK/$M063_LOG.log" >&2
+      fail "M063-AC2 ($M063_LOG): the render drew a report carrying <<$M063_RETIRED>>"
+    fi
+  done
+done
+pass "M063-AC2: rendered twice from an empty store, the placement fixture prints each marked index in the chapter carrying the first marker that names it and the index no marker names in the book's last chapter, both renders match one manifest, and neither draws either retired report"
 
 # ---------------------------------------------------------------------------
 # M60-AC4 — the report for a record written by a superseded version is drawn
@@ -6416,20 +6409,22 @@ pass "M60-AC1: examples/book/, whose markers are all in its last chapter, still 
 # by hand from the fixture:
 #
 #   (1) the record belongs to four.qmd, which places nothing and renders
-#       fourth of five, and the whole book is rendered. index.qmd and three.qmd
-#       each build an index and each read the plant; two.qmd builds none and
-#       reads it in silence; four.qmd overwrites it before building anything,
-#       and five.qmd builds none. three.qmd cannot use four.qmd's record, so it
-#       does not take `gamma` on and builds `beta` alone — still a chapter that
-#       builds. Chapters that build an index: 2. Expected reports: 2.
+#       fourth of five, and the whole book is rendered. index.qmd builds
+#       `alpha` and three.qmd `beta`, and each reads the plant; two.qmd builds
+#       none and reads it in silence; four.qmd overwrites it before building
+#       anything; five.qmd builds `gamma`, the index no marker names, but
+#       renders after four.qmd and so reads the record THIS render wrote rather
+#       than the plant. Chapters that build a section: 3. Chapters that build
+#       one AND read the plant: 2. Expected reports: 2.
 #
 #   (2) the record belongs to three.qmd, which DOES place an index, and
 #       index.qmd alone is rendered. One chapter renders, it builds `alpha`,
 #       and the plant is still there when it reads. Chapters that build an
 #       index: 1. Expected reports: 1.
 #
-# 2 is neither the fixture's chapter count (5) nor one report for the book, so
-# the two runs together separate once-per-building-chapter from both.
+# 2 is none of the fixture's chapter count (5), the chapters that build a
+# section (3), or one report for the book, so the two runs together separate
+# once-per-building-chapter-that-read-it from all three.
 # ---------------------------------------------------------------------------
 PLACE_STORE="$PLACE_DIR/.quarto/$STORE_DIR"
 place_stale() {   # <chapter file> <slug> <render argument or ""> <expected count> <label>
@@ -6467,11 +6462,13 @@ place_stale four.qmd stale-last '' 2 \
   'a record in a chapter that places nothing and renders fourth of five, whole book rendered, two chapters building'
 place_stale three.qmd stale-placing index.qmd 1 \
   'a record in a chapter that places an index, one chapter rendered, one chapter building'
-pass "M60-AC4: the report for a record written by a superseded version is drawn once per chapter that builds an index — twice in a whole-book render two of whose five chapters build one, and once where a single building chapter is rendered — and names the chapter whose record it refused"
+pass "M60-AC4: the report for a record written by a superseded version is drawn once per chapter that builds an index and reads it — twice in a whole-book render three of whose five chapters build one and two of those read the plant, and once where a single building chapter is rendered — and names the chapter whose record it refused"
 
 # ---------------------------------------------------------------------------
-# M061 — what an HTML book says about an index section it could not place, one
-# it printed twice, and one whose chapter record can never be written.
+# M063 — the store shapes that used to change where an HTML book's index
+# sections land: a record claiming a marker its chapter's source does not
+# carry, a chapter gaining a marker between two renders, a chapter whose record
+# can never be written, and a store carrying the fields M063 retired.
 #
 # Every check below is derived by hand against a WARM store: one where each of
 # the five chapters has just written its own record from its own source. The
@@ -6505,23 +6502,42 @@ rm -rf "$M061W/base/_book"
 [ -d "$M061W/base/.quarto/$STORE_DIR" ] \
   || fail "M061: the copied fixture carries no store, so every planted run below would start from an empty one rather than the warm store these checks are derived against"
 
-# One copy of that tree, with the extension spliced in beside it and one
-# `perl` substitution applied to the filter. The substitution is checked to
-# have changed something: a pattern that stopped matching would leave the
-# filter intact and the run below would be reported as a check failing to
-# matter when nothing had been mutated.
-m061_mutant() {   # <slug> <perl expression> <label>
-  local slug="$1" expression="$2" label="$3"
+# One copy of that tree, with the extension spliced in beside it. The copy
+# renders through its own `_extensions/index`, so a mutation applied to it
+# cannot reach the repository's filter or any other run.
+m063_tree() {   # <slug>
+  local slug="$1"
   rm -rf "$M061W/$slug"
   cp -R "$M061W/base" "$M061W/$slug"
   mkdir -p "$M061W/$slug/_extensions"
   cp -R "$QI_EXT_DIR" "$M061W/$slug/_extensions/index"
+}
+
+# ...and one `perl` substitution applied to that copy's filter. The
+# substitution is checked to have changed something: a pattern that stopped
+# matching would leave the filter intact and the run below would be reported as
+# a check failing to matter when nothing had been mutated.
+m061_mutant() {   # <slug> <perl expression> <label>
+  local slug="$1" expression="$2" label="$3"
+  m063_tree "$slug"
   perl -0777 -pe "$expression" \
     "$M061W/$slug/_extensions/index/modules/book.lua" > "$M061W/$slug-spliced"
   if cmp -s "$M061W/$slug/_extensions/index/modules/book.lua" "$M061W/$slug-spliced"; then
     fail "$label: the substitution aimed at the filter changed nothing, so the render below would be reported as a check failing to matter when the fault is this mutation's"
   fi
   mv "$M061W/$slug-spliced" "$M061W/$slug/_extensions/index/modules/book.lua"
+}
+
+# A whole-book render of one such copy, held to a section manifest. The capture
+# slug is separate from the tree's, so a tree rendered twice writes two sets of
+# artifacts rather than one silently overwriting the other.
+m063_tree_render() {   # <slug> <capture slug> <label> <manifest>
+  local slug="$1" cap="$2" label="$3" manifest="$4"
+  ( cd "$M061W/$slug" && quarto render --to html ) \
+    > "$WORK/m063-$cap.log" 2>&1 \
+    || { tail -30 "$WORK/m063-$cap.log" >&2; fail "$label: the render failed; IP2 forbids any of this taking a render down"; }
+  capture --project "$M061W/$slug" html "m063-$cap"
+  check_book_sections "$CAPTURE_ROOT/m063-$cap/_book" "$label" "$manifest"
 }
 
 # One substitution on one record, from the filter's own store, and guarded both
@@ -6545,127 +6561,92 @@ PLANTPY
 }
 
 # ---------------------------------------------------------------------------
-# M061-AC1 — a stored record claiming a placement marker its chapter's source
-# does not carry. five.qmd renders LAST, so every chapter before it reads the
-# claim and none of them can correct it; five.qmd itself rebuilds its own
-# record from its own source, so by the time the book-wide reports are drawn
-# the claim is gone and `gamma` is named by no marker at all.
+# M063-AC2, continued — a stored record claiming a placement marker its
+# chapter's source does not carry. five.qmd renders LAST, so every chapter
+# before it reads the claim and none of them can correct it; five.qmd itself
+# rebuilds its own record from its own source, so the claim never reaches the
+# chapter it is about.
+#
+# Under M60's rule this store moved `gamma`'s section: index.qmd and three.qmd
+# read the claim, concluded five.qmd was the last chapter placing anything, and
+# left the section to a chapter whose own record then said it had no marker —
+# so no page carried it at all. Under M063's rule the section goes to the
+# book's last chapter whatever any record claims, so the pages are the pages an
+# unplanted render prints.
 #
 # Derived by hand from the fixture, chapter by chapter:
 #
-#   index.qmd  reads the plant, so alpha=1, beta=3, gamma=5 and the last
-#              placing chapter is five.qmd. It builds `alpha` (its own marker)
-#              and, not being last, takes nothing else on. One marker-position
-#              report: four chapters come after it.
+#   index.qmd  reads the plant, so alpha=1, beta=3, gamma=5. It builds `alpha`
+#              (its own marker) and, not being the book's last chapter, takes
+#              nothing else on. One marker-position report: four chapters come
+#              after it.
 #   two.qmd    places nothing and builds nothing.
-#   three.qmd  reads the plant too, so it is NOT the last placing chapter and
-#              builds `beta` alone. One marker-position report: two after it.
+#   three.qmd  reads the plant too, and builds `beta` alone. One marker-
+#              position report: two chapters after it.
 #   four.qmd   places nothing and builds nothing.
 #   five.qmd   its own record is built in memory from its own source and
-#              carries no marker, so gamma is placed by nobody, the last
-#              placing chapter is three.qmd, and three.qmd's record says it
-#              took `beta` on and nothing else. One unplaced-section report.
+#              carries no marker, so `gamma` is placed by nobody and the book's
+#              last chapter takes it on — which is this chapter. No chapter
+#              comes after it, so it draws no marker-position report.
 #
-# Three extension warnings, and the section manifest is the one an ordinary
-# FIRST render prints — the same rows, for an entirely different reason.
+# Two extension warnings, and the ordinary manifest.
 # ---------------------------------------------------------------------------
-place_plant_marker five.qmd gamma "M061-AC1"
-place_render place-phantom "M061-AC1"
+place_plant_marker five.qmd gamma "M063-AC2 (a phantom marker)"
+place_render place-phantom "M063-AC2 (a phantom marker)"
 cp "$WORK/m061-five.qmd-record.json" "$PLACE_STORE/five.qmd$STORE_SUFFIX"
-check_book_sections "$CAPTURE_ROOT/place-phantom/_book" "M061-AC1" \
-  "$PLACE_SECTIONS_FIRST"
-check_warning_count "$WORK/place-phantom.log" "$WARN_DEFER" 1 "M061-AC1"
-{ grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" | grep -qF 'the index "gamma"'; } \
-  || { grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" >&2; fail "M061-AC1: the unplaced-section report does not name gamma, the index no section was printed for"; }
-{ grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" | grep -qF 'goes to three.qmd'; } \
-  || { grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" >&2; fail "M061-AC1: the unplaced-section report does not name three.qmd, the chapter the section was owed to"; }
-{ grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" | grep -qF 'could not read then: none'; } \
-  || { grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" >&2; fail "M061-AC1: the unplaced-section report names a chapter as unreadable, though the store it was drawn over was warm and three.qmd read every record"; }
-check_warning_count "$WORK/place-phantom.log" "$WARN_DOUBLED" 0 \
-  "M061-AC1 (no page carries the section, so nothing is doubled)"
-check_extension_warning_count "$WORK/place-phantom.log" 3 \
-  "M061-AC1 (the phantom-marker render emitted a warning this suite cannot name; its three are the two marker-position reports and the unplaced-section report)"
-pass "M061-AC1: over a store whose five.qmd record claims a placement marker its source does not carry, the book prints no gamma section on any page and reports that index once by name, naming the chapter the section was owed to and no chapter as unreadable"
+check_book_sections "$CAPTURE_ROOT/place-phantom/_book" "M063-AC2 (a phantom marker)" \
+  "$PLACE_SECTIONS"
+check_extension_warning_count "$WORK/place-phantom.log" 2 \
+  "M063-AC2 (the phantom-marker render emitted a warning this suite cannot name; its two are the marker-position reports)"
+pass "M063-AC2: over a store whose five.qmd record claims a placement marker its source does not carry, the book prints the same sections on the same pages as an unplanted render — a stale claim about where a marker is no longer moves the index no marker names"
 
-if [ "${1:-}" = "--self-test" ]; then
-  # -------------------------------------------------------------------------
-  # M061 T6 — the same store against a filter that decides whether to draw the
-  # unplaced-section report the way M60 did: from whether the placing chapter
-  # could see every later record, rather than from what that chapter recorded
-  # having taken on. One substitution and nothing moved.
-  #
-  # Under it the run above goes SILENT: three.qmd read every record of a warm
-  # store, so the re-derived picture says it had everything it needed, while
-  # the section it did not print is still missing from every page.
-  # -------------------------------------------------------------------------
-  m061_mutant noadopt \
-    's{ and not took\[name\]\n}{ and #(placer.unseen or {}) > 0\n}' \
-    "M061 T6 self-test"
-  python3 - "$M061W/noadopt/.quarto/$STORE_DIR/five.qmd$STORE_SUFFIX" <<'NOADOPTPY' \
-    || fail "M061 T6 self-test: the phantom marker could not be planted in the copied store (its own FAIL line is above)"
-import json, sys
-path = sys.argv[1]
-record = json.load(open(path, encoding='utf-8'))
-if 'gamma' in (record.get('marker') or []):
-    sys.exit('FAIL: M061 T6 self-test: the copied record already claims a '
-             'placement marker for gamma, so the plant changes nothing')
-record['marker'] = ['gamma']
-json.dump(record, open(path, 'w', encoding='utf-8'))
-NOADOPTPY
-  ( cd "$M061W/noadopt" && quarto render --to html ) \
-    > "$WORK/m061-noadopt.log" 2>&1 \
-    || { tail -30 "$WORK/m061-noadopt.log" >&2; fail "M061 T6 self-test: the mutated render failed; the case below is about a report it draws, not about a broken render"; }
-  capture --project "$M061W/noadopt" html "m061-noadopt"
-  # The section is missing from every page here exactly as it is above, so what
-  # separates the two runs is the report and nothing else.
-  check_book_sections "$CAPTURE_ROOT/m061-noadopt/_book" "M061 T6 self-test" \
-    "$PLACE_SECTIONS_FIRST"
-  check_warning_count "$WORK/m061-noadopt.log" "$WARN_DEFER" 0 \
-    "M061 T6 self-test (the re-derived picture says the chapter saw everything)"
-  pass "M061 T6 self-test: with the unplaced-section report decided by whether the placing chapter could see every later record instead of by what it recorded taking on, the same store prints the same pages and says nothing at all — which is the silence reading the recorded adoption turns into a report"
-fi
+# The one substitution every "shown red" run below uses: the placement rule
+# M063 supersedes, restored. `last` — the last chapter of the book that places
+# an index, derived from the same `placing` map the live rule reads — takes the
+# place of the book's last chapter, and nothing else moves. It is the rule
+# KI199 is about: each chapter derives `placing` from a different mixture of
+# this render's records and the previous render's, so two chapters of one
+# render can name two different `last` chapters.
+#
+# What it deliberately does NOT restore is M60's `later` guard, which held the
+# adoption back until a chapter had read a usable record for every chapter
+# after it. That guard was the deferral machinery, not the placement rule, and
+# it is what the two retired reports spoke for; restoring it would make each
+# run below a story about deferral rather than about which chapter the section
+# lands in.
+M063_LASTPLACER_MUTATION='s{  if first ~= nil and ctx\.position == #ctx\.chapters then\n}{  local last = nil\n  for _, nm in ipairs(qi_indexes.names()) do\n    local at = placing[nm]\n    if at ~= nil and (last == nil or at > last) then last = at end\n  end\n  if first ~= nil and ctx.position == last then\n}'
 
 # ---------------------------------------------------------------------------
-# M061-AC2 — a chapter AFTER the last placing chapter gains a placement marker
-# between two renders. Chapters render in book order, so three.qmd reads
-# four.qmd's PRE-marker record, still concludes it is the last chapter that
-# places anything, and takes `gamma` on; four.qmd then renders, sees its own
-# marker, and builds `gamma` too. Two chapters, one index, two sections.
+# M063-AC1 — KI199's own case: a chapter AFTER the last placing chapter gains a
+# placement marker between two renders. This is what the milestone is for, so
+# it is run over a scratch copy of the warm fixture rather than over the
+# repository's, and its two renders are held to ONE manifest.
 #
-# Derived by hand from the fixture and the store the run above left:
+# Under the superseded rule the two renders differed. Chapters render in book
+# order, so on the render just after the edit three.qmd read four.qmd's
+# PRE-marker record, concluded it was still the last chapter placing anything,
+# and took `gamma` on; four.qmd then rendered, saw its own marker, and built
+# `gamma` too — the same index in two chapters of one book. Under M063's rule
+# `gamma` is placed by four.qmd's marker and nobody adopts it, on that render
+# and on every one after.
 #
-#   render 1 (four.qmd has just gained the marker)
-#     index.qmd  builds `alpha`; four.qmd's stored record carries no marker
-#                yet, so `gamma` is placed by nobody. One marker-position
-#                report (four chapters after it).
-#     three.qmd  reads that same pre-marker record, is the last placing
-#                chapter, has read every later record, and so builds `beta`
-#                AND takes `gamma` on. One marker-position report (two after).
-#     four.qmd   its own marker names `gamma`, so it builds that section. One
-#                marker-position report (one after: five.qmd).
-#     five.qmd   builds nothing, and is the chapter that has seen every
-#                record: three.qmd and four.qmd both recorded taking `gamma`
-#                on, so it draws the doubled-section report once.
-#     Four extension warnings; `gamma` on three.html and on four.html.
+# Derived by hand from the fixture and the warm store the copy carries:
 #
-#   render 2 (nothing edited)
-#     index.qmd and three.qmd now read four.qmd's record WITH its marker, so
-#     `gamma` is placed at four.qmd and three.qmd takes nothing on. Three
-#     marker-position reports, no doubled-section report, `gamma` on
-#     four.html alone.
+#   index.qmd  reads four.qmd's pre-marker record; builds `alpha`. One
+#              marker-position report (four chapters after it).
+#   two.qmd    builds nothing.
+#   three.qmd  reads the same pre-marker record; builds `beta` and takes
+#              nothing on, not being the book's last chapter. One marker-
+#              position report (two after).
+#   four.qmd   its own marker names `gamma`, so it builds that section. One
+#              marker-position report (one after: five.qmd).
+#   five.qmd   the book's last chapter. It reads four.qmd's record as THIS
+#              render wrote it, so `gamma` is placed and only `delta` is left
+#              unplaced — and nothing in the book marks a term in `delta`, so
+#              it prints no section. No chapter after it, so no report.
 #
-# Between the two, one chapter is rendered on its own each way, which is what
-# says WHICH chapter draws the report: five.qmd alone draws it, and four.qmd —
-# the chapter that gained the marker and prints a section for it — draws none.
+# Three extension warnings on each of the two renders.
 # ---------------------------------------------------------------------------
-read -r -d '' PLACE_SECTIONS_DOUBLED <<'MANIFEST' || true
-five.html	-
-four.html	qi-index-gamma	Index of Gamma
-index.html	qi-index-alpha	Index of Alpha
-three.html	qi-index-beta	Index of Beta
-three.html	qi-index-gamma	Index of Gamma
-two.html	-
-MANIFEST
 read -r -d '' PLACE_SECTIONS_MARKED <<'MANIFEST' || true
 five.html	-
 four.html	qi-index-gamma	Index of Gamma
@@ -6678,10 +6659,9 @@ MANIFEST
 # aside for the restore. Guarded: a chapter that already carries a marker for
 # that index would make the append a no-op and the runs below a story about
 # nothing.
-m061_add_marker() {   # <chapter file> <index name> <label>
-  local chapter="$1" name="$2" label="$3"
-  cp "$PLACE_DIR/$chapter" "$WORK/m061-$chapter.orig"
-  python3 - "$PLACE_DIR/$chapter" "$name" "$label" <<'ADDPY'
+m063_add_marker() {   # <chapter path> <index name> <label>
+  local path="$1" name="$2" label="$3"
+  python3 - "$path" "$name" "$label" <<'ADDPY'
 import sys
 path, name, label = sys.argv[1:4]
 body = open(path, encoding='utf-8').read()
@@ -6694,122 +6674,120 @@ with open(path, 'w', encoding='utf-8') as handle:
 ADDPY
 }
 
-m061_add_marker four.qmd gamma "M061-AC2"
-place_render place-doubled "M061-AC2 (the render made just after the marker was added)"
-check_book_sections "$CAPTURE_ROOT/place-doubled/_book" "M061-AC2" \
-  "$PLACE_SECTIONS_DOUBLED"
-check_warning_count "$WORK/place-doubled.log" "$WARN_DOUBLED" 1 "M061-AC2"
-{ grep -F -- "$WARN_DOUBLED" "$WORK/place-doubled.log" | grep -qF 'the index "gamma"'; } \
-  || { grep -F -- "$WARN_DOUBLED" "$WORK/place-doubled.log" >&2; fail "M061-AC2: the doubled-section report does not name gamma, the index printed twice"; }
-{ grep -F -- "$WARN_DOUBLED" "$WORK/place-doubled.log" | grep -qF 'three.qmd, four.qmd'; } \
-  || { grep -F -- "$WARN_DOUBLED" "$WORK/place-doubled.log" >&2; fail "M061-AC2: the doubled-section report does not name three.qmd and four.qmd, the two chapters carrying a section, in book order"; }
-check_warning_count "$WORK/place-doubled.log" "$WARN_DEFER" 0 \
-  "M061-AC2 (the section is on two pages, so nothing is unplaced)"
-check_extension_warning_count "$WORK/place-doubled.log" 4 \
-  "M061-AC2 (the doubling render emitted a warning this suite cannot name; its four are the three marker-position reports and the doubled-section report)"
-
-# WHICH chapter draws it, over that same doubled store. five.qmd builds no
-# index section at all and draws the report; four.qmd builds one of the two
-# and draws none.
-place_render place-doubled-fifth "M061-AC2 (five.qmd alone)" five.qmd
-check_warning_count "$WORK/place-doubled-fifth.log" "$WARN_DOUBLED" 1 \
-  "M061-AC2 (five.qmd alone draws it)"
-place_render place-doubled-fourth "M061-AC2 (four.qmd alone)" four.qmd
-check_warning_count "$WORK/place-doubled-fourth.log" "$WARN_DOUBLED" 0 \
-  "M061-AC2 (four.qmd is not the last chapter of the book, so it draws none)"
-
-place_render place-marked "M061-AC2 (the render after that)"
-check_book_sections "$CAPTURE_ROOT/place-marked/_book" "M061-AC2" \
+m063_tree marked
+m063_add_marker "$M061W/marked/four.qmd" gamma "M063-AC1" \
+  || fail "M063-AC1: the marker could not be appended to the copied chapter (its own FAIL line is above)"
+m063_tree_render marked marked-one \
+  "M063-AC1 (the render made just after the marker was added)" \
   "$PLACE_SECTIONS_MARKED"
-check_warning_count "$WORK/place-marked.log" "$WARN_DOUBLED" 0 \
-  "M061-AC2 (every chapter has read the new marker, so one section is printed)"
-check_warning_count "$WORK/place-marked.log" "$WARN_DEFER" 0 \
-  "M061-AC2 (the marker places the section, so nothing is unplaced)"
-pass "M061-AC2: where a chapter after the last placing one gains a placement marker between two renders, the next render prints that index in both chapters and the book's last chapter — neither of them — reports it once by name, and the render after that prints it in the marker's chapter alone and reports nothing"
+check_extension_warning_count "$WORK/m063-marked-one.log" 3 \
+  "M063-AC1 (the render just after the edit emitted a warning this suite cannot name; its three are the marker-position reports of index.qmd, three.qmd and four.qmd)"
+m063_tree_render marked marked-two "M063-AC1 (the render after that)" \
+  "$PLACE_SECTIONS_MARKED"
+check_extension_warning_count "$WORK/m063-marked-two.log" 3 \
+  "M063-AC1 (the second render emitted a warning this suite cannot name; its three are the same marker-position reports)"
+pass "M063-AC1: where a chapter after the last placing one gains a placement marker between two renders, the render made immediately after prints that index in the marker's chapter alone — and so does the render after it, against the same manifest"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
-  # M061 T7 — the same edit against a filter with the doubled-section report
-  # suppressed, and nothing else changed. The two sections are still printed,
-  # so what the case shows is the report doing the work rather than the edit
-  # failing to double anything.
+  # M063 T5 — the same edit against a copy of the tree whose only change
+  # restores the superseded rule, and nothing else moved. Under it the render
+  # just after the edit prints `gamma` in three.qmd AND in four.qmd, which is
+  # the doubling KI199 names and what the manifest above would accept if it
+  # were not sensitive to which chapter the section lands in.
   # -------------------------------------------------------------------------
-  m061_mutant nodouble \
-    's{      if #carrying > 1 and marks_in\(records, name\) then\n}{      if false then\n}' \
-    "M061 T7 self-test"
-  python3 - "$M061W/nodouble/four.qmd" <<'NODOUBLEPY' \
-    || fail "M061 T7 self-test: the marker could not be appended to the copied chapter (its own FAIL line is above)"
-import sys
-path = sys.argv[1]
-body = open(path, encoding='utf-8').read()
-if '::: {.qi-index-here' in body:
-    sys.exit('FAIL: M061 T7 self-test: the copied chapter already carries a '
-             'placement marker, so appending one changes nothing')
-open(path, 'w', encoding='utf-8').write(
-    body + '\n::: {.qi-index-here index="gamma"}\n:::\n')
-NODOUBLEPY
-  ( cd "$M061W/nodouble" && quarto render --to html ) \
-    > "$WORK/m061-nodouble.log" 2>&1 \
-    || { tail -30 "$WORK/m061-nodouble.log" >&2; fail "M061 T7 self-test: the mutated render failed; the case below is about a report it draws, not about a broken render"; }
-  capture --project "$M061W/nodouble" html "m061-nodouble"
-  check_book_sections "$CAPTURE_ROOT/m061-nodouble/_book" "M061 T7 self-test" \
-    "$PLACE_SECTIONS_DOUBLED"
-  check_warning_count "$WORK/m061-nodouble.log" "$WARN_DOUBLED" 0 \
-    "M061 T7 self-test (the report is suppressed)"
-  pass "M061 T7 self-test: with the doubled-section report suppressed and nothing else changed, the same edit still prints the index in two chapters and the book says nothing — which is the silence the report turns into a finding"
+  read -r -d '' M063_SECTIONS_DOUBLED <<'MANIFEST' || true
+five.html	-
+four.html	qi-index-gamma	Index of Gamma
+index.html	qi-index-alpha	Index of Alpha
+three.html	qi-index-beta	Index of Beta
+three.html	qi-index-gamma	Index of Gamma
+two.html	-
+MANIFEST
+  m061_mutant lastplacer "$M063_LASTPLACER_MUTATION" "M063 T5 self-test"
+  m063_add_marker "$M061W/lastplacer/four.qmd" gamma "M063 T5 self-test" \
+    || fail "M063 T5 self-test: the marker could not be appended to the copied chapter (its own FAIL line is above)"
+  m063_tree_render lastplacer lastplacer "M063 T5 self-test" "$M063_SECTIONS_DOUBLED"
+  pass "M063 T5 self-test: with the superseded rule restored and nothing else changed, the same edit prints gamma in two chapters of one book — the doubling the manifest the run above is held to would fail on"
+
+  # -------------------------------------------------------------------------
+  # M063 T6 — and the same restored rule over an EMPTY store, which is the
+  # other half of the disagreement. One copy of the fixture with its store
+  # removed, so the case is about the empty store and not about the warm one.
+  #
+  # Derived by hand. index.qmd renders first and sees only its own record, so
+  # the only index it knows a marker for is `alpha`, its own — which makes
+  # index.qmd itself the last chapter placing anything, and it takes on every
+  # other declared index: `beta` and `gamma`, which chapters of this book mark,
+  # and `delta`, which nothing marks and which therefore prints nowhere.
+  # three.qmd then reads index.qmd's record as well as building its own, so it
+  # knows `alpha` is placed at 1 and `beta` at 3, makes itself the last placing
+  # chapter, and takes `gamma` on too. Two chapters of ONE render disagree
+  # about which of them owes the sections no marker names, and the pages show
+  # both answers at once.
+  # -------------------------------------------------------------------------
+  read -r -d '' M063_SECTIONS_FIRSTCHAPTER <<'MANIFEST' || true
+five.html	-
+four.html	-
+index.html	qi-index-alpha	Index of Alpha
+index.html	qi-index-beta	Index of Beta
+index.html	qi-index-gamma	Index of Gamma
+three.html	qi-index-beta	Index of Beta
+three.html	qi-index-gamma	Index of Gamma
+two.html	-
+MANIFEST
+  m061_mutant lastplacer-cold "$M063_LASTPLACER_MUTATION" "M063 T6 self-test"
+  rm -rf "$M061W/lastplacer-cold/.quarto/$STORE_DIR"
+  [ -d "$M061W/lastplacer-cold/.quarto/$STORE_DIR" ] \
+    && fail "M063 T6 self-test: the copied store is still there, so the render below would be about a warm store"
+  m063_tree_render lastplacer-cold lastplacer-cold "M063 T6 self-test" \
+    "$M063_SECTIONS_FIRSTCHAPTER"
+  pass "M063 T6 self-test: with the superseded rule restored and the store emptied, two chapters of one render each take on the indexes no marker names and each print a section for them — the within-one-render disagreement the manifest M063-AC2 holds both renders to would fail on"
 fi
 
-# The fixture goes back to what the repository holds, and the store with it:
-# the render after the restore still reads four.qmd's marker out of its stored
-# record, so it takes a second whole-book render to settle, and that one is
-# held to the ordinary second-render manifest rather than assumed.
-cp "$WORK/m061-four.qmd.orig" "$PLACE_DIR/four.qmd"
-cmp -s "$WORK/m061-four.qmd.orig" "$PLACE_DIR/four.qmd" \
-  || fail "M061-AC2: four.qmd was not restored to the bytes this check copied aside"
-place_render place-restored "M061-AC2 (the first render after the restore)"
-place_render place-rewarm "M061-AC2 (the second render after the restore)"
-check_book_sections "$CAPTURE_ROOT/place-rewarm/_book" "M061-AC2 (restored)" \
-  "$PLACE_SECTIONS_SECOND"
-check_warning_count "$WORK/place-rewarm.log" "$WARN_DOUBLED" 0 \
-  "M061-AC2 (restored)"
-check_warning_count "$WORK/place-rewarm.log" "$WARN_DEFER" 0 \
-  "M061-AC2 (restored)"
-pass "M061-AC2: with four.qmd restored, two further renders put the fixture back to the sections and the silence an ordinary second render prints"
-
 # ---------------------------------------------------------------------------
-# M061-AC3 — a chapter whose record can never be written. The store path
+# M063-AC3 — a chapter whose record can never be written. The store path
 # four.qmd's record would occupy is held by a DIRECTORY, so the write fails
 # every time and no later render can ever put a record there. Every render
-# therefore looks exactly like the one before it, which is the shape the
-# sentence M60's report carried — render the book again and the section will be
-# placed — was false about.
+# therefore looks exactly like the one before it.
+#
+# Under the superseded rule that store cost the book a section: three.qmd could
+# not read four.qmd's record, so it would not conclude it was the last chapter
+# placing anything, and `gamma` was printed on no page at all — on this render
+# and on every render after it, for ever. Under M063's rule the section goes to
+# the book's last chapter whatever the store says, so it is printed; what it is
+# short is four.qmd's own term, `Dovetail`, which lives only in the record that
+# cannot be written (KI205).
 #
 # Derived by hand, and identical on both renders:
 #
 #   index.qmd  opens the directory, reads nothing out of it, and reports
-#              four.qmd's record unreadable; four.qmd is after it, so it is
-#              one of the chapters index.qmd could not read. Builds `alpha`.
-#              One marker-position report (four chapters after it).
+#              four.qmd's record unreadable. Builds `alpha`. One marker-
+#              position report (four chapters after it).
 #   two.qmd    the same unreadable report; builds nothing.
-#   three.qmd  the same unreadable report; four.qmd is after it and unread, so
-#              it cannot conclude it is the last placing chapter and builds
-#              `beta` alone. One marker-position report (two after).
+#   three.qmd  the same unreadable report; builds `beta`. One marker-position
+#              report (two after).
 #   four.qmd   never reads its own record, so it draws no unreadable report
 #              for itself; its own write fails on the directory, which is one
 #              report. Builds nothing.
-#   five.qmd   the same unreadable report; draws the unplaced-section report
-#              once for `gamma`, naming three.qmd and four.qmd — the chapter
-#              the section is owed to, and the chapter whose record that
-#              chapter could not read.
+#   five.qmd   the same unreadable report; the book's last chapter, so it takes
+#              `gamma` on and builds its section — short `Dovetail`. No chapter
+#              after it, so no marker-position report.
 #
-#   4 unreadable + 1 write-failure + 2 marker-position + 1 unplaced = 8.
+#   4 unreadable + 1 write-failure + 2 marker-position = 7.
 #
-# Eight warning lines, of which the pattern-set helper below counts seven. The
-# eighth is four.qmd's write-failure report: Quarto writes an ERROR line of its
+# Seven warning lines, of which the pattern-set helper below counts six. The
+# seventh is four.qmd's write-failure report: Quarto writes an ERROR line of its
 # own immediately before it, and the report's line then opens with that line's
 # colour-reset escape rather than with `(W)`, where the helper's anchored
-# patterns cannot reach it. It is counted by its own key, and the raw count of
-# warning lines is asserted alongside, so all eight are held either way.
+# patterns cannot reach it (KI206). It is counted by its own key, and the raw
+# count of warning lines is asserted alongside, so all seven are held either
+# way.
+#
+# The unreadable report is drawn from inside `store_read`, once per rendering
+# chapter that meets the held path — four of the five — and not once per
+# section the record costs. The stale-record and refiled-record reports are the
+# two on M062's once-per-building-chapter rule, and neither is drawn here.
 # ---------------------------------------------------------------------------
 m061_block_record() {   # <chapter file> <store directory> <label>
   local chapter="$1" store="$2" label="$3"
@@ -6818,103 +6796,6 @@ m061_block_record() {   # <chapter file> <store directory> <label>
   [ -d "$store/$chapter$STORE_SUFFIX" ] \
     || fail "$label: the store path for $chapter is not a directory, so the write below would succeed and the run would be about an ordinary record"
 }
-
-m061_block_record four.qmd "$PLACE_STORE" "M061-AC3"
-for M061_PASS in one two; do
-  place_render "place-blocked-$M061_PASS" "M061-AC3 (render $M061_PASS)"
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_DEFER" 1 \
-    "M061-AC3 (render $M061_PASS)"
-  { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" \
-    | grep -qF 'could not read then: four.qmd. A chapter takes on'; } \
-    || { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M061-AC3 (render $M061_PASS): the unplaced-section report does not name four.qmd among the chapters whose record the placing chapter could not read"; }
-  { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" | grep -qF 'the index "gamma"'; } \
-    || { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M061-AC3 (render $M061_PASS): the unplaced-section report does not name gamma"; }
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_UNREADABLE" 4 \
-    "M061-AC3 (render $M061_PASS: index.qmd, two.qmd, three.qmd and five.qmd each read the held path; four.qmd never reads its own)"
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_UNWRITABLE" 1 \
-    "M061-AC3 (render $M061_PASS: four.qmd's own write)"
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_MARKER_NOT_LAST" 2 \
-    "M061-AC3 (render $M061_PASS: index.qmd and three.qmd each build a section with chapters after them)"
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_STALE" 0 \
-    "M061-AC3 (render $M061_PASS: unreadable, never stale)"
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_DOUBLED" 0 \
-    "M061-AC3 (render $M061_PASS: no page carries the section)"
-  check_extension_warning_count "$WORK/place-blocked-$M061_PASS.log" 7 \
-    "M061-AC3 (render $M061_PASS emitted a warning this suite cannot name; the seven its anchored patterns reach are four unreadable-record reports, two marker-position reports and the unplaced-section report)"
-  M061_LINES=$( { grep -c '(W) ' "$WORK/place-blocked-$M061_PASS.log" || true; } | tr -d ' ')
-  [ "$M061_LINES" = "8" ] \
-    || { grep '(W) ' "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M061-AC3 (render $M061_PASS): the render wrote $M061_LINES warning line(s), and the four kinds this check counts by name account for 8"; }
-done
-pass "M061-AC3: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each reports the unplaced index once, naming the chapter the section is owed to and the chapter whose record it could not read, and each draws the same eight warnings and exits 0"
-
-if [ "${1:-}" = "--self-test" ]; then
-  # -------------------------------------------------------------------------
-  # M061 T8 — the same held path against a filter whose unplaced-section report
-  # names no chapter as unreadable, and nothing else changed. The report still
-  # fires, so what the case shows is the naming clause doing the work rather
-  # than the report itself.
-  # -------------------------------------------------------------------------
-  m061_mutant noname \
-    's{      local blocked = #\(placer\.unseen or \{\}\) > 0\n        and table\.concat\(placer\.unseen, ", "\) or "none"\n}{      local blocked = "none"\n}' \
-    "M061 T8 self-test"
-  m061_block_record four.qmd "$M061W/noname/.quarto/$STORE_DIR" \
-    "M061 T8 self-test"
-  ( cd "$M061W/noname" && quarto render --to html ) \
-    > "$WORK/m061-noname.log" 2>&1 \
-    || { tail -30 "$WORK/m061-noname.log" >&2; fail "M061 T8 self-test: the mutated render failed; the case below is about what a report names, not about a broken render"; }
-  capture --project "$M061W/noname" html "m061-noname"
-  check_warning_count "$WORK/m061-noname.log" "$WARN_DEFER" 1 \
-    "M061 T8 self-test (the report is still drawn)"
-  if grep -F -- "$WARN_DEFER" "$WORK/m061-noname.log" | grep -qF 'four.qmd'; then
-    grep -F -- "$WARN_DEFER" "$WORK/m061-noname.log" >&2
-    fail "M061 T8 self-test: the report still names four.qmd though the naming clause was removed, so the run above would pass with that clause gone"
-  fi
-  pass "M061 T8 self-test: with the naming clause removed and nothing else changed, the same held store path still draws the unplaced-section report and it names no chapter — which is what the run above would accept if it read the report's presence alone"
-fi
-
-# The held path goes back to an ordinary record: it is removed, and two further
-# renders put four.qmd's record back and let three.qmd take `gamma` on again.
-rm -rf "$PLACE_STORE/four.qmd$STORE_SUFFIX"
-place_render place-unblocked "M061-AC3 (the first render after the path is freed)"
-place_render place-rewarm-two "M061-AC3 (the second render after the path is freed)"
-check_book_sections "$CAPTURE_ROOT/place-rewarm-two/_book" "M061-AC3 (freed)" \
-  "$PLACE_SECTIONS_SECOND"
-check_warning_count "$WORK/place-rewarm-two.log" "$WARN_DEFER" 0 \
-  "M061-AC3 (freed)"
-check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE" 0 \
-  "M061-AC3 (freed)"
-pass "M061-AC3: with the held path freed, two further renders write four.qmd's record again and put the fixture back to the sections and the silence an ordinary second render prints"
-
-# ---------------------------------------------------------------------------
-# M061-AC4 — a store whose records all stand at the current version and carry
-# NEITHER of the two fields this milestone added: the store an author has after
-# upgrading from a version that recorded what a chapter saw but not what it
-# concluded. Neither report may be drawn off that silence, and every chapter's
-# terms must still print.
-#
-# Two renders, because a whole-book render does not on its own read a stripped
-# record: chapters render in book order and each rewrites its own record as it
-# goes, so by the time five.qmd reads three.qmd's record that record was
-# written by THIS render and carries both fields. The whole-book leg is the
-# criterion's own; the single-chapter leg is what puts a stripped record in
-# front of the chapter that reads one, and is the leg a filter reading a
-# missing field as "took nothing on" fails.
-#
-# Every term the five chapters mark, and the section each prints in, is listed
-# by hand below: `alpha` takes index.qmd's Aardvark and two.qmd's Bramble,
-# `beta` index.qmd's Cardamom and three.qmd's Coriander, and `gamma` the four
-# terms index.qmd, two.qmd, four.qmd and five.qmd file in it.
-# ---------------------------------------------------------------------------
-read -r -d '' PLACE_TERMS <<'MANIFEST' || true
-index.html	qi-index-alpha	Aardvark
-index.html	qi-index-alpha	Bramble
-three.html	qi-index-beta	Cardamom
-three.html	qi-index-beta	Coriander
-three.html	qi-index-gamma	Dovetail
-three.html	qi-index-gamma	Escutcheon
-three.html	qi-index-gamma	Gantry
-three.html	qi-index-gamma	Gondola
-MANIFEST
 
 # Every printed term of every generated index section, by page and section id,
 # in rendered order. A term missing because its chapter's record was refused
@@ -6960,79 +6841,216 @@ print(f'ok   {label}: {len(actual)} printed term(s) across '
 TERMPY
 }
 
-# Both fields removed from every record of a store, in one pass, and the pass
-# is held to a non-empty domain and to records that actually carried them: a
-# glob that matched nothing, or records already without the fields, would
-# leave the runs below about an unstripped store.
-m061_strip_fields() {   # <store directory> <label>
-  python3 - "$1" "$2" <<'STRIPPY'
+# The gamma section as it stands with four.qmd's record unwritable: three of
+# the four terms the fixture files in that index, `Dovetail` missing because it
+# is four.qmd's alone. Held by term rather than by count, so the section being
+# printed short is what is asserted rather than merely that it is printed.
+read -r -d '' PLACE_TERMS_BLOCKED <<'MANIFEST' || true
+five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Gantry
+five.html	qi-index-gamma	Gondola
+index.html	qi-index-alpha	Aardvark
+index.html	qi-index-alpha	Bramble
+three.html	qi-index-beta	Cardamom
+three.html	qi-index-beta	Coriander
+MANIFEST
+
+m061_block_record four.qmd "$PLACE_STORE" "M063-AC3"
+for M061_PASS in one two; do
+  place_render "place-blocked-$M061_PASS" "M063-AC3 (render $M061_PASS)"
+  check_book_sections "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" \
+    "M063-AC3 (render $M061_PASS)" "$PLACE_SECTIONS"
+  check_book_terms "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" \
+    "M063-AC3 (render $M061_PASS)" "$PLACE_TERMS_BLOCKED"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_UNREADABLE" 4 \
+    "M063-AC3 (render $M061_PASS: index.qmd, two.qmd, three.qmd and five.qmd each read the held path; four.qmd never reads its own)"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_UNWRITABLE" 1 \
+    "M063-AC3 (render $M061_PASS: four.qmd's own write)"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_MARKER_NOT_LAST" 2 \
+    "M063-AC3 (render $M061_PASS: index.qmd and three.qmd each build a section with chapters after them)"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_STALE" 0 \
+    "M063-AC3 (render $M061_PASS: unreadable, never stale)"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_INDEX_STALE_NAME" 0 \
+    "M063-AC3 (render $M061_PASS: no record names an index this book does not declare)"
+  check_extension_warning_count "$WORK/place-blocked-$M061_PASS.log" 6 \
+    "M063-AC3 (render $M061_PASS emitted a warning this suite cannot name; the six its anchored patterns reach are four unreadable-record reports and two marker-position reports)"
+  M061_LINES=$( { grep -c '(W) ' "$WORK/place-blocked-$M061_PASS.log" || true; } | tr -d ' ')
+  [ "$M061_LINES" = "7" ] \
+    || { grep '(W) ' "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M063-AC3 (render $M061_PASS): the render wrote $M061_LINES warning line(s), and the three kinds this check counts by name account for 7"; }
+done
+pass "M063-AC3: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter, short only the term that lives in the record that cannot be written, and each draws the same seven warnings and exits 0"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M063 T7 — the same held store path against a copy of the tree whose only
+  # change restores the superseded rule, and nothing else moved. Under it
+  # five.qmd is no longer the chapter that owes the section: three.qmd reads
+  # four.qmd's held path, finds no record there, and is still the last chapter
+  # its own picture says places anything — so it takes `gamma` on and prints
+  # the section in three.html, where the manifest above puts it in five.html.
+  # -------------------------------------------------------------------------
+  m061_mutant lastplacer-blocked "$M063_LASTPLACER_MUTATION" "M063 T7 self-test"
+  m061_block_record four.qmd "$M061W/lastplacer-blocked/.quarto/$STORE_DIR" \
+    "M063 T7 self-test"
+  ( cd "$M061W/lastplacer-blocked" && quarto render --to html ) \
+    > "$WORK/m063-lastplacer-blocked.log" 2>&1 \
+    || { tail -30 "$WORK/m063-lastplacer-blocked.log" >&2; fail "M063 T7 self-test: the mutated render failed; the case below is about which chapter carries a section, not about a broken render"; }
+  capture --project "$M061W/lastplacer-blocked" html "m063-lastplacer-blocked"
+  if check_book_sections "$CAPTURE_ROOT/m063-lastplacer-blocked/_book" \
+       "M063 T7 self-test (probe)" "$PLACE_SECTIONS" \
+       > "$WORK/m063-lastplacer-blocked-probe.log" 2>&1; then
+    cat "$WORK/m063-lastplacer-blocked-probe.log" >&2
+    fail "M063 T7 self-test: with the superseded rule restored the held path still gave the manifest above, so that manifest would accept the rule this milestone replaced"
+  fi
+  grep -qF 'three.html	qi-index-gamma' "$WORK/m063-lastplacer-blocked-probe.log" \
+    || { cat "$WORK/m063-lastplacer-blocked-probe.log" >&2; fail "M063 T7 self-test: the mutated render failed the manifest, but not by putting gamma in three.html — that failure is not the one this case is about"; }
+  pass "M063 T7 self-test: with the superseded rule restored and nothing else changed, the same held store path puts gamma in three.html rather than in the book's last chapter — which is what the manifest the run above is held to refuses"
+fi
+
+# The held path goes back to an ordinary record: it is removed, and two further
+# renders put four.qmd's record back and its term with it.
+rm -rf "$PLACE_STORE/four.qmd$STORE_SUFFIX"
+place_render place-unblocked "M063-AC3 (the first render after the path is freed)"
+place_render place-rewarm-two "M063-AC3 (the second render after the path is freed)"
+check_book_sections "$CAPTURE_ROOT/place-rewarm-two/_book" "M063-AC3 (freed)" \
+  "$PLACE_SECTIONS"
+check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M063-AC3 (freed)"
+pass "M063-AC3: with the held path freed, two further renders write four.qmd's record again and put the fixture back to the sections and the silence an ordinary render prints"
+
+# ---------------------------------------------------------------------------
+# M063-AC2, continued — a store whose records all stand at the current version
+# and carry the three fields M063 retired: `later`, which M60 wrote, and
+# `adopted` and `unseen`, which M061 wrote. This is the store an author has the
+# moment they upgrade, and `STORE_VERSION` deliberately does not move for it —
+# so every one of those records must still be accepted and must still give the
+# book its chapter's terms (the M14 lesson).
+#
+# The fields are PLANTED rather than removed: no version now writes them, so a
+# store this run finds is a store without them, and the shape at risk is the
+# one an upgrade leaves behind. `later` is planted as a value the superseded
+# validator would have refused outright — a string where it demanded a boolean
+# — because a field nothing reads may not cost a chapter its terms whatever it
+# holds.
+#
+# Two renders, because a whole-book render does not on its own put a planted
+# record in front of a chapter that reads one: chapters render in book order
+# and each rewrites its own record as it goes. The whole-book leg holds the
+# sections and every term; the single-chapter leg puts planted records in front
+# of the book's last chapter, which is the chapter that takes on the index no
+# marker names.
+#
+# Every term the five chapters mark, and the section each prints in, is listed
+# by hand below: `alpha` takes index.qmd's Aardvark and two.qmd's Bramble,
+# `beta` index.qmd's Cardamom and three.qmd's Coriander, and `gamma` the four
+# terms index.qmd, two.qmd, four.qmd and five.qmd file in it — printed in
+# five.html, the book's last chapter.
+# ---------------------------------------------------------------------------
+read -r -d '' PLACE_TERMS <<'MANIFEST' || true
+five.html	qi-index-gamma	Dovetail
+five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Gantry
+five.html	qi-index-gamma	Gondola
+index.html	qi-index-alpha	Aardvark
+index.html	qi-index-alpha	Bramble
+three.html	qi-index-beta	Cardamom
+three.html	qi-index-beta	Coriander
+MANIFEST
+
+# The three retired fields planted into every record of a store, in one pass,
+# and the pass is held to a non-empty domain and to records that did not
+# already carry them: a glob that matched nothing, or records already planted,
+# would leave the runs below about an unplanted store.
+m063_plant_retired() {   # <store directory> <label>
+  python3 - "$1" "$2" <<'PLANTOLDPY'
 import glob, json, os, sys
 store, label = sys.argv[1:3]
 paths = sorted(glob.glob(os.path.join(store, '*.qi.json')))
 if not paths:
-    sys.exit(f'FAIL: {label}: no record under {store}, so the strip below '
+    sys.exit(f'FAIL: {label}: no record under {store}, so the plant below '
              f'would run over nothing')
 for path in paths:
     record = json.load(open(path, encoding='utf-8'))
-    missing = [f for f in ('adopted', 'unseen') if f not in record]
-    if missing:
-        sys.exit(f'FAIL: {label}: {path} already carries no {missing}, so '
-                 f'removing them changes nothing')
-    del record['adopted'], record['unseen']
+    already = [f for f in ('later', 'adopted', 'unseen') if f in record]
+    if already:
+        sys.exit(f'FAIL: {label}: {path} already carries {already}, so '
+                 f'planting them changes nothing')
+    # A string where the superseded validator demanded a boolean, and two
+    # lists naming chapters and indexes that have nothing to do with this
+    # book: a field nothing reads may say anything at all.
+    record['later'] = 'neither true nor false'
+    record['adopted'] = ['alpha', 'beta', 'gamma', 'delta']
+    record['unseen'] = ['a-chapter-this-book-does-not-have.qmd']
     json.dump(record, open(path, 'w', encoding='utf-8'))
-print(f'ok   {label}: both fields removed from all {len(paths)} record(s)')
-STRIPPY
+print(f'ok   {label}: all three retired fields planted in all {len(paths)} '
+      f'record(s)')
+PLANTOLDPY
 }
 
-m061_strip_fields "$PLACE_STORE" "M061-AC4 (before the whole-book render)" \
-  || fail "M061-AC4: the records could not be stripped (their own FAIL line is above)"
-place_render place-oldstore "M061-AC4 (the whole book)"
-check_book_sections "$CAPTURE_ROOT/place-oldstore/_book" "M061-AC4" \
-  "$PLACE_SECTIONS_SECOND"
-check_book_terms "$CAPTURE_ROOT/place-oldstore/_book" "M061-AC4" "$PLACE_TERMS"
-check_warning_count "$WORK/place-oldstore.log" "$WARN_DEFER" 0 "M061-AC4"
-check_warning_count "$WORK/place-oldstore.log" "$WARN_DOUBLED" 0 "M061-AC4"
+m063_plant_retired "$PLACE_STORE" "M063-AC2 (before the whole-book render)" \
+  || fail "M063-AC2: the records could not be planted (their own FAIL line is above)"
+place_render place-oldstore "M063-AC2 (an upgraded store, the whole book)"
+check_book_sections "$CAPTURE_ROOT/place-oldstore/_book" "M063-AC2 (an upgraded store)" \
+  "$PLACE_SECTIONS"
+check_book_terms "$CAPTURE_ROOT/place-oldstore/_book" "M063-AC2 (an upgraded store)" \
+  "$PLACE_TERMS"
 check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_STALE" 0 \
-  "M061-AC4 (neither field is a version bump, so no record is refused)"
+  "M063-AC2 (the three fields are not a version bump, so no record is refused)"
 check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_UNREADABLE" 0 \
-  "M061-AC4 (a record without the two fields is still a valid record)"
+  "M063-AC2 (a record carrying the retired fields is still a valid record)"
 
-# ...and again, so the chapter that draws the two reports reads records the
-# render before it did not rewrite.
-m061_strip_fields "$PLACE_STORE" "M061-AC4 (before the single-chapter render)" \
-  || fail "M061-AC4: the records could not be stripped a second time (their own FAIL line is above)"
-place_render place-oldstore-fifth "M061-AC4 (five.qmd alone)" five.qmd
-check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_DEFER" 0 \
-  "M061-AC4 (a record saying nothing about what its chapter took on draws no report)"
-check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_DOUBLED" 0 \
-  "M061-AC4 (nor is a record that says nothing counted as one of two)"
+# ...and again, so the chapter that takes on the index no marker names reads
+# records the render before it did not rewrite.
+m063_plant_retired "$PLACE_STORE" "M063-AC2 (before the single-chapter render)" \
+  || fail "M063-AC2: the records could not be planted a second time (their own FAIL line is above)"
+place_render place-oldstore-fifth "M063-AC2 (an upgraded store, five.qmd alone)" five.qmd
+check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M063-AC2 (five.qmd reads four planted records and refuses none)"
 check_extension_warning_count "$WORK/place-oldstore-fifth.log" 0 \
-  "M061-AC4 (five.qmd builds no section and reads only valid records, so it has nothing to say)"
-pass "M061-AC4: over a store whose records all stand at the current version and carry neither new field, a whole-book render prints the sections and every one of the terms the fixture marks, and a chapter reading those records on its own draws neither report and says nothing at all"
+  "M063-AC2 (five.qmd has no chapter after it and reads only valid records, so it has nothing to say)"
+pass "M063-AC2: over a store whose records all stand at the current version and carry the three fields this milestone retired — one of them holding a value the superseded validator would have refused — a whole-book render prints the same sections and every one of the terms the fixture marks, and the book's last chapter reading those records on its own says nothing at all"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
-  # M061 T9 — the same stripped store against a filter that reads a missing
-  # `adopted` field as an empty one, which is the reading M60 warned against:
-  # a record that says nothing about what its chapter took on is not a record
-  # saying it took nothing on. One contiguous substitution, nothing moved.
+  # M063 T2 — the same planted store against a filter that refuses a record
+  # carrying `adopted`, which is what a validator still policing a retired
+  # field amounts to. One substitution, nothing moved.
+  #
+  # Derived by hand: chapters render in book order and each rewrites its own
+  # record as it goes, so only the chapters that render BEFORE a planted record
+  # is replaced meet one. index.qmd renders first and so refuses all four of
+  # the others; every later chapter reads records this render has just
+  # rewritten, and refuses none. The `alpha` section index.qmd builds is
+  # therefore short `Bramble`, two.qmd's term — the one term in it that lives
+  # in another chapter's record. Every other section is whole, and the pages
+  # are the same pages: the refusal costs terms, not placement.
   # -------------------------------------------------------------------------
-  m061_mutant oldfalse \
-    's{    if placer ~= nil and placer\.adopted ~= nil then\n      local took = \{\}\n      for _, name in ipairs\(placer\.adopted\) do\n}{    if placer ~= nil then\n      local took = {}\n      for _, name in ipairs(placer.adopted or {}) do\n}' \
-    "M061 T9 self-test"
-  m061_strip_fields "$M061W/oldfalse/.quarto/$STORE_DIR" "M061 T9 self-test" \
-    || fail "M061 T9 self-test: the copied records could not be stripped (their own FAIL line is above)"
-  ( cd "$M061W/oldfalse" && quarto render five.qmd --to html ) \
-    > "$WORK/m061-oldfalse.log" 2>&1 \
-    || { tail -30 "$WORK/m061-oldfalse.log" >&2; fail "M061 T9 self-test: the mutated render failed; the case below is about a report it draws, not about a broken render"; }
-  capture --project "$M061W/oldfalse" html "m061-oldfalse"
-  check_warning_count "$WORK/m061-oldfalse.log" "$WARN_DEFER" 1 \
-    "M061 T9 self-test (a missing field read as an empty one)"
-  pass "M061 T9 self-test: with a missing adopted field read as an empty one and nothing else changed, the same stripped store draws the unplaced-section report for a section that is on the page — which is the report reading absence as no answer keeps silent"
+  read -r -d '' M063_TERMS_REFUSED <<'MANIFEST' || true
+five.html	qi-index-gamma	Dovetail
+five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Gantry
+five.html	qi-index-gamma	Gondola
+index.html	qi-index-alpha	Aardvark
+three.html	qi-index-beta	Cardamom
+three.html	qi-index-beta	Coriander
+MANIFEST
+  m061_mutant refuseold \
+    's{  if data\.marker ~= nil then\n}{  if data.adopted ~= nil then\n    return false\n  end\n  if data.marker ~= nil then\n}' \
+    "M063 T2 self-test"
+  m063_plant_retired "$M061W/refuseold/.quarto/$STORE_DIR" "M063 T2 self-test" \
+    || fail "M063 T2 self-test: the copied records could not be planted (their own FAIL line is above)"
+  ( cd "$M061W/refuseold" && quarto render --to html ) \
+    > "$WORK/m063-refuseold.log" 2>&1 \
+    || { tail -30 "$WORK/m063-refuseold.log" >&2; fail "M063 T2 self-test: the mutated render failed; the case below is about terms lost from an index, not about a broken render"; }
+  capture --project "$M061W/refuseold" html "m063-refuseold"
+  check_book_terms "$CAPTURE_ROOT/m063-refuseold/_book" "M063 T2 self-test" \
+    "$M063_TERMS_REFUSED"
+  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store costs the book a term the run above prints — which is what a validator that ignores a field nothing reads does not do"
 fi
 
-# Back to a store every record of which carries both fields again.
-place_render place-rewarm-three "M061-AC4 (the render after the stripped store)"
+# Back to a store every record of which was written by the chapter it belongs
+# to, from that chapter's own source.
+place_render place-rewarm-three "M063-AC2 (the render after the planted store)"
 
 # ---------------------------------------------------------------------------
 # M062-AC1 — the report for a record naming an index this book does not
@@ -7045,19 +7063,20 @@ place_render place-rewarm-three "M061-AC4 (the render after the stripped store)"
 # Derived by hand against the warm store above:
 #
 #   (1) the record belongs to five.qmd, the book's last chapter, and the whole
-#       book is rendered. index.qmd builds `alpha`; three.qmd builds `beta`
-#       and, having read a usable record for both chapters after it, takes on
-#       `gamma`, which no marker names; two.qmd and four.qmd build nothing;
-#       five.qmd reads the store before it writes and so never meets its own
-#       plant. Chapters that build a section: 2. Chapters that read the plant:
-#       4. Sections built: 3. Expected reports: 2.
+#       book is rendered. index.qmd builds `alpha` and three.qmd `beta`; two.qmd
+#       and four.qmd build nothing; five.qmd, the book's last chapter, takes on
+#       `gamma`, which no marker names, and builds it — but reads the store
+#       before it writes and so never meets its own plant. Chapters that read
+#       the plant: 4. Chapters that build a section: 3. Chapters that do both:
+#       2. Expected reports: 2.
 #
 #   (2) index.qmd alone, over the same plant. One chapter renders and builds
 #       `alpha`. Expected reports: 1.
 #
 # 2 is none of the fixture's chapter count (5), the chapters that read the
-# plant (4), the sections built (3) or one report for the book, so the two
-# runs together separate once-per-building-chapter from every one of them.
+# plant (4), the chapters that build a section (3) or one report for the book,
+# so the two runs together separate once-per-building-chapter from every one of
+# them.
 # ---------------------------------------------------------------------------
 PLACE_UNDECLARED='ghostplacement'
 place_undeclared() {   # <slug> <render argument or ""> <expected count> <label>
@@ -7112,6 +7131,107 @@ pass "M062-AC1: the report for a record naming an index this book does not decla
 # Back to a store every record of which was written by the chapter it belongs
 # to, from that chapter's own source.
 place_render place-rewarm-undeclared "M062-AC1 (the render after the plants)"
+
+# ---------------------------------------------------------------------------
+# M063-AC4 — a book whose chapters carry index marks but no placement marker
+# anywhere. The proviso on M063's rule is that SOME chapter of the book places
+# an index; without it the book's last chapter would take on every declared
+# index and a book asking for no index at all would grow one, which is the
+# single document's rule broken for a book.
+#
+# examples/book-nomarker/ has three chapters and no marker in any of them. Two
+# consecutive whole-book renders, both held to a manifest whose every row is
+# bare. The fixture's own store is rebuilt here rather than assumed: the
+# M062-AC2/AC3 runs above plant records in it and restore them, and this leg
+# is about an ordinary store.
+# ---------------------------------------------------------------------------
+read -r -d '' NOMARKER_SECTIONS <<'MANIFEST' || true
+index.html	-
+one.html	-
+two.html	-
+MANIFEST
+
+rm -rf "$NOMARKER_DIR/_book" "$NOMARKER_DIR/.quarto"
+for M063_PASS in one two; do
+  ( cd "$NOMARKER_DIR" && quarto render --to html ) \
+    > "$WORK/m063-nomarker-$M063_PASS.log" 2>&1 \
+    || { tail -30 "$WORK/m063-nomarker-$M063_PASS.log" >&2; fail "M063-AC4 (render $M063_PASS): the no-marker book failed to render"; }
+  capture --project "$NOMARKER_DIR" html "m063-nomarker-$M063_PASS"
+  check_book_sections "$CAPTURE_ROOT/m063-nomarker-$M063_PASS/_book" \
+    "M063-AC4 (render $M063_PASS)" "$NOMARKER_SECTIONS"
+done
+pass "M063-AC4: a book whose chapters carry index marks but no placement marker anywhere grows no index section in its last chapter either, on the first render and on the render after it"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M063 T8 — the same fixture against a copy of the tree whose only change
+  # drops the "some chapter places an index" proviso. Under it the book's last
+  # chapter takes on every declared index and prints a section for each one
+  # that anything marks, in a book whose author asked for none.
+  # -------------------------------------------------------------------------
+  M063NW="$WORK/m063-nomarker-mutant"
+  rm -rf "$M063NW"
+  cp -R "$NOMARKER_DIR" "$M063NW"
+  rm -f "$M063NW/_extensions"
+  rm -rf "$M063NW/_book" "$M063NW/.quarto"
+  mkdir -p "$M063NW/_extensions"
+  cp -R "$QI_EXT_DIR" "$M063NW/_extensions/index"
+  perl -0777 -pe 's{  if first ~= nil and ctx\.position == #ctx\.chapters then\n}{  if ctx.position == #ctx.chapters then\n}' \
+    "$M063NW/_extensions/index/modules/book.lua" > "$M063NW-spliced"
+  if cmp -s "$M063NW/_extensions/index/modules/book.lua" "$M063NW-spliced"; then
+    fail "M063 T8 self-test: the substitution aimed at the proviso changed nothing, so the render below would be reported as a check failing to matter when the fault is this mutation's"
+  fi
+  mv "$M063NW-spliced" "$M063NW/_extensions/index/modules/book.lua"
+  ( cd "$M063NW" && quarto render --to html ) \
+    > "$WORK/m063-nomarker-mutant.log" 2>&1 \
+    || { tail -30 "$WORK/m063-nomarker-mutant.log" >&2; fail "M063 T8 self-test: the mutated render failed; the case below is about a section it grows, not about a broken render"; }
+  capture --project "$M063NW" html "m063-nomarker-mutant"
+  if check_book_sections "$CAPTURE_ROOT/m063-nomarker-mutant/_book" \
+       "M063 T8 self-test (probe)" "$NOMARKER_SECTIONS" > "$WORK/m063-nomarker-mutant-probe.log" 2>&1; then
+    cat "$WORK/m063-nomarker-mutant-probe.log" >&2
+    fail "M063 T8 self-test: with the proviso dropped the no-marker book still matched the all-bare manifest, so the manifest above would accept a book that grew a section its author asked for nowhere"
+  fi
+  pass "M063 T8 self-test: with the proviso dropped and nothing else changed, the no-marker book grows an index section its author asked for nowhere — which is what the all-bare manifest above refuses"
+fi
+
+# ---------------------------------------------------------------------------
+# M063-AC5 — examples/book/, whose two markers both sit in its last chapter and
+# which is therefore its own fallback chapter, is unchanged by any of this: the
+# chapter that places `main` and `people` is also the book's last chapter, so
+# it takes `places` on under M063's rule exactly as it did under M60's.
+#
+# The manifest is the one M05 and M55 pinned for the fixture, `places`
+# included, read off a rendered book. Two consecutive whole-book renders, over
+# a scratch copy: the repository's own tree is rendered once near the top of
+# this run and then has records planted in it and single chapters re-rendered,
+# so a second whole-book render there would be about that state rather than
+# about this criterion.
+# ---------------------------------------------------------------------------
+read -r -d '' BOOK_SECTIONS <<'MANIFEST' || true
+index.html	-
+last.html	qi-index-main	Index of Subjects
+last.html	qi-index-people	Index of People
+last.html	qi-index-places	Index of Places
+one.html	-
+sub/two.html	-
+MANIFEST
+
+M063BW="$WORK/m063-book"
+rm -rf "$M063BW"
+cp -R "$BOOK_DIR" "$M063BW"
+rm -f "$M063BW/_extensions"
+rm -rf "$M063BW/_book" "$M063BW/.quarto"
+mkdir -p "$M063BW/_extensions"
+cp -R "$QI_EXT_DIR" "$M063BW/_extensions/index"
+for M063_PASS in one two; do
+  ( cd "$M063BW" && quarto render --to html ) \
+    > "$WORK/m063-book-$M063_PASS.log" 2>&1 \
+    || { tail -30 "$WORK/m063-book-$M063_PASS.log" >&2; fail "M063-AC5 (render $M063_PASS): examples/book failed to render"; }
+  capture --project "$M063BW" html "m063-book-$M063_PASS"
+  check_book_sections "$CAPTURE_ROOT/m063-book-$M063_PASS/_book" \
+    "M063-AC5 (render $M063_PASS)" "$BOOK_SECTIONS"
+done
+pass "M063-AC5: examples/book/, whose markers all sit in its last chapter, carries its three declared sections in last.html on the first render and on the render after it, places included"
 
 # ---------------------------------------------------------------------------
 # M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_record`
@@ -14512,7 +14632,7 @@ below the first marker	a mark written below the first marker still reaches the f
 every index in a book	An HTML book builds every index its chapters declare and file a mark in, the same as every other format
 how a book aggregates	its chapters are aggregated through a per-chapter record that carries the index each mark files in
 where a book's indexes go	Each index is placed at the first marker naming it, in whichever chapter that marker stands
-where an unasked-for index goes	an index no marker names is printed after them, in declared order, at the end of the last chapter that places one
+where an unasked-for index goes	an index no marker names is printed after them, in declared order, at the end of the book's last chapter
 a stale declared name	its marks are filed in the first index the book does declare, and the report names the chapter and the name
 MANIFEST
 # The declaration form the criterion names, line for line. Written out here
@@ -19056,53 +19176,59 @@ merged formats named	A PDF book and an EPUB book need none of the above.
 merged means one process	Quarto renders each as one merged document, so the extension sees every chapter's marks at once
 every index in a book	A book that declares several indexes prints each index some chapter files a mark in, each at the first marker naming it
 a stale declared name	its marks are filed in the first index the book still declares, and the report names the chapter and the name
-an unplaced section reported	the report names the index, the chapter its section was owed to, and the chapters whose record that chapter could not read
-an unplaced section forever	Where one of them can never write one
-a doubled section reported	The book's last chapter reports that once, naming the index and every chapter carrying a section for it
+where an unasked-for index goes	and any index no marker names after them, in declared order, at the end of the book's last chapter
+the proviso on that rule	provided some chapter of the book places an index at all
+one answer every render	That chapter is the end of the book's own chapter list, which every chapter of every render reads the same way
 an unusable record repeated	once for every chapter that builds an index section
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
-  || fail "M52-AC5/M55/M061/M062: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, or no longer says what the book reports when an index section is left unplaced, printed twice, or built from a record it could not use (its own FAIL line is above)"
+  || fail "M52-AC5/M55/M062/M063: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, no longer says which chapter carries an index no marker names or on what proviso, or no longer says what the book reports for a record it could not use (its own FAIL line is above)"
 
-# The placement page's own half of the same pair (M061). Its list of rules is
-# where a reader who has not reached the Books page meets the two reports, so
-# it is held to naming both — an index section left unplaced, and one printed
-# in two chapters — rather than to the Books page carrying them alone.
-cat > "$WORK/placing-claims.txt" <<'M061PLACING'
-an unplaced section reported	says so once, naming the index, the chapter its section was owed to and the chapters whose record that chapter could not read
-a doubled section reported	the section prints in two chapters instead, which the same chapter reports once by name
-M061PLACING
+# The placement page's own half of the same pair (M063). Its list of rules is
+# where a reader who has not reached the Books page meets the book's placement
+# rule, so it is held to naming the chapter and the proviso rather than to the
+# Books page carrying them alone.
+cat > "$WORK/placing-claims.txt" <<'M063PLACING'
+where an unasked-for index goes	goes at the end of the book's last chapter, on every render
+the proviso on that rule	provided some chapter of the book places an index
+M063PLACING
 python3 tests/sitecheck.py claims site/placing-the-index.qmd \
     "$WORK/placing-claims.txt" \
-  || fail "M061-AC6: site/placing-the-index.qmd no longer says what a book reports when an index section is left unplaced or printed twice (its own FAIL line is above)"
+  || fail "M063-AC6: site/placing-the-index.qmd no longer says which chapter of a book carries an index no marker names, or on what proviso (its own FAIL line is above)"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
-  # M061-AC6's other half: each of the two pages, with the claim this
-  # milestone added removed and the rest of the page untouched. A claim list
-  # that passes over a page missing the sentence it names is a list holding
-  # nothing, and both pages are shown separately — a plant on one says nothing
-  # about the row aimed at the other.
+  # M063-AC6's other half: each of the two pages, with the sentence this
+  # milestone rewrote put back to the rule it supersedes and the rest of the
+  # page untouched. A claim list that passes over a page still stating the OLD
+  # rule is a list holding nothing — and a page carrying the superseded
+  # sentence is the failure that actually threatens here, rather than a page
+  # carrying no sentence at all, so the plant substitutes rather than deletes.
+  # Both pages are shown separately: a plant on one says nothing about the row
+  # aimed at the other.
   # -------------------------------------------------------------------------
   M061D="$WORK/m061docs"
   rm -rf "$M061D"
   mkdir -p "$M061D"
-  m061_strip_claim() {   # <page> <sentence> <destination> <label>
-    python3 - "$1" "$2" "$3" "$4" <<'STRIPCLAIMPY'
+  m063_supersede_claim() {   # <page> <new sentence> <superseded sentence> <destination> <label>
+    python3 - "$1" "$2" "$3" "$4" "$5" <<'SUPERSEDEPY'
 import sys
-page, gone, target, label = sys.argv[1:5]
+page, live, old, target, label = sys.argv[1:6]
 body = open(page, encoding='utf-8').read()
 flat = ' '.join(body.split())
-if ' '.join(gone.split()) not in flat:
-    sys.exit(f'FAIL: {label}: {page} does not carry <<{gone}>>, so removing '
+live, old = ' '.join(live.split()), ' '.join(old.split())
+if live not in flat:
+    sys.exit(f'FAIL: {label}: {page} does not carry <<{live}>>, so replacing '
              f'it changes nothing and the case below is about the unplanted '
              f'page')
-# Removed from the FLATTENED text and written back flattened, because the
+if old in flat:
+    sys.exit(f'FAIL: {label}: {page} already carries the superseded sentence '
+             f'<<{old}>>, so the plant is not what puts it there')
+# Substituted in the FLATTENED text and written back flattened, because the
 # sentence is wrapped across source lines and the check itself compares
-# flattened text: a line-oriented deletion would leave half of it behind.
-open(target, 'w', encoding='utf-8').write(
-    flat.replace(' '.join(gone.split()), '') + '\n')
-STRIPCLAIMPY
+# flattened text: a line-oriented edit would leave half of it behind.
+open(target, 'w', encoding='utf-8').write(flat.replace(live, old) + '\n')
+SUPERSEDEPY
   }
   m061_planted() {   # <label> <expected substring> <command...>
     local label="$1" want="$2"
@@ -19110,41 +19236,34 @@ STRIPCLAIMPY
     local out rc
     out=$("$@" 2>&1) && rc=0 || rc=$?
     [ "$rc" -ne 0 ] \
-      || { printf '%s\n' "$out" >&2; fail "M061-AC6 self-test: the planted case ($label) passed, so the claim list's green says nothing"; }
+      || { printf '%s\n' "$out" >&2; fail "M063-AC6 self-test: the planted case ($label) passed, so the claim list's green says nothing"; }
     printf '%s' "$out" | grep -qF -- "$want" \
-      || { printf '%s\n' "$out" >&2; fail "M061-AC6 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
-    printf 'ok   M061-AC6 self-test: the claim list is red on <<%s>>\n' "$label"
+      || { printf '%s\n' "$out" >&2; fail "M063-AC6 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    printf 'ok   M063-AC6 self-test: the claim list is red on <<%s>>\n' "$label"
   }
 
-  m061_strip_claim site/books.qmd \
-    "The book's last chapter reports that once, naming the index and every chapter carrying a section for it" \
-    "$M061D/books-nodouble.qmd" "M061-AC6 self-test" \
-    || fail "M061-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
-  m061_planted 'the books page with its doubled-section claim removed' \
+  m063_supersede_claim site/books.qmd \
+    "and any index no marker names after them, in declared order, at the end of the book's last chapter" \
+    "and any index no marker names after them, in declared order, at the end of the last chapter that places one" \
+    "$M061D/books-oldrule.qmd" "M063-AC6 self-test" \
+    || fail "M063-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
+  m061_planted 'the books page stating the superseded chapter rule' \
     'does not state 1 of the 9 claim(s)' \
-    python3 tests/sitecheck.py claims "$M061D/books-nodouble.qmd" \
+    python3 tests/sitecheck.py claims "$M061D/books-oldrule.qmd" \
       "$WORK/books-claims.txt"
 
-  m061_strip_claim site/books.qmd \
-    "once for every chapter that builds an index section" \
-    "$M061D/books-norepeat.qmd" "M062-AC5 self-test" \
-    || fail "M062-AC5 self-test: the books page variant could not be written (its own FAIL line is above)"
-  m061_planted 'the books page with its repeated-report claim removed' \
-    'does not state 1 of the 9 claim(s)' \
-    python3 tests/sitecheck.py claims "$M061D/books-norepeat.qmd" \
-      "$WORK/books-claims.txt"
-
-  m061_strip_claim site/placing-the-index.qmd \
-    "says so once, naming the index, the chapter its section was owed to and the chapters whose record that chapter could not read" \
-    "$M061D/placing-nodefer.qmd" "M061-AC6 self-test" \
-    || fail "M061-AC6 self-test: the placement page variant could not be written (its own FAIL line is above)"
-  m061_planted 'the placement page with its unplaced-section claim removed' \
+  m063_supersede_claim site/placing-the-index.qmd \
+    "goes at the end of the book's last chapter, on every render" \
+    "goes at the end of the last chapter that places one, and a first render can leave it out" \
+    "$M061D/placing-oldrule.qmd" "M063-AC6 self-test" \
+    || fail "M063-AC6 self-test: the placement page variant could not be written (its own FAIL line is above)"
+  m061_planted 'the placement page stating the superseded chapter rule' \
     'does not state 1 of the 2 claim(s)' \
-    python3 tests/sitecheck.py claims "$M061D/placing-nodefer.qmd" \
+    python3 tests/sitecheck.py claims "$M061D/placing-oldrule.qmd" \
       "$WORK/placing-claims.txt"
-  pass "M061-AC6 self-test: each of the two claim lists is red on a copy of its own page with the claim this milestone added removed, so neither list's green is over a page that has lost it"
+  pass "M063-AC6 self-test: each of the two claim lists is red on a copy of its own page whose sentence states the chapter rule this milestone supersedes, so neither list's green is over a page still telling a reader the old rule"
 fi
-pass "M061-AC6: both the books page and the placement page state what a book reports when an index section is left unplaced and when one prints twice"
+pass "M063-AC6: both the books page and the placement page say which chapter of a book carries an index no marker names, and on what proviso"
 
 cat > "$WORK/backend-count.txt" <<'M52PHRASES'
 back-end count	two back-ends

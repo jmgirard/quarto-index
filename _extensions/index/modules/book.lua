@@ -114,10 +114,10 @@ local function store_path(ctx, file)
 end
 
 -- One chapter's record: what it marked, where those marks are anchored on its
--- own page, and whether it carries the placement marker. What the chapter
--- CONCLUDED — which chapters after it it could not read, and which indexes it
--- took on — is filled in by `html_book` once it knows, and this table is the
--- one written to disk.
+-- own page, and whether it carries the placement marker. Complete as it
+-- stands, and this table is the one written to disk: M60 and M061 also filled
+-- in what the chapter CONCLUDED, for the two reports M063 retired, and nothing
+-- adds a field to it after it is built.
 local function build_record(ctx, marker)
   local marks = {}
   for _, mark in ipairs(qi_marks.html_marks) do
@@ -237,46 +237,21 @@ local function valid_record(data, file)
      or type(data.marks) ~= "table" then
     return false
   end
+  -- `later`, `adopted` and `unseen` are not validated and not read: M60 and
+  -- M061 wrote them for the two reports M063 retired, and no field this
+  -- version reads is derived from any of them. A record carrying all three,
+  -- or one of them holding a shape this file would once have refused, is
+  -- still a perfectly good record — refusing it would cost its chapter's
+  -- terms until the whole book rendered again, over a field nothing walks.
+  -- `STORE_VERSION` therefore does not move: the fields are ignored, not
+  -- outlawed (the M14 lesson).
+  --
   -- The indexes this chapter carries a surviving placement marker for, in the
   -- order the chapter places them. A list rather than the boolean version 3
   -- wrote, because one chapter can place several indexes and the book has to
   -- know which; a chapter with no marker writes an empty one. Validated here
   -- rather than trusted, because `marker_chapter` walks it before any marker
   -- logic runs and a non-list would take the render down with it (IP2).
-  -- M60's boolean, which no version now writes: `unseen` below says what it
-  -- said and says WHICH chapters. Still accepted rather than refused, because
-  -- a record M60 wrote is otherwise a perfectly good record and refusing it
-  -- would cost its chapter's terms until the whole book rendered again — and
-  -- nothing reads it, so a record carrying it says nothing about what its
-  -- chapter took on, exactly as one carrying neither new field does.
-  if data.later ~= nil and type(data.later) ~= "boolean" then
-    return false
-  end
-  -- What the chapter CONCLUDED, as against what it saw. `adopted` is the
-  -- indexes it built a section for, in declared order; `unseen` the chapters
-  -- after it whose record it could not use. Both are read by the two reports
-  -- the book's last chapter draws and by nothing that reaches an index, so
-  -- both are optional on exactly the terms the per-mark fields below are: a
-  -- record written before they existed is a perfectly good record, and
-  -- refusing it would cost an author a whole chapter's terms for a field only
-  -- a report reads. Absent is NOT the empty list — a chapter that adopted
-  -- nothing writes an empty list, and only a version without the field writes
-  -- none, so absent is read as no answer and no answer draws no report.
-  -- Validated here rather than trusted, because both are walked with `ipairs`
-  -- before any report logic runs and a non-list would take the render down
-  -- with it (IP2).
-  for _, list in ipairs({ "adopted", "unseen" }) do
-    if data[list] ~= nil then
-      if type(data[list]) ~= "table" then
-        return false
-      end
-      for _, name in ipairs(data[list]) do
-        if type(name) ~= "string" then
-          return false
-        end
-      end
-    end
-  end
   if data.marker ~= nil then
     if type(data.marker) ~= "table" then
       return false
@@ -474,21 +449,15 @@ local function fold_undeclared(records)
   return refiled
 end
 
--- Returns the usable records in book order, the chapters whose record this
--- version refused for being written by another one — the caller's to report —
--- and the chapters AFTER this one whose record this render could not use.
+-- Returns the usable records in book order and the chapters whose record this
+-- version refused for being written by another one — the caller's to report.
 --
--- That last list is the half of the store a chapter cannot see for itself:
--- chapters render in book order, so the ones before it have just written, and
--- the ones after it have written nothing this render. A chapter with a name in
--- that list cannot yet tell whether some later chapter places an index, and so
--- cannot conclude it is the last chapter that places anything. The chapters
--- BEFORE it are deliberately not listed: one of them missing or refused hides
--- a marker at a position this chapter already stands after, which cannot make
--- this chapter the last placer when it is not.
---
--- One pass. M60 asked the same files a second question in a second walk, which
--- opened, decoded and validated every later record twice over.
+-- One pass, and only these two answers. M60 and M061 also asked which chapters
+-- AFTER this one had no usable record, because a chapter then had to work out
+-- whether it was the last one placing anything before it could take on an
+-- index no marker names. M063 hands that index to the book's last chapter,
+-- which every chapter names the same way from `ctx.chapters`, so no chapter
+-- asks the store where the other markers are any more.
 --
 -- `own` is this chapter's own record, built in memory and spliced in at this
 -- chapter's own position rather than read back off the disk: the store is read
@@ -498,12 +467,11 @@ end
 -- reports on this chapter's own file — there is no stale or unreadable record
 -- of its own for it to find, whatever the write does afterwards.
 local function store_read(ctx, own)
-  local records, stale, unseen = {}, {}, {}
-  for position, file in ipairs(ctx.chapters) do
+  local records, stale = {}, {}
+  for _, file in ipairs(ctx.chapters) do
     if file == ctx.file then
       records[#records + 1] = own
     else
-      local usable = false
       local fh = io.open(store_path(ctx, file), "r")
       if fh then
         local text = fh:read("a")
@@ -511,7 +479,6 @@ local function store_read(ctx, own)
         local ok, data = pcall(pandoc.json.decode, text, false)
         if ok and valid_record(data, file) then
           records[#records + 1] = data
-          usable = true
         else
           -- Never silent: the cost of a record this version cannot use is a
           -- chapter missing from the index, and the fix is the same either way
@@ -533,16 +500,9 @@ local function store_read(ctx, own)
           end
         end
       end
-      -- Missing, refused for its version, refused for its shape: all three leave
-      -- this render without a record it can use, which is the one question the
-      -- chapters after this one are asked. Why it could not be used is the
-      -- reports' business above, not this list's.
-      if not usable and position > ctx.position then
-        unseen[#unseen + 1] = file
-      end
     end
   end
-  return records, stale, unseen
+  return records, stale
 end
 
 -- Every chapter's marks as the entry builder wants them: the kind tables
@@ -846,20 +806,6 @@ local function marker_chapter(ctx, records)
   return first
 end
 
--- Does any chapter file a mark in this index? An index nothing marks prints no
--- section however it is placed, so a deferral reported for it would promise a
--- section a further render would not print either.
-local function marks_in(records, name)
-  for _, record in ipairs(records) do
-    for _, mark in ipairs(record.marks or {}) do
-      if mark.index == name then
-        return true
-      end
-    end
-  end
-  return false
-end
-
 local function any_marks(records)
   for _, record in ipairs(records) do
     if #(record.marks or {}) > 0 then
@@ -876,23 +822,12 @@ end
 -- `marker` is the list of index names this chapter has a surviving placement
 -- marker for, in the order it places them.
 local function html_book(doc, ctx, marker, taken)
-  -- Built before the store is read and written after every judgement is made:
-  -- this chapter's record carries what it CONCLUDED as well as what it saw,
-  -- and what it concluded is not known until the placement below is settled.
-  -- The copy is what the aggregation reads, because `fold_undeclared` rewrites
-  -- the record it walks (`record_for_reading`).
+  -- Built before the store is read, and written unchanged further down. The
+  -- copy is what the aggregation reads, because `fold_undeclared` rewrites the
+  -- record it walks (`record_for_reading`).
   local record = build_record(ctx, marker)
   local reading = record_for_reading(record)
-  local records, stale, unseen = store_read(ctx, reading)
-  -- This chapter's answer to a question only it can answer: which chapters
-  -- after this one had no record this render could use? Chapters render in
-  -- book order and each rewrites its own record as it goes, so no later
-  -- chapter can reconstruct what an earlier one saw — and the book's last
-  -- chapter has to know it, because it is the chapter that reports an index
-  -- section left unplaced, and names there what stood in the way.
-  record.unseen = unseen
-  reading.unseen = unseen
-  local later = #unseen == 0
+  local records, stale = store_read(ctx, reading)
   -- Before any judgement is made about a mark: an index name this book no
   -- longer declares is settled against what it declares now, so every
   -- accumulator below sees only names this book has.
@@ -922,27 +857,24 @@ local function html_book(doc, ctx, marker, taken)
     end
   end
 
-  -- The indexes THIS chapter builds, and where the book's placement sites
-  -- begin and end. `first` draws the reports that are about the book rather
+  -- The indexes THIS chapter builds, and the first chapter of the book that
+  -- places anything. `first` draws the reports that are about the book rather
   -- than about one section, so a book placing three indexes in three chapters
-  -- still reports each of them once.
-  local mine, first, last = {}, nil, nil
+  -- still reports each of them once. Where the LAST placement site stands is
+  -- no longer asked: M60 and M061 handed an index no marker names to the last
+  -- chapter that placed one, a position each chapter derived from a different
+  -- mixture of this render's records and the previous render's and so
+  -- disagreed about within one render.
+  local mine, first = {}, nil
   for _, name in ipairs(qi_indexes.names()) do
     local at = placing[name]
     if at ~= nil then
       if first == nil or at < first then first = at end
-      if last == nil or at > last then last = at end
       if at == ctx.position then
         mine[name] = true
       end
     end
   end
-  -- An index no marker names goes after the ones markers do place: it is
-  -- handed to the LAST chapter that places anything, where `place_index`
-  -- appends it below that chapter's own markers, in declared order. A chapter
-  -- whose author wrote no marker at all therefore never grows an index
-  -- section, and every section of the book sits in a chapter its author asked
-  -- for one in — which is the single document's rule read for a book.
   -- Each of this chapter's markers for an index some EARLIER chapter marks a
   -- place for. Reported before anything is built, because a chapter can both
   -- build one index and lose another to a chapter ahead of it.
@@ -963,14 +895,23 @@ local function html_book(doc, ctx, marker, taken)
   end
 
   local builds = next(mine) ~= nil
-  -- ...but only a chapter that has seen a record for every chapter after it
-  -- may conclude it is the last one that places anything. On a first render no
-  -- chapter has written yet when the chapters before it run, so an early
-  -- placing chapter would otherwise take on every index no marker names and
-  -- print it in a chapter its author asked nothing for. Where that picture is
-  -- missing the section waits for a further render, and the book's last
-  -- chapter says so below — the placement rule itself is unchanged.
-  if first ~= nil and ctx.position == last and later then
+  -- An index no marker names goes to the book's LAST chapter, provided some
+  -- chapter of the book places one. Every chapter of every render names that
+  -- chapter the same way — it is the end of `ctx.chapters`, the render list
+  -- Quarto hands each process — so no two chapters of one render can disagree
+  -- about which of them owes the section, and no render can print it in two
+  -- chapters. The proviso keeps the single document's rule: a book whose
+  -- author wrote no marker anywhere is a book asking for no index, and its
+  -- last chapter grows no section either. `first` is read off the records this
+  -- chapter could read plus its own marker, so a last chapter that carries no
+  -- marker and can read no placing chapter's record concludes the book places
+  -- nothing and builds no section (KI214).
+  --
+  -- Where the last chapter carries no marker of its own, `place_index`
+  -- appends the section at the end of that chapter's body; where it carries
+  -- one, the section follows the ones its own markers place, in declared
+  -- order.
+  if first ~= nil and ctx.position == #ctx.chapters then
     for _, name in ipairs(qi_indexes.names()) do
       if placing[name] == nil then
         mine[name] = true
@@ -979,96 +920,11 @@ local function html_book(doc, ctx, marker, taken)
     end
   end
 
-  -- Which indexes this chapter built a section for, in declared order —
-  -- whether its own marker placed one or it took on an index no marker names.
-  -- Recorded rather than re-derived, because the chapter that reports on it
-  -- renders later and cannot see the store as this one found it. The two
-  -- causes are deliberately not told apart here: what the reports are about is
-  -- how many chapters printed a section, and which of them a marker sent
-  -- there is a question `marker_chapter` answers from the same records.
-  local adopted = {}
-  for _, name in ipairs(qi_indexes.names()) do
-    if mine[name] then
-      adopted[#adopted + 1] = name
-    end
-  end
-  record.adopted = adopted
-  reading.adopted = adopted
-
-  -- Everything this chapter concluded is settled, so the record goes to disk
-  -- here rather than before the store was read: one write, after the last
-  -- judgement, and the aggregation above ran over the copy of it.
+  -- The one write of this chapter's own record. `store_read` skips this
+  -- chapter's own path, so nothing above depends on the write happening after
+  -- it; the position is kept because the aggregation above runs over the copy
+  -- (`reading`) rather than over the table going to disk.
   store_write(ctx, record)
-
-  -- Drawn by the last chapter in book order alone, the same chapter the three
-  -- book-wide reports are drawn by: it is the only one that has seen every
-  -- record, so it is the only one that can say an index is named by no marker
-  -- anywhere. Whether the chapter that should have taken it on did so is read
-  -- off that chapter's own record, which it wrote as it rendered; a chapter
-  -- that renders later cannot see what an earlier one saw.
-  if ctx.position == #ctx.chapters and first ~= nil then
-    -- The record of the chapter an index no marker names is owed to. It is
-    -- read for what that chapter CONCLUDED — the sections it built, and the
-    -- chapters it could not read — rather than for a picture re-derived here
-    -- from the store as it stands now, which is not the store that chapter
-    -- saw. `records` always holds it: `last` is a position `marker_chapter`
-    -- read out of these same records.
-    local placer = nil
-    for _, other in ipairs(records) do
-      if other.file == ctx.chapters[last] then
-        placer = other
-      end
-    end
-    -- A record with neither field was written by a version that had neither,
-    -- and says nothing about what its chapter took on. A report drawn on that
-    -- silence is a report about a section that may well be on the page, so
-    -- silence draws none.
-    if placer ~= nil and placer.adopted ~= nil then
-      local took = {}
-      for _, name in ipairs(placer.adopted) do
-        took[name] = true
-      end
-      -- Named where there are any, and "none" where there are not: a chapter
-      -- can have read every record and still not have taken the section on,
-      -- when the store it read named a LATER chapter as the last placer —
-      -- a marker that chapter has since lost, or a record left claiming one.
-      local blocked = #(placer.unseen or {}) > 0
-        and table.concat(placer.unseen, ", ") or "none"
-      for _, name in ipairs(qi_indexes.names()) do
-        if placing[name] == nil and not took[name]
-           and marks_in(records, name) then
-          qi_core.warn(('no placement marker in this book names the index "%s", so its section goes to %s, the last chapter of the book that places one — and when that chapter rendered it did not take the section on. Chapters whose record it could not read then: %s. A chapter takes on an index no marker names only once it has read a usable record for every chapter after it'):format(name, ctx.chapters[last], blocked))
-        end
-      end
-    end
-
-    -- ...and the other way round: an index with a section in more than one
-    -- chapter. Read off the same recorded adoptions, because that is the only
-    -- place a chapter's own conclusion survives its process — nothing on this
-    -- render's pages tells the last chapter what an earlier one printed. Named
-    -- in book order, once per index, by the one chapter that has seen every
-    -- record. A record with no `adopted` field is a chapter that says nothing
-    -- about what it built, and a chapter that says nothing is not counted as
-    -- one of two.
-    local built = {}
-    for _, other in ipairs(records) do
-      for _, name in ipairs(other.adopted or {}) do
-        local carrying = qi_core.namespace(built, name)
-        carrying[#carrying + 1] = other.file
-      end
-    end
-    for _, name in ipairs(qi_indexes.names()) do
-      local carrying = built[name] or {}
-      -- `adopted` is what a chapter DECIDED to build, and a declared index no
-      -- mark files in is decided for and then printed nowhere: an index with
-      -- no marks anywhere in the book has no section to have twice. Guarded
-      -- on the same `marks_in` the unplaced-section report above is guarded
-      -- on, and for the same reason (M061 review F1).
-      if #carrying > 1 and marks_in(records, name) then
-        qi_core.warn(('the index "%s" has a section in more than one chapter of this book — %s. A chapter builds a section for an index its own marker places, and the last chapter that places any index also builds one for each index no marker names; a placement marker added between two renders changes which chapter that is, and a render made before every chapter has read the new marker builds the section in each of them'):format(name, table.concat(carrying, ", ")))
-      end
-    end
-  end
 
   -- The two reports about a stored record this render could not use as it
   -- stands: one refused for its version, one refiled because it names an index
@@ -1110,8 +966,6 @@ local function html_book(doc, ctx, marker, taken)
       end
       return qi_marker.place_index(doc, nil)
     end
-    -- Named for what it holds rather than `later`, which in this function is
-    -- already the boolean this chapter recorded about the store.
     local after = {}
     for position = ctx.position + 1, #ctx.chapters do
       after[#after + 1] = ctx.chapters[position]
@@ -1187,7 +1041,6 @@ M["book_sort_for"] = book_sort_for
 M["book_marks"] = book_marks
 M["report_book_dangling"] = report_book_dangling
 M["marker_chapter"] = marker_chapter
-M["marks_in"] = marks_in
 M["any_marks"] = any_marks
 M["html_book"] = html_book
 

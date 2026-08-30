@@ -1,10 +1,10 @@
 # The first-render placement fixture (M60). Everything here is a shape
 # examples/book/ deliberately does not have:
 #   - the placement markers sit in DIFFERENT chapters, so the chapter that
-#     takes on an index no marker names is not the book's last one;
+#     takes on an index no marker names carries no marker of its own;
 #   - the book ends with TWO chapters carrying no marker at all, so the
-#     chapter that reports an unplaced or doubled index section is never the
-#     chapter a check gives a marker to or whose record it makes unwritable;
+#     chapter that takes on an index no marker names is never the chapter a
+#     check gives a marker to or whose record it makes unwritable;
 #   - one declared index is named by no marker anywhere, so a render has to
 #     decide where it goes rather than read it off a marker;
 #   - one declared index is named by no marker AND marked by nothing, so a

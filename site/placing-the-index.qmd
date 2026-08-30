@@ -32,13 +32,10 @@ Seven rules, each of which warns rather than breaking your build:
 - **The marker is empty.** Write anything inside it and your content stays
   where the marker was, with a warning. Nothing you wrote is deleted.
 - **A marker in a document with no index marks** places nothing, and says so.
-- **An index no marker names, in an HTML book**, goes at the end of the last
-  chapter that places one, and a first render can leave it out. The book's
-  last chapter says so once, naming the index, the chapter its section was
-  owed to and the chapters whose record that chapter could not read. Give some
-  later chapter a marker for that index between two renders and the section
-  prints in two chapters instead, which the same chapter reports once by name.
-  The [Books](books.qmd) page has the whole of it.
+- **An index no marker names, in an HTML book**, goes at the end of the book's
+  last chapter, on every render, provided some chapter of the book places an
+  index. Where that chapter carries a marker of its own the section follows
+  the ones its markers place. The [Books](books.qmd) page has the whole of it.
 - **A nested marker that was the only thing there** empties the place it was
   written in, and that is reported by the number of the top-level block it sat
   under — with the chapter that number was counted in, in an HTML book. (A lone

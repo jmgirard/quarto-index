@@ -427,8 +427,11 @@ ids, its own output page — to a sidecar store
 under the project's `.quarto/` scratch directory, keyed by chapter source path,
 and the chapter carrying a placement marker reads the whole store back in book
 order and builds each index that marker places; an index no marker names is
-built by the last chapter that places one, after the indexes it places
-(corrected M55). Each record carries the index every mark files in and each
+built by the book's LAST chapter, after any index that chapter's own markers
+place, provided some chapter of the book places one (corrected M063 — M55 and
+M60 gave it to the last chapter that placed an index, a position each chapter
+derived from a different mixture of this render's records and the previous
+render's). Each record carries the index every mark files in and each
 index's own declared sort keys, so every judgement the book makes across its
 chapters is made inside one index (D-021); a name the reading chapter does not
 declare is a stale record's, and its marks are filed in the first declared
@@ -444,24 +447,24 @@ known locally and never read back from the store, so a chapter whose own record
 failed to write still knows what it is. Nothing about the store may break a
 render (IP2): the write is one guarded unit, a record is validated against a
 version and a shape before it is read, and every failure costs that chapter's
-entries and says so. Seven cases are reported rather than guessed at (corrected M061,
-which added the last of them and found the deferral M60 added missing here): a
-book whose chapters mark terms but whose author wrote no marker anywhere
-(reported by the last chapter, the only one that can know), a marker in a book
-that marks nothing, a second marker chapter (the first in book order builds the
-index), a marker with chapters after it (whose entries are one render behind),
-an index no marker names whose section the last placing chapter did not take
-on, that same index taken on by two chapters at once, and a page
-Quarto presents as a book chapter without the metadata this needs — which falls
-back to indexing that page alone, the pre-M05 defect, and so is never silent.
-The last two are read off what each chapter RECORDED concluding — the indexes
-it built a section for, and the chapters after it whose record it could not use
-— rather than re-derived by the reading chapter from a store it did not see
-(M061): a chapter renders in its own process, and only its own record survives
-it. Both fields are optional, so a record written before them says nothing
-about what its chapter took on and draws neither report. The store is read once
-per chapter, before that chapter writes, with the chapter's own record built in
-memory and spliced in at its own position (M061).
+entries and says so. Five cases are reported rather than guessed at (corrected
+M063, which retired two of the seven M061 left): a book whose chapters mark
+terms but whose
+author wrote no marker anywhere (reported by the last chapter, the only one
+that can know), a marker in a book that marks nothing, a second marker chapter
+(the first in book order builds the index), a marker with chapters after it
+(whose entries are one render behind), and a page Quarto presents as a book
+chapter without the metadata this needs — which falls back to indexing that
+page alone, the pre-M05 defect, and so is never silent. The two M063 retired
+were an index no marker names whose section the last placing chapter did not
+take on, and that same index taken on by two chapters at once; the book's last
+chapter takes the section on wherever the records it read show any chapter
+placing an index, so neither can arise (KI214 is the residual case). The record
+fields they read — `adopted`, `unseen`, and M60's `later` — went with them, and
+`STORE_VERSION` did not move: a record still carrying any of them is read as a
+record without them, so an upgrade costs no chapter its terms. The store is
+read once per chapter, before that chapter writes, with the chapter's own
+record built in memory and spliced in at its own position (M061).
 
 Shared between them: the level parse and its empty-level drop, the
 cross-reference target parse and its `: ` join, and every warning about the
@@ -1322,27 +1325,49 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   only U+00A0 and U+200B reach one. A transposed code point in the list — say
   `\u{2007}` written as `\u{2070}`, a visible glyph — would ship silently.
   — M59 review F6
-- **KI199.** Two chapters can both print a section for the same unplaced index
-  when a chapter after the last placer gains a marker between renders: the
-  earlier one still sees that chapter's pre-marker record and believes it is
-  last. Both print the section; the book's last chapter now reports it once by
-  name (corrected M061), and preventing it needs a way for a chapter to see a
-  marker a later chapter has not yet recorded (ROADMAP). Predates M60 and
-  reproduces identically without it. — M60 review F3
-- **KI205.** A chapter whose record can never be written leaves an index
-  section that is never printed, on every render: the chapters before it never
-  see a record for it, so none of them takes the unnamed index on. M061 made
-  the render say so once per render and name the chapter, and did not make the
-  section printable. The KI203 entry M061 struck carried this half as well as
-  the false promise M061 removed; restored here as its own entry, since only
-  the promise was fixed. — M60 review F11, corrected M061 review F4
-- **KI206.** M061-AC3's warning-count assertion expects 7 anchored `(W)`
+- **KI205.** A book's index section for an index no marker names is printed
+  short the terms of any chapter whose record cannot be read — a chapter whose
+  store path is held by something else, a project tree that is read-only. The
+  book's last chapter builds the section from the records it could read, and a
+  chapter's marks reach the index by no other route. M063 made the section
+  printable, and did not make those terms reachable; the render says which
+  chapter, twice, in the unreadable-record and failed-write reports. Narrowed
+  M063 from the whole section being lost. — M60 review F11, corrected M061
+  review F4, narrowed M063
+- **KI214.** A book prints no section for an index no marker names where the
+  last chapter can read a usable record for none of the chapters that place
+  one. The proviso on M063's rule — some chapter of the book places an index —
+  is `first`, which each chapter derives from the records it could read plus
+  its own marker, so a last chapter that carries no marker and reads no placing
+  chapter's record concludes the book places nothing and builds no section.
+  Observed 2026-08-30 on a scratch copy of `examples/book-placement/` with the
+  store paths of both `index.qmd` and `three.qmd` held by directories: two
+  consecutive whole-book renders each printed `alpha` in `index.html` and
+  `beta` in `three.html` and no `gamma` section on any page, both exiting 0.
+  The same shape as KI205 — an unwritable record costing more than its own
+  chapter's terms — and the same remedy, a route to a chapter's marks that does
+  not go through the store.
+  — M063 AC3 criteria audit
+- **KI215.** The two store reports repeat once more than
+  `site/books.qmd` states in a book whose fallback set is entirely unmarked.
+  The fallback loop sets `builds = true` for every index no marker names,
+  including one no chapter marks, so a last chapter whose `mine_marks` is empty
+  and which therefore prints no section still opens the `builds or first ==
+  nil` gate. Observed 2026-08-30 on a scratch copy of `examples/book-placement/`
+  with every `gamma` mark removed and `four.qmd`'s record made stale and
+  unwritable: `five.html` carried no index section, and the stale-record report
+  was drawn 3 times where two chapters build a section. The class predates
+  M063 — a chapter whose marker places only an unmarked index sets `builds`
+  the same way — and M063 adds the marker-less last chapter as a new instance.
+  Narrowing it needs `marks_in`, which M063 retired with the reports that were
+  its only callers. — M063 review F1
+- **KI206.** M063-AC3's warning-count assertion expects 6 anchored `(W)`
   matches because Quarto writes a colour-reset escape at the head of the
   write-failure report's line, which `tests/scans/warn-distinct.py`'s
   `^\(W\) ` patterns then miss. Nothing sets or asserts that escape, so an
-  uncoloured log makes the count 8 and the check red for a reason that is not
+  uncoloured log makes the count 7 and the check red for a reason that is not
   the extension's. The raw warning-line count asserted beside it is the stable
-  half. — M061 review F2
+  half. — M061 review F2, counts corrected M063
 - **KI208.** The gate drawing the two store reports from a chapter that builds
   no index section, `builds or first == nil`, reads `first` off the records
   that chapter could read, so it fires in any book whose marker chapter's own
@@ -1376,10 +1401,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   why. `examples/book-nomarker/` carries no sort keys and the check guards
   none, so the key half of `fold_undeclared`'s rebuild would silently stop
   being covered there if the fixture gained one. — M062 review F7
-- **KI207.** `valid_record`'s `data.later` branch, which keeps a record written
-  by the M60-era version readable, is reached by no check: no version writes
-  the field and nothing plants a record carrying it, so the compatibility it
-  states is asserted nowhere. — M061 review F6
 - **KI204.** `store_write`'s open-failure guard does not stop the write. With
   the record's store path held by a directory, the render logs
   `ERROR ([C]:-1) <path>: Is a directory` — the text `io.open` hands back — and

@@ -6602,7 +6602,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # failing to double anything.
   # -------------------------------------------------------------------------
   m061_mutant nodouble \
-    's{      if #carrying > 1 then\n}{      if false then\n}' \
+    's{      if #carrying > 1 and marks_in\(records, name\) then\n}{      if false then\n}' \
     "M061 T7 self-test"
   python3 - "$M061W/nodouble/four.qmd" <<'NODOUBLEPY' \
     || fail "M061 T7 self-test: the marker could not be appended to the copied chapter (its own FAIL line is above)"

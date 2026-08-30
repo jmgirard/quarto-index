@@ -202,4 +202,60 @@ exit 0). Named check lines are the suite's own `ok` lines.
   one prints twice; the `M061-AC6` self-test shows each of the two claim lists red on
   a copy of its own page with that claim removed.
 - AC7 — PASS. `tests/run-tests.sh` — 515 checks, exit 0. `tests/run-tests.sh
-  --self-test` — 976 checks, exit 0. Both run whole on this branch at the tip.
+  --self-test` — 976 checks, exit 0. Both run whole, and both re-run whole after
+  the gate fixes below, with the same figures and every `M061-AC` line byte-identical
+  to the pre-fix run.
+
+### Consistency gate
+
+`cairn_validate.py` exit 0, every check PASS, every advisory OK — the `release window`
+advisory did not fire. No `DESIGN.md` principle text changed, so `cairn_impact.py`
+was not run. The `generic` profile's `consistency-gate` slot names no toolchain checks.
+
+### Findings
+
+Three lenses ran, none having seen the implementation. The blame-history lens
+reported no findings; the prior-review lens reported none, having read M60's archived
+`## Review` (KI198-KI203) and probed the repo's GitHub inline review comments, of
+which there are none. The diff-bug lens reported eight, ranked.
+
+- **F1 — the doubled-section report fires for an index with no section anywhere.**
+  `adopted` records what a chapter decided to build, and a declared index no mark
+  files in is decided for and then printed nowhere, so two chapters both "adopting"
+  it drew a report about a section that does not exist. The unplaced-section report
+  already guards on `marks_in`; the doubled one did not. **Fixed at the gate.**
+  Reproduced first on a scratch copy of the placement fixture carrying a fourth
+  declared index nothing marks: the render drew the report for that index as well as
+  for `gamma`, and no page carried a section for it. Guarded on the same `marks_in`,
+  and regression-tested by giving `examples/book-placement/` that fourth declared
+  index — inert once guarded (every `M061-AC` line unchanged), and without the guard
+  it makes AC2's count-of-one assertion read two.
+- **F2 — AC3's anchored-warning count of 7 rests on an ANSI escape nothing pins.**
+  Quarto writes a colour-reset sequence at the head of the write-failure report's
+  line, which the scan's `^\(W\) ` patterns then miss; an uncoloured log makes the
+  count 8. **Filed as KI206**, with the raw warning-line count beside it named as the
+  stable half. No fix: pinning the escape is check-reader work, not this milestone's.
+- **F3 — KI204's recorded mechanism does not reproduce.** **Rejected**, the
+  refutation checked against the implementation rather than against its account:
+  this branch's own AC3 render log carries `book.lua:209: attempt to index a nil
+  value (local 'fh')`, and line 209 is `fh:write`, the line after the guard. The
+  entry records what the render did.
+- **F4 — KI203 was struck as fixed when only its wording was fixed.** The entry
+  carried a false promise and an index section that is never printed while a chapter's
+  record can never be written; M061 removed the promise. **Fixed at the gate** —
+  **KI205** restores the behavioural half as its own entry.
+- **F5 — `record_for_reading`'s copy is shallow one level below `marks`.**
+  **Rejected**: no defect today, `fold_undeclared` is the only mutator and it replaces
+  `sorts` wholesale and assigns only `mark.index`, which the comment names.
+- **F6 — `valid_record`'s `data.later` branch is asserted by no check.**
+  **Filed as KI207.**
+- **F7 — AC3's report-naming grep matched a prefix, not the set.**
+  `could not read then: four.qmd` also passed on `four.qmd, five.qmd`, so the check
+  could not tell a correct one-element `unseen` from an over-broad one. **Fixed at the
+  gate**: the grep now carries the sentence that follows, pinning the whole set.
+- **F8 — AC4's whole-book leg cannot fail, and the criterion names only that leg.**
+  **Rejected**: AC4 passes as written, and the implement gate already recorded adding
+  the discriminating single-chapter leg rather than amending AC4.
+
+None of the eight meets the return floor: none demonstrates an acceptance criterion
+failing, and the one load-bearing defect among them (F1) is fixed on the branch.

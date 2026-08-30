@@ -98,7 +98,53 @@ local function book_context(doc)
     -- another chapter's site-relative href into a link this page can use.
     offset = as_href(quarto.project.offset or "."),
     dir = pandoc.path.join({ root, ".quarto", STORE_DIR }),
+    -- The project directory the chapter list is relative to. Carried because
+    -- a chapter whose record cannot be used is read back from its own source,
+    -- and `book.render` names that source relative to here.
+    root = root,
   }
+end
+
+-- The extension this render is writing pages under, read off this chapter's
+-- own output page rather than assumed: `.html` for every book this code runs
+-- for, and the one spelling the render is known to be producing.
+local function output_extension(ctx)
+  return ctx.href:match("(%.[^%./]+)$") or ""
+end
+
+-- Another chapter's page, as this book's output tree spells it. The store
+-- normally answers this — every record carries its chapter's own `href` — so
+-- this is for the chapter whose record could not be used and whose page must
+-- therefore be derived from what Quarto's own conventions make it.
+--
+-- `meta` is that chapter's own parsed metadata. Quarto lets a chapter name its
+-- output file there, and probing this book fixture on 2026-08-30 with
+-- `output-file: custom-four.html` in one chapter and `output-file: bare-two`
+-- in another produced `custom-four.html` and `bare-two.html`: the name is
+-- taken as written where it carries an extension, and given the output
+-- extension where it does not. It is relative to the chapter, as the chapter's
+-- own source path is.
+--
+-- That same probe found `quarto.doc.output_file` for such a chapter pointing
+-- outside the project's output directory, so `book_context` above returns nil
+-- for it and it writes no record at all (KI216). A chapter declaring
+-- `output-file:` therefore reaches this branch only where an earlier render
+-- left it a record this version can no longer use. The branch is written all
+-- the same: the alternative is a locator that silently names a page the book
+-- does not have.
+local function chapter_href(ctx, file, meta)
+  local dir = file:match("^(.*/)") or ""
+  local declared = meta and meta["output-file"] or nil
+  if declared ~= nil then
+    local name = as_href(pandoc.utils.stringify(declared))
+    if name ~= "" then
+      if not name:match("[^/]%.[^%./]+$") then
+        name = name .. output_extension(ctx)
+      end
+      return dir .. name
+    end
+  end
+  return (file:gsub("%.[^%./]*$", "")) .. output_extension(ctx)
 end
 
 -- Another chapter's page, as a link from the page holding the index.
@@ -1029,6 +1075,8 @@ M["as_href"] = as_href
 M["strip_prefix"] = strip_prefix
 M["book_context"] = book_context
 M["relative_href"] = relative_href
+M["output_extension"] = output_extension
+M["chapter_href"] = chapter_href
 M["store_path"] = store_path
 M["build_record"] = build_record
 M["record_for_reading"] = record_for_reading

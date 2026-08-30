@@ -1426,3 +1426,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   render survives and reports once, so IP2 holds; what the author is shown is
   the second failure rather than the first, beside an ERROR line the extension
   did not mean to print. Observed 2026-08-30 on M061-AC3's render. — M061 T8
+- **KI216.** A book chapter that declares `output-file:` in its own front
+  matter drops out of the book's index entirely and indexes itself alone.
+  `quarto.doc.output_file` for such a chapter is `<project>/<name>.html`
+  rather than a path under the project's output directory, so
+  `book_context`'s `strip_prefix(output, out)` returns nil, the chapter takes
+  the no-metadata fallback, and it writes no record — its terms reach no
+  section of the book and no route recovers them, since recovery reads a
+  record that was opened and refused rather than one that was never written.
+  Observed 2026-08-30 on a scratch copy of `examples/book-placement/` with
+  `output-file: custom-four.html` in `four.qmd` and `output-file: bare-two` in
+  `two.qmd`: both pages landed in `_book/` under the names their front matter
+  asked for, while the filter was told `<project>/custom-four.html` and
+  `<project>/bare-two.html`; both chapters drew the looks-like-a-book warning
+  and neither wrote a store record. — M064 T2 probe

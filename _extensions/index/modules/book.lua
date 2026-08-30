@@ -243,12 +243,40 @@ local function valid_record(data, file)
   -- know which; a chapter with no marker writes an empty one. Validated here
   -- rather than trusted, because `marker_chapter` walks it before any marker
   -- logic runs and a non-list would take the render down with it (IP2).
-  -- M60's boolean, which no version now writes: `unseen` below says the same
-  -- thing and says WHICH chapters. Still accepted, because a record M60 wrote
-  -- is otherwise a perfectly good record and refusing it would cost its
-  -- chapter's terms until the whole book rendered again.
+  -- Optional on the same terms as the four per-mark fields below: a record
+  -- written before this field existed simply does not say what its chapter
+  -- saw. Absent is not `false`: only a version of this extension without the
+  -- field writes no field, and such a record is never one this render wrote,
+  -- so reading it as "did not have the picture" would report a deferral for a
+  -- section already printed. Absent is read as no answer, and no answer draws
+  -- no report.
   if data.later ~= nil and type(data.later) ~= "boolean" then
     return false
+  end
+  -- What the chapter CONCLUDED, as against what it saw. `adopted` is the
+  -- indexes it built a section for, in declared order; `unseen` the chapters
+  -- after it whose record it could not use. Both are read by the two reports
+  -- the book's last chapter draws and by nothing that reaches an index, so
+  -- both are optional on exactly the terms the per-mark fields below are: a
+  -- record written before they existed is a perfectly good record, and
+  -- refusing it would cost an author a whole chapter's terms for a field only
+  -- a report reads. Absent is NOT the empty list — a chapter that adopted
+  -- nothing writes an empty list, and only a version without the field writes
+  -- none, so absent is read as no answer and no answer draws no report.
+  -- Validated here rather than trusted, because both are walked with `ipairs`
+  -- before any report logic runs and a non-list would take the render down
+  -- with it (IP2).
+  for _, list in ipairs({ "adopted", "unseen" }) do
+    if data[list] ~= nil then
+      if type(data[list]) ~= "table" then
+        return false
+      end
+      for _, name in ipairs(data[list]) do
+        if type(name) ~= "string" then
+          return false
+        end
+      end
+    end
   end
   if data.marker ~= nil then
     if type(data.marker) ~= "table" then
@@ -848,12 +876,14 @@ local function html_book(doc, ctx, marker, taken)
   local record = build_record(ctx, marker)
   local reading = record_for_reading(record)
   local records, stale, unseen = store_read(ctx, reading)
-  -- This chapter's answer to a question only it can answer: did the store
-  -- already hold a usable record for every chapter after this one? Chapters
-  -- render in book order and each rewrites its own record as it goes, so no
-  -- later chapter can reconstruct what an earlier one saw — and the book's
-  -- last chapter has to know it, because it is the chapter that reports an
-  -- index section left unplaced.
+  -- This chapter's answer to a question only it can answer: which chapters
+  -- after this one had no record this render could use? Chapters render in
+  -- book order and each rewrites its own record as it goes, so no later
+  -- chapter can reconstruct what an earlier one saw — and the book's last
+  -- chapter has to know it, because it is the chapter that reports an index
+  -- section left unplaced, and names there what stood in the way.
+  record.unseen = unseen
+  reading.unseen = unseen
   local later = #unseen == 0
   record.later = later
   -- Before any judgement is made about a mark: an index name this book no
@@ -941,6 +971,22 @@ local function html_book(doc, ctx, marker, taken)
       end
     end
   end
+
+  -- Which indexes this chapter built a section for, in declared order —
+  -- whether its own marker placed one or it took on an index no marker names.
+  -- Recorded rather than re-derived, because the chapter that reports on it
+  -- renders later and cannot see the store as this one found it. The two
+  -- causes are deliberately not told apart here: what the reports are about is
+  -- how many chapters printed a section, and which of them a marker sent
+  -- there is a question `marker_chapter` answers from the same records.
+  local adopted = {}
+  for _, name in ipairs(qi_indexes.names()) do
+    if mine[name] then
+      adopted[#adopted + 1] = name
+    end
+  end
+  record.adopted = adopted
+  reading.adopted = adopted
 
   -- Everything this chapter concluded is settled, so the record goes to disk
   -- here rather than before the store was read: one write, after the last

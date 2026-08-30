@@ -98,7 +98,7 @@ tells the author.
       chapters, and the later chapters whose record this render could not use; retire
       `later_recorded` (`_extensions/index/modules/book.lua:439`). `html_book` builds this
       chapter's record in memory, splices it in at its own position, and writes once.
-- [ ] T2. The record carries `adopted` (index names this chapter took on) and `unseen` (the
+- [x] T2. The record carries `adopted` (index names this chapter took on) and `unseen` (the
       later chapters it could not read); both optional in `valid_record`, absent read as no
       answer, no `STORE_VERSION` bump — a field only a report reads never invalidates another
       chapter's terms.
@@ -136,6 +136,7 @@ tells the author.
 - 2026-08-30: plan gate chose reporting a doubled index section over always sending an unnamed index to the book's last chapter, because the latter reverses M55's placement rule and moves the section out of the chapter placing the book's other indexes; falsified by a mechanism letting a chapter see a placement marker a later chapter has not yet recorded.
 - 2026-08-30: plan gate chose a fifth chapter in `examples/book-placement/` over a new book fixture directory, because the axis under test is the distance between the gaining chapter and the reporting one and a fifth fixture adds a render to every suite run; falsified by the re-derivation of that fixture's manifests proving larger than the new-fixture cost.
 - 2026-08-30: T1 — one store pass. `store_read` takes this chapter's in-memory record, splices it in at its own position and never reads this chapter's own file, and returns the usable records, the version-refused chapters and the later chapters whose record this render could not use; `later_recorded` is retired. `store_write` takes a built record and runs after the placement is settled, so the chapter records what it concluded and writes once. `record_for_reading` gives the aggregation a copy, so `fold_undeclared` cannot write a folded index name into the store. Suite green, 498 checks, exit 0.
+- 2026-08-30: T2 — a record carries `adopted` (the indexes the chapter built a section for, in declared order) and `unseen` (the later chapters whose record it could not use). Both optional in `valid_record` and walked only after their type is tested; absent read as no answer, no `STORE_VERSION` bump. Suite green, 498 checks, exit 0.
 - 2026-08-30: implement gate chose the drafted texts for both reports and a second single-chapter render leg in AC4's check over amending AC4, because a whole-book render rewrites every record before the last chapter reads one, so the stripped-field control cannot go red without it.
 - 2026-08-30: plan gate chose optional new record fields read as no answer over a `STORE_VERSION` bump, because a bump drops every chapter's terms from the book index until the whole book renders again for a field only a report reads (M14); falsified by a reader that reaches the index rather than a report coming to depend on either field.
 

@@ -1,11 +1,11 @@
 # M063: A book puts an index no marker names in the same chapter on every render
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP3
-- **Branch/PR:** —
+- **Branch/PR:** `m063-book-fallback-placement`
 
 ## Goal
 
@@ -143,6 +143,7 @@ the 0.1.0 release.
 - 2026-08-30: plan gate chose the book's last chapter over reading later chapters' `.qmd` source for a marker and over a per-render store snapshot, because the last chapter is `ctx.chapters[#ctx.chapters]` in every chapter's process and so cannot be disagreed about, where a source read recognizes a marker by text and is blind to one arriving via an include or an executable cell and a snapshot adds a store artifact and a one-render lag; falsified by a book whose last chapter is a place an author will not accept an index section in.
 - 2026-08-30: plan gate chose retiring the unplaced-section and doubled-section reports outright over keeping them as guards for a partial-render path, because neither can fire once the last chapter always adopts and a check over a report nothing reaches is vacuous (the M38 lesson); falsified by a render path reaching either report with the new rule in place.
 - 2026-08-30: plan gate chose leaving the terms of an unwritable chapter's record out of scope over recovering them here, because reaching them needs a route that does not go through the sidecar store at all; falsified by the store gaining a second read path for a reason of its own.
+- 2026-08-30: /milestone-implement opened; branch `m063-book-fallback-placement` cut from main.
 
 ## Decisions
 

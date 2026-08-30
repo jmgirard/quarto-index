@@ -8,7 +8,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M063 | A book puts an index no marker names in the same chapter on every render | planned | — | normal | milestones/M063-book-fallback-placement.md |
+| M063 | A book puts an index no marker names in the same chapter on every render | in-progress | — | normal | milestones/M063-book-fallback-placement.md |
 | M061 | A book reports the index section it deferred, doubled, or can never place | done | — | normal | milestones/archive/M061-book-deferred-section-reports.md |
 | M062 | A book repeats a record complaint once per index section it costs | done | M061 | normal | milestones/archive/M062-book-record-report-counts.md |
 | M60 | An HTML book's first render places each index where its author asked | done | — | normal | milestones/archive/M60-book-first-render-placement.md |

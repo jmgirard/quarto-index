@@ -1199,6 +1199,14 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   scope is one chapter, which is the fact that explains why a range spanning
   two chapters does not pair. Reaching the pair of words takes a second message
   shape and a superseding entry against D-021. — M55
+- **KI168.** The report for a record naming an index the book no longer
+  declares is drawn by `fold_undeclared`, which every rendering chapter calls,
+  so one such record draws it once per chapter rendered rather than once per
+  chapter that builds an index. The count is asserted only behind
+  single-chapter renders, where either rule gives 1. Wording corrected M60:
+  the entry read as naming the version-skew report, which M60 moved and which
+  is now drawn once per building chapter; the report M55's review actually
+  found is this one, and it is unchanged. — M55 review F4, corrected M60
 - **KI170.** The duplicate-marker report a book with one namespace draws still
   ends "and a book has a single index". It is drawn only for a book declaring
   nothing or one index, where it is true, but it is now the only sentence in

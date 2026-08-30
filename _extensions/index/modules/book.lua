@@ -225,9 +225,11 @@ local function valid_record(data, file)
   -- logic runs and a non-list would take the render down with it (IP2).
   -- Optional on the same terms as the four per-mark fields below: a record
   -- written before this field existed simply does not say what its chapter
-  -- saw, and `nil` is read as "the later chapters were not known to be
-  -- recorded" — one further deferral report at worst, never a chapter's terms
-  -- dropped.
+  -- saw. Absent is not `false`: only a version of this extension without the
+  -- field writes no field, and such a record is never one this render wrote,
+  -- so reading it as "did not have the picture" would report a deferral for a
+  -- section already printed. Absent is read as no answer, and no answer draws
+  -- no report.
   if data.later ~= nil and type(data.later) ~= "boolean" then
     return false
   end
@@ -923,7 +925,11 @@ local function html_book(doc, ctx, marker, taken)
     if not adopted then
       for _, record in ipairs(records) do
         if record.file == ctx.chapters[last] then
-          adopted = record.later == true
+          -- `~= false` rather than `== true`: a record with no `later` field
+          -- at all was written before the field existed and says nothing
+          -- either way, and a report drawn on its silence is a report about a
+          -- section that is on the page.
+          adopted = record.later ~= false
         end
       end
     end
@@ -959,11 +965,13 @@ local function html_book(doc, ctx, marker, taken)
       end
       return qi_marker.place_index(doc, nil)
     end
-    local later = {}
+    -- Named for what it holds rather than `later`, which in this function is
+    -- already the boolean this chapter recorded about the store.
+    local after = {}
     for position = ctx.position + 1, #ctx.chapters do
-      later[#later + 1] = ctx.chapters[position]
+      after[#after + 1] = ctx.chapters[position]
     end
-    if #later > 0 then
+    if #after > 0 then
       -- Chapters render in book order, so a chapter after this one has not
       -- run yet in this render: what the index shows for it is whatever an
       -- earlier render recorded, which may name terms that chapter no longer
@@ -983,7 +991,7 @@ local function html_book(doc, ctx, marker, taken)
             .. "dead. Put the marker chapter last in the book. The chapter "
             .. "count is over the files this book renders, in the order the "
             .. "book's render list gives them")
-           :format(ctx.file, #later, table.concat(later, ", ")))
+           :format(ctx.file, #after, table.concat(after, ", ")))
     end
     -- Only the marks of the indexes this chapter builds. Another chapter's
     -- section is built in that chapter's own process, out of the same records.

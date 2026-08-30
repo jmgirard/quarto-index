@@ -1,6 +1,6 @@
 # M062: A book repeats a record complaint once per index section it costs
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M061
 - **Driving RR:** —
@@ -116,6 +116,7 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 - 2026-08-30: T7 — `site/books.qmd` and `CHANGELOG.md` state when each report repeats, written against the AC1 and AC3 renders' own logs; the claim joins the books page's claim list, whose self-test now plants its removal as well as M061's.
 - 2026-08-30: DESIGN.md known issues KI168, KI200 and KI202 struck as fixed by this milestone: the refiled-name report drawn once per chapter rendered, a book with no marker anywhere reporting an unusable record zero times, and both counts on the refiled-name report asserted only behind single-chapter renders.
 - 2026-08-30: T3-T7 verified together by one `tests/run-tests.sh --self-test` run rather than one run per task — the suite takes about 30 minutes plain and 50 with the self-test. 981 checks, exit 0.
+- 2026-08-30: all tasks done, status review. Suite green over the branch as it stands: 519 checks plain, 981 with `--self-test`, both exit 0.
 - 2026-08-30: T1+T2 landed in one commit — T1 alone removes the refiled-name report with nothing drawing it, so the two cannot be separated. `fold_undeclared` returns chapter-and-name pairs; `html_book` draws both store reports at one site, gated on `builds or first == nil`. Suite green: 515 checks, exit 0.
 - 2026-08-30: plan gate chose one report site for both reports over leaving the refiled-name report inside `fold_undeclared`, because a function every rendering chapter calls cannot draw a report scoped to the chapters that build; falsified by a caller needing the refiled marks folded without wanting the report.
 

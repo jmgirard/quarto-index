@@ -9,7 +9,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP1
-- **Branch/PR:** `m060-book-first-render-placement`
+- **Branch/PR:** `m060-book-first-render-placement` — https://github.com/jmgirard/quarto-index/pull/60
 
 ## Goal
 

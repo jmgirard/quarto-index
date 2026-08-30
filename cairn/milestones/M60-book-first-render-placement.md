@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M60: An HTML book's first render places each index where its author asked
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -152,6 +152,7 @@ in a rendered book or a failed render.
 - 2026-08-29: T5 — the `mark.xrefs` type test now precedes the loop that walks the field. A record whose `xrefs` is a number, planted from `one.qmd`'s own record with its version read from the filter's constant, leaves `quarto render last.qmd` at exit 0, draws the unreadable-record report once naming `one.qmd`, and leaves `main` and `places` printed; the same record unplanted is accepted and all three print. Under `--self-test` the same record against a filter with those three lines deleted and nothing moved takes the render down with `attempt to index a number value` at `valid_record`. Suite green: 496 plain, 945 with `--self-test`.
 - 2026-08-29: T6 — a planted `one.qmd` record splits its marks between `main` and a name the book does not declare and carries a key for the printed path `Beta` under each, `Zulu Beta` and `Alpha Beta`; the rendered page files `Beta` under `Z` behind `Zeta` and under no other group. Under `--self-test` the same record against a filter whose fold sorts both names in one run puts it under `A`, and the same reader reports it. Suite green: 498 plain, 948 with `--self-test`.
 - 2026-08-29: T7 — both documentation pages now say an index no marker names waits for a second render where the last marker is not in the book's last chapter, and that nothing else does; three `CHANGELOG.md` entries added under Output for the deferred section, the version-skew report's new count, and the refused `xrefs` field. KI167, KI168, KI169 and KI171 struck from `cairn/DESIGN.md`; KI170 stays, being out of scope. No candidate row to rewrite — the row naming those four was consumed when M60 was planned. Suite green: 498 plain, 948 with `--self-test`.
+- 2026-08-29: all seven tasks done; `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit 0 over the branch, 498 and 948 checks. Status review.
 
 ## Decisions
 

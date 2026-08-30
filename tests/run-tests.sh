@@ -849,11 +849,12 @@ MANIFEST
 # ---------------------------------------------------------------------------
 # Manifest 7 — the no-marker book (M05-AC6). Each row is <page><TAB><visible
 # term>: the term a reader must still see on that page in a book that gets no
-# index at all, derived from the two chapter sources.
+# index at all, derived from the three chapter sources.
 # ---------------------------------------------------------------------------
 read -r -d '' BOOK_NOMARKER_TERMS <<'MANIFEST' || true
 index.html	Nomark One
 one.html	Nomark Two
+two.html	Nomark Three
 MANIFEST
 
 # The book's own reports, named once each (M05 hardening). The store reports
@@ -5812,6 +5813,135 @@ check_warning_count "$WORK/book-nomarker.log" "$WARN_BOOK_NOMARKER" 1 "M05-AC6"
 pass "M05-AC6: the missing-marker report fires exactly once in a full render, naming the marker div"
 
 # ---------------------------------------------------------------------------
+# M062-AC2/AC3 — a book with NO placement marker anywhere still says when it
+# could not use a stored chapter record. Left at the once-per-building-chapter
+# rule alone, such a book says it zero times: no chapter builds a section, so
+# no chapter reports, and an author whose chapter has silently dropped out of
+# the book is told nothing at all. The rule this milestone ships adds the
+# chapters whose records show no chapter of the book placing any index.
+#
+# Both counts below are derived by hand from the fixture, which has three
+# chapters for this reason: a chapter reads the store BEFORE it rewrites its
+# own record, so a record planted in the last chapter is read by the two
+# chapters ahead of it and by no other. 2 is therefore neither one report for
+# the book nor one per chapter rendered (3) — the two readings a two-chapter
+# fixture cannot tell apart.
+# ---------------------------------------------------------------------------
+NOMARKER_STORE="$NOMARKER_DIR/.quarto/$STORE_DIR"
+NOMARKER_RECORD="$NOMARKER_STORE/two.qmd$STORE_SUFFIX"
+[ -s "$NOMARKER_RECORD" ] \
+  || fail "M062-AC2: the no-marker book left no record for two.qmd, so the plants below would be about a store that is not there"
+cp "$NOMARKER_RECORD" "$WORK/nomarker-two-record.json"
+
+nomarker_render() {   # <slug> <label>
+  ( cd "$NOMARKER_DIR" && quarto render --to html ) \
+    > "$WORK/$1.log" 2>&1 \
+    || { tail -30 "$WORK/$1.log" >&2; fail "$2: the no-marker book failed to render; IP2 forbids a record this render cannot use taking one down"; }
+  capture --project "$NOMARKER_DIR" html "$1"
+}
+
+# Named, not merely counted: each of the two reports must be about two.qmd,
+# which is the chapter whose record was planted.
+nomarker_named() {   # <slug> <sentence the report must carry> <count> <label>
+  local named
+  named=$(grep -cF -- "$2" "$WORK/$1.log" || true)
+  [ "$named" -eq "$3" ] \
+    || { grep -F -- 'recorded index marks' "$WORK/$1.log" >&2; fail "$4: $named of the reports carry <<$2>>, want $3 — the count is right only if each report is about the chapter whose record was planted"; }
+}
+
+# AC2 — the record at the version this one supersedes, read from the filter's
+# own constant rather than written down here.
+python3 - "$WORK/nomarker-two-record.json" "$NOMARKER_RECORD" \
+  "$SUPERSEDED_VERSION" <<'NOMARKSTALEPY'
+import json, sys
+record = json.load(open(sys.argv[1], encoding='utf-8'))
+if record['version'] == int(sys.argv[3]):
+    sys.exit(f'FAIL: M062-AC2: two.qmd\'s record already stands at version '
+             f'{sys.argv[3]}, so the plant changes nothing and the run below '
+             f'would be about an unplanted record')
+record['version'] = int(sys.argv[3])
+json.dump(record, open(sys.argv[2], 'w', encoding='utf-8'))
+NOMARKSTALEPY
+nomarker_render nomarker-stale "M062-AC2"
+check_warning_count "$WORK/nomarker-stale.log" "$WARN_STORE_STALE" 2 \
+  "M062-AC2 (the two chapters that read the plant while no chapter of the book places an index)"
+nomarker_named nomarker-stale \
+  'the recorded index marks for two.qmd were written by a different' 2 \
+  "M062-AC2"
+check_warning_count "$WORK/nomarker-stale.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M062-AC2 (refused for its version, not for its shape)"
+check_warning_count "$WORK/nomarker-stale.log" "$WARN_BOOK_NOMARKER" 1 \
+  "M062-AC2 (the missing-marker report is still the book's own, once)"
+cp "$WORK/nomarker-two-record.json" "$NOMARKER_RECORD"
+pass "M062-AC2: in a book with no placement marker anywhere, a record written by a superseded version is reported by each of the two chapters that read it, each naming that chapter, and neither refused for its shape"
+
+# AC3 — the same record, at this version, naming an index the book does not
+# declare. The fixture declares none at all, so every name but the one an
+# undeclared book has is undeclared here.
+NOMARKER_UNDECLARED='ghostnomark'
+QI_NOMARKER_UNDECLARED="$NOMARKER_UNDECLARED" python3 - \
+  "$WORK/nomarker-two-record.json" "$NOMARKER_RECORD" <<'NOMARKNAMEPY'
+import json, os, sys
+record = json.load(open(sys.argv[1], encoding='utf-8'))
+value = os.environ['QI_NOMARKER_UNDECLARED']
+if not record.get('marks'):
+    sys.exit('FAIL: M062-AC3: two.qmd\'s record carries no marks, so the '
+             'plant below would rename nothing')
+if {mark.get('index') for mark in record['marks']} == {value}:
+    sys.exit(f'FAIL: M062-AC3: two.qmd\'s record already names {value!r} on '
+             f'every mark, so the plant changes nothing')
+for mark in record['marks']:
+    mark['index'] = value
+json.dump(record, open(sys.argv[2], 'w', encoding='utf-8'))
+NOMARKNAMEPY
+nomarker_render nomarker-undeclared "M062-AC3"
+check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_INDEX_STALE_NAME" 2 \
+  "M062-AC3 (the two chapters that read the plant while no chapter of the book places an index)"
+nomarker_named nomarker-undeclared \
+  "the recorded index marks for two.qmd name the index \"$NOMARKER_UNDECLARED\"" 2 \
+  "M062-AC3"
+check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_STALE" 0 \
+  "M062-AC3 (refiled for its name, not refused for its version)"
+check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M062-AC3 (nor refused for its shape)"
+# The marks that record carries still print. This book builds no index section
+# at all — nothing places one — so the section of the render they print in is
+# the chapter's own body: the term two.qmd marks is still inside the page's
+# document content, which is where M05-AC6 requires every marked term of this
+# book to be. Read out of that region rather than off the whole file, so a
+# term surviving only in the page's navigation or its search index would fail.
+NOMARKER_PLANTED_TERM='Nomark Three'
+NOMARKER_BODY_ID='quarto-document-content'
+QI_NOMARKER_TERM="$NOMARKER_PLANTED_TERM" QI_NOMARKER_BODY="$NOMARKER_BODY_ID" \
+  python3 - "$CAPTURE_ROOT/nomarker-undeclared/_book/two.html" <<'NOMARKTERMPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+term, body_id = os.environ['QI_NOMARKER_TERM'], os.environ['QI_NOMARKER_BODY']
+doc = H.parse(sys.argv[1])
+body = H.find_id(doc, body_id)
+if body is None:
+    print(f'FAIL: M062-AC3: {sys.argv[1]} carries no element with id '
+          f'{body_id!r}, so the check below would be over an empty domain',
+          file=sys.stderr)
+    sys.exit(1)
+if term not in H.text(body, ' '):
+    print(f'FAIL: M062-AC3: {term!r} is not in the document content of '
+          f'{sys.argv[1]}, so a record refiled for its index name cost its '
+          f'chapter the terms it carries', file=sys.stderr)
+    sys.exit(1)
+if H.index_section(doc) is not None:
+    print(f'FAIL: M062-AC3: {sys.argv[1]} carries an index section, so the '
+          f'term above may be printing out of an index rather than where its '
+          f'author wrote it', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M062-AC3: {term!r} still prints in the document content of '
+      f'two.html, on a page carrying no index section of its own')
+NOMARKTERMPY
+cp "$WORK/nomarker-two-record.json" "$NOMARKER_RECORD"
+pass "M062-AC3: in the same book, a record naming an index it does not declare is reported by each of the two chapters that read it, each naming that chapter and that name, and the term that record carries still prints in a section of the render"
+
+# ---------------------------------------------------------------------------
 # M05-AC5 — the book PDF. One merged document, so the LaTeX back-end needs
 # none of the store machinery; this pins that it still aggregates every
 # chapter's marks into one printed index (GP6).
@@ -6900,6 +7030,84 @@ fi
 
 # Back to a store every record of which carries both fields again.
 place_render place-rewarm-three "M061-AC4 (the render after the stripped store)"
+
+# ---------------------------------------------------------------------------
+# M062-AC1 — the report for a record naming an index this book does not
+# declare is drawn once per chapter that BUILDS a section, which is the rule
+# M55 decided and not the one it shipped: drawn from inside `fold_undeclared`,
+# which every rendering chapter calls, it fired once per chapter RENDERED, and
+# every count asserted for it stood behind a single-chapter render where both
+# rules give 1 (KI168).
+#
+# Derived by hand against the warm store above:
+#
+#   (1) the record belongs to five.qmd, the book's last chapter, and the whole
+#       book is rendered. index.qmd builds `alpha`; three.qmd builds `beta`
+#       and, having read a usable record for both chapters after it, takes on
+#       `gamma`, which no marker names; two.qmd and four.qmd build nothing;
+#       five.qmd reads the store before it writes and so never meets its own
+#       plant. Chapters that build a section: 2. Chapters that read the plant:
+#       4. Sections built: 3. Expected reports: 2.
+#
+#   (2) index.qmd alone, over the same plant. One chapter renders and builds
+#       `alpha`. Expected reports: 1.
+#
+# 2 is none of the fixture's chapter count (5), the chapters that read the
+# plant (4), the sections built (3) or one report for the book, so the two
+# runs together separate once-per-building-chapter from every one of them.
+# ---------------------------------------------------------------------------
+PLACE_UNDECLARED='ghostplacement'
+place_undeclared() {   # <slug> <render argument or ""> <expected count> <label>
+  local slug="$1" target="$2" want="$3" label="$4" named
+  cp "$PLACE_STORE/five.qmd$STORE_SUFFIX" "$WORK/place-$slug-record.json"
+  QI_PLACE_UNDECLARED="$PLACE_UNDECLARED" python3 - \
+    "$WORK/place-$slug-record.json" "$PLACE_STORE/five.qmd$STORE_SUFFIX" <<'PLACENAMEPY'
+import json, os, sys
+record = json.load(open(sys.argv[1], encoding='utf-8'))
+value = os.environ['QI_PLACE_UNDECLARED']
+if not record.get('marks'):
+    sys.exit('FAIL: M062-AC1: five.qmd\'s record carries no marks, so the '
+             'plant below would rename nothing')
+if {mark.get('index') for mark in record['marks']} == {value}:
+    sys.exit(f'FAIL: M062-AC1: five.qmd\'s record already names {value!r} on '
+             f'every mark, so the plant changes nothing and the render below '
+             f'would be about an unplanted record')
+for mark in record['marks']:
+    mark['index'] = value
+# The sort keys move with the marks, or the case would be about marks alone
+# while the report speaks for both.
+merged = {}
+for keys in record.get('sorts', {}).values():
+    merged.update(keys)
+record['sorts'] = {value: merged} if merged else {}
+json.dump(record, open(sys.argv[2], 'w', encoding='utf-8'))
+PLACENAMEPY
+  # shellcheck disable=SC2086
+  ( cd "$PLACE_DIR" && quarto render $target --to html ) \
+    > "$WORK/place-$slug.log" 2>&1 \
+    || { tail -30 "$WORK/place-$slug.log" >&2; fail "M062-AC1 ($label): the render failed; IP2 forbids a record naming an index this book does not declare taking one down"; }
+  capture --project "$PLACE_DIR" html "place-$slug"
+  check_warning_count "$WORK/place-$slug.log" "$WARN_INDEX_STALE_NAME" "$want" \
+    "M062-AC1 ($label)"
+  named=$(grep -cF -- "the recorded index marks for five.qmd name the index \"$PLACE_UNDECLARED\"" "$WORK/place-$slug.log" || true)
+  [ "$named" -eq "$want" ] \
+    || { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/place-$slug.log" >&2; fail "M062-AC1 ($label): $named of the reports name five.qmd and $PLACE_UNDECLARED, want $want — the count is right only if each report is about the chapter whose record was planted and the name it carries"; }
+  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_STALE" 0 \
+    "M062-AC1 ($label, refiled for its name rather than refused for its version)"
+  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE" 0 \
+    "M062-AC1 ($label, nor refused for its shape)"
+  cp "$WORK/place-$slug-record.json" "$PLACE_STORE/five.qmd$STORE_SUFFIX"
+}
+
+place_undeclared undeclared-book '' 2 \
+  'the whole book, two of whose five chapters build a section'
+place_undeclared undeclared-first index.qmd 1 \
+  'index.qmd alone, the one chapter rendered and the one that builds'
+pass "M062-AC1: the report for a record naming an index this book does not declare is drawn once per chapter that builds a section — twice in a whole-book render two of whose five chapters build one, and once where a single building chapter is rendered — and each report names the chapter whose record it refiled and the name that record carries"
+
+# Back to a store every record of which was written by the chapter it belongs
+# to, from that chapter's own source.
+place_render place-rewarm-undeclared "M062-AC1 (the render after the plants)"
 
 # ---------------------------------------------------------------------------
 # M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_record`
@@ -18847,9 +19055,10 @@ a stale declared name	its marks are filed in the first index the book still decl
 an unplaced section reported	the report names the index, the chapter its section was owed to, and the chapters whose record that chapter could not read
 an unplaced section forever	Where one of them can never write one
 a doubled section reported	The book's last chapter reports that once, naming the index and every chapter carrying a section for it
+an unusable record repeated	once for every chapter that builds an index section
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
-  || fail "M52-AC5/M55/M061: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, or no longer says what the book reports when an index section is left unplaced or printed twice (its own FAIL line is above)"
+  || fail "M52-AC5/M55/M061/M062: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, or no longer says what the book reports when an index section is left unplaced, printed twice, or built from a record it could not use (its own FAIL line is above)"
 
 # The placement page's own half of the same pair (M061). Its list of rules is
 # where a reader who has not reached the Books page meets the two reports, so
@@ -18908,8 +19117,17 @@ STRIPCLAIMPY
     "$M061D/books-nodouble.qmd" "M061-AC6 self-test" \
     || fail "M061-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
   m061_planted 'the books page with its doubled-section claim removed' \
-    'does not state 1 of the 8 claim(s)' \
+    'does not state 1 of the 9 claim(s)' \
     python3 tests/sitecheck.py claims "$M061D/books-nodouble.qmd" \
+      "$WORK/books-claims.txt"
+
+  m061_strip_claim site/books.qmd \
+    "once for every chapter that builds an index section" \
+    "$M061D/books-norepeat.qmd" "M062-AC5 self-test" \
+    || fail "M062-AC5 self-test: the books page variant could not be written (its own FAIL line is above)"
+  m061_planted 'the books page with its repeated-report claim removed' \
+    'does not state 1 of the 9 claim(s)' \
+    python3 tests/sitecheck.py claims "$M061D/books-norepeat.qmd" \
       "$WORK/books-claims.txt"
 
   m061_strip_claim site/placing-the-index.qmd \

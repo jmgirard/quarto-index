@@ -86,20 +86,20 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 - [x] T2. One report site in `html_book` for both the version-refused and the refiled-name
       reports: once per chapter that builds an index, and once by a chapter that builds none
       only where the records it read show no chapter of the book placing any index.
-- [ ] T3. `examples/book-nomarker/` gains `two.qmd`, marking terms and carrying no placement
+- [x] T3. `examples/book-nomarker/` gains `two.qmd`, marking terms and carrying no placement
       marker; the fixture comment and every count M05 pinned over it are re-derived by hand
       with the arithmetic shown.
-- [ ] T4. AC1's check over `examples/book-placement/`: one substitution plants the undeclared
+- [x] T4. AC1's check over `examples/book-placement/`: one substitution plants the undeclared
       name in `five.qmd`'s record; assert 2 on the whole book and 1 on the single-chapter
       render, each naming the chapter and the name; restore the record.
-- [ ] T5. AC2 and AC3's checks over the three-chapter `examples/book-nomarker/`: plant
+- [x] T5. AC2 and AC3's checks over the three-chapter `examples/book-nomarker/`: plant
       `two.qmd`'s record at the superseded version read from the filter's own constant, then
       with an undeclared index name; assert both counts at 2, the chapter each names, the
       zero unreadable-record count, and that the refiled marks print.
-- [ ] T6. Show each moved report red where it must now fire and silent where it must not:
+- [x] T6. Show each moved report red where it must now fire and silent where it must not:
       revert T2's gate and record which check fails, and confirm the AC1 render's count moves
       off 2.
-- [ ] T7. `site/books.qmd` and `CHANGELOG.md` state when each report repeats, written against
+- [x] T7. `site/books.qmd` and `CHANGELOG.md` state when each report repeats, written against
       an executed render's own output; the claim joins the page's
       `tests/sitecheck.py claims` file and is shown red against a copy with it removed.
 
@@ -108,6 +108,14 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 - 2026-08-30: created by /milestone-plan.
 - 2026-08-30: criteria audit ran in FULL mode (user-facing tier) over M061's and M062's criteria together in one fresh-context [O] reader; its M062 findings and their disposal are recorded in M061's work log.
 - 2026-08-30: plan gate chose a third chapter in `examples/book-nomarker/` over keeping two, because in a two-chapter book exactly one chapter can report and "once" is the answer under once-per-book as well as under the rule this milestone ships; falsified by a fixture shape that separates the two rules without adding a chapter.
+- 2026-08-30: T3 — `examples/book-nomarker/` gained `two.qmd`; the fixture comment re-derives the count by hand (a chapter reads the store before it rewrites its own record, so a record planted in `two.qmd` is read by `index.qmd` and `one.qmd` alone: 2, against 3 chapters rendered and 1 report for the book). M05-AC6's missing-marker count is unchanged at 1 — the book's last chapter draws it and there is still one last chapter — and its visible-term manifest gained `two.html` / `Nomark Three`. `one.qmd`'s prose no longer calls itself the last chapter.
+- 2026-08-30: T4 — AC1's `place_undeclared` over `examples/book-placement/`, planting the undeclared name in `five.qmd`'s record: 2 on the whole book, 1 on `index.qmd` alone, each report named against the chapter and the name, with the version-refused and unreadable counts at 0; the record is restored after each run and the store re-warmed.
+- 2026-08-30: T5 — AC2 and AC3's checks over the three-chapter `examples/book-nomarker/`, both counts 2, each report named against `two.qmd`, the unreadable count 0, and the missing-marker report still 1.
+- 2026-08-30: AC3's "print in a section of the render" was read at the question gate as the chapter's own page, this fixture placing no index and so building no index section. The check reads the term out of the page's `quarto-document-content` region and asserts the page carries no index section; a first draft asserting a `<section>` element was red — Quarto emits none on a page whose only heading is its title.
+- 2026-08-30: T6 — two probes made by hand on the working tree and restored after. With T2's gate reverted to `if builds then`, the AC2 render draws the version-refused report 0 times and M062-AC2's count check fails. With the refiled-name report put back inside `fold_undeclared`, the AC1 whole-book render draws it 4 times rather than 2 — the four chapters that read the plant.
+- 2026-08-30: T7 — `site/books.qmd` and `CHANGELOG.md` state when each report repeats, written against the AC1 and AC3 renders' own logs; the claim joins the books page's claim list, whose self-test now plants its removal as well as M061's.
+- 2026-08-30: DESIGN.md known issues KI168, KI200 and KI202 struck as fixed by this milestone: the refiled-name report drawn once per chapter rendered, a book with no marker anywhere reporting an unusable record zero times, and both counts on the refiled-name report asserted only behind single-chapter renders.
+- 2026-08-30: T3-T7 verified together by one `tests/run-tests.sh --self-test` run rather than one run per task — the suite takes about 30 minutes plain and 50 with the self-test. 981 checks, exit 0.
 - 2026-08-30: T1+T2 landed in one commit — T1 alone removes the refiled-name report with nothing drawing it, so the two cannot be separated. `fold_undeclared` returns chapter-and-name pairs; `html_book` draws both store reports at one site, gated on `builds or first == nil`. Suite green: 515 checks, exit 0.
 - 2026-08-30: plan gate chose one report site for both reports over leaving the refiled-name report inside `fold_undeclared`, because a function every rendering chapter calls cannot draw a report scoped to the chapters that build; falsified by a caller needing the refiled marks folded without wanting the report.
 

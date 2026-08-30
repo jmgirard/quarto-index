@@ -1,0 +1,9 @@
+# Third chapter without a marker
+
+A third chapter is what lets this book count. A chapter reads the store before
+it rewrites its own record, so a record planted here is read by the two
+chapters ahead of it and by no other — and "twice" is then neither one report
+for the book nor one for each of the three chapters rendered. In a two-chapter
+book both readings give one, and the fixture could not tell them apart.
+
+This chapter marks a term too: [Nomark Three]{.index}.

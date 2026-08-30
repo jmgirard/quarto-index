@@ -1,11 +1,11 @@
 # M062: A book repeats a record complaint once per index section it costs
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M061
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** —
+- **Branch/PR:** m062-book-record-report-counts
 
 ## Goal
 

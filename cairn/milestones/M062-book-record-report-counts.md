@@ -80,10 +80,10 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 
 ## Tasks
 
-- [ ] T1. `fold_undeclared` (`_extensions/index/modules/book.lua:364`) returns the chapter
+- [x] T1. `fold_undeclared` (`_extensions/index/modules/book.lua:364`) returns the chapter
       and name of each record it refiled rather than warning from inside the function every
       rendering chapter calls; the caller reports.
-- [ ] T2. One report site in `html_book` for both the version-refused and the refiled-name
+- [x] T2. One report site in `html_book` for both the version-refused and the refiled-name
       reports: once per chapter that builds an index, and once by a chapter that builds none
       only where the records it read show no chapter of the book placing any index.
 - [ ] T3. `examples/book-nomarker/` gains `two.qmd`, marking terms and carrying no placement
@@ -108,6 +108,7 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 - 2026-08-30: created by /milestone-plan.
 - 2026-08-30: criteria audit ran in FULL mode (user-facing tier) over M061's and M062's criteria together in one fresh-context [O] reader; its M062 findings and their disposal are recorded in M061's work log.
 - 2026-08-30: plan gate chose a third chapter in `examples/book-nomarker/` over keeping two, because in a two-chapter book exactly one chapter can report and "once" is the answer under once-per-book as well as under the rule this milestone ships; falsified by a fixture shape that separates the two rules without adding a chapter.
+- 2026-08-30: T1+T2 landed in one commit — T1 alone removes the refiled-name report with nothing drawing it, so the two cannot be separated. `fold_undeclared` returns chapter-and-name pairs; `html_book` draws both store reports at one site, gated on `builds or first == nil`. Suite green: 515 checks, exit 0.
 - 2026-08-30: plan gate chose one report site for both reports over leaving the refiled-name report inside `fold_undeclared`, because a function every rendering chapter calls cannot draw a report scoped to the chapters that build; falsified by a caller needing the refiled marks folded without wanting the report.
 
 ## Decisions

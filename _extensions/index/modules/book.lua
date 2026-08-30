@@ -405,8 +405,16 @@ end
 --
 -- Every name is settled here, before any judgement is made about a mark, so
 -- the aggregation below never sees an index name this book does not have.
+--
+-- Returns the chapter-and-name pairs it refiled, once per name per record, in
+-- the order it met them — the caller's to report. Every rendering chapter
+-- calls this function, so a report drawn from inside it is drawn once per
+-- chapter RENDERED, and what the refiling costs is a section's share of that
+-- chapter's terms: the count belongs to the chapters that build a section, and
+-- only the caller knows which those are (M062).
 local function fold_undeclared(records)
   local default = qi_indexes.default()
+  local refiled = {}
   for _, record in ipairs(records) do
     local reported = {}
     local function fold(name)
@@ -415,7 +423,7 @@ local function fold_undeclared(records)
       end
       if not reported[name] then
         reported[name] = true
-        qi_core.warn(('the recorded index marks for %s name the index "%s", which this book does not declare; they are filed in the first index it does declare, and their sort keys with them — render that chapter again, or render the whole book, once the %s: metadata is settled'):format(record.file, tostring(name), qi_indexes.INDEXES_KEY))
+        refiled[#refiled + 1] = { file = record.file, name = tostring(name) }
       end
       return default
     end
@@ -463,6 +471,7 @@ local function fold_undeclared(records)
       record.sorts = rebuilt
     end
   end
+  return refiled
 end
 
 -- Returns the usable records in book order, the chapters whose record this
@@ -818,8 +827,8 @@ end
 -- it is a stale record's leftover, and folding it to the first declared index
 -- would let it take the placement site away from the marker the author has
 -- actually written for that index in some other chapter. Its own chapter's
--- marks are reported by `fold_undeclared`, which is the report that tells the
--- author the record is stale.
+-- marks are refiled by `fold_undeclared`, and the report `html_book` draws
+-- from what that returns is what tells the author the record is stale.
 local function marker_chapter(ctx, records)
   local first = {}
   for _, record in ipairs(records) do
@@ -887,7 +896,7 @@ local function html_book(doc, ctx, marker, taken)
   -- Before any judgement is made about a mark: an index name this book no
   -- longer declares is settled against what it declares now, so every
   -- accumulator below sees only names this book has.
-  fold_undeclared(records)
+  local refiled = fold_undeclared(records)
   -- Before anything about the marker: a broken cross-reference is a defect
   -- whether or not this book places an index, and the last chapter is the one
   -- that can see the whole book's marks (report_book_dangling). A book whose
@@ -1061,18 +1070,35 @@ local function html_book(doc, ctx, marker, taken)
     end
   end
 
-  if builds then
-    -- Drawn by each chapter that builds an index, in book order, which is what
-    -- M55 decided: the record's absence costs this section its share of that
-    -- chapter's terms, and a chapter that prints nothing has nothing to say
-    -- about it. A book placing three indexes in three chapters therefore says
-    -- so three times — once per section the record is missing from.
+  -- The two reports about a stored record this render could not use as it
+  -- stands: one refused for its version, one refiled because it names an index
+  -- this book no longer declares. Both cost the same thing — a section's share
+  -- of that chapter's terms — so both are drawn on the same rule, at one site
+  -- (M062).
+  --
+  -- Once per chapter that BUILDS a section, which is what M55 decided: a
+  -- chapter that prints nothing has nothing to say about a record it never
+  -- printed out of. A book placing three indexes in three chapters therefore
+  -- says so three times, once per section the record is missing from.
+  --
+  -- ...and once by each chapter whose records show NO chapter of the book
+  -- placing any index. Left at the building rule alone, a book with no
+  -- placement marker anywhere reports a record it cannot use zero times, and
+  -- an author whose chapter has silently dropped out of a book that will get
+  -- an index as soon as they write a marker is told nothing at all.
+  if builds or first == nil then
     for _, file in ipairs(stale) do
       qi_core.warn(("the recorded index marks for %s were written by a different "
             .. "version of this extension and were ignored; render that "
             .. "chapter again, or render the whole book, to put its "
             .. "terms back in the index"):format(file))
     end
+    for _, entry in ipairs(refiled) do
+      qi_core.warn(('the recorded index marks for %s name the index "%s", which this book does not declare; they are filed in the first index it does declare, and their sort keys with them — render that chapter again, or render the whole book, once the %s: metadata is settled'):format(entry.file, entry.name, qi_indexes.INDEXES_KEY))
+    end
+  end
+
+  if builds then
     if not any_marks(records) then
       -- The book path's counterpart to the single-document no-marks warning,
       -- which cannot be asked of one chapter. Without it a marker in a book

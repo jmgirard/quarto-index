@@ -285,6 +285,13 @@ local function valid_record(data, file)
     if mark.paired ~= nil and qi_core.RANGE_ENDS[mark.paired] ~= true then
       return false
     end
+    -- The field's own type BEFORE anything walks it: `ipairs` on a number
+    -- raises, and this function is called outside any `pcall`, so a record
+    -- whose `xrefs` is not a list would take the render down through the very
+    -- function written to stop that (IP2).
+    if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
+      return false
+    end
     -- Validated here rather than trusted (review F9): a record whose xref
     -- lost its levels reaches `qi_levels.levels_key` and takes the render down with it,
     -- which IP2 forbids. Two consumers read these now — the entry builder and
@@ -300,9 +307,6 @@ local function valid_record(data, file)
           return false
         end
       end
-    end
-    if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
-      return false
     end
     -- Required rather than optional, unlike the four fields above: this is the
     -- field the version bump to 4 is for. A record with no index name is one

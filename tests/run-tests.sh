@@ -6290,6 +6290,117 @@ place_stale three.qmd stale-placing index.qmd 1 \
 pass "M60-AC4: the report for a record written by a superseded version is drawn once per chapter that builds an index — twice in a whole-book render two of whose four chapters build one, and once where a single building chapter is rendered — and names the chapter whose record it refused"
 
 # ---------------------------------------------------------------------------
+# M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_record`
+# runs outside any `pcall`, and it used to walk that field with `ipairs` before
+# testing its type, so such a record raised and took the render down — through
+# the very function written to stop a wrongly shaped record doing exactly that
+# (IP2). The type test now precedes the walk.
+#
+# The plant is built from THIS chapter's own record, and its version is read
+# from the filter's constant rather than written down: a plant at any other
+# version is refused for its version and never reaches the field this is about.
+# ---------------------------------------------------------------------------
+# The unplanted copy first, so the run below cannot be about a record this
+# filter would have refused whatever its `xrefs` said.
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-xrefs-plain.log" 2>&1 \
+  || { tail -30 "$WORK/book-xrefs-plain.log" >&2; fail "M60-AC5: the marker chapter failed to re-render over the unplanted store"; }
+capture --project "$BOOK_DIR" html "book-xrefs-plain"
+check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M60-AC5 (the unplanted record is accepted)"
+check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_STALE" 0 \
+  "M60-AC5 (the unplanted record is accepted)"
+check_section_ids "$CAPTURE_ROOT/book-xrefs-plain/_book/last.html" \
+  "M60-AC5 (the unplanted store prints all three declared indexes)" \
+  "$HTML_SECTION_ID-main $HTML_SECTION_ID-people $HTML_SECTION_ID-places"
+
+m60_plant_xrefs() {   # <destination record path>
+  python3 - "$WORK/one-record.json" "$1" "$STORE_VERSION" <<'XREFPY'
+import json, sys
+source, target, version = sys.argv[1:4]
+record = json.load(open(source, encoding='utf-8'))
+if record['version'] != int(version):
+    sys.exit(f"FAIL: M60-AC5: the record stands at version {record['version']} "
+             f"and the filter's own constant is {version}, so the plant below "
+             f"would be refused for its version before its xrefs were read")
+if not record['marks']:
+    sys.exit('FAIL: M60-AC5: the record holds no mark to plant the field on')
+if record['marks'][0].get('xrefs') == 5:
+    sys.exit('FAIL: M60-AC5: the mark already carries the planted value, so '
+             'the plant changes nothing')
+record['marks'][0]['xrefs'] = 5
+json.dump(record, open(target, 'w', encoding='utf-8'))
+XREFPY
+}
+
+m60_plant_xrefs "$CORRUPT"
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-xrefs-number.log" 2>&1 \
+  || { tail -30 "$WORK/book-xrefs-number.log" >&2; fail "M60-AC5: a record whose xrefs is a number took the render down; IP2 forbids it"; }
+capture --project "$BOOK_DIR" html "book-xrefs-number"
+check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_UNREADABLE" 1 \
+  "M60-AC5"
+{ grep -F -- "$WARN_STORE_UNREADABLE" "$WORK/book-xrefs-number.log" \
+  | grep -qF 'one.qmd'; } \
+  || { grep -F -- "$WARN_STORE_UNREADABLE" "$WORK/book-xrefs-number.log" >&2; fail "M60-AC5: the report does not name one.qmd, the chapter whose record was refused"; }
+check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_STALE" 0 \
+  "M60-AC5 (refused for its shape, not for its version)"
+# one.qmd carries this book's only `people` mark, so refusing its record leaves
+# `people` nothing to print; `main` and `places`, whose marks are in the other
+# three chapters, are printed as usual. Named individually rather than counted:
+# two sections both headed `main` is what a merged aggregation produces.
+check_section_ids "$CAPTURE_ROOT/book-xrefs-number/_book/last.html" \
+  "M60-AC5" "$HTML_SECTION_ID-main $HTML_SECTION_ID-places"
+cp "$WORK/one-record.json" "$CORRUPT"
+pass "M60-AC5: a stored record whose xrefs field is a number is reported as one that could not be read, naming its chapter, the render exits 0, and the book still prints main and places — while the same record unplanted is accepted and prints all three"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M60 T5 — the same record against a filter with the `xrefs` type test
+  # DELETED: one deletion and nothing moved, so what the case below shows is
+  # that test doing the work, not some other line's rearrangement. The render
+  # must die, and die at `valid_record` for indexing a number — a render that
+  # failed for any other reason would be a green this check has not earned.
+  # -------------------------------------------------------------------------
+  M60W="$WORK/m60"
+  rm -rf "$M60W/noguard"
+  mkdir -p "$M60W"
+  # The whole fixture, store and all, then the extension over it: examples/book
+  # reaches the filter through an `_extensions` SYMLINK, which `cp -R`
+  # preserves, and a scratch copy still pointing at the repository's own tree
+  # would render through the unspliced filter.
+  cp -R "$BOOK_DIR" "$M60W/noguard"
+  rm -f "$M60W/noguard/_extensions"
+  rm -rf "$M60W/noguard/_book"
+  mkdir -p "$M60W/noguard/_extensions"
+  cp -R "$QI_EXT_DIR" "$M60W/noguard/_extensions/index"
+  [ -d "$M60W/noguard/.quarto/$STORE_DIR" ] \
+    || fail "M60 T5 self-test: the copied book carries no store, so the plant below would have no record to sit in"
+  perl -0777 -pe 's{    if mark\.xrefs ~= nil and type\(mark\.xrefs\) ~= "table" then\n      return false\n    end\n}{}' \
+    "$M60W/noguard/_extensions/index/modules/book.lua" > "$M60W/noguard-spliced"
+  if cmp -s "$M60W/noguard/_extensions/index/modules/book.lua" "$M60W/noguard-spliced"; then
+    fail "M60 T5 self-test: the deletion aimed at the xrefs type test removed nothing — the render below would be reported as the guard failing to matter when the fault is this mutation's"
+  fi
+  mv "$M60W/noguard-spliced" "$M60W/noguard/_extensions/index/modules/book.lua"
+  m60_plant_xrefs "$M60W/noguard/.quarto/$STORE_DIR/one.qmd$STORE_SUFFIX"
+  # The render is expected to DIE, so its status is caught rather than tested
+  # in place: the capture helper still runs on the line after it, which is what
+  # M24-AC3 asks of every render in this file, and the scratch tree it is
+  # pointed at holds nothing to capture, exactly as a dead render should leave.
+  M60_NOGUARD_RC=0
+  ( cd "$M60W/noguard" && quarto render last.qmd --to html ) \
+    > "$WORK/m60-noguard.log" 2>&1 || M60_NOGUARD_RC=$?
+  capture --project "$M60W/noguard" html "m60-noguard"
+  [ "$M60_NOGUARD_RC" -ne 0 ] \
+    || fail "M60 T5 self-test: the render survived a record whose xrefs is a number with the type test deleted, so the criterion's green says nothing about that test"
+  grep -qF 'attempt to index a number value' "$WORK/m60-noguard.log" \
+    || { tail -30 "$WORK/m60-noguard.log" >&2; fail "M60 T5 self-test: the render failed, but not for indexing a number — that failure is not the one this deletion plants"; }
+  grep -q 'book\.lua.*valid_record' "$WORK/m60-noguard.log" \
+    || { tail -30 "$WORK/m60-noguard.log" >&2; fail "M60 T5 self-test: the render failed for indexing a number somewhere other than valid_record, which is not the site this deletion opens"; }
+  pass "M60 T5 self-test: with the xrefs type test deleted and nothing else changed, the same record takes the render down at valid_record for indexing a number — which is the failure the test in place turns into a report"
+fi
+
+# ---------------------------------------------------------------------------
 # The ordering fixture: marker in the first chapter, a second marker in the
 # last, and a chapter filename with a space in it.
 # ---------------------------------------------------------------------------

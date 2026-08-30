@@ -128,6 +128,27 @@
   index, an entry marked both as a plain locator and as a cross-reference, and
   two entries that print in one place and file under two keys.
 
+- An HTML book whose placement markers sit in different chapters no longer
+  prints an index section in a chapter its author asked nothing for. An index
+  no marker names goes to the last chapter that places one, and that chapter
+  now takes it on only once it has seen a record for every chapter after it —
+  which on a book's first render it has not. So such an index is left out of a
+  first render, the book's last chapter reports it once by name, and a second
+  render prints it. A book whose markers all sit in its last chapter is
+  unaffected; `tests/run-tests.sh` fails at `M60-AC1` without this. Both the
+  [Books](site/books.qmd) and [Named indexes](site/named-indexes.qmd) pages
+  say so.
+
+- A stored chapter record written by another version of the extension is now
+  reported once by each chapter that builds an index, rather than once by
+  every chapter that renders while it stands.
+
+- A stored chapter record whose cross-reference field is not a list is refused
+  and reported like any other record this version cannot read. It used to be
+  walked before its type was tested, which ended the render — the one thing
+  the record check exists to prevent; `tests/run-tests.sh` fails at
+  `M60-AC5` without the fix.
+
 ### Project
 
 - The extension ships editor metadata beside its manifest:

@@ -87,6 +87,14 @@ that marker stands;
 an index no marker names is printed after them, in declared order, at the end
 of the last chapter that places one.
 
+That last chapter can only know it is the last one that places anything once
+it has seen every other chapter's record, and on a book's first render the
+chapters after it have written nothing yet. Where the marker that comes last
+is not in the book's last chapter, an index no marker names therefore waits: a
+first render leaves it out and reports it once by name, and the next render
+prints it. Nothing else waits — every index a marker names is printed at that
+marker on the first render like any other.
+
 A chapter's stored record outlives the render that wrote it. So a record
 naming an index you have since removed from `indexes:` — or renamed — is a
 record the book can still read but no longer place: its marks are filed in the

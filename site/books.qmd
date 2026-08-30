@@ -36,11 +36,20 @@ exactly as it does inside one document.
 
 A book that declares several indexes prints each index some chapter files a
 mark in, each at the first marker naming it — in whichever chapter that marker
-stands — and any index no marker names after them, in declared order. Every
-judgement the extension makes across chapters is made inside one index, so a
-`see=` written in one index that names a term only another index marks is
-reported as naming nothing indexed, and the report says which index it was
-judged in.
+stands — and any index no marker names after them, in declared order, at the
+end of the last chapter that places one. Every judgement the extension makes
+across chapters is made inside one index, so a `see=` written in one index that
+names a term only another index marks is reported as naming nothing indexed,
+and the report says which index it was judged in.
+
+An index no marker names is the one thing that can take two renders. The
+chapter that prints it has to have seen every other chapter's marks before it
+can know it is the last chapter that places anything, and on a book's first
+render the chapters after it have written nothing yet. So where the last
+marker of the book is not in its last chapter, a first render leaves that
+index out and says so once, naming it; the next render prints it. A book whose
+markers all sit in its last chapter never meets this, and every index a marker
+does name is printed at that marker on the first render like any other.
 
 Two things worth knowing:
 

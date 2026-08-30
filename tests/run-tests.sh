@@ -18844,9 +18844,85 @@ merged formats named	A PDF book and an EPUB book need none of the above.
 merged means one process	Quarto renders each as one merged document, so the extension sees every chapter's marks at once
 every index in a book	A book that declares several indexes prints each index some chapter files a mark in, each at the first marker naming it
 a stale declared name	its marks are filed in the first index the book still declares, and the report names the chapter and the name
+an unplaced section reported	the report names the index, the chapter its section was owed to, and the chapters whose record that chapter could not read
+an unplaced section forever	Where one of them can never write one
+a doubled section reported	The book's last chapter reports that once, naming the index and every chapter carrying a section for it
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
-  || fail "M52-AC5/M55: site/books.qmd no longer scopes its per-chapter model to the HTML book, or no longer says what a book that declares several indexes does (its own FAIL line is above)"
+  || fail "M52-AC5/M55/M061: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, or no longer says what the book reports when an index section is left unplaced or printed twice (its own FAIL line is above)"
+
+# The placement page's own half of the same pair (M061). Its list of rules is
+# where a reader who has not reached the Books page meets the two reports, so
+# it is held to naming both — an index section left unplaced, and one printed
+# in two chapters — rather than to the Books page carrying them alone.
+cat > "$WORK/placing-claims.txt" <<'M061PLACING'
+an unplaced section reported	says so once, naming the index, the chapter its section was owed to and the chapters whose record that chapter could not read
+a doubled section reported	the section prints in two chapters instead, which the same chapter reports once by name
+M061PLACING
+python3 tests/sitecheck.py claims site/placing-the-index.qmd \
+    "$WORK/placing-claims.txt" \
+  || fail "M061-AC6: site/placing-the-index.qmd no longer says what a book reports when an index section is left unplaced or printed twice (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M061-AC6's other half: each of the two pages, with the claim this
+  # milestone added removed and the rest of the page untouched. A claim list
+  # that passes over a page missing the sentence it names is a list holding
+  # nothing, and both pages are shown separately — a plant on one says nothing
+  # about the row aimed at the other.
+  # -------------------------------------------------------------------------
+  M061D="$WORK/m061docs"
+  rm -rf "$M061D"
+  mkdir -p "$M061D"
+  m061_strip_claim() {   # <page> <sentence> <destination> <label>
+    python3 - "$1" "$2" "$3" "$4" <<'STRIPCLAIMPY'
+import sys
+page, gone, target, label = sys.argv[1:5]
+body = open(page, encoding='utf-8').read()
+flat = ' '.join(body.split())
+if ' '.join(gone.split()) not in flat:
+    sys.exit(f'FAIL: {label}: {page} does not carry <<{gone}>>, so removing '
+             f'it changes nothing and the case below is about the unplanted '
+             f'page')
+# Removed from the FLATTENED text and written back flattened, because the
+# sentence is wrapped across source lines and the check itself compares
+# flattened text: a line-oriented deletion would leave half of it behind.
+open(target, 'w', encoding='utf-8').write(
+    flat.replace(' '.join(gone.split()), '') + '\n')
+STRIPCLAIMPY
+  }
+  m061_planted() {   # <label> <expected substring> <command...>
+    local label="$1" want="$2"
+    shift 2
+    local out rc
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M061-AC6 self-test: the planted case ($label) passed, so the claim list's green says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M061-AC6 self-test: the planted case ($label) failed, but not with <<$want>> — that failure is not this clause catching this defect"; }
+    printf 'ok   M061-AC6 self-test: the claim list is red on <<%s>>\n' "$label"
+  }
+
+  m061_strip_claim site/books.qmd \
+    "The book's last chapter reports that once, naming the index and every chapter carrying a section for it" \
+    "$M061D/books-nodouble.qmd" "M061-AC6 self-test" \
+    || fail "M061-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
+  m061_planted 'the books page with its doubled-section claim removed' \
+    'does not state 1 of the 8 claim(s)' \
+    python3 tests/sitecheck.py claims "$M061D/books-nodouble.qmd" \
+      "$WORK/books-claims.txt"
+
+  m061_strip_claim site/placing-the-index.qmd \
+    "says so once, naming the index, the chapter its section was owed to and the chapters whose record that chapter could not read" \
+    "$M061D/placing-nodefer.qmd" "M061-AC6 self-test" \
+    || fail "M061-AC6 self-test: the placement page variant could not be written (its own FAIL line is above)"
+  m061_planted 'the placement page with its unplaced-section claim removed' \
+    'does not state 1 of the 2 claim(s)' \
+    python3 tests/sitecheck.py claims "$M061D/placing-nodefer.qmd" \
+      "$WORK/placing-claims.txt"
+  pass "M061-AC6 self-test: each of the two claim lists is red on a copy of its own page with the claim this milestone added removed, so neither list's green is over a page that has lost it"
+fi
+pass "M061-AC6: both the books page and the placement page state what a book reports when an index section is left unplaced and when one prints twice"
 
 cat > "$WORK/backend-count.txt" <<'M52PHRASES'
 back-end count	two back-ends

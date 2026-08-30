@@ -660,23 +660,33 @@ local function store_read(ctx, own)
         if ok and valid_record(data, file) then
           records[#records + 1] = data
         else
-          -- Never silent: the cost of a record this version cannot use is a
-          -- chapter missing from the index, and the fix is the same either way
-          -- — render that chapter again. WHY it could not be used is not: a
-          -- record left by an older version of this extension is perfectly
-          -- readable and simply stale, and calling that unreadable sends an
-          -- author looking for a corrupt file that is not there.
+          -- Opened and unusable, which is the one case the source route is
+          -- for: this record costs its chapter every term it marked, and the
+          -- chapter's own source still says what its author wrote (D-041). An
+          -- ABSENT record never reaches here at all — `io.open` returned
+          -- nothing and this branch was not taken — so a first render is
+          -- unchanged.
+          local rebuilt = recover_record(ctx, file)
+          if rebuilt ~= nil then
+            records[#records + 1] = rebuilt
+          end
+          -- Never silent: the fix is the same either way — render that chapter
+          -- again. WHY it could not be used is not: a record left by an older
+          -- version of this extension is perfectly readable and simply stale,
+          -- and calling that unreadable sends an author looking for a corrupt
+          -- file that is not there. What recovery returned is not either, and
+          -- each report says which of the two happened for its chapter.
           if ok and type(data) == "table" and data.version ~= STORE_VERSION then
             -- Handed back rather than reported here: a version-skewed record
             -- costs the chapters that BUILD an index their share of that
             -- chapter's terms, and every other chapter of the book reads the
             -- store without printing anything out of it. Reported by the caller,
             -- once per chapter that builds (M55).
-            stale[#stale + 1] = file
+            stale[#stale + 1] = { file = file, recovered = rebuilt ~= nil }
+          elseif rebuilt ~= nil then
+            qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, and without anything reaching that chapter through an include or an executed cell — render that chapter again, or render the whole book, to restore them"):format(file))
           else
-            qi_core.warn(("the recorded index marks for %s could not be read and were "
-                  .. "ignored; render that chapter again, or render the whole "
-                  .. "book, to put its terms back in the index"):format(file))
+            qi_core.warn(("the recorded index marks for %s could not be read and neither could that chapter's own source, so none of its terms are in the index; render that chapter again, or render the whole book, once both files can be read"):format(file))
           end
         end
       end
@@ -879,6 +889,12 @@ local function book_marks(ctx, records)
                              mark.levels),
         xrefs = xrefs,
         anchor = mark.anchor,
+        -- Set only on a mark recovered from a chapter's source, where nothing
+        -- minted an anchor: it says this mark contributes a locator all the
+        -- same, and that locator is the chapter's page. Without it a recovered
+        -- mark is indistinguishable from a cross-reference mark, which has no
+        -- anchor either and must contribute no locator.
+        page_locator = mark.page_locator,
         -- The chapter's own resolved role, which is all a book needs now that
         -- nothing pairs here: a mark carries whatever role its own chapter
         -- concluded for it.
@@ -1123,11 +1139,12 @@ local function html_book(doc, ctx, marker, taken)
   -- an author whose chapter has silently dropped out of a book that will get
   -- an index as soon as they write a marker is told nothing at all.
   if builds or first == nil then
-    for _, file in ipairs(stale) do
-      qi_core.warn(("the recorded index marks for %s were written by a different "
-            .. "version of this extension and were ignored; render that "
-            .. "chapter again, or render the whole book, to put its "
-            .. "terms back in the index"):format(file))
+    for _, entry in ipairs(stale) do
+      if entry.recovered then
+        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, and without anything reaching that chapter through an include or an executed cell — render that chapter again, or render the whole book, to restore them"):format(entry.file))
+      else
+        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension and that chapter's own source could not be read, so none of its terms are in the index; render that chapter again, or render the whole book, once its source can be read"):format(entry.file))
+      end
     end
     for _, entry in ipairs(refiled) do
       qi_core.warn(('the recorded index marks for %s name the index "%s", which this book does not declare; they are filed in the first index it does declare, and their sort keys with them — render that chapter again, or render the whole book, once the %s: metadata is settled'):format(entry.file, entry.name, qi_indexes.INDEXES_KEY))

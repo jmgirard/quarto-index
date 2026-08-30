@@ -84,10 +84,18 @@ authored book reads.
       book's five pages; both mutant renders run to completion and exit 0, so
       each failure is the recovery being absent rather than a render that did
       not happen.
-- [ ] AC5. In a book where one chapter's record is unusable AND its source
-      cannot be read or parsed, the whole-book render completes and exits 0,
-      every other chapter's terms print in the sections AC1 names, and one
-      warning names that chapter.
+- [ ] AC5. With a copy of `examples/book-placement/` whose `four.qmd` store
+      path is held by a directory and whose `four.qmd` carries a `\x80` byte —
+      which the chapter's own render replaces with the Unicode replacement
+      character and completes, and which `pandoc.read` refuses — two
+      consecutive whole-book HTML renders each complete and exit 0, and each
+      prints `alpha` in `index.html` carrying `Aardvark` and `Bramble`, `beta`
+      in `three.html` carrying `Cardamom` and `Coriander`, and `gamma` in
+      `five.html` carrying `Escutcheon`, `Gantry` and `Gondola` and not
+      `Dovetail`. On each render the report naming `four.qmd` and saying its
+      source could not be read either is drawn four times, once per chapter
+      that reads the held path; `four.qmd` reads no record of its own and draws
+      no such report, its own write still failing on the held path.
 - [ ] AC6. `site/books.qmd`'s paragraph on a record that cannot be read states
       what recovery returns — the chapter's authored terms, each linking to
       that chapter's page — and the four things it does not: a fragment,
@@ -129,7 +137,8 @@ authored book reads.
       what recovery returned for that chapter.
 - [ ] T7. Suite: extend the M063-AC3 blocked case to AC1 and AC2; add AC3's
       two-held-paths case and AC5's unreadable-source case; add AC4's two
-      mutants under `--self-test`.
+      mutants under `--self-test`; and cover the version-skewed record's two
+      recovery reports, which no criterion exercises.
 - [ ] T8. `site/books.qmd`, the changelog, and the KI205/KI214 dispositions.
 
 ## Work log
@@ -141,6 +150,9 @@ authored book reads.
 - 2026-08-30: T1 — D-041 was appended at plan time and stands unchanged; this task's remainder is `cairn/DESIGN.md`'s Architecture book paragraph, whose "no chapter can see another's" sentence is now conditional on the store being usable, with recovery, its boundary and KI214's narrowing stated. Suite green (525 ok lines, exit 0) after one re-run: the first run died on a Quarto deno segfault in M20-AC1's PDF render, unrelated to the branch.
 - 2026-08-30: T2 — `book_context` returns `root`, and `chapter_href`/`output_extension` derive another chapter's page from its own front-matter `output-file:` or from its source stem. Probed on this fixture: `output-file: custom-four.html` produced `custom-four.html` and `output-file: bare-two` produced `bare-two.html`, so a declared name is taken as written where it carries an extension and given the output extension where it does not. The same probe found `quarto.doc.output_file` for such a chapter naming a path outside the output directory, so `book_context` refuses it and it writes no record at all — filed as KI216, and it makes the `output-file:` branch reachable only where an earlier render left a record this version can no longer use. Suite green, exit 0.
 - 2026-08-30: T3 — `recover_record` reads `<root>/<chapter>` and `pandoc.read`s it inside one `pcall`, returning a record whose marks carry levels, surviving cross-reference targets, naming context and index name, and whose `marker` is the chapter's top-level placement markers deduped per index. No anchor, role, pairing verdict or sort key. A locator-contributing recovered mark is flagged `page_locator`, which is what tells it from a cross-reference mark, since neither has an anchor. Defined and unused at this commit; suite green, exit 0.
+- 2026-08-30: T4-T6 code landed (checkpoint, tasks not ticked): `store_read` calls `recover_record` on both unusable branches and on neither absent one; `book_marks` carries `page_locator`; `html.lua`'s `mark_target` returns a bare page href where a mark has no anchor and its locator gate accepts `page_locator`; the unreadable- and stale-record reports each split into a recovered and a not-recovered wording. T5 needed no code of its own — `marker_chapter` reads `record.marker`, which a recovered record carries. The suite still pins the pre-recovery behavior, so it is red until T7.
+- 2026-08-30: amendment (substantive) — AC5's wording. Observed on a scratch copy of `examples/book-placement/`: the arrangement draws the report four times, once per chapter that reads the held path, where AC5 said "one warning names that chapter". A fresh-context [O] criteria audit of the proposed replacement ran in FULL mode and returned 7 findings; 6 fixed in the wording before it was written (name a copy of the fixture rather than the shipped tree; pin the `alpha` and `beta` terms, not only `gamma`'s; two consecutive renders as AC1 and AC3 ask; count the report over the log rather than attribute one per chapter, since the marker-position reports also name `four.qmd`; say `four.qmd` draws no SUCH report while its own write still fails; name the byte and the asymmetry that makes the case reachable). Its probe-adequacy finding went to the gate, which chose keeping the criterion at the one failure shape and covering the version-skewed record's two recovery reports as T7 test work instead.
+- 2026-08-30: T7 gains the version-skewed record's two recovery reports, which no criterion exercises (minor amendment, from the AC5 audit).
 - 2026-08-30: implementation gate chose leaving a recovered chapter's declared sort keys out of recovery (M065 fences the richer mark forms), extending the existing unreadable-record report with a clause rather than adding a second warning, and one guard around the whole read-parse-walk proven by AC5 rather than escalating the IP2 tripwire.
 - 2026-08-30: criteria audit ran in FULL mode ([O], fresh context, user-facing tier plus two `ip-touching` tags) and returned 12 findings. Fixed at the gate: the criteria name the `gamma` terms rather than deferring to a manifest this milestone writes; they assert the whole book's section map rather than one section; AC4 states the observable page outcome rather than a harness verdict; AC2 asserts a fragment present on the rendered page rather than one matching the sidecar JSON; AC5 (both record and source unreadable) and the report-clause task were added. Its href-derivation finding was answered by probe — `book.render` carries no output path, but the chapter's own front-matter `output-file:` does. Findings 5, 6 and 10 (probe adequacy over the unusable-record causes and the recovered mark forms) became the sizing question and are M065.
 

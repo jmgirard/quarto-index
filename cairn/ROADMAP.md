@@ -9,7 +9,7 @@ _Released 0.1.0 2026-08-26._
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M061 | A book reports the index section it deferred, doubled, or can never place | done | — | normal | milestones/archive/M061-book-deferred-section-reports.md |
-| M062 | A book repeats a record complaint once per index section it costs | planned | M061 | normal | milestones/M062-book-record-report-counts.md |
+| M062 | A book repeats a record complaint once per index section it costs | review | M061 | normal | milestones/M062-book-record-report-counts.md |
 | M60 | An HTML book's first render places each index where its author asked | done | — | normal | milestones/archive/M60-book-first-render-placement.md |
 | M59 | The words an author writes are refused when a reader cannot read them | done | — | normal | milestones/archive/M59-index-label-refusals.md |
 | M58 | An author sets the punctuation the index prints inside an entry | done | — | normal | milestones/archive/M58-index-separators.md |

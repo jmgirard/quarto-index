@@ -1210,14 +1210,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   scope is one chapter, which is the fact that explains why a range spanning
   two chapters does not pair. Reaching the pair of words takes a second message
   shape and a superseding entry against D-021. — M55
-- **KI168.** The report for a record naming an index the book no longer
-  declares is drawn by `fold_undeclared`, which every rendering chapter calls,
-  so one such record draws it once per chapter rendered rather than once per
-  chapter that builds an index. The count is asserted only behind
-  single-chapter renders, where either rule gives 1. Wording corrected M60:
-  the entry read as naming the version-skew report, which M60 moved and which
-  is now drawn once per building chapter; the report M55's review actually
-  found is this one, and it is unchanged. — M55 review F4, corrected M60
 - **KI170.** The duplicate-marker report a book with one namespace draws still
   ends "and a book has a single index". It is drawn only for a book declaring
   nothing or one index, where it is true, but it is now the only sentence in
@@ -1351,17 +1343,43 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   uncoloured log makes the count 8 and the check red for a reason that is not
   the extension's. The raw warning-line count asserted beside it is the stable
   half. — M061 review F2
+- **KI208.** The gate drawing the two store reports from a chapter that builds
+  no index section, `builds or first == nil`, reads `first` off the records
+  that chapter could read, so it fires in any book whose marker chapter's own
+  record is unreadable — not only in a book with no placement marker anywhere.
+  A book whose only marker sits in its last chapter, rendered after a version
+  bump that makes every record stale, therefore reports each stale record once
+  per chapter that read it: 3 reports over 3 chapters, 780 over 40, where the
+  pre-M062 gate drew 0 (KI200). Observed 2026-08-30 on a scratch three-chapter
+  book built from `examples/book-nomarker/` with a marker added to `two.qmd`.
+  — M062 review F1
+- **KI209.** `DESIGN.md`'s store paragraph enumerates the cases a book reports
+  without stating the counting rule for the two store reports, which is now the
+  two-branch rule KI208 names — the one place a reader would meet that rule by
+  inspection. — M062 review F8
+- **KI210.** M062-AC3's "the marks still print" assertion cannot fail on the
+  defect it names: `two.html` renders from `two.qmd`'s own source, so
+  `Nomark Three` prints whether or not the planted record is refiled. The
+  fixture builds no index section, so it holds nowhere a refiled mark is
+  observable. — M062 review F3
+- **KI211.** M062-AC3's count of 2 does not separate the shipped
+  once-per-reading-chapter rule from the one it replaces: with the report drawn
+  from inside `fold_undeclared` the same three-chapter render also gives 2. It
+  does catch a revert of the gate to `if builds then`, which gives 0; the
+  block's header comment claims the wider separation. — M062 review F4
+- **KI212.** M062-AC1's single-chapter run separates no counting rule from
+  another — one chapter rendered, one reading, one section built and one book
+  all give 1. It is a control; the criterion's text calls it more. — M062
+  review F6
+- **KI213.** M062-AC3's plant renames each mark's index and leaves
+  `record['sorts']` alone, where M062-AC1's plant re-keys the sort map and says
+  why. `examples/book-nomarker/` carries no sort keys and the check guards
+  none, so the key half of `fold_undeclared`'s rebuild would silently stop
+  being covered there if the fixture gained one. — M062 review F7
 - **KI207.** `valid_record`'s `data.later` branch, which keeps a record written
   by the M60-era version readable, is reached by no check: no version writes
   the field and nothing plants a record carrying it, so the compatibility it
   states is asserted nowhere. — M061 review F6
-- **KI200.** A record written by a superseded version is now reported only by a
-  chapter that builds an index, so a book where no chapter builds one — no
-  placement marker anywhere, or no marks — reports it zero times, where it was
-  reported once per rendered chapter before. — M60 review F5
-- **KI202.** Both count assertions on the report KI168 names sit behind
-  single-chapter renders, where 1 is the answer under either counting rule, so
-  neither would catch the count KI168 describes. — M60 review F10
 - **KI204.** `store_write`'s open-failure guard does not stop the write. With
   the record's store path held by a directory, the render logs
   `ERROR ([C]:-1) <path>: Is a directory` — the text `io.open` hands back — and

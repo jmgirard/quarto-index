@@ -89,6 +89,13 @@ again is the fix. A record that names an index you have since removed from
 `indexes:` costs nothing: its marks are filed in the first index the book
 still declares, and the report names the chapter and the name.
 
+Either report repeats: the book draws it once for every chapter that builds an
+index section, which is what the unusable record costs it. A chapter that
+builds none reports too where the records it read show no chapter of the book
+placing an index — a book with no placement marker anywhere, and equally a
+chapter rendered while the record of the chapter carrying the marker cannot
+itself be read.
+
 ## The merged books: PDF and EPUB
 
 A PDF book and an EPUB book need none of the above. Quarto renders each as one

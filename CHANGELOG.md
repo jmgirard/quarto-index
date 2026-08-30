@@ -139,9 +139,14 @@
   [Books](site/books.qmd) and [Named indexes](site/named-indexes.qmd) pages
   say so.
 
-- A stored chapter record written by another version of the extension is now
-  reported once by each chapter that builds an index, rather than once by
-  every chapter that renders while it stands.
+- A stored chapter record an HTML book cannot use as it stands — one written
+  by another version of the extension, and one naming an index the book no
+  longer declares — is now reported once by each chapter that builds an index
+  section, rather than once by every chapter that renders while it stands. A
+  chapter that builds none reports as well where the records it read show no
+  chapter of the book placing an index — a book with no placement marker
+  anywhere, and equally a chapter rendered while the marker chapter's own
+  record cannot be read — where such a chapter used to say nothing at all.
 
 - A stored chapter record whose cross-reference field is not a list is refused
   and reported like any other record this version cannot read. It used to be

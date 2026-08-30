@@ -604,8 +604,8 @@ end
 -- declare, rather than in a group the loop below never reaches and so never
 -- prints. Both callers settle their own names before they get here — a single
 -- document's marks through `mark_index` as each is read, a book's records
--- through `fold_undeclared` as they are read back — and each reports what it
--- resolved, which is why nothing is reported again here. This is the floor
+-- through `fold_undeclared` as they are read back — and each is reported where
+-- it resolved, which is why nothing is reported again here. This is the floor
 -- under both: a mark that reached the builder is a mark that prints, and a
 -- group silently dropped would be an author's term missing from the index
 -- with nothing said about it (IP2).

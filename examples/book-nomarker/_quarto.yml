@@ -1,6 +1,15 @@
 # The no-marker book fixture (M05-AC6). Marks in every chapter, no placement
 # marker anywhere: the book must render, carry no index section on any page,
-# and warn exactly once that a marker chapter is missing.
+# and warn exactly once that a marker chapter is missing — the last chapter in
+# book order draws that report, and it is the only chapter that can.
+#
+# THREE chapters, not two (M062). A book with no marker builds no index
+# section, so the reports about a stored record this render could not use are
+# drawn here by the chapters that READ the record rather than by the chapters
+# that build one. A chapter reads the store before it rewrites its own record,
+# so a record planted in `two.qmd` is read by `index.qmd` and `one.qmd` and by
+# nothing else: 2, which is neither one report for the book nor one for each
+# of the 3 chapters rendered. With two chapters both rules give 1.
 project:
   type: book
 
@@ -9,6 +18,7 @@ book:
   chapters:
     - index.qmd
     - one.qmd
+    - two.qmd
 
 format:
   html: default

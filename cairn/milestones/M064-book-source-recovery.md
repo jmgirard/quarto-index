@@ -2,12 +2,12 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M064: A chapter's terms reach the book index when its record cannot be read
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** —
+- **Branch/PR:** `m064-book-source-recovery`
 
 ## Goal
 
@@ -109,7 +109,7 @@ authored book reads.
 
 ## Tasks
 
-- [ ] T1. Append the D-entry superseding D-040's declined clause, and update
+- [x] T1. Append the D-entry superseding D-040's declined clause, and update
       `cairn/DESIGN.md`'s Architecture book paragraph, whose "no chapter can
       see another's" sentence becomes conditional on the store being usable.
 - [ ] T2. `book_context` gains `root`; add a helper deriving another chapter's
@@ -138,6 +138,8 @@ authored book reads.
 - 2026-08-30: plan gate chose reading another chapter's `.qmd` and parsing it over reading Quarto's `.quarto/idx/<chapter>.json` cache, which carries the same markdown and adds a dependency on a Quarto internal, and over reading the chapter's rendered HTML, which a probe showed is not on disk during any chapter's filter run; falsified by a Quarto release where a chapter's source is not readable from a sibling chapter's process, or where the output tree is populated mid-render.
 - 2026-08-30: plan gate chose a page href with no fragment for a recovered mark over re-deriving the anchor by re-running the minting on the reparse, which matches only where the reparse sees what that chapter's process saw and otherwise links to a fragment that is not on the page; falsified by evidence that the minting is reproducible across shortcodes, includes and cell output.
 - 2026-08-30: plan gate chose firing recovery only where a record was opened and could not be used over firing on an absent record too, which would complete a book's first index but falsify `site/books.qmd`'s render-twice guidance and move existing first-render manifests; falsified by an author report that a first render's short index is the more costly failure.
+- 2026-08-30: T1 — D-041 was appended at plan time and stands unchanged; this task's remainder is `cairn/DESIGN.md`'s Architecture book paragraph, whose "no chapter can see another's" sentence is now conditional on the store being usable, with recovery, its boundary and KI214's narrowing stated. Suite green (525 ok lines, exit 0) after one re-run: the first run died on a Quarto deno segfault in M20-AC1's PDF render, unrelated to the branch.
+- 2026-08-30: implementation gate chose leaving a recovered chapter's declared sort keys out of recovery (M065 fences the richer mark forms), extending the existing unreadable-record report with a clause rather than adding a second warning, and one guard around the whole read-parse-walk proven by AC5 rather than escalating the IP2 tripwire.
 - 2026-08-30: criteria audit ran in FULL mode ([O], fresh context, user-facing tier plus two `ip-touching` tags) and returned 12 findings. Fixed at the gate: the criteria name the `gamma` terms rather than deferring to a manifest this milestone writes; they assert the whole book's section map rather than one section; AC4 states the observable page outcome rather than a harness verdict; AC2 asserts a fragment present on the rendered page rather than one matching the sidecar JSON; AC5 (both record and source unreadable) and the report-clause task were added. Its href-derivation finding was answered by probe — `book.render` carries no output path, but the chapter's own front-matter `output-file:` does. Findings 5, 6 and 10 (probe adequacy over the unusable-record causes and the recovered mark forms) became the sizing question and are M065.
 
 ## Decisions

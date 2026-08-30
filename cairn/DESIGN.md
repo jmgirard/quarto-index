@@ -421,7 +421,9 @@ composes the very string the index prints, so it is emphasized whole (D-008).
 **Book projects** split the HTML back-end in two, and leave the LaTeX one
 alone. A PDF book is rendered as one merged document, so its marks are already
 in one process; an HTML book renders each chapter separately, so no chapter can
-see another's. Each chapter therefore writes what it found — levels,
+see another's except through what that chapter left behind, or — where what it
+left behind cannot be used — through that chapter's own source (added M064).
+Each chapter therefore writes what it found — levels,
 cross-reference targets, the mention role where a mark declares one, anchor
 ids, its own output page — to a sidecar store
 under the project's `.quarto/` scratch directory, keyed by chapter source path,
@@ -447,7 +449,20 @@ known locally and never read back from the store, so a chapter whose own record
 failed to write still knows what it is. Nothing about the store may break a
 render (IP2): the write is one guarded unit, a record is validated against a
 version and a shape before it is read, and every failure costs that chapter's
-entries and says so. Five cases are reported rather than guessed at (corrected
+entries and says so. A record the reading chapter OPENED and could not use —
+undecodable, refused for its shape, or written by another version — sends it to
+that chapter's source instead: the file is read and parsed inside one guard,
+and the marks and placement markers the parse yields join the book's index
+(added M064, D-041). Recovery carries the author's own values alone — the
+printed levels and the index each mark files in, and which indexes the chapter
+places. It carries no anchor, so a recovered locator links to the chapter's
+page and no fragment; no resolved role and no pairing verdict, which are
+conclusions a chapter reaches about itself (D-009); and no declared sort key.
+It never fires on a record that is simply ABSENT, so a first render is
+unchanged. A mark reaching the chapter through an include shortcode or an
+executed cell, or living in content the HTML render drops, is not in that parse
+and is not recovered; a source Pandoc's markdown reader cannot read recovers
+nothing, and the reading chapter's own record report says so. Five cases are reported rather than guessed at (corrected
 M063, which retired two of the seven M061 left): a book whose chapters mark
 terms but whose
 author wrote no marker anywhere (reported by the last chapter, the only one
@@ -458,8 +473,9 @@ chapter without the metadata this needs — which falls back to indexing that
 page alone, the pre-M05 defect, and so is never silent. The two M063 retired
 were an index no marker names whose section the last placing chapter did not
 take on, and that same index taken on by two chapters at once; the book's last
-chapter takes the section on wherever the records it read show any chapter
-placing an index, so neither can arise (KI214 is the residual case). The record
+chapter takes the section on wherever the records it read — recovery included —
+show any chapter placing an index, so neither can arise (KI214 is the residual
+case, narrowed M064 to a record that is absent rather than unusable). The record
 fields they read — `adopted`, `unseen`, and M60's `later` — went with them, and
 `STORE_VERSION` did not move: a record still carrying any of them is read as a
 record without them, so an upgrade costs no chapter its terms. The store is

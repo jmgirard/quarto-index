@@ -114,8 +114,9 @@ local function store_path(ctx, file)
 end
 
 -- One chapter's record: what it marked, where those marks are anchored on its
--- own page, and whether it carries the placement marker.
-local function store_write(ctx, marker)
+-- own page, whether it carries the placement marker, and whether the store
+-- already held a record for every chapter after this one when it rendered.
+local function store_write(ctx, marker, later)
   local marks = {}
   for _, mark in ipairs(qi_marks.html_marks) do
     local xrefs = {}
@@ -178,8 +179,14 @@ local function store_write(ctx, marker)
       error(tostring(open_err), 0)
     end
     local written, write_err = fh:write(pandoc.json.encode(
+      -- `later` is this chapter's answer to a question only it can answer: did
+      -- the store already hold a usable record for every chapter after this
+      -- one? Chapters render in book order and each rewrites its own record as
+      -- it goes, so no later chapter can reconstruct what an earlier one saw —
+      -- and the book's last chapter has to know it, because it is the chapter
+      -- that reports an index section deferred to a further render.
       { version = STORE_VERSION, file = ctx.file, href = ctx.href,
-        marker = marker, marks = marks, sorts = sorts }))
+        marker = marker, marks = marks, sorts = sorts, later = later }))
     fh:close()
     if not written then
       error(tostring(write_err), 0)
@@ -216,6 +223,16 @@ local function valid_record(data, file)
   -- know which; a chapter with no marker writes an empty one. Validated here
   -- rather than trusted, because `marker_chapter` walks it before any marker
   -- logic runs and a non-list would take the render down with it (IP2).
+  -- Optional on the same terms as the four per-mark fields below: a record
+  -- written before this field existed simply does not say what its chapter
+  -- saw. Absent is not `false`: only a version of this extension without the
+  -- field writes no field, and such a record is never one this render wrote,
+  -- so reading it as "did not have the picture" would report a deferral for a
+  -- section already printed. Absent is read as no answer, and no answer draws
+  -- no report.
+  if data.later ~= nil and type(data.later) ~= "boolean" then
+    return false
+  end
   if data.marker ~= nil then
     if type(data.marker) ~= "table" then
       return false
@@ -270,6 +287,13 @@ local function valid_record(data, file)
     if mark.paired ~= nil and qi_core.RANGE_ENDS[mark.paired] ~= true then
       return false
     end
+    -- The field's own type BEFORE anything walks it: `ipairs` on a number
+    -- raises, and this function is called outside any `pcall`, so a record
+    -- whose `xrefs` is not a list would take the render down through the very
+    -- function written to stop that (IP2).
+    if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
+      return false
+    end
     -- Validated here rather than trusted (review F9): a record whose xref
     -- lost its levels reaches `qi_levels.levels_key` and takes the render down with it,
     -- which IP2 forbids. Two consumers read these now — the entry builder and
@@ -285,9 +309,6 @@ local function valid_record(data, file)
           return false
         end
       end
-    end
-    if mark.xrefs ~= nil and type(mark.xrefs) ~= "table" then
-      return false
     end
     -- Required rather than optional, unlike the four fields above: this is the
     -- field the version bump to 4 is for. A record with no index name is one
@@ -400,8 +421,42 @@ local function fold_undeclared(records)
   end
 end
 
+-- Does the store already hold a record this version can use for every chapter
+-- that renders AFTER this one? That is the half of the store a chapter cannot
+-- see for itself: chapters render in book order, so the ones before it have
+-- just written, and the ones after it have written nothing this render. A
+-- chapter that answers no cannot yet tell whether some later chapter places an
+-- index, and so cannot conclude it is the last chapter that places anything.
+--
+-- The chapters BEFORE it are deliberately not asked about: one of them missing
+-- or refused hides a marker at a position this chapter already stands after,
+-- which cannot make this chapter the last placer when it is not.
+--
+-- Read before this chapter writes its own record, which is the only moment
+-- these files still say what the render found them saying. Silent by design:
+-- `store_read` walks the same files a moment later and draws every report
+-- there is to draw about them, so warning here would double each one.
+local function later_recorded(ctx)
+  for position = ctx.position + 1, #ctx.chapters do
+    local file = ctx.chapters[position]
+    local fh = io.open(store_path(ctx, file), "r")
+    if not fh then
+      return false
+    end
+    local text = fh:read("a")
+    fh:close()
+    local ok, data = pcall(pandoc.json.decode, text, false)
+    if not (ok and valid_record(data, file)) then
+      return false
+    end
+  end
+  return true
+end
+
+-- Returns the usable records in book order, and the chapters whose record this
+-- version refused for being written by another one — the caller's to report.
 local function store_read(ctx)
-  local records = {}
+  local records, stale = {}, {}
   for _, file in ipairs(ctx.chapters) do
     local fh = io.open(store_path(ctx, file), "r")
     if fh then
@@ -418,10 +473,12 @@ local function store_read(ctx)
         -- readable and simply stale, and calling that unreadable sends an
         -- author looking for a corrupt file that is not there.
         if ok and type(data) == "table" and data.version ~= STORE_VERSION then
-          qi_core.warn(("the recorded index marks for %s were written by a different "
-                .. "version of this extension and were ignored; render that "
-                .. "chapter again, or render the whole book, to put its "
-                .. "terms back in the index"):format(file))
+          -- Handed back rather than reported here: a version-skewed record
+          -- costs the chapters that BUILD an index their share of that
+          -- chapter's terms, and every other chapter of the book reads the
+          -- store without printing anything out of it. Reported by the caller,
+          -- once per chapter that builds (M55).
+          stale[#stale + 1] = file
         else
           qi_core.warn(("the recorded index marks for %s could not be read and were "
                 .. "ignored; render that chapter again, or render the whole "
@@ -430,7 +487,7 @@ local function store_read(ctx)
       end
     end
   end
-  return records
+  return records, stale
 end
 
 -- Every chapter's marks as the entry builder wants them: the kind tables
@@ -734,6 +791,20 @@ local function marker_chapter(ctx, records)
   return first
 end
 
+-- Does any chapter file a mark in this index? An index nothing marks prints no
+-- section however it is placed, so a deferral reported for it would promise a
+-- section a further render would not print either.
+local function marks_in(records, name)
+  for _, record in ipairs(records) do
+    for _, mark in ipairs(record.marks or {}) do
+      if mark.index == name then
+        return true
+      end
+    end
+  end
+  return false
+end
+
 local function any_marks(records)
   for _, record in ipairs(records) do
     if #(record.marks or {}) > 0 then
@@ -750,8 +821,11 @@ end
 -- `marker` is the list of index names this chapter has a surviving placement
 -- marker for, in the order it places them.
 local function html_book(doc, ctx, marker, taken)
-  store_write(ctx, marker)
-  local records = store_read(ctx)
+  -- Before the write, or a chapter would be reading its own record back as
+  -- the state some earlier render left.
+  local later = later_recorded(ctx)
+  store_write(ctx, marker, later)
+  local records, stale = store_read(ctx)
   -- Before any judgement is made about a mark: an index name this book no
   -- longer declares is settled against what it declares now, so every
   -- accumulator below sees only names this book has.
@@ -822,7 +896,14 @@ local function html_book(doc, ctx, marker, taken)
   end
 
   local builds = next(mine) ~= nil
-  if first ~= nil and ctx.position == last then
+  -- ...but only a chapter that has seen a record for every chapter after it
+  -- may conclude it is the last one that places anything. On a first render no
+  -- chapter has written yet when the chapters before it run, so an early
+  -- placing chapter would otherwise take on every index no marker names and
+  -- print it in a chapter its author asked nothing for. Where that picture is
+  -- missing the section waits for a further render, and the book's last
+  -- chapter says so below — the placement rule itself is unchanged.
+  if first ~= nil and ctx.position == last and later then
     for _, name in ipairs(qi_indexes.names()) do
       if placing[name] == nil then
         mine[name] = true
@@ -831,7 +912,48 @@ local function html_book(doc, ctx, marker, taken)
     end
   end
 
+  -- Drawn by the last chapter in book order alone, the same chapter the three
+  -- book-wide reports are drawn by: it is the only one that has seen every
+  -- record, so it is the only one that can say an index is named by no marker
+  -- anywhere. Whether the chapter that should have taken it on did so is read
+  -- off that chapter's own record, which it wrote as it rendered; a chapter
+  -- that renders later cannot see what an earlier one saw.
+  if ctx.position == #ctx.chapters and first ~= nil then
+    -- The book's last chapter has no chapter after it, so where it is itself
+    -- the last placing chapter it always had the picture and always adopted.
+    local adopted = last == ctx.position
+    if not adopted then
+      for _, record in ipairs(records) do
+        if record.file == ctx.chapters[last] then
+          -- `~= false` rather than `== true`: a record with no `later` field
+          -- at all was written before the field existed and says nothing
+          -- either way, and a report drawn on its silence is a report about a
+          -- section that is on the page.
+          adopted = record.later ~= false
+        end
+      end
+    end
+    if not adopted then
+      for _, name in ipairs(qi_indexes.names()) do
+        if placing[name] == nil and marks_in(records, name) then
+          qi_core.warn(('no placement marker in this book names the index "%s", so its section goes to the last chapter that places one — and on this render that chapter had not yet seen a record for every chapter of the book. Render the book again and the section will be placed'):format(name))
+        end
+      end
+    end
+  end
+
   if builds then
+    -- Drawn by each chapter that builds an index, in book order, which is what
+    -- M55 decided: the record's absence costs this section its share of that
+    -- chapter's terms, and a chapter that prints nothing has nothing to say
+    -- about it. A book placing three indexes in three chapters therefore says
+    -- so three times — once per section the record is missing from.
+    for _, file in ipairs(stale) do
+      qi_core.warn(("the recorded index marks for %s were written by a different "
+            .. "version of this extension and were ignored; render that "
+            .. "chapter again, or render the whole book, to put its "
+            .. "terms back in the index"):format(file))
+    end
     if not any_marks(records) then
       -- The book path's counterpart to the single-document no-marks warning,
       -- which cannot be asked of one chapter. Without it a marker in a book
@@ -843,11 +965,13 @@ local function html_book(doc, ctx, marker, taken)
       end
       return qi_marker.place_index(doc, nil)
     end
-    local later = {}
+    -- Named for what it holds rather than `later`, which in this function is
+    -- already the boolean this chapter recorded about the store.
+    local after = {}
     for position = ctx.position + 1, #ctx.chapters do
-      later[#later + 1] = ctx.chapters[position]
+      after[#after + 1] = ctx.chapters[position]
     end
-    if #later > 0 then
+    if #after > 0 then
       -- Chapters render in book order, so a chapter after this one has not
       -- run yet in this render: what the index shows for it is whatever an
       -- earlier render recorded, which may name terms that chapter no longer
@@ -867,7 +991,7 @@ local function html_book(doc, ctx, marker, taken)
             .. "dead. Put the marker chapter last in the book. The chapter "
             .. "count is over the files this book renders, in the order the "
             .. "book's render list gives them")
-           :format(ctx.file, #later, table.concat(later, ", ")))
+           :format(ctx.file, #after, table.concat(after, ", ")))
     end
     -- Only the marks of the indexes this chapter builds. Another chapter's
     -- section is built in that chapter's own process, out of the same records.
@@ -910,12 +1034,14 @@ M["store_path"] = store_path
 M["store_write"] = store_write
 M["valid_record"] = valid_record
 M["fold_undeclared"] = fold_undeclared
+M["later_recorded"] = later_recorded
 M["store_read"] = store_read
 M["book_sort_keys"] = book_sort_keys
 M["book_sort_for"] = book_sort_for
 M["book_marks"] = book_marks
 M["report_book_dangling"] = report_book_dangling
 M["marker_chapter"] = marker_chapter
+M["marks_in"] = marks_in
 M["any_marks"] = any_marks
 M["html_book"] = html_book
 

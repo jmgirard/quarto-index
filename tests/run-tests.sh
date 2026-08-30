@@ -861,6 +861,9 @@ MANIFEST
 # guarantee unproven.
 WARN_STORE_UNREADABLE='could not be read and were ignored'
 WARN_STORE_STALE='were written by a different version of this extension and were ignored'
+# M60's deferral report, keyed on its value-free tail: the head names the index
+# that was not placed, which differs per book.
+WARN_DEFER='Render the book again and the section will be placed'
 WARN_STORE_UNWRITABLE='could not record index marks for'
 WARN_MARKER_NOT_LAST='chapter(s) come after it'
 WARN_MARKER_SECOND='comes first in book order and carries one too'
@@ -6094,6 +6097,475 @@ check_warning_count "$WORK/book-removed.log" "$WARN_INDEX_STALE_NAME" 1 \
 grep -qF 'Turing' "$CAPTURE_ROOT/book-removed/_book/last.html" \
   || fail "M55-AC3: the removed index's term is missing from the page, so the record's marks were dropped rather than filed in the first declared index"
 pass "M55-AC3: a record naming a declaration the book has since removed keeps its chapter's terms, filed in the first index the book still declares, and the report names that chapter and that name"
+
+# ---------------------------------------------------------------------------
+# M60 — where an HTML book's index sections land on a FIRST render.
+# examples/book/ puts every marker in its last chapter, so it never asks this
+# fixture's question: which chapter takes on an index no marker names, when the
+# chapter that would take it on has not yet seen the chapters after it.
+# ---------------------------------------------------------------------------
+PLACE_DIR="examples/book-placement"
+
+# Every generated index section on every page of a rendered book, by page, id
+# and DECLARED TITLE — never by a count. A chapter adopting every index no
+# marker names produces exactly the count one section per marker produces, and
+# only the ids and titles tell the two apart. A page carrying no section is
+# written with a single `-`, so a page that quietly grew one fails here rather
+# than going unlisted.
+check_book_sections() {   # <rendered book dir> <label> <manifest>
+  local root="$1" label="$2" manifest="$3"
+  printf '%s\n' "$manifest" > "$WORK/book-sections.txt"
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
+    "$root" "$WORK/book-sections.txt" "$label" <<'PLACEPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+root, manifest_path, label = sys.argv[1:4]
+prefix = os.environ['HTML_SECTION_ID']
+pages = H.html_files(root)
+if not pages:
+    print(f'FAIL: {label}: {root} holds no rendered page, so the manifest '
+          f'below would be compared against nothing', file=sys.stderr)
+    sys.exit(1)
+actual = []
+for page in pages:
+    try:
+        found = H.index_sections(H.parse(os.path.join(root, page)), prefix)
+    except ValueError as bad:
+        print(f'FAIL: {label}: {bad}', file=sys.stderr)
+        sys.exit(1)
+    if not found:
+        actual.append(f'{page}\t-')
+    for hit in found:
+        actual.append(f'{page}\t{hit["ident"]}\t{hit["title"]}')
+expected = H.read_manifest(manifest_path)
+if not expected:
+    print(f'FAIL: {label}: the manifest is empty, so a book printing nothing '
+          f'would match it', file=sys.stderr)
+    sys.exit(1)
+if actual != expected:
+    print(f'FAIL: {label}: the index sections this book printed are not the '
+          f'ones the manifest names', file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such row rendered>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  row {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+carrying = len([r for r in actual if not r.endswith('\t-')])
+print(f'ok   {label}: {len(pages)} rendered page(s) carry {carrying} generated '
+      f'index section(s), each the id and declared title the manifest names')
+PLACEPY
+}
+
+# ORACLE — derived by hand from examples/book-placement/. The book declares
+# `alpha`, `beta` and `gamma`; the marker in index.qmd names no index and so
+# places the first declared one, the marker in three.qmd names `beta`, and no
+# marker anywhere names `gamma`. On a FIRST render three.qmd is the last
+# chapter that places anything but has not yet seen four.qmd's record, so it
+# does not take `gamma` on and no page carries that section — even though
+# index.qmd, two.qmd and four.qmd all mark a term that files in it.
+read -r -d '' PLACE_SECTIONS_FIRST <<'MANIFEST' || true
+four.html	-
+index.html	qi-index-alpha	Index of Alpha
+three.html	qi-index-beta	Index of Beta
+two.html	-
+MANIFEST
+# ...and on a SECOND render three.qmd has seen every chapter's record, so it
+# takes `gamma` on, after the index its own marker places and on that one page.
+read -r -d '' PLACE_SECTIONS_SECOND <<'MANIFEST' || true
+four.html	-
+index.html	qi-index-alpha	Index of Alpha
+three.html	qi-index-beta	Index of Beta
+three.html	qi-index-gamma	Index of Gamma
+two.html	-
+MANIFEST
+
+rm -rf "$PLACE_DIR/_book" "$PLACE_DIR/.quarto"
+( cd "$PLACE_DIR" && quarto render --to html ) > "$WORK/place-first.log" 2>&1 \
+  || { tail -30 "$WORK/place-first.log" >&2; fail "M60-AC1: the placement fixture failed to render to HTML from an empty store"; }
+capture --project "$PLACE_DIR" html "place-first"
+check_book_sections "$CAPTURE_ROOT/place-first/_book" "M60-AC1" \
+  "$PLACE_SECTIONS_FIRST"
+
+# M60-AC3 — and the book says so, once, naming the index it did not place.
+# Drawn by four.qmd, the last chapter in book order: it is the only chapter
+# that has seen every record, so it is the only one that can know no marker
+# anywhere names `gamma`.
+check_warning_count "$WORK/place-first.log" "$WARN_DEFER" 1 "M60-AC3"
+{ grep -F -- "$WARN_DEFER" "$WORK/place-first.log" | grep -qF 'the index "gamma"'; } \
+  || { grep -F -- "$WARN_DEFER" "$WORK/place-first.log" >&2; fail "M60-AC3: the deferral report does not name the index that was not placed"; }
+# Every warning this first render emits is one this suite can name: the two
+# marker-position reports the fixture's own shape draws (a marker in index.qmd
+# with three chapters after it, and one in three.qmd with one) and the deferral
+# report above. A record refused, an index folded or a target dangling would
+# each be a fourth.
+check_extension_warning_count "$WORK/place-first.log" 3 \
+  "M60-AC1/AC3 (the placement fixture's first render emitted a warning this suite cannot name; its three are the two marker-position reports and the deferral report)"
+pass "M60-AC1/AC3: rendered from an empty store, the placement fixture prints an index section only where a marker in that chapter places one, prints none for the index no marker names, and reports that index once by name"
+
+( cd "$PLACE_DIR" && quarto render --to html ) > "$WORK/place-second.log" 2>&1 \
+  || { tail -30 "$WORK/place-second.log" >&2; fail "M60-AC2: the placement fixture failed its second render"; }
+capture --project "$PLACE_DIR" html "place-second"
+check_book_sections "$CAPTURE_ROOT/place-second/_book" "M60-AC2" \
+  "$PLACE_SECTIONS_SECOND"
+check_warning_count "$WORK/place-second.log" "$WARN_DEFER" 0 \
+  "M60-AC2 (the section was placed, so nothing defers it)"
+check_extension_warning_count "$WORK/place-second.log" 2 \
+  "M60-AC2 (the placement fixture's second render emitted a warning this suite cannot name; its two are the marker-position reports)"
+pass "M60-AC2: a second render over the store the first left places the index no marker names in the last chapter that places one, on that page alone, and draws no deferral report"
+
+# M60-AC1's other half: the fixture whose markers are all in its LAST chapter
+# is unchanged by any of this. That chapter has no chapter after it, so it has
+# the whole picture on a first render and takes `places` on exactly as it did.
+# Read off the first render captured at the top of this section.
+check_section_ids "$CAPTURE_ROOT/book-html/_book/last.html" \
+  "M60-AC1 (examples/book, rendered from an empty store)" \
+  "$HTML_SECTION_ID-main $HTML_SECTION_ID-people $HTML_SECTION_ID-places"
+check_warning_count "$WORK/book-html.log" "$WARN_DEFER" 0 \
+  "M60-AC1 (examples/book defers nothing)"
+pass "M60-AC1: examples/book/, whose markers are all in its last chapter, still carries its three declared sections in last.html on a first render and defers nothing"
+
+# ---------------------------------------------------------------------------
+# M60-AC4 — the report for a record written by a superseded version is drawn
+# once per chapter that BUILDS an index, which is what M55 decided and not what
+# it shipped: drawn inside `store_read`, it fired once per chapter RENDERED.
+#
+# A chapter rewrites its own record as it renders, so a planted record is read
+# only by the chapters that render before the chapter it belongs to. The two
+# positions below are chosen around that, and each run's expectation is derived
+# by hand from the fixture:
+#
+#   (1) the record belongs to four.qmd, which places nothing and renders LAST,
+#       and the whole book is rendered. index.qmd and three.qmd each build an
+#       index and each read the plant; two.qmd builds none and reads it in
+#       silence; four.qmd overwrites it before building anything. Chapters that
+#       build an index: 2. Expected reports: 2.
+#
+#   (2) the record belongs to three.qmd, which DOES place an index, and
+#       index.qmd alone is rendered. One chapter renders, it builds `alpha`,
+#       and the plant is still there when it reads. Chapters that build an
+#       index: 1. Expected reports: 1.
+#
+# 2 is neither the fixture's chapter count (4) nor one report for the book, so
+# the two runs together separate once-per-building-chapter from both.
+# ---------------------------------------------------------------------------
+PLACE_STORE="$PLACE_DIR/.quarto/$STORE_DIR"
+place_stale() {   # <chapter file> <slug> <render argument or ""> <expected count> <label>
+  local chapter="$1" slug="$2" target="$3" want="$4" label="$5"
+  cp "$PLACE_STORE/$chapter$STORE_SUFFIX" "$WORK/place-$slug-record.json"
+  # Written at the version this one supersedes, derived from the filter's own
+  # constant rather than named here, and otherwise a record this filter would
+  # accept — or the run below would be about a record refused for its shape.
+  python3 - "$WORK/place-$slug-record.json" \
+    "$PLACE_STORE/$chapter$STORE_SUFFIX" "$SUPERSEDED_VERSION" <<'STALEPY'
+import json, sys
+record = json.load(open(sys.argv[1], encoding='utf-8'))
+if record['version'] == int(sys.argv[3]):
+    sys.exit(f'FAIL: M60-AC4: {sys.argv[1]} already stands at version '
+             f'{sys.argv[3]}, so the plant changes nothing and the run below '
+             f'would be about an unplanted record')
+record['version'] = int(sys.argv[3])
+json.dump(record, open(sys.argv[2], 'w', encoding='utf-8'))
+STALEPY
+  # shellcheck disable=SC2086
+  ( cd "$PLACE_DIR" && quarto render $target --to html ) \
+    > "$WORK/place-$slug.log" 2>&1 \
+    || { tail -30 "$WORK/place-$slug.log" >&2; fail "M60-AC4 ($label): the render failed; IP2 forbids a stale record taking one down"; }
+  capture --project "$PLACE_DIR" html "place-$slug"
+  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_STALE" "$want" \
+    "M60-AC4 ($label)"
+  { grep -F -- "$WARN_STORE_STALE" "$WORK/place-$slug.log" | grep -qF "$chapter"; } \
+    || { grep -F -- "$WARN_STORE_STALE" "$WORK/place-$slug.log" >&2; fail "M60-AC4 ($label): the report does not name $chapter, the chapter whose record was refused"; }
+  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE" 0 \
+    "M60-AC4 ($label, stale rather than unreadable)"
+  cp "$WORK/place-$slug-record.json" "$PLACE_STORE/$chapter$STORE_SUFFIX"
+}
+
+place_stale four.qmd stale-last '' 2 \
+  'a record in the chapter that places nothing and renders last, whole book rendered, two chapters building'
+place_stale three.qmd stale-placing index.qmd 1 \
+  'a record in a chapter that places an index, one chapter rendered, one chapter building'
+pass "M60-AC4: the report for a record written by a superseded version is drawn once per chapter that builds an index — twice in a whole-book render two of whose four chapters build one, and once where a single building chapter is rendered — and names the chapter whose record it refused"
+
+# ---------------------------------------------------------------------------
+# M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_record`
+# runs outside any `pcall`, and it used to walk that field with `ipairs` before
+# testing its type, so such a record raised and took the render down — through
+# the very function written to stop a wrongly shaped record doing exactly that
+# (IP2). The type test now precedes the walk.
+#
+# The plant is built from THIS chapter's own record, and its version is read
+# from the filter's constant rather than written down: a plant at any other
+# version is refused for its version and never reaches the field this is about.
+# ---------------------------------------------------------------------------
+# The unplanted copy first, so the run below cannot be about a record this
+# filter would have refused whatever its `xrefs` said.
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-xrefs-plain.log" 2>&1 \
+  || { tail -30 "$WORK/book-xrefs-plain.log" >&2; fail "M60-AC5: the marker chapter failed to re-render over the unplanted store"; }
+capture --project "$BOOK_DIR" html "book-xrefs-plain"
+check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M60-AC5 (the unplanted record is accepted)"
+check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_STALE" 0 \
+  "M60-AC5 (the unplanted record is accepted)"
+check_section_ids "$CAPTURE_ROOT/book-xrefs-plain/_book/last.html" \
+  "M60-AC5 (the unplanted store prints all three declared indexes)" \
+  "$HTML_SECTION_ID-main $HTML_SECTION_ID-people $HTML_SECTION_ID-places"
+
+m60_plant_xrefs() {   # <destination record path>
+  python3 - "$WORK/one-record.json" "$1" "$STORE_VERSION" <<'XREFPY'
+import json, sys
+source, target, version = sys.argv[1:4]
+record = json.load(open(source, encoding='utf-8'))
+if record['version'] != int(version):
+    sys.exit(f"FAIL: M60-AC5: the record stands at version {record['version']} "
+             f"and the filter's own constant is {version}, so the plant below "
+             f"would be refused for its version before its xrefs were read")
+if not record['marks']:
+    sys.exit('FAIL: M60-AC5: the record holds no mark to plant the field on')
+if record['marks'][0].get('xrefs') == 5:
+    sys.exit('FAIL: M60-AC5: the mark already carries the planted value, so '
+             'the plant changes nothing')
+record['marks'][0]['xrefs'] = 5
+json.dump(record, open(target, 'w', encoding='utf-8'))
+XREFPY
+}
+
+m60_plant_xrefs "$CORRUPT"
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-xrefs-number.log" 2>&1 \
+  || { tail -30 "$WORK/book-xrefs-number.log" >&2; fail "M60-AC5: a record whose xrefs is a number took the render down; IP2 forbids it"; }
+capture --project "$BOOK_DIR" html "book-xrefs-number"
+check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_UNREADABLE" 1 \
+  "M60-AC5"
+{ grep -F -- "$WARN_STORE_UNREADABLE" "$WORK/book-xrefs-number.log" \
+  | grep -qF 'one.qmd'; } \
+  || { grep -F -- "$WARN_STORE_UNREADABLE" "$WORK/book-xrefs-number.log" >&2; fail "M60-AC5: the report does not name one.qmd, the chapter whose record was refused"; }
+check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_STALE" 0 \
+  "M60-AC5 (refused for its shape, not for its version)"
+# one.qmd carries this book's only `people` mark, so refusing its record leaves
+# `people` nothing to print; `main` and `places`, whose marks are in the other
+# three chapters, are printed as usual. Named individually rather than counted:
+# two sections both headed `main` is what a merged aggregation produces.
+check_section_ids "$CAPTURE_ROOT/book-xrefs-number/_book/last.html" \
+  "M60-AC5" "$HTML_SECTION_ID-main $HTML_SECTION_ID-places"
+cp "$WORK/one-record.json" "$CORRUPT"
+pass "M60-AC5: a stored record whose xrefs field is a number is reported as one that could not be read, naming its chapter, the render exits 0, and the book still prints main and places — while the same record unplanted is accepted and prints all three"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M60 T5 — the same record against a filter with the `xrefs` type test
+  # DELETED: one deletion and nothing moved, so what the case below shows is
+  # that test doing the work, not some other line's rearrangement. The render
+  # must die, and die at `valid_record` for indexing a number — a render that
+  # failed for any other reason would be a green this check has not earned.
+  # -------------------------------------------------------------------------
+  M60W="$WORK/m60"
+  rm -rf "$M60W/noguard"
+  mkdir -p "$M60W"
+  # The whole fixture, store and all, then the extension over it: examples/book
+  # reaches the filter through an `_extensions` SYMLINK, which `cp -R`
+  # preserves, and a scratch copy still pointing at the repository's own tree
+  # would render through the unspliced filter.
+  cp -R "$BOOK_DIR" "$M60W/noguard"
+  rm -f "$M60W/noguard/_extensions"
+  rm -rf "$M60W/noguard/_book"
+  mkdir -p "$M60W/noguard/_extensions"
+  cp -R "$QI_EXT_DIR" "$M60W/noguard/_extensions/index"
+  [ -d "$M60W/noguard/.quarto/$STORE_DIR" ] \
+    || fail "M60 T5 self-test: the copied book carries no store, so the plant below would have no record to sit in"
+  perl -0777 -pe 's{    if mark\.xrefs ~= nil and type\(mark\.xrefs\) ~= "table" then\n      return false\n    end\n}{}' \
+    "$M60W/noguard/_extensions/index/modules/book.lua" > "$M60W/noguard-spliced"
+  if cmp -s "$M60W/noguard/_extensions/index/modules/book.lua" "$M60W/noguard-spliced"; then
+    fail "M60 T5 self-test: the deletion aimed at the xrefs type test removed nothing — the render below would be reported as the guard failing to matter when the fault is this mutation's"
+  fi
+  mv "$M60W/noguard-spliced" "$M60W/noguard/_extensions/index/modules/book.lua"
+  m60_plant_xrefs "$M60W/noguard/.quarto/$STORE_DIR/one.qmd$STORE_SUFFIX"
+  # The render is expected to DIE, so its status is caught rather than tested
+  # in place: the capture helper still runs on the line after it, which is what
+  # M24-AC3 asks of every render in this file, and the scratch tree it is
+  # pointed at holds nothing to capture, exactly as a dead render should leave.
+  M60_NOGUARD_RC=0
+  ( cd "$M60W/noguard" && quarto render last.qmd --to html ) \
+    > "$WORK/m60-noguard.log" 2>&1 || M60_NOGUARD_RC=$?
+  capture --project "$M60W/noguard" html "m60-noguard"
+  [ "$M60_NOGUARD_RC" -ne 0 ] \
+    || fail "M60 T5 self-test: the render survived a record whose xrefs is a number with the type test deleted, so the criterion's green says nothing about that test"
+  grep -qF 'attempt to index a number value' "$WORK/m60-noguard.log" \
+    || { tail -30 "$WORK/m60-noguard.log" >&2; fail "M60 T5 self-test: the render failed, but not for indexing a number — that failure is not the one this deletion plants"; }
+  grep -q 'book\.lua.*valid_record' "$WORK/m60-noguard.log" \
+    || { tail -30 "$WORK/m60-noguard.log" >&2; fail "M60 T5 self-test: the render failed for indexing a number somewhere other than valid_record, which is not the site this deletion opens"; }
+  pass "M60 T5 self-test: with the xrefs type test deleted and nothing else changed, the same record takes the render down at valid_record for indexing a number — which is the failure the test in place turns into a report"
+fi
+
+# ---------------------------------------------------------------------------
+# M60-AC6 — the sort-key merge order M55 fixed at its review gate and shipped
+# with no regression test. A stored record can carry sort keys under a name the
+# book still declares AND under one it no longer does; both fold into the first
+# declared index, and first-one-wins settles which key a shared printed path
+# files under. Sorting the names together hands the path to whichever name
+# sorts first, so a stale name beats the destination index's own key on nothing
+# but its spelling. The destination index's own keys are taken first.
+#
+# The two keys are chosen to collate into DIFFERENT letter groups, so the
+# observable is where the term prints rather than an ordering only the filter
+# can see: `Zulu Beta` files `Beta` under Z, behind `Zeta`; `Alpha Beta` files
+# it under A.
+# ---------------------------------------------------------------------------
+m60_plant_merge() {   # <destination record path>
+  python3 - "$WORK/one-record.json" "$1" <<'MERGEPY'
+import json, sys
+source, target = sys.argv[1:3]
+record = json.load(open(source, encoding='utf-8'))
+gamma = [m for m in record['marks'] if m['levels'] == ['Gamma']]
+if not gamma:
+    sys.exit('FAIL: M60-AC6: one.qmd\'s record marks no Gamma, so the split '
+             'between a declared index and one the book does not declare '
+             'would not be planted')
+if record.get('sorts'):
+    sys.exit(f"FAIL: M60-AC6: the record already carries sort keys "
+             f"{record['sorts']}, so the two this plant writes would not be "
+             f"the two whose order is in question")
+# The marks split between the two names, which is what makes this a record the
+# fold is about rather than a bare pair of key maps.
+gamma[0]['index'] = 'ghostindex'
+record['sorts'] = {'main': {'Beta': 'Zulu Beta'},
+                   'ghostindex': {'Beta': 'Alpha Beta'}}
+json.dump(record, open(target, 'w', encoding='utf-8'))
+MERGEPY
+}
+
+# The reader, called at the site and again by the planted case below, so what
+# is shown red there is this check and not a second one written to agree with
+# it.
+m60_merge_order() {   # <html file> <section id> <label>
+  python3 - "$1" "$2" "$3" <<'ORDERPY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+path, section, label = sys.argv[1:4]
+doc = H.parse(path)
+found = H.find_id(doc, section)
+if found is None:
+    print(f'FAIL: {label}: {path} carries no {section!r} section, so there is '
+          f'no letter group to read the term out of', file=sys.stderr)
+    sys.exit(1)
+groups, current = {}, None
+for record in H.index_entries(found):
+    if record['kind'] == 'heading':
+        current = record['label']
+        groups.setdefault(current, [])
+    elif record['kind'] == 'entry' and record['depth'] == 0:
+        if current is None:
+            print(f'FAIL: {label}: an entry stands before any letter group, so '
+                  f'the groups read here are not the ones the page shows',
+                  file=sys.stderr)
+            sys.exit(1)
+        groups[current].append(record['term'])
+if not groups:
+    print(f'FAIL: {label}: the {section!r} section shows no letter group at '
+          f'all, so this reader would compare nothing', file=sys.stderr)
+    sys.exit(1)
+WANT_GROUP, WANT = 'Z', ['Zeta', 'Beta']
+if groups.get(WANT_GROUP) != WANT:
+    print(f'FAIL: {label}: the term does not print under the letter group its '
+          f'own index\'s key gives it: the {WANT_GROUP!r} group holds '
+          f'{groups.get(WANT_GROUP)}, expected {WANT} — the destination '
+          f'index\'s own key, and the named neighbour that key puts it behind',
+          file=sys.stderr)
+    sys.exit(1)
+stray = sorted(g for g, terms in groups.items()
+               if g != WANT_GROUP and 'Beta' in terms)
+if stray:
+    print(f'FAIL: {label}: the term also prints under the letter group(s) '
+          f'{stray}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: the shared path prints under {WANT_GROUP!r}, after '
+      f'{WANT[0]!r}, which is the group the declared index\'s own key gives it')
+ORDERPY
+}
+
+m60_plant_merge "$CORRUPT"
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-merge.log" 2>&1 \
+  || { tail -30 "$WORK/book-merge.log" >&2; fail "M60-AC6: a record splitting its marks and keys between two index names took the render down"; }
+capture --project "$BOOK_DIR" html "book-merge"
+# Reported, not silent: the name the book does not declare is named, once.
+check_warning_count "$WORK/book-merge.log" "$WARN_INDEX_STALE_NAME" 1 \
+  "M60-AC6"
+m60_merge_order "$CAPTURE_ROOT/book-merge/_book/last.html" \
+  "$HTML_SECTION_ID-main" "M60-AC6" \
+  || fail "M60-AC6: the shared printed path does not file under the declared index's own key (the reader's own FAIL line is above)"
+cp "$WORK/one-record.json" "$CORRUPT"
+pass "M60-AC6: where a record carries a sort key for one printed path under both a declared index and a name the book no longer declares, the path files under the declared index's own key, in that key's letter group and behind the neighbour it sorts after"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M60 T6 — the same record against a filter that merges the two names in one
+  # sorted run, which is the order that stood before M55's gate fix. The stale
+  # name sorts first, so its key wins the shared path and the term files under
+  # the other letter group.
+  # -------------------------------------------------------------------------
+  M60W="$WORK/m60"
+  rm -rf "$M60W/preorder"
+  mkdir -p "$M60W"
+  cp -R "$BOOK_DIR" "$M60W/preorder"
+  rm -f "$M60W/preorder/_extensions"
+  rm -rf "$M60W/preorder/_book"
+  mkdir -p "$M60W/preorder/_extensions"
+  cp -R "$QI_EXT_DIR" "$M60W/preorder/_extensions/index"
+  [ -d "$M60W/preorder/.quarto/$STORE_DIR" ] \
+    || fail "M60 T6 self-test: the copied book carries no store, so the plant below would have no record to sit in"
+  python3 - "$M60W/preorder/_extensions/index/modules/book.lua" <<'PREORDERPY'
+import sys
+path = sys.argv[1]
+text = open(path, encoding='utf-8').read()
+after = '''      local kept, folded = {}, {}
+      for name in pairs(record.sorts) do
+        if qi_indexes.declared_for(name) ~= nil then
+          kept[#kept + 1] = name
+        else
+          folded[#folded + 1] = name
+        end
+      end
+      table.sort(kept)
+      table.sort(folded)
+      local names = kept
+      for _, name in ipairs(folded) do
+        names[#names + 1] = name
+      end
+'''
+before = '''      local names = {}
+      for name in pairs(record.sorts) do
+        names[#names + 1] = name
+      end
+      table.sort(names)
+'''
+if text.count(after) != 1:
+    sys.exit(f'FAIL: M60 T6 self-test: the kept-then-folded ordering was found '
+             f'{text.count(after)} time(s) in {path}, so the splice below '
+             f'would plant nothing and the case would be reported as the check '
+             f'failing to discriminate when the fault is this mutation\'s')
+open(path, 'w', encoding='utf-8').write(text.replace(after, before))
+PREORDERPY
+  m60_plant_merge "$M60W/preorder/.quarto/$STORE_DIR/one.qmd$STORE_SUFFIX"
+  ( cd "$M60W/preorder" && quarto render last.qmd --to html ) \
+    > "$WORK/m60-preorder.log" 2>&1 \
+    || { tail -30 "$WORK/m60-preorder.log" >&2; fail "M60 T6 self-test: the book with the pre-fix merge order failed to render at all, so the case below would be about a broken render rather than about the order"; }
+  capture --project "$M60W/preorder" html "m60-preorder"
+  M60_ORDER_OUT=$(m60_merge_order \
+    "$CAPTURE_ROOT/m60-preorder/_book/last.html" "$HTML_SECTION_ID-main" \
+    'M60 T6 self-test (the pre-fix merge order)' 2>&1) \
+    && M60_ORDER_RC=0 || M60_ORDER_RC=$?
+  [ "$M60_ORDER_RC" -ne 0 ] \
+    || { printf '%s\n' "$M60_ORDER_OUT" >&2; fail "M60 T6 self-test: the check passed against the merge order that stood before M55's gate fix, so its green says nothing about that fix"; }
+  printf '%s' "$M60_ORDER_OUT" \
+    | grep -qF "does not print under the letter group its own index's key gives it" \
+    || { printf '%s\n' "$M60_ORDER_OUT" >&2; fail "M60 T6 self-test: the check failed against the pre-fix order, but not by finding the term under another letter group — that failure is not this clause catching this defect"; }
+  pass "M60 T6 self-test: against the merge order that sorted both names in one run, the stale name's key wins the shared path and the same reader reports the term under the wrong letter group"
+fi
 
 # ---------------------------------------------------------------------------
 # The ordering fixture: marker in the first chapter, a second marker in the

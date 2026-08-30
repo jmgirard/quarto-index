@@ -1,0 +1,11 @@
+# Third chapter
+
+The marker below names the second declared index, so this chapter places that
+index and not the one the first chapter's marker placed. It is also the last
+chapter of the book that places anything, which is where an index no marker
+names goes once a render can see every chapter's marks.
+
+A term for the index this chapter places: [Coriander]{.index index="beta"}.
+
+::: {.qi-index-here index="beta"}
+:::

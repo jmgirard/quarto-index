@@ -5,7 +5,7 @@
 - **Depends on:** M061
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** m062-book-record-report-counts
+- **Branch/PR:** m062-book-record-report-counts / https://github.com/jmgirard/quarto-index/pull/62
 
 ## Goal
 
@@ -106,6 +106,7 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 ## Work log
 
 - 2026-08-30: created by /milestone-plan.
+- 2026-08-30: review opened — branch pushed, draft PR #62; `cairn_validate` passes (exit 0), the generic profile's consistency-gate slot names no toolchain checks, and no DESIGN principle changed so `cairn_impact` is skipped. Suite runs and the three review lenses are in flight.
 - 2026-08-30: criteria audit ran in FULL mode (user-facing tier) over M061's and M062's criteria together in one fresh-context [O] reader; its M062 findings and their disposal are recorded in M061's work log.
 - 2026-08-30: plan gate chose a third chapter in `examples/book-nomarker/` over keeping two, because in a two-chapter book exactly one chapter can report and "once" is the answer under once-per-book as well as under the rule this milestone ships; falsified by a fixture shape that separates the two rules without adding a chapter.
 - 2026-08-30: T3 — `examples/book-nomarker/` gained `two.qmd`; the fixture comment re-derives the count by hand (a chapter reads the store before it rewrites its own record, so a record planted in `two.qmd` is read by `index.qmd` and `one.qmd` alone: 2, against 3 chapters rendered and 1 report for the book). M05-AC6's missing-marker count is unchanged at 1 — the book's last chapter draws it and there is still one last chapter — and its visible-term manifest gained `two.html` / `Nomark Three`. `one.qmd`'s prose no longer calls itself the last chapter.

@@ -1,6 +1,6 @@
 # M063: A book puts an index no marker names in the same chapter on every render
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -64,13 +64,18 @@ the 0.1.0 release.
       render after that matches the same manifest, so the two renders no longer differ.
       Both exit 0, and neither draws the retired reports, whose message keys no longer
       match any warning the filter emits. Shown red against the same restored-rule copy.
-- [ ] AC3. Where the store path `examples/book-placement/`'s `four.qmd` record would
-      occupy is held by a directory, so that record can never be written, two consecutive
-      whole-book HTML renders each match AC2's manifest — the `gamma` section is printed
-      rather than lost — and each draws the write-failure report for `four.qmd` once and
-      the unreadable-record report for `four.qmd` once per index section that record
-      costs (M062's rule). The raw count of the render's warning lines is asserted
-      beside the by-kind counts, KI206's escape making the anchored patterns miss one.
+- [ ] AC3. Against the store AC2's second render left, where the store path
+      `examples/book-placement/`'s `four.qmd` record would occupy is held by a
+      directory, so that record can never be written, two consecutive whole-book HTML
+      renders each match AC2's manifest — the `gamma` section is printed rather than
+      lost, short only `Dovetail`, the term that lives in the record that cannot be
+      written, compared term by term against a hand-written list of every term every
+      generated section of the book prints, by page and section id. Each render writes
+      seven warning lines and no others: the write-failure report for `four.qmd` once,
+      the unreadable-record report for `four.qmd` four times, one for each chapter that
+      reads the held path — every chapter but `four.qmd` itself — and the
+      marker-position report `index.qmd` and `three.qmd` each draw. Both renders exit 0.
+      Shown red against the same restored-rule copy.
 - [ ] AC4. Two consecutive whole-book HTML renders of `examples/book-nomarker/`, whose
       chapters carry index marks but no placement marker, match a section manifest whose
       every row is bare: a book that places no index grows no section in its last chapter
@@ -99,38 +104,38 @@ the 0.1.0 release.
 
 ## Tasks
 
-- [ ] T1. `html_book` builds an index no marker names in the book's last chapter,
+- [x] T1. `html_book` builds an index no marker names in the book's last chapter,
       gated on some chapter of the book placing one; the `ctx.position == last`
       adoption branch (`_extensions/index/modules/book.lua:973-984`) goes.
       (RB tripwire: ip-touching)
-- [ ] T2. `record.unseen`, `record.adopted`, the `later` gate, `store_read`'s unseen
+- [x] T2. `record.unseen`, `record.adopted`, the `later` gate, `store_read`'s unseen
       pass (`book.lua:500-546`) and `valid_record`'s two-field loop (`book.lua:268`)
       are retired; `STORE_VERSION` is unchanged and a record still carrying either
       field keeps its chapter's terms.
-- [ ] T3. The unplaced-section and doubled-section reports are deleted with their
+- [x] T3. The unplaced-section and doubled-section reports are deleted with their
       `WARN_DEFER`/`WARN_DOUBLED` keys (`tests/run-tests.sh:872,875`) and their rows in
       the report-key scan (`tests/run-tests.sh:3596`); the filter's pinned warning count
       is re-derived by hand and the arithmetic shown.
-- [ ] T4. Every `examples/book-placement/` manifest and warning count is re-derived by
+- [x] T4. Every `examples/book-placement/` manifest and warning count is re-derived by
       hand and shown: `PLACE_SECTIONS_FIRST` and `PLACE_SECTIONS_SECOND` become one
       manifest, `PLACE_SECTIONS_DOUBLED` goes, `PLACE_SECTIONS_MARKED` becomes AC1's,
       and the stale oracle comment at `tests/run-tests.sh:6331` is corrected to the
       four indexes the fixture declares.
-- [ ] T5. AC1's check: the marker appended to `four.qmd` over a copied tree, both
+- [x] T5. AC1's check: the marker appended to `four.qmd` over a copied tree, both
       renders held to the manifest, shown red against a one-substitution mutant
       restoring "the last chapter that places one".
-- [ ] T6. AC2's check: both renders from an empty store held to one manifest, shown red
+- [x] T6. AC2's check: both renders from an empty store held to one manifest, shown red
       against the same mutant, and the retired keys shown matching no live warning.
-- [ ] T7. AC3's check: the held store path, both renders held to the manifest, the two
+- [x] T7. AC3's check: the held store path, both renders held to the manifest, the two
       report kinds counted by kind and the raw warning-line count asserted beside them.
-- [ ] T8. AC4's and AC5's checks: `examples/book-nomarker/` held to an all-bare
+- [x] T8. AC4's and AC5's checks: `examples/book-nomarker/` held to an all-bare
       manifest and shown red against a mutant dropping the proviso; `examples/book/`
       held to its pinned manifest across two renders.
-- [ ] T9. `site/books.qmd:40,47-56`, `site/placing-the-index.qmd:37` and
+- [x] T9. `site/books.qmd:40,47-56`, `site/placing-the-index.qmd:37` and
       `CHANGELOG.md:133-137` state the new rule and lose the superseded sentences; the
       pinned claim rows (`tests/run-tests.sh:19066-19079`) move with them, and each page
       is shown red against a copy whose claim states the superseded rule.
-- [ ] T10. `cairn/DESIGN.md`: KI199 struck, KI205 rewritten to the section that prints
+- [x] T10. `cairn/DESIGN.md`: KI199 struck, KI205 rewritten to the section that prints
       short an unwritable chapter's terms, the book paragraph's report count and its
       account of what a chapter records corrected; a `cairn/DECISIONS.md` entry
       supersedes M55's placement choice; a `candidate` ROADMAP row carries KI205's
@@ -144,7 +149,32 @@ the 0.1.0 release.
 - 2026-08-30: plan gate chose retiring the unplaced-section and doubled-section reports outright over keeping them as guards for a partial-render path, because neither can fire once the last chapter always adopts and a check over a report nothing reaches is vacuous (the M38 lesson); falsified by a render path reaching either report with the new rule in place.
 - 2026-08-30: plan gate chose leaving the terms of an unwritable chapter's record out of scope over recovering them here, because reaching them needs a route that does not go through the sidecar store at all; falsified by the store gaining a second read path for a reason of its own.
 - 2026-08-30: /milestone-implement opened; branch `m063-book-fallback-placement` cut from main.
+- 2026-08-30: question gate chose appending the fallback section at the end of a marker-less last chapter (which `place_index` already does), re-aiming the three check blocks whose subject was the retired reports at the section and term manifests rather than deleting them, and dropping `valid_record`'s `data.later` type refusal, since a field nothing reads may not cost a chapter its terms.
+- 2026-08-30: T1-T4 land in one commit: the placement rule, the retired fields and reports, and the re-derived manifests and counts cannot be separated without a red suite between them.
+- 2026-08-30: `marks_in` retired with the two reports, its only callers (minor amendment, discovered sub-task).
+- 2026-08-30: T9 extended to `site/named-indexes.qmd`, which states the superseded rule in two places and was not in the plan's file list (minor amendment, discovered sub-task).
+- 2026-08-30: KI207 struck rather than kept: the gate's answer removed the `data.later` branch it names.
+- 2026-08-30: amendment (substantive) to AC3, mini gate chose correcting the report cadence and naming the missing term over correcting the cadence alone. The planned clause said the unreadable-record report is drawn once per index section the record costs (M062's rule); it is drawn from inside `store_read`, once per rendering chapter that meets the held path — 4, against 3 sections built and 1 section the record costs terms in. Amended text below.
+- 2026-08-30: criteria audit on the amended AC3 ran in FULL mode (user-facing tier), fresh-context [O] reader that did not author it. Returned 6 findings: the instrument-bound raw-count sentence (replaced by the deliverable property, seven warning lines and their composition), the environment-dependent KI206 clause (dropped with it), a total of 5 implied against the pinned 7, the unenumerated "short only Dovetail" (the term-by-term sweep named), a missing exit-0 promise (added), and the unprobed axis of which chapter's record cannot be written.
+- 2026-08-30: that last finding reproduced and filed as KI214, not folded into AC3: with the store paths of both `index.qmd` and `three.qmd` held by directories, two consecutive whole-book renders of a scratch `examples/book-placement/` each printed `alpha` and `beta` and no `gamma` section on any page, exit 0 both times. The standing sidecar-store candidate row carries it.
+- 2026-08-30: the amended AC3 re-entered the audit's questions once with a second fresh-context [O] reader, per criterion. Returned 3: the store the leg runs against unnamed (named), the per-chapter distribution unenumerable from one byte-identical message (restated as a count of four with its derivation), and no shown-red control where AC1, AC2 and AC4 each have one (added as T7's control, the restored-rule copy over the held path).
+- 2026-08-30: T1-T10 done. `tests/run-tests.sh` 524 checks exit 0; `--self-test` 987 checks exit 0. Status to review.
 
 ## Decisions
+
+The amended AC3, verbatim as written above:
+
+> - [ ] AC3. Against the store AC2's second render left, where the store path
+>   `examples/book-placement/`'s `four.qmd` record would occupy is held by a
+>   directory, so that record can never be written, two consecutive whole-book HTML
+>   renders each match AC2's manifest — the `gamma` section is printed rather than
+>   lost, short only `Dovetail`, the term that lives in the record that cannot be
+>   written, compared term by term against a hand-written list of every term every
+>   generated section of the book prints, by page and section id. Each render writes
+>   seven warning lines and no others: the write-failure report for `four.qmd` once,
+>   the unreadable-record report for `four.qmd` four times, one for each chapter that
+>   reads the held path — every chapter but `four.qmd` itself — and the
+>   marker-position report `index.qmd` and `three.qmd` each draw. Both renders exit 0.
+>   Shown red against the same restored-rule copy.
 
 ## Review

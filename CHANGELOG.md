@@ -128,16 +128,20 @@
   index, an entry marked both as a plain locator and as a cross-reference, and
   two entries that print in one place and file under two keys.
 
-- An HTML book whose placement markers sit in different chapters no longer
-  prints an index section in a chapter its author asked nothing for. An index
-  no marker names goes to the last chapter that places one, and that chapter
-  now takes it on only once it has seen a record for every chapter after it —
-  which on a book's first render it has not. So such an index is left out of a
-  first render, the book's last chapter reports it once by name, and a second
-  render prints it. A book whose markers all sit in its last chapter is
-  unaffected; `tests/run-tests.sh` fails at `M60-AC1` without this. Both the
-  [Books](site/books.qmd) and [Named indexes](site/named-indexes.qmd) pages
-  say so.
+- An index no marker names, in an HTML book, is printed at the end of the
+  book's last chapter, on every render — provided some chapter of the book
+  places an index, since a book asking for no index grows none. Where that
+  chapter carries a marker of its own the section follows the ones its markers
+  place; where it carries none the section goes at the end of the chapter.
+  Which chapter that is comes from the book's own chapter list, which every
+  chapter of every render reads the same way, so no render prints such a
+  section in two chapters and none of it waits for a second render. Earlier
+  versions handed the section to the last chapter that placed an index, worked
+  out from the records the other chapters had left, and two chapters of one
+  render could reach two different answers; `tests/run-tests.sh` fails at
+  `M063-AC1` without this. The
+  [Books](site/books.qmd), [Named indexes](site/named-indexes.qmd) and
+  [Placing the index](site/placing-the-index.qmd) pages say so.
 
 - A stored chapter record an HTML book cannot use as it stands — one written
   by another version of the extension, and one naming an index the book no
@@ -154,26 +158,16 @@
   the record check exists to prevent; `tests/run-tests.sh` fails at
   `M60-AC5` without the fix.
 
-- The report an HTML book draws for an index section it did not place now
-  names the chapter that section was owed to and the chapters whose record
-  that chapter could not read, and no longer says a further render will place
-  it. A chapter whose record can never be written — something else holds the
-  path it needs, the project tree is read-only — leaves that section unplaced
-  on every render, and the old sentence promised otherwise every time.
-
-- An HTML book whose index section is printed in two chapters now says so
-  once, naming the index and both chapters. It happens when a chapter after
-  the last one already placing an index gains a placement marker between two
-  renders: the chapters before it still read that chapter's earlier record,
-  one of them takes the index on, and the chapter with the new marker prints
-  it too. The render after that prints the section in the marker's chapter
-  alone.
-
-- A chapter's stored record now says which indexes that chapter built a
-  section for and which chapters after it it could not read. Both are read
-  only by the two reports above, so a record written before they existed is
-  still a good record and draws neither report rather than being read as a
-  chapter that took nothing on.
+- An HTML book no longer reports an index section it did not place, or one
+  printed in two chapters: the rule above leaves neither possible, so both
+  reports were removed along with the two fields a chapter's stored record
+  carried for them. The record format is unchanged, so a record written by
+  this version's predecessor still gives its chapter's terms to the index
+  rather than being refused. What a chapter whose record can never be
+  written — something else holds the path it needs, the project tree is
+  read-only — costs the book is now that chapter's own terms alone: the
+  section is still printed, short those terms, and the reports naming the
+  unreadable record and the failed write say which chapter to look at.
 
 ### Project
 

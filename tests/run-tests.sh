@@ -6753,6 +6753,155 @@ check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE" 0 \
 pass "M061-AC3: with the held path freed, two further renders write four.qmd's record again and put the fixture back to the sections and the silence an ordinary second render prints"
 
 # ---------------------------------------------------------------------------
+# M061-AC4 — a store whose records all stand at the current version and carry
+# NEITHER of the two fields this milestone added: the store an author has after
+# upgrading from a version that recorded what a chapter saw but not what it
+# concluded. Neither report may be drawn off that silence, and every chapter's
+# terms must still print.
+#
+# Two renders, because a whole-book render does not on its own read a stripped
+# record: chapters render in book order and each rewrites its own record as it
+# goes, so by the time five.qmd reads three.qmd's record that record was
+# written by THIS render and carries both fields. The whole-book leg is the
+# criterion's own; the single-chapter leg is what puts a stripped record in
+# front of the chapter that reads one, and is the leg a filter reading a
+# missing field as "took nothing on" fails.
+#
+# Every term the five chapters mark, and the section each prints in, is listed
+# by hand below: `alpha` takes index.qmd's Aardvark and two.qmd's Bramble,
+# `beta` index.qmd's Cardamom and three.qmd's Coriander, and `gamma` the four
+# terms index.qmd, two.qmd, four.qmd and five.qmd file in it.
+# ---------------------------------------------------------------------------
+read -r -d '' PLACE_TERMS <<'MANIFEST' || true
+index.html	qi-index-alpha	Aardvark
+index.html	qi-index-alpha	Bramble
+three.html	qi-index-beta	Cardamom
+three.html	qi-index-beta	Coriander
+three.html	qi-index-gamma	Dovetail
+three.html	qi-index-gamma	Escutcheon
+three.html	qi-index-gamma	Gantry
+three.html	qi-index-gamma	Gondola
+MANIFEST
+
+# Every printed term of every generated index section, by page and section id,
+# in rendered order. A term missing because its chapter's record was refused
+# is exactly what this is looking for, so the comparison is against a
+# hand-written list rather than against a count.
+check_book_terms() {   # <rendered book dir> <label> <manifest>
+  local root="$1" label="$2" manifest="$3"
+  printf '%s\n' "$manifest" > "$WORK/book-terms.txt"
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
+    "$root" "$WORK/book-terms.txt" "$label" <<'TERMPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+root, manifest_path, label = sys.argv[1:4]
+prefix = os.environ['HTML_SECTION_ID']
+pages = H.html_files(root)
+if not pages:
+    print(f'FAIL: {label}: {root} holds no rendered page', file=sys.stderr)
+    sys.exit(1)
+actual = []
+for page in pages:
+    doc = H.parse(os.path.join(root, page))
+    for found in H.index_sections(doc, prefix):
+        for record in H.entry_records(H.find_id(doc, found['ident'])):
+            actual.append(f"{page}\t{found['ident']}\t{record['term']}")
+expected = H.read_manifest(manifest_path)
+if not expected:
+    print(f'FAIL: {label}: the manifest is empty, so a book printing no term '
+          f'at all would match it', file=sys.stderr)
+    sys.exit(1)
+if actual != expected:
+    print(f'FAIL: {label}: the terms this book printed are not the ones the '
+          f'manifest names', file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such row rendered>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  row {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: {len(actual)} printed term(s) across '
+      f'{len(pages)} rendered page(s), each in the section the manifest names')
+TERMPY
+}
+
+# Both fields removed from every record of a store, in one pass, and the pass
+# is held to a non-empty domain and to records that actually carried them: a
+# glob that matched nothing, or records already without the fields, would
+# leave the runs below about an unstripped store.
+m061_strip_fields() {   # <store directory> <label>
+  python3 - "$1" "$2" <<'STRIPPY'
+import glob, json, os, sys
+store, label = sys.argv[1:3]
+paths = sorted(glob.glob(os.path.join(store, '*.qi.json')))
+if not paths:
+    sys.exit(f'FAIL: {label}: no record under {store}, so the strip below '
+             f'would run over nothing')
+for path in paths:
+    record = json.load(open(path, encoding='utf-8'))
+    missing = [f for f in ('adopted', 'unseen') if f not in record]
+    if missing:
+        sys.exit(f'FAIL: {label}: {path} already carries no {missing}, so '
+                 f'removing them changes nothing')
+    del record['adopted'], record['unseen']
+    json.dump(record, open(path, 'w', encoding='utf-8'))
+print(f'ok   {label}: both fields removed from all {len(paths)} record(s)')
+STRIPPY
+}
+
+m061_strip_fields "$PLACE_STORE" "M061-AC4 (before the whole-book render)" \
+  || fail "M061-AC4: the records could not be stripped (their own FAIL line is above)"
+place_render place-oldstore "M061-AC4 (the whole book)"
+check_book_sections "$CAPTURE_ROOT/place-oldstore/_book" "M061-AC4" \
+  "$PLACE_SECTIONS_SECOND"
+check_book_terms "$CAPTURE_ROOT/place-oldstore/_book" "M061-AC4" "$PLACE_TERMS"
+check_warning_count "$WORK/place-oldstore.log" "$WARN_DEFER" 0 "M061-AC4"
+check_warning_count "$WORK/place-oldstore.log" "$WARN_DOUBLED" 0 "M061-AC4"
+check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_STALE" 0 \
+  "M061-AC4 (neither field is a version bump, so no record is refused)"
+check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M061-AC4 (a record without the two fields is still a valid record)"
+
+# ...and again, so the chapter that draws the two reports reads records the
+# render before it did not rewrite.
+m061_strip_fields "$PLACE_STORE" "M061-AC4 (before the single-chapter render)" \
+  || fail "M061-AC4: the records could not be stripped a second time (their own FAIL line is above)"
+place_render place-oldstore-fifth "M061-AC4 (five.qmd alone)" five.qmd
+check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_DEFER" 0 \
+  "M061-AC4 (a record saying nothing about what its chapter took on draws no report)"
+check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_DOUBLED" 0 \
+  "M061-AC4 (nor is a record that says nothing counted as one of two)"
+check_extension_warning_count "$WORK/place-oldstore-fifth.log" 0 \
+  "M061-AC4 (five.qmd builds no section and reads only valid records, so it has nothing to say)"
+pass "M061-AC4: over a store whose records all stand at the current version and carry neither new field, a whole-book render prints the sections and every one of the terms the fixture marks, and a chapter reading those records on its own draws neither report and says nothing at all"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M061 T9 — the same stripped store against a filter that reads a missing
+  # `adopted` field as an empty one, which is the reading M60 warned against:
+  # a record that says nothing about what its chapter took on is not a record
+  # saying it took nothing on. One contiguous substitution, nothing moved.
+  # -------------------------------------------------------------------------
+  m061_mutant oldfalse \
+    's{    if placer ~= nil and placer\.adopted ~= nil then\n      local took = \{\}\n      for _, name in ipairs\(placer\.adopted\) do\n}{    if placer ~= nil then\n      local took = {}\n      for _, name in ipairs(placer.adopted or {}) do\n}' \
+    "M061 T9 self-test"
+  m061_strip_fields "$M061W/oldfalse/.quarto/$STORE_DIR" "M061 T9 self-test" \
+    || fail "M061 T9 self-test: the copied records could not be stripped (their own FAIL line is above)"
+  ( cd "$M061W/oldfalse" && quarto render five.qmd --to html ) \
+    > "$WORK/m061-oldfalse.log" 2>&1 \
+    || { tail -30 "$WORK/m061-oldfalse.log" >&2; fail "M061 T9 self-test: the mutated render failed; the case below is about a report it draws, not about a broken render"; }
+  capture --project "$M061W/oldfalse" html "m061-oldfalse"
+  check_warning_count "$WORK/m061-oldfalse.log" "$WARN_DEFER" 1 \
+    "M061 T9 self-test (a missing field read as an empty one)"
+  pass "M061 T9 self-test: with a missing adopted field read as an empty one and nothing else changed, the same stripped store draws the unplaced-section report for a section that is on the page — which is the report reading absence as no answer keeps silent"
+fi
+
+# Back to a store every record of which carries both fields again.
+place_render place-rewarm-three "M061-AC4 (the render after the stripped store)"
+
+# ---------------------------------------------------------------------------
 # M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_record`
 # runs outside any `pcall`, and it used to walk that field with `ipairs` before
 # testing its type, so such a record raised and took the render down — through

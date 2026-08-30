@@ -282,7 +282,8 @@ run_scan() {
         "$WARN_MARKER_EMPTIED" "$WARN_MARKER_NOT_LAST" "$WARN_MARKER_DUP_STEM" \
         "$WARN_MARKER_DUP_NAMED" "$WARN_INDEX_BADNAME" \
         "$WARN_INDEX_STALE_NAME" "$WARN_BOOK_MARKER_SECOND_NAMED" \
-        "$WARN_BOOK_SORT_CONFLICT" "$WARN_BOOK_SORT_CONFLICT_NAMED" ;;
+        "$WARN_BOOK_SORT_CONFLICT" "$WARN_BOOK_SORT_CONFLICT_NAMED" \
+        "$WARN_DEFER" ;;
     store-names)
       STORE_SUFFIX="$STORE_SUFFIX" STORE_DIR="$STORE_DIR" python3 "$script" ;;
     *)
@@ -861,9 +862,13 @@ MANIFEST
 # guarantee unproven.
 WARN_STORE_UNREADABLE='could not be read and were ignored'
 WARN_STORE_STALE='were written by a different version of this extension and were ignored'
-# M60's deferral report, keyed on its value-free tail: the head names the index
-# that was not placed, which differs per book.
-WARN_DEFER='Render the book again and the section will be placed'
+# The unplaced-section report, keyed on its value-free tail: everything before
+# it names the index, the chapter the section was owed to, and the chapters
+# that chapter could not read, all of which differ per book. M60 keyed it on a
+# sentence promising a further render would place the section, which M061
+# removed — a chapter whose record can never be written makes that promise
+# false on every render forever. Held to a live message by the report-key scan.
+WARN_DEFER='A chapter takes on an index no marker names only once it has read a usable record for every chapter after it'
 WARN_STORE_UNWRITABLE='could not record index marks for'
 WARN_MARKER_NOT_LAST='chapter(s) come after it'
 WARN_MARKER_SECOND='comes first in book order and carries one too'
@@ -3570,6 +3575,32 @@ pass "M08-AC2/M10-AC4/M11-AC5: six self-referential targets each report once in 
 # adding its key here a failure rather than a silent gap (M18 review F3).
 # ---------------------------------------------------------------------------
 run_scan mark-report-keys
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M061 T3 — the scan above is what holds every report grep key to a live
+  # filter message, and a scan that cannot fail holds nothing. The plant is a
+  # key no warning in the filter contains, passed alongside a key that IS
+  # live: the run must die naming the dead key, so what is shown is the scan
+  # separating the two rather than refusing its whole argument list.
+  # -------------------------------------------------------------------------
+  M061_DEADKEY='a sentence no warning this filter emits contains anywhere'
+  if grep -RqF -- "$M061_DEADKEY" "$QI_EXT_DIR"; then
+    fail "M061 T3 self-test: the filter carries the string this plant calls dead, so the scan would be right to accept it and the case below proves nothing"
+  fi
+  M061_KEYS_RC=0
+  python3 "$SCAN_DIR/mark-report-keys.py" "$WARN_DEFER" "$M061_DEADKEY" \
+    > "$WORK/m061-deadkey.log" 2>&1 || M061_KEYS_RC=$?
+  [ "$M061_KEYS_RC" -ne 0 ] \
+    || { cat "$WORK/m061-deadkey.log" >&2; fail "M061 T3 self-test: the report-key scan accepted a key matching no filter warning, so its green over the live keys says nothing"; }
+  grep -qF "key <<$M061_DEADKEY>> matches 0 filter warnings" "$WORK/m061-deadkey.log" \
+    || { cat "$WORK/m061-deadkey.log" >&2; fail "M061 T3 self-test: the scan failed, but not for the dead key this plant added — that failure is not the one being shown"; }
+  if grep -qF "$WARN_DEFER" "$WORK/m061-deadkey.log"; then
+    cat "$WORK/m061-deadkey.log" >&2
+    fail "M061 T3 self-test: the scan also complained about the live unplaced-section key, so the failure is not the plant's alone"
+  fi
+  pass "M061 T3 self-test: the report-key scan is red on a key matching no filter warning and names that key alone, so its green over the unplaced-section report's key holds that key to a live message"
+fi
 
 python3 - "$CAPTURE_ROOT/self-xref-latex/self-xref.tex" <<'PY'
 import sys

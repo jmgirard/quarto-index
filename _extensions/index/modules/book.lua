@@ -243,13 +243,12 @@ local function valid_record(data, file)
   -- know which; a chapter with no marker writes an empty one. Validated here
   -- rather than trusted, because `marker_chapter` walks it before any marker
   -- logic runs and a non-list would take the render down with it (IP2).
-  -- Optional on the same terms as the four per-mark fields below: a record
-  -- written before this field existed simply does not say what its chapter
-  -- saw. Absent is not `false`: only a version of this extension without the
-  -- field writes no field, and such a record is never one this render wrote,
-  -- so reading it as "did not have the picture" would report a deferral for a
-  -- section already printed. Absent is read as no answer, and no answer draws
-  -- no report.
+  -- M60's boolean, which no version now writes: `unseen` below says what it
+  -- said and says WHICH chapters. Still accepted rather than refused, because
+  -- a record M60 wrote is otherwise a perfectly good record and refusing it
+  -- would cost its chapter's terms until the whole book rendered again — and
+  -- nothing reads it, so a record carrying it says nothing about what its
+  -- chapter took on, exactly as one carrying neither new field does.
   if data.later ~= nil and type(data.later) ~= "boolean" then
     return false
   end
@@ -885,7 +884,6 @@ local function html_book(doc, ctx, marker, taken)
   record.unseen = unseen
   reading.unseen = unseen
   local later = #unseen == 0
-  record.later = later
   -- Before any judgement is made about a mark: an index name this book no
   -- longer declares is settled against what it declares now, so every
   -- accumulator below sees only names this book has.
@@ -1000,24 +998,37 @@ local function html_book(doc, ctx, marker, taken)
   -- off that chapter's own record, which it wrote as it rendered; a chapter
   -- that renders later cannot see what an earlier one saw.
   if ctx.position == #ctx.chapters and first ~= nil then
-    -- The book's last chapter has no chapter after it, so where it is itself
-    -- the last placing chapter it always had the picture and always adopted.
-    local adopted = last == ctx.position
-    if not adopted then
-      for _, record in ipairs(records) do
-        if record.file == ctx.chapters[last] then
-          -- `~= false` rather than `== true`: a record with no `later` field
-          -- at all was written before the field existed and says nothing
-          -- either way, and a report drawn on its silence is a report about a
-          -- section that is on the page.
-          adopted = record.later ~= false
-        end
+    -- The record of the chapter an index no marker names is owed to. It is
+    -- read for what that chapter CONCLUDED — the sections it built, and the
+    -- chapters it could not read — rather than for a picture re-derived here
+    -- from the store as it stands now, which is not the store that chapter
+    -- saw. `records` always holds it: `last` is a position `marker_chapter`
+    -- read out of these same records.
+    local placer = nil
+    for _, other in ipairs(records) do
+      if other.file == ctx.chapters[last] then
+        placer = other
       end
     end
-    if not adopted then
+    -- A record with neither field was written by a version that had neither,
+    -- and says nothing about what its chapter took on. A report drawn on that
+    -- silence is a report about a section that may well be on the page, so
+    -- silence draws none.
+    if placer ~= nil and placer.adopted ~= nil then
+      local took = {}
+      for _, name in ipairs(placer.adopted) do
+        took[name] = true
+      end
+      -- Named where there are any, and "none" where there are not: a chapter
+      -- can have read every record and still not have taken the section on,
+      -- when the store it read named a LATER chapter as the last placer —
+      -- a marker that chapter has since lost, or a record left claiming one.
+      local blocked = #(placer.unseen or {}) > 0
+        and table.concat(placer.unseen, ", ") or "none"
       for _, name in ipairs(qi_indexes.names()) do
-        if placing[name] == nil and marks_in(records, name) then
-          qi_core.warn(('no placement marker in this book names the index "%s", so its section goes to the last chapter that places one — and on this render that chapter had not yet seen a record for every chapter of the book. Render the book again and the section will be placed'):format(name))
+        if placing[name] == nil and not took[name]
+           and marks_in(records, name) then
+          qi_core.warn(('no placement marker in this book names the index "%s", so its section goes to %s, the last chapter of the book that places one — and when that chapter rendered it did not take the section on. Chapters whose record it could not read then: %s. A chapter takes on an index no marker names only once it has read a usable record for every chapter after it'):format(name, ctx.chapters[last], blocked))
         end
       end
     end

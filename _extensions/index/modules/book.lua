@@ -114,10 +114,10 @@ local function store_path(ctx, file)
 end
 
 -- One chapter's record: what it marked, where those marks are anchored on its
--- own page, and whether it carries the placement marker. What the chapter
--- CONCLUDED — which chapters after it it could not read, and which indexes it
--- took on — is filled in by `html_book` once it knows, and this table is the
--- one written to disk.
+-- own page, and whether it carries the placement marker. Complete as it
+-- stands, and this table is the one written to disk: M60 and M061 also filled
+-- in what the chapter CONCLUDED, for the two reports M063 retired, and nothing
+-- adds a field to it after it is built.
 local function build_record(ctx, marker)
   local marks = {}
   for _, mark in ipairs(qi_marks.html_marks) do
@@ -822,11 +822,9 @@ end
 -- `marker` is the list of index names this chapter has a surviving placement
 -- marker for, in the order it places them.
 local function html_book(doc, ctx, marker, taken)
-  -- Built before the store is read and written after every judgement is made:
-  -- this chapter's record carries what it CONCLUDED as well as what it saw,
-  -- and what it concluded is not known until the placement below is settled.
-  -- The copy is what the aggregation reads, because `fold_undeclared` rewrites
-  -- the record it walks (`record_for_reading`).
+  -- Built before the store is read, and written unchanged further down. The
+  -- copy is what the aggregation reads, because `fold_undeclared` rewrites the
+  -- record it walks (`record_for_reading`).
   local record = build_record(ctx, marker)
   local reading = record_for_reading(record)
   local records, stale = store_read(ctx, reading)
@@ -922,10 +920,10 @@ local function html_book(doc, ctx, marker, taken)
     end
   end
 
-  -- Written after the store was read rather than before it: the read is the
-  -- one moment the other chapters' files still say what this render found
-  -- them saying, and the aggregation above ran over the copy of this record
-  -- (`reading`) rather than the one going to disk.
+  -- The one write of this chapter's own record. `store_read` skips this
+  -- chapter's own path, so nothing above depends on the write happening after
+  -- it; the position is kept because the aggregation above runs over the copy
+  -- (`reading`) rather than over the table going to disk.
   store_write(ctx, record)
 
   -- The two reports about a stored record this render could not use as it

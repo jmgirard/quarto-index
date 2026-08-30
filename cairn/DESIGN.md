@@ -1348,6 +1348,19 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   chapter's terms — and the same remedy, a route to a chapter's marks that does
   not go through the store.
   — M063 AC3 criteria audit
+- **KI215.** The two store reports repeat once more than
+  `site/books.qmd` states in a book whose fallback set is entirely unmarked.
+  The fallback loop sets `builds = true` for every index no marker names,
+  including one no chapter marks, so a last chapter whose `mine_marks` is empty
+  and which therefore prints no section still opens the `builds or first ==
+  nil` gate. Observed 2026-08-30 on a scratch copy of `examples/book-placement/`
+  with every `gamma` mark removed and `four.qmd`'s record made stale and
+  unwritable: `five.html` carried no index section, and the stale-record report
+  was drawn 3 times where two chapters build a section. The class predates
+  M063 — a chapter whose marker places only an unmarked index sets `builds`
+  the same way — and M063 adds the marker-less last chapter as a new instance.
+  Narrowing it needs `marks_in`, which M063 retired with the reports that were
+  its only callers. — M063 review F1
 - **KI206.** M063-AC3's warning-count assertion expects 6 anchored `(W)`
   matches because Quarto writes a colour-reset escape at the head of the
   write-failure report's line, which `tests/scans/warn-distinct.py`'s

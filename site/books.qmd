@@ -51,10 +51,11 @@ its own, the section follows the ones its markers place; where it carries
 none, the section goes at the end of that chapter. A book with no marker
 anywhere places no index and grows no section in its last chapter either.
 
-Adding or moving a placement marker changes where the indexes that marker
-names are printed, and nothing else: a chapter that gains a marker for an
-index prints that index from the very next render, and the index no marker
-names stays where it was.
+Adding or moving a placement marker takes effect on the very next render: a
+chapter that gains a marker for an index prints that index from then on. An
+index no marker names stays in the last chapter throughout — unless the marker
+you add or remove is the book's only one, since the proviso above turns every
+such section on or off with it.
 
 Two things worth knowing:
 

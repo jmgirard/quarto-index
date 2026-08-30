@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP3
-- **Branch/PR:** `m063-book-fallback-placement`
+- **Branch/PR:** `m063-book-fallback-placement` / https://github.com/jmgirard/quarto-index/pull/63
 
 ## Goal
 
@@ -48,7 +48,7 @@ the 0.1.0 release.
 
 ## Acceptance criteria
 
-- [ ] AC1. Over a scratch copy of `examples/book-placement/` whose `four.qmd` has
+- [x] AC1. Over a scratch copy of `examples/book-placement/` whose `four.qmd` has
       gained a `gamma` placement marker between renders — KI199's own case, which today
       prints two `gamma` sections — the whole-book HTML render made immediately after
       matches the section manifest naming `four.html` as the one page carrying a `gamma`
@@ -57,14 +57,14 @@ the 0.1.0 release.
       directory (`check_book_sections`, `tests/run-tests.sh:6282`), so a section on any
       other page fails it. Both renders exit 0. Shown red against a copy of the tree
       whose only change restores the superseded rule.
-- [ ] AC2. From an empty store, the whole-book HTML render of
+- [x] AC2. From an empty store, the whole-book HTML render of
       `examples/book-placement/` matches the section manifest naming `five.html` as the
       page carrying `gamma`, `index.html` `alpha` and `three.html` `beta` — each marked
       index in the chapter carrying the first marker that names it — and the whole-book
       render after that matches the same manifest, so the two renders no longer differ.
       Both exit 0, and neither draws the retired reports, whose message keys no longer
       match any warning the filter emits. Shown red against the same restored-rule copy.
-- [ ] AC3. Against the store AC2's second render left, where the store path
+- [x] AC3. Against the store AC2's second render left, where the store path
       `examples/book-placement/`'s `four.qmd` record would occupy is held by a
       directory, so that record can never be written, two consecutive whole-book HTML
       renders each match AC2's manifest — the `gamma` section is printed rather than
@@ -76,21 +76,21 @@ the 0.1.0 release.
       reads the held path — every chapter but `four.qmd` itself — and the
       marker-position report `index.qmd` and `three.qmd` each draw. Both renders exit 0.
       Shown red against the same restored-rule copy.
-- [ ] AC4. Two consecutive whole-book HTML renders of `examples/book-nomarker/`, whose
+- [x] AC4. Two consecutive whole-book HTML renders of `examples/book-nomarker/`, whose
       chapters carry index marks but no placement marker, match a section manifest whose
       every row is bare: a book that places no index grows no section in its last chapter
       either. Shown red against a copy of the tree whose only change drops the
       "some chapter places an index" proviso.
-- [ ] AC5. Two consecutive whole-book HTML renders of `examples/book/`, whose two
+- [x] AC5. Two consecutive whole-book HTML renders of `examples/book/`, whose two
       markers both sit in `last.qmd` and which is therefore its own fallback chapter,
       match the section manifest M05 and M55 pinned for it, `places` included.
-- [ ] AC6. `site/books.qmd`, `site/placing-the-index.qmd` and `CHANGELOG.md` state
+- [x] AC6. `site/books.qmd`, `site/placing-the-index.qmd` and `CHANGELOG.md` state
       which chapter of a book carries an index no marker names, written against a render
       AC1-AC5 captured; every sentence stating the superseded rule is corrected, and the
       pinned claim rows for the two site pages with them. Each page's new claim is shown
       red against a copy of that page whose claim names the superseded chapter rule
       rather than being absent.
-- [ ] AC7. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit 0.
+- [x] AC7. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit 0.
 
 ## Coverage
 
@@ -159,6 +159,8 @@ the 0.1.0 release.
 - 2026-08-30: that last finding reproduced and filed as KI214, not folded into AC3: with the store paths of both `index.qmd` and `three.qmd` held by directories, two consecutive whole-book renders of a scratch `examples/book-placement/` each printed `alpha` and `beta` and no `gamma` section on any page, exit 0 both times. The standing sidecar-store candidate row carries it.
 - 2026-08-30: the amended AC3 re-entered the audit's questions once with a second fresh-context [O] reader, per criterion. Returned 3: the store the leg runs against unnamed (named), the per-chapter distribution unenumerable from one byte-identical message (restated as a count of four with its derivation), and no shown-red control where AC1, AC2 and AC4 each have one (added as T7's control, the restored-rule copy over the held path).
 - 2026-08-30: T1-T10 done. `tests/run-tests.sh` 524 checks exit 0; `--self-test` 987 checks exit 0. Status to review.
+- 2026-08-30: /milestone-review opened; PR #63 draft. Default branch was at the branch's base, so no merge was needed. Consistency gate clean, no principle text changed, `generic` profile names no toolchain checks. AC1-AC7 all green with fresh evidence; the shown-red controls green in the `--self-test` half.
+- 2026-08-30: three review lenses ran. Blame-history and prior-review reported no findings; the diff-bug lens returned eight, none meeting the return floor. Five fixed at the gate: three `book.lua` comments asserting invariants the branch removed, `examples/book-placement/`'s own prose (`five.qmd`, `three.qmd`, `_quarto.yml`) still describing the superseded rule and the two retired reports, and `site/books.qmd`'s "and nothing else" sentence, falsified by the book's only marker flipping the proviso. F1 reproduced and filed as KI215 rather than fixed: narrowing the report gate needs `marks_in`, which T2's gate retired. F6 and F8 rejected as outside the criteria's domain.
 
 ## Decisions
 
@@ -178,3 +180,117 @@ The amended AC3, verbatim as written above:
 >   Shown red against the same restored-rule copy.
 
 ## Review
+
+Evidence run 2026-08-30 on `m063-book-fallback-placement`, PR #63. `main` and
+`origin/main` stood at the branch's base commit, so nothing was merged in.
+Every figure below is from `tests/run-tests.sh` (525 checks, exit 0) and
+`tests/run-tests.sh --self-test` (988 checks, exit 0), re-run after the
+gate fixes recorded further down; the shown-red controls live in the
+`--self-test` half.
+
+- AC1. Green. Over a scratch copy of `examples/book-placement/` whose
+  `four.qmd` gained a `gamma` marker between renders, both the render made
+  immediately after and the render after that matched one manifest — 5 pages
+  carrying 3 generated sections, `gamma` on `four.html` alone — compared by
+  `check_book_sections` walking every `.html` under `_book/`. Both exit 0.
+  Shown red by the T5 control: with the superseded rule restored by one
+  substitution and nothing else changed, the same edit printed 4 sections over
+  5 pages, `gamma` in two chapters of one book.
+- AC2. Green. From an empty store, both the first whole-book render and the
+  one after it matched one manifest — `index.html` `alpha`, `three.html`
+  `beta`, `five.html` `gamma` — so the two renders no longer differ; both exit
+  0 with 2 extension warnings each, its two marker-position reports. Neither
+  retired message text appears anywhere under `_extensions/`, and neither
+  appears in either render log. Shown red by the T6 control: with the
+  superseded rule restored over an empty store, 5 sections printed across 5
+  pages, two chapters of one render each taking on the indexes no marker names.
+- AC3. Green. Against the store AC2's second render left, with `four.qmd`'s
+  store path held by a directory, both whole-book renders matched AC2's
+  manifest and printed 7 terms across 5 pages, checked term by term against the
+  hand-written per-page, per-section list — the `gamma` section printed, short
+  only `Dovetail`. Each render wrote 7 warning lines and no others: the
+  unreadable-record report for `four.qmd` 4 times (index, two, three and five
+  each read the held path; four never reads its own), the write-failure report
+  once, and the marker-position reports of `index.qmd` and `three.qmd`. Both
+  exit 0. Shown red by the T7 control: the restored rule over the same held
+  path put `gamma` in `three.html`, and the probe confirmed the manifest failed
+  for that reason and no other. A follow-up leg confirmed that freeing the path
+  restores the ordinary sections and silence.
+- AC4. Green. Both whole-book renders of `examples/book-nomarker/` matched an
+  all-bare manifest — 3 pages, 0 generated sections. Shown red by the T8
+  control: with the proviso dropped by one substitution, the same book grew an
+  index section its author asked for nowhere, and the mutation was checked to
+  have changed the file before the render was trusted.
+- AC5. Green. Both whole-book renders of `examples/book/` carried its 3
+  declared sections in `last.html`, `places` included, against the manifest M05
+  and M55 pinned.
+- AC6. Green. The claim lists for `site/books.qmd` and
+  `site/placing-the-index.qmd` both pass, each stating which chapter carries an
+  index no marker names and on what proviso; `CHANGELOG.md` states the same
+  rule, read directly. Shown red for both pages: each claim list failed against
+  a copy of its own page whose sentence states the superseded chapter rule, and
+  the check confirmed the failure named that clause rather than any other.
+  `site/named-indexes.qmd` was corrected too (T9, minor amendment) and its
+  pinned row moved with it.
+- AC7. Green. `tests/run-tests.sh` 525 checks, exit 0;
+  `tests/run-tests.sh --self-test` 988 checks, exit 0.
+
+### Consistency gate
+
+`cairn_validate.py` exit 0, every check PASS, every advisory OK — the `release
+window` advisory did not fire. No `DESIGN.md` IP/GP principle text changed on
+this branch, so `cairn_impact.py --changed` does not apply. The active profile
+is `generic`, whose `consistency-gate` slot names no toolchain checks.
+
+### Independent review
+
+The diff touches executable surface (`book.lua`, `run-tests.sh`,
+`warn-distinct.py`), so all three lenses were spawned fresh-context in
+parallel. The blame-history lens and the prior-review lens each reported no
+findings: the first confirmed every deletion traces to a plan line item and
+that the M14 lesson was applied the way it prescribes (`STORE_VERSION` left
+alone while the retired fields stop being validated); the second reported no
+prior-review evidence of a regression on the touched files. The diff-bug lens
+returned eight, ranked; none met the return floor.
+
+- F1 (fix now, code left as-is; recorded as a known issue). The fallback loop
+  sets `builds = true` for every unplaced declared index, including one nothing
+  marks, so a last chapter that prints no section still opens the
+  `builds or first == nil` gate and draws the stale-record and refiled-record
+  reports. Reproduced against a scratch copy of `examples/book-placement/` with
+  every `gamma` mark removed and `four.qmd`'s record made stale and unwritable:
+  `five.html` carried no index section, and the stale-record report was drawn 3
+  times where `site/books.qmd` promises one per chapter that builds a section
+  and two chapters build one. The class predates this branch — a chapter whose
+  marker places only an index nothing marks has always set `builds` the same
+  way — and the branch adds the marker-less last chapter as a new instance of
+  it. Code untouched here because the narrowing needs `marks_in` back, which
+  T2's gate deliberately retired.
+- F2 (fixed). `examples/book-placement/five.qmd`, `three.qmd` and
+  `_quarto.yml` still described themselves in terms of the superseded rule and
+  the two retired reports, while every new manifest pins `five.html` as the
+  `gamma` page. Corrected to state what each chapter is for under the new rule.
+- F3, F4, F7 (fixed). Three `book.lua` comments asserted invariants the diff
+  removed: `build_record`'s header said the retired fields are filled in later,
+  `html_book`'s opening said the record is not complete until placement is
+  settled, and the `store_write` comment gave a read-ordering reason that
+  cannot bear on a write to a path `store_read` skips. All three rewritten to
+  what the code now does.
+- F5 (fixed). `site/books.qmd`'s new "and nothing else" sentence over-claimed:
+  adding or removing the book's only marker flips the proviso and turns every
+  fallback section on or off. Rewritten to say so.
+- F6 (rejected, out of scope). `site/named-indexes.qmd`'s new claim has no
+  shown-red control. AC6 names `site/books.qmd`, `site/placing-the-index.qmd`
+  and `CHANGELOG.md`; the page was added to T9 as a minor amendment and is
+  outside the criterion's domain, so this is a coverage gap in the amendment
+  rather than a criterion failing.
+- F8 (rejected, out of scope). No manifest pins where within the page a
+  marker-less last chapter's section lands. `check_book_sections` records page,
+  section id and title by design, and AC5 pins within-page order for the
+  marker-carrying case; the marker-less case's position is not a promise any
+  M063 criterion makes.
+
+Two figures the lens re-derived by hand were checked and stand: the retired
+warning count (79 - 2 = 77 in `tests/scans/warn-distinct.py`) and AC3's
+4 + 1 + 2 = 7.
+

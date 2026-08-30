@@ -1319,3 +1319,30 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   only U+00A0 and U+200B reach one. A transposed code point in the list — say
   `\u{2007}` written as `\u{2070}`, a visible glyph — would ship silently.
   — M59 review F6
+- **KI198.** The book's last chapter decides whether the deferred-section
+  report is due by reading the last placing chapter's `later` flag, not by
+  reading what that chapter actually took on. The two differ when a chapter's
+  stored record still claims a placement marker its source no longer has: the
+  placing chapter then sees a later placer and does not adopt, while the last
+  chapter computes a different last placer, reads its `later` as true and stays
+  silent. The section is absent for that render with no report, and returns on
+  the next one. — M60 review F1
+- **KI199.** Two chapters can both adopt the same unplaced index when a chapter
+  after the last placer gains a marker between renders: the earlier one still
+  sees that chapter's pre-marker record and believes it is last. Both print the
+  section, with no report. Predates M60 and reproduces identically without it.
+  — M60 review F3
+- **KI200.** A record written by a superseded version is now reported only by a
+  chapter that builds an index, so a book where no chapter builds one — no
+  placement marker anywhere, or no marks — reports it zero times, where it was
+  reported once per rendered chapter before. — M60 review F5
+- **KI201.** `later_recorded` opens, decodes and fully validates every record
+  after the current chapter, on top of `store_read`'s own pass over all of
+  them, so a book's store read is quadratic in chapter count. — M60 review F9
+- **KI202.** Both count assertions on the report KI168 names sit behind
+  single-chapter renders, where 1 is the answer under either counting rule, so
+  neither would catch the count KI168 describes. — M60 review F10
+- **KI203.** A chapter after the last placer whose record is never written —
+  its `store_write` failed and only warned — leaves `later_recorded` false on
+  every future render, so an index no marker names is deferred forever under a
+  report saying the next render will place it. — M60 review F11

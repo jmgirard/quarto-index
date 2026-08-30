@@ -6644,6 +6644,115 @@ check_warning_count "$WORK/place-rewarm.log" "$WARN_DEFER" 0 \
 pass "M061-AC2: with four.qmd restored, two further renders put the fixture back to the sections and the silence an ordinary second render prints"
 
 # ---------------------------------------------------------------------------
+# M061-AC3 — a chapter whose record can never be written. The store path
+# four.qmd's record would occupy is held by a DIRECTORY, so the write fails
+# every time and no later render can ever put a record there. Every render
+# therefore looks exactly like the one before it, which is the shape the
+# sentence M60's report carried — render the book again and the section will be
+# placed — was false about.
+#
+# Derived by hand, and identical on both renders:
+#
+#   index.qmd  opens the directory, reads nothing out of it, and reports
+#              four.qmd's record unreadable; four.qmd is after it, so it is
+#              one of the chapters index.qmd could not read. Builds `alpha`.
+#              One marker-position report (four chapters after it).
+#   two.qmd    the same unreadable report; builds nothing.
+#   three.qmd  the same unreadable report; four.qmd is after it and unread, so
+#              it cannot conclude it is the last placing chapter and builds
+#              `beta` alone. One marker-position report (two after).
+#   four.qmd   never reads its own record, so it draws no unreadable report
+#              for itself; its own write fails on the directory, which is one
+#              report. Builds nothing.
+#   five.qmd   the same unreadable report; draws the unplaced-section report
+#              once for `gamma`, naming three.qmd and four.qmd — the chapter
+#              the section is owed to, and the chapter whose record that
+#              chapter could not read.
+#
+#   4 unreadable + 1 write-failure + 2 marker-position + 1 unplaced = 8.
+#
+# Eight warning lines, of which the pattern-set helper below counts seven. The
+# eighth is four.qmd's write-failure report: Quarto writes an ERROR line of its
+# own immediately before it, and the report's line then opens with that line's
+# colour-reset escape rather than with `(W)`, where the helper's anchored
+# patterns cannot reach it. It is counted by its own key, and the raw count of
+# warning lines is asserted alongside, so all eight are held either way.
+# ---------------------------------------------------------------------------
+m061_block_record() {   # <chapter file> <store directory> <label>
+  local chapter="$1" store="$2" label="$3"
+  rm -f "$store/$chapter$STORE_SUFFIX"
+  mkdir -p "$store/$chapter$STORE_SUFFIX"
+  [ -d "$store/$chapter$STORE_SUFFIX" ] \
+    || fail "$label: the store path for $chapter is not a directory, so the write below would succeed and the run would be about an ordinary record"
+}
+
+m061_block_record four.qmd "$PLACE_STORE" "M061-AC3"
+for M061_PASS in one two; do
+  place_render "place-blocked-$M061_PASS" "M061-AC3 (render $M061_PASS)"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_DEFER" 1 \
+    "M061-AC3 (render $M061_PASS)"
+  { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" \
+    | grep -qF 'could not read then: four.qmd'; } \
+    || { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M061-AC3 (render $M061_PASS): the unplaced-section report does not name four.qmd among the chapters whose record the placing chapter could not read"; }
+  { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" | grep -qF 'the index "gamma"'; } \
+    || { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M061-AC3 (render $M061_PASS): the unplaced-section report does not name gamma"; }
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_UNREADABLE" 4 \
+    "M061-AC3 (render $M061_PASS: index.qmd, two.qmd, three.qmd and five.qmd each read the held path; four.qmd never reads its own)"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_UNWRITABLE" 1 \
+    "M061-AC3 (render $M061_PASS: four.qmd's own write)"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_MARKER_NOT_LAST" 2 \
+    "M061-AC3 (render $M061_PASS: index.qmd and three.qmd each build a section with chapters after them)"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_STALE" 0 \
+    "M061-AC3 (render $M061_PASS: unreadable, never stale)"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_DOUBLED" 0 \
+    "M061-AC3 (render $M061_PASS: no page carries the section)"
+  check_extension_warning_count "$WORK/place-blocked-$M061_PASS.log" 7 \
+    "M061-AC3 (render $M061_PASS emitted a warning this suite cannot name; the seven its anchored patterns reach are four unreadable-record reports, two marker-position reports and the unplaced-section report)"
+  M061_LINES=$( { grep -c '(W) ' "$WORK/place-blocked-$M061_PASS.log" || true; } | tr -d ' ')
+  [ "$M061_LINES" = "8" ] \
+    || { grep '(W) ' "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M061-AC3 (render $M061_PASS): the render wrote $M061_LINES warning line(s), and the four kinds this check counts by name account for 8"; }
+done
+pass "M061-AC3: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each reports the unplaced index once, naming the chapter the section is owed to and the chapter whose record it could not read, and each draws the same eight warnings and exits 0"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M061 T8 — the same held path against a filter whose unplaced-section report
+  # names no chapter as unreadable, and nothing else changed. The report still
+  # fires, so what the case shows is the naming clause doing the work rather
+  # than the report itself.
+  # -------------------------------------------------------------------------
+  m061_mutant noname \
+    's{      local blocked = #\(placer\.unseen or \{\}\) > 0\n        and table\.concat\(placer\.unseen, ", "\) or "none"\n}{      local blocked = "none"\n}' \
+    "M061 T8 self-test"
+  m061_block_record four.qmd "$M061W/noname/.quarto/$STORE_DIR" \
+    "M061 T8 self-test"
+  ( cd "$M061W/noname" && quarto render --to html ) \
+    > "$WORK/m061-noname.log" 2>&1 \
+    || { tail -30 "$WORK/m061-noname.log" >&2; fail "M061 T8 self-test: the mutated render failed; the case below is about what a report names, not about a broken render"; }
+  capture --project "$M061W/noname" html "m061-noname"
+  check_warning_count "$WORK/m061-noname.log" "$WARN_DEFER" 1 \
+    "M061 T8 self-test (the report is still drawn)"
+  if grep -F -- "$WARN_DEFER" "$WORK/m061-noname.log" | grep -qF 'four.qmd'; then
+    grep -F -- "$WARN_DEFER" "$WORK/m061-noname.log" >&2
+    fail "M061 T8 self-test: the report still names four.qmd though the naming clause was removed, so the run above would pass with that clause gone"
+  fi
+  pass "M061 T8 self-test: with the naming clause removed and nothing else changed, the same held store path still draws the unplaced-section report and it names no chapter — which is what the run above would accept if it read the report's presence alone"
+fi
+
+# The held path goes back to an ordinary record: it is removed, and two further
+# renders put four.qmd's record back and let three.qmd take `gamma` on again.
+rm -rf "$PLACE_STORE/four.qmd$STORE_SUFFIX"
+place_render place-unblocked "M061-AC3 (the first render after the path is freed)"
+place_render place-rewarm-two "M061-AC3 (the second render after the path is freed)"
+check_book_sections "$CAPTURE_ROOT/place-rewarm-two/_book" "M061-AC3 (freed)" \
+  "$PLACE_SECTIONS_SECOND"
+check_warning_count "$WORK/place-rewarm-two.log" "$WARN_DEFER" 0 \
+  "M061-AC3 (freed)"
+check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE" 0 \
+  "M061-AC3 (freed)"
+pass "M061-AC3: with the held path freed, two further renders write four.qmd's record again and put the fixture back to the sections and the silence an ordinary second render prints"
+
+# ---------------------------------------------------------------------------
 # M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_record`
 # runs outside any `pcall`, and it used to walk that field with `ipairs` before
 # testing its type, so such a record raised and took the render down — through

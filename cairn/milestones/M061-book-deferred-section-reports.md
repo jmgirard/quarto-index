@@ -94,7 +94,7 @@ tells the author.
 
 ## Tasks
 
-- [ ] T1. One store pass: `store_read` returns the usable records, the version-refused
+- [x] T1. One store pass: `store_read` returns the usable records, the version-refused
       chapters, and the later chapters whose record this render could not use; retire
       `later_recorded` (`_extensions/index/modules/book.lua:439`). `html_book` builds this
       chapter's record in memory, splices it in at its own position, and writes once.
@@ -135,6 +135,8 @@ tells the author.
 - 2026-08-30: criteria audit ran in FULL mode (user-facing tier), fresh-context [O] reader, on the drafted M061 and M062 criteria together. Returned ten findings and six factual corrections; seven fixed at the gate (instrument-bound warning floor, manifest not stated as a page sweep, the retired grep key going vacuous, AC4's incomplete render list, M062's wrong arithmetic and undercounted assertions, M062's non-discriminating control), three posed as gate questions (doubling prevented or reported, the fixture axis, an old record's missing field).
 - 2026-08-30: plan gate chose reporting a doubled index section over always sending an unnamed index to the book's last chapter, because the latter reverses M55's placement rule and moves the section out of the chapter placing the book's other indexes; falsified by a mechanism letting a chapter see a placement marker a later chapter has not yet recorded.
 - 2026-08-30: plan gate chose a fifth chapter in `examples/book-placement/` over a new book fixture directory, because the axis under test is the distance between the gaining chapter and the reporting one and a fifth fixture adds a render to every suite run; falsified by the re-derivation of that fixture's manifests proving larger than the new-fixture cost.
+- 2026-08-30: T1 — one store pass. `store_read` takes this chapter's in-memory record, splices it in at its own position and never reads this chapter's own file, and returns the usable records, the version-refused chapters and the later chapters whose record this render could not use; `later_recorded` is retired. `store_write` takes a built record and runs after the placement is settled, so the chapter records what it concluded and writes once. `record_for_reading` gives the aggregation a copy, so `fold_undeclared` cannot write a folded index name into the store. Suite green, 498 checks, exit 0.
+- 2026-08-30: implement gate chose the drafted texts for both reports and a second single-chapter render leg in AC4's check over amending AC4, because a whole-book render rewrites every record before the last chapter reads one, so the stripped-field control cannot go red without it.
 - 2026-08-30: plan gate chose optional new record fields read as no answer over a `STORE_VERSION` bump, because a bump drops every chapter's terms from the book index until the whole book renders again for a field only a report reads (M14); falsified by a reader that reaches the index rather than a report coming to depend on either field.
 
 ## Decisions

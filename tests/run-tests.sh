@@ -6401,6 +6401,173 @@ if [ "${1:-}" = "--self-test" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# M60-AC6 — the sort-key merge order M55 fixed at its review gate and shipped
+# with no regression test. A stored record can carry sort keys under a name the
+# book still declares AND under one it no longer does; both fold into the first
+# declared index, and first-one-wins settles which key a shared printed path
+# files under. Sorting the names together hands the path to whichever name
+# sorts first, so a stale name beats the destination index's own key on nothing
+# but its spelling. The destination index's own keys are taken first.
+#
+# The two keys are chosen to collate into DIFFERENT letter groups, so the
+# observable is where the term prints rather than an ordering only the filter
+# can see: `Zulu Beta` files `Beta` under Z, behind `Zeta`; `Alpha Beta` files
+# it under A.
+# ---------------------------------------------------------------------------
+m60_plant_merge() {   # <destination record path>
+  python3 - "$WORK/one-record.json" "$1" <<'MERGEPY'
+import json, sys
+source, target = sys.argv[1:3]
+record = json.load(open(source, encoding='utf-8'))
+gamma = [m for m in record['marks'] if m['levels'] == ['Gamma']]
+if not gamma:
+    sys.exit('FAIL: M60-AC6: one.qmd\'s record marks no Gamma, so the split '
+             'between a declared index and one the book does not declare '
+             'would not be planted')
+if record.get('sorts'):
+    sys.exit(f"FAIL: M60-AC6: the record already carries sort keys "
+             f"{record['sorts']}, so the two this plant writes would not be "
+             f"the two whose order is in question")
+# The marks split between the two names, which is what makes this a record the
+# fold is about rather than a bare pair of key maps.
+gamma[0]['index'] = 'ghostindex'
+record['sorts'] = {'main': {'Beta': 'Zulu Beta'},
+                   'ghostindex': {'Beta': 'Alpha Beta'}}
+json.dump(record, open(target, 'w', encoding='utf-8'))
+MERGEPY
+}
+
+# The reader, called at the site and again by the planted case below, so what
+# is shown red there is this check and not a second one written to agree with
+# it.
+m60_merge_order() {   # <html file> <section id> <label>
+  python3 - "$1" "$2" "$3" <<'ORDERPY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+path, section, label = sys.argv[1:4]
+doc = H.parse(path)
+found = H.find_id(doc, section)
+if found is None:
+    print(f'FAIL: {label}: {path} carries no {section!r} section, so there is '
+          f'no letter group to read the term out of', file=sys.stderr)
+    sys.exit(1)
+groups, current = {}, None
+for record in H.index_entries(found):
+    if record['kind'] == 'heading':
+        current = record['label']
+        groups.setdefault(current, [])
+    elif record['kind'] == 'entry' and record['depth'] == 0:
+        if current is None:
+            print(f'FAIL: {label}: an entry stands before any letter group, so '
+                  f'the groups read here are not the ones the page shows',
+                  file=sys.stderr)
+            sys.exit(1)
+        groups[current].append(record['term'])
+if not groups:
+    print(f'FAIL: {label}: the {section!r} section shows no letter group at '
+          f'all, so this reader would compare nothing', file=sys.stderr)
+    sys.exit(1)
+WANT_GROUP, WANT = 'Z', ['Zeta', 'Beta']
+if groups.get(WANT_GROUP) != WANT:
+    print(f'FAIL: {label}: the term does not print under the letter group its '
+          f'own index\'s key gives it: the {WANT_GROUP!r} group holds '
+          f'{groups.get(WANT_GROUP)}, expected {WANT} — the destination '
+          f'index\'s own key, and the named neighbour that key puts it behind',
+          file=sys.stderr)
+    sys.exit(1)
+stray = sorted(g for g, terms in groups.items()
+               if g != WANT_GROUP and 'Beta' in terms)
+if stray:
+    print(f'FAIL: {label}: the term also prints under the letter group(s) '
+          f'{stray}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: the shared path prints under {WANT_GROUP!r}, after '
+      f'{WANT[0]!r}, which is the group the declared index\'s own key gives it')
+ORDERPY
+}
+
+m60_plant_merge "$CORRUPT"
+( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
+  > "$WORK/book-merge.log" 2>&1 \
+  || { tail -30 "$WORK/book-merge.log" >&2; fail "M60-AC6: a record splitting its marks and keys between two index names took the render down"; }
+capture --project "$BOOK_DIR" html "book-merge"
+# Reported, not silent: the name the book does not declare is named, once.
+check_warning_count "$WORK/book-merge.log" "$WARN_INDEX_STALE_NAME" 1 \
+  "M60-AC6"
+m60_merge_order "$CAPTURE_ROOT/book-merge/_book/last.html" \
+  "$HTML_SECTION_ID-main" "M60-AC6" \
+  || fail "M60-AC6: the shared printed path does not file under the declared index's own key (the reader's own FAIL line is above)"
+cp "$WORK/one-record.json" "$CORRUPT"
+pass "M60-AC6: where a record carries a sort key for one printed path under both a declared index and a name the book no longer declares, the path files under the declared index's own key, in that key's letter group and behind the neighbour it sorts after"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M60 T6 — the same record against a filter that merges the two names in one
+  # sorted run, which is the order that stood before M55's gate fix. The stale
+  # name sorts first, so its key wins the shared path and the term files under
+  # the other letter group.
+  # -------------------------------------------------------------------------
+  M60W="$WORK/m60"
+  rm -rf "$M60W/preorder"
+  mkdir -p "$M60W"
+  cp -R "$BOOK_DIR" "$M60W/preorder"
+  rm -f "$M60W/preorder/_extensions"
+  rm -rf "$M60W/preorder/_book"
+  mkdir -p "$M60W/preorder/_extensions"
+  cp -R "$QI_EXT_DIR" "$M60W/preorder/_extensions/index"
+  [ -d "$M60W/preorder/.quarto/$STORE_DIR" ] \
+    || fail "M60 T6 self-test: the copied book carries no store, so the plant below would have no record to sit in"
+  python3 - "$M60W/preorder/_extensions/index/modules/book.lua" <<'PREORDERPY'
+import sys
+path = sys.argv[1]
+text = open(path, encoding='utf-8').read()
+after = '''      local kept, folded = {}, {}
+      for name in pairs(record.sorts) do
+        if qi_indexes.declared_for(name) ~= nil then
+          kept[#kept + 1] = name
+        else
+          folded[#folded + 1] = name
+        end
+      end
+      table.sort(kept)
+      table.sort(folded)
+      local names = kept
+      for _, name in ipairs(folded) do
+        names[#names + 1] = name
+      end
+'''
+before = '''      local names = {}
+      for name in pairs(record.sorts) do
+        names[#names + 1] = name
+      end
+      table.sort(names)
+'''
+if text.count(after) != 1:
+    sys.exit(f'FAIL: M60 T6 self-test: the kept-then-folded ordering was found '
+             f'{text.count(after)} time(s) in {path}, so the splice below '
+             f'would plant nothing and the case would be reported as the check '
+             f'failing to discriminate when the fault is this mutation\'s')
+open(path, 'w', encoding='utf-8').write(text.replace(after, before))
+PREORDERPY
+  m60_plant_merge "$M60W/preorder/.quarto/$STORE_DIR/one.qmd$STORE_SUFFIX"
+  ( cd "$M60W/preorder" && quarto render last.qmd --to html ) \
+    > "$WORK/m60-preorder.log" 2>&1 \
+    || { tail -30 "$WORK/m60-preorder.log" >&2; fail "M60 T6 self-test: the book with the pre-fix merge order failed to render at all, so the case below would be about a broken render rather than about the order"; }
+  capture --project "$M60W/preorder" html "m60-preorder"
+  M60_ORDER_OUT=$(m60_merge_order \
+    "$CAPTURE_ROOT/m60-preorder/_book/last.html" "$HTML_SECTION_ID-main" \
+    'M60 T6 self-test (the pre-fix merge order)' 2>&1) \
+    && M60_ORDER_RC=0 || M60_ORDER_RC=$?
+  [ "$M60_ORDER_RC" -ne 0 ] \
+    || { printf '%s\n' "$M60_ORDER_OUT" >&2; fail "M60 T6 self-test: the check passed against the merge order that stood before M55's gate fix, so its green says nothing about that fix"; }
+  printf '%s' "$M60_ORDER_OUT" \
+    | grep -qF "does not print under the letter group its own index's key gives it" \
+    || { printf '%s\n' "$M60_ORDER_OUT" >&2; fail "M60 T6 self-test: the check failed against the pre-fix order, but not by finding the term under another letter group — that failure is not this clause catching this defect"; }
+  pass "M60 T6 self-test: against the merge order that sorted both names in one run, the stale name's key wins the shared path and the same reader reports the term under the wrong letter group"
+fi
+
+# ---------------------------------------------------------------------------
 # The ordering fixture: marker in the first chapter, a second marker in the
 # last, and a chapter filename with a space in it.
 # ---------------------------------------------------------------------------

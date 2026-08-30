@@ -121,7 +121,7 @@ in a rendered book or a failed render.
       final chapter, which is the one chapter that always has the picture.
       Register the new message with `tests/scans/warn-distinct.py` by a
       value-free stem, and keep it a prefix of no existing message.
-- [ ] T3. Move the superseded-version report out of `store_read`
+- [x] T3. Move the superseded-version report out of `store_read`
       (`book.lua:411-430`) so it is drawn by the chapters that build an index;
       add the two-position stale-record probe and its hand-derived count.
 - [ ] T4. Suite checks for AC1, AC2 and AC3: render the new fixture from an
@@ -147,6 +147,7 @@ in a rendered book or a failed render.
 - 2026-08-29: implementation gate chose recording, in each chapter's own stored record, whether the store held a record for every other chapter when it rendered — the book's last chapter reads the placing chapter's value rather than inferring a first render — and chose running AC4's two stale-record positions as one whole-book render and one single-chapter render, so the report count equals the chapters that build an index in both.
 - 2026-08-29: T1 — `examples/book-placement/` added: four chapters, markers in the first and third, a marker-free fourth, three declared indexes of which `gamma` is named by no marker, and eight terms no two of which share a printed path. Rendered from an empty store against the current filter it reproduces the defect: `index.html` carries sections for `alpha`, `beta` and `gamma`, and a second render leaves `alpha` alone there.
 - 2026-08-29: T2 — a chapter takes on an index no marker names only when the store already holds a usable record for every chapter after it, read before the chapter writes its own and carried in that record as `later`; the book's last chapter reads the placing chapter's value and reports a deferred section once. The gate asks only about the chapters that render after, so a refused record in an earlier chapter no longer costs the section M55-AC5 requires. warn-distinct's message count 77 → 78. `examples/book-placement/` renders `alpha` and `beta` alone with one report on the first render and `gamma` on the third chapter on the second; `examples/book/` is unchanged. Suite green, 486 checks.
+- 2026-08-29: T3 — `store_read` hands the chapters whose record was refused for version skew back to its caller, and each chapter that builds an index reports them; the unreadable-record report stays where it was. AC4's two positions added over `examples/book-placement/`: the record in the chapter that places nothing and renders last, whole book rendered, expects 2, and the record in a placing chapter with one chapter rendered expects 1, each hand-derived in the check's comment. The count discriminates: with the report back inside `store_read` the first run draws 3, once per chapter rendered. Suite green, 493 checks.
 
 ## Decisions
 

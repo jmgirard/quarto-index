@@ -861,6 +861,9 @@ MANIFEST
 # guarantee unproven.
 WARN_STORE_UNREADABLE='could not be read and were ignored'
 WARN_STORE_STALE='were written by a different version of this extension and were ignored'
+# M60's deferral report, keyed on its value-free tail: the head names the index
+# that was not placed, which differs per book.
+WARN_DEFER='Render the book again and the section will be placed'
 WARN_STORE_UNWRITABLE='could not record index marks for'
 WARN_MARKER_NOT_LAST='chapter(s) come after it'
 WARN_MARKER_SECOND='comes first in book order and carries one too'
@@ -6094,6 +6097,197 @@ check_warning_count "$WORK/book-removed.log" "$WARN_INDEX_STALE_NAME" 1 \
 grep -qF 'Turing' "$CAPTURE_ROOT/book-removed/_book/last.html" \
   || fail "M55-AC3: the removed index's term is missing from the page, so the record's marks were dropped rather than filed in the first declared index"
 pass "M55-AC3: a record naming a declaration the book has since removed keeps its chapter's terms, filed in the first index the book still declares, and the report names that chapter and that name"
+
+# ---------------------------------------------------------------------------
+# M60 — where an HTML book's index sections land on a FIRST render.
+# examples/book/ puts every marker in its last chapter, so it never asks this
+# fixture's question: which chapter takes on an index no marker names, when the
+# chapter that would take it on has not yet seen the chapters after it.
+# ---------------------------------------------------------------------------
+PLACE_DIR="examples/book-placement"
+
+# Every generated index section on every page of a rendered book, by page, id
+# and DECLARED TITLE — never by a count. A chapter adopting every index no
+# marker names produces exactly the count one section per marker produces, and
+# only the ids and titles tell the two apart. A page carrying no section is
+# written with a single `-`, so a page that quietly grew one fails here rather
+# than going unlisted.
+check_book_sections() {   # <rendered book dir> <label> <manifest>
+  local root="$1" label="$2" manifest="$3"
+  printf '%s\n' "$manifest" > "$WORK/book-sections.txt"
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
+    "$root" "$WORK/book-sections.txt" "$label" <<'PLACEPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+root, manifest_path, label = sys.argv[1:4]
+prefix = os.environ['HTML_SECTION_ID']
+pages = H.html_files(root)
+if not pages:
+    print(f'FAIL: {label}: {root} holds no rendered page, so the manifest '
+          f'below would be compared against nothing', file=sys.stderr)
+    sys.exit(1)
+actual = []
+for page in pages:
+    try:
+        found = H.index_sections(H.parse(os.path.join(root, page)), prefix)
+    except ValueError as bad:
+        print(f'FAIL: {label}: {bad}', file=sys.stderr)
+        sys.exit(1)
+    if not found:
+        actual.append(f'{page}\t-')
+    for hit in found:
+        actual.append(f'{page}\t{hit["ident"]}\t{hit["title"]}')
+expected = H.read_manifest(manifest_path)
+if not expected:
+    print(f'FAIL: {label}: the manifest is empty, so a book printing nothing '
+          f'would match it', file=sys.stderr)
+    sys.exit(1)
+if actual != expected:
+    print(f'FAIL: {label}: the index sections this book printed are not the '
+          f'ones the manifest names', file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such row rendered>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  row {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+carrying = len([r for r in actual if not r.endswith('\t-')])
+print(f'ok   {label}: {len(pages)} rendered page(s) carry {carrying} generated '
+      f'index section(s), each the id and declared title the manifest names')
+PLACEPY
+}
+
+# ORACLE — derived by hand from examples/book-placement/. The book declares
+# `alpha`, `beta` and `gamma`; the marker in index.qmd names no index and so
+# places the first declared one, the marker in three.qmd names `beta`, and no
+# marker anywhere names `gamma`. On a FIRST render three.qmd is the last
+# chapter that places anything but has not yet seen four.qmd's record, so it
+# does not take `gamma` on and no page carries that section — even though
+# index.qmd, two.qmd and four.qmd all mark a term that files in it.
+read -r -d '' PLACE_SECTIONS_FIRST <<'MANIFEST' || true
+four.html	-
+index.html	qi-index-alpha	Index of Alpha
+three.html	qi-index-beta	Index of Beta
+two.html	-
+MANIFEST
+# ...and on a SECOND render three.qmd has seen every chapter's record, so it
+# takes `gamma` on, after the index its own marker places and on that one page.
+read -r -d '' PLACE_SECTIONS_SECOND <<'MANIFEST' || true
+four.html	-
+index.html	qi-index-alpha	Index of Alpha
+three.html	qi-index-beta	Index of Beta
+three.html	qi-index-gamma	Index of Gamma
+two.html	-
+MANIFEST
+
+rm -rf "$PLACE_DIR/_book" "$PLACE_DIR/.quarto"
+( cd "$PLACE_DIR" && quarto render --to html ) > "$WORK/place-first.log" 2>&1 \
+  || { tail -30 "$WORK/place-first.log" >&2; fail "M60-AC1: the placement fixture failed to render to HTML from an empty store"; }
+capture --project "$PLACE_DIR" html "place-first"
+check_book_sections "$CAPTURE_ROOT/place-first/_book" "M60-AC1" \
+  "$PLACE_SECTIONS_FIRST"
+
+# M60-AC3 — and the book says so, once, naming the index it did not place.
+# Drawn by four.qmd, the last chapter in book order: it is the only chapter
+# that has seen every record, so it is the only one that can know no marker
+# anywhere names `gamma`.
+check_warning_count "$WORK/place-first.log" "$WARN_DEFER" 1 "M60-AC3"
+{ grep -F -- "$WARN_DEFER" "$WORK/place-first.log" | grep -qF 'the index "gamma"'; } \
+  || { grep -F -- "$WARN_DEFER" "$WORK/place-first.log" >&2; fail "M60-AC3: the deferral report does not name the index that was not placed"; }
+# Every warning this first render emits is one this suite can name: the two
+# marker-position reports the fixture's own shape draws (a marker in index.qmd
+# with three chapters after it, and one in three.qmd with one) and the deferral
+# report above. A record refused, an index folded or a target dangling would
+# each be a fourth.
+check_extension_warning_count "$WORK/place-first.log" 3 \
+  "M60-AC1/AC3 (the placement fixture's first render emitted a warning this suite cannot name; its three are the two marker-position reports and the deferral report)"
+pass "M60-AC1/AC3: rendered from an empty store, the placement fixture prints an index section only where a marker in that chapter places one, prints none for the index no marker names, and reports that index once by name"
+
+( cd "$PLACE_DIR" && quarto render --to html ) > "$WORK/place-second.log" 2>&1 \
+  || { tail -30 "$WORK/place-second.log" >&2; fail "M60-AC2: the placement fixture failed its second render"; }
+capture --project "$PLACE_DIR" html "place-second"
+check_book_sections "$CAPTURE_ROOT/place-second/_book" "M60-AC2" \
+  "$PLACE_SECTIONS_SECOND"
+check_warning_count "$WORK/place-second.log" "$WARN_DEFER" 0 \
+  "M60-AC2 (the section was placed, so nothing defers it)"
+check_extension_warning_count "$WORK/place-second.log" 2 \
+  "M60-AC2 (the placement fixture's second render emitted a warning this suite cannot name; its two are the marker-position reports)"
+pass "M60-AC2: a second render over the store the first left places the index no marker names in the last chapter that places one, on that page alone, and draws no deferral report"
+
+# M60-AC1's other half: the fixture whose markers are all in its LAST chapter
+# is unchanged by any of this. That chapter has no chapter after it, so it has
+# the whole picture on a first render and takes `places` on exactly as it did.
+# Read off the first render captured at the top of this section.
+check_section_ids "$CAPTURE_ROOT/book-html/_book/last.html" \
+  "M60-AC1 (examples/book, rendered from an empty store)" \
+  "$HTML_SECTION_ID-main $HTML_SECTION_ID-people $HTML_SECTION_ID-places"
+check_warning_count "$WORK/book-html.log" "$WARN_DEFER" 0 \
+  "M60-AC1 (examples/book defers nothing)"
+pass "M60-AC1: examples/book/, whose markers are all in its last chapter, still carries its three declared sections in last.html on a first render and defers nothing"
+
+# ---------------------------------------------------------------------------
+# M60-AC4 — the report for a record written by a superseded version is drawn
+# once per chapter that BUILDS an index, which is what M55 decided and not what
+# it shipped: drawn inside `store_read`, it fired once per chapter RENDERED.
+#
+# A chapter rewrites its own record as it renders, so a planted record is read
+# only by the chapters that render before the chapter it belongs to. The two
+# positions below are chosen around that, and each run's expectation is derived
+# by hand from the fixture:
+#
+#   (1) the record belongs to four.qmd, which places nothing and renders LAST,
+#       and the whole book is rendered. index.qmd and three.qmd each build an
+#       index and each read the plant; two.qmd builds none and reads it in
+#       silence; four.qmd overwrites it before building anything. Chapters that
+#       build an index: 2. Expected reports: 2.
+#
+#   (2) the record belongs to three.qmd, which DOES place an index, and
+#       index.qmd alone is rendered. One chapter renders, it builds `alpha`,
+#       and the plant is still there when it reads. Chapters that build an
+#       index: 1. Expected reports: 1.
+#
+# 2 is neither the fixture's chapter count (4) nor one report for the book, so
+# the two runs together separate once-per-building-chapter from both.
+# ---------------------------------------------------------------------------
+PLACE_STORE="$PLACE_DIR/.quarto/$STORE_DIR"
+place_stale() {   # <chapter file> <slug> <render argument or ""> <expected count> <label>
+  local chapter="$1" slug="$2" target="$3" want="$4" label="$5"
+  cp "$PLACE_STORE/$chapter$STORE_SUFFIX" "$WORK/place-$slug-record.json"
+  # Written at the version this one supersedes, derived from the filter's own
+  # constant rather than named here, and otherwise a record this filter would
+  # accept — or the run below would be about a record refused for its shape.
+  python3 - "$WORK/place-$slug-record.json" \
+    "$PLACE_STORE/$chapter$STORE_SUFFIX" "$SUPERSEDED_VERSION" <<'STALEPY'
+import json, sys
+record = json.load(open(sys.argv[1], encoding='utf-8'))
+if record['version'] == int(sys.argv[3]):
+    sys.exit(f'FAIL: M60-AC4: {sys.argv[1]} already stands at version '
+             f'{sys.argv[3]}, so the plant changes nothing and the run below '
+             f'would be about an unplanted record')
+record['version'] = int(sys.argv[3])
+json.dump(record, open(sys.argv[2], 'w', encoding='utf-8'))
+STALEPY
+  # shellcheck disable=SC2086
+  ( cd "$PLACE_DIR" && quarto render $target --to html ) \
+    > "$WORK/place-$slug.log" 2>&1 \
+    || { tail -30 "$WORK/place-$slug.log" >&2; fail "M60-AC4 ($label): the render failed; IP2 forbids a stale record taking one down"; }
+  capture --project "$PLACE_DIR" html "place-$slug"
+  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_STALE" "$want" \
+    "M60-AC4 ($label)"
+  { grep -F -- "$WARN_STORE_STALE" "$WORK/place-$slug.log" | grep -qF "$chapter"; } \
+    || { grep -F -- "$WARN_STORE_STALE" "$WORK/place-$slug.log" >&2; fail "M60-AC4 ($label): the report does not name $chapter, the chapter whose record was refused"; }
+  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE" 0 \
+    "M60-AC4 ($label, stale rather than unreadable)"
+  cp "$WORK/place-$slug-record.json" "$PLACE_STORE/$chapter$STORE_SUFFIX"
+}
+
+place_stale four.qmd stale-last '' 2 \
+  'a record in the chapter that places nothing and renders last, whole book rendered, two chapters building'
+place_stale three.qmd stale-placing index.qmd 1 \
+  'a record in a chapter that places an index, one chapter rendered, one chapter building'
+pass "M60-AC4: the report for a record written by a superseded version is drawn once per chapter that builds an index — twice in a whole-book render two of whose four chapters build one, and once where a single building chapter is rendered — and names the chapter whose record it refused"
 
 # ---------------------------------------------------------------------------
 # The ordering fixture: marker in the first chapter, a second marker in the

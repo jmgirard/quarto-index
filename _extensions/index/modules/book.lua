@@ -447,8 +447,10 @@ local function later_recorded(ctx)
   return true
 end
 
+-- Returns the usable records in book order, and the chapters whose record this
+-- version refused for being written by another one — the caller's to report.
 local function store_read(ctx)
-  local records = {}
+  local records, stale = {}, {}
   for _, file in ipairs(ctx.chapters) do
     local fh = io.open(store_path(ctx, file), "r")
     if fh then
@@ -465,10 +467,12 @@ local function store_read(ctx)
         -- readable and simply stale, and calling that unreadable sends an
         -- author looking for a corrupt file that is not there.
         if ok and type(data) == "table" and data.version ~= STORE_VERSION then
-          qi_core.warn(("the recorded index marks for %s were written by a different "
-                .. "version of this extension and were ignored; render that "
-                .. "chapter again, or render the whole book, to put its "
-                .. "terms back in the index"):format(file))
+          -- Handed back rather than reported here: a version-skewed record
+          -- costs the chapters that BUILD an index their share of that
+          -- chapter's terms, and every other chapter of the book reads the
+          -- store without printing anything out of it. Reported by the caller,
+          -- once per chapter that builds (M55).
+          stale[#stale + 1] = file
         else
           qi_core.warn(("the recorded index marks for %s could not be read and were "
                 .. "ignored; render that chapter again, or render the whole "
@@ -477,7 +481,7 @@ local function store_read(ctx)
       end
     end
   end
-  return records
+  return records, stale
 end
 
 -- Every chapter's marks as the entry builder wants them: the kind tables
@@ -815,7 +819,7 @@ local function html_book(doc, ctx, marker, taken)
   -- the state some earlier render left.
   local later = later_recorded(ctx)
   store_write(ctx, marker, later)
-  local records = store_read(ctx)
+  local records, stale = store_read(ctx)
   -- Before any judgement is made about a mark: an index name this book no
   -- longer declares is settled against what it declares now, so every
   -- accumulator below sees only names this book has.
@@ -929,6 +933,17 @@ local function html_book(doc, ctx, marker, taken)
   end
 
   if builds then
+    -- Drawn by each chapter that builds an index, in book order, which is what
+    -- M55 decided: the record's absence costs this section its share of that
+    -- chapter's terms, and a chapter that prints nothing has nothing to say
+    -- about it. A book placing three indexes in three chapters therefore says
+    -- so three times — once per section the record is missing from.
+    for _, file in ipairs(stale) do
+      qi_core.warn(("the recorded index marks for %s were written by a different "
+            .. "version of this extension and were ignored; render that "
+            .. "chapter again, or render the whole book, to put its "
+            .. "terms back in the index"):format(file))
+    end
     if not any_marks(records) then
       -- The book path's counterpart to the single-document no-marks warning,
       -- which cannot be asked of one chapter. Without it a marker in a book

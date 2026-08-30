@@ -6337,6 +6337,162 @@ place_stale three.qmd stale-placing index.qmd 1 \
 pass "M60-AC4: the report for a record written by a superseded version is drawn once per chapter that builds an index — twice in a whole-book render two of whose five chapters build one, and once where a single building chapter is rendered — and names the chapter whose record it refused"
 
 # ---------------------------------------------------------------------------
+# M061 — what an HTML book says about an index section it could not place, one
+# it printed twice, and one whose chapter record can never be written.
+#
+# Every check below is derived by hand against a WARM store: one where each of
+# the five chapters has just written its own record from its own source. The
+# run above left four.qmd's record restored from a copy and the other four
+# rewritten by whatever render touched them last, so the store is rebuilt here
+# rather than assumed.
+# ---------------------------------------------------------------------------
+place_render() {   # <slug> <label> [render argument]
+  local slug="$1" label="$2" target="${3:-}"
+  # shellcheck disable=SC2086
+  ( cd "$PLACE_DIR" && quarto render $target --to html ) \
+    > "$WORK/$slug.log" 2>&1 \
+    || { tail -30 "$WORK/$slug.log" >&2; fail "$label: the placement fixture failed to render; IP2 forbids any of this taking a render down"; }
+  capture --project "$PLACE_DIR" html "$slug"
+}
+
+place_render place-warm "M061 (the warm store the checks below are derived against)"
+
+# The fixture as it stands with that store, kept aside: every planted-defect
+# run below is a copy of THIS tree with one thing changed, so a failure there
+# is the mutation's and not some difference in the store it started from. The
+# `_extensions` entry is a symlink into the repository, which `cp -R`
+# preserves — a copy still pointing at it would render through the unspliced
+# filter — so each copy gets its own tree.
+M061W="$WORK/m061"
+rm -rf "$M061W"
+mkdir -p "$M061W"
+cp -R "$PLACE_DIR" "$M061W/base"
+rm -f "$M061W/base/_extensions"
+rm -rf "$M061W/base/_book"
+[ -d "$M061W/base/.quarto/$STORE_DIR" ] \
+  || fail "M061: the copied fixture carries no store, so every planted run below would start from an empty one rather than the warm store these checks are derived against"
+
+# One copy of that tree, with the extension spliced in beside it and one
+# `perl` substitution applied to the filter. The substitution is checked to
+# have changed something: a pattern that stopped matching would leave the
+# filter intact and the run below would be reported as a check failing to
+# matter when nothing had been mutated.
+m061_mutant() {   # <slug> <perl expression> <label>
+  local slug="$1" expression="$2" label="$3"
+  rm -rf "$M061W/$slug"
+  cp -R "$M061W/base" "$M061W/$slug"
+  mkdir -p "$M061W/$slug/_extensions"
+  cp -R "$QI_EXT_DIR" "$M061W/$slug/_extensions/index"
+  perl -0777 -pe "$expression" \
+    "$M061W/$slug/_extensions/index/modules/book.lua" > "$M061W/$slug-spliced"
+  if cmp -s "$M061W/$slug/_extensions/index/modules/book.lua" "$M061W/$slug-spliced"; then
+    fail "$label: the substitution aimed at the filter changed nothing, so the render below would be reported as a check failing to matter when the fault is this mutation's"
+  fi
+  mv "$M061W/$slug-spliced" "$M061W/$slug/_extensions/index/modules/book.lua"
+}
+
+# One substitution on one record, from the filter's own store, and guarded both
+# ways: the field must not already say what the plant makes it say, or the run
+# below would be about an unplanted record.
+place_plant_marker() {   # <chapter file> <index name> <label>
+  local chapter="$1" name="$2" label="$3"
+  cp "$PLACE_STORE/$chapter$STORE_SUFFIX" "$WORK/m061-$chapter-record.json"
+  python3 - "$WORK/m061-$chapter-record.json" \
+    "$PLACE_STORE/$chapter$STORE_SUFFIX" "$name" "$label" <<'PLANTPY'
+import json, sys
+source, target, name, label = sys.argv[1:5]
+record = json.load(open(source, encoding='utf-8'))
+if name in (record.get('marker') or []):
+    sys.exit(f'FAIL: {label}: the record already claims a placement marker for '
+             f'{name}, so the plant changes nothing and the run below would be '
+             f'about an unplanted record')
+record['marker'] = [name]
+json.dump(record, open(target, 'w', encoding='utf-8'))
+PLANTPY
+}
+
+# ---------------------------------------------------------------------------
+# M061-AC1 — a stored record claiming a placement marker its chapter's source
+# does not carry. five.qmd renders LAST, so every chapter before it reads the
+# claim and none of them can correct it; five.qmd itself rebuilds its own
+# record from its own source, so by the time the book-wide reports are drawn
+# the claim is gone and `gamma` is named by no marker at all.
+#
+# Derived by hand from the fixture, chapter by chapter:
+#
+#   index.qmd  reads the plant, so alpha=1, beta=3, gamma=5 and the last
+#              placing chapter is five.qmd. It builds `alpha` (its own marker)
+#              and, not being last, takes nothing else on. One marker-position
+#              report: four chapters come after it.
+#   two.qmd    places nothing and builds nothing.
+#   three.qmd  reads the plant too, so it is NOT the last placing chapter and
+#              builds `beta` alone. One marker-position report: two after it.
+#   four.qmd   places nothing and builds nothing.
+#   five.qmd   its own record is built in memory from its own source and
+#              carries no marker, so gamma is placed by nobody, the last
+#              placing chapter is three.qmd, and three.qmd's record says it
+#              took `beta` on and nothing else. One unplaced-section report.
+#
+# Three extension warnings, and the section manifest is the one an ordinary
+# FIRST render prints — the same rows, for an entirely different reason.
+# ---------------------------------------------------------------------------
+place_plant_marker five.qmd gamma "M061-AC1"
+place_render place-phantom "M061-AC1"
+cp "$WORK/m061-five.qmd-record.json" "$PLACE_STORE/five.qmd$STORE_SUFFIX"
+check_book_sections "$CAPTURE_ROOT/place-phantom/_book" "M061-AC1" \
+  "$PLACE_SECTIONS_FIRST"
+check_warning_count "$WORK/place-phantom.log" "$WARN_DEFER" 1 "M061-AC1"
+{ grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" | grep -qF 'the index "gamma"'; } \
+  || { grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" >&2; fail "M061-AC1: the unplaced-section report does not name gamma, the index no section was printed for"; }
+{ grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" | grep -qF 'goes to three.qmd'; } \
+  || { grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" >&2; fail "M061-AC1: the unplaced-section report does not name three.qmd, the chapter the section was owed to"; }
+{ grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" | grep -qF 'could not read then: none'; } \
+  || { grep -F -- "$WARN_DEFER" "$WORK/place-phantom.log" >&2; fail "M061-AC1: the unplaced-section report names a chapter as unreadable, though the store it was drawn over was warm and three.qmd read every record"; }
+check_warning_count "$WORK/place-phantom.log" "$WARN_DOUBLED" 0 \
+  "M061-AC1 (no page carries the section, so nothing is doubled)"
+check_extension_warning_count "$WORK/place-phantom.log" 3 \
+  "M061-AC1 (the phantom-marker render emitted a warning this suite cannot name; its three are the two marker-position reports and the unplaced-section report)"
+pass "M061-AC1: over a store whose five.qmd record claims a placement marker its source does not carry, the book prints no gamma section on any page and reports that index once by name, naming the chapter the section was owed to and no chapter as unreadable"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M061 T6 — the same store against a filter that decides whether to draw the
+  # unplaced-section report the way M60 did: from whether the placing chapter
+  # could see every later record, rather than from what that chapter recorded
+  # having taken on. One substitution and nothing moved.
+  #
+  # Under it the run above goes SILENT: three.qmd read every record of a warm
+  # store, so the re-derived picture says it had everything it needed, while
+  # the section it did not print is still missing from every page.
+  # -------------------------------------------------------------------------
+  m061_mutant noadopt \
+    's{ and not took\[name\]\n}{ and #(placer.unseen or {}) > 0\n}' \
+    "M061 T6 self-test"
+  python3 - "$M061W/noadopt/.quarto/$STORE_DIR/five.qmd$STORE_SUFFIX" <<'NOADOPTPY' \
+    || fail "M061 T6 self-test: the phantom marker could not be planted in the copied store (its own FAIL line is above)"
+import json, sys
+path = sys.argv[1]
+record = json.load(open(path, encoding='utf-8'))
+if 'gamma' in (record.get('marker') or []):
+    sys.exit('FAIL: M061 T6 self-test: the copied record already claims a '
+             'placement marker for gamma, so the plant changes nothing')
+record['marker'] = ['gamma']
+json.dump(record, open(path, 'w', encoding='utf-8'))
+NOADOPTPY
+  ( cd "$M061W/noadopt" && quarto render --to html ) \
+    > "$WORK/m061-noadopt.log" 2>&1 \
+    || { tail -30 "$WORK/m061-noadopt.log" >&2; fail "M061 T6 self-test: the mutated render failed; the case below is about a report it draws, not about a broken render"; }
+  capture --project "$M061W/noadopt" html "m061-noadopt"
+  # The section is missing from every page here exactly as it is above, so what
+  # separates the two runs is the report and nothing else.
+  check_book_sections "$CAPTURE_ROOT/m061-noadopt/_book" "M061 T6 self-test" \
+    "$PLACE_SECTIONS_FIRST"
+  check_warning_count "$WORK/m061-noadopt.log" "$WARN_DEFER" 0 \
+    "M061 T6 self-test (the re-derived picture says the chapter saw everything)"
+  pass "M061 T6 self-test: with the unplaced-section report decided by whether the placing chapter could see every later record instead of by what it recorded taking on, the same store prints the same pages and says nothing at all — which is the silence reading the recorded adoption turns into a report"
+fi
+
+# ---------------------------------------------------------------------------
 # M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_record`
 # runs outside any `pcall`, and it used to walk that field with `ipairs` before
 # testing its type, so such a record raised and took the render down — through

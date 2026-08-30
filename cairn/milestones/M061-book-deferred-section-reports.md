@@ -5,7 +5,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** `m061-book-deferred-section-reports`
+- **Branch/PR:** `m061-book-deferred-section-reports` / https://github.com/jmgirard/quarto-index/pull/61
 
 ## Goal
 

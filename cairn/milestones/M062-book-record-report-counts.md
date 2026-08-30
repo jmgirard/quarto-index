@@ -36,7 +36,7 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 
 ## Acceptance criteria
 
-- [ ] AC1. With `examples/book-placement/`'s stored record for `five.qmd` planted to name an
+- [x] AC1. With `examples/book-placement/`'s stored record for `five.qmd` planted to name an
       index the book does not declare, a whole-book HTML render draws the refiled-name report
       exactly twice, each naming `five.qmd` and the undeclared name. The arithmetic: two
       chapters build an index (`index.qmd` builds `alpha`, `three.qmd` builds `beta` and, as
@@ -45,7 +45,7 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
       so 2 separates once-per-building-chapter from once-per-reading-chapter, from
       once-per-section, and from one report for the book. A render of `index.qmd` alone over
       the same plant draws it exactly once. Each render exits 0.
-- [ ] AC2. In `examples/book-nomarker/`, extended to three chapters that carry marks and no
+- [x] AC2. In `examples/book-nomarker/`, extended to three chapters that carry marks and no
       placement marker anywhere, a whole-book HTML render over a store whose `two.qmd` record
       stands at the version this one supersedes draws the version-refused report exactly
       twice — `index.qmd` and `one.qmd`, the two chapters that read that record while the
@@ -53,11 +53,11 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
       neither one report for the book nor the three chapters rendered. The same render draws
       the report zero times before this milestone, draws the unreadable-record report zero
       times, and exits 0.
-- [ ] AC3. The same three-chapter render with `two.qmd`'s record instead planted to name an
+- [x] AC3. The same three-chapter render with `two.qmd`'s record instead planted to name an
       index the book does not declare draws the refiled-name report exactly twice, each
       naming `two.qmd` and the undeclared name, and the marks that record carries still print
       in a section of the render. The render exits 0.
-- [ ] AC4. Every count assertion these two reports already carry holds unchanged: the two
+- [x] AC4. Every count assertion these two reports already carry holds unchanged: the two
       `m55_stale_name` runs, the declaration-removal run and M60-AC6's split-record run, each
       a single-chapter `examples/book/` render expecting one refiled-name report, together
       with that report's existing zero-count control; `examples/book-nomarker/`'s
@@ -106,6 +106,7 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 ## Work log
 
 - 2026-08-30: created by /milestone-plan.
+- 2026-08-30: review — AC1-AC4 verified against one plain suite run (519 checks, exit 0) and ticked; AC5/AC6 await the `--self-test` run. Three lenses ran: blame-history and prior-review found nothing, the diff-bug lens eight, pending triage at the gate.
 - 2026-08-30: review opened — branch pushed, draft PR #62; `cairn_validate` passes (exit 0), the generic profile's consistency-gate slot names no toolchain checks, and no DESIGN principle changed so `cairn_impact` is skipped. Suite runs and the three review lenses are in flight.
 - 2026-08-30: criteria audit ran in FULL mode (user-facing tier) over M061's and M062's criteria together in one fresh-context [O] reader; its M062 findings and their disposal are recorded in M061's work log.
 - 2026-08-30: plan gate chose a third chapter in `examples/book-nomarker/` over keeping two, because in a two-chapter book exactly one chapter can report and "once" is the answer under once-per-book as well as under the rule this milestone ships; falsified by a fixture shape that separates the two rules without adding a chapter.
@@ -124,3 +125,27 @@ User-facing tier: the deliverable is what a rendered book's log tells the author
 ## Decisions
 
 ## Review
+
+Fresh evidence, one `tests/run-tests.sh` run over the branch at 3ec1b9d unless a line says
+otherwise; 519 checks, exit 0.
+
+- AC1 — `M062-AC1` passes: over `examples/book-placement/` with `five.qmd`'s record planted to
+  name `ghostplacement`, the whole-book render draws the refiled-name report exactly twice and
+  the `index.qmd`-only render exactly once, each report named against `five.qmd` and that name,
+  with the version-refused and unreadable-record counts 0 in both. Both renders exit 0.
+- AC2 — `M062-AC2` passes: over the three-chapter `examples/book-nomarker/` with `two.qmd`'s
+  record planted at the version this one supersedes (read from the filter's own constant), the
+  whole-book render draws the version-refused report exactly twice, each naming `two.qmd`, the
+  unreadable-record report 0 times, and the missing-marker report once. The count is 0 before
+  this milestone — recorded by T6's hand probe with the gate reverted to `if builds then`. Exit 0.
+- AC3 — `M062-AC3` passes: the same render with `two.qmd`'s record instead naming `ghostnomark`
+  draws the refiled-name report exactly twice, each naming `two.qmd` and that name, with the
+  version-refused and unreadable counts 0; `Nomark Three` still prints inside `two.html`'s
+  `quarto-document-content`, on a page carrying no index section. Exit 0.
+- AC4 — every named pre-existing count holds: the two `m55_stale_name` runs and the
+  declaration-removal run (`M55-AC3`, both pass lines), M60-AC6's split-record run (`M60-AC6`),
+  the refiled-name report's zero-count control (`M38-AC5/M55-AC1`, which asserts no stale-name
+  report), `examples/book-nomarker/`'s missing-marker report at M05's count of 1 over the
+  re-derived three chapters (`M05-AC6`), and `examples/book-placement/`'s two
+  planted-superseded-record version-refused counts of 2 and 1 (`M60-AC4`). Each render exits 0.
+

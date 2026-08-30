@@ -43,7 +43,7 @@ tells the author.
 
 ## Acceptance criteria
 
-- [ ] AC1. With `examples/book-placement/`'s stored record for `five.qmd` planted to claim a
+- [x] AC1. With `examples/book-placement/`'s stored record for `five.qmd` planted to claim a
       placement marker for `gamma` that `five.qmd`'s source does not carry, a whole-book HTML
       render prints a generated index section only on the pages, under the ids and with the
       declared titles a hand-derived manifest states — that manifest listing every rendered
@@ -76,11 +76,11 @@ tells the author.
       `three.html` alone and defers nothing, `examples/book/` carries its three sections in
       `last.html` on a first render and defers nothing, and M60's two planted-superseded-record
       runs keep their version-skew counts of 2 and 1. Each render exits 0.
-- [ ] AC6. `tests/sitecheck.py claims` holds `site/books.qmd` and
+- [x] AC6. `tests/sitecheck.py claims` holds `site/books.qmd` and
       `site/placing-the-index.qmd` to a claim naming what a book reports when an index
       section is deferred and when one prints twice, and fails on a copy of either page with
       that claim removed.
-- [ ] AC7. `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test` passes.
+- [x] AC7. `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test` passes.
 
 ## Coverage
 
@@ -147,6 +147,7 @@ tells the author.
 - 2026-08-30: T10 — `site/books.qmd` and `site/placing-the-index.qmd` state what a book reports when an index section is left unplaced (naming the index, the chapter it was owed to and the chapters that chapter could not read, and that a record which can never be written draws the same report on every render) and when one prints in two chapters; `CHANGELOG.md` gains three entries for the two reports and the record's two new fields. Every sentence is written against the render logs the checks above captured. Three claim rows join the books page's list and a new list holds the placement page; each page is shown red under `--self-test` against a copy with its own claim removed. `cairn/DESIGN.md`: the book paragraph's "five cases are reported" is corrected to seven — the deferral M60 added was never listed — and gains what a chapter now records and the one store pass; KI198, KI201 and KI203 are struck as fixed, KI199 is narrowed to the doubling that still happens and is now reported, and KI204 records `store_write`'s open-failure guard not stopping the write, observed on AC3's render.
 - 2026-08-30: all ten tasks done; status to review. `tests/run-tests.sh` 515 checks exit 0, `tests/run-tests.sh --self-test` 976 checks exit 0.
 - 2026-08-30: implement gate chose the drafted texts for both reports and a second single-chapter render leg in AC4's check over amending AC4, because a whole-book render rewrites every record before the last chapter reads one, so the stripped-field control cannot go red without it.
+- 2026-08-30: review — checkpoint before the gate. All seven criteria verified with fresh evidence (515 checks plain, 976 with `--self-test`, both exit 0); `cairn_validate.py` exit 0; no principle text changed, so `cairn_impact` was skipped; the `generic` profile names no toolchain checks. Three lenses ran: blame-history and prior-review found nothing, the diff-bug lens eight. Three fixed here — the doubled-section report drawn for a declared index nothing marks (reproduced on a scratch render, guarded on `marks_in` and regression-tested by a fourth declared index in `examples/book-placement/`), AC3's report-naming grep matching a prefix rather than the whole `unseen` set, and KI203's behavioural half restored as KI205 after only its false promise was fixed. KI206 and KI207 file two check gaps. Three rejected, one of them a refutation of KI204 checked against the render log, where the recorded observation reproduces.
 - 2026-08-30: plan gate chose optional new record fields read as no answer over a `STORE_VERSION` bump, because a bump drops every chapter's terms from the book index until the whole book renders again for a field only a report reads (M14); falsified by a reader that reaches the index rather than a report coming to depend on either field.
 
 ## Decisions
@@ -158,6 +159,16 @@ exit 0). Named check lines are the suite's own `ok` lines.
 
 ### Acceptance criteria
 
+- AC1 — PASS. `M061-AC1`: over a store whose `five.qmd` record is planted to claim a
+  `gamma` placement marker its source does not carry, the whole-book render prints 2
+  sections over 5 pages against the hand-derived manifest — every rendered page a row,
+  a page with no section its own row — draws the unplaced-section report once naming
+  `gamma`, `three.qmd` and no chapter as unreadable, draws the doubled-section report
+  zero times, and emits exactly the 3 extension warnings the check enumerates; the
+  render exits 0. Before this milestone the same render is silent: the `M061 T6`
+  self-test mutant, whose only change is the report deciding from whether the placing
+  chapter could see every later record rather than from what it recorded taking on,
+  prints the same pages and says nothing at all.
 - AC2 — PASS. `M061-AC2`: the render made just after `four.qmd` gains a `gamma`
   marker prints 4 sections over 5 pages against the hand-derived manifest, draws
   the doubled-section report once naming `gamma` and `three.qmd, four.qmd` in book
@@ -186,3 +197,9 @@ exit 0). Named check lines are the suite's own `ok` lines.
   three sections in `last.html` on a first render, defers nothing), `M60-AC4` (the
   superseded-version report drawn twice in the whole-book render and once for the
   single building chapter). Each render exits 0.
+- AC6 — PASS. `M061-AC6`: both `site/books.qmd` and `site/placing-the-index.qmd` are
+  held to a claim naming what a book reports when a section is left unplaced and when
+  one prints twice; the `M061-AC6` self-test shows each of the two claim lists red on
+  a copy of its own page with that claim removed.
+- AC7 — PASS. `tests/run-tests.sh` — 515 checks, exit 0. `tests/run-tests.sh
+  --self-test` — 976 checks, exit 0. Both run whole on this branch at the tip.

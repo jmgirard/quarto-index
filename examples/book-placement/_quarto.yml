@@ -7,6 +7,9 @@
 #     chapter a check gives a marker to or whose record it makes unwritable;
 #   - one declared index is named by no marker anywhere, so a render has to
 #     decide where it goes rather than read it off a marker;
+#   - one declared index is named by no marker AND marked by nothing, so a
+#     report about a section has an index with no section to overstate about
+#     (M061 review F1);
 #   - no chapter carries a second marker, so nothing here is about the
 #     duplicate-marker rule examples/book/ already covers.
 #
@@ -24,12 +27,14 @@ book:
     - four.qmd
     - five.qmd
 
-# Three declared indexes. `alpha` is placed by the marker in the FIRST chapter,
+# Four declared indexes. `alpha` is placed by the marker in the FIRST chapter,
 # which names no index and so places the first declared one; `beta` by the
-# marker in the THIRD chapter, which names it; and `gamma` by no marker at all.
-# The first declared title is deliberately not "Index", for the reason
-# examples/book/ gives: a section still headed "Index" could not tell a
-# declared title from the neutral one.
+# marker in the THIRD chapter, which names it; `gamma` by no marker at all; and
+# `delta` by no marker and by nothing else either — no chapter marks a term in
+# it, so it prints no section anywhere and every report about a section has to
+# stay silent about it. The first declared title is deliberately not "Index",
+# for the reason examples/book/ gives: a section still headed "Index" could not
+# tell a declared title from the neutral one.
 indexes:
   - name: alpha
     title: Index of Alpha
@@ -37,6 +42,8 @@ indexes:
     title: Index of Beta
   - name: gamma
     title: Index of Gamma
+  - name: delta
+    title: Index of Delta
 
 filters:
   - index

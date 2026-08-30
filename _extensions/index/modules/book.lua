@@ -1050,7 +1050,12 @@ local function html_book(doc, ctx, marker, taken)
     end
     for _, name in ipairs(qi_indexes.names()) do
       local carrying = built[name] or {}
-      if #carrying > 1 then
+      -- `adopted` is what a chapter DECIDED to build, and a declared index no
+      -- mark files in is decided for and then printed nowhere: an index with
+      -- no marks anywhere in the book has no section to have twice. Guarded
+      -- on the same `marks_in` the unplaced-section report above is guarded
+      -- on, and for the same reason (M061 review F1).
+      if #carrying > 1 and marks_in(records, name) then
         qi_core.warn(('the index "%s" has a section in more than one chapter of this book — %s. A chapter builds a section for an index its own marker places, and the last chapter that places any index also builds one for each index no marker names; a placement marker added between two renders changes which chapter that is, and a render made before every chapter has read the new marker builds the section in each of them'):format(name, table.concat(carrying, ", ")))
       end
     end

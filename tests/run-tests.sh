@@ -6692,7 +6692,7 @@ for M061_PASS in one two; do
   check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_DEFER" 1 \
     "M061-AC3 (render $M061_PASS)"
   { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" \
-    | grep -qF 'could not read then: four.qmd'; } \
+    | grep -qF 'could not read then: four.qmd. A chapter takes on'; } \
     || { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M061-AC3 (render $M061_PASS): the unplaced-section report does not name four.qmd among the chapters whose record the placing chapter could not read"; }
   { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" | grep -qF 'the index "gamma"'; } \
     || { grep -F -- "$WARN_DEFER" "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M061-AC3 (render $M061_PASS): the unplaced-section report does not name gamma"; }

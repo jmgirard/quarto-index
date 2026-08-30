@@ -1337,6 +1337,24 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   name (corrected M061), and preventing it needs a way for a chapter to see a
   marker a later chapter has not yet recorded (ROADMAP). Predates M60 and
   reproduces identically without it. — M60 review F3
+- **KI205.** A chapter whose record can never be written leaves an index
+  section that is never printed, on every render: the chapters before it never
+  see a record for it, so none of them takes the unnamed index on. M061 made
+  the render say so once per render and name the chapter, and did not make the
+  section printable. The KI203 entry M061 struck carried this half as well as
+  the false promise M061 removed; restored here as its own entry, since only
+  the promise was fixed. — M60 review F11, corrected M061 review F4
+- **KI206.** M061-AC3's warning-count assertion expects 7 anchored `(W)`
+  matches because Quarto writes a colour-reset escape at the head of the
+  write-failure report's line, which `tests/scans/warn-distinct.py`'s
+  `^\(W\) ` patterns then miss. Nothing sets or asserts that escape, so an
+  uncoloured log makes the count 8 and the check red for a reason that is not
+  the extension's. The raw warning-line count asserted beside it is the stable
+  half. — M061 review F2
+- **KI207.** `valid_record`'s `data.later` branch, which keeps a record written
+  by the M60-era version readable, is reached by no check: no version writes
+  the field and nothing plants a record carrying it, so the compatibility it
+  states is asserted nowhere. — M061 review F6
 - **KI200.** A record written by a superseded version is now reported only by a
   chapter that builds an index, so a book where no chapter builds one — no
   placement marker anywhere, or no marks — reports it zero times, where it was

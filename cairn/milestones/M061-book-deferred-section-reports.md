@@ -1,11 +1,11 @@
 # M061: A book reports the index section it deferred, doubled, or can never place
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** —
+- **Branch/PR:** `m061-book-deferred-section-reports`
 
 ## Goal
 

@@ -495,6 +495,140 @@ local function fold_undeclared(records)
   return refiled
 end
 
+-- ---------------------------------------------------------------------------
+-- Recovery: one chapter's record rebuilt from that chapter's own source.
+--
+-- The store is the primary route and stays it. This runs only where the store
+-- held a record the reading chapter OPENED and could not use, which costs that
+-- chapter every term it marked; a record that is simply ABSENT is not this
+-- case and is left alone, so a first render is unchanged (D-041).
+--
+-- What comes back is the AUTHOR's own values and nothing else: the levels each
+-- mark indexes, the index it files in, and which indexes the chapter places.
+-- A chapter's own conclusions about itself — the anchor it minted, the role it
+-- resolved, the verdict it reached about a range — are not here and are not
+-- invented (D-009, D-021). So a recovered mark carries no anchor, and its
+-- locator is the chapter's page with no fragment; it indexes as though
+-- `range=` and `role=` were absent; and it declares no sort key, so its terms
+-- file under their printed text.
+--
+-- The parse is an AST walk with this extension's own mark reader, which is why
+-- D-040's first ground against reading source does not hold here. Its second
+-- stands and is this route's boundary: Quarto expands include shortcodes and
+-- executable cells before any filter runs, and this parse is of the file on
+-- disk, so a mark arriving by either route is not in it. Neither is a mark in
+-- content the HTML render drops.
+-- ---------------------------------------------------------------------------
+
+-- Every index mark in a parsed chapter, in document order, as a record's marks.
+-- Silent throughout: every report about what an author wrote is drawn by that
+-- chapter's own render, and drawing them again here would name another
+-- chapter's mistakes once per chapter that reads it.
+local function recovered_marks(parsed)
+  local marks = {}
+  parsed.blocks:walk({
+    Span = function(span)
+      if not span.classes:includes(qi_core.INDEX_CLASS) then
+        return nil
+      end
+      local entry = span.attributes["entry"]
+      local visible = qi_marks.span_text(span)
+      local context = qi_marks.describe(entry, visible)
+      local xrefs, declared = {}, 0
+      for _, kind in ipairs(qi_core.XREF_KINDS) do
+        local value = span.attributes[kind.attr]
+        if value ~= nil then
+          declared = declared + 1
+          local levels = qi_marks.target_levels(value, kind.attr, context, false)
+          if levels then
+            xrefs[#xrefs + 1] = { attr = kind.attr, levels = levels }
+          end
+        end
+      end
+      local levels = qi_marks.derive_levels(entry, visible, declared,
+                                            #span.content, context, nil, false)
+      if levels == nil then
+        return nil
+      end
+      -- The format-neutral self-target drop the emitting pass makes: a target
+      -- naming the entry it is written on says nothing, and the mark then
+      -- indexes as usual. Made here too, so what survives is what decides
+      -- whether this mark contributes a locator at all.
+      local own_key = qi_levels.levels_key(levels)
+      local surviving = {}
+      for _, xref in ipairs(xrefs) do
+        if qi_levels.levels_key(xref.levels) ~= own_key then
+          surviving[#surviving + 1] = xref
+        end
+      end
+      marks[#marks + 1] = {
+        levels = levels,
+        xrefs = surviving,
+        context = context,
+        -- Resolved against what the READING chapter declares, which for a book
+        -- is the same `indexes:` metadata the recovered chapter read: the name
+        -- is settled here rather than left for `fold_undeclared`, exactly as a
+        -- mark's own chapter settles it.
+        index = qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR],
+                                      context, false),
+        -- This mark has no anchor and never will, so `mark_target` cannot
+        -- build a fragment for it. The flag is what tells a locator-
+        -- contributing recovered mark from a cross-reference mark, which has
+        -- no anchor either and must contribute no locator.
+        page_locator = #surviving == 0 or nil,
+      }
+      return nil
+    end,
+  })
+  return marks
+end
+
+-- The indexes a parsed chapter places, in the order it places them: one entry
+-- per index, the first marker naming it holding the site, exactly as
+-- `resolve_markers` settles it inside a rendering chapter. Top-level markers
+-- alone — a nested one places nothing there and places nothing here.
+local function recovered_markers(parsed)
+  local names, seen = {}, {}
+  for _, block in ipairs(parsed.blocks) do
+    if qi_marker.is_marker(block) then
+      local name =
+        qi_indexes.authored_index(block.attributes[qi_indexes.INDEX_ATTR])
+      if not seen[name] then
+        seen[name] = true
+        names[#names + 1] = name
+      end
+    end
+  end
+  return names
+end
+
+-- One chapter's record, rebuilt from its source, or nil where nothing could be
+-- rebuilt. Every step is inside one guard: the file may be gone, unreadable or
+-- something Pandoc's markdown reader refuses, and none of that may take the
+-- render down with it (IP2). A failure returns nil and the caller reports it.
+local function recover_record(ctx, file)
+  local ok, record = pcall(function()
+    local fh = io.open(pandoc.path.join({ ctx.root, file }), "r")
+    if not fh then
+      error("cannot open", 0)
+    end
+    local text = fh:read("a")
+    fh:close()
+    if text == nil then
+      error("cannot read", 0)
+    end
+    local parsed = pandoc.read(text, "markdown")
+    return { version = STORE_VERSION, file = file,
+             href = chapter_href(ctx, file, parsed.meta),
+             marker = recovered_markers(parsed),
+             marks = recovered_marks(parsed) }
+  end)
+  if not ok then
+    return nil
+  end
+  return record
+end
+
 -- Returns the usable records in book order and the chapters whose record this
 -- version refused for being written by another one — the caller's to report.
 --
@@ -1083,6 +1217,9 @@ M["record_for_reading"] = record_for_reading
 M["store_write"] = store_write
 M["valid_record"] = valid_record
 M["fold_undeclared"] = fold_undeclared
+M["recovered_marks"] = recovered_marks
+M["recovered_markers"] = recovered_markers
+M["recover_record"] = recover_record
 M["store_read"] = store_read
 M["book_sort_keys"] = book_sort_keys
 M["book_sort_for"] = book_sort_for

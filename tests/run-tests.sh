@@ -5844,7 +5844,10 @@ nomarker_render() {   # <slug> <label>
 # which is the chapter whose record was planted.
 nomarker_named() {   # <slug> <sentence the report must carry> <count> <label>
   local named
-  named=$(grep -cF -- "$2" "$WORK/$1.log" || true)
+  # Occurrences, not matching lines, which is what `check_warning_count` beside
+  # it counts: two reports emitted onto one line would read 2 there and 1 here,
+  # and the run would fail naming the report's wording (M062 review F5).
+  named=$( { grep -oF -- "$2" "$WORK/$1.log" || true; } | wc -l | tr -d ' ')
   [ "$named" -eq "$3" ] \
     || { grep -F -- 'recorded index marks' "$WORK/$1.log" >&2; fail "$4: $named of the reports carry <<$2>>, want $3 — the count is right only if each report is about the chapter whose record was planted"; }
 }
@@ -7089,7 +7092,8 @@ PLACENAMEPY
   capture --project "$PLACE_DIR" html "place-$slug"
   check_warning_count "$WORK/place-$slug.log" "$WARN_INDEX_STALE_NAME" "$want" \
     "M062-AC1 ($label)"
-  named=$(grep -cF -- "the recorded index marks for five.qmd name the index \"$PLACE_UNDECLARED\"" "$WORK/place-$slug.log" || true)
+  # Occurrences, not matching lines (M062 review F5), as above.
+  named=$( { grep -oF -- "the recorded index marks for five.qmd name the index \"$PLACE_UNDECLARED\"" "$WORK/place-$slug.log" || true; } | wc -l | tr -d ' ')
   [ "$named" -eq "$want" ] \
     || { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/place-$slug.log" >&2; fail "M062-AC1 ($label): $named of the reports name five.qmd and $PLACE_UNDECLARED, want $want — the count is right only if each report is about the chapter whose record was planted and the name it carries"; }
   check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_STALE" 0 \

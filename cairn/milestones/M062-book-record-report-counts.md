@@ -200,3 +200,16 @@ regressing them. The diff-bug lens reported eight, ranked below with its own ran
   `DESIGN.md`'s store paragraph enumerates the reported cases without stating the counting rule
   for the two store reports — the one place a reader would catch F1 by inspection.
 
+### Triage
+
+Posed at the merge gate; the maintainer chose to fix F2 and F5 on the branch and to record the
+other six as known issues.
+
+- F2 — fixed on the branch: both sentences now name the rule the gate implements, in
+  `site/books.qmd` and `CHANGELOG.md`. The AC5 claim sentence is untouched.
+- F5 — fixed on the branch: `nomarker_named` and `place_undeclared` count occurrences through
+  `grep -oF | wc -l`, the convention `check_warning_count` documents.
+- F1 → KI208. F8 → KI208 (its first half) and KI209. F3 → KI210. F4 → KI211. F6 → KI212.
+  F7 → KI213. None fails an acceptance criterion, so none meets the return floor.
+
+Re-verification after the two fixes is recorded in the work log.

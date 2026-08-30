@@ -7,6 +7,8 @@ _Last hygiene check: 2026-08-30 (M60 merged and archived: an HTML book's first r
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M061 | A book reports the index section it deferred, doubled, or can never place | planned | — | normal | milestones/M061-book-deferred-section-reports.md |
+| M062 | A book repeats a record complaint once per index section it costs | planned | M061 | normal | milestones/M062-book-record-report-counts.md |
 | M60 | An HTML book's first render places each index where its author asked | done | — | normal | milestones/archive/M60-book-first-render-placement.md |
 | M59 | The words an author writes are refused when a reader cannot read them | done | — | normal | milestones/archive/M59-index-label-refusals.md |
 | M58 | An author sets the punctuation the index prints inside an entry | done | — | normal | milestones/archive/M58-index-separators.md |
@@ -18,7 +20,7 @@ _Last hygiene check: 2026-08-30 (M60 merged and archived: an HTML book's first r
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- Repair the first-render placement mechanism M60 shipped and the report counts around it; promote the placement half on an author reporting a section absent or doubled, the report half on any of them turning a run red for a reason that is not the defect it names — added 2026-08-30 — M60 review F1, F3, F5, F9, F10, F11; M55 review F4 — KI168, KI198-KI203
+- Prevent a book's index section printing twice when a chapter gains a placement marker between renders, rather than reporting the doubling; promote on a way for a chapter to see a marker a later chapter has not yet recorded — added 2026-08-30 — M061 plan gate
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
 - Repair the readers and checks the EPUB back-end, the editor metadata and the named-index work added; promote on any of them turning a run red for a reason that is not the defect it names — added 2026-08-27, clustered 2026-08-29 — M52 review F3, F7-F13; M50 review F1, F2, F3, F6; M49 review F6, F7, F9 — KI91-KI104
 - Fence the three unguarded edges of the named-index LaTeX behavior M49 shipped; promote the first two on an author report or a fixture reaching either edge, the third on the extension claiming a plain-pandoc path at all — added 2026-08-28 — M49 review F2, F3, F4 — KI105, KI106, KI107

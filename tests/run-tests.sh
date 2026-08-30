@@ -6193,14 +6193,20 @@ print(f'ok   {label}: {len(pages)} rendered page(s) carry {carrying} generated '
 PLACEPY
 }
 
-# ORACLE — derived by hand from examples/book-placement/. The book declares
-# `alpha`, `beta` and `gamma`; the marker in index.qmd names no index and so
-# places the first declared one, the marker in three.qmd names `beta`, and no
-# marker anywhere names `gamma`. On a FIRST render three.qmd is the last
-# chapter that places anything but has not yet seen four.qmd's record, so it
-# does not take `gamma` on and no page carries that section — even though
-# index.qmd, two.qmd and four.qmd all mark a term that files in it.
+# ORACLE — derived by hand from examples/book-placement/. The book renders five
+# chapters, in the order index.qmd, two.qmd, three.qmd, four.qmd, five.qmd, and
+# declares `alpha`, `beta` and `gamma`; the marker in index.qmd names no index
+# and so places the first declared one, the marker in three.qmd names `beta`,
+# and no marker anywhere names `gamma`. On a FIRST render three.qmd is the last
+# chapter that places anything but has not yet seen four.qmd's or five.qmd's
+# record, so it does not take `gamma` on and no page carries that section —
+# even though index.qmd, two.qmd, four.qmd and five.qmd all mark a term that
+# files in it. The rows are in the order the sweep walks the rendered pages,
+# which is every `.html` under the book's output directory sorted as a string:
+# `five` before `four` (`i` before `o`), both before `index`, then `three`,
+# then `two`.
 read -r -d '' PLACE_SECTIONS_FIRST <<'MANIFEST' || true
+five.html	-
 four.html	-
 index.html	qi-index-alpha	Index of Alpha
 three.html	qi-index-beta	Index of Beta
@@ -6209,6 +6215,7 @@ MANIFEST
 # ...and on a SECOND render three.qmd has seen every chapter's record, so it
 # takes `gamma` on, after the index its own marker places and on that one page.
 read -r -d '' PLACE_SECTIONS_SECOND <<'MANIFEST' || true
+five.html	-
 four.html	-
 index.html	qi-index-alpha	Index of Alpha
 three.html	qi-index-beta	Index of Beta
@@ -6224,7 +6231,7 @@ check_book_sections "$CAPTURE_ROOT/place-first/_book" "M60-AC1" \
   "$PLACE_SECTIONS_FIRST"
 
 # M60-AC3 — and the book says so, once, naming the index it did not place.
-# Drawn by four.qmd, the last chapter in book order: it is the only chapter
+# Drawn by five.qmd, the last chapter in book order: it is the only chapter
 # that has seen every record, so it is the only one that can know no marker
 # anywhere names `gamma`.
 check_warning_count "$WORK/place-first.log" "$WARN_DEFER" 1 "M60-AC3"
@@ -6232,11 +6239,11 @@ check_warning_count "$WORK/place-first.log" "$WARN_DEFER" 1 "M60-AC3"
   || { grep -F -- "$WARN_DEFER" "$WORK/place-first.log" >&2; fail "M60-AC3: the deferral report does not name the index that was not placed"; }
 # Every warning this first render emits is one this suite can name: the two
 # marker-position reports the fixture's own shape draws (a marker in index.qmd
-# with three chapters after it, and one in three.qmd with one) and the deferral
-# report above. A record refused, an index folded or a target dangling would
-# each be a fourth.
+# with four chapters after it, and one in three.qmd with two) and the unplaced-
+# section report above. A record refused, an index folded, a target dangling or
+# a section doubled would each be a fourth.
 check_extension_warning_count "$WORK/place-first.log" 3 \
-  "M60-AC1/AC3 (the placement fixture's first render emitted a warning this suite cannot name; its three are the two marker-position reports and the deferral report)"
+  "M60-AC1/AC3 (the placement fixture's first render emitted a warning this suite cannot name; its three are the two marker-position reports and the unplaced-section report)"
 pass "M60-AC1/AC3: rendered from an empty store, the placement fixture prints an index section only where a marker in that chapter places one, prints none for the index no marker names, and reports that index once by name"
 
 ( cd "$PLACE_DIR" && quarto render --to html ) > "$WORK/place-second.log" 2>&1 \
@@ -6248,6 +6255,10 @@ check_warning_count "$WORK/place-second.log" "$WARN_DEFER" 0 \
   "M60-AC2 (the section was placed, so nothing defers it)"
 check_extension_warning_count "$WORK/place-second.log" 2 \
   "M60-AC2 (the placement fixture's second render emitted a warning this suite cannot name; its two are the marker-position reports)"
+check_warning_count "$WORK/place-second.log" "$WARN_DOUBLED" 0 \
+  "M60-AC2/M061 (one chapter took the section on, so nothing is doubled)"
+check_warning_count "$WORK/place-first.log" "$WARN_DOUBLED" 0 \
+  "M60-AC1/M061 (no chapter took the section on, so nothing is doubled)"
 pass "M60-AC2: a second render over the store the first left places the index no marker names in the last chapter that places one, on that page alone, and draws no deferral report"
 
 # M60-AC1's other half: the fixture whose markers are all in its LAST chapter
@@ -6271,18 +6282,20 @@ pass "M60-AC1: examples/book/, whose markers are all in its last chapter, still 
 # positions below are chosen around that, and each run's expectation is derived
 # by hand from the fixture:
 #
-#   (1) the record belongs to four.qmd, which places nothing and renders LAST,
-#       and the whole book is rendered. index.qmd and three.qmd each build an
-#       index and each read the plant; two.qmd builds none and reads it in
-#       silence; four.qmd overwrites it before building anything. Chapters that
-#       build an index: 2. Expected reports: 2.
+#   (1) the record belongs to four.qmd, which places nothing and renders
+#       fourth of five, and the whole book is rendered. index.qmd and three.qmd
+#       each build an index and each read the plant; two.qmd builds none and
+#       reads it in silence; four.qmd overwrites it before building anything,
+#       and five.qmd builds none. three.qmd cannot use four.qmd's record, so it
+#       does not take `gamma` on and builds `beta` alone — still a chapter that
+#       builds. Chapters that build an index: 2. Expected reports: 2.
 #
 #   (2) the record belongs to three.qmd, which DOES place an index, and
 #       index.qmd alone is rendered. One chapter renders, it builds `alpha`,
 #       and the plant is still there when it reads. Chapters that build an
 #       index: 1. Expected reports: 1.
 #
-# 2 is neither the fixture's chapter count (4) nor one report for the book, so
+# 2 is neither the fixture's chapter count (5) nor one report for the book, so
 # the two runs together separate once-per-building-chapter from both.
 # ---------------------------------------------------------------------------
 PLACE_STORE="$PLACE_DIR/.quarto/$STORE_DIR"
@@ -6318,10 +6331,10 @@ STALEPY
 }
 
 place_stale four.qmd stale-last '' 2 \
-  'a record in the chapter that places nothing and renders last, whole book rendered, two chapters building'
+  'a record in a chapter that places nothing and renders fourth of five, whole book rendered, two chapters building'
 place_stale three.qmd stale-placing index.qmd 1 \
   'a record in a chapter that places an index, one chapter rendered, one chapter building'
-pass "M60-AC4: the report for a record written by a superseded version is drawn once per chapter that builds an index — twice in a whole-book render two of whose four chapters build one, and once where a single building chapter is rendered — and names the chapter whose record it refused"
+pass "M60-AC4: the report for a record written by a superseded version is drawn once per chapter that builds an index — twice in a whole-book render two of whose five chapters build one, and once where a single building chapter is rendered — and names the chapter whose record it refused"
 
 # ---------------------------------------------------------------------------
 # M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_record`

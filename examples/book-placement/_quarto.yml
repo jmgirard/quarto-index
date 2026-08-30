@@ -2,8 +2,9 @@
 # examples/book/ deliberately does not have:
 #   - the placement markers sit in DIFFERENT chapters, so the chapter that
 #     takes on an index no marker names is not the book's last one;
-#   - the book ends with a chapter carrying no marker at all, which is the
-#     chapter that reports a deferred index section;
+#   - the book ends with TWO chapters carrying no marker at all, so the
+#     chapter that reports an unplaced or doubled index section is never the
+#     chapter a check gives a marker to or whose record it makes unwritable;
 #   - one declared index is named by no marker anywhere, so a render has to
 #     decide where it goes rather than read it off a marker;
 #   - no chapter carries a second marker, so nothing here is about the
@@ -21,6 +22,7 @@ book:
     - two.qmd
     - three.qmd
     - four.qmd
+    - five.qmd
 
 # Three declared indexes. `alpha` is placed by the marker in the FIRST chapter,
 # which names no index and so places the first declared one; `beta` by the

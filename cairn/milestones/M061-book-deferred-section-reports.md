@@ -51,25 +51,25 @@ tells the author.
       deferred-section report exactly once, that report naming `gamma`. The render emits
       exactly the extension warnings the check names one by one, and exits 0. The same render
       draws the report zero times before this milestone.
-- [ ] AC2. Where `four.qmd` gains a placement marker naming `gamma` between two whole-book
+- [x] AC2. Where `four.qmd` gains a placement marker naming `gamma` between two whole-book
       renders of `examples/book-placement/`, the render made after it gains one prints a
       `gamma` section on both `three.html` and `four.html`, and `five.qmd` — neither the
       chapter that gained the marker nor a chapter that printed the section — draws the
       doubled-section report exactly once, that report naming `gamma`; the next whole-book
       render prints `gamma` on `four.html` alone and draws that report zero times. Each
       render exits 0.
-- [ ] AC3. Where the store path `examples/book-placement/`'s `four.qmd` record would occupy
+- [x] AC3. Where the store path `examples/book-placement/`'s `four.qmd` record would occupy
       is held by a directory, so that record can never be written, two consecutive whole-book
       HTML renders each draw the deferred-section report exactly once for `gamma`, each
       report naming `four.qmd` among the chapters whose record the render could not read.
       Each render's other extension warnings are enumerated by count and kind in the check —
       the write-failure report `four.qmd` draws for itself and the unreadable-record report
       every chapter draws for it included — and each render exits 0.
-- [ ] AC4. A whole-book render over a store whose records all carry the current
+- [x] AC4. A whole-book render over a store whose records all carry the current
       `STORE_VERSION` and neither new field draws the deferred-section report zero times and
       the doubled-section report zero times, and every chapter's terms still print in the
       book's index sections.
-- [ ] AC5. The deferred-section report's new grep key is held to a live message by the
+- [x] AC5. The deferred-section report's new grep key is held to a live message by the
       suite's report-key scan, and the assertions M60 pinned hold over the re-derived
       five-chapter fixture: from an empty store the first render prints the sections its
       manifest names and defers `gamma` once, the second render prints `gamma` in
@@ -152,3 +152,37 @@ tells the author.
 ## Decisions
 
 ## Review
+
+Fresh evidence, this branch at the tip, `tests/run-tests.sh` run whole (515 checks,
+exit 0). Named check lines are the suite's own `ok` lines.
+
+### Acceptance criteria
+
+- AC2 — PASS. `M061-AC2`: the render made just after `four.qmd` gains a `gamma`
+  marker prints 4 sections over 5 pages against the hand-derived manifest, draws
+  the doubled-section report once naming `gamma` and `three.qmd, four.qmd` in book
+  order, and draws no unplaced-section report; two single-chapter renders over that
+  same store show `five.qmd` alone drawing it and `four.qmd` drawing none; the next
+  render prints 3 sections — `gamma` on `four.html` alone — and draws the report
+  zero times. Every render exits 0 (the suite fails on a non-zero render).
+- AC3 — PASS. `M061-AC3`: with `four.qmd`'s store path held by a directory, two
+  consecutive whole-book renders are identical — each draws the unplaced-section
+  report once for `gamma`, naming `three.qmd` and `four.qmd` among the chapters
+  whose record could not be read, and each draws the same 8 warning lines enumerated
+  by kind (4 unreadable-record, 1 write-failure, 2 marker-position, 1 unplaced).
+  Freeing the path and rendering twice restores the ordinary second-render manifest
+  and silence. Each render exits 0.
+- AC4 — PASS. `M061-AC4`: both new fields stripped from all 5 records of a warm
+  store; the whole-book render prints the second-render manifest (3 sections over 5
+  pages) and all 8 printed terms in the sections the manifest names, drawing neither
+  report; a second leg strips again and renders `five.qmd` alone — neither report and
+  no extension warning at all.
+- AC5 — PASS. `M10-AC4`: each of the 25 report grep keys, `WARN_DEFER` and
+  `WARN_DOUBLED` among them, matches exactly its own filter warning and none of the
+  others. M60's pinned assertions hold over the re-derived five-chapter fixture:
+  `M60-AC1/AC3` (first render from an empty store prints its manifest sections, none
+  for the unnamed index, and reports it once by name), `M60-AC2` (second render places
+  it in that chapter alone, no deferral), `M60-AC1` (`examples/book/` carries its
+  three sections in `last.html` on a first render, defers nothing), `M60-AC4` (the
+  superseded-version report drawn twice in the whole-book render and once for the
+  single building chapter). Each render exits 0.

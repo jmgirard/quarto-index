@@ -8,6 +8,8 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M064 | A chapter's terms reach the book index when its record cannot be read | planned | — | normal | milestones/M064-book-source-recovery.md |
+| M065 | The forms a recovered chapter's marks take are fenced | planned | M064 | normal | milestones/M065-recovered-mark-forms.md |
 | M063 | A book puts an index no marker names in the same chapter on every render | done | — | normal | milestones/archive/M063-book-fallback-placement.md |
 | M061 | A book reports the index section it deferred, doubled, or can never place | done | — | normal | milestones/archive/M061-book-deferred-section-reports.md |
 | M062 | A book repeats a record complaint once per index section it costs | done | M061 | normal | milestones/archive/M062-book-record-report-counts.md |
@@ -19,7 +21,7 @@ _Released 0.1.0 2026-08-26._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- Reach a book chapter's marks without the sidecar store: M063 leaves the fallback section short an unwritable chapter's terms, and prints no section at all where no placing chapter's record can be read. Promote on a route to another chapter's marks that does not go through the store — added 2026-08-30, extended 2026-08-30 — M063 plan gate, M063 AC3 audit — KI205, KI214
+- Recovery follow-ups to M064's source route: recover an ABSENT record too, which completes a book's first index and is the half of KI205 M064 leaves; and give a recovered locator its chapter's minted fragment. Promote the first on an author reporting a short first-render index, the second on a derivation reproducing that chapter's anchor ids — added 2026-08-30 — M064 — KI205
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
 - Repair the readers and checks the EPUB back-end, the editor metadata and the named-index work added; promote on any of them turning a run red for a reason that is not the defect it names — added 2026-08-27, clustered 2026-08-29 — M52 review F3, F7-F13; M50 review F1, F2, F3, F6; M49 review F6, F7, F9 — KI91-KI104
 - Fence the three unguarded edges of the named-index LaTeX behavior M49 shipped; promote the first two on an author report or a fixture reaching either edge, the third on the extension claiming a plain-pandoc path at all — added 2026-08-28 — M49 review F2, F3, F4 — KI105, KI106, KI107

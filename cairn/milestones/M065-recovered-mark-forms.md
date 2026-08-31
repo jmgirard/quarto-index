@@ -96,7 +96,7 @@ authored book reads, in the shapes authors write.
       declared sort keys.
 - [x] T3. The version-skewed record case and the unreadable store directory
       case, with their report counts and clauses.
-- [ ] T4. The per-field mutants under `--self-test`: the two AC6 names, one
+- [x] T4. The per-field mutants under `--self-test`: the two AC6 names, one
       dropping the recovered sort keys, one carrying `range=` and its
       re-derived pairing into a recovered record, asserted to leave the
       recovered section unchanged, and one disabling the store-directory
@@ -122,6 +122,7 @@ authored book reads, in the shapes authors write.
 - 2026-08-31: T3 — AC5's two arrangements. The version-skewed record is planted on two.qmd, so index.qmd, which renders first and builds the section that chapter's term belongs to, is the one chapter that meets it: three warnings, `Bramble` recovered and linking to two.qmd's page rather than to the anchor the refused record carried. The store directory replaced by a regular file draws 20 recovery, 5 write-failure and 2 marker-position warnings, exits 0, and prints every term the book marks.
 - 2026-08-31: AC6 amended at a mini gate — its second clause named an effect its mutant cannot produce, since the chapter AC5's version-skewed render refuses carries no placement marker and a marker moves where a section prints rather than which terms it holds. Criteria audit ran in FULL mode ([O], fresh context, user-facing tier) over the amended wording and returned four findings: an unbounded trailing quantifier and a referent reaching outside the file, both fixed in the wording; AC5's two routes losing their planted-defect coverage, answered by a fifth T4 mutant over the store-directory probe; and AC6 binding an instrument property without saying so, which is the shape the gate chose deliberately and is recorded here rather than in the criterion.
 - 2026-08-31: D-043 written — an existing-but-unlistable store directory is told apart from an absent record, so every chapter is recovered from its source rather than silently dropped. Suite 578 checks, exit 0.
+- 2026-08-31: T4 — five per-field mutants, each one substitution against a copy of the tree: folding a recovered mark's levels to its first loses the sub-entry and gives its parent the locator; emptying the recovered markers leaves the held-pair render with no section for the index no marker names; dropping the recovered sort keys moves `Zephyr` from the head of the section to its tail; carrying `range=` and a re-derived pairing leaves the section exactly as it stands; and disabling the store-directory probe leaves every index holding its own chapter's marks alone. Suite 1069 checks with `--self-test`, exit 0.
 
 ## Decisions
 

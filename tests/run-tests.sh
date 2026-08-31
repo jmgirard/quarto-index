@@ -7862,6 +7862,160 @@ if [ "${1:-}" = "--self-test" ]; then
   pass "M064 F2 self-test: with the locator dedup disabled and nothing else changed, the doubled mark prints the same link twice — the defect the F2 check is held against — and the render still exits 0"
 fi
 
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M065-AC6 and T4 — one mutant per field a recovered record carries, so each
+  # is fenced on its own rather than by the single kill-switch M064-AC4 uses.
+  # Each copy differs from the tree in ONE substitution, and each render must
+  # run to completion and exit 0: what the manifests below catch is the field
+  # being absent, not a render that did not happen.
+  #
+  #   levels    folded to the mark's first, against the AC1 arrangement. The
+  #             only multi-level mark in the corpus is four.qmd's
+  #             `entry="Woodwork!Joinery"`, so exactly two rows move: the
+  #             sub-entry goes, and its parent — which no mark of its own
+  #             indexes — stops being a parent and takes the locator.
+  #   marker    emptied, against the arrangement holding BOTH marker-carrying
+  #             chapters' store paths. Neither marker is recovered, so no
+  #             record shows any chapter of the book placing an index, the
+  #             book's last chapter takes nothing on, and the index no marker
+  #             names prints on no page at all.
+  #   sorts     dropped, against the AC1 arrangement. `Zephyr` files under its
+  #             printed text and moves from the head of the section to its
+  #             tail — the letter rows show both positions, which is what
+  #             M065-AC2 is about.
+  #   range     CARRIED, with the pairing a chapter's own process would reach
+  #             re-derived from the recovered marks, against the AC1
+  #             arrangement. The section must not move: both ends of a pair
+  #             land on one page in one role, so the locator dedup has already
+  #             made them one link, and the closing end's dropped locator was
+  #             that same link. This one asserts an invariance rather than a
+  #             loss, which is the honest shape for a field whose recovery
+  #             would be invisible.
+  #   store     the store-directory probe disabled, against the arrangement
+  #             that replaces the directory with a file. Every record path
+  #             reads as absent again, so no chapter is recovered and each
+  #             index carries the terms of the chapter that builds it and
+  #             nothing else — which is what this book did before D-043.
+  # -------------------------------------------------------------------------
+
+  # ORACLE — the gamma section with every recovered mark folded to one level.
+  read -r -d '' M065_GAMMA_ROWS_FLAT <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	A
+0	Zephyr	four.html
+letter	D
+0	Dovetail	four.html
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	F
+0	Ferrule		see-link Escutcheon
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+letter	H
+0	Hasp		also-link Escutcheon
+letter	I
+0	Ingot	four.html
+letter	J
+0	Jetty	four.html
+letter	W
+0	Woodwork	four.html
+MANIFEST
+
+  # ORACLE — the same section with the recovered sort keys dropped: `Zephyr`
+  # files under Z, where its printed text puts it, rather than under A.
+  read -r -d '' M065_GAMMA_ROWS_NOSORT <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	D
+0	Dovetail	four.html
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	F
+0	Ferrule		see-link Escutcheon
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+letter	H
+0	Hasp		also-link Escutcheon
+letter	I
+0	Ingot	four.html
+letter	J
+0	Jetty	four.html
+letter	W
+0	Woodwork	
+1	Joinery	four.html
+letter	Z
+0	Zephyr	four.html
+MANIFEST
+
+  # ORACLE — every term the book prints with no chapter recovered from source
+  # and no record readable: each building chapter's own marks and nothing
+  # else, and no section at all for the index no marker names.
+  read -r -d '' M065_TERMS_OWN_ONLY <<'MANIFEST' || true
+index.html	qi-index-alpha	Aardvark
+three.html	qi-index-beta	Coriander
+MANIFEST
+
+  m061_mutant m065-flatlevels \
+    's{      if levels == nil then\n        return nil\n      end\n}{      if levels == nil then\n        return nil\n      end\n      levels = { levels[1] }\n}' \
+    "M065-AC6 self-test (a recovered mark folded to one level)"
+  m061_block_record four.qmd \
+    "$M061W/m065-flatlevels/.quarto/$STORE_DIR" "M065-AC6 self-test (levels)"
+  m063_tree_render m065-flatlevels m065-flatlevels \
+    "M065-AC6 self-test (levels)" "$PLACE_SECTIONS"
+  check_index_sections "$CAPTURE_ROOT/m063-m065-flatlevels/_book/five.html" \
+    "$M065_GAMMA_ROWS_FLAT" "M065-AC6 self-test (levels)" hrefs
+  pass "M065-AC6 self-test: with a recovered mark's levels folded to its first and nothing else changed, the gamma section loses the sub-entry AC1 requires and its parent takes the locator instead — the defect the AC1 rows are held against — and the render still exits 0"
+
+  m061_mutant m065-nomarker \
+    's{^local function recovered_markers\(blocks\)\n}{local function recovered_markers(blocks)\n  do return {} end\n}m' \
+    "M065-AC6 self-test (a recovered chapter places nothing)"
+  for M065_HELD in index.qmd three.qmd; do
+    m061_block_record "$M065_HELD" \
+      "$M061W/m065-nomarker/.quarto/$STORE_DIR" "M065-AC6 self-test (marker)"
+  done
+  m063_tree_render m065-nomarker m065-nomarker \
+    "M065-AC6 self-test (marker)" "$PLACE_SECTIONS_NOGAMMA"
+  pass "M065-AC6 self-test: with the recovered placement markers dropped and nothing else changed, the render holding both marker-carrying chapters' store paths prints no section for the index no marker names on any of the book's five pages — the defect that arrangement's section manifest is held against — and the render still exits 0"
+
+  m061_mutant m065-nosorts \
+    's{local function register_recovered_sort\(sorts, index, levels, value, context,\n                                       kept, depth\)\n}{local function register_recovered_sort(sorts, index, levels, value, context,\n                                       kept, depth)\n  do return end\n}' \
+    "M065-AC2 self-test (the recovered sort keys dropped)"
+  m061_block_record four.qmd \
+    "$M061W/m065-nosorts/.quarto/$STORE_DIR" "M065-AC2 self-test"
+  m063_tree_render m065-nosorts m065-nosorts \
+    "M065-AC2 self-test" "$PLACE_SECTIONS"
+  check_index_sections "$CAPTURE_ROOT/m063-m065-nosorts/_book/five.html" \
+    "$M065_GAMMA_ROWS_NOSORT" "M065-AC2 self-test" hrefs
+  pass "M065-AC2 self-test: with the recovered sort keys dropped and nothing else changed, the term whose mark declares one files under its printed text at the tail of the section rather than at its head — the defect the AC2 rows are held against — and the render still exits 0"
+
+  m061_mutant m065-carryrange \
+    's{        xrefs = surviving,\n}{        xrefs = surviving,\n        range = span.attributes[qi_core.RANGE_ATTR],\n}; s{^  return marks, sorts\n}{  local pending = {}\n  for _, mark in ipairs(marks) do\n    local key = qi_levels.levels_key(mark.levels)\n    if mark.range == "open" then\n      pending[key] = mark\n    elseif mark.range == "close" and pending[key] then\n      pending[key].paired = "open"\n      mark.paired = "close"\n      pending[key] = nil\n    end\n  end\n  return marks, sorts\n}m' \
+    "M065-AC4 self-test (range carried and paired)"
+  m061_block_record four.qmd \
+    "$M061W/m065-carryrange/.quarto/$STORE_DIR" "M065-AC4 self-test"
+  m063_tree_render m065-carryrange m065-carryrange \
+    "M065-AC4 self-test" "$PLACE_SECTIONS"
+  check_index_sections "$CAPTURE_ROOT/m063-m065-carryrange/_book/five.html" \
+    "$M065_GAMMA_ROWS" "M065-AC4 self-test (the section does not move)" hrefs
+  pass "M065-AC4 self-test: with a recovered mark carrying the range end its author wrote, and the pairing a chapter's own process would reach re-derived from the recovered marks, the gamma section is exactly the section the unmutated run prints — so the one plain locator AC4 promises is what the pair prints whether the field travels or not, and the render still exits 0"
+
+  m061_mutant m065-noprobe \
+    's{  local store_lost = store_directory_unusable\(ctx\)\n}{  local store_lost = false\n}' \
+    "M065-AC5 self-test (the store-directory probe disabled)"
+  m065_break_store "$M061W/m065-noprobe/.quarto/$STORE_DIR" \
+    "M065-AC5 self-test"
+  m063_tree_render m065-noprobe m065-noprobe \
+    "M065-AC5 self-test" "$PLACE_SECTIONS_NOGAMMA"
+  check_book_terms "$CAPTURE_ROOT/m063-m065-noprobe/_book" \
+    "M065-AC5 self-test (no chapter is recovered, so each index holds its own chapter's marks alone)" \
+    "$M065_TERMS_OWN_ONLY"
+  check_warning_count "$WORK/m063-m065-noprobe.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+    "M065-AC5 self-test (every record path reads as absent again, so nothing is recovered and nothing is reported)"
+  pass "M065-AC5 self-test: with the store-directory probe disabled and nothing else changed, the same store directory replaced by a file leaves every record path reading as never written — no chapter is recovered, no report is drawn, each index carries the terms of the chapter that builds it alone, and the index no marker names prints nowhere — which is what this book did before the probe, and what the manifests the run above is held to refuse"
+fi
+
 
 
 # ---------------------------------------------------------------------------

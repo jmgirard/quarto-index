@@ -504,13 +504,17 @@ end
 -- case and is left alone, so a first render is unchanged (D-041).
 --
 -- What comes back is the AUTHOR's own values and nothing else: the levels each
--- mark indexes, the index it files in, and which indexes the chapter places.
+-- mark indexes, the index it files in, the sort keys it declares, and which
+-- indexes the chapter places.
 -- A chapter's own conclusions about itself — the anchor it minted, the role it
--- resolved, the verdict it reached about a range — are not here and are not
--- invented (D-009, D-021). So a recovered mark carries no anchor, and its
--- locator is the chapter's page with no fragment; it indexes as though
--- `range=` and `role=` were absent; and it declares no sort key, so its terms
--- file under their printed text.
+-- resolved, the verdict it reached about a range, the sort key it RESOLVED by
+-- filling its own fallbacks in — are not here and are not invented (D-009,
+-- D-021). So a recovered mark carries no anchor, and its locator is the
+-- chapter's page with no fragment; and it indexes as though `range=` and
+-- `role=` were absent. A `sort=` the author wrote is one of their own values
+-- and does come back, in the declared-key-per-printed-path shape
+-- `build_record` writes, so a term files where its author asked whether or not
+-- its chapter's record could be read.
 --
 -- The parse is an AST walk with this extension's own mark reader, which is why
 -- D-040's first ground against reading source does not hold here. Its second
@@ -566,8 +570,45 @@ end
 -- Silent throughout: every report about what an author wrote is drawn by that
 -- chapter's own render, and drawing them again here would name another
 -- chapter's mistakes once per chapter that reads it.
+--
+-- One printed level path files under one sort key, and the FIRST mark in
+-- document order to declare it wins — the rule `qi_sortkeys.register_sort`
+-- follows inside a rendering chapter, kept here so a chapter recovered from
+-- its source and the same chapter read from its record cannot file its terms
+-- differently. Silently, like everything else here: the rival-key report is
+-- that chapter's own render's to draw.
+local function register_recovered_sort(sorts, index, levels, value, context,
+                                       kept, depth)
+  if value == nil then
+    return
+  end
+  local declared =
+    qi_levels.sort_levels(value, levels, context, false, kept, depth)
+  if declared == nil then
+    return
+  end
+  for i = 1, #levels do
+    local key = declared[i]
+    if key then
+      local registry = sorts[index]
+      if registry == nil then
+        registry = {}
+        sorts[index] = registry
+      end
+      local path = qi_levels.level_path(levels, i)
+      if registry[path] == nil then
+        registry[path] = key
+      end
+    end
+  end
+end
+
+-- Returns the marks and the DECLARED sort keys, one map per index, in
+-- `build_record`'s own shape — a resolved key would carry this reader's
+-- fallbacks and beat another chapter's real one, which is the conflation
+-- `build_record` states at length.
 local function recovered_marks(blocks)
-  local marks = {}
+  local marks, sorts = {}, {}
   blocks:walk({
     Span = function(span)
       if not span.classes:includes(qi_core.INDEX_CLASS) then
@@ -587,8 +628,10 @@ local function recovered_marks(blocks)
           end
         end
       end
-      local levels = qi_marks.derive_levels(entry, visible, declared,
-                                            #span.content, context, nil, false)
+      local sort_value = span.attributes["sort"]
+      local levels, _, kept, depth =
+        qi_marks.derive_levels(entry, visible, declared, #span.content, context,
+                               sort_value, false)
       if levels == nil then
         return nil
       end
@@ -603,6 +646,11 @@ local function recovered_marks(blocks)
           surviving[#surviving + 1] = xref
         end
       end
+      local index_name =
+        qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR], context,
+                              false)
+      register_recovered_sort(sorts, index_name, levels, sort_value, context,
+                              kept, depth)
       marks[#marks + 1] = {
         levels = levels,
         xrefs = surviving,
@@ -611,8 +659,7 @@ local function recovered_marks(blocks)
         -- is the same `indexes:` metadata the recovered chapter read: the name
         -- is settled here rather than left for `fold_undeclared`, exactly as a
         -- mark's own chapter settles it.
-        index = qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR],
-                                      context, false),
+        index = index_name,
         -- This mark has no anchor and never will, so `mark_target` cannot
         -- build a fragment for it. The flag is what tells a locator-
         -- contributing recovered mark from a cross-reference mark, which has
@@ -622,7 +669,7 @@ local function recovered_marks(blocks)
       return nil
     end,
   })
-  return marks
+  return marks, sorts
 end
 
 -- The indexes a chapter places, in the order it places them: one entry per
@@ -663,10 +710,11 @@ local function recover_record(ctx, file)
     end
     local parsed = pandoc.read(text, "markdown")
     local blocks = drop_conditional(parsed.blocks)
+    local marks, sorts = recovered_marks(blocks)
     return { version = STORE_VERSION, file = file,
              href = chapter_href(ctx, file, parsed.meta),
              marker = recovered_markers(blocks),
-             marks = recovered_marks(blocks) }
+             marks = marks, sorts = sorts }
   end)
   if not ok then
     return nil

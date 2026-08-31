@@ -89,7 +89,9 @@ authored book reads, in the shapes authors write.
 - [ ] T1. Grow the fixture's blocked chapters with the six mark forms, each on
       a term no other mark in the corpus indexes, and re-baseline every
       manifest the new marks move.
-- [ ] T2. Criteria AC1-AC4 as suite checks over the recovered section.
+- [ ] T2. Criteria AC1-AC4 as suite checks over the recovered section, and the
+      recovery change AC2 needs: a recovered record carries the chapter's
+      declared sort keys.
 - [ ] T3. The version-skewed record case and the unreadable store directory
       case, with their report counts and clauses.
 - [ ] T4. The per-field mutants under `--self-test`: the two AC6 names, one
@@ -108,6 +110,8 @@ authored book reads, in the shapes authors write.
 - 2026-08-31: amendment return: AC4 — "the recovered `range=` pair prints one plain locator for the chapter's page — the locator either end alone would print, since neither end is resolved as a range — and the mark declaring `mention=\"principal\"` prints the locator an undeclared role gets, with no principal styling: the degradation D-041 requires of a value no other process resolved."
 - 2026-08-31: criteria audit ran in FULL mode ([O], fresh context, user-facing tier) over the amended AC3 and AC4, twice; round 1 returned four findings (neither mark named as recovered, `mention="principal"` unnamed, an appositive deferring the promise to a docs page, and a vacuous range clause) and round 2 one (the range clause still unfalsifiable, and D-009/D-021 mis-cited for a within-chapter pair). All disposed in the wording above; T4 grew a range-invariance mutant, criteria set unchanged.
 - 2026-08-30: criteria audit ran in FULL mode ([O], fresh context, user-facing tier) over M064's draft; findings 5, 6 and 10 — one exemplar standing in for the recovered-form family, and one unusable-record cause standing in for four — are what this milestone exists to answer.
+- 2026-08-31: task order — T2's code half runs before T1, so the fixture's manifests are baselined once against the behavior they will ship with rather than twice.
+- 2026-08-31: `recover_record` carries the chapter's declared sort keys, in `build_record`'s declared-key-per-printed-path shape, first mark in document order winning; a recovered `Zephyr` written `sort="Abacus"` now files under A as it does on the record route. Suite 562 checks, exit 0.
 
 ## Decisions
 

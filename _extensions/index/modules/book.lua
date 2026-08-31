@@ -159,6 +159,41 @@ local function store_path(ctx, file)
   return pandoc.path.join({ ctx.dir, file .. STORE_SUFFIX })
 end
 
+-- Is the store DIRECTORY there and unusable? `io.open` on a record path
+-- returns nothing both for a record that was never written and for one sitting
+-- in a directory that has been replaced by a file or whose permissions were
+-- cleared, and the two are opposite cases: the first is a first render, which
+-- recovery leaves alone, and the second is every chapter's marks lost from
+-- every other chapter's index, silently and on every render (D-043).
+--
+-- Told apart without reading any error message: the directory is unusable when
+-- it CANNOT be listed and its own name is in a listing of its parent. A
+-- directory that is simply not there fails the second test, so a first render
+-- and a tree with no store take the absent branch exactly as they did. A
+-- parent that cannot be listed either is read as absent for the same reason —
+-- there is nothing to say the store was ever written.
+--
+-- Once per rendering chapter, not once per record: the answer is a fact about
+-- the render, and probing it per chapter would ask the same question of the
+-- same path once for every chapter of the book.
+local function store_directory_unusable(ctx)
+  if pcall(pandoc.system.list_directory, ctx.dir) then
+    return false
+  end
+  local parent = pandoc.path.directory(ctx.dir)
+  local name = pandoc.path.filename(ctx.dir)
+  local ok, entries = pcall(pandoc.system.list_directory, parent)
+  if not ok then
+    return false
+  end
+  for _, entry in ipairs(entries) do
+    if entry == name then
+      return true
+    end
+  end
+  return false
+end
+
 -- One chapter's record: what it marked, where those marks are anchored on its
 -- own page, and whether it carries the placement marker. Complete as it
 -- stands, and this table is the one written to disk: M60 and M061 also filled
@@ -504,13 +539,17 @@ end
 -- case and is left alone, so a first render is unchanged (D-041).
 --
 -- What comes back is the AUTHOR's own values and nothing else: the levels each
--- mark indexes, the index it files in, and which indexes the chapter places.
+-- mark indexes, the index it files in, the sort keys it declares, and which
+-- indexes the chapter places.
 -- A chapter's own conclusions about itself — the anchor it minted, the role it
--- resolved, the verdict it reached about a range — are not here and are not
--- invented (D-009, D-021). So a recovered mark carries no anchor, and its
--- locator is the chapter's page with no fragment; it indexes as though
--- `range=` and `role=` were absent; and it declares no sort key, so its terms
--- file under their printed text.
+-- resolved, the verdict it reached about a range, the sort key it RESOLVED by
+-- filling its own fallbacks in — are not here and are not invented (D-009,
+-- D-021). So a recovered mark carries no anchor, and its locator is the
+-- chapter's page with no fragment; and it indexes as though `range=` and
+-- `role=` were absent. A `sort=` the author wrote is one of their own values
+-- and does come back, in the declared-key-per-printed-path shape
+-- `build_record` writes, so a term files where its author asked whether or not
+-- its chapter's record could be read.
 --
 -- The parse is an AST walk with this extension's own mark reader, which is why
 -- D-040's first ground against reading source does not hold here. Its second
@@ -566,8 +605,45 @@ end
 -- Silent throughout: every report about what an author wrote is drawn by that
 -- chapter's own render, and drawing them again here would name another
 -- chapter's mistakes once per chapter that reads it.
+--
+-- One printed level path files under one sort key, and the FIRST mark in
+-- document order to declare it wins — the rule `qi_sortkeys.register_sort`
+-- follows inside a rendering chapter, kept here so a chapter recovered from
+-- its source and the same chapter read from its record cannot file its terms
+-- differently. Silently, like everything else here: the rival-key report is
+-- that chapter's own render's to draw.
+local function register_recovered_sort(sorts, index, levels, value, context,
+                                       kept, depth)
+  if value == nil then
+    return
+  end
+  local declared =
+    qi_levels.sort_levels(value, levels, context, false, kept, depth)
+  if declared == nil then
+    return
+  end
+  for i = 1, #levels do
+    local key = declared[i]
+    if key then
+      local registry = sorts[index]
+      if registry == nil then
+        registry = {}
+        sorts[index] = registry
+      end
+      local path = qi_levels.level_path(levels, i)
+      if registry[path] == nil then
+        registry[path] = key
+      end
+    end
+  end
+end
+
+-- Returns the marks and the DECLARED sort keys, one map per index, in
+-- `build_record`'s own shape — a resolved key would carry this reader's
+-- fallbacks and beat another chapter's real one, which is the conflation
+-- `build_record` states at length.
 local function recovered_marks(blocks)
-  local marks = {}
+  local marks, sorts = {}, {}
   blocks:walk({
     Span = function(span)
       if not span.classes:includes(qi_core.INDEX_CLASS) then
@@ -587,8 +663,10 @@ local function recovered_marks(blocks)
           end
         end
       end
-      local levels = qi_marks.derive_levels(entry, visible, declared,
-                                            #span.content, context, nil, false)
+      local sort_value = span.attributes["sort"]
+      local levels, _, kept, depth =
+        qi_marks.derive_levels(entry, visible, declared, #span.content, context,
+                               sort_value, false)
       if levels == nil then
         return nil
       end
@@ -603,6 +681,11 @@ local function recovered_marks(blocks)
           surviving[#surviving + 1] = xref
         end
       end
+      local index_name =
+        qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR], context,
+                              false)
+      register_recovered_sort(sorts, index_name, levels, sort_value, context,
+                              kept, depth)
       marks[#marks + 1] = {
         levels = levels,
         xrefs = surviving,
@@ -611,8 +694,7 @@ local function recovered_marks(blocks)
         -- is the same `indexes:` metadata the recovered chapter read: the name
         -- is settled here rather than left for `fold_undeclared`, exactly as a
         -- mark's own chapter settles it.
-        index = qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR],
-                                      context, false),
+        index = index_name,
         -- This mark has no anchor and never will, so `mark_target` cannot
         -- build a fragment for it. The flag is what tells a locator-
         -- contributing recovered mark from a cross-reference mark, which has
@@ -622,7 +704,7 @@ local function recovered_marks(blocks)
       return nil
     end,
   })
-  return marks
+  return marks, sorts
 end
 
 -- The indexes a chapter places, in the order it places them: one entry per
@@ -663,10 +745,11 @@ local function recover_record(ctx, file)
     end
     local parsed = pandoc.read(text, "markdown")
     local blocks = drop_conditional(parsed.blocks)
+    local marks, sorts = recovered_marks(blocks)
     return { version = STORE_VERSION, file = file,
              href = chapter_href(ctx, file, parsed.meta),
              marker = recovered_markers(blocks),
-             marks = recovered_marks(blocks) }
+             marks = marks, sorts = sorts }
   end)
   if not ok then
     return nil
@@ -693,57 +776,68 @@ end
 -- of its own for it to find, whatever the write does afterwards.
 local function store_read(ctx, own)
   local records, stale = {}, {}
+  -- Probed once, before any record is opened: a record this loop cannot open
+  -- while the store directory itself is unusable was not never-written, it is
+  -- out of reach, and the source route is what it is for (D-043).
+  local store_lost = store_directory_unusable(ctx)
   for _, file in ipairs(ctx.chapters) do
     if file == ctx.file then
       records[#records + 1] = own
     else
       local fh = io.open(store_path(ctx, file), "r")
+      local unusable, ok, data = false, false, nil
       if fh then
         local text = fh:read("a")
         fh:close()
-        local ok, data = pcall(pandoc.json.decode, text, false)
+        ok, data = pcall(pandoc.json.decode, text, false)
         if ok and valid_record(data, file) then
           records[#records + 1] = data
         else
-          -- Opened and unusable, which is the one case the source route is
-          -- for: this record costs its chapter every term it marked, and the
-          -- chapter's own source still says what its author wrote (D-041). An
-          -- ABSENT record never reaches here at all — `io.open` returned
-          -- nothing and this branch was not taken — so a first render is
-          -- unchanged.
-          local rebuilt = recover_record(ctx, file)
-          if rebuilt ~= nil then
-            records[#records + 1] = rebuilt
-          end
-          -- Three outcomes, not two. A parse that succeeds and finds no mark
-          -- at all is not a recovery: the chapter's terms are as absent as
-          -- they were, and telling the author they came back sends them
-          -- looking in the index for a term that is not there. It is the
-          -- ordinary shape for a chapter whose marks arrive through an
-          -- include shortcode or an executed cell, neither of which is in the
-          -- file this route reads.
-          local recovered = rebuilt ~= nil and #rebuilt.marks > 0
-          -- Never silent: the fix is the same either way — render that chapter
-          -- again. WHY it could not be used is not: a record left by an older
-          -- version of this extension is perfectly readable and simply stale,
-          -- and calling that unreadable sends an author looking for a corrupt
-          -- file that is not there. What recovery returned is not either, and
-          -- each report says which of the two happened for its chapter.
-          if ok and type(data) == "table" and data.version ~= STORE_VERSION then
-            -- Handed back rather than reported here: a version-skewed record
-            -- costs the chapters that BUILD an index their share of that
-            -- chapter's terms, and every other chapter of the book reads the
-            -- store without printing anything out of it. Reported by the caller,
-            -- once per chapter that builds (M55).
-            stale[#stale + 1] =
-              { file = file, recovered = recovered, parsed = rebuilt ~= nil }
-          elseif recovered then
-            qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
-          elseif rebuilt ~= nil then
-            qi_core.warn(("the recorded index marks for %s could not be read, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(file))
-          else
-            qi_core.warn(("the recorded index marks for %s could not be read and neither could that chapter's own source, so none of its terms are in the index; render that chapter again, or render the whole book, once both files can be read"):format(file))
-          end
+          unusable = true
+        end
+      elseif store_lost then
+        unusable = true
+      end
+      if unusable then
+        -- Out of reach, which is the one case the source route is for: this
+        -- record costs its chapter every term it marked, and the chapter's own
+        -- source still says what its author wrote (D-041). Either the record
+        -- was opened and could not be used, or it could not be opened while
+        -- the store directory itself was there and unusable (D-043). A record
+        -- that is simply ABSENT is neither, and never reaches here — so a
+        -- first render is unchanged.
+        local rebuilt = recover_record(ctx, file)
+        if rebuilt ~= nil then
+          records[#records + 1] = rebuilt
+        end
+        -- Three outcomes, not two. A parse that succeeds and finds no mark
+        -- at all is not a recovery: the chapter's terms are as absent as
+        -- they were, and telling the author they came back sends them
+        -- looking in the index for a term that is not there. It is the
+        -- ordinary shape for a chapter whose marks arrive through an
+        -- include shortcode or an executed cell, neither of which is in the
+        -- file this route reads.
+        local recovered = rebuilt ~= nil and #rebuilt.marks > 0
+        -- Never silent: the fix is the same either way — render that chapter
+        -- again. WHY it could not be used is not: a record left by an older
+        -- version of this extension is perfectly readable and simply stale,
+        -- and calling that unreadable sends an author looking for a corrupt
+        -- file that is not there. What recovery returned is not either, and
+        -- each report says which of the two happened for its chapter.
+        if ok and type(data) == "table" and data.version ~= STORE_VERSION then
+          -- Handed back rather than reported here: a version-skewed record
+          -- costs the chapters that BUILD an index their share of that
+          -- chapter's terms, and every other chapter of the book reads the
+          -- store without printing anything out of it. Reported by the caller,
+          -- once per chapter that builds (M55).
+          stale[#stale + 1] =
+            { file = file, recovered = recovered, parsed = rebuilt ~= nil }
+        elseif recovered then
+          qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
+        elseif rebuilt ~= nil then
+          qi_core.warn(("the recorded index marks for %s could not be read, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(file))
+        else
+          qi_core.warn(("the recorded index marks for %s could not be read and neither could that chapter's own source, so none of its terms are in the index; render that chapter again, or render the whole book, once both files can be read"):format(file))
         end
       end
     end

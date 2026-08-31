@@ -1333,6 +1333,56 @@ print(f'ok   {label}: all {checked} fragment-carrying locator(s) name an id '
 FRAGPY
 }
 
+# The role each of ONE entry's locator links carries (M065-AC4). `want` is
+# `principal` or `plain`: a mark whose role its own chapter resolved is printed
+# emphasized and carrying the principal class, and a mark whose role nothing
+# resolved — a recovered one, since a chapter's resolution is a conclusion and
+# not a value its author wrote — is printed as an undeclared role is. The
+# classes are read rather than the emphasis, and the entry must carry at least
+# one link, so an entry that lost its locators cannot pass by having no class
+# to object to.
+check_locator_role() {   # <html file> <section id> <term> <principal|plain> <label>
+  local htmlfile="$1" section="$2" term="$3" want="$4" label="$5"
+  QI_SECTION="$section" QI_WANT="$want" QI_PRINCIPAL="$HTML_PRINCIPAL_CLASS" \
+  python3 - "$htmlfile" "$term" "$label" <<'ROLEPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+path, term, label = sys.argv[1:4]
+want, principal = os.environ['QI_WANT'], os.environ['QI_PRINCIPAL']
+if want not in ('principal', 'plain'):
+    sys.exit(f'FAIL: {label}: {want!r} is not a role this check knows')
+section = H.find_id(H.parse(path), os.environ['QI_SECTION'])
+if section is None:
+    sys.exit(f'FAIL: {label}: {path} carries no '
+             f'{os.environ["QI_SECTION"]!r} section')
+items = []
+for item in H.find_all(section, 'li'):
+    own = [n for n in H.own_nodes(item) if 'qi-term' in H.classes(n)]
+    if len(own) == 1 and H.text(own[0]) == term:
+        items.append(item)
+if len(items) != 1:
+    sys.exit(f'FAIL: {label}: the section holds {len(items)} entries for '
+             f'{term!r}, expected exactly 1')
+links = []
+for span in H.own_nodes(items[0]):
+    if 'qi-locators' in H.classes(span):
+        links += H.find_all(span, 'a')
+if not links:
+    sys.exit(f'FAIL: {label}: the entry {term!r} carries no locator link, so '
+             f'this check asserted nothing about the role one would print in')
+carried = [principal in H.classes(a) for a in links]
+if want == 'principal' and not all(carried):
+    sys.exit(f'FAIL: {label}: {len(carried) - sum(carried)} of the entry\'s '
+             f'{len(carried)} locator link(s) carry no {principal!r} class')
+if want == 'plain' and any(carried):
+    sys.exit(f'FAIL: {label}: {sum(carried)} of the entry\'s {len(carried)} '
+             f'locator link(s) carry the {principal!r} class')
+print(f'ok   {label}: all {len(links)} locator link(s) of {term!r} print in '
+      f'the {want} role')
+ROLEPY
+}
+
 # A WHOLE-DOCUMENT sweep for the letter-group heading class (M07-AC3). The
 # expected labels are hand-derived, one per line, in the order the page must
 # show them; the sweep reads the entire document rather than the index
@@ -6528,8 +6578,10 @@ TERMPY
 #                      `Bramble`, which two.qmd marks and has not yet recorded.
 #   three.html beta    three.qmd has index.qmd's and two.qmd's records by then,
 #                      so both `Cardamom` and `Coriander` print.
-#   five.html  gamma   the last chapter has every other record, so all four of
-#                      its terms print.
+#   five.html  gamma   the last chapter has every other record, so all eleven
+#                      of its printed entries appear — four.qmd's eight among
+#                      them, `Zephyr` first of all under the sort key its own
+#                      mark declares.
 #
 # This is the milestone's headline boundary, and the one arrangement that can
 # fail on it: recovery fires only where a record was OPENED and could not be
@@ -6538,10 +6590,17 @@ TERMPY
 # here — the change Scope Out refuses, which without this manifest no check in
 # the suite could see (review F4).
 read -r -d '' PLACE_TERMS_COLD <<'MANIFEST' || true
+five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
 five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Ferrule
 five.html	qi-index-gamma	Gantry
 five.html	qi-index-gamma	Gondola
+five.html	qi-index-gamma	Hasp
+five.html	qi-index-gamma	Ingot
+five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Woodwork
+five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
 three.html	qi-index-beta	Cardamom
 three.html	qi-index-beta	Coriander
@@ -6550,10 +6609,17 @@ MANIFEST
 # The render after it, with every record on disk: alpha gains `Bramble`, and
 # nothing else moves.
 read -r -d '' PLACE_TERMS_WARM <<'MANIFEST' || true
+five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
 five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Ferrule
 five.html	qi-index-gamma	Gantry
 five.html	qi-index-gamma	Gondola
+five.html	qi-index-gamma	Hasp
+five.html	qi-index-gamma	Ingot
+five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Woodwork
+five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
 index.html	qi-index-alpha	Bramble
 three.html	qi-index-beta	Cardamom
@@ -6987,8 +7053,8 @@ fi
 #              itself; its own write fails on the directory, which is one
 #              report. Builds nothing.
 #   five.qmd   the same recovery report; the book's last chapter, so it takes
-#              `gamma` on and builds its section — all four terms. No chapter
-#              after it, so no marker-position report.
+#              `gamma` on and builds its section — all eleven entries. No
+#              chapter after it, so no marker-position report.
 #
 #   4 recovery + 1 write-failure + 2 marker-position = 7.
 #
@@ -7014,23 +7080,67 @@ m061_block_record() {   # <chapter file> <store directory> <label>
 }
 
 
-# The gamma section as it stands with four.qmd's record unwritable: all four
-# terms the fixture files in that index, `Dovetail` among them although it
-# lives only in the chapter whose record can never be written (M064-AC1). Held
-# by term rather than by count, so which terms the section carries is what is
-# asserted rather than merely that it is printed. The alpha and beta sections
+# The gamma section as it stands with four.qmd's record unwritable: every one
+# of the eleven entries the fixture files in that index, the eight that live
+# only in the chapter whose record can never be written among them (M064-AC1,
+# M065-AC1 to M065-AC4). Held by term rather than by count, so which terms the
+# section carries is what is asserted rather than merely that it is printed —
+# and in RENDERED order, so `Zephyr` filing first under the sort key four.qmd
+# declares for it is asserted here too (M065-AC2). The alpha and beta sections
 # are here for the same reason: a recovery that dropped another chapter's terms
 # while adding four.qmd's would match a manifest naming only `gamma`.
 read -r -d '' PLACE_TERMS_BLOCKED <<'MANIFEST' || true
+five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
 five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Ferrule
 five.html	qi-index-gamma	Gantry
 five.html	qi-index-gamma	Gondola
+five.html	qi-index-gamma	Hasp
+five.html	qi-index-gamma	Ingot
+five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Woodwork
+five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
 index.html	qi-index-alpha	Bramble
 three.html	qi-index-beta	Cardamom
 three.html	qi-index-beta	Coriander
 MANIFEST
+
+# ORACLE — the gamma section as five.html must print it while four.qmd's
+# record is unreadable, derived by hand from the five chapters' sources. Rows
+# are `depth<TAB>term<TAB>hrefs[<TAB>cross-reference]` and `letter<TAB>label`,
+# in rendered order; an entry with no locator carries an empty href field.
+read -r -d '' M065_GAMMA_ROWS <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	A
+0	Zephyr	four.html
+letter	D
+0	Dovetail	four.html
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	F
+0	Ferrule		see-link Escutcheon
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+letter	H
+0	Hasp		also-link Escutcheon
+letter	I
+0	Ingot	four.html
+letter	J
+0	Jetty	four.html
+letter	W
+0	Woodwork	
+1	Joinery	four.html
+MANIFEST
+
+# The same complete list under a name that says what it holds rather than
+# which arrangement it was first derived for: three later cases print every
+# term the book marks, each for its own reason — a record that can never be
+# written and is recovered, a record refused for its version and recovered,
+# and a store directory replaced by a file with every chapter recovered.
+PLACE_TERMS_COMPLETE="$PLACE_TERMS_BLOCKED"
 
 m061_block_record four.qmd "$PLACE_STORE" "M063-AC3"
 for M061_PASS in one two; do
@@ -7064,11 +7174,40 @@ for M061_PASS in one two; do
   check_locator_fragments "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" \
     five.html "$HTML_SECTION_ID-gamma" \
     "M064-AC2 (render $M061_PASS: every fragment-carrying locator of the gamma section)"
+  # M065-AC1 to M065-AC4 — the whole gamma section, row by row, in the form
+  # that states WHERE each locator points and what each cross-reference names.
+  # Every one of the six forms four.qmd writes is settled by a row here:
+  #   AC1  `Woodwork` is one entry at depth 0 with no locator of its own, and
+  #        `Joinery` sits under it at depth 1. The parent has no mark anywhere
+  #        in the book, so a rebuilt sub-entry that lost its parent, or that
+  #        printed one parent per mark, fails on these two rows.
+  #   AC2  `Zephyr` files under the letter A, where the sort key its mark
+  #        declares puts it, rather than under Z where its printed term does —
+  #        the two rows the group headings make visible, and the reason the
+  #        letter rows are in this manifest at all.
+  #   AC3  `Ferrule` and `Hasp` each carry an empty locator field and one
+  #        cross-reference naming `Escutcheon`. A cross-reference takes the
+  #        locator's place in this extension, for `see-also=` as much as for
+  #        `see=`, and recovery does not change that.
+  #   AC4  `Ingot`, marked twice as the two ends of a range, prints ONE plain
+  #        locator for four.qmd's page — the locator either end alone would
+  #        print, since nothing outside that chapter's own process resolved
+  #        the pair. Its role half is `check_locator_role` below.
+  # The three anchored hrefs are the chapters' own records, and each mark
+  # number is the mark's position in its chapter's source: index.qmd marks
+  # Aardvark, Cardamom and Gantry in that order, two.qmd Bramble and Gondola,
+  # and five.qmd Escutcheon alone, whose href carries no page because five.qmd
+  # is the chapter the section is printed in.
+  check_index_sections "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book/five.html" \
+    "$M065_GAMMA_ROWS" "M065-AC1/AC2/AC3/AC4 (render $M061_PASS)" hrefs
+  check_locator_role "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book/five.html" \
+    "$HTML_SECTION_ID-gamma" Jetty plain \
+    "M065-AC4 (render $M061_PASS: a recovered mention role is a value no process resolved)"
   M061_LINES=$( { grep -c '(W) ' "$WORK/place-blocked-$M061_PASS.log" || true; } | tr -d ' ')
   [ "$M061_LINES" = "7" ] \
     || { grep '(W) ' "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M063-AC3 (render $M061_PASS): the render wrote $M061_LINES warning line(s), and the three kinds this check counts by name account for 7"; }
 done
-pass "M063-AC3/M064-AC1/M064-AC2: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all four of its terms, the one that lives only in the unwritable record linking to that chapter's page with no fragment and every other locator's fragment naming an id its page holds, and each draws the same seven warnings and exits 0"
+pass "M063-AC3/M064-AC1/M064-AC2: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all eleven of its entries, the eight that live only in the unwritable record linking to that chapter's page with no fragment and every other locator's fragment naming an id its page holds, and each draws the same seven warnings and exits 0"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -7108,6 +7247,14 @@ check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE_RECOVER
   "M063-AC3 (freed)"
 check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M063-AC3 (freed), nor the wording for a chapter whose own source could not be read either"
+# The control the M065-AC4 role assertion above rests on: over a record that
+# CAN be read, four.qmd's own render resolved `mention="principal"` and its
+# locator prints emphasized and carrying the principal class. Without this the
+# blocked render's plain locator could not be told from a book where the role
+# never printed at all.
+check_locator_role "$CAPTURE_ROOT/place-rewarm-two/_book/five.html" \
+  "$HTML_SECTION_ID-gamma" Jetty principal \
+  "M065-AC4 (the control: a role its own chapter resolved does print)"
 pass "M063-AC3: with the held path freed, two further renders write four.qmd's record again and put the fixture back to the sections and the silence an ordinary render prints"
 
 # ---------------------------------------------------------------------------
@@ -7121,8 +7268,9 @@ pass "M063-AC3: with the held path freed, two further renders write four.qmd's r
 # ---------------------------------------------------------------------------
 
 # The gamma section as it stands where recovery does NOT happen: three of the
-# four terms, `Dovetail` missing because it lives only in the chapter whose
-# record cannot be read and whose source cannot be parsed. This is the manifest
+# eleven entries, the eight four.qmd contributes missing because they live only
+# in the chapter whose record cannot be read and whose source cannot be parsed.
+# This is the manifest
 # the AC1 arrangement matched before this milestone, kept as what the
 # recovery-disabled mutant and the unreadable-source case must print.
 read -r -d '' PLACE_TERMS_NORECOVERY <<'MANIFEST' || true
@@ -7209,7 +7357,7 @@ m064_chapter_render() {   # <slug> <capture slug> <chapter> <label>
 #   four.qmd   reads both held paths: 2. Builds nothing.
 #   five.qmd   reads both held paths: 2. The book's last chapter, and the two
 #              recovered markers show `alpha` and `beta` placed, so it takes
-#              `gamma` on and builds its section with all four terms.
+#              `gamma` on and builds its section with all eleven entries.
 #
 #   8 recovery + 2 write-failure + 2 marker-position = 12 warning lines, of
 #   which the anchored pattern set reaches the 10 that are not write failures
@@ -7240,7 +7388,7 @@ for M064_PASS in one two; do
   [ "$M064_LINES" = "12" ] \
     || { grep '(W) ' "$WORK/m063-m064-heldpair-$M064_PASS.log" >&2; fail "M064-AC3 (render $M064_PASS): the render wrote $M064_LINES warning line(s), and the kinds this check counts by name account for 12"; }
 done
-pass "M064-AC3: with the store paths of both marker chapters held by directories, two consecutive whole-book renders each print the same three sections — the index no marker names among them, carrying all four of its terms — and each draws the same twelve warnings and exits 0"
+pass "M064-AC3: with the store paths of both marker chapters held by directories, two consecutive whole-book renders each print the same three sections — the index no marker names among them, carrying all eleven of its entries — and each draws the same twelve warnings and exits 0"
 
 # ---------------------------------------------------------------------------
 # M064-AC5 — the same held path as the AC1 arrangement, and four.qmd's source
@@ -7301,26 +7449,46 @@ print(f'ok   {label}: the record was moved to the superseded version {older}')
 STALEVERPY
 }
 
-# four.qmd's only index mark, moved inside a block recovery takes out whole, so
-# the chapter's source parses and this route reaches no mark at all. Both the
-# unreadable-record case and the version-skewed one below plant it, so neither
-# can drift from the other in what it makes the parse see.
-m064_hide_only_mark() {   # <chapter path> <label>
+# Every index mark the chapter carries, moved inside a block recovery takes out
+# whole, so the chapter's source parses and this route reaches no mark at all.
+# The whole body below the chapter's heading is wrapped, rather than one named
+# paragraph: four.qmd carries eight marks in seven forms (M065 T1), and a
+# helper naming one of them would leave the other seven reachable and the case
+# would be about nothing. Both the unreadable-record case and the
+# version-skewed one below plant it, so neither can drift from the other in
+# what it makes the parse see.
+m064_hide_all_marks() {   # <chapter path> <label>
   python3 - "$1" "$2" <<'NOMARKSPY'
 import sys
 path, label = sys.argv[1:3]
 text = open(path, encoding='utf-8').read()
-old = 'A second term for the index no marker names: [Dovetail]{.index index="gamma"}.'
-if old not in text:
-    sys.exit(f'FAIL: {label}: {path} does not carry the mark this case moves, '
+lines = text.split('\n')
+heads = [i for i, line in enumerate(lines) if line.startswith('# ')]
+if not heads:
+    sys.exit(f'FAIL: {label}: {path} carries no top-level heading, so this '
+             f'helper cannot tell the chapter title from its body')
+head, body = lines[:heads[0] + 1], lines[heads[0] + 1:]
+if '.index' in '\n'.join(head):
+    sys.exit(f'FAIL: {label}: {path} marks a term in its own heading, which '
+             f'this helper leaves outside the block it wraps')
+marks = '\n'.join(body).count('.index')
+if marks == 0:
+    sys.exit(f'FAIL: {label}: {path} carries no index mark below its heading, '
              f'so the copy would parse to the marks it always had')
-new = ('::: {.content-visible when-format="pdf"}\n'
-       + old + '\n:::')
-open(path, 'w', encoding='utf-8').write(text.replace(old, new))
-if '.index' in open(path, encoding='utf-8').read().replace(new, ''):
+wrapped = ('\n'.join(head) + '\n\n::: {.content-visible when-format="pdf"}\n'
+           + '\n'.join(body).strip('\n') + '\n:::\n')
+open(path, 'w', encoding='utf-8').write(wrapped)
+after = open(path, encoding='utf-8').read()
+if after.count('.index') != marks:
+    sys.exit(f'FAIL: {label}: the wrap changed the chapter from {marks} index '
+             f'mark(s) to {after.count(".index")}, so it dropped or duplicated '
+             f'one rather than moving them all inside the block')
+outside = after.split('::: {.content-visible when-format="pdf"}')[0]
+if '.index' in outside:
     sys.exit(f'FAIL: {label}: {path} still carries an index mark outside the '
              f'block this case wraps, so the parse would reach one after all')
-print(f'ok   {label}: the chapter\'s only mark now sits inside a conditional block')
+print(f'ok   {label}: all {marks} of the chapter\'s marks now sit inside one '
+      f'conditional block')
 NOMARKSPY
 }
 
@@ -7368,8 +7536,8 @@ pass "M064 T7: a record written at the superseded version costs its chapter noth
 # further down; without this one the wording ships with nothing but
 # `warn-distinct.py`'s count standing behind it.
 m063_tree m064-stalenomarks
-m064_hide_only_mark "$M061W/m064-stalenomarks/four.qmd" "M064 R2-F2" \
-  || fail "M064 R2-F2: the chapter's only mark could not be moved inside a conditional block (its own FAIL line is above)"
+m064_hide_all_marks "$M061W/m064-stalenomarks/four.qmd" "M064 R2-F2" \
+  || fail "M064 R2-F2: the chapter's marks could not be moved inside a conditional block (its own FAIL line is above)"
 m064_plant_stale m064-stalenomarks four.qmd \
   "M064 R2-F2 (a version-skewed record whose chapter's source reaches no mark)" \
   || fail "M064 R2-F2: the record could not be moved to the superseded version (its own FAIL line is above)"
@@ -7402,9 +7570,10 @@ pass "M064 R2-F2: a record written at the superseded version whose chapter's sou
 #                     attribute says, so neither term reaches the index; and
 #                     one destination in one role gets one locator, so the
 #                     doubled `Dovetail` still prints a single link.
-#   m064-nomarks      four.qmd's only mark moves inside a conditional block, so
-#                     the parse succeeds and reaches nothing at all. The report
-#                     must say that rather than claim terms came back.
+#   m064-nomarks      every mark four.qmd carries moves inside a conditional
+#                     block, so the parse succeeds and reaches nothing at all.
+#                     The report must say that rather than claim terms came
+#                     back.
 #
 # The `html` block is what makes the first case discriminating twice over. Its
 # passage IS on the rendered page — asserted below, so the check cannot pass on
@@ -7482,8 +7651,8 @@ check_warning_count "$WORK/m063-m064-conditional.log" \
 pass "M064 F1/F2: a recovered chapter's marks inside a conditional block reach no index section — the block Quarto keeps for this format among them — while its ordinary marks still do, and a term it marks twice prints one locator rather than the same link twice"
 
 m063_tree m064-nomarks
-m064_hide_only_mark "$M061W/m064-nomarks/four.qmd" "M064 F3" \
-  || fail "M064 F3: the chapter's only mark could not be moved inside a conditional block (its own FAIL line is above)"
+m064_hide_all_marks "$M061W/m064-nomarks/four.qmd" "M064 F3" \
+  || fail "M064 F3: the chapter's marks could not be moved inside a conditional block (its own FAIL line is above)"
 m061_block_record four.qmd \
   "$M061W/m064-nomarks/.quarto/$STORE_DIR" "M064 F3"
 m063_tree_render m064-nomarks m064-nomarks \
@@ -7501,6 +7670,123 @@ check_warning_count "$WORK/m063-m064-nomarks.log" \
   "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M064 F3 (the source read and parsed, so it was never lost)"
 pass "M064 F3: where a chapter's record cannot be read and its source parses to no mark this route reaches, the report says that rather than claiming the chapter's terms came back, and the index is short them"
+
+# ---------------------------------------------------------------------------
+# M065-AC5 — the two remaining ways a chapter's record goes unusable, each in
+# a WHOLE-BOOK render.
+#
+# The version-skewed half is planted on two.qmd rather than on four.qmd, which
+# is what makes a whole-book render able to ask the question at all: a chapter
+# rewrites its own record at the current version when its turn comes, so the
+# plant is only ever read by the chapters rendered BEFORE it. two.qmd renders
+# second, and index.qmd — which renders first and builds `alpha`, the section
+# two.qmd's `Bramble` belongs to — is the one chapter that meets it.
+#
+# Derived by hand:
+#
+#   index.qmd  reads two.qmd's planted record, refuses it, recovers two.qmd
+#              from its source, and builds `alpha` with `Bramble` in it. One
+#              stale-record report; one marker-position report (four after).
+#   two.qmd    rewrites its own record at the current version.
+#   three.qmd  reads a current record for two.qmd; builds `beta`. One
+#              marker-position report (two after).
+#   four.qmd   builds nothing, reads current records.
+#   five.qmd   builds `gamma` from current records throughout.
+#
+#   1 stale + 2 marker-position = 3 warning lines.
+#
+# What tells the run from an ordinary warm render is not which terms print —
+# they are the same terms — but where `Bramble` links: recovered from source it
+# carries two.qmd's page and no fragment, where the record carries the anchor
+# the mark was minted at.
+# ---------------------------------------------------------------------------
+m063_tree m065-stalebook
+m064_plant_stale m065-stalebook two.qmd \
+  "M065-AC5 (a version-skewed record in a whole-book render)" \
+  || fail "M065-AC5: the record could not be moved to the superseded version (its own FAIL line is above)"
+m063_tree_render m065-stalebook m065-stalebook \
+  "M065-AC5 (a version-skewed record)" "$PLACE_SECTIONS"
+check_book_terms "$CAPTURE_ROOT/m063-m065-stalebook/_book" \
+  "M065-AC5 (a version-skewed record costs the book no term)" \
+  "$PLACE_TERMS_COMPLETE"
+check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_STALE_RECOVERED" 1 \
+  "M065-AC5 (index.qmd alone meets the plant, and it builds the section that term belongs to)"
+{ grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/m063-m065-stalebook.log" \
+  | grep -qF 'two.qmd'; } \
+  || { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/m063-m065-stalebook.log" >&2; fail "M065-AC5: the stale-record report does not name two.qmd, the chapter whose record was refused"; }
+check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_STALE_LOST" 0 \
+  "M065-AC5 (the chapter's source reads, so nothing is lost)"
+check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M065-AC5 (the source carries marks, so the no-marks wording is never drawn)"
+check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+  "M065-AC5 (the record was read and refused, never unreadable)"
+check_entry_locators "$CAPTURE_ROOT/m063-m065-stalebook/_book/index.html" \
+  "$HTML_SECTION_ID-alpha" Bramble "two.html" \
+  "M065-AC5 (the refused chapter's term is recovered, so its locator carries that chapter's page and no fragment)"
+check_extension_warning_count "$WORK/m063-m065-stalebook.log" 3 \
+  "M065-AC5 (the version-skewed render emitted a warning this suite cannot name; the three its anchored patterns reach are one stale-record report and two marker-position reports)"
+pass "M065-AC5: a whole-book render in which one chapter's record carries a version this extension does not write prints every one of the book's terms in the sections the fixture asks for, draws the stale-record report once and only for that chapter, and links that chapter's own term by its page rather than by the anchor the refused record carried"
+
+# ---------------------------------------------------------------------------
+# ...and the store DIRECTORY itself replaced by a regular file, so no record
+# path in it can be opened at all. Before D-043 that was indistinguishable from
+# a store no render had written yet, and the book printed each chapter's own
+# terms and nothing else; the directory is now probed, so every chapter is
+# recovered from its source and the book's index is complete.
+#
+# Derived by hand. Each of the five chapters reads the four record paths that
+# are not its own and can open none of them, and each chapter's own write fails
+# on the file standing where the directory belongs:
+#
+#   20 recovery + 5 write-failure + 2 marker-position = 27 warning lines.
+#
+# The named counts account for all 27, so the raw count is asserted alongside
+# them rather than through the anchored-pattern helper, whose reach the write
+# failures fall in and out of depending on what Quarto printed just before them
+# (KI206).
+# ---------------------------------------------------------------------------
+m065_break_store() {   # <store directory> <label>
+  local store="$1" label="$2"
+  local held
+  [ -d "$store" ] \
+    || fail "$label: $store is not a directory to begin with, so the render below would be about a store that was never written"
+  held=$(find "$store" -name "*$STORE_SUFFIX" | wc -l | tr -d ' ')
+  [ "$held" = "5" ] \
+    || fail "$label: the store holds $held record(s) and this book has five chapters, so the render below would be about a store that is short records rather than one that is out of reach"
+  rm -rf "$store"
+  printf 'a file where the store directory belongs\n' > "$store"
+  [ -f "$store" ] && [ ! -d "$store" ] \
+    || fail "$label: $store is still a directory, so every record in it would be read perfectly well"
+  printf 'ok   %s: the store directory is now a regular file, and the five records it held are out of reach\n' "$label"
+}
+
+m063_tree m065-lostdir
+m065_break_store "$M061W/m065-lostdir/.quarto/$STORE_DIR" "M065-AC5"
+m063_tree_render m065-lostdir m065-lostdir \
+  "M065-AC5 (the store directory itself)" "$PLACE_SECTIONS"
+check_book_terms "$CAPTURE_ROOT/m063-m065-lostdir/_book" \
+  "M065-AC5 (every chapter is recovered from its source, so no term is lost)" \
+  "$PLACE_TERMS_COMPLETE"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNREADABLE_RECOVERED" 20 \
+  "M065-AC5 (each of the five chapters meets the four record paths that are not its own)"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
+  "M065-AC5 (every chapter's source reads, so nothing is lost)"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M065-AC5 (every chapter's source carries marks)"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_STALE_RECOVERED" 0 \
+  "M065-AC5 (nothing could be opened, so nothing could be found stale)"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNWRITABLE" 5 \
+  "M065-AC5 (every chapter's own write fails on the file standing where the directory belongs)"
+check_entry_locators "$CAPTURE_ROOT/m063-m065-lostdir/_book/five.html" \
+  "$HTML_SECTION_ID-gamma" Dovetail "four.html" \
+  "M065-AC5 (a recovered locator carries the chapter's page and no fragment)"
+check_entry_locators "$CAPTURE_ROOT/m063-m065-lostdir/_book/index.html" \
+  "$HTML_SECTION_ID-alpha" Bramble "two.html" \
+  "M065-AC5 (the section the FIRST chapter builds is recovered too)"
+M065_LINES=$( { grep -c '(W) ' "$WORK/m063-m065-lostdir.log" || true; } | tr -d ' ')
+[ "$M065_LINES" = "27" ] \
+  || { grep '(W) ' "$WORK/m063-m065-lostdir.log" >&2; fail "M065-AC5: the render wrote $M065_LINES warning line(s), and the kinds this check counts by name account for 27"; }
+pass "M065-AC5: a whole-book render whose store directory has been replaced by a file completes and exits 0, recovers every one of the five chapters from its own source so that every term the book marks prints in the section the fixture asks for, and draws the same 27 warnings the four record paths and one write per chapter account for"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -7576,6 +7862,160 @@ if [ "${1:-}" = "--self-test" ]; then
   pass "M064 F2 self-test: with the locator dedup disabled and nothing else changed, the doubled mark prints the same link twice — the defect the F2 check is held against — and the render still exits 0"
 fi
 
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M065-AC6 and T4 — one mutant per field a recovered record carries, so each
+  # is fenced on its own rather than by the single kill-switch M064-AC4 uses.
+  # Each copy differs from the tree in ONE substitution, and each render must
+  # run to completion and exit 0: what the manifests below catch is the field
+  # being absent, not a render that did not happen.
+  #
+  #   levels    folded to the mark's first, against the AC1 arrangement. The
+  #             only multi-level mark in the corpus is four.qmd's
+  #             `entry="Woodwork!Joinery"`, so exactly two rows move: the
+  #             sub-entry goes, and its parent — which no mark of its own
+  #             indexes — stops being a parent and takes the locator.
+  #   marker    emptied, against the arrangement holding BOTH marker-carrying
+  #             chapters' store paths. Neither marker is recovered, so no
+  #             record shows any chapter of the book placing an index, the
+  #             book's last chapter takes nothing on, and the index no marker
+  #             names prints on no page at all.
+  #   sorts     dropped, against the AC1 arrangement. `Zephyr` files under its
+  #             printed text and moves from the head of the section to its
+  #             tail — the letter rows show both positions, which is what
+  #             M065-AC2 is about.
+  #   range     CARRIED, with the pairing a chapter's own process would reach
+  #             re-derived from the recovered marks, against the AC1
+  #             arrangement. The section must not move: both ends of a pair
+  #             land on one page in one role, so the locator dedup has already
+  #             made them one link, and the closing end's dropped locator was
+  #             that same link. This one asserts an invariance rather than a
+  #             loss, which is the honest shape for a field whose recovery
+  #             would be invisible.
+  #   store     the store-directory probe disabled, against the arrangement
+  #             that replaces the directory with a file. Every record path
+  #             reads as absent again, so no chapter is recovered and each
+  #             index carries the terms of the chapter that builds it and
+  #             nothing else — which is what this book did before D-043.
+  # -------------------------------------------------------------------------
+
+  # ORACLE — the gamma section with every recovered mark folded to one level.
+  read -r -d '' M065_GAMMA_ROWS_FLAT <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	A
+0	Zephyr	four.html
+letter	D
+0	Dovetail	four.html
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	F
+0	Ferrule		see-link Escutcheon
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+letter	H
+0	Hasp		also-link Escutcheon
+letter	I
+0	Ingot	four.html
+letter	J
+0	Jetty	four.html
+letter	W
+0	Woodwork	four.html
+MANIFEST
+
+  # ORACLE — the same section with the recovered sort keys dropped: `Zephyr`
+  # files under Z, where its printed text puts it, rather than under A.
+  read -r -d '' M065_GAMMA_ROWS_NOSORT <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	D
+0	Dovetail	four.html
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	F
+0	Ferrule		see-link Escutcheon
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+letter	H
+0	Hasp		also-link Escutcheon
+letter	I
+0	Ingot	four.html
+letter	J
+0	Jetty	four.html
+letter	W
+0	Woodwork	
+1	Joinery	four.html
+letter	Z
+0	Zephyr	four.html
+MANIFEST
+
+  # ORACLE — every term the book prints with no chapter recovered from source
+  # and no record readable: each building chapter's own marks and nothing
+  # else, and no section at all for the index no marker names.
+  read -r -d '' M065_TERMS_OWN_ONLY <<'MANIFEST' || true
+index.html	qi-index-alpha	Aardvark
+three.html	qi-index-beta	Coriander
+MANIFEST
+
+  m061_mutant m065-flatlevels \
+    's{      if levels == nil then\n        return nil\n      end\n}{      if levels == nil then\n        return nil\n      end\n      levels = { levels[1] }\n}' \
+    "M065-AC6 self-test (a recovered mark folded to one level)"
+  m061_block_record four.qmd \
+    "$M061W/m065-flatlevels/.quarto/$STORE_DIR" "M065-AC6 self-test (levels)"
+  m063_tree_render m065-flatlevels m065-flatlevels \
+    "M065-AC6 self-test (levels)" "$PLACE_SECTIONS"
+  check_index_sections "$CAPTURE_ROOT/m063-m065-flatlevels/_book/five.html" \
+    "$M065_GAMMA_ROWS_FLAT" "M065-AC6 self-test (levels)" hrefs
+  pass "M065-AC6 self-test: with a recovered mark's levels folded to its first and nothing else changed, the gamma section loses the sub-entry AC1 requires and its parent takes the locator instead — the defect the AC1 rows are held against — and the render still exits 0"
+
+  m061_mutant m065-nomarker \
+    's{^local function recovered_markers\(blocks\)\n}{local function recovered_markers(blocks)\n  do return {} end\n}m' \
+    "M065-AC6 self-test (a recovered chapter places nothing)"
+  for M065_HELD in index.qmd three.qmd; do
+    m061_block_record "$M065_HELD" \
+      "$M061W/m065-nomarker/.quarto/$STORE_DIR" "M065-AC6 self-test (marker)"
+  done
+  m063_tree_render m065-nomarker m065-nomarker \
+    "M065-AC6 self-test (marker)" "$PLACE_SECTIONS_NOGAMMA"
+  pass "M065-AC6 self-test: with the recovered placement markers dropped and nothing else changed, the render holding both marker-carrying chapters' store paths prints no section for the index no marker names on any of the book's five pages — the defect that arrangement's section manifest is held against — and the render still exits 0"
+
+  m061_mutant m065-nosorts \
+    's{local function register_recovered_sort\(sorts, index, levels, value, context,\n                                       kept, depth\)\n}{local function register_recovered_sort(sorts, index, levels, value, context,\n                                       kept, depth)\n  do return end\n}' \
+    "M065-AC2 self-test (the recovered sort keys dropped)"
+  m061_block_record four.qmd \
+    "$M061W/m065-nosorts/.quarto/$STORE_DIR" "M065-AC2 self-test"
+  m063_tree_render m065-nosorts m065-nosorts \
+    "M065-AC2 self-test" "$PLACE_SECTIONS"
+  check_index_sections "$CAPTURE_ROOT/m063-m065-nosorts/_book/five.html" \
+    "$M065_GAMMA_ROWS_NOSORT" "M065-AC2 self-test" hrefs
+  pass "M065-AC2 self-test: with the recovered sort keys dropped and nothing else changed, the term whose mark declares one files under its printed text at the tail of the section rather than at its head — the defect the AC2 rows are held against — and the render still exits 0"
+
+  m061_mutant m065-carryrange \
+    's{        xrefs = surviving,\n}{        xrefs = surviving,\n        range = span.attributes[qi_core.RANGE_ATTR],\n}; s{^  return marks, sorts\n}{  local pending = {}\n  for _, mark in ipairs(marks) do\n    local key = qi_levels.levels_key(mark.levels)\n    if mark.range == "open" then\n      pending[key] = mark\n    elseif mark.range == "close" and pending[key] then\n      pending[key].paired = "open"\n      mark.paired = "close"\n      pending[key] = nil\n    end\n  end\n  return marks, sorts\n}m' \
+    "M065-AC4 self-test (range carried and paired)"
+  m061_block_record four.qmd \
+    "$M061W/m065-carryrange/.quarto/$STORE_DIR" "M065-AC4 self-test"
+  m063_tree_render m065-carryrange m065-carryrange \
+    "M065-AC4 self-test" "$PLACE_SECTIONS"
+  check_index_sections "$CAPTURE_ROOT/m063-m065-carryrange/_book/five.html" \
+    "$M065_GAMMA_ROWS" "M065-AC4 self-test (the section does not move)" hrefs
+  pass "M065-AC4 self-test: with a recovered mark carrying the range end its author wrote, and the pairing a chapter's own process would reach re-derived from the recovered marks, the gamma section is exactly the section the unmutated run prints — so the one plain locator AC4 promises is what the pair prints whether the field travels or not, and the render still exits 0"
+
+  m061_mutant m065-noprobe \
+    's{  local store_lost = store_directory_unusable\(ctx\)\n}{  local store_lost = false\n}' \
+    "M065-AC5 self-test (the store-directory probe disabled)"
+  m065_break_store "$M061W/m065-noprobe/.quarto/$STORE_DIR" \
+    "M065-AC5 self-test"
+  m063_tree_render m065-noprobe m065-noprobe \
+    "M065-AC5 self-test" "$PLACE_SECTIONS_NOGAMMA"
+  check_book_terms "$CAPTURE_ROOT/m063-m065-noprobe/_book" \
+    "M065-AC5 self-test (no chapter is recovered, so each index holds its own chapter's marks alone)" \
+    "$M065_TERMS_OWN_ONLY"
+  check_warning_count "$WORK/m063-m065-noprobe.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+    "M065-AC5 self-test (every record path reads as absent again, so nothing is recovered and nothing is reported)"
+  pass "M065-AC5 self-test: with the store-directory probe disabled and nothing else changed, the same store directory replaced by a file leaves every record path reading as never written — no chapter is recovered, no report is drawn, each index carries the terms of the chapter that builds it alone, and the index no marker names prints nowhere — which is what this book did before the probe, and what the manifests the run above is held to refuse"
+fi
+
 
 
 # ---------------------------------------------------------------------------
@@ -7602,15 +8042,25 @@ fi
 #
 # Every term the five chapters mark, and the section each prints in, is listed
 # by hand below: `alpha` takes index.qmd's Aardvark and two.qmd's Bramble,
-# `beta` index.qmd's Cardamom and three.qmd's Coriander, and `gamma` the four
-# terms index.qmd, two.qmd, four.qmd and five.qmd file in it — printed in
-# five.html, the book's last chapter.
+# `beta` index.qmd's Cardamom and three.qmd's Coriander, and `gamma` the eleven
+# entries index.qmd, two.qmd, four.qmd and five.qmd file in it — eight of them
+# four.qmd's, seven from its six mark forms with `Woodwork` and its sub-entry
+# `Joinery` counting as two and `Ingot`'s two range marks as one, plus the bare
+# `Dovetail` that chapter already marked — printed in five.html, the book's
+# last chapter, `Zephyr` first under the sort key four.qmd declares for it.
 # ---------------------------------------------------------------------------
 read -r -d '' PLACE_TERMS <<'MANIFEST' || true
+five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
 five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Ferrule
 five.html	qi-index-gamma	Gantry
 five.html	qi-index-gamma	Gondola
+five.html	qi-index-gamma	Hasp
+five.html	qi-index-gamma	Ingot
+five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Woodwork
+five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
 index.html	qi-index-alpha	Bramble
 three.html	qi-index-beta	Cardamom
@@ -7704,10 +8154,17 @@ if [ "${1:-}" = "--self-test" ]; then
   # run's, and the locator below is what tells the two runs apart.
   # -------------------------------------------------------------------------
   read -r -d '' M063_TERMS_REFUSED <<'MANIFEST' || true
+five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
 five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Ferrule
 five.html	qi-index-gamma	Gantry
 five.html	qi-index-gamma	Gondola
+five.html	qi-index-gamma	Hasp
+five.html	qi-index-gamma	Ingot
+five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Woodwork
+five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
 index.html	qi-index-alpha	Bramble
 three.html	qi-index-beta	Cardamom

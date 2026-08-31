@@ -7,3 +7,33 @@ chapter whose store path a check holds with a directory when it needs a record
 that can never be written — both a chapter ahead of the one that reports.
 
 A second term for the index no marker names: [Dovetail]{.index index="gamma"}.
+
+The six mark forms below are what makes this chapter's recovery worth fencing:
+a chapter read back from its own source has to reach every shape an author
+writes, not only the bare mark above. Each is on a term no other mark in this
+book indexes, because the sort-key registry is keyed on the printed level path
+and a term marked in two chapters would put two chapters' keys in question (the
+M13 lesson, extended M56).
+
+More than one level, so recovery has to rebuild a sub-entry and the parent it
+hangs under: [joinery]{.index entry="Woodwork!Joinery" index="gamma"}.
+
+A declared sort key, which is a value the author wrote rather than a conclusion
+this chapter reached, so recovery carries it: [Zephyr]{.index index="gamma"
+sort="Abacus"}.
+
+A cross-reference sending the reader somewhere else instead of listing a page,
+whose target is a term five.qmd marks: [Ferrule]{.index index="gamma"
+see="Escutcheon"}.
+
+A cross-reference sending the reader somewhere else as well — which in this
+extension still prints no page of its own: [Hasp]{.index index="gamma"
+see-also="Escutcheon"}.
+
+A range that opens [Ingot]{.index index="gamma" range="open"} here and closes
+[Ingot]{.index index="gamma" range="close"} here. Nothing outside this
+chapter's own process pairs it, so a recovered pair indexes as though the
+attribute were absent.
+
+Which occurrence is the proper one, a role no other process resolved for a
+recovered mark: [Jetty]{.index index="gamma" mention="principal"}.

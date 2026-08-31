@@ -1,0 +1,127 @@
+<!-- Section ownership + write-modes: see tracking-rules.md "Milestone-file
+     section ownership". A phase skill never rewrites another phase's section.
+     Per-section owners are tagged below. The one size check that can fail is
+     cairn_validate's <150 over the plan-owned body. -->
+# M066: The recovery-route checks read the reports and mutations they name
+
+- **Status:** planned
+- **Priority:** normal
+- **Depends on:** —
+- **Driving RR:** —
+- **Principles touched:** GP1
+- **Branch/PR:** —
+
+## Goal
+
+The checks fencing M064/M065's source-recovery route read every record
+wording their own labels claim, prove each substitution they splice, and hold
+the recovery prose the books page states.
+
+## Scope
+
+Surface tier: **internal** — the deliverable is the acceptance suite's own
+readers over repo-internal artifacts (its captured logs, its spliced filter
+trees, a tracked site page); no external consumer of this repo relies on them.
+
+**In:** three read-repairs, all reached from `tests/run-tests.sh`. Each leaves
+what its check promises unchanged and repairs what the check reads, which is
+the disposition D-011 records for M24's own read-repair.
+
+1. The negative record-report assertions read two of a family's three
+   wordings. The six `WARN_STORE_*` constants at `tests/run-tests.sh:871-876`
+   are three per family (recovered / parsed-with-no-mark / source-also-lost),
+   alternatives on one branch (`modules/book.lua:836-840`, `:1294-1298`). 20
+   sites assert the recovered and lost wordings absent and never the
+   no-marks wording between them, so a defect emitting only that third
+   wording keeps every one of them green. Three sites already read all three
+   (`:7649`, `:7719`, `:7774`) and are the model.
+2. `m061_mutant` (`tests/run-tests.sh:6796-6804`) applies a whole perl
+   expression in one pass and guards it with one whole-file `cmp -s`, while
+   its comment states the promise in the singular. The `m065-carryrange` site
+   (`:7993-7995`) passes two substitutions against whitespace-exact lines; if
+   either slips the file still differs and the guard still passes. That site's
+   assertion is an invariance (`M065-AC4 self-test (the section does not
+   move)`), so a half-applied mutation produces exactly the expected output
+   and the self-test proves nothing.
+3. The books-page claim list (`tests/run-tests.sh:20327-20336`) stops at M063,
+   so the ~50 lines M064 and M065 added at `site/books.qmd:84-135` — the
+   route, the not-returned bullets, the absent-record exclusion, the
+   store-directory case — are held by no reader.
+
+**Out:**
+- The recovered sort key's declared-vs-resolved discrimination — no
+  arrangement of today's fixtures separates the two shapes, since `Zephyr`'s
+  declared `sort="Abacus"` is also its resolved key; discriminating needs a
+  recovered chapter marking a printed path another chapter also sorts, and a
+  reader of the record's `sorts` field, which no check has. Promise-changing
+  → the promise-changing suite row in `## Candidates`.
+- The editor-metadata readers (KI121, KI122, KI124, KI125) → M067.
+- KI117, KI119(c), KI120 → the outstanding reads-repairs candidate row.
+- KI24, KI119(a)(b), KI164, KI123 → the promise-changing suite row.
+
+## Acceptance criteria
+
+- [ ] AC1. Every `check_warning_count` site in `tests/run-tests.sh` that
+      asserts a literal 0 occurrences of one of the six `WARN_STORE_*`
+      record-report wordings defined at `tests/run-tests.sh:871-876` asserts,
+      on that same log, a literal 0 occurrences of the other two wordings of
+      that constant's family; the domain is the sites that
+      `grep -n -A1 'check_warning_count "' tests/run-tests.sh` lists.
+- [ ] AC2. `m061_mutant` fails, naming the substitution that matched nothing,
+      when any one substitution in its expression matches nothing — including
+      at the `m065-carryrange` site (`tests/run-tests.sh:7993`), whose two
+      substitutions it counts separately rather than through one whole-file
+      `cmp`.
+- [ ] AC3. The claims `tests/sitecheck.py claims` holds `site/books.qmd` to
+      cover each of the four prose blocks M064 and M065 added at
+      `site/books.qmd:84-135` — the recovery route, the "not returned"
+      bullets, the absent-record exclusion, and the store-directory case.
+- [ ] AC4. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` each
+      exit 0.
+
+## Coverage
+
+- AC1 → T1, T2
+- AC2 → T3, T4
+- AC3 → T5, T6
+- AC4 → T7
+
+## Tasks
+
+- [ ] T1. Enumerate the domain with
+      `grep -n -A1 'check_warning_count "' tests/run-tests.sh`, and record in
+      the work log how many sites assert a literal 0 of a `WARN_STORE_*`
+      wording and how many of those read fewer than their family's three.
+      The count is the floor the repair is measured against, taken before any
+      edit.
+- [ ] T2. Complete every short site to all three wordings of its family, on
+      the model of `:7649`, `:7719`, `:7774`, extending each label tail to
+      name the wording added. Re-run the enumeration and show no site short.
+- [ ] T3. Make `m061_mutant` count substitutions rather than compare files:
+      have `perl` report the number of substitutions it applied per
+      expression and fail naming the one that applied none, keeping the
+      existing whole-file guard only as a backstop.
+- [ ] T4. Plant each of `m065-carryrange`'s two substitutions slipped on its
+      own — one at a time, the other left intact — and show the guard red for
+      each; assert the message names the slipped substitution. This is the
+      case a whole-file `cmp` cannot see.
+- [ ] T5. Add claim rows covering the four prose blocks at
+      `site/books.qmd:84-135`, choosing sentences that state the behavior
+      rather than its wrapping (the M41 lesson on flattening).
+- [ ] T6. Update the count-coupled failure string in the claims self-test
+      (`tests/run-tests.sh:20404`, `does not state 1 of the 9 claim(s)`) to
+      the new row count, and re-run that self-test.
+- [ ] T7. Run `tests/run-tests.sh` and `tests/run-tests.sh --self-test`
+      sequentially (PROFILE: never two invocations at once) and record both
+      check counts and exit codes.
+
+## Work log
+
+- 2026-08-31: created by /milestone-plan.
+- 2026-08-31: plan gate chose completing each short assertion site in place over replacing the 20 sites with one helper asserting a family at a time, because the helper would change every label's wording and so what each check reports, where the finding is only that a read is short; falsified by the completed sites proving unmaintainable as the wording set grows.
+- 2026-08-31: plan gate chose counting per-substitution matches in `m061_mutant` over splitting each multi-substitution call into separate single-substitution mutants, because only one of 14 call sites passes two and splitting it would double a render; falsified by a later mutant needing substitutions that are only valid applied together.
+- 2026-08-31: criteria audit ran in REDUCED mode (internal tier, no RB-tripwire tag) over the four drafted criteria in a fresh-context [O] reader. It returned two findings, both fixed before writing: AC1's named procedure did not make its quantified sub-domain decidable (217 of the 302 `check_warning_count` lines end in a `\` continuation, putting the pattern and count on the next line), repaired to `grep -n -A1` plus "a literal 0"; and AC3 bound a row-count floor on `check_claims`' hand-written fixture, an instrument property, repaired to the coverage the check holds, with the block range corrected to `84-135`.
+
+## Decisions
+
+## Review

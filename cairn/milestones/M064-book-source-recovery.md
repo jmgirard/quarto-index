@@ -173,6 +173,7 @@ authored book reads.
 - 2026-08-30: T9-T12 green, status review. Suite exits 0 twice over the branch: 559 checks plain (549 before the repairs), 1035 with `--self-test` (1018).
 - 2026-08-30: review return 1 (defect) — F1: a mark inside a `.content-visible when-format="pdf"` div is recovered into the book index linking to a page that does not carry it, probed on a scratch copy of `examples/book-placement/` (`Wainscot` in `five.html`'s `gamma` linking to `four.html`), which is D-041's own stated falsifier and makes the "nothing in content the HTML render drops" clause of `site/books.qmd`, `cairn/DESIGN.md` and `CHANGELOG.md` false; F2: a recovered chapter marking one term twice prints two identical page locators, `build_entry_tree` deduping cross-references and not locators; F3: the recovered-from-source report is drawn on any successful parse, including one that recovered nothing; F4: no check asserts a cold first render is still short its later chapters' terms, so recovery on an absent record would leave the suite green. Gate chose sending the milestone back over merging as-is or correcting the wording alone.
 - 2026-08-30: review round 2 — fresh evidence over `fc055eb` for all seven criteria, each green; suite 559 checks plain and 1035 with `--self-test`, both exit 0; `cairn_validate` exit 0 with one sizing advisory; three lenses ran, blame-history and prior-review finding nothing and the diff-bug lens ten, none demonstrating a criterion failing.
+- 2026-08-30: gate directed the two contained round-2 findings fixed on the branch — the missing stale no-marks suite case (shown red against a mutated report branch, then reverted) and three over-long prose lines rewrapped — with the notebook-chapter defect, the two refiling findings and the rest recorded rather than fixed here; suite 562 plain and 1038 with `--self-test`, both exit 0.
 
 ## Decisions
 
@@ -556,3 +557,58 @@ Proposed: follow-up to M065.
 recovery paragraph, and `CHANGELOG.md` a 130-column one in the recovery bullet;
 every surrounding line sits at 78 or less. Mid-paragraph edits left unwrapped.
 Proposed: fix on the branch — a rewrap, no wording change.
+
+### Round 2 gate disposition
+
+2026-08-30. Presented at the merge gate with all seven criteria green, the
+consistency gate clean and the ten findings above. The maintainer chose fixing
+the two contained findings on the branch and recording the rest, over fixing
+the notebook-chapter defect here as well, over merging as-is, and over a second
+return. No finding met the return floor: none demonstrates an acceptance
+criterion failing, and the maintainer judged none of them a load-bearing defect
+in what the extension does for a reader of an authored book.
+
+Dispositions taken:
+
+- **R2-F2 — fixed on the branch.** `tests/run-tests.sh` gains the
+  `m064-stalenomarks` case: a version-skewed record whose chapter's source
+  parses and reaches no mark, rendered as `m064-staleok` and `m064-stalelost`
+  are, holding the stale no-marks wording to one occurrence naming `four.qmd`,
+  the other two stale wordings to zero, and `five.html` to no `Dovetail`. The
+  plant both no-marks cases share is factored into `m064_hide_only_mark`, so
+  neither can drift from the other in what it makes the parse see. Shown
+  discriminating: with `book.lua`'s `elseif entry.parsed then` branch mutated
+  to emit the recovered wording, the suite failed at exactly this check
+  ("expected 1 occurrence(s) … got 0") and at no earlier one, `m064-staleok`
+  included; the mutation was reverted and the tree re-run clean.
+- **R2-F10 — fixed on the branch.** The 143- and 119-column lines in
+  `cairn/DESIGN.md`'s recovery paragraph and the 130-column line in
+  `CHANGELOG.md`'s recovery bullet are rewrapped to the files' own width. No
+  wording changed; `CHANGELOG.md`'s one remaining long line predates the
+  branch and is left alone.
+- **R2-F1 — recorded.** A Known issues entry and the standing recovery
+  follow-up candidate row, written in the post-merge hygiene pass. Not fixed
+  here: every criterion and the Scope prose speak of a `.qmd` chapter, the
+  defect needs an unusable record as well as a non-markdown one, and a guard
+  would need a book fixture with a notebook chapter to earn its regression
+  test.
+- **R2-F3 — folded into KI218**, which already records the silent refiling of
+  a recovered mark's undeclared index name; this is the same defect reached by
+  a chapter's own front matter rather than by an unknown name.
+- **R2-F5 — Known issues entry.** The no-marks report says nothing about the
+  markers that were recovered.
+- **R2-F6 — folded into KI216**, which is the condition that makes the
+  `output-file:` branch reachable at all.
+- **R2-F8 — follow-up** on the standing suite-readers candidate row.
+- **R2-F9 — follow-up to M065**, which fences the forms a recovered chapter's
+  marks take.
+- **R2-F4 and R2-F7 — rejected.** R2-F4 is round-1 F11 restated and was
+  rejected there for the same reason. R2-F7 is a wording question the T12
+  criteria audit raised and a gate already settled; AC6 is satisfied as
+  written.
+
+Post-fix evidence over the branch at the fix commit: `tests/run-tests.sh
+--self-test` reported "All checks passed (1038 checks)" and exited 0, and
+`tests/run-tests.sh` reported "All checks passed (562 checks)" and exited 0 —
+the three checks the new case adds. AC7's evidence above stands at the counts
+these runs supersede.

@@ -456,8 +456,9 @@ and the marks and placement markers the parse yields join the book's index
 (added M064, D-041). Recovery carries the author's own values alone — the
 printed levels, the cross-reference targets that survive the self-target drop
 and the index each mark files in, and which indexes the chapter places. The
-surviving targets are load-bearing: a mark with one contributes no locator. It carries no anchor, so a recovered locator links to the chapter's
-page and no fragment; no resolved role and no pairing verdict, which are
+surviving targets are load-bearing: a mark with one contributes no locator.
+It carries no anchor, so a recovered locator links to the chapter's page and
+no fragment; no resolved role and no pairing verdict, which are
 conclusions a chapter reaches about itself (D-009); and no declared sort key.
 It never fires on a record that is simply ABSENT, so a first render is
 unchanged. A mark reaching the chapter through an include shortcode or an
@@ -465,10 +466,10 @@ executed cell is not in that parse and is not recovered, and neither is one
 inside a block or span carrying Quarto's `.content-visible` or
 `.content-hidden` class, which the reader takes out whole before it reads
 anything (D-042); a source Pandoc's markdown reader cannot read recovers
-nothing, and the reading chapter's own record report says so. Five cases are reported rather than guessed at (corrected
-M063, which retired two of the seven M061 left): a book whose chapters mark
-terms but whose
-author wrote no marker anywhere (reported by the last chapter, the only one
+nothing, and the reading chapter's own record report says so. Five cases are
+reported rather than guessed at (corrected M063, which retired two of the
+seven M061 left): a book whose chapters mark terms but whose author wrote no
+marker anywhere (reported by the last chapter, the only one
 that can know), a marker in a book that marks nothing, a second marker chapter
 (the first in book order builds the index), a marker with chapters after it
 (whose entries are one render behind), and a page Quarto presents as a book

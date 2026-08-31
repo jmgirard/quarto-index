@@ -76,8 +76,9 @@
   executed cell is not recovered, and neither is one inside a block or span
   carrying `.content-visible` or `.content-hidden`, which recovery takes out
   whole whatever its `when-` or `unless-` attributes say; a chapter source
-  Pandoc's markdown reader cannot read recovers nothing at all. A record that is simply absent is not recovered either, so a first
-  render is unchanged.
+  Pandoc's markdown reader cannot read recovers nothing at all. A record
+  that is simply absent is not recovered either, so a first render is
+  unchanged.
 
   The two reports about a record this render could not use each say which of
   three things happened for that chapter — its terms were read back out of its

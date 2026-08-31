@@ -7301,6 +7301,29 @@ print(f'ok   {label}: the record was moved to the superseded version {older}')
 STALEVERPY
 }
 
+# four.qmd's only index mark, moved inside a block recovery takes out whole, so
+# the chapter's source parses and this route reaches no mark at all. Both the
+# unreadable-record case and the version-skewed one below plant it, so neither
+# can drift from the other in what it makes the parse see.
+m064_hide_only_mark() {   # <chapter path> <label>
+  python3 - "$1" "$2" <<'NOMARKSPY'
+import sys
+path, label = sys.argv[1:3]
+text = open(path, encoding='utf-8').read()
+old = 'A second term for the index no marker names: [Dovetail]{.index index="gamma"}.'
+if old not in text:
+    sys.exit(f'FAIL: {label}: {path} does not carry the mark this case moves, '
+             f'so the copy would parse to the marks it always had')
+new = ('::: {.content-visible when-format="pdf"}\n'
+       + old + '\n:::')
+open(path, 'w', encoding='utf-8').write(text.replace(old, new))
+if '.index' in open(path, encoding='utf-8').read().replace(new, ''):
+    sys.exit(f'FAIL: {label}: {path} still carries an index mark outside the '
+             f'block this case wraps, so the parse would reach one after all')
+print(f'ok   {label}: the chapter\'s only mark now sits inside a conditional block')
+NOMARKSPY
+}
+
 m063_tree m064-staleok
 m064_plant_stale m064-staleok four.qmd "M064 T7 (a version-skewed record)" \
   || fail "M064 T7: the record could not be moved to the superseded version (its own FAIL line is above)"
@@ -7339,6 +7362,32 @@ if grep -qF 'Dovetail' "$CAPTURE_ROOT/m064-stalelost/_book/five.html"; then
   fail "M064 T7: five.html carries Dovetail, so the unreadable source was recovered after all and the case is about nothing"
 fi
 pass "M064 T7: a record written at the superseded version costs its chapter nothing where that chapter's source reads — the term prints, linking to the chapter's page — and where the source does not read the report says so and the term is absent"
+
+# The third stale-record wording: the source reads and parses, and this route
+# reaches no mark in it. Its unreadable-record twin is the m064-nomarks case
+# further down; without this one the wording ships with nothing but
+# `warn-distinct.py`'s count standing behind it.
+m063_tree m064-stalenomarks
+m064_hide_only_mark "$M061W/m064-stalenomarks/four.qmd" "M064 R2-F2" \
+  || fail "M064 R2-F2: the chapter's only mark could not be moved inside a conditional block (its own FAIL line is above)"
+m064_plant_stale m064-stalenomarks four.qmd \
+  "M064 R2-F2 (a version-skewed record whose chapter's source reaches no mark)" \
+  || fail "M064 R2-F2: the record could not be moved to the superseded version (its own FAIL line is above)"
+m064_chapter_render m064-stalenomarks stalenomarks five.qmd \
+  "M064 R2-F2 (a version-skewed record whose chapter's source reaches no mark)"
+check_warning_count "$WORK/m064-stalenomarks.log" "$WARN_STORE_STALE_NOMARKS" 1 \
+  "M064 R2-F2 (five.qmd builds the section, and the source reached no mark)"
+check_warning_count "$WORK/m064-stalenomarks.log" "$WARN_STORE_STALE_RECOVERED" 0 \
+  "M064 R2-F2 (nothing came back, so the recovery wording is never drawn)"
+check_warning_count "$WORK/m064-stalenomarks.log" "$WARN_STORE_STALE_LOST" 0 \
+  "M064 R2-F2 (the source read and parsed, so it was never lost)"
+{ grep -F -- "$WARN_STORE_STALE_NOMARKS" "$WORK/m064-stalenomarks.log" \
+  | grep -qF 'four.qmd'; } \
+  || { grep -F -- "$WARN_STORE_STALE_NOMARKS" "$WORK/m064-stalenomarks.log" >&2; fail "M064 R2-F2: the stale-record report does not name four.qmd"; }
+if grep -qF 'Dovetail' "$CAPTURE_ROOT/m064-stalenomarks/_book/five.html"; then
+  fail "M064 R2-F2: five.html carries Dovetail, so the hidden mark was recovered after all and the case is about nothing"
+fi
+pass "M064 R2-F2: a record written at the superseded version whose chapter's source parses and reaches no mark draws the wording that says so rather than the one claiming terms came back, and the index is short that chapter's term"
 
 # ---------------------------------------------------------------------------
 # M064 review F1, F2 and F3 — three properties of a recovered record that no
@@ -7433,22 +7482,8 @@ check_warning_count "$WORK/m063-m064-conditional.log" \
 pass "M064 F1/F2: a recovered chapter's marks inside a conditional block reach no index section — the block Quarto keeps for this format among them — while its ordinary marks still do, and a term it marks twice prints one locator rather than the same link twice"
 
 m063_tree m064-nomarks
-python3 - "$M061W/m064-nomarks/four.qmd" "M064 F3" <<'NOMARKSPY'
-import sys
-path, label = sys.argv[1:3]
-text = open(path, encoding='utf-8').read()
-old = 'A second term for the index no marker names: [Dovetail]{.index index="gamma"}.'
-if old not in text:
-    sys.exit(f'FAIL: {label}: {path} does not carry the mark this case moves, '
-             f'so the copy would parse to the marks it always had')
-new = ('::: {.content-visible when-format="pdf"}\n'
-       + old + '\n:::')
-open(path, 'w', encoding='utf-8').write(text.replace(old, new))
-if '.index' in open(path, encoding='utf-8').read().replace(new, ''):
-    sys.exit(f'FAIL: {label}: {path} still carries an index mark outside the '
-             f'block this case wraps, so the parse would reach one after all')
-print(f'ok   {label}: the chapter\'s only mark now sits inside a conditional block')
-NOMARKSPY
+m064_hide_only_mark "$M061W/m064-nomarks/four.qmd" "M064 F3" \
+  || fail "M064 F3: the chapter's only mark could not be moved inside a conditional block (its own FAIL line is above)"
 m061_block_record four.qmd \
   "$M061W/m064-nomarks/.quarto/$STORE_DIR" "M064 F3"
 m063_tree_render m064-nomarks m064-nomarks \

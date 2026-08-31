@@ -94,14 +94,16 @@
   own source, its source parsed and carried no mark this route can reach, or
   its source could not be read either.
 
-- In an HTML book, a store directory that is there and cannot be read — one
-  replaced by a file, or whose permissions have been cleared — no longer reads
-  as a book that has never been rendered. Every chapter is read back from its
-  own source instead, so the book still gets a complete index and a report per
-  chapter saying where its terms came from, where before each index carried
-  only the terms of the chapter that built it and the index no marker names
-  printed on no page at all. A store directory that is not there is untouched:
-  a first render is what it always was.
+- In an HTML book, a store directory that is there and cannot be listed — one
+  replaced by a file, or whose read permission is gone — no longer reads as a
+  book that has never been rendered. Every chapter is read back from its own
+  source instead, so the book still gets a complete index, and each chapter is
+  reported as recovered by every chapter that looks for its record — where
+  before each index carried only the terms of the chapter that built it and the
+  index no marker names printed on no page at all. A store directory that is
+  not there is untouched: a first render is what it always was. So is one that
+  still lists — the records inside it are read as absent whatever is wrong with
+  them.
 
 - **Changed default.** The four words the HTML and EPUB index prints for
   itself now follow the document's `lang:` instead of always being English:

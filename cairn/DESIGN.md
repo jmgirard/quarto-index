@@ -454,21 +454,21 @@ undecodable, refused for its shape, or written by another version — sends it t
 that chapter's source instead: the file is read and parsed inside one guard,
 and the marks and placement markers the parse yields join the book's index
 (added M064, D-041). A record it could not open at all while the store
-DIRECTORY was there and could not be listed is the same case, so a store
-replaced by a file or with its permissions cleared recovers every chapter
-rather than reading as a book never rendered (added M065, D-043). Recovery
-carries the author's own values alone — the
-printed levels, the declared sort keys, the cross-reference targets that
-survive the self-target drop
-and the index each mark files in, and which indexes the chapter places. The
-surviving targets are load-bearing: a mark with one contributes no locator.
-It carries no anchor, so a recovered locator links to the chapter's page and
-no fragment; and no resolved role and no pairing verdict, which are
-conclusions a chapter reaches about itself (D-009) — so a recovered range's
-two ends print the one page and a principal locator prints unemphasized
-(corrected M065, which added the declared sort keys).
-It never fires on a record that is simply ABSENT — one whose store directory
-is not there, or is there and reads perfectly well — so a first render is
+DIRECTORY was there and could not be LISTED is the same case, so a store
+directory replaced by a file, or one whose read permission is gone, recovers
+every chapter rather than reading as a book never rendered (added M065,
+D-043); a store directory that still lists is read as absent whatever happens
+to the records inside it (KI221). Recovery carries the author's own values
+alone — the printed levels, the declared sort keys, the cross-reference
+targets that survive the self-target drop and the index each mark files in,
+and which indexes the chapter places. The surviving targets are load-bearing:
+a mark with one contributes no locator. It carries no anchor, so a recovered
+locator links to the chapter's page and no fragment; and no resolved role and
+no pairing verdict, which are conclusions a chapter reaches about itself
+(D-009) — so a recovered range's two ends print the one page and a principal
+locator prints unemphasized (corrected M065, which added the declared sort
+keys). It never fires on a record that is simply ABSENT — one whose store
+directory is not there, or is there and lists — so a first render is
 unchanged. A mark reaching the chapter through an include shortcode or an
 executed cell is not in that parse and is not recovered, and neither is one
 inside a block or span carrying Quarto's `.content-visible` or
@@ -1361,12 +1361,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   tree whose records cannot be written keeps this shape, and a chapter's marks
   reach the index by no other route. A store directory that is THERE and cannot
   be listed is not this case: M065 recovers every chapter's source there
-  (D-043), so what is left is a record behind a store directory that is absent
-  or reads perfectly well. Narrowed M063 from the whole section being
-  lost, M064 from every unreadable record to the absent one, and M065 from
-  every absent record. — M60
-  review F11, corrected M061 review F4, narrowed M063, narrowed M064, narrowed
-  M065
+  (D-043), so what is left is a record behind a store directory that still
+  lists. Narrowed M063 from the whole section being lost, M064 from every
+  unreadable record to the absent one, and M065 from every absent record.
+  — M60 review F11, corrected M061 review F4, narrowed M063, narrowed M064,
+  narrowed M065
 - **KI214.** A book prints no section for an index no marker names where the
   last chapter can read a usable record for none of the chapters that place
   one, and none of those records can be recovered. The proviso on M063's rule
@@ -1375,13 +1374,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   recovered chapter's markers into that derivation, so a held or refused record
   no longer hides a placement marker; what is left is the ABSENT record, which
   recovery does not read — a chapter rendered on its own against a store no
-  earlier render wrote, its store directory absent or readable (D-043).
-  Narrowed M064 from every unusable record: the
-  two-held-paths arrangement this was observed on is M064-AC3, where both
-  renders now print `gamma` in `five.html`; narrowed M065 from every absent
-  record, since a store directory that is there and unreadable now recovers
-  every chapter and so settles `first`. — M063 AC3 criteria audit, narrowed
-  M064, narrowed M065
+  earlier render wrote, its store directory absent or still listing (D-043).
+  Narrowed M064 from every unusable record: the two-held-paths arrangement this
+  was observed on is M064-AC3, where both renders now print `gamma` in
+  `five.html`; narrowed M065 from every absent record, since a store directory
+  that is there and cannot be listed now recovers every chapter and so settles
+  `first`. — M063 AC3 criteria audit, narrowed M064, narrowed M065
 - **KI215.** The two store reports repeat once more than
   `site/books.qmd` states in a book whose fallback set is entirely unmarked.
   The fallback loop sets `builds = true` for every index no marker names,
@@ -1503,3 +1501,21 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   report says only that none of its terms are in the index. An author cannot
   tell from it whether the section moved. Derived by reading `book.lua:713-719`,
   not observed. — M064 review round 2 R2-F5
+- **KI221.** A record file that exists and cannot be OPENED, behind a store
+  directory that still lists, is read as absent and silently costs its chapter
+  its terms in every other chapter's index. `store_directory_unusable` decides
+  the store is unusable only when the directory cannot be listed, and listing a
+  directory needs the read bit while opening a file inside it needs the search
+  bit. Observed 2026-08-31 on a scratch directory: with the store directory left
+  `a-x`, `pandoc.system.list_directory` succeeded and `io.open` on a record
+  inside it returned nil, so the probe reports the store usable and D-041's
+  recovery never fires; on `chmod 000` the listing fails and the probe fires
+  correctly. Testing whether the record's own filename appears in the directory
+  listing would discriminate present-but-unopenable from never-written exactly,
+  and would subsume the directory case — but that widens D-043's decided
+  trigger, so it is plan work. Two states reach this: a store directory with its
+  search bit gone, and a single record file that cannot be opened. A dangling
+  symlink at the store path is the mirror case — it fails to list and its name
+  is in the parent listing, so recovery fires on a tree no render ever wrote,
+  which D-043 records as its own falsifier; Quarto creates no such link. Narrows
+  what M065 claims for the store-directory probe. — M065 review F1, F8

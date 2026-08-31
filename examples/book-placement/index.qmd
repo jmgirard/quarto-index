@@ -1,7 +1,9 @@
 # Opening
 
-Every term in this book is marked once and in one index, so no two marks share
-a printed level path and no sort key is in question here.
+Every term in this book is marked in one index, and no term is marked in two
+chapters, so no printed level path puts two chapters' sort keys in question.
+Within a chapter a term may be marked twice — four.qmd marks the two ends of a
+range that way.
 
 A term filed in the first declared index: [Aardvark]{.index}.
 

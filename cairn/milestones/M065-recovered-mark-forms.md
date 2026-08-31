@@ -305,3 +305,24 @@ Findings, in the lens's own ranking:
   ten findings from the diff-bug lens; the blame-history and prior-review lenses
   none. No finding met the return floor. Dispositions above; the fix-now work
   and the durable records it writes land after the gate.
+
+### Fix-now work at the gate
+
+The maintainer chose fix-six-then-merge. Six corrections landed, none touching
+executable behavior: `cairn/DESIGN.md`, `site/books.qmd` and `CHANGELOG.md` now
+say the probe tests whether the store directory can be LISTED, and name a store
+directory that still lists as read-as-absent (F1); `site/books.qmd` names both
+repairs rather than the one (F6); its "a report per chapter" and the CHANGELOG's
+are replaced by what the reports actually do (F5); `examples/book-placement/index.qmd`'s
+invariant is narrowed to the cross-chapter property, since `four.qmd` now marks
+`Ingot` twice (F4); the `PLACE_TERMS` comment's "eight of them four.qmd's six
+mark forms" is corrected to seven from the forms plus the pre-existing
+`Dovetail` (F10a); and the ragged mid-sentence line breaks in the edited
+`DESIGN.md` paragraphs and in KI205/KI214 are rewrapped (F10b). `KI221` records
+F1's remainder — a record file that exists and cannot be opened behind a store
+directory that still lists — and F8's dangling-symlink mirror case.
+
+Both suite legs were re-run against the edited fixture and comment:
+`tests/run-tests.sh` 578 checks, exit 0; `tests/run-tests.sh --self-test` 1069
+checks, exit 0. `cairn_validate.py` re-run over the completed edits, exit 0.
+- 2026-08-31: gate — maintainer chose fix-six-then-merge; the six corrections landed, KI221 written, and both suite legs plus `cairn_validate` re-run green over them.

@@ -125,11 +125,14 @@ not recovered: a first render is what it always was, and rendering the whole
 book is still what makes the index complete.
 
 One case that looks absent and is not: where the store directory itself is
-there and cannot be read — replaced by a file, or with its permissions cleared
-— the records in it are out of reach rather than unwritten, and every chapter
-is read back from its source. The book still gets a complete index, with a
-report per chapter saying where its terms came from; taking away whatever
-stands in the directory's place is the fix.
+there and cannot be listed — replaced by a file, or with its read permission
+gone — the records in it are out of reach rather than unwritten, and every
+chapter is read back from its source. The book still gets a complete index,
+with the unusable-record report drawn for each chapter by every chapter that
+looks for it. The fix is whichever put the directory out of reach: taking away
+whatever stands in its place, or restoring its permissions. A store directory
+that still lists is not this case — the records inside it are read as absent,
+whatever is wrong with them.
 
 The two reports repeat on rules of their own. The one for a record that could
 not be read is drawn by every chapter that opens it — every chapter of the book

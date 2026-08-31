@@ -8044,8 +8044,9 @@ fi
 # by hand below: `alpha` takes index.qmd's Aardvark and two.qmd's Bramble,
 # `beta` index.qmd's Cardamom and three.qmd's Coriander, and `gamma` the eleven
 # entries index.qmd, two.qmd, four.qmd and five.qmd file in it — eight of them
-# four.qmd's six mark forms, `Woodwork` and its sub-entry `Joinery` counting as
-# two, and `Ingot`'s two range marks as one — printed in five.html, the book's
+# four.qmd's, seven from its six mark forms with `Woodwork` and its sub-entry
+# `Joinery` counting as two and `Ingot`'s two range marks as one, plus the bare
+# `Dovetail` that chapter already marked — printed in five.html, the book's
 # last chapter, `Zephyr` first under the sort key four.qmd declares for it.
 # ---------------------------------------------------------------------------
 read -r -d '' PLACE_TERMS <<'MANIFEST' || true

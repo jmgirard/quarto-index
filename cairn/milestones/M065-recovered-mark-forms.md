@@ -89,7 +89,7 @@ authored book reads, in the shapes authors write.
 - [x] T1. Grow the fixture's blocked chapters with the six mark forms, each on
       a term no other mark in the corpus indexes, and re-baseline every
       manifest the new marks move.
-- [ ] T2. Criteria AC1-AC4 as suite checks over the recovered section, and the
+- [x] T2. Criteria AC1-AC4 as suite checks over the recovered section, and the
       recovery change AC2 needs: a recovered record carries the chapter's
       declared sort keys.
 - [ ] T3. The version-skewed record case and the unreadable store directory
@@ -113,6 +113,7 @@ authored book reads, in the shapes authors write.
 - 2026-08-31: task order — T2's code half runs before T1, so the fixture's manifests are baselined once against the behavior they will ship with rather than twice.
 - 2026-08-31: `recover_record` carries the chapter's declared sort keys, in `build_record`'s declared-key-per-printed-path shape, first mark in document order winning; a recovered `Zephyr` written `sort="Abacus"` now files under A as it does on the record route. Suite 562 checks, exit 0.
 - 2026-08-31: T1 — four.qmd gained seven forms in eight marks (`entry="Woodwork!Joinery"`, `sort="Abacus"` on Zephyr, `see=`, `see-also=`, a `range=` pair, `mention="principal"`), each on a term no other mark in the book indexes; the five term manifests carrying four.qmd's share of `gamma` re-baselined from four entries to eleven, and `m064_hide_only_mark` became `m064_hide_all_marks`, wrapping the chapter's whole body so the no-marks cases still reach no mark. Suite 562 checks, exit 0.
+- 2026-08-31: T2 — the blocked render's whole gamma section is held row by row in the href form (`check_index_sections`), which settles AC1's sub-entry and its once-printed parent, AC2's `Zephyr` under the letter A rather than Z, AC3's two empty locator fields beside their cross-reference rows, and AC4's single plain locator for the range pair; a new `check_locator_role` settles AC4's role half against the record route's own principal locator as its control. Shown red on all three defect classes it claims to catch — a recovered locator asserted principal, a record-route locator asserted plain, and an entry with no locator at all — and green on both controls. Suite 567 checks, exit 0.
 
 ## Decisions
 

@@ -1333,6 +1333,56 @@ print(f'ok   {label}: all {checked} fragment-carrying locator(s) name an id '
 FRAGPY
 }
 
+# The role each of ONE entry's locator links carries (M065-AC4). `want` is
+# `principal` or `plain`: a mark whose role its own chapter resolved is printed
+# emphasized and carrying the principal class, and a mark whose role nothing
+# resolved — a recovered one, since a chapter's resolution is a conclusion and
+# not a value its author wrote — is printed as an undeclared role is. The
+# classes are read rather than the emphasis, and the entry must carry at least
+# one link, so an entry that lost its locators cannot pass by having no class
+# to object to.
+check_locator_role() {   # <html file> <section id> <term> <principal|plain> <label>
+  local htmlfile="$1" section="$2" term="$3" want="$4" label="$5"
+  QI_SECTION="$section" QI_WANT="$want" QI_PRINCIPAL="$HTML_PRINCIPAL_CLASS" \
+  python3 - "$htmlfile" "$term" "$label" <<'ROLEPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+path, term, label = sys.argv[1:4]
+want, principal = os.environ['QI_WANT'], os.environ['QI_PRINCIPAL']
+if want not in ('principal', 'plain'):
+    sys.exit(f'FAIL: {label}: {want!r} is not a role this check knows')
+section = H.find_id(H.parse(path), os.environ['QI_SECTION'])
+if section is None:
+    sys.exit(f'FAIL: {label}: {path} carries no '
+             f'{os.environ["QI_SECTION"]!r} section')
+items = []
+for item in H.find_all(section, 'li'):
+    own = [n for n in H.own_nodes(item) if 'qi-term' in H.classes(n)]
+    if len(own) == 1 and H.text(own[0]) == term:
+        items.append(item)
+if len(items) != 1:
+    sys.exit(f'FAIL: {label}: the section holds {len(items)} entries for '
+             f'{term!r}, expected exactly 1')
+links = []
+for span in H.own_nodes(items[0]):
+    if 'qi-locators' in H.classes(span):
+        links += H.find_all(span, 'a')
+if not links:
+    sys.exit(f'FAIL: {label}: the entry {term!r} carries no locator link, so '
+             f'this check asserted nothing about the role one would print in')
+carried = [principal in H.classes(a) for a in links]
+if want == 'principal' and not all(carried):
+    sys.exit(f'FAIL: {label}: {len(carried) - sum(carried)} of the entry\'s '
+             f'{len(carried)} locator link(s) carry no {principal!r} class')
+if want == 'plain' and any(carried):
+    sys.exit(f'FAIL: {label}: {sum(carried)} of the entry\'s {len(carried)} '
+             f'locator link(s) carry the {principal!r} class')
+print(f'ok   {label}: all {len(links)} locator link(s) of {term!r} print in '
+      f'the {want} role')
+ROLEPY
+}
+
 # A WHOLE-DOCUMENT sweep for the letter-group heading class (M07-AC3). The
 # expected labels are hand-derived, one per line, in the order the page must
 # show them; the sweep reads the entire document rather than the index
@@ -7057,6 +7107,34 @@ three.html	qi-index-beta	Cardamom
 three.html	qi-index-beta	Coriander
 MANIFEST
 
+# ORACLE — the gamma section as five.html must print it while four.qmd's
+# record is unreadable, derived by hand from the five chapters' sources. Rows
+# are `depth<TAB>term<TAB>hrefs[<TAB>cross-reference]` and `letter<TAB>label`,
+# in rendered order; an entry with no locator carries an empty href field.
+read -r -d '' M065_GAMMA_ROWS <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	A
+0	Zephyr	four.html
+letter	D
+0	Dovetail	four.html
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	F
+0	Ferrule		see-link Escutcheon
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+letter	H
+0	Hasp		also-link Escutcheon
+letter	I
+0	Ingot	four.html
+letter	J
+0	Jetty	four.html
+letter	W
+0	Woodwork	
+1	Joinery	four.html
+MANIFEST
+
 m061_block_record four.qmd "$PLACE_STORE" "M063-AC3"
 for M061_PASS in one two; do
   place_render "place-blocked-$M061_PASS" "M063-AC3 (render $M061_PASS)"
@@ -7089,6 +7167,35 @@ for M061_PASS in one two; do
   check_locator_fragments "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" \
     five.html "$HTML_SECTION_ID-gamma" \
     "M064-AC2 (render $M061_PASS: every fragment-carrying locator of the gamma section)"
+  # M065-AC1 to M065-AC4 — the whole gamma section, row by row, in the form
+  # that states WHERE each locator points and what each cross-reference names.
+  # Every one of the six forms four.qmd writes is settled by a row here:
+  #   AC1  `Woodwork` is one entry at depth 0 with no locator of its own, and
+  #        `Joinery` sits under it at depth 1. The parent has no mark anywhere
+  #        in the book, so a rebuilt sub-entry that lost its parent, or that
+  #        printed one parent per mark, fails on these two rows.
+  #   AC2  `Zephyr` files under the letter A, where the sort key its mark
+  #        declares puts it, rather than under Z where its printed term does —
+  #        the two rows the group headings make visible, and the reason the
+  #        letter rows are in this manifest at all.
+  #   AC3  `Ferrule` and `Hasp` each carry an empty locator field and one
+  #        cross-reference naming `Escutcheon`. A cross-reference takes the
+  #        locator's place in this extension, for `see-also=` as much as for
+  #        `see=`, and recovery does not change that.
+  #   AC4  `Ingot`, marked twice as the two ends of a range, prints ONE plain
+  #        locator for four.qmd's page — the locator either end alone would
+  #        print, since nothing outside that chapter's own process resolved
+  #        the pair. Its role half is `check_locator_role` below.
+  # The three anchored hrefs are the chapters' own records, and each mark
+  # number is the mark's position in its chapter's source: index.qmd marks
+  # Aardvark, Cardamom and Gantry in that order, two.qmd Bramble and Gondola,
+  # and five.qmd Escutcheon alone, whose href carries no page because five.qmd
+  # is the chapter the section is printed in.
+  check_index_sections "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book/five.html" \
+    "$M065_GAMMA_ROWS" "M065-AC1/AC2/AC3/AC4 (render $M061_PASS)" hrefs
+  check_locator_role "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book/five.html" \
+    "$HTML_SECTION_ID-gamma" Jetty plain \
+    "M065-AC4 (render $M061_PASS: a recovered mention role is a value no process resolved)"
   M061_LINES=$( { grep -c '(W) ' "$WORK/place-blocked-$M061_PASS.log" || true; } | tr -d ' ')
   [ "$M061_LINES" = "7" ] \
     || { grep '(W) ' "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M063-AC3 (render $M061_PASS): the render wrote $M061_LINES warning line(s), and the three kinds this check counts by name account for 7"; }
@@ -7133,6 +7240,14 @@ check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE_RECOVER
   "M063-AC3 (freed)"
 check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M063-AC3 (freed), nor the wording for a chapter whose own source could not be read either"
+# The control the M065-AC4 role assertion above rests on: over a record that
+# CAN be read, four.qmd's own render resolved `mention="principal"` and its
+# locator prints emphasized and carrying the principal class. Without this the
+# blocked render's plain locator could not be told from a book where the role
+# never printed at all.
+check_locator_role "$CAPTURE_ROOT/place-rewarm-two/_book/five.html" \
+  "$HTML_SECTION_ID-gamma" Jetty principal \
+  "M065-AC4 (the control: a role its own chapter resolved does print)"
 pass "M063-AC3: with the held path freed, two further renders write four.qmd's record again and put the fixture back to the sections and the silence an ordinary render prints"
 
 # ---------------------------------------------------------------------------

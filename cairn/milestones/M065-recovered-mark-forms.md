@@ -2,12 +2,12 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M065: The forms a recovered chapter's marks take are fenced
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M064
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** —
+- **Branch/PR:** `m065-recovered-mark-forms`
 
 ## Goal
 

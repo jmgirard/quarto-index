@@ -7,7 +7,7 @@
 - **Depends on:** M064
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** `m065-recovered-mark-forms`
+- **Branch/PR:** `m065-recovered-mark-forms` — PR #65 (https://github.com/jmgirard/quarto-index/pull/65)
 
 ## Goal
 
@@ -46,34 +46,34 @@ authored book reads, in the shapes authors write.
 
 ## Acceptance criteria
 
-- [ ] AC1. In a whole-book render with the enriched chapter's store path held
+- [x] AC1. In a whole-book render with the enriched chapter's store path held
       by a directory, the recovered section prints its multi-level `entry=`
       mark as a subentry under the parent term the mark names, and prints the
       parent term once.
-- [ ] AC2. In that same render, the mark carrying a declared `sort=` prints at
+- [x] AC2. In that same render, the mark carrying a declared `sort=` prints at
       the position its sort key gives it rather than the position its printed
       term would give it, and the two positions differ.
-- [ ] AC3. In that same render, the recovered `see=` mark and the recovered
+- [x] AC3. In that same render, the recovered `see=` mark and the recovered
       `see-also=` mark each print a cross-reference line naming its target,
       and neither prints a locator.
-- [ ] AC4. In that same render, the recovered `range=` pair prints one plain
+- [x] AC4. In that same render, the recovered `range=` pair prints one plain
       locator for the chapter's page — the locator either end alone would
       print, since neither end is resolved as a range — and the mark
       declaring `mention="principal"` prints the locator an undeclared role
       gets, with no principal styling: the degradation D-041 requires of a
       value no other process resolved.
-- [ ] AC5. A whole-book render in which one chapter's record carries a
+- [x] AC5. A whole-book render in which one chapter's record carries a
       `version` this extension does not write prints that chapter's terms in
       their sections and draws the record-stale report once for that chapter,
       naming what recovery returned; a whole-book render in which the store
       directory itself cannot be read prints every chapter's terms and exits 0.
-- [ ] AC6. Against copies of the tree whose only change is, in turn, folding a
+- [x] AC6. Against copies of the tree whose only change is, in turn, folding a
       recovered mark's levels to its first and dropping the recovered
       placement markers, AC1's section loses its sub-entry and a render with
       both marker-carrying chapters' store paths held by directories loses the
       section for the index no marker names, respectively; each of the two
       mutant renders runs to completion and exits 0.
-- [ ] AC7. `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
+- [x] AC7. `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
       exits 0.
 
 ## Coverage
@@ -141,3 +141,167 @@ authored book reads, in the shapes authors write.
   inconsistency.
 
 ## Review
+
+Fresh evidence, 2026-08-31, on `m065-recovered-mark-forms` at the pre-gate
+checkpoint, PR #65. Both suite runs executed for this review: `tests/run-tests.sh`
+579 ok lines / 578 checks, exit 0; `tests/run-tests.sh --self-test` 1069 checks,
+exit 0. Driving RR is `—`, so there are no carried projections to set beside a
+measured outcome.
+
+- **AC1 — green.** In both renders of the held-record arrangement,
+  `check_index_sections` matched all 21 rows of five.html's gamma section in
+  rendered order: `Woodwork` at depth 0 with an empty locator field, `Joinery`
+  under it at depth 1 linking to `four.html`, and one `Woodwork` row, so a
+  parent printed per mark would fail on the row count and order. The check
+  discriminates: the `m065-flatlevels` mutant, which folds a recovered mark's
+  levels to its first, matches a 20-row manifest instead — the sub-entry gone
+  and its parent holding the locator.
+- **AC2 — green.** The same 21-row match carries the group headings, so
+  `Zephyr` is asserted under the letter `A`, at the head of the section, where
+  the `sort="Abacus"` its mark declares puts it; no `Z` heading appears in the
+  section at all, so the two positions differ. The check discriminates: the
+  `m065-nosorts` mutant, which drops the recovered sort keys, matches a
+  manifest with `Zephyr` under `Z` at the tail.
+- **AC3 — green.** In the same 21-row match, `Ferrule` carries an empty locator
+  field and one `see-link` naming `Escutcheon`, and `Hasp` an empty locator
+  field and one `also-link` naming `Escutcheon`. The manifest rows state the
+  locator field and the cross-reference target separately, so a row printing a
+  page beside its cross-reference fails on the locator field.
+- **AC4 — green, both halves.** Range: in the same 21-row match `Ingot`, marked
+  as the two ends of a range, is one row with one locator, `four.html` — the
+  href either end alone would print. Role: `check_locator_role` reports the
+  single locator link of `Jetty` printing in the plain role in both renders,
+  against a control on the record route reporting the same term's locator
+  printing in the principal role, so the class name the assertion turns on is
+  shown able to appear. The range half is fenced by invariance: the
+  `m065-carryrange` mutant carries `range=` into the recovered record and
+  re-derives the pairing, and the section matches the same 21 rows unchanged.
+- **AC5 — green, both arrangements.** Version-skewed record: with two.qmd's
+  record moved to superseded version 3, the whole-book render prints all 15 of
+  the book's terms across its 5 pages, each in the section the manifest names;
+  the stale-record report is drawn exactly once and names two.qmd; the
+  recovered `Bramble` links to `two.html` rather than to the anchor the refused
+  record carried; and the render's whole warning output is 3 lines, each one the
+  suite names. Unreadable store directory: with the store directory replaced by
+  a regular file, the render exits 0, prints all 15 terms across all 5 pages,
+  and draws exactly the 27 warnings the four record paths and one write per
+  chapter account for — 20 recovery, 5 write-failure, 2 marker-position. The
+  arrangement discriminates: the `m065-noprobe` mutant, which disables the
+  store-directory probe, leaves the same broken store recovering nothing, each
+  index holding only its own chapter's marks (2 printed terms, not 15) and the
+  index no marker names printing on no page.
+- **AC6 — green, both mutants.** Each is one substitution against a copy of the
+  tree, `m061_mutant` failing the run if the substitution changed nothing.
+  Levels folded to the first: the gamma section matches the 20-row manifest, so
+  it loses AC1's sub-entry, and the render exits 0. Recovered placement markers
+  emptied: with both marker-carrying chapters' store paths held by directories,
+  the 5 rendered pages carry 2 index sections rather than 3 — the section for
+  the index no marker names is gone — and the render exits 0.
+- **AC7 — green.** Both runs executed sequentially for this review at the
+  branch head: `tests/run-tests.sh` reported 578 checks passed, exit 0;
+  `tests/run-tests.sh --self-test` reported 1069 checks passed, exit 0.
+
+### Consistency gate
+
+`cairn_validate.py` exit 0 — every check PASS, every advisory OK, the release
+window advisory among them. No `DESIGN.md` principle changed on this branch, so
+`cairn_impact.py` does not apply. The active profile is `generic`, whose
+`consistency-gate` slot names no toolchain checks, so that half is a clean
+no-op.
+
+### Independent fresh-context review
+
+The declared surface tier is user-facing and the diff touches executable
+surface (`_extensions/index/modules/book.lua`, `tests/run-tests.sh`), so the
+full three-lens fan-out ran, each lens fresh-context and with its own evidence
+base. The [S] blame-history lens read `git log`/`git blame` on the modified
+lines and reported no findings, naming five classes it checked clean. The [S]
+prior-review lens read the archived `## Review` sections, `LESSONS.md` and the
+Known-issues entries on the touched functions, ran the GitHub inline-comment
+probe (empty, so the thread walk was skipped) and reported "no prior-review
+evidence". The [O] diff-bug lens reported ten findings, ranked; all ten are
+recorded below with their disposition.
+
+Return floor: no finding demonstrates an acceptance criterion failing inside
+the domain its wording quantifies over. F1 is the one that comes closest and is
+put to the maintainer explicitly — AC5 quantifies over a store directory that
+"cannot be read", and the state F1 names is one that reads (lists) perfectly
+well, so it falls outside AC5 rather than falsifying it.
+
+Findings, in the lens's own ranking:
+
+- **F1 — the store-directory probe tests the read bit, but opening a record
+  needs the search bit; the docs claim "permissions cleared" is covered.**
+  Verified at review: on a store directory left `a-x` (read kept, execute
+  cleared), `pandoc.system.list_directory` succeeds while `io.open` on a record
+  inside it returns nil, so the probe reads the store as absent and every
+  chapter silently loses its terms from every other chapter's index. On `chmod
+  000` the listing fails and the probe fires correctly. The same family covers a
+  single record file that exists and cannot be opened. **Disposition: fix the
+  prose now** — `DESIGN.md`, `site/books.qmd` and `CHANGELOG.md` say what the
+  probe actually tests (a store directory that cannot be listed) — **plus a
+  Known-issues entry and a candidate row** for the wider present-but-unopenable
+  predicate, which changes D-043's decided trigger and is plan work, not a
+  review-side patch. Not a floor return: outside AC5's domain, and it narrows
+  KI205 rather than regressing anything.
+- **F2 — the milestone's central decision (declared, not resolved, sort keys)
+  has no check that can fail.** The fixture gives every mark a term no other
+  mark in the corpus indexes, and a shared printed level path across two
+  chapters is the only arrangement in which a resolved key differs observably
+  from a declared one. Verified: `register_recovered_sort` returns early on a
+  nil value, so a resolved-key variant would register printed-text keys that
+  match the declared fallbacks everywhere the fixture reaches, and the 21-row
+  oracle would not move. **Disposition: follow-up candidate row.** Closing it
+  needs a fixture term marked in two chapters, which the fixture's stated
+  invariant forbids — a fixture change, not a review fix.
+- **F3 — the `m065-carryrange` mutant is two substitutions behind one
+  `cmp` guard, and asserts only invariance.** If the second substitution stops
+  matching after a refactor, the first still fires, `cmp` still sees a change,
+  and the mutant degrades to carrying `range=` without pairing while staying
+  green. **Disposition: follow-up candidate row** — the guard belongs on
+  `m061_mutant`, which every mutant in the suite uses. The invariance half was
+  disposed of deliberately at the implement gate and is recorded there.
+- **F4 — `examples/book-placement/index.qmd`'s stated fixture invariant is now
+  false.** It says every term in the book is marked once, and `four.qmd` now
+  marks `Ingot` twice as the two ends of a range. The diff made the sentence
+  false. **Disposition: fix now** — narrow it to the cross-chapter property the
+  sort-key work actually relies on.
+- **F5 — "a report per chapter" undercounts the store-directory reports.** A
+  broken store draws one report per reading-chapter/other-chapter pair — 20 for
+  this five-chapter fixture, as the suite asserts — not 5. `site/books.qmd`
+  corrects itself a few lines later; `CHANGELOG.md` does not. **Disposition:
+  fix now** in `CHANGELOG.md`.
+- **F6 — `site/books.qmd` offers a fix that applies to only one of the two
+  cases it names.** "Taking away whatever stands in the directory's place"
+  is no fix for a permissions case. **Disposition: fix now**, with F1's prose.
+- **F7 — `m065_break_store` hard-codes the chapter count** (`[ "$held" = "5" ]`),
+  so a sixth chapter would fail it with a message about a store short records.
+  **Disposition: reject** — it fails loudly rather than silently, and the
+  fixture's five-chapter count is pinned in dozens of manifests already, so this
+  guard is not where that change would first be felt.
+- **F8 — a dangling symlink at the store path fires recovery on a tree that was
+  never rendered**, which is a literal counter-example to D-043's recorded
+  falsifier. **Disposition: follow-up**, recorded in the same Known-issues entry
+  as F1's remainder; Quarto never creates such a link, so it is not reachable
+  by the route the extension supports.
+- **F9 — no version guard on `pandoc.system.list_directory`.** Absent the
+  function, both `pcall`s fail and the probe returns false — the pre-D-043
+  behavior, safe and silent. **Disposition: reject** — not a defect on any
+  Pandoc this extension supports.
+- **F10 — prose and count slips.** (a) The suite comment at the `PLACE_TERMS`
+  manifest says "eight of them four.qmd's six mark forms"; `Dovetail` is the
+  pre-existing bare mark, so seven of the eight come from the forms —
+  **fix now**. (b) `DESIGN.md`'s edited paragraphs carry ragged mid-sentence
+  line breaks no other paragraph in the file has — **fix now**; the same
+  finding's complaint about "narrowed M065" is **rejected**, since it matches
+  the "narrowed M063, narrowed M064" convention the entry already uses. (c) The
+  new `site/books.qmd` prose is not registered in the `books-claims.txt` set, so
+  it is unguarded against drift — **follow-up candidate row**; M064's recovery
+  prose is unregistered on the same footing, so this is a standing gap rather
+  than one this diff opened.
+
+- 2026-08-31: review — all seven criteria green on fresh evidence (578 checks
+  plain, 1069 with `--self-test`, both exit 0), the consistency gate clean, and
+  ten findings from the diff-bug lens; the blame-history and prior-review lenses
+  none. No finding met the return floor. Dispositions above; the fix-now work
+  and the durable records it writes land after the gate.

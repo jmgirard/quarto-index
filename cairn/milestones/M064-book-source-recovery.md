@@ -230,3 +230,107 @@ and exited 0. The default branch stands at 524 and 988.
   the gate is a clean no-op.
 - Default branch — `origin/main` had not moved since the branch was cut (0
   commits behind), so no merge or re-run was needed before gathering evidence.
+
+## Review findings
+
+Three fresh-context lenses ran on the diff (`git diff main...HEAD`), none having
+seen the implementation. The [S] blame-history lens reported no findings. The
+[S] prior-review lens reported one. The [O] diff-bug lens reported eleven.
+Ranked most severe first, each with its verification and its proposed
+disposition; the gate decides.
+
+**F1 — CONFIRMED by probe. A recovered term reaches the index where the
+rendered page does not carry it.** `recovered_marks` walks every `Span` of the
+whole `pandoc.read` parse and knows nothing of what the render emits, so a mark
+inside `::: {.content-visible when-format="pdf"}` is recovered. Probed
+2026-08-30 on a scratch copy of `examples/book-placement/` with a `Wainscot`
+mark in such a div in `four.qmd` and that chapter's store path held by a
+directory: `five.html`'s `gamma` section printed `Wainscot` linking to
+`four.html`, a page that does not contain it. The same render with a usable
+record printed it nowhere, and a mark inside an HTML comment was not recovered
+in either. This is the falsifying condition D-041 states for itself. It also
+makes the third of the four boundary claims `site/books.qmd`, `cairn/DESIGN.md`
+and `CHANGELOG.md` each assert — "nothing in content the HTML render drops" —
+false as written. Proposed: return to `in-progress`.
+
+**F2 — CONFIRMED by probe. A recovered chapter marking one term twice prints
+two identical locators.** `build_entry_tree` appends locators with no dedup,
+where it dedupes cross-references three lines below; with anchors the two are
+distinct targets, recovered they are the same bare page href. Probed on the
+same tree with a second `Dovetail` mark added to `four.qmd`: the `gamma` entry
+printed `<a href="four.html">1</a>, <a href="four.html">2</a>`. A range's two
+ends reach this the same way, `paired` not being recovered by design. Proposed:
+return to `in-progress`.
+
+**F3 — CONFIRMED by reading, and by this milestone's own T8 probe.** The
+"terms were recovered from its own source instead" report is drawn on any
+successful parse: `recover_record` returns a record whatever the walk yields,
+and `store_read` keys the wording on `rebuilt ~= nil`. A chapter reaching its
+terms through an include shortcode parses to zero marks, and the T8 work-log
+entry records exactly that — the term printed nowhere while "the four recovery
+reports [were] still drawn". The author is told terms came back when none did.
+Proposed: return to `in-progress` with F1 and F2.
+
+**F4 — CONFIRMED by reading. The milestone's headline boundary has no
+discriminating check.** No check asserts a cold first render is still short its
+later chapters' terms: `place-first` runs `check_book_sections` and
+`check_extension_warning_count` only, and every one of the seven
+`check_book_terms` call sites is a warm or blocked arrangement. Moving the
+`recover_record` call into `store_read`'s absent path would leave the suite
+green, though Scope Out says that change falsifies `site/books.qmd`'s
+render-twice guidance. Proposed: fix with F1-F3 — a term manifest for the cold
+render.
+
+**F5.** An undeclared `index=` on a recovered mark is refiled silently:
+`mark_index(..., false)` folds the unknown name before the record is handed on,
+so `fold_undeclared` never adds the chapter to `refiled`. A stored record in
+the same position draws the "which this book does not declare" report.
+Proposed: follow-up.
+
+**F6.** The four-item boundary list omits `sort=` and `mention=`, neither
+recovered. A dropped sort key moves an entry in the printed order with nothing
+said. AC6 asks for four, so this is a gap rather than a failure. Proposed:
+follow-up to M065, which fences the richer mark forms.
+
+**F7.** A `STORE_VERSION` bump makes every record stale, so the first render
+after an upgrade has each of n chapters read and `pandoc.read` the other n-1
+sources — n(n-1) parses per whole-book render. Fine at five chapters,
+unmeasured at scale, and named nowhere. Proposed: Known issues entry.
+
+**F8.** `cairn/DESIGN.md` says recovery carries the printed levels, the index
+each mark files in, and which indexes the chapter places; the code also
+recovers `see=`/`see-also=` targets, which reach both the index and
+`report_book_dangling`. The recovery is load-bearing — a surviving target is
+what decides whether a mark contributes a locator — so the defect is the
+summary, not the code. Proposed: fix the sentence with F1-F3.
+
+**F9.** `site/books.qmd`'s "Either report repeats: the book draws it once for
+every chapter that builds an index section" is drawn per chapter that READS,
+not per chapter that builds; AC5's own count is four reports in a book with
+three building chapters. Pre-existing text (KI215 covers a narrower version),
+but the branch rewrote the paragraph above it and AC5 makes the mismatch
+concrete. Its "Either" also no longer has a nearby antecedent. Proposed: fix
+the sentence with F1-F3.
+
+**F10.** `chapter_href` concatenates a declared `output-file:` with no
+validation, so `.html` becomes `.html.html` and an absolute or `../` value is
+joined as written. Reachable only through a version-skewed leftover (KI216),
+which the code comment says. Proposed: reject — near-unreachable, and the
+branch names the reachability condition.
+
+**F11.** `page_locator` is copied out of a record in `book_marks` but not
+policed by `valid_record`, where every other mark field is. Records are
+extension-written and the worst case is a bare page link. Proposed: reject —
+theoretical.
+
+**F12 ([S] prior-review lens).** The diff adds five names to `book.lua`'s
+export table — `output_extension`, `chapter_href`, `recovered_marks`,
+`recovered_markers`, `recover_record` — none reached from outside the module
+(confirmed by grep over `tests/` and the other filter modules). This grows the
+surface KI77 describes rather than narrowing it. Proposed: reject as already
+tracked — the standing candidate row on narrowing each module's exports covers
+it, and a second row would duplicate it.
+
+**On AC6.** AC6 asks that `site/books.qmd` state four things recovery does not
+return, and it states them; the criterion passes as written and is not
+reinterpreted here. F1 records that the third of the four is false of the code.

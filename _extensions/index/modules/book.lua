@@ -516,17 +516,59 @@ end
 -- D-040's first ground against reading source does not hold here. Its second
 -- stands and is this route's boundary: Quarto expands include shortcodes and
 -- executable cells before any filter runs, and this parse is of the file on
--- disk, so a mark arriving by either route is not in it. Neither is a mark in
--- content the HTML render drops.
+-- disk, so a mark arriving by either route is not in it. Neither is a mark
+-- inside a block or span Quarto shows or hides by format, profile or metadata
+-- — `drop_conditional` below takes those out whole before anything is read.
 -- ---------------------------------------------------------------------------
 
--- Every index mark in a parsed chapter, in document order, as a record's marks.
+-- Quarto's two conditional-content classes. A block or span carrying either is
+-- kept or dropped by the format being rendered, the active profile, or a
+-- metadata value — settled by Quarto before any filter runs, and recorded
+-- nowhere in the file on disk. This route reads the file on disk, so it cannot
+-- tell which way the render went, and takes the whole element out rather than
+-- guess: a mark inside one is left out even where the render in hand would
+-- have kept it. That costs a term, where the other direction puts a term in
+-- the index whose page does not carry it.
+local CONDITIONAL_CLASSES = { "content-visible", "content-hidden" }
+
+local function is_conditional(el)
+  for _, class in ipairs(CONDITIONAL_CLASSES) do
+    if el.classes:includes(class) then
+      return true
+    end
+  end
+  return false
+end
+
+-- The parsed blocks with every conditional element removed, whole — its
+-- content with it, and a marker div carrying one of the classes along with the
+-- rest. The walk is bottom-up, so a conditional nested inside another is
+-- removed with its parent either way.
+local function drop_conditional(blocks)
+  return blocks:walk({
+    Div = function(div)
+      if is_conditional(div) then
+        return {}
+      end
+      return nil
+    end,
+    Span = function(span)
+      if is_conditional(span) then
+        return {}
+      end
+      return nil
+    end,
+  })
+end
+
+-- Every index mark in a chapter's parsed blocks, in document order, as a
+-- record's marks. The blocks are `drop_conditional`'s, never the raw parse.
 -- Silent throughout: every report about what an author wrote is drawn by that
 -- chapter's own render, and drawing them again here would name another
 -- chapter's mistakes once per chapter that reads it.
-local function recovered_marks(parsed)
+local function recovered_marks(blocks)
   local marks = {}
-  parsed.blocks:walk({
+  blocks:walk({
     Span = function(span)
       if not span.classes:includes(qi_core.INDEX_CLASS) then
         return nil
@@ -583,13 +625,15 @@ local function recovered_marks(parsed)
   return marks
 end
 
--- The indexes a parsed chapter places, in the order it places them: one entry
--- per index, the first marker naming it holding the site, exactly as
+-- The indexes a chapter places, in the order it places them: one entry per
+-- index, the first marker naming it holding the site, exactly as
 -- `resolve_markers` settles it inside a rendering chapter. Top-level markers
--- alone — a nested one places nothing there and places nothing here.
-local function recovered_markers(parsed)
+-- alone — a nested one places nothing there and places nothing here. The
+-- blocks are `drop_conditional`'s, so a marker Quarto would drop places
+-- nothing here either.
+local function recovered_markers(blocks)
   local names, seen = {}, {}
-  for _, block in ipairs(parsed.blocks) do
+  for _, block in ipairs(blocks) do
     if qi_marker.is_marker(block) then
       local name =
         qi_indexes.authored_index(block.attributes[qi_indexes.INDEX_ATTR])
@@ -618,10 +662,11 @@ local function recover_record(ctx, file)
       error("cannot read", 0)
     end
     local parsed = pandoc.read(text, "markdown")
+    local blocks = drop_conditional(parsed.blocks)
     return { version = STORE_VERSION, file = file,
              href = chapter_href(ctx, file, parsed.meta),
-             marker = recovered_markers(parsed),
-             marks = recovered_marks(parsed) }
+             marker = recovered_markers(blocks),
+             marks = recovered_marks(blocks) }
   end)
   if not ok then
     return nil
@@ -670,6 +715,14 @@ local function store_read(ctx, own)
           if rebuilt ~= nil then
             records[#records + 1] = rebuilt
           end
+          -- Three outcomes, not two. A parse that succeeds and finds no mark
+          -- at all is not a recovery: the chapter's terms are as absent as
+          -- they were, and telling the author they came back sends them
+          -- looking in the index for a term that is not there. It is the
+          -- ordinary shape for a chapter whose marks arrive through an
+          -- include shortcode or an executed cell, neither of which is in the
+          -- file this route reads.
+          local recovered = rebuilt ~= nil and #rebuilt.marks > 0
           -- Never silent: the fix is the same either way — render that chapter
           -- again. WHY it could not be used is not: a record left by an older
           -- version of this extension is perfectly readable and simply stale,
@@ -682,9 +735,12 @@ local function store_read(ctx, own)
             -- chapter's terms, and every other chapter of the book reads the
             -- store without printing anything out of it. Reported by the caller,
             -- once per chapter that builds (M55).
-            stale[#stale + 1] = { file = file, recovered = rebuilt ~= nil }
+            stale[#stale + 1] =
+              { file = file, recovered = recovered, parsed = rebuilt ~= nil }
+          elseif recovered then
+            qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
           elseif rebuilt ~= nil then
-            qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, and without anything reaching that chapter through an include or an executed cell — render that chapter again, or render the whole book, to restore them"):format(file))
+            qi_core.warn(("the recorded index marks for %s could not be read, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(file))
           else
             qi_core.warn(("the recorded index marks for %s could not be read and neither could that chapter's own source, so none of its terms are in the index; render that chapter again, or render the whole book, once both files can be read"):format(file))
           end
@@ -1141,7 +1197,9 @@ local function html_book(doc, ctx, marker, taken)
   if builds or first == nil then
     for _, entry in ipairs(stale) do
       if entry.recovered then
-        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, and without anything reaching that chapter through an include or an executed cell — render that chapter again, or render the whole book, to restore them"):format(entry.file))
+        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(entry.file))
+      elseif entry.parsed then
+        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(entry.file))
       else
         qi_core.warn(("the recorded index marks for %s were written by a different version of this extension and that chapter's own source could not be read, so none of its terms are in the index; render that chapter again, or render the whole book, once its source can be read"):format(entry.file))
       end

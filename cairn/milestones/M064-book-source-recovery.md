@@ -37,6 +37,10 @@ authored book reads.
   extension — and carries no fragment.
 - Recovered markers join `placing`, so `first` is settled from the book's
   chapters rather than only from the records that could be read (KI214).
+- A block or span carrying `.content-visible` or `.content-hidden` leaves the
+  parse whole before anything is read, whatever its `when-`/`unless-`
+  attributes say, so a mark inside one is not recovered even where this render
+  would have printed it (D-042).
 - A superseding D-entry reversing D-040's declined clause for this use.
 - `cairn/DESIGN.md`'s Architecture book paragraph, `site/books.qmd`, the
   changelog; KI205 and KI214 struck or narrowed.
@@ -61,7 +65,7 @@ authored book reads.
 
 ## Acceptance criteria
 
-- [x] AC1. With `examples/book-placement/`'s `four.qmd` store path held by a
+- [ ] AC1. With `examples/book-placement/`'s `four.qmd` store path held by a
       directory — the arrangement `tests/run-tests.sh`'s M063-AC3 case already
       makes — two consecutive whole-book HTML renders each print exactly three
       index sections, `alpha` in `index.html`, `beta` in `three.html` and
@@ -69,22 +73,22 @@ authored book reads.
       `Escutcheon`, `Gantry` and `Gondola` — the four terms the fixture's
       chapters file in `gamma`, `Dovetail` living only in `four.qmd`. Each
       render exits 0. (RB tripwire: ip-touching)
-- [x] AC2. In those same two renders, the `gamma` entry for `Dovetail` links to
+- [ ] AC2. In those same two renders, the `gamma` entry for `Dovetail` links to
       `four.html` with no `#` in its href, and each of `Escutcheon`, `Gantry`
       and `Gondola` links to a page href whose `#` fragment names an id that is
       present on that rendered page.
-- [x] AC3. With the store paths of both `index.qmd` and `three.qmd` held by
+- [ ] AC3. With the store paths of both `index.qmd` and `three.qmd` held by
       directories — KI214's own observation, which today prints no `gamma`
       section on any page — two consecutive whole-book HTML renders each print
       the same three sections AC1 names, the `gamma` section carrying the same
       four terms, and each exits 0. (RB tripwire: ip-touching)
-- [x] AC4. Against a copy of the tree whose only change disables the recovery
+- [ ] AC4. Against a copy of the tree whose only change disables the recovery
       reader, AC1's arrangement leaves `Dovetail` out of `five.html`'s `gamma`
       section and AC3's arrangement prints no `gamma` section on any of the
       book's five pages; both mutant renders run to completion and exit 0, so
       each failure is the recovery being absent rather than a render that did
       not happen.
-- [x] AC5. With a copy of `examples/book-placement/` whose `four.qmd` store
+- [ ] AC5. With a copy of `examples/book-placement/` whose `four.qmd` store
       path is held by a directory and whose `four.qmd` carries a `\x80` byte —
       which the chapter's own render replaces with the Unicode replacement
       character and completes, and which `pandoc.read` refuses — two
@@ -96,13 +100,17 @@ authored book reads.
       source could not be read either is drawn four times, once per chapter
       that reads the held path; `four.qmd` reads no record of its own and draws
       no such report, its own write still failing on the held path.
-- [x] AC6. `site/books.qmd`'s paragraph on a record that cannot be read states
+- [ ] AC6. `site/books.qmd`'s paragraph on a record that cannot be read states
       what recovery returns — the chapter's authored terms, each linking to
       that chapter's page — and the four things it does not: a fragment,
       anything reaching the chapter through an include shortcode or an executed
-      cell, anything in content the HTML render drops, and anything in a
-      chapter source Pandoc's markdown reader cannot read.
-- [x] AC7. `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
+      cell, anything inside a block or span carrying Quarto's
+      `.content-visible` or `.content-hidden` class, which the paragraph says
+      is taken out whole whatever its `when-` or `unless-` attributes say so
+      that a mark there is left out even where this render would have printed
+      it, and anything in a chapter source Pandoc's markdown reader cannot
+      read.
+- [ ] AC7. `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
       exits 0.
 
 ## Coverage
@@ -112,34 +120,37 @@ authored book reads.
 - AC3 → T3, T5, T7
 - AC4 → T7
 - AC5 → T3, T7
-- AC6 → T8
-- AC7 → T1, T2, T3, T4, T5, T6, T7, T8
+- AC6 → T8, T12
+- AC7 → T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12
 
 ## Tasks
 
-- [x] T1. Append the D-entry superseding D-040's declined clause, and update
-      `cairn/DESIGN.md`'s Architecture book paragraph, whose "no chapter can
-      see another's" sentence becomes conditional on the store being usable.
-- [x] T2. `book_context` gains `root`; add a helper deriving another chapter's
-      page href from that chapter's front-matter `output-file:` where it
-      declares one, otherwise its source stem plus the output extension.
-- [x] T3. `recover_record(ctx, file)`: read and `pandoc.read` the chapter
-      source inside a `pcall`, walk the parse for marks and for placement
-      markers, and return a record carrying the author's values only — no
-      anchor, no role, no pairing verdict. A failure returns nothing and
-      leaves the render standing (AC5).
-- [x] T4. Call it from `store_read`'s unusable branches and from none of the
-      absent branch; teach the HTML locator to emit a bare page href where a
-      mark carries no anchor.
-- [x] T5. Recovered markers reach `marker_chapter`, so `placing` and `first`
-      are settled from them.
-- [x] T6. The record-unreadable and record-stale reports gain a clause saying
-      what recovery returned for that chapter.
-- [x] T7. Suite: extend the M063-AC3 blocked case to AC1 and AC2; add AC3's
-      two-held-paths case and AC5's unreadable-source case; add AC4's two
-      mutants under `--self-test`; and cover the version-skewed record's two
-      recovery reports, which no criterion exercises.
+- [x] T1. The D-entry superseding D-040's declined clause, and DESIGN's
+      Architecture book paragraph made conditional on the store being usable.
+- [x] T2. `book_context` gains `root`, and a helper derives another chapter's
+      page href from its front-matter `output-file:` or its source stem.
+- [x] T3. `recover_record(ctx, file)`: read and `pandoc.read` the source in one
+      `pcall`, walk it for marks and markers, return the author's values only —
+      no anchor, role or pairing verdict; a failure returns nothing.
+- [x] T4. Call it from `store_read`'s unusable branches and from neither absent
+      one; the HTML locator emits a bare page href for an anchorless mark.
+- [x] T5. Recovered markers reach `marker_chapter`, settling `placing`/`first`.
+- [x] T6. Both record reports say what recovery returned for that chapter.
+- [x] T7. Suite: AC1/AC2 on the extended M063-AC3 case, AC3's two held paths,
+      AC5's unreadable source, AC4's two mutants, and the version-skewed
+      record's recovery reports.
 - [x] T8. `site/books.qmd`, the changelog, and the KI205/KI214 dispositions.
+- [ ] T9. Recovery drops every `.content-visible`/`.content-hidden` block and
+      span before reading a mark or marker (F1); the suite holds the terms
+      inside them out of every index section.
+- [ ] T10. `build_entry_tree` prints one locator per destination and role
+      (F2); the suite holds a recovered chapter marking one term twice to a
+      single link.
+- [ ] T11. A third report wording for a source that parses and reaches no mark
+      (F3), and a term manifest for the cold first render, so recovery on an
+      absent record would turn the suite red (F4).
+- [ ] T12. The AC6 and Scope amendments, D-042, the `books.qmd`, DESIGN and
+      changelog sentences the repairs falsify (F8, F9), and KI217/KI218.
 
 ## Work log
 
@@ -158,6 +169,8 @@ authored book reads.
 - 2026-08-30: T7 gains the version-skewed record's two recovery reports, which no criterion exercises (minor amendment, from the AC5 audit).
 - 2026-08-30: implementation gate chose leaving a recovered chapter's declared sort keys out of recovery (M065 fences the richer mark forms), extending the existing unreadable-record report with a clause rather than adding a second warning, and one guard around the whole read-parse-walk proven by AC5 rather than escalating the IP2 tripwire.
 - 2026-08-30: criteria audit ran in FULL mode ([O], fresh context, user-facing tier plus two `ip-touching` tags) and returned 12 findings. Fixed at the gate: the criteria name the `gamma` terms rather than deferring to a manifest this milestone writes; they assert the whole book's section map rather than one section; AC4 states the observable page outcome rather than a harness verdict; AC2 asserts a fragment present on the rendered page rather than one matching the sidecar JSON; AC5 (both record and source unreadable) and the report-clause task were added. Its href-derivation finding was answered by probe — `book.render` carries no output path, but the chapter's own front-matter `output-file:` does. Findings 5, 6 and 10 (probe adequacy over the unusable-record causes and the recovered mark forms) became the sizing question and are M065.
+- 2026-08-30: return-1 gate chose skipping every `.content-visible`/`.content-hidden` block and span whole over deciding per block whether the format in hand keeps it, which re-implements Quarto's visibility rules inside this extension and returns the defect wherever the two disagree; falsified by an author reporting a term lost from a recovered index because it sat in a block that render kept. Also chose holding the criteria set rather than adding criteria for F1 and F2 (D-118's direction on a milestone already returned once), and putting the new cases in scratch copies rather than growing `examples/book-placement/`, whose growth is M065's own task.
+- 2026-08-30: amendment (substantive) — AC6's third boundary item and one Scope In bullet. The repair makes AC6's "anything in content the HTML render drops" a promise nothing enumerates, so it narrows to the two conditional-content classes the reader does enumerate; the Scope bullet states the same skip. A fresh-context [O] criteria audit of the proposed AC6 wording ran in FULL mode and returned 7 findings; 4 fixed in the wording before it was written (name the two classes rather than the mechanism, since a bare `.content-visible` is skipped and other drop routes are not; fold the em-dash aside into what the paragraph states, so the criterion is settled by reading rather than by probe; drop "the render in hand" for plain wording; keep the list's four items parallel). Its finding that `cairn/DESIGN.md`, `CHANGELOG.md` and D-041 carry the same falsified clause went to T12 and D-042 rather than to a new criterion, and its probe-adequacy finding to T9's suite check, both per the gate's hold-the-set choice. Every criterion box is unticked: the Review section's evidence predates these repairs.
 - 2026-08-30: review return 1 (defect) — F1: a mark inside a `.content-visible when-format="pdf"` div is recovered into the book index linking to a page that does not carry it, probed on a scratch copy of `examples/book-placement/` (`Wainscot` in `five.html`'s `gamma` linking to `four.html`), which is D-041's own stated falsifier and makes the "nothing in content the HTML render drops" clause of `site/books.qmd`, `cairn/DESIGN.md` and `CHANGELOG.md` false; F2: a recovered chapter marking one term twice prints two identical page locators, `build_entry_tree` deduping cross-references and not locators; F3: the recovered-from-source report is drawn on any successful parse, including one that recovered nothing; F4: no check asserts a cold first render is still short its later chapters' terms, so recovery on an absent record would leave the suite green. Gate chose sending the milestone back over merging as-is or correcting the wording alone.
 
 ## Decisions

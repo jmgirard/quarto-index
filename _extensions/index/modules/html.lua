@@ -180,11 +180,28 @@ local function build_entry_tree(marks)
     -- source: it has no anchor and still contributes a locator, where a
     -- cross-reference mark has no anchor and must not.
     if (mark.anchor or mark.page_locator) and mark.paired ~= "close" then
-      -- A table rather than the bare target string: a locator now has a role
-      -- as well as a destination, and the two travel together so a reordering
-      -- cannot separate them (M20).
-      node.locators[#node.locators + 1] =
-        { target = mark_target(mark), role = mark.role }
+      -- Two marks that land on the same destination in the same role are one
+      -- locator, not two: a reader following either arrives at the same place,
+      -- and printing it twice reports how the author spread the marks rather
+      -- than anything a reader wants — the rule the cross-references below
+      -- already keep. With an anchor this can never fire, since each mark
+      -- mints an id of its own; it fires on a chapter recovered from its
+      -- source, whose marks all carry that chapter's page and nothing after
+      -- it, and where a term marked twice would otherwise print the same link
+      -- twice over.
+      local target = mark_target(mark)
+      local already = false
+      for _, existing in ipairs(node.locators) do
+        if existing.target == target and existing.role == mark.role then
+          already = true
+        end
+      end
+      if not already then
+        -- A table rather than the bare target string: a locator now has a role
+        -- as well as a destination, and the two travel together so a reordering
+        -- cannot separate them (M20).
+        node.locators[#node.locators + 1] = { target = target, role = mark.role }
+      end
     end
     for _, xref in ipairs(mark.xrefs) do
       -- Two marks carrying the same target on the same key are one

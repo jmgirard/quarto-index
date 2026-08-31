@@ -73,14 +73,16 @@
   A recovered term links to its chapter's page with no fragment: the id it
   would link to is minted while that chapter renders, and only its record
   carries it. A mark reaching the chapter through an include shortcode or an
-  executed cell, or living in content the HTML render drops, is not recovered,
-  and a chapter source Pandoc's markdown reader cannot read recovers nothing at
-  all. A record that is simply absent is not recovered either, so a first
+  executed cell is not recovered, and neither is one inside a block or span
+  carrying `.content-visible` or `.content-hidden`, which recovery takes out
+  whole whatever its `when-` or `unless-` attributes say; a chapter source
+  Pandoc's markdown reader cannot read recovers nothing at all. A record that is simply absent is not recovered either, so a first
   render is unchanged.
 
   The two reports about a record this render could not use each say which of
-  the two happened for that chapter — its terms were read back out of its own
-  source, or its source could not be read either.
+  three things happened for that chapter — its terms were read back out of its
+  own source, its source parsed and carried no mark this route can reach, or
+  its source could not be read either.
 
 - **Changed default.** The four words the HTML and EPUB index prints for
   itself now follow the document's `lang:` instead of always being English:

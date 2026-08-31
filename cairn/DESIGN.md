@@ -454,14 +454,17 @@ undecodable, refused for its shape, or written by another version — sends it t
 that chapter's source instead: the file is read and parsed inside one guard,
 and the marks and placement markers the parse yields join the book's index
 (added M064, D-041). Recovery carries the author's own values alone — the
-printed levels and the index each mark files in, and which indexes the chapter
-places. It carries no anchor, so a recovered locator links to the chapter's
+printed levels, the cross-reference targets that survive the self-target drop
+and the index each mark files in, and which indexes the chapter places. The
+surviving targets are load-bearing: a mark with one contributes no locator. It carries no anchor, so a recovered locator links to the chapter's
 page and no fragment; no resolved role and no pairing verdict, which are
 conclusions a chapter reaches about itself (D-009); and no declared sort key.
 It never fires on a record that is simply ABSENT, so a first render is
 unchanged. A mark reaching the chapter through an include shortcode or an
-executed cell, or living in content the HTML render drops, is not in that parse
-and is not recovered; a source Pandoc's markdown reader cannot read recovers
+executed cell is not in that parse and is not recovered, and neither is one
+inside a block or span carrying Quarto's `.content-visible` or
+`.content-hidden` class, which the reader takes out whole before it reads
+anything (D-042); a source Pandoc's markdown reader cannot read recovers
 nothing, and the reading chapter's own record report says so. Five cases are reported rather than guessed at (corrected
 M063, which retired two of the seven M061 left): a book whose chapters mark
 terms but whose
@@ -1438,3 +1441,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   asked for, while the filter was told `<project>/custom-four.html` and
   `<project>/bare-two.html`; both chapters drew the looks-like-a-book warning
   and neither wrote a store record. — M064 T2 probe
+- **KI217.** A `STORE_VERSION` bump makes every record in the store unusable at
+  once, and every unusable record now costs a re-read and a `pandoc.read` of
+  that chapter's source. Each chapter of an n-chapter book reads the n-1
+  records that are not its own, so the first whole-book render after such an
+  upgrade parses n(n-1) chapter sources — derived from `store_read`'s loop and
+  `recover_record`'s call site, not measured. Nothing bounds or caches it and
+  nothing names it to an author; the cost is invisible at this repo's fixture
+  sizes and unmeasured at book sizes. — M064 review F7
+- **KI218.** A recovered mark naming an index the book does not declare is
+  refiled into the first declared index with nothing said. `recovered_marks`
+  resolves the name through `mark_index` before the rebuilt record is handed
+  on, so the unknown name is already gone by the time `fold_undeclared` walks
+  the records and never reaches the `refiled` list the report is drawn from. A
+  stored record in the same position draws that report. — M064 review F5

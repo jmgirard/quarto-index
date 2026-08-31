@@ -85,7 +85,9 @@ Where the record was there to open and could not be used, that chapter's own
 `.qmd` is read and parsed instead, and the terms it marks — and the placement
 markers it carries — join the book's index. The report says so: it names the
 chapter and says its terms came from that chapter's source rather than from a
-record.
+record. Where the source parses and carries no mark this route can reach — a
+chapter whose marks all arrive through an include, say — the report says that
+instead, so nothing tells you terms came back when none did.
 
 Four things recovery does not return.
 
@@ -96,8 +98,12 @@ Four things recovery does not return.
 - **Nothing that reaches the chapter through an include shortcode or an
   executed cell.** Quarto expands both before any filter runs, and what is
   read here is the file on disk.
-- **Nothing in content the HTML render drops.** If the chapter's own render
-  never emits it, recovery does not put it in the index.
+- **Nothing inside a block or span carrying `.content-visible` or
+  `.content-hidden`.** Quarto settles those by the format being rendered, the
+  active profile, or a metadata value, and the file on disk records none of
+  that — so recovery takes such a block or span out whole, whatever its
+  `when-` or `unless-` attributes say. A term marked inside one is left out
+  even where this render would have printed it.
 - **Nothing at all, where Pandoc's markdown reader cannot read the chapter
   source.** The report then says the source could not be read either, and that
   chapter's terms are missing from the index until it is rendered again.
@@ -106,12 +112,15 @@ A record that is simply *absent* — a chapter that has never been rendered — 
 not recovered: a first render is what it always was, and rendering the whole
 book is still what makes the index complete.
 
-Either report repeats: the book draws it once for every chapter that builds an
-index section, which is what the unusable record costs it. A chapter that
-builds none reports too where the records it read show no chapter of the book
-placing an index — a book with no placement marker anywhere, and equally a
-chapter rendered while the record of the chapter carrying the marker cannot
-itself be read.
+The two reports repeat on rules of their own. The one for a record that could
+not be read is drawn by every chapter that opens it — every chapter of the book
+but the one whose record it is, since a chapter reads the store before it
+writes its own. The one for a record left by a different version of this
+extension is drawn once for every chapter that builds an index section, which
+is what that record costs it; a chapter that builds none draws it too where the
+records it read show no chapter of the book placing an index — a book with no
+placement marker anywhere, and equally a chapter rendered while the record of
+the chapter carrying the marker cannot itself be read.
 
 ## The merged books: PDF and EPUB
 

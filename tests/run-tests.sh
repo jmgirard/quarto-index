@@ -860,14 +860,19 @@ MANIFEST
 # are what an author gets instead of a failed render when the filter cannot
 # read or write a record, so a check that stopped firing would leave an IP2
 # guarantee unproven.
-# Four keys, not two: M064 reads a chapter's own source where its record was
+# Six keys, not two: M064 reads a chapter's own source where its record was
 # opened and could not be used, so each of the two reports now has a wording
-# for the chapter whose terms came back and one for the chapter whose source
-# could not be read either. Each key carries its own family's opening clause,
-# so a grep for one matches neither wording of the other family.
+# for the chapter whose terms came back, one for the chapter whose source
+# parsed and carried no mark this route reaches, and one for the chapter whose
+# source could not be read at all. Each key carries its own family's opening
+# clause, so a grep for one matches no wording of the other family; the
+# recovered and no-marks keys of one family diverge at the word after the
+# comma, so neither matches the other.
 WARN_STORE_UNREADABLE_RECOVERED="could not be read, so that chapter's terms were recovered from its own source instead"
+WARN_STORE_UNREADABLE_NOMARKS="could not be read, and that chapter's own source carries no index mark this route can reach"
 WARN_STORE_UNREADABLE_LOST="could not be read and neither could that chapter's own source"
 WARN_STORE_STALE_RECOVERED="were written by a different version of this extension, so that chapter's terms were recovered from its own source instead"
+WARN_STORE_STALE_NOMARKS="were written by a different version of this extension, and that chapter's own source carries no index mark this route can reach"
 WARN_STORE_STALE_LOST="were written by a different version of this extension and that chapter's own source could not be read"
 # The unplaced-section report (M60/M061) and the doubled-section report (M061)
 # had their keys here. M063 hands an index no marker names to the book's last
@@ -6469,12 +6474,101 @@ three.html	qi-index-beta	Index of Beta
 two.html	-
 MANIFEST
 
+# Every printed term of every generated index section, by page and section id,
+# in rendered order. A term missing because its chapter's record was refused
+# is exactly what this is looking for, so the comparison is against a
+# hand-written list rather than against a count.
+check_book_terms() {   # <rendered book dir> <label> <manifest>
+  local root="$1" label="$2" manifest="$3"
+  printf '%s\n' "$manifest" > "$WORK/book-terms.txt"
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
+    "$root" "$WORK/book-terms.txt" "$label" <<'TERMPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+root, manifest_path, label = sys.argv[1:4]
+prefix = os.environ['HTML_SECTION_ID']
+pages = H.html_files(root)
+if not pages:
+    print(f'FAIL: {label}: {root} holds no rendered page', file=sys.stderr)
+    sys.exit(1)
+actual = []
+for page in pages:
+    doc = H.parse(os.path.join(root, page))
+    for found in H.index_sections(doc, prefix):
+        for record in H.entry_records(H.find_id(doc, found['ident'])):
+            actual.append(f"{page}\t{found['ident']}\t{record['term']}")
+expected = H.read_manifest(manifest_path)
+if not expected:
+    print(f'FAIL: {label}: the manifest is empty, so a book printing no term '
+          f'at all would match it', file=sys.stderr)
+    sys.exit(1)
+if actual != expected:
+    print(f'FAIL: {label}: the terms this book printed are not the ones the '
+          f'manifest names', file=sys.stderr)
+    for i in range(max(len(actual), len(expected))):
+        got = actual[i] if i < len(actual) else '<no such row rendered>'
+        want = expected[i] if i < len(expected) else '<not in the manifest>'
+        if got != want:
+            print(f'  row {i + 1}:\n    expected <<{want}>>\n'
+                  f'    got      <<{got}>>', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: {len(actual)} printed term(s) across '
+      f'{len(pages)} rendered page(s), each in the section the manifest names')
+TERMPY
+}
+
+# ORACLE — derived by hand from the same five chapters, for the FIRST render
+# out of an empty store and for the render after it. A chapter reads the store
+# before it writes its own record, so on a cold render each building chapter
+# sees only the records the chapters BEFORE it have just written:
+#
+#   index.html alpha   index.qmd builds it first of all, with an empty store
+#                      behind it, so it carries its own `Aardvark` and not
+#                      `Bramble`, which two.qmd marks and has not yet recorded.
+#   three.html beta    three.qmd has index.qmd's and two.qmd's records by then,
+#                      so both `Cardamom` and `Coriander` print.
+#   five.html  gamma   the last chapter has every other record, so all four of
+#                      its terms print.
+#
+# This is the milestone's headline boundary, and the one arrangement that can
+# fail on it: recovery fires only where a record was OPENED and could not be
+# used, never where it is simply absent. Move the `recover_record` call into
+# `store_read`'s absent branch and index.html's alpha section gains `Bramble`
+# here — the change Scope Out refuses, which without this manifest no check in
+# the suite could see (review F4).
+read -r -d '' PLACE_TERMS_COLD <<'MANIFEST' || true
+five.html	qi-index-gamma	Dovetail
+five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Gantry
+five.html	qi-index-gamma	Gondola
+index.html	qi-index-alpha	Aardvark
+three.html	qi-index-beta	Cardamom
+three.html	qi-index-beta	Coriander
+MANIFEST
+
+# The render after it, with every record on disk: alpha gains `Bramble`, and
+# nothing else moves.
+read -r -d '' PLACE_TERMS_WARM <<'MANIFEST' || true
+five.html	qi-index-gamma	Dovetail
+five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Gantry
+five.html	qi-index-gamma	Gondola
+index.html	qi-index-alpha	Aardvark
+index.html	qi-index-alpha	Bramble
+three.html	qi-index-beta	Cardamom
+three.html	qi-index-beta	Coriander
+MANIFEST
+
 rm -rf "$PLACE_DIR/_book" "$PLACE_DIR/.quarto"
 ( cd "$PLACE_DIR" && quarto render --to html ) > "$WORK/place-first.log" 2>&1 \
   || { tail -30 "$WORK/place-first.log" >&2; fail "M063-AC2: the placement fixture failed to render to HTML from an empty store"; }
 capture --project "$PLACE_DIR" html "place-first"
 check_book_sections "$CAPTURE_ROOT/place-first/_book" "M063-AC2 (from an empty store)" \
   "$PLACE_SECTIONS"
+check_book_terms "$CAPTURE_ROOT/place-first/_book" \
+  "M064 F4 (a first render carries no term of a chapter whose record is absent)" \
+  "$PLACE_TERMS_COLD"
 # Every warning this render emits is one this suite can name: the two
 # marker-position reports the fixture's own shape draws — a marker in index.qmd
 # with four chapters after it, and one in three.qmd with two. five.qmd builds
@@ -6488,6 +6582,9 @@ check_extension_warning_count "$WORK/place-first.log" 2 \
 capture --project "$PLACE_DIR" html "place-second"
 check_book_sections "$CAPTURE_ROOT/place-second/_book" "M063-AC2 (the render after it)" \
   "$PLACE_SECTIONS"
+check_book_terms "$CAPTURE_ROOT/place-second/_book" \
+  "M064 F4 (the render after it, with every record on disk)" \
+  "$PLACE_TERMS_WARM"
 check_extension_warning_count "$WORK/place-second.log" 2 \
   "M063-AC2 (the placement fixture's second render emitted a warning this suite cannot name; its two are the marker-position reports)"
 
@@ -6916,49 +7013,6 @@ m061_block_record() {   # <chapter file> <store directory> <label>
     || fail "$label: the store path for $chapter is not a directory, so the write below would succeed and the run would be about an ordinary record"
 }
 
-# Every printed term of every generated index section, by page and section id,
-# in rendered order. A term missing because its chapter's record was refused
-# is exactly what this is looking for, so the comparison is against a
-# hand-written list rather than against a count.
-check_book_terms() {   # <rendered book dir> <label> <manifest>
-  local root="$1" label="$2" manifest="$3"
-  printf '%s\n' "$manifest" > "$WORK/book-terms.txt"
-  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - \
-    "$root" "$WORK/book-terms.txt" "$label" <<'TERMPY'
-import os, sys
-sys.path.insert(0, 'tests')
-import htmlindex as H
-root, manifest_path, label = sys.argv[1:4]
-prefix = os.environ['HTML_SECTION_ID']
-pages = H.html_files(root)
-if not pages:
-    print(f'FAIL: {label}: {root} holds no rendered page', file=sys.stderr)
-    sys.exit(1)
-actual = []
-for page in pages:
-    doc = H.parse(os.path.join(root, page))
-    for found in H.index_sections(doc, prefix):
-        for record in H.entry_records(H.find_id(doc, found['ident'])):
-            actual.append(f"{page}\t{found['ident']}\t{record['term']}")
-expected = H.read_manifest(manifest_path)
-if not expected:
-    print(f'FAIL: {label}: the manifest is empty, so a book printing no term '
-          f'at all would match it', file=sys.stderr)
-    sys.exit(1)
-if actual != expected:
-    print(f'FAIL: {label}: the terms this book printed are not the ones the '
-          f'manifest names', file=sys.stderr)
-    for i in range(max(len(actual), len(expected))):
-        got = actual[i] if i < len(actual) else '<no such row rendered>'
-        want = expected[i] if i < len(expected) else '<not in the manifest>'
-        if got != want:
-            print(f'  row {i + 1}:\n    expected <<{want}>>\n'
-                  f'    got      <<{got}>>', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   {label}: {len(actual)} printed term(s) across '
-      f'{len(pages)} rendered page(s), each in the section the manifest names')
-TERMPY
-}
 
 # The gamma section as it stands with four.qmd's record unwritable: all four
 # terms the fixture files in that index, `Dovetail` among them although it
@@ -7286,6 +7340,133 @@ if grep -qF 'Dovetail' "$CAPTURE_ROOT/m064-stalelost/_book/five.html"; then
 fi
 pass "M064 T7: a record written at the superseded version costs its chapter nothing where that chapter's source reads — the term prints, linking to the chapter's page — and where the source does not read the report says so and the term is absent"
 
+# ---------------------------------------------------------------------------
+# M064 review F1, F2 and F3 — three properties of a recovered record that no
+# criterion's arrangement reaches, each on its own copy of the fixture with
+# four.qmd's store path held by a directory.
+#
+#   m064-conditional  four.qmd gains two conditional blocks — one Quarto keeps
+#                     only for `pdf`, one only for `html` — each marking a term
+#                     nothing else in the corpus marks, and a SECOND mark on
+#                     `Dovetail`. Recovery takes a block carrying either
+#                     conditional class out whole whatever its `when-`
+#                     attribute says, so neither term reaches the index; and
+#                     one destination in one role gets one locator, so the
+#                     doubled `Dovetail` still prints a single link.
+#   m064-nomarks      four.qmd's only mark moves inside a conditional block, so
+#                     the parse succeeds and reaches nothing at all. The report
+#                     must say that rather than claim terms came back.
+#
+# The `html` block is what makes the first case discriminating twice over. Its
+# passage IS on the rendered page — asserted below, so the check cannot pass on
+# a block that was never there — and a repair that read the `when-` attribute
+# instead of skipping whole would print its term.
+# ---------------------------------------------------------------------------
+M064_PDF_TERM='Wainscot'
+M064_HTML_TERM='Xylem'
+M064_HTML_PASSAGE='A passage this HTML render keeps'
+
+# The two conditional blocks and the doubled mark, appended to one copy's
+# four.qmd. A function rather than a heredoc at each site, so the mutant runs
+# under `--self-test` plant exactly what the case above plants.
+m064_plant_conditional() {   # <tree slug>
+  cat >> "$M061W/$1/four.qmd" <<CONDITIONAL
+
+A second mark on a term this chapter already indexes, so the recovered entry
+has two marks pointing at one page: [Dovetail]{.index index="gamma"}.
+
+::: {.content-visible when-format="pdf"}
+A passage this HTML render drops: [$M064_PDF_TERM]{.index index="gamma"}.
+:::
+
+::: {.content-visible when-format="html"}
+$M064_HTML_PASSAGE: [$M064_HTML_TERM]{.index index="gamma"}.
+:::
+CONDITIONAL
+}
+
+# `m061_mutant`'s substitution is aimed at `book.lua`; the locator tree lives in
+# `html.lua`, and one of the mutants below is aimed there. Same guard: a
+# substitution that changed nothing is a failure, never a silent no-op.
+m064_mutant_html() {   # <slug> <perl expression> <label>
+  local slug="$1" expression="$2" label="$3"
+  m063_tree "$slug"
+  perl -0777 -pe "$expression" \
+    "$M061W/$slug/_extensions/index/modules/html.lua" > "$M061W/$slug-spliced"
+  if cmp -s "$M061W/$slug/_extensions/index/modules/html.lua" \
+            "$M061W/$slug-spliced"; then
+    fail "$label: the substitution aimed at the filter changed nothing, so the render below would be reported as a check failing to matter when the fault is this mutation's"
+  fi
+  mv "$M061W/$slug-spliced" "$M061W/$slug/_extensions/index/modules/html.lua"
+}
+
+m063_tree m064-conditional
+m064_plant_conditional m064-conditional
+m061_block_record four.qmd \
+  "$M061W/m064-conditional/.quarto/$STORE_DIR" "M064 F1/F2"
+m063_tree_render m064-conditional m064-conditional \
+  "M064 F1/F2 (conditional blocks and a doubled mark)" "$PLACE_SECTIONS"
+# The rendered chapter is what settles which of the two blocks this render
+# keeps: without this, a check finding neither term in the index could not tell
+# a recovery that skipped them from a book where neither block was reachable.
+if ! grep -qF "$M064_HTML_PASSAGE" \
+     "$CAPTURE_ROOT/m063-m064-conditional/_book/four.html"; then
+  fail "M064 F1: four.html does not carry the passage this render is supposed to keep, so the terms below are absent from the index for a reason this check is not about"
+fi
+if grep -qF 'A passage this HTML render drops' \
+     "$CAPTURE_ROOT/m063-m064-conditional/_book/four.html"; then
+  fail "M064 F1: four.html carries the passage this render is supposed to drop, so the fixture's two conditional blocks are not behaving differently and the case is about nothing"
+fi
+check_book_terms "$CAPTURE_ROOT/m063-m064-conditional/_book" \
+  "M064 F1 (neither conditional term reaches any index section)" \
+  "$PLACE_TERMS_BLOCKED"
+check_entry_locators \
+  "$CAPTURE_ROOT/m063-m064-conditional/_book/five.html" \
+  "$HTML_SECTION_ID-gamma" Dovetail "four.html" \
+  "M064 F2 (a term marked twice in a recovered chapter prints one locator)"
+check_warning_count "$WORK/m063-m064-conditional.log" \
+  "$WARN_STORE_UNREADABLE_RECOVERED" 4 \
+  "M064 F1 (the chapter still recovers the marks outside its conditional blocks)"
+check_warning_count "$WORK/m063-m064-conditional.log" \
+  "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M064 F1 (marks were recovered, so the no-marks wording is never drawn)"
+pass "M064 F1/F2: a recovered chapter's marks inside a conditional block reach no index section — the block Quarto keeps for this format among them — while its ordinary marks still do, and a term it marks twice prints one locator rather than the same link twice"
+
+m063_tree m064-nomarks
+python3 - "$M061W/m064-nomarks/four.qmd" "M064 F3" <<'NOMARKSPY'
+import sys
+path, label = sys.argv[1:3]
+text = open(path, encoding='utf-8').read()
+old = 'A second term for the index no marker names: [Dovetail]{.index index="gamma"}.'
+if old not in text:
+    sys.exit(f'FAIL: {label}: {path} does not carry the mark this case moves, '
+             f'so the copy would parse to the marks it always had')
+new = ('::: {.content-visible when-format="pdf"}\n'
+       + old + '\n:::')
+open(path, 'w', encoding='utf-8').write(text.replace(old, new))
+if '.index' in open(path, encoding='utf-8').read().replace(new, ''):
+    sys.exit(f'FAIL: {label}: {path} still carries an index mark outside the '
+             f'block this case wraps, so the parse would reach one after all')
+print(f'ok   {label}: the chapter\'s only mark now sits inside a conditional block')
+NOMARKSPY
+m061_block_record four.qmd \
+  "$M061W/m064-nomarks/.quarto/$STORE_DIR" "M064 F3"
+m063_tree_render m064-nomarks m064-nomarks \
+  "M064 F3 (a source that parses and reaches no mark)" "$PLACE_SECTIONS"
+check_book_terms "$CAPTURE_ROOT/m063-m064-nomarks/_book" \
+  "M064 F3 (nothing was recovered, so the gamma section is short Dovetail)" \
+  "$PLACE_TERMS_NORECOVERY"
+check_warning_count "$WORK/m063-m064-nomarks.log" \
+  "$WARN_STORE_UNREADABLE_NOMARKS" 4 \
+  "M064 F3 (each chapter that reads the held path is told the source reached no mark)"
+check_warning_count "$WORK/m063-m064-nomarks.log" \
+  "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+  "M064 F3 (nothing came back, so the recovery wording is never drawn)"
+check_warning_count "$WORK/m063-m064-nomarks.log" \
+  "$WARN_STORE_UNREADABLE_LOST" 0 \
+  "M064 F3 (the source read and parsed, so it was never lost)"
+pass "M064 F3: where a chapter's record cannot be read and its source parses to no mark this route reaches, the report says that rather than claiming the chapter's terms came back, and the index is short them"
+
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M064-AC4 — the two arrangements above against copies of the tree whose
@@ -7322,6 +7503,42 @@ if [ "${1:-}" = "--self-test" ]; then
   m063_tree_render m064-norecovery-heldpair m064-norecovery-heldpair \
     "M064-AC4 self-test (both marker chapters held)" "$PLACE_SECTIONS_NOGAMMA"
   pass "M064-AC4 self-test: with the recovery reader disabled and nothing else changed, the AC3 arrangement prints no gamma section on any of the book's five pages — KI214's own observation, which the manifest AC3 is held to would fail on — and the render still exits 0"
+
+  # -------------------------------------------------------------------------
+  # The two checks the F1/F2 case above rests on, each shown red against the
+  # defect it claims to catch: a recovery that reads conditional content, and
+  # a locator list that keeps a destination twice. Both mutants render the same
+  # planted fixture the case renders, and both must exit 0 — what changes is
+  # what the gamma section prints, not whether the book built.
+  # -------------------------------------------------------------------------
+  m061_mutant m064-nocond \
+    's{^local function drop_conditional\(blocks\)\n}{local function drop_conditional(blocks)\n  do return blocks end\n}m' \
+    "M064 F1 self-test (conditional content read)"
+  m064_plant_conditional m064-nocond
+  m061_block_record four.qmd \
+    "$M061W/m064-nocond/.quarto/$STORE_DIR" "M064 F1 self-test"
+  m063_tree_render m064-nocond m064-nocond \
+    "M064 F1 self-test (conditional content read)" "$PLACE_SECTIONS"
+  check_section_carries "$CAPTURE_ROOT/m063-m064-nocond/_book/five.html" \
+    "$HTML_SECTION_ID-gamma" "$M064_PDF_TERM" \
+    "M064 F1 self-test (the term four.html does not carry)"
+  check_section_carries "$CAPTURE_ROOT/m063-m064-nocond/_book/five.html" \
+    "$HTML_SECTION_ID-gamma" "$M064_HTML_TERM" \
+    "M064 F1 self-test (the term inside the block this render keeps)"
+  pass "M064 F1 self-test: with the conditional skip disabled and nothing else changed, the gamma section carries both conditional terms — the defect the F1 check is held against, one of them on a page that does not carry the term — and the render still exits 0"
+
+  m064_mutant_html m064-nodedup \
+    's{if existing\.target == target and existing\.role == mark\.role then}{if false then}' \
+    "M064 F2 self-test (a destination kept twice)"
+  m064_plant_conditional m064-nodedup
+  m061_block_record four.qmd \
+    "$M061W/m064-nodedup/.quarto/$STORE_DIR" "M064 F2 self-test"
+  m063_tree_render m064-nodedup m064-nodedup \
+    "M064 F2 self-test (a destination kept twice)" "$PLACE_SECTIONS"
+  check_entry_locators "$CAPTURE_ROOT/m063-m064-nodedup/_book/five.html" \
+    "$HTML_SECTION_ID-gamma" Dovetail "four.html four.html" \
+    "M064 F2 self-test (the doubled mark's two identical links)"
+  pass "M064 F2 self-test: with the locator dedup disabled and nothing else changed, the doubled mark prints the same link twice — the defect the F2 check is held against — and the render still exits 0"
 fi
 
 

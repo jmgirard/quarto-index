@@ -1341,29 +1341,27 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   only U+00A0 and U+200B reach one. A transposed code point in the list — say
   `\u{2007}` written as `\u{2070}`, a visible glyph — would ship silently.
   — M59 review F6
-- **KI205.** A book's index section for an index no marker names is printed
-  short the terms of any chapter whose record cannot be read — a chapter whose
-  store path is held by something else, a project tree that is read-only. The
-  book's last chapter builds the section from the records it could read, and a
-  chapter's marks reach the index by no other route. M063 made the section
-  printable, and did not make those terms reachable; the render says which
-  chapter, twice, in the unreadable-record and failed-write reports. Narrowed
-  M063 from the whole section being lost. — M60 review F11, corrected M061
-  review F4, narrowed M063
+- **KI205.** A book's index section is printed short the terms of any chapter
+  whose record is ABSENT — a chapter of a read-only project tree that has never
+  been rendered. A record that was opened and could not be used no longer costs
+  its chapter's terms: M064 reads that chapter's own source instead. Recovery
+  never fires on an absent record, so a book rendered for the first time into a
+  tree whose records cannot be written keeps this shape, and a chapter's marks
+  reach the index by no other route. Narrowed M063 from the whole section being
+  lost, and M064 from every unreadable record to the absent one. — M60 review
+  F11, corrected M061 review F4, narrowed M063, narrowed M064
 - **KI214.** A book prints no section for an index no marker names where the
   last chapter can read a usable record for none of the chapters that place
-  one. The proviso on M063's rule — some chapter of the book places an index —
-  is `first`, which each chapter derives from the records it could read plus
-  its own marker, so a last chapter that carries no marker and reads no placing
-  chapter's record concludes the book places nothing and builds no section.
-  Observed 2026-08-30 on a scratch copy of `examples/book-placement/` with the
-  store paths of both `index.qmd` and `three.qmd` held by directories: two
-  consecutive whole-book renders each printed `alpha` in `index.html` and
-  `beta` in `three.html` and no `gamma` section on any page, both exiting 0.
-  The same shape as KI205 — an unwritable record costing more than its own
-  chapter's terms — and the same remedy, a route to a chapter's marks that does
-  not go through the store.
-  — M063 AC3 criteria audit
+  one, and none of those records can be recovered. The proviso on M063's rule
+  — some chapter of the book places an index — is `first`, which each chapter
+  derives from the records it could read plus its own marker. M064 puts a
+  recovered chapter's markers into that derivation, so a held or refused record
+  no longer hides a placement marker; what is left is the ABSENT record, which
+  recovery does not read — a chapter rendered on its own against a store no
+  earlier render wrote. Narrowed M064 from every unusable record: the
+  two-held-paths arrangement this was observed on is M064-AC3, where both
+  renders now print `gamma` in `five.html`. — M063 AC3 criteria audit, narrowed
+  M064
 - **KI215.** The two store reports repeat once more than
   `site/books.qmd` states in a book whose fallback set is entirely unmarked.
   The fallback loop sets `builds = true` for every index no marker names,

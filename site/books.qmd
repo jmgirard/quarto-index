@@ -76,10 +76,35 @@ with `quarto create project` already ignores `/.quarto/` in git; a book whose
 If a chapter's record cannot be written or read back — a read-only project
 tree, a stale file where the directory belongs, a record left by an older
 version of this extension — the book still renders, and the extension names
-the chapter whose terms are missing from the index. Rendering that chapter
-again is the fix. A record that names an index you have since removed from
-`indexes:` costs nothing: its marks are filed in the first index the book
-still declares, and the report names the chapter and the name.
+the chapter the report is about. Rendering that chapter again is the fix. A
+record that names an index you have since removed from `indexes:` costs
+nothing: its marks are filed in the first index the book still declares, and
+the report names the chapter and the name.
+
+Where the record was there to open and could not be used, that chapter's own
+`.qmd` is read and parsed instead, and the terms it marks — and the placement
+markers it carries — join the book's index. The report says so: it names the
+chapter and says its terms came from that chapter's source rather than from a
+record.
+
+Four things recovery does not return.
+
+- **No fragment.** A recovered term links to the chapter's page and nothing
+  after it, so following it lands at the top of that page rather than at the
+  marked passage. The id a mark is anchored at is minted while that chapter
+  renders, and only its record carries it.
+- **Nothing that reaches the chapter through an include shortcode or an
+  executed cell.** Quarto expands both before any filter runs, and what is
+  read here is the file on disk.
+- **Nothing in content the HTML render drops.** If the chapter's own render
+  never emits it, recovery does not put it in the index.
+- **Nothing at all, where Pandoc's markdown reader cannot read the chapter
+  source.** The report then says the source could not be read either, and that
+  chapter's terms are missing from the index until it is rendered again.
+
+A record that is simply *absent* — a chapter that has never been rendered — is
+not recovered: a first render is what it always was, and rendering the whole
+book is still what makes the index complete.
 
 Either report repeats: the book draws it once for every chapter that builds an
 index section, which is what the unusable record costs it. A chapter that

@@ -7,7 +7,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** `m064-book-source-recovery`
+- **Branch/PR:** `m064-book-source-recovery` — https://github.com/jmgirard/quarto-index/pull/64
 
 ## Goal
 
@@ -61,7 +61,7 @@ authored book reads.
 
 ## Acceptance criteria
 
-- [ ] AC1. With `examples/book-placement/`'s `four.qmd` store path held by a
+- [x] AC1. With `examples/book-placement/`'s `four.qmd` store path held by a
       directory — the arrangement `tests/run-tests.sh`'s M063-AC3 case already
       makes — two consecutive whole-book HTML renders each print exactly three
       index sections, `alpha` in `index.html`, `beta` in `three.html` and
@@ -69,22 +69,22 @@ authored book reads.
       `Escutcheon`, `Gantry` and `Gondola` — the four terms the fixture's
       chapters file in `gamma`, `Dovetail` living only in `four.qmd`. Each
       render exits 0. (RB tripwire: ip-touching)
-- [ ] AC2. In those same two renders, the `gamma` entry for `Dovetail` links to
+- [x] AC2. In those same two renders, the `gamma` entry for `Dovetail` links to
       `four.html` with no `#` in its href, and each of `Escutcheon`, `Gantry`
       and `Gondola` links to a page href whose `#` fragment names an id that is
       present on that rendered page.
-- [ ] AC3. With the store paths of both `index.qmd` and `three.qmd` held by
+- [x] AC3. With the store paths of both `index.qmd` and `three.qmd` held by
       directories — KI214's own observation, which today prints no `gamma`
       section on any page — two consecutive whole-book HTML renders each print
       the same three sections AC1 names, the `gamma` section carrying the same
       four terms, and each exits 0. (RB tripwire: ip-touching)
-- [ ] AC4. Against a copy of the tree whose only change disables the recovery
+- [x] AC4. Against a copy of the tree whose only change disables the recovery
       reader, AC1's arrangement leaves `Dovetail` out of `five.html`'s `gamma`
       section and AC3's arrangement prints no `gamma` section on any of the
       book's five pages; both mutant renders run to completion and exit 0, so
       each failure is the recovery being absent rather than a render that did
       not happen.
-- [ ] AC5. With a copy of `examples/book-placement/` whose `four.qmd` store
+- [x] AC5. With a copy of `examples/book-placement/` whose `four.qmd` store
       path is held by a directory and whose `four.qmd` carries a `\x80` byte —
       which the chapter's own render replaces with the Unicode replacement
       character and completes, and which `pandoc.read` refuses — two
@@ -96,13 +96,13 @@ authored book reads.
       source could not be read either is drawn four times, once per chapter
       that reads the held path; `four.qmd` reads no record of its own and draws
       no such report, its own write still failing on the held path.
-- [ ] AC6. `site/books.qmd`'s paragraph on a record that cannot be read states
+- [x] AC6. `site/books.qmd`'s paragraph on a record that cannot be read states
       what recovery returns — the chapter's authored terms, each linking to
       that chapter's page — and the four things it does not: a fragment,
       anything reaching the chapter through an include shortcode or an executed
       cell, anything in content the HTML render drops, and anything in a
       chapter source Pandoc's markdown reader cannot read.
-- [ ] AC7. `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
+- [x] AC7. `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
       exits 0.
 
 ## Coverage
@@ -162,3 +162,71 @@ authored book reads.
 ## Decisions
 
 ## Review
+
+Fresh evidence, 2026-08-30, over the branch at its pre-gate state. The
+acceptance suite is the profile's `verify` command; every criterion below cites
+the run that produced its result.
+
+**AC1** — green. `tests/run-tests.sh` exits 0; the M063-AC3/M064-AC1 case holds
+two consecutive whole-book renders of `examples/book-placement/` with
+`four.qmd`'s store path held by a directory to one section manifest —
+`index.html qi-index-alpha`, `three.html qi-index-beta`, `five.html
+qi-index-gamma`, `two.html` and `four.html` no section — and to one term
+manifest putting `Dovetail`, `Escutcheon`, `Gantry` and `Gondola` in
+`five.html`'s `gamma`. Both renders exit 0 and draw the same seven warnings.
+
+**AC2** — green. In each of those two renders the `gamma` entry for `Dovetail`
+links to `four.html` with no `#`, and all three of the section's other locators
+carry a fragment naming an id the page it points at holds — checked against the
+rendered page, not against the sidecar record.
+
+**AC3** — green. With the store paths of `index.qmd` and `three.qmd` both held,
+two consecutive renders each match the same section manifest AC1 names and the
+same four `gamma` terms, each exiting 0, each drawing twelve warning lines —
+eight recovery reports, two marker-position reports and two write failures.
+
+**AC4** — green. Under `--self-test`, two mutant copies of the tree whose only
+change is a `do return nil end` at the top of `recover_record` reproduce the
+pre-branch outcome. AC1's arrangement then prints three sections and seven
+terms — `Dovetail` absent from `five.html`'s `gamma`, where the AC1 manifest
+requires it. AC3's arrangement prints two sections, no `gamma` on any of the
+book's five pages, which is KI214's own observation. Both mutant renders run to
+completion and exit 0, so each failure is the recovery being absent rather than
+a render that did not happen.
+
+**AC5** — green. On a copy of the fixture whose `four.qmd` store path is held
+and whose source carries a `\x80` byte, both renders complete and exit 0 and
+print `Aardvark`/`Bramble` in `index.html`'s `alpha`, `Cardamom`/`Coriander` in
+`three.html`'s `beta`, and `Escutcheon`/`Gantry`/`Gondola` — not `Dovetail` —
+in `five.html`'s `gamma`. The report naming `four.qmd` and saying its source
+could not be read either is drawn four times per render; the recovery wording
+is drawn zero times; `four.qmd` draws one write failure of its own and no such
+report. The suite also guards the asymmetry the case rests on: the planted file
+must fail to decode as UTF-8 while the chapter's own render completes.
+
+**AC6** — green. `site/books.qmd` (read at HEAD) states that where the record
+was there to open and could not be used, the chapter's `.qmd` is parsed and the
+terms it marks and the markers it carries join the index, and that the report
+says the terms came from source; four bulleted paragraphs then state what
+recovery does not return — no fragment, nothing reaching the chapter through an
+include shortcode or an executed cell, nothing in content the HTML render
+drops, and nothing at all where Pandoc's markdown reader cannot read the
+source. A closing paragraph states that an absent record is not recovered.
+
+**AC7** — green. Both runs made 2026-08-30 over the branch at its pre-gate
+state: `tests/run-tests.sh` reported "All checks passed (549 checks)" and exited
+0; `tests/run-tests.sh --self-test` reported "All checks passed (1018 checks)"
+and exited 0. The default branch stands at 524 and 988.
+
+## Consistency gate
+
+- `cairn_validate.py` — exit 0, every check PASS, every advisory OK. The
+  `release window` advisory did not fire.
+- `cairn_impact.py` — skipped: the branch changes no `DESIGN.md` IP/GP
+  principle text (`git diff main...HEAD -- cairn/DESIGN.md` matches no
+  principle line), only the Architecture book paragraph and the Known issues
+  entries.
+- Toolchain checks — the active `generic` profile names none, so this half of
+  the gate is a clean no-op.
+- Default branch — `origin/main` had not moved since the branch was cut (0
+  commits behind), so no merge or re-run was needed before gathering evidence.

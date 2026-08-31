@@ -53,13 +53,15 @@ authored book reads, in the shapes authors write.
 - [ ] AC2. In that same render, the mark carrying a declared `sort=` prints at
       the position its sort key gives it rather than the position its printed
       term would give it, and the two positions differ.
-- [ ] AC3. In that same render, the `see=` mark prints its cross-reference line
-      naming its target and no locator, and the `see-also=` mark prints its
-      line beside its own locator.
-- [ ] AC4. In that same render, the recovered `range=` pair prints as two plain
-      locators rather than one range, and the mark declaring a mention role
-      prints with the locator an undeclared role gets — the degradation D-009
-      and D-021 require of a value no other process resolved.
+- [ ] AC3. In that same render, the recovered `see=` mark and the recovered
+      `see-also=` mark each print a cross-reference line naming its target,
+      and neither prints a locator.
+- [ ] AC4. In that same render, the recovered `range=` pair prints one plain
+      locator for the chapter's page — the locator either end alone would
+      print, since neither end is resolved as a range — and the mark
+      declaring `mention="principal"` prints the locator an undeclared role
+      gets, with no principal styling: the degradation D-041 requires of a
+      value no other process resolved.
 - [ ] AC5. A whole-book render in which one chapter's record carries a
       `version` this extension does not write prints that chapter's terms in
       their sections and draws the record-stale report once for that chapter,
@@ -90,7 +92,10 @@ authored book reads, in the shapes authors write.
 - [ ] T2. Criteria AC1-AC4 as suite checks over the recovered section.
 - [ ] T3. The version-skewed record case and the unreadable store directory
       case, with their report counts and clauses.
-- [ ] T4. The two per-field mutants under `--self-test`.
+- [ ] T4. The per-field mutants under `--self-test`: the two AC6 names, one
+      dropping the recovered sort keys, and one carrying `range=` and its
+      re-derived pairing into a recovered record, asserted to leave the
+      recovered section unchanged.
 - [ ] T5. `site/books.qmd` and `cairn/DESIGN.md` where the new evidence changes
       what is claimed; the KI dispositions this milestone closes or narrows.
 
@@ -98,8 +103,24 @@ authored book reads, in the shapes authors write.
 
 - 2026-08-30: created by /milestone-plan, as the second half of the M064 split.
 - 2026-08-30: plan gate chose splitting this from M064 over one milestone carrying both, which crossed both split tripwires and the 150-line cap, and over one milestone with a narrower promise that refuses the richer mark forms outright and ships a documented hole; falsified by M064 landing and this work proving to be a handful of manifest edits rather than a sitting.
+- 2026-08-31: probe render of the enriched fixture, on the record route and the recovered route, settled what each of the six forms actually prints; AC1 and AC4's role half already hold, AC2's sort key does not survive recovery, and AC3's and AC4's planned clauses were false of the extension.
+- 2026-08-31: amendment return: AC3 — "the recovered `see=` mark and the recovered `see-also=` mark each print a cross-reference line naming its target, and neither prints a locator."
+- 2026-08-31: amendment return: AC4 — "the recovered `range=` pair prints one plain locator for the chapter's page — the locator either end alone would print, since neither end is resolved as a range — and the mark declaring `mention=\"principal\"` prints the locator an undeclared role gets, with no principal styling: the degradation D-041 requires of a value no other process resolved."
+- 2026-08-31: criteria audit ran in FULL mode ([O], fresh context, user-facing tier) over the amended AC3 and AC4, twice; round 1 returned four findings (neither mark named as recovered, `mention="principal"` unnamed, an appositive deferring the promise to a docs page, and a vacuous range clause) and round 2 one (the range clause still unfalsifiable, and D-009/D-021 mis-cited for a within-chapter pair). All disposed in the wording above; T4 grew a range-invariance mutant, criteria set unchanged.
 - 2026-08-30: criteria audit ran in FULL mode ([O], fresh context, user-facing tier) over M064's draft; findings 5, 6 and 10 — one exemplar standing in for the recovered-form family, and one unusable-record cause standing in for four — are what this milestone exists to answer.
 
 ## Decisions
+
+- 2026-08-31: a recovered record carries the chapter's DECLARED sort keys.
+  M064 left them out, so a term written to file under a key filed under its
+  printed text whenever the store failed and under the author's key otherwise
+  — a difference in a book's index no author asked for. A declared `sort=` is
+  a value the author typed, so it sits inside D-041's boundary exactly as the
+  printed levels and the cross-reference targets do; what stays outside is the
+  RESOLVED key, which has this chapter's fallbacks filled in and is that
+  chapter's own conclusion (D-009, D-021) — the same reason `build_record`
+  writes declarations rather than resolutions. Rejected: leaving the keys out
+  and narrowing AC2 to the degradation, which is cheaper and ships the
+  inconsistency.
 
 ## Review

@@ -6528,8 +6528,10 @@ TERMPY
 #                      `Bramble`, which two.qmd marks and has not yet recorded.
 #   three.html beta    three.qmd has index.qmd's and two.qmd's records by then,
 #                      so both `Cardamom` and `Coriander` print.
-#   five.html  gamma   the last chapter has every other record, so all four of
-#                      its terms print.
+#   five.html  gamma   the last chapter has every other record, so all eleven
+#                      of its printed entries appear — four.qmd's eight among
+#                      them, `Zephyr` first of all under the sort key its own
+#                      mark declares.
 #
 # This is the milestone's headline boundary, and the one arrangement that can
 # fail on it: recovery fires only where a record was OPENED and could not be
@@ -6538,10 +6540,17 @@ TERMPY
 # here — the change Scope Out refuses, which without this manifest no check in
 # the suite could see (review F4).
 read -r -d '' PLACE_TERMS_COLD <<'MANIFEST' || true
+five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
 five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Ferrule
 five.html	qi-index-gamma	Gantry
 five.html	qi-index-gamma	Gondola
+five.html	qi-index-gamma	Hasp
+five.html	qi-index-gamma	Ingot
+five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Woodwork
+five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
 three.html	qi-index-beta	Cardamom
 three.html	qi-index-beta	Coriander
@@ -6550,10 +6559,17 @@ MANIFEST
 # The render after it, with every record on disk: alpha gains `Bramble`, and
 # nothing else moves.
 read -r -d '' PLACE_TERMS_WARM <<'MANIFEST' || true
+five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
 five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Ferrule
 five.html	qi-index-gamma	Gantry
 five.html	qi-index-gamma	Gondola
+five.html	qi-index-gamma	Hasp
+five.html	qi-index-gamma	Ingot
+five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Woodwork
+five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
 index.html	qi-index-alpha	Bramble
 three.html	qi-index-beta	Cardamom
@@ -6987,8 +7003,8 @@ fi
 #              itself; its own write fails on the directory, which is one
 #              report. Builds nothing.
 #   five.qmd   the same recovery report; the book's last chapter, so it takes
-#              `gamma` on and builds its section — all four terms. No chapter
-#              after it, so no marker-position report.
+#              `gamma` on and builds its section — all eleven entries. No
+#              chapter after it, so no marker-position report.
 #
 #   4 recovery + 1 write-failure + 2 marker-position = 7.
 #
@@ -7014,18 +7030,27 @@ m061_block_record() {   # <chapter file> <store directory> <label>
 }
 
 
-# The gamma section as it stands with four.qmd's record unwritable: all four
-# terms the fixture files in that index, `Dovetail` among them although it
-# lives only in the chapter whose record can never be written (M064-AC1). Held
-# by term rather than by count, so which terms the section carries is what is
-# asserted rather than merely that it is printed. The alpha and beta sections
+# The gamma section as it stands with four.qmd's record unwritable: every one
+# of the eleven entries the fixture files in that index, the eight that live
+# only in the chapter whose record can never be written among them (M064-AC1,
+# M065-AC1 to M065-AC4). Held by term rather than by count, so which terms the
+# section carries is what is asserted rather than merely that it is printed —
+# and in RENDERED order, so `Zephyr` filing first under the sort key four.qmd
+# declares for it is asserted here too (M065-AC2). The alpha and beta sections
 # are here for the same reason: a recovery that dropped another chapter's terms
 # while adding four.qmd's would match a manifest naming only `gamma`.
 read -r -d '' PLACE_TERMS_BLOCKED <<'MANIFEST' || true
+five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
 five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Ferrule
 five.html	qi-index-gamma	Gantry
 five.html	qi-index-gamma	Gondola
+five.html	qi-index-gamma	Hasp
+five.html	qi-index-gamma	Ingot
+five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Woodwork
+five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
 index.html	qi-index-alpha	Bramble
 three.html	qi-index-beta	Cardamom
@@ -7068,7 +7093,7 @@ for M061_PASS in one two; do
   [ "$M061_LINES" = "7" ] \
     || { grep '(W) ' "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M063-AC3 (render $M061_PASS): the render wrote $M061_LINES warning line(s), and the three kinds this check counts by name account for 7"; }
 done
-pass "M063-AC3/M064-AC1/M064-AC2: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all four of its terms, the one that lives only in the unwritable record linking to that chapter's page with no fragment and every other locator's fragment naming an id its page holds, and each draws the same seven warnings and exits 0"
+pass "M063-AC3/M064-AC1/M064-AC2: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all eleven of its entries, the eight that live only in the unwritable record linking to that chapter's page with no fragment and every other locator's fragment naming an id its page holds, and each draws the same seven warnings and exits 0"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -7121,8 +7146,9 @@ pass "M063-AC3: with the held path freed, two further renders write four.qmd's r
 # ---------------------------------------------------------------------------
 
 # The gamma section as it stands where recovery does NOT happen: three of the
-# four terms, `Dovetail` missing because it lives only in the chapter whose
-# record cannot be read and whose source cannot be parsed. This is the manifest
+# eleven entries, the eight four.qmd contributes missing because they live only
+# in the chapter whose record cannot be read and whose source cannot be parsed.
+# This is the manifest
 # the AC1 arrangement matched before this milestone, kept as what the
 # recovery-disabled mutant and the unreadable-source case must print.
 read -r -d '' PLACE_TERMS_NORECOVERY <<'MANIFEST' || true
@@ -7209,7 +7235,7 @@ m064_chapter_render() {   # <slug> <capture slug> <chapter> <label>
 #   four.qmd   reads both held paths: 2. Builds nothing.
 #   five.qmd   reads both held paths: 2. The book's last chapter, and the two
 #              recovered markers show `alpha` and `beta` placed, so it takes
-#              `gamma` on and builds its section with all four terms.
+#              `gamma` on and builds its section with all eleven entries.
 #
 #   8 recovery + 2 write-failure + 2 marker-position = 12 warning lines, of
 #   which the anchored pattern set reaches the 10 that are not write failures
@@ -7240,7 +7266,7 @@ for M064_PASS in one two; do
   [ "$M064_LINES" = "12" ] \
     || { grep '(W) ' "$WORK/m063-m064-heldpair-$M064_PASS.log" >&2; fail "M064-AC3 (render $M064_PASS): the render wrote $M064_LINES warning line(s), and the kinds this check counts by name account for 12"; }
 done
-pass "M064-AC3: with the store paths of both marker chapters held by directories, two consecutive whole-book renders each print the same three sections — the index no marker names among them, carrying all four of its terms — and each draws the same twelve warnings and exits 0"
+pass "M064-AC3: with the store paths of both marker chapters held by directories, two consecutive whole-book renders each print the same three sections — the index no marker names among them, carrying all eleven of its entries — and each draws the same twelve warnings and exits 0"
 
 # ---------------------------------------------------------------------------
 # M064-AC5 — the same held path as the AC1 arrangement, and four.qmd's source
@@ -7301,26 +7327,46 @@ print(f'ok   {label}: the record was moved to the superseded version {older}')
 STALEVERPY
 }
 
-# four.qmd's only index mark, moved inside a block recovery takes out whole, so
-# the chapter's source parses and this route reaches no mark at all. Both the
-# unreadable-record case and the version-skewed one below plant it, so neither
-# can drift from the other in what it makes the parse see.
-m064_hide_only_mark() {   # <chapter path> <label>
+# Every index mark the chapter carries, moved inside a block recovery takes out
+# whole, so the chapter's source parses and this route reaches no mark at all.
+# The whole body below the chapter's heading is wrapped, rather than one named
+# paragraph: four.qmd carries eight marks in seven forms (M065 T1), and a
+# helper naming one of them would leave the other seven reachable and the case
+# would be about nothing. Both the unreadable-record case and the
+# version-skewed one below plant it, so neither can drift from the other in
+# what it makes the parse see.
+m064_hide_all_marks() {   # <chapter path> <label>
   python3 - "$1" "$2" <<'NOMARKSPY'
 import sys
 path, label = sys.argv[1:3]
 text = open(path, encoding='utf-8').read()
-old = 'A second term for the index no marker names: [Dovetail]{.index index="gamma"}.'
-if old not in text:
-    sys.exit(f'FAIL: {label}: {path} does not carry the mark this case moves, '
+lines = text.split('\n')
+heads = [i for i, line in enumerate(lines) if line.startswith('# ')]
+if not heads:
+    sys.exit(f'FAIL: {label}: {path} carries no top-level heading, so this '
+             f'helper cannot tell the chapter title from its body')
+head, body = lines[:heads[0] + 1], lines[heads[0] + 1:]
+if '.index' in '\n'.join(head):
+    sys.exit(f'FAIL: {label}: {path} marks a term in its own heading, which '
+             f'this helper leaves outside the block it wraps')
+marks = '\n'.join(body).count('.index')
+if marks == 0:
+    sys.exit(f'FAIL: {label}: {path} carries no index mark below its heading, '
              f'so the copy would parse to the marks it always had')
-new = ('::: {.content-visible when-format="pdf"}\n'
-       + old + '\n:::')
-open(path, 'w', encoding='utf-8').write(text.replace(old, new))
-if '.index' in open(path, encoding='utf-8').read().replace(new, ''):
+wrapped = ('\n'.join(head) + '\n\n::: {.content-visible when-format="pdf"}\n'
+           + '\n'.join(body).strip('\n') + '\n:::\n')
+open(path, 'w', encoding='utf-8').write(wrapped)
+after = open(path, encoding='utf-8').read()
+if after.count('.index') != marks:
+    sys.exit(f'FAIL: {label}: the wrap changed the chapter from {marks} index '
+             f'mark(s) to {after.count(".index")}, so it dropped or duplicated '
+             f'one rather than moving them all inside the block')
+outside = after.split('::: {.content-visible when-format="pdf"}')[0]
+if '.index' in outside:
     sys.exit(f'FAIL: {label}: {path} still carries an index mark outside the '
              f'block this case wraps, so the parse would reach one after all')
-print(f'ok   {label}: the chapter\'s only mark now sits inside a conditional block')
+print(f'ok   {label}: all {marks} of the chapter\'s marks now sit inside one '
+      f'conditional block')
 NOMARKSPY
 }
 
@@ -7368,8 +7414,8 @@ pass "M064 T7: a record written at the superseded version costs its chapter noth
 # further down; without this one the wording ships with nothing but
 # `warn-distinct.py`'s count standing behind it.
 m063_tree m064-stalenomarks
-m064_hide_only_mark "$M061W/m064-stalenomarks/four.qmd" "M064 R2-F2" \
-  || fail "M064 R2-F2: the chapter's only mark could not be moved inside a conditional block (its own FAIL line is above)"
+m064_hide_all_marks "$M061W/m064-stalenomarks/four.qmd" "M064 R2-F2" \
+  || fail "M064 R2-F2: the chapter's marks could not be moved inside a conditional block (its own FAIL line is above)"
 m064_plant_stale m064-stalenomarks four.qmd \
   "M064 R2-F2 (a version-skewed record whose chapter's source reaches no mark)" \
   || fail "M064 R2-F2: the record could not be moved to the superseded version (its own FAIL line is above)"
@@ -7402,9 +7448,10 @@ pass "M064 R2-F2: a record written at the superseded version whose chapter's sou
 #                     attribute says, so neither term reaches the index; and
 #                     one destination in one role gets one locator, so the
 #                     doubled `Dovetail` still prints a single link.
-#   m064-nomarks      four.qmd's only mark moves inside a conditional block, so
-#                     the parse succeeds and reaches nothing at all. The report
-#                     must say that rather than claim terms came back.
+#   m064-nomarks      every mark four.qmd carries moves inside a conditional
+#                     block, so the parse succeeds and reaches nothing at all.
+#                     The report must say that rather than claim terms came
+#                     back.
 #
 # The `html` block is what makes the first case discriminating twice over. Its
 # passage IS on the rendered page — asserted below, so the check cannot pass on
@@ -7482,8 +7529,8 @@ check_warning_count "$WORK/m063-m064-conditional.log" \
 pass "M064 F1/F2: a recovered chapter's marks inside a conditional block reach no index section — the block Quarto keeps for this format among them — while its ordinary marks still do, and a term it marks twice prints one locator rather than the same link twice"
 
 m063_tree m064-nomarks
-m064_hide_only_mark "$M061W/m064-nomarks/four.qmd" "M064 F3" \
-  || fail "M064 F3: the chapter's only mark could not be moved inside a conditional block (its own FAIL line is above)"
+m064_hide_all_marks "$M061W/m064-nomarks/four.qmd" "M064 F3" \
+  || fail "M064 F3: the chapter's marks could not be moved inside a conditional block (its own FAIL line is above)"
 m061_block_record four.qmd \
   "$M061W/m064-nomarks/.quarto/$STORE_DIR" "M064 F3"
 m063_tree_render m064-nomarks m064-nomarks \
@@ -7602,15 +7649,24 @@ fi
 #
 # Every term the five chapters mark, and the section each prints in, is listed
 # by hand below: `alpha` takes index.qmd's Aardvark and two.qmd's Bramble,
-# `beta` index.qmd's Cardamom and three.qmd's Coriander, and `gamma` the four
-# terms index.qmd, two.qmd, four.qmd and five.qmd file in it — printed in
-# five.html, the book's last chapter.
+# `beta` index.qmd's Cardamom and three.qmd's Coriander, and `gamma` the eleven
+# entries index.qmd, two.qmd, four.qmd and five.qmd file in it — eight of them
+# four.qmd's six mark forms, `Woodwork` and its sub-entry `Joinery` counting as
+# two, and `Ingot`'s two range marks as one — printed in five.html, the book's
+# last chapter, `Zephyr` first under the sort key four.qmd declares for it.
 # ---------------------------------------------------------------------------
 read -r -d '' PLACE_TERMS <<'MANIFEST' || true
+five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
 five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Ferrule
 five.html	qi-index-gamma	Gantry
 five.html	qi-index-gamma	Gondola
+five.html	qi-index-gamma	Hasp
+five.html	qi-index-gamma	Ingot
+five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Woodwork
+five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
 index.html	qi-index-alpha	Bramble
 three.html	qi-index-beta	Cardamom
@@ -7704,10 +7760,17 @@ if [ "${1:-}" = "--self-test" ]; then
   # run's, and the locator below is what tells the two runs apart.
   # -------------------------------------------------------------------------
   read -r -d '' M063_TERMS_REFUSED <<'MANIFEST' || true
+five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
 five.html	qi-index-gamma	Escutcheon
+five.html	qi-index-gamma	Ferrule
 five.html	qi-index-gamma	Gantry
 five.html	qi-index-gamma	Gondola
+five.html	qi-index-gamma	Hasp
+five.html	qi-index-gamma	Ingot
+five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Woodwork
+five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
 index.html	qi-index-alpha	Bramble
 three.html	qi-index-beta	Cardamom

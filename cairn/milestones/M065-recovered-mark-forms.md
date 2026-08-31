@@ -86,7 +86,7 @@ authored book reads, in the shapes authors write.
 
 ## Tasks
 
-- [ ] T1. Grow the fixture's blocked chapters with the six mark forms, each on
+- [x] T1. Grow the fixture's blocked chapters with the six mark forms, each on
       a term no other mark in the corpus indexes, and re-baseline every
       manifest the new marks move.
 - [ ] T2. Criteria AC1-AC4 as suite checks over the recovered section, and the
@@ -112,6 +112,7 @@ authored book reads, in the shapes authors write.
 - 2026-08-30: criteria audit ran in FULL mode ([O], fresh context, user-facing tier) over M064's draft; findings 5, 6 and 10 — one exemplar standing in for the recovered-form family, and one unusable-record cause standing in for four — are what this milestone exists to answer.
 - 2026-08-31: task order — T2's code half runs before T1, so the fixture's manifests are baselined once against the behavior they will ship with rather than twice.
 - 2026-08-31: `recover_record` carries the chapter's declared sort keys, in `build_record`'s declared-key-per-printed-path shape, first mark in document order winning; a recovered `Zephyr` written `sort="Abacus"` now files under A as it does on the record route. Suite 562 checks, exit 0.
+- 2026-08-31: T1 — four.qmd gained seven forms in eight marks (`entry="Woodwork!Joinery"`, `sort="Abacus"` on Zephyr, `see=`, `see-also=`, a `range=` pair, `mention="principal"`), each on a term no other mark in the book indexes; the five term manifests carrying four.qmd's share of `gamma` re-baselined from four entries to eleven, and `m064_hide_only_mark` became `m064_hide_all_marks`, wrapping the chapter's whole body so the no-marks cases still reach no mark. Suite 562 checks, exit 0.
 
 ## Decisions
 

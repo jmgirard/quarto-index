@@ -8,7 +8,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M064 | A chapter's terms reach the book index when its record cannot be read | review | — | normal | milestones/M064-book-source-recovery.md |
+| M064 | A chapter's terms reach the book index when its record cannot be read | in-progress | — | normal | milestones/M064-book-source-recovery.md |
 | M065 | The forms a recovered chapter's marks take are fenced | planned | M064 | normal | milestones/M065-recovered-mark-forms.md |
 | M063 | A book puts an index no marker names in the same chapter on every render | done | — | normal | milestones/archive/M063-book-fallback-placement.md |
 | M061 | A book reports the index section it deferred, doubled, or can never place | done | — | normal | milestones/archive/M061-book-deferred-section-reports.md |

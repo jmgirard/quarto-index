@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M064: A chapter's terms reach the book index when its record cannot be read
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -158,6 +158,7 @@ authored book reads.
 - 2026-08-30: T7 gains the version-skewed record's two recovery reports, which no criterion exercises (minor amendment, from the AC5 audit).
 - 2026-08-30: implementation gate chose leaving a recovered chapter's declared sort keys out of recovery (M065 fences the richer mark forms), extending the existing unreadable-record report with a clause rather than adding a second warning, and one guard around the whole read-parse-walk proven by AC5 rather than escalating the IP2 tripwire.
 - 2026-08-30: criteria audit ran in FULL mode ([O], fresh context, user-facing tier plus two `ip-touching` tags) and returned 12 findings. Fixed at the gate: the criteria name the `gamma` terms rather than deferring to a manifest this milestone writes; they assert the whole book's section map rather than one section; AC4 states the observable page outcome rather than a harness verdict; AC2 asserts a fragment present on the rendered page rather than one matching the sidecar JSON; AC5 (both record and source unreadable) and the report-clause task were added. Its href-derivation finding was answered by probe — `book.render` carries no output path, but the chapter's own front-matter `output-file:` does. Findings 5, 6 and 10 (probe adequacy over the unusable-record causes and the recovered mark forms) became the sizing question and are M065.
+- 2026-08-30: review return 1 (defect) — F1: a mark inside a `.content-visible when-format="pdf"` div is recovered into the book index linking to a page that does not carry it, probed on a scratch copy of `examples/book-placement/` (`Wainscot` in `five.html`'s `gamma` linking to `four.html`), which is D-041's own stated falsifier and makes the "nothing in content the HTML render drops" clause of `site/books.qmd`, `cairn/DESIGN.md` and `CHANGELOG.md` false; F2: a recovered chapter marking one term twice prints two identical page locators, `build_entry_tree` deduping cross-references and not locators; F3: the recovered-from-source report is drawn on any successful parse, including one that recovered nothing; F4: no check asserts a cold first render is still short its later chapters' terms, so recovery on an absent record would leave the suite green. Gate chose sending the milestone back over merging as-is or correcting the wording alone.
 
 ## Decisions
 
@@ -334,3 +335,16 @@ it, and a second row would duplicate it.
 **On AC6.** AC6 asks that `site/books.qmd` state four things recovery does not
 return, and it states them; the criterion passes as written and is not
 reinterpreted here. F1 records that the third of the four is false of the code.
+
+## Gate disposition
+
+2026-08-30. Presented at the merge gate with all seven criteria green, the
+consistency gate clean and CI green on PR #64. The maintainer judged F1 and F2
+load-bearing defects in what the extension does for a reader of an authored
+book and sent the milestone back to `in-progress` rather than merging as-is or
+correcting the wording alone. This is defect return 1 for M064.
+
+Dispositions taken: F1, F2, F3 and F4 return to implementation, F8 and F9 fix
+with them, F5 and F6 follow-up (F6 to M065), F7 a Known issues entry, F10, F11
+and F12 rejected as recorded above. No merge, no approval marker written, and
+the draft PR stays open on the branch.

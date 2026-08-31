@@ -1441,7 +1441,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `two.qmd`: both pages landed in `_book/` under the names their front matter
   asked for, while the filter was told `<project>/custom-four.html` and
   `<project>/bare-two.html`; both chapters drew the looks-like-a-book warning
-  and neither wrote a store record. — M064 T2 probe
+  and neither wrote a store record. Where a leftover record makes the branch
+  reachable, a declared name whose stem carries a dot loses its extension:
+  `chapter_href`'s already-has-an-extension test is
+  `name:match("[^/]%.[^%./]+$")`, which reads `v1.2` as extensioned, so the
+  recovered locator is `v1.2` while Quarto writes `v1.2.html`. Derived by
+  reading `book.lua:126`, not observed. — M064 T2 probe, extended M064
+  review round 2 R2-F6
 - **KI217.** A `STORE_VERSION` bump makes every record in the store unusable at
   once, and every unusable record now costs a re-read and a `pandoc.read` of
   that chapter's source. Each chapter of an n-chapter book reads the n-1
@@ -1455,4 +1461,29 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   resolves the name through `mark_index` before the rebuilt record is handed
   on, so the unknown name is already gone by the time `fold_undeclared` walks
   the records and never reaches the `refiled` list the report is drawn from. A
-  stored record in the same position draws that report. — M064 review F5
+  stored record in the same position draws that report. The same silent
+  refiling is reached without an unknown name: `recovered_marks` resolves
+  `index=` against the READING chapter's declarations and reads the recovered
+  chapter's `parsed.meta` only for `output-file:`, so a chapter whose own
+  front matter adds an index has that term filed in the book's first one.
+  Derived by reading `book.lua:596-598`, not observed. — M064 review F5,
+  extended M064 review round 2 R2-F3
+- **KI219.** A book chapter that is not markdown source is parsed as markdown
+  anyway when its record is recovered, and its terms are refiled into the wrong
+  index with nothing said. `recover_record` calls `pandoc.read(text,
+  "markdown")` on whatever `book.render` names, with no test on the extension,
+  and Quarto books take `.ipynb` chapters. Probed 2026-08-30 with `pandoc lua`
+  over a one-cell notebook whose markdown source marks `[Gantry]{.index
+  index="gamma"}`: the reader accepts the raw JSON and returns the span with
+  its `index` attribute as the seven-character string `"gamma"`, the JSON
+  escaping riding into the value; `mark_index` matches no declared index of
+  that name and returns the book's first, and because recovery resolves before
+  `fold_undeclared` runs no refiling report is drawn. Needs that chapter's
+  record opened and unusable as well. — M064 review round 2 R2-F1
+- **KI220.** A recovered parse that reaches a placement marker and no mark
+  reports only the loss. `store_read` appends the rebuilt record before testing
+  `#rebuilt.marks > 0`, so such a chapter's markers still settle `placing` and
+  `first` — which is what AC3's arrangement rests on — while the no-marks
+  report says only that none of its terms are in the index. An author cannot
+  tell from it whether the section moved. Derived by reading `book.lua:713-719`,
+  not observed. — M064 review round 2 R2-F5

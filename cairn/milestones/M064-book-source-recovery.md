@@ -65,27 +65,27 @@ authored book reads.
 
 ## Acceptance criteria
 
-- [ ] AC1. With `examples/book-placement/`'s `four.qmd` store path held by a
+- [x] AC1. With `examples/book-placement/`'s `four.qmd` store path held by a
       directory — the arrangement `tests/run-tests.sh`'s M063-AC3 case makes —
       two consecutive whole-book HTML renders each print exactly three index
       sections, `alpha` in `index.html`, `beta` in `three.html` and `gamma` in
       `five.html`, the `gamma` section carrying `Dovetail` — which lives only
       in `four.qmd` — `Escutcheon`, `Gantry`, `Gondola` and no other term. Each
       render exits 0. (RB tripwire: ip-touching)
-- [ ] AC2. In those same two renders, the `gamma` entry for `Dovetail` links to
+- [x] AC2. In those same two renders, the `gamma` entry for `Dovetail` links to
       `four.html` with no `#` in its href, and each of `Escutcheon`, `Gantry`
       and `Gondola` links to a page href whose `#` fragment names an id that is
       present on that rendered page.
-- [ ] AC3. With the store paths of both `index.qmd` and `three.qmd` held by
+- [x] AC3. With the store paths of both `index.qmd` and `three.qmd` held by
       directories — KI214's observation — two consecutive whole-book HTML
       renders each print the same three sections AC1 names, the `gamma` section
       carrying the same four terms, and each exits 0. (RB tripwire:
       ip-touching)
-- [ ] AC4. Against a copy of the tree whose only change disables the recovery
+- [x] AC4. Against a copy of the tree whose only change disables the recovery
       reader, AC1's arrangement leaves `Dovetail` out of `five.html`'s `gamma`
       section and AC3's arrangement prints no `gamma` section on any of the
       book's five pages; both mutant renders run to completion and exit 0.
-- [ ] AC5. With a copy of `examples/book-placement/` whose `four.qmd` store
+- [x] AC5. With a copy of `examples/book-placement/` whose `four.qmd` store
       path is held by a directory and whose `four.qmd` carries a `\x80` byte —
       which the chapter's own render replaces with the Unicode replacement
       character and completes, and which `pandoc.read` refuses — two
@@ -97,7 +97,7 @@ authored book reads.
       source could not be read either is drawn four times, once per chapter
       that reads the held path; `four.qmd` reads no record of its own and draws
       no such report, its own write still failing on the held path.
-- [ ] AC6. `site/books.qmd`'s paragraph on a record that cannot be read states
+- [x] AC6. `site/books.qmd`'s paragraph on a record that cannot be read states
       what recovery returns — the chapter's authored terms, each linking to
       that chapter's page — and the four things it does not: a fragment,
       anything reaching the chapter through an include shortcode or an executed
@@ -107,7 +107,7 @@ authored book reads.
       that a mark there is left out even where this render would have printed
       it, and anything in a chapter source Pandoc's markdown reader cannot
       read.
-- [ ] AC7. `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
+- [x] AC7. `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
       exits 0.
 
 ## Coverage
@@ -172,10 +172,16 @@ authored book reads.
 - 2026-08-30: T12 — the AC6 and Scope amendments landed, D-042 narrows D-041's boundary clause to the two conditional-content classes, and `site/books.qmd`, `cairn/DESIGN.md` and `CHANGELOG.md` say the narrower thing. `books.qmd`'s report-repetition paragraph now states each report's own rule rather than one rule for both (F9), and DESIGN's recovery sentence names the surviving cross-reference targets recovery carries and what they decide (F8). KI217 and KI218 file F7 and F5.
 - 2026-08-30: T9-T12 green, status review. Suite exits 0 twice over the branch: 559 checks plain (549 before the repairs), 1035 with `--self-test` (1018).
 - 2026-08-30: review return 1 (defect) — F1: a mark inside a `.content-visible when-format="pdf"` div is recovered into the book index linking to a page that does not carry it, probed on a scratch copy of `examples/book-placement/` (`Wainscot` in `five.html`'s `gamma` linking to `four.html`), which is D-041's own stated falsifier and makes the "nothing in content the HTML render drops" clause of `site/books.qmd`, `cairn/DESIGN.md` and `CHANGELOG.md` false; F2: a recovered chapter marking one term twice prints two identical page locators, `build_entry_tree` deduping cross-references and not locators; F3: the recovered-from-source report is drawn on any successful parse, including one that recovered nothing; F4: no check asserts a cold first render is still short its later chapters' terms, so recovery on an absent record would leave the suite green. Gate chose sending the milestone back over merging as-is or correcting the wording alone.
+- 2026-08-30: review round 2 — fresh evidence over `fc055eb` for all seven criteria, each green; suite 559 checks plain and 1035 with `--self-test`, both exit 0; `cairn_validate` exit 0 with one sizing advisory; three lenses ran, blame-history and prior-review finding nothing and the diff-bug lens ten, none demonstrating a criterion failing.
 
 ## Decisions
 
 ## Review
+
+### Round 1 (2026-08-30) — superseded by round 2 below
+
+Evidence gathered before the T9-T12 repairs; kept for the findings and the
+gate disposition it records. Round 2's evidence is the milestone's evidence.
 
 Fresh evidence, 2026-08-30, over the branch at its pre-gate state. The
 acceptance suite is the profile's `verify` command; every criterion below cites
@@ -232,7 +238,7 @@ state: `tests/run-tests.sh` reported "All checks passed (549 checks)" and exited
 0; `tests/run-tests.sh --self-test` reported "All checks passed (1018 checks)"
 and exited 0. The default branch stands at 524 and 988.
 
-## Consistency gate
+### Round 1 consistency gate
 
 - `cairn_validate.py` — exit 0, every check PASS, every advisory OK. The
   `release window` advisory did not fire.
@@ -245,7 +251,7 @@ and exited 0. The default branch stands at 524 and 988.
 - Default branch — `origin/main` had not moved since the branch was cut (0
   commits behind), so no merge or re-run was needed before gathering evidence.
 
-## Review findings
+### Round 1 findings
 
 Three fresh-context lenses ran on the diff (`git diff main...HEAD`), none having
 seen the implementation. The [S] blame-history lens reported no findings. The
@@ -349,7 +355,7 @@ it, and a second row would duplicate it.
 return, and it states them; the criterion passes as written and is not
 reinterpreted here. F1 records that the third of the four is false of the code.
 
-## Gate disposition
+### Round 1 gate disposition
 
 2026-08-30. Presented at the merge gate with all seven criteria green, the
 consistency gate clean and CI green on PR #64. The maintainer judged F1 and F2
@@ -361,3 +367,192 @@ Dispositions taken: F1, F2, F3 and F4 return to implementation, F8 and F9 fix
 with them, F5 and F6 follow-up (F6 to M065), F7 a Known issues entry, F10, F11
 and F12 rejected as recorded above. No merge, no approval marker written, and
 the draft PR stays open on the branch.
+
+### Round 2 (2026-08-30)
+
+Fresh evidence over the branch at `fc055eb`, after the T9-T12 repairs. The
+acceptance suite is the `generic` profile's `verify` command; both runs were
+made this session and every criterion below cites the run that produced its
+result. `origin/main` had not moved since the branch was cut (0 commits
+behind), so no merge or re-run was needed before gathering evidence.
+
+**AC1** — green. `tests/run-tests.sh` exits 0 (559 checks). The
+M063-AC3/M064-AC1 case holds two consecutive whole-book renders of
+`examples/book-placement/` with `four.qmd`'s store path held by a directory to
+one section manifest — `index.html qi-index-alpha`, `three.html qi-index-beta`,
+`five.html qi-index-gamma`, `two.html` and `four.html` no section — and to one
+term manifest putting `Dovetail`, `Escutcheon`, `Gantry` and `Gondola` in
+`five.html`'s `gamma`. The term check compares the whole printed list against
+the manifest, so "and no other term" is asserted rather than assumed. Both
+renders exit 0 and draw the same seven warnings.
+
+**AC2** — green. In each of those two renders the `gamma` entry for `Dovetail`
+links to `four.html` with no `#`, and all three of the section's other locators
+carry a fragment naming an id the page it points at holds — checked against the
+rendered page, not against the sidecar record.
+
+**AC3** — green. With the store paths of `index.qmd` and `three.qmd` both held
+by directories, two consecutive renders each match the same section manifest
+AC1 names and the same four `gamma` terms (8 printed terms across the book's 5
+pages, each in the section the manifest names), each exiting 0, each drawing
+twelve warning lines — eight recovery reports, two marker-position reports and
+two write failures.
+
+**AC4** — green. `tests/run-tests.sh --self-test` exits 0 (1035 checks). Two
+mutant copies of the tree whose only change disables the recovery reader
+reproduce the pre-branch outcome: AC1's arrangement then prints three sections
+and seven terms, `Dovetail` absent from `five.html`'s `gamma` where the AC1
+manifest requires it; AC3's arrangement prints two sections and no `gamma` on
+any of the book's five pages, which is KI214's own observation. Both mutant
+renders run to completion and exit 0, so each failure is the recovery being
+absent rather than a render that did not happen.
+
+**AC5** — green. On a copy of the fixture whose `four.qmd` store path is held
+and whose source carries a `\x80` byte, both renders complete and exit 0 and
+print seven terms against the manifest — `Aardvark`/`Bramble` in
+`index.html`'s `alpha`, `Cardamom`/`Coriander` in `three.html`'s `beta`, and
+`Escutcheon`/`Gantry`/`Gondola`, not `Dovetail`, in `five.html`'s `gamma`. The
+report naming `four.qmd` and saying its source could not be read either is
+drawn four times per render; the recovery wording is drawn zero times;
+`four.qmd` draws one write failure of its own and no such report. The suite
+also guards the asymmetry the case rests on: the planted file must fail to
+decode as UTF-8 while the chapter's own render completes.
+
+**AC6** — green. `site/books.qmd` read at HEAD (lines 84-110): the paragraph
+states that where the record was there to open and could not be used, that
+chapter's own `.qmd` is read and parsed and the terms it marks and the markers
+it carries join the index. Four bulleted items then state what recovery does
+not return — no fragment; nothing reaching the chapter through an include
+shortcode or an executed cell; nothing inside a block or span carrying
+`.content-visible` or `.content-hidden`, which the item says is taken out
+whole "whatever its `when-` or `unless-` attributes say" and left out "even
+where this render would have printed it"; and nothing at all where Pandoc's
+markdown reader cannot read the chapter source. A closing paragraph states that
+an absent record is not recovered.
+
+**AC7** — green. Both runs made 2026-08-30 over the branch at `fc055eb`:
+`tests/run-tests.sh` reported "All checks passed (559 checks)" and exited 0;
+`tests/run-tests.sh --self-test` reported "All checks passed (1035 checks)" and
+exited 0. The default branch stands at 524 and 988.
+
+No Driving RR, so no projection-vs-outcome pairs are owed.
+
+### Round 2 consistency gate
+
+- `cairn_validate.py` — exit 0, every check PASS. One advisory: `sizing (split
+  tripwires)` WARNs that M064 carries 12 tasks against the 10 tripwire, the
+  four repair tasks the return added. Advisories are not gate failures. The
+  `release window` advisory did not fire.
+- `cairn_impact.py` — skipped: the branch changes no `DESIGN.md` IP/GP
+  principle text (`git diff origin/main...HEAD -- cairn/DESIGN.md` matches no
+  principle line), only the Architecture book paragraph and the Known issues
+  entries.
+- Toolchain checks — the active `generic` profile names none, so this half of
+  the gate is a clean no-op.
+
+### Round 2 findings
+
+Three fresh-context lenses ran on `git diff origin/main...HEAD`, none having
+seen the implementation. The [S] blame-history lens reported no findings: it
+checked the recovery route against D-040/D-041/D-042, the locator dedup against
+M20's locator invariant, the `WARN_STORE_*` split against every M55/M60/M063
+call site it re-points, and the KI205/KI214 narrowings, and found nothing the
+diff silently undoes. The [S] prior-review lens reported no findings: its
+`gh api .../pulls/comments` probe returned `[]`, so no GitHub thread surface
+exists, and against the archived `## Review` sections and this milestone's own
+round-1 record it confirmed each of F1-F4, F8 and F9 fixed in the diff and
+F5-F7 and F10-F12 left where round 1 put them. The [O] diff-bug lens reported
+ten. Ranked most severe first, each with its verification and its proposed
+disposition; the gate decides.
+
+**R2-F1 — CONFIRMED by probe. A chapter that is not markdown source is parsed
+as markdown anyway, and its recovered terms are refiled into the wrong index
+with nothing said.** `recover_record` calls `pandoc.read(text, "markdown")` on
+whatever `book.render` names (`book.lua:664`), with no test on the chapter's
+extension; Quarto books take `.ipynb` chapters. Probed 2026-08-30 with `pandoc
+lua` over a one-cell notebook whose markdown source is `Some text
+[Dovetail]{.index} and [Gantry]{.index index="gamma"} here.`: the markdown
+reader accepts the raw JSON and returns both spans, `Gantry`'s `index`
+attribute arriving as the seven-character string `"gamma"` — the JSON escaping
+rides into the value. `recovered_marks` then resolves that name with
+`mark_index(..., false)`, which matches no declared index and returns the
+book's FIRST one, and because recovery resolves before `fold_undeclared` runs
+no refiling report is drawn. The author is told terms came back and not that
+they came back into the wrong section. Needs a second precondition — that
+chapter's record opened and unusable. No criterion covers a non-`.qmd` chapter;
+Scope In says only "reading `<project>/<chapter>` and `pandoc.read`-ing it".
+Proposed: Known issues entry plus the candidate row, or a fix on the branch —
+the gate's call.
+
+**R2-F2 — CONFIRMED by reading. The third stale-record wording ships with no
+test.** T11 added a no-marks wording to both report families.
+`WARN_STORE_STALE_NOMARKS` is defined at `tests/run-tests.sh:875` and
+referenced nowhere else, and no case plants a version-skewed record whose
+chapter source parses to zero marks — `m064-staleok` and `m064-stalelost` cover
+the recovered and lost wordings, and `m064-nomarks` uses a held path, the
+unreadable family. So `book.lua:1201`'s `elseif entry.parsed then` branch is
+unexercised: only `warn-distinct.py`'s EXPECTED count would notice its
+deletion, not its correctness. AC7 still passes; this is a coverage hole in the
+repair T11 exists for. Proposed: fix on the branch — the stale variant of a
+case the suite already builds.
+
+**R2-F3 — PLAUSIBLE (read, not probed). A recovered mark's index name is
+resolved against the reading chapter's declarations, not the recovered
+chapter's own.** `recovered_marks` resolves `index=` with the reading process's
+`qi_indexes` state and reads `parsed.meta` only for `output-file:`, so a
+chapter whose own front matter adds an index has that term refiled into the
+book's first index rather than dropped and reported. Same silent-refiling shape
+as R2-F1, reached without a notebook, and the same family as round-1 F5, which
+is KI218. Proposed: fold into KI218 rather than a second record.
+
+**R2-F4 — CONFIRMED by reading. A stored record can claim a page locator.**
+`book_marks` copies `page_locator` off the record's mark and `valid_record`
+polices no such field, where `anchor`, `role`, `range` and `paired` are all
+policed. Reachable only via a hand-written or foreign record; worst case a bare
+page link. This is round-1 F11 restated. Proposed: reject, as round 1 did.
+
+**R2-F5 — CONFIRMED by reading. A parse that recovers markers but no marks
+reports only the loss.** `store_read` appends the rebuilt record before testing
+`#rebuilt.marks > 0`, so such a chapter's placement markers still reach
+`placing` — which is right — but the no-marks report says only that none of its
+terms are in the index, never that its markers came back. An author cannot tell
+from the report whether the section moved. Proposed: Known issues entry.
+
+**R2-F6 — CONFIRMED by reading. An `output-file:` with a dotted stem loses its
+extension.** `chapter_href`'s already-has-an-extension test is
+`name:match("[^/]%.[^%./]+$")` (`book.lua:126`), which classifies `v1.2` and
+`chap.1` as extensioned, so the recovered locator becomes `v1.2` while Quarto
+writes `v1.2.html` — a link to a page the book does not have, which is D-041's
+own falsifier. Reachable only across a `STORE_VERSION` bump, per KI216, which
+is what makes the `output-file:` branch reachable at all. Proposed: fold into
+KI216.
+
+**R2-F7 — CONFIRMED by probe. The three documents word the conditional skip in
+terms of attributes a bare class need not carry.** `site/books.qmd`,
+`cairn/DESIGN.md`, `CHANGELOG.md` and D-042 all say the block is taken out
+whole "whatever its `when-` or `unless-` attributes say", while
+`is_conditional` keys on the class alone, so a bare `::: {.content-visible}` is
+dropped too. AC6 is satisfied as literally written, and the T12 criteria audit
+raised this and the gate chose to name the classes rather than the mechanism.
+Proposed: reject — a wording question already decided at a gate.
+
+**R2-F8 — CONFIRMED by reading. The converted negative warning assertions skip
+the no-marks wordings.** Roughly a dozen sites assert `_RECOVERED 0` and
+`_LOST 0` and never `_NOMARKS 0` (M062-AC2, M062-AC3, the M05 ghost case, M14
+review F4, M55-AC3, M60-AC4). A regression turning a correct report into the
+no-marks wording would not be caught by name at those sites, though
+`check_extension_warning_count` catches it by total where a total also runs.
+Proposed: follow-up on the standing suite-readers candidate row.
+
+**R2-F9 — PLAUSIBLE (read). A mark written in a chapter's metadata is indexed
+by a real render and not by recovery.** `index.lua`'s pass list reaches `Meta`,
+so `title: "[Term]{.index}"` is collected in an ordinary render, while
+`recovered_marks`/`recovered_markers` walk `blocks` only. The same shape as the
+include boundary AC6 documents, but not one of the four things it enumerates.
+Proposed: follow-up to M065.
+
+**R2-F10 — CONFIRMED. Three added prose lines exceed the files' wrap.**
+`cairn/DESIGN.md` carries a 143-column line and a 119-column one in the
+recovery paragraph, and `CHANGELOG.md` a 130-column one in the recovery bullet;
+every surrounding line sits at 78 or less. Mid-paragraph edits left unwrapped.
+Proposed: fix on the branch — a rewrap, no wording change.

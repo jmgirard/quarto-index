@@ -89,7 +89,13 @@ record. Where the source parses and carries no mark this route can reach — a
 chapter whose marks all arrive through an include, say — the report says that
 instead, so nothing tells you terms came back when none did.
 
-Four things recovery does not return.
+What comes back is what you wrote. An `entry=` naming several levels rebuilds
+its sub-entry and the parent it hangs under; a `sort=` still files the term
+where it asks; and `see=` and `see-also=` still print their lines, neither
+carrying a page number, as neither does on an ordinary render. What does not
+come back is anything the chapter worked out for itself while it rendered.
+
+Five things recovery does not return.
 
 - **No fragment.** A recovered term links to the chapter's page and nothing
   after it, so following it lands at the top of that page rather than at the
@@ -107,10 +113,23 @@ Four things recovery does not return.
 - **Nothing at all, where Pandoc's markdown reader cannot read the chapter
   source.** The report then says the source could not be read either, and that
   chapter's terms are missing from the index until it is rendered again.
+- **A page range, and a principal locator.** Whether two marks are the two ends
+  of one range, and which locator a `mention="principal"` emphasizes, are
+  settled inside that chapter's own render against the anchors it produced. A
+  recovered mark indexes as though `range=` and `mention=` were absent: both
+  ends of a range print the one page the chapter is on, and the role prints as
+  an undeclared one does.
 
 A record that is simply *absent* — a chapter that has never been rendered — is
 not recovered: a first render is what it always was, and rendering the whole
 book is still what makes the index complete.
+
+One case that looks absent and is not: where the store directory itself is
+there and cannot be read — replaced by a file, or with its permissions cleared
+— the records in it are out of reach rather than unwritten, and every chapter
+is read back from its source. The book still gets a complete index, with a
+report per chapter saying where its terms came from; taking away whatever
+stands in the directory's place is the fix.
 
 The two reports repeat on rules of their own. The one for a record that could
 not be read is drawn by every chapter that opens it — every chapter of the book

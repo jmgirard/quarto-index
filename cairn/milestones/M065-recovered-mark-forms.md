@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M065: The forms a recovered chapter's marks take are fenced
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M064
 - **Driving RR:** —
@@ -102,7 +102,7 @@ authored book reads, in the shapes authors write.
       recovered section unchanged, and one disabling the store-directory
       probe, asserted to leave every chapter's index short every other
       chapter's terms.
-- [ ] T5. `site/books.qmd` and `cairn/DESIGN.md` where the new evidence changes
+- [x] T5. `site/books.qmd` and `cairn/DESIGN.md` where the new evidence changes
       what is claimed; the KI dispositions this milestone closes or narrows.
 
 ## Work log
@@ -123,6 +123,8 @@ authored book reads, in the shapes authors write.
 - 2026-08-31: AC6 amended at a mini gate — its second clause named an effect its mutant cannot produce, since the chapter AC5's version-skewed render refuses carries no placement marker and a marker moves where a section prints rather than which terms it holds. Criteria audit ran in FULL mode ([O], fresh context, user-facing tier) over the amended wording and returned four findings: an unbounded trailing quantifier and a referent reaching outside the file, both fixed in the wording; AC5's two routes losing their planted-defect coverage, answered by a fifth T4 mutant over the store-directory probe; and AC6 binding an instrument property without saying so, which is the shape the gate chose deliberately and is recorded here rather than in the criterion.
 - 2026-08-31: D-043 written — an existing-but-unlistable store directory is told apart from an absent record, so every chapter is recovered from its source rather than silently dropped. Suite 578 checks, exit 0.
 - 2026-08-31: T4 — five per-field mutants, each one substitution against a copy of the tree: folding a recovered mark's levels to its first loses the sub-entry and gives its parent the locator; emptying the recovered markers leaves the held-pair render with no section for the index no marker names; dropping the recovered sort keys moves `Zephyr` from the head of the section to its tail; carrying `range=` and a re-derived pairing leaves the section exactly as it stands; and disabling the store-directory probe leaves every index holding its own chapter's marks alone. Suite 1069 checks with `--self-test`, exit 0.
+- 2026-08-31: T5 — `site/books.qmd` states what recovery returns for the richer forms and grows a fifth not-returned bullet for the range pairing and the principal role, plus the store-directory case; `CHANGELOG.md` gains the same two facts under Unreleased; `cairn/DESIGN.md`'s recovery paragraph is corrected (it said recovery carries no declared sort key) and KI205 and KI214 narrow again, both now standing only where the store directory is absent or reads perfectly well.
+- 2026-08-31: all tasks done; `tests/run-tests.sh --self-test` 1069 checks, exit 0. Status to review.
 
 ## Decisions
 

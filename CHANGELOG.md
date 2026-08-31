@@ -80,10 +80,28 @@
   that is simply absent is not recovered either, so a first render is
   unchanged.
 
+  What comes back is what the author wrote. An `entry=` naming several levels
+  rebuilds its sub-entry and the parent it hangs under; a `sort=` still files
+  the term where it asks; and `see=` and `see-also=` still print their lines,
+  neither carrying a page number, as neither does on an ordinary render. What
+  the chapter worked out for itself while it rendered does not come back: a
+  recovered mark indexes as though `range=` and `mention=` were absent, so
+  both ends of a page range print the one page the chapter is on, and a
+  principal locator prints as an undeclared one does.
+
   The two reports about a record this render could not use each say which of
   three things happened for that chapter — its terms were read back out of its
   own source, its source parsed and carried no mark this route can reach, or
   its source could not be read either.
+
+- In an HTML book, a store directory that is there and cannot be read — one
+  replaced by a file, or whose permissions have been cleared — no longer reads
+  as a book that has never been rendered. Every chapter is read back from its
+  own source instead, so the book still gets a complete index and a report per
+  chapter saying where its terms came from, where before each index carried
+  only the terms of the chapter that built it and the index no marker names
+  printed on no page at all. A store directory that is not there is untouched:
+  a first render is what it always was.
 
 - **Changed default.** The four words the HTML and EPUB index prints for
   itself now follow the document's `lang:` instead of always being English:

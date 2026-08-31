@@ -7135,6 +7135,13 @@ letter	W
 1	Joinery	four.html
 MANIFEST
 
+# The same complete list under a name that says what it holds rather than
+# which arrangement it was first derived for: three later cases print every
+# term the book marks, each for its own reason — a record that can never be
+# written and is recovered, a record refused for its version and recovered,
+# and a store directory replaced by a file with every chapter recovered.
+PLACE_TERMS_COMPLETE="$PLACE_TERMS_BLOCKED"
+
 m061_block_record four.qmd "$PLACE_STORE" "M063-AC3"
 for M061_PASS in one two; do
   place_render "place-blocked-$M061_PASS" "M063-AC3 (render $M061_PASS)"
@@ -7663,6 +7670,123 @@ check_warning_count "$WORK/m063-m064-nomarks.log" \
   "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M064 F3 (the source read and parsed, so it was never lost)"
 pass "M064 F3: where a chapter's record cannot be read and its source parses to no mark this route reaches, the report says that rather than claiming the chapter's terms came back, and the index is short them"
+
+# ---------------------------------------------------------------------------
+# M065-AC5 — the two remaining ways a chapter's record goes unusable, each in
+# a WHOLE-BOOK render.
+#
+# The version-skewed half is planted on two.qmd rather than on four.qmd, which
+# is what makes a whole-book render able to ask the question at all: a chapter
+# rewrites its own record at the current version when its turn comes, so the
+# plant is only ever read by the chapters rendered BEFORE it. two.qmd renders
+# second, and index.qmd — which renders first and builds `alpha`, the section
+# two.qmd's `Bramble` belongs to — is the one chapter that meets it.
+#
+# Derived by hand:
+#
+#   index.qmd  reads two.qmd's planted record, refuses it, recovers two.qmd
+#              from its source, and builds `alpha` with `Bramble` in it. One
+#              stale-record report; one marker-position report (four after).
+#   two.qmd    rewrites its own record at the current version.
+#   three.qmd  reads a current record for two.qmd; builds `beta`. One
+#              marker-position report (two after).
+#   four.qmd   builds nothing, reads current records.
+#   five.qmd   builds `gamma` from current records throughout.
+#
+#   1 stale + 2 marker-position = 3 warning lines.
+#
+# What tells the run from an ordinary warm render is not which terms print —
+# they are the same terms — but where `Bramble` links: recovered from source it
+# carries two.qmd's page and no fragment, where the record carries the anchor
+# the mark was minted at.
+# ---------------------------------------------------------------------------
+m063_tree m065-stalebook
+m064_plant_stale m065-stalebook two.qmd \
+  "M065-AC5 (a version-skewed record in a whole-book render)" \
+  || fail "M065-AC5: the record could not be moved to the superseded version (its own FAIL line is above)"
+m063_tree_render m065-stalebook m065-stalebook \
+  "M065-AC5 (a version-skewed record)" "$PLACE_SECTIONS"
+check_book_terms "$CAPTURE_ROOT/m063-m065-stalebook/_book" \
+  "M065-AC5 (a version-skewed record costs the book no term)" \
+  "$PLACE_TERMS_COMPLETE"
+check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_STALE_RECOVERED" 1 \
+  "M065-AC5 (index.qmd alone meets the plant, and it builds the section that term belongs to)"
+{ grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/m063-m065-stalebook.log" \
+  | grep -qF 'two.qmd'; } \
+  || { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/m063-m065-stalebook.log" >&2; fail "M065-AC5: the stale-record report does not name two.qmd, the chapter whose record was refused"; }
+check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_STALE_LOST" 0 \
+  "M065-AC5 (the chapter's source reads, so nothing is lost)"
+check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M065-AC5 (the source carries marks, so the no-marks wording is never drawn)"
+check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+  "M065-AC5 (the record was read and refused, never unreadable)"
+check_entry_locators "$CAPTURE_ROOT/m063-m065-stalebook/_book/index.html" \
+  "$HTML_SECTION_ID-alpha" Bramble "two.html" \
+  "M065-AC5 (the refused chapter's term is recovered, so its locator carries that chapter's page and no fragment)"
+check_extension_warning_count "$WORK/m063-m065-stalebook.log" 3 \
+  "M065-AC5 (the version-skewed render emitted a warning this suite cannot name; the three its anchored patterns reach are one stale-record report and two marker-position reports)"
+pass "M065-AC5: a whole-book render in which one chapter's record carries a version this extension does not write prints every one of the book's terms in the sections the fixture asks for, draws the stale-record report once and only for that chapter, and links that chapter's own term by its page rather than by the anchor the refused record carried"
+
+# ---------------------------------------------------------------------------
+# ...and the store DIRECTORY itself replaced by a regular file, so no record
+# path in it can be opened at all. Before D-043 that was indistinguishable from
+# a store no render had written yet, and the book printed each chapter's own
+# terms and nothing else; the directory is now probed, so every chapter is
+# recovered from its source and the book's index is complete.
+#
+# Derived by hand. Each of the five chapters reads the four record paths that
+# are not its own and can open none of them, and each chapter's own write fails
+# on the file standing where the directory belongs:
+#
+#   20 recovery + 5 write-failure + 2 marker-position = 27 warning lines.
+#
+# The named counts account for all 27, so the raw count is asserted alongside
+# them rather than through the anchored-pattern helper, whose reach the write
+# failures fall in and out of depending on what Quarto printed just before them
+# (KI206).
+# ---------------------------------------------------------------------------
+m065_break_store() {   # <store directory> <label>
+  local store="$1" label="$2"
+  local held
+  [ -d "$store" ] \
+    || fail "$label: $store is not a directory to begin with, so the render below would be about a store that was never written"
+  held=$(find "$store" -name "*$STORE_SUFFIX" | wc -l | tr -d ' ')
+  [ "$held" = "5" ] \
+    || fail "$label: the store holds $held record(s) and this book has five chapters, so the render below would be about a store that is short records rather than one that is out of reach"
+  rm -rf "$store"
+  printf 'a file where the store directory belongs\n' > "$store"
+  [ -f "$store" ] && [ ! -d "$store" ] \
+    || fail "$label: $store is still a directory, so every record in it would be read perfectly well"
+  printf 'ok   %s: the store directory is now a regular file, and the five records it held are out of reach\n' "$label"
+}
+
+m063_tree m065-lostdir
+m065_break_store "$M061W/m065-lostdir/.quarto/$STORE_DIR" "M065-AC5"
+m063_tree_render m065-lostdir m065-lostdir \
+  "M065-AC5 (the store directory itself)" "$PLACE_SECTIONS"
+check_book_terms "$CAPTURE_ROOT/m063-m065-lostdir/_book" \
+  "M065-AC5 (every chapter is recovered from its source, so no term is lost)" \
+  "$PLACE_TERMS_COMPLETE"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNREADABLE_RECOVERED" 20 \
+  "M065-AC5 (each of the five chapters meets the four record paths that are not its own)"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
+  "M065-AC5 (every chapter's source reads, so nothing is lost)"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M065-AC5 (every chapter's source carries marks)"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_STALE_RECOVERED" 0 \
+  "M065-AC5 (nothing could be opened, so nothing could be found stale)"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNWRITABLE" 5 \
+  "M065-AC5 (every chapter's own write fails on the file standing where the directory belongs)"
+check_entry_locators "$CAPTURE_ROOT/m063-m065-lostdir/_book/five.html" \
+  "$HTML_SECTION_ID-gamma" Dovetail "four.html" \
+  "M065-AC5 (a recovered locator carries the chapter's page and no fragment)"
+check_entry_locators "$CAPTURE_ROOT/m063-m065-lostdir/_book/index.html" \
+  "$HTML_SECTION_ID-alpha" Bramble "two.html" \
+  "M065-AC5 (the section the FIRST chapter builds is recovered too)"
+M065_LINES=$( { grep -c '(W) ' "$WORK/m063-m065-lostdir.log" || true; } | tr -d ' ')
+[ "$M065_LINES" = "27" ] \
+  || { grep '(W) ' "$WORK/m063-m065-lostdir.log" >&2; fail "M065-AC5: the render wrote $M065_LINES warning line(s), and the kinds this check counts by name account for 27"; }
+pass "M065-AC5: a whole-book render whose store directory has been replaced by a file completes and exits 0, recovers every one of the five chapters from its own source so that every term the book marks prints in the section the fixture asks for, and draws the same 27 warnings the four record paths and one write per chapter account for"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------

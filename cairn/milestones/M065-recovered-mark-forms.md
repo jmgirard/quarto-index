@@ -67,10 +67,12 @@ authored book reads, in the shapes authors write.
       their sections and draws the record-stale report once for that chapter,
       naming what recovery returned; a whole-book render in which the store
       directory itself cannot be read prints every chapter's terms and exits 0.
-- [ ] AC6. Against copies of the tree whose only change is, in turn, dropping
-      the recovered levels and dropping the recovered marker, AC1's section
-      loses its subentry and AC5's version-skewed render loses that chapter's
-      terms respectively; every mutant render runs to completion and exits 0.
+- [ ] AC6. Against copies of the tree whose only change is, in turn, folding a
+      recovered mark's levels to its first and dropping the recovered
+      placement markers, AC1's section loses its sub-entry and a render with
+      both marker-carrying chapters' store paths held by directories loses the
+      section for the index no marker names, respectively; each of the two
+      mutant renders runs to completion and exits 0.
 - [ ] AC7. `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
       exits 0.
 
@@ -92,12 +94,14 @@ authored book reads, in the shapes authors write.
 - [x] T2. Criteria AC1-AC4 as suite checks over the recovered section, and the
       recovery change AC2 needs: a recovered record carries the chapter's
       declared sort keys.
-- [ ] T3. The version-skewed record case and the unreadable store directory
+- [x] T3. The version-skewed record case and the unreadable store directory
       case, with their report counts and clauses.
 - [ ] T4. The per-field mutants under `--self-test`: the two AC6 names, one
-      dropping the recovered sort keys, and one carrying `range=` and its
+      dropping the recovered sort keys, one carrying `range=` and its
       re-derived pairing into a recovered record, asserted to leave the
-      recovered section unchanged.
+      recovered section unchanged, and one disabling the store-directory
+      probe, asserted to leave every chapter's index short every other
+      chapter's terms.
 - [ ] T5. `site/books.qmd` and `cairn/DESIGN.md` where the new evidence changes
       what is claimed; the KI dispositions this milestone closes or narrows.
 
@@ -114,6 +118,10 @@ authored book reads, in the shapes authors write.
 - 2026-08-31: `recover_record` carries the chapter's declared sort keys, in `build_record`'s declared-key-per-printed-path shape, first mark in document order winning; a recovered `Zephyr` written `sort="Abacus"` now files under A as it does on the record route. Suite 562 checks, exit 0.
 - 2026-08-31: T1 — four.qmd gained seven forms in eight marks (`entry="Woodwork!Joinery"`, `sort="Abacus"` on Zephyr, `see=`, `see-also=`, a `range=` pair, `mention="principal"`), each on a term no other mark in the book indexes; the five term manifests carrying four.qmd's share of `gamma` re-baselined from four entries to eleven, and `m064_hide_only_mark` became `m064_hide_all_marks`, wrapping the chapter's whole body so the no-marks cases still reach no mark. Suite 562 checks, exit 0.
 - 2026-08-31: T2 — the blocked render's whole gamma section is held row by row in the href form (`check_index_sections`), which settles AC1's sub-entry and its once-printed parent, AC2's `Zephyr` under the letter A rather than Z, AC3's two empty locator fields beside their cross-reference rows, and AC4's single plain locator for the range pair; a new `check_locator_role` settles AC4's role half against the record route's own principal locator as its control. Shown red on all three defect classes it claims to catch — a recovered locator asserted principal, a record-route locator asserted plain, and an entry with no locator at all — and green on both controls. Suite 567 checks, exit 0.
+- 2026-08-31: correcting two work-log lines above: the 2026-08-31 lines beginning `amendment return: AC3` and `amendment return: AC4` are written in the shape `/milestone-review` reserves for an amendment executing a defect return from review. No review has run on this milestone and neither amendment is a return; both were made at the implement question gate. The lines stand as history (IP4); the amendment-return count for this milestone is zero.
+- 2026-08-31: T3 — AC5's two arrangements. The version-skewed record is planted on two.qmd, so index.qmd, which renders first and builds the section that chapter's term belongs to, is the one chapter that meets it: three warnings, `Bramble` recovered and linking to two.qmd's page rather than to the anchor the refused record carried. The store directory replaced by a regular file draws 20 recovery, 5 write-failure and 2 marker-position warnings, exits 0, and prints every term the book marks.
+- 2026-08-31: AC6 amended at a mini gate — its second clause named an effect its mutant cannot produce, since the chapter AC5's version-skewed render refuses carries no placement marker and a marker moves where a section prints rather than which terms it holds. Criteria audit ran in FULL mode ([O], fresh context, user-facing tier) over the amended wording and returned four findings: an unbounded trailing quantifier and a referent reaching outside the file, both fixed in the wording; AC5's two routes losing their planted-defect coverage, answered by a fifth T4 mutant over the store-directory probe; and AC6 binding an instrument property without saying so, which is the shape the gate chose deliberately and is recorded here rather than in the criterion.
+- 2026-08-31: D-043 written — an existing-but-unlistable store directory is told apart from an absent record, so every chapter is recovered from its source rather than silently dropped. Suite 578 checks, exit 0.
 
 ## Decisions
 

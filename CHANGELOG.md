@@ -60,6 +60,31 @@
 
 ### Output
 
+- In an HTML book, a chapter whose record this render opened and could not use
+  — a stale file where the record belongs, a record written by an older version
+  of this extension, a record whose shape this version refuses — no longer
+  costs the book that chapter's terms. The chapter's own `.qmd` is read and
+  parsed instead, and the terms it marks and the placement markers it carries
+  join the book's index. Because those markers say which indexes a chapter
+  places, a book whose marker chapters' records cannot be read now prints the
+  index no marker names in its last chapter, where before it printed no such
+  section on any page.
+
+  A recovered term links to its chapter's page with no fragment: the id it
+  would link to is minted while that chapter renders, and only its record
+  carries it. A mark reaching the chapter through an include shortcode or an
+  executed cell is not recovered, and neither is one inside a block or span
+  carrying `.content-visible` or `.content-hidden`, which recovery takes out
+  whole whatever its `when-` or `unless-` attributes say; a chapter source
+  Pandoc's markdown reader cannot read recovers nothing at all. A record
+  that is simply absent is not recovered either, so a first render is
+  unchanged.
+
+  The two reports about a record this render could not use each say which of
+  three things happened for that chapter — its terms were read back out of its
+  own source, its source parsed and carried no mark this route can reach, or
+  its source could not be read either.
+
 - **Changed default.** The four words the HTML and EPUB index prints for
   itself now follow the document's `lang:` instead of always being English:
   the `Symbols` heading, the `see` and `see also` in front of a

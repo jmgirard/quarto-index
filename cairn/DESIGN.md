@@ -421,7 +421,9 @@ composes the very string the index prints, so it is emphasized whole (D-008).
 **Book projects** split the HTML back-end in two, and leave the LaTeX one
 alone. A PDF book is rendered as one merged document, so its marks are already
 in one process; an HTML book renders each chapter separately, so no chapter can
-see another's. Each chapter therefore writes what it found — levels,
+see another's except through what that chapter left behind, or — where what it
+left behind cannot be used — through that chapter's own source (added M064).
+Each chapter therefore writes what it found — levels,
 cross-reference targets, the mention role where a mark declares one, anchor
 ids, its own output page — to a sidecar store
 under the project's `.quarto/` scratch directory, keyed by chapter source path,
@@ -447,10 +449,27 @@ known locally and never read back from the store, so a chapter whose own record
 failed to write still knows what it is. Nothing about the store may break a
 render (IP2): the write is one guarded unit, a record is validated against a
 version and a shape before it is read, and every failure costs that chapter's
-entries and says so. Five cases are reported rather than guessed at (corrected
-M063, which retired two of the seven M061 left): a book whose chapters mark
-terms but whose
-author wrote no marker anywhere (reported by the last chapter, the only one
+entries and says so. A record the reading chapter OPENED and could not use —
+undecodable, refused for its shape, or written by another version — sends it to
+that chapter's source instead: the file is read and parsed inside one guard,
+and the marks and placement markers the parse yields join the book's index
+(added M064, D-041). Recovery carries the author's own values alone — the
+printed levels, the cross-reference targets that survive the self-target drop
+and the index each mark files in, and which indexes the chapter places. The
+surviving targets are load-bearing: a mark with one contributes no locator.
+It carries no anchor, so a recovered locator links to the chapter's page and
+no fragment; no resolved role and no pairing verdict, which are
+conclusions a chapter reaches about itself (D-009); and no declared sort key.
+It never fires on a record that is simply ABSENT, so a first render is
+unchanged. A mark reaching the chapter through an include shortcode or an
+executed cell is not in that parse and is not recovered, and neither is one
+inside a block or span carrying Quarto's `.content-visible` or
+`.content-hidden` class, which the reader takes out whole before it reads
+anything (D-042); a source Pandoc's markdown reader cannot read recovers
+nothing, and the reading chapter's own record report says so. Five cases are
+reported rather than guessed at (corrected M063, which retired two of the
+seven M061 left): a book whose chapters mark terms but whose author wrote no
+marker anywhere (reported by the last chapter, the only one
 that can know), a marker in a book that marks nothing, a second marker chapter
 (the first in book order builds the index), a marker with chapters after it
 (whose entries are one render behind), and a page Quarto presents as a book
@@ -458,8 +477,9 @@ chapter without the metadata this needs — which falls back to indexing that
 page alone, the pre-M05 defect, and so is never silent. The two M063 retired
 were an index no marker names whose section the last placing chapter did not
 take on, and that same index taken on by two chapters at once; the book's last
-chapter takes the section on wherever the records it read show any chapter
-placing an index, so neither can arise (KI214 is the residual case). The record
+chapter takes the section on wherever the records it read — recovery included —
+show any chapter placing an index, so neither can arise (KI214 is the residual
+case, narrowed M064 to a record that is absent rather than unusable). The record
 fields they read — `adopted`, `unseen`, and M60's `later` — went with them, and
 `STORE_VERSION` did not move: a record still carrying any of them is read as a
 record without them, so an upgrade costs no chapter its terms. The store is
@@ -1325,29 +1345,27 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   only U+00A0 and U+200B reach one. A transposed code point in the list — say
   `\u{2007}` written as `\u{2070}`, a visible glyph — would ship silently.
   — M59 review F6
-- **KI205.** A book's index section for an index no marker names is printed
-  short the terms of any chapter whose record cannot be read — a chapter whose
-  store path is held by something else, a project tree that is read-only. The
-  book's last chapter builds the section from the records it could read, and a
-  chapter's marks reach the index by no other route. M063 made the section
-  printable, and did not make those terms reachable; the render says which
-  chapter, twice, in the unreadable-record and failed-write reports. Narrowed
-  M063 from the whole section being lost. — M60 review F11, corrected M061
-  review F4, narrowed M063
+- **KI205.** A book's index section is printed short the terms of any chapter
+  whose record is ABSENT — a chapter of a read-only project tree that has never
+  been rendered. A record that was opened and could not be used no longer costs
+  its chapter's terms: M064 reads that chapter's own source instead. Recovery
+  never fires on an absent record, so a book rendered for the first time into a
+  tree whose records cannot be written keeps this shape, and a chapter's marks
+  reach the index by no other route. Narrowed M063 from the whole section being
+  lost, and M064 from every unreadable record to the absent one. — M60 review
+  F11, corrected M061 review F4, narrowed M063, narrowed M064
 - **KI214.** A book prints no section for an index no marker names where the
   last chapter can read a usable record for none of the chapters that place
-  one. The proviso on M063's rule — some chapter of the book places an index —
-  is `first`, which each chapter derives from the records it could read plus
-  its own marker, so a last chapter that carries no marker and reads no placing
-  chapter's record concludes the book places nothing and builds no section.
-  Observed 2026-08-30 on a scratch copy of `examples/book-placement/` with the
-  store paths of both `index.qmd` and `three.qmd` held by directories: two
-  consecutive whole-book renders each printed `alpha` in `index.html` and
-  `beta` in `three.html` and no `gamma` section on any page, both exiting 0.
-  The same shape as KI205 — an unwritable record costing more than its own
-  chapter's terms — and the same remedy, a route to a chapter's marks that does
-  not go through the store.
-  — M063 AC3 criteria audit
+  one, and none of those records can be recovered. The proviso on M063's rule
+  — some chapter of the book places an index — is `first`, which each chapter
+  derives from the records it could read plus its own marker. M064 puts a
+  recovered chapter's markers into that derivation, so a held or refused record
+  no longer hides a placement marker; what is left is the ABSENT record, which
+  recovery does not read — a chapter rendered on its own against a store no
+  earlier render wrote. Narrowed M064 from every unusable record: the
+  two-held-paths arrangement this was observed on is M064-AC3, where both
+  renders now print `gamma` in `five.html`. — M063 AC3 criteria audit, narrowed
+  M064
 - **KI215.** The two store reports repeat once more than
   `site/books.qmd` states in a book whose fallback set is entirely unmarked.
   The fallback loop sets `builds = true` for every index no marker names,
@@ -1410,3 +1428,31 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   render survives and reports once, so IP2 holds; what the author is shown is
   the second failure rather than the first, beside an ERROR line the extension
   did not mean to print. Observed 2026-08-30 on M061-AC3's render. — M061 T8
+- **KI216.** A book chapter that declares `output-file:` in its own front
+  matter drops out of the book's index entirely and indexes itself alone.
+  `quarto.doc.output_file` for such a chapter is `<project>/<name>.html`
+  rather than a path under the project's output directory, so
+  `book_context`'s `strip_prefix(output, out)` returns nil, the chapter takes
+  the no-metadata fallback, and it writes no record — its terms reach no
+  section of the book and no route recovers them, since recovery reads a
+  record that was opened and refused rather than one that was never written.
+  Observed 2026-08-30 on a scratch copy of `examples/book-placement/` with
+  `output-file: custom-four.html` in `four.qmd` and `output-file: bare-two` in
+  `two.qmd`: both pages landed in `_book/` under the names their front matter
+  asked for, while the filter was told `<project>/custom-four.html` and
+  `<project>/bare-two.html`; both chapters drew the looks-like-a-book warning
+  and neither wrote a store record. — M064 T2 probe
+- **KI217.** A `STORE_VERSION` bump makes every record in the store unusable at
+  once, and every unusable record now costs a re-read and a `pandoc.read` of
+  that chapter's source. Each chapter of an n-chapter book reads the n-1
+  records that are not its own, so the first whole-book render after such an
+  upgrade parses n(n-1) chapter sources — derived from `store_read`'s loop and
+  `recover_record`'s call site, not measured. Nothing bounds or caches it and
+  nothing names it to an author; the cost is invisible at this repo's fixture
+  sizes and unmeasured at book sizes. — M064 review F7
+- **KI218.** A recovered mark naming an index the book does not declare is
+  refiled into the first declared index with nothing said. `recovered_marks`
+  resolves the name through `mark_index` before the rebuilt record is handed
+  on, so the unknown name is already gone by the time `fold_undeclared` walks
+  the records and never reaches the `refiled` list the report is drawn from. A
+  stored record in the same position draws that report. — M064 review F5

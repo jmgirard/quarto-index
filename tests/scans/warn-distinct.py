@@ -244,8 +244,12 @@ if blank:
 # An exact count, not a floor: a floor passes while a warning quietly stops
 # being read. This number changes when a warning is added or removed.
 # 79 until M063, which deleted the unplaced-section and doubled-section
-# reports with the recorded state they read: 79 - 2 = 77.
-EXPECTED = 77
+# reports with the recorded state they read: 79 - 2 = 77. M064 splits the
+# unreadable-record and stale-record reports in THREE apiece — one wording
+# where the chapter's own source was read back, one where it parsed and
+# carried no mark this route reaches, and one where it could not be read at
+# all — so 77 + 4 = 81.
+EXPECTED = 81
 if len(lits) != EXPECTED:
     print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
           f'{EXPECTED}. Either a warning was added or removed without updating '

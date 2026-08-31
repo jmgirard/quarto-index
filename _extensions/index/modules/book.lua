@@ -98,7 +98,53 @@ local function book_context(doc)
     -- another chapter's site-relative href into a link this page can use.
     offset = as_href(quarto.project.offset or "."),
     dir = pandoc.path.join({ root, ".quarto", STORE_DIR }),
+    -- The project directory the chapter list is relative to. Carried because
+    -- a chapter whose record cannot be used is read back from its own source,
+    -- and `book.render` names that source relative to here.
+    root = root,
   }
+end
+
+-- The extension this render is writing pages under, read off this chapter's
+-- own output page rather than assumed: `.html` for every book this code runs
+-- for, and the one spelling the render is known to be producing.
+local function output_extension(ctx)
+  return ctx.href:match("(%.[^%./]+)$") or ""
+end
+
+-- Another chapter's page, as this book's output tree spells it. The store
+-- normally answers this — every record carries its chapter's own `href` — so
+-- this is for the chapter whose record could not be used and whose page must
+-- therefore be derived from what Quarto's own conventions make it.
+--
+-- `meta` is that chapter's own parsed metadata. Quarto lets a chapter name its
+-- output file there, and probing this book fixture on 2026-08-30 with
+-- `output-file: custom-four.html` in one chapter and `output-file: bare-two`
+-- in another produced `custom-four.html` and `bare-two.html`: the name is
+-- taken as written where it carries an extension, and given the output
+-- extension where it does not. It is relative to the chapter, as the chapter's
+-- own source path is.
+--
+-- That same probe found `quarto.doc.output_file` for such a chapter pointing
+-- outside the project's output directory, so `book_context` above returns nil
+-- for it and it writes no record at all (KI216). A chapter declaring
+-- `output-file:` therefore reaches this branch only where an earlier render
+-- left it a record this version can no longer use. The branch is written all
+-- the same: the alternative is a locator that silently names a page the book
+-- does not have.
+local function chapter_href(ctx, file, meta)
+  local dir = file:match("^(.*/)") or ""
+  local declared = meta and meta["output-file"] or nil
+  if declared ~= nil then
+    local name = as_href(pandoc.utils.stringify(declared))
+    if name ~= "" then
+      if not name:match("[^/]%.[^%./]+$") then
+        name = name .. output_extension(ctx)
+      end
+      return dir .. name
+    end
+  end
+  return (file:gsub("%.[^%./]*$", "")) .. output_extension(ctx)
 end
 
 -- Another chapter's page, as a link from the page holding the index.
@@ -449,6 +495,185 @@ local function fold_undeclared(records)
   return refiled
 end
 
+-- ---------------------------------------------------------------------------
+-- Recovery: one chapter's record rebuilt from that chapter's own source.
+--
+-- The store is the primary route and stays it. This runs only where the store
+-- held a record the reading chapter OPENED and could not use, which costs that
+-- chapter every term it marked; a record that is simply ABSENT is not this
+-- case and is left alone, so a first render is unchanged (D-041).
+--
+-- What comes back is the AUTHOR's own values and nothing else: the levels each
+-- mark indexes, the index it files in, and which indexes the chapter places.
+-- A chapter's own conclusions about itself — the anchor it minted, the role it
+-- resolved, the verdict it reached about a range — are not here and are not
+-- invented (D-009, D-021). So a recovered mark carries no anchor, and its
+-- locator is the chapter's page with no fragment; it indexes as though
+-- `range=` and `role=` were absent; and it declares no sort key, so its terms
+-- file under their printed text.
+--
+-- The parse is an AST walk with this extension's own mark reader, which is why
+-- D-040's first ground against reading source does not hold here. Its second
+-- stands and is this route's boundary: Quarto expands include shortcodes and
+-- executable cells before any filter runs, and this parse is of the file on
+-- disk, so a mark arriving by either route is not in it. Neither is a mark
+-- inside a block or span Quarto shows or hides by format, profile or metadata
+-- — `drop_conditional` below takes those out whole before anything is read.
+-- ---------------------------------------------------------------------------
+
+-- Quarto's two conditional-content classes. A block or span carrying either is
+-- kept or dropped by the format being rendered, the active profile, or a
+-- metadata value — settled by Quarto before any filter runs, and recorded
+-- nowhere in the file on disk. This route reads the file on disk, so it cannot
+-- tell which way the render went, and takes the whole element out rather than
+-- guess: a mark inside one is left out even where the render in hand would
+-- have kept it. That costs a term, where the other direction puts a term in
+-- the index whose page does not carry it.
+local CONDITIONAL_CLASSES = { "content-visible", "content-hidden" }
+
+local function is_conditional(el)
+  for _, class in ipairs(CONDITIONAL_CLASSES) do
+    if el.classes:includes(class) then
+      return true
+    end
+  end
+  return false
+end
+
+-- The parsed blocks with every conditional element removed, whole — its
+-- content with it, and a marker div carrying one of the classes along with the
+-- rest. The walk is bottom-up, so a conditional nested inside another is
+-- removed with its parent either way.
+local function drop_conditional(blocks)
+  return blocks:walk({
+    Div = function(div)
+      if is_conditional(div) then
+        return {}
+      end
+      return nil
+    end,
+    Span = function(span)
+      if is_conditional(span) then
+        return {}
+      end
+      return nil
+    end,
+  })
+end
+
+-- Every index mark in a chapter's parsed blocks, in document order, as a
+-- record's marks. The blocks are `drop_conditional`'s, never the raw parse.
+-- Silent throughout: every report about what an author wrote is drawn by that
+-- chapter's own render, and drawing them again here would name another
+-- chapter's mistakes once per chapter that reads it.
+local function recovered_marks(blocks)
+  local marks = {}
+  blocks:walk({
+    Span = function(span)
+      if not span.classes:includes(qi_core.INDEX_CLASS) then
+        return nil
+      end
+      local entry = span.attributes["entry"]
+      local visible = qi_marks.span_text(span)
+      local context = qi_marks.describe(entry, visible)
+      local xrefs, declared = {}, 0
+      for _, kind in ipairs(qi_core.XREF_KINDS) do
+        local value = span.attributes[kind.attr]
+        if value ~= nil then
+          declared = declared + 1
+          local levels = qi_marks.target_levels(value, kind.attr, context, false)
+          if levels then
+            xrefs[#xrefs + 1] = { attr = kind.attr, levels = levels }
+          end
+        end
+      end
+      local levels = qi_marks.derive_levels(entry, visible, declared,
+                                            #span.content, context, nil, false)
+      if levels == nil then
+        return nil
+      end
+      -- The format-neutral self-target drop the emitting pass makes: a target
+      -- naming the entry it is written on says nothing, and the mark then
+      -- indexes as usual. Made here too, so what survives is what decides
+      -- whether this mark contributes a locator at all.
+      local own_key = qi_levels.levels_key(levels)
+      local surviving = {}
+      for _, xref in ipairs(xrefs) do
+        if qi_levels.levels_key(xref.levels) ~= own_key then
+          surviving[#surviving + 1] = xref
+        end
+      end
+      marks[#marks + 1] = {
+        levels = levels,
+        xrefs = surviving,
+        context = context,
+        -- Resolved against what the READING chapter declares, which for a book
+        -- is the same `indexes:` metadata the recovered chapter read: the name
+        -- is settled here rather than left for `fold_undeclared`, exactly as a
+        -- mark's own chapter settles it.
+        index = qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR],
+                                      context, false),
+        -- This mark has no anchor and never will, so `mark_target` cannot
+        -- build a fragment for it. The flag is what tells a locator-
+        -- contributing recovered mark from a cross-reference mark, which has
+        -- no anchor either and must contribute no locator.
+        page_locator = #surviving == 0 or nil,
+      }
+      return nil
+    end,
+  })
+  return marks
+end
+
+-- The indexes a chapter places, in the order it places them: one entry per
+-- index, the first marker naming it holding the site, exactly as
+-- `resolve_markers` settles it inside a rendering chapter. Top-level markers
+-- alone — a nested one places nothing there and places nothing here. The
+-- blocks are `drop_conditional`'s, so a marker Quarto would drop places
+-- nothing here either.
+local function recovered_markers(blocks)
+  local names, seen = {}, {}
+  for _, block in ipairs(blocks) do
+    if qi_marker.is_marker(block) then
+      local name =
+        qi_indexes.authored_index(block.attributes[qi_indexes.INDEX_ATTR])
+      if not seen[name] then
+        seen[name] = true
+        names[#names + 1] = name
+      end
+    end
+  end
+  return names
+end
+
+-- One chapter's record, rebuilt from its source, or nil where nothing could be
+-- rebuilt. Every step is inside one guard: the file may be gone, unreadable or
+-- something Pandoc's markdown reader refuses, and none of that may take the
+-- render down with it (IP2). A failure returns nil and the caller reports it.
+local function recover_record(ctx, file)
+  local ok, record = pcall(function()
+    local fh = io.open(pandoc.path.join({ ctx.root, file }), "r")
+    if not fh then
+      error("cannot open", 0)
+    end
+    local text = fh:read("a")
+    fh:close()
+    if text == nil then
+      error("cannot read", 0)
+    end
+    local parsed = pandoc.read(text, "markdown")
+    local blocks = drop_conditional(parsed.blocks)
+    return { version = STORE_VERSION, file = file,
+             href = chapter_href(ctx, file, parsed.meta),
+             marker = recovered_markers(blocks),
+             marks = recovered_marks(blocks) }
+  end)
+  if not ok then
+    return nil
+  end
+  return record
+end
+
 -- Returns the usable records in book order and the chapters whose record this
 -- version refused for being written by another one — the caller's to report.
 --
@@ -480,23 +705,44 @@ local function store_read(ctx, own)
         if ok and valid_record(data, file) then
           records[#records + 1] = data
         else
-          -- Never silent: the cost of a record this version cannot use is a
-          -- chapter missing from the index, and the fix is the same either way
-          -- — render that chapter again. WHY it could not be used is not: a
-          -- record left by an older version of this extension is perfectly
-          -- readable and simply stale, and calling that unreadable sends an
-          -- author looking for a corrupt file that is not there.
+          -- Opened and unusable, which is the one case the source route is
+          -- for: this record costs its chapter every term it marked, and the
+          -- chapter's own source still says what its author wrote (D-041). An
+          -- ABSENT record never reaches here at all — `io.open` returned
+          -- nothing and this branch was not taken — so a first render is
+          -- unchanged.
+          local rebuilt = recover_record(ctx, file)
+          if rebuilt ~= nil then
+            records[#records + 1] = rebuilt
+          end
+          -- Three outcomes, not two. A parse that succeeds and finds no mark
+          -- at all is not a recovery: the chapter's terms are as absent as
+          -- they were, and telling the author they came back sends them
+          -- looking in the index for a term that is not there. It is the
+          -- ordinary shape for a chapter whose marks arrive through an
+          -- include shortcode or an executed cell, neither of which is in the
+          -- file this route reads.
+          local recovered = rebuilt ~= nil and #rebuilt.marks > 0
+          -- Never silent: the fix is the same either way — render that chapter
+          -- again. WHY it could not be used is not: a record left by an older
+          -- version of this extension is perfectly readable and simply stale,
+          -- and calling that unreadable sends an author looking for a corrupt
+          -- file that is not there. What recovery returned is not either, and
+          -- each report says which of the two happened for its chapter.
           if ok and type(data) == "table" and data.version ~= STORE_VERSION then
             -- Handed back rather than reported here: a version-skewed record
             -- costs the chapters that BUILD an index their share of that
             -- chapter's terms, and every other chapter of the book reads the
             -- store without printing anything out of it. Reported by the caller,
             -- once per chapter that builds (M55).
-            stale[#stale + 1] = file
+            stale[#stale + 1] =
+              { file = file, recovered = recovered, parsed = rebuilt ~= nil }
+          elseif recovered then
+            qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
+          elseif rebuilt ~= nil then
+            qi_core.warn(("the recorded index marks for %s could not be read, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(file))
           else
-            qi_core.warn(("the recorded index marks for %s could not be read and were "
-                  .. "ignored; render that chapter again, or render the whole "
-                  .. "book, to put its terms back in the index"):format(file))
+            qi_core.warn(("the recorded index marks for %s could not be read and neither could that chapter's own source, so none of its terms are in the index; render that chapter again, or render the whole book, once both files can be read"):format(file))
           end
         end
       end
@@ -699,6 +945,12 @@ local function book_marks(ctx, records)
                              mark.levels),
         xrefs = xrefs,
         anchor = mark.anchor,
+        -- Set only on a mark recovered from a chapter's source, where nothing
+        -- minted an anchor: it says this mark contributes a locator all the
+        -- same, and that locator is the chapter's page. Without it a recovered
+        -- mark is indistinguishable from a cross-reference mark, which has no
+        -- anchor either and must contribute no locator.
+        page_locator = mark.page_locator,
         -- The chapter's own resolved role, which is all a book needs now that
         -- nothing pairs here: a mark carries whatever role its own chapter
         -- concluded for it.
@@ -943,11 +1195,14 @@ local function html_book(doc, ctx, marker, taken)
   -- an author whose chapter has silently dropped out of a book that will get
   -- an index as soon as they write a marker is told nothing at all.
   if builds or first == nil then
-    for _, file in ipairs(stale) do
-      qi_core.warn(("the recorded index marks for %s were written by a different "
-            .. "version of this extension and were ignored; render that "
-            .. "chapter again, or render the whole book, to put its "
-            .. "terms back in the index"):format(file))
+    for _, entry in ipairs(stale) do
+      if entry.recovered then
+        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(entry.file))
+      elseif entry.parsed then
+        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(entry.file))
+      else
+        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension and that chapter's own source could not be read, so none of its terms are in the index; render that chapter again, or render the whole book, once its source can be read"):format(entry.file))
+      end
     end
     for _, entry in ipairs(refiled) do
       qi_core.warn(('the recorded index marks for %s name the index "%s", which this book does not declare; they are filed in the first index it does declare, and their sort keys with them — render that chapter again, or render the whole book, once the %s: metadata is settled'):format(entry.file, entry.name, qi_indexes.INDEXES_KEY))
@@ -1029,12 +1284,17 @@ M["as_href"] = as_href
 M["strip_prefix"] = strip_prefix
 M["book_context"] = book_context
 M["relative_href"] = relative_href
+M["output_extension"] = output_extension
+M["chapter_href"] = chapter_href
 M["store_path"] = store_path
 M["build_record"] = build_record
 M["record_for_reading"] = record_for_reading
 M["store_write"] = store_write
 M["valid_record"] = valid_record
 M["fold_undeclared"] = fold_undeclared
+M["recovered_marks"] = recovered_marks
+M["recovered_markers"] = recovered_markers
+M["recover_record"] = recover_record
 M["store_read"] = store_read
 M["book_sort_keys"] = book_sort_keys
 M["book_sort_for"] = book_sort_for

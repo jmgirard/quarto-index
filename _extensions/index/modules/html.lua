@@ -138,7 +138,14 @@ end
 -- on this same page; in a book it is the mark's anchor on the page of the
 -- chapter that carries it, written relative to the page holding the index.
 -- One function for both, so a locator cannot mean two different things.
+-- A mark recovered from another chapter's source has no anchor: nothing minted
+-- one for it, and a fragment computed here would name an id that page may not
+-- carry, which links to nowhere in silence. Its locator is the chapter's page
+-- and nothing after it.
 local function mark_target(mark)
+  if mark.anchor == nil then
+    return mark.href or ""
+  end
   return (mark.href or "") .. "#" .. mark.anchor
 end
 
@@ -169,12 +176,32 @@ local function build_entry_tree(marks)
     -- range differently shaped for no reason a reader could see. `paired` is
     -- the mark's own chapter's verdict — the one scope a range pairs in
     -- (D-009), whether this index is a document's or the book's.
-    if mark.anchor and mark.paired ~= "close" then
-      -- A table rather than the bare target string: a locator now has a role
-      -- as well as a destination, and the two travel together so a reordering
-      -- cannot separate them (M20).
-      node.locators[#node.locators + 1] =
-        { target = mark_target(mark), role = mark.role }
+    -- `page_locator` is the book's flag for a mark recovered from a chapter's
+    -- source: it has no anchor and still contributes a locator, where a
+    -- cross-reference mark has no anchor and must not.
+    if (mark.anchor or mark.page_locator) and mark.paired ~= "close" then
+      -- Two marks that land on the same destination in the same role are one
+      -- locator, not two: a reader following either arrives at the same place,
+      -- and printing it twice reports how the author spread the marks rather
+      -- than anything a reader wants — the rule the cross-references below
+      -- already keep. With an anchor this can never fire, since each mark
+      -- mints an id of its own; it fires on a chapter recovered from its
+      -- source, whose marks all carry that chapter's page and nothing after
+      -- it, and where a term marked twice would otherwise print the same link
+      -- twice over.
+      local target = mark_target(mark)
+      local already = false
+      for _, existing in ipairs(node.locators) do
+        if existing.target == target and existing.role == mark.role then
+          already = true
+        end
+      end
+      if not already then
+        -- A table rather than the bare target string: a locator now has a role
+        -- as well as a destination, and the two travel together so a reordering
+        -- cannot separate them (M20).
+        node.locators[#node.locators + 1] = { target = target, role = mark.role }
+      end
     end
     for _, xref in ipairs(mark.xrefs) do
       -- Two marks carrying the same target on the same key are one

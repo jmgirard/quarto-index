@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M067: The editor-metadata checks read what they claim to read
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -113,7 +113,7 @@ repair's evidence is therefore a planted construct, not a shipped one, on the
       would be a demonstration read as syntax) is untrue of the swept domain,
       which carries no `mention=""` or `range=""` construct at all — correct
       the docstring to the ground that holds, or drop the narrowing.
-- [ ] T6. Run `tests/run-tests.sh` and `tests/run-tests.sh --self-test`
+- [x] T6. Run `tests/run-tests.sh` and `tests/run-tests.sh --self-test`
       sequentially (PROFILE: never two invocations at once) and record both
       check counts and exit codes.
 
@@ -131,6 +131,7 @@ repair's evidence is therefore a planted construct, not a shipped one, on the
 - 2026-09-01: T4 — `check_docs` splits its arguments at `--`; a page it cannot read fails through `read`'s own message naming the path. The four suite call sites moved to the new shape; plants added for an absent page and for a call with no `--`.
 - 2026-09-01: T5 — `stated_forms` reads "There are exactly <count> supported forms" off the page (digits or one to twenty in words, exactly one such sentence) and `form_table` holds the row count to it; `SYNTAX_FORMS` is gone. Plants: the sentence edited to eleven, a row added, the sentence removed, a non-number word. The narrowing's docstring now states the ground a same-session read of the site supports: the empty-value demonstrations are backticked prose, which the sweep never reads as a construct. `int()` is guarded by `isascii()` per the M36 lesson.
 - 2026-09-01: T6 — plain run over d7c555c: 578 checks, exit 0. The module docstring's `schema` paragraph still stated the empty-value ground T5 corrected; fixed after that run (docstring only), the self-test run below is over the corrected tree.
+- 2026-09-01: T6 — self-test run over e7f9a55: 1085 checks, exit 0 (1071 on M066; the 14 added are the M067 plants and probes). Status → review.
 - 2026-09-01: T1–T5 landed in one checkpoint rather than five: their suite evidence is one contiguous self-test block, and the block was run extracted on its own before the full suite (T6).
 
 ## Decisions

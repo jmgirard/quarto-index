@@ -26,8 +26,8 @@ DOCUMENT, never a widened scan of what the filter's source accepts.
 
       The values enumerated for `mention` and for `range` are read from the
       form table in <syntax-table.qmd> and not from every occurrence in the
-      sweep: a page demonstrating a no-op writes an empty value, which is a
-      value no `enum:` should offer. The table is that file's rows carrying a
+      sweep: the table is the one place the docs enumerate those values as
+      a set. The table is that file's rows carrying a
       construct in their first cell, and there are as many of them as that
       file's own sentence "There are exactly <count> supported forms"
       states — read off the page, so a row added or the sentence edited

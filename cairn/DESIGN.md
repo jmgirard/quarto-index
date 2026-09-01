@@ -950,6 +950,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI134.** The section-end regex matches one character into a `####`
   heading. — M37 review
 - **KI135.** Mutation anchors are matched anywhere in the file. — M37 review
+- **KI222.** `m061_mutant` fails a substitution that matched nothing and never
+  one that matched more than once, so an anchor gone ambiguous splices every
+  match into the filter and passes. The counts file already carries the
+  number. — M066 review F7
 - **KI138.** `check_folded_heading` raises rather than reporting. — M38 review
   round 3
 - **KI140.** The gallery's AC4 extracts with plain `pdftotext` where the

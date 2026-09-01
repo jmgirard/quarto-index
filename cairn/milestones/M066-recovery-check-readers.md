@@ -63,9 +63,11 @@ the disposition D-011 records for M24's own read-repair.
 
 - [ ] AC1. Every `check_warning_count` site in `tests/run-tests.sh` that
       asserts a literal 0 occurrences of one of the six `WARN_STORE_*`
-      record-report wordings defined at `tests/run-tests.sh:871-876` asserts,
-      on that same log, a literal 0 occurrences of the other two wordings of
-      that constant's family; the domain is the sites that
+      record-report wordings defined at `tests/run-tests.sh:871-876` has,
+      within the same enclosing shell function and against the same log-path
+      expression, a `check_warning_count` site for each of the other two
+      wordings of that constant's family, each asserting a literal count; the
+      domain is the sites that
       `grep -n -A1 'check_warning_count "' tests/run-tests.sh` lists.
 - [ ] AC2. `m061_mutant` fails, naming the substitution that matched nothing,
       when any one substitution in its expression matches nothing — including
@@ -126,6 +128,7 @@ the disposition D-011 records for M24's own read-repair.
 - 2026-09-01: T3 edit landed: `m061_mutant` takes `<slug> <label> <substitution>...`, one perl process applying each argument in turn and writing its match count to `$M061W/<slug>-counts`; a count of 0 fails naming the substitution's ordinal and its first 72 characters, a count file short of the arguments fails, and the whole-file `cmp` stays as a backstop. The 12 callers reorder to label-then-expression; the `m065-carryrange` site's two substitutions become `M065_CARRYRANGE_CARRY` and `M065_CARRYRANGE_PAIR`. Isolated bash run over a five-line stand-in filter: intact counts 1 and 1; the carry slipped names substitution 1 of 2 with the spliced file still differing from the original; the pair slipped names 2 of 2; both slipped names 1; a non-compiling expression fails behind perl's own message.
 - 2026-09-01: T4 edit landed: `m066_slipped` in the M065 self-test block runs `m061_mutant` in a subshell with each carryrange substitution slipped (a `;` for the `,` the pattern anchors on) and the other intact, holding the exit non-zero, the message to name that ordinal, and the spliced file to differ from the original, so the case caught is the half-applied one.
 - 2026-09-01: T5/T6 edits landed: nine rows added to `books-claims.txt` (the recovery route; the no-marks report; what comes back; no fragment; conditional content out whole; no range and no principal; an absent record is not recovered; an unlistable store directory; a store that still lists), the call's FAIL text and the rows' comment extended to say so, and the count-coupled self-test string moved from 9 to 18; `python3 tests/sitecheck.py claims site/books.qmd` over the extracted rows states all 18, exit 0. Correction to the T2 line: 27 no-marks sites were added, not 26 (27 + 4 = 31). Boxes T2-T6 stay unticked until T7's two runs are clean.
+- 2026-09-01: substantive amendment, mini gate, user adopted the recommended option: AC1's "asserts, on that same log, a literal 0 occurrences of the other two wordings" becomes "has, within the same enclosing shell function and against the same log-path expression, a `check_warning_count` site for each of the other two wordings of that constant's family, each asserting a literal count". Reason: the plan's model sites hold one wording of the family at 1 where the log draws it, so a literal 0 of the other two was unsatisfiable there. Fresh-context [O] reader ran the REDUCED audit over the proposed wording before it was written: one finding (bounded promise: "on that same log" was undecidable from the named grep where two functions share one log-path text, `$WORK/place-$slug.log`), repaired by the function-and-expression clause above; proportionality and instrument clear.
 
 ## Decisions
 

@@ -6830,7 +6830,7 @@ m061_mutant() {   # <slug> <label> <perl substitution>...
     open my $out, ">", $counts or die "$counts: $!\n";
     for my $i (0 .. $#subs) {
       my $n = eval "\$text =~ $subs[$i]";
-      die "substitution " . ($i + 1) . " did not compile: $@" if $@;
+      die "substitution " . ($i + 1) . " could not be applied (a compile error, or a death inside it): $@" if $@;
       print $out ($i + 1), "\t", ($n || 0), "\n";
     }
     close $out or die "$counts: $!\n";
@@ -6840,6 +6840,8 @@ m061_mutant() {   # <slug> <label> <perl substitution>...
   local ordinal applied text counted=0
   while IFS=$'\t' read -r ordinal applied; do
     counted=$((counted + 1))
+    [ "$ordinal" -ge 1 ] && [ "$ordinal" -le "$#" ] 2>/dev/null \
+      || fail "$label: perl reported a count for substitution $ordinal, which is not among the $# passed, so the mutation is not known to have applied"
     text="${!ordinal}"
     [ "$applied" -gt 0 ] \
       || fail "$label: substitution $ordinal of $# aimed at the filter matched nothing (<<${text:0:72}>>), so the render below would be reported as a check failing to matter when the fault is this mutation's"
@@ -6847,7 +6849,7 @@ m061_mutant() {   # <slug> <label> <perl substitution>...
   [ "$counted" -eq "$#" ] \
     || fail "$label: perl reported $counted substitution count(s) for the $# substitution(s) passed, so the mutation is not known to have applied"
   if cmp -s "$filter" "$M061W/$slug-spliced"; then
-    fail "$label: every substitution reported a match and the filter is still unchanged, so the counts above are not to be trusted"
+    fail "$label: every substitution reported a match and the filter is still unchanged, so the counts in $M061W/$slug-counts are not to be trusted"
   fi
   mv "$M061W/$slug-spliced" "$filter"
 }
@@ -8101,8 +8103,8 @@ MANIFEST
       && fail "M066-AC2 self-test: $label left the filter unchanged, so the other substitution did not apply either and this is not the half-applied case the count is held to catch"
     printf 'ok   M066-AC2 self-test: %s is refused naming substitution %s, and the filter still differs, which the whole-file guard alone would have passed\n' "$label" "$ordinal"
   }
-  M066_CARRY_SLIPPED='s{        xrefs = surviving;\n}{        xrefs = surviving,\n        range = span.attributes[qi_core.RANGE_ATTR],\n}'
-  M066_PAIR_SLIPPED='s{^  return marks; sorts\n}{  return marks, sorts\n}m'
+  M066_CARRY_SLIPPED='s{        xrefs = surviving;\n}{slipped}'
+  M066_PAIR_SLIPPED='s{^  return marks; sorts\n}{slipped}m'
   m066_slipped 1 "the range-carrying substitution slipped, the pairing one intact" \
     "$M066_CARRY_SLIPPED" "$M065_CARRYRANGE_PAIR"
   m066_slipped 2 "the pairing substitution slipped, the range-carrying one intact" \
@@ -20464,9 +20466,12 @@ one answer every render	That chapter is the end of the book's own chapter list, 
 an unusable record repeated	once for every chapter that builds an index section
 the recovery route	Where the record was there to open and could not be used, that chapter's own `.qmd` is read and parsed instead, and the terms it marks — and the placement markers it carries — join the book's index
 the no-marks report	Where the source parses and carries no mark this route can reach — a chapter whose marks all arrive through an include, say — the report says that instead, so nothing tells you terms came back when none did
-what comes back	What comes back is what you wrote.
+five things not returned	Five things recovery does not return.
+what comes back	An `entry=` naming several levels rebuilds its sub-entry and the parent it hangs under; a `sort=` still files the term where it asks; and `see=` and `see-also=` still print their lines, neither carrying a page number
+nothing through an include or a cell	Quarto expands both before any filter runs, and what is read here is the file on disk
 no fragment	A recovered term links to the chapter's page and nothing after it, so following it lands at the top of that page rather than at the marked passage
 conditional content out whole	so recovery takes such a block or span out whole, whatever its `when-` or `unless-` attributes say
+nothing where the source cannot be read	The report then says the source could not be read either, and that chapter's terms are missing from the index until it is rendered again
 no range and no principal	both ends of a range print the one page the chapter is on, and the role prints as an undeclared one does
 an absent record is not recovered	A record that is simply *absent* — a chapter that has never been rendered — is not recovered
 an unlistable store directory	where the store directory itself is there and cannot be listed — replaced by a file, or with its read permission gone — the records in it are out of reach rather than unwritten, and every chapter is read back from its source
@@ -20539,7 +20544,7 @@ SUPERSEDEPY
     "$M061D/books-oldrule.qmd" "M063-AC6 self-test" \
     || fail "M063-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
   m061_planted 'the books page stating the superseded chapter rule' \
-    'does not state 1 of the 18 claim(s)' \
+    'does not state 1 of the 21 claim(s)' \
     python3 tests/sitecheck.py claims "$M061D/books-oldrule.qmd" \
       "$WORK/books-claims.txt"
 

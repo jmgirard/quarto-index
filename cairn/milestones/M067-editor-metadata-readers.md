@@ -9,7 +9,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** m067-editor-metadata-readers
+- **Branch/PR:** m067-editor-metadata-readers · https://github.com/jmgirard/quarto-index/pull/67
 
 ## Goal
 
@@ -63,17 +63,17 @@ repair's evidence is therefore a planted construct, not a shipped one, on the
 
 ## Acceptance criteria
 
-- [ ] AC1. `parse_attrs` (`tests/editormeta.py:89-132`) reads a
+- [x] AC1. `parse_attrs` (`tests/editormeta.py:89-132`) reads a
       backslash-escaped quote inside a quoted attribute value as part of that
       value, ending the value at the next unescaped quote.
-- [ ] AC2. `attribute_sites` (`tests/editorfixture.py:161-191`) pairs each
+- [x] AC2. `attribute_sites` (`tests/editorfixture.py:161-191`) pairs each
       mark-class construct with the term of that same construct, so a snippet
       whose `.index` construct is not a span shifts no later construct's
       pairing.
-- [ ] AC3. `check_docs` (`tests/editormeta.py:419-441`) fails naming a
+- [x] AC3. `check_docs` (`tests/editormeta.py:419-441`) fails naming a
       documentation page it cannot read, rather than reclassifying that
       argument into a name to search for in the remaining pages.
-- [ ] AC4. The row count `table_values` requires of `site/syntax.qmd`'s form
+- [x] AC4. The row count `table_values` requires of `site/syntax.qmd`'s form
       table is read from that page's own stated sentence rather than from a
       literal in `tests/editormeta.py`.
 - [ ] AC5. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` each
@@ -137,3 +137,9 @@ repair's evidence is therefore a planted construct, not a shipped one, on the
 ## Decisions
 
 ## Review
+
+- 2026-09-01: reviewed over 67738c8 (branch even with `origin/main`, nothing to merge in); draft PR #67.
+- AC1 — direct probe of `parse_attrs` from a scratch script over 67738c8: `entry="a \"b=c\" d" sort="k"` reads as two attributes, `entry` holding `a "b=c" d`; `entry="p \\"` reads as `p \`; the single-quoted form reads the same way. Verified.
+- AC2 — direct probe: a `.index` div ahead of a `sort=` mark and a bare mark; `constructs` carries `term` None for the div, `The Hague` and `Den Haag` for the spans, and `attribute_sites` pairs `sort=` with `The Hague`. Verified.
+- AC3 — `docs <absent.html> README.md -- _schema.yml _snippets.json` fails naming the absent path through `read`'s own message, exit 1; a call with no `--` fails saying so, exit 1. Verified.
+- AC4 — `SYNTAX_FORMS` is absent from `tests/`, `site/` and `README.md`; `stated_forms` reads 10 off `site/syntax.qmd`'s sentence and `form_table` counts 10 rows. Verified.

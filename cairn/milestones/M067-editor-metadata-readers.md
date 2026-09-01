@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M067: The editor-metadata checks read what they claim to read
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** m067-editor-metadata-readers
 
 ## Goal
 
@@ -89,24 +89,24 @@ repair's evidence is therefore a planted construct, not a shipped one, on the
 
 ## Tasks
 
-- [ ] T1. Give `parse_attrs`'s quoted-value scan escape handling: a
+- [x] T1. Give `parse_attrs`'s quoted-value scan escape handling: a
       backslash-escaped quote belongs to the value, and the value ends at the
       next unescaped quote. Keep it a scan, not a pattern — the docstring's
       stated reason (`entry="a=b"` is one attribute) still holds.
-- [ ] T2. Plant a snippet body carrying an escaped quote in a value and show
+- [x] T2. Plant a snippet body carrying an escaped quote in a value and show
       the pre-repair scan manufacturing a spurious attribute name, then the
       repaired scan reading one value. The plant is required because no
       shipped snippet carries the shape.
-- [ ] T3. Pair terms with constructs by identity rather than by ordinal in
+- [x] T3. Pair terms with constructs by identity rather than by ordinal in
       `attribute_sites` — have `marked_terms` return the term against the
       construct it came from (or `None` where it skipped), so a skip cannot
       shift a later pairing. Plant a non-span `.index` construct ahead of two
       ordinary marks and show the mis-pairing before and its absence after.
-- [ ] T4. Classify `check_docs`'s arguments by something other than
+- [x] T4. Classify `check_docs`'s arguments by something other than
       existence — position or an explicit separator — and fail naming a page
       it cannot read. Extend the `m50_planted` block with the case an absent
       page produces, which today reddens naming the wrong file.
-- [ ] T5. Read the form count from `site/syntax.qmd`'s own sentence and hold
+- [x] T5. Read the form count from `site/syntax.qmd`'s own sentence and hold
       the table against it, so editing the sentence alone or adding a row
       alone each fail. Dispose of `table_values`'s narrowing rationale in the
       same pass: its docstring's ground (an `enum:` offering the empty string
@@ -124,6 +124,13 @@ repair's evidence is therefore a planted construct, not a shipped one, on the
 - 2026-08-31: plan gate chose keeping `parse_attrs` a hand-written scan (T1) over replacing it with Pandoc's own parse of the block, because reading the attribute through a render would make an internal-tier check depend on a process boundary and a Pandoc version; falsified by the scan and Pandoc disagreeing on a shape the snippets come to carry.
 - 2026-08-31: plan gate routed KI123 out rather than repairing it here, because its repair widens what `check_schema` asserts where the other four repair what a reader reads; falsified by a decision that `check_schema` should hold the docs' description promise after all.
 - 2026-08-31: criteria audit ran in REDUCED mode (internal tier, no RB-tripwire tag) over the five drafted criteria in a fresh-context [O] reader. One finding, fixed before writing: AC1 promised agreement with Pandoc's own parse on a rendered fixture, which crosses a process and environment boundary and binds a plant rather than the reader — restated as the reader's own behavior. Two cited ranges were corrected in passing (`parse_attrs` 89-132, `check_docs` 419-441).
+- 2026-09-01: implementation gate chose `--` to separate `docs` mode's pages from its filenames (T4), a word table plus digits for the form-count sentence (T5), and the escaped quote read without its backslash, as pandoc 3.11 was observed to read it (T1).
+- 2026-09-01: T1 — `parse_attrs` treats a backslash before the closing quote or before another backslash as an escape, the character after it joining the value; `ESCAPE` is a module constant so a self-test can splice it out.
+- 2026-09-01: T2 — `escaped.json` plants `sort="The \"key=Hague\" city"`; the bodies check passes on it, and the same check under a copy of the reader with `ESCAPE` spliced out names `key=` as an undocumented attribute. The splice is `spliced_copy`, extracted from `m061_mutant` with the same per-substitution counts, which now calls it.
+- 2026-09-01: T3 — `constructs` records each block's offset; `load` reads each `.index` construct's own term off the span it closes (`marked_term`, None for a div) and `attribute_sites` pairs by that. `divmark.json` plants a `.index` div ahead of a sort= mark and a bare mark; the probe reads sort= paired with `The Hague`, and with the ordinal pairing spliced back in, with `Den Haag`.
+- 2026-09-01: T4 — `check_docs` splits its arguments at `--`; a page it cannot read fails through `read`'s own message naming the path. The four suite call sites moved to the new shape; plants added for an absent page and for a call with no `--`.
+- 2026-09-01: T5 — `stated_forms` reads "There are exactly <count> supported forms" off the page (digits or one to twenty in words, exactly one such sentence) and `form_table` holds the row count to it; `SYNTAX_FORMS` is gone. Plants: the sentence edited to eleven, a row added, the sentence removed, a non-number word. The narrowing's docstring now states the ground a same-session read of the site supports: the empty-value demonstrations are backticked prose, which the sweep never reads as a construct. `int()` is guarded by `isascii()` per the M36 lesson.
+- 2026-09-01: T1–T5 landed in one checkpoint rather than five: their suite evidence is one contiguous self-test block, and the block was run extracted on its own before the full suite (T6).
 
 ## Decisions
 

@@ -9,7 +9,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** m066-recovery-check-readers
+- **Branch/PR:** m066-recovery-check-readers · https://github.com/jmgirard/quarto-index/pull/66
 
 ## Goal
 
@@ -61,7 +61,7 @@ the disposition D-011 records for M24's own read-repair.
 
 ## Acceptance criteria
 
-- [ ] AC1. Every `check_warning_count` site in `tests/run-tests.sh` that
+- [x] AC1. Every `check_warning_count` site in `tests/run-tests.sh` that
       asserts a literal 0 occurrences of one of the six `WARN_STORE_*`
       record-report wordings defined at `tests/run-tests.sh:871-876` has,
       within the same enclosing shell function and against the same log-path
@@ -69,12 +69,12 @@ the disposition D-011 records for M24's own read-repair.
       wordings of that constant's family, each asserting a literal count; the
       domain is the sites that
       `grep -n -A1 'check_warning_count "' tests/run-tests.sh` lists.
-- [ ] AC2. `m061_mutant` fails, naming the substitution that matched nothing,
+- [x] AC2. `m061_mutant` fails, naming the substitution that matched nothing,
       when any one substitution in its expression matches nothing — including
       at the `m065-carryrange` site (`tests/run-tests.sh:7993`), whose two
       substitutions it counts separately rather than through one whole-file
       `cmp`.
-- [ ] AC3. The claims `tests/sitecheck.py claims` holds `site/books.qmd` to
+- [x] AC3. The claims `tests/sitecheck.py claims` holds `site/books.qmd` to
       cover each of the four prose blocks M064 and M065 added at
       `site/books.qmd:84-135` — the recovery route, the "not returned"
       bullets, the absent-record exclusion, and the store-directory case.
@@ -134,3 +134,9 @@ the disposition D-011 records for M24's own read-repair.
 ## Decisions
 
 ## Review
+
+- 2026-09-01: sync — `origin/main` unmoved since the branch was cut (no commits in `HEAD..origin/main`); branch pushed; draft PR #66 opened.
+- AC1 — VERIFIED. A parser over `grep -n -A1 'check_warning_count "' tests/run-tests.sh` (joining each site's `\` continuation, resolving the enclosing `name() {` function and the log-path argument): 329 sites listed; 108 assert a `WARN_STORE_*` wording; 87 assert one at a literal 0; 0 of those 87 lack, in the same function against the same log-path expression, a literal-count site for each of the other two wordings of the family.
+- AC2 — VERIFIED. `m061_mutant` extracted verbatim into a scratch script (a stub `m063_tree` copying `_extensions/index/modules/book.lua`, a stub `fail`) and run over the suite's own `M065_CARRYRANGE_*` and `M066_*_SLIPPED` expressions: intact exits 0 with counts 1 and 1; the carry slipped exits 1 naming "substitution 1 of 2 … matched nothing" and the pair slipped names "substitution 2 of 2", each with the spliced file still differing from the original (the half-applied case a whole-file `cmp` passes); both slipped names 1; a single expression matching nothing names "1 of 1". Counts file per run reads the per-substitution match counts.
+- AC3 — VERIFIED. The 18 rows extracted from the `books-claims.txt` heredoc (`tests/run-tests.sh:20456-20473`) run through `python3 tests/sitecheck.py claims site/books.qmd` state all 18, exit 0; mapped onto the page, the nine M066 rows land 2 on the route block (84-90), 4 on the "what comes back / not returned" block (92-121), 1 on the absent-record block (123-125), 2 on the store-directory block (127-135) — each of the four blocks held by at least one row.
+- Consistency gate: `cairn_validate.py` exit 0, all checks passed (advisories OK, `release window` not fired); no `DESIGN.md` principle changed by the diff (only `tests/run-tests.sh` and tracking files), so `cairn_impact.py --changed` skipped; profile `generic` names no toolchain checks.

@@ -6809,19 +6809,47 @@ m063_tree() {   # <slug>
   cp -R "$QI_EXT_DIR" "$M061W/$slug/_extensions/index"
 }
 
-# ...and one `perl` substitution applied to that copy's filter. The
-# substitution is checked to have changed something: a pattern that stopped
-# matching would leave the filter intact and the run below would be reported as
-# a check failing to matter when nothing had been mutated.
-m061_mutant() {   # <slug> <perl expression> <label>
-  local slug="$1" expression="$2" label="$3"
+# ...and one or more `perl` substitutions applied to that copy's filter, each
+# passed as its own argument. Each substitution is counted on its own — perl
+# reports how many times each applied — and one that applied nowhere fails
+# naming its ordinal and its head: a pattern that stopped matching would leave
+# its part of the filter intact and the run below would be reported as a check
+# failing to matter when the fault is this mutation's. A whole-file `cmp`
+# cannot see the half-applied case — where two substitutions are passed and
+# one slips, the file still differs (M066) — so the whole-file guard is kept
+# only as a backstop behind the counts.
+m061_mutant() {   # <slug> <label> <perl substitution>...
+  local slug="$1" label="$2"
+  shift 2
+  [ "$#" -ge 1 ] || fail "$label: m061_mutant was given no substitution to apply"
   m063_tree "$slug"
-  perl -0777 -pe "$expression" \
-    "$M061W/$slug/_extensions/index/modules/book.lua" > "$M061W/$slug-spliced"
-  if cmp -s "$M061W/$slug/_extensions/index/modules/book.lua" "$M061W/$slug-spliced"; then
-    fail "$label: the substitution aimed at the filter changed nothing, so the render below would be reported as a check failing to matter when the fault is this mutation's"
+  local filter="$M061W/$slug/_extensions/index/modules/book.lua"
+  perl -e '
+    my ($counts, @subs) = @ARGV;
+    my $text = do { local $/; <STDIN> };
+    open my $out, ">", $counts or die "$counts: $!\n";
+    for my $i (0 .. $#subs) {
+      my $n = eval "\$text =~ $subs[$i]";
+      die "substitution " . ($i + 1) . " did not compile: $@" if $@;
+      print $out ($i + 1), "\t", ($n || 0), "\n";
+    }
+    close $out or die "$counts: $!\n";
+    print $text;
+  ' "$M061W/$slug-counts" "$@" < "$filter" > "$M061W/$slug-spliced" \
+    || fail "$label: perl could not apply the substitution(s) aimed at the filter (its own message is above)"
+  local ordinal applied text counted=0
+  while IFS=$'\t' read -r ordinal applied; do
+    counted=$((counted + 1))
+    text="${!ordinal}"
+    [ "$applied" -gt 0 ] \
+      || fail "$label: substitution $ordinal of $# aimed at the filter matched nothing (<<${text:0:72}>>), so the render below would be reported as a check failing to matter when the fault is this mutation's"
+  done < "$M061W/$slug-counts"
+  [ "$counted" -eq "$#" ] \
+    || fail "$label: perl reported $counted substitution count(s) for the $# substitution(s) passed, so the mutation is not known to have applied"
+  if cmp -s "$filter" "$M061W/$slug-spliced"; then
+    fail "$label: every substitution reported a match and the filter is still unchanged, so the counts above are not to be trusted"
   fi
-  mv "$M061W/$slug-spliced" "$M061W/$slug/_extensions/index/modules/book.lua"
+  mv "$M061W/$slug-spliced" "$filter"
 }
 
 # A whole-book render of one such copy, held to a section manifest. The capture
@@ -7000,7 +7028,7 @@ three.html	qi-index-beta	Index of Beta
 three.html	qi-index-gamma	Index of Gamma
 two.html	-
 MANIFEST
-  m061_mutant lastplacer "$M063_LASTPLACER_MUTATION" "M063 T5 self-test"
+  m061_mutant lastplacer "M063 T5 self-test" "$M063_LASTPLACER_MUTATION"
   m063_add_marker "$M061W/lastplacer/four.qmd" gamma "M063 T5 self-test" \
     || fail "M063 T5 self-test: the marker could not be appended to the copied chapter (its own FAIL line is above)"
   m063_tree_render lastplacer lastplacer "M063 T5 self-test" "$M063_SECTIONS_DOUBLED"
@@ -7032,7 +7060,7 @@ three.html	qi-index-beta	Index of Beta
 three.html	qi-index-gamma	Index of Gamma
 two.html	-
 MANIFEST
-  m061_mutant lastplacer-cold "$M063_LASTPLACER_MUTATION" "M063 T6 self-test"
+  m061_mutant lastplacer-cold "M063 T6 self-test" "$M063_LASTPLACER_MUTATION"
   rm -rf "$M061W/lastplacer-cold/.quarto/$STORE_DIR"
   [ -d "$M061W/lastplacer-cold/.quarto/$STORE_DIR" ] \
     && fail "M063 T6 self-test: the copied store is still there, so the render below would be about a warm store"
@@ -7240,7 +7268,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # its own picture says places anything — so it takes `gamma` on and prints
   # the section in three.html, where the manifest above puts it in five.html.
   # -------------------------------------------------------------------------
-  m061_mutant lastplacer-blocked "$M063_LASTPLACER_MUTATION" "M063 T7 self-test"
+  m061_mutant lastplacer-blocked "M063 T7 self-test" "$M063_LASTPLACER_MUTATION"
   m061_block_record four.qmd "$M061W/lastplacer-blocked/.quarto/$STORE_DIR" \
     "M063 T7 self-test"
   ( cd "$M061W/lastplacer-blocked" && quarto render --to html ) \
@@ -7848,8 +7876,8 @@ if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   M064_NORECOVERY_MUTATION='s{^local function recover_record\(ctx, file\)\n}{local function recover_record(ctx, file)\n  do return nil end\n}m'
 
-  m061_mutant m064-norecovery-blocked "$M064_NORECOVERY_MUTATION" \
-    "M064-AC4 self-test (the held path)"
+  m061_mutant m064-norecovery-blocked "M064-AC4 self-test (the held path)" \
+    "$M064_NORECOVERY_MUTATION"
   m061_block_record four.qmd \
     "$M061W/m064-norecovery-blocked/.quarto/$STORE_DIR" \
     "M064-AC4 self-test (the held path)"
@@ -7859,8 +7887,8 @@ if [ "${1:-}" = "--self-test" ]; then
     "M064-AC4 self-test (the held path)" "$PLACE_TERMS_NORECOVERY"
   pass "M064-AC4 self-test: with the recovery reader disabled and nothing else changed, the AC1 arrangement leaves Dovetail out of five.html's gamma section — the term the manifest AC1 is held to requires — and the render still exits 0"
 
-  m061_mutant m064-norecovery-heldpair "$M064_NORECOVERY_MUTATION" \
-    "M064-AC4 self-test (both marker chapters held)"
+  m061_mutant m064-norecovery-heldpair "M064-AC4 self-test (both marker chapters held)" \
+    "$M064_NORECOVERY_MUTATION"
   for M064_HELD in index.qmd three.qmd; do
     m061_block_record "$M064_HELD" \
       "$M061W/m064-norecovery-heldpair/.quarto/$STORE_DIR" \
@@ -7878,8 +7906,8 @@ if [ "${1:-}" = "--self-test" ]; then
   # what the gamma section prints, not whether the book built.
   # -------------------------------------------------------------------------
   m061_mutant m064-nocond \
-    's{^local function drop_conditional\(blocks\)\n}{local function drop_conditional(blocks)\n  do return blocks end\n}m' \
-    "M064 F1 self-test (conditional content read)"
+    "M064 F1 self-test (conditional content read)" \
+    's{^local function drop_conditional\(blocks\)\n}{local function drop_conditional(blocks)\n  do return blocks end\n}m'
   m064_plant_conditional m064-nocond
   m061_block_record four.qmd \
     "$M061W/m064-nocond/.quarto/$STORE_DIR" "M064 F1 self-test"
@@ -8003,8 +8031,8 @@ three.html	qi-index-beta	Coriander
 MANIFEST
 
   m061_mutant m065-flatlevels \
-    's{      if levels == nil then\n        return nil\n      end\n}{      if levels == nil then\n        return nil\n      end\n      levels = { levels[1] }\n}' \
-    "M065-AC6 self-test (a recovered mark folded to one level)"
+    "M065-AC6 self-test (a recovered mark folded to one level)" \
+    's{      if levels == nil then\n        return nil\n      end\n}{      if levels == nil then\n        return nil\n      end\n      levels = { levels[1] }\n}'
   m061_block_record four.qmd \
     "$M061W/m065-flatlevels/.quarto/$STORE_DIR" "M065-AC6 self-test (levels)"
   m063_tree_render m065-flatlevels m065-flatlevels \
@@ -8014,8 +8042,8 @@ MANIFEST
   pass "M065-AC6 self-test: with a recovered mark's levels folded to its first and nothing else changed, the gamma section loses the sub-entry AC1 requires and its parent takes the locator instead — the defect the AC1 rows are held against — and the render still exits 0"
 
   m061_mutant m065-nomarker \
-    's{^local function recovered_markers\(blocks\)\n}{local function recovered_markers(blocks)\n  do return {} end\n}m' \
-    "M065-AC6 self-test (a recovered chapter places nothing)"
+    "M065-AC6 self-test (a recovered chapter places nothing)" \
+    's{^local function recovered_markers\(blocks\)\n}{local function recovered_markers(blocks)\n  do return {} end\n}m'
   for M065_HELD in index.qmd three.qmd; do
     m061_block_record "$M065_HELD" \
       "$M061W/m065-nomarker/.quarto/$STORE_DIR" "M065-AC6 self-test (marker)"
@@ -8025,8 +8053,8 @@ MANIFEST
   pass "M065-AC6 self-test: with the recovered placement markers dropped and nothing else changed, the render holding both marker-carrying chapters' store paths prints no section for the index no marker names on any of the book's five pages — the defect that arrangement's section manifest is held against — and the render still exits 0"
 
   m061_mutant m065-nosorts \
-    's{local function register_recovered_sort\(sorts, index, levels, value, context,\n                                       kept, depth\)\n}{local function register_recovered_sort(sorts, index, levels, value, context,\n                                       kept, depth)\n  do return end\n}' \
-    "M065-AC2 self-test (the recovered sort keys dropped)"
+    "M065-AC2 self-test (the recovered sort keys dropped)" \
+    's{local function register_recovered_sort\(sorts, index, levels, value, context,\n                                       kept, depth\)\n}{local function register_recovered_sort(sorts, index, levels, value, context,\n                                       kept, depth)\n  do return end\n}'
   m061_block_record four.qmd \
     "$M061W/m065-nosorts/.quarto/$STORE_DIR" "M065-AC2 self-test"
   m063_tree_render m065-nosorts m065-nosorts \
@@ -8035,9 +8063,14 @@ MANIFEST
     "$M065_GAMMA_ROWS_NOSORT" "M065-AC2 self-test" hrefs
   pass "M065-AC2 self-test: with the recovered sort keys dropped and nothing else changed, the term whose mark declares one files under its printed text at the tail of the section rather than at its head — the defect the AC2 rows are held against — and the render still exits 0"
 
+  # Two substitutions, each its own argument: one carries the range end into
+  # the recovered mark, the other pairs the ends. Named here so the M066-AC2
+  # self-test below can slip each with the other left intact.
+  M065_CARRYRANGE_CARRY='s{        xrefs = surviving,\n}{        xrefs = surviving,\n        range = span.attributes[qi_core.RANGE_ATTR],\n}'
+  M065_CARRYRANGE_PAIR='s{^  return marks, sorts\n}{  local pending = {}\n  for _, mark in ipairs(marks) do\n    local key = qi_levels.levels_key(mark.levels)\n    if mark.range == "open" then\n      pending[key] = mark\n    elseif mark.range == "close" and pending[key] then\n      pending[key].paired = "open"\n      mark.paired = "close"\n      pending[key] = nil\n    end\n  end\n  return marks, sorts\n}m'
   m061_mutant m065-carryrange \
-    's{        xrefs = surviving,\n}{        xrefs = surviving,\n        range = span.attributes[qi_core.RANGE_ATTR],\n}; s{^  return marks, sorts\n}{  local pending = {}\n  for _, mark in ipairs(marks) do\n    local key = qi_levels.levels_key(mark.levels)\n    if mark.range == "open" then\n      pending[key] = mark\n    elseif mark.range == "close" and pending[key] then\n      pending[key].paired = "open"\n      mark.paired = "close"\n      pending[key] = nil\n    end\n  end\n  return marks, sorts\n}m' \
-    "M065-AC4 self-test (range carried and paired)"
+    "M065-AC4 self-test (range carried and paired)" \
+    "$M065_CARRYRANGE_CARRY" "$M065_CARRYRANGE_PAIR"
   m061_block_record four.qmd \
     "$M061W/m065-carryrange/.quarto/$STORE_DIR" "M065-AC4 self-test"
   m063_tree_render m065-carryrange m065-carryrange \
@@ -8046,9 +8079,38 @@ MANIFEST
     "$M065_GAMMA_ROWS" "M065-AC4 self-test (the section does not move)" hrefs
   pass "M065-AC4 self-test: with a recovered mark carrying the range end its author wrote, and the pairing a chapter's own process would reach re-derived from the recovered marks, the gamma section is exactly the section the unmutated run prints — so the one plain locator AC4 promises is what the pair prints whether the field travels or not, and the render still exits 0"
 
+  # M066-AC2 — the per-substitution count catches what a whole-file `cmp`
+  # cannot: one of the two carryrange substitutions slipped with the other
+  # left intact leaves the filter changed, so the file still differs and the
+  # old guard passed a half-applied mutation into a render whose assertion
+  # above is an invariance. Each slip runs in a subshell with its FAIL
+  # captured, because m061_mutant exits on it; the spliced file it leaves
+  # behind is then held to differ from the original, so the case caught is
+  # the half-applied one and not a mutation that applied nowhere.
+  m066_slipped() {   # <ordinal> <label> <substitutions...>
+    local ordinal="$1" label="$2"
+    shift 2
+    local out rc
+    out=$(m061_mutant "m066-slip-$ordinal" "$label" "$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M066-AC2 self-test: $label passed, so a half-applied mutation would be rendered as though whole"; }
+    printf '%s' "$out" | grep -qF -- "substitution $ordinal of 2 aimed at the filter matched nothing" \
+      || { printf '%s\n' "$out" >&2; fail "M066-AC2 self-test: $label failed, but not naming substitution $ordinal as the one that matched nothing — that failure is not the count catching this defect"; }
+    cmp -s "$M061W/m066-slip-$ordinal/_extensions/index/modules/book.lua" \
+      "$M061W/m066-slip-$ordinal-spliced" \
+      && fail "M066-AC2 self-test: $label left the filter unchanged, so the other substitution did not apply either and this is not the half-applied case the count is held to catch"
+    printf 'ok   M066-AC2 self-test: %s is refused naming substitution %s, and the filter still differs, which the whole-file guard alone would have passed\n' "$label" "$ordinal"
+  }
+  M066_CARRY_SLIPPED='s{        xrefs = surviving;\n}{        xrefs = surviving,\n        range = span.attributes[qi_core.RANGE_ATTR],\n}'
+  M066_PAIR_SLIPPED='s{^  return marks; sorts\n}{  return marks, sorts\n}m'
+  m066_slipped 1 "the range-carrying substitution slipped, the pairing one intact" \
+    "$M066_CARRY_SLIPPED" "$M065_CARRYRANGE_PAIR"
+  m066_slipped 2 "the pairing substitution slipped, the range-carrying one intact" \
+    "$M065_CARRYRANGE_CARRY" "$M066_PAIR_SLIPPED"
+
   m061_mutant m065-noprobe \
-    's{  local store_lost = store_directory_unusable\(ctx\)\n}{  local store_lost = false\n}' \
-    "M065-AC5 self-test (the store-directory probe disabled)"
+    "M065-AC5 self-test (the store-directory probe disabled)" \
+    's{  local store_lost = store_directory_unusable\(ctx\)\n}{  local store_lost = false\n}'
   m065_break_store "$M061W/m065-noprobe/.quarto/$STORE_DIR" \
     "M065-AC5 self-test"
   m063_tree_render m065-noprobe m065-noprobe \
@@ -8226,8 +8288,8 @@ three.html	qi-index-beta	Cardamom
 three.html	qi-index-beta	Coriander
 MANIFEST
   m061_mutant refuseold \
-    's{  if data\.marker ~= nil then\n}{  if data.adopted ~= nil then\n    return false\n  end\n  if data.marker ~= nil then\n}' \
-    "M063 T2 self-test"
+    "M063 T2 self-test" \
+    's{  if data\.marker ~= nil then\n}{  if data.adopted ~= nil then\n    return false\n  end\n  if data.marker ~= nil then\n}'
   m063_plant_retired "$M061W/refuseold/.quarto/$STORE_DIR" "M063 T2 self-test" \
     || fail "M063 T2 self-test: the copied records could not be planted (their own FAIL line is above)"
   ( cd "$M061W/refuseold" && quarto render --to html ) \
@@ -20387,7 +20449,9 @@ python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
 # marker last, render the whole book, each chapter keeps a record — is true of
 # the HTML book alone, and this milestone made an EPUB book a case that reads
 # the page and must not follow it. The page scopes the model and names the
-# merged formats; these rows are what holds it there.
+# merged formats; these rows are what holds it there. M066 added the rows
+# from `the recovery route` down, one per sentence of the M064/M065 prose
+# (`site/books.qmd:84-135`), each stating the behavior rather than its wrapping.
 cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
@@ -20398,9 +20462,18 @@ where an unasked-for index goes	and any index no marker names after them, in dec
 the proviso on that rule	provided some chapter of the book places an index at all
 one answer every render	That chapter is the end of the book's own chapter list, which every chapter of every render reads the same way
 an unusable record repeated	once for every chapter that builds an index section
+the recovery route	Where the record was there to open and could not be used, that chapter's own `.qmd` is read and parsed instead, and the terms it marks — and the placement markers it carries — join the book's index
+the no-marks report	Where the source parses and carries no mark this route can reach — a chapter whose marks all arrive through an include, say — the report says that instead, so nothing tells you terms came back when none did
+what comes back	What comes back is what you wrote.
+no fragment	A recovered term links to the chapter's page and nothing after it, so following it lands at the top of that page rather than at the marked passage
+conditional content out whole	so recovery takes such a block or span out whole, whatever its `when-` or `unless-` attributes say
+no range and no principal	both ends of a range print the one page the chapter is on, and the role prints as an undeclared one does
+an absent record is not recovered	A record that is simply *absent* — a chapter that has never been rendered — is not recovered
+an unlistable store directory	where the store directory itself is there and cannot be listed — replaced by a file, or with its read permission gone — the records in it are out of reach rather than unwritten, and every chapter is read back from its source
+a store that still lists	A store directory that still lists is not this case — the records inside it are read as absent, whatever is wrong with them
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
-  || fail "M52-AC5/M55/M062/M063: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, no longer says which chapter carries an index no marker names or on what proviso, or no longer says what the book reports for a record it could not use (its own FAIL line is above)"
+  || fail "M52-AC5/M55/M062/M063: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, no longer says which chapter carries an index no marker names or on what proviso, or no longer says what the book reports for a record it could not use, or no longer states the source-recovery route M064/M065 added — what it returns, what it does not, that an absent record is left alone and an unlistable store directory is not (its own FAIL line is above)"
 
 # The placement page's own half of the same pair (M063). Its list of rules is
 # where a reader who has not reached the Books page meets the book's placement
@@ -20466,7 +20539,7 @@ SUPERSEDEPY
     "$M061D/books-oldrule.qmd" "M063-AC6 self-test" \
     || fail "M063-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
   m061_planted 'the books page stating the superseded chapter rule' \
-    'does not state 1 of the 9 claim(s)' \
+    'does not state 1 of the 18 claim(s)' \
     python3 tests/sitecheck.py claims "$M061D/books-oldrule.qmd" \
       "$WORK/books-claims.txt"
 

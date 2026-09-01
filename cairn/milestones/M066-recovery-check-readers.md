@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M066: The recovery-route checks read the reports and mutations they name
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -96,24 +96,24 @@ the disposition D-011 records for M24's own read-repair.
       wording and how many of those read fewer than their family's three.
       The count is the floor the repair is measured against, taken before any
       edit.
-- [ ] T2. Complete every short site to all three wordings of its family, on
+- [x] T2. Complete every short site to all three wordings of its family, on
       the model of `:7649`, `:7719`, `:7774`, extending each label tail to
       name the wording added. Re-run the enumeration and show no site short.
-- [ ] T3. Make `m061_mutant` count substitutions rather than compare files:
+- [x] T3. Make `m061_mutant` count substitutions rather than compare files:
       have `perl` report the number of substitutions it applied per
       expression and fail naming the one that applied none, keeping the
       existing whole-file guard only as a backstop.
-- [ ] T4. Plant each of `m065-carryrange`'s two substitutions slipped on its
+- [x] T4. Plant each of `m065-carryrange`'s two substitutions slipped on its
       own — one at a time, the other left intact — and show the guard red for
       each; assert the message names the slipped substitution. This is the
       case a whole-file `cmp` cannot see.
-- [ ] T5. Add claim rows covering the four prose blocks at
+- [x] T5. Add claim rows covering the four prose blocks at
       `site/books.qmd:84-135`, choosing sentences that state the behavior
       rather than its wrapping (the M41 lesson on flattening).
-- [ ] T6. Update the count-coupled failure string in the claims self-test
+- [x] T6. Update the count-coupled failure string in the claims self-test
       (`tests/run-tests.sh:20404`, `does not state 1 of the 9 claim(s)`) to
       the new row count, and re-run that self-test.
-- [ ] T7. Run `tests/run-tests.sh` and `tests/run-tests.sh --self-test`
+- [x] T7. Run `tests/run-tests.sh` and `tests/run-tests.sh --self-test`
       sequentially (PROFILE: never two invocations at once) and record both
       check counts and exit codes.
 
@@ -129,6 +129,7 @@ the disposition D-011 records for M24's own read-repair.
 - 2026-09-01: T4 edit landed: `m066_slipped` in the M065 self-test block runs `m061_mutant` in a subshell with each carryrange substitution slipped (a `;` for the `,` the pattern anchors on) and the other intact, holding the exit non-zero, the message to name that ordinal, and the spliced file to differ from the original, so the case caught is the half-applied one.
 - 2026-09-01: T5/T6 edits landed: nine rows added to `books-claims.txt` (the recovery route; the no-marks report; what comes back; no fragment; conditional content out whole; no range and no principal; an absent record is not recovered; an unlistable store directory; a store that still lists), the call's FAIL text and the rows' comment extended to say so, and the count-coupled self-test string moved from 9 to 18; `python3 tests/sitecheck.py claims site/books.qmd` over the extracted rows states all 18, exit 0. Correction to the T2 line: 27 no-marks sites were added, not 26 (27 + 4 = 31). Boxes T2-T6 stay unticked until T7's two runs are clean.
 - 2026-09-01: substantive amendment, mini gate, user adopted the recommended option: AC1's "asserts, on that same log, a literal 0 occurrences of the other two wordings" becomes "has, within the same enclosing shell function and against the same log-path expression, a `check_warning_count` site for each of the other two wordings of that constant's family, each asserting a literal count". Reason: the plan's model sites hold one wording of the family at 1 where the log draws it, so a literal 0 of the other two was unsatisfiable there. Fresh-context [O] reader ran the REDUCED audit over the proposed wording before it was written: one finding (bounded promise: "on that same log" was undecidable from the named grep where two functions share one log-path text, `$WORK/place-$slug.log`), repaired by the function-and-expression clause above; proportionality and instrument clear.
+- 2026-09-01: T7: `tests/run-tests.sh` 578 checks exit 0; `tests/run-tests.sh --self-test` 1071 checks exit 0 (1069 before M066: the two `m066_slipped` cases), run sequentially, the second starting after the first ended. Both `M066-AC2 self-test` lines print, each naming its slipped ordinal with the filter still differing; the books-page plant is red on `1 of the 18 claim(s)`. T2-T7 ticked on these runs; status to review.
 
 ## Decisions
 

@@ -6014,6 +6014,8 @@ check_warning_count "$WORK/nomarker-stale.log" "$WARN_STORE_UNREADABLE_RECOVERED
   "M062-AC2 (refused for its version, not for its shape)"
 check_warning_count "$WORK/nomarker-stale.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M062-AC2 (refused for its version, not for its shape), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/nomarker-stale.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M062-AC2 (refused for its version, not for its shape), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_warning_count "$WORK/nomarker-stale.log" "$WARN_BOOK_NOMARKER" 1 \
   "M062-AC2 (the missing-marker report is still the book's own, once)"
 cp "$WORK/nomarker-two-record.json" "$NOMARKER_RECORD"
@@ -6048,10 +6050,14 @@ check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_STALE_RECOVERED
   "M062-AC3 (refiled for its name, not refused for its version)"
 check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_STALE_LOST" 0 \
   "M062-AC3 (refiled for its name, not refused for its version), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M062-AC3 (refiled for its name, not refused for its version), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
   "M062-AC3 (nor refused for its shape)"
 check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M062-AC3 (nor refused for its shape), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M062-AC3 (nor refused for its shape), nor the wording for a chapter whose own source carries no mark this route reaches"
 # The marks that record carries still print. This book builds no index section
 # at all — nothing places one — so the section of the render they print in is
 # the chapter's own body: the term two.qmd marks is still inside the page's
@@ -6224,10 +6230,14 @@ check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 
   "M05 hardening (ghost record)"
 check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M05 hardening (ghost record), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M05 hardening (ghost record), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE_RECOVERED" 0 \
   "M05 hardening (ghost record)"
 check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE_LOST" 0 \
   "M05 hardening (ghost record), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M05 hardening (ghost record), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_index_sections "$CAPTURE_ROOT/book-ghost/_book/last.html" \
   "$BOOK_HTML_INDEX" "M05 hardening (stale chapter ignored)" hrefs
 check_letter_sweep "$CAPTURE_ROOT/book-ghost/_book/last.html" "M07-AC4 (stale chapter)" \
@@ -6263,6 +6273,8 @@ check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 
   "M06 (stale store record)"
 check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M06 (stale store record), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M06 (stale store record), nor the wording for a chapter whose own source carries no mark this route reaches"
 # M55-AC5 — and the report names the chapter whose record was refused, which
 # is the only thing that tells the author which one to render again.
 { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/book-stale.log" | grep -qF 'one.qmd'; } \
@@ -6317,10 +6329,14 @@ check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_UNREADABLE_RECOVERED
   "M14 (review F4)"
 check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M14 (review F4), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M14 (review F4), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_STALE_RECOVERED" 0 \
   "M14 (review F4)"
 check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_STALE_LOST" 0 \
   "M14 (review F4), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M14 (review F4), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_warning_count "$WORK/book-nocontext.log" \
   "$(dangling_report_index see 'a mark in one.qmd' 'Nothing Indexed Here' main)" 1 \
   "M14 (review F4)"
@@ -6374,6 +6390,8 @@ STALEPY
     "M55-AC3 ($label, reported rather than refused)"
   check_warning_count "$WORK/book-$slug.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
     "M55-AC3 ($label, reported rather than refused), nor the wording for a chapter whose own source could not be read either"
+  check_warning_count "$WORK/book-$slug.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+    "M55-AC3 ($label, reported rather than refused), nor the wording for a chapter whose own source carries no mark this route reaches"
   { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/book-$slug.log" \
     | grep -qF -- "$named"; } \
     || { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/book-$slug.log" >&2; fail "M55-AC3 ($label): the report does not carry <<$named>>, so it names neither the chapter the record came from nor the index name it carries"; }
@@ -6731,6 +6749,8 @@ STALEPY
     "M60-AC4 ($label, stale rather than unreadable)"
   check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
     "M60-AC4 ($label, stale rather than unreadable), nor the wording for a chapter whose own source could not be read either"
+  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+    "M60-AC4 ($label, stale rather than unreadable), nor the wording for a chapter whose own source carries no mark this route reaches"
   cp "$WORK/place-$slug-record.json" "$PLACE_STORE/$chapter$STORE_SUFFIX"
 }
 
@@ -7159,6 +7179,8 @@ for M061_PASS in one two; do
     "M063-AC3 (render $M061_PASS: unreadable, never stale)"
   check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_STALE_LOST" 0 \
     "M063-AC3 (render $M061_PASS: unreadable, never stale), nor the wording for a chapter whose own source could not be read either"
+  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+    "M063-AC3 (render $M061_PASS: unreadable, never stale), nor the wording for a chapter whose own source carries no mark this route reaches"
   check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_INDEX_STALE_NAME" 0 \
     "M063-AC3 (render $M061_PASS: no record names an index this book does not declare)"
   check_extension_warning_count "$WORK/place-blocked-$M061_PASS.log" 6 \
@@ -7247,6 +7269,8 @@ check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE_RECOVER
   "M063-AC3 (freed)"
 check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M063-AC3 (freed), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M063-AC3 (freed), nor the wording for a chapter whose own source carries no mark this route reaches"
 # The control the M065-AC4 role assertion above rests on: over a record that
 # CAN be read, four.qmd's own render resolved `mention="principal"` and its
 # locator prints emphasized and carrying the principal class. Without this the
@@ -7380,6 +7404,9 @@ for M064_PASS in one two; do
     "$WARN_STORE_UNREADABLE_LOST" 0 \
     "M064-AC3 (render $M064_PASS: both sources parse, so nothing is lost)"
   check_warning_count "$WORK/m063-m064-heldpair-$M064_PASS.log" \
+    "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+    "M064-AC3 (render $M064_PASS: both sources carry marks, so the no-marks wording is never drawn)"
+  check_warning_count "$WORK/m063-m064-heldpair-$M064_PASS.log" \
     "$WARN_STORE_UNWRITABLE" 2 \
     "M064-AC3 (render $M064_PASS: index.qmd's and three.qmd's own writes)"
   check_extension_warning_count "$WORK/m063-m064-heldpair-$M064_PASS.log" 10 \
@@ -7412,6 +7439,9 @@ for M064_PASS in one two; do
   check_warning_count "$WORK/m063-m064-lostsource-$M064_PASS.log" \
     "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
     "M064-AC5 (render $M064_PASS: nothing was recovered, so the recovery wording is never drawn)"
+  check_warning_count "$WORK/m063-m064-lostsource-$M064_PASS.log" \
+    "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+    "M064-AC5 (render $M064_PASS: the source could not be read, so the no-marks wording is never drawn)"
   { grep -F -- "$WARN_STORE_UNREADABLE_LOST" \
       "$WORK/m063-m064-lostsource-$M064_PASS.log" | grep -qF 'four.qmd'; } \
     || { grep -F -- "$WARN_STORE_UNREADABLE_LOST" "$WORK/m063-m064-lostsource-$M064_PASS.log" >&2; fail "M064-AC5 (render $M064_PASS): the report does not name four.qmd, the chapter whose record and source were both unreadable"; }
@@ -7501,6 +7531,8 @@ check_warning_count "$WORK/m064-staleok.log" "$WARN_STORE_STALE_RECOVERED" 1 \
   "M064 T7 (five.qmd builds the section the refused record would have cost)"
 check_warning_count "$WORK/m064-staleok.log" "$WARN_STORE_STALE_LOST" 0 \
   "M064 T7 (the chapter's source reads, so nothing is lost)"
+check_warning_count "$WORK/m064-staleok.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M064 T7 (the chapter's source carries marks, so the no-marks wording is never drawn)"
 { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/m064-staleok.log" \
   | grep -qF 'four.qmd'; } \
   || { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/m064-staleok.log" >&2; fail "M064 T7: the stale-record report does not name four.qmd"; }
@@ -7523,6 +7555,8 @@ check_warning_count "$WORK/m064-stalelost.log" "$WARN_STORE_STALE_LOST" 1 \
   "M064 T7 (five.qmd builds the section, and nothing could be recovered)"
 check_warning_count "$WORK/m064-stalelost.log" "$WARN_STORE_STALE_RECOVERED" 0 \
   "M064 T7 (nothing was recovered, so the recovery wording is never drawn)"
+check_warning_count "$WORK/m064-stalelost.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M064 T7 (the source could not be read, so the no-marks wording is never drawn)"
 { grep -F -- "$WARN_STORE_STALE_LOST" "$WORK/m064-stalelost.log" \
   | grep -qF 'four.qmd'; } \
   || { grep -F -- "$WARN_STORE_STALE_LOST" "$WORK/m064-stalelost.log" >&2; fail "M064 T7: the stale-record report does not name four.qmd"; }
@@ -7648,6 +7682,9 @@ check_warning_count "$WORK/m063-m064-conditional.log" \
 check_warning_count "$WORK/m063-m064-conditional.log" \
   "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
   "M064 F1 (marks were recovered, so the no-marks wording is never drawn)"
+check_warning_count "$WORK/m063-m064-conditional.log" \
+  "$WARN_STORE_UNREADABLE_LOST" 0 \
+  "M064 F1 (the source reads, so the lost wording is never drawn)"
 pass "M064 F1/F2: a recovered chapter's marks inside a conditional block reach no index section — the block Quarto keeps for this format among them — while its ordinary marks still do, and a term it marks twice prints one locator rather than the same link twice"
 
 m063_tree m064-nomarks
@@ -7720,6 +7757,10 @@ check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_STALE_NOMARKS" 
   "M065-AC5 (the source carries marks, so the no-marks wording is never drawn)"
 check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
   "M065-AC5 (the record was read and refused, never unreadable)"
+check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
+  "M065-AC5 (the record was read and refused, never unreadable, so the lost wording is never drawn)"
+check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M065-AC5 (the record was read and refused, never unreadable, so the no-marks wording is never drawn)"
 check_entry_locators "$CAPTURE_ROOT/m063-m065-stalebook/_book/index.html" \
   "$HTML_SECTION_ID-alpha" Bramble "two.html" \
   "M065-AC5 (the refused chapter's term is recovered, so its locator carries that chapter's page and no fragment)"
@@ -7775,6 +7816,10 @@ check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNREADABLE_NOMARK
   "M065-AC5 (every chapter's source carries marks)"
 check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_STALE_RECOVERED" 0 \
   "M065-AC5 (nothing could be opened, so nothing could be found stale)"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_STALE_LOST" 0 \
+  "M065-AC5 (nothing could be opened, so nothing could be found stale and lost)"
+check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M065-AC5 (nothing could be opened, so nothing could be found stale with no marks)"
 check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNWRITABLE" 5 \
   "M065-AC5 (every chapter's own write fails on the file standing where the directory belongs)"
 check_entry_locators "$CAPTURE_ROOT/m063-m065-lostdir/_book/five.html" \
@@ -8013,6 +8058,10 @@ MANIFEST
     "$M065_TERMS_OWN_ONLY"
   check_warning_count "$WORK/m063-m065-noprobe.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
     "M065-AC5 self-test (every record path reads as absent again, so nothing is recovered and nothing is reported)"
+  check_warning_count "$WORK/m063-m065-noprobe.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
+    "M065-AC5 self-test (every record path reads as absent again, so the lost wording is never drawn)"
+  check_warning_count "$WORK/m063-m065-noprobe.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+    "M065-AC5 self-test (every record path reads as absent again, so the no-marks wording is never drawn)"
   pass "M065-AC5 self-test: with the store-directory probe disabled and nothing else changed, the same store directory replaced by a file leaves every record path reading as never written — no chapter is recovered, no report is drawn, each index carries the terms of the chapter that builds it alone, and the index no marker names prints nowhere — which is what this book did before the probe, and what the manifests the run above is held to refuse"
 fi
 
@@ -8108,10 +8157,14 @@ check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_STALE_RECOVERED" 0 \
   "M063-AC2 (the three fields are not a version bump, so no record is refused)"
 check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_STALE_LOST" 0 \
   "M063-AC2 (the three fields are not a version bump, so no record is refused), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M063-AC2 (the three fields are not a version bump, so no record is refused), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
   "M063-AC2 (a record carrying the retired fields is still a valid record)"
 check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M063-AC2 (a record carrying the retired fields is still a valid record), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M063-AC2 (a record carrying the retired fields is still a valid record), nor the wording for a chapter whose own source carries no mark this route reaches"
 
 # ...and again, so the chapter that takes on the index no marker names reads
 # records the render before it did not rewrite.
@@ -8122,6 +8175,8 @@ check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_STORE_UNREADABLE_REC
   "M063-AC2 (five.qmd reads four planted records and refuses none)"
 check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M063-AC2 (five.qmd reads four planted records and refuses none), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M063-AC2 (five.qmd reads four planted records and refuses none), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_extension_warning_count "$WORK/place-oldstore-fifth.log" 0 \
   "M063-AC2 (five.qmd has no chapter after it and reads only valid records, so it has nothing to say)"
 # The locator M063 T2's self-test contrasts with: over the unmutated filter no
@@ -8258,10 +8313,14 @@ PLACENAMEPY
     "M062-AC1 ($label, refiled for its name rather than refused for its version)"
   check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_STALE_LOST" 0 \
     "M062-AC1 ($label, refiled for its name rather than refused for its version), nor the wording for a chapter whose own source could not be read either"
+  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+    "M062-AC1 ($label, refiled for its name rather than refused for its version), nor the wording for a chapter whose own source carries no mark this route reaches"
   check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
     "M062-AC1 ($label, nor refused for its shape)"
   check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
     "M062-AC1 ($label, nor refused for its shape), nor the wording for a chapter whose own source could not be read either"
+  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+    "M062-AC1 ($label, nor refused for its shape), nor the wording for a chapter whose own source carries no mark this route reaches"
   cp "$WORK/place-$slug-record.json" "$PLACE_STORE/five.qmd$STORE_SUFFIX"
 }
 
@@ -8397,10 +8456,14 @@ check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_UNREADABLE_RECOVER
   "M60-AC5 (the unplanted record is accepted)"
 check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M60-AC5 (the unplanted record is accepted), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M60-AC5 (the unplanted record is accepted), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_STALE_RECOVERED" 0 \
   "M60-AC5 (the unplanted record is accepted)"
 check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_STALE_LOST" 0 \
   "M60-AC5 (the unplanted record is accepted), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M60-AC5 (the unplanted record is accepted), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_section_ids "$CAPTURE_ROOT/book-xrefs-plain/_book/last.html" \
   "M60-AC5 (the unplanted store prints all three declared indexes)" \
   "$HTML_SECTION_ID-main $HTML_SECTION_ID-people $HTML_SECTION_ID-places"
@@ -8438,6 +8501,8 @@ check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_STALE_RECOVERED" 
   "M60-AC5 (refused for its shape, not for its version)"
 check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_STALE_LOST" 0 \
   "M60-AC5 (refused for its shape, not for its version), nor the wording for a chapter whose own source could not be read either"
+check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_STALE_NOMARKS" 0 \
+  "M60-AC5 (refused for its shape, not for its version), nor the wording for a chapter whose own source carries no mark this route reaches"
 # All three declared indexes, not the two a refused record used to leave
 # (M064): the record is still refused for its shape, and one.qmd's own source
 # is read back instead, so the `people` section it carries the only mark for is

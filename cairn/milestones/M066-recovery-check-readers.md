@@ -4,12 +4,12 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M066: The recovery-route checks read the reports and mutations they name
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
-- **Branch/PR:** —
+- **Branch/PR:** m066-recovery-check-readers
 
 ## Goal
 
@@ -88,7 +88,7 @@ the disposition D-011 records for M24's own read-repair.
 
 ## Tasks
 
-- [ ] T1. Enumerate the domain with
+- [x] T1. Enumerate the domain with
       `grep -n -A1 'check_warning_count "' tests/run-tests.sh`, and record in
       the work log how many sites assert a literal 0 of a `WARN_STORE_*`
       wording and how many of those read fewer than their family's three.
@@ -121,6 +121,8 @@ the disposition D-011 records for M24's own read-repair.
 - 2026-08-31: plan gate chose completing each short assertion site in place over replacing the 20 sites with one helper asserting a family at a time, because the helper would change every label's wording and so what each check reports, where the finding is only that a read is short; falsified by the completed sites proving unmaintainable as the wording set grows.
 - 2026-08-31: plan gate chose counting per-substitution matches in `m061_mutant` over splitting each multi-substitution call into separate single-substitution mutants, because only one of 14 call sites passes two and splitting it would double a render; falsified by a later mutant needing substitutions that are only valid applied together.
 - 2026-08-31: criteria audit ran in REDUCED mode (internal tier, no RB-tripwire tag) over the four drafted criteria in a fresh-context [O] reader. It returned two findings, both fixed before writing: AC1's named procedure did not make its quantified sub-domain decidable (217 of the 302 `check_warning_count` lines end in a `\` continuation, putting the pattern and count on the next line), repaired to `grep -n -A1` plus "a literal 0"; and AC3 bound a row-count floor on `check_claims`' hand-written fixture, an instrument property, repaired to the coverage the check holds, with the block range corrected to `84-135`.
+
+- 2026-09-01: T1 enumeration, before any edit: 298 `check_warning_count` sites; 72 assert a `WARN_STORE_*` wording at some count; 56 assert one at a literal 0; 48 of those 56 sit on a log where their family is read short of its three wordings, in 27 (log, family) groups. Read with a parser that joins each site's `\` continuation line, which the first pass missed (the pattern sits on the next line at 217 sites). Note for the AC1 wording: the plan's model sites (`:7719`) hold one wording of the family at 1 and the other two at 0, so `a literal 0 of the other two` cannot be met where a wording is drawn; amendment raised at the mini gate below.
 
 ## Decisions
 

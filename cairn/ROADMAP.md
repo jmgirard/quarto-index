@@ -8,7 +8,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M066 | The recovery-route checks read the reports and mutations they name | planned | — | normal | milestones/M066-recovery-check-readers.md |
+| M066 | The recovery-route checks read the reports and mutations they name | review | — | normal | milestones/M066-recovery-check-readers.md |
 | M067 | The editor-metadata checks read what they claim to read | planned | — | normal | milestones/M067-editor-metadata-readers.md |
 | M065 | The forms a recovered chapter's marks take are fenced | done | M064 | normal | milestones/archive/M065-recovered-mark-forms.md |
 | M064 | A chapter's terms reach the book index when its record cannot be read | done | — | normal | milestones/archive/M064-book-source-recovery.md |

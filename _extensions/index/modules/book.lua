@@ -907,7 +907,7 @@ local function store_read(ctx, own, recover_absent)
         -- and reaches here only in a chapter that can print a section
         -- (`recover_absent`): everywhere else it is read as absent exactly as
         -- it always was.
-        local rebuilt = recover_record(ctx, file)
+        local rebuilt, refused = recover_record(ctx, file)
         if rebuilt ~= nil then
           records[#records + 1] = rebuilt
         end
@@ -927,7 +927,17 @@ local function store_read(ctx, own, recover_absent)
         -- unreadable sends an author looking for a corrupt file that is not
         -- there. What recovery returned is a second axis, and each report
         -- says which case and which outcome its chapter had.
-        if ok and type(data) == "table" and data.version ~= STORE_VERSION then
+        if refused then
+          -- Ahead of every branch below, and one wording for all of them. What
+          -- the record was — never written, opened and unusable, left by an
+          -- older version — decides nothing an author can act on here: the
+          -- source cannot stand in for it whichever it was, and the fix is the
+          -- same one. A refused chapter therefore says this and nothing else,
+          -- and is not handed to the caller as a stale record would be, so a
+          -- book with several such chapters says one thing per chapter rather
+          -- than two.
+          qi_core.warn(("the recorded index marks for %s could not be used, and that chapter's source is not one this route reads — it reads a chapter written as .qmd, .md, .markdown or .Rmd source and no other kind — so none of its terms are in the index; render that chapter again, or render the whole book, to restore them"):format(file))
+        elseif ok and type(data) == "table" and data.version ~= STORE_VERSION then
           -- Handed back rather than reported here: a version-skewed record
           -- costs the chapters that BUILD an index their share of that
           -- chapter's terms, and every other chapter of the book reads the

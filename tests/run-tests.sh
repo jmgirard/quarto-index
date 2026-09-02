@@ -880,6 +880,12 @@ WARN_STORE_STALE_LOST="were written by a different version of this extension and
 # never-written record can otherwise draw are the lost wording above, shared
 # with the opened-and-unusable case, and silence.
 WARN_STORE_NEVER_RECOVERED="no render has written a record of the index marks for"
+# Eight with M070, which adds the wording for a chapter whose SOURCE this route
+# does not read — an .ipynb chapter, or one whose name carries no extension at
+# all. It is drawn whatever state that chapter's record was in, so it is the
+# one wording of the family whose key says nothing about the record, and it
+# stands ahead of every other: a refused chapter draws this and nothing else.
+WARN_STORE_KIND_REFUSED="is not one this route reads"
 # The unplaced-section report (M60/M061) and the doubled-section report (M061)
 # had their keys here. M063 hands an index no marker names to the book's last
 # chapter unconditionally, so no render can leave such a section unplaced or

@@ -98,7 +98,7 @@ reach the book index and what the render tells them when some cannot.
       path's own extension lowercased, and a refusal that returns the file
       rather than nil so the caller can name it. A chapter whose name carries
       no extension at all is refused with the rest.
-- [ ] T2. The refusal wording beside `book.lua:887-891` and M069's, drawn once
+- [x] T2. The refusal wording beside `book.lua:887-891` and M069's, drawn once
       per reading chapter for the refused chapter; `tests/scans/warn-distinct.py`'s
       EXPECTED count moves with it.
 - [ ] T3. `recovered_marks` and `recovered_markers` over the chapter's metadata
@@ -128,6 +128,7 @@ reach the book index and what the render tells them when some cannot.
 - 2026-09-02: plan gate chose an extension whitelist over sniffing the file's content, because Quarto names the chapter files and the set it accepts is small and enumerable, where a content sniff would be a second reader guessing at a format Quarto already knows; falsified by a Quarto release taking a book chapter whose extension is outside the set and whose source Pandoc's markdown reader reads correctly.
 - 2026-09-02: criteria audit ran in FULL mode ([O], fresh context) and returned findings on all three drafted criteria — AC1 unbounded over "not markdown" with no enumerable set and its antecedent covering only one of two entry paths, AC2 unsatisfiable as written because a recovered locator carries no fragment by decision and its record-route baseline was unpinned, AC3 wholly instrument-bound and its single plant standing in for a family. All fixed before this file was written.
 - 2026-09-02: T1 — `recover_record` refuses a chapter whose extension is not `.qmd`, `.md`, `.markdown` or `.Rmd` (lower-cased comparison over `pandoc.path.split_extension`), before anything is opened; a chapter whose name carries no extension is refused with the rest. The refusal returns a second value rather than the file, the plan's own shape: the caller already holds the file and names it itself. `tests/run-tests.sh` passed, 631 checks.
+- 2026-09-02: T2 — one refusal wording for every state a refused chapter's record can be in, drawn in `store_read` ahead of the four wordings already there; a refused chapter is not handed on as a stale record, so it says one thing rather than two. The implementation gate chose the longer wording naming the accepted set and chose one sentence over two. `warn-distinct.py`'s EXPECTED moved 82 to 83, and the suite gained the `WARN_STORE_KIND_REFUSED` key. `tests/run-tests.sh` passed, 631 checks.
 - 2026-09-02: probe run 2026-09-02 under pandoc 3.11 — a filter table carrying a `Span` function visits a span in `abstract:` as well as one in the body, confirming the asymmetry AC3 rests on before this milestone was written rather than leaving it for implementation.
 
 ## Decisions

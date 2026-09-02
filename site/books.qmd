@@ -124,15 +124,26 @@ A record that is simply *absent* — a chapter that has never been rendered — 
 not recovered: a first render is what it always was, and rendering the whole
 book is still what makes the index complete.
 
-One case that looks absent and is not: where the store directory itself is
-there and cannot be listed — replaced by a file, or with its read permission
-gone — the records in it are out of reach rather than unwritten, and every
-chapter is read back from its source. The book still gets a complete index,
-with the unusable-record report drawn for each chapter by every chapter that
-looks for it. The fix is whichever put the directory out of reach: taking away
-whatever stands in its place, or restoring its permissions. A store directory
-that still lists is not this case — the records inside it are read as absent,
-whatever is wrong with them.
+One case that looks absent and is not: a record that is *there* and cannot be
+opened. What tells the two apart is the listing of the directory the record
+belongs in — a record whose filename is among that directory's entries was
+written there, whatever opening it does, so it is out of reach rather than
+unwritten and its chapter is read back from its source. That covers one record
+whose permissions have been cleared, a store directory that has lost the search
+bit its records are opened through, and the store directory itself being out of
+reach — replaced by a file, or with its read permission gone — where every
+record under it is out of reach and every chapter is read back. The book still
+gets a complete index, with the unusable-record report drawn for each such
+chapter by every chapter that looks for its record. The fix is whichever put
+the path out of reach: taking away whatever stands in its place, or restoring
+permissions.
+
+The listing is the only evidence there is, so a file merely *named* like a
+record and unopenable counts as one that was written — a broken symlink left at
+that path by hand, say. Nothing this extension writes produces a file of that
+name it cannot open, so the case arises only where something else made it, and
+what it costs is a chapter read back from its source rather than dropped. A
+record whose name the directory does not list is absent exactly as before.
 
 The two reports repeat on rules of their own. The one for a record that could
 not be read is drawn by every chapter that opens it — every chapter of the book

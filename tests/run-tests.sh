@@ -8120,9 +8120,13 @@ MANIFEST
   m066_slipped 2 "the pairing substitution slipped, the range-carrying one intact" \
     "$M065_CARRYRANGE_CARRY" "$M066_PAIR_SLIPPED"
 
+  # Aimed at `store_probe`, which M068 put in `store_directory_unusable`'s
+  # place: the store directory replaced by a file is still one of the states it
+  # answers for, and disabling it whole is still what makes every record path
+  # read as never written.
   m061_mutant m065-noprobe \
     "M065-AC5 self-test (the store-directory probe disabled)" \
-    's{  local store_lost = store_directory_unusable\(ctx\)\n}{  local store_lost = false\n}'
+    's{  local was_written = store_probe\(\)\n}{  local was_written = function() return false end\n}'
   m065_break_store "$M061W/m065-noprobe/.quarto/$STORE_DIR" \
     "M065-AC5 self-test"
   m063_tree_render m065-noprobe m065-noprobe \
@@ -8137,6 +8141,315 @@ MANIFEST
   check_warning_count "$WORK/m063-m065-noprobe.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
     "M065-AC5 self-test (every record path reads as absent again, so the no-marks wording is never drawn)"
   pass "M065-AC5 self-test: with the store-directory probe disabled and nothing else changed, the same store directory replaced by a file leaves every record path reading as never written — no chapter is recovered, no report is drawn, each index carries the terms of the chapter that builds it alone, and the index no marker names prints nowhere — which is what this book did before the probe, and what the manifests the run above is held to refuse"
+fi
+
+# ---------------------------------------------------------------------------
+# M068 — a record FILE that is there and cannot be opened, behind a store
+# directory that lists perfectly well. Before this milestone `io.open`
+# returning nothing was the whole test, so such a record read exactly as one no
+# render had written and its chapter's terms went missing from every other
+# chapter's index in silence (KI221). The probe now asks the directory listing
+# whether a file of that name is there, so the record is recovered from its
+# chapter's own source and reported, as an opened-and-unusable one already is.
+#
+# The arrangement is a DANGLING SYMLINK at the record path rather than cleared
+# permission bits, which differ between the machines this suite runs on and are
+# ignored outright by a root-run render. Its target is a path inside a
+# directory that does not exist, not a bare missing filename: `store_write`
+# opens the record path for writing and a symlink to a missing name in an
+# existing directory would be FOLLOWED, creating the target and leaving the
+# next render reading an ordinary record — the run would then be about a store
+# that healed itself between two renders. With no directory to create it in,
+# the write fails as four.qmd's held record already does, the link stays
+# dangling, and the two renders below are the same case twice.
+#
+# Derived by hand from the fixture, and identical to the held-record
+# arrangement above: four.qmd's record is out of reach, so each of the four
+# chapters that is not four.qmd reads that path, recovers that chapter from its
+# source and says so, four.qmd's own write fails once, and the two
+# marker-position reports the book always draws are drawn.
+#
+#   4 recovery + 1 write-failure + 2 marker-position = 7 warning lines.
+#
+# The named counts account for all 7 and the raw count of warning lines is
+# asserted alongside them, since the write-failure report falls in and out of
+# the anchored-pattern helper's reach depending on what Quarto printed just
+# before it (KI206).
+# ---------------------------------------------------------------------------
+m068_dangle_record() {   # <chapter file> <store directory> <label>
+  local chapter="$1" store="$2" label="$3"
+  local path="$store/$chapter$STORE_SUFFIX"
+  [ -d "$store" ] \
+    || fail "$label: $store is not a directory, so the run below would be about the store directory rather than about one record inside it"
+  rm -rf "$path"
+  ln -s "no-such-directory/absent$STORE_SUFFIX" "$path"
+  m068_assert_dangling "$path" "$store" "$chapter" "$label"
+}
+
+# The three facts the arrangement rests on, asserted rather than assumed — and
+# asserted again after each render, since a write that followed the link would
+# leave an ordinary record behind and the render after it would be about a
+# store that healed itself.
+m068_assert_dangling() {   # <record path> <store directory> <chapter file> <label>
+  local path="$1" store="$2" chapter="$3" label="$4"
+  [ -L "$path" ] \
+    || fail "$label: $path is not a symlink, so the run is not about a record that is there and cannot be opened"
+  [ ! -e "$path" ] \
+    || fail "$label: $path resolves to something that exists, so it would be opened and read like any other record"
+  python3 - "$store" "$chapter$STORE_SUFFIX" "$label" <<'DANGLEPY'
+import os, sys
+store, name, label = sys.argv[1:4]
+entries = os.listdir(store)
+if name not in entries:
+    sys.exit(f'FAIL: {label}: {name} is not among the {len(entries)} entry/entries '
+             f'of {store}, so the probe under test has nothing to find and the '
+             f'run below would be about a record that was never written')
+print(f'ok   {label}: {name} is a dangling symlink and its name is one of the '
+      f'{len(entries)} entries {store} lists')
+DANGLEPY
+}
+
+# The recovery report for four.qmd, whole. A count of the family alone would
+# be satisfied by four reports about the wrong chapter, or by one report
+# repeated with the wrong tail: this is the message an author reads, and the
+# tail is the half telling them what to do about it.
+M068_RECOVERED_FOUR="the recorded index marks for four.qmd could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"
+
+m063_tree m068-dangling
+M068_STORE="$M061W/m068-dangling/.quarto/$STORE_DIR"
+m068_dangle_record four.qmd "$M068_STORE" "M068-AC1"
+for M068_PASS in one two; do
+  m063_tree_render m068-dangling "m068-dangling-$M068_PASS" \
+    "M068-AC1 (render $M068_PASS)" "$PLACE_SECTIONS"
+  # AC1 — every term the book marks, four.qmd's eight among them, in the
+  # section the fixture asks for.
+  check_book_terms "$CAPTURE_ROOT/m063-m068-dangling-$M068_PASS/_book" \
+    "M068-AC1 (render $M068_PASS: four.qmd is recovered from its source, so no term is lost)" \
+    "$PLACE_TERMS_COMPLETE"
+  # AC1 and AC4 in one manifest — the gamma section row by row in href form.
+  # Every locator belonging to a chapter whose record was opened and used
+  # carries a fragment (`index.html#qi-mark-3`, `two.html#qi-mark-2`, and
+  # five.qmd's own `#qi-mark-1`); every locator belonging to four.qmd, the
+  # recovered chapter, carries its page and nothing after it.
+  check_index_sections \
+    "$CAPTURE_ROOT/m063-m068-dangling-$M068_PASS/_book/five.html" \
+    "$M065_GAMMA_ROWS" "M068-AC1/M068-AC4 (render $M068_PASS)" hrefs
+  # AC2 — the report, whole, once per chapter that reads the store. Four, not
+  # five: four.qmd never reads its own record.
+  check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
+    "$M068_RECOVERED_FOUR" 4 \
+    "M068-AC2 (render $M068_PASS: index.qmd, two.qmd, three.qmd and five.qmd each meet four.qmd's record path)"
+  check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
+    "$WARN_STORE_UNREADABLE_LOST" 0 \
+    "M068-AC2 (render $M068_PASS: four.qmd's own source reads, so nothing is lost)"
+  check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
+    "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+    "M068-AC2 (render $M068_PASS: four.qmd's own source carries marks)"
+  check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
+    "$WARN_STORE_STALE_RECOVERED" 0 \
+    "M068-AC2 (render $M068_PASS: nothing could be opened, so nothing could be found stale)"
+  check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
+    "$WARN_STORE_UNWRITABLE" 1 \
+    "M068-AC2 (render $M068_PASS: four.qmd's own write follows the link into a directory that is not there)"
+  M068_LINES=$( { grep -c '(W) ' "$WORK/m063-m068-dangling-$M068_PASS.log" || true; } | tr -d ' ')
+  [ "$M068_LINES" = "7" ] \
+    || { grep '(W) ' "$WORK/m063-m068-dangling-$M068_PASS.log" >&2; fail "M068-AC2 (render $M068_PASS): the render wrote $M068_LINES warning line(s), and the kinds this check counts by name account for 7"; }
+  m068_assert_dangling "$M068_STORE/four.qmd$STORE_SUFFIX" "$M068_STORE" four.qmd \
+    "M068-AC1 (after render $M068_PASS)"
+done
+pass "M068-AC1/M068-AC2/M068-AC4: where a chapter's record is a file the store directory lists and no render can open, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all eleven of its entries, four.qmd's eight linking to that chapter's page with no fragment while every locator from a record that was read carries its fragment, and each draws the recovery report for four.qmd whole four times among seven warnings and exits 0"
+
+# ---------------------------------------------------------------------------
+# M068-AC3, and the control that separates the two sides of the new test. The
+# cold first render — the `place-first` leg near the top of this file, into a
+# tree with no store directory at all — is what says the widened probe still
+# never fires on a record that was never written, and it is asserted there.
+# This is its near neighbour: a store directory that lists PERFECTLY WELL and
+# holds no record for four.qmd. The name is absent from the listing, so the
+# absent branch is taken and nothing is reported about that chapter — which is
+# what a book whose fourth chapter has never been rendered looks like, and what
+# a probe recovering on the strength of `io.open` alone would destroy.
+#
+# Two legs, because a whole-book render does not on its own put an absent
+# record in front of the chapter that would pay for it: chapters render in book
+# order and four.qmd rewrites its own record before five.qmd, the chapter that
+# builds the section, reads the store.
+# ---------------------------------------------------------------------------
+m063_tree m068-norecord
+M068_NORECORD_STORE="$M061W/m068-norecord/.quarto/$STORE_DIR"
+rm -f "$M068_NORECORD_STORE/four.qmd$STORE_SUFFIX"
+python3 - "$M068_NORECORD_STORE" "four.qmd$STORE_SUFFIX" <<'NORECORDPY'
+import os, sys
+store, name = sys.argv[1:3]
+entries = os.listdir(store)
+if name in entries:
+    sys.exit(f'FAIL: M068-AC3: {name} is still among {store}\'s entries, so the '
+             f'run below would be about a record that is there')
+if not entries:
+    sys.exit(f'FAIL: M068-AC3: {store} lists nothing at all, so the run below '
+             f'would be about an empty store rather than one that is short one '
+             f'record')
+print(f'ok   M068-AC3: {store} lists {len(entries)} record(s) and none of them '
+      f'is {name}')
+NORECORDPY
+# Leg one, the whole book. four.qmd renders fourth of five and rewrites its
+# own record as it goes, so five.qmd — the chapter that builds the section an
+# absent record would cost — reads a record this render wrote and the book's
+# index is whole. That is the ordinary healing a never-written record gets, and
+# what says so here is that nothing was reported: a probe recovering on the
+# strength of `io.open` alone would have drawn four.qmd's report three times
+# before four.qmd ever ran.
+m063_tree_render m068-norecord m068-norecord \
+  "M068-AC3 (a listing store short one record)" "$PLACE_SECTIONS"
+check_book_terms "$CAPTURE_ROOT/m063-m068-norecord/_book" \
+  "M068-AC3 (four.qmd rewrites its own record before the chapter that builds the section reads it)" \
+  "$PLACE_TERMS_COMPLETE"
+check_warning_count "$WORK/m063-m068-norecord.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+  "M068-AC3 (a name the listing does not carry is a record that was never written)"
+check_warning_count "$WORK/m063-m068-norecord.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
+  "M068-AC3 (nothing is recovered, so the lost wording is never drawn)"
+check_warning_count "$WORK/m063-m068-norecord.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M068-AC3 (nothing is recovered, so the no-marks wording is never drawn)"
+check_extension_warning_count "$WORK/m063-m068-norecord.log" 2 \
+  "M068-AC3 (the two marker-position reports this book always draws, and no third)"
+
+# Leg two — the same store, short the same record, with five.qmd rendered on
+# its own so that nothing rewrites it first. This is what an absent record
+# COSTS, and the cost is what the widened probe must leave exactly where it
+# was: the gamma section prints the three terms the chapters other than
+# four.qmd mark in it and none of four.qmd's eight, and not one word is said.
+# Derived by hand from the five chapters' sources — the same rows the complete
+# manifest above holds, less every row whose locator is four.qmd's page.
+read -r -d '' M068_GAMMA_ROWS_ABSENT <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+MANIFEST
+rm -f "$M068_NORECORD_STORE/four.qmd$STORE_SUFFIX"
+[ ! -e "$M068_NORECORD_STORE/four.qmd$STORE_SUFFIX" ] \
+  || fail "M068-AC3: four.qmd's record is still there, so the render below would read it"
+( cd "$M061W/m068-norecord" && quarto render five.qmd --to html ) \
+  > "$WORK/m063-m068-norecord-fifth.log" 2>&1 \
+  || { tail -30 "$WORK/m063-m068-norecord-fifth.log" >&2; fail "M068-AC3: the single-chapter render failed; IP2 forbids a missing record taking one down"; }
+capture --project "$M061W/m068-norecord" html "m068-norecord-fifth"
+check_index_sections \
+  "$CAPTURE_ROOT/m068-norecord-fifth/_book/five.html" \
+  "$M068_GAMMA_ROWS_ABSENT" "M068-AC3 (five.qmd alone, four.qmd's record absent)" hrefs
+check_warning_count "$WORK/m063-m068-norecord-fifth.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+  "M068-AC3 (five.qmd alone: the absent record is not recovered)"
+check_extension_warning_count "$WORK/m063-m068-norecord-fifth.log" 0 \
+  "M068-AC3 (five.qmd is the book's last chapter and reads three records it can use, so it has nothing to say)"
+pass "M068-AC3: a store directory that lists and holds no record for four.qmd recovers nothing and says nothing — the whole book heals itself when four.qmd rewrites its own record, and five.qmd rendered alone prints the gamma section short every one of four.qmd's eight terms in silence, which is the never-written case the widened probe still refuses to recover"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M068 T5 — the axes the probe is free in, one planted defect each, against
+  # copies of the tree whose only change is that mutation. Three of them make
+  # the listed-and-unopenable record read as never written again, which is the
+  # state this milestone ends; one makes a record that really was never written
+  # read as recovered, which is the state it must not create; and one changes
+  # no output at all and is caught by counting what it costs.
+  # -------------------------------------------------------------------------
+
+  # A mutant tree with four.qmd's record dangling, held to the shape the AC1
+  # and AC2 checks above refuse: four.qmd's terms gone from the book's index,
+  # and not one word said about them.
+  m068_mutant_silent() {   # <slug> <label> <perl substitution>...
+    local slug="$1" label="$2"
+    shift 2
+    m061_mutant "$slug" "$label" "$@"
+    m068_dangle_record four.qmd "$M061W/$slug/.quarto/$STORE_DIR" "$label"
+    ( cd "$M061W/$slug" && quarto render --to html ) \
+      > "$WORK/m068-$slug.log" 2>&1 \
+      || { tail -30 "$WORK/m068-$slug.log" >&2; fail "$label: the mutated render failed; the case below is about which terms an index carries, not about a broken render"; }
+    capture --project "$M061W/$slug" html "m068-$slug"
+    check_book_terms "$CAPTURE_ROOT/m068-$slug/_book" \
+      "$label (four.qmd reads as never written again)" "$PLACE_TERMS_NORECOVERY"
+    check_warning_count "$WORK/m068-$slug.log" "$M068_RECOVERED_FOUR" 0 \
+      "$label (nothing is recovered, so the report the run above draws four times is drawn none)"
+  }
+
+  # 1. The per-record name test removed, leaving the directory-level test that
+  #    stood before this milestone: a record behind a listing store directory
+  #    reads as absent however the listing spells it.
+  m068_mutant_silent m068-nonametest "M068 T5 self-test (the name test removed)" \
+    's{    return where\.names ~= nil\n      and where\.names\[pandoc\.path\.filename\(path\)\] == true\n}{    return false\n}m'
+  pass "M068 T5 self-test: with the per-record name test removed and nothing else changed, a record the store directory lists and no render can open leaves four.qmd's eight terms out of the book's index in silence — the shape the checks above refuse"
+
+  # 2. The name compared as the record's whole path rather than as the
+  #    basename the listing holds. Nothing ever matches, so every unopenable
+  #    record reads as absent again.
+  m068_mutant_silent m068-joinedpath "M068 T5 self-test (the name compared as a joined path)" \
+    's{      and where\.names\[pandoc\.path\.filename\(path\)\] == true\n}{      and where.names[path] == true\n}m'
+  pass "M068 T5 self-test: with the record's whole path compared against a listing that holds basenames, the same record reads as never written again"
+
+  # 3. The listing taken from the store directory's PARENT where the record's
+  #    own directory is meant. `.quarto` lists `quarto-index` and no record
+  #    name, so again nothing matches.
+  m068_mutant_silent m068-parentlisting "M068 T5 self-test (the parent's listing consulted)" \
+    's{    local where = listing\(pandoc\.path\.directory\(path\)\)\n}{    local where = listing(pandoc.path.directory(pandoc.path.directory(path)))\n}m'
+  pass "M068 T5 self-test: with the record's name looked for in the listing of the store directory's parent, the same record reads as never written again"
+
+  # 4. The test INVERTED — a name the listing carries read as never written and
+  #    a name it does not carry read as out of reach. Held against the other
+  #    control: the store that lists and holds no record for four.qmd, where
+  #    the inverted test recovers a chapter no render ever recorded. This is
+  #    the direction the milestone must not create, and no manifest over the
+  #    dangling arrangement alone would catch it.
+  m061_mutant m068-inverted "M068 T5 self-test (the test inverted)" \
+    's{    return where\.names ~= nil\n      and where\.names\[pandoc\.path\.filename\(path\)\] == true\n}{    return not (where.names ~= nil\n      and where.names[pandoc.path.filename(path)] == true)\n}m'
+  rm -f "$M061W/m068-inverted/.quarto/$STORE_DIR/four.qmd$STORE_SUFFIX"
+  ( cd "$M061W/m068-inverted" && quarto render --to html ) \
+    > "$WORK/m068-inverted.log" 2>&1 \
+    || { tail -30 "$WORK/m068-inverted.log" >&2; fail "M068 T5 self-test (the test inverted): the mutated render failed; the case below is about what a report says, not about a broken render"; }
+  capture --project "$M061W/m068-inverted" html "m068-inverted"
+  M068_INVERTED=$( { grep -oF -- "$M068_RECOVERED_FOUR" "$WORK/m068-inverted.log" || true; } | wc -l | tr -d ' ')
+  [ "$M068_INVERTED" != "0" ] \
+    || { grep '(W) ' "$WORK/m068-inverted.log" >&2; fail "M068 T5 self-test (the test inverted): a store holding no record for four.qmd drew that chapter's recovery report 0 times even with the test inverted, so the control above is not what refuses this mutation"; }
+  pass "M068 T5 self-test: with the name test inverted and nothing else changed, a store directory that lists and holds no record for four.qmd recovers that chapter and reports it $M068_INVERTED time(s) — which the control above, holding that same store to silence, refuses"
+
+  # 5. The listing taken once per RECORD rather than once per render. It
+  #    changes no output at all — the store is read before this chapter writes,
+  #    so a second listing of the same directory in the same process can only
+  #    say what the first did — and is caught by counting the listings
+  #    themselves, which is the cost D-043 settled the probe's shape on.
+  #
+  #    Both legs run over a tree with TWO records dangling, since the
+  #    arrangement above puts exactly one unopenable record in front of each
+  #    chapter and one listing per record is one listing per render there.
+  #    Derived by hand over the five chapters, each of which reads the four
+  #    records that are not its own: index.qmd, three.qmd and five.qmd each
+  #    meet both dangling records and two.qmd and four.qmd each meet one, so
+  #    remembering the answer per directory is 5 listings for the book and
+  #    taking it afresh per record is 8.
+  M068_COUNT_PROBE='s{    local ok, entries = pcall\(pandoc\.system\.list_directory, dir\)\n}{    io.stderr:write("QI-LISTING\\n")\n    local ok, entries = pcall(pandoc.system.list_directory, dir)\n}m'
+  M068_NOMEMO='s{    local answer = seen\[dir\]\n    if answer ~= nil then\n      return answer\n    end\n}{    local answer = nil\n}m'
+  m068_count_listings() {   # <slug> <label> <expected> <perl substitution>...
+    local slug="$1" label="$2" want="$3"
+    shift 3
+    m061_mutant "$slug" "$label" "$@"
+    m068_dangle_record four.qmd "$M061W/$slug/.quarto/$STORE_DIR" "$label"
+    m068_dangle_record two.qmd "$M061W/$slug/.quarto/$STORE_DIR" "$label"
+    ( cd "$M061W/$slug" && quarto render --to html ) \
+      > "$WORK/m068-$slug.log" 2>&1 \
+      || { tail -30 "$WORK/m068-$slug.log" >&2; fail "$label: the instrumented render failed; the count below is about how often a directory is listed, not about a broken render"; }
+    capture --project "$M061W/$slug" html "m068-$slug"
+    local got
+    got=$( { grep -c 'QI-LISTING' "$WORK/m068-$slug.log" || true; } | tr -d ' ')
+    [ "$got" = "$want" ] \
+      || fail "$label: the render listed a store directory $got time(s), expected $want"
+    printf 'ok   %s: %s store-directory listing(s) over the book\n' "$label" "$got"
+  }
+  m068_count_listings m068-listing-memo \
+    "M068 T5 self-test (the listing remembered, as it stands)" 5 \
+    "$M068_COUNT_PROBE"
+  m068_count_listings m068-listing-nomemo \
+    "M068 T5 self-test (the listing taken afresh per record)" 8 \
+    "$M068_COUNT_PROBE" "$M068_NOMEMO"
+  pass "M068 T5 self-test: over a book with two records dangling, the probe as it stands lists a store directory 5 times — once per rendering chapter — where dropping the remembered answer lists it 8 times, once per unopenable record; the instrumentation is the same in both legs and only the remembering differs"
 fi
 
 
@@ -20651,7 +20964,10 @@ python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
 # the page and must not follow it. The page scopes the model and names the
 # merged formats; these rows are what holds it there. M066 added the rows
 # from `the recovery route` down, one per sentence of the M064/M065 prose
-# (`site/books.qmd:84-135`), each stating the behavior rather than its wrapping.
+# (`site/books.qmd:84-135`), each stating the behavior rather than its wrapping;
+# M068 replaced the two store-directory rows with four, since the test that
+# tells a written record from a never-written one moved to the record's own
+# name in a listing and the page now states the lookalike that test accepts.
 cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
@@ -20672,11 +20988,13 @@ conditional content out whole	so recovery takes such a block or span out whole, 
 nothing where the source cannot be read	The report then says the source could not be read either, and that chapter's terms are missing from the index until it is rendered again
 no range and no principal	both ends of a range print the one page the chapter is on, and the role prints as an undeclared one does
 an absent record is not recovered	A record that is simply *absent* — a chapter that has never been rendered — is not recovered
-an unlistable store directory	where the store directory itself is there and cannot be listed — replaced by a file, or with its read permission gone — the records in it are out of reach rather than unwritten, and every chapter is read back from its source
-a store that still lists	A store directory that still lists is not this case — the records inside it are read as absent, whatever is wrong with them
+a listed record that will not open	a record whose filename is among that directory's entries was written there, whatever opening it does, so it is out of reach rather than unwritten and its chapter is read back from its source
+an unlistable store directory	the store directory itself being out of reach — replaced by a file, or with its read permission gone — where every record under it is out of reach and every chapter is read back
+a name no listing carries	A record whose name the directory does not list is absent exactly as before.
+a lookalike counts as written	a file merely *named* like a record and unopenable counts as one that was written — a broken symlink left at that path by hand, say
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
-  || fail "M52-AC5/M55/M062/M063: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, no longer says which chapter carries an index no marker names or on what proviso, or no longer says what the book reports for a record it could not use, or no longer states the source-recovery route M064/M065 added — what it returns, what it does not, that an absent record is left alone and an unlistable store directory is not (its own FAIL line is above)"
+  || fail "M52-AC5/M55/M062/M063: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, no longer says which chapter carries an index no marker names or on what proviso, or no longer says what the book reports for a record it could not use, or no longer states the source-recovery route M064/M065 added — what it returns, what it does not, that a record whose name no listing carries is left alone while one the listing carries and nothing can open is not, a hand-made lookalike among those (its own FAIL line is above)"
 
 # The placement page's own half of the same pair (M063). Its list of rules is
 # where a reader who has not reached the Books page meets the book's placement
@@ -20742,7 +21060,7 @@ SUPERSEDEPY
     "$M061D/books-oldrule.qmd" "M063-AC6 self-test" \
     || fail "M063-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
   m061_planted 'the books page stating the superseded chapter rule' \
-    'does not state 1 of the 21 claim(s)' \
+    'does not state 1 of the 23 claim(s)' \
     python3 tests/sitecheck.py claims "$M061D/books-oldrule.qmd" \
       "$WORK/books-claims.txt"
 

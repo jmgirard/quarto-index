@@ -8,7 +8,7 @@ _Released 0.1.0 2026-08-26._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M068 | A record that is listed and cannot be opened is not read as one that was never written | planned | — | normal | milestones/M068-listed-unopenable-record.md |
+| M068 | A record that is listed and cannot be opened is not read as one that was never written | in-progress | — | normal | milestones/M068-listed-unopenable-record.md |
 | M066 | The recovery-route checks read the reports and mutations they name | done | — | normal | milestones/archive/M066-recovery-check-readers.md |
 | M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |
 | M065 | The forms a recovered chapter's marks take are fenced | done | M064 | normal | milestones/archive/M065-recovered-mark-forms.md |

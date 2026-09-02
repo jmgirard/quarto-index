@@ -159,39 +159,77 @@ local function store_path(ctx, file)
   return pandoc.path.join({ ctx.dir, file .. STORE_SUFFIX })
 end
 
--- Is the store DIRECTORY there and unusable? `io.open` on a record path
--- returns nothing both for a record that was never written and for one sitting
--- in a directory that has been replaced by a file or whose permissions were
--- cleared, and the two are opposite cases: the first is a first render, which
--- recovery leaves alone, and the second is every chapter's marks lost from
--- every other chapter's index, silently and on every render (D-043).
+-- Was this record ever WRITTEN? `io.open` on a record path returns nothing
+-- both for a record no render has written and for one that is there and out
+-- of reach — a file whose directory has lost the search bit, a path a hand has
+-- replaced with a broken link, a store directory replaced by a file — and the
+-- two are opposite cases: the first is a first render, which recovery leaves
+-- alone, and the second is that chapter's marks lost from every other
+-- chapter's index, silently and on every render (D-043, D-044).
 --
--- Told apart without reading any error message: the directory is unusable when
--- it CANNOT be listed and its own name is in a listing of its parent. A
--- directory that is simply not there fails the second test, so a first render
--- and a tree with no store take the absent branch exactly as they did. A
--- parent that cannot be listed either is read as absent for the same reason —
--- there is nothing to say the store was ever written.
+-- Told apart without reading any error message, by the DIRECTORY LISTING the
+-- record's own name would be in: a record whose filename is among the entries
+-- of the directory holding it was written there, whatever opening it does.
+-- No render produces a file of that name it cannot open, so the name in the
+-- listing is the evidence. A file merely NAMED like a record and unopenable —
+-- a broken link an author left by hand — is read as written and recovered:
+-- the boundary D-044 accepts, because nothing Pandoc's Lua interface exposes
+-- separates it from the real thing (KI224).
 --
--- Once per rendering chapter, not once per record: the answer is a fact about
--- the render, and probing it per chapter would ask the same question of the
--- same path once for every chapter of the book.
-local function store_directory_unusable(ctx)
-  if pcall(pandoc.system.list_directory, ctx.dir) then
-    return false
+-- Where that directory cannot be listed at all it is itself the unusable
+-- thing, provided its own name is in a listing of ITS parent — D-043's test,
+-- kept whole and reached through this same probe, so every record under such a
+-- directory is out of reach. A directory that is simply not there fails that
+-- test, so a first render and a tree with no store take the absent branch
+-- exactly as they did; a parent that cannot be listed either is read as absent
+-- for the same reason — there is nothing to say the store was ever written.
+--
+-- The listing consulted is the record's OWN directory, not the store's top
+-- level: a book chapter may sit in a subdirectory and `store_write` puts its
+-- record in a matching subdirectory of the store, so two chapters of the same
+-- filename in different directories share a record basename. Compared against
+-- the top-level listing alone, the never-written one of them would read as
+-- written and a first render would recover it — the falsifier D-043 names.
+--
+-- Answered from memory per directory, so a render lists the store once however
+-- many records it meets there, which is the cost D-043 settled on; and lazily,
+-- so a book whose records all open lists nothing at all.
+local function store_probe()
+  local seen = {}
+  local function listing(dir)
+    local answer = seen[dir]
+    if answer ~= nil then
+      return answer
+    end
+    local ok, entries = pcall(pandoc.system.list_directory, dir)
+    if ok then
+      local names = {}
+      for _, entry in ipairs(entries) do
+        names[entry] = true
+      end
+      answer = { names = names, lost = false }
+    else
+      -- `pandoc.path.directory` is its own fixed point at a root ("/" and "."
+      -- both map to themselves), which is what stops this walking for ever.
+      local parent = pandoc.path.directory(dir)
+      local up = parent ~= dir and listing(parent) or nil
+      answer = {
+        names = nil,
+        lost = up ~= nil and up.names ~= nil
+          and up.names[pandoc.path.filename(dir)] == true,
+      }
+    end
+    seen[dir] = answer
+    return answer
   end
-  local parent = pandoc.path.directory(ctx.dir)
-  local name = pandoc.path.filename(ctx.dir)
-  local ok, entries = pcall(pandoc.system.list_directory, parent)
-  if not ok then
-    return false
-  end
-  for _, entry in ipairs(entries) do
-    if entry == name then
+  return function(path)
+    local where = listing(pandoc.path.directory(path))
+    if where.lost then
       return true
     end
+    return where.names ~= nil
+      and where.names[pandoc.path.filename(path)] == true
   end
-  return false
 end
 
 -- One chapter's record: what it marked, where those marks are anchored on its
@@ -776,15 +814,17 @@ end
 -- of its own for it to find, whatever the write does afterwards.
 local function store_read(ctx, own)
   local records, stale = {}, {}
-  -- Probed once, before any record is opened: a record this loop cannot open
-  -- while the store directory itself is unusable was not never-written, it is
-  -- out of reach, and the source route is what it is for (D-043).
-  local store_lost = store_directory_unusable(ctx)
+  -- One probe for this whole pass: a record this loop cannot open whose name
+  -- is nonetheless in the listing of the directory it belongs in was not
+  -- never-written, it is out of reach, and the source route is what it is for
+  -- (D-043, D-044).
+  local was_written = store_probe()
   for _, file in ipairs(ctx.chapters) do
     if file == ctx.file then
       records[#records + 1] = own
     else
-      local fh = io.open(store_path(ctx, file), "r")
+      local path = store_path(ctx, file)
+      local fh = io.open(path, "r")
       local unusable, ok, data = false, false, nil
       if fh then
         local text = fh:read("a")
@@ -795,7 +835,7 @@ local function store_read(ctx, own)
         else
           unusable = true
         end
-      elseif store_lost then
+      elseif was_written(path) then
         unusable = true
       end
       if unusable then
@@ -803,9 +843,10 @@ local function store_read(ctx, own)
         -- record costs its chapter every term it marked, and the chapter's own
         -- source still says what its author wrote (D-041). Either the record
         -- was opened and could not be used, or it could not be opened while
-        -- the store directory itself was there and unusable (D-043). A record
-        -- that is simply ABSENT is neither, and never reaches here — so a
-        -- first render is unchanged.
+        -- its own name stood in the listing of the directory it belongs in —
+        -- the store directory itself being there and unlistable among those
+        -- (D-043, D-044). A record that is simply ABSENT is neither, and never
+        -- reaches here — so a first render is unchanged.
         local rebuilt = recover_record(ctx, file)
         if rebuilt ~= nil then
           records[#records + 1] = rebuilt

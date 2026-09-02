@@ -312,6 +312,10 @@ version-skew branch, since `ok` is false whenever there is no file), recovery
 stays inside `recover_record`'s `pcall` so IP2 holds, and the never-written
 key cannot alias either could-not-be-read wording.
 
+**After the fix-now work:** `tests/run-tests.sh` exits 0 with 631 checks and
+`--self-test` with 1182, so AC7 holds over the fixed tree; `cairn_validate`
+passes with no advisory.
+
 **Gate outcome (2026-09-02).** Approved for merge with the record fixes made
 first: F4, F6 and F9 fixed on the branch; F7 rejected; F1, F2, F3, F5 and F8
 to a candidate row at the hygiene pass.

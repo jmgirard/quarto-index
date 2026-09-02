@@ -8103,7 +8103,7 @@ MANIFEST
 
   m061_mutant m065-flatlevels \
     "M065-AC6 self-test (a recovered mark folded to one level)" \
-    's{      if levels == nil then\n        return nil\n      end\n}{      if levels == nil then\n        return nil\n      end\n      levels = { levels[1] }\n}'
+    's{    if levels == nil then\n      return nil\n    end\n}{    if levels == nil then\n      return nil\n    end\n    levels = { levels[1] }\n}'
   m061_block_record four.qmd \
     "$M061W/m065-flatlevels/.quarto/$STORE_DIR" "M065-AC6 self-test (levels)"
   m063_tree_render m065-flatlevels m065-flatlevels \
@@ -8137,7 +8137,7 @@ MANIFEST
   # Two substitutions, each its own argument: one carries the range end into
   # the recovered mark, the other pairs the ends. Named here so the M066-AC2
   # self-test below can slip each with the other left intact.
-  M065_CARRYRANGE_CARRY='s{        xrefs = surviving,\n}{        xrefs = surviving,\n        range = span.attributes[qi_core.RANGE_ATTR],\n}'
+  M065_CARRYRANGE_CARRY='s{      xrefs = surviving,\n}{      xrefs = surviving,\n      range = span.attributes[qi_core.RANGE_ATTR],\n}'
   M065_CARRYRANGE_PAIR='s{^  return marks, sorts\n}{  local pending = {}\n  for _, mark in ipairs(marks) do\n    local key = qi_levels.levels_key(mark.levels)\n    if mark.range == "open" then\n      pending[key] = mark\n    elseif mark.range == "close" and pending[key] then\n      pending[key].paired = "open"\n      mark.paired = "close"\n      pending[key] = nil\n    end\n  end\n  return marks, sorts\n}m'
   m061_mutant m065-carryrange \
     "M065-AC4 self-test (range carried and paired)" \
@@ -8172,7 +8172,7 @@ MANIFEST
       && fail "M066-AC2 self-test: $label left the filter unchanged, so the other substitution did not apply either and this is not the half-applied case the count is held to catch"
     printf 'ok   M066-AC2 self-test: %s is refused naming substitution %s, and the filter still differs, which the whole-file guard alone would have passed\n' "$label" "$ordinal"
   }
-  M066_CARRY_SLIPPED='s{        xrefs = surviving;\n}{slipped}'
+  M066_CARRY_SLIPPED='s{      xrefs = surviving;\n}{slipped}'
   M066_PAIR_SLIPPED='s{^  return marks; sorts\n}{slipped}m'
   m066_slipped 1 "the range-carrying substitution slipped, the pairing one intact" \
     "$M066_CARRY_SLIPPED" "$M065_CARRYRANGE_PAIR"
@@ -21765,6 +21765,9 @@ nothing through an include or a cell	Quarto expands both before any filter runs,
 no fragment	A recovered term links to the chapter's page and nothing after it, so following it lands at the top of that page rather than at the marked passage
 conditional content out whole	so recovery takes such a block or span out whole, whatever its `when-` or `unless-` attributes say
 nothing where the source cannot be read	The report then says the source could not be read either, and that chapter's terms are missing from the index until it is rendered again
+which chapter sources this route reads	a chapter named `.qmd`, `.md`, `.markdown` or `.Rmd`, and no other kind
+a chapter this route will not read	Such a chapter is refused and reported by a wording of its own naming the file, whatever state its record was in, and none of its terms reach any index until it is rendered again
+a front-matter mark comes back	A mark written in the chapter's YAML front matter comes back with the marks in its body
 no range and no principal	both ends of a range print the one page the chapter is on, and the role prints as an undeclared one does
 an absent record is read back where a section would lose it	is read back only where its terms would otherwise be lost from a section this chapter itself prints
 the two chapters that read one	a chapter carrying a placement marker of its own, and the book's last chapter, which takes on every index no marker names

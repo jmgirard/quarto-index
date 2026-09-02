@@ -90,6 +90,15 @@ record. Where the source parses and carries no mark this route can reach — a
 chapter whose marks all arrive through an include, say — the report says that
 instead, so nothing tells you terms came back when none did.
 
+Which chapter files this route reads is a shorter list than the ones a book can
+hold: a chapter named `.qmd`, `.md`, `.markdown` or `.Rmd`, and no other kind. A
+notebook chapter is one Quarto executes to produce its markdown, and the file on
+disk is JSON; read as markdown it yields marks whose attribute values carry that
+file's own quoting, so its terms are filed under names nothing in the book
+answers to. Such a chapter is refused and reported by a wording of its own naming
+the file, whatever state its record was in, and none of its terms reach any index
+until it is rendered again.
+
 What comes back is what you wrote. An `entry=` naming several levels rebuilds
 its sub-entry and the parent it hangs under; a `sort=` still files the term
 where it asks; and `see=` and `see-also=` still print their lines, neither
@@ -114,15 +123,9 @@ Five things recovery does not return.
   that — so recovery takes such a block or span out whole, whatever its
   `when-` or `unless-` attributes say. A term marked inside one is left out
   even where this render would have printed it.
-- **Nothing at all, from a chapter written as something other than markdown
-  source.** This route reads a chapter file named `.qmd`, `.md`, `.markdown` or
-  `.Rmd`, and no other kind. A book may take a notebook chapter, which Quarto
-  executes to produce its markdown; the file on disk is JSON, and reading it as
-  markdown files that chapter's terms under whatever its mangled attributes
-  resolve to. Such a chapter is refused and reported by a wording of its own
-  naming the file, and its terms are missing from the index until it is
-  rendered again. Where the source is one this route does read and Pandoc's
-  markdown reader cannot read it, the report says that instead.
+- **Nothing at all, where Pandoc's markdown reader cannot read the chapter
+  source.** The report then says the source could not be read either, and that
+  chapter's terms are missing from the index until it is rendered again.
 - **A page range, and a principal locator.** Whether two marks are the two ends
   of one range, and which locator a `mention="principal"` emphasizes, are
   settled inside that chapter's own render against the anchors it produced. A

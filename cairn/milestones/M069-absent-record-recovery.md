@@ -67,29 +67,29 @@ prints and what the render tells them, not an internal artifact.
 
 ## Acceptance criteria
 
-- [ ] AC1. In a render of every chapter of a copy of `examples/book-placement/`
+- [x] AC1. In a render of every chapter of a copy of `examples/book-placement/`
       whose project tree holds no sidecar store at all, `index.html` and
       `five.html` each print index sections carrying the terms every other
       chapter of that fixture marks in its markdown body, held row by row in
       href form against a hand-derived manifest for that render, each recovered
       term's locator a link to that chapter's page with no fragment.
-- [ ] AC2. On that same render, `two.html` and `four.html` — the fixture's
+- [x] AC2. On that same render, `two.html` and `four.html` — the fixture's
       chapters that carry no placement marker and are not its last — print no
       index section, and neither render draws any report about another
       chapter's record.
-- [ ] AC3. A chapter recovered because no render has written its record is
+- [x] AC3. A chapter recovered because no render has written its record is
       reported by a wording that names the record as one no render has written,
       asserted message-whole with its per-chapter cadence; the three
       could-not-be-read wordings are unchanged and still drawn, message-whole,
       by the `m068-dangling` fixture.
-- [ ] AC4. A whole-book render of `examples/book` into a writable tree draws no
+- [x] AC4. A whole-book render of `examples/book` into a writable tree draws no
       report of any wording this route draws — the never-written wording this
       milestone adds and the three could-not-be-read wordings alike — and
       matches its existing term manifest unchanged.
-- [ ] AC5. On the AC1 render, a chapter with no record whose source cannot be
+- [x] AC5. On the AC1 render, a chapter with no record whose source cannot be
       read draws the report naming that outcome, and a chapter with no record
       whose source parses to no index mark draws nothing at all.
-- [ ] AC6. `site/books.qmd` and `CHANGELOG.md` each state that a chapter
+- [x] AC6. `site/books.qmd` and `CHANGELOG.md` each state that a chapter
       carrying a placement marker, and the book's last chapter, read another
       chapter's source where no record for it has been written, that no other
       chapter does, and that a chapter recovered this way contributes no
@@ -153,6 +153,7 @@ prints and what the render tells them, not an internal artifact.
 - 2026-09-02: T7 — D-045 recorded; `site/books.qmd` and `CHANGELOG.md` state the gate, its two halves, the silence and the missing fragment; `cairn/DESIGN.md`'s recovery prose updated, with KI205 narrowed to the chapters that print nothing and KI214 to a last chapter whose own source-reading also fails.
 - 2026-09-02: two docs-prose checks at the tail of the suite were bookkeeping this milestone moves: the books-page claim ledger pinned the sentence "an absent record is not recovered", replaced by five rows naming which chapters read one back, that no other chapter does, that a whole-book render is untouched and where the route stays silent; and the planted-defect self-test that reads that ledger's size pins 27 claims where it pinned 23.
 - 2026-09-02: `tests/run-tests.sh` exits 0 (631 checks) and `tests/run-tests.sh --self-test` exits 0 (1182 checks). Status to review.
+- 2026-09-02: AC1-AC6 recorded against a fresh `tests/run-tests.sh` run (631 checks, exit 0); AC7's self-test leg still running.
 - 2026-09-02: review opened; draft PR #69 pushed, `cairn_validate` passes with no advisory, three fresh-context review lenses spawned. Acceptance suite re-running for fresh evidence; no criterion ticked yet.
 
 ## Decisions
@@ -160,3 +161,51 @@ prints and what the render tells them, not an internal artifact.
 - D-045 records the gate and supersedes D-041's never-fires-on-an-absent-record clause; it lives in `cairn/DECISIONS.md` as a cross-cutting entry.
 
 ## Review
+
+Fresh evidence, 2026-09-02, at 8cfd2cd + the review checkpoint, PR #69.
+`tests/run-tests.sh` exits 0 with 631 checks; every criterion below is read
+out of that run's log unless it says otherwise.
+
+- AC1. The store-less legs pass: `m069-index`, `m069-three` and `m069-five`
+  each render one chapter of a store-less copy of `examples/book-placement/`
+  with the store asserted gone before and after, and each matches its
+  hand-derived href-form manifest row by row and in order — alpha 2 rows,
+  beta 5 rows, gamma 11 rows — every recovered locator a bare `<chapter>.html`
+  with no fragment. 16 `ok` lines carry the `M069-AC1` label; the run's
+  summary pass line names all three chapters and the four sources each read.
+- AC2. `m069-two` and `m069-four` each render alone over the same store-less
+  tree: 2 rendered pages carry 0 generated index sections (the chapter and the
+  book's home page), and four silent zero-count checks per leg hold each of the
+  four wordings this route can draw to 0 occurrences, with a fifth holding the
+  leg's whole extension-warning count to 0. 7 `ok` lines carry the `M069-AC2`
+  label.
+- AC3. On each of the three recovering legs the never-written wording is
+  counted 4 times and the could-not-be-read recovered wording 0 times, and the
+  `place-first` whole-book leg counts it 6; `tests/scans/warn-distinct.py`
+  holds the filter's 82 warn() messages mutually distinct and none a prefix of
+  another, and the extension-warning counts on those legs are the mechanism
+  that accounts for every emitted message against the whole-message patterns
+  that scan generates. The three could-not-be-read wordings are untouched in
+  `book.lua` and still drawn by `m068-dangling`, whose two consecutive
+  whole-book renders are asserted identical across 7 named warnings.
+- AC4. The whole-book render of `examples/book` into a writable tree holds all
+  four of this route's wordings to 0 occurrences and its whole
+  extension-warning count to the 7 named ones it drew before this branch, and
+  its 3 index sections still match all 30 manifest rows in order.
+- AC5. Two legs over the store-less tree, both rendering `five.qmd`. With
+  four.qmd's source carrying a byte no UTF-8 decoder accepts, the
+  source-could-not-be-read wording is counted once, the other three chapters
+  are recovered and reported, and the whole extension-warning count is 4.
+  With all 8 of four.qmd's marks moved inside one conditional block, the
+  never-written wording is counted 3 times, the no-marks and lost wordings 0,
+  and the whole extension-warning count is 3 — four.qmd draws nothing at all.
+  Both legs print the same 6-row section. 7 `ok` lines carry the `M069-AC5`
+  label.
+- AC6. `site/books.qmd` states that a chapter carrying a placement marker and
+  the book's last chapter read the sources of chapters no record has been
+  written for, that "every other chapter reads such a record as absent and
+  says nothing about it", and that recovery comes "without the links into
+  their pages that a record carries", the missing fragment named again in the
+  paragraph after. `CHANGELOG.md`'s Unreleased/Output entry states the same
+  three in its own words. The prose-guard check holds `site/books.qmd` to all
+  27 of its pinned claims.

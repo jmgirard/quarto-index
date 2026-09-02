@@ -93,7 +93,7 @@ reach the book index and what the render tells them when some cannot.
 
 ## Tasks
 
-- [ ] T1. The extension test in `recover_record` (`book.lua:783`), before the
+- [x] T1. The extension test in `recover_record` (`book.lua:783`), before the
       read: the accepted set as a named table, the comparison on the chapter
       path's own extension lowercased, and a refusal that returns the file
       rather than nil so the caller can name it. A chapter whose name carries
@@ -127,6 +127,7 @@ reach the book index and what the render tells them when some cannot.
 - 2026-09-02: plan gate chose to make recovery reach a front-matter mark over narrowing the ordinary render so neither reaches one, because the render's behavior is what a single-document author already gets and changing it would drop terms from documents that are not books at all; falsified by an author reporting a term in their front matter reaching the index as a defect rather than as what they asked for.
 - 2026-09-02: plan gate chose an extension whitelist over sniffing the file's content, because Quarto names the chapter files and the set it accepts is small and enumerable, where a content sniff would be a second reader guessing at a format Quarto already knows; falsified by a Quarto release taking a book chapter whose extension is outside the set and whose source Pandoc's markdown reader reads correctly.
 - 2026-09-02: criteria audit ran in FULL mode ([O], fresh context) and returned findings on all three drafted criteria — AC1 unbounded over "not markdown" with no enumerable set and its antecedent covering only one of two entry paths, AC2 unsatisfiable as written because a recovered locator carries no fragment by decision and its record-route baseline was unpinned, AC3 wholly instrument-bound and its single plant standing in for a family. All fixed before this file was written.
+- 2026-09-02: T1 — `recover_record` refuses a chapter whose extension is not `.qmd`, `.md`, `.markdown` or `.Rmd` (lower-cased comparison over `pandoc.path.split_extension`), before anything is opened; a chapter whose name carries no extension is refused with the rest. The refusal returns a second value rather than the file, the plan's own shape: the caller already holds the file and names it itself. `tests/run-tests.sh` passed, 631 checks.
 - 2026-09-02: probe run 2026-09-02 under pandoc 3.11 — a filter table carrying a `Span` function visits a span in `abstract:` as well as one in the body, confirming the asymmetry AC3 rests on before this milestone was written rather than leaving it for implementation.
 
 ## Decisions

@@ -776,11 +776,44 @@ local function recovered_markers(blocks)
   return names
 end
 
+-- The chapter sources this route reads, lower-cased. A book's chapter files
+-- are named by its author and listed by Quarto, which takes an `.ipynb`
+-- chapter as readily as a `.qmd` one; the reader below is Pandoc's markdown
+-- reader and nothing else, so what it may be handed is the markdown-source
+-- extensions and no other kind. Handed a notebook it does not refuse: it
+-- accepts the raw JSON as markdown, and what comes back is a mark whose
+-- attribute values carry the JSON's own quoting — a term filed into whatever
+-- index that mangled name resolves to, with nothing said (KI219).
+local SOURCE_EXTENSIONS = {
+  [".qmd"] = true,
+  [".md"] = true,
+  [".markdown"] = true,
+  [".rmd"] = true,
+}
+
+-- Whether this route may read <file> at all: its own extension, lower-cased
+-- so a chapter written `.Rmd` and one written `.rmd` are the same file kind.
+-- A chapter whose name carries no extension is refused with the rest — there
+-- is nothing to test it against, and guessing is the second reader this route
+-- is not.
+local function readable_source(file)
+  local _, ext = pandoc.path.split_extension(file)
+  return ext ~= nil and SOURCE_EXTENSIONS[ext:lower()] == true
+end
+
 -- One chapter's record, rebuilt from its source, or nil where nothing could be
 -- rebuilt. Every step is inside one guard: the file may be gone, unreadable or
 -- something Pandoc's markdown reader refuses, and none of that may take the
 -- render down with it (IP2). A failure returns nil and the caller reports it.
+--
+-- Two ways of returning nothing, because they are two different things to tell
+-- an author: a source this route could not read as it hoped to, and a source
+-- this route never offers to read. The second is the boolean, and the caller
+-- names the file in a report of its own.
 local function recover_record(ctx, file)
+  if not readable_source(file) then
+    return nil, true
+  end
   local ok, record = pcall(function()
     local fh = io.open(pandoc.path.join({ ctx.root, file }), "r")
     if not fh then

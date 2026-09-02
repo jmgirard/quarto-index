@@ -476,14 +476,29 @@ locator links to the chapter's page and no fragment; and no resolved role and
 no pairing verdict, which are conclusions a chapter reaches about itself
 (D-009) — so a recovered range's two ends print the one page and a principal
 locator prints unemphasized (corrected M065, which added the declared sort
-keys). It never fires on a record that is simply ABSENT — one whose name no
-listing of the directory it belongs in carries — so a first render is
-unchanged. A mark reaching the chapter through an include shortcode or an
+keys). A record that is simply ABSENT — one whose name no listing of the
+directory it belongs in carries — is recovered only in a chapter that can PRINT
+an index section: one carrying a placement marker of its own, and the book's
+last chapter, which takes on every index no marker names (added M069, D-045).
+Both halves are settled from `resolve_markers` and `ctx.position` before the
+store is opened, so no two chapters of one render disagree; every other chapter
+reads such a record as absent, which is the cost the gate accepts (KI205). A
+whole-book render prints the same index — by the time a chapter reads the
+store the chapters before it have written their records — so an ordinary first
+render of a book whose marker sits in its last chapter recovers nothing, while
+one whose marker sits earlier recovers the chapters behind it and reports each.
+A mark reaching the chapter through an include shortcode or an
 executed cell is not in that parse and is not recovered, and neither is one
 inside a block or span carrying Quarto's `.content-visible` or
 `.content-hidden` class, which the reader takes out whole before it reads
 anything (D-042); a source Pandoc's markdown reader cannot read recovers
-nothing, and the reading chapter's own record report says so. Five cases are
+nothing, and the reading chapter's own record report says so. Four wordings
+carry the outcome: three for a record that was written and could not be used —
+recovered, parsed and reaching no mark, unreadable — and a fourth for one no
+render has written whose source was read back, which never calls such a record
+unreadable. A never-written record whose source parses to no mark is the one
+silent outcome: it has lost nothing, and every chapter of a store-less book
+that marks nothing would otherwise report on every render (M069). Five cases are
 reported rather than guessed at (corrected M063, which retired two of the
 seven M061 left): a book whose chapters mark terms but whose author wrote no
 marker anywhere (reported by the last chapter, the only one
@@ -1358,21 +1373,18 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   only U+00A0 and U+200B reach one. A transposed code point in the list — say
   `\u{2007}` written as `\u{2070}`, a visible glyph — would ship silently.
   — M59 review F6
-- **KI205.** A book's index section is printed short the terms of any chapter
-  whose record is ABSENT — a chapter of a read-only project tree that has never
-  been rendered. A record that was opened and could not be used no longer costs
-  its chapter's terms: M064 reads that chapter's own source instead. Recovery
-  never fires on an absent record, so a book rendered for the first time into a
-  tree whose records cannot be written keeps this shape, and a chapter's marks
-  reach the index by no other route. A record that is there and cannot be opened
-  is not this case: M068 recovers its chapter's source wherever the record's own
-  filename is in the listing of the directory it belongs in, the store directory
-  being there and unlistable among those (D-043, D-044), so what is left is a
-  record whose name no listing carries. Narrowed M063 from the whole section
-  being lost, M064 from every unreadable record to the absent one, M065 from
-  every absent record, and M068 from every record behind a listing store
-  directory. — M60 review F11, corrected M061 review F4, narrowed M063,
-  narrowed M064, narrowed M065, narrowed M068
+- **KI205.** A chapter of an HTML book whose record is ABSENT is read as absent
+  in every chapter that carries no placement marker and is not the book's last
+  — the chapters M069's gate leaves out (D-045). Such a chapter prints no index
+  section, so no term is lost from anything it prints; what it costs is that
+  its own page's view of the store is one chapter short, which nothing renders
+  and nothing reports. A chapter that CAN print a section reads the missing
+  chapter's source, so the printed index no longer goes short. Narrowed M063
+  from the whole section being lost, M064 from every unreadable record to the
+  absent one, M065 from every absent record, M068 from every record behind a
+  listing store directory, and M069 from every chapter to the chapters that
+  print nothing. — M60 review F11, corrected M061 review F4, narrowed M063,
+  narrowed M064, narrowed M065, narrowed M068, narrowed M069
 - **KI214.** A book prints no section for an index no marker names where the
   last chapter can read a usable record for none of the chapters that place
   one, and none of those records can be recovered. The proviso on M063's rule
@@ -1386,7 +1398,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   was observed on is M064-AC3, where both renders now print `gamma` in
   `five.html`; narrowed M065 from every absent record, since a store directory
   that is there and cannot be listed now recovers every chapter and so settles
-  `first`. — M063 AC3 criteria audit, narrowed M064, narrowed M065
+  `first`; narrowed M069, which reads the sources of the chapters no record
+  has been written for in exactly the chapter this is about — the book's last —
+  so `first` is settled from every chapter's markers whether or not any record
+  exists, and what is left is a last chapter whose own source-reading also
+  fails, which is the unreadable-source case rather than the absent-record one.
+  — M063 AC3 criteria audit, narrowed M064, narrowed M065, narrowed M069
 - **KI215.** The two store reports repeat once more than
   `site/books.qmd` states in a book whose fallback set is entirely unmarked.
   The fallback loop sets `builds = true` for every index no marker names,
@@ -1477,6 +1494,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `recover_record`'s call site, not measured. Nothing bounds or caches it and
   nothing names it to an author; the cost is invisible at this repo's fixture
   sizes and unmeasured at book sizes. — M064 review F7
+- **KI227.** KI217's sibling for a store that was never written: where no
+  record exists at all, each chapter admitted by the recovery gate — a chapter
+  carrying a placement marker, and the book's last chapter — parses every one
+  of the other n-1 chapter sources, so a book rendered one chapter at a time
+  into a store-less tree parses on the order of n(n-1) sources across the run.
+  Derived from `store_read`'s loop against `recover_absent` at
+  `book.lua:1269`, not measured. Nothing bounds or caches it; invisible at the
+  fixture's five chapters and unmeasured at book sizes. — M069 Scope Out, M069
+  review F6
 - **KI218.** A recovered mark naming an index the book does not declare is
   refiled into the first declared index with nothing said. `recovered_marks`
   resolves the name through `mark_index` before the rebuilt record is handed

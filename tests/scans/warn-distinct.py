@@ -248,8 +248,10 @@ if blank:
 # unreadable-record and stale-record reports in THREE apiece — one wording
 # where the chapter's own source was read back, one where it parsed and
 # carried no mark this route reaches, and one where it could not be read at
-# all — so 77 + 4 = 81.
-EXPECTED = 81
+# all — so 77 + 4 = 81. M069 adds a fourth recovery wording, drawn where no
+# render has written the record at all and the chapter's source was read back:
+# 81 + 1 = 82.
+EXPECTED = 82
 if len(lits) != EXPECTED:
     print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
           f'{EXPECTED}. Either a warning was added or removed without updating '

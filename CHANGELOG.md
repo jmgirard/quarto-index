@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased
+
+### Output
+
+- In an HTML book, a chapter no render has written a record for is now read
+  back from its own source by the chapters that can print an index section —
+  a chapter carrying a placement marker of its own, and the book's last
+  chapter, which takes on every index no marker names — so a book rendered
+  chapter by chapter, or into a tree whose records never survive, prints an
+  index carrying every chapter's terms rather than one short of them. Every
+  other chapter reads such a record as absent exactly as before, and a
+  recovered chapter contributes no fragment to its locators: each links to
+  that chapter's page and nothing after it. A whole-book render prints the
+  index it always printed, since by the time a chapter reads the store the
+  chapters before it have written their records: the ordinary first render of
+  a book whose marker sits in its last chapter reads no source and reports
+  nothing, while one whose marker sits earlier reads the sources of the
+  chapters behind it and reports each, the next render silent.
+
+  A chapter recovered this way is reported by a wording of its own, naming the
+  record as one no render has written rather than one that could not be read.
+  A chapter with no record whose source parses and reaches no index mark is
+  passed over in silence — it has lost nothing, and a chapter that marks
+  nothing looks exactly the same — while one whose source cannot be read at
+  all still draws the report naming that outcome.
+
 ## 0.2.0 (2026-09-02)
 
 Two changes break what 0.1.0 did. The index words now follow the document's

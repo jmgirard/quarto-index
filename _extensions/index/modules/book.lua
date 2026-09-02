@@ -822,7 +822,17 @@ end
 -- would see the state some earlier render left. It is also why nothing here
 -- reports on this chapter's own file — there is no stale or unreadable record
 -- of its own for it to find, whatever the write does afterwards.
-local function store_read(ctx, own)
+--
+-- `recover_absent` is the caller's answer to a question the store cannot be
+-- asked: may a record NO render has written be recovered from its chapter's
+-- source in this chapter? True for a chapter carrying a placement marker of
+-- its own and for the book's last chapter — between them, every chapter that
+-- can print an index section — and false everywhere else, so a chapter that
+-- prints nothing pays nothing for a book whose store has never been written.
+-- Both halves are settled before the store is opened, from `resolve_markers`
+-- and from `ctx.position` against `ctx.chapters`, so no two chapters of one
+-- render can disagree about either.
+local function store_read(ctx, own, recover_absent)
   local records, stale = {}, {}
   -- One probe for this whole pass: a record this loop cannot open whose name
   -- is nonetheless in the listing of the directory it belongs in was not
@@ -835,7 +845,7 @@ local function store_read(ctx, own)
     else
       local path = store_path(ctx, file)
       local fh = io.open(path, "r")
-      local unusable, ok, data = false, false, nil
+      local unusable, never_written, ok, data = false, false, false, nil
       if fh then
         local text = fh:read("a")
         fh:close()
@@ -847,16 +857,23 @@ local function store_read(ctx, own)
         end
       elseif was_written(path) then
         unusable = true
+      elseif recover_absent then
+        -- Never written, and this chapter is one that can print a section, so
+        -- the terms would otherwise be lost from the index it prints rather
+        -- than merely absent from a page nobody reads.
+        never_written = true
       end
-      if unusable then
+      if unusable or never_written then
         -- Out of reach, which is the one case the source route is for: this
         -- record costs its chapter every term it marked, and the chapter's own
         -- source still says what its author wrote (D-041). Either the record
         -- was opened and could not be used, or it could not be opened while
         -- its own name stood in the listing of the directory it belongs in —
         -- the store directory itself being there and unlistable among those
-        -- (D-043, D-044). A record that is simply ABSENT is neither, and never
-        -- reaches here — so a first render is unchanged.
+        -- (D-043, D-044). A record that is simply ABSENT is the third case,
+        -- and reaches here only in a chapter that can print a section
+        -- (`recover_absent`): everywhere else it is read as absent exactly as
+        -- it always was.
         local rebuilt = recover_record(ctx, file)
         if rebuilt ~= nil then
           records[#records + 1] = rebuilt
@@ -869,12 +886,14 @@ local function store_read(ctx, own)
         -- include shortcode or an executed cell, neither of which is in the
         -- file this route reads.
         local recovered = rebuilt ~= nil and #rebuilt.marks > 0
-        -- Never silent: the fix is the same either way — render that chapter
-        -- again. WHY it could not be used is not: a record left by an older
-        -- version of this extension is perfectly readable and simply stale,
-        -- and calling that unreadable sends an author looking for a corrupt
-        -- file that is not there. What recovery returned is not either, and
-        -- each report says which of the two happened for its chapter.
+        -- Silent in one case only, the one below that says so. Everywhere
+        -- else the fix is the same — render that chapter again — but WHY the
+        -- record could not be used is not: a record left by an older version
+        -- of this extension is perfectly readable and simply stale, one no
+        -- render has written was never there at all, and calling either
+        -- unreadable sends an author looking for a corrupt file that is not
+        -- there. What recovery returned is a second axis, and each report
+        -- says which case and which outcome its chapter had.
         if ok and type(data) == "table" and data.version ~= STORE_VERSION then
           -- Handed back rather than reported here: a version-skewed record
           -- costs the chapters that BUILD an index their share of that
@@ -883,6 +902,19 @@ local function store_read(ctx, own)
           -- once per chapter that builds (M55).
           stale[#stale + 1] =
             { file = file, recovered = recovered, parsed = rebuilt ~= nil }
+        elseif never_written and recovered then
+          -- The fourth wording. "Could not be read" would be false here:
+          -- there is no file to read, and an author sent looking for a
+          -- corrupt record would find nothing.
+          qi_core.warn(("no render has written a record of the index marks for %s, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
+        elseif never_written and rebuilt ~= nil then
+          -- The one branch that says nothing at all. A source that parses and
+          -- reaches no mark is the ORDINARY shape for a chapter of a book
+          -- whose store has never been written — every chapter marking
+          -- nothing is one — and it has lost nothing, so reporting it would
+          -- fire for most of a correct book on every render. A record that
+          -- was written and cannot be used is the opposite case: something
+          -- was there and is gone, which is the no-marks wording below.
         elseif recovered then
           qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
         elseif rebuilt ~= nil then
@@ -1224,7 +1256,17 @@ local function html_book(doc, ctx, marker, taken)
   -- record it walks (`record_for_reading`).
   local record = build_record(ctx, marker)
   local reading = record_for_reading(record)
-  local records, stale = store_read(ctx, reading)
+  -- May this chapter recover a record no render has written? Only where the
+  -- terms would otherwise be lost from a section this chapter itself prints:
+  -- a chapter carrying a placement marker of its own, and the book's last
+  -- chapter, which takes on every index no marker names. Both are settled
+  -- here, before the store is opened — `marker` is what `resolve_markers`
+  -- left of this chapter's own source, and the position is the render list
+  -- Quarto hands every chapter — so no two chapters of one render can reach
+  -- different answers, and no chapter that prints nothing parses the rest of
+  -- the book to find that out.
+  local records, stale =
+    store_read(ctx, reading, #marker > 0 or ctx.position == #ctx.chapters)
   -- Before any judgement is made about a mark: an index name this book no
   -- longer declares is settled against what it declares now, so every
   -- accumulator below sees only names this book has.

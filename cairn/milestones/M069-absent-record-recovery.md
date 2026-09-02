@@ -4,13 +4,13 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M069: A chapter no render has written a record for reaches the book index where its terms would otherwise be lost
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
 - **Resolves:** —
-- **Branch/PR:** —
+- **Branch/PR:** m069-absent-record-recovery / https://github.com/jmgirard/quarto-index/pull/69
 
 ## Goal
 
@@ -67,34 +67,34 @@ prints and what the render tells them, not an internal artifact.
 
 ## Acceptance criteria
 
-- [ ] AC1. In a render of every chapter of a copy of `examples/book-placement/`
+- [x] AC1. In a render of every chapter of a copy of `examples/book-placement/`
       whose project tree holds no sidecar store at all, `index.html` and
       `five.html` each print index sections carrying the terms every other
       chapter of that fixture marks in its markdown body, held row by row in
       href form against a hand-derived manifest for that render, each recovered
       term's locator a link to that chapter's page with no fragment.
-- [ ] AC2. On that same render, `two.html` and `four.html` — the fixture's
+- [x] AC2. On that same render, `two.html` and `four.html` — the fixture's
       chapters that carry no placement marker and are not its last — print no
       index section, and neither render draws any report about another
       chapter's record.
-- [ ] AC3. A chapter recovered because no render has written its record is
+- [x] AC3. A chapter recovered because no render has written its record is
       reported by a wording that names the record as one no render has written,
       asserted message-whole with its per-chapter cadence; the three
       could-not-be-read wordings are unchanged and still drawn, message-whole,
       by the `m068-dangling` fixture.
-- [ ] AC4. A whole-book render of `examples/book` into a writable tree draws no
+- [x] AC4. A whole-book render of `examples/book` into a writable tree draws no
       report of any wording this route draws — the never-written wording this
       milestone adds and the three could-not-be-read wordings alike — and
       matches its existing term manifest unchanged.
-- [ ] AC5. On the AC1 render, a chapter with no record whose source cannot be
+- [x] AC5. On the AC1 render, a chapter with no record whose source cannot be
       read draws the report naming that outcome, and a chapter with no record
       whose source parses to no index mark draws nothing at all.
-- [ ] AC6. `site/books.qmd` and `CHANGELOG.md` each state that a chapter
+- [x] AC6. `site/books.qmd` and `CHANGELOG.md` each state that a chapter
       carrying a placement marker, and the book's last chapter, read another
       chapter's source where no record for it has been written, that no other
       chapter does, and that a chapter recovered this way contributes no
       fragment to its locators.
-- [ ] AC7. `tests/run-tests.sh` exits 0 both plain and with `--self-test`.
+- [x] AC7. `tests/run-tests.sh` exits 0 both plain and with `--self-test`.
 
 ## Coverage
 
@@ -108,32 +108,32 @@ prints and what the render tells them, not an internal artifact.
 
 ## Tasks
 
-- [ ] T1. The gate in `store_read` (`book.lua:825`): thread the reading
+- [x] T1. The gate in `store_read` (`book.lua:825`): thread the reading
       chapter's own placement-marker set and its last-chapter answer in from
       the caller at `book.lua:1227`, and take the recovery branch for a record
       the probe reports never written only when one of the two holds. A record
       the probe reports written keeps M068's behavior in every chapter.
-- [ ] T2. The fourth wording beside `book.lua:887-891`, drawn only on the
+- [x] T2. The fourth wording beside `book.lua:887-891`, drawn only on the
       never-written branch, and the silent outcome for a never-written record
       whose source parses to no mark. `tests/scans/warn-distinct.py`'s EXPECTED
       count moves with it.
-- [ ] T3. The store-less fixture over `examples/book-placement/` — a tree with
+- [x] T3. The store-less fixture over `examples/book-placement/` — a tree with
       no `.quarto` directory at all, re-asserted absent around every render —
       the href-form section manifests for `index.html` and `five.html` (AC1),
       and the two negative controls asserting `two.html` and `four.html` carry
       no index section and draw no report (AC2).
-- [ ] T4. Checks for AC3 and AC5 over that fixture: the new report asserted
+- [x] T4. Checks for AC3 and AC5 over that fixture: the new report asserted
       message-whole and counted by kind, one leg whose chapter source is made
       unreadable, and one unmarked chapter asserted to draw nothing; the
       render's whole extension-warning count accounted for by name.
-- [ ] T5. AC4's control: `examples/book` rendered whole into a writable tree,
+- [x] T5. AC4's control: `examples/book` rendered whole into a writable tree,
       asserted to draw no wording of this route and to match its term manifest.
-- [ ] T6. `--self-test` plants, one per axis the gate is free in, each shown red
+- [x] T6. `--self-test` plants, one per axis the gate is free in, each shown red
       against the check that fences it before its green is trusted: the marker
       half of the gate removed; the last-chapter half removed; the gate
       inverted; the never-written wording swapped for the could-not-be-read
       one; and the parses-to-no-mark branch made to report.
-- [ ] T7. The decision entry superseding D-041's never-fires clause and
+- [x] T7. The decision entry superseding D-041's never-fires clause and
       restating D-043's and D-044's falsifier against the gate; `site/books.qmd`
       and `CHANGELOG.md` (AC6); `cairn/DESIGN.md`'s recovery prose, with KI205
       and KI214 narrowed to the chapters the gate leaves out.
@@ -144,7 +144,178 @@ prints and what the render tells them, not an internal artifact.
 - 2026-09-02: plan gate chose recovery gated on the reading chapter carrying a placement marker or being the book's last over recovering an absent record in every chapter, because both halves are known before the store is read and an ordinary book keeps its marker in the last chapter, so a first render into a writable tree still recovers nothing; falsified by a first render into a writable tree drawing a recovery report, or by an author reporting a book whose index section chapter is neither of the two.
 - 2026-09-02: plan gate chose silence for a never-written record whose source parses to no mark over reusing the existing no-marks report, because in a store-less tree every legitimately unmarked chapter would draw that report on every render and nothing was lost; falsified by an author unable to tell a chapter whose marks failed to recover from one that marks nothing.
 - 2026-09-02: criteria audit ran in FULL mode ([O], fresh context) and returned findings on all five drafted criteria — AC1 unbounded over an unnamed book and its locator clause false for a cross-reference-only mark, AC2 vacuous and resting on a pre-branch output comparison D-004 refused, AC3 promising distinctness `tests/scans/warn-distinct.py` already guarantees and half instrument-bound, AC4 miscounting a set of three as two, AC5 ambiguous across six wordings and mandating a report per unmarked chapter. All fixed before this file was written; the report-per-unmarked-chapter finding went to the question gate.
+- 2026-09-02: question gate chose the full parallel wording for the fourth report, matching the three existing recovery messages word for word after their opening clause, and one render per chapter for the store-less fixture, since a whole-book render heals itself before the book's last chapter runs; both as recommended.
+- 2026-09-02: T1, T2 — `store_read` takes a third argument saying whether an absent record may be recovered in this chapter, built by `html_book` from its own placement markers and its position before the store is opened; the fourth wording beside the three, and the silent branch for a never-written record whose source parses to no mark. `tests/scans/warn-distinct.py` EXPECTED 81 -> 82.
+- 2026-09-02: T3, T4 — five per-chapter legs over a store-less copy of the placement fixture (index, three and five recovering, two and four silent), and the two AC5 legs, one with four.qmd's source unreadable and one with its marks moved inside a conditional block. Quarto emits the book's home page beside any single chapter it renders, so every section manifest names it; each leg asserts the store gone before the render and one record left after it.
+- 2026-09-02: T5 — AC4's control is the existing whole-book render of `examples/book`, whose marker sits in its last chapter; it now also asserts that none of the four wordings this route draws appears, alongside its seven named warnings and its unchanged section manifest.
+- 2026-09-02: T6 — five plants, each shown red against the check that fences it. Separately, the M063 T6, M065-AC5 and M068 T5 self-tests each gained a substitution disabling the new gate beside their own: every one of them is about a rule that predates it and runs over a store the gate now reads through, so without it each would be red for a reason that is not its mutation's.
+- 2026-09-02: M068-AC3's second leg is inverted by this milestone rather than repaired: five.qmd rendered alone over a store short four.qmd's record is the book's last chapter, so it now reads that chapter's source. The leg asserts the complete gamma section and the never-written wording where it asserted a short section and silence, and what still separates a never-written record from a listed unopenable one is which wording is drawn, asserted both ways.
+- 2026-09-02: T7 — D-045 recorded; `site/books.qmd` and `CHANGELOG.md` state the gate, its two halves, the silence and the missing fragment; `cairn/DESIGN.md`'s recovery prose updated, with KI205 narrowed to the chapters that print nothing and KI214 to a last chapter whose own source-reading also fails.
+- 2026-09-02: two docs-prose checks at the tail of the suite were bookkeeping this milestone moves: the books-page claim ledger pinned the sentence "an absent record is not recovered", replaced by five rows naming which chapters read one back, that no other chapter does, that a whole-book render is untouched and where the route stays silent; and the planted-defect self-test that reads that ledger's size pins 27 claims where it pinned 23.
+- 2026-09-02: `tests/run-tests.sh` exits 0 (631 checks) and `tests/run-tests.sh --self-test` exits 0 (1182 checks). Status to review.
+- 2026-09-02: AC1-AC6 recorded against a fresh `tests/run-tests.sh` run (631 checks, exit 0); AC7's self-test leg still running.
+- 2026-09-02: review opened; draft PR #69 pushed, `cairn_validate` passes with no advisory, three fresh-context review lenses spawned. Acceptance suite re-running for fresh evidence; no criterion ticked yet.
 
 ## Decisions
 
+- D-045 records the gate and supersedes D-041's never-fires-on-an-absent-record clause; it lives in `cairn/DECISIONS.md` as a cross-cutting entry.
+
 ## Review
+
+Fresh evidence, 2026-09-02, at 8cfd2cd + the review checkpoint, PR #69.
+`tests/run-tests.sh` exits 0 with 631 checks; every criterion below is read
+out of that run's log unless it says otherwise.
+
+- AC1. The store-less legs pass: `m069-index`, `m069-three` and `m069-five`
+  each render one chapter of a store-less copy of `examples/book-placement/`
+  with the store asserted gone before and after, and each matches its
+  hand-derived href-form manifest row by row and in order — alpha 2 rows,
+  beta 5 rows, gamma 11 rows — every recovered locator a bare `<chapter>.html`
+  with no fragment. 16 `ok` lines carry the `M069-AC1` label; the run's
+  summary pass line names all three chapters and the four sources each read.
+- AC2. `m069-two` and `m069-four` each render alone over the same store-less
+  tree: 2 rendered pages carry 0 generated index sections (the chapter and the
+  book's home page), and four silent zero-count checks per leg hold each of the
+  four wordings this route can draw to 0 occurrences, with a fifth holding the
+  leg's whole extension-warning count to 0. 7 `ok` lines carry the `M069-AC2`
+  label.
+- AC3. On each of the three recovering legs the never-written wording is
+  counted 4 times and the could-not-be-read recovered wording 0 times, and the
+  `place-first` whole-book leg counts it 6; `tests/scans/warn-distinct.py`
+  holds the filter's 82 warn() messages mutually distinct and none a prefix of
+  another, and the extension-warning counts on those legs are the mechanism
+  that accounts for every emitted message against the whole-message patterns
+  that scan generates. The three could-not-be-read wordings are untouched in
+  `book.lua` and still drawn by `m068-dangling`, whose two consecutive
+  whole-book renders are asserted identical across 7 named warnings.
+- AC4. The whole-book render of `examples/book` into a writable tree holds all
+  four of this route's wordings to 0 occurrences and its whole
+  extension-warning count to the 7 named ones it drew before this branch, and
+  its 3 index sections still match all 30 manifest rows in order.
+- AC5. Two legs over the store-less tree, both rendering `five.qmd`. With
+  four.qmd's source carrying a byte no UTF-8 decoder accepts, the
+  source-could-not-be-read wording is counted once, the other three chapters
+  are recovered and reported, and the whole extension-warning count is 4.
+  With all 8 of four.qmd's marks moved inside one conditional block, the
+  never-written wording is counted 3 times, the no-marks and lost wordings 0,
+  and the whole extension-warning count is 3 — four.qmd draws nothing at all.
+  Both legs print the same 6-row section. 7 `ok` lines carry the `M069-AC5`
+  label.
+- AC6. `site/books.qmd` states that a chapter carrying a placement marker and
+  the book's last chapter read the sources of chapters no record has been
+  written for, that "every other chapter reads such a record as absent and
+  says nothing about it", and that recovery comes "without the links into
+  their pages that a record carries", the missing fragment named again in the
+  paragraph after. `CHANGELOG.md`'s Unreleased/Output entry states the same
+  three in its own words. The prose-guard check holds `site/books.qmd` to all
+  27 of its pinned claims.
+- AC7. `tests/run-tests.sh` exits 0 with 631 checks; `tests/run-tests.sh
+  --self-test` exits 0 with 1182. All five T6 plants are shown red against the
+  check that fences them before their green is trusted: the marker half
+  removed (index.qmd's section short two.qmd's term, and silent), the
+  last-chapter half removed (five.qmd prints no section), the gate inverted
+  (two.qmd parses the book and reports four times while printing nothing), the
+  wording swapped (same page, wrong sentence), and the parses-to-no-mark
+  branch made to report.
+
+### Independent review — three fresh-context lenses
+
+Diff touches executable surface (`book.lua`, `run-tests.sh`,
+`warn-distinct.py`), so the full fan-out ran: [O] diff-bug, [S] blame-history,
+[S] prior-PR-comments. The blame lens reported no findings. The prior-review
+lens reported one, which is F2 below; it found no GitHub PR-thread evidence
+(`pulls/comments` returned empty) and no LESSONS line touching these files.
+Ranked, most severe first, each with its disposition.
+
+- **F1. A healthy first whole-book render of a book whose placement marker is
+  not in its last chapter now reports on itself.** Every marker chapter that
+  runs before the chapters behind it meets their absent records, recovers
+  them, and warns "render that chapter again" about chapters that are about to
+  render. Confirmed in the suite's own numbers: the `place-first` leg moved
+  from 2 extension warnings to 8, six of them recovery reports. Nothing is
+  wrong with that render and the second render is silent. D-045 records this
+  ("a book whose markers sit earlier does recover, and says so"), and AC4's
+  only control is `examples/book`, whose marker sits in its last chapter, so
+  no criterion fences the case. Disposition: **follow-up** — quietening it
+  reopens the gate D-045 chose, which is design work, not a review fix.
+- **F2. `recover_absent` over-approximates "prints a section".** Both halves
+  answer eligibility, not building, and the report is drawn inside
+  `store_read` with no `builds` guard. A last chapter carrying no marker in a
+  book whose every declared index is placed earlier has `builds = false`
+  (`book.lua:1336`, `next(mine) ~= nil`, and the fallback loop adds nothing
+  when `placing[name] ~= nil`), yet reads every other chapter's source and
+  reports. Raised independently by the diff-bug and prior-review lenses; the
+  latter ties it to KI215's class. Not covered by any AC1/AC2/AC5/T6 leg —
+  T6's inverted-gate plant catches the mirror case (a non-last chapter) only.
+  Disposition: **follow-up**, with F1 — the repair is a `builds`-aware gate,
+  which KI215 already records as needing `marks_in` back.
+- **F3. A never-written record whose source cannot be read is reported as one
+  that "could not be read".** `book.lua:930` reuses the existing wording, so
+  the author of a chapter no render has touched is sent looking for a corrupt
+  record — the exact falsehood the comment at `book.lua:906` gives as the
+  reason the fourth wording exists. D-045 sanctions the reuse; the AC5
+  `m069-lostsource` leg pins it. Disposition: **follow-up**, with F1 — a fifth
+  wording is the same design question, and D-045 sanctions the reuse.
+- **F4. "A whole-book render is unaffected" is stated flat before its
+  qualifier**, in `CHANGELOG.md`, `site/books.qmd` and `cairn/DESIGN.md`, and
+  F1 is the counterexample. The books-page claim ledger added by T7 pins the
+  unqualified clause as its own row, so the prose guard now holds the
+  overclaim rather than the qualifier. Disposition: **fixed now**. The flat
+  clause is replaced in all three files by what is true — a whole-book render
+  prints the same index it always printed, silent where the marker sits in the
+  last chapter and reporting the chapters behind it where it sits earlier. The
+  ledger's pinned text is the causal clause, not the flat one, so it and the
+  27-claim count are unchanged; the second half of this finding did not hold.
+- **F5. "read back only where its terms would otherwise be lost from a section
+  this chapter itself prints"** (`site/books.qmd`, `cairn/DESIGN.md`) states a
+  property the gate does not have — F2's chapter, and a marker chapter that
+  loses the placement race to an earlier chapter marking the same index, both
+  read and report while printing nothing. Disposition: **follow-up**, with F2
+  — the sentence is accurate once the gate is `builds`-aware, and rewording it
+  alone would document a gap rather than close it.
+- **F6. The Scope Out item promising the store-less render cost be "recorded
+  as KI217's sibling" produced no Known-issues entry** — the only record is a
+  trailing clause in D-045's consequences, which `/milestone` routing and a
+  future KI reader never see. Disposition: **fixed now** — KI227 added to
+  `cairn/DESIGN.md`, stating the n(n-1) parse cost of a store-less render as
+  KI217's sibling.
+- **F7. Six pre-existing self-test plants now carry `M069_NO_ABSENT_GATE`
+  beside their own mutation**, so each is shown red against a filter with two
+  edits and any reword of the literal `elseif recover_absent then` line reds
+  six unrelated plants at once. The coupling is guarded (`spliced_copy` fails
+  on a substitution matching nothing). Named as a cost, not a defect.
+  Disposition: **rejected** — an intentional change the plan called for (T6),
+  guarded against silently matching nothing.
+- **F8. `m069_cold_chapter` does not `rm -rf "$M061W/$slug/_book"`** while its
+  sibling `m069_tree` does. Benign today because `$M061W/base` is created with
+  `_book` removed; it would silently let `check_book_sections` read a stale
+  `_book` if that changed. Disposition: **follow-up** — a suite-reader repair
+  of the kind the standing suite-readers row collects.
+- **F9. A 125-character line in `cairn/DESIGN.md`** in a paragraph wrapped at
+  ~78, from joining new text onto the surviving tail of the old sentence.
+  Disposition: **fixed now** as a side effect of F4's rewrite of that same
+  sentence.
+
+Nothing here demonstrates an acceptance criterion failing inside the domain
+its promise quantifies over: AC2 quantifies over chapters that carry no
+marker **and are not the book's last**, which is not F2's chapter, and AC4
+names `examples/book`, whose marker sits in its last chapter, which is not
+F1's book. So no return floor fires on its own; whether F1, F2 or F3 is a
+load-bearing defect in what an author's render tells them is the maintainer's
+call at the gate.
+
+The diff-bug lens also confirmed what it could not fault: `store_read` has one
+caller, `recover_absent` is settled entirely from `marker` and
+`ctx.position`/`ctx.chapters` before the store is touched, the report chain's
+branches are mutually exclusive (`never_written` can never coincide with the
+version-skew branch, since `ok` is false whenever there is no file), recovery
+stays inside `recover_record`'s `pcall` so IP2 holds, and the never-written
+key cannot alias either could-not-be-read wording.
+
+**After the fix-now work:** `tests/run-tests.sh` exits 0 with 631 checks and
+`--self-test` with 1182, so AC7 holds over the fixed tree; `cairn_validate`
+passes with no advisory.
+
+**Gate outcome (2026-09-02).** Approved for merge with the record fixes made
+first: F4, F6 and F9 fixed on the branch; F7 rejected; F1, F2, F3, F5 and F8
+to a candidate row at the hygiene pass.

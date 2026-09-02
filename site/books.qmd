@@ -22,7 +22,8 @@ single Pandoc process, so none of it applies — see the last section.
 and each chapter is a separate render that cannot see the others, so the index
 is built from the chapters that ran before the one holding the marker. Put the
 marker anywhere else and the chapters after it are represented by whatever the
-*previous* render recorded: on a first render they are missing, and after an
+*previous* render recorded: on a first render they are read back from their own
+sources, without the links into their pages that a record carries, and after an
 edit their entries can name terms the chapter no longer marks and link to
 anchors its page no longer has. The extension names those chapters every time
 it builds the index, so this is loud rather than silent — but the fix is to
@@ -120,9 +121,30 @@ Five things recovery does not return.
   ends of a range print the one page the chapter is on, and the role prints as
   an undeclared one does.
 
-A record that is simply *absent* — a chapter that has never been rendered — is
-not recovered: a first render is what it always was, and rendering the whole
-book is still what makes the index complete.
+A record that is simply *absent* — a chapter no render has written one for —
+is read back only where its terms would otherwise be lost from a section this
+chapter itself prints. Two chapters qualify, and between them they are every
+chapter that can print one: a chapter carrying a placement marker of its own,
+and the book's last chapter, which takes on every index no marker names. Both
+read the sources of the chapters no record has been written for, and every
+other chapter reads such a record as absent and says nothing about it.
+
+So a book rendered chapter by chapter, or into a tree whose records never
+survive, still prints an index carrying every chapter's terms rather than one
+short of them — with the same limits every recovered chapter carries, the
+missing fragment among them. A whole-book render prints the index it always
+printed, because by the time a chapter reads the store the chapters before it
+have written their records: the ordinary first render of a book whose marker
+sits in its last chapter reads no source at all and says nothing. Where the
+marker sits earlier, the chapters behind it have not rendered yet, so that
+chapter reads their sources and reports each one — the same index either way,
+and the next render silent.
+
+A chapter with no record whose source parses and reaches no index mark is
+passed over in silence. It has lost nothing — a chapter that marks nothing
+looks exactly like this — and reporting it would say so for most of a correct
+book on every render. Where the source cannot be read at all, the report
+naming that outcome is drawn, as it is for a record that was written.
 
 One case that looks absent and is not: a record that is *there* and cannot be
 opened. What tells the two apart is the listing of the directory the record
@@ -145,8 +167,11 @@ name it cannot open, so the case arises only where something else made it, and
 what it costs is a chapter read back from its source rather than dropped. A
 record whose name the directory does not list is absent exactly as before.
 
-The two reports repeat on rules of their own. The one for a record that could
-not be read is drawn by every chapter that opens it — every chapter of the book
+The reports repeat on rules of their own. The one for a record no render has
+written is drawn by every chapter the paragraph above admits — a chapter with a
+placement marker, and the book's last chapter — once for each such record it
+meets. The one for a record that could not be read is drawn by every chapter
+that opens it — every chapter of the book
 but the one whose record it is, since a chapter reads the store before it
 writes its own. The one for a record left by a different version of this
 extension is drawn once for every chapter that builds an index section, which

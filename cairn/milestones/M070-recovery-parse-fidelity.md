@@ -4,13 +4,13 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M070: A recovered chapter is read as the file it is, and everywhere its own render reads it
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M069
 - **Driving RR:** —
 - **Principles touched:** IP2
 - **Resolves:** —
-- **Branch/PR:** —
+- **Branch/PR:** m070-recovery-parse-fidelity
 
 ## Goal
 

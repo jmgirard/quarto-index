@@ -1,0 +1,15 @@
+# Opening
+
+The chapter that places both of this book's indexes, and marks a term of its
+own so a section carries one locator that is not a recovered chapter's page:
+[Aardvark]{.index}.
+
+A second mark of its own, into the book's other index, so neither section is
+ever printed empty and each carries a locator from the rendering chapter as
+well as recovered ones: [Anvil]{.index index="aside"}.
+
+::: {.qi-index-here}
+:::
+
+::: {.qi-index-here index="aside"}
+:::

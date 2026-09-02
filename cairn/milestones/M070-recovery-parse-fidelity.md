@@ -106,11 +106,11 @@ reach the book index and what the render tells them when some cannot.
       matter carries no conditional element — and document order settled so a
       front-matter mark's declared sort key cannot beat a body mark's by an
       order the ordinary render does not use.
-- [ ] T4. The AC1/AC2 fixture: a copy of `examples/book` gaining a one-cell
+- [x] T4. The AC1/AC2 fixture: a copy of `examples/book` gaining a one-cell
       `.ipynb` chapter that marks a term, and one chapter per accepted
       extension; the refusal asserted message-whole on both entry paths, and
       the accepted chapters' terms held against the href-form manifest.
-- [ ] T5. The AC3 fixture and its control: a chapter marking a term in
+- [x] T5. The AC3 fixture and its control: a chapter marking a term in
       `abstract:` and nowhere else, rendered once with its record readable and
       once with it recovered, the two asserted to file the same entry in the
       same index and to differ only in the locator's fragment.
@@ -131,6 +131,9 @@ reach the book index and what the render tells them when some cannot.
 - 2026-09-02: T2 — one refusal wording for every state a refused chapter's record can be in, drawn in `store_read` ahead of the four wordings already there; a refused chapter is not handed on as a stale record, so it says one thing rather than two. The implementation gate chose the longer wording naming the accepted set and chose one sentence over two. `warn-distinct.py`'s EXPECTED moved 82 to 83, and the suite gained the `WARN_STORE_KIND_REFUSED` key. `tests/run-tests.sh` passed, 631 checks.
 - 2026-09-02: T3 — `recovered_marks` takes the chapter's metadata and its blocks and walks them in that order, which is the order the ordinary render sees them in; `Meta` carries no `walk`, so the metadata walk is `pandoc.Pandoc({}, meta):walk`. Document order is stated by the two walks rather than read off Pandoc's traversal.
 - 2026-09-02: T3 — `recovered_markers` is left over the blocks alone rather than widened to the metadata as the task's wording read: `resolve_markers` reads `doc.blocks` alone (KI11), so a marker in front matter places nothing in the ordinary render, and Scope Out already holds that chapter out of this milestone. Reading one here would be the recovery route departing from the render, which is the thing the goal forbids. `tests/run-tests.sh` passed, 631 checks.
+- 2026-09-02: T4 and T5 landed together in one commit: both criteria are asserted over the one new fixture `examples/book-extensions` and one suite run, and splitting them would have been two runs over the same tree. The implementation gate chose a committed example book over a fixture the test script assembles.
+- 2026-09-02: T4/T5 — three legs over that fixture: a cold store, a store holding a listed record that cannot be opened (planted for one.qmd and for five.ipynb, so the accepted chapter and the refused one are told apart by what is said about each), and a store holding six.qmd's own record as AC3's control. Suite 631 checks to 640.
+- 2026-09-02: T5 found that a Quarto BOOK chapter's own render files a front-matter mark three times: probed 2026-09-02 under quarto 1.10.18, a filter placed immediately before this extension counted the mark once in the document's metadata and twice more in its blocks, Quarto having already copied the abstract into the chapter's body. The same fixture rendered through the filter as it stands on the default branch writes a record holding the same three marks, so it is not this branch's doing; the recovery route reads the source, where the mark is written once, and files it once. AC3 binds the entry and the index, which agree. Recorded as a known issue at T6.
 - 2026-09-02: probe run 2026-09-02 under pandoc 3.11 — a filter table carrying a `Span` function visits a span in `abstract:` as well as one in the body, confirming the asymmetry AC3 rests on before this milestone was written rather than leaving it for implementation.
 
 ## Decisions

@@ -1,0 +1,12 @@
+---
+abstract: |
+  A chapter whose only index mark is in its own YAML front matter:
+  [Hasp]{.index}. The ordinary render indexes it, because a filter table
+  carrying a `Span` function visits a document's metadata as well as its
+  blocks, and the recovery route has to reach it the same way.
+---
+
+# A chapter marking only in its front matter
+
+The body of this chapter marks nothing at all, so what reaches the index from
+it reaches it from the front matter above or not at all.

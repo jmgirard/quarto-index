@@ -23442,6 +23442,219 @@ M59PLANTPY
     check_index_sections "$M59W/ignored.html" "$M59_CLASH_SECTIONS" "M59 probe"
 fi
 
+# ---------------------------------------------------------------------------
+# M070 — which chapter sources the recovery route reads, and how much of each
+# one it reads. Two edges, one fixture.
+#
+# The first edge is the file kind. `recover_record` handed whatever
+# `book.render` named to Pandoc's markdown reader, and a Quarto book takes an
+# `.ipynb` chapter: the reader accepts the raw JSON, the mark it returns
+# carries the JSON's own quoting inside its attribute values, no declared index
+# matches that name, and the term is filed into the book's FIRST declared index
+# with nothing said (KI219). The route now tests the chapter's own extension
+# before it opens anything, and a refused chapter is reported rather than
+# refiled.
+#
+# The second edge is how much of an accepted chapter is read. The ordinary
+# render's collect passes are filter tables carrying a `Span` function, and
+# Pandoc hands such a table a document's METADATA as well as its blocks, so a
+# mark an author writes in YAML front matter is indexed by that chapter's own
+# render. The recovery walk was over the parsed blocks alone, so the same mark
+# was silently left out of every index of the book whenever its chapter was
+# recovered rather than read from its record.
+#
+# The fixture is the chapter-source-kinds book: six chapters this route reads —
+# one per accepted extension, plus the front-matter chapter and the chapter
+# that places both indexes — and one `.ipynb` chapter it refuses. Every
+# manifest below is derived by hand from those sources: the rendering chapter's
+# own terms carry the fragments that render minted for them, and a recovered
+# chapter's term carries that chapter's page and nothing after it (D-041).
+# ---------------------------------------------------------------------------
+M070_DIR="examples/book-extensions"
+M070W="$WORK/m070"
+rm -rf "$M070W"
+mkdir -p "$M070W"
+
+# One copy of the fixture with the extension spliced in beside it, holding no
+# store and no rendered output. The fixture's `_extensions` entry is a symlink
+# into the repository, which `cp -R` preserves, so it is replaced by a copy of
+# its own: a mutated tree below must not be able to reach the repository's
+# filter or any other run.
+m070_tree() {   # <slug>
+  local slug="$1"
+  rm -rf "$M070W/$slug"
+  cp -R "$M070_DIR" "$M070W/$slug"
+  rm -rf "$M070W/$slug/_book" "$M070W/$slug/.quarto" "$M070W/$slug/_extensions"
+  mkdir -p "$M070W/$slug/_extensions"
+  cp -R "$QI_EXT_DIR" "$M070W/$slug/_extensions/index"
+  [ -f "$M070W/$slug/five.ipynb" ] \
+    || fail "M070 ($slug): the copied fixture carries no notebook chapter, so the leg below would be about a book every one of whose chapters this route reads"
+  [ ! -e "$M070W/$slug/.quarto/$STORE_DIR" ] \
+    || fail "M070 ($slug): the copied fixture carries a sidecar store, so the leg below would be about a store holding records rather than about one no render has written"
+}
+
+# One render of one chapter of one such tree, captured where it stands. The log
+# and the capture both carry the suffix, so a leg rendering twice keeps both and
+# the second is the bare slug, which is what every check below reads.
+m070_render() {   # <slug> <chapter> <label> <log and capture suffix>
+  local slug="$1" chapter="$2" label="$3" suffix="$4"
+  ( cd "$M070W/$slug" && quarto render "$chapter" --to html ) \
+    > "$WORK/m070-$slug$suffix.log" 2>&1 \
+    || { tail -30 "$WORK/m070-$slug$suffix.log" >&2; fail "$label: the render failed; IP2 forbids a chapter source this route will not read taking one down"; }
+  capture --project "$M070W/$slug" html "m070-$slug$suffix"
+}
+
+# ORACLE — derived by hand from the fixture's seven chapter sources. index.qmd
+# carries both placement markers, so a render of it alone prints both sections;
+# its own `Aardvark` and `Anvil` are the two terms carrying fragments, minted in
+# the order that chapter marks them. `Bramble`, `Cardamom`, `Dovetail` and
+# `Escutcheon` are the four accepted extensions' single marks, each recovered to
+# its chapter's page; `Hasp` is six.qmd's front-matter mark, recovered the same
+# way; `Ferrule` is four.Rmd's mark into the second index. `Gantry`,
+# five.ipynb's only mark, is in neither section: the route refuses that chapter,
+# so nothing of it is read and nothing of it is filed.
+read -r -d '' M070_SECTIONS_RECOVERED <<'MANIFEST' || true
+section	qi-index-main	h1	Index of Subjects
+letter	A
+0	Aardvark	#qi-mark-1
+letter	B
+0	Bramble	one.html
+letter	C
+0	Cardamom	two.html
+letter	D
+0	Dovetail	three.html
+letter	E
+0	Escutcheon	four.html
+letter	H
+0	Hasp	six.html
+section	qi-index-aside	h1	Index of Asides
+letter	A
+0	Anvil	#qi-mark-2
+letter	F
+0	Ferrule	four.html
+MANIFEST
+
+# ORACLE — the same two sections with six.qmd read from a record it wrote
+# itself rather than recovered from its source. Every other row is unchanged;
+# `Hasp` is the row where the two routes differ, and it differs twice over.
+#
+# It carries fragments, which a recovered locator cannot have: a record holds
+# the anchors that chapter's own render minted for the mark.
+#
+# And it carries THREE of them for the one mark the author wrote. By the time
+# this extension's passes run over a book chapter, Quarto has already copied
+# the chapter's abstract into its body: a filter placed immediately before this
+# one counted the mark once in the document's metadata and twice more in its
+# blocks (probed 2026-09-02, quarto 1.10.18), and each copy is a mark the
+# render mints an anchor for and files. The recovery route reads the source
+# file, where the author wrote the mark once, so it files it once. The record
+# route's three is not this milestone's doing — the same fixture rendered
+# through the filter as it stands on the default branch writes a record holding
+# the same three marks — and narrowing it is nobody's job here; what AC3 asks
+# is that the two routes agree on the ENTRY and the INDEX, which they do.
+read -r -d '' M070_SECTIONS_RECORDED <<'MANIFEST' || true
+section	qi-index-main	h1	Index of Subjects
+letter	A
+0	Aardvark	#qi-mark-1
+letter	B
+0	Bramble	one.html
+letter	C
+0	Cardamom	two.html
+letter	D
+0	Dovetail	three.html
+letter	E
+0	Escutcheon	four.html
+letter	H
+0	Hasp	six.html#qi-mark-1 six.html#qi-mark-2 six.html#qi-mark-3
+section	qi-index-aside	h1	Index of Asides
+letter	A
+0	Anvil	#qi-mark-2
+letter	F
+0	Ferrule	four.html
+MANIFEST
+
+# --- The first entry path: a record no render has written -------------------
+m070_tree cold
+m070_render cold index.qmd "M070-AC1 (index.qmd alone, no store)" ""
+check_book_sections "$CAPTURE_ROOT/m070-cold/_book" \
+  "M070-AC1 (index.qmd carries both markers, so it prints both sections and no other page carries one)" \
+  "$(printf 'index.html\tqi-index-main\tIndex of Subjects\nindex.html\tqi-index-aside\tIndex of Asides')"
+check_index_sections "$CAPTURE_ROOT/m070-cold/_book/index.html" \
+  "$M070_SECTIONS_RECOVERED" \
+  "M070-AC1/M070-AC2/M070-AC3 (five chapters recovered from their sources, the notebook chapter refused)" hrefs
+check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_KIND_REFUSED" 1 \
+  "M070-AC1 (five.ipynb is refused once, and it is the only chapter of the book that is)"
+check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_NEVER_RECOVERED" 5 \
+  "M070-AC2 (the five chapters whose extensions this route accepts are each recovered and reported)"
+check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+  "M070-AC1 (no record here was written and unusable, so the could-not-be-read wording is never drawn)"
+check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
+  "M070-AC1 (a refused chapter is not reported as a source that could not be read)"
+check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+  "M070-AC1 (nor as one that parsed and reached no mark)"
+check_extension_warning_count "$WORK/m070-cold.log" 7 \
+  "M070-AC1 (index.qmd emitted a warning this suite cannot name; its seven are five never-written recovery reports, the one refusal, and the marker-position report the six chapters after it draw)"
+
+# --- The second entry path: a record listed and unopenable ------------------
+# The same refusal, reached the other way. A first render fills the store with
+# index.qmd's own record and nothing else; a dangling link is then left where
+# five.ipynb's record would be, and another where one.qmd's would be. The
+# second render meets both: each name is in the listing of the directory it
+# belongs in, so neither is read as never-written, and the two are told apart by
+# what is said about them — one.qmd, whose extension this route accepts, draws
+# the could-not-be-read recovery wording, and five.ipynb draws the refusal.
+# Without that pairing the leg could not show which entry path it took, the
+# refusal being one wording for every state a record can be in.
+m070_tree dangling
+m070_render dangling index.qmd \
+  "M070-AC1 (the render that fills the store)" "-first"
+M070_STORE="$M070W/dangling/.quarto/$STORE_DIR"
+m068_dangle_record one.qmd "$M070_STORE" \
+  "M070-AC1 (a listed record that cannot be opened, for a chapter this route reads)"
+m068_dangle_record five.ipynb "$M070_STORE" \
+  "M070-AC1 (a listed record that cannot be opened, for the chapter this route refuses)"
+m070_render dangling index.qmd \
+  "M070-AC1 (index.qmd over a store holding two records that cannot be opened)" ""
+m068_assert_dangling "$M070_STORE/one.qmd$STORE_SUFFIX" \
+  "M070-AC1 (after the render, one.qmd's record)"
+m068_assert_dangling "$M070_STORE/five.ipynb$STORE_SUFFIX" \
+  "M070-AC1 (after the render, five.ipynb's record)"
+check_index_sections "$CAPTURE_ROOT/m070-dangling/_book/index.html" \
+  "$M070_SECTIONS_RECOVERED" \
+  "M070-AC1 (a listed unopenable record: the accepted chapter's terms come back, the refused chapter's do not)" hrefs
+check_warning_count "$WORK/m070-dangling.log" "$WARN_STORE_KIND_REFUSED" 1 \
+  "M070-AC1 (five.ipynb draws the refusal on this entry path too, in the same words)"
+check_warning_count "$WORK/m070-dangling.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
+  "M070-AC1 (one.qmd's record is listed and cannot be opened, which is the entry path this leg is about, and its extension is one this route reads)"
+check_warning_count "$WORK/m070-dangling.log" "$WARN_STORE_NEVER_RECOVERED" 4 \
+  "M070-AC1 (the four chapters no record was written for at all)"
+check_extension_warning_count "$WORK/m070-dangling.log" 7 \
+  "M070-AC1 (the second render emitted a warning this suite cannot name; its seven are four never-written recovery reports, one could-not-be-read report, the one refusal, and the marker-position report)"
+
+# --- The front-matter mark, by both routes ----------------------------------
+# six.qmd is rendered first, so it writes a record of its own from its own
+# render; index.qmd is then rendered against it. What that record carries for
+# the front-matter mark is the ordinary render's own answer, arrived at without
+# any of the code the recovery legs above exercise, which is what makes it a
+# control rather than an echo.
+m070_tree record
+m070_render record six.qmd \
+  "M070-AC3 (the render that writes six.qmd's own record)" "-first"
+[ -f "$M070W/record/.quarto/$STORE_DIR/six.qmd$STORE_SUFFIX" ] \
+  || fail "M070-AC3: six.qmd's own render wrote no record, so the leg below would be about a chapter recovered from its source rather than read from one"
+m070_render record index.qmd \
+  "M070-AC3 (index.qmd over a store holding six.qmd's record)" ""
+check_index_sections "$CAPTURE_ROOT/m070-record/_book/index.html" \
+  "$M070_SECTIONS_RECORDED" \
+  "M070-AC3 (six.qmd read from its own record: the same entry printed in the same index as the recovery route prints it, its locators carrying the fragments a record alone can give)" hrefs
+check_warning_count "$WORK/m070-record.log" "$WARN_STORE_NEVER_RECOVERED" 4 \
+  "M070-AC3 (six.qmd is read from its record and draws no recovery report; the four chapters without one do)"
+check_warning_count "$WORK/m070-record.log" "$WARN_STORE_KIND_REFUSED" 1 \
+  "M070-AC3 (five.ipynb is refused here as well)"
+check_extension_warning_count "$WORK/m070-record.log" 6 \
+  "M070-AC3 (the second render emitted a warning this suite cannot name; its six are four never-written recovery reports, the one refusal, and the marker-position report)"
+pass "M070-AC1/M070-AC2/M070-AC3: over a book whose chapters are written in five source kinds, the four extensions this route accepts are each recovered whole and the notebook chapter is refused and reported in the same words on both entry paths — a record no render has written, and a record listed and unopenable — with none of its terms in either index section; and a mark written in a chapter's YAML front matter reaches the same entry in the same index by the recovery route as by the record route, the recovered locator carrying that chapter's page and no fragment"
+
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

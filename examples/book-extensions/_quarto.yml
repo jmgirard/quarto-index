@@ -1,0 +1,39 @@
+# The chapter-source-kinds fixture (M070). Seven chapters, six of them read by
+# the recovery route and one refused, so one render can show both what the
+# route reads and what it will not.
+#
+# The shapes here are load-bearing for the acceptance manifests: one chapter
+# per source extension the route accepts, an `.ipynb` chapter it refuses, and a
+# chapter whose only mark is in its YAML front matter, which the ordinary
+# render indexes and the recovery route has to reach the same way.
+project:
+  type: book
+
+book:
+  title: "Chapter Source Kinds"
+  chapters:
+    - index.qmd
+    - one.qmd
+    - two.md
+    - three.markdown
+    - four.Rmd
+    - five.ipynb
+    - six.qmd
+
+format:
+  html: default
+
+# Two declared indexes, both placed by markers in the first chapter, so a
+# render of that chapter alone prints both sections. The second is what makes
+# the refused chapter's term visible as a defect rather than merely missing:
+# it marks a term into `aside`, and a parse of its raw JSON files that term
+# into the FIRST declared index instead, which a fixture declaring one index
+# could not show.
+indexes:
+  - name: main
+    title: Index of Subjects
+  - name: aside
+    title: Index of Asides
+
+filters:
+  - index

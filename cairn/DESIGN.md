@@ -1574,3 +1574,31 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `site/books.qmd`, `CHANGELOG.md` and D-044 saying an absent record never
   fires is true of every tree a render can reach and false of the probe read
   alone. Accepted at the M068 merge gate rather than fixed. — M068 review G1, G2
+- **KI228.** An ordinary first whole-book render of a book whose placement
+  marker sits before its last chapter now reports on itself: every marker
+  chapter runs before the chapters behind it, meets their absent records,
+  recovers them, and warns "render that chapter again" about chapters that are
+  about to render. Nothing is wrong with that render and the second is silent.
+  Observed 2026-09-02 in the suite's own `place-first` leg, which moved from 2
+  extension warnings to 8, six of them recovery reports. Recorded in D-045's
+  consequences and accepted at the M069 merge gate. — M069 review F1
+- **KI229.** `recover_absent` answers eligibility, not building, and the
+  recovery report is drawn inside `store_read` with no `builds` guard, so a
+  chapter admitted by the gate that prints no section still parses every other
+  chapter's source and reports each. The reachable shape is a last chapter
+  carrying no marker in a book whose every declared index is placed earlier:
+  `mine` is empty and the fallback loop adds nothing, so `builds` is false.
+  Derived from `book.lua:1269` against `book.lua:1336`, not observed; no suite
+  leg covers it, and T6's inverted-gate plant catches only the mirror case.
+  `site/books.qmd` and this file therefore claim a chapter reads back "only
+  where its terms would otherwise be lost from a section this chapter itself
+  prints", which is stronger than the gate. Same class as KI215. — M069 review
+  F2, F5
+- **KI230.** A record no render has written whose chapter's source also cannot
+  be read is reported as one that "could not be read", asserting a record
+  existed — the falsehood the fourth wording was added to avoid. Pinned by the
+  AC5 `m069-lostsource` leg and sanctioned by D-045. — M069 review F3
+- **KI231.** `m069_cold_chapter` does not remove its `_book` before rendering
+  while its sibling `m069_tree` does. Benign while `$M061W/base` is created
+  with `_book` removed; it would silently let `check_book_sections` read a
+  stale `_book` if that changed. — M069 review F8

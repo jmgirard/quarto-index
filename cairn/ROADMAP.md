@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-02 (M069 and M070 planned from the recovery-follow-ups candidate row, which narrows to the fragment item alone; its absent-record, non-markdown-source and metadata-borne-mark items are promoted. No terminal row pruned; ROADMAP within budget.)_
+_Last hygiene check: 2026-09-02 (M069 done and archived; KI227-KI231 added and one candidate row filed for its deferred review findings; M064's terminal row pruned to hold the retention cap. LESSONS.md is at 49 lines / 19,912 bytes, one line under both caps.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 
@@ -9,19 +9,19 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | review | — | normal | milestones/M069-absent-record-recovery.md |
+| M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | done | — | normal | milestones/archive/M069-absent-record-recovery.md |
 | M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | planned | M069 | normal | milestones/M070-recovery-parse-fidelity.md |
 | M068 | A record that is listed and cannot be opened is not read as one that was never written | done | — | normal | milestones/archive/M068-listed-unopenable-record.md |
 | M066 | The recovery-route checks read the reports and mutations they name | done | — | normal | milestones/archive/M066-recovery-check-readers.md |
 | M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |
 | M065 | The forms a recovered chapter's marks take are fenced | done | M064 | normal | milestones/archive/M065-recovered-mark-forms.md |
-| M064 | A chapter's terms reach the book index when its record cannot be read | done | — | normal | milestones/archive/M064-book-source-recovery.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- Narrow what the absent-record recovery gate admits and what it says: report only where a chapter builds a section, quieten an ordinary first render whose marker sits early, and give a never-written record whose source also fails its own wording. Promote on an author reporting the reports — added 2026-09-02 — M069 review F1, F2, F3, F5, F8 — KI228, KI229, KI230, KI231
 - Give a recovered locator a fragment where the author wrote the mark's id themselves, the one value the source alone settles: a minted number counts against ids taken across the whole rendered page, which the source cannot know. Promote on an author reporting a recovered locator lands at a chapter's top — added 2026-08-30, narrowed 2026-09-02 — M064/M065 reviews — KI205
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
 - Repair the readers and checks the EPUB back-end, the editor metadata and the named-index work added; promote on any of them turning a run red for a reason that is not the defect it names — added 2026-08-27, clustered 2026-08-29 — M52 review F3, F7-F13; M50 review F1, F2, F3, F6; M49 review F6, F7, F9 — KI91-KI104

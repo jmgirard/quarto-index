@@ -23655,6 +23655,181 @@ check_extension_warning_count "$WORK/m070-record.log" 6 \
   "M070-AC3 (the second render emitted a warning this suite cannot name; its six are four never-written recovery reports, the one refusal, and the marker-position report)"
 pass "M070-AC1/M070-AC2/M070-AC3: over a book whose chapters are written in five source kinds, the four extensions this route accepts are each recovered whole and the notebook chapter is refused and reported in the same words on both entry paths — a record no render has written, and a record listed and unopenable — with none of its terms in either index section; and a mark written in a chapter's YAML front matter reaches the same entry in the same index by the recovery route as by the record route, the recovered locator carrying that chapter's page and no fragment"
 
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M070 T6 — the axes the two edges are free in, one planted defect each,
+  # against copies of the fixture whose only change is that mutation. Three
+  # take the extension test away, turn it round, or narrow the set it holds;
+  # one takes the metadata walk away; one takes away the signal that tells a
+  # refused chapter from one whose source could not be read. Each is shown red
+  # against the check that fences it, and each check is shown green unplanted
+  # by the three legs above.
+  #
+  # Not planted: the metadata walk run TWICE. It is invisible, and for a reason
+  # worth writing down — a second locator onto the page a first one already
+  # names is dropped where the entry is built, so nothing downstream can tell
+  # one walk from two. There is nothing there to fence.
+  # -------------------------------------------------------------------------
+
+  # One mutant tree, one chapter rendered into it with no store, captured.
+  m070_mutant() {   # <slug> <label> <perl substitution>...
+    local slug="$1" label="$2"
+    shift 2
+    [ "$#" -ge 1 ] || fail "$label: m070_mutant was given no substitution to apply"
+    m070_tree "$slug"
+    local filter="$M070W/$slug/_extensions/index/modules/book.lua"
+    spliced_copy "$label" "the filter" "$filter" "$M070W/$slug-spliced" "$@"
+    mv "$M070W/$slug-spliced" "$filter"
+    m070_render "$slug" index.qmd "$label" ""
+  }
+
+  # 1 — the extension test removed, which is the state KI219 records. The
+  # notebook chapter is handed to Pandoc's markdown reader, which accepts its
+  # raw JSON; the mark that comes back carries the JSON's own quoting in its
+  # `index` attribute, no declared index answers to that name, and `Gantry` is
+  # filed into the book's FIRST declared index — the one its author did not
+  # name — with no report of any kind.
+  read -r -d '' M070_SECTIONS_REFILED <<'MANIFEST' || true
+section	qi-index-main	h1	Index of Subjects
+letter	A
+0	Aardvark	#qi-mark-1
+letter	B
+0	Bramble	one.html
+letter	C
+0	Cardamom	two.html
+letter	D
+0	Dovetail	three.html
+letter	E
+0	Escutcheon	four.html
+letter	G
+0	Gantry	five.html
+letter	H
+0	Hasp	six.html
+section	qi-index-aside	h1	Index of Asides
+letter	A
+0	Anvil	#qi-mark-2
+letter	F
+0	Ferrule	four.html
+MANIFEST
+  m070_mutant notest "M070 T6 self-test (the extension test removed)" \
+    's{  if not readable_source\(file\) then\n    return nil, true\n  end\n}{}'
+  check_index_sections "$CAPTURE_ROOT/m070-notest/_book/index.html" \
+    "$M070_SECTIONS_REFILED" \
+    "M070 T6 self-test (the test removed: the notebook chapter's term is filed into the index its author did not name)" hrefs
+  check_warning_count "$WORK/m070-notest.log" "$WARN_STORE_KIND_REFUSED" 0 \
+    "M070 T6 self-test (the test removed: nothing is refused, so nothing is said)"
+  pass "M070 T6 self-test: with the extension test removed and nothing else changed, the notebook chapter is parsed as markdown and its term is filed into the book's first declared index with nothing said — which the AC1 manifest and refusal count for the cold leg would fail on"
+
+  # 2 — the test turned round, so exactly the chapters this route reads are
+  # refused and the one it does not read is parsed. Five refusals where there
+  # was one, and the only terms left in the two sections are the rendering
+  # chapter's own two plus the notebook's misfiled one.
+  read -r -d '' M070_SECTIONS_INVERTED <<'MANIFEST' || true
+section	qi-index-main	h1	Index of Subjects
+letter	A
+0	Aardvark	#qi-mark-1
+letter	G
+0	Gantry	five.html
+section	qi-index-aside	h1	Index of Asides
+letter	A
+0	Anvil	#qi-mark-2
+MANIFEST
+  m070_mutant inverted "M070 T6 self-test (the extension test inverted)" \
+    's{  if not readable_source\(file\) then\n}{  if readable_source(file) then\n}'
+  check_index_sections "$CAPTURE_ROOT/m070-inverted/_book/index.html" \
+    "$M070_SECTIONS_INVERTED" \
+    "M070 T6 self-test (the test inverted: the five chapters this route reads lose every term, and the one it does not read keeps its)" hrefs
+  check_warning_count "$WORK/m070-inverted.log" "$WARN_STORE_KIND_REFUSED" 5 \
+    "M070 T6 self-test (the test inverted: the five chapters whose extensions this route accepts are the ones refused)"
+  check_warning_count "$WORK/m070-inverted.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
+    "M070 T6 self-test (the test inverted: the notebook chapter is the only one recovered)"
+  pass "M070 T6 self-test: with the extension test turned round and nothing else changed, the five chapters this route reads are refused and the notebook is parsed instead — which the AC2 manifest and the refusal count for the cold leg would fail on"
+
+  # 3 — one member taken out of the accepted set. `.markdown` is the spelling
+  # nothing else in the fixture shares, so the chapter written that way is the
+  # one that goes, and it goes silently as far as the section is concerned: the
+  # only thing that says so is the refusal report, now drawn twice.
+  read -r -d '' M070_SECTIONS_NOMARKDOWN <<'MANIFEST' || true
+section	qi-index-main	h1	Index of Subjects
+letter	A
+0	Aardvark	#qi-mark-1
+letter	B
+0	Bramble	one.html
+letter	C
+0	Cardamom	two.html
+letter	E
+0	Escutcheon	four.html
+letter	H
+0	Hasp	six.html
+section	qi-index-aside	h1	Index of Asides
+letter	A
+0	Anvil	#qi-mark-2
+letter	F
+0	Ferrule	four.html
+MANIFEST
+  m070_mutant nomarkdown \
+    "M070 T6 self-test (one member taken out of the accepted set)" \
+    's{  \[".markdown"\] = true,\n}{}'
+  check_index_sections "$CAPTURE_ROOT/m070-nomarkdown/_book/index.html" \
+    "$M070_SECTIONS_NOMARKDOWN" \
+    "M070 T6 self-test (the .markdown chapter refused: its term is the one row missing)" hrefs
+  check_warning_count "$WORK/m070-nomarkdown.log" "$WARN_STORE_KIND_REFUSED" 2 \
+    "M070 T6 self-test (two chapters refused where the fixture has one to refuse)"
+  pass "M070 T6 self-test: with one extension taken out of the accepted set and nothing else changed, the chapter written that way is refused and its term leaves the index — which the AC2 manifest for the cold leg would fail on"
+
+  # 4 — the metadata walk removed, so recovery reads a chapter's blocks alone
+  # as it did before this milestone. six.qmd marks nothing in its body, so its
+  # parse now reaches no mark at all: `Hasp` leaves the index, and the chapter
+  # falls into the branch that says nothing, which is why the count of
+  # never-written reports drops rather than the count of any other wording
+  # rising.
+  read -r -d '' M070_SECTIONS_NOMETA <<'MANIFEST' || true
+section	qi-index-main	h1	Index of Subjects
+letter	A
+0	Aardvark	#qi-mark-1
+letter	B
+0	Bramble	one.html
+letter	C
+0	Cardamom	two.html
+letter	D
+0	Dovetail	three.html
+letter	E
+0	Escutcheon	four.html
+section	qi-index-aside	h1	Index of Asides
+letter	A
+0	Anvil	#qi-mark-2
+letter	F
+0	Ferrule	four.html
+MANIFEST
+  m070_mutant nometa "M070 T6 self-test (the metadata walk removed)" \
+    's{  pandoc\.Pandoc\(\{\}, meta\):walk\(\{ Span = collect \}\)\n}{}'
+  check_index_sections "$CAPTURE_ROOT/m070-nometa/_book/index.html" \
+    "$M070_SECTIONS_NOMETA" \
+    "M070 T6 self-test (the metadata walk removed: the front-matter mark reaches no index at all)" hrefs
+  check_warning_count "$WORK/m070-nometa.log" "$WARN_STORE_NEVER_RECOVERED" 4 \
+    "M070 T6 self-test (six.qmd now parses to no mark, so it is passed over in silence rather than reported as recovered)"
+  pass "M070 T6 self-test: with the metadata walk removed and nothing else changed, a chapter whose only mark is in its front matter is recovered as one that marks nothing and its term leaves every index — which the AC3 manifest for the cold leg would fail on"
+
+  # 5 — the refusal's own signal removed, so a refused chapter returns like one
+  # whose source could not be read. Nothing about the printed page changes:
+  # five.ipynb's terms are out of the index either way. What changes is that an
+  # author is told the notebook's source could not be READ, and sent looking
+  # for a damaged file, when the truth is that this route never offered to read
+  # it. The wording is the whole of what this plant moves, which is why the
+  # unchanged manifest is asserted beside the counts.
+  m070_mutant lostwording \
+    "M070 T6 self-test (the refusal reported as a source that could not be read)" \
+    's{    return nil, true\n}{    return nil\n}'
+  check_index_sections "$CAPTURE_ROOT/m070-lostwording/_book/index.html" \
+    "$M070_SECTIONS_RECOVERED" \
+    "M070 T6 self-test (the swapped wording changes no printed page, which is why the wording itself is asserted)" hrefs
+  check_warning_count "$WORK/m070-lostwording.log" "$WARN_STORE_KIND_REFUSED" 0 \
+    "M070 T6 self-test (the refusal is never drawn)"
+  check_warning_count "$WORK/m070-lostwording.log" "$WARN_STORE_UNREADABLE_LOST" 1 \
+    "M070 T6 self-test (the notebook chapter is reported as a source that could not be read)"
+  pass "M070 T6 self-test: with the refusal's own signal removed and nothing else changed, the same page is printed and the notebook chapter is reported as a source that could not be read — which the AC1 counts for the cold leg would fail on"
+fi
+
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

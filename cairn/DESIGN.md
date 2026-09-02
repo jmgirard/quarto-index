@@ -757,10 +757,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   refuses to pin that with a source scan. — M01 review R16, widened through
   M03 P1, M04, M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8; inventory
   corrected M38
-- **KI11.** A marker written in YAML `abstract:` survives verbatim into the HTML
-  header — filter residue of the IP2 class, since `resolve_markers` reads
-  `doc.blocks` alone; the misplaced-class report is silent there for the same
-  reason. — M08 review R4/Q2
+- **KI11.** A placement marker written in YAML `abstract:` survives verbatim
+  into the HTML header — filter residue of the IP2 class, since
+  `resolve_markers` reads `doc.blocks` alone; the misplaced-class report is
+  silent there for the same reason. A book chapter's recovery route matches
+  that: `recovered_markers` reads the parsed blocks alone too. A MARK written
+  there is a different case and is indexed by both routes (corrected M070). —
+  M08 review R4/Q2
 - **KI12.** `resolve_markers` rebuilds every Blocks list in every format whether
   or not a marker exists. The LaTeX byte-diff that proved that output-neutral
   was deleted at M16 (D-004), so neither back-end has byte-level evidence for it
@@ -1515,18 +1518,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   front matter adds an index has that term filed in the book's first one.
   Derived by reading `book.lua:596-598`, not observed. — M064 review F5,
   extended M064 review round 2 R2-F3
-- **KI219.** A book chapter that is not markdown source is parsed as markdown
-  anyway when its record is recovered, and its terms are refiled into the wrong
-  index with nothing said. `recover_record` calls `pandoc.read(text,
-  "markdown")` on whatever `book.render` names, with no test on the extension,
-  and Quarto books take `.ipynb` chapters. Probed 2026-08-30 with `pandoc lua`
-  over a one-cell notebook whose markdown source marks `[Gantry]{.index
-  index="gamma"}`: the reader accepts the raw JSON and returns the span with
-  its `index` attribute as the seven-character string `"gamma"`, the JSON
-  escaping riding into the value; `mark_index` matches no declared index of
-  that name and returns the book's first, and because recovery resolves before
-  `fold_undeclared` runs no refiling report is drawn. Needs that chapter's
-  record opened and unusable as well. — M064 review round 2 R2-F1
 - **KI220.** A recovered parse that reaches a placement marker and no mark
   reports only the loss. `store_read` appends the rebuilt record before testing
   `#rebuilt.marks > 0`, so such a chapter's markers still settle `placing` and
@@ -1602,3 +1593,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   while its sibling `m069_tree` does. Benign while `$M061W/base` is created
   with `_book` removed; it would silently let `check_book_sections` read a
   stale `_book` if that changed. — M069 review F8
+- **KI232.** A mark written in a Quarto BOOK chapter's YAML front matter is
+  indexed three times by that chapter's own render, so one authored mark files
+  three locators onto the same page. By the time this extension's passes run,
+  Quarto has already copied the chapter's abstract into its body: a filter
+  placed immediately before this one counted the mark once in the document's
+  metadata and twice more in its blocks (probed 2026-09-02, quarto 1.10.18).
+  A single document outside a book is indexed once. The recovery route reads
+  the source file, where the mark is written once, so the two routes file the
+  same entry in the same index and differ in how many locators it carries;
+  M070's AC3 control pins the three. — M070 T5

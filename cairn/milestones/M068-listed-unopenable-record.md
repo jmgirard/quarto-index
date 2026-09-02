@@ -125,6 +125,25 @@ prints and what the render tells them, not an internal artifact.
       `CHANGELOG.md` (AC5); `cairn/DESIGN.md`'s recovery prose; KI221 struck
       and a known issue added for the hand-made lookalike the new trigger
       recovers.
+- [ ] T7. `store_probe` (`book.lua:216`): a directory whose own listing fails
+      takes the `lost` answer of the directory above it, so D-043's
+      directory-level case reaches a record at any depth rather than only one
+      sitting directly in the store. Probe comment corrected to state it (F1).
+- [ ] T8. The nested legs, over a copy of `examples/book` whose `sub/two.qmd`
+      keeps its record one level down in the store: an unlistable store
+      directory above that chapter, and a dangling record whose basename the
+      store's top level does not list. Both assert the two listings differ (F2).
+- [ ] T9. Two self-test plants on the axes only a subdirectory chapter is free
+      in — the inherited answer dropped, and the store's top level consulted
+      where the record's own directory is meant — each shown red against the
+      leg that fences it; the flat parent-listing plant's comment corrected to
+      what it does and does not fence (F2).
+- [ ] T10. Suite hygiene on M068's own checks and the prose the fix bears on:
+      the marker-position pair named so all seven warnings of the AC2 render
+      are accounted for by kind (F4); the name-absent control's store
+      re-asserted short one record and non-empty before its second leg (F7);
+      `cairn/DESIGN.md`'s recovery prose made explicit about depth and a known
+      issue added for the hand-made link at the store DIRECTORY path (F3, F5).
 
 ## Work log
 
@@ -143,6 +162,8 @@ prints and what the render tells them, not an internal artifact.
 - 2026-09-01: T6 — D-044 appended; `site/books.qmd` and `CHANGELOG.md` state the widened trigger and the named-lookalike boundary; DESIGN.md's recovery prose rewritten, KI205 and KI214 narrowed, KI221 struck and replaced by KI224.
 - 2026-09-01: review opened; draft PR #68 pushed, PR URL recorded in the header.
 - 2026-09-01: review returned M068 to in-progress at the merge gate. What failed: F1 — `store_probe` does not propagate its `lost` answer down a directory chain, so a chapter whose record sits in a store subdirectory takes the ABSENT branch under an unlistable store directory and loses its terms in silence, which `origin/main` did not and which D-044's own decision text forbids; F2 — no fixture has a chapter in a subdirectory, so that axis is fenced by nothing. Six acceptance criteria verified, consistency gate clean; no merge, no approval marker written.
+- 2026-09-02: question gate chose the existing `examples/book` as the fixture carrying the subdirectory chapter (it already has one, with a warm store and a last chapter that builds the index) over nesting a placement chapter or committing a fifth example book; chose to fence both the returned defect and the store-top-level lookup the plan gate rejected, since only the second tells the chosen lookup from that rival; and chose to hold the six criteria as written, the nested case being a defect against the Scope clause promising the directory-level case keeps its behavior rather than new ground (D-118: no criterion added).
+- 2026-09-02: T7-T10 written, checks not yet run: `store_probe` hands a lost directory's answer down the chain (F1); two nested legs over a copy of `examples/book` (F2); two self-test plants on the axes only a subdirectory chapter is free in (F2); the marker-position pair named so all seven AC2 warnings are accounted for by kind (F4); the name-absent control re-guarded before its second leg (F7); DESIGN.md's recovery prose made explicit about depth and KI225 added for the hand-made link at the store directory path (F3, F5). Checkpoint only — the profile's verify slot has not passed yet.
 
 ## Decisions
 

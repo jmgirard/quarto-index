@@ -178,11 +178,19 @@ end
 --
 -- Where that directory cannot be listed at all it is itself the unusable
 -- thing, provided its own name is in a listing of ITS parent — D-043's test,
--- kept whole and reached through this same probe, so every record under such a
--- directory is out of reach. A directory that is simply not there fails that
--- test, so a first render and a tree with no store take the absent branch
--- exactly as they did; a parent that cannot be listed either is read as absent
--- for the same reason — there is nothing to say the store was ever written.
+-- kept whole and reached through this same probe. A directory that is simply
+-- not there fails that test, so a first render and a tree with no store take
+-- the absent branch exactly as they did.
+--
+-- A parent that cannot be listed either hands its own answer down rather than
+-- being read as absent: a directory below one that is itself out of reach is
+-- out of reach too. That is what makes "every record under such a directory"
+-- mean every record however deeply nested, and not only the ones sitting
+-- directly in it — the chapter at `sub/two.qmd`, whose record `store_write`
+-- puts in a matching subdirectory, is two failed listings below a store
+-- directory replaced by a file. The walk therefore ends only at a directory
+-- that CAN be listed, and what that listing says about the name below it is
+-- the whole answer for the chain.
 --
 -- The listing consulted is the record's OWN directory, not the store's top
 -- level: a book chapter may sit in a subdirectory and `store_write` puts its
@@ -215,8 +223,10 @@ local function store_probe()
       local up = parent ~= dir and listing(parent) or nil
       answer = {
         names = nil,
-        lost = up ~= nil and up.names ~= nil
-          and up.names[pandoc.path.filename(dir)] == true,
+        lost = up ~= nil
+          and (up.lost
+            or (up.names ~= nil
+              and up.names[pandoc.path.filename(dir)] == true)),
       }
     end
     seen[dir] = answer

@@ -459,7 +459,10 @@ one record whose permissions were cleared, and a store directory that has lost
 the search bit its records are opened through, recover that chapter rather than
 reading as never written (added M068, D-044); the directory itself being there
 and unlistable puts every record under it out of reach on that same probe
-(added M065, D-043). The listing is remembered per directory, so a render lists
+(added M065, D-043) — every record however deeply nested, since a directory
+whose own listing fails takes the answer of the directory above it, and a
+chapter written as `sub/two.qmd` keeps its record two failed listings down
+(corrected M068, review F1). The listing is remembered per directory, so a render lists
 the store once however many records it meets there, and the directory consulted
 is the record's own rather than the store's top level, since a chapter in a
 subdirectory keeps its record in a matching subdirectory. A file merely NAMED
@@ -1515,3 +1518,16 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   source rather than dropped — the direction D-044 accepts. Declined at the
   M068 plan gate and named in D-044's own consequences. Replaces KI221, which
   M068 fixed. — M068 plan gate
+- **KI225.** A broken symlink left at the STORE DIRECTORY path by hand has
+  every record path beneath it read as out of reach, so a tree no render ever
+  wrote is recovered chapter by chapter and reported. The path fails to list
+  and its own name is in the parent directory's listing, which is the whole of
+  the evidence D-043 rests on; that answer is handed down to every directory
+  below it, so a chapter in a subdirectory is recovered too. Observed
+  2026-09-02 on a scratch tree: with `.quarto/quarto-index` a symlink to a name
+  that is not there, the probe answers "written" both for a record directly in
+  it and for one two directories below. Quarto creates no such link, and the
+  cost is a chapter read back from its own source rather than dropped — the
+  direction D-044 accepts for the record-file mirror of this case (KI224).
+  Carries forward the remainder of KI221, which M068 otherwise fixed.
+  — M068 review F5

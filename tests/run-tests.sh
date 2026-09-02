@@ -8181,32 +8181,70 @@ m068_dangle_record() {   # <chapter file> <store directory> <label>
   local path="$store/$chapter$STORE_SUFFIX"
   [ -d "$store" ] \
     || fail "$label: $store is not a directory, so the run below would be about the store directory rather than about one record inside it"
+  # A chapter in a subdirectory keeps its record in a matching subdirectory of
+  # the store, and that directory has to be the one a render made: a link left
+  # in a directory this helper created would be in a shape no `store_write`
+  # produces.
+  [ -d "$(dirname "$path")" ] \
+    || fail "$label: $(dirname "$path") is not a directory, so no render ever wrote $chapter's record there and the run below would be about a store shaped unlike the one this book writes"
   rm -rf "$path"
   ln -s "no-such-directory/absent$STORE_SUFFIX" "$path"
-  m068_assert_dangling "$path" "$store" "$chapter" "$label"
+  m068_assert_dangling "$path" "$label"
 }
 
 # The three facts the arrangement rests on, asserted rather than assumed — and
 # asserted again after each render, since a write that followed the link would
 # leave an ordinary record behind and the render after it would be about a
 # store that healed itself.
-m068_assert_dangling() {   # <record path> <store directory> <chapter file> <label>
-  local path="$1" store="$2" chapter="$3" label="$4"
+#
+# The listing asked is the record's OWN directory, which is what the probe
+# under test asks: for a chapter in a subdirectory the store's top level holds
+# the subdirectory's name and not the record's, so a helper asking the top
+# level would refuse the very arrangement the nested legs below are about.
+m068_assert_dangling() {   # <record path> <label>
+  local path="$1" label="$2"
   [ -L "$path" ] \
     || fail "$label: $path is not a symlink, so the run is not about a record that is there and cannot be opened"
   [ ! -e "$path" ] \
     || fail "$label: $path resolves to something that exists, so it would be opened and read like any other record"
-  python3 - "$store" "$chapter$STORE_SUFFIX" "$label" <<'DANGLEPY'
+  python3 - "$(dirname "$path")" "$(basename "$path")" "$label" <<'DANGLEPY'
 import os, sys
-store, name, label = sys.argv[1:4]
-entries = os.listdir(store)
+where, name, label = sys.argv[1:4]
+entries = os.listdir(where)
 if name not in entries:
     sys.exit(f'FAIL: {label}: {name} is not among the {len(entries)} entry/entries '
-             f'of {store}, so the probe under test has nothing to find and the '
-             f'run below would be about a record that was never written')
+             f'of {where}, the directory it belongs in, so the probe under test '
+             f'has nothing to find and the run below would be about a record '
+             f'that was never written')
 print(f'ok   {label}: {name} is a dangling symlink and its name is one of the '
-      f'{len(entries)} entries {store} lists')
+      f'{len(entries)} entries {where} lists')
 DANGLEPY
+}
+
+# One directory lists a name and another does not. Both legs below rest on such
+# a difference — the nested record's basename is in the store's `sub/` listing
+# and NOT in the store's top level — and neither is worth anything unasserted:
+# a fixture whose two listings happened to agree would pass under the lookup
+# the plan gate rejected as readily as under the one it chose.
+m068_assert_listing() {   # <directory> <name> <in|out> <label>
+  python3 - "$1" "$2" "$3" "$4" <<'LISTPY'
+import os, sys
+where, name, want, label = sys.argv[1:5]
+entries = os.listdir(where)
+if not entries:
+    sys.exit(f'FAIL: {label}: {where} lists nothing at all, so the run below '
+             f'would be about an empty directory rather than about which of '
+             f'its entries {name} is')
+if want == 'in' and name not in entries:
+    sys.exit(f'FAIL: {label}: {name} is not among the {len(entries)} entry/entries '
+             f'of {where}, so the run below is not the case it is credited with')
+if want == 'out' and name in entries:
+    sys.exit(f'FAIL: {label}: {name} IS among the {len(entries)} entry/entries of '
+             f'{where}, so the run below would pass under a probe reading that '
+             f'listing as readily as under the one it is meant to fence')
+print(f'ok   {label}: of the {len(entries)} entries {where} lists, {name} is '
+      f'{"one" if want == "in" else "not one"}')
+LISTPY
 }
 
 # The recovery report for four.qmd, whole. A count of the family alone would
@@ -8251,10 +8289,12 @@ for M068_PASS in one two; do
   check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
     "$WARN_STORE_UNWRITABLE" 1 \
     "M068-AC2 (render $M068_PASS: four.qmd's own write follows the link into a directory that is not there)"
+  check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" "$WARN_MARKER_NOT_LAST" 2 \
+    "M068-AC2 (render $M068_PASS: index.qmd and three.qmd each build a section with chapters after them, which is the pair of reports this book always draws)"
   M068_LINES=$( { grep -c '(W) ' "$WORK/m063-m068-dangling-$M068_PASS.log" || true; } | tr -d ' ')
   [ "$M068_LINES" = "7" ] \
-    || { grep '(W) ' "$WORK/m063-m068-dangling-$M068_PASS.log" >&2; fail "M068-AC2 (render $M068_PASS): the render wrote $M068_LINES warning line(s), and the kinds this check counts by name account for 7"; }
-  m068_assert_dangling "$M068_STORE/four.qmd$STORE_SUFFIX" "$M068_STORE" four.qmd \
+    || { grep '(W) ' "$WORK/m063-m068-dangling-$M068_PASS.log" >&2; fail "M068-AC2 (render $M068_PASS): the render wrote $M068_LINES warning line(s), and the four recovery reports, one write-failure report and two marker-position reports this check counts BY NAME account for 7"; }
+  m068_assert_dangling "$M068_STORE/four.qmd$STORE_SUFFIX" \
     "M068-AC1 (after render $M068_PASS)"
 done
 pass "M068-AC1/M068-AC2/M068-AC4: where a chapter's record is a file the store directory lists and no render can open, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all eleven of its entries, four.qmd's eight linking to that chapter's page with no fragment while every locator from a record that was read carries its fragment, and each draws the recovery report for four.qmd whole four times among seven warnings and exits 0"
@@ -8278,20 +8318,8 @@ pass "M068-AC1/M068-AC2/M068-AC4: where a chapter's record is a file the store d
 m063_tree m068-norecord
 M068_NORECORD_STORE="$M061W/m068-norecord/.quarto/$STORE_DIR"
 rm -f "$M068_NORECORD_STORE/four.qmd$STORE_SUFFIX"
-python3 - "$M068_NORECORD_STORE" "four.qmd$STORE_SUFFIX" <<'NORECORDPY'
-import os, sys
-store, name = sys.argv[1:3]
-entries = os.listdir(store)
-if name in entries:
-    sys.exit(f'FAIL: M068-AC3: {name} is still among {store}\'s entries, so the '
-             f'run below would be about a record that is there')
-if not entries:
-    sys.exit(f'FAIL: M068-AC3: {store} lists nothing at all, so the run below '
-             f'would be about an empty store rather than one that is short one '
-             f'record')
-print(f'ok   M068-AC3: {store} lists {len(entries)} record(s) and none of them '
-      f'is {name}')
-NORECORDPY
+m068_assert_listing "$M068_NORECORD_STORE" "four.qmd$STORE_SUFFIX" out \
+  "M068-AC3 (before the whole-book leg: a store that lists and holds no record for four.qmd)"
 # Leg one, the whole book. four.qmd renders fourth of five and rewrites its
 # own record as it goes, so five.qmd — the chapter that builds the section an
 # absent record would cost — reads a record this render wrote and the book's
@@ -8328,9 +8356,14 @@ letter	G
 0	Gantry	index.html#qi-mark-3
 0	Gondola	two.html#qi-mark-2
 MANIFEST
+# The whole-book leg above let four.qmd rewrite its own record, so it is
+# removed again — and the store is re-asserted short that one record and NOT
+# empty, since the guard before the first render says nothing about the state
+# this second one starts from: a store emptied between the legs would leave
+# this control running over no records at all and still passing.
 rm -f "$M068_NORECORD_STORE/four.qmd$STORE_SUFFIX"
-[ ! -e "$M068_NORECORD_STORE/four.qmd$STORE_SUFFIX" ] \
-  || fail "M068-AC3: four.qmd's record is still there, so the render below would read it"
+m068_assert_listing "$M068_NORECORD_STORE" "four.qmd$STORE_SUFFIX" out \
+  "M068-AC3 (before five.qmd alone: the store still lists the other records and not four.qmd's)"
 ( cd "$M061W/m068-norecord" && quarto render five.qmd --to html ) \
   > "$WORK/m063-m068-norecord-fifth.log" 2>&1 \
   || { tail -30 "$WORK/m063-m068-norecord-fifth.log" >&2; fail "M068-AC3: the single-chapter render failed; IP2 forbids a missing record taking one down"; }
@@ -8343,6 +8376,160 @@ check_warning_count "$WORK/m063-m068-norecord-fifth.log" "$WARN_STORE_UNREADABLE
 check_extension_warning_count "$WORK/m063-m068-norecord-fifth.log" 0 \
   "M068-AC3 (five.qmd is the book's last chapter and reads three records it can use, so it has nothing to say)"
 pass "M068-AC3: a store directory that lists and holds no record for four.qmd recovers nothing and says nothing — the whole book heals itself when four.qmd rewrites its own record, and five.qmd rendered alone prints the gamma section short every one of four.qmd's eight terms in silence, which is the never-written case the widened probe still refuses to recover"
+
+# ---------------------------------------------------------------------------
+# M068 — the same two questions asked of a chapter that sits in a
+# SUBDIRECTORY, which is the shape every fixture above is flat in. A book
+# chapter may be written as `sub/two.qmd`, and `store_write` puts its record in
+# a matching subdirectory of the store, so the record's own directory and the
+# store's top level are two different directories that list different names:
+# the store's top level holds `sub`, and only `sub` itself holds
+# `two.qmd$STORE_SUFFIX`. On a flat book the two coincide and every question
+# about which of them the probe asks answers itself.
+#
+# `examples/book` already has that chapter, so this runs over a copy of it
+# rendered fresh into an empty tree — its own warm store, untouched by the
+# corruption the checks earlier in this file plant in the fixture's own.
+#
+# Two legs, one for each way a record under `sub/` can be out of reach:
+#
+#   unlistable  the STORE DIRECTORY replaced by a file. Its own name is in
+#               `.quarto`'s listing, so it is the unusable thing (D-043), and
+#               every record beneath it is out of reach however deeply nested —
+#               which is what the probe's answer for a directory has to hand
+#               DOWN to the directories under it, rather than reading a
+#               subdirectory whose parent cannot be listed as never written.
+#
+#   nested      the store directory listing perfectly well and the record at
+#               `sub/two.qmd$STORE_SUFFIX` a dangling link. Its basename is in
+#               `sub`'s listing and is NOT in the store's top-level listing,
+#               both asserted, so a probe reading the top level instead — the
+#               lookup the plan gate rejected — reads it as never written and
+#               drops that chapter in silence.
+#
+# What each leg reads is one entry the whole book shares. `Shared Term` is
+# marked in index.qmd, one.qmd and sub/two.qmd, so its locators say per
+# chapter whether that chapter came out of a record (a locator carrying the
+# fragment the record anchors) or out of its own source (the chapter's page and
+# nothing more) — the two halves in one row. `Beacon` is marked in the
+# subdirectory chapter alone, so it is there at all only if that chapter was
+# reached. Both derived by hand from the three sources.
+# ---------------------------------------------------------------------------
+M068BW="$WORK/m068-book"
+rm -rf "$M068BW"
+mkdir -p "$M068BW"
+cp -R "$BOOK_DIR" "$M068BW/warm"
+# The fixture's `_extensions` is a symlink into the repository, which `cp -R`
+# preserves; the self-test's plants below mutate their own copy of the filter,
+# so each tree gets its own extension directory rather than the shared one.
+rm -f "$M068BW/warm/_extensions"
+mkdir -p "$M068BW/warm/_extensions"
+cp -R "$QI_EXT_DIR" "$M068BW/warm/_extensions/index"
+rm -rf "$M068BW/warm/_book" "$M068BW/warm/.quarto"
+( cd "$M068BW/warm" && quarto render --to html ) \
+  > "$WORK/m068-nested-warm.log" 2>&1 \
+  || { tail -30 "$WORK/m068-nested-warm.log" >&2; fail "M068 (nested): the book fixture failed to render into an empty tree; IP2 forbids any of this taking a render down"; }
+M068_NESTED_HELD=$(find "$M068BW/warm/.quarto/$STORE_DIR" -name "*$STORE_SUFFIX" | wc -l | tr -d ' ')
+[ "$M068_NESTED_HELD" = "4" ] \
+  || fail "M068 (nested): the render left $M068_NESTED_HELD record(s) and this book has four chapters, so the legs below would be about a store that is short records rather than one whose records are out of reach"
+[ -f "$M068BW/warm/.quarto/$STORE_DIR/sub/two.qmd$STORE_SUFFIX" ] \
+  || fail "M068 (nested): the record for sub/two.qmd is not one level down inside the store, so this fixture is flat after all and neither leg below is the case it is credited with"
+
+# One copy of that warm tree per leg.
+m068_nested_tree() {   # <slug>
+  local slug="$1"
+  rm -rf "$M068BW/$slug"
+  cp -R "$M068BW/warm" "$M068BW/$slug"
+  rm -rf "$M068BW/$slug/_book"
+}
+
+# One leg: render last.qmd — the chapter that builds the index — on its own, so
+# nothing rewrites another chapter's record first, and read the two entries.
+m068_nested_render() {   # <slug> <label> <recoveries> <shared locators> <warning lines>
+  local slug="$1" label="$2" recoveries="$3" shared="$4" lines="$5" got
+  ( cd "$M068BW/$slug" && quarto render last.qmd --to html ) \
+    > "$WORK/m068-nested-$slug.log" 2>&1 \
+    || { tail -30 "$WORK/m068-nested-$slug.log" >&2; fail "$label: the render failed; IP2 forbids a record that cannot be opened taking one down"; }
+  capture --project "$M068BW/$slug" html "m068-nested-$slug"
+  check_warning_count "$WORK/m068-nested-$slug.log" "$M068_RECOVERED_SUBTWO" 1 \
+    "$label: the recovery report names the chapter in the subdirectory, whole and once"
+  check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_STORE_UNREADABLE_RECOVERED" "$recoveries" \
+    "$label: the chapters recovered are exactly the ones whose records are out of reach"
+  check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
+    "$label: every recovered chapter's own source reads, so the lost wording is never drawn"
+  check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+    "$label: every recovered chapter's own source carries marks, so the no-marks wording is never drawn"
+  check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_MARKER_DUP_NAMED" 1 \
+    "$label: the second marker for the index named main, which this book always draws"
+  check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_DANGLING_INDEX" 1 \
+    "$label: the cross-reference in the subdirectory chapter that names an entry no mark indexes, which this book always draws"
+  got=$( { grep -c '(W) ' "$WORK/m068-nested-$slug.log" || true; } | tr -d ' ')
+  [ "$got" = "$lines" ] \
+    || { grep '(W) ' "$WORK/m068-nested-$slug.log" >&2; fail "$label: the render wrote $got warning line(s), and the kinds this check counts by name account for $lines"; }
+  check_entry_locators "$CAPTURE_ROOT/m068-nested-$slug/_book/last.html" \
+    "$HTML_SECTION_ID-main" "Shared Term" "$shared" \
+    "$label: the entry all three chapters mark says, locator by locator, which of them came out of a record and which out of its own source"
+  check_entry_locators "$CAPTURE_ROOT/m068-nested-$slug/_book/last.html" \
+    "$HTML_SECTION_ID-main" Beacon "sub/two.html" \
+    "$label: the term marked in the subdirectory chapter alone is in the index, pointing at that chapter's page with no fragment"
+}
+
+M068_RECOVERED_SUBTWO="the recorded index marks for sub/two.qmd could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"
+
+# Leg one. The store directory is replaced by a file, so `sub` cannot be
+# listed, and neither can the directory above it: the answer that says the
+# store was written is two levels up, in `.quarto`'s listing, and has to reach
+# the record through both. All three records other than last.qmd's own are out
+# of reach, so all three chapters are recovered and not one locator in the
+# shared entry carries a fragment.
+#
+#   1 second-marker + 3 recovery + 1 dangling cross-reference
+#     + 1 write-failure (the store path is a file, so last.qmd cannot write
+#       its own record either) = 6 warning lines.
+m068_nested_tree unlistable
+m068_break_store_at() {   # <store directory> <records held> <label>
+  local store="$1" want="$2" label="$3" held
+  held=$(find "$store" -name "*$STORE_SUFFIX" | wc -l | tr -d ' ')
+  [ "$held" = "$want" ] \
+    || fail "$label: the store holds $held record(s), not the $want this book writes, so the render below would be about a store that is short records rather than one that is out of reach"
+  m068_assert_listing "$(dirname "$store")" "$(basename "$store")" in \
+    "$label: the store directory's own name is in its parent's listing, which is what says it was written"
+  rm -rf "$store"
+  printf 'a file where the store directory belongs\n' > "$store"
+  [ -f "$store" ] && [ ! -d "$store" ] \
+    || fail "$label: $store is still a directory, so every record in it would be read perfectly well"
+  printf 'ok   %s: the store directory is now a regular file, and the %s records it held — one of them a level below it — are out of reach\n' "$label" "$want"
+}
+m068_break_store_at "$M068BW/unlistable/.quarto/$STORE_DIR" 4 \
+  "M068 (nested: a store directory that cannot be listed)"
+m068_nested_render unlistable \
+  "M068 (nested: a store directory that cannot be listed, over a chapter in a subdirectory)" \
+  3 "index.html one.html sub/two.html" 6
+check_warning_count "$WORK/m068-nested-unlistable.log" "$WARN_STORE_UNWRITABLE" 1 \
+  "M068 (nested: last.qmd's own write meets the same file where the store directory belongs)"
+pass "M068 (nested): a store directory replaced by a file puts the record one level below it out of reach as surely as the ones directly in it — sub/two.qmd is recovered from its own source and reported by name, its terms are in the book's index pointing at its page, and every locator of the entry all three chapters mark has lost its fragment, which is what an unlistable store directory meant before this milestone and has to go on meaning"
+
+# Leg two. The store directory lists perfectly well; the record one level down
+# is a dangling link. Its basename is in `sub`'s listing and is not in the
+# store's top-level listing, so the record's OWN directory is the only listing
+# that answers for it — the lookup this milestone chose, and the one leg that
+# tells it from the store-top-level lookup it rejected. index.qmd's and
+# one.qmd's records open and are read, so their locators keep their fragments
+# while the recovered chapter's does not.
+#
+#   1 second-marker + 1 recovery + 1 dangling cross-reference = 3 warning lines.
+m068_nested_tree nested
+M068_NESTED_STORE="$M068BW/nested/.quarto/$STORE_DIR"
+m068_dangle_record "sub/two.qmd" "$M068_NESTED_STORE" \
+  "M068 (nested: a record one level down that cannot be opened)"
+m068_assert_listing "$M068_NESTED_STORE" "two.qmd$STORE_SUFFIX" out \
+  "M068 (nested: the record's basename is not among the store's top-level entries)"
+m068_nested_render nested \
+  "M068 (nested: a record one level down that cannot be opened)" \
+  1 "index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html" 3
+m068_assert_dangling "$M068_NESTED_STORE/sub/two.qmd$STORE_SUFFIX" \
+  "M068 (nested: after the render)"
+pass "M068 (nested): where the record for sub/two.qmd is a dangling link its own directory lists and the store's top level does not, that chapter is recovered from its source and reported while index.qmd and one.qmd are read from their records — the entry all three mark carries one fragment-bearing locator for each record that was read and the bare page for the one that was not, which is the difference between asking the record's own directory and asking the store's top level"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -8386,9 +8573,12 @@ if [ "${1:-}" = "--self-test" ]; then
     's{      and where\.names\[pandoc\.path\.filename\(path\)\] == true\n}{      and where.names[path] == true\n}m'
   pass "M068 T5 self-test: with the record's whole path compared against a listing that holds basenames, the same record reads as never written again"
 
-  # 3. The listing taken from the store directory's PARENT where the record's
-  #    own directory is meant. `.quarto` lists `quarto-index` and no record
-  #    name, so again nothing matches.
+  # 3. The listing taken one directory UP from the record's own. On this flat
+  #    book that is `.quarto`, which lists `quarto-index` and no record name,
+  #    so nothing matches — a strictly wrong directory, not the store's top
+  #    level, which here IS the record's own directory. The rival lookup the
+  #    plan gate rejected is a different plant, and it needs a chapter in a
+  #    subdirectory to be told apart at all: plant 7 below.
   m068_mutant_silent m068-parentlisting "M068 T5 self-test (the parent's listing consulted)" \
     's{    local where = listing\(pandoc\.path\.directory\(path\)\)\n}{    local where = listing(pandoc.path.directory(pandoc.path.directory(path)))\n}m'
   pass "M068 T5 self-test: with the record's name looked for in the listing of the store directory's parent, the same record reads as never written again"
@@ -8450,6 +8640,87 @@ if [ "${1:-}" = "--self-test" ]; then
     "M068 T5 self-test (the listing taken afresh per record)" 8 \
     "$M068_COUNT_PROBE" "$M068_NOMEMO"
   pass "M068 T5 self-test: over a book with two records dangling, the probe as it stands lists a store directory 5 times — once per rendering chapter — where dropping the remembered answer lists it 8 times, once per unopenable record; the instrumentation is the same in both legs and only the remembering differs"
+
+  # 6 and 7. The two axes only a chapter in a SUBDIRECTORY is free in, one
+  # plant each over the nested book. Every plant above runs on a flat book,
+  # where the record's own directory and the store's top level are the same
+  # directory and neither of these mutations changes a thing.
+  m068_nested_mutant() {   # <slug> <label> <perl substitution>
+    local slug="$1" label="$2" subst="$3"
+    m068_nested_tree "$slug"
+    local filter="$M068BW/$slug/_extensions/index/modules/book.lua"
+    spliced_copy "$label" "the filter" "$filter" "$M068BW/$slug-spliced" "$subst"
+    mv "$M068BW/$slug-spliced" "$filter"
+  }
+
+  # The shape both plants produce, and the one the nested legs above refuse:
+  # the subdirectory chapter's terms gone from the book's index with nothing
+  # said. Read as identity, not as a count — the shared entry keeps exactly the
+  # locators of the chapters that were reached, and the term marked in the
+  # subdirectory chapter alone is not in the section at all.
+  m068_nested_silent() {   # <slug> <label> <shared locators>
+    local slug="$1" label="$2" shared="$3"
+    ( cd "$M068BW/$slug" && quarto render last.qmd --to html ) \
+      > "$WORK/m068-nested-$slug.log" 2>&1 \
+      || { tail -30 "$WORK/m068-nested-$slug.log" >&2; fail "$label: the mutated render failed; the case below is about which terms an index carries, not about a broken render"; }
+    capture --project "$M068BW/$slug" html "m068-nested-$slug"
+    check_warning_count "$WORK/m068-nested-$slug.log" "$M068_RECOVERED_SUBTWO" 0 \
+      "$label (the report the leg above draws once is drawn none)"
+    check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
+      "$label (nor either of the other wordings a record out of reach can draw)"
+    check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
+      "$label (nor the no-marks wording)"
+    check_entry_locators "$CAPTURE_ROOT/m068-nested-$slug/_book/last.html" \
+      "$HTML_SECTION_ID-main" "Shared Term" "$shared" \
+      "$label (the shared entry keeps the locators of the chapters that were reached and loses the subdirectory chapter's)"
+    QI_SECTION="$HTML_SECTION_ID-main" python3 - \
+      "$CAPTURE_ROOT/m068-nested-$slug/_book/last.html" Beacon "$label" <<'GONEPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+path, term, label = sys.argv[1:4]
+section = H.find_id(H.parse(path), os.environ['QI_SECTION'])
+if section is None:
+    sys.exit(f'FAIL: {label}: {path} carries no {os.environ["QI_SECTION"]!r} section')
+terms = [r['term'] for r in H.entry_records(section) if r['kind'] == 'entry']
+if term in terms:
+    sys.exit(f'FAIL: {label}: {term!r} is still among the {len(terms)} entries of '
+             f'the section, so the subdirectory chapter was reached after all '
+             f'and this mutation is not the defect the leg above is held to catch')
+print(f'ok   {label}: {term!r}, marked in the subdirectory chapter alone, is not '
+      f'among the {len(terms)} entries the section holds')
+GONEPY
+  }
+
+  # 6. The answer a directory that cannot be listed gets from its parent no
+  #    longer handed DOWN to the directories under it — the probe as it stood
+  #    when this milestone first went to review. `sub` cannot be listed and
+  #    neither can the store directory above it, so the record one level down
+  #    reads as never written while the three beside it read as out of reach:
+  #    the chapter is dropped in silence, and on a flat book nothing changes at
+  #    all.
+  m068_nested_mutant lostchain "M068 self-test (a lost directory's answer not handed down)" \
+    's{        lost = up \~= nil\n          and \(up\.lost\n            or \(up\.names \~= nil\n              and up\.names\[pandoc\.path\.filename\(dir\)\] == true\)\),\n}{        lost = up ~= nil and up.names ~= nil\n          and up.names[pandoc.path.filename(dir)] == true,\n}m'
+  m068_break_store_at "$M068BW/lostchain/.quarto/$STORE_DIR" 4 \
+    "M068 self-test (a lost directory's answer not handed down)"
+  m068_nested_silent lostchain "M068 self-test (a lost directory's answer not handed down)" \
+    "index.html one.html"
+  pass "M068 self-test: with a lost directory's answer read only from its parent's listing and never handed down, the same store directory replaced by a file recovers the two chapters whose records sit directly in it and drops the one whose record sits a level below — sub/two.qmd's terms leave the book's index in silence, which is what the nested leg above refuses and what no flat fixture can tell apart"
+
+  # 7. The record's name looked for in the STORE'S TOP LEVEL rather than in the
+  #    directory the record belongs in — the lookup the plan gate rejected, and
+  #    the one plant 3 above cannot reach: on a flat book that substitution
+  #    lands on `.quarto` instead, which is a strictly wrong directory rather
+  #    than the plausible rival. Here the two are different directories and the
+  #    top level is the rival: it lists `sub` and does not list the record's
+  #    own basename, so the record reads as never written.
+  m068_nested_mutant toplevel "M068 self-test (the store's top level consulted for a record one level down)" \
+    's{    local where = listing\(pandoc\.path\.directory\(path\)\)\n}{    local where = listing(pandoc.path.directory(pandoc.path.directory(path)))\n}m'
+  m068_dangle_record "sub/two.qmd" "$M068BW/toplevel/.quarto/$STORE_DIR" \
+    "M068 self-test (the store's top level consulted for a record one level down)"
+  m068_nested_silent toplevel "M068 self-test (the store's top level consulted for a record one level down)" \
+    "index.html#qi-mark-1 one.html#qi-mark-2"
+  pass "M068 self-test: with a record's name looked for in the store's top-level listing rather than in the listing of the directory it belongs in, the dangling record one level down reads as never written and sub/two.qmd's terms leave the index in silence, while the two records that open are read exactly as before — the rejected lookup, shown to be told from the chosen one by the nested leg above and by nothing on a flat book"
 fi
 
 

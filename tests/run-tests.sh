@@ -21737,6 +21737,10 @@ python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
 # M068 replaced the two store-directory rows with four, since the test that
 # tells a written record from a never-written one moved to the record's own
 # name in a listing and the page now states the lookalike that test accepts.
+# M069 replaced the never-recovered row with five, since a record no render has
+# written is now read back in the chapters that print a section, and the page
+# states which chapters those are, that no other chapter does it, that a
+# whole-book render is untouched, and where the route stays silent.
 cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
@@ -21756,7 +21760,11 @@ no fragment	A recovered term links to the chapter's page and nothing after it, s
 conditional content out whole	so recovery takes such a block or span out whole, whatever its `when-` or `unless-` attributes say
 nothing where the source cannot be read	The report then says the source could not be read either, and that chapter's terms are missing from the index until it is rendered again
 no range and no principal	both ends of a range print the one page the chapter is on, and the role prints as an undeclared one does
-an absent record is not recovered	A record that is simply *absent* — a chapter that has never been rendered — is not recovered
+an absent record is read back where a section would lose it	is read back only where its terms would otherwise be lost from a section this chapter itself prints
+the two chapters that read one	a chapter carrying a placement marker of its own, and the book's last chapter, which takes on every index no marker names
+no other chapter reads one	every other chapter reads such a record as absent and says nothing about it
+a whole-book render is unaffected	by the time a chapter reads the store the chapters before it have written their records
+silence where a source reaches no mark	A chapter with no record whose source parses and reaches no index mark is passed over in silence
 a listed record that will not open	a record whose filename is among that directory's entries was written there, whatever opening it does, so it is out of reach rather than unwritten and its chapter is read back from its source
 an unlistable store directory	the store directory itself being out of reach — replaced by a file, or with its read permission gone — where every record under it is out of reach and every chapter is read back
 a name no listing carries	A record whose name the directory does not list is absent exactly as before.

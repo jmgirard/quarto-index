@@ -10,7 +10,7 @@ _Released 0.2.0 2026-09-02._
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | done | — | normal | milestones/archive/M069-absent-record-recovery.md |
-| M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | review | M069 | normal | milestones/M070-recovery-parse-fidelity.md |
+| M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | in-progress | M069 | normal | milestones/M070-recovery-parse-fidelity.md |
 | M068 | A record that is listed and cannot be opened is not read as one that was never written | done | — | normal | milestones/archive/M068-listed-unopenable-record.md |
 | M066 | The recovery-route checks read the reports and mutations they name | done | — | normal | milestones/archive/M066-recovery-check-readers.md |
 | M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |

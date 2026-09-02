@@ -37,11 +37,17 @@ reach the book index and what the render tells them when some cannot.
   name before `fold_undeclared` would draw the refiling report.
 - The report for such a chapter: a wording naming the file and saying its
   source was not read, beside the wordings `book.lua:887-891` and M069 draw.
-- `recovered_marks` (`book.lua:693`) and `recovered_markers` (`book.lua:762`)
-  reach a mark a chapter writes in its YAML front matter, which the ordinary
-  render already indexes: probed 2026-09-02 under pandoc 3.11, a filter table
-  carrying a `Span` function visits a span in `abstract:` exactly as it visits
-  one in the body, while the recovery walk is over `parsed.blocks` alone.
+- `recovered_marks` (`book.lua:693`) reaches a mark a chapter writes in its
+  YAML front matter, which the ordinary render already indexes: probed
+  2026-09-02 under pandoc 3.11, a filter table carrying a `Span` function
+  visits a span in `abstract:` exactly as it visits one in the body, and visits
+  it before the body, while the recovery walk is over `parsed.blocks` alone.
+  Front matter is read through the same conditional-content drop the blocks go
+  through, so a mark inside `.content-visible` or `.content-hidden` is left out
+  there as it is in the body. `recovered_markers` (`book.lua:762`) is not
+  widened with it: `resolve_markers` reads `doc.blocks` alone, so a marker in
+  front matter places nothing in the ordinary render either, and reading one
+  here would be the recovery route departing from the render.
 - Acceptance-suite fixtures for both edges, and `--self-test` plants over each
   axis they are free in.
 - `site/books.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md` with KI219 retired and
@@ -85,27 +91,27 @@ reach the book index and what the render tells them when some cannot.
 
 ## Coverage
 
-- AC1 → T1, T2, T4
+- AC1 → T1, T2, T4, T8, T9
 - AC2 → T1, T4
-- AC3 → T3, T5
-- AC4 → T6
-- AC5 → T4, T5, T6
+- AC3 → T3, T5, T7, T10
+- AC4 → T6, T11
+- AC5 → T4, T5, T6, T7, T8, T9, T10, T11
 
 ## Tasks
 
 - [x] T1. The extension test in `recover_record` (`book.lua:783`), before the
       read: the accepted set as a named table, the comparison on the chapter
-      path's own extension lowercased, and a refusal that returns the file
-      rather than nil so the caller can name it. A chapter whose name carries
-      no extension at all is refused with the rest.
+      path's own extension lowercased, and a refusal the caller can tell from
+      a failed read. A name carrying no extension is refused with the rest.
 - [x] T2. The refusal wording beside `book.lua:887-891` and M069's, drawn once
-      per reading chapter for the refused chapter; `tests/scans/warn-distinct.py`'s
-      EXPECTED count moves with it.
-- [x] T3. `recovered_marks` and `recovered_markers` over the chapter's metadata
-      as well as its blocks, with `drop_conditional` applied to neither — front
-      matter carries no conditional element — and document order settled so a
-      front-matter mark's declared sort key cannot beat a body mark's by an
-      order the ordinary render does not use.
+      per reading chapter; `tests/scans/warn-distinct.py`'s EXPECTED moves with
+      it.
+- [x] T3. `recovered_marks` over the chapter's metadata as well as its blocks,
+      with `drop_conditional` applied to both, and document order settled —
+      metadata before blocks, the order the ordinary render uses — so a
+      front-matter mark's declared sort key beats a body mark's exactly where
+      the ordinary render lets it. `recovered_markers` stays over the blocks
+      alone, matching `resolve_markers`.
 - [x] T4. The AC1/AC2 fixture: a copy of `examples/book` gaining a one-cell
       `.ipynb` chapter that marks a term, and one chapter per accepted
       extension; the refusal asserted message-whole on both entry paths, and
@@ -113,13 +119,26 @@ reach the book index and what the render tells them when some cannot.
 - [x] T5. The AC3 fixture and its control: a chapter marking a term in
       `abstract:` and nowhere else, rendered once with its record readable and
       once with it recovered, the two asserted to file the same entry in the
-      same index and to differ only in the locator's fragment.
+      same index; the record route's locators carry fragments and the recovered
+      one does not, and it carries more of them, because Quarto copies the
+      abstract into the chapter's body before this filter runs.
 - [x] T6. `--self-test` plants over each axis, each shown red against the check
-      that fences it: the extension test removed; the test inverted; the
-      accepted set narrowed by one member; the metadata walk removed; and the
-      metadata walk applied to the ordinary render's own pass, which must
-      change nothing. Then `site/books.qmd`, `CHANGELOG.md` and
-      `cairn/DESIGN.md` with KI219 retired.
+      that fences it, and then `site/books.qmd`, `CHANGELOG.md` and
+      `cairn/DESIGN.md`.
+- [ ] T7. The conditional-content removal over the front matter as well as the
+      blocks, a fixture chapter marking inside a conditional span and a
+      conditional block there, and a plant reading the front matter raw.
+- [ ] T8. The refusal asserted to name the chapter's file, beside the count, on
+      both entry paths — the precedent `M60-AC4` and `M064-AC5` set.
+- [ ] T9. The refusal wording asserting nothing about a record, since it is
+      drawn where none was written; and its departure from the silence rule —
+      a refused chapter reports on every path — named in `DESIGN.md`.
+- [ ] T10. The walk order fenced rather than asserted in a comment: a chapter
+      whose front matter and body declare rival sort keys for one term, and a
+      plant turning the two walks round.
+- [ ] T11. `DESIGN.md`'s recovery-contract paragraph; the dead nil guard; the
+      retired known-issue citations in the filter and the suite; KI232 widened
+      to the reflection that causes it; the notebook fixture's cell id.
 
 ## Work log
 
@@ -142,6 +161,11 @@ reach the book index and what the render tells them when some cannot.
 - 2026-09-02: review step 2 — draft PR #70 opened against main (branch 9 ahead of origin/main, 0 behind, so no merge was needed); its three CI checks are green. Step 4's universal cairn-file checks passed; no DESIGN.md principle text changed, so `cairn_impact` is skipped, and the `generic` profile names no toolchain checks.
 - 2026-09-02: review returned M070 to in-progress on two findings meeting the return floor. AC1 fails its own "asserted message-whole" clause: no check asserts the refusal names the chapter's file, and the suite's own precedent (M60-AC4, M064-AC5) does exactly that. And recovery now indexes a mark written inside `.content-hidden`/`.content-visible` in YAML front matter, because the new metadata walk bypasses `drop_conditional` — verified under pandoc 3.11 — which falsifies a pinned `site/books.qmd` claim, `DESIGN.md:491-494`, and the milestone's own Goal. AC2, AC3 and AC4 verified; AC5's plain half passed at 640 checks and its `--self-test` half was not run, the fix changing both the filter and the suite. Ten further findings logged in the Review section. First defect return for this milestone.
 - 2026-09-02: probe run 2026-09-02 under pandoc 3.11 — a filter table carrying a `Span` function visits a span in `abstract:` as well as one in the body, confirming the asymmetry AC3 rests on before this milestone was written rather than leaving it for implementation.
+- 2026-09-02: return round 1, implementation gate — both recommendations taken: the scope text is narrowed to promise only the front-matter MARK (the marker half stays out, matching `resolve_markers`), and the refusal's opening clause changes from "the recorded index marks for %s could not be used" to "no record of the index marks for %s could be used", which is true on the never-written path too. Amended text shown verbatim at the gate.
+- 2026-09-02: amendment (substantive, gated) — Scope In's third bullet, T3 and T5 rewritten to say what was built: `recovered_marks` alone reaches front matter, the conditional-content drop reaches it, metadata is read before blocks, and the two routes differ in locator count as well as in the fragment. No acceptance criterion's wording changed. Tasks T7-T11 added for the return's findings, Coverage extended, and the Tasks section compressed in one pass to hold the 150-line cap (`cairn_validate` weight caps PASS).
+- 2026-09-02: T7/T10 (checkpoint, not yet ticked) — `drop_conditional`'s filter is now a named table and a chapter's parsed metadata goes through it via `conditional_free_meta` before the mark walk; probed 2026-09-02 under pandoc 3.11, a `.content-hidden` span and a `.content-hidden` div written in `abstract:` are both removed by that walk and both survive without it. Fixture chapter `seven.qmd` added, carrying rival declared sort keys for one term across its front matter and body and two marks inside conditional classes in its front matter; two plants added, each rendered by hand and shown to move the printed index — the front matter read raw indexes `Jetsam` and `Kestrel`, the two walks turned round moves `Ingot` from the A group to a Z group.
+- 2026-09-02: T8/T9 (checkpoint, not yet ticked) — `m070_refusal_names` greps the refusal line for the chapter's file beside the count, on both entry paths, the pairing `M60-AC4` and `M064-AC5` make. The refusal wording no longer asserts a record existed, and its departure from the silence rule is named beside the branch and in `DESIGN.md`: a refused source was never read, so nothing knows whether it marks a term, and guessing silence would cost its author every term of that chapter.
+- 2026-09-02: T11 (checkpoint, not yet ticked) — `DESIGN.md`'s recovery-contract paragraph now states the accepted extension set, the metadata read and its order, the conditional drop over front matter, the fifth wording and the refused chapter's exemption from the silence rule; `readable_source`'s dead nil guard removed after verifying `pandoc.path.split_extension` returns `""` and never nil (2026-09-02, pandoc 3.11); the retired KI219 citations in the filter and the suite replaced; KI232 widened from `abstract:` to the metadata reflection that causes it; `five.ipynb`'s cell given the id its declared `nbformat_minor: 5` requires. The suite was still running when this was committed, so nothing here is verified yet.
 
 ## Decisions
 

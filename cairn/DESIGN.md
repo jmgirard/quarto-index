@@ -487,18 +487,39 @@ whole-book render prints the same index — by the time a chapter reads the
 store the chapters before it have written their records — so an ordinary first
 render of a book whose marker sits in its last chapter recovers nothing, while
 one whose marker sits earlier recovers the chapters behind it and reports each.
+The parse is offered only the chapter files this route is a reader
+for — `.qmd`, `.md`, `.markdown` and `.Rmd`, compared case-insensitively, a
+name carrying no extension refused with the rest — because a book takes an
+`.ipynb` chapter too, whose JSON the markdown reader accepts and returns marks
+from whose attribute values carry that JSON's own quoting, filed under a name
+the book declares nothing by (added M070). It reads an accepted chapter's
+METADATA as well as its blocks, and its metadata first, which is the order an
+ordinary render reads the two in: a mark written in YAML front matter is
+indexed by that chapter's own render, so it is recovered too, and a sort key
+declared there beats one declared in the body here exactly as it does there
+(added M070). A placement MARKER written in front matter is not read, because
+`resolve_markers` does not read one out of front matter either (KI11).
 A mark reaching the chapter through an include shortcode or an
 executed cell is not in that parse and is not recovered, and neither is one
 inside a block or span carrying Quarto's `.content-visible` or
-`.content-hidden` class, which the reader takes out whole before it reads
-anything (D-042); a source Pandoc's markdown reader cannot read recovers
-nothing, and the reading chapter's own record report says so. Four wordings
+`.content-hidden` class, which the reader takes out whole — of the front matter
+and of the blocks alike — before it reads
+anything (D-042, front matter added M070); a source Pandoc's markdown reader
+cannot read recovers
+nothing, and the reading chapter's own record report says so. Five wordings
 carry the outcome: three for a record that was written and could not be used —
-recovered, parsed and reaching no mark, unreadable — and a fourth for one no
+recovered, parsed and reaching no mark, unreadable — a fourth for one no
 render has written whose source was read back, which never calls such a record
-unreadable. A never-written record whose source parses to no mark is the one
+unreadable, and a fifth for a chapter whose source this route does not read,
+drawn ahead of the other four and whatever state that chapter's record was in,
+and so worded to assert nothing about the record (added M070). A never-written
+record whose source parses to no mark is the one
 silent outcome: it has lost nothing, and every chapter of a store-less book
-that marks nothing would otherwise report on every render (M069). Five cases are
+that marks nothing would otherwise report on every render (M069). A REFUSED
+chapter is outside that silence and reports on every path, the never-written
+one included: its source was never read, so nothing here knows whether it marks
+a term at all, and guessing that it marks none would cost its author every term
+of that chapter with no way to find out (M070). Five cases are
 reported rather than guessed at (corrected M063, which retired two of the
 seven M061 left): a book whose chapters mark terms but whose author wrote no
 marker anywhere (reported by the last chapter, the only one
@@ -1594,11 +1615,14 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   with `_book` removed; it would silently let `check_book_sections` read a
   stale `_book` if that changed. — M069 review F8
 - **KI232.** A mark written in a Quarto BOOK chapter's YAML front matter is
-  indexed three times by that chapter's own render, so one authored mark files
-  three locators onto the same page. By the time this extension's passes run,
-  Quarto has already copied the chapter's abstract into its body: a filter
-  placed immediately before this one counted the mark once in the document's
-  metadata and twice more in its blocks (probed 2026-09-02, quarto 1.10.18).
+  indexed more than once by that chapter's own render, so one authored mark
+  files several locators onto the same page. Quarto reflects metadata fields
+  into the chapter body before any filter runs, so the mark is reached in the
+  metadata and again in each reflected copy; the mechanism is the reflection,
+  not the field, and `abstract:` is the field it was measured in. A filter
+  placed immediately before this one counted an `abstract:` mark once in the
+  document's metadata and twice more in its blocks (probed 2026-09-02, quarto
+  1.10.18).
   A single document outside a book is indexed once. The recovery route reads
   the source file, where the mark is written once, so the two routes file the
   same entry in the same index and differ in how many locators it carries;

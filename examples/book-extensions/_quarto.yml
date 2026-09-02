@@ -1,11 +1,13 @@
-# The chapter-source-kinds fixture (M070). Seven chapters, six of them read by
-# the recovery route and one refused, so one render can show both what the
+# The chapter-source-kinds fixture (M070). Eight chapters, seven of them read
+# by the recovery route and one refused, so one render can show both what the
 # route reads and what it will not.
 #
 # The shapes here are load-bearing for the acceptance manifests: one chapter
-# per source extension the route accepts, an `.ipynb` chapter it refuses, and a
+# per source extension the route accepts, an `.ipynb` chapter it refuses, a
 # chapter whose only mark is in its YAML front matter, which the ordinary
-# render indexes and the recovery route has to reach the same way.
+# render indexes and the recovery route has to reach the same way, and a
+# chapter whose front matter and body declare rival sort keys for one term and
+# whose front matter also hides marks behind Quarto's conditional classes.
 project:
   type: book
 
@@ -19,6 +21,7 @@ book:
     - four.Rmd
     - five.ipynb
     - six.qmd
+    - seven.qmd
 
 format:
   html: default

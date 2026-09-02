@@ -627,25 +627,42 @@ local function is_conditional(el)
   return false
 end
 
+-- The removal itself, as one filter table, because two things are read out of
+-- a chapter's source and both carry conditional content: its blocks, and its
+-- metadata. The walk is bottom-up, so a conditional nested inside another is
+-- removed with its parent either way; a marker div carrying one of the classes
+-- goes with the rest.
+local CONDITIONAL_FILTER = {
+  Div = function(div)
+    if is_conditional(div) then
+      return {}
+    end
+    return nil
+  end,
+  Span = function(span)
+    if is_conditional(span) then
+      return {}
+    end
+    return nil
+  end,
+}
+
 -- The parsed blocks with every conditional element removed, whole — its
--- content with it, and a marker div carrying one of the classes along with the
--- rest. The walk is bottom-up, so a conditional nested inside another is
--- removed with its parent either way.
+-- content with it.
 local function drop_conditional(blocks)
-  return blocks:walk({
-    Div = function(div)
-      if is_conditional(div) then
-        return {}
-      end
-      return nil
-    end,
-    Span = function(span)
-      if is_conditional(span) then
-        return {}
-      end
-      return nil
-    end,
-  })
+  return blocks:walk(CONDITIONAL_FILTER)
+end
+
+-- The same removal over a chapter's parsed METADATA, returned as a document
+-- carrying that metadata and no blocks. `Meta` has no `walk` of its own, so
+-- the walk is over a document built around it. The same filter, because the
+-- two classes mean the same thing wherever an author writes them and this
+-- route can no more tell which way the render went in `abstract:` than it can
+-- in the body: verified 2026-09-02 under pandoc 3.11, a `.content-hidden` span
+-- and a `.content-hidden` div written in `abstract:` are both taken out by
+-- this walk and both survive when it is not made.
+local function conditional_free_meta(meta)
+  return pandoc.Pandoc({}, meta):walk(CONDITIONAL_FILTER)
 end
 
 -- Every index mark in a chapter's parsed blocks, in document order, as a
@@ -760,14 +777,21 @@ local function recovered_marks(meta, blocks)
     return nil
   end
 
-  -- Metadata first and blocks second, which is the order the ordinary
-  -- render sees them in. Two walks rather than one over a rebuilt document:
-  -- the order is then this reader's own statement rather than a traversal
-  -- order it would be reading off Pandoc, and `Meta` carries no `walk` of
-  -- its own to be walked directly. `drop_conditional` reaches the blocks
-  -- alone: Quarto shows and hides content by a class on a block or a span,
-  -- and front matter carries no block of that kind.
-  pandoc.Pandoc({}, meta):walk({ Span = collect })
+  -- Metadata first and blocks second, which is the order the ordinary render
+  -- sees them in — verified 2026-09-02 under pandoc 3.11, a filter table with
+  -- a `Span` function is handed a span in `abstract:` before one in the body.
+  -- The order is load-bearing and not decorative: `register_recovered_sort` is
+  -- first-wins, so a sort key declared in front matter beats one declared in
+  -- the body, and it must beat it here exactly where it beats it there. Two
+  -- walks rather than one over a rebuilt document, so the order is this
+  -- reader's own statement rather than a traversal order read off Pandoc.
+  --
+  -- Both sides go through the conditional-content removal, the metadata by
+  -- `conditional_free_meta` and the blocks by `drop_conditional` in the
+  -- caller. An author writes `.content-visible` and `.content-hidden` in
+  -- front matter as readily as in the body, and this route cannot tell which
+  -- way either went.
+  conditional_free_meta(meta):walk({ Span = collect })
   blocks:walk({ Span = collect })
   return marks, sorts
 end
@@ -800,7 +824,8 @@ end
 -- extensions and no other kind. Handed a notebook it does not refuse: it
 -- accepts the raw JSON as markdown, and what comes back is a mark whose
 -- attribute values carry the JSON's own quoting — a term filed into whatever
--- index that mangled name resolves to, with nothing said (KI219).
+-- index that mangled name resolves to, with nothing said. That was the
+-- behavior through 0.2.0, recorded as a known issue and fixed here (M070).
 local SOURCE_EXTENSIONS = {
   [".qmd"] = true,
   [".md"] = true,
@@ -815,7 +840,10 @@ local SOURCE_EXTENSIONS = {
 -- is not.
 local function readable_source(file)
   local _, ext = pandoc.path.split_extension(file)
-  return ext ~= nil and SOURCE_EXTENSIONS[ext:lower()] == true
+  -- `split_extension` returns the empty string, never nil, for a name that
+  -- carries no extension (verified 2026-09-02 under pandoc 3.11), so the
+  -- lookup below is the whole test: no entry answers to "".
+  return SOURCE_EXTENSIONS[ext:lower()] == true
 end
 
 -- One chapter's record, rebuilt from its source, or nil where nothing could be
@@ -953,7 +981,23 @@ local function store_read(ctx, own, recover_absent)
           -- and is not handed to the caller as a stale record would be, so a
           -- book with several such chapters says one thing per chapter rather
           -- than two.
-          qi_core.warn(("the recorded index marks for %s could not be used, and that chapter's source is not one this route reads — it reads a chapter written as .qmd, .md, .markdown or .Rmd source and no other kind — so none of its terms are in the index; render that chapter again, or render the whole book, to restore them"):format(file))
+          --
+          -- "No record could be used" rather than "the recorded marks could
+          -- not be used": this branch is reached on the never-written path as
+          -- well, where there is no record to have failed, and the wording
+          -- above it exists precisely so no report sends an author looking for
+          -- a corrupt file that was never there.
+          --
+          -- Drawn on that never-written path too, which is where this parts
+          -- company with the silent branch further down. That branch is silent
+          -- because a source that PARSED and reached no mark is known to have
+          -- lost nothing. A refused source was never read, so nothing here
+          -- knows whether it marks a term or not; staying silent would be a
+          -- guess, and the guess costs the author every term of that chapter
+          -- with no way to find out. A book carrying a notebook chapter
+          -- therefore hears about it on every render whose store is missing
+          -- that chapter's record, marks or no marks.
+          qi_core.warn(("no record of the index marks for %s could be used, and that chapter's source is not one this route reads — it reads a chapter written as .qmd, .md, .markdown or .Rmd source and no other kind — so none of its terms are in the index; render that chapter again, or render the whole book, to restore them"):format(file))
         elseif ok and type(data) == "table" and data.version ~= STORE_VERSION then
           -- Handed back rather than reported here: a version-skewed record
           -- costs the chapters that BUILD an index their share of that

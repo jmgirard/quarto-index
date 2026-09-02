@@ -94,7 +94,7 @@ prints and what the render tells them, not an internal artifact.
       chapter's source where no record for it has been written, that no other
       chapter does, and that a chapter recovered this way contributes no
       fragment to its locators.
-- [ ] AC7. `tests/run-tests.sh` exits 0 both plain and with `--self-test`.
+- [x] AC7. `tests/run-tests.sh` exits 0 both plain and with `--self-test`.
 
 ## Coverage
 
@@ -209,3 +209,90 @@ out of that run's log unless it says otherwise.
   paragraph after. `CHANGELOG.md`'s Unreleased/Output entry states the same
   three in its own words. The prose-guard check holds `site/books.qmd` to all
   27 of its pinned claims.
+- AC7. `tests/run-tests.sh` exits 0 with 631 checks; `tests/run-tests.sh
+  --self-test` exits 0 with 1182. All five T6 plants are shown red against the
+  check that fences them before their green is trusted: the marker half
+  removed (index.qmd's section short two.qmd's term, and silent), the
+  last-chapter half removed (five.qmd prints no section), the gate inverted
+  (two.qmd parses the book and reports four times while printing nothing), the
+  wording swapped (same page, wrong sentence), and the parses-to-no-mark
+  branch made to report.
+
+### Independent review — three fresh-context lenses
+
+Diff touches executable surface (`book.lua`, `run-tests.sh`,
+`warn-distinct.py`), so the full fan-out ran: [O] diff-bug, [S] blame-history,
+[S] prior-PR-comments. The blame lens reported no findings. The prior-review
+lens reported one, which is F2 below; it found no GitHub PR-thread evidence
+(`pulls/comments` returned empty) and no LESSONS line touching these files.
+Ranked, most severe first, each with its disposition.
+
+- **F1. A healthy first whole-book render of a book whose placement marker is
+  not in its last chapter now reports on itself.** Every marker chapter that
+  runs before the chapters behind it meets their absent records, recovers
+  them, and warns "render that chapter again" about chapters that are about to
+  render. Confirmed in the suite's own numbers: the `place-first` leg moved
+  from 2 extension warnings to 8, six of them recovery reports. Nothing is
+  wrong with that render and the second render is silent. D-045 records this
+  ("a book whose markers sit earlier does recover, and says so"), and AC4's
+  only control is `examples/book`, whose marker sits in its last chapter, so
+  no criterion fences the case. Disposition:
+- **F2. `recover_absent` over-approximates "prints a section".** Both halves
+  answer eligibility, not building, and the report is drawn inside
+  `store_read` with no `builds` guard. A last chapter carrying no marker in a
+  book whose every declared index is placed earlier has `builds = false`
+  (`book.lua:1336`, `next(mine) ~= nil`, and the fallback loop adds nothing
+  when `placing[name] ~= nil`), yet reads every other chapter's source and
+  reports. Raised independently by the diff-bug and prior-review lenses; the
+  latter ties it to KI215's class. Not covered by any AC1/AC2/AC5/T6 leg —
+  T6's inverted-gate plant catches the mirror case (a non-last chapter) only.
+  Disposition:
+- **F3. A never-written record whose source cannot be read is reported as one
+  that "could not be read".** `book.lua:930` reuses the existing wording, so
+  the author of a chapter no render has touched is sent looking for a corrupt
+  record — the exact falsehood the comment at `book.lua:906` gives as the
+  reason the fourth wording exists. D-045 sanctions the reuse; the AC5
+  `m069-lostsource` leg pins it. Disposition:
+- **F4. "A whole-book render is unaffected" is stated flat before its
+  qualifier**, in `CHANGELOG.md`, `site/books.qmd` and `cairn/DESIGN.md`, and
+  F1 is the counterexample. The books-page claim ledger added by T7 pins the
+  unqualified clause as its own row, so the prose guard now holds the
+  overclaim rather than the qualifier. Disposition:
+- **F5. "read back only where its terms would otherwise be lost from a section
+  this chapter itself prints"** (`site/books.qmd`, `cairn/DESIGN.md`) states a
+  property the gate does not have — F2's chapter, and a marker chapter that
+  loses the placement race to an earlier chapter marking the same index, both
+  read and report while printing nothing. Disposition:
+- **F6. The Scope Out item promising the store-less render cost be "recorded
+  as KI217's sibling" produced no Known-issues entry** — the only record is a
+  trailing clause in D-045's consequences, which `/milestone` routing and a
+  future KI reader never see. Disposition:
+- **F7. Six pre-existing self-test plants now carry `M069_NO_ABSENT_GATE`
+  beside their own mutation**, so each is shown red against a filter with two
+  edits and any reword of the literal `elseif recover_absent then` line reds
+  six unrelated plants at once. The coupling is guarded (`spliced_copy` fails
+  on a substitution matching nothing). Named as a cost, not a defect.
+  Disposition:
+- **F8. `m069_cold_chapter` does not `rm -rf "$M061W/$slug/_book"`** while its
+  sibling `m069_tree` does. Benign today because `$M061W/base` is created with
+  `_book` removed; it would silently let `check_book_sections` read a stale
+  `_book` if that changed. Disposition:
+- **F9. A 125-character line in `cairn/DESIGN.md`** in a paragraph wrapped at
+  ~78, from joining new text onto the surviving tail of the old sentence.
+  Disposition:
+
+Nothing here demonstrates an acceptance criterion failing inside the domain
+its promise quantifies over: AC2 quantifies over chapters that carry no
+marker **and are not the book's last**, which is not F2's chapter, and AC4
+names `examples/book`, whose marker sits in its last chapter, which is not
+F1's book. So no return floor fires on its own; whether F1, F2 or F3 is a
+load-bearing defect in what an author's render tells them is the maintainer's
+call at the gate.
+
+The diff-bug lens also confirmed what it could not fault: `store_read` has one
+caller, `recover_absent` is settled entirely from `marker` and
+`ctx.position`/`ctx.chapters` before the store is touched, the report chain's
+branches are mutually exclusive (`never_written` can never coincide with the
+version-skew branch, since `ok` is false whenever there is no file), recovery
+stays inside `recover_record`'s `pcall` so IP2 holds, and the never-written
+key cannot alias either could-not-be-read wording.

@@ -3,6 +3,7 @@
 _The only authority on milestone status. Grouped by status, not ID._
 _Last hygiene check: 2026-09-02 (M068 done and archived, PR #68 squash-merged after a second review pass: six criteria on fresh evidence — 605 checks plain, 1140 with `--self-test` — consistency gate clean, three-lens fan-out returning eight findings and no return-floor defect. KI221 retired at M068; KI224, KI225 and KI226 added, the last an accepted limitation. Two candidate rows extended, the reads-repair row at a disposition gate. LESSONS unchanged at 49/50 lines and 19,912/20,000 bytes; ROADMAP within budget.)_
 _Released 0.1.0 2026-08-26._
+_Released 0.2.0 2026-09-02._
 
 ## Milestones
 

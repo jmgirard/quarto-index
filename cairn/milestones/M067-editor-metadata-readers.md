@@ -76,7 +76,7 @@ repair's evidence is therefore a planted construct, not a shipped one, on the
 - [x] AC4. The row count `table_values` requires of `site/syntax.qmd`'s form
       table is read from that page's own stated sentence rather than from a
       literal in `tests/editormeta.py`.
-- [ ] AC5. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` each
+- [x] AC5. `tests/run-tests.sh` and `tests/run-tests.sh --self-test` each
       exit 0.
 
 ## Coverage
@@ -143,3 +143,17 @@ repair's evidence is therefore a planted construct, not a shipped one, on the
 - AC2 — direct probe: a `.index` div ahead of a `sort=` mark and a bare mark; `constructs` carries `term` None for the div, `The Hague` and `Den Haag` for the spans, and `attribute_sites` pairs `sort=` with `The Hague`. Verified.
 - AC3 — `docs <absent.html> README.md -- _schema.yml _snippets.json` fails naming the absent path through `read`'s own message, exit 1; a call with no `--` fails saying so, exit 1. Verified.
 - AC4 — `SYNTAX_FORMS` is absent from `tests/`, `site/` and `README.md`; `stated_forms` reads 10 off `site/syntax.qmd`'s sentence and `form_table` counts 10 rows. Verified.
+- AC5 — `tests/run-tests.sh` over 3dd3f5c: 578 checks, exit 0; `tests/run-tests.sh --self-test` over the same tree, run after it: 1085 checks, exit 0. Verified.
+- Consistency gate: `cairn_validate.py` all checks passed, exit 0; no principle changed, so no impact report; the generic profile's toolchain slot names no checks. Draft PR #67 CI green (compare, render floor and pinned).
+- Fan-out (executable surface): [O] diff-bug lens ten findings; [S] blame-history lens one (F6's docstring, inherited from M50); [S] prior-review lens none regressed, one inherited note (KI222). None demonstrates a criterion failing; no return. Findings and dispositions, as triaged at the gate:
+  - F1 (O1). With the count read off the page, an eleventh row added *together with* the sentence edited to "eleven" passes, where the literal refused it; the residual net is `check_schema`'s enum comparison, blind to a new row on `entry=`/`see=`/`sort=`. Verified by the reviewer on a planted page. — accepted limitation: AC4 and T5 asked for exactly this reading; Known-issues entry at hygiene.
+  - F2 (O2). `parse_attrs`'s new docstring sentence "the reading pandoc gives the filter" over-claims: on a malformed block (`entry="unterminated sort="k"`, `entry="a\"`) pandoc makes no span or reads a different value. — fix now: the docstring says well-formed.
+  - F3 (O3). A stated count of zero with the rows removed makes the form table an empty domain, which the module docstring says every mode refuses; `enum: []` then passes. — fix now: `stated_forms` refuses a count under one.
+  - F4 (O4). KI121, KI122, KI124 and KI125 still stand in `DESIGN.md` at HEAD; every prior repairing milestone deleted its entries in the implementing commit. — fix now.
+  - F5 (O5). `args.index('--')` takes the first separator, so a second `--` becomes a name and is "found" in the page. — fix now: a `--` among the names is refused.
+  - F6 (O6, S-blame). `marked_term`'s docstring keeps "reported by the length check below" and no such check exists; a `[` inside a visible term is truncated silently (pre-existing, M50). — fix now: the docstring names what the walk-back does and does not do; the truncation stays pre-existing and unrouted.
+  - F7 (O7). The narrowing's corrected ground names a difference in kind, not in result: the sweep and the table give the same sets today. — rejected: T5 offered correcting the docstring, and the corrected ground is true.
+  - F8 (O8). `FORM_COUNT` is unanchored and case-sensitive; every variant tried fails closed. — rejected: no defect.
+  - F9 (O9). The success message re-reads `site/syntax.qmd` three extra times. — rejected: style.
+  - F10 (O10). The criteria's cited line ranges predate the implementation. — rejected: plan-owned text.
+  - F11 (S-prior). `spliced_copy` inherits KI222's gap (over-application counted, never checked) at a second caller. — follow-up: KI222's entry names `spliced_copy` at hygiene; already on the M37 guards row.

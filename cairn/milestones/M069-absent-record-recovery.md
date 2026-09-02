@@ -10,7 +10,7 @@
 - **Driving RR:** —
 - **Principles touched:** IP2
 - **Resolves:** —
-- **Branch/PR:** m069-absent-record-recovery
+- **Branch/PR:** m069-absent-record-recovery / https://github.com/jmgirard/quarto-index/pull/69
 
 ## Goal
 
@@ -153,6 +153,7 @@ prints and what the render tells them, not an internal artifact.
 - 2026-09-02: T7 — D-045 recorded; `site/books.qmd` and `CHANGELOG.md` state the gate, its two halves, the silence and the missing fragment; `cairn/DESIGN.md`'s recovery prose updated, with KI205 narrowed to the chapters that print nothing and KI214 to a last chapter whose own source-reading also fails.
 - 2026-09-02: two docs-prose checks at the tail of the suite were bookkeeping this milestone moves: the books-page claim ledger pinned the sentence "an absent record is not recovered", replaced by five rows naming which chapters read one back, that no other chapter does, that a whole-book render is untouched and where the route stays silent; and the planted-defect self-test that reads that ledger's size pins 27 claims where it pinned 23.
 - 2026-09-02: `tests/run-tests.sh` exits 0 (631 checks) and `tests/run-tests.sh --self-test` exits 0 (1182 checks). Status to review.
+- 2026-09-02: review opened; draft PR #69 pushed, `cairn_validate` passes with no advisory, three fresh-context review lenses spawned. Acceptance suite re-running for fresh evidence; no criterion ticked yet.
 
 ## Decisions
 

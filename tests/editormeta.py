@@ -115,7 +115,10 @@ def parse_attrs(block):
     attribute named `entry`, and a regex reading `name=` anywhere would report
     a second one named `a`. Inside a quoted value a backslash-escaped quote is
     part of the value, without its backslash, and the value ends at the next
-    unescaped quote — the reading pandoc gives the filter.
+    unescaped quote — the reading pandoc gives the filter of a well-formed
+    block. A malformed one (an unterminated value, a backslash before the
+    closing quote) is read by this scan where pandoc makes no span at all,
+    and nothing here claims otherwise.
     """
     classes, attrs = [], []
     i, n = 0, len(block)
@@ -250,13 +253,20 @@ def stated_forms(path, text):
             f'table is held to is read from exactly one'))
     word = stated[0].rstrip('.')
     if word.isascii() and word.isdigit():
-        return int(word)
-    if word in NUMBER_WORDS:
-        return NUMBER_WORDS[word]
-    raise SystemExit(fail(
-        f'{path}: states "exactly {word} supported forms", and {word!r} is '
-        f'neither digits nor a number word from one to twenty, so the count '
-        f'its table is held to cannot be read'))
+        count = int(word)
+    elif word in NUMBER_WORDS:
+        count = NUMBER_WORDS[word]
+    else:
+        raise SystemExit(fail(
+            f'{path}: states "exactly {word} supported forms", and {word!r} '
+            f'is neither digits nor a number word from one to twenty, so the '
+            f'count its table is held to cannot be read'))
+    if count < 1:
+        raise SystemExit(fail(
+            f'{path}: states exactly {count} supported forms, and a table '
+            f'held to no rows is an empty domain, over which the values '
+            f'below would be compared as two empty sets'))
+    return count
 
 
 def form_table(path):
@@ -491,6 +501,9 @@ def check_docs(*args):
                     'arguments are which')
     at = args.index('--')
     paths, names = list(args[:at]), list(args[at + 1:])
+    if '--' in names:
+        return fail('more than one `--` was given, so which arguments are '
+                    'pages and which are filenames is not settled')
     if not paths or not names:
         return fail(f'{len(paths)} page(s) and {len(names)} name(s) were '
                     f'given, where this check needs at least one of each')

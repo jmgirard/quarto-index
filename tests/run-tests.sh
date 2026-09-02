@@ -19772,6 +19772,8 @@ write('nosentence.qmd', syntax.replace(
     SENTENCE, 'There are several supported forms.'), syntax)
 write('umpteen.qmd', syntax.replace(
     SENTENCE, 'There are exactly umpteen supported forms.'), syntax)
+write('zero.qmd', syntax.replace(
+    SENTENCE, 'There are exactly 0 supported forms.'), syntax)
 rows = [line for line in syntax.splitlines(True)
         if line.startswith('| `[term]{.index mention=')]
 if len(rows) != 1:
@@ -19860,7 +19862,10 @@ M067PAIRPY
   m50_planted 'a form-count sentence stating a word that is not a number' \
     "'umpteen' is neither digits nor a number word" \
     python3 tests/editormeta.py schema "$M50_SCHEMA" "$M067W/umpteen.qmd" $M50_PAGES
-  pass "M067-AC4 self-test: the form table is held to the count the syntax page's own sentence states — the sentence edited alone, a row added alone, the sentence removed and a sentence stating a word that is not a number are each refused naming which"
+  m50_planted 'a form-count sentence stating zero, which would hold the table to an empty domain' \
+    'states exactly 0 supported forms, and a table held to no rows is an empty domain' \
+    python3 tests/editormeta.py schema "$M50_SCHEMA" "$M067W/zero.qmd" $M50_PAGES
+  pass "M067-AC4 self-test: the form table is held to the count the syntax page's own sentence states — the sentence edited alone, a row added alone, the sentence removed and a sentence stating a word that is not a number and a sentence stating zero are each refused naming which"
 fi
 
 # ---------------------------------------------------------------------------
@@ -20272,7 +20277,11 @@ M50DOCPY
     'no `--` separates the documentation pages from the filenames' \
     python3 tests/editormeta.py docs "$SITE_OUT/index.html" README.md _schema.yml _snippets.json
 
-  pass "M50 T5/T6 self-test: each clause of the install probe and of the documentation reader is planted on its own and shown red, while both pass unplanted on this run's own archive and this repository's own pages — an archive rebuilt without one of the two files, a project with no extension installed, and no file named to look for; a rendered page and a README each with one filename removed, no filename to look for, a page that is not there named as the page it is (M067), and a call with no -- in it"
+  m50_planted 'a call with two -- in it, the second of which the reader once took for a filename and found in the page' \
+    'more than one `--` was given' \
+    python3 tests/editormeta.py docs "$SITE_OUT/index.html" README.md -- _schema.yml --
+
+  pass "M50 T5/T6 self-test: each clause of the install probe and of the documentation reader is planted on its own and shown red, while both pass unplanted on this run's own archive and this repository's own pages — an archive rebuilt without one of the two files, a project with no extension installed, and no file named to look for; a rendered page and a README each with one filename removed, no filename to look for, a page that is not there named as the page it is (M067), a call with no -- in it and one with two"
 fi
 
 # ---------------------------------------------------------------------------

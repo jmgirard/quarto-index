@@ -927,11 +927,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   exercise it. — M36
 - **KI120.** `%2F%2Fevil.com` is skipped by neither the `//` nor the scheme
   guard and is resolved as a local path, a false report only. — M46 review
-- **KI122.** `check_docs` reclassifies a missing captured page into a name to
-  look for. — M50 review
-- **KI124.** `parse_attrs` stops at the first `"` in a value. — M50 review
-- **KI125.** `attribute_sites` pairs constructs and marks positionally past a
-  skip. — M50 review
 - **KI127.** Both sides of the version matrix's fixture-set comparison are
   sets, so two render targets written to one extraction name read as agreement
   while one extraction is silently overwritten. — M48 review
@@ -1149,8 +1144,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   path, percent-decoding of `%3F`/`%23` and of a non-UTF-8 escape, and a
   blockquote stripper that strips a leading `>` from any line, fenced code
   included. — M46 review
-- **KI121.** `SYNTAX_FORMS = 10` is pinned by nothing and narrowed on a ground
-  untrue of the swept domain. — M50 review
 - **KI123.** README and `site/index.qmd` promise a description on every class
   where `check_schema` requires one only under `attributes:`. — M50 review
 - **KI126.** `minted_carried` is an existence test, so a page whose only

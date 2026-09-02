@@ -145,9 +145,9 @@ def marked_term(text, item):
 
     Read by walking back from the attribute block to the `]` that closes the
     span and then to its opening `[`, which is what Pandoc's own span syntax
-    is; a mark's visible text holds no bracket in any snippet this extension
-    ships, and one that did would be reported by the length check below rather
-    than read wrong in silence.
+    is. The walk stops at the nearest `[`, so a visible text holding one would
+    be read short of it; no snippet this extension ships writes a bracket in
+    a term, and nothing here checks that none does (M067 review).
     """
     head = text[:item['at']]
     if not head.endswith(']'):

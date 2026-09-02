@@ -134,6 +134,8 @@ repair's evidence is therefore a planted construct, not a shipped one, on the
 - 2026-09-01: T6 — self-test run over e7f9a55: 1085 checks, exit 0 (1071 on M066; the 14 added are the M067 plants and probes). Status → review.
 - 2026-09-01: T1–T5 landed in one checkpoint rather than five: their suite evidence is one contiguous self-test block, and the block was run extracted on its own before the full suite (T6).
 - 2026-09-01: gate chose applying F2–F6 before merging. F2 and F6 are docstrings; F3 `stated_forms` refuses a count under one, planted as `zero.qmd`; F5 `check_docs` refuses a second `--`, planted as a call with two; F4 deletes KI121, KI122, KI124 and KI125 from `DESIGN.md`. Both suites re-run below over the fixed tree.
+- Re-run over 20de306 (gate fixes F2–F6 applied): `tests/run-tests.sh` 578 checks, exit 0; `tests/run-tests.sh --self-test` after it, 1087 checks, exit 0 (the two added are the zero-count and second-`--` plants). PR #67 CI green on the pushed fixes.
+
 ## Decisions
 
 ## Review

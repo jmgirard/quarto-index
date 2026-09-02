@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M070: A recovered chapter is read as the file it is, and everywhere its own render reads it
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M069
 - **Driving RR:** —
@@ -125,18 +125,18 @@ reach the book index and what the render tells them when some cannot.
 - [x] T6. `--self-test` plants over each axis, each shown red against the check
       that fences it, and then `site/books.qmd`, `CHANGELOG.md` and
       `cairn/DESIGN.md`.
-- [ ] T7. The conditional-content removal over the front matter as well as the
+- [x] T7. The conditional-content removal over the front matter as well as the
       blocks, a fixture chapter marking inside a conditional span and a
       conditional block there, and a plant reading the front matter raw.
-- [ ] T8. The refusal asserted to name the chapter's file, beside the count, on
+- [x] T8. The refusal asserted to name the chapter's file, beside the count, on
       both entry paths — the precedent `M60-AC4` and `M064-AC5` set.
-- [ ] T9. The refusal wording asserting nothing about a record, since it is
+- [x] T9. The refusal wording asserting nothing about a record, since it is
       drawn where none was written; and its departure from the silence rule —
       a refused chapter reports on every path — named in `DESIGN.md`.
-- [ ] T10. The walk order fenced rather than asserted in a comment: a chapter
+- [x] T10. The walk order fenced rather than asserted in a comment: a chapter
       whose front matter and body declare rival sort keys for one term, and a
       plant turning the two walks round.
-- [ ] T11. `DESIGN.md`'s recovery-contract paragraph; the dead nil guard; the
+- [x] T11. `DESIGN.md`'s recovery-contract paragraph; the dead nil guard; the
       retired known-issue citations in the filter and the suite; KI232 widened
       to the reflection that causes it; the notebook fixture's cell id.
 
@@ -167,6 +167,7 @@ reach the book index and what the render tells them when some cannot.
 - 2026-09-02: T8/T9 (checkpoint, not yet ticked) — `m070_refusal_names` greps the refusal line for the chapter's file beside the count, on both entry paths, the pairing `M60-AC4` and `M064-AC5` make. The refusal wording no longer asserts a record existed, and its departure from the silence rule is named beside the branch and in `DESIGN.md`: a refused source was never read, so nothing knows whether it marks a term, and guessing silence would cost its author every term of that chapter.
 - 2026-09-02: T11 (checkpoint, not yet ticked) — `DESIGN.md`'s recovery-contract paragraph now states the accepted extension set, the metadata read and its order, the conditional drop over front matter, the fifth wording and the refused chapter's exemption from the silence rule; `readable_source`'s dead nil guard removed after verifying `pandoc.path.split_extension` returns `""` and never nil (2026-09-02, pandoc 3.11); the retired KI219 citations in the filter and the suite replaced; KI232 widened from `abstract:` to the metadata reflection that causes it; `five.ipynb`'s cell given the id its declared `nbformat_minor: 5` requires. The suite was still running when this was committed, so nothing here is verified yet.
 - 2026-09-02: return round 1, first run — `tests/run-tests.sh` passed at 642 checks (640 on the returned branch) and `--self-test` at 1207 (1201), both exit 0, every M070 leg and all seven plants green, the two new plants among them. Three check labels still said "five chapters" where the fixture now has six; corrected, and both suites re-run over the corrected tree because a label is prose a reviewer reads. No task ticked until that pair lands.
+- 2026-09-02: return round 1 complete, T7-T11 ticked — `tests/run-tests.sh` passed at 642 checks and `tests/run-tests.sh --self-test` at 1207, both exit 0 over the corrected tree, 25 M070 checks among them and all seven plants shown red against the check that fences each. Status back to `review`.
 
 ## Decisions
 

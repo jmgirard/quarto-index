@@ -101,9 +101,22 @@
   reported as recovered by every chapter that looks for its record — where
   before each index carried only the terms of the chapter that built it and the
   index no marker names printed on no page at all. A store directory that is
-  not there is untouched: a first render is what it always was. So is one that
-  still lists — the records inside it are read as absent whatever is wrong with
-  them.
+  not there is untouched: a first render is what it always was.
+
+- In an HTML book, a record file the store directory lists and which cannot be
+  opened — one whose permissions have been cleared, or sitting in a directory
+  that has lost the search bit its records are opened through — no longer reads
+  as a record no render has written. Its chapter is read back from its own
+  source and reported, exactly as a record that was opened and could not be
+  used already is, so its terms stay in the book's index instead of going
+  missing from every other chapter's in silence. The evidence is the record's
+  own filename in the listing of the directory it belongs in; a name the
+  listing does not carry is still an absent record, so a first render and a
+  tree with no store are untouched. A file merely *named* like a record and
+  unopenable counts as one that was written — a broken symlink left at that
+  path by hand, say — and its chapter is read back from source, which nothing
+  this extension writes can produce and which costs a chapter recovered rather
+  than dropped.
 
 - **Changed default.** The four words the HTML and EPUB index prints for
   itself now follow the document's `lang:` instead of always being English:

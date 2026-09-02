@@ -12,10 +12,12 @@
   index carrying every chapter's terms rather than one short of them. Every
   other chapter reads such a record as absent exactly as before, and a
   recovered chapter contributes no fragment to its locators: each links to
-  that chapter's page and nothing after it. A whole-book render is unaffected,
-  since by the time a chapter reads the store the chapters before it have
-  written their records, so the ordinary first render of a book whose marker
-  sits in its last chapter reads no source and reports nothing.
+  that chapter's page and nothing after it. A whole-book render prints the
+  index it always printed, since by the time a chapter reads the store the
+  chapters before it have written their records: the ordinary first render of
+  a book whose marker sits in its last chapter reads no source and reports
+  nothing, while one whose marker sits earlier reads the sources of the
+  chapters behind it and reports each, the next render silent.
 
   A chapter recovered this way is reported by a wording of its own, naming the
   record as one no render has written rather than one that could not be read.

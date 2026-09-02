@@ -132,10 +132,13 @@ other chapter reads such a record as absent and says nothing about it.
 So a book rendered chapter by chapter, or into a tree whose records never
 survive, still prints an index carrying every chapter's terms rather than one
 short of them — with the same limits every recovered chapter carries, the
-missing fragment among them. A whole-book render is unaffected, because by the
-time a chapter reads the store the chapters before it have written their
-records: the ordinary first render of a book whose marker sits in its last
-chapter reads no source at all and says nothing.
+missing fragment among them. A whole-book render prints the index it always
+printed, because by the time a chapter reads the store the chapters before it
+have written their records: the ordinary first render of a book whose marker
+sits in its last chapter reads no source at all and says nothing. Where the
+marker sits earlier, the chapters behind it have not rendered yet, so that
+chapter reads their sources and reports each one — the same index either way,
+and the next render silent.
 
 A chapter with no record whose source parses and reaches no index mark is
 passed over in silence. It has lost nothing — a chapter that marks nothing

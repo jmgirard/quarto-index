@@ -483,9 +483,11 @@ last chapter, which takes on every index no marker names (added M069, D-045).
 Both halves are settled from `resolve_markers` and `ctx.position` before the
 store is opened, so no two chapters of one render disagree; every other chapter
 reads such a record as absent, which is the cost the gate accepts (KI205). A
-whole-book render is unaffected — by the time a chapter reads the store the
-chapters before it have written their records — so an ordinary first render of
-a book whose marker sits in its last chapter recovers nothing. A mark reaching the chapter through an include shortcode or an
+whole-book render prints the same index — by the time a chapter reads the
+store the chapters before it have written their records — so an ordinary first
+render of a book whose marker sits in its last chapter recovers nothing, while
+one whose marker sits earlier recovers the chapters behind it and reports each.
+A mark reaching the chapter through an include shortcode or an
 executed cell is not in that parse and is not recovered, and neither is one
 inside a block or span carrying Quarto's `.content-visible` or
 `.content-hidden` class, which the reader takes out whole before it reads
@@ -1492,6 +1494,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `recover_record`'s call site, not measured. Nothing bounds or caches it and
   nothing names it to an author; the cost is invisible at this repo's fixture
   sizes and unmeasured at book sizes. — M064 review F7
+- **KI227.** KI217's sibling for a store that was never written: where no
+  record exists at all, each chapter admitted by the recovery gate — a chapter
+  carrying a placement marker, and the book's last chapter — parses every one
+  of the other n-1 chapter sources, so a book rendered one chapter at a time
+  into a store-less tree parses on the order of n(n-1) sources across the run.
+  Derived from `store_read`'s loop against `recover_absent` at
+  `book.lua:1269`, not measured. Nothing bounds or caches it; invisible at the
+  fixture's five chapters and unmeasured at book sizes. — M069 Scope Out, M069
+  review F6
 - **KI218.** A recovered mark naming an index the book does not declare is
   refiled into the first declared index with nothing said. `recovered_marks`
   resolves the name through `mark_index` before the rebuilt record is handed

@@ -236,7 +236,8 @@ Ranked, most severe first, each with its disposition.
   wrong with that render and the second render is silent. D-045 records this
   ("a book whose markers sit earlier does recover, and says so"), and AC4's
   only control is `examples/book`, whose marker sits in its last chapter, so
-  no criterion fences the case. Disposition:
+  no criterion fences the case. Disposition: **follow-up** — quietening it
+  reopens the gate D-045 chose, which is design work, not a review fix.
 - **F2. `recover_absent` over-approximates "prints a section".** Both halves
   answer eligibility, not building, and the report is drawn inside
   `store_read` with no `builds` guard. A last chapter carrying no marker in a
@@ -246,40 +247,54 @@ Ranked, most severe first, each with its disposition.
   reports. Raised independently by the diff-bug and prior-review lenses; the
   latter ties it to KI215's class. Not covered by any AC1/AC2/AC5/T6 leg —
   T6's inverted-gate plant catches the mirror case (a non-last chapter) only.
-  Disposition:
+  Disposition: **follow-up**, with F1 — the repair is a `builds`-aware gate,
+  which KI215 already records as needing `marks_in` back.
 - **F3. A never-written record whose source cannot be read is reported as one
   that "could not be read".** `book.lua:930` reuses the existing wording, so
   the author of a chapter no render has touched is sent looking for a corrupt
   record — the exact falsehood the comment at `book.lua:906` gives as the
   reason the fourth wording exists. D-045 sanctions the reuse; the AC5
-  `m069-lostsource` leg pins it. Disposition:
+  `m069-lostsource` leg pins it. Disposition: **follow-up**, with F1 — a fifth
+  wording is the same design question, and D-045 sanctions the reuse.
 - **F4. "A whole-book render is unaffected" is stated flat before its
   qualifier**, in `CHANGELOG.md`, `site/books.qmd` and `cairn/DESIGN.md`, and
   F1 is the counterexample. The books-page claim ledger added by T7 pins the
   unqualified clause as its own row, so the prose guard now holds the
-  overclaim rather than the qualifier. Disposition:
+  overclaim rather than the qualifier. Disposition: **fixed now**. The flat
+  clause is replaced in all three files by what is true — a whole-book render
+  prints the same index it always printed, silent where the marker sits in the
+  last chapter and reporting the chapters behind it where it sits earlier. The
+  ledger's pinned text is the causal clause, not the flat one, so it and the
+  27-claim count are unchanged; the second half of this finding did not hold.
 - **F5. "read back only where its terms would otherwise be lost from a section
   this chapter itself prints"** (`site/books.qmd`, `cairn/DESIGN.md`) states a
   property the gate does not have — F2's chapter, and a marker chapter that
   loses the placement race to an earlier chapter marking the same index, both
-  read and report while printing nothing. Disposition:
+  read and report while printing nothing. Disposition: **follow-up**, with F2
+  — the sentence is accurate once the gate is `builds`-aware, and rewording it
+  alone would document a gap rather than close it.
 - **F6. The Scope Out item promising the store-less render cost be "recorded
   as KI217's sibling" produced no Known-issues entry** — the only record is a
   trailing clause in D-045's consequences, which `/milestone` routing and a
-  future KI reader never see. Disposition:
+  future KI reader never see. Disposition: **fixed now** — KI227 added to
+  `cairn/DESIGN.md`, stating the n(n-1) parse cost of a store-less render as
+  KI217's sibling.
 - **F7. Six pre-existing self-test plants now carry `M069_NO_ABSENT_GATE`
   beside their own mutation**, so each is shown red against a filter with two
   edits and any reword of the literal `elseif recover_absent then` line reds
   six unrelated plants at once. The coupling is guarded (`spliced_copy` fails
   on a substitution matching nothing). Named as a cost, not a defect.
-  Disposition:
+  Disposition: **rejected** — an intentional change the plan called for (T6),
+  guarded against silently matching nothing.
 - **F8. `m069_cold_chapter` does not `rm -rf "$M061W/$slug/_book"`** while its
   sibling `m069_tree` does. Benign today because `$M061W/base` is created with
   `_book` removed; it would silently let `check_book_sections` read a stale
-  `_book` if that changed. Disposition:
+  `_book` if that changed. Disposition: **follow-up** — a suite-reader repair
+  of the kind the standing suite-readers row collects.
 - **F9. A 125-character line in `cairn/DESIGN.md`** in a paragraph wrapped at
   ~78, from joining new text onto the surviving tail of the old sentence.
-  Disposition:
+  Disposition: **fixed now** as a side effect of F4's rewrite of that same
+  sentence.
 
 Nothing here demonstrates an acceptance criterion failing inside the domain
 its promise quantifies over: AC2 quantifies over chapters that carry no
@@ -296,3 +311,7 @@ branches are mutually exclusive (`never_written` can never coincide with the
 version-skew branch, since `ok` is false whenever there is no file), recovery
 stays inside `recover_record`'s `pcall` so IP2 holds, and the never-written
 key cannot alias either could-not-be-read wording.
+
+**Gate outcome (2026-09-02).** Approved for merge with the record fixes made
+first: F4, F6 and F9 fixed on the branch; F7 rejected; F1, F2, F3, F5 and F8
+to a candidate row at the hygiene pass.

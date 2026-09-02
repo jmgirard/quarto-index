@@ -1,19 +1,18 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-01 (M068 planned: a sidecar record whose name is in the store directory's listing and which cannot be opened is recovered from its chapter's source instead of read as never written. Plan gate promoted the store-probe item out of the recovery-follow-ups candidate row ahead of its author-report condition, on the 2026-08-31 probe; the criteria audit ran in full mode and returned seven findings, all fixed before the file was written.)_
+_Last hygiene check: 2026-09-02 (M068 done and archived, PR #68 squash-merged after a second review pass: six criteria on fresh evidence — 605 checks plain, 1140 with `--self-test` — consistency gate clean, three-lens fan-out returning eight findings and no return-floor defect. KI221 retired at M068; KI224, KI225 and KI226 added, the last an accepted limitation. Two candidate rows extended, the reads-repair row at a disposition gate. LESSONS unchanged at 49/50 lines and 19,912/20,000 bytes; ROADMAP within budget.)_
 _Released 0.1.0 2026-08-26._
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M068 | A record that is listed and cannot be opened is not read as one that was never written | review | — | normal | milestones/M068-listed-unopenable-record.md |
+| M068 | A record that is listed and cannot be opened is not read as one that was never written | done | — | normal | milestones/archive/M068-listed-unopenable-record.md |
 | M066 | The recovery-route checks read the reports and mutations they name | done | — | normal | milestones/archive/M066-recovery-check-readers.md |
 | M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |
 | M065 | The forms a recovered chapter's marks take are fenced | done | M064 | normal | milestones/archive/M065-recovered-mark-forms.md |
 | M064 | A chapter's terms reach the book index when its record cannot be read | done | — | normal | milestones/archive/M064-book-source-recovery.md |
-| M063 | A book puts an index no marker names in the same chapter on every render | done | — | normal | milestones/archive/M063-book-fallback-placement.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -39,8 +38,8 @@ _Released 0.1.0 2026-08-26._
 - Make the acceptance suite and its PDF comparison version-portable, and give the matrix its missing legs; promote the comparison on an extraction shown engine-neutral across the two engines, the legs with it or sooner on the restored PDF leg running a clean schedule cycle, the unreproduced floor-leg failure on a recurrence — added 2026-08-26 — M43/M51/M52 — KI110, KI111, KI112, KI113, KI114
 - Print an RTL index term correctly, and follow `lang:` for the index punctuation, the cross-reference target's level join included: nothing localizes any of it; promote on a bidi path that also settles locator placement, or on two references of different kinds agreeing on a language's index punctuation — added 2026-08-24, clustered 2026-08-29 — M33/M58 Scope Out, RR02 B2 — KI6
 - A `site/gallery/` page for the two-index PDF fixture; promote with any other gallery extension, the gallery build's own checks (M41) needing extending — added 2026-08-27 — M49 Scope Out
-- Suite readers, reads-repairs still outstanding: the `stopped` reading over a log whose rejection is its last unclosed `! ` line; `flatten` stripping `>` inside a fenced block; `%2F%2Fevil.com` resolved as a local path. Promote on any turning a run red wrongly — added 2026-08-16, split 2026-08-31 — M36/M40/M46, M064/M065 — KI117, KI119, KI120
-- Suite work that would WIDEN a check rather than repair what it reads; promote each on its own promise being settled: the all-empty-`entry=` report; a bare `/` and `%3F`/`%23` in the link checker; M30's typeset proof over the xref and sort-key probes; which prose is pinned; a description per schema class; a recovered declared sort key — added 2026-08-31 — KI24, KI118, KI119, KI123, KI164
+- Suite readers, reads-repairs still outstanding: the `stopped` reading over a log whose rejection is its last unclosed `! ` line; `flatten` stripping `>` inside a fenced block; `%2F%2Fevil.com` resolved as a local path; `m068_assert_dangling`/`m068_assert_listing` dying with a Python traceback rather than a named `FAIL:` line on a directory that is missing or unlistable. Promote on any turning a run red wrongly — added 2026-08-16, split 2026-08-31, extended 2026-09-02 at a disposition gate — M36/M40/M46, M064/M065, M068 review G6 — KI117, KI119, KI120
+- Suite work that would WIDEN a check rather than repair what it reads; promote each on its own promise being settled: the all-empty-`entry=` report; a bare `/` and `%3F`/`%23` in the link checker; M30's typeset proof over the xref and sort-key probes; which prose is pinned; a description per schema class; a recovered declared sort key; a total warning count over M068's two nested plants; a fence for the store probe's laziness claim; `m068_nested_render`'s failure message, which credits itself with kinds a sibling check names — added 2026-08-31, extended 2026-09-02 — M068 review G4, G5, G7 — KI24, KI118, KI119, KI123, KI164
 - The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
 - Repair the version-matrix readers; promote on any of them turning a run red for a reason that is not the defect it names, or on the workflow gaining a trigger — added 2026-08-28 — M48 review, M51 review F2, M53 review F1-F2 — KI126, KI127, KI128, KI129, KI130, KI131, KI132
 - Repair the guards and bounded mutations M37 shipped, and prove the clauses M38 descoped; promote with the readers they bind in hand — added 2026-08-25, extended 2026-09-01 at a disposition gate — M37 review, M38 Scope Out, M38 review round 3, M066 review F7 — KI133, KI134, KI135, KI136, KI137, KI138, KI139, KI222

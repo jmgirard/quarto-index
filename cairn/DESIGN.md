@@ -1531,3 +1531,20 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   direction D-044 accepts for the record-file mirror of this case (KI224).
   Carries forward the remainder of KI221, which M068 otherwise fixed.
   — M068 review F5
+- **KI226.** Where the store directory does not exist AND `.quarto` itself
+  cannot be listed, `store_probe` reads every record path as written, so a
+  first render into such a tree would recover every chapter from its source
+  and report each one. The `lost` answer a directory takes from its parent
+  says only that some ancestor is out of reach; it does not distinguish a
+  directory that is missing from one that is there and unreachable, and the
+  walk goes above the store as far as the first listable ancestor. Observed
+  2026-09-02 by running `store_probe` under `pandoc lua` on a scratch tree:
+  with no `.quarto/quarto-index` at all and `.quarto` either a regular file or
+  at `a-r`, it answers "written" for records flat, one level down and three
+  levels down, where the pre-M068 probe answered "never written". No render
+  reaches the state — `quarto render` aborts with `PermissionDenied` on the
+  unlistable shape and `Failed to ensure directory exists: expected 'dir', got
+  'file'` on the other, both before the extension loads — so the prose in
+  `site/books.qmd`, `CHANGELOG.md` and D-044 saying an absent record never
+  fires is true of every tree a render can reach and false of the probe read
+  alone. Accepted at the M068 merge gate rather than fixed. — M068 review G1, G2

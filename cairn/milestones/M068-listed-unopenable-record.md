@@ -9,7 +9,7 @@
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
-- **Branch/PR:** `m068-listed-unopenable-record`
+- **Branch/PR:** `m068-listed-unopenable-record` / https://github.com/jmgirard/quarto-index/pull/68
 
 ## Goal
 
@@ -141,6 +141,7 @@ prints and what the render tells them, not an internal artifact.
 - 2026-09-01: two existing readers repointed at the widened behavior rather than left stating the superseded one: `site/books.qmd`'s two pinned store-directory claims became four, and M063-AC6's self-test guard, which names the claim count, moved from 21 to 23.
 - 2026-09-01: `tests/run-tests.sh` exits 0 plain (593 checks) and with `--self-test` (1119 checks); status set to review.
 - 2026-09-01: T6 — D-044 appended; `site/books.qmd` and `CHANGELOG.md` state the widened trigger and the named-lookalike boundary; DESIGN.md's recovery prose rewritten, KI205 and KI214 narrowed, KI221 struck and replaced by KI224.
+- 2026-09-01: review opened; draft PR #68 pushed, PR URL recorded in the header.
 
 ## Decisions
 

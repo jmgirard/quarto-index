@@ -1,13 +1,14 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-01 (M067 merged and archived: the four M50 editor-metadata readers read what their messages claim — an escaped quote stays in its value, a mark is paired with its own span, the docs check splits pages from filenames at `--` and names a page it cannot read, and the form-table count comes off the syntax page's own sentence; sixteen plants fence them. Review: five criteria green (578 plain, 1085 self-test, re-run 578 / 1087 over the gate fixes, all exit 0), gate clean, ten diff-bug findings and none regressed from the other lenses, five fixed at the gate, KI223 for a row and its sentence edited together, KI222 extended to name `spliced_copy`. No lesson added; M062's terminal row pruned to hold the five-row retention.)_
+_Last hygiene check: 2026-09-01 (M068 planned: a sidecar record whose name is in the store directory's listing and which cannot be opened is recovered from its chapter's source instead of read as never written. Plan gate promoted the store-probe item out of the recovery-follow-ups candidate row ahead of its author-report condition, on the 2026-08-31 probe; the criteria audit ran in full mode and returned seven findings, all fixed before the file was written.)_
 _Released 0.1.0 2026-08-26._
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M068 | A record that is listed and cannot be opened is not read as one that was never written | planned | — | normal | milestones/M068-listed-unopenable-record.md |
 | M066 | The recovery-route checks read the reports and mutations they name | done | — | normal | milestones/archive/M066-recovery-check-readers.md |
 | M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |
 | M065 | The forms a recovered chapter's marks take are fenced | done | M064 | normal | milestones/archive/M065-recovered-mark-forms.md |
@@ -19,7 +20,7 @@ _Released 0.1.0 2026-08-26._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- Recovery follow-ups to the source route: recover an ABSENT record; mint a recovered locator's fragment; refuse a non-markdown chapter source; reach a metadata-borne mark; widen the store probe to a record that exists and cannot be OPENED. Promote each on an author reporting its state — added 2026-08-30, extended 2026-08-31 — M064/M065 reviews — KI205, KI219, KI221
+- Recovery follow-ups to the source route: recover an ABSENT record; mint a recovered locator's fragment; refuse a non-markdown chapter source; reach a metadata-borne mark. Promote each on an author reporting its state — added 2026-08-30, extended 2026-08-31, store-probe item promoted to M068 2026-09-01 — M064/M065 reviews — KI205, KI219
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
 - Repair the readers and checks the EPUB back-end, the editor metadata and the named-index work added; promote on any of them turning a run red for a reason that is not the defect it names — added 2026-08-27, clustered 2026-08-29 — M52 review F3, F7-F13; M50 review F1, F2, F3, F6; M49 review F6, F7, F9 — KI91-KI104
 - Fence the three unguarded edges of the named-index LaTeX behavior M49 shipped; promote the first two on an author report or a fixture reaching either edge, the third on the extension claiming a plain-pandoc path at all — added 2026-08-28 — M49 review F2, F3, F4 — KI105, KI106, KI107

@@ -115,10 +115,11 @@ def load(snippets_path):
     """Every snippet, expanded, with the constructs each body carries.
 
     Each is a dict: `name`, `text` (the body with its tab stops replaced),
-    `constructs` (the class and attributes of each of ours in it), and `marks`
-    (the visible text of each `.index` span, in written order) — the term a
-    mark indexes under when it carries no `entry=`, which is what the control's
-    entry for that snippet is.
+    `constructs` (the class and attributes of each of ours in it, each
+    `.index` construct also carrying `term`, the visible text of the span it
+    closes, or None where it closes no span), and `marks` (those terms, in
+    written order) — the term a mark indexes under when it carries no
+    `entry=`, which is what the control's entry for that snippet is.
     """
     try:
         entries = json.loads(editormeta.read(snippets_path))
@@ -129,33 +130,32 @@ def load(snippets_path):
     for name, entry in entries.items():
         text = editormeta.expand(entry.get('body', ''))
         found = editormeta.constructs(text)
+        for item in found:
+            if item['cls'] == editormeta.MARK_CLASS:
+                item['term'] = marked_term(text, item)
         out.append({'name': name, 'text': text, 'constructs': found,
-                    'marks': marked_terms(text)})
+                    'marks': [item['term'] for item in found
+                              if item.get('term') is not None]})
     return out
 
 
-def marked_terms(text):
-    """The visible text of every `[…]{.index …}` span in `text`.
+def marked_term(text, item):
+    """The visible text of the `[…]{.index …}` span whose attribute block
+    `item` is, or None where the block closes no span — a `.index` div.
 
     Read by walking back from the attribute block to the `]` that closes the
     span and then to its opening `[`, which is what Pandoc's own span syntax
-    is; a mark's visible text holds no bracket in any snippet this extension
-    ships, and one that did would be reported by the length check below rather
-    than read wrong in silence.
+    is. The walk stops at the nearest `[`, so a visible text holding one would
+    be read short of it; no snippet this extension ships writes a bracket in
+    a term, and nothing here checks that none does (M067 review).
     """
-    terms = []
-    for match in editormeta.ATTR_BLOCK.finditer(text):
-        classes, _attrs = editormeta.parse_attrs(match.group(1))
-        if editormeta.MARK_CLASS not in classes:
-            continue
-        head = text[:match.start()]
-        if not head.endswith(']'):
-            continue
-        open_at = head.rfind('[')
-        if open_at < 0:
-            continue
-        terms.append(head[open_at + 1:-1])
-    return terms
+    head = text[:item['at']]
+    if not head.endswith(']'):
+        return None
+    open_at = head.rfind('[')
+    if open_at < 0:
+        return None
+    return head[open_at + 1:-1]
 
 
 def attribute_sites(snippets):
@@ -168,16 +168,18 @@ def attribute_sites(snippets):
     written on both ends of its pair — but two SNIPPETS writing it would leave
     every clause below reading whichever entry came first, which
     `check_generate` refuses rather than compares arbitrarily.
+
+    Each construct is paired with its own term — the one `load` read off the
+    span that construct closes — never with the next term in written order:
+    a `.index` construct that is not a span has no term, and pairing by
+    ordinal shifted every later construct onto the term after its own (M067).
     """
     sites = {}
     for snippet in snippets:
-        marks = list(snippet['marks'])
-        index = 0
         for item in snippet['constructs']:
             if item['cls'] != editormeta.MARK_CLASS:
                 continue
-            term = marks[index] if index < len(marks) else None
-            index += 1
+            term = item['term']
             for name, value in item['attrs']:
                 site = sites.setdefault(
                     name, {'snippets': [], 'terms': [], 'values': []})

@@ -6809,21 +6809,21 @@ m063_tree() {   # <slug>
   cp -R "$QI_EXT_DIR" "$M061W/$slug/_extensions/index"
 }
 
-# ...and one or more `perl` substitutions applied to that copy's filter, each
-# passed as its own argument. Each substitution is counted on its own — perl
-# reports how many times each applied — and one that applied nowhere fails
-# naming its ordinal and its head: a pattern that stopped matching would leave
-# its part of the filter intact and the run below would be reported as a check
-# failing to matter when the fault is this mutation's. A whole-file `cmp`
-# cannot see the half-applied case — where two substitutions are passed and
-# one slips, the file still differs (M066) — so the whole-file guard is kept
-# only as a backstop behind the counts.
-m061_mutant() {   # <slug> <label> <perl substitution>...
-  local slug="$1" label="$2"
-  shift 2
-  [ "$#" -ge 1 ] || fail "$label: m061_mutant was given no substitution to apply"
-  m063_tree "$slug"
-  local filter="$M061W/$slug/_extensions/index/modules/book.lua"
+# One or more `perl` substitutions applied to a copy of one file, each passed
+# as its own argument; <noun> names the file in the messages ("the filter",
+# "the reader"). Each substitution is counted on its own — perl reports how
+# many times each applied — and one that applied nowhere fails naming its
+# ordinal and its head: a pattern that stopped matching would leave its part
+# of the file intact and the run below would be reported as a check failing
+# to matter when the fault is this mutation's. A whole-file `cmp` cannot see
+# the half-applied case — where two substitutions are passed and one slips,
+# the file still differs (M066) — so the whole-file guard is kept only as a
+# backstop behind the counts. The copy is left at <target>, its counts beside
+# it at <target>-counts.
+spliced_copy() {   # <label> <noun> <source> <target> <perl substitution>...
+  local label="$1" noun="$2" source="$3" target="$4"
+  shift 4
+  [ "$#" -ge 1 ] || fail "$label: spliced_copy was given no substitution to apply"
   perl -e '
     my ($counts, @subs) = @ARGV;
     my $text = do { local $/; <STDIN> };
@@ -6835,8 +6835,8 @@ m061_mutant() {   # <slug> <label> <perl substitution>...
     }
     close $out or die "$counts: $!\n";
     print $text;
-  ' "$M061W/$slug-counts" "$@" < "$filter" > "$M061W/$slug-spliced" \
-    || fail "$label: perl could not apply the substitution(s) aimed at the filter (its own message is above)"
+  ' "$target-counts" "$@" < "$source" > "$target" \
+    || fail "$label: perl could not apply the substitution(s) aimed at $noun (its own message is above)"
   local ordinal applied text counted=0
   while IFS=$'\t' read -r ordinal applied; do
     counted=$((counted + 1))
@@ -6844,13 +6844,23 @@ m061_mutant() {   # <slug> <label> <perl substitution>...
       || fail "$label: perl reported a count for substitution $ordinal, which is not among the $# passed, so the mutation is not known to have applied"
     text="${!ordinal}"
     [ "$applied" -gt 0 ] \
-      || fail "$label: substitution $ordinal of $# aimed at the filter matched nothing (<<${text:0:72}>>), so the render below would be reported as a check failing to matter when the fault is this mutation's"
-  done < "$M061W/$slug-counts"
+      || fail "$label: substitution $ordinal of $# aimed at $noun matched nothing (<<${text:0:72}>>), so the run below would be reported as a check failing to matter when the fault is this mutation's"
+  done < "$target-counts"
   [ "$counted" -eq "$#" ] \
     || fail "$label: perl reported $counted substitution count(s) for the $# substitution(s) passed, so the mutation is not known to have applied"
-  if cmp -s "$filter" "$M061W/$slug-spliced"; then
-    fail "$label: every substitution reported a match and the filter is still unchanged, so the counts in $M061W/$slug-counts are not to be trusted"
+  if cmp -s "$source" "$target"; then
+    fail "$label: every substitution reported a match and $noun is still unchanged, so the counts in $target-counts are not to be trusted"
   fi
+}
+
+# ...and that splice applied to a copied tree's filter, in place.
+m061_mutant() {   # <slug> <label> <perl substitution>...
+  local slug="$1" label="$2"
+  shift 2
+  [ "$#" -ge 1 ] || fail "$label: m061_mutant was given no substitution to apply"
+  m063_tree "$slug"
+  local filter="$M061W/$slug/_extensions/index/modules/book.lua"
+  spliced_copy "$label" "the filter" "$filter" "$M061W/$slug-spliced" "$@"
   mv "$M061W/$slug-spliced" "$filter"
 }
 
@@ -19684,6 +19694,178 @@ M50PLANTPY
     python3 tests/editormeta.py bodies "$M50_SNIPPETS"
 
   pass "M50 T3 self-test: each clause of the schema and snippet readers is planted on its own and shown red, while both pass unplanted on this repository's own files — a third class, an added enumerated value, an attribute moved to the wrong class, an attribute with no description, a form table one row short, no document to sweep and a swept page carrying no construct; an empty description, a snippet file that is not JSON, a snippet file that is a list, a dropped snippet, a body writing an undocumented attribute, each of the three required shapes dropped on its own, and no document to sweep"
+
+  # -------------------------------------------------------------------------
+  # M067 — three of the four reads the M50 readers misread, each shown on a
+  # planted input no shipped file carries (the fourth, the documentation
+  # reader's, is planted beside its own check below). The two latent ones are
+  # shown both ways: the repaired reader over the plant, and a copy of the
+  # reader with the repair spliced back out over the same plant, so the plant
+  # is known to reach the read it is about and not merely to pass.
+  # -------------------------------------------------------------------------
+  M067W="$WORK/m067probe"
+  rm -rf "$M067W"; mkdir -p "$M067W"
+
+  # A copy of the test modules with one substitution applied to one of them;
+  # the fixture module imports its siblings from its own directory, so the
+  # copy is what a probe run from it reads.
+  m067_mutant() {   # <slug> <label> <module> <perl substitution>...
+    local slug="$1" label="$2" module="$3"
+    shift 3
+    rm -rf "$M067W/$slug"; mkdir -p "$M067W/$slug"
+    cp tests/*.py "$M067W/$slug/"
+    spliced_copy "$label" "the reader" "tests/$module" "$M067W/$slug-spliced" "$@"
+    mv "$M067W/$slug-spliced" "$M067W/$slug/$module"
+  }
+
+  python3 - "$M067W" "$M50_SNIPPETS" "$M50_SYNTAX" <<'M067PLANTPY' \
+    || fail "M067 self-test: the planted variants could not be written (their own FAIL line is above)"
+import json
+import sys
+
+out, snippets_path, syntax_path = sys.argv[1:4]
+
+
+def write(name, text, source):
+    if text == source:
+        print(f'FAIL: M067 self-test: the mutation for {name} changed '
+              f'nothing, so the case below is about the unplanted file',
+              file=sys.stderr)
+        sys.exit(1)
+    with open(f'{out}/{name}', 'w', encoding='utf-8') as handle:
+        handle.write(text)
+
+
+snippets = open(snippets_path, encoding='utf-8').read()
+entries = json.loads(snippets)
+SORT = 'Index mark with a sort key'
+
+# A quoted value holding an escaped quote with an `=` inside it: a scan that
+# ends the value at the escaped quote resumes inside it and reads `key=` as
+# an attribute nobody wrote (KI124).
+plant = {k: dict(v) for k, v in entries.items()}
+plant[SORT]['body'] = ('[${1:The Hague}]{.index '
+                       'sort="${2:The \\"key=Hague\\" city}"}')
+write('escaped.json', json.dumps(plant, indent=2), snippets)
+
+# A `.index` construct that is not a span ahead of two marks, the first
+# writing sort= and the second bare: a pairing by ordinal hands the div the
+# first term and the sort= mark the second (KI125).
+plant = {k: dict(v) for k, v in entries.items()}
+plant[SORT]['body'] = ['::: {.index}', ':::', '',
+                       '[${1:The Hague}]{.index sort="${2:Hague}"}', '',
+                       '[${3:Den Haag}]{.index}']
+write('divmark.json', json.dumps(plant, indent=2), snippets)
+
+# The syntax page with its sentence edited alone, its table grown alone, its
+# sentence gone, and its sentence stating a word no reader can count.
+syntax = open(syntax_path, encoding='utf-8').read()
+SENTENCE = 'There are exactly ten supported forms.'
+if syntax.count(SENTENCE) != 1:
+    print(f'FAIL: M067 self-test: {syntax_path} carries {syntax.count(SENTENCE)} '
+          f'copies of <<{SENTENCE}>>, where the plants below edit exactly '
+          f'one', file=sys.stderr)
+    sys.exit(1)
+write('eleven.qmd', syntax.replace(
+    SENTENCE, 'There are exactly eleven supported forms.'), syntax)
+write('nosentence.qmd', syntax.replace(
+    SENTENCE, 'There are several supported forms.'), syntax)
+write('umpteen.qmd', syntax.replace(
+    SENTENCE, 'There are exactly umpteen supported forms.'), syntax)
+write('zero.qmd', syntax.replace(
+    SENTENCE, 'There are exactly 0 supported forms.'), syntax)
+rows = [line for line in syntax.splitlines(True)
+        if line.startswith('| `[term]{.index mention=')]
+if len(rows) != 1:
+    print('FAIL: M067 self-test: the form table does not write exactly one '
+          'mention= row, so the row-added plant is not the mutation it '
+          'claims to be', file=sys.stderr)
+    sys.exit(1)
+write('rowadded.qmd', syntax.replace(
+    rows[0], rows[0] + '| `[term]{.index mention="secondary"}` | `term` | '
+    '`term`, a form the sentence does not count |\n', 1), syntax)
+M067PLANTPY
+
+  # M067-AC1 — the escaped quote. The repaired scan reads the block the way
+  # pandoc 3.11 was observed to (the value with its quotes and no backslash),
+  # so the planted body writes one attribute and the bodies check passes;
+  # with the escape character spliced out, the same body reads as writing
+  # `key=`, which no page documents.
+  python3 - <<'M067ESCPY' \
+    || fail "M067-AC1: parse_attrs does not read an escaped quote as part of the value (its own FAIL line is above)"
+import sys
+sys.path.insert(0, 'tests')
+import editormeta
+block = '.index entry="a \\"b=c\\" d" sort="k"'
+got = editormeta.parse_attrs(block)
+want = (['index'], [('entry', 'a "b=c" d'), ('sort', 'k')])
+if got != want:
+    print(f'FAIL: parse_attrs reads <<{block}>> as {got!r}, where pandoc '
+          f'3.11 reads it as {want!r}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M067-AC1: parse_attrs reads <<{block}>> as {want!r} — the '
+      f'escaped quotes part of the value, the value ending at the next '
+      f'unescaped quote')
+M067ESCPY
+  python3 tests/editormeta.py bodies "$M067W/escaped.json" $M50_PAGES \
+    || fail "M067-AC1: the bodies check refuses a snippet whose value holds an escaped quote, so the repaired scan is not reading it as one value (its own FAIL line is above)"
+  m067_mutant noescape "M067-AC1 self-test (the escape character spliced out)" editormeta.py \
+    's{^ESCAPE = .*\n}{ESCAPE = ""\n}m'
+  m50_planted 'a quoted value holding an escaped quote, read by a scan with no escape handling' \
+    "write key= on class 'index', which no swept document documents" \
+    python3 "$M067W/noescape/editormeta.py" bodies "$M067W/escaped.json" $M50_PAGES
+  pass "M067-AC1 self-test: a value holding an escaped quote is read as one value by the repaired scan, the bodies check passing on it, and as two attributes by the same scan with its escape character spliced out, which names the key= nobody wrote"
+
+  # M067-AC2 — the pairing. The probe reads which term sort= is paired with
+  # in the planted set; the repaired pairing reads the span that writes it,
+  # and the ordinal pairing spliced back in reads the bare mark after it.
+  m067_pairing() {   # <reader directory>
+    python3 - "$1" "$M067W/divmark.json" <<'M067PAIRPY'
+import sys
+
+reader, snippets = sys.argv[1:3]
+sys.path.insert(0, reader)
+import editorfixture  # noqa: E402
+
+sites = editorfixture.attribute_sites(editorfixture.load(snippets))
+term = sites['sort']['term']
+if term != 'The Hague':
+    print(f'FAIL: sort= is paired with the term {term!r}, where the span '
+          f'that writes it reads The Hague', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   sort= is paired with the term {term!r}, the span that writes it, '
+      f'past a .index construct that is not a span')
+M067PAIRPY
+  }
+  m067_pairing tests \
+    || fail "M067-AC2: attribute_sites pairs sort= with a term other than its own span's past a .index div (its own FAIL line is above)"
+  m067_mutant ordinal "M067-AC2 self-test (pairing by ordinal spliced back in)" editorfixture.py \
+    's{^        for item in snippet\[\x27constructs\x27\]:\n            if item\[\x27cls\x27\] != editormeta.MARK_CLASS:\n}{        marks = list(snippet[\x27marks\x27])\n        index = 0\n        for item in snippet[\x27constructs\x27]:\n            if item[\x27cls\x27] != editormeta.MARK_CLASS:\n}m' \
+    's{^            term = item\[\x27term\x27\]\n}{            term = marks[index] if index < len(marks) else None\n            index += 1\n}m'
+  m50_planted 'a .index div ahead of two marks, paired by ordinal' \
+    "paired with the term 'Den Haag'" \
+    m067_pairing "$M067W/ordinal"
+  pass "M067-AC2 self-test: with a .index div ahead of a sort= mark and a bare mark, the repaired pairing hands sort= its own span's term and the ordinal pairing spliced back in hands it the bare mark's"
+
+  # M067-AC4 — the row count read from the page. Each of the two halves
+  # changed alone is refused, as is a page with no sentence to read and one
+  # whose sentence states a word the reader cannot count.
+  m50_planted 'the form-count sentence edited alone, to eleven' \
+    "where that page's own sentence states exactly 11 supported forms" \
+    python3 tests/editormeta.py schema "$M50_SCHEMA" "$M067W/eleven.qmd" $M50_PAGES
+  m50_planted 'a form row added alone, the sentence still stating ten' \
+    'carries 11 row(s) with a construct in the first cell' \
+    python3 tests/editormeta.py schema "$M50_SCHEMA" "$M067W/rowadded.qmd" $M50_PAGES
+  m50_planted 'a syntax page with no sentence stating the form count' \
+    'carries 0 sentence(s) of the form' \
+    python3 tests/editormeta.py schema "$M50_SCHEMA" "$M067W/nosentence.qmd" $M50_PAGES
+  m50_planted 'a form-count sentence stating a word that is not a number' \
+    "'umpteen' is neither digits nor a number word" \
+    python3 tests/editormeta.py schema "$M50_SCHEMA" "$M067W/umpteen.qmd" $M50_PAGES
+  m50_planted 'a form-count sentence stating zero, which would hold the table to an empty domain' \
+    'states exactly 0 supported forms, and a table held to no rows is an empty domain' \
+    python3 tests/editormeta.py schema "$M50_SCHEMA" "$M067W/zero.qmd" $M50_PAGES
+  pass "M067-AC4 self-test: the form table is held to the count the syntax page's own sentence states — the sentence edited alone, a row added alone, the sentence removed and a sentence stating a word that is not a number and a sentence stating zero are each refused naming which"
 fi
 
 # ---------------------------------------------------------------------------
@@ -20002,7 +20184,7 @@ python3 tests/editormeta.py installed "$M50INST/project" _schema.yml _snippets.j
 # site (M24) rather than the source, so what is held is the page a reader gets.
 # ---------------------------------------------------------------------------
 python3 tests/editormeta.py docs "$SITE_OUT/index.html" README.md \
-    _schema.yml _snippets.json \
+    -- _schema.yml _snippets.json \
   || fail "M50-AC6: the site's entry page or README does not name an editor-metadata file the extension ships (its own FAIL line is above)"
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -20073,17 +20255,33 @@ M50DOCPY
 
   m50_planted 'a rendered entry page that no longer names the snippet file' \
     'does not name _snippets.json' \
-    python3 tests/editormeta.py docs "$M50I/page.html" README.md _schema.yml _snippets.json
+    python3 tests/editormeta.py docs "$M50I/page.html" README.md -- _schema.yml _snippets.json
 
   m50_planted 'a README that no longer names the schema file' \
     'does not name _schema.yml' \
-    python3 tests/editormeta.py docs "$SITE_OUT/index.html" "$M50I/README.md" _schema.yml _snippets.json
+    python3 tests/editormeta.py docs "$SITE_OUT/index.html" "$M50I/README.md" -- _schema.yml _snippets.json
 
   m50_planted 'no filename to look for, over which the documentation reader would pass on an empty set' \
     'where this check needs at least one of each' \
-    python3 tests/editormeta.py docs "$SITE_OUT/index.html" README.md
+    python3 tests/editormeta.py docs "$SITE_OUT/index.html" README.md --
 
-  pass "M50 T5/T6 self-test: each clause of the install probe and of the documentation reader is planted on its own and shown red, while both pass unplanted on this run's own archive and this repository's own pages — an archive rebuilt without one of the two files, a project with no extension installed, and no file named to look for; a rendered page and a README each with one filename removed, and no filename to look for"
+  # M067-AC3 — a page that is not there fails naming that page. Before M067
+  # the reader told pages from names by which arguments existed on disk, so
+  # this call reddened naming README.md as a page that does not name
+  # absent.html (KI122); the `--` is what tells them apart now.
+  m50_planted 'a documentation page that is not there, which an existence test made a filename to look for' \
+    "$M50I/absent.html: cannot be read" \
+    python3 tests/editormeta.py docs "$M50I/absent.html" README.md -- _schema.yml _snippets.json
+
+  m50_planted 'a call with no -- in it, over which the reader could not tell pages from filenames' \
+    'no `--` separates the documentation pages from the filenames' \
+    python3 tests/editormeta.py docs "$SITE_OUT/index.html" README.md _schema.yml _snippets.json
+
+  m50_planted 'a call with two -- in it, the second of which the reader once took for a filename and found in the page' \
+    'more than one `--` was given' \
+    python3 tests/editormeta.py docs "$SITE_OUT/index.html" README.md -- _schema.yml --
+
+  pass "M50 T5/T6 self-test: each clause of the install probe and of the documentation reader is planted on its own and shown red, while both pass unplanted on this run's own archive and this repository's own pages — an archive rebuilt without one of the two files, a project with no extension installed, and no file named to look for; a rendered page and a README each with one filename removed, no filename to look for, a page that is not there named as the page it is (M067), a call with no -- in it and one with two"
 fi
 
 # ---------------------------------------------------------------------------

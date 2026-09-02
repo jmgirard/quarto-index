@@ -26,10 +26,12 @@ DOCUMENT, never a widened scan of what the filter's source accepts.
 
       The values enumerated for `mention` and for `range` are read from the
       form table in <syntax-table.qmd> and not from every occurrence in the
-      sweep: a page demonstrating a no-op writes an empty value, which is a
-      value no `enum:` should offer. The table is that file's rows carrying a
-      construct in their first cell, and there are exactly ten of them — the
-      count that file's own prose states.
+      sweep: the table is the one place the docs enumerate those values as
+      a set. The table is that file's rows carrying a
+      construct in their first cell, and there are as many of them as that
+      file's own sentence "There are exactly <count> supported forms"
+      states — read off the page, so a row added or the sentence edited
+      alone is each refused.
 
   bodies <snippets.json> <qmd> [<qmd> ...]
       Every attribute name the sweep enumerates for a class appears in at
@@ -42,6 +44,14 @@ DOCUMENT, never a widened scan of what the filter's source accepts.
       text — `${1:cats}` as `cats`, `$0` as nothing — which is the text an
       editor leaves behind once an author tabs through the snippet, and the
       same substitution `tests/editorfixture.py` renders.
+
+  installed <project> <name> [<name> ...]
+      The extension a project installed carries each named file.
+
+  docs <page> [<page> ...] -- <name> [<name> ...]
+      Each named file is named on each documentation page. The `--` is what
+      tells the pages from the names; a page that cannot be read fails
+      naming that page.
 
 Every mode prints what it swept, and refuses an empty domain: a sweep over no
 file, or over files carrying no construct, would pass by comparing two empty
@@ -65,11 +75,22 @@ MARK_CLASS = 'index'
 MARKER_CLASS = 'qi-index-here'
 CLASSES = (MARK_CLASS, MARKER_CLASS)
 
-# The number of forms `site/syntax.qmd` tabulates, which that page's own prose
-# states in words ("There are exactly ten supported forms"). A table that grew
-# a form is a syntax the schema has to describe, so the number is asserted
-# rather than counted and reported.
-SYNTAX_FORMS = 10
+# The sentence in `site/syntax.qmd` that states how many forms its table
+# tabulates, and the words it may state that count in. A table that grew a
+# form is a syntax the schema has to describe, so the table is held to the
+# page's own sentence rather than to a count pinned here: the sentence edited
+# alone and a row added alone are each refused (M067).
+FORM_COUNT = re.compile(r'There are exactly (\S+) supported forms')
+NUMBER_WORDS = {word: index for index, word in enumerate(
+    ('one two three four five six seven eight nine ten eleven twelve '
+     'thirteen fourteen fifteen sixteen seventeen eighteen nineteen '
+     'twenty').split(), 1)}
+
+# The character that escapes a quote, or itself, inside a quoted attribute
+# value: pandoc 3.11 reads `entry="a \"b\" c"` as the value `a "b" c` and
+# `entry="p \\"` as `p \`. A scan without it ends the value at the escaped
+# quote and resumes inside it (M067).
+ESCAPE = '\\'
 
 # The three snippet shapes AC3 names, each as a predicate over one construct
 # found in a body: the class it is on, and whether it carries any attribute.
@@ -92,7 +113,12 @@ def parse_attrs(block):
     Written as a scan rather than as a pattern because a value is quoted and
     may hold the characters a pattern would key on: `entry="a=b"` is one
     attribute named `entry`, and a regex reading `name=` anywhere would report
-    a second one named `a`.
+    a second one named `a`. Inside a quoted value a backslash-escaped quote is
+    part of the value, without its backslash, and the value ends at the next
+    unescaped quote — the reading pandoc gives the filter of a well-formed
+    block. A malformed one (an unterminated value, a backslash before the
+    closing quote) is read by this scan where pandoc makes no span at all,
+    and nothing here claims otherwise.
     """
     classes, attrs = [], []
     i, n = 0, len(block)
@@ -117,10 +143,14 @@ def parse_attrs(block):
             if j < n and block[j] in '"\'':
                 quote = block[j]
                 j += 1
-                start = j
+                chars = []
                 while j < n and block[j] != quote:
+                    if (block[j] == ESCAPE and j + 1 < n
+                            and block[j + 1] in (quote, ESCAPE)):
+                        j += 1
+                    chars.append(block[j])
                     j += 1
-                value = block[start:j]
+                value = ''.join(chars)
                 j += 1
             else:
                 start = j
@@ -142,15 +172,18 @@ def constructs(text):
     """Every construct in `text` on one of this extension's classes.
 
     Each is a dict: `cls` (which class), `attrs` (its `name=value` pairs in
-    written order). A block on any other class — the docs site writes plenty,
-    every fenced code block among them — is not one of ours and is skipped.
+    written order), `at` (the offset of its opening brace in `text`, which is
+    what lets a reader pair the block with the span it closes). A block on
+    any other class — the docs site writes plenty, every fenced code block
+    among them — is not one of ours and is skipped.
     """
     found = []
     for match in ATTR_BLOCK.finditer(text):
         classes, attrs = parse_attrs(match.group(1))
         for cls in CLASSES:
             if cls in classes:
-                found.append({'cls': cls, 'attrs': attrs})
+                found.append({'cls': cls, 'attrs': attrs,
+                              'at': match.start()})
     return found
 
 
@@ -210,28 +243,65 @@ def check_snippets(path):
     return 0
 
 
-def table_values(path, attribute):
-    """The values the form table in `path` writes for one attribute.
+def stated_forms(path, text):
+    """The count of supported forms the page's own sentence states."""
+    stated = FORM_COUNT.findall(text)
+    if len(stated) != 1:
+        raise SystemExit(fail(
+            f'{path}: carries {len(stated)} sentence(s) of the form "There '
+            f'are exactly <count> supported forms", where the row count its '
+            f'table is held to is read from exactly one'))
+    word = stated[0].rstrip('.')
+    if word.isascii() and word.isdigit():
+        count = int(word)
+    elif word in NUMBER_WORDS:
+        count = NUMBER_WORDS[word]
+    else:
+        raise SystemExit(fail(
+            f'{path}: states "exactly {word} supported forms", and {word!r} '
+            f'is neither digits nor a number word from one to twenty, so the '
+            f'count its table is held to cannot be read'))
+    if count < 1:
+        raise SystemExit(fail(
+            f'{path}: states exactly {count} supported forms, and a table '
+            f'held to no rows is an empty domain, over which the values '
+            f'below would be compared as two empty sets'))
+    return count
 
-    The table is read as its rows carrying a construct in the first cell,
-    which is what makes this narrower than the sweep: a page elsewhere on the
-    site demonstrates what an empty value does, and an `enum:` offering the
-    empty string would be that demonstration read as syntax.
+
+def form_table(path):
+    """The form table's rows carrying a construct in the first cell, and the
+    count the page's sentence states, the two held equal.
+
+    The table is read rather than every construct the sweep finds because the
+    table is the one place the docs enumerate an attribute's values as a set;
+    the other pages each demonstrate one value in a construct, and the prose
+    demonstrating an empty value writes it in backticks, which is no construct
+    at all — so an empty string could reach neither reading, and what the
+    table alone gives is the enumeration (M067).
     """
+    text = read(path)
     rows = []
-    for line in read(path).splitlines():
+    for line in text.splitlines():
         if not line.startswith('|'):
             continue
         first = line.split('|')[1] if line.count('|') > 1 else ''
         if constructs(first):
             rows.append(first)
-    if len(rows) != SYNTAX_FORMS:
+    stated = stated_forms(path, text)
+    if len(rows) != stated:
         raise SystemExit(fail(
             f'{path}: its form table carries {len(rows)} row(s) with a '
-            f'construct in the first cell, where that page states exactly '
-            f'{SYNTAX_FORMS} supported forms; the values below would be read '
-            f'off a table that is not the one this check is about'))
-    return sorted({value for row in rows for item in constructs(row)
+            f'construct in the first cell, where that page\'s own sentence '
+            f'states exactly {stated} supported forms; the values below '
+            f'would be read off a table that is not the one this check is '
+            f'about'))
+    return rows
+
+
+def table_values(path, attribute):
+    """The values the form table in `path` writes for one attribute."""
+    return sorted({value for row in form_table(path) for item in constructs(row)
                    for name, value in item['attrs'] if name == attribute})
 
 
@@ -305,8 +375,9 @@ def check_schema(schema_path, syntax_path, *qmds):
           f'equal those the {len(qmds)} swept document(s) write '
           f'({", ".join(documented[MARK_CLASS])} on {MARK_CLASS}; '
           f'{", ".join(documented[MARKER_CLASS])} on {MARKER_CLASS}), and '
-          f'its mention= and range= values equal the {SYNTAX_FORMS} form '
-          f'rows\' ({", ".join(table_values(syntax_path, "mention"))}; '
+          f'its mention= and range= values equal the '
+          f'{len(form_table(syntax_path))} form rows\' '
+          f'({", ".join(table_values(syntax_path, "mention"))}; '
           f'{", ".join(table_values(syntax_path, "range"))})')
     return 0
 
@@ -416,15 +487,23 @@ def check_installed(project, *names):
     return 0
 
 
-def check_docs(*paths_and_names):
+def check_docs(*args):
     """AC6: each named file is named on each documentation page.
 
-    The pages are given as paths and the names as bare filenames, told apart
-    by whether the argument is a file that exists: a name that happened to be
-    a path would otherwise be swept as a page and never looked for.
+    The pages come before a `--` and the names after it. Told apart by
+    position rather than by which arguments exist on disk, a page that is
+    missing fails naming that page, where an existence test made it one more
+    name to look for in the pages that survived (M067).
     """
-    paths = [arg for arg in paths_and_names if os.path.isfile(arg)]
-    names = [arg for arg in paths_and_names if not os.path.isfile(arg)]
+    if '--' not in args:
+        return fail('no `--` separates the documentation pages from the '
+                    'filenames to look for, so this check cannot tell which '
+                    'arguments are which')
+    at = args.index('--')
+    paths, names = list(args[:at]), list(args[at + 1:])
+    if '--' in names:
+        return fail('more than one `--` was given, so which arguments are '
+                    'pages and which are filenames is not settled')
     if not paths or not names:
         return fail(f'{len(paths)} page(s) and {len(names)} name(s) were '
                     f'given, where this check needs at least one of each')

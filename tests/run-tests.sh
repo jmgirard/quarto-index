@@ -8429,6 +8429,7 @@ rm -rf "$M068BW/warm/_book" "$M068BW/warm/.quarto"
 ( cd "$M068BW/warm" && quarto render --to html ) \
   > "$WORK/m068-nested-warm.log" 2>&1 \
   || { tail -30 "$WORK/m068-nested-warm.log" >&2; fail "M068 (nested): the book fixture failed to render into an empty tree; IP2 forbids any of this taking a render down"; }
+capture --project "$M068BW/warm" html "m068-nested-warm"
 M068_NESTED_HELD=$(find "$M068BW/warm/.quarto/$STORE_DIR" -name "*$STORE_SUFFIX" | wc -l | tr -d ' ')
 [ "$M068_NESTED_HELD" = "4" ] \
   || fail "M068 (nested): the render left $M068_NESTED_HELD record(s) and this book has four chapters, so the legs below would be about a store that is short records rather than one whose records are out of reach"

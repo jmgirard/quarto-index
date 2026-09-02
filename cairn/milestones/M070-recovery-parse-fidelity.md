@@ -101,7 +101,7 @@ reach the book index and what the render tells them when some cannot.
 - [x] T2. The refusal wording beside `book.lua:887-891` and M069's, drawn once
       per reading chapter for the refused chapter; `tests/scans/warn-distinct.py`'s
       EXPECTED count moves with it.
-- [ ] T3. `recovered_marks` and `recovered_markers` over the chapter's metadata
+- [x] T3. `recovered_marks` and `recovered_markers` over the chapter's metadata
       as well as its blocks, with `drop_conditional` applied to neither — front
       matter carries no conditional element — and document order settled so a
       front-matter mark's declared sort key cannot beat a body mark's by an
@@ -129,6 +129,8 @@ reach the book index and what the render tells them when some cannot.
 - 2026-09-02: criteria audit ran in FULL mode ([O], fresh context) and returned findings on all three drafted criteria — AC1 unbounded over "not markdown" with no enumerable set and its antecedent covering only one of two entry paths, AC2 unsatisfiable as written because a recovered locator carries no fragment by decision and its record-route baseline was unpinned, AC3 wholly instrument-bound and its single plant standing in for a family. All fixed before this file was written.
 - 2026-09-02: T1 — `recover_record` refuses a chapter whose extension is not `.qmd`, `.md`, `.markdown` or `.Rmd` (lower-cased comparison over `pandoc.path.split_extension`), before anything is opened; a chapter whose name carries no extension is refused with the rest. The refusal returns a second value rather than the file, the plan's own shape: the caller already holds the file and names it itself. `tests/run-tests.sh` passed, 631 checks.
 - 2026-09-02: T2 — one refusal wording for every state a refused chapter's record can be in, drawn in `store_read` ahead of the four wordings already there; a refused chapter is not handed on as a stale record, so it says one thing rather than two. The implementation gate chose the longer wording naming the accepted set and chose one sentence over two. `warn-distinct.py`'s EXPECTED moved 82 to 83, and the suite gained the `WARN_STORE_KIND_REFUSED` key. `tests/run-tests.sh` passed, 631 checks.
+- 2026-09-02: T3 — `recovered_marks` takes the chapter's metadata and its blocks and walks them in that order, which is the order the ordinary render sees them in; `Meta` carries no `walk`, so the metadata walk is `pandoc.Pandoc({}, meta):walk`. Document order is stated by the two walks rather than read off Pandoc's traversal.
+- 2026-09-02: T3 — `recovered_markers` is left over the blocks alone rather than widened to the metadata as the task's wording read: `resolve_markers` reads `doc.blocks` alone (KI11), so a marker in front matter places nothing in the ordinary render, and Scope Out already holds that chapter out of this milestone. Reading one here would be the recovery route departing from the render, which is the thing the goal forbids. `tests/run-tests.sh` passed, 631 checks.
 - 2026-09-02: probe run 2026-09-02 under pandoc 3.11 — a filter table carrying a `Span` function visits a span in `abstract:` as well as one in the body, confirming the asymmetry AC3 rests on before this milestone was written rather than leaving it for implementation.
 
 ## Decisions

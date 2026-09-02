@@ -690,68 +690,85 @@ end
 -- `build_record`'s own shape — a resolved key would carry this reader's
 -- fallbacks and beat another chapter's real one, which is the conflation
 -- `build_record` states at length.
-local function recovered_marks(blocks)
+--
+-- Over the chapter's METADATA as well as its blocks, because that is what the
+-- chapter's own render reads. The render's collect passes are filter tables
+-- carrying a `Span` function, and Pandoc hands such a table a document's
+-- metadata as readily as its blocks, so a mark an author writes in YAML front
+-- matter is indexed by that chapter's own render exactly as one in the body
+-- is. A recovery walk over the blocks alone left such a mark out of every
+-- index of the book, silently, whenever the chapter was recovered rather than
+-- read from its record.
+local function recovered_marks(meta, blocks)
   local marks, sorts = {}, {}
-  blocks:walk({
-    Span = function(span)
-      if not span.classes:includes(qi_core.INDEX_CLASS) then
-        return nil
-      end
-      local entry = span.attributes["entry"]
-      local visible = qi_marks.span_text(span)
-      local context = qi_marks.describe(entry, visible)
-      local xrefs, declared = {}, 0
-      for _, kind in ipairs(qi_core.XREF_KINDS) do
-        local value = span.attributes[kind.attr]
-        if value ~= nil then
-          declared = declared + 1
-          local levels = qi_marks.target_levels(value, kind.attr, context, false)
-          if levels then
-            xrefs[#xrefs + 1] = { attr = kind.attr, levels = levels }
-          end
-        end
-      end
-      local sort_value = span.attributes["sort"]
-      local levels, _, kept, depth =
-        qi_marks.derive_levels(entry, visible, declared, #span.content, context,
-                               sort_value, false)
-      if levels == nil then
-        return nil
-      end
-      -- The format-neutral self-target drop the emitting pass makes: a target
-      -- naming the entry it is written on says nothing, and the mark then
-      -- indexes as usual. Made here too, so what survives is what decides
-      -- whether this mark contributes a locator at all.
-      local own_key = qi_levels.levels_key(levels)
-      local surviving = {}
-      for _, xref in ipairs(xrefs) do
-        if qi_levels.levels_key(xref.levels) ~= own_key then
-          surviving[#surviving + 1] = xref
-        end
-      end
-      local index_name =
-        qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR], context,
-                              false)
-      register_recovered_sort(sorts, index_name, levels, sort_value, context,
-                              kept, depth)
-      marks[#marks + 1] = {
-        levels = levels,
-        xrefs = surviving,
-        context = context,
-        -- Resolved against what the READING chapter declares, which for a book
-        -- is the same `indexes:` metadata the recovered chapter read: the name
-        -- is settled here rather than left for `fold_undeclared`, exactly as a
-        -- mark's own chapter settles it.
-        index = index_name,
-        -- This mark has no anchor and never will, so `mark_target` cannot
-        -- build a fragment for it. The flag is what tells a locator-
-        -- contributing recovered mark from a cross-reference mark, which has
-        -- no anchor either and must contribute no locator.
-        page_locator = #surviving == 0 or nil,
-      }
+  local function collect(span)
+    if not span.classes:includes(qi_core.INDEX_CLASS) then
       return nil
-    end,
-  })
+    end
+    local entry = span.attributes["entry"]
+    local visible = qi_marks.span_text(span)
+    local context = qi_marks.describe(entry, visible)
+    local xrefs, declared = {}, 0
+    for _, kind in ipairs(qi_core.XREF_KINDS) do
+      local value = span.attributes[kind.attr]
+      if value ~= nil then
+        declared = declared + 1
+        local levels = qi_marks.target_levels(value, kind.attr, context, false)
+        if levels then
+          xrefs[#xrefs + 1] = { attr = kind.attr, levels = levels }
+        end
+      end
+    end
+    local sort_value = span.attributes["sort"]
+    local levels, _, kept, depth =
+      qi_marks.derive_levels(entry, visible, declared, #span.content, context,
+                             sort_value, false)
+    if levels == nil then
+      return nil
+    end
+    -- The format-neutral self-target drop the emitting pass makes: a target
+    -- naming the entry it is written on says nothing, and the mark then
+    -- indexes as usual. Made here too, so what survives is what decides
+    -- whether this mark contributes a locator at all.
+    local own_key = qi_levels.levels_key(levels)
+    local surviving = {}
+    for _, xref in ipairs(xrefs) do
+      if qi_levels.levels_key(xref.levels) ~= own_key then
+        surviving[#surviving + 1] = xref
+      end
+    end
+    local index_name =
+      qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR], context,
+                            false)
+    register_recovered_sort(sorts, index_name, levels, sort_value, context,
+                            kept, depth)
+    marks[#marks + 1] = {
+      levels = levels,
+      xrefs = surviving,
+      context = context,
+      -- Resolved against what the READING chapter declares, which for a book
+      -- is the same `indexes:` metadata the recovered chapter read: the name
+      -- is settled here rather than left for `fold_undeclared`, exactly as a
+      -- mark's own chapter settles it.
+      index = index_name,
+      -- This mark has no anchor and never will, so `mark_target` cannot
+      -- build a fragment for it. The flag is what tells a locator-
+      -- contributing recovered mark from a cross-reference mark, which has
+      -- no anchor either and must contribute no locator.
+      page_locator = #surviving == 0 or nil,
+    }
+    return nil
+  end
+
+  -- Metadata first and blocks second, which is the order the ordinary
+  -- render sees them in. Two walks rather than one over a rebuilt document:
+  -- the order is then this reader's own statement rather than a traversal
+  -- order it would be reading off Pandoc, and `Meta` carries no `walk` of
+  -- its own to be walked directly. `drop_conditional` reaches the blocks
+  -- alone: Quarto shows and hides content by a class on a block or a span,
+  -- and front matter carries no block of that kind.
+  pandoc.Pandoc({}, meta):walk({ Span = collect })
+  blocks:walk({ Span = collect })
   return marks, sorts
 end
 
@@ -826,7 +843,7 @@ local function recover_record(ctx, file)
     end
     local parsed = pandoc.read(text, "markdown")
     local blocks = drop_conditional(parsed.blocks)
-    local marks, sorts = recovered_marks(blocks)
+    local marks, sorts = recovered_marks(parsed.meta, blocks)
     return { version = STORE_VERSION, file = file,
              href = chapter_href(ctx, file, parsed.meta),
              marker = recovered_markers(blocks),

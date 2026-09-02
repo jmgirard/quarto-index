@@ -335,7 +335,25 @@ Ranked most severe first. Dispositions are recorded at the merge gate.
 
 ### Triage
 
-Presented at the merge gate 2026-09-02.
+Presented at the merge gate 2026-09-02. The maintainer approved the merge with
+the recommended disposition.
+
+- **G1, G2 — actioned, follow-up.** Today's behavior and the prose that
+  overstates it, so a `DESIGN.md` Known-issues entry rather than a candidate
+  row (D-013): the probe reads an absent record as written when the store
+  directory does not exist and `.quarto` itself cannot be listed, and the four
+  claim sites are written as if it did not. Accepted for now because no render
+  reaches the state — quarto aborts on both shapes before the extension loads.
+- **G4, G5, G7 — actioned, follow-up.** Check-widening on M068's own checks:
+  the nested leg's failure message, a total warning count over the two nested
+  plants, and a fence for the laziness claim. To the standing suite-widening
+  candidate row.
+- **G6 — actioned, follow-up.** A reads-repair: two helpers crash rather than
+  reporting a named failure. To the standing suite-readers candidate row.
+- **G3 — rejected, subsumed.** It is G1's cause, not a separate defect, and
+  the leg it asks for cannot be a render check at all.
+- **G8 — rejected.** A pure style nitpick, which the out-of-scope taxonomy
+  names.
 
 Defect returns for M068: 1 (the first pass). This pass adds none: G1 is the
 only finding of return-floor weight and it fails no acceptance criterion —

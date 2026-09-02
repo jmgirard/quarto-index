@@ -23615,7 +23615,7 @@ check_book_sections "$CAPTURE_ROOT/m070-cold/_book" \
   "$(printf 'index.html\tqi-index-main\tIndex of Subjects\nindex.html\tqi-index-aside\tIndex of Asides')"
 check_index_sections "$CAPTURE_ROOT/m070-cold/_book/index.html" \
   "$M070_SECTIONS_RECOVERED" \
-  "M070-AC1/M070-AC2/M070-AC3 (five chapters recovered from their sources, the notebook chapter refused)" hrefs
+  "M070-AC1/M070-AC2/M070-AC3 (six chapters recovered from their sources, the notebook chapter refused)" hrefs
 check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_KIND_REFUSED" 1 \
   "M070-AC1 (five.ipynb is refused once, and it is the only chapter of the book that is)"
 m070_refusal_names five.ipynb "$WORK/m070-cold.log" "M070-AC1 (a record no render has written)"
@@ -23689,7 +23689,7 @@ check_warning_count "$WORK/m070-record.log" "$WARN_STORE_KIND_REFUSED" 1 \
   "M070-AC3 (five.ipynb is refused here as well)"
 check_extension_warning_count "$WORK/m070-record.log" 7 \
   "M070-AC3 (the second render emitted a warning this suite cannot name; its seven are five never-written recovery reports, the one refusal, and the marker-position report)"
-pass "M070-AC1/M070-AC2/M070-AC3: over a book whose chapters are written in five source kinds, the four extensions this route accepts are each recovered whole and the notebook chapter is refused and reported in the same words on both entry paths — a record no render has written, and a record listed and unopenable — with none of its terms in either index section; and a mark written in a chapter's YAML front matter reaches the same entry in the same index by the recovery route as by the record route, the recovered locator carrying that chapter's page and no fragment"
+pass "M070-AC1/M070-AC2/M070-AC3: over a book whose chapters are written in five source kinds, the four extensions this route accepts are each recovered whole and the notebook chapter is refused and reported on both entry paths — a record no render has written, and a record listed and unopenable — in the same words, each naming that chapter's own file, with none of its terms in either index section; and a mark written in a chapter's YAML front matter reaches the same entry in the same index by the recovery route as by the record route, the recovered locator carrying that chapter's page and no fragment, while a mark written there inside one of Quarto's conditional classes reaches no index at all and a sort key declared there beats one declared in the body"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -23762,7 +23762,7 @@ MANIFEST
   pass "M070 T6 self-test: with the extension test removed and nothing else changed, the notebook chapter is parsed as markdown and its term is filed into the book's first declared index with nothing said — which the AC1 manifest and refusal count for the cold leg would fail on"
 
   # 2 — the test turned round, so exactly the chapters this route reads are
-  # refused and the one it does not read is parsed. Five refusals where there
+  # refused and the one it does not read is parsed. Six refusals where there
   # was one, and the only terms left in the two sections are the rendering
   # chapter's own two plus the notebook's misfiled one.
   read -r -d '' M070_SECTIONS_INVERTED <<'MANIFEST' || true
@@ -23779,12 +23779,12 @@ MANIFEST
     's{  if not readable_source\(file\) then\n}{  if readable_source(file) then\n}'
   check_index_sections "$CAPTURE_ROOT/m070-inverted/_book/index.html" \
     "$M070_SECTIONS_INVERTED" \
-    "M070 T6 self-test (the test inverted: the five chapters this route reads lose every term, and the one it does not read keeps its)" hrefs
+    "M070 T6 self-test (the test inverted: the six chapters this route reads lose every term, and the one it does not read keeps its)" hrefs
   check_warning_count "$WORK/m070-inverted.log" "$WARN_STORE_KIND_REFUSED" 6 \
     "M070 T6 self-test (the test inverted: the six chapters whose extensions this route accepts are the ones refused)"
   check_warning_count "$WORK/m070-inverted.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
     "M070 T6 self-test (the test inverted: the notebook chapter is the only one recovered)"
-  pass "M070 T6 self-test: with the extension test turned round and nothing else changed, the five chapters this route reads are refused and the notebook is parsed instead — which the AC2 manifest and the refusal count for the cold leg would fail on"
+  pass "M070 T6 self-test: with the extension test turned round and nothing else changed, the six chapters this route reads are refused and the notebook is parsed instead — which the AC2 manifest and the refusal count for the cold leg would fail on"
 
   # 3 — one member taken out of the accepted set. `.markdown` is the spelling
   # nothing else in the fixture shares, so the chapter written that way is the

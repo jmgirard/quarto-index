@@ -63,27 +63,27 @@ prints and what the render tells them, not an internal artifact.
 
 ## Acceptance criteria
 
-- [ ] AC1. In the new book fixture, whose store directory lists and holds an
+- [x] AC1. In the new book fixture, whose store directory lists and holds an
       unopenable record file for one chapter, the render of the chapter that
       builds the book index produces an index section carrying that chapter's
       marked terms, each held row by row in href form against a hand-derived
       manifest for that render.
-- [ ] AC2. That same render draws the existing could-not-be-read recovery
+- [x] AC2. That same render draws the existing could-not-be-read recovery
       report naming that chapter, asserted message-whole, once per chapter of
       the fixture that reads the store, and the render's extension warnings are
       those reports and nothing else.
-- [ ] AC3. The suite's existing cold-first-render control — the
+- [x] AC3. The suite's existing cold-first-render control — the
       `place-first` render of `examples/book-placement/` into a tree with no
       store directory — draws no recovery report and matches the
       `PLACE_TERMS_COLD` manifest unchanged.
-- [ ] AC4. In the AC1 fixture, every locator belonging to a chapter whose
+- [x] AC4. In the AC1 fixture, every locator belonging to a chapter whose
       record was opened and used carries a page fragment, and every locator
       belonging to the recovered chapter carries none — both held in the same
       manifest AC1 asserts.
-- [ ] AC5. `site/books.qmd` and `CHANGELOG.md` each state that a record present
+- [x] AC5. `site/books.qmd` and `CHANGELOG.md` each state that a record present
       in a listing store directory and unopenable has its chapter recovered
       from source, and that a file merely named like one counts as written.
-- [ ] AC6. `tests/run-tests.sh` exits 0 both plain and with `--self-test`.
+- [x] AC6. `tests/run-tests.sh` exits 0 both plain and with `--self-test`.
 
 ## Coverage
 
@@ -146,3 +146,147 @@ prints and what the render tells them, not an internal artifact.
 ## Decisions
 
 ## Review
+
+Fresh evidence taken 2026-09-01 on branch `m068-listed-unopenable-record`
+against `origin/main`, which has not moved since the branch was cut. PR #68.
+
+### Acceptance criteria
+
+- **AC1 — verified.** `tests/run-tests.sh` (exit 0, 593 checks). Over the new
+  `m068-dangling` fixture, whose store directory lists 5 entries one of which is
+  a dangling symlink at four.qmd's record path, each of two consecutive
+  whole-book renders carries 3 generated index sections over 5 pages and 15
+  printed terms, each in the section the manifest names; five.qmd's gamma
+  section matches all 21 manifest rows in href form, in order. The fixture is
+  re-asserted dangling after each render, so a run whose symlink healed fails.
+
+- **AC2 — verified.** In the same two renders, the could-not-be-read recovery
+  report naming four.qmd is drawn message-whole 4 times — once for each of
+  index.qmd, two.qmd, three.qmd and five.qmd, four.qmd never reading its own
+  record — while the three sibling recovery wordings (lost, no-marks, stale)
+  are each drawn 0 times and the unwritable-record report once. The render's
+  `(W) ` lines total 7, which the kinds counted by name account for.
+
+- **AC3 — verified.** The `place-first` leg renders `examples/book-placement/`
+  after `rm -rf _book .quarto`, prints 14 terms across 5 pages against
+  `PLACE_TERMS_COLD` — a manifest this diff does not touch, no added or removed
+  line naming it — and `check_extension_warning_count` holds that render's
+  extension warnings to the fixture's own 2 marker-position reports, so no
+  recovery report is drawn. The added name-absent control passes beside it: a
+  store directory listing 4 records and holding none for four.qmd recovers
+  nothing and says nothing, and five.qmd rendered alone prints the gamma section
+  short all 8 of four.qmd's terms in silence.
+
+- **AC4 — verified.** Inside the same 21-row manifest AC1 asserts, held in href
+  form: four.qmd's 8 locators point at that chapter's page with no fragment,
+  and every locator belonging to a chapter whose record was opened and used
+  carries its fragment. Both renders match, in order.
+
+- **AC5 — verified.** Read on the branch: `site/books.qmd` states that a record
+  that is there and cannot be opened is told from an absent one by the listing
+  of the directory it belongs in, so it is read back from its source, and that
+  a file merely named like a record and unopenable counts as one that was
+  written. `CHANGELOG.md` states both in its own entry. Two pinned claim rows
+  became four and M063-AC6's self-test guard moved from 21 to 23 accordingly.
+
+- **AC6 — verified.** Run sequentially per the profile: `tests/run-tests.sh`
+  exits 0 with 593 checks, and `tests/run-tests.sh --self-test` exits 0 with
+  1119. Among the latter, the five M068 plants each go red against the check
+  fencing them before their green is trusted — the name test removed, the name
+  compared as a joined path, and the parent's listing consulted each drop
+  four.qmd's terms to 7 printed in silence; the test inverted recovers a record
+  no render wrote and reports it 3 times; and dropping the remembered listing
+  takes a two-dangling-record book from 5 store listings to 8.
+
+### Consistency gate
+
+- `cairn_validate.py` exits 0: 16 checks PASS, 7 advisories OK. No `release
+  window` advisory.
+- No `IP`/`GP` principle text changed in `cairn/DESIGN.md`, so `cairn_impact`
+  does not apply.
+- Toolchain half: the `generic` profile's `consistency-gate` slot names no
+  checks. Clean no-op.
+
+### Independent review
+
+Full three-lens fan-out (user-facing tier; the diff touches
+`_extensions/index/modules/book.lua` and `tests/run-tests.sh`). Fresh contexts,
+distinct evidence bases, ref-based git only.
+
+- **[S] blame-history:** no findings. `store_probe` preserves D-043's test
+  inside its `lost` branch; the memoization matches D-043's stated cost bound;
+  KI221 correctly retired and replaced. Flagged the two-level unlistable chain
+  as a reader-visible edge, not a defect — which the [O] lens then showed to
+  be one.
+- **[S] prior-review-record:** no findings. The `gh` inline-comment probe
+  returned empty, so no PR-thread walk was warranted; archived `## Review`
+  sections show the diff closes KI221 rather than regressing any prior finding,
+  and does not repeat M063's review-flagged absolute claim.
+- **[O] diff-bug:** seven findings, ranked below.
+
+### Findings
+
+Ranked most severe first. Dispositions are recorded at the merge gate.
+
+- **F1. `book.lua:216-220` — `lost` does not propagate down a directory chain,
+  so D-043's directory-level case is lost for a chapter whose record sits in a
+  store subdirectory.** Where a directory cannot be listed, `lost` is computed
+  from its own parent's listing alone; if that parent is itself unlistable,
+  `up.names` is nil and the child gets `lost = false, names = nil`, so the
+  record takes the ABSENT branch. Verified independently of the reviewer's
+  account: `store_probe` extracted verbatim into a scratch file and run under
+  `pandoc lua` against a store path replaced by a regular file returns `true`
+  for a flat record and `false` for one under a subdirectory. `store_write`
+  (`book.lua:307`) creates the nested directory, and `examples/book/` already
+  has a chapter at `sub/two.qmd`, so the shape is live in this repo. On
+  `origin/main`, `store_directory_unusable(ctx)` was answered once and applied
+  to every record however nested, so this is a regression; it also contradicts
+  D-044's own decision text, which states the directory-level case "puts every
+  record under it out of reach". Failure: a book with `sub/ch.qmd` whose store
+  directory is replaced by a file or has its permissions cleared loses that
+  chapter's terms from every other chapter's index, silently and with no report.
+
+- **F2. `tests/run-tests.sh` — no fixture places a chapter in a subdirectory,
+  so the own-directory-vs-top-level axis the question gate chose is fenced by
+  nothing, and F1 escapes.** Every book example used by the M068 checks is
+  flat, where the two paths coincide. The `m068-parentlisting` plant
+  substitutes `directory(directory(path))`, which on a flat book is `.quarto` —
+  the store's parent, not the store's top level — so it kills a strictly-wrong
+  lookup and says nothing about the axis it is credited with. An implementation
+  consulting `ctx.dir` alone, the alternative the gate rejected, passes the new
+  suite unchanged.
+
+- **F3. `site/books.qmd`, `cairn/DESIGN.md`, `cairn/DECISIONS.md` D-044,
+  `book.lua:180-182` — the claim that every record under an unlistable store
+  directory is out of reach is false as implemented.** Follows from F1: it
+  holds only for records directly in that directory. The pinned claim row
+  `an unlistable store directory` pins a sentence the code does not honour, and
+  the claims check cannot notice, since it only tests that the sentence is
+  present.
+
+- **F4. `tests/run-tests.sh:8254-8256` — AC2's "and nothing else" rests on a
+  raw `grep -c '(W) '` total of 7, of which the named kinds account for 5.** The
+  two marker-position reports in that total are covered by no named check, so a
+  render that drops one while any other filter emits one extra `(W)` line still
+  totals 7 and passes. `check_extension_warning_count`, which is pattern-set
+  based and is used in the AC3 leg, is not used here.
+
+- **F5. `cairn/DESIGN.md` — KI221's second remainder was struck without a
+  successor.** KI224 covers a lookalike record *file*; the hand-made broken
+  symlink at the *store directory* path, which KI221 also recorded, is
+  unchanged by this milestone and now documented nowhere. It still fires: the
+  path fails to list, its name is in `.quarto`'s listing, so `lost` is true and
+  a tree no render ever wrote is recovered and reported.
+
+- **F6. `CHANGELOG.md`, `cairn/DESIGN.md` — the permission-bit cases the docs
+  lead with are asserted by no check.** The suite deliberately tests only a
+  dangling symlink, per the plan gate. Verified by hand rather than left to
+  inference: with a record at `chmod 000`, `io.open` returns nil and the probe
+  returns true; with the store directory at `a-x`, likewise. The shipped claim
+  is true; it is the suite that does not hold it.
+
+- **F7. `tests/run-tests.sh:8331-8333` — AC3's second leg re-checks only that
+  four.qmd's record is gone before rendering five.qmd alone.** The first leg's
+  non-emptiness guard runs before the first render, not before this one, so a
+  future change emptying the store between legs would leave this control
+  running over an empty domain and still passing.

@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M068: A record that is listed and cannot be opened is not read as one that was never written
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -139,6 +139,7 @@ prints and what the render tells them, not an internal artifact.
 - 2026-09-01: T4 — the cold `place-first` control stands unchanged (AC3), and the name-absent control runs in two legs, because a whole-book render lets four.qmd rewrite its own record before the chapter that builds the section reads it; the second leg renders five.qmd alone.
 - 2026-09-01: T5 — five plants, each shown red against the check that fences it: the name test removed, the name compared as a joined path, the parent's listing consulted (all three leave four.qmd's terms out in silence), the test inverted (recovers a record no render wrote, refused by the name-absent control), and the memoized listing dropped (5 listings become 8 over a book with two records dangling). M065-AC5's own probe-disabling plant repointed at `store_probe`.
 - 2026-09-01: two existing readers repointed at the widened behavior rather than left stating the superseded one: `site/books.qmd`'s two pinned store-directory claims became four, and M063-AC6's self-test guard, which names the claim count, moved from 21 to 23.
+- 2026-09-01: `tests/run-tests.sh` exits 0 plain (593 checks) and with `--self-test` (1119 checks); status set to review.
 - 2026-09-01: T6 — D-044 appended; `site/books.qmd` and `CHANGELOG.md` state the widened trigger and the named-lookalike boundary; DESIGN.md's recovery prose rewritten, KI205 and KI214 narrowed, KI221 struck and replaced by KI224.
 
 ## Decisions

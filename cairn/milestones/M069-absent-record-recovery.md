@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M069: A chapter no render has written a record for reaches the book index where its terms would otherwise be lost
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -151,6 +151,8 @@ prints and what the render tells them, not an internal artifact.
 - 2026-09-02: T6 — five plants, each shown red against the check that fences it. Separately, the M063 T6, M065-AC5 and M068 T5 self-tests each gained a substitution disabling the new gate beside their own: every one of them is about a rule that predates it and runs over a store the gate now reads through, so without it each would be red for a reason that is not its mutation's.
 - 2026-09-02: M068-AC3's second leg is inverted by this milestone rather than repaired: five.qmd rendered alone over a store short four.qmd's record is the book's last chapter, so it now reads that chapter's source. The leg asserts the complete gamma section and the never-written wording where it asserted a short section and silence, and what still separates a never-written record from a listed unopenable one is which wording is drawn, asserted both ways.
 - 2026-09-02: T7 — D-045 recorded; `site/books.qmd` and `CHANGELOG.md` state the gate, its two halves, the silence and the missing fragment; `cairn/DESIGN.md`'s recovery prose updated, with KI205 narrowed to the chapters that print nothing and KI214 to a last chapter whose own source-reading also fails.
+- 2026-09-02: two docs-prose checks at the tail of the suite were bookkeeping this milestone moves: the books-page claim ledger pinned the sentence "an absent record is not recovered", replaced by five rows naming which chapters read one back, that no other chapter does, that a whole-book render is untouched and where the route stays silent; and the planted-defect self-test that reads that ledger's size pins 27 claims where it pinned 23.
+- 2026-09-02: `tests/run-tests.sh` exits 0 (631 checks) and `tests/run-tests.sh --self-test` exits 0 (1182 checks). Status to review.
 
 ## Decisions
 

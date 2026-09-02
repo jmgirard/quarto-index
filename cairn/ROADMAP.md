@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-01 (M066 merged and archived: the recovery-route checks now read what they name. Every literal-0 record-report assertion sits beside its family's other two wordings on the same log in the same function, 31 sites added and 0 short; `m061_mutant` counts each substitution's matches and fails naming the one that matched nothing, with `m066_slipped` planting each half of the carryrange mutation slipped alone; 21 claim rows hold the books page, twelve of them the source-recovery prose. Review: four criteria green (578 plain, 1071 self-test, both exit 0, re-run over the gate fixes), gate clean, fifteen diff-bug findings and none from the other lenses, seven fixed at the gate, KI222 for over-application never checked, its row extended at a disposition gate. No lesson added; M061's terminal row pruned to hold the five-row retention.)_
+_Last hygiene check: 2026-09-01 (M067 merged and archived: the four M50 editor-metadata readers read what their messages claim — an escaped quote stays in its value, a mark is paired with its own span, the docs check splits pages from filenames at `--` and names a page it cannot read, and the form-table count comes off the syntax page's own sentence; sixteen plants fence them. Review: five criteria green (578 plain, 1085 self-test, re-run 578 / 1087 over the gate fixes, all exit 0), gate clean, ten diff-bug findings and none regressed from the other lenses, five fixed at the gate, KI223 for a row and its sentence edited together, KI222 extended to name `spliced_copy`. No lesson added; M062's terminal row pruned to hold the five-row retention.)_
 _Released 0.1.0 2026-08-26._
 
 ## Milestones
@@ -9,11 +9,10 @@ _Released 0.1.0 2026-08-26._
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M066 | The recovery-route checks read the reports and mutations they name | done | — | normal | milestones/archive/M066-recovery-check-readers.md |
-| M067 | The editor-metadata checks read what they claim to read | review | — | normal | milestones/M067-editor-metadata-readers.md |
+| M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |
 | M065 | The forms a recovered chapter's marks take are fenced | done | M064 | normal | milestones/archive/M065-recovered-mark-forms.md |
 | M064 | A chapter's terms reach the book index when its record cannot be read | done | — | normal | milestones/archive/M064-book-source-recovery.md |
 | M063 | A book puts an index no marker names in the same chapter on every render | done | — | normal | milestones/archive/M063-book-fallback-placement.md |
-| M062 | A book repeats a record complaint once per index section it costs | done | M061 | normal | milestones/archive/M062-book-record-report-counts.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

@@ -948,7 +948,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI222.** `m061_mutant` fails a substitution that matched nothing and never
   one that matched more than once, so an anchor gone ambiguous splices every
   match into the filter and passes. The counts file already carries the
-  number. — M066 review F7
+  number. The loop is `spliced_copy` since M067, so `m067_mutant`'s copies of
+  the test modules inherit the gap. — M066 review F7, M067 review F11
 - **KI138.** `check_folded_heading` raises rather than reporting. — M38 review
   round 3
 - **KI140.** The gallery's AC4 extracts with plain `pdftotext` where the
@@ -1146,6 +1147,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   included. — M46 review
 - **KI123.** README and `site/index.qmd` promise a description on every class
   where `check_schema` requires one only under `attributes:`. — M50 review
+- **KI223.** `form_table` holds `site/syntax.qmd`'s form table to the count
+  that page's own sentence states, so a row added together with the sentence
+  edited passes; only `check_schema`'s `enum:` comparison remains to notice a
+  new row, and it is blind to one on `entry=`, `see=` or `sort=`. — M067
+  review F1
 - **KI126.** `minted_carried` is an existence test, so a page whose only
   locator points at an anchor it does not carry dumps at exit 0 and a partial
   rename passes. — M48 review

@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M068: A record that is listed and cannot be opened is not read as one that was never written
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -142,6 +142,7 @@ prints and what the render tells them, not an internal artifact.
 - 2026-09-01: `tests/run-tests.sh` exits 0 plain (593 checks) and with `--self-test` (1119 checks); status set to review.
 - 2026-09-01: T6 — D-044 appended; `site/books.qmd` and `CHANGELOG.md` state the widened trigger and the named-lookalike boundary; DESIGN.md's recovery prose rewritten, KI205 and KI214 narrowed, KI221 struck and replaced by KI224.
 - 2026-09-01: review opened; draft PR #68 pushed, PR URL recorded in the header.
+- 2026-09-01: review returned M068 to in-progress at the merge gate. What failed: F1 — `store_probe` does not propagate its `lost` answer down a directory chain, so a chapter whose record sits in a store subdirectory takes the ABSENT branch under an unlistable store directory and loses its terms in silence, which `origin/main` did not and which D-044's own decision text forbids; F2 — no fixture has a chapter in a subdirectory, so that axis is fenced by nothing. Six acceptance criteria verified, consistency gate clean; no merge, no approval marker written.
 
 ## Decisions
 
@@ -290,3 +291,24 @@ Ranked most severe first. Dispositions are recorded at the merge gate.
   non-emptiness guard runs before the first render, not before this one, so a
   future change emptying the store between legs would leave this control
   running over an empty domain and still passing.
+
+### Triage
+
+Presented at the merge gate 2026-09-01; the maintainer chose to send M068 back
+rather than merge or patch at the review desk.
+
+- **F1 — actioned, return floor.** A load-bearing defect in what the extension
+  does for an author, and it falsifies the Scope clause promising the
+  directory-level case keeps its behavior. Returns M068 to `in-progress`.
+- **F2 — actioned, fix with F1.** The check that fences F1 is the same work.
+- **F3, F5 — actioned, fix with F1.** Four prose sites and one known issue
+  follow from the code fix; F5's remainder needs a known issue of its own.
+- **F4, F7 — actioned, fix with F1.** Both are suite hygiene on checks this
+  milestone wrote, cheap to take in the same pass.
+- **F6 — rejected, verified instead.** The shipped claim is true: observed by
+  hand at `chmod 000` on a record and `a-x` on the store directory. Widening
+  the suite to permission bits is what the plan gate declined, for machines
+  whose permission semantics differ; it belongs to the standing suite-widening
+  candidate row, not here.
+
+Defect returns for M068: 1.

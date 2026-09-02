@@ -10,7 +10,7 @@
 - **Driving RR:** —
 - **Principles touched:** IP2
 - **Resolves:** —
-- **Branch/PR:** m070-recovery-parse-fidelity
+- **Branch/PR:** m070-recovery-parse-fidelity / https://github.com/jmgirard/quarto-index/pull/70
 
 ## Goal
 
@@ -139,8 +139,11 @@ reach the book index and what the render tells them when some cannot.
 - 2026-09-02: T6 checkpoint 2 — the self-test found two things the first pass broke and neither was silent: T3's reindentation of `recovered_marks` left three M065/M066 plants anchored on the old column, which `spliced_copy` refused rather than passing; and rewriting a bullet in `site/books.qmd` dropped one of the 27 sentences that page is held to. Plants re-anchored; the pinned sentence restored verbatim and the new material given its own paragraph, with three claims pinned beside it (27 to 30). Re-running `--self-test`.
 - 2026-09-02: T6 checkpoint 3 — the three claims pinned on `site/books.qmd` moved its count from 27 to 30, and the M063-AC6 self-test asserts the claim check's failure message names that count; expectation moved with it. An earlier run of the same suite died at M05 on a Quarto segmentation fault, an environment failure rather than a check, and was rerun.
 - 2026-09-02: T6 — five plants, each shown red against the check that fences it: the extension test removed (the notebook chapter's term filed into the index its author did not name), the test inverted, one member taken out of the accepted set, the metadata walk removed, and the refusal's own signal removed so a refused chapter is reported as a source that could not be read. `site/books.qmd`, `CHANGELOG.md`, KI219 retired, KI11 corrected in place, KI232 added. `tests/run-tests.sh --self-test` passed, 1201 checks; the plain run before it passed at 640. A second Quarto segmentation fault, this time at M55, ended one run before it; the rerun was clean and both were in the long self-test mode while every plain run was clean.
+- 2026-09-02: review step 2 — draft PR #70 opened against main (branch 9 ahead of origin/main, 0 behind, so no merge was needed); its three CI checks are green. Step 4's universal cairn-file checks passed; no DESIGN.md principle text changed, so `cairn_impact` is skipped, and the `generic` profile names no toolchain checks.
 - 2026-09-02: probe run 2026-09-02 under pandoc 3.11 — a filter table carrying a `Span` function visits a span in `abstract:` as well as one in the body, confirming the asymmetry AC3 rests on before this milestone was written rather than leaving it for implementation.
 
 ## Decisions
 
 ## Review
+
+_Verification in flight: draft PR #70 open and its CI green; `cairn_validate` passed all checks; the plain acceptance-suite run and the three fresh-context reviewers are still running. No criterion is ticked yet._

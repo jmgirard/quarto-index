@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-02 (M068 done and archived, PR #68 squash-merged after a second review pass: six criteria on fresh evidence — 605 checks plain, 1140 with `--self-test` — consistency gate clean, three-lens fan-out returning eight findings and no return-floor defect. KI221 retired at M068; KI224, KI225 and KI226 added, the last an accepted limitation. Two candidate rows extended, the reads-repair row at a disposition gate. LESSONS unchanged at 49/50 lines and 19,912/20,000 bytes; ROADMAP within budget.)_
+_Last hygiene check: 2026-09-02 (M069 and M070 planned from the recovery-follow-ups candidate row, which narrows to the fragment item alone; its absent-record, non-markdown-source and metadata-borne-mark items are promoted. No terminal row pruned; ROADMAP within budget.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 
@@ -9,6 +9,8 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | planned | — | normal | milestones/M069-absent-record-recovery.md |
+| M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | planned | M069 | normal | milestones/M070-recovery-parse-fidelity.md |
 | M068 | A record that is listed and cannot be opened is not read as one that was never written | done | — | normal | milestones/archive/M068-listed-unopenable-record.md |
 | M066 | The recovery-route checks read the reports and mutations they name | done | — | normal | milestones/archive/M066-recovery-check-readers.md |
 | M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |
@@ -20,7 +22,7 @@ _Released 0.2.0 2026-09-02._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- Recovery follow-ups to the source route: recover an ABSENT record; mint a recovered locator's fragment; refuse a non-markdown chapter source; reach a metadata-borne mark. Promote each on an author reporting its state — added 2026-08-30, extended 2026-08-31, store-probe item promoted to M068 2026-09-01 — M064/M065 reviews — KI205, KI219
+- Give a recovered locator a fragment where the author wrote the mark's id themselves, the one value the source alone settles: a minted number counts against ids taken across the whole rendered page, which the source cannot know. Promote on an author reporting a recovered locator lands at a chapter's top — added 2026-08-30, narrowed 2026-09-02 — M064/M065 reviews — KI205
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
 - Repair the readers and checks the EPUB back-end, the editor metadata and the named-index work added; promote on any of them turning a run red for a reason that is not the defect it names — added 2026-08-27, clustered 2026-08-29 — M52 review F3, F7-F13; M50 review F1, F2, F3, F6; M49 review F6, F7, F9 — KI91-KI104
 - Fence the three unguarded edges of the named-index LaTeX behavior M49 shipped; promote the first two on an author report or a fixture reaching either edge, the third on the extension claiming a plain-pandoc path at all — added 2026-08-28 — M49 review F2, F3, F4 — KI105, KI106, KI107

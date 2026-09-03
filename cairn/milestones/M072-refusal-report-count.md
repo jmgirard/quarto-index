@@ -69,6 +69,8 @@ Today `store_read` draws the refusal inline for every reading chapter in all thr
 
 - 2026-09-03: review — draft PR #72; branch level with the default branch, no merge needed. Consistency gate clean (cairn_validate all-pass; the generic profile names no toolchain checks). Three-lens fan-out returned eight findings: five fixed on the branch (the docs' account of which record state is which, the omitted builds-none clause, DESIGN's two now-false clauses, and m072_render's over-general failure message, which regressed an M070 review fix), two filed as follow-ups, one rejected. Both suites re-run whole after the fixes: 663 and 1239 checks, exit 0.
 
+- 2026-09-03: step-7 approval: PR #72 approved for merge
+
 ## Decisions
 
 ## Review

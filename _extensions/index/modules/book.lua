@@ -847,9 +847,11 @@ local function readable_source(file)
 end
 
 -- One chapter's record, rebuilt from its source, or nil where nothing could be
--- rebuilt. Every step is inside one guard: the file may be gone, unreadable or
--- something Pandoc's markdown reader refuses, and none of that may take the
--- render down with it (IP2). A failure returns nil and the caller reports it.
+-- rebuilt. Every step that TOUCHES the file is inside one guard: it may be
+-- gone, unreadable or something Pandoc's markdown reader refuses, and none of
+-- that may take the render down with it (IP2). The file-kind test ahead of the
+-- guard touches nothing — it reads the path string this route was handed —
+-- which is the whole point of its being ahead of it. A failure returns nil and the caller reports it.
 --
 -- Two ways of returning nothing, because they are two different things to tell
 -- an author: a source this route could not read as it hoped to, and a source
@@ -870,6 +872,12 @@ local function recover_record(ctx, file)
       error("cannot read", 0)
     end
     local parsed = pandoc.read(text, "markdown")
+    -- The conditional-content removal reaches both inputs, but not both here:
+    -- the blocks are cleaned on the way in and the metadata is cleaned inside
+    -- `recovered_marks`, which is also where the order of the two walks is
+    -- stated. A second caller must pass `drop_conditional`'s blocks, as this
+    -- one does, or it recovers body conditionals while still dropping
+    -- front-matter ones.
     local blocks = drop_conditional(parsed.blocks)
     local marks, sorts = recovered_marks(parsed.meta, blocks)
     return { version = STORE_VERSION, file = file,

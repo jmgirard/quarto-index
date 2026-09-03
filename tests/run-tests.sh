@@ -23492,6 +23492,16 @@ M070W="$WORK/m070"
 rm -rf "$M070W"
 mkdir -p "$M070W"
 
+# The fixture carries `.Rmd` chapters, and Quarto picks the knitr engine off
+# that extension, so the one leg that RENDERS such a chapter shells out to R.
+# Named here rather than left to that render, which would fail deep in a knitr
+# log and read like a defect in this extension rather than a toolchain this
+# machine does not have. The route's own reading of an `.Rmd` source needs no
+# R at all — it is Pandoc's markdown reader either way — so this guard is about
+# writing the AC3 control's record and nothing else.
+command -v Rscript >/dev/null 2>&1 \
+  || fail "Rscript not found on PATH (examples/book-extensions carries .Rmd chapters, and the M070-AC3 control renders one of them, which Quarto runs through knitr). M070-AC3 must never pass unrun."
+
 # One copy of the fixture with the extension spliced in beside it, holding no
 # store and no rendered output. The fixture's `_extensions` entry is a symlink
 # into the repository, which `cp -R` preserves, so it is replaced by a copy of
@@ -23521,7 +23531,7 @@ m070_render() {   # <slug> <chapter> <label> <log and capture suffix>
   local slug="$1" chapter="$2" label="$3" suffix="$4"
   ( cd "$M070W/$slug" && quarto render "$chapter" --to html ) \
     > "$WORK/m070-$slug$suffix.log" 2>&1 \
-    || { tail -30 "$WORK/m070-$slug$suffix.log" >&2; fail "$label: the render failed; IP2 forbids a chapter source this route will not read taking one down"; }
+    || { tail -30 "$WORK/m070-$slug$suffix.log" >&2; fail "$label: the render failed, so this leg says nothing about what reaches the index; where the chapter rendered is the one carrying a source this route will not read, IP2 forbids that source taking a render down at all"; }
   capture --project "$M070W/$slug" html "m070-$slug$suffix"
 }
 

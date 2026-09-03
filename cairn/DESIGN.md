@@ -1624,20 +1624,27 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   placed immediately before this one counted an `abstract:` mark once in the
   document's metadata and twice more in its blocks (probed 2026-09-02, quarto
   1.10.18).
-  A single document outside a book is indexed once. The recovery route reads
+  A single document outside a book is indexed once. The extra locators are
+  DEAD: the reflected copies do not survive into the emitted page, so the page
+  carries one anchor and the index links three. Measured 2026-09-02 over
+  M070's own AC3 control — `six.qmd` marks `Hasp` once in `abstract:`,
+  `six.html` carries `id="qi-mark-1"` alone, and the index prints
+  `six.html#qi-mark-1`, `#qi-mark-2` and `#qi-mark-3`. The recovery route reads
   the source file, where the mark is written once, so the two routes file the
-  same entry in the same index and differ in how many locators it carries;
-  M070's AC3 control pins the three. — M070 T5
-- **KI233.** An index mark written in a chapter metadata field Quarto does not
-  reflect into the page body is indexed by the ordinary render under locator
-  fragments that page does not carry. A chapter carrying
-  `description: "A [Zed]{.index} term"` has `Zed` filed three times, at
-  `qi-mark-1`, `qi-mark-4` and `qi-mark-5`, none of which the chapter's own page
-  holds; the recovery route files it once, with the page and no fragment, so the
-  two routes agree on the entry and the index and differ in the locators. The
+  same entry in the same index and differ in how many locators it carries and
+  in whether they resolve; M070's AC3 control pins the three. — M070 T5,
+  corrected M070 review round 3 R3-F1
+- **KI233.** KI232's dangling locators reach EVERY front-matter field, a
+  reflected one included; the field is not the discriminator. A chapter
+  carrying `description: "A [Zed]{.index} term"` — a field Quarto does not
+  reflect — has `Zed` filed three times, at `qi-mark-1`, `qi-mark-4` and
+  `qi-mark-5`, none of which the chapter's own page holds, exactly as the
+  reflected `abstract:` of KI232 files three of which the page holds one. The
+  recovery route files it once, with the page and no fragment, so the two
+  routes agree on the entry and the index and differ in the locators. The
   render side is where the dangling fragments are minted, and it behaves this
-  way on the default branch too. Same reflection as KI232, a field that is not
-  reflected. — M070 review round 2 R2-F2
+  way on the default branch too. — M070 review round 2 R2-F2, discriminator
+  corrected M070 review round 3 R3-F1
 - **KI234.** The refusal a chapter this route will not read draws stands ahead
   of the version-skew branch and is drawn once per READING chapter, where the
   stale family is drawn once per BUILDING chapter. So a refused chapter whose

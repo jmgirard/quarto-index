@@ -1,5 +1,6 @@
-# The chapter-source-kinds fixture (M070). Nine chapters, eight of them read
-# by the recovery route and one refused, so one render can show both what the
+# The chapter-source-kinds fixture (M070). Nine chapters: index.qmd, which does
+# the reading and supplies its own marks; seven the recovery route reads back
+# from their sources; and one it refuses. So one render can show both what the
 # route reads and what it will not.
 #
 # The shapes here are load-bearing for the acceptance manifests: one chapter

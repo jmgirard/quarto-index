@@ -108,7 +108,11 @@ where it asks; and `see=` and `see-also=` still print their lines, neither
 carrying a page number, as neither does on an ordinary render. A mark written
 in the chapter's YAML front matter comes back with the marks in its body: an
 ordinary render indexes one written there, so this route reads a chapter's
-front matter as well as its body and the two agree. What does not come back is
+front matter as well as its body and the two file the same entry in the same
+index. They do not agree on how many locators that entry carries: Quarto
+copies some front-matter fields into the chapter body before any filter runs,
+so an ordinary render reaches such a mark more than once and prints a locator
+for each, while this route reads the source, where you wrote it once. What does not come back is
 anything the chapter worked out for itself while it rendered.
 
 Five things recovery does not return.

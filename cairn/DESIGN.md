@@ -1518,8 +1518,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   rather than a path under the project's output directory, so
   `book_context`'s `strip_prefix(output, out)` returns nil, the chapter takes
   the no-metadata fallback, and it writes no record — its terms reach no
-  section of the book and no route recovers them, since recovery reads a
-  record that was opened and refused rather than one that was never written.
+  section of the book. Recovery read only a record that was opened and refused
+  when this was written; since M069 it also reads one no render has written, so
+  a chapter that prints an index section does read such a chapter's source
+  (corrected M073 — where that recovered locator points, the chapter's declared
+  `output-file:` or the href the book expects, is unverified).
   Observed 2026-08-30 on a scratch copy of `examples/book-placement/` with
   `output-file: custom-four.html` in `four.qmd` and `output-file: bare-two` in
   `two.qmd`: both pages landed in `_book/` under the names their front matter
@@ -1629,10 +1632,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   where its terms would otherwise be lost from a section this chapter itself
   prints", which is stronger than the gate. Same class as KI215. — M069 review
   F2, F5
-- **KI230.** A record no render has written whose chapter's source also cannot
-  be read is reported as one that "could not be read", asserting a record
-  existed — the falsehood the fourth wording was added to avoid. Pinned by the
-  AC5 `m069-lostsource` leg and sanctioned by D-045. — M069 review F3
+- **KI230.** *Resolved M073.* A record no render has written whose chapter's
+  source also cannot be read was reported as one that "could not be read",
+  asserting a record existed — the falsehood the fourth wording was added to
+  avoid. It now draws a sixth wording of its own, naming the record as one no
+  render has written and the source as one that could not be read; the
+  `m069-lostsource` leg counts that wording and holds the old one at zero.
+  — M069 review F3
 - **KI231.** `m069_cold_chapter` does not remove its `_book` before rendering
   while its sibling `m069_tree` does. Benign while `$M061W/base` is created
   with `_book` removed; it would silently let `check_book_sections` read a
@@ -1650,17 +1656,16 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `tests/fragments.py resolve` passes there, the anchors being real. No
   fixture marks a `title:`; `site/books.qmd` and `CHANGELOG.md` name the
   exception. — M071 review F1
-- **KI236.** A record file whose bytes decode to a JSON object or array but
-  carry no `version` field, or one this render does not write, is classified
-  as version-skewed: `store_read`'s branch tests `data.version ~=
-  STORE_VERSION`, and a missing field satisfies it. Probed 2026-09-03:
-  `pandoc.json.decode("{}", false)` yields a table whose `version` is nil,
-  while `"this is not a record\n"` decodes to nil and takes the undecodable
-  path. So a truncated or hand-emptied record is reported as one another
-  version wrote — and, since M072, at the section-building count rather than
-  by every chapter that meets it. `site/books.qmd`, `CHANGELOG.md` and the
-  recovery section above name the states as the code partitions them.
-  — M072 review F1
+- **KI236.** *Resolved M073.* A record file whose bytes decode to a JSON object
+  or array but carry no `version` field was classified as version-skewed:
+  `store_read`'s branch tested `data.version ~= STORE_VERSION`, which a missing
+  field satisfies. Probed 2026-09-03: `pandoc.json.decode("{}", false)` yields
+  a table whose `version` is nil, while `"this is not a record\n"` decodes to
+  nil and takes the undecodable path. That branch now also requires
+  `type(data.version) == "number"`, so only a number this render does not write
+  reads as a version and a truncated, hand-emptied or wrongly typed record
+  joins the wordings for a record that could not be read. `valid_record` is
+  unchanged and refuses both alike. — M072 review F1
 - **KI237.** The `first == nil` half of the report site's gate is never
   exercised for a refused entry: every `m072` render is over a store where
   `index.qmd` places both indexes, so `first` is non-nil in the

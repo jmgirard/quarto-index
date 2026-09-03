@@ -21772,7 +21772,12 @@ python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
 # chapter's page, by either route. M072 added the row after THAT one, since the
 # refusal a refused chapter draws is no longer drawn on one rule whatever state
 # its record was in, and the page now states which report each state's count
-# follows.
+# follows. M073 added the four rows after that one: that a
+# never-written record whose source cannot be read says so rather than claiming
+# a record was there, that it does so in a wording of its own, that only a
+# `version` this render can read as a number evidences a version at all, and
+# that a record decoding to a table without one is read as a record that could
+# not be used.
 cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
@@ -21807,6 +21812,10 @@ a listed record that will not open	a record whose filename is among that directo
 an unlistable store directory	the store directory itself being out of reach — replaced by a file, or with its read permission gone — where every record under it is out of reach and every chapter is read back
 a name no listing carries	A record whose name the directory does not list is absent exactly as before.
 a lookalike counts as written	a file merely *named* like a record and unopenable counts as one that was written — a broken symlink left at that path by hand, say
+a never-written record whose source is lost says so	where no render has written one, it says that instead, and names the source alone
+the never-written lost report is its own wording	its own wording, saying that no render has written the record and that the chapter's source could not be read either
+only a number evidences a version	evidences no version and is read as a record that could not be used
+a versionless record is one that could not be used	decoding to a table that names no version this render can read as one
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
   || fail "M52-AC5/M55/M062/M063/M071-AC4: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, no longer says which chapter carries an index no marker names or on what proviso, or no longer says what the book reports for a record it could not use, or no longer states the source-recovery route M064/M065 added — what it returns, what it does not, that a record whose name no listing carries is left alone while one the listing carries and nothing can open is not, a hand-made lookalike among those (its own FAIL line is above)"

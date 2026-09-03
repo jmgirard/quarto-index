@@ -139,7 +139,10 @@ Five things recovery does not return.
   even where this render would have printed it.
 - **Nothing at all, where Pandoc's markdown reader cannot read the chapter
   source.** The report then says the source could not be read either, and that
-  chapter's terms are missing from the index until it is rendered again.
+  chapter's terms are missing from the index until it is rendered again. It
+  says so in the words of the state the record was in: where a record was
+  written and could not be read, the report names both files; where no render
+  has written one, it says that instead, and names the source alone.
 - **A page range, and a principal locator.** Whether two marks are the two ends
   of one range, and which locator a `mention="principal"` emphasizes, are
   settled inside that chapter's own render against the anchors it produced. A
@@ -170,7 +173,10 @@ A chapter with no record whose source parses and reaches no index mark is
 passed over in silence. It has lost nothing — a chapter that marks nothing
 looks exactly like this — and reporting it would say so for most of a correct
 book on every render. Where the source cannot be read at all, the report
-naming that outcome is drawn, as it is for a record that was written.
+naming that outcome is drawn — its own wording, saying that no render has
+written the record and that the chapter's source could not be read either.
+The report for a record that WAS written and could not be read says a record
+was there, which on this path would be a file no render ever made.
 
 One case that looks absent and is not: a record that is *there* and cannot be
 opened. What tells the two apart is the listing of the directory the record
@@ -209,16 +215,18 @@ the chapter carrying the marker cannot itself be read.
 The one for a chapter whose source this route will not read follows whichever
 report it stands in for, so a book carrying such a chapter hears about it as
 often as it would have heard about that chapter's record. Where the record was
-left by a different version — which is what any record that decodes and does not
-carry the version this render writes is read as, one carrying no version at all
-included — it is drawn on the rule just given: once for every chapter that builds
+left by a different version — which is what a record carrying a `version` this
+render does not write is read as, and only that: a record file that decodes to a
+table carrying no `version` at all, or one holding something other than a number,
+evidences no version and is read as a record that could not be used — it is drawn
+on the rule just given: once for every chapter that builds
 an index section, and once by a chapter that builds none where the records it
 read show no chapter placing an index. Where no render has written the record, it
 is drawn by every chapter the never-written rule admits — a chapter with a
 placement marker, and the book's last chapter — once for each such record it
-meets. And where the record is there and cannot be used — unopenable, or holding
-bytes that do not decode at all — it is drawn by every chapter that looks for
-it.
+meets. And where the record is there and cannot be used — unopenable, holding
+bytes that do not decode at all, or decoding to a table that names no version
+this render can read as one — it is drawn by every chapter that looks for it.
 
 ## The merged books: PDF and EPUB
 

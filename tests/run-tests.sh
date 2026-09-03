@@ -21756,7 +21756,10 @@ python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
 # sources the route reads, what a chapter it will not read gets, when such a
 # chapter is refused at all, and that a front-matter mark comes back. M071
 # added the row after that one: a front-matter mark files one locator, the
-# chapter's page, by either route.
+# chapter's page, by either route. M072 added the row after THAT one, since the
+# refusal a refused chapter draws is no longer drawn on one rule whatever state
+# its record was in, and the page now states which report each state's count
+# follows.
 cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
@@ -21777,6 +21780,7 @@ conditional content out whole	so recovery takes such a block or span out whole, 
 nothing where the source cannot be read	The report then says the source could not be read either, and that chapter's terms are missing from the index until it is rendered again
 which chapter sources this route reads	a chapter named `.qmd`, `.md`, `.markdown` or `.Rmd`, and no other kind
 a chapter this route will not read	Such a chapter is refused and reported by a wording of its own naming the file, and none of its terms reach any index until it is rendered again
+how often a refused chapter is reported	follows whichever report it stands in for, so a book carrying such a chapter hears about it as often as it would have heard about that chapter's record
 when a notebook chapter is refused at all	This route reads a chapter's source only where that chapter's record could not be used or was never written, so a notebook chapter whose record is there and readable is read from that record like any other
 a front-matter mark comes back	A mark written in the chapter's YAML front matter comes back with the marks in its body
 a front-matter mark files one locator	A mark written in the chapter's front matter files one locator, the chapter's page with no fragment, whether the chapter is read from its record or from its source
@@ -21858,7 +21862,7 @@ SUPERSEDEPY
     "$M061D/books-oldrule.qmd" "M063-AC6 self-test" \
     || fail "M063-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
   m061_planted 'the books page stating the superseded chapter rule' \
-    'does not state 1 of the 32 claim(s)' \
+    'does not state 1 of the 33 claim(s)' \
     python3 tests/sitecheck.py claims "$M061D/books-oldrule.qmd" \
       "$WORK/books-claims.txt"
 
@@ -24391,6 +24395,7 @@ m072_fill() {   # <slug>
   ( cd "$M072W/$slug" && quarto render --to html ) \
     > "$WORK/m072-$slug-fill.log" 2>&1 \
     || { tail -30 "$WORK/m072-$slug-fill.log" >&2; fail "M072 ($slug): the whole-book render that fills the store failed, so this leg says nothing about a store any render wrote"; }
+  capture --project "$M072W/$slug" html "m072-$slug-fill"
   for chapter in index.qmd one.qmd five.ipynb; do
     [ -f "$M072W/$slug/.quarto/$STORE_DIR/$chapter$STORE_SUFFIX" ] \
       || fail "M072 ($slug): the whole-book render wrote no record for $chapter, so the reads below would be about a record that was never written rather than one that was"
@@ -24412,6 +24417,7 @@ m072_render() {   # <slug> <chapter> <suffix> <label>
   ( cd "$M072W/$slug" && quarto render "$chapter" --to html ) \
     > "$WORK/m072-$slug$suffix.log" 2>&1 \
     || { tail -30 "$WORK/m072-$slug$suffix.log" >&2; fail "$label: the render failed, so this leg says nothing about what was reported; IP2 forbids an unusable record taking a render down at all"; }
+  capture --project "$M072W/$slug" html "m072-$slug$suffix"
 }
 
 # The version field of one record rewritten, and nothing else. The plant has to

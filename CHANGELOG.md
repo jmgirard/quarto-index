@@ -4,6 +4,20 @@
 
 ### Output
 
+- In an HTML book, a chapter whose source this extension will not read is now
+  reported once for every chapter that builds an index section, rather than
+  once for every chapter that reads the store, where the record that chapter
+  left behind was written by a different version of this extension. That is the
+  count every other report about a record from another version follows, and it
+  is what such a record costs: a section's share of that chapter's terms. A book
+  carrying a notebook chapter with an old record said the refusal once per
+  chapter of the book, where it said any other stale record once per section.
+  The three other states a record can be in — never written, there and
+  unopenable, there and holding bytes that are not a record — still draw the
+  report where the chapter meets the record, on the counts they have always had,
+  and a refused chapter still says one thing and never that its record was
+  written by a different version.
+
 - In an HTML book, a chapter no render has written a record for is now read
   back from its own source by the chapters that can print an index section —
   a chapter carrying a placement marker of its own, and the book's last

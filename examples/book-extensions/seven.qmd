@@ -7,8 +7,11 @@ abstract: |
 
   The front matter also carries marks inside the classes Quarto shows and hides
   by format, profile or metadata. Recovery takes those out here exactly as it
-  takes them out of the body, so neither term below reaches any index:
-  [Jetsam]{.content-hidden .index} inside a span, and a whole block of it.
+  takes them out of the body, so none of the three terms below reaches any
+  index: [Jetsam]{.content-hidden .index}, which is a mark span carrying the
+  class itself; [Oakum]{.content-visible .index when-format="html"}, which is
+  the other class, kept apart so the removal is not fenced on one of the two;
+  and a whole block of it.
 
   ::: {.content-hidden when-format="html"}
   [Kestrel]{.index}

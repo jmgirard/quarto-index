@@ -26,28 +26,24 @@ reach the book index and what the render tells them when some cannot.
 
 **In:**
 
-- An extension test in `recover_record` (`book.lua:783`) before
-  `pandoc.read(text, "markdown")`: a chapter source whose extension is not one
-  of the markdown ones Quarto books take is not parsed at all, and its chapter
-  is reported rather than refiled. KI219 records what happens today — a
-  one-cell `.ipynb` chapter's raw JSON is accepted, its span's `index`
-  attribute arrives seven characters long with the JSON escaping inside it,
-  `mark_index` matches no declared index of that name, and the term is filed
-  into the book's first index with nothing said, because recovery resolves the
-  name before `fold_undeclared` would draw the refiling report.
+- An extension test in `recover_record` before `pandoc.read(text, "markdown")`:
+  a chapter source whose extension is not one of the markdown ones Quarto books
+  take is not parsed at all, and its chapter is reported rather than refiled.
+  KI219 records what happens today — a one-cell `.ipynb` chapter's raw JSON is
+  accepted, the span's `index` attribute arrives with the JSON's own escaping
+  inside it, no declared index answers to that name, and the term is filed into
+  the book's first index with nothing said.
 - The report for such a chapter: a wording naming the file and saying its
-  source was not read, beside the wordings `book.lua:887-891` and M069 draw.
-- `recovered_marks` (`book.lua:693`) reaches a mark a chapter writes in its
-  YAML front matter, which the ordinary render already indexes: probed
-  2026-09-02 under pandoc 3.11, a filter table carrying a `Span` function
-  visits a span in `abstract:` exactly as it visits one in the body, and visits
-  it before the body, while the recovery walk is over `parsed.blocks` alone.
-  Front matter is read through the same conditional-content drop the blocks go
-  through, so a mark inside `.content-visible` or `.content-hidden` is left out
-  there as it is in the body. `recovered_markers` (`book.lua:762`) is not
-  widened with it: `resolve_markers` reads `doc.blocks` alone, so a marker in
-  front matter places nothing in the ordinary render either, and reading one
-  here would be the recovery route departing from the render.
+  source was not read, beside the four wordings already there.
+- `recovered_marks` reaches a mark a chapter writes in its YAML front matter,
+  which the ordinary render already indexes: probed 2026-09-02 under pandoc
+  3.11, a filter table carrying a `Span` function visits a span in `abstract:`
+  as it visits one in the body, and visits it first. Front matter goes through
+  the same conditional-content drop the blocks do, so a mark carrying or inside
+  `.content-visible` or `.content-hidden` is left out there as in the body.
+  `recovered_markers` is not widened with it: `resolve_markers` reads
+  `doc.blocks` alone, so a marker in front matter places nothing in the
+  ordinary render either, and reading one here would be a departure from it.
 - Acceptance-suite fixtures for both edges, and `--self-test` plants over each
   axis they are free in.
 - `site/books.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md` with KI219 retired and
@@ -77,13 +73,18 @@ reach the book index and what the render tells them when some cannot.
       listed, and a record no render has written.
 - [x] AC2. The extensions the parse accepts are `.qmd`, `.md`, `.markdown` and
       `.Rmd`; a fixture carrying one recovered chapter per accepted extension
-      has each of those chapters' terms in the book's index, held row by row in
-      href form against a hand-derived manifest.
-- [ ] AC3. A mark written in a chapter's YAML front matter reaches the book's
-      index by the recovery route under the same printed entry and in the same
-      declared index as it reaches it when that chapter's record is read, its
-      locator a link to that chapter's page with no fragment; the record-route
-      half is asserted on its own render of the same fixture as the control.
+      whose only mark is in that chapter's body has each of those chapters'
+      terms in the book's index, held row by row in href form against a
+      hand-derived manifest.
+- [ ] AC3. A mark written in the YAML front matter of a chapter whose source
+      file's extension is one the recovery parse accepts, written in the file on
+      disk, naming an index the book declares, and neither carrying nor inside a
+      block or span carrying `.content-visible` or `.content-hidden`, that
+      reaches the book's index when that chapter's record is read, reaches it
+      under the same printed entry and in that same index when no record of that
+      chapter has been written and it is recovered from its source instead; and
+      the recovered mark's locator, where it contributes one, is a link to that
+      chapter's page with no fragment.
 - [x] AC4. `site/books.qmd` and `CHANGELOG.md` each state which chapter source
       files the recovery route reads and which it refuses, and that a recovered
       chapter's front-matter marks reach the index with its body's.
@@ -92,53 +93,57 @@ reach the book index and what the render tells them when some cannot.
 ## Coverage
 
 - AC1 → T1, T2, T4, T8, T9
-- AC2 → T1, T4
-- AC3 → T3, T5, T7, T10
-- AC4 → T6, T11
-- AC5 → T4, T5, T6, T7, T8, T9, T10, T11
+- AC2 → T1, T4, T16
+- AC3 → T3, T5, T7, T10, T12, T16
+- AC4 → T6, T11, T13
+- AC5 → T4-T16
 
 ## Tasks
 
-- [x] T1. The extension test in `recover_record` (`book.lua:783`), before the
-      read: the accepted set as a named table, the comparison on the chapter
-      path's own extension lowercased, and a refusal the caller can tell from
-      a failed read. A name carrying no extension is refused with the rest.
-- [x] T2. The refusal wording beside `book.lua:887-891` and M069's, drawn once
-      per reading chapter; `tests/scans/warn-distinct.py`'s EXPECTED moves with
-      it.
+- [x] T1. The extension test in `recover_record` before the read: the accepted
+      set named, the comparison lower-cased, a refusal the caller tells from a
+      failed read, and a name carrying no extension refused with the rest.
+- [x] T2. The refusal wording beside the four already there, once per reading
+      chapter; `tests/scans/warn-distinct.py`'s EXPECTED moves with it.
 - [x] T3. `recovered_marks` over the chapter's metadata as well as its blocks,
-      with `drop_conditional` applied to both, and document order settled —
-      metadata before blocks, the order the ordinary render uses — so a
-      front-matter mark's declared sort key beats a body mark's exactly where
-      the ordinary render lets it. `recovered_markers` stays over the blocks
-      alone, matching `resolve_markers`.
-- [x] T4. The AC1/AC2 fixture: a copy of `examples/book` gaining a one-cell
-      `.ipynb` chapter that marks a term, and one chapter per accepted
-      extension; the refusal asserted message-whole on both entry paths, and
-      the accepted chapters' terms held against the href-form manifest.
-- [x] T5. The AC3 fixture and its control: a chapter marking a term in
-      `abstract:` and nowhere else, rendered once with its record readable and
-      once with it recovered, the two asserted to file the same entry in the
-      same index; the record route's locators carry fragments and the recovered
-      one does not, and it carries more of them, because Quarto copies the
-      abstract into the chapter's body before this filter runs.
+      the conditional drop over both, metadata first — the render's own order,
+      so a front-matter sort key beats a body one where the render lets it.
+      `recovered_markers` stays over the blocks, matching `resolve_markers`.
+- [x] T4. The AC1/AC2 fixture: `examples/book` copied, gaining a one-cell
+      `.ipynb` chapter and one chapter per accepted extension; the refusal
+      asserted message-whole on both entry paths and the accepted chapters'
+      terms held against the href-form manifest.
+- [x] T5. The AC3 fixture and its control: a chapter marking only in
+      `abstract:`, rendered once from its own record and once recovered, both
+      filing the same entry in the same index.
 - [x] T6. `--self-test` plants over each axis, each shown red against the check
-      that fences it, and then `site/books.qmd`, `CHANGELOG.md` and
-      `cairn/DESIGN.md`.
-- [x] T7. The conditional-content removal over the front matter as well as the
-      blocks, a fixture chapter marking inside a conditional span and a
-      conditional block there, and a plant reading the front matter raw.
-- [x] T8. The refusal asserted to name the chapter's file, beside the count, on
+      that fences it; then `site/books.qmd`, `CHANGELOG.md`, `cairn/DESIGN.md`.
+- [x] T7. The conditional-content removal over the front matter too, a fixture
+      chapter marking inside a conditional span and block there, and a plant
+      reading the front matter raw.
+- [x] T8. The refusal asserted to name the chapter's file beside the count, on
       both entry paths — the precedent `M60-AC4` and `M064-AC5` set.
-- [x] T9. The refusal wording asserting nothing about a record, since it is
-      drawn where none was written; and its departure from the silence rule —
-      a refused chapter reports on every path — named in `DESIGN.md`.
-- [x] T10. The walk order fenced rather than asserted in a comment: a chapter
-      whose front matter and body declare rival sort keys for one term, and a
-      plant turning the two walks round.
+- [x] T9. The refusal asserting nothing about a record, and its departure from
+      the silence rule named in `DESIGN.md`.
+- [x] T10. The walk order fenced rather than commented: a chapter whose front
+      matter and body declare rival sort keys, and a plant turning the walks
+      round.
 - [x] T11. `DESIGN.md`'s recovery-contract paragraph; the dead nil guard; the
-      retired known-issue citations in the filter and the suite; KI232 widened
-      to the reflection that causes it; the notebook fixture's cell id.
+      retired known-issue citations; KI232 widened; the fixture's cell id.
+- [ ] T12. The front-matter conditional-drop plant's label: an ordinary render
+      does index its two marks, so the label states the decision instead.
+- [ ] T13. The refused-chapter claim on `site/books.qmd` and in `CHANGELOG.md`,
+      narrowed to the states the refusal branch is reached in, its pinned claim
+      rows moving with it.
+- [ ] T14. The refusal's check key made unique to its own wording, and the
+      copied-fixture store assertion made one that can fail.
+- [ ] T15. The durable records: a D-entry for each of this milestone's two
+      narrowings of the recovery decision; KI218 corrected and KI220's citation
+      repaired; KI233 and KI234 added; the follow-up candidate row.
+- [ ] T16. AC3's probe axes in one chapter: a non-`.qmd` extension, a field
+      other than `abstract:`, an entry from the attribute rather than the
+      visible words, and the book's second index; manifests, counts and plants
+      moving with it, and a `.content-visible` mark beside the hidden pair.
 
 ## Work log
 
@@ -316,3 +321,9 @@ runs", which the `seven.qmd` probe above falsifies. It is a derived claim in a
 code-adjacent artifact and goes with R2-F1's amendment.
 
 Defect returns for this milestone: 2. Amendment returns: 1. No thrash trigger.
+- 2026-09-02: return round 2, implementation gate — both recommendations taken: AC3 narrows to carve out a front-matter mark carrying or inside `.content-visible`/`.content-hidden` rather than widening recovery to index one against D-042, and the refused-chapter claim on `site/books.qmd` and in `CHANGELOG.md` is narrowed to the states the refusal branch is reached in rather than moving the refusal ahead of the record check.
+- 2026-09-02: criteria audit over the amended AC3 ran in FULL mode ([O], fresh context, having authored none of it) and returned seven findings — the carve-out missing the mark span that carries the class itself, no antecedent scoping the promise to a chapter actually recovered, the promise reaching chapters the route refuses outright and so contradicting AC1, D-041's include/executed-cell boundary unnamed, an instrument-binding trailing clause about the fixture and its control, "its locator" ambiguous over the two routes, and one exemplar standing in for the four axes the domain is free in. Six fixed at the gate; the seventh became this round's question and the probes were taken.
+- 2026-09-02: the wording fixed at that gate re-entered the questions once with its own fresh [O] reader, FULL mode, which returned six more — a locator promised for a cross-reference mark that contributes none, a mark neither route can index, an undeclared index name Scope Out holds out, the recovery entry path unnamed, AC2 falsified by the fixture's own conditional chapter, and `.content-visible` never planted in front matter. Further churn went to the user, who took the narrowed AC3 and the AC2 narrowing.
+- 2026-09-02: amendment return: AC3 — "A mark written in the YAML front matter of a chapter whose source file's extension is one the recovery parse accepts, written in the file on disk, naming an index the book declares, and neither carrying nor inside a block or span carrying `.content-visible` or `.content-hidden`, that reaches the book's index when that chapter's record is read, reaches it under the same printed entry and in that same index when no record of that chapter has been written and it is recovered from its source instead; and the recovered mark's locator, where it contributes one, is a link to that chapter's page with no fragment"
+- 2026-09-02: amendment (substantive, gated) — AC2 narrowed to the chapters it was written about, gaining "whose only mark is in that chapter's body"; the fixture's own `seven.qmd` falsifies it as it stood. No criterion was widened or added: both amendments narrow. Tasks T12-T16 added for the round's findings, Coverage extended, and the Tasks section and then Scope In each compressed in one pass to hold the 150-line cap (`cairn_validate` weight caps PASS).
+- 2026-09-02: `ROADMAP.md` reached its 60-line cap when the round's follow-up row was added, so the chapter-filename row and the Windows-symlink row were clustered into one paths-and-filenames row rather than either being dropped.

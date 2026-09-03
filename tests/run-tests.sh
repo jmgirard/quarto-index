@@ -885,7 +885,7 @@ WARN_STORE_NEVER_RECOVERED="no render has written a record of the index marks fo
 # all. It is drawn whatever state that chapter's record was in, so it is the
 # one wording of the family whose key says nothing about the record, and it
 # stands ahead of every other: a refused chapter draws this and nothing else.
-WARN_STORE_KIND_REFUSED="is not one this route reads"
+WARN_STORE_KIND_REFUSED="source is not one this route reads"
 # The unplaced-section report (M60/M061) and the doubled-section report (M061)
 # had their keys here. M063 hands an index no marker names to the book's last
 # chapter unconditionally, so no render can leave such a section unplaced or
@@ -21746,7 +21746,10 @@ python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
 # M069 replaced the never-recovered row with five, since a record no render has
 # written is now read back in the chapters that print a section, and the page
 # states which chapters those are, that no other chapter does it, that a
-# whole-book render is untouched, and where the route stays silent.
+# whole-book render is untouched, and where the route stays silent. M070 added
+# the four rows from `which chapter sources this route reads` down: which
+# sources the route reads, what a chapter it will not read gets, when such a
+# chapter is refused at all, and that a front-matter mark comes back.
 cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
@@ -21766,7 +21769,8 @@ no fragment	A recovered term links to the chapter's page and nothing after it, s
 conditional content out whole	so recovery takes such a block or span out whole, whatever its `when-` or `unless-` attributes say
 nothing where the source cannot be read	The report then says the source could not be read either, and that chapter's terms are missing from the index until it is rendered again
 which chapter sources this route reads	a chapter named `.qmd`, `.md`, `.markdown` or `.Rmd`, and no other kind
-a chapter this route will not read	Such a chapter is refused and reported by a wording of its own naming the file, whatever state its record was in, and none of its terms reach any index until it is rendered again
+a chapter this route will not read	Such a chapter is refused and reported by a wording of its own naming the file, and none of its terms reach any index until it is rendered again
+when a notebook chapter is refused at all	This route reads a chapter's source only where that chapter's record could not be used or was never written, so a notebook chapter whose record is there and readable is read from that record like any other
 a front-matter mark comes back	A mark written in the chapter's YAML front matter comes back with the marks in its body
 no range and no principal	both ends of a range print the one page the chapter is on, and the role prints as an undeclared one does
 an absent record is read back where a section would lose it	is read back only where its terms would otherwise be lost from a section this chapter itself prints
@@ -21846,7 +21850,7 @@ SUPERSEDEPY
     "$M061D/books-oldrule.qmd" "M063-AC6 self-test" \
     || fail "M063-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
   m061_planted 'the books page stating the superseded chapter rule' \
-    'does not state 1 of the 30 claim(s)' \
+    'does not state 1 of the 31 claim(s)' \
     python3 tests/sitecheck.py claims "$M061D/books-oldrule.qmd" \
       "$WORK/books-claims.txt"
 
@@ -23473,9 +23477,10 @@ fi
 # sort key is first-wins, so a key written in front matter has to beat one
 # written in the body here exactly where it beats it there.
 #
-# The fixture is the chapter-source-kinds book: seven chapters this route reads
-# — one per accepted extension, the front-matter chapter, the chapter whose
-# front matter and body compete for one term's sort key and hide two marks
+# The fixture is the chapter-source-kinds book: eight chapters this route reads
+# — one per accepted extension, the front-matter chapter, a second front-matter
+# chapter moving every axis that case is free in at once, the chapter whose
+# front matter and body compete for one term's sort key and hide three marks
 # behind Quarto's conditional classes, and the chapter that places both indexes
 # — and one `.ipynb` chapter it refuses. Every manifest below is derived by
 # hand from those sources: the rendering chapter's own terms carry the
@@ -23501,10 +23506,12 @@ m070_tree() {   # <slug>
   cp -R "$QI_EXT_DIR" "$M070W/$slug/_extensions/index"
   [ -f "$M070W/$slug/five.ipynb" ] \
     || fail "M070 ($slug): the copied fixture carries no notebook chapter, so the leg below would be about a book every one of whose chapters this route reads"
+  [ -f "$M070W/$slug/eight.Rmd" ] \
+    || fail "M070 ($slug): the copied fixture carries no chapter marking only in its front matter under a non-.qmd extension, so the AC3 axes below would rest on one exemplar"
   [ -f "$M070W/$slug/seven.qmd" ] \
     || fail "M070 ($slug): the copied fixture carries no chapter whose front matter competes with its body, so the walk-order and conditional-content legs below would be about a book with nothing in it to show"
-  [ ! -e "$M070W/$slug/.quarto/$STORE_DIR" ] \
-    || fail "M070 ($slug): the copied fixture carries a sidecar store, so the leg below would be about a store holding records rather than about one no render has written"
+  [ -z "$(find "$M070W/$slug" -type d -name "$STORE_DIR" -print -quit)" ] \
+    || fail "M070 ($slug): the copied fixture carries a sidecar store somewhere other than the .quarto directory removed above, so the leg below would be about a store holding records rather than about one no render has written"
 }
 
 # One render of one chapter of one such tree, captured where it stands. The log
@@ -23531,7 +23538,7 @@ m070_refusal_names() {   # <chapter> <log> <label>
   pass "$label: the refusal names $chapter, the chapter whose source this route will not read"
 }
 
-# ORACLE — derived by hand from the fixture's seven chapter sources. index.qmd
+# ORACLE — derived by hand from the fixture's eight chapter sources. index.qmd
 # carries both placement markers, so a render of it alone prints both sections;
 # its own `Aardvark` and `Anvil` are the two terms carrying fragments, minted in
 # the order that chapter marks them. `Bramble`, `Cardamom`, `Dovetail` and
@@ -23541,9 +23548,14 @@ m070_refusal_names() {   # <chapter> <log> <label>
 # seven.qmd's term, marked twice under two declared sort keys — `Az` in the
 # front matter and `Zz` in the body — and it files under the front matter's,
 # so it sits in the A group after `Aardvark` rather than in a Z group of its
-# own; seven.qmd's two conditional marks, `Jetsam` and `Kestrel`, are in no
-# section at all, taken out of the front matter as they would be out of the
-# body. `Gantry`, five.ipynb's only mark, is in neither section: the route
+# own; seven.qmd's three conditional marks — `Jetsam`, a mark span carrying
+# the class itself, `Oakum`, carrying the other class, and `Kestrel`, inside a
+# conditional block — are in no section at all, taken out of the front matter
+# as they would be out of the body. `Mullion`, `Nacelle` and `Lanyard` are
+# eight.Rmd's three front-matter marks: one whose entry comes from its
+# attribute rather than its visible words, one written in `description:` rather
+# than `abstract:`, and one naming the book's second index, all in a chapter
+# whose extension is not `.qmd`. `Gantry`, five.ipynb's only mark, is in neither section: the route
 # refuses that chapter, so nothing of it is read and nothing of it is filed.
 read -r -d '' M070_SECTIONS_RECOVERED <<'MANIFEST' || true
 section	qi-index-main	h1	Index of Subjects
@@ -23560,11 +23572,17 @@ letter	E
 0	Escutcheon	four.html
 letter	H
 0	Hasp	six.html
+letter	M
+0	Mullion	eight.html
+letter	N
+0	Nacelle	eight.html
 section	qi-index-aside	h1	Index of Asides
 letter	A
 0	Anvil	#qi-mark-2
 letter	F
 0	Ferrule	four.html
+letter	L
+0	Lanyard	eight.html
 MANIFEST
 
 # ORACLE — the same two sections with six.qmd read from a record it wrote
@@ -23600,11 +23618,17 @@ letter	E
 0	Escutcheon	four.html
 letter	H
 0	Hasp	six.html#qi-mark-1 six.html#qi-mark-2 six.html#qi-mark-3
+letter	M
+0	Mullion	eight.html#qi-mark-2
+letter	N
+0	Nacelle	eight.html#qi-mark-3 eight.html#qi-mark-4 eight.html#qi-mark-5
 section	qi-index-aside	h1	Index of Asides
 letter	A
 0	Anvil	#qi-mark-2
 letter	F
 0	Ferrule	four.html
+letter	L
+0	Lanyard	eight.html#qi-mark-1
 MANIFEST
 
 # --- The first entry path: a record no render has written -------------------
@@ -23615,20 +23639,20 @@ check_book_sections "$CAPTURE_ROOT/m070-cold/_book" \
   "$(printf 'index.html\tqi-index-main\tIndex of Subjects\nindex.html\tqi-index-aside\tIndex of Asides')"
 check_index_sections "$CAPTURE_ROOT/m070-cold/_book/index.html" \
   "$M070_SECTIONS_RECOVERED" \
-  "M070-AC1/M070-AC2/M070-AC3 (six chapters recovered from their sources, the notebook chapter refused)" hrefs
+  "M070-AC1/M070-AC2/M070-AC3 (seven chapters recovered from their sources, the notebook chapter refused)" hrefs
 check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_KIND_REFUSED" 1 \
   "M070-AC1 (five.ipynb is refused once, and it is the only chapter of the book that is)"
 m070_refusal_names five.ipynb "$WORK/m070-cold.log" "M070-AC1 (a record no render has written)"
-check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_NEVER_RECOVERED" 6 \
-  "M070-AC2 (the six chapters whose extensions this route accepts are each recovered and reported)"
+check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_NEVER_RECOVERED" 7 \
+  "M070-AC2 (the seven chapters whose extensions this route accepts are each recovered and reported)"
 check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
   "M070-AC1 (no record here was written and unusable, so the could-not-be-read wording is never drawn)"
 check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
   "M070-AC1 (a refused chapter is not reported as a source that could not be read)"
 check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
   "M070-AC1 (nor as one that parsed and reached no mark)"
-check_extension_warning_count "$WORK/m070-cold.log" 8 \
-  "M070-AC1 (index.qmd emitted a warning this suite cannot name; its eight are six never-written recovery reports, the one refusal, and the marker-position report the seven chapters after it draw)"
+check_extension_warning_count "$WORK/m070-cold.log" 9 \
+  "M070-AC1 (index.qmd emitted a warning this suite cannot name; its nine are seven never-written recovery reports, the one refusal, and the marker-position report the eight chapters after it draw)"
 
 # --- The second entry path: a record listed and unopenable ------------------
 # The same refusal, reached the other way. A first render fills the store with
@@ -23662,10 +23686,10 @@ check_warning_count "$WORK/m070-dangling.log" "$WARN_STORE_KIND_REFUSED" 1 \
 m070_refusal_names five.ipynb "$WORK/m070-dangling.log" "M070-AC1 (a record listed and unopenable)"
 check_warning_count "$WORK/m070-dangling.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
   "M070-AC1 (one.qmd's record is listed and cannot be opened, which is the entry path this leg is about, and its extension is one this route reads)"
-check_warning_count "$WORK/m070-dangling.log" "$WARN_STORE_NEVER_RECOVERED" 5 \
-  "M070-AC1 (the five chapters no record was written for at all)"
-check_extension_warning_count "$WORK/m070-dangling.log" 8 \
-  "M070-AC1 (the second render emitted a warning this suite cannot name; its eight are five never-written recovery reports, one could-not-be-read report, the one refusal, and the marker-position report)"
+check_warning_count "$WORK/m070-dangling.log" "$WARN_STORE_NEVER_RECOVERED" 6 \
+  "M070-AC1 (the six chapters no record was written for at all)"
+check_extension_warning_count "$WORK/m070-dangling.log" 9 \
+  "M070-AC1 (the second render emitted a warning this suite cannot name; its nine are six never-written recovery reports, one could-not-be-read report, the one refusal, and the marker-position report)"
 
 # --- The front-matter mark, by both routes ----------------------------------
 # six.qmd is rendered first, so it writes a record of its own from its own
@@ -23676,20 +23700,24 @@ check_extension_warning_count "$WORK/m070-dangling.log" 8 \
 m070_tree record
 m070_render record six.qmd \
   "M070-AC3 (the render that writes six.qmd's own record)" "-first"
-[ -f "$M070W/record/.quarto/$STORE_DIR/six.qmd$STORE_SUFFIX" ] \
-  || fail "M070-AC3: six.qmd's own render wrote no record, so the leg below would be about a chapter recovered from its source rather than read from one"
+m070_render record eight.Rmd \
+  "M070-AC3 (the render that writes eight.Rmd's own record)" "-second"
+for m070_recorded in six.qmd eight.Rmd; do
+  [ -f "$M070W/record/.quarto/$STORE_DIR/$m070_recorded$STORE_SUFFIX" ] \
+    || fail "M070-AC3: $m070_recorded's own render wrote no record, so the leg below would be about a chapter recovered from its source rather than read from one"
+done
 m070_render record index.qmd \
   "M070-AC3 (index.qmd over a store holding six.qmd's record)" ""
 check_index_sections "$CAPTURE_ROOT/m070-record/_book/index.html" \
   "$M070_SECTIONS_RECORDED" \
   "M070-AC3 (six.qmd read from its own record: the same entry printed in the same index as the recovery route prints it, its locators carrying the fragments a record alone can give)" hrefs
 check_warning_count "$WORK/m070-record.log" "$WARN_STORE_NEVER_RECOVERED" 5 \
-  "M070-AC3 (six.qmd is read from its record and draws no recovery report; the five chapters without one do)"
+  "M070-AC3 (six.qmd and eight.Rmd are read from their own records and draw no recovery report; the five chapters without one do)"
 check_warning_count "$WORK/m070-record.log" "$WARN_STORE_KIND_REFUSED" 1 \
   "M070-AC3 (five.ipynb is refused here as well)"
 check_extension_warning_count "$WORK/m070-record.log" 7 \
   "M070-AC3 (the second render emitted a warning this suite cannot name; its seven are five never-written recovery reports, the one refusal, and the marker-position report)"
-pass "M070-AC1/M070-AC2/M070-AC3: over a book whose chapters are written in five source kinds, the four extensions this route accepts are each recovered whole and the notebook chapter is refused and reported on both entry paths — a record no render has written, and a record listed and unopenable — in the same words, each naming that chapter's own file, with none of its terms in either index section; and a mark written in a chapter's YAML front matter reaches the same entry in the same index by the recovery route as by the record route, the recovered locator carrying that chapter's page and no fragment, while a mark written there inside one of Quarto's conditional classes reaches no index at all and a sort key declared there beats one declared in the body"
+pass "M070-AC1/M070-AC2/M070-AC3: over a book whose chapters are written in five source kinds, the four extensions this route accepts are each recovered whole and the notebook chapter is refused and reported on both entry paths — a record no render has written, and a record listed and unopenable — in the same words, each naming that chapter's own file, with none of its terms in either index section; and a mark written in a chapter's YAML front matter reaches the same entry in the same index by the recovery route as by the record route — across the metadata field it is written in, the extension of the chapter carrying it, whether its entry comes from its visible words or its attribute, and which of the book's two indexes it names — the recovered locator carrying that chapter's page and no fragment, while a mark carrying or inside one of Quarto's conditional classes there reaches no index at all and a sort key declared there beats one declared in the body"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -23746,11 +23774,17 @@ letter	G
 0	Gantry	five.html
 letter	H
 0	Hasp	six.html
+letter	M
+0	Mullion	eight.html
+letter	N
+0	Nacelle	eight.html
 section	qi-index-aside	h1	Index of Asides
 letter	A
 0	Anvil	#qi-mark-2
 letter	F
 0	Ferrule	four.html
+letter	L
+0	Lanyard	eight.html
 MANIFEST
   m070_mutant notest "M070 T6 self-test (the extension test removed)" \
     's{  if not readable_source\(file\) then\n    return nil, true\n  end\n}{}'
@@ -23779,12 +23813,12 @@ MANIFEST
     's{  if not readable_source\(file\) then\n}{  if readable_source(file) then\n}'
   check_index_sections "$CAPTURE_ROOT/m070-inverted/_book/index.html" \
     "$M070_SECTIONS_INVERTED" \
-    "M070 T6 self-test (the test inverted: the six chapters this route reads lose every term, and the one it does not read keeps its)" hrefs
-  check_warning_count "$WORK/m070-inverted.log" "$WARN_STORE_KIND_REFUSED" 6 \
-    "M070 T6 self-test (the test inverted: the six chapters whose extensions this route accepts are the ones refused)"
+    "M070 T6 self-test (the test inverted: the seven chapters this route reads lose every term, and the one it does not read keeps its)" hrefs
+  check_warning_count "$WORK/m070-inverted.log" "$WARN_STORE_KIND_REFUSED" 7 \
+    "M070 T6 self-test (the test inverted: the seven chapters whose extensions this route accepts are the ones refused)"
   check_warning_count "$WORK/m070-inverted.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
     "M070 T6 self-test (the test inverted: the notebook chapter is the only one recovered)"
-  pass "M070 T6 self-test: with the extension test turned round and nothing else changed, the six chapters this route reads are refused and the notebook is parsed instead — which the AC2 manifest and the refusal count for the cold leg would fail on"
+  pass "M070 T6 self-test: with the extension test turned round and nothing else changed, the seven chapters this route reads are refused and the notebook is parsed instead — which the AC2 manifest and the refusal count for the cold leg would fail on"
 
   # 3 — one member taken out of the accepted set. `.markdown` is the spelling
   # nothing else in the fixture shares, so the chapter written that way is the
@@ -23803,11 +23837,17 @@ letter	E
 0	Escutcheon	four.html
 letter	H
 0	Hasp	six.html
+letter	M
+0	Mullion	eight.html
+letter	N
+0	Nacelle	eight.html
 section	qi-index-aside	h1	Index of Asides
 letter	A
 0	Anvil	#qi-mark-2
 letter	F
 0	Ferrule	four.html
+letter	L
+0	Lanyard	eight.html
 MANIFEST
   m070_mutant nomarkdown \
     "M070 T6 self-test (one member taken out of the accepted set)" \
@@ -23849,9 +23889,9 @@ MANIFEST
     's{  conditional_free_meta\(meta\):walk\(\{ Span = collect \}\)\n}{}'
   check_index_sections "$CAPTURE_ROOT/m070-nometa/_book/index.html" \
     "$M070_SECTIONS_NOMETA" \
-    "M070 T6 self-test (the metadata walk removed: the front-matter mark reaches no index at all)" hrefs
+    "M070 T6 self-test (the metadata walk removed: every front-matter mark reaches no index at all)" hrefs
   check_warning_count "$WORK/m070-nometa.log" "$WARN_STORE_NEVER_RECOVERED" 5 \
-    "M070 T6 self-test (six.qmd now parses to no mark, so it is passed over in silence rather than reported as recovered)"
+    "M070 T6 self-test (six.qmd and eight.Rmd now parse to no mark, so each is passed over in silence rather than reported as recovered)"
   pass "M070 T6 self-test: with the metadata walk removed and nothing else changed, a chapter whose only mark is in its front matter is recovered as one that marks nothing and its term leaves every index — which the AC3 manifest for the cold leg would fail on"
 
   # 5 — the refusal's own signal removed, so a refused chapter returns like one
@@ -23898,19 +23938,27 @@ letter	J
 0	Jetsam	seven.html
 letter	K
 0	Kestrel	seven.html
+letter	M
+0	Mullion	eight.html
+letter	N
+0	Nacelle	eight.html
+letter	O
+0	Oakum	seven.html
 section	qi-index-aside	h1	Index of Asides
 letter	A
 0	Anvil	#qi-mark-2
 letter	F
 0	Ferrule	four.html
+letter	L
+0	Lanyard	eight.html
 MANIFEST
   m070_mutant rawmeta \
     "M070 T6 self-test (the front matter read without the conditional-content removal)" \
     's{  conditional_free_meta\(meta\):walk\(\{ Span = collect \}\)\n}{  pandoc.Pandoc({}, meta):walk({ Span = collect })\n}'
   check_index_sections "$CAPTURE_ROOT/m070-rawmeta/_book/index.html" \
     "$M070_SECTIONS_RAWMETA" \
-    "M070 T6 self-test (the removal taken off the front matter: a mark inside a conditional span and one inside a conditional block are both indexed)" hrefs
-  pass "M070 T6 self-test: with the conditional-content removal taken off a chapter's front matter and nothing else changed, two marks an ordinary render settles before this extension runs are recovered and indexed — which the AC1/AC2/AC3 manifest for the cold leg would fail on"
+    "M070 T6 self-test (the removal taken off the front matter: a mark span carrying a conditional class, one carrying the other class, and one inside a conditional block are all indexed)" hrefs
+  pass "M070 T6 self-test: with the conditional-content removal taken off a chapter's front matter and nothing else changed, three marks the recovery route drops by decision are recovered and indexed — Quarto settles a span-level conditional after this extension's pass, so the chapter's own render does index them and recovery deliberately does not (D-042) — which the AC1/AC2/AC3 manifest for the cold leg would fail on"
 
   # 7 — the two walks turned round, so the body is read before the front
   # matter. Nothing is lost and nothing is gained; what moves is which of two
@@ -23932,6 +23980,10 @@ letter	E
 0	Escutcheon	four.html
 letter	H
 0	Hasp	six.html
+letter	M
+0	Mullion	eight.html
+letter	N
+0	Nacelle	eight.html
 letter	Z
 0	Ingot	seven.html
 section	qi-index-aside	h1	Index of Asides
@@ -23939,6 +23991,8 @@ letter	A
 0	Anvil	#qi-mark-2
 letter	F
 0	Ferrule	four.html
+letter	L
+0	Lanyard	eight.html
 MANIFEST
   m070_mutant bodyfirst \
     "M070 T6 self-test (the body read before the front matter)" \

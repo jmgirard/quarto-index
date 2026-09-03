@@ -1,0 +1,16 @@
+---
+description: "A mark in a second metadata field, which the ordinary render indexes as it indexes one in the abstract: [Nacelle]{.index}."
+abstract: |
+  A chapter whose marks are all in its front matter and whose extension is not
+  `.qmd`. One of them names the book's second index rather than its first:
+  [Lanyard]{.index index="aside"}. Another prints an entry the words on the
+  page do not spell, taken from its attribute instead: [the pintle
+  bolt]{.index entry="Mullion"}.
+---
+
+# An .Rmd chapter marking only in its front matter
+
+The body of this chapter marks nothing at all, so every term it contributes
+comes from the front matter above — written in a field other than `abstract:`,
+into an index other than the first, and under an entry the visible words do not
+spell.

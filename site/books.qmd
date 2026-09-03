@@ -96,8 +96,11 @@ notebook chapter is one Quarto executes to produce its markdown, and the file on
 disk is JSON; read as markdown it yields marks whose attribute values carry that
 file's own quoting, so its terms are filed under names nothing in the book
 answers to. Such a chapter is refused and reported by a wording of its own naming
-the file, whatever state its record was in, and none of its terms reach any index
-until it is rendered again.
+the file, and none of its terms reach any index until it is rendered again. This
+route reads a chapter's source only where that chapter's record could not be used
+or was never written, so a notebook chapter whose record is there and readable is
+read from that record like any other, which is what a whole-book render leaves
+behind.
 
 What comes back is what you wrote. An `entry=` naming several levels rebuilds
 its sub-entry and the parent it hangs under; a `sort=` still files the term

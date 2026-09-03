@@ -32,8 +32,11 @@
   file was being read as markdown, and the terms it appeared to carry were
   filed under whatever the JSON's own quoting left of their attributes — often
   in an index the author had not named, with nothing said. Such a chapter is
-  now refused and reported by a wording of its own naming the file, whatever
-  state its record was in, and none of its terms reach any index.
+  now refused and reported by a wording of its own naming the file, and none of
+  its terms reach any index. Reading a chapter's source happens only where that
+  chapter's record could not be used or was never written, so a notebook chapter
+  whose record is there and readable is still read from that record, which is
+  what a whole-book render leaves behind.
 
 - A mark written in a chapter's YAML front matter now comes back with the
   marks in that chapter's body when the chapter is recovered. An ordinary

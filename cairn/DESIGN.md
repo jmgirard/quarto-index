@@ -1534,18 +1534,19 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   the records and never reaches the `refiled` list the report is drawn from. A
   stored record in the same position draws that report. The same silent
   refiling is reached without an unknown name: `recovered_marks` resolves
-  `index=` against the READING chapter's declarations and reads the recovered
-  chapter's `parsed.meta` only for `output-file:`, so a chapter whose own
-  front matter adds an index has that term filed in the book's first one.
-  Derived by reading `book.lua:596-598`, not observed. — M064 review F5,
-  extended M064 review round 2 R2-F3
+  `index=` against the READING chapter's declarations, and while it now walks
+  the recovered chapter's metadata for marks, it never reads that chapter's own
+  `indexes:` declarations, so a chapter whose own front matter adds an index has
+  that term filed in the book's first one. Derived by reading
+  `book.lua:756-759`, not observed. — M064 review F5, extended M064 review
+  round 2 R2-F3, corrected M070
 - **KI220.** A recovered parse that reaches a placement marker and no mark
   reports only the loss. `store_read` appends the rebuilt record before testing
   `#rebuilt.marks > 0`, so such a chapter's markers still settle `placing` and
-  `first` — which is what AC3's arrangement rests on — while the no-marks
+  `first` — which is what M064's AC3 arrangement rests on — while the no-marks
   report says only that none of its terms are in the index. An author cannot
-  tell from it whether the section moved. Derived by reading `book.lua:713-719`,
-  not observed. — M064 review round 2 R2-F5
+  tell from it whether the section moved. Derived by reading `book.lua:955-966`,
+  not observed. — M064 review round 2 R2-F5, citation corrected M070
 - **KI224.** A file merely NAMED like a record and unopenable is recovered as
   though a render had written it. The listing of the directory a record belongs
   in is the whole of the evidence D-044 rests on, and nothing Pandoc's Lua
@@ -1627,3 +1628,20 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   the source file, where the mark is written once, so the two routes file the
   same entry in the same index and differ in how many locators it carries;
   M070's AC3 control pins the three. — M070 T5
+- **KI233.** An index mark written in a chapter metadata field Quarto does not
+  reflect into the page body is indexed by the ordinary render under locator
+  fragments that page does not carry. A chapter carrying
+  `description: "A [Zed]{.index} term"` has `Zed` filed three times, at
+  `qi-mark-1`, `qi-mark-4` and `qi-mark-5`, none of which the chapter's own page
+  holds; the recovery route files it once, with the page and no fragment, so the
+  two routes agree on the entry and the index and differ in the locators. The
+  render side is where the dangling fragments are minted, and it behaves this
+  way on the default branch too. Same reflection as KI232, a field that is not
+  reflected. — M070 review round 2 R2-F2
+- **KI234.** The refusal a chapter this route will not read draws stands ahead
+  of the version-skew branch and is drawn once per READING chapter, where the
+  stale family is drawn once per BUILDING chapter. So a refused chapter whose
+  record was written by an older version never reaches `stale` and can never
+  draw the different-version wording, and a book with several index-printing
+  chapters says the refusal more often than it says a stale record.
+  — M070 review round 1 F6, widened M070 review round 2 R2-F7

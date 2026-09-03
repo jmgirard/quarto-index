@@ -1,4 +1,4 @@
-# The chapter-source-kinds fixture (M070). Eight chapters, seven of them read
+# The chapter-source-kinds fixture (M070). Nine chapters, eight of them read
 # by the recovery route and one refused, so one render can show both what the
 # route reads and what it will not.
 #
@@ -8,6 +8,10 @@
 # render indexes and the recovery route has to reach the same way, and a
 # chapter whose front matter and body declare rival sort keys for one term and
 # whose front matter also hides marks behind Quarto's conditional classes.
+# The last chapter is the front-matter case again with every axis it is free in
+# moved at once: a non-`.qmd` extension, a field other than `abstract:`, an
+# entry taken from the attribute rather than from the visible words, and the
+# book's second declared index rather than its first.
 project:
   type: book
 
@@ -22,6 +26,7 @@ book:
     - five.ipynb
     - six.qmd
     - seven.qmd
+    - eight.Rmd
 
 format:
   html: default

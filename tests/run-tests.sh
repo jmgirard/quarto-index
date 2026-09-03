@@ -24320,6 +24320,322 @@ if [ "${1:-}" = "--self-test" ]; then
   pass "M071 T4 self-test: the fragment reader fails, naming the target, on a capture with one href rewritten to a fragment its page does not carry and on one rewritten to a page the capture lacks, refuses a page with no index section as an empty domain, and the containment reader refuses each of the front-matter page's anchors asked the wrong way round"
 fi
 
+# ---------------------------------------------------------------------------
+# M072 — how often a chapter this route will not read is reported, when the
+# record it met was written by another version of this extension.
+#
+# The refusal is one wording for four record states, and through M071 it was
+# drawn where the chapter met the record: once per chapter that READS the
+# store. The three different-version wordings are drawn somewhere else — once
+# per chapter that BUILDS an index section, and once by a chapter whose records
+# show no chapter of the book placing an index (M062) — because what a
+# version-skewed record costs is a section's share of that chapter's terms, and
+# a chapter that prints no section pays nothing. So a book with many chapters
+# and one notebook chapter whose record an older version wrote said the refusal
+# once per chapter where it said any other stale record once per section
+# (KI234). Since M072 the version-skewed state alone is handed to the report
+# site and drawn there, and the refusal follows the count of the reports it
+# stands in for, whichever state it is in (D-049).
+#
+# Four record states, one axis moved. This leg counts the refusal in each of
+# the four states `store_read` tells apart — a record written by another
+# version, a record listed and unopenable, a record whose bytes do not decode,
+# and no record at all — from a chapter that builds a section and from one that
+# does not, and shows that only the first state's count moved. The controls are
+# the other three: their counts are the counts they had before this milestone,
+# and each is drawn by the chapter that met the record.
+#
+# The fixture is the chapter-source-kinds book (M070), the one book here with a
+# chapter this route refuses. Its store is filled by a WHOLE-BOOK render, which
+# is what leaves a notebook chapter's record readable in the first place: the
+# refusal is reached only where a record could not be used, so a fixture whose
+# store was never written would be testing the never-written state instead.
+# `index.qmd` carries both placement markers and is the book's first chapter;
+# `one.qmd` carries none and is not the book's last, so it builds no section
+# while the store shows `index.qmd` placing both indexes — the two sides of the
+# rule the count now follows.
+# ---------------------------------------------------------------------------
+M072_DIR="$M070_DIR"
+M072W="$WORK/m072"
+rm -rf "$M072W"
+mkdir -p "$M072W"
+
+# The fixture's `.Rmd` chapters go through knitr, and the whole-book render
+# below renders them. Named here rather than left to that render, which would
+# fail deep in a knitr log and read like a defect in this extension.
+command -v Rscript >/dev/null 2>&1 \
+  || fail "Rscript not found on PATH (examples/book-extensions carries .Rmd chapters, and the M072 store is filled by a whole-book render, which runs them through knitr). M072 must never pass unrun."
+
+# One copy of the fixture with the extension spliced in beside it, holding no
+# store. Same shape as the M070 trees, kept separate because these are filled
+# by a whole-book render rather than left cold.
+m072_tree() {   # <slug>
+  local slug="$1"
+  rm -rf "$M072W/$slug"
+  cp -R "$M072_DIR" "$M072W/$slug"
+  rm -rf "$M072W/$slug/_book" "$M072W/$slug/.quarto" "$M072W/$slug/_extensions"
+  mkdir -p "$M072W/$slug/_extensions"
+  cp -R "$QI_EXT_DIR" "$M072W/$slug/_extensions/index"
+  [ -f "$M072W/$slug/five.ipynb" ] \
+    || fail "M072 ($slug): the copied fixture carries no notebook chapter, so every count below would be about a book with nothing in it to refuse"
+  [ -z "$(find "$M072W/$slug" -type d -name "$STORE_DIR" -print -quit)" ] \
+    || fail "M072 ($slug): the copied fixture carries a store somewhere other than the .quarto directory removed above, so the fill below would not be what wrote the records this leg plants in"
+}
+
+# The whole-book render that fills the store. Every chapter's record has to be
+# there afterwards, the notebook chapter's most of all: it is the record the
+# plants below rewrite, and a fill that silently left it out would send this
+# leg through the never-written state while claiming the version-skewed one.
+m072_fill() {   # <slug>
+  local slug="$1" chapter
+  ( cd "$M072W/$slug" && quarto render --to html ) \
+    > "$WORK/m072-$slug-fill.log" 2>&1 \
+    || { tail -30 "$WORK/m072-$slug-fill.log" >&2; fail "M072 ($slug): the whole-book render that fills the store failed, so this leg says nothing about a store any render wrote"; }
+  for chapter in index.qmd one.qmd five.ipynb; do
+    [ -f "$M072W/$slug/.quarto/$STORE_DIR/$chapter$STORE_SUFFIX" ] \
+      || fail "M072 ($slug): the whole-book render wrote no record for $chapter, so the reads below would be about a record that was never written rather than one that was"
+  done
+}
+
+# One filled tree copied to another slug, so the four record states are planted
+# into stores one render wrote rather than four.
+m072_copy() {   # <from> <to>
+  local from="$1" to="$2"
+  rm -rf "$M072W/$to"
+  cp -R "$M072W/$from" "$M072W/$to"
+  [ -f "$M072W/$to/.quarto/$STORE_DIR/five.ipynb$STORE_SUFFIX" ] \
+    || fail "M072 ($to): the copy carries no record for five.ipynb, so the state planted below would not be the state this check names"
+}
+
+m072_render() {   # <slug> <chapter> <suffix> <label>
+  local slug="$1" chapter="$2" suffix="$3" label="$4"
+  ( cd "$M072W/$slug" && quarto render "$chapter" --to html ) \
+    > "$WORK/m072-$slug$suffix.log" 2>&1 \
+    || { tail -30 "$WORK/m072-$slug$suffix.log" >&2; fail "$label: the render failed, so this leg says nothing about what was reported; IP2 forbids an unusable record taking a render down at all"; }
+}
+
+# The version field of one record rewritten, and nothing else. The plant has to
+# be the record this book's own render wrote, minus its version: a synthetic
+# record would also be testing whatever else it differs in, and the control
+# below — the same tree before the plant — would then not be a control.
+m072_skew() {   # <slug> <chapter> <label>
+  local slug="$1" chapter="$2" label="$3"
+  python3 - "$M072W/$slug/.quarto/$STORE_DIR/$chapter$STORE_SUFFIX" \
+    "$STORE_VERSION" "$SUPERSEDED_VERSION" "$label" <<'M072SKEW'
+import json, sys
+path, current, superseded, label = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
+with open(path) as fh:
+    record = json.load(fh)
+if record.get('version') != current:
+    sys.exit(f'FAIL: {label}: {path} carries version {record.get("version")!r}, not the '
+             f'{current} this render writes, so rewriting it would not be moving the one '
+             f'axis this leg is about')
+record['version'] = superseded
+with open(path, 'w') as fh:
+    json.dump(record, fh)
+M072SKEW
+  python3 -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1]))["version"] == int(sys.argv[2]) else "the rewrite did not land")' \
+    "$M072W/$slug/.quarto/$STORE_DIR/$chapter$STORE_SUFFIX" "$SUPERSEDED_VERSION" \
+    || fail "$label: $chapter's record does not carry the superseded version after the rewrite"
+  pass "$label: $chapter's record carries version $SUPERSEDED_VERSION where this render writes $STORE_VERSION, and differs from the record that render wrote in nothing else"
+}
+
+# AC3's naming clause, subtractively: of THIS extension's warnings (the pattern
+# set the source scan derives, not `(W)` lines, which every filter Quarto runs
+# writes), take the ones naming the refused chapter, take away the refusal and
+# — where the render draws one — the marker-position report, which names every
+# chapter after the marker by construction and is untouched by this milestone.
+# What is left must be nothing. Subtracting the two known wordings rather than
+# counting them is what catches a wording that does not exist yet: a seventh
+# report naming that chapter would survive both subtractions and fail here.
+m072_only_refusal_names() {   # <log> <marker|nomarker> <label>
+  local log="$1" marker="$2" label="$3"
+  local named="$WORK/m072-named.txt" residue="$WORK/m072-residue.txt"
+  { grep -E -f "$QI_WARN_PATTERNS" "$log" || true; } > "$WORK/m072-warns.txt"
+  { grep -F 'five.ipynb' "$WORK/m072-warns.txt" || true; } > "$named"
+  # The empty-domain fence: with no line naming that chapter at all, the
+  # residue below is empty for a reason that has nothing to do with which
+  # wordings drew it, and this check would pass over a log it never read.
+  [ -s "$named" ] \
+    || { cat "$WORK/m072-warns.txt" >&2; fail "$label: no warning of this extension names five.ipynb in $log, so the subtraction below would come out empty whatever the wordings were"; }
+  { grep -vF -- "$WARN_STORE_KIND_REFUSED" "$named" || true; } > "$residue"
+  if [ "$marker" = marker ]; then
+    { grep -vF -- "$WARN_MARKER_NOT_LAST" "$residue" || true; } > "$residue.2"
+    mv "$residue.2" "$residue"
+  fi
+  [ ! -s "$residue" ] \
+    || { cat "$residue" >&2; fail "$label: a warning of this extension other than the refusal names five.ipynb"; }
+  pass "$label: the refusal is the only warning of this extension naming five.ipynb, the marker-position report aside"
+}
+
+# The six wordings AC3 holds at zero: the three for a record written by another
+# version, and the three for one that could not be read. A refused chapter says
+# the refusal and none of these, whichever state its record was in.
+m072_other_wordings_silent() {   # <log> <label>
+  local log="$1" label="$2" key
+  for key in "$WARN_STORE_STALE_RECOVERED" "$WARN_STORE_STALE_NOMARKS" \
+             "$WARN_STORE_STALE_LOST" "$WARN_STORE_UNREADABLE_RECOVERED" \
+             "$WARN_STORE_UNREADABLE_NOMARKS" "$WARN_STORE_UNREADABLE_LOST"; do
+    check_warning_count "$log" "$key" 0 "$label"
+  done
+}
+
+# --- The control: the store as the whole-book render left it ----------------
+# Rendered BEFORE anything is planted, and from the chapter that builds both
+# sections, which is the render that would draw a refusal if one were there to
+# draw. Its silence is what makes the single refusal below a consequence of the
+# version and not of the fixture: the same book, the same chapter, the same
+# store, one field of one record apart.
+m072_tree base
+m072_fill base
+m072_render base index.qmd "-before" \
+  "M072-AC1 control (index.qmd over the store the whole-book render wrote)"
+check_warning_count "$WORK/m072-base-before.log" "$WARN_STORE_KIND_REFUSED" 0 \
+  "M072-AC1 control (every record is usable, so the notebook chapter's source is never asked for and nothing is refused)"
+check_extension_warning_count "$WORK/m072-base-before.log" 1 \
+  "M072-AC1 control (index.qmd over an intact store emitted a warning this suite cannot name; its one is the marker-position report the eight chapters after it draw)"
+
+# --- AC1: the version-skewed state, from both sides of the rule -------------
+m072_copy base version
+m072_skew version five.ipynb "M072-AC1 (the plant)"
+
+m072_render version one.qmd "-one" \
+  "M072-AC1 (one.qmd over a store whose notebook record another version wrote)"
+check_warning_count "$WORK/m072-version-one.log" "$WARN_STORE_KIND_REFUSED" 0 \
+  "M072-AC1 (one.qmd builds no section and the store shows index.qmd placing both indexes, so it says nothing about a record it never prints out of)"
+m072_other_wordings_silent "$WORK/m072-version-one.log" \
+  "M072-AC1/M072-AC3 (one.qmd, version-skewed record)"
+check_extension_warning_count "$WORK/m072-version-one.log" 0 \
+  "M072-AC1/M072-AC3 (one.qmd emitted a warning this suite cannot name; over this store it draws none at all)"
+
+m072_render version index.qmd "" \
+  "M072-AC1 (index.qmd over a store whose notebook record another version wrote)"
+check_warning_count "$WORK/m072-version.log" "$WARN_STORE_KIND_REFUSED" 1 \
+  "M072-AC1 (index.qmd builds both sections, and the refusal is drawn once there — the count the three different-version wordings follow)"
+m070_refusal_names five.ipynb "$WORK/m072-version.log" \
+  "M072-AC1 (a record written by another version)"
+m072_other_wordings_silent "$WORK/m072-version.log" \
+  "M072-AC1/M072-AC3 (index.qmd, version-skewed record)"
+m072_only_refusal_names "$WORK/m072-version.log" marker \
+  "M072-AC3 (index.qmd, version-skewed record)"
+check_extension_warning_count "$WORK/m072-version.log" 2 \
+  "M072-AC1/M072-AC3 (index.qmd emitted a warning this suite cannot name; its two are the one refusal and the marker-position report)"
+
+# --- AC2: the three states whose counts did not move ------------------------
+# Each is planted into a store one whole-book render wrote, and each is read by
+# `one.qmd` — the chapter that builds no section, and so the chapter whose
+# count the version-skewed state's move is visible against. A refusal here is
+# drawn where the chapter met the record, which is where all four were drawn
+# before this milestone.
+m072_copy base listed
+M072_LISTED_STORE="$M072W/listed/.quarto/$STORE_DIR"
+m068_dangle_record five.ipynb "$M072_LISTED_STORE" \
+  "M072-AC2 (the notebook chapter's record listed and unopenable)"
+m072_render listed one.qmd "-one" \
+  "M072-AC2 (one.qmd over a listed, unopenable notebook record)"
+check_warning_count "$WORK/m072-listed-one.log" "$WARN_STORE_KIND_REFUSED" 1 \
+  "M072-AC2 (a record listed and unopenable: the refusal is drawn by the chapter that met it, section or no section)"
+m070_refusal_names five.ipynb "$WORK/m072-listed-one.log" \
+  "M072-AC2 (a record listed and unopenable)"
+m072_other_wordings_silent "$WORK/m072-listed-one.log" \
+  "M072-AC2/M072-AC3 (one.qmd, listed and unopenable record)"
+m072_only_refusal_names "$WORK/m072-listed-one.log" nomarker \
+  "M072-AC3 (one.qmd, listed and unopenable record)"
+check_extension_warning_count "$WORK/m072-listed-one.log" 1 \
+  "M072-AC2/M072-AC3 (one.qmd emitted a warning this suite cannot name; its one is the refusal)"
+
+m072_copy base undecodable
+printf 'this is not a record\n' \
+  > "$M072W/undecodable/.quarto/$STORE_DIR/five.ipynb$STORE_SUFFIX"
+python3 -c 'import json,sys
+try:
+    json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+sys.exit("the planted bytes decode as JSON")' \
+  "$M072W/undecodable/.quarto/$STORE_DIR/five.ipynb$STORE_SUFFIX" \
+  || fail "M072-AC2: the bytes planted at five.ipynb's record decode after all, so the render below would be about a record that was read rather than one that was not"
+m072_render undecodable one.qmd "-one" \
+  "M072-AC2 (one.qmd over a notebook record whose bytes do not decode)"
+check_warning_count "$WORK/m072-undecodable-one.log" "$WARN_STORE_KIND_REFUSED" 1 \
+  "M072-AC2 (bytes that do not decode as a record: the refusal is drawn by the chapter that met them)"
+m070_refusal_names five.ipynb "$WORK/m072-undecodable-one.log" \
+  "M072-AC2 (bytes that do not decode as a record)"
+m072_other_wordings_silent "$WORK/m072-undecodable-one.log" \
+  "M072-AC2/M072-AC3 (one.qmd, undecodable record)"
+m072_only_refusal_names "$WORK/m072-undecodable-one.log" nomarker \
+  "M072-AC3 (one.qmd, undecodable record)"
+check_extension_warning_count "$WORK/m072-undecodable-one.log" 1 \
+  "M072-AC2/M072-AC3 (one.qmd emitted a warning this suite cannot name; its one is the refusal)"
+
+m072_copy base nostore
+rm -rf "$M072W/nostore/.quarto/$STORE_DIR"
+[ ! -d "$M072W/nostore/.quarto/$STORE_DIR" ] \
+  || fail "M072-AC2: the store directory is still there, so the render below would be about records rather than about their absence"
+m072_render nostore one.qmd "-one" \
+  "M072-AC2 (one.qmd with no store at all)"
+check_warning_count "$WORK/m072-nostore-one.log" "$WARN_STORE_KIND_REFUSED" 0 \
+  "M072-AC2 (no store: one.qmd builds no section, so a record no render has written is read as absent and its chapter's source is never asked for)"
+m072_other_wordings_silent "$WORK/m072-nostore-one.log" \
+  "M072-AC2/M072-AC3 (one.qmd, no store)"
+check_extension_warning_count "$WORK/m072-nostore-one.log" 0 \
+  "M072-AC2/M072-AC3 (one.qmd emitted a warning this suite cannot name; with no store it draws none at all)"
+pass "M072-AC1/M072-AC2/M072-AC3: of the four record states this route tells apart, the one whose record another version wrote is the only one whose refusal count moved — drawn once by the chapter that builds an index section and not at all by the chapter that builds none, where a record listed and unopenable and a record whose bytes do not decode are each still refused once by the chapter that meets them and a book with no store says nothing; the same store one field earlier draws no refusal, and no wording of this extension other than the refusal names the refused chapter"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M072 T2 — the two axes the count rests on, one planted defect each,
+  # against copies of the version-skewed tree whose only change is that
+  # mutation. One turns the report site's gate round, so the chapter that
+  # builds a section is the one that says nothing; the other puts the refusal
+  # test back ahead of the version test, which is where this milestone found
+  # it, so the refusal is drawn where the chapter meets the record again.
+  # Each is shown red against the counts the AC1 legs above assert, and each
+  # of those counts is shown green unplanted by those legs.
+  # -------------------------------------------------------------------------
+
+  # One mutant tree carrying the version-skewed store, both chapters rendered
+  # into it. The store is copied from the skewed tree rather than planted
+  # again, so the mutation is the only difference from the leg above.
+  m072_mutant() {   # <slug> <label> <perl substitution>...
+    local slug="$1" label="$2"
+    shift 2
+    [ "$#" -ge 1 ] || fail "$label: m072_mutant was given no substitution to apply"
+    m072_copy version "$slug"
+    local filter="$M072W/$slug/_extensions/index/modules/book.lua"
+    spliced_copy "$label" "the filter" "$filter" "$M072W/$slug-spliced" "$@"
+    mv "$M072W/$slug-spliced" "$filter"
+    m072_render "$slug" one.qmd "-one" "$label (one.qmd)"
+    m072_render "$slug" index.qmd "" "$label (index.qmd)"
+  }
+
+  # 1 — the report site's gate turned round. The refusal is still handed to
+  # that site, and the site still draws it; what moves is which chapter draws
+  # anything at all. The chapter that builds both sections falls silent and the
+  # chapter that builds none speaks, which is the count this milestone moved,
+  # read backwards.
+  m072_mutant gateflip "M072 T2 self-test (the report site's gate turned round)" \
+    's{\n  if builds or first == nil then\n}{\n  if not (builds or first == nil) then\n}'
+  check_warning_count "$WORK/m072-gateflip-one.log" "$WARN_STORE_KIND_REFUSED" 1 \
+    "M072 T2 self-test (the gate turned round: one.qmd draws the refusal it must not draw)"
+  check_warning_count "$WORK/m072-gateflip.log" "$WARN_STORE_KIND_REFUSED" 0 \
+    "M072 T2 self-test (the gate turned round: index.qmd draws none where it must draw one)"
+  pass "M072 T2 self-test: with the report site's gate turned round and nothing else changed, the chapter that builds no section draws the refusal and the chapter that builds both draws none — which both AC1 counts would fail on"
+
+  # 2 — the refusal test back ahead of the version test, which is the state
+  # this milestone found `store_read` in. A refused chapter never reaches the
+  # branch that hands it to the report site, so it is reported where it met the
+  # record: `one.qmd` says it too, once per reading chapter as before.
+  m072_mutant refusefirst \
+    "M072 T2 self-test (the refusal test back ahead of the version test)" \
+    's{\n        if ok and type\(data\) == "table" and data\.version ~= STORE_VERSION then\n}{\n        if refused then\n          warn_source_refused(file)\n        elseif ok and type(data) == "table" and data.version ~= STORE_VERSION then\n}'
+  check_warning_count "$WORK/m072-refusefirst-one.log" "$WARN_STORE_KIND_REFUSED" 1 \
+    "M072 T2 self-test (the refusal ahead of the version test: one.qmd draws it where it met the record, which is the count this milestone moved)"
+  check_warning_count "$WORK/m072-refusefirst.log" "$WARN_STORE_KIND_REFUSED" 1 \
+    "M072 T2 self-test (the refusal ahead of the version test: index.qmd draws it too, so the count alone cannot tell this mutation from the filter as shipped there)"
+  pass "M072 T2 self-test: with the refusal tested ahead of the version and nothing else changed, a chapter that builds no section is told about a record another version wrote — which the AC1 count for one.qmd would fail on"
+fi
+
 }
 
 # `pipefail` would abort on the function's own exit status before the count is

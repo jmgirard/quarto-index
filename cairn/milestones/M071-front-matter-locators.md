@@ -1,12 +1,12 @@
 # M071: A front-matter mark in an HTML book chapter files one locator, to the chapter's page
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
 - **Resolves:** —
-- **Branch/PR:** —
+- **Branch/PR:** m071-front-matter-locators
 
 ## Goal
 
@@ -60,6 +60,8 @@ Probed 2026-09-02 (quarto 1.10.18, pandoc 3.11): in a book chapter Pandoc hands 
 - 2026-09-02: plan gate chose a page-only locator for every front-matter mark in a book chapter over keeping the metadata copy's fragment and dropping only the reflected copies, because the filter cannot tell which fields the book title block prints, so the fragment stays dead for `description:` and any unprinted field; falsified by an author reporting that a front-matter link landing at the top of the chapter's page, not at its abstract, is a defect.
 - 2026-09-02: plan gate chose the same over a fragment for an enumerated field list (`abstract:`, `subtitle:`, `keywords:`), because the list is Quarto's title-block template, which drifts by release and theme; falsified by Quarto documenting that list as a stable contract.
 - 2026-09-02: plan gate chose the fragment-resolution sweep over the four captures this work touches over every HTML book capture the suite makes, because a dead fragment elsewhere is not this milestone's promise; falsified by a dead fragment found in another fixture's index, which would promote the wider sweep.
+- 2026-09-02: /milestone-implement started; branch cut from the pushed default branch. Question gate: a front-matter mark in the chapter that prints the index links to that chapter's own page by name rather than as an empty link (one extra cold render with a mark spliced into `index.qmd` covers it); the tagging attribute (`data-qi-meta`) joins the whole-set residue sweep with a planted defect of its own — a discovered sub-task, minor amendment under T1/T3.
+- 2026-09-02: T1 and T2 code landed together (checkpoint, unticked until the suite runs over T3's moved manifests): `TagSpan`/`TagPandoc` in `passes.lua` ahead of `CollectSort`, constants `META_MARK_ATTR` and `META_REFLECTION_ID` in `core.lua`, the emit pass reading the tag off and filing a page locator under `html_book_chapter`; `build_record` carries `page_locator` and `book_marks` gives a page locator in the reading chapter its own page's href. Scratch renders: the cold leg prints the M070 recovered rows unchanged; the record leg prints `Hasp`, `Mullion`, `Nacelle`, `Lanyard` at their pages with no fragment, `Ingot` at `seven.html` then `seven.html#qi-mark-1`, and `Jetsam` and `Oakum` at `seven.html` (the render indexes the two conditional spans in `seven.qmd`'s abstract and drops the conditional block); a single document prints its four anchors as before; no `data-qi-meta` reaches HTML or gfm output.
 
 ## Decisions
 

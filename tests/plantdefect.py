@@ -182,7 +182,7 @@ def plant_duplicate(root, name):
     print(marker)
 
 
-# The three residue plants (M24). Each is the defect its sweep in
+# The residue plants (M24; the `meta` plant added M071). Each is the defect its sweep in
 # tests/htmlsweep.py exists to catch, planted into one captured page so the
 # sweep is shown to READ that page and not merely to walk past it: a sweep over
 # a set is satisfied by a set it never opens, which is the vacuous pass the
@@ -199,6 +199,9 @@ def plant_duplicate(root, name):
 HTML_DEFECTS = {
     'pending': ('<body', '<body data-qi-pending="planted"',
                 'data-qi-pending survived into rendered HTML'),
+    # The tagging pass's plumbing (M071), read by the same `pending` sweep.
+    'meta': ('<body', '<body data-qi-meta="planted"',
+             'data-qi-meta survived into rendered HTML'),
     'marker': ('</body>', '<div class="%s">planted</div></body>',
                'marker residue in rendered HTML'),
     'emptydiv': ('</body>', '<div class="qi-planted-empty"></div></body>',

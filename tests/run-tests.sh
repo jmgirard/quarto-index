@@ -17911,8 +17911,8 @@ python3 tests/gallerycheck.py pdf "$GALLERY_YML" \
   || fail "M41-AC4: a PDF the gallery links does not carry the index entries its manifest states (its own FAIL line is above)"
 
 python3 tests/htmlsweep.py pending "$CAPTURE_ROOT" \
-  || fail "M03-AC3: the pending attribute reached rendered HTML"
-pass "M03-AC3: the pending attribute reaches no page this run rendered, forged author copies included"
+  || fail "M03-AC3/M071: a plumbing attribute (the pending tag, or the tagging pass's) reached rendered HTML"
+pass "M03-AC3/M071: neither plumbing attribute — the pending tag, nor the tagging pass's — reaches any page this run rendered, forged author copies included"
 MARKER_CLASS="$MARKER_CLASS" python3 tests/htmlsweep.py marker "$CAPTURE_ROOT" \
   || fail "M04-AC1/M04-AC4/M12: the marker class reached a rendered page that should not carry it, or left one that should"
 pass "M04-AC1/M04-AC4/M12: every page this run rendered carries exactly the marker elements the fixture that wrote it means to keep, and the two that keep any are the two that write one somewhere the filter refuses"
@@ -18589,7 +18589,12 @@ if [ "${1:-}" = "--self-test" ]; then
     || fail "M24 self-test: the marker sweep fails on the unplanted mirror, so no failure below is evidence of anything"
   while IFS= read -r page; do
     REL="${page#"$CAPTURE_ROOT"/}"
-    for KIND in pending marker; do
+    # Three plants over two sweeps: the `pending` sweep reads both plumbing
+    # attributes (the tagging pass's `data-qi-meta` joined it in M071), so
+    # the `meta` plant is judged by that same mode.
+    for KIND in pending meta marker; do
+      SWEEP_MODE="$KIND"
+      [ "$KIND" != meta ] || SWEEP_MODE=pending
       cp "$page" "$SWEEPW/$REL"
       SWEEP_EXPECT=$(MARKER_CLASS="$MARKER_CLASS" \
         python3 tests/plantdefect.py --html "$SWEEPW/$REL" "$KIND") \
@@ -18598,7 +18603,7 @@ if [ "${1:-}" = "--self-test" ]; then
       # failing path BY DESIGN, and `A && B` with a failing A returns non-zero,
       # which `set -e` would take as the run aborting here with no FAIL line.
       SWEEP_OUT=$(MARKER_CLASS="$MARKER_CLASS" \
-        python3 tests/htmlsweep.py "$KIND" "$SWEEPW" 2>&1) && SWEEP_RC=0 || SWEEP_RC=$?
+        python3 tests/htmlsweep.py "$SWEEP_MODE" "$SWEEPW" 2>&1) && SWEEP_RC=0 || SWEEP_RC=$?
       [ "$SWEEP_RC" -ne 0 ] \
         || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep passed with the residue planted in $REL, so it is not reading that page"; }
       printf '%s' "$SWEEP_OUT" | grep -qF -- "$SWEEP_EXPECT" \
@@ -18608,7 +18613,7 @@ if [ "${1:-}" = "--self-test" ]; then
       cp "$page" "$SWEEPW/$REL"
     done
   done < <(find "$CAPTURE_ROOT" -name '*.html' | sort)
-  pass "M24: both whole-set residue sweeps fail, naming the page, on their own residue planted into each of the $SWEEP_PAGES captured page(s) in turn"
+  pass "M24: both whole-set residue sweeps fail, naming the page, on their own residue planted into each of the $SWEEP_PAGES captured page(s) in turn — the pending sweep on each of its two plumbing attributes"
 
   # The empty-div half names its three pages, so its discrimination is per
   # page and not per set: each planted in a copy, each required to fail.

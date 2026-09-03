@@ -507,6 +507,9 @@ end
 -- which is why this is written as a guarantee rather than as a fix.
 return {
   { Pandoc = qi_passes.Reset },
+  -- The tagging pass carries both hooks: its element function discards a
+  -- forged tag before its document function tags the metadata's marks.
+  { Span = qi_passes.TagSpan, Pandoc = qi_passes.TagPandoc },
   { Span = qi_passes.CollectSort },
   { Span = qi_passes.CollectKeys },
   -- The range pass carries a document hook as well as an element one: an

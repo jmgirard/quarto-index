@@ -1,9 +1,11 @@
--- The per-document reset and the four Span passes, in the order the filter
--- returns them: the reset, then three passes that only read — one registering
+-- The per-document reset and the five Span passes, in the order the filter
+-- returns them: the reset, then the tagging pass that tells a front-matter
+-- mark from a body one, then three passes that only read — one registering
 -- sort keys, one deciding which keys are contested, one pairing page ranges —
 -- and the emitting pass that rewrites the mark. The range pass carries a
 -- document hook as well, since whether an opening is ever closed is a fact only
--- the whole document settles.
+-- the whole document settles; the tagging pass carries one because the
+-- metadata is reached through the document.
 --
 -- They share the accumulators in `qi_marks`, `qi_latex` and `qi_sortkeys`
 -- rather than passing state between themselves: Pandoc runs each as a separate
@@ -25,15 +27,88 @@ local M = {}
 -- one because it has to run before the first mark is seen, and Pandoc runs a
 -- filter table with no element function over the document before the next
 -- table's element functions (M26).
+-- Whether this document is one chapter of an HTML book — the one render in
+-- which a front-matter mark files a page locator rather than an anchor (see
+-- the emitting pass). Assigned wholesale here on every document, like
+-- `range_pair_found`, so no earlier document's value can survive into it; it
+-- is a per-document fact, not an accumulator, which is why it joins no
+-- module's `reset`.
+local html_book_chapter = false
+
 local function Reset(doc)
-  -- First of the four, and it takes the document: every accumulator below is
+  -- First of the five, and it takes the document: every accumulator below is
   -- keyed by the index a mark files in, so which indexes this document has
   -- must be settled before the first mark is recorded.
   qi_indexes.reset(doc)
   qi_marks.reset()
   qi_latex.reset()
   qi_sortkeys.reset()
+  html_book_chapter = qi_core.is_html() and doc.meta.book ~= nil
   return nil
+end
+
+-- The tagging pass: which marks the passes below reach through the metadata.
+-- Pandoc hands a filter's `Span` function every span of the document in one
+-- traversal, the metadata's ahead of the blocks' (probed 2026-09-02, quarto
+-- 1.10.18, pandoc 3.11: a book chapter's `abstract:` mark reached `Span`
+-- before any body span), and nothing about the span itself says which side it
+-- came from. So the pass walks the metadata alone, from the document, and
+-- tags every index mark it finds there with META_MARK_ATTR; the emitting pass
+-- reads the tag off.
+--
+-- Two other things the same pass does, because they have to happen before any
+-- pass reads a mark. Its `Span` function discards a META_MARK_ATTR an author
+-- wrote — on any span — since one left in place would file a body mark as a
+-- front-matter one (the HTML_PENDING_ATTR precedent in the emitting pass);
+-- Pandoc runs a table's element functions before its document function, so
+-- the forgeries are gone before the metadata is tagged. And in an HTML render
+-- its document function takes the index class off every span inside Quarto's
+-- top-level META_REFLECTION_ID div, where the chapter's metadata fields have
+-- been copied ahead of every filter: each such span is a second reading of a
+-- mark the metadata already carries, and the div does not survive into the
+-- page (the same probe: one `abstract:` mark reached `Span` three times and
+-- its page carried one anchor). The copies are declassed rather than removed,
+-- so nothing about the div but that class changes; a single HTML document has
+-- no such div, and no other format has been measured for one.
+local function TagSpan(span)
+  if span.attributes[qi_core.META_MARK_ATTR] == nil then
+    return nil
+  end
+  span.attributes[qi_core.META_MARK_ATTR] = nil
+  return span
+end
+
+local function tag_meta_marks(span)
+  if not span.classes:includes(qi_core.INDEX_CLASS) then
+    return nil
+  end
+  span.attributes[qi_core.META_MARK_ATTR] = "1"
+  return span
+end
+
+local function declass_copy(span)
+  if not span.classes:includes(qi_core.INDEX_CLASS) then
+    return nil
+  end
+  span.classes = span.classes:filter(function(class)
+    return class ~= qi_core.INDEX_CLASS
+  end)
+  return span
+end
+
+local function TagPandoc(doc)
+  -- `Meta` has no `walk` of its own (the recovery route's reader makes the
+  -- same detour); the document's walk reaches the metadata, and the metadata
+  -- alone is what is walked here.
+  doc.meta = pandoc.Pandoc({}, doc.meta):walk({ Span = tag_meta_marks }).meta
+  if qi_core.is_html() then
+    for i, block in ipairs(doc.blocks) do
+      if block.t == "Div" and block.identifier == qi_core.META_REFLECTION_ID then
+        doc.blocks[i] = block:walk({ Span = declass_copy })
+      end
+    end
+  end
+  return doc
 end
 
 -- The collect pass: a full traversal that only reads. It runs before the
@@ -317,8 +392,16 @@ local function Span(span)
     -- is discarded wherever it is found.
     span.attributes[qi_core.HTML_PENDING_ATTR] = nil
   end
+  -- The tagging pass's answer to where this mark was reached — the metadata,
+  -- or the blocks — read off and removed here, in every format: it is
+  -- plumbing between two passes, exactly as the pending tag is, and an
+  -- author's copy was discarded by that pass before it could be read.
+  local from_meta = span.attributes[qi_core.META_MARK_ATTR] ~= nil
+  if from_meta then
+    span.attributes[qi_core.META_MARK_ATTR] = nil
+  end
   if not span.classes:includes(qi_core.INDEX_CLASS) then
-    if forged then
+    if forged or from_meta then
       return span
     end
     return nil
@@ -511,8 +594,21 @@ local function Span(span)
     -- range (review F1). The resolved `role` beside it was always written
     -- this way; the two fields disagreeing about one judgement is what made
     -- the defect reachable.
+    -- A front-matter mark in an HTML book chapter files a page locator and
+    -- gets no anchor (D-048): the page holds at most one element for it, in a
+    -- title block whose fields Quarto's template chooses and this filter
+    -- cannot see, so a fragment minted here names an id the page may not
+    -- carry — a link to nowhere, in silence. The chapter's page is what the
+    -- recovery route files for the same mark, and the two routes now file the
+    -- same row. A single document keeps its anchor: its title block is on the
+    -- same page and every probed field printed one (see the tagging pass).
+    -- `page_locator` is the recovery route's own flag, read by the book's
+    -- entry tree, and it is written only for a mark that CONTRIBUTES a locator
+    -- — the same `#xrefs == 0` the anchor below is gated on.
+    local page_only = from_meta and html_book_chapter
     local record = { levels = levels, sort = sort, xrefs = xrefs,
                      context = context, index = index_name,
+                     page_locator = (page_only and #xrefs == 0) or nil,
                      -- Likewise resolved rather than raw: a range's role is
                      -- the RANGE's, so an opening whose closing declared it
                      -- carries it here too and the HTML locator is emphasized
@@ -524,7 +620,7 @@ local function Span(span)
                        and span.attributes[qi_core.RANGE_ATTR] or nil,
                      paired = range ~= nil and range.ending or nil }
     qi_marks.html_marks[#qi_marks.html_marks + 1] = record
-    if #xrefs == 0 then
+    if #xrefs == 0 and not page_only then
       -- Only a locator-contributing mark needs somewhere to link back to; a
       -- cross-reference mark takes the place of the locator and so has no
       -- anchor of its own. WHICH id anchors it — the author's own, or a
@@ -537,8 +633,9 @@ local function Span(span)
 
   if not qi_core.is_latex_derived() then
     -- Formats with no index back-end pass the visible text through
-    -- untouched, with no artifacts.
-    return nil
+    -- untouched, with no artifacts — the span itself returned only where
+    -- the tag above was taken off it, so the removal reaches the output.
+    return from_meta and span or nil
   end
 
   -- Recorded for every mark whatever it emits: a cross-reference mark files
@@ -625,6 +722,8 @@ end
 -- the M16-AC3 probe relocates a definition into another file — a plain
 -- `NAME =` line left behind here would then mask it (M16 review F3).
 M["Reset"] = Reset
+M["TagSpan"] = TagSpan
+M["TagPandoc"] = TagPandoc
 M["CollectSort"] = CollectSort
 M["CollectKeys"] = CollectKeys
 M["CollectRanges"] = CollectRanges

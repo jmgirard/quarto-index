@@ -141,7 +141,8 @@ end
 -- A mark recovered from another chapter's source has no anchor: nothing minted
 -- one for it, and a fragment computed here would name an id that page may not
 -- carry, which links to nowhere in silence. Its locator is the chapter's page
--- and nothing after it.
+-- and nothing after it. A front-matter mark in an HTML book chapter is filed
+-- the same way by that chapter's own render (D-048).
 local function mark_target(mark)
   if mark.anchor == nil then
     return mark.href or ""
@@ -177,8 +178,9 @@ local function build_entry_tree(marks)
     -- the mark's own chapter's verdict — the one scope a range pairs in
     -- (D-009), whether this index is a document's or the book's.
     -- `page_locator` is the book's flag for a mark recovered from a chapter's
-    -- source: it has no anchor and still contributes a locator, where a
-    -- cross-reference mark has no anchor and must not.
+    -- source, and for a front-matter mark of an HTML book chapter: it has no
+    -- anchor and still contributes a locator, where a cross-reference mark
+    -- has no anchor and must not.
     if (mark.anchor or mark.page_locator) and mark.paired ~= "close" then
       -- Two marks that land on the same destination in the same role are one
       -- locator, not two: a reader following either arrives at the same place,

@@ -6,7 +6,7 @@
 - **Driving RR:** —
 - **Principles touched:** GP1
 - **Resolves:** —
-- **Branch/PR:** m071-front-matter-locators
+- **Branch/PR:** m071-front-matter-locators · https://github.com/jmgirard/quarto-index/pull/71
 
 ## Goal
 

@@ -1,6 +1,6 @@
 # M073: A store report names the record it met as the record it was
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -91,30 +91,30 @@ stands as its known issue.
 
 ## Tasks
 
-- [ ] T1: Add the sixth wording in `store_read`
+- [x] T1: Add the sixth wording in `store_read`
       (`_extensions/index/modules/book.lua:1057-1071`) on the
       `never_written and rebuilt == nil` path, sharing no prefix with the five
       standing wordings; add its grep key beside the others
       (`tests/run-tests.sh:871-889`) and raise `warn-distinct.py`'s
       `EXPECTED` 83 → 84 with its own arithmetic line.
-- [ ] T2: Narrow the classification test at `book.lua:1008` to a record whose
+- [x] T2: Narrow the classification test at `book.lua:1008` to a record whose
       `version` is a number other than `STORE_VERSION`; leave `valid_record`
       (`book.lua:365`) alone, so a decoded table with no version still fails
       validation and takes the unusable path.
-- [ ] T3: Re-read all six store wordings and the prose naming their states
+- [x] T3: Re-read all six store wordings and the prose naming their states
       against the narrowed sets, per the M38 lesson — a clause goes false in
       silence when what it is computed over changes.
-- [ ] T4: Suite legs: extend `m069-lostsource`'s assertions (AC1); the
+- [x] T4: Suite legs: extend `m069-lostsource`'s assertions (AC1); the
       undecodable-plus-broken-source leg over `examples/book-placement`
       (AC2); the three version-form legs over `examples/book-extensions`
       (AC3), reading `STORE_VERSION` through `run_scan store-version` rather
       than spelling it (the M06 lesson). Hand-derive every count.
-- [ ] T5: The three planted defects of AC6 under `--self-test`, each shown red
+- [x] T5: The three planted defects of AC6 under `--self-test`, each shown red
       before its fix, each a single substitution (`spliced_copy` fails a
       zero-match plant).
-- [ ] T6: `site/books.qmd`, `CHANGELOG.md`, the books claim-ledger rows, and
+- [x] T6: `site/books.qmd`, `CHANGELOG.md`, the books claim-ledger rows, and
       the recovery prose plus KI230 and KI236 in `cairn/DESIGN.md`.
-- [ ] T7: Full `tests/run-tests.sh` and `--self-test` runs; D-entry
+- [x] T7: Full `tests/run-tests.sh` and `--self-test` runs; D-entry
       superseding D-045's clause that a never-written record whose source
       cannot be read draws the existing wording for that outcome, and
       recording the version-field partition.
@@ -126,6 +126,14 @@ stands as its known issue.
 - 2026-09-03: plan gate chose reading a versionless record as one that could not be read over giving it a wording of its own, because a seventh sentence buys a distinction no author acts on differently; falsified by an author reporting they needed to know the file held a record's bytes rather than a damaged record.
 - 2026-09-03: implement gate chose the sixth wording's own opening clause over sharing the never-written recovery wording's, because that clause is the grep key the suite counts that report by and a shared opening would make one key count both; falsified by an author reporting the two never-written reports read as unrelated to them.
 - 2026-09-03: criteria audit ran in full mode over two passes ([O], fresh context); pass 1 returned four instrument-bound criteria and one unreachable approach, pass 2 returned eight findings over the rewrite — an unenumerable "opening" clause, two counts stated per render that are per reading chapter, `{}` conflating two probe forms, an ambiguous plant site, a missing nil-only plant, and two documentation promises over whole files — all disposed into the criteria above.
+
+- 2026-09-03: T1-T3 — the sixth wording added on the `never_written and rebuilt == nil` path with its own opening clause, its grep key beside the others, `warn-distinct.py`'s EXPECTED 83 → 84; the classification test narrowed to `type(data.version) == "number"`; `valid_record` left alone with a note saying the divergence is deliberate.
+- 2026-09-03: T3 re-read found the M072 `refusefirst` plant's needle sitting on the line the narrowing moved, and KI216's clause saying no route recovers an `output-file:` chapter's terms, false since M069 — the plant re-anchored, KI216 corrected in place, a candidate row added for where that recovered locator points.
+- 2026-09-03: T4 — `m069-lostsource` re-pointed at the new wording (AC1); the undecodable-record-plus-broken-source leg over `examples/book-placement` (AC2); the three version-form legs over a copy of the filled `examples/book-extensions` store, reading `STORE_VERSION` through `run_scan store-version` (AC3). All counts hand-derived.
+- 2026-09-03: T5 — three plants under `--self-test`: the new branch made unreachable, the version test back to inequality alone, and the same test narrowed to nil rather than to a number; the third is run over all three version forms, the deleted-version form staying green under it being the point.
+- 2026-09-03: T6 — `site/books.qmd`, `CHANGELOG.md`, four claim-ledger rows, KI230 and KI236 marked resolved in place.
+- 2026-09-03: T7 — D-050 recorded. Suite runs 1-4 each surfaced one defect in this milestone's own additions: the two self-test renders missing their `capture` calls (M24 scan), the claim-list self-test's pinned row count 33 → 37, and the M070 `lostwording` plant asserting the old wording over a cold tree, where the never-written one is now the true report. Run 1 was invalid — the script was edited while it ran; see the LESSONS line.
+- 2026-09-03: `tests/run-tests.sh --self-test` exits 0, all 1260 checks passed (run 5, tree at 79f2855).
 
 ## Decisions
 

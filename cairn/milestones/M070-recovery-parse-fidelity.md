@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M070: A recovered chapter is read as the file it is, and everywhere its own render reads it
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M069
 - **Driving RR:** —
@@ -130,17 +130,17 @@ reach the book index and what the render tells them when some cannot.
       round.
 - [x] T11. `DESIGN.md`'s recovery-contract paragraph; the dead nil guard; the
       retired known-issue citations; KI232 widened; the fixture's cell id.
-- [ ] T12. The front-matter conditional-drop plant's label: an ordinary render
+- [x] T12. The front-matter conditional-drop plant's label: an ordinary render
       does index its two marks, so the label states the decision instead.
-- [ ] T13. The refused-chapter claim on `site/books.qmd` and in `CHANGELOG.md`,
+- [x] T13. The refused-chapter claim on `site/books.qmd` and in `CHANGELOG.md`,
       narrowed to the states the refusal branch is reached in, its pinned claim
       rows moving with it.
-- [ ] T14. The refusal's check key made unique to its own wording, and the
+- [x] T14. The refusal's check key made unique to its own wording, and the
       copied-fixture store assertion made one that can fail.
-- [ ] T15. The durable records: a D-entry for each of this milestone's two
+- [x] T15. The durable records: a D-entry for each of this milestone's two
       narrowings of the recovery decision; KI218 corrected and KI220's citation
       repaired; KI233 and KI234 added; the follow-up candidate row.
-- [ ] T16. AC3's probe axes in one chapter: a non-`.qmd` extension, a field
+- [x] T16. AC3's probe axes in one chapter: a non-`.qmd` extension, a field
       other than `abstract:`, an entry from the attribute rather than the
       visible words, and the book's second index; manifests, counts and plants
       moving with it, and a `.content-visible` mark beside the hidden pair.
@@ -327,3 +327,6 @@ Defect returns for this milestone: 2. Amendment returns: 1. No thrash trigger.
 - 2026-09-02: amendment return: AC3 — "A mark written in the YAML front matter of a chapter whose source file's extension is one the recovery parse accepts, written in the file on disk, naming an index the book declares, and neither carrying nor inside a block or span carrying `.content-visible` or `.content-hidden`, that reaches the book's index when that chapter's record is read, reaches it under the same printed entry and in that same index when no record of that chapter has been written and it is recovered from its source instead; and the recovered mark's locator, where it contributes one, is a link to that chapter's page with no fragment"
 - 2026-09-02: amendment (substantive, gated) — AC2 narrowed to the chapters it was written about, gaining "whose only mark is in that chapter's body"; the fixture's own `seven.qmd` falsifies it as it stood. No criterion was widened or added: both amendments narrow. Tasks T12-T16 added for the round's findings, Coverage extended, and the Tasks section and then Scope In each compressed in one pass to hold the 150-line cap (`cairn_validate` weight caps PASS).
 - 2026-09-02: `ROADMAP.md` reached its 60-line cap when the round's follow-up row was added, so the chapter-filename row and the Windows-symlink row were clustered into one paths-and-filenames row rather than either being dropped.
+- 2026-09-02: T12-T16 — the front-matter conditional-drop plant's label now states the decision (Quarto settles a span-level conditional after this extension's pass, so the chapter's own render does index those marks and recovery drops them by D-042) instead of crediting the render with settling them first; the refused-chapter claim narrowed on `site/books.qmd` and in `CHANGELOG.md`, its pinned rows moving with it, 30 claims to 31; `WARN_STORE_KIND_REFUSED` lengthened to `source is not one this route reads`, which matches one wording in the filter where the old six words matched three; and the copied-fixture store assertion moved off the path `rm -rf` had just removed to a `find` over the whole copy, shown red by hand against a store planted outside `.quarto` and shown blind in the old form.
+- 2026-09-02: T16 — `examples/book-extensions` gains `eight.Rmd`, which moves all four axes AC3 is free in at once: a non-`.qmd` extension, a mark in `description:` as well as `abstract:`, an entry taken from the attribute rather than the visible words, and the book's second declared index. Its three terms are held in both manifests, the record-route half rendered from `eight.Rmd`'s own record beside `six.qmd`'s. `seven.qmd` gains a `.content-visible` front-matter mark so the conditional drop is not fenced on one of its two classes. Warning counts moved with the ninth chapter: 6 to 7 never-written on the cold leg, 5 to 6 on the dangling leg, 8 to 9 total on each, and 6 to 7 refusals under the inverted plant.
+- 2026-09-02: return round 2 complete, T12-T16 ticked — `tests/run-tests.sh` passed at 642 checks and `tests/run-tests.sh --self-test` at 1207, both exit 0, 25 M070 checks among them and all seven plants shown red against the check that fences each. Status back to `review`.

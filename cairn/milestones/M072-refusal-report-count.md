@@ -1,6 +1,6 @@
 # M072: A refused chapter whose record an older version wrote is reported once per index section
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -62,6 +62,8 @@ Today `store_read` draws the refusal inline for every reading chapter in all thr
 - 2026-09-03: T3 — `site/books.qmd` states which report the refusal's count follows in each record state, with a claim-ledger row pinning it (the pinned claim total moved from 32 to 33); `CHANGELOG.md` entry under Unreleased / Output; DESIGN's recovery section restated with the count; KI234 struck.
 - 2026-09-03: added to T2 beyond the plan — a control render over the store as the whole-book render left it, before the version plant, so the single refusal is evidenced against the same book, chapter and store one field apart; and a capture after every render, which the M24 sweep requires.
 - 2026-09-03: `tests/run-tests.sh --self-test` exits 0 on the branch, 1239 checks.
+
+- 2026-09-03: `tests/run-tests.sh` exits 0 on the branch, 13m09s wall clock (603s user, 72s system, 85% CPU — the run is effectively single-core).
 
 ## Decisions
 

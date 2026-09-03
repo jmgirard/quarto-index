@@ -60,7 +60,9 @@
   something a filter can see. A single document that is not a book chapter is
   untouched: its front-matter marks keep their anchors and their fragment
   locators, its page printing every one of the probed fields in its own title
-  block.
+  block. A mark written in a chapter's `title:` is not covered: Quarto copies the
+  title into every page's sidebar and page navigation, and each copy still
+  files a locator of its own.
 
 ## 0.2.0 (2026-09-02)
 

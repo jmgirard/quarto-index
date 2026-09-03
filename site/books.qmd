@@ -115,8 +115,11 @@ or from its source: whether the page prints that field at all, and where, is
 the title-block template's choice rather than this extension's, so a link into
 the field could land nowhere, and the index links to the page instead. (A
 single document that is not a book chapter is different — its front matter is
-printed on the same page, and a mark there keeps its own anchor.) What does
-not come back is anything the chapter worked out for itself while it rendered.
+printed on the same page, and a mark there keeps its own anchor. A mark in
+the chapter's `title:` is the other exception: Quarto copies the title into
+every page's sidebar and page navigation, and each copy still files a locator
+of its own.) What does not come back is anything the chapter worked out for
+itself while it rendered.
 
 Five things recovery does not return.
 

@@ -24845,6 +24845,7 @@ if [ "${1:-}" = "--self-test" ]; then
   ( cd "$M061W/m073-collapsed" && quarto render five.qmd --to html ) \
     > "$WORK/m073-collapsed.log" 2>&1 \
     || { tail -30 "$WORK/m073-collapsed.log" >&2; fail "M073 T5 self-test: the mutated render failed; this case is about which wording is drawn, not about a broken render"; }
+  capture --project "$M061W/m073-collapsed" html "m073-collapsed"
   check_warning_count "$WORK/m073-collapsed.log" "$WARN_STORE_NEVER_LOST" 0 \
     "M073 T5 self-test (the branch made unreachable: the wording this milestone added is never drawn)"
   check_warning_count "$WORK/m073-collapsed.log" "$WARN_STORE_UNREADABLE_LOST" 1 \
@@ -24868,6 +24869,7 @@ if [ "${1:-}" = "--self-test" ]; then
     ( cd "$M072W/$slug" && quarto render index.qmd --to html ) \
       > "$WORK/$slug.log" 2>&1 \
       || { tail -30 "$WORK/$slug.log" >&2; fail "$label: the mutated render failed; this case is about which wording is drawn, not about a broken render"; }
+    capture --project "$M072W/$slug" html "$slug"
   }
 
   # 2 — the classification test back where this milestone found it, testing

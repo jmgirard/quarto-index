@@ -1,0 +1,61 @@
+# M072: A refused chapter whose record an older version wrote is reported once per index section
+
+- **Status:** planned
+- **Priority:** normal
+- **Depends on:** —
+- **Driving RR:** —
+- **Principles touched:** GP1
+- **Resolves:** —
+- **Branch/PR:** —
+
+## Goal
+
+In an HTML book, a chapter whose source the recovery route will not read is reported, where its record was written by a different version of this extension, on the count every other different-version report follows — once per chapter that builds an index section, and once by a chapter whose records show no chapter of the book placing an index — rather than once per chapter that reads the store, so a book carrying a notebook chapter with an old record hears about it as often as it hears about any other stale record.
+
+## Scope
+
+User-facing tier: the deliverable is the reports a book render prints and the docs that state their counts.
+
+Today `store_read` draws the refusal inline for every reading chapter in all three record states it is reached in (`book.lua:983-1008`), while the three different-version wordings are handed back in `stale` and drawn at one site under `builds or first == nil` (`book.lua:1496-1504`; M062). D-046 fixed the refusal at once per reading chapter, ahead of every other wording (KI234).
+
+**In:**
+- On the version-skewed branch a refused chapter is handed back in `stale` with a `refused` flag instead of being drawn inline, and the report site draws the refusal wording for it ahead of the three different-version wordings, under the same gate. The never-written and listed-unopenable and undecodable states keep the inline draw and their counts.
+- The refusal keeps its precedence: a refused chapter still says one thing, and never the different-version wording (D-046's precedence clause stands; D-049 supersedes its count clause).
+- A suite leg over `examples/book-extensions` rendering a non-building chapter and the building chapter in each record state; `site/books.qmd`'s count paragraph, its claim ledger, `CHANGELOG.md`, DESIGN's recovery section; KI234 struck.
+
+**Out:**
+- A new wording naming both the refusal and the version (the gate declined it: a seventh store wording for a state the author acts on the same way).
+- The could-not-be-read family's once-per-opening-chapter count, documented at `site/books.qmd:192-195`: untouched.
+- Front-matter locators (KI232, KI233) → M071.
+
+## Acceptance criteria
+
+- [ ] AC1: In `examples/book-extensions`, over a store a whole-book render wrote with `five.ipynb`'s record then rewritten to carry a store version other than the extension's, a render of `one.qmd` alone (a chapter with no placement marker that is not the book's last, so it builds no section while the store shows `index.qmd` placing both indexes) draws the refusal wording 0 times, and a render of `index.qmd` alone draws it exactly once, naming `five.ipynb`.
+- [ ] AC2: In the same fixture, a render of `one.qmd` alone draws the refusal once when `five.ipynb`'s record is listed by the store directory and cannot be opened, once when that record holds bytes that do not decode as a record, and 0 times when no store exists — the counts those three states draw today — so of the four record states `store_read` tells apart the different-version state is the only one whose count moves.
+- [ ] AC3: In every render AC1 and AC2 make, the three different-version wordings and the three could-not-be-read wordings are drawn 0 times, and no line of any of those logs names `five.ipynb` in a wording other than the refusal.
+- [ ] AC4: `site/books.qmd` states the refusal's count for each of the three record states it is reached in, in the paragraph that states the other wordings' counts, and `CHANGELOG.md` carries an entry under `## Unreleased` / `### Output` naming the count that moved.
+- [ ] AC5: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit 0 on the branch.
+
+## Coverage
+
+- AC1 → T1, T2
+- AC2 → T2
+- AC3 → T1, T2
+- AC4 → T3
+- AC5 → T2
+
+## Tasks
+
+- [ ] T1: `store_read` (`book.lua:983-1016`): test the version-skewed state before the refusal, and on that branch append `{ file = file, refused = true }` to `stale` rather than warning; `html_book`'s report site (`book.lua:1496-1504`) draws the refusal wording for `entry.refused` first. The comment at `book.lua:984-1008` restated to say which states draw inline and which at the site.
+- [ ] T2: Suite leg `m072`: build the store with a whole-book render of `examples/book-extensions`; rewrite `five.ipynb`'s record version the way the existing stale plants do (grep `STORE_VERSION` in `tests/run-tests.sh`); render `one.qmd` and `index.qmd` alone and count the refusal, the three stale keys and the three unreadable keys with `check_warning_count`, the name with a `m070_refusal_names`-style grep; three controls over `one.qmd` — listed-unopenable (the M070 dangling plant), undecodable bytes, no store; extension totals pinned. Shown red first by two planted defects — the site gate inverted, and the refusal test moved back ahead of the version test — recorded in the work log.
+- [ ] T3: Docs: `site/books.qmd:190-200` gains the refusal's count by state and the claim ledger (`tests/run-tests.sh:21753-21785`) a row pinning it; the `CHANGELOG.md` entry; DESIGN's recovery section sentence "drawn ahead of the other four" (`cairn/DESIGN.md:501-504`) restated with the count, KI234 struck; `warn-distinct.py`'s pinned count untouched.
+
+## Work log
+
+- 2026-09-02: created by /milestone-plan from the M070 follow-up candidate row (KI234); criteria audit ran in FULL mode ([O], fresh context) — M072's share of its eight findings: the goal and AC1 stated a count rule narrower than the code's `builds or first == nil` (restated), AC2's "only state that moves" quantified over states it did not count (the undecodable state added, the four states named), AC3's per-file claim outran the log counter (name check added), the work-log clause moved to T2; D-049 written.
+- 2026-09-02: plan gate chose handing the version-skewed refusal to the one report site over also drawing a new wording naming the version, because the record's state decides nothing the author acts on differently and a seventh wording costs a translation and a pin for it; falsified by an author reporting they needed to know the record was stale to act.
+- 2026-09-02: plan gate chose the change over leaving the count and recording acceptance, because a book with many chapters and one notebook says the refusal once per chapter where it says a stale record once per section; falsified by nothing — the alternative was the null change.
+
+## Decisions
+
+## Review

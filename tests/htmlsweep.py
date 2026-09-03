@@ -5,7 +5,9 @@ over EVERY page the run rendered rather than over a written-down list of
 fixtures; the third is stated only where a marker was removed.
 
   pending — the `data-qi-pending` attribute is filter plumbing between two
-            passes and must never survive into rendered output. An author's
+            passes and must never survive into rendered output, and neither
+            may `data-qi-meta`, the tagging pass's plumbing (M071); the mode
+            reads both and names the one it found. An author's
             forged copy must not survive either, which is why the sweep asks
             for the attribute rather than for a mark the filter minted. It
             asks STRUCTURALLY — an element of the parsed page carrying that
@@ -47,6 +49,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import htmlindex as H  # noqa: E402
 
 PENDING_ATTR = 'data-qi-pending'
+META_ATTR = 'data-qi-meta'
+PLUMBING_ATTRS = (PENDING_ATTR, META_ATTR)
 
 
 def pages(root):
@@ -60,14 +64,20 @@ def pages(root):
 
 
 def sweep_pending(root, names):
-    bad = []
+    # One finding per attribute, each naming the pages it survived on, so a
+    # failure says WHICH plumbing leaked and the self-test can require the
+    # name of the one it planted.
+    found = {attr: [] for attr in PLUMBING_ATTRS}
     for name in names:
         doc = H.parse(os.path.join(root, name))
-        if any(PENDING_ATTR in node.attrs for node in H.walk(doc)):
-            bad.append(name)
+        nodes = list(H.walk(doc))
+        for attr in PLUMBING_ATTRS:
+            if any(attr in node.attrs for node in nodes):
+                found[attr].append(name)
+    bad = ['%s survived into rendered HTML: %s' % (attr, ' '.join(names))
+           for attr, names in found.items() if names]
     if bad:
-        return ('%s survived into rendered HTML: %s'
-                % (PENDING_ATTR, ' '.join(bad)))
+        return '\n'.join(bad)
     return None
 
 

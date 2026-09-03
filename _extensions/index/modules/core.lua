@@ -461,6 +461,23 @@ local HTML_LETTER_CLASS = "qi-letter"
 -- and removes the tag. It never survives into output.
 local HTML_PENDING_ATTR = "data-qi-pending"
 
+-- A mark the Span passes reach through the document's METADATA rather than
+-- its blocks — one written in YAML front matter — is tagged with this
+-- attribute by the tagging pass, which is the only pass that can tell the two
+-- apart: Pandoc hands a filter's `Span` function a front-matter span and a
+-- body span alike, in one traversal. The emitting pass reads the tag off and
+-- removes it, in every format; like HTML_PENDING_ATTR it never survives into
+-- output, and an author's forged copy is discarded before it can be read.
+local META_MARK_ATTR = "data-qi-meta"
+
+-- The top-level div Quarto writes a chapter's reflected metadata fields into,
+-- ahead of any filter, in an HTML book chapter: every mark inside it is a copy
+-- of one already in the metadata (probed 2026-09-02, quarto 1.10.18: a
+-- `Span` pass reached an `abstract:` mark once in the metadata and twice more
+-- inside this div, and the rendered page carried one anchor). The tagging pass
+-- takes the index class off those copies so no later pass files them.
+local META_REFLECTION_ID = "quarto-meta-markdown"
+
 -- Exported through the bracket form, never `M.NAME = NAME`: the source
 -- scans take the FIRST match for `NAME =` over the whole source set, and
 -- the M16-AC3 probe relocates a definition into another file — a plain
@@ -504,5 +521,7 @@ M["HTML_ANCHOR_PREFIX"] = HTML_ANCHOR_PREFIX
 M["HTML_ENTRY_PREFIX"] = HTML_ENTRY_PREFIX
 M["HTML_LETTER_CLASS"] = HTML_LETTER_CLASS
 M["HTML_PENDING_ATTR"] = HTML_PENDING_ATTR
+M["META_MARK_ATTR"] = META_MARK_ATTR
+M["META_REFLECTION_ID"] = META_REFLECTION_ID
 
 return M

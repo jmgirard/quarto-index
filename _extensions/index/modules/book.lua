@@ -273,9 +273,14 @@ local function build_record(ctx, marker)
       -- by a render made before the declaration was edited — the reading
       -- chapter says so and files the mark in its first declared index
       -- (`fold_undeclared` below) rather than dropping the term.
+      -- `page_locator` is set on a front-matter mark of an HTML book chapter,
+      -- which has no anchor and contributes the chapter's page (D-048); it
+      -- travels so the reading chapter files the record's row as the
+      -- recovery route files the same mark.
       { levels = mark.levels, xrefs = xrefs, anchor = mark.anchor,
         context = mark.context, role = mark.role, range = mark.range,
-        paired = mark.paired, index = mark.index }
+        paired = mark.paired, index = mark.index,
+        page_locator = mark.page_locator }
   end
   -- The chapter's DECLARED sort keys, one per printed level path, rather than
   -- a resolved key per mark. A mark's resolved key already has this chapter's
@@ -1249,13 +1254,15 @@ local function book_marks(ctx, records)
         -- contributes no locator here either.
         paired = mark.paired,
         -- A mark in the chapter holding the index links within its own page,
-        -- exactly as a single document's does.
+        -- exactly as a single document's does — except a page locator, whose
+        -- whole target is the page: with no anchor to link within, it names
+        -- its own page the way a page locator in any other chapter does.
         -- Written exactly as Quarto writes its own links to that page,
         -- raw rather than percent-escaped: Quarto normalizes a link target
         -- either way, so an escape here is undone before it reaches output
         -- (its own sidebar link to a space-named chapter is `./a b.html`).
-        href = record.file ~= ctx.file and relative_href(ctx, record.href)
-          or nil,
+        href = (record.file ~= ctx.file or mark.page_locator)
+          and relative_href(ctx, record.href) or nil,
       }
     end
   end

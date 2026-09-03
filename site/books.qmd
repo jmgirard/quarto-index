@@ -109,18 +109,25 @@ carrying a page number, as neither does on an ordinary render. A mark written
 in the chapter's YAML front matter comes back with the marks in its body: an
 ordinary render indexes one written there, so this route reads a chapter's
 front matter as well as its body and the two file the same entry in the same
-index. They do not agree on how many locators that entry carries: Quarto
-copies some front-matter fields into the chapter body before any filter runs,
-so an ordinary render reaches such a mark more than once and prints a locator
-for each, while this route reads the source, where you wrote it once. What does not come back is
-anything the chapter worked out for itself while it rendered.
+index. A mark written in the chapter's front matter files one locator, the
+chapter's page with no fragment, whether the chapter is read from its record
+or from its source: whether the page prints that field at all, and where, is
+the title-block template's choice rather than this extension's, so a link into
+the field could land nowhere, and the index links to the page instead. (A
+single document that is not a book chapter is different — its front matter is
+printed on the same page, and a mark there keeps its own anchor. A mark in
+the chapter's `title:` is the other exception: Quarto copies the title into
+every page's sidebar and page navigation, and each copy still files a locator
+of its own.) What does not come back is anything the chapter worked out for
+itself while it rendered.
 
 Five things recovery does not return.
 
 - **No fragment.** A recovered term links to the chapter's page and nothing
   after it, so following it lands at the top of that page rather than at the
   marked passage. The id a mark is anchored at is minted while that chapter
-  renders, and only its record carries it.
+  renders, and only its record carries it. A term marked in the chapter's
+  front matter links this way by either route, as said above.
 - **Nothing that reaches the chapter through an include shortcode or an
   executed cell.** Quarto expands both before any filter runs, and what is
   read here is the file on disk.

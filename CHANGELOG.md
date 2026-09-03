@@ -45,6 +45,25 @@
   of the book whenever the chapter was recovered rather than read from its
   record.
 
+- In an HTML book, a mark written in a chapter's YAML front matter now files
+  one locator, the chapter's page with no fragment, when the chapter is read
+  from its own record — the row the recovery route already filed for it — so
+  the two routes print the same row for such a mark. Before, the chapter's own
+  render filed the mark once for the metadata and once more for each copy of
+  the field Quarto reflects into the chapter's body ahead of every filter,
+  each copy minting an anchor of its own, and it linked every one by a
+  fragment: an `abstract:` mark printed three locators of which two named ids
+  the page did not carry, and a `description:` mark printed one that did,
+  since a book's title block does not print that field. The reflected copies
+  are no longer marks, and the metadata's mark mints no anchor, because which
+  fields the page prints is the title-block template's choice and not
+  something a filter can see. A single document that is not a book chapter is
+  untouched: its front-matter marks keep their anchors and their fragment
+  locators, its page printing every one of the probed fields in its own title
+  block. A mark written in a chapter's `title:` is not covered: Quarto copies the
+  title into every page's sidebar and page navigation, and each copy still
+  files a locator of its own.
+
 ## 0.2.0 (2026-09-02)
 
 Two changes break what 0.1.0 did. The index words now follow the document's

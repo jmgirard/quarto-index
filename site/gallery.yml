@@ -40,6 +40,7 @@ not-shown:
   - examples/fold-xref-empty.qmd
   - examples/fold-xref-self.qmd
   - examples/fold-xref.qmd
+  - examples/front-matter.qmd
   - examples/id-collision.qmd
   - examples/index-labels-clash.qmd
   - examples/index-labels-misuse.qmd

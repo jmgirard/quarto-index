@@ -1,0 +1,17 @@
+---
+title: "quarto-index front-matter control"
+subtitle: "The subtitle marks a term: [Gimbal]{.index}."
+description: "The description marks a term: [Halyard]{.index}."
+abstract: |
+  The abstract marks a term: [Bollard]{.index}.
+filters:
+  - index
+---
+
+# A single document marking in its front matter
+
+A single HTML document that is not a book chapter, with one index mark in each
+of three YAML front-matter fields and one in its body. It is the control for
+the book-chapter rule: here every front-matter mark keeps its anchor, and the
+index links to each one by a fragment, because the page prints the three
+fields in its own title block. The body marks a term too: [Capstan]{.index}.

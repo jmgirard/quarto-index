@@ -23964,9 +23964,11 @@ MANIFEST
     "M070 T6 self-test (the swapped wording changes no printed page, which is why the wording itself is asserted)" hrefs
   check_warning_count "$WORK/m070-lostwording.log" "$WARN_STORE_KIND_REFUSED" 0 \
     "M070 T6 self-test (the refusal is never drawn)"
-  check_warning_count "$WORK/m070-lostwording.log" "$WARN_STORE_UNREADABLE_LOST" 1 \
-    "M070 T6 self-test (the notebook chapter is reported as a source that could not be read)"
-  pass "M070 T6 self-test: with the refusal's own signal removed and nothing else changed, the same page is printed and the notebook chapter is reported as a source that could not be read — which the AC1 counts for the cold leg would fail on"
+  check_warning_count "$WORK/m070-lostwording.log" "$WARN_STORE_NEVER_LOST" 1 \
+    "M070 T6 self-test (the notebook chapter is reported as one whose source could not be read; M073 gave that outcome its own wording on the never-written path, and this tree is cold, so the report says no render has written the record rather than that a record could not be read)"
+  check_warning_count "$WORK/m070-lostwording.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
+    "M070 T6 self-test (and not the wording for a record that WAS written, there being no store here at all)"
+  pass "M070 T6 self-test: with the refusal's own signal removed and nothing else changed, the same page is printed and the notebook chapter is reported as one whose source could not be read — which the AC1 counts for the cold leg would fail on"
 
   # 6 — the conditional-content removal taken off the front matter, so the
   # metadata is walked raw while the blocks still go through it. seven.qmd

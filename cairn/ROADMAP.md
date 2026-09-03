@@ -14,7 +14,6 @@ _Released 0.2.0 2026-09-02._
 | M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | done | — | normal | milestones/archive/M069-absent-record-recovery.md |
 | M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | done | M069 | normal | milestones/archive/M070-recovery-parse-fidelity.md |
 | M068 | A record that is listed and cannot be opened is not read as one that was never written | done | — | normal | milestones/archive/M068-listed-unopenable-record.md |
-| M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

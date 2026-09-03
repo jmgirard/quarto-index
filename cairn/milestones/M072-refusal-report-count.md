@@ -65,6 +65,8 @@ Today `store_read` draws the refusal inline for every reading chapter in all thr
 
 - 2026-09-03: `tests/run-tests.sh` exits 0 on the branch, 13m09s wall clock (603s user, 72s system, 85% CPU — the run is effectively single-core).
 
+- 2026-09-03: candidate row added for running the suite's legs in parallel, from the 13m09s measured here; ROADMAP reached 60 lines with it, so M067's terminal row was pruned to hold the line cap — the milestone's summary is in milestones/archive/.
+
 ## Decisions
 
 ## Review

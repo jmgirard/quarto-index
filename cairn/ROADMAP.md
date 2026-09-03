@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-02 (M070 done and archived; KI219 retired, KI232-KI234 added and KI233's discriminator corrected at review round 3; the M070 follow-up candidate row narrowed with it; M065's terminal row pruned to hold the retention cap. No lesson captured: M070's one candidate — a `.Rmd` fixture pulling knitr and R into the suite — ships guarded by its own preflight, and LESSONS.md is at 49 lines / 19,912 bytes with no line this milestone retires, so it would have displaced a live one. check-design.md 37 lines / 17,699 bytes, both under budget.)_
+_Last hygiene check: 2026-09-03 (M071 done and archived; KI232/KI233 struck with the milestone, KI235 added with a candidate row pointing at it; M066's terminal row pruned to hold the retention cap. No lesson captured. LESSONS.md 49 lines / 19,912 bytes; check-design.md 37 lines / 17,699 bytes, both under budget.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 
@@ -9,12 +9,11 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M071 | A front-matter mark in an HTML book chapter files one locator, to the chapter's page | review | — | normal | milestones/M071-front-matter-locators.md |
 | M072 | A refused chapter whose record an older version wrote is reported once per index section | planned | — | normal | milestones/M072-refusal-report-count.md |
+| M071 | A front-matter mark in an HTML book chapter files one locator, to the chapter's page | done | — | normal | milestones/archive/M071-front-matter-locators.md |
 | M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | done | — | normal | milestones/archive/M069-absent-record-recovery.md |
 | M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | done | M069 | normal | milestones/archive/M070-recovery-parse-fidelity.md |
 | M068 | A record that is listed and cannot be opened is not read as one that was never written | done | — | normal | milestones/archive/M068-listed-unopenable-record.md |
-| M066 | The recovery-route checks read the reports and mutations they name | done | — | normal | milestones/archive/M066-recovery-check-readers.md |
 | M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
@@ -22,6 +21,7 @@ _Released 0.2.0 2026-09-02._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- Declass Quarto's navigation-envelope copies of a chapter's `title:` in an HTML book, so a mark written there files one locator rather than one per sidebar and page-navigation copy on every page; promote on an author reporting a title mark's locator count — added 2026-09-03 — M071 review F1 — KI235
 - Narrow what the absent-record recovery gate admits and what it says: report only where a chapter builds a section, quieten an ordinary first render whose marker sits early, and give a never-written record whose source also fails its own wording. Promote on an author reporting the reports — added 2026-09-02 — M069 review F1, F2, F3, F5, F8 — KI228, KI229, KI230, KI231
 - Give a recovered locator a fragment where the author wrote the mark's id themselves, the one value the source alone settles: a minted number counts against ids taken across the whole rendered page, which the source cannot know. Promote on an author reporting a recovered locator lands at a chapter's top — added 2026-08-30, narrowed 2026-09-02 — M064/M065 reviews — KI205
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate

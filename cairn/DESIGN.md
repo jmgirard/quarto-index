@@ -1634,3 +1634,16 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   draw the different-version wording, and a book with several index-printing
   chapters says the refusal more often than it says a stale record.
   — M070 review round 1 F6, widened M070 review round 2 R2-F7
+- **KI235.** A mark written in a chapter's `title:` in an HTML book files
+  several locators, all live. Quarto copies the title into the top-level
+  `#quarto-navigation-envelope` div ahead of every filter, and that div
+  survives into each page's sidebar and page-navigation markup, so every
+  page's render reaches the copy as a body mark and mints an anchor for it;
+  the tagging pass declasses `#quarto-meta-markdown` alone. Measured
+  2026-09-03 (quarto 1.10.18) in a two-chapter book: `Widget`, marked in
+  `ch1.qmd`'s title, prints five locators on the index page — two into that
+  page's own navigation, `ch1.html`, and two into `ch1.html`'s navigation;
+  before M071 the same book printed eight, six into `ch1.html`.
+  `tests/fragments.py resolve` passes there, the anchors being real. No
+  fixture marks a `title:`; `site/books.qmd` and `CHANGELOG.md` name the
+  exception. — M071 review F1

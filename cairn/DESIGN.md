@@ -1650,3 +1650,26 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `tests/fragments.py resolve` passes there, the anchors being real. No
   fixture marks a `title:`; `site/books.qmd` and `CHANGELOG.md` name the
   exception. — M071 review F1
+- **KI236.** A record file whose bytes decode to a JSON object or array but
+  carry no `version` field, or one this render does not write, is classified
+  as version-skewed: `store_read`'s branch tests `data.version ~=
+  STORE_VERSION`, and a missing field satisfies it. Probed 2026-09-03:
+  `pandoc.json.decode("{}", false)` yields a table whose `version` is nil,
+  while `"this is not a record\n"` decodes to nil and takes the undecodable
+  path. So a truncated or hand-emptied record is reported as one another
+  version wrote — and, since M072, at the section-building count rather than
+  by every chapter that meets it. `site/books.qmd`, `CHANGELOG.md` and the
+  recovery section above name the states as the code partitions them.
+  — M072 review F1
+- **KI237.** The `first == nil` half of the report site's gate is never
+  exercised for a refused entry: every `m072` render is over a store where
+  `index.qmd` places both indexes, so `first` is non-nil in the
+  builds-no-section case, and the `gateflip` plant inverts the whole gate
+  rather than that disjunct. A site loop gated on `builds` alone would pass
+  the whole leg while dropping the refusal in a book with no placement marker
+  anywhere, which `site/books.qmd` and the claim ledger promise it draws.
+  — M072 review F4
+- **KI238.** `m072_only_refusal_names` writes its three intermediate files to
+  fixed `$WORK` paths reused by every call, so the diagnostics left after a
+  failure describe only the last invocation. Harmless while the suite is
+  serial. — M072 review F7

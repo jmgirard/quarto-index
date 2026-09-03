@@ -1,0 +1,9 @@
+# An .Rmd chapter
+
+Its extension is spelled with a capital letter, so the test on it has to
+compare case-insensitively or refuse a chapter this route reads perfectly
+well: [Escutcheon]{.index}.
+
+A second mark, into the book's other index, so that index has a member from a
+chapter the route accepts and is not a section holding one refused term:
+[Ferrule]{.index index="aside"}.

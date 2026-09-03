@@ -1,0 +1,4 @@
+# A .qmd chapter
+
+The extension the route was written for, kept in the fixture so the accepted
+set is exercised whole rather than only at its edges: [Bramble]{.index}.

@@ -627,25 +627,42 @@ local function is_conditional(el)
   return false
 end
 
+-- The removal itself, as one filter table, because two things are read out of
+-- a chapter's source and both carry conditional content: its blocks, and its
+-- metadata. The walk is bottom-up, so a conditional nested inside another is
+-- removed with its parent either way; a marker div carrying one of the classes
+-- goes with the rest.
+local CONDITIONAL_FILTER = {
+  Div = function(div)
+    if is_conditional(div) then
+      return {}
+    end
+    return nil
+  end,
+  Span = function(span)
+    if is_conditional(span) then
+      return {}
+    end
+    return nil
+  end,
+}
+
 -- The parsed blocks with every conditional element removed, whole — its
--- content with it, and a marker div carrying one of the classes along with the
--- rest. The walk is bottom-up, so a conditional nested inside another is
--- removed with its parent either way.
+-- content with it.
 local function drop_conditional(blocks)
-  return blocks:walk({
-    Div = function(div)
-      if is_conditional(div) then
-        return {}
-      end
-      return nil
-    end,
-    Span = function(span)
-      if is_conditional(span) then
-        return {}
-      end
-      return nil
-    end,
-  })
+  return blocks:walk(CONDITIONAL_FILTER)
+end
+
+-- The same removal over a chapter's parsed METADATA, returned as a document
+-- carrying that metadata and no blocks. `Meta` has no `walk` of its own, so
+-- the walk is over a document built around it. The same filter, because the
+-- two classes mean the same thing wherever an author writes them and this
+-- route can no more tell which way the render went in `abstract:` than it can
+-- in the body: verified 2026-09-02 under pandoc 3.11, a `.content-hidden` span
+-- and a `.content-hidden` div written in `abstract:` are both taken out by
+-- this walk and both survive when it is not made.
+local function conditional_free_meta(meta)
+  return pandoc.Pandoc({}, meta):walk(CONDITIONAL_FILTER)
 end
 
 -- Every index mark in a chapter's parsed blocks, in document order, as a
@@ -690,68 +707,92 @@ end
 -- `build_record`'s own shape — a resolved key would carry this reader's
 -- fallbacks and beat another chapter's real one, which is the conflation
 -- `build_record` states at length.
-local function recovered_marks(blocks)
+--
+-- Over the chapter's METADATA as well as its blocks, because that is what the
+-- chapter's own render reads. The render's collect passes are filter tables
+-- carrying a `Span` function, and Pandoc hands such a table a document's
+-- metadata as readily as its blocks, so a mark an author writes in YAML front
+-- matter is indexed by that chapter's own render exactly as one in the body
+-- is. A recovery walk over the blocks alone left such a mark out of every
+-- index of the book, silently, whenever the chapter was recovered rather than
+-- read from its record.
+local function recovered_marks(meta, blocks)
   local marks, sorts = {}, {}
-  blocks:walk({
-    Span = function(span)
-      if not span.classes:includes(qi_core.INDEX_CLASS) then
-        return nil
-      end
-      local entry = span.attributes["entry"]
-      local visible = qi_marks.span_text(span)
-      local context = qi_marks.describe(entry, visible)
-      local xrefs, declared = {}, 0
-      for _, kind in ipairs(qi_core.XREF_KINDS) do
-        local value = span.attributes[kind.attr]
-        if value ~= nil then
-          declared = declared + 1
-          local levels = qi_marks.target_levels(value, kind.attr, context, false)
-          if levels then
-            xrefs[#xrefs + 1] = { attr = kind.attr, levels = levels }
-          end
-        end
-      end
-      local sort_value = span.attributes["sort"]
-      local levels, _, kept, depth =
-        qi_marks.derive_levels(entry, visible, declared, #span.content, context,
-                               sort_value, false)
-      if levels == nil then
-        return nil
-      end
-      -- The format-neutral self-target drop the emitting pass makes: a target
-      -- naming the entry it is written on says nothing, and the mark then
-      -- indexes as usual. Made here too, so what survives is what decides
-      -- whether this mark contributes a locator at all.
-      local own_key = qi_levels.levels_key(levels)
-      local surviving = {}
-      for _, xref in ipairs(xrefs) do
-        if qi_levels.levels_key(xref.levels) ~= own_key then
-          surviving[#surviving + 1] = xref
-        end
-      end
-      local index_name =
-        qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR], context,
-                              false)
-      register_recovered_sort(sorts, index_name, levels, sort_value, context,
-                              kept, depth)
-      marks[#marks + 1] = {
-        levels = levels,
-        xrefs = surviving,
-        context = context,
-        -- Resolved against what the READING chapter declares, which for a book
-        -- is the same `indexes:` metadata the recovered chapter read: the name
-        -- is settled here rather than left for `fold_undeclared`, exactly as a
-        -- mark's own chapter settles it.
-        index = index_name,
-        -- This mark has no anchor and never will, so `mark_target` cannot
-        -- build a fragment for it. The flag is what tells a locator-
-        -- contributing recovered mark from a cross-reference mark, which has
-        -- no anchor either and must contribute no locator.
-        page_locator = #surviving == 0 or nil,
-      }
+  local function collect(span)
+    if not span.classes:includes(qi_core.INDEX_CLASS) then
       return nil
-    end,
-  })
+    end
+    local entry = span.attributes["entry"]
+    local visible = qi_marks.span_text(span)
+    local context = qi_marks.describe(entry, visible)
+    local xrefs, declared = {}, 0
+    for _, kind in ipairs(qi_core.XREF_KINDS) do
+      local value = span.attributes[kind.attr]
+      if value ~= nil then
+        declared = declared + 1
+        local levels = qi_marks.target_levels(value, kind.attr, context, false)
+        if levels then
+          xrefs[#xrefs + 1] = { attr = kind.attr, levels = levels }
+        end
+      end
+    end
+    local sort_value = span.attributes["sort"]
+    local levels, _, kept, depth =
+      qi_marks.derive_levels(entry, visible, declared, #span.content, context,
+                             sort_value, false)
+    if levels == nil then
+      return nil
+    end
+    -- The format-neutral self-target drop the emitting pass makes: a target
+    -- naming the entry it is written on says nothing, and the mark then
+    -- indexes as usual. Made here too, so what survives is what decides
+    -- whether this mark contributes a locator at all.
+    local own_key = qi_levels.levels_key(levels)
+    local surviving = {}
+    for _, xref in ipairs(xrefs) do
+      if qi_levels.levels_key(xref.levels) ~= own_key then
+        surviving[#surviving + 1] = xref
+      end
+    end
+    local index_name =
+      qi_indexes.mark_index(span.attributes[qi_indexes.INDEX_ATTR], context,
+                            false)
+    register_recovered_sort(sorts, index_name, levels, sort_value, context,
+                            kept, depth)
+    marks[#marks + 1] = {
+      levels = levels,
+      xrefs = surviving,
+      context = context,
+      -- Resolved against what the READING chapter declares, which for a book
+      -- is the same `indexes:` metadata the recovered chapter read: the name
+      -- is settled here rather than left for `fold_undeclared`, exactly as a
+      -- mark's own chapter settles it.
+      index = index_name,
+      -- This mark has no anchor and never will, so `mark_target` cannot
+      -- build a fragment for it. The flag is what tells a locator-
+      -- contributing recovered mark from a cross-reference mark, which has
+      -- no anchor either and must contribute no locator.
+      page_locator = #surviving == 0 or nil,
+    }
+    return nil
+  end
+
+  -- Metadata first and blocks second, which is the order the ordinary render
+  -- sees them in — verified 2026-09-02 under pandoc 3.11, a filter table with
+  -- a `Span` function is handed a span in `abstract:` before one in the body.
+  -- The order is load-bearing and not decorative: `register_recovered_sort` is
+  -- first-wins, so a sort key declared in front matter beats one declared in
+  -- the body, and it must beat it here exactly where it beats it there. Two
+  -- walks rather than one over a rebuilt document, so the order is this
+  -- reader's own statement rather than a traversal order read off Pandoc.
+  --
+  -- Both sides go through the conditional-content removal, the metadata by
+  -- `conditional_free_meta` and the blocks by `drop_conditional` in the
+  -- caller. An author writes `.content-visible` and `.content-hidden` in
+  -- front matter as readily as in the body, and this route cannot tell which
+  -- way either went.
+  conditional_free_meta(meta):walk({ Span = collect })
+  blocks:walk({ Span = collect })
   return marks, sorts
 end
 
@@ -776,11 +817,50 @@ local function recovered_markers(blocks)
   return names
 end
 
+-- The chapter sources this route reads, lower-cased. A book's chapter files
+-- are named by its author and listed by Quarto, which takes an `.ipynb`
+-- chapter as readily as a `.qmd` one; the reader below is Pandoc's markdown
+-- reader and nothing else, so what it may be handed is the markdown-source
+-- extensions and no other kind. Handed a notebook it does not refuse: it
+-- accepts the raw JSON as markdown, and what comes back is a mark whose
+-- attribute values carry the JSON's own quoting — a term filed into whatever
+-- index that mangled name resolves to, with nothing said. That was the
+-- behavior through 0.2.0, recorded as a known issue and fixed here (M070).
+local SOURCE_EXTENSIONS = {
+  [".qmd"] = true,
+  [".md"] = true,
+  [".markdown"] = true,
+  [".rmd"] = true,
+}
+
+-- Whether this route may read <file> at all: its own extension, lower-cased
+-- so a chapter written `.Rmd` and one written `.rmd` are the same file kind.
+-- A chapter whose name carries no extension is refused with the rest — there
+-- is nothing to test it against, and guessing is the second reader this route
+-- is not.
+local function readable_source(file)
+  local _, ext = pandoc.path.split_extension(file)
+  -- `split_extension` returns the empty string, never nil, for a name that
+  -- carries no extension (verified 2026-09-02 under pandoc 3.11), so the
+  -- lookup below is the whole test: no entry answers to "".
+  return SOURCE_EXTENSIONS[ext:lower()] == true
+end
+
 -- One chapter's record, rebuilt from its source, or nil where nothing could be
--- rebuilt. Every step is inside one guard: the file may be gone, unreadable or
--- something Pandoc's markdown reader refuses, and none of that may take the
--- render down with it (IP2). A failure returns nil and the caller reports it.
+-- rebuilt. Every step that TOUCHES the file is inside one guard: it may be
+-- gone, unreadable or something Pandoc's markdown reader refuses, and none of
+-- that may take the render down with it (IP2). The file-kind test ahead of the
+-- guard touches nothing — it reads the path string this route was handed —
+-- which is the whole point of its being ahead of it. A failure returns nil and the caller reports it.
+--
+-- Two ways of returning nothing, because they are two different things to tell
+-- an author: a source this route could not read as it hoped to, and a source
+-- this route never offers to read. The second is the boolean, and the caller
+-- names the file in a report of its own.
 local function recover_record(ctx, file)
+  if not readable_source(file) then
+    return nil, true
+  end
   local ok, record = pcall(function()
     local fh = io.open(pandoc.path.join({ ctx.root, file }), "r")
     if not fh then
@@ -792,8 +872,14 @@ local function recover_record(ctx, file)
       error("cannot read", 0)
     end
     local parsed = pandoc.read(text, "markdown")
+    -- The conditional-content removal reaches both inputs, but not both here:
+    -- the blocks are cleaned on the way in and the metadata is cleaned inside
+    -- `recovered_marks`, which is also where the order of the two walks is
+    -- stated. A second caller must pass `drop_conditional`'s blocks, as this
+    -- one does, or it recovers body conditionals while still dropping
+    -- front-matter ones.
     local blocks = drop_conditional(parsed.blocks)
-    local marks, sorts = recovered_marks(blocks)
+    local marks, sorts = recovered_marks(parsed.meta, blocks)
     return { version = STORE_VERSION, file = file,
              href = chapter_href(ctx, file, parsed.meta),
              marker = recovered_markers(blocks),
@@ -874,7 +960,7 @@ local function store_read(ctx, own, recover_absent)
         -- and reaches here only in a chapter that can print a section
         -- (`recover_absent`): everywhere else it is read as absent exactly as
         -- it always was.
-        local rebuilt = recover_record(ctx, file)
+        local rebuilt, refused = recover_record(ctx, file)
         if rebuilt ~= nil then
           records[#records + 1] = rebuilt
         end
@@ -894,7 +980,33 @@ local function store_read(ctx, own, recover_absent)
         -- unreadable sends an author looking for a corrupt file that is not
         -- there. What recovery returned is a second axis, and each report
         -- says which case and which outcome its chapter had.
-        if ok and type(data) == "table" and data.version ~= STORE_VERSION then
+        if refused then
+          -- Ahead of every branch below, and one wording for all of them. What
+          -- the record was — never written, opened and unusable, left by an
+          -- older version — decides nothing an author can act on here: the
+          -- source cannot stand in for it whichever it was, and the fix is the
+          -- same one. A refused chapter therefore says this and nothing else,
+          -- and is not handed to the caller as a stale record would be, so a
+          -- book with several such chapters says one thing per chapter rather
+          -- than two.
+          --
+          -- "No record could be used" rather than "the recorded marks could
+          -- not be used": this branch is reached on the never-written path as
+          -- well, where there is no record to have failed, and the wording
+          -- above it exists precisely so no report sends an author looking for
+          -- a corrupt file that was never there.
+          --
+          -- Drawn on that never-written path too, which is where this parts
+          -- company with the silent branch further down. That branch is silent
+          -- because a source that PARSED and reached no mark is known to have
+          -- lost nothing. A refused source was never read, so nothing here
+          -- knows whether it marks a term or not; staying silent would be a
+          -- guess, and the guess costs the author every term of that chapter
+          -- with no way to find out. A book carrying a notebook chapter
+          -- therefore hears about it on every render whose store is missing
+          -- that chapter's record, marks or no marks.
+          qi_core.warn(("no record of the index marks for %s could be used, and that chapter's source is not one this route reads — it reads a chapter written as .qmd, .md, .markdown or .Rmd source and no other kind — so none of its terms are in the index; render that chapter again, or render the whole book, to restore them"):format(file))
+        elseif ok and type(data) == "table" and data.version ~= STORE_VERSION then
           -- Handed back rather than reported here: a version-skewed record
           -- costs the chapters that BUILD an index their share of that
           -- chapter's terms, and every other chapter of the book reads the

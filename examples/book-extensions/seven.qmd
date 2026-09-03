@@ -1,0 +1,25 @@
+---
+abstract: |
+  A chapter whose front matter competes with its own body for one term's sort
+  key: [Ingot]{.index sort="Az"}. Front matter is read before the body, by this
+  route and by an ordinary render alike, and the first declaration of a key
+  wins, so this is the key the term files under.
+
+  The front matter also carries marks inside the classes Quarto shows and hides
+  by format, profile or metadata. Recovery takes those out here exactly as it
+  takes them out of the body, so none of the three terms below reaches any
+  index: [Jetsam]{.content-hidden .index}, which is a mark span carrying the
+  class itself; [Oakum]{.content-visible .index when-format="html"}, which is
+  the other class, kept apart so the removal is not fenced on one of the two;
+  and a whole block of it.
+
+  ::: {.content-hidden when-format="html"}
+  [Kestrel]{.index}
+  :::
+---
+
+# A chapter whose front matter and body compete
+
+The body marks the same term again under a different declared sort key. It is
+the later of the two, so it loses, and `Ingot` files under the front matter's
+key rather than this one: [Ingot]{.index sort="Zz"}.

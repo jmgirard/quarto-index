@@ -487,18 +487,39 @@ whole-book render prints the same index — by the time a chapter reads the
 store the chapters before it have written their records — so an ordinary first
 render of a book whose marker sits in its last chapter recovers nothing, while
 one whose marker sits earlier recovers the chapters behind it and reports each.
+The parse is offered only the chapter files this route is a reader
+for — `.qmd`, `.md`, `.markdown` and `.Rmd`, compared case-insensitively, a
+name carrying no extension refused with the rest — because a book takes an
+`.ipynb` chapter too, whose JSON the markdown reader accepts and returns marks
+from whose attribute values carry that JSON's own quoting, filed under a name
+the book declares nothing by (added M070). It reads an accepted chapter's
+METADATA as well as its blocks, and its metadata first, which is the order an
+ordinary render reads the two in: a mark written in YAML front matter is
+indexed by that chapter's own render, so it is recovered too, and a sort key
+declared there beats one declared in the body here exactly as it does there
+(added M070). A placement MARKER written in front matter is not read, because
+`resolve_markers` does not read one out of front matter either (KI11).
 A mark reaching the chapter through an include shortcode or an
 executed cell is not in that parse and is not recovered, and neither is one
 inside a block or span carrying Quarto's `.content-visible` or
-`.content-hidden` class, which the reader takes out whole before it reads
-anything (D-042); a source Pandoc's markdown reader cannot read recovers
-nothing, and the reading chapter's own record report says so. Four wordings
+`.content-hidden` class, which the reader takes out whole — of the front matter
+and of the blocks alike — before it reads
+anything (D-042, front matter added M070); a source Pandoc's markdown reader
+cannot read recovers
+nothing, and the reading chapter's own record report says so. Five wordings
 carry the outcome: three for a record that was written and could not be used —
-recovered, parsed and reaching no mark, unreadable — and a fourth for one no
+recovered, parsed and reaching no mark, unreadable — a fourth for one no
 render has written whose source was read back, which never calls such a record
-unreadable. A never-written record whose source parses to no mark is the one
+unreadable, and a fifth for a chapter whose source this route does not read,
+drawn ahead of the other four and whatever state that chapter's record was in,
+and so worded to assert nothing about the record (added M070). A never-written
+record whose source parses to no mark is the one
 silent outcome: it has lost nothing, and every chapter of a store-less book
-that marks nothing would otherwise report on every render (M069). Five cases are
+that marks nothing would otherwise report on every render (M069). A REFUSED
+chapter is outside that silence and reports on every path, the never-written
+one included: its source was never read, so nothing here knows whether it marks
+a term at all, and guessing that it marks none would cost its author every term
+of that chapter with no way to find out (M070). Five cases are
 reported rather than guessed at (corrected M063, which retired two of the
 seven M061 left): a book whose chapters mark terms but whose author wrote no
 marker anywhere (reported by the last chapter, the only one
@@ -757,10 +778,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   refuses to pin that with a source scan. — M01 review R16, widened through
   M03 P1, M04, M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8; inventory
   corrected M38
-- **KI11.** A marker written in YAML `abstract:` survives verbatim into the HTML
-  header — filter residue of the IP2 class, since `resolve_markers` reads
-  `doc.blocks` alone; the misplaced-class report is silent there for the same
-  reason. — M08 review R4/Q2
+- **KI11.** A placement marker written in YAML `abstract:` survives verbatim
+  into the HTML header — filter residue of the IP2 class, since
+  `resolve_markers` reads `doc.blocks` alone; the misplaced-class report is
+  silent there for the same reason. A book chapter's recovery route matches
+  that: `recovered_markers` reads the parsed blocks alone too. A MARK written
+  there is a different case and is indexed by both routes (corrected M070). —
+  M08 review R4/Q2
 - **KI12.** `resolve_markers` rebuilds every Blocks list in every format whether
   or not a marker exists. The LaTeX byte-diff that proved that output-neutral
   was deleted at M16 (D-004), so neither back-end has byte-level evidence for it
@@ -1510,30 +1534,19 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   the records and never reaches the `refiled` list the report is drawn from. A
   stored record in the same position draws that report. The same silent
   refiling is reached without an unknown name: `recovered_marks` resolves
-  `index=` against the READING chapter's declarations and reads the recovered
-  chapter's `parsed.meta` only for `output-file:`, so a chapter whose own
-  front matter adds an index has that term filed in the book's first one.
-  Derived by reading `book.lua:596-598`, not observed. — M064 review F5,
-  extended M064 review round 2 R2-F3
-- **KI219.** A book chapter that is not markdown source is parsed as markdown
-  anyway when its record is recovered, and its terms are refiled into the wrong
-  index with nothing said. `recover_record` calls `pandoc.read(text,
-  "markdown")` on whatever `book.render` names, with no test on the extension,
-  and Quarto books take `.ipynb` chapters. Probed 2026-08-30 with `pandoc lua`
-  over a one-cell notebook whose markdown source marks `[Gantry]{.index
-  index="gamma"}`: the reader accepts the raw JSON and returns the span with
-  its `index` attribute as the seven-character string `"gamma"`, the JSON
-  escaping riding into the value; `mark_index` matches no declared index of
-  that name and returns the book's first, and because recovery resolves before
-  `fold_undeclared` runs no refiling report is drawn. Needs that chapter's
-  record opened and unusable as well. — M064 review round 2 R2-F1
+  `index=` against the READING chapter's declarations, and while it now walks
+  the recovered chapter's metadata for marks, it never reads that chapter's own
+  `indexes:` declarations, so a chapter whose own front matter adds an index has
+  that term filed in the book's first one. Derived by reading
+  `book.lua:756-759`, not observed. — M064 review F5, extended M064 review
+  round 2 R2-F3, corrected M070
 - **KI220.** A recovered parse that reaches a placement marker and no mark
   reports only the loss. `store_read` appends the rebuilt record before testing
   `#rebuilt.marks > 0`, so such a chapter's markers still settle `placing` and
-  `first` — which is what AC3's arrangement rests on — while the no-marks
+  `first` — which is what M064's AC3 arrangement rests on — while the no-marks
   report says only that none of its terms are in the index. An author cannot
-  tell from it whether the section moved. Derived by reading `book.lua:713-719`,
-  not observed. — M064 review round 2 R2-F5
+  tell from it whether the section moved. Derived by reading `book.lua:955-966`,
+  not observed. — M064 review round 2 R2-F5, citation corrected M070
 - **KI224.** A file merely NAMED like a record and unopenable is recovered as
   though a render had written it. The listing of the directory a record belongs
   in is the whole of the evidence D-044 rests on, and nothing Pandoc's Lua
@@ -1602,3 +1615,40 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   while its sibling `m069_tree` does. Benign while `$M061W/base` is created
   with `_book` removed; it would silently let `check_book_sections` read a
   stale `_book` if that changed. — M069 review F8
+- **KI232.** A mark written in a Quarto BOOK chapter's YAML front matter is
+  indexed more than once by that chapter's own render, so one authored mark
+  files several locators onto the same page. Quarto reflects metadata fields
+  into the chapter body before any filter runs, so the mark is reached in the
+  metadata and again in each reflected copy; the mechanism is the reflection,
+  not the field, and `abstract:` is the field it was measured in. A filter
+  placed immediately before this one counted an `abstract:` mark once in the
+  document's metadata and twice more in its blocks (probed 2026-09-02, quarto
+  1.10.18).
+  A single document outside a book is indexed once. The extra locators are
+  DEAD: the reflected copies do not survive into the emitted page, so the page
+  carries one anchor and the index links three. Measured 2026-09-02 over
+  M070's own AC3 control — `six.qmd` marks `Hasp` once in `abstract:`,
+  `six.html` carries `id="qi-mark-1"` alone, and the index prints
+  `six.html#qi-mark-1`, `#qi-mark-2` and `#qi-mark-3`. The recovery route reads
+  the source file, where the mark is written once, so the two routes file the
+  same entry in the same index and differ in how many locators it carries and
+  in whether they resolve; M070's AC3 control pins the three. — M070 T5,
+  corrected M070 review round 3 R3-F1
+- **KI233.** KI232's dangling locators reach EVERY front-matter field, a
+  reflected one included; the field is not the discriminator. A chapter
+  carrying `description: "A [Zed]{.index} term"` — a field Quarto does not
+  reflect — has `Zed` filed three times, at `qi-mark-1`, `qi-mark-4` and
+  `qi-mark-5`, none of which the chapter's own page holds, exactly as the
+  reflected `abstract:` of KI232 files three of which the page holds one. The
+  recovery route files it once, with the page and no fragment, so the two
+  routes agree on the entry and the index and differ in the locators. The
+  render side is where the dangling fragments are minted, and it behaves this
+  way on the default branch too. — M070 review round 2 R2-F2, discriminator
+  corrected M070 review round 3 R3-F1
+- **KI234.** The refusal a chapter this route will not read draws stands ahead
+  of the version-skew branch and is drawn once per READING chapter, where the
+  stale family is drawn once per BUILDING chapter. So a refused chapter whose
+  record was written by an older version never reaches `stale` and can never
+  draw the different-version wording, and a book with several index-printing
+  chapters says the refusal more often than it says a stale record.
+  — M070 review round 1 F6, widened M070 review round 2 R2-F7

@@ -90,11 +90,30 @@ record. Where the source parses and carries no mark this route can reach — a
 chapter whose marks all arrive through an include, say — the report says that
 instead, so nothing tells you terms came back when none did.
 
+Which chapter files this route reads is a shorter list than the ones a book can
+hold: a chapter named `.qmd`, `.md`, `.markdown` or `.Rmd`, and no other kind. A
+notebook chapter is one Quarto executes to produce its markdown, and the file on
+disk is JSON; read as markdown it yields marks whose attribute values carry that
+file's own quoting, so its terms are filed under names nothing in the book
+answers to. Such a chapter is refused and reported by a wording of its own naming
+the file, and none of its terms reach any index until it is rendered again. This
+route reads a chapter's source only where that chapter's record could not be used
+or was never written, so a notebook chapter whose record is there and readable is
+read from that record like any other, which is what a whole-book render leaves
+behind.
+
 What comes back is what you wrote. An `entry=` naming several levels rebuilds
 its sub-entry and the parent it hangs under; a `sort=` still files the term
 where it asks; and `see=` and `see-also=` still print their lines, neither
-carrying a page number, as neither does on an ordinary render. What does not
-come back is anything the chapter worked out for itself while it rendered.
+carrying a page number, as neither does on an ordinary render. A mark written
+in the chapter's YAML front matter comes back with the marks in its body: an
+ordinary render indexes one written there, so this route reads a chapter's
+front matter as well as its body and the two file the same entry in the same
+index. They do not agree on how many locators that entry carries: Quarto
+copies some front-matter fields into the chapter body before any filter runs,
+so an ordinary render reaches such a mark more than once and prints a locator
+for each, while this route reads the source, where you wrote it once. What does not come back is
+anything the chapter worked out for itself while it rendered.
 
 Five things recovery does not return.
 

@@ -6,7 +6,7 @@
 - **Driving RR:** —
 - **Principles touched:** GP1
 - **Resolves:** —
-- **Branch/PR:** `m072-refusal-report-count`
+- **Branch/PR:** `m072-refusal-report-count` / https://github.com/jmgirard/quarto-index/pull/72
 
 ## Goal
 

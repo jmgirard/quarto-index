@@ -24275,7 +24275,8 @@ if [ "${1:-}" = "--self-test" ]; then
   # the reason; the unplanted capture passed above.
   M071_FRAG="$WORK/m071-frag"
   m071_frag_plant() {   # <slug> <substitution> <expected fragment of the FAIL line> <what was planted>
-    local slug="$1" sub="$2" expect="$3" what="$4" dir="$M071_FRAG/$slug"
+    local slug="$1" sub="$2" expect="$3" what="$4"
+    local dir="$M071_FRAG/$slug"
     rm -rf "$dir"
     cp -R "$CAPTURE_ROOT/m070-record/_book" "$dir"
     spliced_copy "M071 T4 self-test ($what)" "the captured index page" \

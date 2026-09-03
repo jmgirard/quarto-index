@@ -24274,6 +24274,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # href rewritten. Each is required to fail naming the rewritten target and
   # the reason; the unplanted capture passed above.
   M071_FRAG="$WORK/m071-frag"
+  mkdir -p "$M071_FRAG"
   m071_frag_plant() {   # <slug> <substitution> <expected fragment of the FAIL line> <what was planted>
     local slug="$1" sub="$2" expect="$3" what="$4"
     local dir="$M071_FRAG/$slug"
@@ -24309,12 +24310,12 @@ if [ "${1:-}" = "--self-test" ]; then
   # The containment reader asked the wrong way round: the body's anchor is
   # not inside the title block, and the abstract's is not outside it.
   for m071_wrong in "inside qi-mark-4 sits outside" "outside qi-mark-1 sits inside"; do
-    set -- $m071_wrong
-    M071_WRONG_OUT=$(python3 tests/fragments.py "$1" \
-      "$CAPTURE_ROOT/front-matter/front-matter.html" title-block-header "$2" 2>&1) \
+    read -r m071_mode m071_id m071_verb m071_where <<< "$m071_wrong"
+    M071_WRONG_OUT=$(python3 tests/fragments.py "$m071_mode" \
+      "$CAPTURE_ROOT/front-matter/front-matter.html" title-block-header "$m071_id" 2>&1) \
       && M071_RC=0 || M071_RC=$?
-    [ "$M071_RC" -ne 0 ] && printf '%s' "$M071_WRONG_OUT" | grep -qF -- "$2' $3 the element" \
-      || { printf '%s\n' "$M071_WRONG_OUT" >&2; fail "M071 T3 self-test: the containment reader did not refuse $2 as $1 the title block"; }
+    [ "$M071_RC" -ne 0 ] && printf '%s' "$M071_WRONG_OUT" | grep -qF -- "$m071_id' $m071_verb $m071_where the element" \
+      || { printf '%s\n' "$M071_WRONG_OUT" >&2; fail "M071 T3 self-test: the containment reader did not refuse $m071_id as $m071_mode the title block"; }
   done
   pass "M071 T4 self-test: the fragment reader fails, naming the target, on a capture with one href rewritten to a fragment its page does not carry and on one rewritten to a page the capture lacks, refuses a page with no index section as an empty domain, and the containment reader refuses each of the front-matter page's anchors asked the wrong way round"
 fi

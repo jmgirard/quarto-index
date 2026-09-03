@@ -171,8 +171,8 @@ ordinary plan-gate choice.
 
 ## Architecture
 
-One Pandoc-Lua filter, run as four passes over each document (corrected M06,
-M21).
+One Pandoc-Lua filter, run as five passes over each document (corrected M06,
+M21; the tagging pass added M071).
 Its entry point is `_extensions/index/index.lua`, which defines the Pandoc pass
 and nothing else; every other definition lives in a module beside it under
 `_extensions/index/modules/`, loaded with a relative `require("./modules/<name>")`
@@ -202,12 +202,19 @@ The modules, in dependency order:
   that decides which shape a key gets.
 - `marks.lua` — what every back-end needs from one mark, derived once, and the
   document-wide accumulators the passes share.
-- `passes.lua` — the per-document reset and the four Span passes, in the order
-  the filter returns them: the reset, then three that only read — one
+- `passes.lua` — the per-document reset and the five Span passes, in the order
+  the filter returns them: the reset; the tagging pass, whose document hook
+  tags every index mark in the metadata with `META_MARK_ATTR` and, in an HTML
+  render, takes the index class off every span inside Quarto's top-level
+  `#quarto-meta-markdown` div (the chapter's metadata fields, copied there
+  ahead of every filter and not printed), its element hook discarding an
+  author's copy of the tag first (added M071); then three that only read — one
   registering sort keys, one deciding which keys are contested, one pairing
-  page ranges — and the emitting pass that rewrites the mark. The range pass
-  carries a document hook as well, since whether an opening is ever closed is
-  known only once the whole document has been read.
+  page ranges — and the emitting pass that rewrites the mark, reading the tag
+  off and, in an HTML book chapter, filing a tagged mark as a page locator
+  with no anchor (D-048). The range pass carries a document hook as well,
+  since whether an opening is ever closed is known only once the whole
+  document has been read.
 - `html.lua` — the HTML back-end: the entry tree, its ordering and grouping,
   the anchors that link an entry back to its mark, and the index section built
   out of them.
@@ -472,7 +479,9 @@ alone — the printed levels, the declared sort keys, the cross-reference
 targets that survive the self-target drop and the index each mark files in,
 and which indexes the chapter places. The surviving targets are load-bearing:
 a mark with one contributes no locator. It carries no anchor, so a recovered
-locator links to the chapter's page and no fragment; and no resolved role and
+locator links to the chapter's page and no fragment — and so does a
+front-matter mark filed by the chapter's own render, which mints no anchor for
+it either (D-048, M071), so the two routes print one row for such a mark; and no resolved role and
 no pairing verdict, which are conclusions a chapter reaches about itself
 (D-009) — so a recovered range's two ends print the one page and a principal
 locator prints unemphasized (corrected M065, which added the declared sort
@@ -497,7 +506,10 @@ METADATA as well as its blocks, and its metadata first, which is the order an
 ordinary render reads the two in: a mark written in YAML front matter is
 indexed by that chapter's own render, so it is recovered too, and a sort key
 declared there beats one declared in the body here exactly as it does there
-(added M070). A placement MARKER written in front matter is not read, because
+(added M070); since M071 the render files such a mark exactly as this route
+does, one locator to the chapter's page (D-048), where before it filed one
+locator per reading Quarto's reflected copies gave it, most into ids the page
+did not carry. A placement MARKER written in front matter is not read, because
 `resolve_markers` does not read one out of front matter either (KI11).
 A mark reaching the chapter through an include shortcode or an
 executed cell is not in that parse and is not recovered, and neither is one
@@ -1615,36 +1627,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   while its sibling `m069_tree` does. Benign while `$M061W/base` is created
   with `_book` removed; it would silently let `check_book_sections` read a
   stale `_book` if that changed. — M069 review F8
-- **KI232.** A mark written in a Quarto BOOK chapter's YAML front matter is
-  indexed more than once by that chapter's own render, so one authored mark
-  files several locators onto the same page. Quarto reflects metadata fields
-  into the chapter body before any filter runs, so the mark is reached in the
-  metadata and again in each reflected copy; the mechanism is the reflection,
-  not the field, and `abstract:` is the field it was measured in. A filter
-  placed immediately before this one counted an `abstract:` mark once in the
-  document's metadata and twice more in its blocks (probed 2026-09-02, quarto
-  1.10.18).
-  A single document outside a book is indexed once. The extra locators are
-  DEAD: the reflected copies do not survive into the emitted page, so the page
-  carries one anchor and the index links three. Measured 2026-09-02 over
-  M070's own AC3 control — `six.qmd` marks `Hasp` once in `abstract:`,
-  `six.html` carries `id="qi-mark-1"` alone, and the index prints
-  `six.html#qi-mark-1`, `#qi-mark-2` and `#qi-mark-3`. The recovery route reads
-  the source file, where the mark is written once, so the two routes file the
-  same entry in the same index and differ in how many locators it carries and
-  in whether they resolve; M070's AC3 control pins the three. — M070 T5,
-  corrected M070 review round 3 R3-F1
-- **KI233.** KI232's dangling locators reach EVERY front-matter field, a
-  reflected one included; the field is not the discriminator. A chapter
-  carrying `description: "A [Zed]{.index} term"` — a field Quarto does not
-  reflect — has `Zed` filed three times, at `qi-mark-1`, `qi-mark-4` and
-  `qi-mark-5`, none of which the chapter's own page holds, exactly as the
-  reflected `abstract:` of KI232 files three of which the page holds one. The
-  recovery route files it once, with the page and no fragment, so the two
-  routes agree on the entry and the index and differ in the locators. The
-  render side is where the dangling fragments are minted, and it behaves this
-  way on the default branch too. — M070 review round 2 R2-F2, discriminator
-  corrected M070 review round 3 R3-F1
 - **KI234.** The refusal a chapter this route will not read draws stands ahead
   of the version-skew branch and is drawn once per READING chapter, where the
   stale family is drawn once per BUILDING chapter. So a refused chapter whose

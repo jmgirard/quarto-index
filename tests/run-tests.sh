@@ -21754,7 +21754,9 @@ python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
 # whole-book render is untouched, and where the route stays silent. M070 added
 # the four rows from `which chapter sources this route reads` down: which
 # sources the route reads, what a chapter it will not read gets, when such a
-# chapter is refused at all, and that a front-matter mark comes back.
+# chapter is refused at all, and that a front-matter mark comes back. M071
+# added the row after that one: a front-matter mark files one locator, the
+# chapter's page, by either route.
 cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
@@ -21777,6 +21779,7 @@ which chapter sources this route reads	a chapter named `.qmd`, `.md`, `.markdown
 a chapter this route will not read	Such a chapter is refused and reported by a wording of its own naming the file, and none of its terms reach any index until it is rendered again
 when a notebook chapter is refused at all	This route reads a chapter's source only where that chapter's record could not be used or was never written, so a notebook chapter whose record is there and readable is read from that record like any other
 a front-matter mark comes back	A mark written in the chapter's YAML front matter comes back with the marks in its body
+a front-matter mark files one locator	A mark written in the chapter's front matter files one locator, the chapter's page with no fragment, whether the chapter is read from its record or from its source
 no range and no principal	both ends of a range print the one page the chapter is on, and the role prints as an undeclared one does
 an absent record is read back where a section would lose it	is read back only where its terms would otherwise be lost from a section this chapter itself prints
 the two chapters that read one	a chapter carrying a placement marker of its own, and the book's last chapter, which takes on every index no marker names
@@ -21789,7 +21792,7 @@ a name no listing carries	A record whose name the directory does not list is abs
 a lookalike counts as written	a file merely *named* like a record and unopenable counts as one that was written — a broken symlink left at that path by hand, say
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
-  || fail "M52-AC5/M55/M062/M063: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, no longer says which chapter carries an index no marker names or on what proviso, or no longer says what the book reports for a record it could not use, or no longer states the source-recovery route M064/M065 added — what it returns, what it does not, that a record whose name no listing carries is left alone while one the listing carries and nothing can open is not, a hand-made lookalike among those (its own FAIL line is above)"
+  || fail "M52-AC5/M55/M062/M063/M071-AC4: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, no longer says which chapter carries an index no marker names or on what proviso, or no longer says what the book reports for a record it could not use, or no longer states the source-recovery route M064/M065 added — what it returns, what it does not, that a record whose name no listing carries is left alone while one the listing carries and nothing can open is not, a hand-made lookalike among those (its own FAIL line is above)"
 
 # The placement page's own half of the same pair (M063). Its list of rules is
 # where a reader who has not reached the Books page meets the book's placement
@@ -23600,29 +23603,31 @@ letter	L
 0	Lanyard	eight.html
 MANIFEST
 
-# ORACLE — the same two sections with six.qmd read from a record it wrote
-# itself rather than recovered from its source. Every other row is unchanged;
-# `Hasp` is the row where the two routes differ, and it differs twice over.
-#
-# It carries fragments, which a recovered locator cannot have: a record holds
-# the anchors that chapter's own render minted for the mark.
-#
-# And it carries THREE of them for the one mark the author wrote. By the time
-# this extension's passes run over a book chapter, Quarto has already copied
-# the chapter's abstract into its body: a filter placed immediately before this
-# one counted the mark once in the document's metadata and twice more in its
-# blocks (probed 2026-09-02, quarto 1.10.18), and each copy is a mark the
-# render mints an anchor for and files. The recovery route reads the source
-# file, where the author wrote the mark once, so it files it once. The record
-# route's three is not this milestone's doing — the same fixture rendered
-# through the filter as it stands on the default branch writes a record holding
-# the same three marks — and narrowing it is nobody's job here; what AC3 asks
-# is that the two routes agree on the ENTRY and the INDEX, which they do.
+# ORACLE — the same two sections with six.qmd, seven.qmd and eight.Rmd each
+# read from a record it wrote itself rather than recovered from its source.
+# Derived by hand from the three chapters' sources under D-048 (M071): a mark
+# written in a chapter's YAML front matter files ONE locator, that chapter's
+# page with no fragment, from its record exactly as from its source, so `Hasp`,
+# `Mullion`, `Nacelle` and `Lanyard` print the rows the recovery legs print for
+# them. Two things a record adds that a source cannot. `Ingot` is marked in
+# seven.qmd's front matter AND its body: the front-matter mark files the page,
+# the body mark keeps its anchor, and the body mark is the only mark of that
+# chapter minting one, so its fragment is the first. And `Jetsam` and `Oakum`,
+# the two marks in seven.qmd's abstract carrying one of Quarto's conditional
+# classes on the span itself, are indexed by that chapter's own render (the
+# M070 review recorded that the render indexes a `.content-hidden`
+# front-matter span; observed again 2026-09-02, quarto 1.10.18) and file its
+# page as any front-matter mark does, where the recovery route drops both
+# (D-042); `Kestrel`, inside a conditional BLOCK in the same abstract, reaches
+# neither route — the render does not index it (observed 2026-09-02, quarto
+# 1.10.18) and recovery drops the block. Before M071 the record route printed
+# three locators for `Hasp` and for `Nacelle`, two of each into ids the page
+# did not carry (KI232, KI233 — struck M071).
 read -r -d '' M070_SECTIONS_RECORDED <<'MANIFEST' || true
 section	qi-index-main	h1	Index of Subjects
 letter	A
 0	Aardvark	#qi-mark-1
-0	Ingot	seven.html
+0	Ingot	seven.html seven.html#qi-mark-1
 letter	B
 0	Bramble	one.html
 letter	C
@@ -23632,18 +23637,22 @@ letter	D
 letter	E
 0	Escutcheon	four.html
 letter	H
-0	Hasp	six.html#qi-mark-1 six.html#qi-mark-2 six.html#qi-mark-3
+0	Hasp	six.html
+letter	J
+0	Jetsam	seven.html
 letter	M
-0	Mullion	eight.html#qi-mark-2
+0	Mullion	eight.html
 letter	N
-0	Nacelle	eight.html#qi-mark-3 eight.html#qi-mark-4 eight.html#qi-mark-5
+0	Nacelle	eight.html
+letter	O
+0	Oakum	seven.html
 section	qi-index-aside	h1	Index of Asides
 letter	A
 0	Anvil	#qi-mark-2
 letter	F
 0	Ferrule	four.html
 letter	L
-0	Lanyard	eight.html#qi-mark-1
+0	Lanyard	eight.html
 MANIFEST
 
 # --- The first entry path: a record no render has written -------------------
@@ -23707,32 +23716,37 @@ check_extension_warning_count "$WORK/m070-dangling.log" 9 \
   "M070-AC1 (the second render emitted a warning this suite cannot name; its nine are six never-written recovery reports, one could-not-be-read report, the one refusal, and the marker-position report)"
 
 # --- The front-matter mark, by both routes ----------------------------------
-# six.qmd is rendered first, so it writes a record of its own from its own
-# render; index.qmd is then rendered against it. What that record carries for
-# the front-matter mark is the ordinary render's own answer, arrived at without
-# any of the code the recovery legs above exercise, which is what makes it a
-# control rather than an echo.
+# six.qmd, seven.qmd and eight.Rmd are rendered first, so each writes a record
+# of its own from its own render; index.qmd is then rendered against them.
+# What those records carry for a front-matter mark is the ordinary render's
+# own answer, arrived at without any of the code the recovery legs above
+# exercise, which is what makes it a control rather than an echo — and, since
+# M071, the row it prints for such a mark is the row the recovery legs print
+# (M071-AC1), seven.qmd adding the one case a source cannot show: a term
+# marked in the front matter and again in the body.
 m070_tree record
 m070_render record six.qmd \
-  "M070-AC3 (the render that writes six.qmd's own record)" "-first"
+  "M070-AC3/M071-AC1 (the render that writes six.qmd's own record)" "-first"
+m070_render record seven.qmd \
+  "M070-AC3/M071-AC1 (the render that writes seven.qmd's own record)" "-second"
 m070_render record eight.Rmd \
-  "M070-AC3 (the render that writes eight.Rmd's own record)" "-second"
-for m070_recorded in six.qmd eight.Rmd; do
+  "M070-AC3/M071-AC1 (the render that writes eight.Rmd's own record)" "-third"
+for m070_recorded in six.qmd seven.qmd eight.Rmd; do
   [ -f "$M070W/record/.quarto/$STORE_DIR/$m070_recorded$STORE_SUFFIX" ] \
-    || fail "M070-AC3: $m070_recorded's own render wrote no record, so the leg below would be about a chapter recovered from its source rather than read from one"
+    || fail "M070-AC3/M071-AC1: $m070_recorded's own render wrote no record, so the leg below would be about a chapter recovered from its source rather than read from one"
 done
 m070_render record index.qmd \
-  "M070-AC3 (index.qmd over a store holding six.qmd's record)" ""
+  "M070-AC3/M071-AC1 (index.qmd over a store holding the three chapters' records)" ""
 check_index_sections "$CAPTURE_ROOT/m070-record/_book/index.html" \
   "$M070_SECTIONS_RECORDED" \
-  "M070-AC3 (six.qmd read from its own record: the same entry printed in the same index as the recovery route prints it, its locators carrying the fragments a record alone can give)" hrefs
-check_warning_count "$WORK/m070-record.log" "$WARN_STORE_NEVER_RECOVERED" 5 \
-  "M070-AC3 (six.qmd and eight.Rmd are read from their own records and draw no recovery report; the five chapters without one do)"
+  "M070-AC3/M071-AC1 (six.qmd, seven.qmd and eight.Rmd read from their own records: each front-matter mark printed at its chapter's page with no fragment, the rows the recovery legs print, and seven.qmd's body mark alone carrying a fragment)" hrefs
+check_warning_count "$WORK/m070-record.log" "$WARN_STORE_NEVER_RECOVERED" 4 \
+  "M070-AC3/M071-AC1 (six.qmd, seven.qmd and eight.Rmd are read from their own records and draw no recovery report; the four chapters without one do)"
 check_warning_count "$WORK/m070-record.log" "$WARN_STORE_KIND_REFUSED" 1 \
   "M070-AC3 (five.ipynb is refused here as well)"
-check_extension_warning_count "$WORK/m070-record.log" 7 \
-  "M070-AC3 (the second render emitted a warning this suite cannot name; its seven are five never-written recovery reports, the one refusal, and the marker-position report)"
-pass "M070-AC1/M070-AC2/M070-AC3: over a book whose chapters are written in five source kinds, the four extensions this route accepts are each recovered whole and the notebook chapter is refused and reported on both entry paths — a record no render has written, and a record listed and unopenable — in the same words, each naming that chapter's own file, with none of its terms in either index section; and a mark written in a chapter's YAML front matter reaches the same entry in the same index by the recovery route as by the record route — across the metadata field it is written in, the extension of the chapter carrying it, whether its entry comes from its visible words or its attribute, and which of the book's two indexes it names — the recovered locator carrying that chapter's page and no fragment, while a mark carrying or inside one of Quarto's conditional classes there reaches no index at all and a sort key declared there beats one declared in the body"
+check_extension_warning_count "$WORK/m070-record.log" 6 \
+  "M070-AC3/M071-AC1 (the second render emitted a warning this suite cannot name; its six are four never-written recovery reports, the one refusal, and the marker-position report)"
+pass "M070-AC1/M070-AC2/M070-AC3/M071-AC1: over a book whose chapters are written in five source kinds, the four extensions this route accepts are each recovered whole and the notebook chapter is refused and reported on both entry paths — a record no render has written, and a record listed and unopenable — in the same words, each naming that chapter's own file, with none of its terms in either index section; and a mark written in a chapter's YAML front matter reaches the same entry in the same index by the recovery route as by the record route — across the metadata field it is written in, the extension of the chapter carrying it, whether its entry comes from its visible words or its attribute, and which of the book's two indexes it names — with ONE locator by either route, that chapter's page and no fragment, while a mark carrying or inside one of Quarto's conditional classes there reaches no index by the recovery route and a sort key declared there beats one declared in the body"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -24016,6 +24030,292 @@ MANIFEST
     "$M070_SECTIONS_BODYFIRST" \
     "M070 T6 self-test (the walks turned round: the body's declared sort key wins and the term files under a letter the ordinary render would not put it under)" hrefs
   pass "M070 T6 self-test: with the two walks turned round and nothing else changed, a term whose front matter and body declare rival sort keys files under the body's — which the AC1/AC2/AC3 manifest for the cold leg would fail on"
+fi
+
+# ===========================================================================
+# M071 — a front-matter mark in an HTML book chapter files one locator, to
+# the chapter's page (D-048). The record leg above is AC1's evidence; below
+# are the single-document control (AC3), the fragment-resolution sweep over
+# the four captures this work touches (AC2), and the one case the fixture's
+# chapters do not reach — a front-matter mark in the chapter that prints the
+# index — followed by the self-test's planted defects.
+# ===========================================================================
+
+# --- AC3: a single document is untouched ------------------------------------
+# ORACLE — derived by hand from examples/front-matter.qmd. Four marks, one in
+# each of three front-matter fields and one in the body. A single document is
+# no book chapter, so every one keeps its anchor and the index links each by a
+# fragment. The front-matter anchors are minted in the order the metadata is
+# walked, which is its fields' key order — `abstract`, `description`,
+# `subtitle` (Pandoc walks a metadata map by key; verified 2026-09-02, pandoc
+# 3.11) — and ahead of the body's, which the metadata is handed before.
+read -r -d '' M071_FRONT_MATTER_SECTIONS <<'MANIFEST' || true
+section	qi-index	h1	Index
+letter	B
+0	Bollard	#qi-mark-1
+letter	C
+0	Capstan	#qi-mark-4
+letter	G
+0	Gimbal	#qi-mark-3
+letter	H
+0	Halyard	#qi-mark-2
+MANIFEST
+quarto render examples/front-matter.qmd --to html > "$WORK/front-matter.log" 2>&1 \
+  || { tail -20 "$WORK/front-matter.log" >&2; fail "M071-AC3: examples/front-matter.qmd failed to render to HTML"; }
+capture examples/front-matter.qmd html "front-matter"
+check_index_sections "$CAPTURE_ROOT/front-matter/front-matter.html" \
+  "$M071_FRONT_MATTER_SECTIONS" \
+  "M071-AC3 (a single document: all four marks anchored, the three front-matter ones ahead of the body's)" hrefs
+check_extension_warning_count "$WORK/front-matter.log" 0 \
+  "M071-AC3 (a single document's front-matter marks draw no report)"
+# The three front-matter anchors sit inside the title block, which is where a
+# single document prints those fields, and the body's does not. Read
+# structurally, and the ids are the manifest's own, so the two assertions are
+# about the same four elements.
+m071_fragments() {   # <mode> <label> <args...>
+  local mode="$1" label="$2"
+  shift 2
+  HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+  HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+    python3 tests/fragments.py "$mode" "$@" \
+    || fail "$label (tests/fragments.py's own FAIL line is above)"
+}
+m071_fragments inside \
+  "M071-AC3 (the three front-matter anchors sit inside the title block)" \
+  "$CAPTURE_ROOT/front-matter/front-matter.html" title-block-header \
+  qi-mark-1 qi-mark-2 qi-mark-3
+m071_fragments outside \
+  "M071-AC3 (the body's anchor sits outside the title block)" \
+  "$CAPTURE_ROOT/front-matter/front-matter.html" title-block-header qi-mark-4
+pass "M071-AC3: a single HTML document with a mark in each of abstract:, description: and subtitle: and one in its body prints four terms with a fragment locator each, its page carrying all four anchors, the three front-matter ones inside its title block — a document that is not a book chapter files a front-matter mark as it did before"
+
+# --- AC2: every fragment in the four captures resolves ----------------------
+# Every locator of every index section, on the index page of each of the
+# three book-extensions captures and on the single document's page: each href
+# carrying a fragment names an id the page it links to carries, read from
+# that page. The reader fails on a page the capture lacks, on a fragment the
+# page does not carry, and on a domain with no fragment in it at all.
+for m071_capture in m070-cold/_book m070-dangling/_book m070-record/_book; do
+  m071_fragments resolve \
+    "M071-AC2 ($m071_capture: every fragment among index.html's locators names an id its page carries)" \
+    "$CAPTURE_ROOT/$m071_capture" index.html
+done
+m071_fragments resolve \
+  "M071-AC2 (front-matter: every fragment among the single document's locators names an id its page carries)" \
+  "$CAPTURE_ROOT/front-matter" front-matter.html
+pass "M071-AC2: in the index sections of the three book-extensions captures and the front-matter capture, every locator href carrying a fragment names an id the page it links to carries"
+
+# --- The reading chapter's own front-matter mark ----------------------------
+# ORACLE — the cold manifest with one row added. index.qmd has no front matter
+# of its own; a copy of the fixture gives it one, marking `Windlass` in an
+# `abstract:`. It is a front-matter mark in an HTML book chapter, so it files
+# one locator, the chapter's page — and the chapter is the one printing the
+# index, so the page is index.html itself, named as any other chapter's page
+# is rather than linked within (a locator with no fragment has nothing to link
+# within). Nothing else moves: the other chapters are recovered as in the cold
+# leg, and the reading chapter's two body marks keep their fragments.
+read -r -d '' M071_SECTIONS_OWN <<'MANIFEST' || true
+section	qi-index-main	h1	Index of Subjects
+letter	A
+0	Aardvark	#qi-mark-1
+0	Ingot	seven.html
+letter	B
+0	Bramble	one.html
+letter	C
+0	Cardamom	two.html
+letter	D
+0	Dovetail	three.html
+letter	E
+0	Escutcheon	four.html
+letter	H
+0	Hasp	six.html
+letter	M
+0	Mullion	eight.html
+letter	N
+0	Nacelle	eight.html
+letter	W
+0	Windlass	index.html
+section	qi-index-aside	h1	Index of Asides
+letter	A
+0	Anvil	#qi-mark-2
+letter	F
+0	Ferrule	four.html
+letter	L
+0	Lanyard	eight.html
+MANIFEST
+# A copied tree's file, spliced in place — M070's tree and render helpers,
+# with the file to splice named rather than fixed to book.lua.
+m071_splice() {   # <slug> <file relative to the tree> <label> <perl substitution>...
+  local slug="$1" file="$2" label="$3"
+  shift 3
+  [ "$#" -ge 1 ] || fail "$label: m071_splice was given no substitution to apply"
+  local target="$M070W/$slug/$file"
+  [ -f "$target" ] || fail "$label: $target is not there to splice"
+  spliced_copy "$label" "$file" "$target" "$M070W/$slug-spliced" "$@"
+  mv "$M070W/$slug-spliced" "$target"
+}
+m070_tree own
+m071_splice own index.qmd "M071 (a front-matter mark given to the reading chapter)" \
+  's{\A}{---\nabstract: "The reading chapter marks [Windlass]{.index} in its own front matter."\n---\n\n}'
+m070_render own index.qmd "M071 (index.qmd with a front-matter mark of its own, no store)" ""
+check_index_sections "$CAPTURE_ROOT/m070-own/_book/index.html" \
+  "$M071_SECTIONS_OWN" \
+  "M071 (the reading chapter's own front-matter mark files its own page by name, with no fragment)" hrefs
+m071_fragments resolve \
+  "M071 (m070-own: every fragment among index.html's locators names an id its page carries)" \
+  "$CAPTURE_ROOT/m070-own/_book" index.html
+pass "M071: a front-matter mark in the chapter that prints the index files one locator naming that chapter's own page, index.html, with no fragment, and every other row of the cold leg is unchanged"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M071 T3/T4 — the planted defects. Three against the filter, over copies of
+  # the fixture whose only change is that mutation, each shown to print the
+  # defect's own rows where the record leg prints the rows above: the
+  # reflected copies made marks again, the page locator turned back into an
+  # anchor, and the forgery strip removed with a forged tag written on a body
+  # mark — beside its control, the same forgery against the unmutated filter,
+  # where the rows do not move. Then the fragment reader against a capture
+  # with one href rewritten to a fragment no page carries and one to a page
+  # the capture lacks, and the containment reader asked the wrong way round.
+  # -------------------------------------------------------------------------
+
+  # ORACLE — the record leg's rows with six.qmd alone recorded (seven.qmd and
+  # eight.Rmd recovered from their sources, so only `Hasp` differs from the
+  # cold manifest), which is what a leg rendering six.qmd and then index.qmd
+  # prints. Both filter plants below move that one row.
+  m071_six_row() {   # <Hasp row> — the manifest with that row for Hasp
+    printf '%s\n' "$M070_SECTIONS_RECOVERED" \
+      | perl -pe 's{^0\tHasp\tsix\.html$}{'"$1"'}'
+  }
+  m071_six_leg() {   # <slug> <label>
+    m070_render "$1" six.qmd "$2 (the render that writes six.qmd's record)" "-first"
+    [ -f "$M070W/$1/.quarto/$STORE_DIR/six.qmd$STORE_SUFFIX" ] \
+      || fail "$2: six.qmd's own render wrote no record"
+    m070_render "$1" index.qmd "$2" ""
+  }
+
+  # 1 — the reflected copies made marks again: the class removal taken out of
+  # the tagging pass. six.qmd's abstract is copied twice into the hidden div
+  # (probed 2026-09-02, quarto 1.10.18), so each copy is a body mark minting
+  # an anchor of its own, and `Hasp` prints the page and then two fragments
+  # into ids six.html does not carry.
+  m070_tree nodeclass
+  m071_splice nodeclass _extensions/index/modules/passes.lua \
+    "M071 T3 self-test (the reflected copies' class removal taken out)" \
+    's{  if qi_core\.is_html\(\) then\n    for i, block in ipairs\(doc\.blocks\) do\n      if block\.t == "Div" and block\.identifier == qi_core\.META_REFLECTION_ID then\n        doc\.blocks\[i\] = block:walk\(\{ Span = declass_copy \}\)\n      end\n    end\n  end\n}{}'
+  m071_six_leg nodeclass "M071 T3 self-test (the reflected copies made marks again)"
+  check_index_sections "$CAPTURE_ROOT/m070-nodeclass/_book/index.html" \
+    "$(m071_six_row '0\tHasp\tsix.html six.html#qi-mark-1 six.html#qi-mark-2')" \
+    "M071 T3 self-test (the class removal taken out: Hasp prints its page and then two fragments into ids six.html does not carry)" hrefs
+  M071_NODECLASS_OUT=$(HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+    HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+    python3 tests/fragments.py resolve "$CAPTURE_ROOT/m070-nodeclass/_book" index.html 2>&1) \
+    && M071_RC=0 || M071_RC=$?
+  [ "$M071_RC" -ne 0 ] \
+    || { printf '%s\n' "$M071_NODECLASS_OUT" >&2; fail "M071 T3/T4 self-test: the fragment reader passed over the index the class removal's absence prints, whose Hasp fragments name ids six.html does not carry"; }
+  printf '%s' "$M071_NODECLASS_OUT" | grep -qF -- "carries no id 'qi-mark-1'" \
+    || { printf '%s\n' "$M071_NODECLASS_OUT" >&2; fail "M071 T3/T4 self-test: the fragment reader failed over that index, but not on six.html lacking qi-mark-1"; }
+  pass "M071 T3 self-test: with the reflected copies' class removal taken out and nothing else changed, six.qmd's one front-matter mark prints three locators, two into ids its page does not carry — which the AC1 manifest and the AC2 sweep would both fail on"
+
+  # 2 — the page locator turned back into an anchor: the emit pass told no
+  # mark is a front-matter one in a book chapter. The copies stay declassed,
+  # so `Hasp` prints one locator, with the fragment the mark now mints — the
+  # single document's shape, on a page whose title block prints the field, so
+  # this defect is one the fragment sweep cannot see and the manifest alone
+  # holds.
+  m070_tree nopage
+  m071_splice nopage _extensions/index/modules/passes.lua \
+    "M071 T3 self-test (the page locator turned back into an anchor)" \
+    's{    local page_only = from_meta and html_book_chapter\n}{    local page_only = false\n}'
+  m071_six_leg nopage "M071 T3 self-test (the page locator turned back into an anchor)"
+  check_index_sections "$CAPTURE_ROOT/m070-nopage/_book/index.html" \
+    "$(m071_six_row '0\tHasp\tsix.html#qi-mark-1')" \
+    "M071 T3 self-test (no page locator: Hasp prints one fragment locator, as a single document's front-matter mark does)" hrefs
+  pass "M071 T3 self-test: with the emit pass filing a front-matter mark as a body one and nothing else changed, six.qmd's front-matter mark prints a fragment locator where the record leg prints its page — which the AC1 manifest would fail on"
+
+  # 3 — the forgery strip. seven.qmd's BODY mark is given the tagging pass's
+  # own attribute by hand. Against the unmutated filter the tagging pass
+  # discards it before any pass reads it, and the rows are the record leg's
+  # for that chapter (the control: a forged tag must move nothing, and must
+  # not survive into the page). Against a filter whose tagging pass keeps
+  # it, the body mark is read as a front-matter one: it files the page, which
+  # the front-matter mark's own locator already names, and `Ingot` loses its
+  # fragment.
+  m071_seven_row() {   # <Ingot row> — the cold manifest with seven.qmd from its record
+    printf '%s\n' "$M070_SECTIONS_RECOVERED" \
+      | perl -pe 's{^0\tIngot\tseven\.html$}{'"$1"'}; s{^(letter\tM)$}{letter\tJ\n0\tJetsam\tseven.html\n$1}; s{^(section\tqi-index-aside\t.*)$}{letter\tO\n0\tOakum\tseven.html\n$1}'
+  }
+  m071_seven_leg() {   # <slug> <label>
+    m071_splice "$1" seven.qmd "$2 (a forged tag on the body mark)" \
+      's{\[Ingot\]\{\.index sort="Zz"\}}{[Ingot]{.index sort="Zz" data-qi-meta="1"}}'
+    m070_render "$1" seven.qmd "$2 (the render that writes seven.qmd's record)" "-first"
+    [ -f "$M070W/$1/.quarto/$STORE_DIR/seven.qmd$STORE_SUFFIX" ] \
+      || fail "$2: seven.qmd's own render wrote no record"
+    m070_render "$1" index.qmd "$2" ""
+  }
+  m070_tree forgedctl
+  m071_seven_leg forgedctl "M071 T3 self-test control (a forged tag against the unmutated filter)"
+  check_index_sections "$CAPTURE_ROOT/m070-forgedctl/_book/index.html" \
+    "$(m071_seven_row '0\tIngot\tseven.html seven.html#qi-mark-1')" \
+    "M071 T3 self-test control (the forged tag discarded: Ingot keeps its page and its body fragment)" hrefs
+  python3 tests/htmlsweep.py pending "$CAPTURE_ROOT/m070-forgedctl-first" \
+    || fail "M071 T3 self-test control: the forged tag survived into seven.qmd's rendered page"
+  m070_tree forged
+  m071_splice forged _extensions/index/modules/passes.lua \
+    "M071 T3 self-test (the forgery strip taken out)" \
+    's{local function TagSpan\(span\)\n  if span\.attributes\[qi_core\.META_MARK_ATTR\] == nil then\n    return nil\n  end\n}{local function TagSpan(span)\n  if true then\n    return nil\n  end\n}'
+  m071_seven_leg forged "M071 T3 self-test (the forgery strip taken out)"
+  check_index_sections "$CAPTURE_ROOT/m070-forged/_book/index.html" \
+    "$(m071_seven_row '0\tIngot\tseven.html')" \
+    "M071 T3 self-test (the strip taken out: the forged body mark files the page the front-matter mark already names, and Ingot loses its fragment)" hrefs
+  pass "M071 T3 self-test: a forged tagging attribute on a body mark moves nothing against the filter as shipped and survives into no page, and with the tagging pass's strip taken out the same forgery files that mark as a front-matter one — which the AC1 manifest would fail on"
+
+  # 4 — the fragment reader, against copies of the record capture with one
+  # href rewritten. Each is required to fail naming the rewritten target and
+  # the reason; the unplanted capture passed above.
+  M071_FRAG="$WORK/m071-frag"
+  m071_frag_plant() {   # <slug> <substitution> <expected fragment of the FAIL line> <what was planted>
+    local slug="$1" sub="$2" expect="$3" what="$4" dir="$M071_FRAG/$slug"
+    rm -rf "$dir"
+    cp -R "$CAPTURE_ROOT/m070-record/_book" "$dir"
+    spliced_copy "M071 T4 self-test ($what)" "the captured index page" \
+      "$CAPTURE_ROOT/m070-record/_book/index.html" "$dir/index.html" "$sub"
+    local out rc
+    out=$(HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+      HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+      python3 tests/fragments.py resolve "$dir" index.html 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M071 T4 self-test: the fragment reader passed over a capture with $what"; }
+    printf '%s' "$out" | grep -qF -- "$expect" \
+      || { printf '%s\n' "$out" >&2; fail "M071 T4 self-test: the fragment reader failed over a capture with $what, but not with <<$expect>>"; }
+  }
+  m071_frag_plant nofragment \
+    's{href="seven\.html#qi-mark-1"}{href="seven.html#qi-mark-99"}' \
+    "seven.html carries no id 'qi-mark-99'" \
+    "one href rewritten to a fragment no page carries"
+  m071_frag_plant nopage \
+    's{href="seven\.html#qi-mark-1"}{href="nine.html#qi-mark-1"}' \
+    "nine.html is no page of the capture" \
+    "one href rewritten to a page the capture lacks"
+  # An index whose locators carry no fragment at all is an empty domain, not a
+  # pass: six.html prints no index section, and the reader says so.
+  M071_EMPTY_OUT=$(HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+    HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+    python3 tests/fragments.py resolve "$CAPTURE_ROOT/m070-record/_book" six.html 2>&1) \
+    && M071_RC=0 || M071_RC=$?
+  [ "$M071_RC" -ne 0 ] && printf '%s' "$M071_EMPTY_OUT" | grep -qF -- "carries no generated index section" \
+    || { printf '%s\n' "$M071_EMPTY_OUT" >&2; fail "M071 T4 self-test: the fragment reader did not refuse a page with no index section as an empty domain"; }
+  # The containment reader asked the wrong way round: the body's anchor is
+  # not inside the title block, and the abstract's is not outside it.
+  for m071_wrong in "inside qi-mark-4 sits outside" "outside qi-mark-1 sits inside"; do
+    set -- $m071_wrong
+    M071_WRONG_OUT=$(python3 tests/fragments.py "$1" \
+      "$CAPTURE_ROOT/front-matter/front-matter.html" title-block-header "$2" 2>&1) \
+      && M071_RC=0 || M071_RC=$?
+    [ "$M071_RC" -ne 0 ] && printf '%s' "$M071_WRONG_OUT" | grep -qF -- "$2' $3 the element" \
+      || { printf '%s\n' "$M071_WRONG_OUT" >&2; fail "M071 T3 self-test: the containment reader did not refuse $2 as $1 the title block"; }
+  done
+  pass "M071 T4 self-test: the fragment reader fails, naming the target, on a capture with one href rewritten to a fragment its page does not carry and on one rewritten to a page the capture lacks, refuses a page with no index section as an empty domain, and the containment reader refuses each of the front-matter page's anchors asked the wrong way round"
 fi
 
 }

@@ -9,18 +9,18 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M072 | A refused chapter whose record an older version wrote is reported once per index section | planned | — | normal | milestones/M072-refusal-report-count.md |
+| M072 | A refused chapter whose record an older version wrote is reported once per index section | review | — | normal | milestones/M072-refusal-report-count.md |
 | M071 | A front-matter mark in an HTML book chapter files one locator, to the chapter's page | done | — | normal | milestones/archive/M071-front-matter-locators.md |
 | M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | done | — | normal | milestones/archive/M069-absent-record-recovery.md |
 | M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | done | M069 | normal | milestones/archive/M070-recovery-parse-fidelity.md |
 | M068 | A record that is listed and cannot be opened is not read as one that was never written | done | — | normal | milestones/archive/M068-listed-unopenable-record.md |
-| M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- Run the suite's independent legs in parallel, each owning its own work directory, so a full run stops costing 13 minutes on one core; the shared work directory, the legs that mutate one fixture in sequence, and the serial check output are the cost. Promote on the run time blocking a task loop, or on a leg being skipped to avoid it — added 2026-09-03 — M072 implement (13m09s wall, 675s CPU)
 - Declass Quarto's navigation-envelope copies of a chapter's `title:` in an HTML book, so a mark written there files one locator rather than one per sidebar and page-navigation copy on every page; promote on an author reporting a title mark's locator count — added 2026-09-03 — M071 review F1 — KI235
 - Narrow what the absent-record recovery gate admits and what it says: report only where a chapter builds a section, quieten an ordinary first render whose marker sits early, and give a never-written record whose source also fails its own wording. Promote on an author reporting the reports — added 2026-09-02 — M069 review F1, F2, F3, F5, F8 — KI228, KI229, KI230, KI231
 - Give a recovered locator a fragment where the author wrote the mark's id themselves, the one value the source alone settles: a minted number counts against ids taken across the whole rendered page, which the source cannot know. Promote on an author reporting a recovered locator lands at a chapter's top — added 2026-08-30, narrowed 2026-09-02 — M064/M065 reviews — KI205

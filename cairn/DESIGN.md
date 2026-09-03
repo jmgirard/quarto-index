@@ -523,15 +523,25 @@ carry the outcome: three for a record that was written and could not be used —
 recovered, parsed and reaching no mark, unreadable — a fourth for one no
 render has written whose source was read back, which never calls such a record
 unreadable, and a fifth for a chapter whose source this route does not read,
-drawn ahead of the other four and whatever state that chapter's record was in,
-and so worded to assert nothing about the record (added M070). A never-written
+drawn instead of the other four whatever state that chapter's record was in,
+and so worded to assert nothing about the record (added M070). That fifth is
+drawn at the count of the wording it stands in for (D-049, M072): where the
+record came from another version — which is what any record that decodes and
+does not carry this version's number is read as — it is handed to the report
+site with the stale records and drawn there, once per chapter that builds a
+section and once by a chapter that builds none whose records show no chapter
+placing an index; in the other three states it is drawn where the chapter met
+the record, as all four were before. A never-written
 record whose source parses to no mark is the one
 silent outcome: it has lost nothing, and every chapter of a store-less book
 that marks nothing would otherwise report on every render (M069). A REFUSED
-chapter is outside that silence and reports on every path, the never-written
-one included: its source was never read, so nothing here knows whether it marks
-a term at all, and guessing that it marks none would cost its author every term
-of that chapter with no way to find out (M070). Five cases are
+chapter is outside that silence on every path a record can fail on, the
+never-written one included: its source was never read, so nothing here knows
+whether it marks a term at all, and guessing that it marks none would cost its
+author every term of that chapter with no way to find out (M070). It reports on
+each of those paths at the count that path's own wording follows, so over a
+record another version wrote a chapter that builds no section says nothing,
+exactly as it says nothing about any other stale record (M072). Five cases are
 reported rather than guessed at (corrected M063, which retired two of the
 seven M061 left): a book whose chapters mark terms but whose author wrote no
 marker anywhere (reported by the last chapter, the only one
@@ -1627,13 +1637,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   while its sibling `m069_tree` does. Benign while `$M061W/base` is created
   with `_book` removed; it would silently let `check_book_sections` read a
   stale `_book` if that changed. — M069 review F8
-- **KI234.** The refusal a chapter this route will not read draws stands ahead
-  of the version-skew branch and is drawn once per READING chapter, where the
-  stale family is drawn once per BUILDING chapter. So a refused chapter whose
-  record was written by an older version never reaches `stale` and can never
-  draw the different-version wording, and a book with several index-printing
-  chapters says the refusal more often than it says a stale record.
-  — M070 review round 1 F6, widened M070 review round 2 R2-F7
 - **KI235.** A mark written in a chapter's `title:` in an HTML book files
   several locators, all live. Quarto copies the title into the top-level
   `#quarto-navigation-envelope` div ahead of every filter, and that div

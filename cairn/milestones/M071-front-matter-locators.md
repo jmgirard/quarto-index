@@ -1,6 +1,6 @@
 # M071: A front-matter mark in an HTML book chapter files one locator, to the chapter's page
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -65,6 +65,7 @@ Probed 2026-09-02 (quarto 1.10.18, pandoc 3.11): in a book chapter Pandoc hands 
 - 2026-09-02: checkpoint, unverified — T3, T4 and T5 landed: `M070_SECTIONS_RECORDED` re-derived under D-048 (front-matter rows page-only, `Ingot` page then fragment, `Jetsam` and `Oakum` added), the record leg renders `seven.qmd`, `examples/front-matter.qmd` with its manifest and title-block containment checks, the fragment sweep (`tests/fragments.py resolve`) over the four captures, the own-chapter leg, and a self-test of five filter/fixture plants plus reader plants; `site/books.qmd` and its ledger row, `CHANGELOG.md`, DESIGN (architecture, recovery, KI232/KI233 struck). The fixture, gallery row and `htmlsweep`/`plantdefect` extension had gone into the T1/T2 commit. Full `--self-test` run in progress; tasks stay unticked until it is clean.
 - 2026-09-03: first `--self-test` run stopped at the M063-AC6 self-test, which pins the books-page ledger count (31 → 32 with the new row); pin moved, suite re-run.
 - 2026-09-03: `tests/run-tests.sh --self-test` clean, 1228 checks (1207 at M070's close), after two shell slips in the T4 self-test (an unbound local, a missing parent directory) each fixed and re-run; T1–T5 ticked. Planted defects shown red: the reflected copies' class removal taken out (`Hasp` prints its page then two fragments into ids `six.html` lacks, the fragment sweep failing on the first), the page locator turned back into an anchor (`Hasp` prints one fragment locator), the forgery strip taken out with a forged tag on `seven.qmd`'s body mark (`Ingot` loses its fragment) beside its control (nothing moves, no residue), the fragment reader on an href to a missing fragment and to a missing page, an empty domain, and the containment reader asked the wrong way round; `data-qi-meta` planted per captured page fails the residue sweep. Plain run in progress.
+- 2026-09-03: plain `tests/run-tests.sh` clean, 654 checks (642 at M070's close); `cairn_validate` clean; plan-owned body 56 lines. Status → review.
 
 ## Decisions
 

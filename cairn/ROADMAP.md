@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-03 (M072 done and archived; KI234 struck with the milestone, KI236-KI238 added and absorbed into three existing candidate rows, each compressed to hold the per-row cap. No lesson captured — the copy-does-not-inherit-the-fix finding is the M41/M52 line's family and LESSONS.md is at cap. Prose-guard suites green in the branch's own runs. LESSONS.md 49 lines / 19,912 bytes; check-design.md 37 lines / 17,699 bytes, both under budget.)_
+_Last hygiene check: 2026-09-03 (audit pass: all 16 cairn_validate checks PASS, all 7 advisories OK; nothing in flight, working tree clean, git reconciled through f11349b. No open issues or external PRs; no outside merges since the last stamp; no `resolves`/`closes` clause in any retained done row, so no orphan reads owed. Nothing fixed — two headroom findings surfaced for the user: LESSONS.md 49/50 lines and 19,912/20,000 bytes, ROADMAP.md 59/60 lines; check-design.md 37/40 lines, 17,699/18,000 bytes.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 

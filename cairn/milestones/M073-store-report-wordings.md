@@ -6,7 +6,7 @@
 - **Driving RR:** —
 - **Principles touched:** IP2, GP1
 - **Resolves:** —
-- **Branch/PR:** `m073-store-report-wordings`
+- **Branch/PR:** `m073-store-report-wordings` / https://github.com/jmgirard/quarto-index/pull/73
 
 ## Goal
 
@@ -134,6 +134,7 @@ stands as its known issue.
 - 2026-09-03: T6 — `site/books.qmd`, `CHANGELOG.md`, four claim-ledger rows, KI230 and KI236 marked resolved in place.
 - 2026-09-03: T7 — D-050 recorded. Suite runs 1-4 each surfaced one defect in this milestone's own additions: the two self-test renders missing their `capture` calls (M24 scan), the claim-list self-test's pinned row count 33 → 37, and the M070 `lostwording` plant asserting the old wording over a cold tree, where the never-written one is now the true report. Run 1 was invalid — the script was edited while it ran; see the LESSONS line.
 - 2026-09-03: `tests/run-tests.sh --self-test` exits 0, all 1260 checks passed (run 5, tree at 79f2855).
+- 2026-09-03: review opened — branch pushed, draft PR #73; consistency gate clean (cairn_validate 16 PASS / 7 advisories OK; generic profile names no toolchain checks; no principle changed, so no impact scan). Criteria evidence pending the full suite and self-test re-run.
 
 ## Decisions
 

@@ -209,13 +209,16 @@ the chapter carrying the marker cannot itself be read.
 The one for a chapter whose source this route will not read follows whichever
 report it stands in for, so a book carrying such a chapter hears about it as
 often as it would have heard about that chapter's record. Where the record was
-left by a different version, it is drawn on the rule just given — once for every
-chapter that builds an index section, and once by a chapter that builds none
-where the records it read show no chapter placing an index. Where no render has
-written the record, it is drawn by the two chapters that read a source for an
-absent record, once each. And where the record is there and cannot be used —
-unopenable, or holding bytes that are not a record — it is drawn by every
-chapter that looks for it.
+left by a different version — which is what any record that decodes and does not
+carry the version this render writes is read as, one carrying no version at all
+included — it is drawn on the rule just given: once for every chapter that builds
+an index section, and once by a chapter that builds none where the records it
+read show no chapter placing an index. Where no render has written the record, it
+is drawn by every chapter the never-written rule admits — a chapter with a
+placement marker, and the book's last chapter — once for each such record it
+meets. And where the record is there and cannot be used — unopenable, or holding
+bytes that do not decode at all — it is drawn by every chapter that looks for
+it.
 
 ## The merged books: PDF and EPUB
 

@@ -24416,7 +24416,7 @@ m072_render() {   # <slug> <chapter> <suffix> <label>
   local slug="$1" chapter="$2" suffix="$3" label="$4"
   ( cd "$M072W/$slug" && quarto render "$chapter" --to html ) \
     > "$WORK/m072-$slug$suffix.log" 2>&1 \
-    || { tail -30 "$WORK/m072-$slug$suffix.log" >&2; fail "$label: the render failed, so this leg says nothing about what was reported; IP2 forbids an unusable record taking a render down at all"; }
+    || { tail -30 "$WORK/m072-$slug$suffix.log" >&2; fail "$label: the render failed, so this leg says nothing about what was reported; where the store this render read holds a record that cannot be used, IP2 forbids that record taking a render down at all"; }
   capture --project "$M072W/$slug" html "m072-$slug$suffix"
 }
 

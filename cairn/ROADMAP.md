@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-02 (M069 done and archived; KI227-KI231 added and one candidate row filed for its deferred review findings; M064's terminal row pruned to hold the retention cap. LESSONS.md is at 49 lines / 19,912 bytes, one line under both caps.)_
+_Last hygiene check: 2026-09-02 (M070 done and archived; KI219 retired, KI232-KI234 added and KI233's discriminator corrected at review round 3; the M070 follow-up candidate row narrowed with it; M065's terminal row pruned to hold the retention cap. No lesson captured: M070's one candidate — a `.Rmd` fixture pulling knitr and R into the suite — ships guarded by its own preflight, and LESSONS.md is at 49 lines / 19,912 bytes with no line this milestone retires, so it would have displaced a live one. check-design.md 37 lines / 17,699 bytes, both under budget.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 
@@ -10,11 +10,10 @@ _Released 0.2.0 2026-09-02._
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | done | — | normal | milestones/archive/M069-absent-record-recovery.md |
-| M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | review | M069 | normal | milestones/M070-recovery-parse-fidelity.md |
+| M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | done | M069 | normal | milestones/archive/M070-recovery-parse-fidelity.md |
 | M068 | A record that is listed and cannot be opened is not read as one that was never written | done | — | normal | milestones/archive/M068-listed-unopenable-record.md |
 | M066 | The recovery-route checks read the reports and mutations they name | done | — | normal | milestones/archive/M066-recovery-check-readers.md |
 | M067 | The editor-metadata checks read what they claim to read | done | — | normal | milestones/archive/M067-editor-metadata-readers.md |
-| M065 | The forms a recovered chapter's marks take are fenced | done | M064 | normal | milestones/archive/M065-recovered-mark-forms.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

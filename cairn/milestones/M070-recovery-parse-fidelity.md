@@ -76,7 +76,7 @@ reach the book index and what the render tells them when some cannot.
       whose only mark is in that chapter's body has each of those chapters'
       terms in the book's index, held row by row in href form against a
       hand-derived manifest.
-- [ ] AC3. A mark written in the YAML front matter of a chapter whose source
+- [x] AC3. A mark written in the YAML front matter of a chapter whose source
       file's extension is one the recovery parse accepts, written in the file on
       disk, naming an index the book declares, and neither carrying nor inside a
       block or span carrying `.content-visible` or `.content-hidden`, that
@@ -180,147 +180,144 @@ reach the book index and what the render tells them when some cannot.
 
 ## Review
 
-_Reviewed 2026-09-02 against PR #70, round 2. **Outcome: returned to
-`in-progress`** — one amendment return on AC3, and one finding meeting the
-defect floor. AC1, AC2, AC4 and AC5 are verified below; AC3 is not._
+_Reviewed 2026-09-02 against PR #70, round 3. **Outcome: all five acceptance
+criteria verified.** Ten findings from the independent review, six taken
+fix-now and applied on the branch before this evidence was gathered; none met
+the return floor._
 
 ### Acceptance criteria
 
 - **AC1 — verified.** Both entry paths draw the refusal exactly once, each
   naming the chapter's file, and none of `five.ipynb`'s terms are in either
   index section: `plain.log:717-727`. The cold leg and the listed-unopenable
-  leg each match all 19 manifest rows in href form, in order; `m070_refusal_names`
-  greps the refusal line for `five.ipynb` on both (`:719`, `:725`); the three
-  could-not-be-read wordings are asserted absent (0 each), and the reading
-  chapter's total warning count is pinned at 8. The message-whole half is the
-  key plus those zero-counts plus `warn-distinct`, which R2-F3 weakens without
-  breaking.
+  leg each match all 25 manifest rows in href form, in order (`:718`, `:724`);
+  `m070_refusal_names` greps the refusal line for `five.ipynb` on both (`:719`,
+  `:725`); the three could-not-be-read wordings are asserted absent (0 each);
+  and the reading chapter's total warning count is pinned at 9 on each leg. The
+  message-whole half is that key — now the unique substring `source is not one
+  this route reads` — plus those zero-counts plus `warn-distinct`.
 - **AC2 — verified.** One chapter per accepted extension (`.qmd`, `.md`,
-  `.markdown`, `.Rmd`), each recovered and its term in the book's index, held
-  row by row in href form against the hand-derived manifest: `plain.log:718`,
-  "2 generated index section(s) and all 19 manifest rows match, in order".
-- **AC3 — not verified (R2-F1).** `six.qmd`'s `Hasp` does file the same entry
-  in the same declared index by both routes, recovered (`plain.log:718`,
-  locator `six.html`, no fragment) and read from the chapter's own record as
-  the control (`:726`, locators `six.html#qi-mark-1..3`). But AC3 promises
-  this of *a mark written in a chapter's YAML front matter*, and this branch's
-  own fixture carries one it is false of. Rendered by hand 2026-09-02 under
-  quarto 1.10.18 on a scratch copy of `examples/book-extensions`,
-  `seven.qmd`'s own render writes a record holding `Jetsam` — the
-  `[Jetsam]{.content-hidden .index}` span in its `abstract:` — three times,
-  and a following render of `index.qmd` prints it in `qi-index-main`. The
-  recovery route files it nowhere. The criterion is what is wrong here, not
-  the code: see R2-F1.
-- **AC4 — verified by reading both pages.** `site/books.qmd:93-100` states the
-  accepted set and the refusal; `:104-109` states that a front-matter mark
-  comes back with the body's. `CHANGELOG.md:29-45` states both in its
-  unreleased section. (One clause of that same passage is over-general —
-  R2-F6 — which AC4 as written does not reach.)
+  `.markdown`, `.Rmd`), each recovered and its body mark in the book's index,
+  held row by row in href form against the hand-derived manifest:
+  `plain.log:718`, "2 generated index section(s) and all 25 manifest rows
+  match, in order". The `nomarkdown` plant takes `.markdown` out of the
+  accepted set and that chapter's row is the one that leaves the manifest
+  (`self.log:1290-1291`), so the set is fenced member by member and not only
+  at its edges.
+- **AC3 — verified.** Over `six.qmd` and `eight.Rmd`, whose only marks are in
+  their front matter: each files the same printed entry in the same declared
+  index by both routes — recovered (`plain.log:718`, locators `six.html`,
+  `eight.html`, no fragment) and read from that chapter's own record as the
+  control (`:726`, `six.html#qi-mark-1..3`, `eight.html#qi-mark-1..5`). The
+  four axes AC3 is free in all move at once in `eight.Rmd`: a non-`.qmd`
+  extension, `description:` beside `abstract:`, an entry taken from the
+  attribute rather than the visible words, and the book's second declared
+  index. The criterion's carve-out is fenced from the other side by
+  `seven.qmd`, whose three conditional front-matter marks reach no index, and
+  by the `rawmeta` plant, which puts all three back (`self.log:1296-1297`).
+  The locator clause holds: every recovered row carries the chapter's page and
+  nothing after it.
+- **AC4 — verified by reading both pages.** `site/books.qmd:93-102` states the
+  accepted set and the refusal, and scopes the refusal to the states its branch
+  is reached in; `:105-115` states that a front-matter mark comes back with the
+  body's, and now says where the two routes stop agreeing (R3-F4).
+  `CHANGELOG.md:29-46` states both in its unreleased section.
 - **AC5 — verified.** `tests/run-tests.sh` passed at 642 checks and
   `tests/run-tests.sh --self-test` at 1207, both exit 0, over this branch's
-  head `e81a709`. 25 M070 checks among them and all seven plants shown red
-  against the check that fences each.
+  head with the round-3 fix-now work applied. 25 M070 checks among them, and
+  all seven plants shown red against the check that fences each
+  (`self.log:1286-1299`).
 
 ### Consistency gate
 
-`cairn_validate.py` exit 0 — 16 PASS, one advisory (`sizing`: 11 tasks against
-the 10 tripwire, from the return round's T7-T11). No `DESIGN.md` principle text
-changed, so `cairn_impact` is skipped. The `generic` profile names no toolchain
-checks, so the universal cairn-file checks are the whole gate. PR #70's CI is
-green on the head commit (`compare`, `plan`, `render (floor, 1.4.549)`,
+`cairn_validate.py` exit 0 — 16 PASS, one advisory (`sizing`: 16 tasks against
+the 10 tripwire, from two return rounds). No `DESIGN.md` principle text
+changed — the diff's only IP2 mentions are Known-issues prose — so
+`cairn_impact` is skipped. The `generic` profile names no toolchain checks, so
+the universal cairn-file checks are the whole gate. PR #70's CI is green
+(`compare`, `plan`, `build`, `render (floor, 1.4.549)`,
 `render (pinned, 1.10.18)`).
 
 ### Independent review
 
 User-facing tier, executable diff → the full three-lens fan-out, all
 fresh-context, none having seen the implementation. **[S] blame-history: no
-defects** — it checked each of round 1's F1-F12 against the code rather than
-against the milestone's account of them, and found D-041 through D-045
-untouched beyond the changes this milestone records. **[S] prior-review record:
-zero findings** — the GitHub inline-comment probe returned empty, so that
-surface was skipped by its own gate; against the archived `## Review` sections
-of the milestones touching `book.lua` nothing in the diff reintroduces or
-contradicts a recorded finding. **[O] diff-bug: 10 findings**, below.
+defects** — it traced every modified and removed line to the commit that wrote
+it and found the new `refused` branch additive with all five prior store
+outcomes intact, `recovered_markers` deliberately unwidened per D-047/KI11, and
+the only deletions in the suite a mechanical reindent of two splice patterns.
+**[S] prior-review record: zero findings** — the GitHub inline-comment probe
+returned empty, so that surface was skipped by its own gate; against the
+archived `## Review` sections and this milestone's own rounds 1-2, every fixed
+finding is durably applied and none is reintroduced. **[O] diff-bug: 10
+findings**, below.
 
 ### Findings and dispositions
 
-R2-F1, R2-F2, R2-F3 and R2-F6 were verified independently before triage, by
-hand renders in a scratch tree and by reading the implementation.
+R3-F1, R3-F2, R3-F4 and R3-F7 were verified independently before triage, by
+reading the run's own captures and logs and by reading the implementation.
 
-- **R2-F1 — amendment return on AC3.** Verified as above: a
-  `.content-hidden` span written in `abstract:` is indexed by that chapter's
-  own render and is not recovered. The reviewer read this as a defect in the
-  code — the F1 fix diverging from the render in the opposite direction — and
-  the code is right: a probe over the same tree shows the ordinary render also
-  indexes a `.content-hidden` span written in the BODY (`Marlin`, one mark in
-  the record) while the page itself carries neither, because Quarto settles
-  span-level conditional content after this extension's pass. Recovery has
-  dropped body conditionals since D-042, deliberately, preferring a lost term
-  over an invented one; extending that to front matter is what Scope In says
-  this milestone does. So the divergence is the standing decision applied
-  consistently, and AC3 is the thing that is wrong: it quantifies over every
-  front-matter mark with no carve-out for the class the plan excludes in as
-  many words. Routed to the gated criterion amendment.
-- **R2-F6 — fix now (floor: load-bearing defect).** `site/books.qmd:98-100`
-  — a *pinned* claim — and `CHANGELOG.md:33-34` both say a refused chapter is
-  reported "whatever state its record was in, and none of its terms reach any
-  index". The refusal branch is inside `if unusable or never_written`
-  (`book.lua:944,975`), so a notebook chapter whose record is present and
-  usable is read from that record like any other and its terms do reach the
-  index — which is the ordinary case on a whole-book render. The two pages
-  therefore tell a notebook author their terms are lost when normally they are
-  not. The filter's own comment (`book.lua:976-980`) enumerates the three
-  states correctly.
-- **R2-F2 — follow-up (candidate row).** The metadata walk is over all of a
-  chapter's metadata, not the fields Quarto reflects into the body, so a mark
-  in `description:` or `subtitle:` is now recovered. Verified: a chapter with
-  `description: "A [Zed]{.index} term"` has `Zed` filed by the recovery route
-  with locator `one.html`. But its own render files `Zed` too — three times,
-  at `qi-mark-1/4/5`, none of which `one.html` carries — so recovery is
-  matching the render, which is this milestone's goal, and the dangling
-  fragments are the render's pre-existing behavior on `main`. The known issue
-  is the render side; recovery inherited it.
-- **R2-F3 — fix now.** `WARN_STORE_KIND_REFUSED` (`tests/run-tests.sh:888`) is
-  the six-word substring `is not one this route reads`, which occurs verbatim
-  inside the unreadable-no-marks and stale-no-marks wordings
-  (`book.lua:1025,1493`). Every other `WARN_STORE_*` key is unique to its own
-  message, which the block's comment asserts of all of them. The AC1 counts
-  survive it — a shared occurrence inflates the refusal count and the other
-  keys' zero-counts catch the substitution — but `m070_refusal_names` alone
-  does not discriminate, and the plants are what carry the leg.
-- **R2-F4 — fix now.** No `DECISIONS.md` entry records this milestone's two
-  narrowings of D-041 — refusing a whole class of chapter source, and widening
-  what "that parse yields" to metadata. D-042 and D-045 are both smaller
-  narrowings of D-041 and each took an entry. The two plan-gate choices with
-  their falsifiers are in the work log and never reached the file.
-- **R2-F5 — fix now.** KI218 (`DESIGN.md:1537-1540`) says `recovered_marks`
-  "reads the recovered chapter's `parsed.meta` only for `output-file:`", which
-  this branch falsifies. KI11 was corrected and KI219 retired; this one was
-  missed. Its citation `book.lua:596-598` and KI220's `book.lua:713-719` now
-  point at unrelated text after the reindent.
-- **R2-F7 — follow-up (reads-repair candidate row).** The refusal stands ahead
-  of the version-skew branch, so a refused chapter whose record is
-  version-skewed never reaches `stale` and the different-version wording can
-  never be drawn for it; and the refusal is drawn once per *reading* chapter
-  where the stale family is drawn once per *building* chapter. Carried from
-  round 1's F6, which this branch widens without recording the asymmetry.
-- **R2-F8 — reject (unfalsified).** The accepted set may be narrower than what
-  Quarto renders — `.Rmarkdown` was named as a possibility and not confirmed.
-  The plan gate's falsifier is exactly this class of evidence and states the
-  promotion condition; nothing here is that evidence yet.
-- **R2-F9 — fix now (trivial).** `tests/run-tests.sh:23506-23507` asserts the
-  copied fixture carries no sidecar store two lines after `rm -rf` removes
-  `.quarto`, so it cannot fail. Its two neighbours guard real fixture drift.
-- **R2-F10 — reject (out of scope: formatter-class).** Ragged line filling in
-  `DESIGN.md:495-512`.
+- **R3-F1 — fix now.** `KI232` and `KI233` both understated the front-matter
+  locator defect, and KI233 named the wrong discriminator. KI233 attributed the
+  dangling fragments to "a chapter metadata field Quarto does not reflect into
+  the page body". Verified against this branch's own AC3 capture that a
+  REFLECTED field does it too: `six.qmd` marks `Hasp` once in `abstract:`,
+  `tests/.work/cap/m070-record/_book/six.html` carries `id="qi-mark-1"` alone,
+  and the printed index links `six.html#qi-mark-1`, `#qi-mark-2` and
+  `#qi-mark-3` — two of the three dead. `eight.html` carries `qi-mark-1..2`
+  against five linked. The defect is the render's and pre-existing on the
+  default branch, so it is not this diff's to fix; the records this milestone
+  wrote about it are. Both known issues corrected and the follow-up candidate
+  row's wording moved with them.
+- **R3-F2 — fix now.** The fixture's `.Rmd` chapters make Quarto select the
+  knitr engine, so the one leg that RENDERS such a chapter shells out to R
+  (`m070-record-second.log` opens `processing file: eight.Rmd` /
+  `output file: eight.knit.md`). The suite preflights makeindex, pdflatex,
+  pdftotext, pdfinfo, shasum, kpsewhich and PyYAML and refuses to skip any of
+  them; R was the one hard dependency with no guard, and its absence would have
+  surfaced ~20 minutes in as `m070_render`'s failure message, which hard-coded
+  the refusal framing for all four of its call sites — three of which render a
+  chapter this route reads. Preflight added; the message unpinned from the
+  refusal.
+- **R3-F4 — fix now.** `site/books.qmd` said this route "reads a chapter's
+  front matter as well as its body and the two agree". They agree on the entry
+  and the index and not on the locator count — the record route files a
+  reflected front-matter mark three times and this route once. Narrowed to say
+  both halves. The pinned claim substring stops at "comes back with the marks
+  in its body", so no claim row moved and the count stands at 31.
+- **R3-F5 — fix now (trivial).** `recover_record`'s comment claimed "every step
+  is inside one guard … (IP2)", which the file-kind test ahead of the `pcall`
+  falsifies. The test touches no file — it reads the path string — which is why
+  it is ahead of the guard; the comment now says so rather than overclaiming.
+- **R3-F6 — fix now (trivial).** The conditional-content removal reaches
+  `recovered_marks`'s two inputs at different levels: the blocks cleaned by the
+  caller, the metadata cleaned inside. No live defect, but a second caller
+  would inherit half the removal silently, and only the metadata half is
+  planted. Stated at the boundary.
+- **R3-F3 — reject (not a defect).** "AC3 is unticked while the milestone is at
+  `review`." That is what AC fencing prescribes: a criterion box is ticked by
+  review against recorded evidence, never by the implementer. It is ticked in
+  this round, above.
+- **R3-F7 — reject (refuted).** "Identical check counts across round 2 could be
+  output copied forward." Re-derived from scratch this round: the plain suite
+  reports 642 and `--self-test` 1207, the two numbers the round-2 work log
+  claims. Round 2's new material is guards and a third render, which `fail`
+  without incrementing.
+- **R3-F8 — fix now (the fixture header) / reject (the rest).** The fixture's
+  own header said "Nine chapters, eight of them read by the recovery route",
+  counting `index.qmd`, which does the reading and supplies its own marks;
+  every leg recovers seven. Corrected. Rejected with it: `site/books.qmd:86`'s
+  generic "that chapter's own `.qmd`", which is an unmodified pinned line the
+  diff did not introduce; the Coverage map's `AC2 → T16`, which is right
+  because T16 moved AC2's manifest rows; and six lines running 80-82 columns,
+  which is the formatter class a prior round already rejected.
 
-One further item, found while verifying R2-F1 rather than reported by a lens:
-the plant label at `tests/run-tests.sh` for the front-matter conditional drop
-says the two marks are ones "an ordinary render settles before this extension
-runs", which the `seven.qmd` probe above falsifies. It is a derived claim in a
-code-adjacent artifact and goes with R2-F1's amendment.
-
-Defect returns for this milestone: 2. Amendment returns: 1. No thrash trigger.
+Defect returns for this milestone: 2. Amendment returns: 1. No thrash trigger,
+and none added this round — no finding demonstrated an acceptance criterion
+failing, and the one user-facing defect among them (R3-F1's dead locator
+fragments) is the ordinary render's, pre-existing on the default branch and
+outside this milestone's scope, so what this diff owed was an accurate record
+of it and that is what was corrected.
 - 2026-09-02: return round 2, implementation gate — both recommendations taken: AC3 narrows to carve out a front-matter mark carrying or inside `.content-visible`/`.content-hidden` rather than widening recovery to index one against D-042, and the refused-chapter claim on `site/books.qmd` and in `CHANGELOG.md` is narrowed to the states the refusal branch is reached in rather than moving the refusal ahead of the record check.
 - 2026-09-02: criteria audit over the amended AC3 ran in FULL mode ([O], fresh context, having authored none of it) and returned seven findings — the carve-out missing the mark span that carries the class itself, no antecedent scoping the promise to a chapter actually recovered, the promise reaching chapters the route refuses outright and so contradicting AC1, D-041's include/executed-cell boundary unnamed, an instrument-binding trailing clause about the fixture and its control, "its locator" ambiguous over the two routes, and one exemplar standing in for the four axes the domain is free in. Six fixed at the gate; the seventh became this round's question and the probes were taken.
 - 2026-09-02: the wording fixed at that gate re-entered the questions once with its own fresh [O] reader, FULL mode, which returned six more — a locator promised for a cross-reference mark that contributes none, a mark neither route can index, an undeclared index name Scope Out holds out, the recovery entry path unnamed, AC2 falsified by the fixture's own conditional chapter, and `.content-visible` never planted in front matter. Further churn went to the user, who took the narrowed AC3 and the AC2 narrowing.
@@ -331,3 +328,4 @@ Defect returns for this milestone: 2. Amendment returns: 1. No thrash trigger.
 - 2026-09-02: T16 — `examples/book-extensions` gains `eight.Rmd`, which moves all four axes AC3 is free in at once: a non-`.qmd` extension, a mark in `description:` as well as `abstract:`, an entry taken from the attribute rather than the visible words, and the book's second declared index. Its three terms are held in both manifests, the record-route half rendered from `eight.Rmd`'s own record beside `six.qmd`'s. `seven.qmd` gains a `.content-visible` front-matter mark so the conditional drop is not fenced on one of its two classes. Warning counts moved with the ninth chapter: 6 to 7 never-written on the cold leg, 5 to 6 on the dangling leg, 8 to 9 total on each, and 6 to 7 refusals under the inverted plant.
 - 2026-09-02: return round 2 complete, T12-T16 ticked — `tests/run-tests.sh` passed at 642 checks and `tests/run-tests.sh --self-test` at 1207, both exit 0, 25 M070 checks among them and all seven plants shown red against the check that fences each. Status back to `review`.
 - 2026-09-02: review round 3 (checkpoint, nothing verified yet) — the three fresh-context lenses ran: [S] blame-history and [S] prior-review returned no defects, [O] diff-bug returned 10 findings. None demonstrates an acceptance criterion failing and none is a defect in what the extension does for an author, so the return floor is not met and no return is made. Six taken fix-now and applied here before any evidence was recorded: KI232/KI233 corrected after verifying by hand against this branch's own AC3 capture that a REFLECTED field's extra locators are dead too (`six.html` carries `id="qi-mark-1"` alone while the index prints `#qi-mark-1`, `#qi-mark-2` and `#qi-mark-3`), which falsifies KI233's "a field Quarto does not reflect" discriminator, the follow-up candidate row moving with it; `site/books.qmd`'s unqualified "the two agree" narrowed to the entry and the index, saying the locator counts differ (the pinned substring stops short of that clause, so no claim row moved); an `Rscript` preflight for the `.Rmd` chapters, whose own render Quarto runs through knitr, and `m070_render`'s failure message unpinned from the refusal framing it hard-coded for all four call sites; `recover_record`'s IP2 comment narrowed to the steps that touch the file; the split conditional drop stated at its boundary; and the fixture header's chapter count corrected from eight to seven. Both suites re-running over the edited tree; no acceptance criterion is ticked until that pair lands.
+- 2026-09-02: review round 3 complete — all five acceptance criteria verified against `tests/run-tests.sh` at 642 checks and `--self-test` at 1207, both exit 0 over the tree carrying the round's six fix-now edits; AC3 ticked, the last box. Ten findings from the three lenses, six fixed here and four rejected with reasons, all logged in the Review section. None met the return floor: no finding demonstrated an acceptance criterion failing, and the one user-facing defect among them is the ordinary render's dead front-matter locator fragments, pre-existing on the default branch, which this milestone owed an accurate record of rather than a fix. Defect returns stay at 2, amendment returns at 1.

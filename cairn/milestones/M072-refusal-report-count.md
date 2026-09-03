@@ -1,12 +1,12 @@
 # M072: A refused chapter whose record an older version wrote is reported once per index section
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
 - **Resolves:** —
-- **Branch/PR:** —
+- **Branch/PR:** `m072-refusal-report-count`
 
 ## Goal
 
@@ -32,7 +32,7 @@ Today `store_read` draws the refusal inline for every reading chapter in all thr
 
 - [ ] AC1: In `examples/book-extensions`, over a store a whole-book render wrote with `five.ipynb`'s record then rewritten to carry a store version other than the extension's, a render of `one.qmd` alone (a chapter with no placement marker that is not the book's last, so it builds no section while the store shows `index.qmd` placing both indexes) draws the refusal wording 0 times, and a render of `index.qmd` alone draws it exactly once, naming `five.ipynb`.
 - [ ] AC2: In the same fixture, a render of `one.qmd` alone draws the refusal once when `five.ipynb`'s record is listed by the store directory and cannot be opened, once when that record holds bytes that do not decode as a record, and 0 times when no store exists — the counts those three states draw today — so of the four record states `store_read` tells apart the different-version state is the only one whose count moves.
-- [ ] AC3: In every render AC1 and AC2 make, the three different-version wordings and the three could-not-be-read wordings are drawn 0 times, and no line of any of those logs names `five.ipynb` in a wording other than the refusal.
+- [ ] AC3: In the two single-chapter renders AC1 makes and the three AC2 makes, the three different-version wordings and the three could-not-be-read wordings are drawn 0 times, and the only warnings of this extension naming `five.ipynb` are the refusal and, in the `index.qmd` renders, the marker-position report, which names the chapters after the marker.
 - [ ] AC4: `site/books.qmd` states the refusal's count for each of the three record states it is reached in, in the paragraph that states the other wordings' counts, and `CHANGELOG.md` carries an entry under `## Unreleased` / `### Output` naming the count that moved.
 - [ ] AC5: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both exit 0 on the branch.
 
@@ -55,6 +55,7 @@ Today `store_read` draws the refusal inline for every reading chapter in all thr
 - 2026-09-02: created by /milestone-plan from the M070 follow-up candidate row (KI234); criteria audit ran in FULL mode ([O], fresh context) — M072's share of its eight findings: the goal and AC1 stated a count rule narrower than the code's `builds or first == nil` (restated), AC2's "only state that moves" quantified over states it did not count (the undecodable state added, the four states named), AC3's per-file claim outran the log counter (name check added), the work-log clause moved to T2; D-049 written.
 - 2026-09-02: plan gate chose handing the version-skewed refusal to the one report site over also drawing a new wording naming the version, because the record's state decides nothing the author acts on differently and a seventh wording costs a translation and a pin for it; falsified by an author reporting they needed to know the record was stale to act.
 - 2026-09-02: plan gate chose the change over leaving the count and recording acceptance, because a book with many chapters and one notebook says the refusal once per chapter where it says a stale record once per section; falsified by nothing — the alternative was the null change.
+- 2026-09-03: AC3 amended at a mini gate — its second clause quantified over every line of the logs, which the marker-position report's chapter list falsifies for `five.ipynb` on any render of `index.qmd`, and the whole-book setup render put Quarto's own progress output inside the promise too. Narrowed to this extension's own warnings over the five single-chapter renders, with the marker-position report named as the one carve-out. Full-mode criteria audit ([O], fresh context) returned three findings on the drafted wording; the bounded domain and the demoted relative clause are in the text as adopted, the third recorded as the check shape T2 must take — subtract the two known wordings and assert the residue empty.
 
 ## Decisions
 

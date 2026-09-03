@@ -896,6 +896,18 @@ local function recover_record(ctx, file)
   return record
 end
 
+-- The one wording for a chapter whose source this route will not read, in one
+-- place because it is drawn from two: inline, by the chapter that met the
+-- record, where the record was never written or was opened and could not be
+-- used; and at the report site, once per chapter that builds an index section,
+-- where the record was written by another version of this extension (D-049).
+-- A second `warn()` call carrying these words would be a second copy of them
+-- to keep in step, and the source scan that holds this extension's messages
+-- mutually distinct would read the pair as one message written twice.
+local function warn_source_refused(file)
+  qi_core.warn(("no record of the index marks for %s could be used, and that chapter's source is not one this route reads — it reads a chapter written as .qmd, .md, .markdown or .Rmd source and no other kind — so none of its terms are in the index; render that chapter again, or render the whole book, to restore them"):format(file))
+end
+
 -- Returns the usable records in book order and the chapters whose record this
 -- version refused for being written by another one — the caller's to report.
 --
@@ -985,15 +997,42 @@ local function store_read(ctx, own, recover_absent)
         -- unreadable sends an author looking for a corrupt file that is not
         -- there. What recovery returned is a second axis, and each report
         -- says which case and which outcome its chapter had.
-        if refused then
-          -- Ahead of every branch below, and one wording for all of them. What
-          -- the record was — never written, opened and unusable, left by an
-          -- older version — decides nothing an author can act on here: the
-          -- source cannot stand in for it whichever it was, and the fix is the
-          -- same one. A refused chapter therefore says this and nothing else,
-          -- and is not handed to the caller as a stale record would be, so a
-          -- book with several such chapters says one thing per chapter rather
-          -- than two.
+        --
+        -- Two draw sites, split on the record's state and not on the wording.
+        -- A version-skewed record is handed to the caller and drawn there,
+        -- whether its chapter was refused or recovered, because what it costs
+        -- is a section's share of that chapter's terms and only a chapter that
+        -- builds a section pays it. The other three states — never written,
+        -- listed and unopenable, opened and undecodable — are drawn here, by
+        -- every chapter that reads the store, the counts they have always had.
+        if ok and type(data) == "table" and data.version ~= STORE_VERSION then
+          -- Handed back rather than reported here, refused or not: a
+          -- version-skewed record costs the chapters that BUILD an index their
+          -- share of that chapter's terms, and every other chapter of the book
+          -- reads the store without printing anything out of it. Reported by
+          -- the caller, once per chapter that builds (M55), which is the count
+          -- every wording about a version-skewed record follows — the
+          -- refusal's included, since what it costs is the same thing (D-049).
+          -- The `refused` flag is what the caller draws the refusal's own
+          -- wording on, ahead of the three below and instead of them: a
+          -- refused chapter says one thing, and never that its record was
+          -- written by a different version (D-046's precedence clause).
+          if refused then
+            stale[#stale + 1] = { file = file, refused = true }
+          else
+            stale[#stale + 1] =
+              { file = file, recovered = recovered, parsed = rebuilt ~= nil }
+          end
+        elseif refused then
+          -- Drawn here, by this chapter, for the other three record states:
+          -- never written, listed and unopenable, and opened but undecodable.
+          -- Those are the states whose own sibling wordings are drawn here
+          -- too, once per chapter that reads the store, so the refusal follows
+          -- the count of the reports it stands in for. Ahead of every branch
+          -- below, and one wording for all of them. What the record was
+          -- decides nothing an author can act on here: the source cannot stand
+          -- in for it whichever it was, and the fix is the same one. A refused
+          -- chapter therefore says this and nothing else.
           --
           -- "No record could be used" rather than "the recorded marks could
           -- not be used": this branch is reached on the never-written path as
@@ -1010,15 +1049,7 @@ local function store_read(ctx, own, recover_absent)
           -- with no way to find out. A book carrying a notebook chapter
           -- therefore hears about it on every render whose store is missing
           -- that chapter's record, marks or no marks.
-          qi_core.warn(("no record of the index marks for %s could be used, and that chapter's source is not one this route reads — it reads a chapter written as .qmd, .md, .markdown or .Rmd source and no other kind — so none of its terms are in the index; render that chapter again, or render the whole book, to restore them"):format(file))
-        elseif ok and type(data) == "table" and data.version ~= STORE_VERSION then
-          -- Handed back rather than reported here: a version-skewed record
-          -- costs the chapters that BUILD an index their share of that
-          -- chapter's terms, and every other chapter of the book reads the
-          -- store without printing anything out of it. Reported by the caller,
-          -- once per chapter that builds (M55).
-          stale[#stale + 1] =
-            { file = file, recovered = recovered, parsed = rebuilt ~= nil }
+          warn_source_refused(file)
         elseif never_written and recovered then
           -- The fourth wording. "Could not be read" would be false here:
           -- there is no file to read, and an author sent looking for a
@@ -1488,7 +1519,11 @@ local function html_book(doc, ctx, marker, taken)
   -- stands: one refused for its version, one refiled because it names an index
   -- this book no longer declares. Both cost the same thing — a section's share
   -- of that chapter's terms — so both are drawn on the same rule, at one site
-  -- (M062).
+  -- (M062). A chapter whose source this route will not read arrives among the
+  -- first, flagged, and is drawn here on that same rule when its record was
+  -- written by another version — the one record state whose refusal costs a
+  -- section rather than a reading (D-049); in every other state that chapter
+  -- drew its refusal where it met the record.
   --
   -- Once per chapter that BUILDS a section, which is what M55 decided: a
   -- chapter that prints nothing has nothing to say about a record it never
@@ -1502,7 +1537,14 @@ local function html_book(doc, ctx, marker, taken)
   -- an index as soon as they write a marker is told nothing at all.
   if builds or first == nil then
     for _, entry in ipairs(stale) do
-      if entry.recovered then
+      if entry.refused then
+        -- Ahead of the three below and instead of them. This chapter's source
+        -- is not one the recovery route reads, so nothing was read back and
+        -- nothing is known about what it marked; the record's own version
+        -- decides nothing the author acts on differently, and a refused
+        -- chapter says one thing (D-046's precedence clause, D-049).
+        warn_source_refused(entry.file)
+      elseif entry.recovered then
         qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(entry.file))
       elseif entry.parsed then
         qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(entry.file))

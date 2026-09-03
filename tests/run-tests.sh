@@ -880,6 +880,14 @@ WARN_STORE_STALE_LOST="were written by a different version of this extension and
 # never-written record can otherwise draw are the lost wording above, shared
 # with the opened-and-unusable case, and silence.
 WARN_STORE_NEVER_RECOVERED="no render has written a record of the index marks for"
+# Nine with M073, which adds the never-written family's third outcome: no
+# record, and a source that could not be read either. Before it that state drew
+# the lost wording above, which says the record could not be read and so
+# asserts a file no render ever wrote. Its opening clause is deliberately not
+# the never-written recovery key just above — a shared opening would have that
+# key count both reports — and it names the source rather than the record, so
+# it matches neither could-not-be-read wording.
+WARN_STORE_NEVER_LOST="has been written by any render, and that chapter's own source could not be read either"
 # Eight with M070, which adds the wording for a chapter whose SOURCE this route
 # does not read — an .ipynb chapter, or one whose name carries no extension at
 # all. It is drawn whatever state that chapter's record was in, so it is the

@@ -1,12 +1,12 @@
 # M073: A store report names the record it met as the record it was
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP1
 - **Resolves:** —
-- **Branch/PR:** —
+- **Branch/PR:** `m073-store-report-wordings`
 
 ## Goal
 
@@ -124,6 +124,7 @@ stands as its known issue.
 - 2026-09-03: created by /milestone-plan, promoting the held store-reports candidate row (its KI230 and KI236 halves); the other two halves are M074.
 - 2026-09-03: plan gate chose a sixth wording, drawn where the never-written wordings already are, over reusing the could-not-be-read wording, because the latter asserts a record existed; falsified by an author reporting the two states read the same to them.
 - 2026-09-03: plan gate chose reading a versionless record as one that could not be read over giving it a wording of its own, because a seventh sentence buys a distinction no author acts on differently; falsified by an author reporting they needed to know the file held a record's bytes rather than a damaged record.
+- 2026-09-03: implement gate chose the sixth wording's own opening clause over sharing the never-written recovery wording's, because that clause is the grep key the suite counts that report by and a shared opening would make one key count both; falsified by an author reporting the two never-written reports read as unrelated to them.
 - 2026-09-03: criteria audit ran in full mode over two passes ([O], fresh context); pass 1 returned four instrument-bound criteria and one unreachable approach, pass 2 returned eight findings over the rewrite — an unenumerable "opening" clause, two counts stated per render that are per reading chapter, `{}` conflating two probe forms, an ambiguous plant site, a missing nil-only plant, and two documentation promises over whole files — all disposed into the criteria above.
 
 ## Decisions

@@ -1055,6 +1055,34 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   as M46 wrote it, its report clause corrected by D-029. — M46 review F23
 - **KI158.** The base-segment comparison runs before `os.path.normpath`, a
   false report only. — M46 review F27
+- **KI241.** Three checks sweep what the whole run has accumulated rather than
+  a domain they declare: M13's AC5 report scan globs every warning log under
+  `$WORK`, M15's untouched-artifact comparison holds the whole capture root to
+  a per-file mapping, and M31's stale-`.ind` sweep takes every captured `.tex`
+  carrying `\printindex`. Each is a shipped milestone's acceptance criterion,
+  and each reads what earlier sections produced, so a run of part of the suite
+  either fails them or passes them on an emptier domain than they name. —
+  M075 plan
+- **KI242.** Around ninety fixed filenames under `$WORK` are written from many
+  call sites — `check_index_sections` writes `index-sections.txt` from 69 of
+  them and `check_letter_sweep` writes `letter-sweep.txt` from 19 — so no two
+  sections can run at once without one overwriting the other's input. — M075
+  plan
+- **KI243.** `$WORK/one-record.json` is a single backup slot: the M60-AC5 plant
+  copies a book's record there before corrupting it, and two later unrelated
+  sections restore the original from that one path, so nothing may plant a
+  second record while it is held. — M075 plan
+- **KI244.** `examples_state` hashes every file under `examples/` and M42-AC5
+  holds the listing byte-identical across a render, so anything that writes
+  beside a fixture while the run is in flight fails a criterion about
+  something else. — M075 plan
+- **KI245.** Both nested self-invocations of the suite (`--fixture-check`,
+  `--plant-wrapper-defect`) truncate `$RAN_LEDGER`, which is emptied
+  unconditionally at startup while the `$WORK` wipe and the pre-render clean
+  are guarded against exactly those two modes. Today both `ran_clean` calls
+  and M38-AC6's read of the ledger come after both invocations, so nothing is
+  lost; a call added before either would be erased with nothing reporting it.
+  Latent. — M075 plan
 
 ### The acceptance suite: coverage gaps
 

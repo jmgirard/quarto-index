@@ -70,7 +70,7 @@ The wordings themselves → M073.
       two regions returns no sentence saying one report per record or one per
       chapter that reads the store, and the books page's claim ledger
       (`tests/run-tests.sh:21763`) carries a row for each sentence added.
-- [ ] AC6: `tests/run-tests.sh` passes; `tests/run-tests.sh --self-test`
+- [x] AC6: `tests/run-tests.sh` passes; `tests/run-tests.sh --self-test`
       passes, and its M074 battery shows red against the pre-fix code each
       plant names: (a) the report site's `builds or first == nil` gate turned
       round for the never-written entries, (b) the per-chapter draw restored
@@ -136,6 +136,7 @@ The wordings themselves → M073.
 - 2026-09-04: F5 and F6 taken as KI239 (the never-written refusal joined into one line while the version-skewed refusal beside it still draws one per chapter — the same sentence at two counts, created by this diff) and KI240 (KI229's second silent shape: a marker naming an index an earlier chapter also places). D-013 puts both in DESIGN.md Known issues rather than a ROADMAP row.
 - 2026-09-04: T6 closed. `tests/run-tests.sh --self-test` green, 1296 checks, exit 0, 26m19s.
 - 2026-09-04: review round 2 — branch level with `origin/main`, PR #74 already open. Plain `tests/run-tests.sh` green, 699 checks, exit 0; AC1-AC5 verified with fresh evidence and ticked; `cairn_validate` all PASS with no release-window advisory. Three fresh-context lenses ran: prior-review record zero findings, blame-history three, diff-bug nine — none failing a criterion, so no floor return. AC6's `--self-test` half is still running; this is a checkpoint, not the gate.
+- 2026-09-04: round 2 AC6 — `tests/run-tests.sh --self-test` green, 1296 checks, exit 0; all six criteria ticked against recorded evidence. Twelve findings across the three lenses: N1/N3/N7 fix-now (three stale or miscounting comment clauses), N2/N4/N5 follow-up, N8/N9/B3 rejected, N6/B2 already filed as KI239/KI240.
 
 ## Decisions
 
@@ -282,7 +283,15 @@ PR #74 already open, so no second one was cut.
   per-chapter-that-reads-the-store is the shipped count. The claim ledger holds
   44 rows, three of them added by this milestone, one per rewritten sentence;
   the M063-AC6 needle reads 44 to match.
-- **AC6 — see below.**
+- **AC6 — PASSED.** `tests/run-tests.sh` green, 699 checks, exit 0;
+  `tests/run-tests.sh --self-test` green, 1296 checks, exit 0. The M074 battery
+  shows each plant red against the pre-fix code: (a) the report site's
+  `builds or first == nil` gate turned round for the never-written entries —
+  the building chapter falls silent and the non-building one reports all seven;
+  (b) the per-chapter draw restored inside `store_read` — four reports where
+  the milestone draws one; (c) the aggregation reduced to `files[1]` — the one
+  line names two.qmd and drops three/four/five.qmd, which no count in the suite
+  can see and `check_warning_names` does.
 
 ### Consistency gate
 
@@ -290,3 +299,81 @@ PR #74 already open, so no second one was cut.
 advisory. No `IP`/`GP` principle text changed in the diff, so `cairn_impact.py`
 was not run. The `generic` profile's consistency-gate slot names no toolchain
 checks.
+
+### Independent review
+
+Three fresh-context lenses (user-facing tier, executable surface), each on a
+distinct evidence base. [S] prior-review record: the archive carries no
+`## Review` sections at all and the inline-PR-comment probe returned `[]`, so
+the only prior-review surface is round 1's own record; it verified every round-1
+disposition landed as recorded and reported no findings. [S] blame-history:
+three findings (B1-B3), two of them the known issues round 1 filed. [O]
+diff-bug: nine findings (N1-N9), and it confirmed all six round-1 fixes landed
+correctly — 44 ledger rows against a needle reading 44, `check_warning_names_nth`
+with `place-first` asserted by membership, the `m074-unplaced` control closing
+F3's hole, the m070-inverted pass line corrected, the DESIGN reflow, the
+changelog possessive. It also re-derived every hand-rederived count in the diff
+and every named/unnamed pair for substring collisions, finding none.
+
+- **N1 (fix now).** `book.lua:1586-1588`: the report-site comment enumerates
+  three reports and then says a source-refused chapter "arrives among the first
+  two, flagged". It arrives among the first (`stale`, flagged) and the third
+  (`absent.refused`, a separate list) — never among `refiled`, which is
+  impossible for it. The clause contradicts its own next sentence, which names
+  the version-skew and never-written paths correctly.
+- **N3 (fix now).** `book.lua:937`: "One pass, and only these two answers" is
+  stale — the three lines above it now say `store_read` returns three things,
+  and `:1140` returns three values.
+- **N7 (fix now).** `cairn/DESIGN.md:538` "in the two states about a record that
+  WAS there" against `book.lua:1042-1049`, whose new comment lists three under
+  the same phrase. DESIGN recovers the third in its next sentence, so the
+  paragraph is not false, but the numeral undercounts its own subject. Round 1
+  rejected F8's second half on the grounds that the sets differ (wordings vs.
+  record states); the new evidence is that the diff's own comment now uses the
+  identical phrase for a three-member set. Dropping the numeral settles it.
+- **N2 (follow-up).** `tests/run-tests.sh:25374-25376`: plant 2's page control
+  reads `$CAPTURE_ROOT/m069-m069-index`, the clean leg's capture, not the
+  mutant's (`m069-m074-inline`), so nothing in the plant can make it fail. Its
+  label says so honestly ("the unmutated leg's section, restated") and the
+  discriminating check is the count, which is red on the plant — but every
+  sibling plant reads its own mutant's capture, and repointing it would make the
+  check live. Deferred because verifying it costs a full self-test run.
+- **N4 (follow-up).** `site/books.qmd:171` — the sentence round 1's F1 actually
+  failed on — was rewritten rather than added, so it has no claim-ledger row,
+  and `sitecheck.py claims` checks presence only. A later reword back to
+  "reports each one" would be green. AC5 as written is satisfied (a row per
+  sentence *added*); adding a row moves the ledger to 45 and the M063-AC6 needle
+  with it, which is the cost that defers it.
+- **N5 (follow-up).** `tests/run-tests.sh:2081-2115`: `check_warning_names_nth`
+  picks its line by ordinal among the grep matches, relying on Quarto emitting
+  chapter logs in render order — a new assumption in a suite whose other
+  multi-line assertions are order-free. A flip would fail spuriously, never pass
+  falsely; a content-keyed assertion would be equally strong and order-free.
+- **N6 / B1 (already filed, KI239).** The never-written refusal is joined into
+  one line while the version-skewed refusal beside it still draws one per
+  chapter, so the identical sentence draws at two counts. Round 1 took this as
+  F5 and D-013 put it in DESIGN Known issues; both lenses re-raised it because
+  the diff creates it and the tier is the warning text an author reads. Carried
+  as filed, consciously, not silently.
+- **B2 (already filed, KI240).** A chapter whose placement marker names an index
+  an earlier chapter also places has `mine` empty, so it recovers every
+  never-written source and now says nothing about it. Round 1's F6; no suite leg
+  exercises the shape.
+- **B3 (rejected — no observable symptom remains).** Retiring M069 T6's
+  whole-gate inversion plant loses the false-positive-admission mutation class:
+  plants 1 and 2 only ever revoke admission, never wrongly grant it. Verified
+  against the code — a wrongly admitted chapter is by construction one that
+  builds no section, so its recovered terms go nowhere and the report site's
+  gate is shut for it; the only remaining symptom is the parse cost already
+  accepted as KI227/KI229/KI240. A chapter that does build is admitted by the
+  surviving halves either way. The mutation has no correctness consequence left
+  to assert.
+- **N8 (rejected — unreachable, and out-of-scope class).** `chapter_list`
+  returns `""` for an empty list; all three call sites guard with `#... > 0`.
+  A hardening suggestion about a fourth site that does not exist.
+- **N9 (rejected — style/reuse nitpick).** `check_warning_names_nth` duplicates
+  `check_warning_names`; the lens itself calls it quality, not a defect.
+
+Return count: 1 defect return (round 1's). No amendment return. Nothing in
+round 2 demonstrates an acceptance criterion failing, so the return floor does
+not fire.

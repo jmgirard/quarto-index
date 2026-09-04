@@ -1083,6 +1083,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   and M38-AC6's read of the ledger come after both invocations, so nothing is
   lost; a call added before either would be erased with nothing reporting it.
   Latent. — M075 plan
+- **KI246.** The fifteen-slowest profile the driver prints sits outside
+  `run_all_checks`, after the check count has been taken, so it reaches
+  neither `run.log` nor that count and no check reads it — the same shape
+  KI30 records for M24's clean assertion. A reader working from the run log
+  alone sees no profile. Accepted. — M075 review F3
 
 ### The acceptance suite: coverage gaps
 

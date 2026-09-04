@@ -1072,6 +1072,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   neither `run.log` nor that count and no check reads it — the same shape
   KI30 records for M24's clean assertion. A reader working from the run log
   alone sees no profile. Accepted. — M075 review F3
+- **KI247.** The 155 `section '<heading>'` calls put banner heading text into
+  executable source, which `tests/suitescan.py`'s read and pairing checks both
+  sweep, so a heading naming an artifact under the fixture directory or
+  carrying the render command would make those checks report a violation
+  against a comment. None of the 155 headings today does. Extends KI31.
+  — M075 review F7
+- **KI248.** A section's heading is its banner's FIRST comment line, so a
+  banner whose sentence wraps names its section by a truncated fragment in the
+  timing file and in the profile the run prints. — M075 review F11
 
 ### The acceptance suite: coverage gaps
 
@@ -1309,6 +1318,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI164.** M30's typeset print proof is not extended to the cross-reference
   and sort-key probes, which still assert compile-and-accept only. — M30,
   recovered by M54 T3
+- **KI249.** `sitecheck.py`'s claim ledger asks only whether a page STATES each
+  pinned sentence, never whether a sentence the ledger no longer holds has come
+  back, so a claim rewritten rather than added carries no row and a reword back
+  to the old wording is green. The sentence M073 review F1 failed on
+  (`site/books.qmd:171`) is such a claim. — M074 review N4
 
 ### The repo and its packaging
 

@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-03 (M073 merged and archived; ROADMAP row done, M068's terminal row pruned to hold the retention limit at five — ROADMAP 51 lines / 10,816 bytes. LESSONS.md 48 lines / 19,935 bytes, inside the 50-line / 20,000-byte cap but with under 100 bytes of headroom: the M38 stale-clause lesson was extended rather than a line added, and nothing M073 shipped retires a lesson, so the next pass prunes. One candidate row added (a suite-wide store zero-control sweep); no finding-absorbing row touched, so no disposition chip. cairn_validate all PASS.)_
+_Last hygiene check: 2026-09-04 (M074 merged and archived; ROADMAP row done, M069's terminal row pruned to hold the retention limit at five — ROADMAP 50 lines / 10,895 bytes, every candidate row now inside the 400-byte cap after the M073 book-fixture row was trimmed from 413. What M074 taught is check-building craft, so it went to check-design.md by the ownership exit rather than to LESSONS.md, which stands unchanged at 48 lines / 19,935 bytes; check-design.md 38 lines / 17,993 bytes, inside its own 40-line / 18,000-byte budget. The check-discrimination candidate row absorbed M074's three deferred suite findings, its first extension past one milestone, so no disposition chip was owed. No new accepted limitation: round 1 wrote KI239 and KI240. cairn_validate all PASS.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 
@@ -10,10 +10,9 @@ _Released 0.2.0 2026-09-02._
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M073 | A store report names the record it met as the record it was | done | — | normal | milestones/archive/M073-store-report-wordings.md |
-| M074 | A record no render has written is reported by the chapter that prints the section, once | review | M073 | normal | milestones/M074-never-written-report-site.md |
+| M074 | A record no render has written is reported by the chapter that prints the section, once | done | M073 | normal | milestones/archive/M074-never-written-report-site.md |
 | M072 | A refused chapter whose record an older version wrote is reported once per index section | done | — | normal | milestones/archive/M072-refusal-report-count.md |
 | M071 | A front-matter mark in an HTML book chapter files one locator, to the chapter's page | done | — | normal | milestones/archive/M071-front-matter-locators.md |
-| M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | done | — | normal | milestones/archive/M069-absent-record-recovery.md |
 | M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | done | M069 | normal | milestones/archive/M070-recovery-parse-fidelity.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
@@ -21,8 +20,8 @@ _Released 0.2.0 2026-09-02._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- Sweep the suite's store legs for zero-controls on every store wording, so a report drawn where it should be silent is caught outside the legs that happen to assert an extension-warning count; promote with any other suite-wide check-discrimination pass — added 2026-09-03 — M073 review F11
-- Ignore the book fixtures' in-place render output (`examples/book*/*.html`, `site_libs/`), which the suite writes beside the project rather than under `_book/` and which nothing in `.gitignore` covers, so a commit made while the suite runs cannot sweep it in; promote with any other repo source-hygiene pass — added 2026-09-03 — M073 implement (a checkpoint commit swept 23 such files, reset before it stood)
+- Sweep the suite for check discrimination: zero-controls on every store wording; a plant control reading its own mutant's capture, not the clean leg's; a ledger that sees a sentence removed, not only present; a multi-line assertion keyed on content, not log order — added 2026-09-03, extended 2026-09-04 — M073 review F11, M074 review N2/N4/N5
+- Ignore the book fixtures' in-place render output (`examples/book*/*.html`, `site_libs/`), written beside the project rather than under `_book/` and uncovered by `.gitignore`, so a commit made while the suite runs cannot sweep it in; promote with any other repo source-hygiene pass — added 2026-09-03 — M073 implement (a checkpoint commit swept 23 such files, reset before it stood)
 - Settle where a recovered locator points for a chapter that declares its own `output-file:`, which writes no record and which M069's never-written recovery now reads from source; promote on an author reporting an index link into such a chapter lands nowhere — added 2026-09-03 — M073 implement T3 re-read — KI216
 - Run the suite's independent legs in parallel, each owning its own work directory and its own intermediate files, so a full run stops costing 13 minutes on one core; the shared work directory and the legs that mutate one fixture in sequence are the cost. Promote on the run time blocking a task loop — added 2026-09-03 — M072 implement (13m09s wall), M072 review F7 — KI238
 - Declass Quarto's navigation-envelope copies of a chapter's `title:` in an HTML book, so a mark written there files one locator rather than one per sidebar and page-navigation copy on every page; promote on an author reporting a title mark's locator count — added 2026-09-03 — M071 review F1 — KI235

@@ -137,6 +137,7 @@ The wordings themselves → M073.
 - 2026-09-04: T6 closed. `tests/run-tests.sh --self-test` green, 1296 checks, exit 0, 26m19s.
 - 2026-09-04: review round 2 — branch level with `origin/main`, PR #74 already open. Plain `tests/run-tests.sh` green, 699 checks, exit 0; AC1-AC5 verified with fresh evidence and ticked; `cairn_validate` all PASS with no release-window advisory. Three fresh-context lenses ran: prior-review record zero findings, blame-history three, diff-bug nine — none failing a criterion, so no floor return. AC6's `--self-test` half is still running; this is a checkpoint, not the gate.
 - 2026-09-04: round 2 AC6 — `tests/run-tests.sh --self-test` green, 1296 checks, exit 0; all six criteria ticked against recorded evidence. Twelve findings across the three lenses: N1/N3/N7 fix-now (three stale or miscounting comment clauses), N2/N4/N5 follow-up, N8/N9/B3 rejected, N6/B2 already filed as KI239/KI240.
+- 2026-09-04: step-7 approval: PR #74 approved for merge, with N1/N3/N7 fixed first; N2, N4 and N5 taken as follow-ups.
 
 ## Decisions
 
@@ -373,6 +374,13 @@ and every named/unnamed pair for substring collisions, finding none.
   A hardening suggestion about a fourth site that does not exist.
 - **N9 (rejected — style/reuse nitpick).** `check_warning_names_nth` duplicates
   `check_warning_names`; the lens itself calls it quality, not a defect.
+
+N1, N3 and N7 were fixed on the branch after the gate: the report-site comment
+now says a source-refused chapter arrives among the first and the third and
+never the second, `store_read`'s header says three answers rather than two, and
+`DESIGN.md:538` drops the numeral. All three are comment or prose text; nothing
+in the committed suite pins any of the edited strings (only gitignored work-tree
+copies carry them), so no re-run was owed.
 
 ### PR conversation
 

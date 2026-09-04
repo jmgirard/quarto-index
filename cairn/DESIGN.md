@@ -535,7 +535,7 @@ a number and does not itself write is read as, and only that (corrected M073,
 D-050) — or where no render has written it at all (M074), it is handed to the
 report site and drawn there, once per chapter that builds a section and once
 by a chapter that builds none whose records show no chapter placing an index;
-in the two states about a record that WAS there it is drawn where the chapter
+in the states about a record that WAS there it is drawn where the chapter
 met the record, as all four were before. A record decoding to a table whose
 `version` is absent, or holds something other than a number, evidences no
 version and takes the could-not-be-read wordings — so it is drawn where the

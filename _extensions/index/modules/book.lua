@@ -935,12 +935,12 @@ end
 -- version refused for being written by another one, and the chapters no render
 -- has written a record for at all — the last two the caller's to report.
 --
--- One pass, and only these two answers. M60 and M061 also asked which chapters
--- AFTER this one had no usable record, because a chapter then had to work out
--- whether it was the last one placing anything before it could take on an
--- index no marker names. M063 hands that index to the book's last chapter,
--- which every chapter names the same way from `ctx.chapters`, so no chapter
--- asks the store where the other markers are any more.
+-- One pass, and only these three answers. M60 and M061 also asked which
+-- chapters AFTER this one had no usable record, because a chapter then had to
+-- work out whether it was the last one placing anything before it could take
+-- on an index no marker names. M063 hands that index to the book's last
+-- chapter, which every chapter names the same way from `ctx.chapters`, so no
+-- chapter asks the store where the other markers are any more.
 --
 -- `own` is this chapter's own record, built in memory and spliced in at this
 -- chapter's own position rather than read back off the disk: the store is read
@@ -1584,11 +1584,12 @@ local function html_book(doc, ctx, marker, taken)
   -- this book no longer declares, and one no render has written at all (M074).
   -- All three cost the same thing — a section's share of that chapter's terms
   -- — so all three are drawn on the same rule, at one site (M062). A chapter
-  -- whose source this route will not read arrives among the first two,
-  -- flagged, and is drawn here on that same rule when its record was written
-  -- by another version (D-049) or was never written; where the record was
-  -- there and could not be used, that chapter drew its refusal where it met
-  -- it.
+  -- whose source this route will not read arrives among the first and the
+  -- third — flagged in the first, a list of its own in the third, and never
+  -- among the second, which no refused chapter can reach — and is drawn here
+  -- on that same rule when its record was written by another version (D-049)
+  -- or was never written; where the record was there and could not be used,
+  -- that chapter drew its refusal where it met it.
   --
   -- Once per chapter that BUILDS a section, which is what M55 decided: a
   -- chapter that prints nothing has nothing to say about a record it never

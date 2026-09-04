@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M076: A store-report leg asserts every wording, not the ones its author recalled
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — assertions inside the repo's own acceptance suite; no consumer of the extension reads them
-- **Branch/PR:** —
+- **Branch/PR:** m076-store-report-zero-controls
 
 ## Goal
 
@@ -108,6 +108,9 @@ milestone changes assertions, never reports.
 - 2026-09-04: plan gate chose enumerating the wording family by shell prefix expansion (`"${!WARN_STORE_@}"`, ten names today) over a list written into the helper, because a written list is fixed by what its author recalled and a tenth wording added later would ship zero-controlled nowhere; falsified by a store report whose key cannot carry the `WARN_STORE_` prefix.
 - 2026-09-04: plan gate chose leaving the conversion's extent to the diff at review over a grep asserting that no old-style `check_warning_count` call on a store wording survives, because D-011 refuses widened source-shape scans and D-029 reads it as covering the suite's own source; the user declined to supersede it. Falsified by a leg added after this milestone that bypasses the helper and ships with no zero controls.
 - 2026-09-04: plan gate chose sweeping all 63 logs over sweeping only the 33 that carry no `check_extension_warning_count`, because a total says how many reports a render drew and never which wording; falsified by the conversion's cost on the 30 already totalled exceeding what it turns up there.
+- 2026-09-04: branch `m076-store-report-zero-controls` cut from the default branch; status in-progress.
+- 2026-09-04: implement gate chose spelling each report's full variable name at the call site (`WARN_STORE_STALE_RECOVERED=1`) over a short suffix, because the text at the call site is then the name the domain holds and a typo is caught as an unknown name rather than swept as a zero; falsified by a wording whose full name will not fit a call site's line. Same gate chose one merged label per log over a note beside each expected count, the helper's own failure message naming the offending wording and both counts; falsified by a merged label that no longer says which leg it is about.
+- 2026-09-04: T1 checkpoint, half-done: `check_store_reports` written at `tests/run-tests.sh:2079`, its domain read from `${!WARN_STORE_@}` at call time. Its four behaviors shown in a scratch harness over crafted logs — green with nothing named, red on a wording present that the call did not name, red on a wrong count, red on a name the domain does not hold, red on an emptied domain. The plain-suite verify is still running, so T1 is not ticked.
 
 ## Decisions
 

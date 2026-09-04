@@ -2061,6 +2061,54 @@ check_warning_count() {
     || fail "$label: expected $want occurrence(s) of <<$pattern>> in $logfile, got $got"
 }
 
+# Assert WHICH store reports a render drew — every wording of the family, not
+# the ones the leg's author recalled. `check_warning_count` asserts one wording
+# at a time, so a leg says nothing at all about the nine it does not name: a
+# change drawing a wording spuriously is red only where a total warning count
+# happens to sit, and silent on the leg that actually met it.
+#
+# The domain is what `${!WARN_STORE_@}` expands to at the moment of the call,
+# never a list written in here: a written list is fixed by what its author
+# recalled, and an eleventh wording added to the family would ship
+# zero-controlled nowhere. A count is asserted for each name the caller gives
+# and 0 for every name in the domain it did not, so adding a wording to the
+# family adds a zero control to every leg at once.
+#
+# Occurrences, not matching lines, for the reason `check_warning_count` gives
+# above: two reports emitted onto one line would count as one under `grep -c`.
+check_store_reports() {   # <logfile> <label> [<WARN_STORE_NAME>=<count> ...]
+  local logfile="$1" label="$2"
+  shift 2
+  local -a domain=( ${!WARN_STORE_@} )
+  local name pair key want got known
+  # An empty domain would pass every call vacuously: nothing named, nothing
+  # swept, nothing asserted.
+  [ "${#domain[@]}" -gt 0 ] \
+    || fail "$label: check_store_reports found no WARN_STORE_ wording in scope, so it would assert nothing over an empty family"
+  # A name the domain does not hold — a typo, or a wording since renamed —
+  # would otherwise be swept as 0 below while the caller believed it had
+  # asserted a count.
+  for pair in "$@"; do
+    key="${pair%%=*}"
+    known=""
+    for name in "${domain[@]}"; do
+      if [ "$name" = "$key" ]; then known=yes; break; fi
+    done
+    [ -n "$known" ] \
+      || fail "$label: check_store_reports was given <<$key>>, which is not one of the ${#domain[@]} store wordings in scope (${domain[*]})"
+  done
+  for name in "${domain[@]}"; do
+    want=0
+    for pair in "$@"; do
+      if [ "${pair%%=*}" = "$name" ]; then want="${pair#*=}"; fi
+    done
+    got=$( { grep -oF -- "${!name}" "$logfile" || true; } | wc -l | tr -d ' ')
+    [ "$got" = "$want" ] \
+      || fail "$label: expected $want occurrence(s) of the $name report <<${!name}>> in $logfile, got $got"
+  done
+  pass "$label: the store reports in $logfile are exactly ${*:-none}, with every other wording of the ${#domain[@]} held at zero"
+}
+
 # One warning line, and WHICH chapters it names. `check_warning_count` counts
 # occurrences of a fixed literal, so it can say a report was drawn once; it
 # cannot say whether that one line covers the chapters it should. M074 draws

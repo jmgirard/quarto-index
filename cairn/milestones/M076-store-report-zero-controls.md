@@ -11,7 +11,7 @@
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — assertions inside the repo's own acceptance suite; no consumer of the extension reads them
-- **Branch/PR:** m076-store-report-zero-controls
+- **Branch/PR:** m076-store-report-zero-controls / https://github.com/jmgirard/quarto-index/pull/76
 
 ## Goal
 
@@ -39,27 +39,27 @@ milestone changes assertions, never reports.
 
 ## Acceptance criteria
 
-- [ ] AC1: `tests/run-tests.sh` defines a helper `check_store_reports` whose
+- [x] AC1: `tests/run-tests.sh` defines a helper `check_store_reports` whose
       domain is the names `"${!WARN_STORE_@}"` expands to at the moment it is
       called. Given a log, a label, and zero or more `<NAME>=<count>` pairs, it
       asserts that count for each named wording and a count of 0 for every name
       in the domain it was not given. It fails when the domain is empty, and
       fails when it is handed a name the domain does not hold.
-- [ ] AC2: `check_warning_names_nth` selects the line it asserts on by a
+- [x] AC2: `check_warning_names_nth` selects the line it asserts on by a
       caller-given content key rather than by that line's position among the
       grep matches, and is shown to pass on a log whose two matching lines have
       been swapped and to fail on one whose names are wrong.
-- [ ] AC3: under `--self-test`, `check_store_reports` is shown red on a crafted
+- [x] AC3: under `--self-test`, `check_store_reports` is shown red on a crafted
       log carrying a store wording the call does not name, red on a crafted log
       whose named wording's count is wrong, and red on a call naming a wording
       its domain does not hold — and green on that same crafted log with none
       of the three planted.
-- [ ] AC4: under `--self-test`, a mutation of the Lua filter that makes one
+- [x] AC4: under `--self-test`, a mutation of the Lua filter that makes one
       named store wording be drawn on a chapter that should not draw it turns
       the suite red on the leg that meets that chapter, and the failure names
       that wording — a leg whose assertions said nothing about that wording
       before this milestone's conversion.
-- [ ] AC5: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` each
+- [x] AC5: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` each
       exit 0.
 
 ## Coverage
@@ -126,7 +126,177 @@ milestone changes assertions, never reports.
 
 - 2026-09-04: T5 done and T7 done — `tests/run-tests.sh --self-test` green, 1397 checks, exit 0; `tests/run-tests.sh` green, 766 checks, exit 0. `cairn_validate` all PASS. The AC4 plant landed as designed: under the mutation the leg's `check_extension_warning_count` of 2 is green — one report became one other report — while the leg's own store-report expectation is red on `WARN_STORE_KIND_REFUSED`.
 - 2026-09-04: figures. Before, at commit 2e70197: 220 `check_warning_count` calls named a store wording, covering 214 distinct (log, wording) pairs of the 780 that 78 log-path expressions and 10 wordings allow. After: 80 `check_store_reports` calls over renders, each asserting all 10 wordings, so all 800 pairs of its 80 logs are asserted — two of the 78 expressions are function-local spellings whose calls the conversion split by render, which is where the extra pair of logs comes from. An 81st call is the AC3 control over a crafted log. `tests/run-tests.sh` 25,884 to 25,834 lines.
+- 2026-09-04: review — PR #76 opened as a draft; both suites green on the branch head (766 and 1397 checks, exit 0), cairn_validate all PASS, three fresh-context reviewers spawned. The [O] lens returned eight findings, the two Sonnet lenses none: F1, F2, F3, F5 and F6/F8 fixed on the branch (a log-not-a-file guard, a `set -e` abort with no FAIL line, the AC4 plant re-typing the leg's expectation instead of expanding it, a convention slip and four labels), F4 and F7 rejected with reasons logged. Both suites re-run green on the fixed tree at the same check counts. No finding reached the return floor.
 
 ## Decisions
 
 ## Review
+
+Verified 2026-09-04 on branch `m076-store-report-zero-controls`, PR #76,
+against the tree that carries the fix-now commit below. Both suite runs are
+from that tree: `tests/run-tests.sh` green, 766 checks, exit 0;
+`tests/run-tests.sh --self-test` green, 1397 checks, exit 0.
+
+**AC1 — met.** `check_store_reports` is defined at `tests/run-tests.sh:2079`.
+Its domain is `local -a domain=( ${!WARN_STORE_@} )` read at the call
+(`:2082`), never a written list; the shell holds ten such names today. For
+each `<NAME>=<count>` pair it asserts that count and for every other name in
+the domain it asserts 0, counting occurrences (`grep -oF | wc -l`) rather than
+matching lines. It refuses an empty domain (`:2087`), a name the domain does
+not hold (`:2098-2105`), and — added at this review, F1 below — a `logfile`
+that is not a file (`:2093`). All five refusals are shown red under
+`--self-test`; see AC3.
+
+**AC2 — met.** `check_warning_names_nth` (`:2186`) picks its line by the two
+chapter lists the caller already passes — the one line of `total` naming every
+chapter in `named` and none in `not named` — and refuses zero or two or more
+qualifying lines. The ordinal argument is gone from the signature and from
+both call sites; `git diff main..HEAD` shows no surviving caller passing one.
+Under `--self-test` (`:7056-7111`) both calls pass on `m076-swapped.log`, the
+render's own two lines written in the other order, with the swap guarded by a
+line count of 2 and a `cmp` against the render's order; and the helper is red
+on `m076-wrongnames.log`, failing with `none of the 2 line(s) carrying`. Log
+lines, verbatim: `ok   M076-AC2: the line each call asserts on is picked by
+the chapters it must and must not name — the same two lines in the other
+order are read the same way, a log naming a chapter the report never covers is
+red, and a log carrying no such line at all is red rather than a silent abort`.
+
+**AC3 — met.** `--self-test` block at `:6979-7054`. The control passes on
+`m076-crafted.log` with nothing planted: `ok   M076-AC3 control (the crafted
+log with none of the three defects planted): the store reports in
+tests/.work/m076-crafted.log are exactly WARN_STORE_STALE_RECOVERED=2, with
+every other wording of the 10 held at zero`. The three cases the criterion
+names are each red, and each checked back by the text of its own failure
+rather than a bare non-zero exit — a wording the call does not name (a
+`WARN_STORE_KIND_REFUSED` line appended to a copy), a named wording's wrong
+count, and a call naming `WARN_STORE_NO_SUCH_WORDING`. Two further refusals
+ride the same block: the emptied family, and (added at this review) a log that
+is not there. Summary line: `ok   M076-AC3: the store-report sweep is red on a
+wording the call does not name, on a named wording's wrong count, on a name
+the family does not hold, on an emptied family and on a log that is not there,
+naming the defect in each — and green on the same log with none of them
+planted`.
+
+**AC4 — met.** `--self-test` block at `:25609-25651`. The mutation removes
+`[".qmd"] = true` from the set of source kinds the recovery route reads, so
+index.qmd — reading a store no render has written — refuses the four chapters
+behind it instead of recovering them. Two assertions bracket it. The leg's
+warning total is unmoved: `check_extension_warning_count … 2` is green under
+the mutation, one report having become one other report. The leg's own
+store-report expectation — `WARN_STORE_NEVER_RECOVERED=1` and every other
+wording at zero, taken from the leg's own `M069_INDEX_STORE_REPORTS` (`:9319`)
+rather than typed out again at the plant, per F3 below — is red, and red by
+counting the wording the mutation drew —
+the `case` guard requires the failure text to read `expected 0 occurrence(s)
+of the WARN_STORE_KIND_REFUSED report … got 1`. That the leg said nothing
+about that wording before the conversion is checked against the default branch
+rather than recalled: `git show main:tests/run-tests.sh` has the m069-index
+leg asserting `WARN_STORE_NEVER_RECOVERED` 1 and three could-not-be-read
+wordings at 0 (`:9219-9229`), and `WARN_STORE_KIND_REFUSED` among neither.
+
+**AC5 — met.** Both runs on the reviewed tree: `tests/run-tests.sh` →
+`All checks passed (766 checks).`, exit 0; `tests/run-tests.sh --self-test` →
+`All checks passed (1397 checks).`, exit 0. Run sequentially, never
+concurrently. The same pair was green on the branch head before the fix-now
+commit, at the same check counts. One word of one comment inside
+`check_store_reports` changed after that run (a free-standing count dropped
+from the F1 guard's comment); `bash -n` is clean and no executable line moved.
+
+**Conversion extent** (the plan gate left this to the diff rather than to a
+grep). Measured on the reviewed tree against `main`, joining backslash
+continuations first: `main` carries 220 `check_warning_count` calls naming a
+`WARN_STORE_*` wording; the branch carries 0. The [O] reviewer re-derived the
+conversion mechanically — every one of the 220 old expectations extracted as a
+(log path, wording, count) triple and diffed against the 81 new calls, an
+absent wording read as 0 — and found every one carried over unchanged, with
+the only deltas the three the work log records: the `place-$slug.log` group
+split across `place_stale`/`place_undeclared`, the `m068-nested-unlistable`
+call folded into `m068_nested_render`'s new parameter, and the 13 newly
+non-zero expectations the T3 survey turned up. No two of the new calls sweep
+one log and deny each other.
+
+### Consistency gate
+
+`cairn_validate.py` — all 16 checks PASS, 7 advisories OK, exit 0; the
+`release window` advisory did not fire. Coverage completeness is one of those
+checks and passes. `cairn_impact.py` not run: `Principles touched:` is `—`.
+Toolchain checks: the `generic` profile's `consistency-gate` slot names none,
+so that half is a clean no-op. `bash -n tests/run-tests.sh` clean.
+
+### Independent review
+
+Three fresh-context reviewers, none having seen the implementation, each on a
+distinct evidence base. The diff touches executable surface
+(`tests/run-tests.sh`), so the full fan-out ran rather than the internal-tier
+single-reviewer route.
+
+**[S] prior-review lens — zero findings.** Read the archived `## Review`
+sections of M062, M066, M073, M074, M075 and `LESSONS.md`, and checked the
+diff against each; the GitHub inline-comment probe returned `[]`, so the
+per-PR thread walk was skipped. It reports the diff consistent with, not
+regressing, the prior findings it names (M62's occurrences-not-lines rule,
+M37's suspended-errexit-in-a-subshell lesson, M38/M073's stale-message lesson,
+M39's bare `warn(` token, M074's `unnamed`-list semantics).
+
+**[S] blame-history lens — no regressions.** It traced every non-zero count it
+could follow out of the 220 removed calls into the new ones and found each
+preserved, and confirmed the wording family is the ten D-052 settled. It
+raised the T6 capture retarget and the `book-nostore` formula as the diff's
+two non-mechanical changes, both scoped and logged by the milestone, and asked
+for a human eye on `ORDER_CHAPTERS * (ORDER_CHAPTERS - 1)` (`:10376`). Checked:
+the ordering fixture has three chapters, the fixture floor at `:10201` refuses
+fewer than three, and the derived 6 and 3 are green on the run above.
+
+**[O] diff-bug lens — eight findings, ranked.** Triage below; every one is
+logged, actioned or rejected.
+
+- **F1 — `check_store_reports` passes vacuously on a log path that is not
+  there** (`:2079`). `grep … || true` swallows the missing-file exit, so `got`
+  is 0 for every wording; 24 of the 88 call sites pass no `<NAME>=<count>` pair
+  at all and assert nothing but zeros, so a mistyped or since-renamed path is
+  green and prints an `ok` line. **Fixed now**: a `[ -f "$logfile" ]` guard at
+  `:2093`, and a fifth `--self-test` case showing the sweep red on an absent
+  log and red by naming the path. The plain run stayed at 766 checks with the
+  guard in, so no existing call site was reading a log that is not there.
+- **F2 — `check_warning_names_nth` could abort the run with no FAIL line**
+  (`:2215`). Called with a `total` of 0 on a log with no matching line, the
+  bare diagnostic `grep` exits 1 and `set -e` ends the run before either
+  `fail` — the failure mode the suite forbids at `:13231` (M14). No call site
+  passes 0. **Fixed now**: `|| true` on the diagnostic grep, `if` in place of
+  `[ … ] && fail` (which also settles F5), and an AC2 case showing the branch
+  reporting a FAIL rather than aborting.
+- **F3 — the AC4 plant re-typed the leg's expectation instead of using it**
+  (`:25643`). The probe hand-wrote `WARN_STORE_NEVER_RECOVERED=1`; nothing tied
+  that literal to the m069-index leg's own call, so changing the leg would
+  leave the plant passing while its pass line went on claiming the leg is
+  protected. **Fixed now**: the leg holds its expectation in
+  `M069_INDEX_STORE_REPORTS` (`:9319`) and the plant expands the same array,
+  with a non-empty guard beside it. This is the milestone's own thesis applied
+  to the milestone's own plant.
+- **F4 — two `case` guards depend on the alphabetical order of
+  `${!WARN_STORE_@}`** (`:7006`, `:25647`). Both require the failure text to
+  name `WARN_STORE_KIND_REFUSED`, which holds because that name sorts first
+  among the mismatching ones and the helper fails on the first mismatch.
+  **Rejected, logged**: renaming a wording would turn the plants red on their
+  "failed, but not by counting that wording" branch — loud, not silent — and
+  a rename is a change that has to revisit these plants anyway. Pinning the
+  order would assert the shell's sort rather than the report.
+- **F5 — `[ … ] && fail` against the suite's own written convention**
+  (`:2216`). **Fixed now**, folded into F2's rewrite.
+- **F6 — the label-merging script left duplicated criterion prefixes**
+  (`:9436`, `:24113`, `:24149`) and a doubled `$label` (`:7196`). Cosmetic, but
+  they print on every green run and one sits inside a parameterized helper.
+  **Fixed now**: four labels corrected; a scan for any other repeated prefix
+  inside a merged label found none.
+- **F7 — unquoted array assignment with no shellcheck annotation** (`:2082`,
+  `local -a domain=( ${!WARN_STORE_@} )`). **Rejected, logged**: the split is
+  the point and is what the plan gate chose; shell identifiers cannot split
+  under the default IFS, and the file's `shellcheck disable=` comments sit on
+  splits that are not self-evident.
+- **F8 — stray extra blank line** after the AC4 block. **Fixed now.**
+
+None of the eight demonstrates an acceptance criterion failing, and none is a
+defect in what the extension does for its users, so the return floor is not
+reached and the milestone stays in review. Five were actioned as fixes, three
+of which (F1, F2, F3) are load-bearing: each was a check that could not fail on
+the thing it claimed to check.

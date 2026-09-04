@@ -2085,6 +2085,13 @@ check_store_reports() {   # <logfile> <label> [<WARN_STORE_NAME>=<count> ...]
   # swept, nothing asserted.
   [ "${#domain[@]}" -gt 0 ] \
     || fail "$label: check_store_reports found no WARN_STORE_ wording in scope, so it would assert nothing over an empty family"
+  # A log that is not there would pass every call vacuously too, and more
+  # quietly: the sweep below swallows grep's missing-file exit with `|| true`
+  # and reads 0 for every wording, so a call that names no count at all — many
+  # here do, asserting nothing but zeros — is green on a path that was mistyped,
+  # renamed by a later milestone, or never written by the render it names.
+  [ -f "$logfile" ] \
+    || fail "$label: check_store_reports was given $logfile, which is not a file, so every wording of the family would be swept as 0 and the call would assert nothing"
   # A name the domain does not hold — a typo, or a wording since renamed —
   # would otherwise be swept as 0 below while the caller believed it had
   # asserted a count.
@@ -2202,9 +2209,13 @@ check_warning_names_nth() {   # <logfile> <pattern> <total> <label> <named> <not
     fi
   done < <(grep -F -- "$pattern" "$logfile")
   if [ "$matched" != 1 ]; then
-    grep -F -- "$pattern" "$logfile" >&2
-    [ "$matched" = 0 ] \
-      && fail "$label: none of the $total line(s) carrying <<$pattern>> names all of $named and none of $unnamed"
+    # `|| true` inside the redirection, and `if` rather than `[ … ] && fail`:
+    # called with a total of 0 the grep finds nothing and exits 1, which under
+    # `set -e` would abort the run before either fail line below ever ran (M14).
+    { grep -F -- "$pattern" "$logfile" || true; } >&2
+    if [ "$matched" = 0 ]; then
+      fail "$label: none of the $total line(s) carrying <<$pattern>> names all of $named and none of $unnamed"
+    fi
     fail "$label: $matched of the $total line(s) carrying <<$pattern>> name all of $named and none of $unnamed, so that key picks no one line"
   fi
   pass "$label: one line of the $total carrying <<$pattern>> names $named and none of $unnamed"
@@ -7028,7 +7039,19 @@ if [ "${1:-}" = "--self-test" ]; then
     *) fail "M076-AC3: the sweep failed with the family emptied, but not by saying so (<<$M076_OUT>>)" ;;
   esac
 
-  pass "M076-AC3: the store-report sweep is red on a wording the call does not name, on a named wording's wrong count, on a name the family does not hold and on an emptied family, naming the defect in each — and green on the same log with none of them planted"
+  # 5 — the log absent. The sweep swallows grep's missing-file exit, so without
+  # the guard a call naming no count at all reads 0 for every wording and goes
+  # green on a path no render ever wrote (M076 review F1).
+  if M076_OUT=$( ( check_store_reports "$WORK/m076-no-such.log" \
+                     "M076-AC3 probe" ) 2>&1 ); then
+    fail "M076-AC3: the sweep passed on a log that is not there, so a call whose path is mistyped or since renamed would assert nothing but zeros and say so as a pass"
+  fi
+  case "$M076_OUT" in
+    *'which is not a file'*) : ;;
+    *) fail "M076-AC3: the sweep failed on the absent log, but not by saying the path is not a file (<<$M076_OUT>>)" ;;
+  esac
+
+  pass "M076-AC3: the store-report sweep is red on a wording the call does not name, on a named wording's wrong count, on a name the family does not hold, on an emptied family and on a log that is not there, naming the defect in each — and green on the same log with none of them planted"
 
   # --- check_warning_names_nth (M076-AC2) -----------------------------------
   # The two lines of the render just above, whose chapter sets nest: the second
@@ -7070,7 +7093,22 @@ if [ "${1:-}" = "--self-test" ]; then
     *) fail "M076-AC2: the membership check failed on the renamed chapter, but not by finding no line that answers to the key (<<$M076_OUT>>)" ;;
   esac
 
-  pass "M076-AC2: the line each call asserts on is picked by the chapters it must and must not name — the same two lines in the other order are read the same way, and a log naming a chapter the report never covers is red"
+  # A total of 0 reaches the no-line branch with nothing for its diagnostic
+  # grep to find. Reported as a FAIL naming the key, never as a bare `set -e`
+  # abort with no FAIL line at all, which is how that branch read before the
+  # M076 review (F2). No call site passes 0; the branch is guarded, not used.
+  M076_EMPTY="$WORK/m076-empty.log"
+  : > "$M076_EMPTY"
+  if M076_OUT=$( ( check_warning_names_nth "$M076_EMPTY" "$WARN_STORE_NEVER_RECOVERED" 0 \
+                     "M076-AC2 probe" "two.qmd" "index.qmd" ) 2>&1 ); then
+    fail "M076-AC2: the membership check passed on a log carrying no such line at all"
+  fi
+  case "$M076_OUT" in
+    *'none of the 0 line(s) carrying'*) : ;;
+    *) fail "M076-AC2: the membership check failed on the empty log, but not by saying no line answers to the key (<<$M076_OUT>>)" ;;
+  esac
+
+  pass "M076-AC2: the line each call asserts on is picked by the chapters it must and must not name — the same two lines in the other order are read the same way, a log naming a chapter the report never covers is red, and a log carrying no such line at all is red rather than a silent abort"
 fi
 
 ( cd "$PLACE_DIR" && quarto render --to html ) > "$WORK/place-second.log" 2>&1 \
@@ -7155,7 +7193,7 @@ STALEPY
     || { tail -30 "$WORK/place-$slug.log" >&2; fail "M60-AC4 ($label): the render failed; IP2 forbids a stale record taking one down"; }
   capture --project "$PLACE_DIR" html "place-$slug"
   check_store_reports "$WORK/place-$slug.log" \
-    "M60-AC4 ($label; $label, stale rather than unreadable)" \
+    "M60-AC4 ($label, stale rather than unreadable)" \
     WARN_STORE_STALE_RECOVERED="$want"
   { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/place-$slug.log" | grep -qF "$chapter"; } \
     || { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/place-$slug.log" >&2; fail "M60-AC4 ($label): the report does not name $chapter, the chapter whose record was refused"; }
@@ -9272,9 +9310,16 @@ check_book_sections "$CAPTURE_ROOT/m069-m069-index/_book" \
   "$(printf 'index.html\tqi-index-alpha\tIndex of Alpha')"
 check_index_sections "$CAPTURE_ROOT/m069-m069-index/_book/index.html" \
   "$M069_ALPHA_ROWS" "M069-AC1 (index.qmd alone, no store)" hrefs
+# Held in a variable because the M076-AC4 plant re-runs THIS leg's expectation
+# against a mutated render's log (`:25585`). Written out twice, the plant would
+# go on passing against a copy of an expectation the leg had since changed, and
+# its pass line would go on claiming the leg is protected — a check fixed by
+# what its author typed rather than by what the leg asserts, which is the whole
+# of what this milestone is about.
+M069_INDEX_STORE_REPORTS=( WARN_STORE_NEVER_RECOVERED=1 )
 check_store_reports "$WORK/m069-m069-index.log" \
   "M074-AC2/M069-AC3/M069-AC5 (ONE report for the four chapters no record has been written for, where before M074 there were four; no record here was written and unusable, so the could-not-be-read wording is never drawn; every source reads, so the lost wording is never drawn; every source carries marks, so the no-marks wording is never drawn)" \
-  WARN_STORE_NEVER_RECOVERED=1
+  "${M069_INDEX_STORE_REPORTS[@]}"
 check_warning_names "$WORK/m069-m069-index.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M074-AC2 (and that one line names each of the four)" \
   "two.qmd three.qmd four.qmd five.qmd" "index.qmd"
@@ -9388,7 +9433,7 @@ check_index_sections "$CAPTURE_ROOT/m069-nomarksource/_book/five.html" \
   "$M069_GAMMA_ROWS_NOFOUR" \
   "M069-AC5 (four.qmd's source reaches no mark, so none of its eight terms is in the section)" hrefs
 check_store_reports "$WORK/m069-nomarksource.log" \
-  "M069-AC5/M074-AC2/M069-AC5 (the other three chapters are recovered and reported in one line; four.qmd is not; a record that was never written draws no no-marks wording either; four.qmd's source reads perfectly well, so the lost wording is never drawn)" \
+  "M069-AC5/M074-AC2 (the other three chapters are recovered and reported in one line; four.qmd is not; a record that was never written draws no no-marks wording either; four.qmd's source reads perfectly well, so the lost wording is never drawn)" \
   WARN_STORE_NEVER_RECOVERED=1
 check_warning_names "$WORK/m069-nomarksource.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M069-AC5/M074-AC2 (and that line names the three that came back, four.qmd's silence being what this leg is about)" \
@@ -24065,7 +24110,7 @@ check_index_sections "$CAPTURE_ROOT/m070-dangling/_book/index.html" \
   "$M070_SECTIONS_RECOVERED" \
   "M070-AC1 (a listed unopenable record: the accepted chapter's terms come back, the refused chapter's do not)" hrefs
 check_store_reports "$WORK/m070-dangling.log" \
-  "M070-AC1/M070-AC1/M074-AC2 (five.ipynb draws the refusal on this entry path too, in the same words; one.qmd's record is listed and cannot be opened, which is the entry path this leg is about, and its extension is one this route reads; the six chapters no record was written for at all, in one line)" \
+  "M070-AC1/M074-AC2 (five.ipynb draws the refusal on this entry path too, in the same words; one.qmd's record is listed and cannot be opened, which is the entry path this leg is about, and its extension is one this route reads; the six chapters no record was written for at all, in one line)" \
   WARN_STORE_KIND_REFUSED=1 WARN_STORE_UNREADABLE_RECOVERED=1 WARN_STORE_NEVER_RECOVERED=1
 m070_refusal_names five.ipynb "$WORK/m070-dangling.log" "M070-AC1 (a record listed and unopenable)"
 check_warning_names "$WORK/m070-dangling.log" "$WARN_STORE_NEVER_RECOVERED" \
@@ -24101,7 +24146,7 @@ check_index_sections "$CAPTURE_ROOT/m070-record/_book/index.html" \
   "$M070_SECTIONS_RECORDED" \
   "M070-AC3/M071-AC1 (six.qmd, seven.qmd and eight.Rmd read from their own records: each front-matter mark printed at its chapter's page with no fragment, the rows the recovery legs print, and seven.qmd's body mark alone carrying a fragment)" hrefs
 check_store_reports "$WORK/m070-record.log" \
-  "M070-AC3/M071-AC1/M074-AC2/M070-AC3 (six.qmd, seven.qmd and eight.Rmd are read from their own records and draw no recovery report; the four chapters without one are reported in one line; five.ipynb is refused here as well)" \
+  "M070-AC3/M071-AC1/M074-AC2 (six.qmd, seven.qmd and eight.Rmd are read from their own records and draw no recovery report; the four chapters without one are reported in one line; five.ipynb is refused here as well)" \
   WARN_STORE_NEVER_RECOVERED=1 WARN_STORE_KIND_REFUSED=1
 check_warning_names "$WORK/m070-record.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M070-AC3/M071-AC1/M074-AC2 (and that line names those four alone — not the three read from their own records, and not the notebook chapter, which draws the refusal)" \
@@ -25588,10 +25633,14 @@ if [ "${1:-}" = "--self-test" ]; then
 
   # The leg's own store-report expectation, run against the mutated render's
   # log: one never-written recovery report and every other wording of the
-  # family at zero, which is what the m069-index leg asserts. It must be red,
-  # and red on the wording the mutation drew.
+  # family at zero. Taken from the m069-index leg itself (`:9313`) rather than
+  # written out again here, so this plant cannot go on passing against a copy
+  # of an expectation that leg has since changed. It must be red, and red on
+  # the wording the mutation drew.
+  [ "${#M069_INDEX_STORE_REPORTS[@]}" -gt 0 ] \
+    || fail "M076-AC4: the m069-index leg's store-report expectation is empty here, so the probe below would be about no expectation at all"
   if M076_OUT=$( ( check_store_reports "$WORK/m069-m076-refusedkind.log" \
-                     "M076-AC4 probe" WARN_STORE_NEVER_RECOVERED=1 ) 2>&1 ); then
+                     "M076-AC4 probe" "${M069_INDEX_STORE_REPORTS[@]}" ) 2>&1 ); then
     fail "M076-AC4: the m069-index leg's store-report expectation passed on a render that refuses four chapters where it should recover them, so the conversion bought that leg nothing"
   fi
   case "$M076_OUT" in
@@ -25601,7 +25650,6 @@ if [ "${1:-}" = "--self-test" ]; then
 
   pass "M076-AC4: with .qmd taken out of the set of source kinds this route reads and nothing else changed, the chapter reading a store no render has written refuses the four chapters behind it and says so — the leg's warning total is unmoved, and the leg's store-report expectation is red and names the refusal wording, which nothing on that leg asserted before this milestone"
 fi
-
 
 # ---------------------------------------------------------------------------
 # M075 — the run accounts for its own wall clock, and the timing file names

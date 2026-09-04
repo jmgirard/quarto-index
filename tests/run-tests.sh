@@ -2103,8 +2103,13 @@ check_store_reports() {   # <logfile> <label> [<WARN_STORE_NAME>=<count> ...]
       if [ "${pair%%=*}" = "$name" ]; then want="${pair#*=}"; fi
     done
     got=$( { grep -oF -- "${!name}" "$logfile" || true; } | wc -l | tr -d ' ')
-    [ "$got" = "$want" ] \
-      || fail "$label: expected $want occurrence(s) of the $name report <<${!name}>> in $logfile, got $got"
+    if [ "$got" != "$want" ]; then
+      if [ -n "${QI_STORE_SURVEY:-}" ]; then
+        printf 'MISMATCH\t%s\t%s\twant=%s\tgot=%s\n' "$logfile" "$name" "$want" "$got" >&2
+      else
+        fail "$label: expected $want occurrence(s) of the $name report <<${!name}>> in $logfile, got $got"
+      fi
+    fi
   done
   pass "$label: the store reports in $logfile are exactly ${*:-none}, with every other wording of the ${#domain[@]} held at zero"
 }
@@ -7959,9 +7964,10 @@ check_entry_locators \
   "$CAPTURE_ROOT/m063-m064-conditional/_book/five.html" \
   "$HTML_SECTION_ID-gamma" Dovetail "four.html" \
   "M064 F2 (a term marked twice in a recovered chapter prints one locator)"
+# four.qmd's record path is blocked, so its own write meets the block too.
 check_store_reports "$WORK/m063-m064-conditional.log" \
-  "M064 F1 (the chapter still recovers the marks outside its conditional blocks; marks were recovered, so the no-marks wording is never drawn; the source reads, so the lost wording is never drawn)" \
-  WARN_STORE_UNREADABLE_RECOVERED=4
+  "M064 F1 (the chapter still recovers the marks outside its conditional blocks; marks were recovered, so the no-marks wording is never drawn; the source reads, so the lost wording is never drawn; four.qmd's own write meets the blocked path)" \
+  WARN_STORE_UNREADABLE_RECOVERED=4 WARN_STORE_UNWRITABLE=1
 pass "M064 F1/F2: a recovered chapter's marks inside a conditional block reach no index section — the block Quarto keeps for this format among them — while its ordinary marks still do, and a term it marks twice prints one locator rather than the same link twice"
 
 m063_tree m064-nomarks
@@ -7974,9 +7980,10 @@ m063_tree_render m064-nomarks m064-nomarks \
 check_book_terms "$CAPTURE_ROOT/m063-m064-nomarks/_book" \
   "M064 F3 (nothing was recovered, so the gamma section is short Dovetail)" \
   "$PLACE_TERMS_NORECOVERY"
+# four.qmd's record path is blocked, so its own write meets the block too.
 check_store_reports "$WORK/m063-m064-nomarks.log" \
-  "M064 F3 (each chapter that reads the held path is told the source reached no mark; nothing came back, so the recovery wording is never drawn; the source read and parsed, so it was never lost)" \
-  WARN_STORE_UNREADABLE_NOMARKS=4
+  "M064 F3 (each chapter that reads the held path is told the source reached no mark; nothing came back, so the recovery wording is never drawn; the source read and parsed, so it was never lost; four.qmd's own write meets the blocked path)" \
+  WARN_STORE_UNREADABLE_NOMARKS=4 WARN_STORE_UNWRITABLE=1
 pass "M064 F3: where a chapter's record cannot be read and its source parses to no mark this route reaches, the report says that rather than claiming the chapter's terms came back, and the index is short them"
 
 # ---------------------------------------------------------------------------
@@ -8489,8 +8496,8 @@ for M068_PASS in one two; do
     "$M068_RECOVERED_FOUR" 4 \
     "M068-AC2 (render $M068_PASS: index.qmd, two.qmd, three.qmd and five.qmd each meet four.qmd's record path)"
   check_store_reports "$WORK/m063-m068-dangling-$M068_PASS.log" \
-    "M068-AC2 (render $M068_PASS: four.qmd's own source reads, so nothing is lost; render $M068_PASS: four.qmd's own source carries marks; render $M068_PASS: nothing could be opened, so nothing could be found stale; render $M068_PASS: four.qmd's own write follows the link into a directory that is not there)" \
-    WARN_STORE_UNWRITABLE=1
+    "M068-AC2 (render $M068_PASS: the four readers above, counted as the recovery wording alone rather than as the whole message; render $M068_PASS: four.qmd's own source reads, so nothing is lost; render $M068_PASS: four.qmd's own source carries marks; render $M068_PASS: nothing could be opened, so nothing could be found stale; render $M068_PASS: four.qmd's own write follows the link into a directory that is not there)" \
+    WARN_STORE_UNREADABLE_RECOVERED=4 WARN_STORE_UNWRITABLE=1
   check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" "$WARN_MARKER_NOT_LAST" 2 \
     "M068-AC2 (render $M068_PASS: index.qmd and three.qmd each build a section with chapters after them, which is the pair of reports this book always draws)"
   M068_LINES=$( { grep -c '(W) ' "$WORK/m063-m068-dangling-$M068_PASS.log" || true; } | tr -d ' ')
@@ -8651,17 +8658,21 @@ m068_nested_tree() {   # <slug>
 
 # One leg: render last.qmd — the chapter that builds the index — on its own, so
 # nothing rewrites another chapter's record first, and read the two entries.
-m068_nested_render() {   # <slug> <label> <recoveries> <shared locators> <warning lines>
-  local slug="$1" label="$2" recoveries="$3" shared="$4" lines="$5" got
+m068_nested_render() {   # <slug> <label> <recoveries> <unwritable> <shared locators> <warning lines>
+  local slug="$1" label="$2" recoveries="$3" unwritable="$4" shared="$5" lines="$6" got
   ( cd "$M068BW/$slug" && quarto render last.qmd --to html ) \
     > "$WORK/m068-nested-$slug.log" 2>&1 \
     || { tail -30 "$WORK/m068-nested-$slug.log" >&2; fail "$label: the render failed; IP2 forbids a record that cannot be opened taking one down"; }
   capture --project "$M068BW/$slug" html "m068-nested-$slug"
   check_warning_count "$WORK/m068-nested-$slug.log" "$M068_RECOVERED_SUBTWO" 1 \
     "$label: the recovery report names the chapter in the subdirectory, whole and once"
-  check_store_reports "$WORK/m068-nested-$slug.log" \
-    "$label: the chapters recovered are exactly the ones whose records are out of reach/$label: every recovered chapter's own source reads, so the lost wording is never drawn/$label: every recovered chapter's own source carries marks, so the no-marks wording is never drawn" \
-    WARN_STORE_UNREADABLE_RECOVERED="$recoveries"
+  # The chapters recovered are exactly the ones whose records are out of reach,
+  # last.qmd's own write fails exactly where the store itself is out of reach,
+  # and every other wording of the family is held at zero: each recovered
+  # chapter's source reads and carries marks, and nothing that could not be
+  # opened could be found stale.
+  check_store_reports "$WORK/m068-nested-$slug.log" "$label" \
+    WARN_STORE_UNREADABLE_RECOVERED="$recoveries" WARN_STORE_UNWRITABLE="$unwritable"
   check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_MARKER_DUP_NAMED" 1 \
     "$label: the second marker for the index named main, which this book always draws"
   check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_DANGLING_INDEX" 1 \
@@ -8706,11 +8717,8 @@ m068_break_store_at() {   # <store directory> <records held> <label>
 m068_break_store_at "$M068BW/unlistable/.quarto/$STORE_DIR" 4 \
   "M068 (nested: a store directory that cannot be listed)"
 m068_nested_render unlistable \
-  "M068 (nested: a store directory that cannot be listed, over a chapter in a subdirectory)" \
-  3 "index.html one.html sub/two.html" 6
-check_store_reports "$WORK/m068-nested-unlistable.log" \
-  "M068 (nested: last.qmd's own write meets the same file where the store directory belongs)" \
-  WARN_STORE_UNWRITABLE=1
+  "M068 (nested: a store directory that cannot be listed, over a chapter in a subdirectory; last.qmd's own write meets the same file where the store directory belongs)" \
+  3 1 "index.html one.html sub/two.html" 6
 pass "M068 (nested): a store directory replaced by a file puts the record one level below it out of reach as surely as the ones directly in it — sub/two.qmd is recovered from its own source and reported by name, its terms are in the book's index pointing at its page, and every locator of the entry all three chapters mark has lost its fragment, which is what an unlistable store directory meant before this milestone and has to go on meaning"
 
 # Leg two. The store directory lists perfectly well; the record one level down
@@ -8730,7 +8738,7 @@ m068_assert_listing "$M068_NESTED_STORE" "two.qmd$STORE_SUFFIX" out \
   "M068 (nested: the record's basename is not among the store's top-level entries)"
 m068_nested_render nested \
   "M068 (nested: a record one level down that cannot be opened)" \
-  1 "index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html" 3
+  1 0 "index.html#qi-mark-1 one.html#qi-mark-2 sub/two.html" 3
 m068_assert_dangling "$M068_NESTED_STORE/sub/two.qmd$STORE_SUFFIX" \
   "M068 (nested: after the render)"
 pass "M068 (nested): where the record for sub/two.qmd is a dangling link its own directory lists and the store's top level does not, that chapter is recovered from its source and reported while index.qmd and one.qmd are read from their records — the entry all three mark carries one fragment-bearing locator for each record that was read and the bare page for the one that was not, which is the difference between asking the record's own directory and asking the store's top level"
@@ -10165,8 +10173,13 @@ printf 'not a directory\n' > "$ORDER_DIR/.quarto/$STORE_DIR"
   || { tail -30 "$WORK/book-nostore.log" >&2; fail "M05 hardening: a store that cannot be written took the render down; IP2 forbids it"; }
 capture --project "$ORDER_DIR" html "book-nostore"
 
+# Every record is out of reach, so each chapter is recovered by every chapter
+# but itself, and each chapter's own write meets the file where the store
+# directory belongs. Both figures are derived from the fixture's chapter count
+# rather than written down, so a chapter added to it moves them together.
 check_store_reports "$WORK/book-nostore.log" \
-  "M05 hardening" \
+  "M05 hardening (a store that cannot be written or read at all)" \
+  WARN_STORE_UNREADABLE_RECOVERED="$(( ORDER_CHAPTERS * (ORDER_CHAPTERS - 1) ))" \
   WARN_STORE_UNWRITABLE="$ORDER_CHAPTERS"
 rm -f "$ORDER_DIR/.quarto/$STORE_DIR"
 pass "M05 hardening: a store that cannot be written is reported per chapter and the book still renders"

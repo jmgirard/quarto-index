@@ -110,6 +110,7 @@ own domains. Out: per-render timing → candidate row; moving the literal
 - 2026-09-04: review opened on PR #75; branch synced with `main` (0 behind), draft PR pushed. Consistency gate green: `cairn_validate` all PASS, no principle changed so no impact report, and the `generic` profile's consistency-gate slot names no toolchain checks. Criterion evidence and the three review lenses in flight.
 - 2026-09-04: review evidence recorded and all four criteria ticked — one fresh `tests/run-tests.sh --self-test` at fb20b8b, exit 0, 1299 checks, 1191s; AC2 and AC3 also held independently of the run's own checks, AC3 against the final timing file and an outer wall clock (gap 0s). Three-lens review fan-out ran; thirteen findings, twelve from the diff-bug lens and one from the prior-review lens duplicating F3, all recorded in the Review section for triage at the gate.
 - 2026-09-04: gate approved fixing the four confirmed review findings, re-verifying, and merging on green. F1, F2, F6, F8 and F11's print header fixed on the branch and each verified standalone; F3 routed to a Known-issues entry, F4/F5/F7/F9/F10 and F11's fragment headings to the suite check-discrimination candidate row, F12 rejected. Full re-run in flight.
+- 2026-09-04: re-verification green at b1c51c4 — `tests/run-tests.sh --self-test` exit 0, 1299 checks, 1208s; all four criteria held again, AC3 also against an outer wall clock (1209s of 1209s). step-7 approval: PR #75 approved for merge.
 
 ## Decisions
 
@@ -181,6 +182,19 @@ defects, re-verify, and merge on green.
 - F12 — rejected. The two implement-gate choices are milestone-local and are
   in the work log with their falsifiers; the cross-cutting decisions file is
   for decisions that bind beyond one milestone, and neither does.
+
+**Re-verified after the gate-directed fixes**, branch head `b1c51c4`:
+`tests/run-tests.sh --self-test` exit 0, 1299 checks, 1208s on the run's own
+clock. AC1 — 156 rows written, fifteen slowest printed before the passing
+line, the header now reading `the fifteen slowest of 155 section rows (1207s,
+plus 2s of setup before the first section)`. AC2 — the run's own check green
+over 155 sections, the final file's headings again byte-identical to the
+scanner's with no duplicate, and T5's three plants again red. AC3 — the run's
+own check green, and the final 156 rows sum to 1209s against an outer wall
+clock of 1209s, gap 0s. AC4 — exit 0, 1299 checks. The one-second difference
+between the run's in-check total (1208s) and the final file (1209s) is F4's
+exposure measured: the check reads its clock before the T5 block, and
+`section_close` writes the M075 row afterwards.
 
 **PR conversation.** Read on PR #75 before the gate: no reviews, no
 conversation comments, no unresolved threads.

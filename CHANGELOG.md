@@ -4,6 +4,30 @@
 
 ### Output
 
+- In an HTML book, the reports about a chapter no render has written a record
+  for are now drawn once for every chapter that builds an index section — and
+  once by a chapter that builds none where the records it read show no chapter
+  of the book placing an index — rather than by every chapter that reads a
+  chapter's source back, whether it prints a section or not. That is what such
+  a record costs: a section's share of that chapter's terms. The last chapter
+  of a book whose every declared index is placed earlier reads those sources
+  and now says nothing about them.
+
+  Each report is drawn once however many such records the chapter met, and
+  names every chapter it covers, rather than once for each of them. A chapter
+  reading a store no render has written meets every other chapter of the book
+  at once — a single-chapter render of a five-chapter book drew four reports
+  saying one thing — and nothing about where a chapter sits tells a first
+  whole-book render from a single-chapter render on a cold store. The three
+  sentences are reworded to read correctly whether one names a single chapter
+  or six. The refusal a chapter whose source this extension will not read draws
+  moves with them where no render has written its record, following the count
+  of the report it stands in for.
+
+  Which chapters are read back is unchanged, and so is every term in every
+  index: a chapter carrying a placement marker, and the book's last chapter,
+  still read the source of each chapter no record has been written for.
+
 - In an HTML book, a chapter no render has written a record for whose own
   source also cannot be read is now reported by a wording of its own, naming
   the record as one no render has written and the source as one that could not
@@ -36,11 +60,12 @@
   another version follows, and it is what such a record costs: a section's share
   of that chapter's terms. A book carrying a notebook chapter with an old record
   said the refusal once per chapter of the book, where it said any other stale
-  record once per section. The three other states a record can be in — never
-  written, there and unopenable, and there and holding bytes that do not decode
-  at all — still draw the report where the chapter meets the record, on the
-  counts they have always had, and a refused chapter still says one thing and
-  never that its record was written by a different version.
+  record once per section. The two states about a record that WAS there — there
+  and unopenable, and there and holding bytes that do not decode at all — still
+  draw the report where the chapter meets the record, on the counts they have
+  always had; a record no render has written is the entry above. A refused
+  chapter still says one thing, and never that its record was written by a
+  different version.
 
 - In an HTML book, a chapter no render has written a record for is now read
   back from its own source by the chapters that can print an index section —
@@ -55,7 +80,8 @@
   chapters before it have written their records: the ordinary first render of
   a book whose marker sits in its last chapter reads no source and reports
   nothing, while one whose marker sits earlier reads the sources of the
-  chapters behind it and reports each, the next render silent.
+  chapters behind it and reports them in one line naming each, the next render
+  silent.
 
   A chapter recovered this way is reported by a wording of its own, naming the
   record as one no render has written rather than one that could not be read.

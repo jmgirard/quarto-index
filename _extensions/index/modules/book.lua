@@ -902,27 +902,45 @@ local function recover_record(ctx, file)
   return record
 end
 
--- The one wording for a chapter whose source this route will not read, in one
--- place because it is drawn from two: inline, by the chapter that met the
--- record, where the record was never written or was opened and could not be
--- used; and at the report site, once per chapter that builds an index section,
--- where the record was written by another version of this extension (D-049).
--- A second `warn()` call carrying these words would be a second copy of them
--- to keep in step, and the source scan that holds this extension's messages
--- mutually distinct would read the pair as one message written twice.
-local function warn_source_refused(file)
-  qi_core.warn(("no record of the index marks for %s could be used, and that chapter's source is not one this route reads — it reads a chapter written as .qmd, .md, .markdown or .Rmd source and no other kind — so none of its terms are in the index; render that chapter again, or render the whole book, to restore them"):format(file))
+-- The chapters one report covers, as the text that stands where a single
+-- chapter's name used to. Commas with a final "and", and never a newline: each
+-- of these reports is one log line, and the scan that holds this extension's
+-- messages mutually distinct refuses a message it cannot match line for line.
+local function chapter_list(files)
+  if #files <= 2 then
+    return table.concat(files, " and ")
+  end
+  return table.concat(files, ", ", 1, #files - 1) .. " and " .. files[#files]
 end
 
--- Returns the usable records in book order and the chapters whose record this
--- version refused for being written by another one — the caller's to report.
+-- The one wording for a chapter whose source this route will not read, in one
+-- place because it is drawn from three: inline, by the chapter that met the
+-- record, where the record was opened and could not be used; and at the report
+-- site, once per chapter that builds an index section, where the record was
+-- written by another version of this extension (D-049) or where no render has
+-- written it at all (M074). A second `warn()` call carrying these words would
+-- be a second copy of them to keep in step, and the source scan that holds this
+-- extension's messages mutually distinct would read the pair as one message
+-- written twice.
 --
--- One pass, and only these two answers. M60 and M061 also asked which chapters
--- AFTER this one had no usable record, because a chapter then had to work out
--- whether it was the last one placing anything before it could take on an
--- index no marker names. M063 hands that index to the book's last chapter,
--- which every chapter names the same way from `ctx.chapters`, so no chapter
--- asks the store where the other markers are any more.
+-- `who` is one chapter's name, or several joined by `chapter_list`: the
+-- never-written draw covers every such chapter of the render in one line, and
+-- the other two sites pass the single chapter they met. The sentence says
+-- "each such chapter" so that it is true of either.
+local function warn_source_refused(who)
+  qi_core.warn(("no record of the index marks for %s could be used, and each such chapter's source is not one this route reads — it reads a chapter written as .qmd, .md, .markdown or .Rmd source and no other kind — so none of its terms are in the index; render each again, or render the whole book, to restore them"):format(who))
+end
+
+-- Returns the usable records in book order, the chapters whose record this
+-- version refused for being written by another one, and the chapters no render
+-- has written a record for at all — the last two the caller's to report.
+--
+-- One pass, and only these three answers. M60 and M061 also asked which
+-- chapters AFTER this one had no usable record, because a chapter then had to
+-- work out whether it was the last one placing anything before it could take
+-- on an index no marker names. M063 hands that index to the book's last
+-- chapter, which every chapter names the same way from `ctx.chapters`, so no
+-- chapter asks the store where the other markers are any more.
 --
 -- `own` is this chapter's own record, built in memory and spliced in at this
 -- chapter's own position rather than read back off the disk: the store is read
@@ -943,6 +961,15 @@ end
 -- render can disagree about either.
 local function store_read(ctx, own, recover_absent)
   local records, stale = {}, {}
+  -- The never-written chapters this render met, in book order, one list per
+  -- wording. Handed back rather than reported here (M074): what such a record
+  -- costs is a section's share of that chapter's terms, and only a chapter that
+  -- builds a section — or one whose records show the book placing nothing —
+  -- pays it. `recover_absent` admits a chapter that can print a section, which
+  -- is not the same as one that does: the book's last chapter is admitted and
+  -- builds nothing where every declared index is placed earlier. The caller
+  -- knows which, and draws one line per list.
+  local absent = { refused = {}, recovered = {}, lost = {} }
   -- One probe for this whole pass: a record this loop cannot open whose name
   -- is nonetheless in the listing of the directory it belongs in was not
   -- never-written, it is out of reach, and the source route is what it is for
@@ -1005,15 +1032,17 @@ local function store_read(ctx, own, recover_absent)
         -- says which case and which outcome its chapter had.
         --
         -- Two draw sites, split on the record's state and not on the wording.
-        -- A version-skewed record is handed to the caller and drawn there,
-        -- whether its chapter was refused or recovered, because what it costs
-        -- is a section's share of that chapter's terms and only a chapter that
-        -- builds a section pays it. Every other state is drawn here, by every
-        -- chapter that reads the store: never written, listed and unopenable,
-        -- and opened but undecodable, those three at the counts they have
-        -- always had; and, since the test below narrowed, a record that opens
-        -- and decodes to a table carrying no version this render reads as a
-        -- number, whose count moved to this site with its wording (D-051).
+        -- Two states are handed to the caller and drawn there, whether the
+        -- chapter was refused or recovered, because what each costs is a
+        -- section's share of that chapter's terms and only a chapter that
+        -- builds a section pays it: a version-skewed record, and a record no
+        -- render has written at all (M074). The states that are drawn HERE,
+        -- by every chapter that reads the store, are the ones about a record
+        -- that was there — listed and unopenable, opened but undecodable, and,
+        -- since the test below narrowed, opened and decoding to a table
+        -- carrying no version this render reads as a number, whose count moved
+        -- to this site with its wording (D-051) — each at the count it has
+        -- always had.
         -- A NUMBER other than the one this render writes, not merely "not
         -- equal to it". `~= STORE_VERSION` alone is satisfied by a record
         -- whose `version` is missing — `pandoc.json.decode` gives such a
@@ -1045,62 +1074,59 @@ local function store_read(ctx, own, recover_absent)
             stale[#stale + 1] =
               { file = file, recovered = recovered, parsed = rebuilt ~= nil }
           end
+        elseif never_written then
+          -- Handed back, never drawn here (M074). A record no render has
+          -- written costs the chapters that BUILD an index their share of
+          -- that chapter's terms, exactly as a version-skewed one does, and
+          -- `recover_absent` admits a chapter that CAN print a section rather
+          -- than one that does: the book's last chapter is admitted and builds
+          -- nothing where every declared index is placed earlier, and used to
+          -- report every chapter of the book from there. The caller knows
+          -- whether this chapter builds; this loop does not.
+          --
+          -- One list per wording, and the caller draws each list as one line
+          -- naming every chapter on it. Three outcomes reach here and a fourth
+          -- does not: a source that PARSED and reached no mark is passed over
+          -- in silence, because it is the ordinary shape for a chapter of a
+          -- book whose store has never been written — every chapter marking
+          -- nothing is one — and it has lost nothing, so reporting it would
+          -- fire for most of a correct book on every render.
+          --
+          -- The refusal is its own list and stands ahead of the other two at
+          -- the caller, one wording for all of them: what the record was
+          -- decides nothing an author can act on, the source cannot stand in
+          -- for it whichever it was, and the fix is the same one. A refused
+          -- source was never read, so nothing here knows whether it marks a
+          -- term; staying silent would be a guess, and the guess costs the
+          -- author every term of that chapter with no way to find out.
+          if refused then
+            absent.refused[#absent.refused + 1] = file
+          elseif recovered then
+            absent.recovered[#absent.recovered + 1] = file
+          elseif rebuilt ~= nil then
+            -- Silent, and the one outcome that adds nothing to any list.
+          else
+            absent.lost[#absent.lost + 1] = file
+          end
         elseif refused then
-          -- Drawn here, by this chapter, for every record state but the
-          -- version-skewed one: never written, listed and unopenable, opened
-          -- but undecodable, and — since the test above narrowed — opened and
+          -- Drawn here, by this chapter, for the record states that are about
+          -- a record that WAS there: listed and unopenable, opened but
+          -- undecodable, and — since the test above narrowed — opened and
           -- decoding to a table that carries no version this render reads as a
-          -- number (D-051).
-          -- Those are the states whose own sibling wordings are drawn here
-          -- too, once per chapter that reads the store, so the refusal follows
-          -- the count of the reports it stands in for. Ahead of every branch
-          -- below, and one wording for all of them. What the record was
-          -- decides nothing an author can act on here: the source cannot stand
-          -- in for it whichever it was, and the fix is the same one. A refused
-          -- chapter therefore says this and nothing else.
+          -- number (D-051). Those are the states whose own sibling wordings
+          -- are drawn here too, once per chapter that reads the store, so the
+          -- refusal follows the count of the reports it stands in for. Ahead
+          -- of every branch below, and one wording for all of them. What the
+          -- record was decides nothing an author can act on here: the source
+          -- cannot stand in for it whichever it was, and the fix is the same
+          -- one. A refused chapter therefore says this and nothing else.
           --
           -- "No record could be used" rather than "the recorded marks could
-          -- not be used": this branch is reached on the never-written path as
-          -- well, where there is no record to have failed, and the wording
-          -- above it exists precisely so no report sends an author looking for
-          -- a corrupt file that was never there.
-          --
-          -- Drawn on that never-written path too, which is where this parts
-          -- company with the silent branch further down. That branch is silent
-          -- because a source that PARSED and reached no mark is known to have
-          -- lost nothing. A refused source was never read, so nothing here
-          -- knows whether it marks a term or not; staying silent would be a
-          -- guess, and the guess costs the author every term of that chapter
-          -- with no way to find out. A book carrying a notebook chapter
-          -- therefore hears about it on every render whose store is missing
-          -- that chapter's record, marks or no marks.
+          -- not be used": the same words are drawn on the never-written path
+          -- at the caller, where there is no record to have failed, and one
+          -- wording covering both must send no author looking for a corrupt
+          -- file that was never there.
           warn_source_refused(file)
-        elseif never_written and recovered then
-          -- The fourth wording. "Could not be read" would be false here:
-          -- there is no file to read, and an author sent looking for a
-          -- corrupt record would find nothing.
-          qi_core.warn(("no render has written a record of the index marks for %s, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
-        elseif never_written and rebuilt ~= nil then
-          -- The one branch that says nothing at all. A source that parses and
-          -- reaches no mark is the ORDINARY shape for a chapter of a book
-          -- whose store has never been written — every chapter marking
-          -- nothing is one — and it has lost nothing, so reporting it would
-          -- fire for most of a correct book on every render. A record that
-          -- was written and cannot be used is the opposite case: something
-          -- was there and is gone, which is the no-marks wording below.
-        elseif never_written then
-          -- The sixth wording, and the never-written family's third outcome:
-          -- no record, and no source to stand in for it either. Reached only
-          -- with `rebuilt == nil`, the two branches above having taken the
-          -- recovered and the parsed-but-markless cases, so nothing else can
-          -- arrive here. Its own sentence rather than the lost wording below,
-          -- which says the record "could not be read" and so asserts a file
-          -- that was never written — the same falsehood the fourth wording
-          -- was added to avoid, left standing on this path until now (KI230).
-          -- Its opening clause is its own: the never-written recovery wording
-          -- above opens with words the suite greps that report by, and a
-          -- shared opening would make one key count both reports.
-          qi_core.warn(("no record of the index marks for %s has been written by any render, and that chapter's own source could not be read either, so none of its terms are in the index; render that chapter again, or render the whole book, once its source can be read"):format(file))
         elseif recovered then
           qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
         elseif rebuilt ~= nil then
@@ -1111,7 +1137,7 @@ local function store_read(ctx, own, recover_absent)
       end
     end
   end
-  return records, stale
+  return records, stale, absent
 end
 
 -- Every chapter's marks as the entry builder wants them: the kind tables
@@ -1453,7 +1479,7 @@ local function html_book(doc, ctx, marker, taken)
   -- Quarto hands every chapter — so no two chapters of one render can reach
   -- different answers, and no chapter that prints nothing parses the rest of
   -- the book to find that out.
-  local records, stale =
+  local records, stale, absent =
     store_read(ctx, reading, #marker > 0 or ctx.position == #ctx.chapters)
   -- Before any judgement is made about a mark: an index name this book no
   -- longer declares is settled against what it declares now, so every
@@ -1553,15 +1579,17 @@ local function html_book(doc, ctx, marker, taken)
   -- (`reading`) rather than over the table going to disk.
   store_write(ctx, record)
 
-  -- The two reports about a stored record this render could not use as it
+  -- The three reports about a record this render could not build out of as it
   -- stands: one refused for its version, one refiled because it names an index
-  -- this book no longer declares. Both cost the same thing — a section's share
-  -- of that chapter's terms — so both are drawn on the same rule, at one site
-  -- (M062). A chapter whose source this route will not read arrives among the
-  -- first, flagged, and is drawn here on that same rule when its record was
-  -- written by another version — the one record state whose refusal costs a
-  -- section rather than a reading (D-049); in every other state that chapter
-  -- drew its refusal where it met the record.
+  -- this book no longer declares, and one no render has written at all (M074).
+  -- All three cost the same thing — a section's share of that chapter's terms
+  -- — so all three are drawn on the same rule, at one site (M062). A chapter
+  -- whose source this route will not read arrives among the first and the
+  -- third — flagged in the first, a list of its own in the third, and never
+  -- among the second, which no refused chapter can reach — and is drawn here
+  -- on that same rule when its record was written by another version (D-049)
+  -- or was never written; where the record was there and could not be used,
+  -- that chapter drew its refusal where it met it.
   --
   -- Once per chapter that BUILDS a section, which is what M55 decided: a
   -- chapter that prints nothing has nothing to say about a record it never
@@ -1592,6 +1620,32 @@ local function html_book(doc, ctx, marker, taken)
     end
     for _, entry in ipairs(refiled) do
       qi_core.warn(('the recorded index marks for %s name the index "%s", which this book does not declare; they are filed in the first index it does declare, and their sort keys with them — render that chapter again, or render the whole book, once the %s: metadata is settled'):format(entry.file, entry.name, qi_indexes.INDEXES_KEY))
+    end
+    -- ...and the records no render has written, one line per wording naming
+    -- every chapter that wording covers (M074). Once per wording rather than
+    -- once per chapter: a chapter reading a cold store meets every other
+    -- chapter of the book at once, and nothing about where it sits tells a
+    -- first whole-book render from a single-chapter render, so volume is the
+    -- only axis left. The refusal stands first, ahead of the two below and
+    -- instead of them for the chapters on its list, the precedence a refused
+    -- chapter has wherever it is drawn (D-046).
+    if #absent.refused > 0 then
+      warn_source_refused(chapter_list(absent.refused))
+    end
+    if #absent.recovered > 0 then
+      -- "Could not be read" would be false here: there is no file to read,
+      -- and an author sent looking for a corrupt record would find nothing.
+      qi_core.warn(("no render has written a record of the index marks for %s; each such chapter's terms were recovered from its own source instead, and are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render each again, or render the whole book, to restore them"):format(chapter_list(absent.recovered)))
+    end
+    if #absent.lost > 0 then
+      -- The never-written family's third outcome: no record, and no source to
+      -- stand in for it either. Its own sentence rather than the lost wording
+      -- for a record that WAS written, which says the record "could not be
+      -- read" and so asserts a file no render ever made (KI230). Its opening
+      -- clause is its own: the recovery wording just above opens with words
+      -- the suite greps that report by, and a shared opening would make one
+      -- key count both reports.
+      qi_core.warn(("no record of the index marks for %s has been written by any render, and each such chapter's own source could not be read either, so none of its terms are in the index; render each again, or render the whole book, once its source can be read"):format(chapter_list(absent.lost)))
     end
   end
 

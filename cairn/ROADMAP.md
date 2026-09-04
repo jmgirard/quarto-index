@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-03 (audit pass: all cairn_validate checks PASS, all advisories OK; nothing in flight, tree clean, git reconciled through f11349b; no open issues or external PRs, no outside merges, no orphaned issues. LESSONS.md pruned to 47 lines / 19,266 bytes — the M08 superseded scaffold lesson retired to DESIGN.md's ownership, M33's PDF Unicode lesson folded into M30's. records-hygiene §7 pass over all 16 finding-absorbing candidate rows: 6 routed to DESIGN.md Known issues and dropped (KI91-KI104, KI117-KI120, KI24/KI118/KI123/KI164/KI237, KI126-KI132, KI133-KI139/KI222, KI177-KI197, all verified present), repo source hygiene pruned (KI75-KI77 stand), the store-reports row held for promotion, 8 evidence-gated rows extended as an explicit choice; then 7 remaining rows clustered into 2. Candidates 37 → 25, ROADMAP 59 → 47 lines / 9,682 bytes.)_
+_Last hygiene check: 2026-09-03 (M073 merged and archived; ROADMAP row done, M068's terminal row pruned to hold the retention limit at five — ROADMAP 51 lines / 10,816 bytes. LESSONS.md 48 lines / 19,935 bytes, inside the 50-line / 20,000-byte cap but with under 100 bytes of headroom: the M38 stale-clause lesson was extended rather than a line added, and nothing M073 shipped retires a lesson, so the next pass prunes. One candidate row added (a suite-wide store zero-control sweep); no finding-absorbing row touched, so no disposition chip. cairn_validate all PASS.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 
@@ -9,13 +9,12 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M073 | A store report names the record it met as the record it was | review | — | normal | milestones/M073-store-report-wordings.md |
+| M073 | A store report names the record it met as the record it was | done | — | normal | milestones/archive/M073-store-report-wordings.md |
 | M074 | A record no render has written is reported by the chapter that prints the section, once | planned | M073 | normal | milestones/M074-never-written-report-site.md |
 | M072 | A refused chapter whose record an older version wrote is reported once per index section | done | — | normal | milestones/archive/M072-refusal-report-count.md |
 | M071 | A front-matter mark in an HTML book chapter files one locator, to the chapter's page | done | — | normal | milestones/archive/M071-front-matter-locators.md |
 | M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | done | — | normal | milestones/archive/M069-absent-record-recovery.md |
 | M070 | A recovered chapter is read as the file it is, and everywhere its own render reads it | done | M069 | normal | milestones/archive/M070-recovery-parse-fidelity.md |
-| M068 | A record that is listed and cannot be opened is not read as one that was never written | done | — | normal | milestones/archive/M068-listed-unopenable-record.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

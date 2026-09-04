@@ -170,6 +170,8 @@ implement:
 - 2026-09-03: T13 — `tests/run-tests.sh` exits 0, 680 checks passed; `tests/run-tests.sh --self-test` exits 0, 1268 checks passed. cairn_validate: all 16 checks PASS, 7 advisories, the sizing one now WARNing at 13 tasks — six of them the review return's repairs, not a second goal.
 - 2026-09-03: review round 2 gate chose fixing all seven confirmed findings on the branch and then merging, over fixing the two code comments alone or merging as it stands.
 - 2026-09-03: CHECKPOINT — round 2's seven fixes written (both book.lua state enumerations, the DESIGN.md ordinals restored so the refusal is the fifth wording again and M073's the sixth, the books page's numeric-version qualifier, D-052 correcting D-050's family count, the store key-count comments back to a monotone 7-8-9, two claim-ledger rows taking the pinned count 39 → 41); the gating suite and self-test runs are still in flight, so the approval marker is unwritten and nothing is merged.
+- 2026-09-03: round 2's seven fixes verified — `tests/run-tests.sh` exits 0, 680 checks; `--self-test` exits 0, 1268 checks; claim ledger 41 rows, warn-distinct 84 messages.
+- 2026-09-03: step-7 approval: PR #73 approved for merge
 - 2026-09-03: review opened — branch pushed, draft PR #73; consistency gate clean (cairn_validate 16 PASS / 7 advisories OK; generic profile names no toolchain checks; no principle changed, so no impact scan). Criteria evidence pending the full suite and self-test re-run.
 
 ## Decisions
@@ -431,4 +433,22 @@ stated.
   render, which already catches a spurious draw there. The gap is
   assert-identity-rather-than-count, not an uncaught regression; the finding's
   failure scenario overstates it.
+
+**Round-2 triage and fixes.** The gate directed fix-all-seven-then-merge.
+R2-F1 through R2-F7 fixed on the branch at `0b2a5bf`; R2-F8 rejected, its
+stated failure scenario not surviving verification — the leg it names already
+asserts a total-warning count of zero over the same render — and the
+identity-vs-count remainder rides the zero-control candidate row F11 opened.
+Dispositions: R2-F1 fix now; R2-F2 fix now; R2-F3 fix now; R2-F4 fix now;
+R2-F5 fix now, as a superseding entry (D-052), D-050 being history; R2-F6 fix
+now; R2-F7 fix now; R2-F8 reject, folded into the standing candidate row.
+
+**Runs after the fixes.** `tests/run-tests.sh` exits 0, 680 checks passed;
+`tests/run-tests.sh --self-test` exits 0, 1268 checks passed. The books claim
+ledger passes at 41 rows and `warn-distinct.py` at 84 mutually distinct
+messages, both over the repaired tree.
+
+**Conversation read.** `pulls/73/reviews`, `issues/73/comments`, and the
+unresolved-thread query all returned empty: no reviews, no comments, no
+unresolved threads. Nothing to triage on that surface.
 

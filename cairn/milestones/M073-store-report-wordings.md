@@ -1,6 +1,6 @@
 # M073: A store report names the record it met as the record it was
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -122,25 +122,25 @@ stands as its known issue.
 Added after the review return of 2026-09-03, one per finding disposed to
 implement:
 
-- [ ] T8: `site/books.qmd` — the clarifying clause on why the never-written
+- [x] T8: `site/books.qmd` — the clarifying clause on why the never-written
       report names the source alone (F5), and claim-ledger rows for that clause
       and for the sentence saying why the wording for a record that WAS written
       is not reused on this path (F1, AC5's failing clause); the claim-list
       self-test's pinned row count 37 → 39.
-- [ ] T9: `cairn/DESIGN.md`'s recovery paragraph corrected in place (F2): six
+- [x] T9: `cairn/DESIGN.md`'s recovery paragraph corrected in place (F2): six
       wordings rather than five, the one added here named among them, and the
       version clause narrowed to a `version` this render reads as a number.
-- [ ] T10: The draw site the narrowing moved (F3, F4): two `one.qmd` legs over
+- [x] T10: The draw site the narrowing moved (F3, F4): two `one.qmd` legs over
       a record carrying no version — an ordinary chapter's and the refused
       notebook chapter's — each shown red under the wide-test plant read on the
       count axis, and the changelog sentence stating the move.
-- [ ] T11: Plant hygiene (F6, F8, F9, F10): the AC2 plant's overwrite guard,
+- [x] T11: Plant hygiene (F6, F8, F9, F10): the AC2 plant's overwrite guard,
       the version plant's comparison made one that can fail and its
       `encoding='utf-8'`, and the boolean nil-test plant's missing zero
       companion.
-- [ ] T12: D-051 recording the reassignment F3 and F4 found unstated; a
+- [x] T12: D-051 recording the reassignment F3 and F4 found unstated; a
       candidate row for the suite-wide zero-control sweep (F11).
-- [ ] T13: Full `tests/run-tests.sh` and `--self-test` runs over the repaired
+- [x] T13: Full `tests/run-tests.sh` and `--self-test` runs over the repaired
       tree.
 
 ## Work log
@@ -161,6 +161,13 @@ implement:
 - 2026-09-03: review returned M073 to in-progress — AC5's clause requiring the books-page claim ledger to carry a row for each sentence added fails: `site/books.qmd:178` is added and unpinned. AC1-AC4 and AC6 verified with fresh evidence (suite 675 checks, self-test 1260 checks, both exit 0); consistency gate clean. Nine further findings logged in the Review section, F2 (DESIGN.md still states five wordings and the falsified version clause) and F3 (the versionless record's report count moved, untested and not in the changelog) the substantive ones.
 - 2026-09-03: return gate chose leaving AC1/AC4/AC5's drifted line citations as recorded over amending them, and holding the criteria set while covering the moved report count with a test leg, a changelog sentence and a D-entry, over adding a seventh criterion for it.
 - 2026-09-03: CHECKPOINT, tasks not ticked — T8-T13 added for the review's implement-bound findings and every edit written (books page clause and two ledger rows, DESIGN.md paragraph corrected in place, two one.qmd count legs with their wide-test plants, four plant-hygiene fixes, D-051, the zero-control candidate row), but the full suite and self-test are still running, so no task is checked off yet. cairn_validate: all 16 checks PASS, the sizing advisory now WARNs at 13 tasks — the return's repair tasks, not a milestone that grew a second goal.
+- 2026-09-03: T8 — the books page's clause on why the never-written report names the source alone, and two claim-ledger rows: one for that clause, one for the sentence AC5's ledger clause failed on; the claim-list self-test's pinned count 37 → 39, and `sitecheck.py claims` green over all 39.
+- 2026-09-03: T9 — the DESIGN.md recovery paragraph corrected in place: six wordings, the M073 one named among them, the version clause narrowed to a `version` this render reads as a number, and the moved draw site stated.
+- 2026-09-03: T10 — two `one.qmd` legs over a record carrying no version, planted on `two.md` and on `five.ipynb`, the plant helper parametrized by chapter; both shown red under a fourth wide-test plant that renders `one.qmd` and asserts every count at zero. Changelog sentence for the move.
+- 2026-09-03: T11 — the AC2 plant given the `[ -f ]` guard its siblings carry; the version plant's pre-image read from the file rather than shallow-copied from the object it mutates, and `encoding='utf-8'` on every open; the boolean nil-test plant given the zero companion the string form asserts.
+- 2026-09-03: T11 evidence — the old comparison was blind to a nested mutation only, not to every mutation as the finding stated: `dict(record)` is a shallow copy, so a top-level reassignment was already red. Run out of tree over the helper's own body, the old form stayed green on `marks[0].term` changed and the new form is red on it, and both are red on a top-level field.
+- 2026-09-03: T12 — D-051 recording the reassignment; the zero-control candidate row added, search-first over the candidates finding no overlap.
+- 2026-09-03: T13 — `tests/run-tests.sh` exits 0, 680 checks passed; `tests/run-tests.sh --self-test` exits 0, 1268 checks passed. cairn_validate: all 16 checks PASS, 7 advisories, the sizing one now WARNing at 13 tasks — six of them the review return's repairs, not a second goal.
 - 2026-09-03: review opened — branch pushed, draft PR #73; consistency gate clean (cairn_validate 16 PASS / 7 advisories OK; generic profile names no toolchain checks; no principle changed, so no impact scan). Criteria evidence pending the full suite and self-test re-run.
 
 ## Decisions

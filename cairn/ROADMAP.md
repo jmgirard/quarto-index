@@ -9,7 +9,7 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M073 | A store report names the record it met as the record it was | planned | — | normal | milestones/M073-store-report-wordings.md |
+| M073 | A store report names the record it met as the record it was | review | — | normal | milestones/M073-store-report-wordings.md |
 | M074 | A record no render has written is reported by the chapter that prints the section, once | planned | M073 | normal | milestones/M074-never-written-report-site.md |
 | M072 | A refused chapter whose record an older version wrote is reported once per index section | done | — | normal | milestones/archive/M072-refusal-report-count.md |
 | M071 | A front-matter mark in an HTML book chapter files one locator, to the chapter's page | done | — | normal | milestones/archive/M071-front-matter-locators.md |
@@ -22,6 +22,9 @@ _Released 0.2.0 2026-09-02._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- Sweep the suite's store legs for zero-controls on every store wording, so a report drawn where it should be silent is caught outside the legs that happen to assert an extension-warning count; promote with any other suite-wide check-discrimination pass — added 2026-09-03 — M073 review F11
+- Ignore the book fixtures' in-place render output (`examples/book*/*.html`, `site_libs/`), which the suite writes beside the project rather than under `_book/` and which nothing in `.gitignore` covers, so a commit made while the suite runs cannot sweep it in; promote with any other repo source-hygiene pass — added 2026-09-03 — M073 implement (a checkpoint commit swept 23 such files, reset before it stood)
+- Settle where a recovered locator points for a chapter that declares its own `output-file:`, which writes no record and which M069's never-written recovery now reads from source; promote on an author reporting an index link into such a chapter lands nowhere — added 2026-09-03 — M073 implement T3 re-read — KI216
 - Run the suite's independent legs in parallel, each owning its own work directory and its own intermediate files, so a full run stops costing 13 minutes on one core; the shared work directory and the legs that mutate one fixture in sequence are the cost. Promote on the run time blocking a task loop — added 2026-09-03 — M072 implement (13m09s wall), M072 review F7 — KI238
 - Declass Quarto's navigation-envelope copies of a chapter's `title:` in an HTML book, so a mark written there files one locator rather than one per sidebar and page-navigation copy on every page; promote on an author reporting a title mark's locator count — added 2026-09-03 — M071 review F1 — KI235
 - Remove `_book` before rendering in `m069_cold_chapter` as its sibling `m069_tree` does, so a change to how `$M061W/base` is built cannot leave `check_book_sections` reading a stale one; promote with any other suite-hygiene pass over the m069 legs — added 2026-09-03 — M069 review F8 — KI231

@@ -362,6 +362,12 @@ end
 -- it, which IP2 forbids — and version skew across an extension upgrade is
 -- exactly how a wrongly shaped record appears in a store nothing prunes.
 local function valid_record(data, file)
+  -- Exactly this version and nothing else. Deliberately NOT the narrowed test
+  -- `store_read` classifies on: usability asks whether this render can read
+  -- the record, and a record whose `version` is absent, a string or a boolean
+  -- is as unusable as one carrying another number. The narrowed test decides
+  -- only which report the chapter draws about a record this one has already
+  -- refused, so the two must not be aligned (M073).
   if type(data) ~= "table" or data.version ~= STORE_VERSION then
     return false
   end
@@ -1002,10 +1008,26 @@ local function store_read(ctx, own, recover_absent)
         -- A version-skewed record is handed to the caller and drawn there,
         -- whether its chapter was refused or recovered, because what it costs
         -- is a section's share of that chapter's terms and only a chapter that
-        -- builds a section pays it. The other three states — never written,
-        -- listed and unopenable, opened and undecodable — are drawn here, by
-        -- every chapter that reads the store, the counts they have always had.
-        if ok and type(data) == "table" and data.version ~= STORE_VERSION then
+        -- builds a section pays it. Every other state is drawn here, by every
+        -- chapter that reads the store: never written, listed and unopenable,
+        -- and opened but undecodable, those three at the counts they have
+        -- always had; and, since the test below narrowed, a record that opens
+        -- and decodes to a table carrying no version this render reads as a
+        -- number, whose count moved to this site with its wording (D-051).
+        -- A NUMBER other than the one this render writes, not merely "not
+        -- equal to it". `~= STORE_VERSION` alone is satisfied by a record
+        -- whose `version` is missing — `pandoc.json.decode` gives such a
+        -- table a nil field, and nil is not the number — so a truncated or
+        -- hand-emptied file that still decodes as a table was read as a
+        -- record another version of this extension wrote, which asserts a
+        -- version that is not in the file (KI236). What the field carries is
+        -- the only evidence there is: a number this render does not write is
+        -- a version, and anything else — absent, a string, a boolean — is a
+        -- record whose bytes cannot be used, which is the wording it now
+        -- takes. `valid_record` is unchanged and refuses both alike, so this
+        -- test decides only which report the chapter draws.
+        if ok and type(data) == "table" and type(data.version) == "number"
+           and data.version ~= STORE_VERSION then
           -- Handed back rather than reported here, refused or not: a
           -- version-skewed record costs the chapters that BUILD an index their
           -- share of that chapter's terms, and every other chapter of the book
@@ -1024,8 +1046,11 @@ local function store_read(ctx, own, recover_absent)
               { file = file, recovered = recovered, parsed = rebuilt ~= nil }
           end
         elseif refused then
-          -- Drawn here, by this chapter, for the other three record states:
-          -- never written, listed and unopenable, and opened but undecodable.
+          -- Drawn here, by this chapter, for every record state but the
+          -- version-skewed one: never written, listed and unopenable, opened
+          -- but undecodable, and — since the test above narrowed — opened and
+          -- decoding to a table that carries no version this render reads as a
+          -- number (D-051).
           -- Those are the states whose own sibling wordings are drawn here
           -- too, once per chapter that reads the store, so the refusal follows
           -- the count of the reports it stands in for. Ahead of every branch
@@ -1063,6 +1088,19 @@ local function store_read(ctx, own, recover_absent)
           -- fire for most of a correct book on every render. A record that
           -- was written and cannot be used is the opposite case: something
           -- was there and is gone, which is the no-marks wording below.
+        elseif never_written then
+          -- The sixth wording, and the never-written family's third outcome:
+          -- no record, and no source to stand in for it either. Reached only
+          -- with `rebuilt == nil`, the two branches above having taken the
+          -- recovered and the parsed-but-markless cases, so nothing else can
+          -- arrive here. Its own sentence rather than the lost wording below,
+          -- which says the record "could not be read" and so asserts a file
+          -- that was never written — the same falsehood the fourth wording
+          -- was added to avoid, left standing on this path until now (KI230).
+          -- Its opening clause is its own: the never-written recovery wording
+          -- above opens with words the suite greps that report by, and a
+          -- shared opening would make one key count both reports.
+          qi_core.warn(("no record of the index marks for %s has been written by any render, and that chapter's own source could not be read either, so none of its terms are in the index; render that chapter again, or render the whole book, once its source can be read"):format(file))
         elseif recovered then
           qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
         elseif rebuilt ~= nil then

@@ -4,6 +4,29 @@
 
 ### Output
 
+- In an HTML book, a chapter no render has written a record for whose own
+  source also cannot be read is now reported by a wording of its own, naming
+  the record as one no render has written and the source as one that could not
+  be read. It said the record could not be read, which asserts a file that was
+  never written and sends an author looking for a corrupt record that is not
+  there. The report a record that WAS written and could not be read draws is
+  unchanged, and still names both files.
+
+- In an HTML book, a record file that decodes to a table carrying no `version`
+  field — or one holding something other than a number — is now reported by the
+  wordings for a record that could not be read rather than as one written by a
+  different version of this extension. Only a `version` this render can read as
+  a number and does not itself write evidences a version at all; a truncated or
+  hand-emptied record evidences none, and was being reported as carrying one.
+  A record whose `version` is a number this render does not write is reported
+  as before, at the count it had. Where a record evidencing no version is
+  reported moves with its wording: it is now drawn where the chapter met it, by
+  every chapter that reads the store, rather than once for every chapter that
+  builds an index section — and where that chapter's source is one this
+  extension will not read, its refusal is drawn there too rather than at the
+  section-building site. No record's usability changes: every one of these was
+  already refused and read back from its chapter's source.
+
 - In an HTML book, a chapter whose source this extension will not read is now
   reported once for every chapter that builds an index section — and once by a
   chapter that builds none where the records it read show no chapter of the book

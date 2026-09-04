@@ -251,8 +251,11 @@ if blank:
 # all — so 77 + 4 = 81. M069 adds a fourth recovery wording, drawn where no
 # render has written the record at all and the chapter's source was read back:
 # 81 + 1 = 82. M070 adds the wording for a chapter whose source this route does
-# not read at all, drawn whatever state its record was in: 82 + 1 = 83.
-EXPECTED = 83
+# not read at all, drawn whatever state its record was in: 82 + 1 = 83. M073
+# adds the never-written family's third outcome — no record written, and a
+# source that could not be read either, which drew the shared could-not-be-read
+# wording before: 83 + 1 = 84.
+EXPECTED = 84
 if len(lits) != EXPECTED:
     print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
           f'{EXPECTED}. Either a warning was added or removed without updating '

@@ -707,14 +707,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `\quartoindexregister`, whose `\protected@write` would expand inside a
   `.toc`/`.lof` write. — M01 review R17, M20 review round 2 R2-F7
 - **KI3.** The filter cannot place the index relative to content Quarto adds
-  after filters run: the reference block is appended once the marker has
-  already placed the index, so the default order is index first, references
-  after, in both back-ends. An author-written empty `#refs` div above the
-  marker settles the order instead, which README documents as the recipe; in
-  HTML that div also costs the author the appendix wrapper and the
-  **References** heading Quarto builds when it appends the block itself, so
-  the recipe writes its own heading. — M01 review P2, restored and reworded
-  from M32 review F2/F3
+  after filters run: the reference block is appended once the marker has already
+  placed the index, so the default order is index first, references after, in
+  both back-ends. An author-written empty `#refs` div above the marker settles
+  the order instead, which `site/placing-the-index.qmd` and
+  `site/latex-and-pdf.qmd` document as the recipe; in HTML that div also costs
+  the author the appendix wrapper and the **References** heading Quarto builds
+  when it appends the block itself, so the recipe writes its own heading. — M01
+  review P2, restored and reworded from M32 review F2/F3; citation corrected
+  2026-09-04, the recipe having moved off README at M40
 - **KI5.** A registered principal page folded inside a makeindex page range is
   not emphasized: the typeset-time channel D-007 adopts looks a page up by
   string, and a range misses, printing it unemphasized and silently. — RR01
@@ -769,51 +770,34 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 ### The HTML back-end and books
 
-- **KI10.** The filter's 19 per-document accumulators are module-level state,
-  latent if Lua state is ever reused across documents. `marks_seen` was the
-  first (it was `marks_emitted` until M04 made it format-neutral); the HTML
-  back-end's `html_marks` was a second until the M03 F1/F2 fix refactored it
-  away. The rest arrived one review at a time: `sort_keys`, the sort-key
-  registry (M06 F-a); `clamped_paths`, the level-fold collision accumulator
-  (M09 F6); `marked_paths` and `pending_xrefs`, the dangling-target report's
-  path set and deferred target list (M14) — a leaked `pending_xrefs` emits
-  reports naming marks in a different file, so the blast radius is worse than a
-  skewed count, reading as a filter bug rather than a stale number;
-  `principal_keys`, `principal_ordinals` and `principal_emitted` (M20 R2-F14),
-  of which `principal_ordinals` is the first whose value reaches an on-disk
-  artifact, the `.aux` registry keys, so a reused state would offset the next
-  document's ordinals rather than merely skew a count; and `range_verdicts`
-  and `range_at` (M23 F8), which replaced the `range_plan`/`range_cursor` pair.
-  `range_at` is the first whose correctness depends on being reset mid-document
-  — `finish_ranges` returns it to the origin between the two traversals, so a
-  state carried into a second document would number that document's range marks
-  from where the first one stopped and hand every one of them another mark's
-  verdict; and `finish_ranges` returns that counter to the origin while leaving
+- **KI10.** The filter's per-document accumulators are module-level state,
+  latent if Lua state is ever reused across documents. A `reset` each module
+  owns returns them between documents; a cell added that joins no `reset` is
+  unguarded, and D-011 refuses to pin that with a source scan. Four carry more
+  than a skewed count. A leaked `pending_xrefs` emits reports naming marks in a
+  different file, so it reads as a filter bug rather than a stale number.
+  `principal_ordinals` is the first whose value reaches an on-disk artifact, the
+  `.aux` registry keys, so a reused state would offset the next document's
+  ordinals. `range_at` is the first whose correctness depends on being reset
+  mid-document, and `finish_ranges` returns it to the origin while leaving
   `range_items`, `range_found`, `range_pair_found` and `range_verdicts` as the
   first document filled them, so a reused state would pair the second document's
-  marks against the first's and report the first's findings again. M17 made the
-  mechanism stronger: the module split moved every one of these out of the
-  filter chunk's own locals and into module tables `require` caches in
-  `package.loaded`, so a reused state no longer re-initializes them on the next
-  execution the way re-running the chunk did. M38 added three more:
-  `indexes.lua`'s `order`, `titles` and `declared`, the indexes a document
-  declares (a fourth, `folded`, went with the fold at M55). They are the first that
-  must be settled BEFORE any mark is recorded — every other accumulator is
-  keyed by the index a mark files in — which is why `indexes.reset` is a
-  `Pandoc` hook taking the document rather than an element one, and why it
-  reinstalls the single unnamed index rather than leaving the tables empty: a
-  module that acquired an index only once a declaration was read would hand a
-  nil key to every accumulator keyed by one. The count is what
-  `tests/stateprobe.py`'s `CELLS` enumerates plus those four; the prose above
-  is a history of how they arrived and names neither `contested_keys` nor them,
-  which is what made the older "17" wrong in both directions. M26's probe
-  resets and proves 15 of the 19: the four `indexes.lua` cells are reset per
-  document but are outside the probe's enumeration, and the fixtures it drives
-  declare no indexes, so a removed reset for them would show no difference to
-  compare. A cell added after M26 that joins no `reset` is unguarded, and D-011
-  refuses to pin that with a source scan. — M01 review R16, widened through
-  M03 P1, M04, M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8; inventory
-  corrected M38
+  marks against the first's and report the first's findings again.
+  `indexes.lua`'s cells must be settled BEFORE any mark is recorded — every
+  other accumulator is keyed by the index a mark files in — which is why
+  `indexes.reset` is a `Pandoc` hook taking the document rather than an element
+  one, and why it reinstalls the single unnamed index rather than leaving the
+  tables empty: a module that acquired an index only once a declaration was read
+  would hand a nil key to every accumulator keyed by one. M26's probe resets and
+  proves the fifteen cells `tests/stateprobe.py`'s `CELLS` enumerates. The six
+  `indexes.lua` resets — `order`, `titles`, `declared`, `language_words`, and
+  M56's `doc_labels` and `index_labels` — are outside it:
+  `tests/state-pollute.lua` never calls `qi_indexes.read` and no fixture the
+  probe drives declares an index, so removing any of the six from `reset` would
+  show no difference to compare (KI179). — M01 review R16, widened through M03
+  P1, M04, M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8; inventory corrected
+  M38; the arrival history and the cell count "19", stale since M56, retired
+  2026-09-04 with git holding both
 - **KI11.** A placement marker written in YAML `abstract:` survives verbatim
   into the HTML header — filter residue of the IP2 class, since
   `resolve_markers` reads `doc.blocks` alone; the misplaced-class report is
@@ -1670,26 +1654,19 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   stands at 4, two of them recovery reports, and the render still reports on
   itself (corrected M074). Recorded in D-045's consequences and accepted at the
   M069 merge gate. — M069 review F1
-- **KI229.** *Report half resolved M074.* `recover_absent` answers
-  eligibility, not building, so a chapter admitted by the gate that prints no
-  section still parses every other chapter's source. The reachable shape is a
-  last chapter carrying no marker in a book whose every declared index is
-  placed earlier: `mine` is empty and the fallback loop adds nothing, so
-  `builds` is false. `site/books.qmd` and this file therefore claim a chapter
-  reads back "only where its terms would otherwise be lost from a section this
-  chapter itself prints", which is stronger than the gate. The parse is what
-  remains, and its cost is KI227's. M074 moved the reports to the site where
-  `builds or first == nil` decides, so such a chapter no longer reports each
-  source it read; the `m074-quiet` leg renders exactly this shape and holds
-  every never-written wording, the refusal included, at zero. Same class as
-  KI215. — M069 review F2, F5
-- **KI230.** *Resolved M073.* A record no render has written whose chapter's
-  source also cannot be read was reported as one that "could not be read",
-  asserting a record existed — the falsehood the fourth wording was added to
-  avoid. It now draws a sixth wording of its own, naming the record as one no
-  render has written and the source as one that could not be read; the
-  `m069-lostsource` leg counts that wording and holds the old one at zero.
-  — M069 review F3
+- **KI229.** `recover_absent` answers eligibility, not building, so a chapter
+  admitted by the gate that prints no section still parses every other chapter's
+  source. The reachable shape is a last chapter carrying no marker in a book
+  whose every declared index is placed earlier: `mine` is empty and the fallback
+  loop adds nothing, so `builds` is false. `site/books.qmd` and this file
+  therefore claim a chapter reads back "only where its terms would otherwise be
+  lost from a section this chapter itself prints", which is stronger than the
+  gate. The parse is what remains, and its cost is KI227's; same class as KI215,
+  second shape at KI240. M074 resolved the report half, moving the reports to the
+  site where `builds or first == nil` decides, so such a chapter no longer
+  reports each source it read; the `m074-quiet` leg renders exactly this shape
+  and holds every never-written wording, the refusal included, at zero. — M069
+  review F2, F5; report half resolved M074
 - **KI231.** `m069_cold_chapter` does not remove its `_book` before rendering
   while its sibling `m069_tree` does. Benign while `$M061W/base` is created
   with `_book` removed; it would silently let `check_book_sections` read a
@@ -1707,27 +1684,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `tests/fragments.py resolve` passes there, the anchors being real. No
   fixture marks a `title:`; `site/books.qmd` and `CHANGELOG.md` name the
   exception. — M071 review F1
-- **KI236.** *Resolved M073.* A record file whose bytes decode to a JSON object
-  or array but carry no `version` field was classified as version-skewed:
-  `store_read`'s branch tested `data.version ~= STORE_VERSION`, which a missing
-  field satisfies. Probed 2026-09-03: `pandoc.json.decode("{}", false)` yields
-  a table whose `version` is nil, while `"this is not a record\n"` decodes to
-  nil and takes the undecodable path. That branch now also requires
-  `type(data.version) == "number"`, so only a number this render does not write
-  reads as a version and a truncated, hand-emptied or wrongly typed record
-  joins the wordings for a record that could not be read. `valid_record` is
-  unchanged and refuses both alike. — M072 review F1
-- **KI237.** *Covered M074.* The `first == nil` half of the report site's gate
-  was never exercised for a refused entry: every `m072` render is over a store
-  where `index.qmd` places both indexes, so `first` is non-nil in the
-  builds-no-section case, and the `gateflip` plant inverts the whole gate
-  rather than that disjunct. A site loop gated on `builds` alone would pass
-  the whole leg while dropping the refusal in a book with no placement marker
-  anywhere, which `site/books.qmd` and the claim ledger promise it draws.
-  M074's `m074-unplaced` leg is that render: the `book-extensions` fixture with
-  its two placement markers taken out, `eight.Rmd` alone over a cold store,
-  drawing the refusal for `five.ipynb` with `builds` false and `first` nil
-  (corrected M074). — M072 review F4
 - **KI238.** `m072_only_refusal_names` writes its three intermediate files to
   fixed `$WORK` paths reused by every call, so the diagnostics left after a
   failure describe only the last invocation. Harmless while the suite is

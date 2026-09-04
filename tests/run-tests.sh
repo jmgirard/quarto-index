@@ -45,6 +45,10 @@ fi
 PLANT_WRAPPER_DEFECT=0
 [ "${1:-}" = "--plant-wrapper-defect" ] && PLANT_WRAPPER_DEFECT=1
 
+# The run's own clock starts before the work directory is wiped and the
+# pre-render clean runs, so the setup row below covers them (M075).
+RUN_STARTED=$(date +%s)
+
 WORK="tests/.work"
 # Neither self-test invocation may wipe the work directory or the run log: the
 # fixture check reads a file the parent wrote there, and the wrapper probe is
@@ -53,6 +57,59 @@ WORK="tests/.work"
 mkdir -p "$WORK"
 RUN_LOG="$WORK/run.log"
 [ "$PLANT_WRAPPER_DEFECT" = "1" ] && RUN_LOG="$WORK/run-plant.log"
+
+# ---------------------------------------------------------------------------
+# The run's own clock (M075). A full run costs minutes and nobody could say
+# which of its checks spent them, so every section below records its own wall
+# clock here and the run is held to the total at the end.
+#
+# One row per section, `heading<TAB>seconds`, plus a row for the window before
+# the first section — this script's own setup, the pre-render clean included —
+# which is measured on its own rather than left as whatever the sections do
+# not account for: a remainder absorbs a lost row, and a lost row is the thing
+# the check at the end of the run exists to catch.
+#
+# Whole seconds, from `date`. The clock the shell can read without launching a
+# helper has no finer resolution here, and a per-section helper process would
+# add its own tenths to what it measures. Nothing accumulates from the
+# rounding: each section closes on the same reading that opens the next, so
+# the rows telescope and their sum is exactly the span they cover.
+#
+# The file is emptied only where $WORK itself is wiped. The two nested
+# invocations of this script below skip that wipe, and must not truncate the
+# rows the parent run has already written.
+# ---------------------------------------------------------------------------
+TIMING="$WORK/timing.tsv"
+[ "$FIXTURE_MODE" = "1" ] || [ "$PLANT_WRAPPER_DEFECT" = "1" ] || : > "$TIMING"
+
+# The section now open, and the reading it opened on. Empty until the first
+# section, which is how the setup row knows it is the setup row.
+SECTION_HEADING=""
+SECTION_STARTED=""
+
+# Close whatever section is open and open the named one, on a single reading
+# of the clock.
+section() {
+  local now
+  now=$(date +%s)
+  if [ -n "$SECTION_HEADING" ]; then
+    printf '%s\t%s\n' "$SECTION_HEADING" "$((now - SECTION_STARTED))" >> "$TIMING"
+  else
+    printf '%s\t%s\n' 'unattributed' "$((now - RUN_STARTED))" >> "$TIMING"
+  fi
+  SECTION_HEADING="$1"
+  SECTION_STARTED="$now"
+}
+
+# Close the last section, so the file is whole for the summary the driver
+# prints. A no-op where no section ever opened.
+section_close() {
+  local now
+  [ -n "$SECTION_HEADING" ] || return 0
+  now=$(date +%s)
+  printf '%s\t%s\n' "$SECTION_HEADING" "$((now - SECTION_STARTED))" >> "$TIMING"
+  SECTION_HEADING=""
+}
 
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 pass() { printf 'ok   %s\n' "$*"; }
@@ -1736,6 +1793,7 @@ pass "AC1: demo resolves the extension via examples/_extensions"
 # count is how a reader sees the domain grow when the filter is split, and a
 # silent enumeration is one nobody notices going empty.
 # ---------------------------------------------------------------------------
+section 'M16-AC2 — the source set is one recursive enumeration, and it is what every'
 printf '== filter source set (%s) ==\n' "$QI_EXT_DIR"
 printf '%s\n' "$FILTER_SOURCES" | sed 's/^/   /'
 printf '   %s file(s)\n\n' "$FILTER_SOURCE_COUNT"
@@ -1770,6 +1828,7 @@ printf '   %s file(s)\n\n' "$FILTER_SOURCE_COUNT"
 # the file LIST; the overlay supplies the BYTES for any tracked path it holds a
 # copy of, and the file is still REPORTED under its own name.
 # ---------------------------------------------------------------------------
+section 'M44-AC1 — the pre-release warning is retired, and no page a reader meets may'
 PRERELEASE_RETIRED=(
   $'warning header\t**Pre-release: install at your own risk.**'
   $'fluid syntax\tUntil the first tagged release the marking syntax is fluid and may change without a deprecation cycle.'
@@ -1884,6 +1943,7 @@ run_scan latex-escape-table
 # The checks in this file are the whole oracle for whether a change moved
 # rendered output.
 # ---------------------------------------------------------------------------
+section 'OUTPUT NEUTRALITY — where the evidence comes from. A checked-in golden `.tex`'
 
 # The HTML back-end's four identifiers are a public surface — a reader's URL
 # and an author's CSS hold on to them — so the suite's copies are pinned to
@@ -1913,12 +1973,14 @@ pass "AC4: both the fold and empty-level warnings emitted for the deep probe"
 # M02-AC1 — the cross-reference manifest is complete, and the form it
 # describes is the form the filter emits.
 # ---------------------------------------------------------------------------
+section 'M02-AC1 — the cross-reference manifest is complete, and the form it'
 printf '%s\n' "$XREF_ENTRIES" > "$WORK/xref-manifest.txt"
 run_scan xref-manifest
 
 # ---------------------------------------------------------------------------
 # M02-AC5 — misuse case (b): one warning, one command, render still clean.
 # ---------------------------------------------------------------------------
+section 'M02-AC5 — misuse case (b): one warning, one command, render still clean.'
 
 # Assert no `\index` argument in a rendered fixture carries a null field. The
 # index tool rejects an entry whose first or middle level is empty — "Illegal
@@ -2162,6 +2224,7 @@ run_scan xref-both-definition
 # ---------------------------------------------------------------------------
 # AC2 — preamble injection and \printindex placement.
 # ---------------------------------------------------------------------------
+section 'AC2 — preamble injection and \printindex placement.'
 python3 - "$CAPTURE_ROOT/demo-latex/demo.tex" <<'PY'
 import sys
 src = open(sys.argv[1], encoding='utf-8').read()
@@ -2205,6 +2268,7 @@ PY
 # ---------------------------------------------------------------------------
 # AC3 — negative control.
 # ---------------------------------------------------------------------------
+section 'AC3 — negative control.'
 quarto render examples/control.qmd --to latex > "$WORK/control-latex.log" 2>&1 \
   || { cat "$WORK/control-latex.log" >&2; fail "AC3: control.qmd failed to render to LaTeX"; }
 capture examples/control.qmd latex "control-latex"
@@ -2253,6 +2317,7 @@ PY
 # ---------------------------------------------------------------------------
 # AC7 — HTML pass-through.
 # ---------------------------------------------------------------------------
+section 'AC7 — HTML pass-through.'
 quarto render examples/demo.qmd --to html > "$WORK/demo-html.log" 2>&1 \
   || { cat "$WORK/demo-html.log" >&2; fail "AC7: demo.qmd failed to render to HTML"; }
 capture examples/demo.qmd html "demo-html"
@@ -2266,6 +2331,7 @@ done
 # ---------------------------------------------------------------------------
 # M03-AC2 / M03-AC3 — the generated HTML index, its anchors and its links.
 # ---------------------------------------------------------------------------
+section 'M03-AC2 / M03-AC3 — the generated HTML index, its anchors and its links.'
 check_html_index_manifest "$CAPTURE_ROOT/demo-html/demo.html" "$DEMO_HTML_INDEX" "M03-AC2"
 check_letter_sweep "$CAPTURE_ROOT/demo-html/demo.html" "M07-AC3 (demo)" \
   $'Symbols\nA\nB\nC\nD\nG\nL\nO\nP\nS\nT\nU\nW'
@@ -2447,6 +2513,7 @@ pass "M02-AC5: case (a) warned exactly twice in each format, emitted no entry, d
 # render; two marks with the same encap are folded together and are fine. The
 # fixture holds one of each shape, so the report is fenced in both directions.
 # ---------------------------------------------------------------------------
+section 'The document-level clash report. Two marks on one key with DIFFERENT encaps'
 for fmt in latex html; do
   quarto render examples/xref-conflict.qmd --to $fmt > "$WORK/conflict-$fmt.log" 2>&1 \
     || { tail -20 "$WORK/conflict-$fmt.log" >&2; fail "M02-AC5: xref-conflict.qmd failed to render to $fmt"; }
@@ -2494,6 +2561,7 @@ pass "M02-AC5: the composed-entry report names each of the eight contested entri
 # TWO levels `Note`/`on birds`, and only sigma may link. `kappa` carries a
 # locator AND a cross-reference, which makeindex rejects but HTML does not.
 # ---------------------------------------------------------------------------
+section 'M03-AC4 — cross-references in a generated HTML index.'
 read -r -d '' XREF_HTML_INDEX <<'MANIFEST' || true
 letter	C
 0	chi	1	see-plain % & # _ { } \ ~ ^ $ @ | ! " < >
@@ -2574,6 +2642,7 @@ PY
 # failure this fixture exists to catch — a dedupe keyed on rendered text
 # passes every other check in this suite.
 # ---------------------------------------------------------------------------
+section 'M03-AC4 — repeated and look-alike cross-reference targets. Manifest 1h, same'
 # The fixture also writes three ids the extension would otherwise mint for
 # itself — `qi-mark-1` on theta, `qi-mark-3` in raw HTML where no mark is,
 # `qi-entry-1` on lambda — so the derivation below skips those numbers: ab
@@ -2672,6 +2741,7 @@ PY
 # `gizmo` and `thingamajig` share a heading line, but `thingamajig` sits in
 # an inline footnote whose text renders at the foot of the page.
 # ---------------------------------------------------------------------------
+section 'M03-AC2 — locator numbering where the renderer moves content. Manifest 1g,'
 read -r -d '' PLACEMENT_HTML_INDEX <<'MANIFEST' || true
 letter	C
 0	contraption	0	see-link widget
@@ -2837,6 +2907,7 @@ PY
 # and pinned to be a DIFFERENT string from the generated section's id, which is
 # the collision this token was chosen to avoid.
 # ---------------------------------------------------------------------------
+section 'M04 — the placement marker: an empty top-level div carrying the class'
 MARKER_CLASS='qi-index-here'
 
 run_scan marker-class
@@ -2848,6 +2919,7 @@ run_scan marker-class
 # the marker. Case folds before ordering, so alpha, Beta, gamma; `Beta` itself
 # is never marked, so it carries no locator and its sub-entry carries one.
 # ---------------------------------------------------------------------------
+section 'Manifest 1i — the generated index in "$CAPTURE_ROOT/marker-html/marker.html" (M04-AC1), same'
 read -r -d '' MARKER_HTML_INDEX <<'MANIFEST' || true
 letter	A
 0	alpha	2
@@ -2866,6 +2938,7 @@ MANIFEST
 # would let a sort key added to the fixture go unprobed while the suite still
 # reported a pass.
 # ---------------------------------------------------------------------------
+section 'Manifest 1m — every sort key examples/sortkey.qmd declares (M06-AC1).'
 read -r -d '' SORTKEY_KEYS <<'MANIFEST' || true
 Hague
 Angstrom
@@ -2899,6 +2972,7 @@ MANIFEST
 # This order differs from the twin fixture's at every top-level position, so
 # the check cannot pass on an index that ignored the sort keys.
 # ---------------------------------------------------------------------------
+section 'Manifest 1n — the order and nesting "$CAPTURE_ROOT/sortkey-pdf/sortkey.pdf" must print its'
 read -r -d '' SORTKEY_PDF_OUTLINE <<'MANIFEST' || true
 0	Ångström
 0	The Hague
@@ -2926,6 +3000,7 @@ MANIFEST
 # a sort= of its own: a sort key belongs to the entry, so both marks file
 # under it and the term stays one entry rather than becoming two.
 # ---------------------------------------------------------------------------
+section 'Manifest 1o — the generated index in "$CAPTURE_ROOT/sortkey-html/sortkey.html" (M06-AC2).'
 read -r -d '' SORTKEY_HTML_INDEX <<'MANIFEST' || true
 letter	A
 0	Ångström	1
@@ -2951,6 +3026,7 @@ MANIFEST
 # it holds in manifest 1o, and the two sub-entries are in the opposite order;
 # the check below asserts that rather than trusting this comment.
 # ---------------------------------------------------------------------------
+section 'Manifest 1p — the same index in "$CAPTURE_ROOT/sortkey-twin-html/sortkey-twin.html" (M06-AC2): the'
 read -r -d '' SORTKEY_TWIN_HTML_INDEX <<'MANIFEST' || true
 letter	Symbols
 0	10 Downing Street	1
@@ -2993,6 +3069,7 @@ MANIFEST
 # The check below also asserts this manifest names as many entries as the
 # fixture has marks, so a row cannot go missing unnoticed.
 # ---------------------------------------------------------------------------
+section 'Manifest 1q — every `\index{}` argument "$CAPTURE_ROOT/sortkey-paths-latex/sortkey-paths.tex" must'
 read -r -d '' SORTKEY_PATHS_ENTRIES <<'MANIFEST' || true
 Hague@Hague, The
 Hague@Hague, The!Scheveningen
@@ -3029,6 +3106,7 @@ MANIFEST
 # level 1 would occupy the slot and file the term under `Ccc`, putting it
 # second rather than third.
 # ---------------------------------------------------------------------------
+section 'Manifest 1r — the generated index in "$CAPTURE_ROOT/sortkey-paths-html/sortkey-paths.html"'
 read -r -d '' SORTKEY_PATHS_HTML_INDEX <<'MANIFEST' || true
 letter	Symbols
 0	Literal	1
@@ -3086,6 +3164,7 @@ QUARTO_EMPTY_DIV='quarto-title-meta'
 # ---------------------------------------------------------------------------
 # M04-AC1 — the index section lands where the marker was written.
 # ---------------------------------------------------------------------------
+section 'M04-AC1 — the index section lands where the marker was written.'
 quarto render examples/marker.qmd --to html > "$WORK/marker-html.log" 2>&1 \
   || { tail -20 "$WORK/marker-html.log" >&2; fail "M04-AC1: marker.qmd failed to render to HTML"; }
 capture examples/marker.qmd html "marker-html"
@@ -3152,6 +3231,7 @@ PY
 # ---------------------------------------------------------------------------
 # M04-AC2 — one \printindex, at the marker, in the emitted .tex.
 # ---------------------------------------------------------------------------
+section 'M04-AC2 — one \printindex, at the marker, in the emitted .tex.'
 quarto render examples/marker.qmd --to latex > "$WORK/marker-latex.log" 2>&1 \
   || { cat "$WORK/marker-latex.log" >&2; fail "M04-AC2: marker.qmd failed to render to LaTeX"; }
 capture examples/marker.qmd latex "marker-latex"
@@ -3212,6 +3292,7 @@ PY
 # each fires once in EVERY format; the fixture holds one nested marker, one
 # second top-level marker, and content inside that second marker.
 # ---------------------------------------------------------------------------
+section 'M04-AC4 — misuse. Every warning is emitted before the back-end branch, so'
 WARN_MARKER_NESTED='index placement marker below the top level'
 # The emptied-place report, keyed on the half that carries no number: the
 # block position varies per report and the naming clause M28 added is shared
@@ -3365,6 +3446,7 @@ PY
 # it (M08's plan gate: the extension reports rather than edits). The message
 # M04 pinned for a nested marker is untouched.
 # ---------------------------------------------------------------------------
+section 'M08-AC3 — marker sites. The class only ever places an index on an empty'
 WARN_SITE_HEADING='marker class is written on a heading'
 WARN_SITE_SPAN='marker class is written on an inline span'
 WARN_SITE_CODE='marker class is written on a code block'
@@ -3485,6 +3567,7 @@ PY
 # untrue. Its own fixture, so marker-sites.qmd's placement counts stay
 # undisturbed.
 # ---------------------------------------------------------------------------
+section 'M08-AC3 (review F4) — the shapes the misplaced-class report must NOT fire on.'
 WARN_MARKER_SITE='marker class is written on'
 
 for fmt in html latex gfm; do
@@ -3519,6 +3602,7 @@ pass "M08-AC3: a marker class in the document title is reported nowhere, and the
 # other shapes are expected to produce, and the emptied-place reports — and any
 # line belonging to neither partition fails.
 # ---------------------------------------------------------------------------
+section 'M12-AC1/AC2/AC3 — the emptied-place report. Every WARNING line the render'
 for fmt in html latex gfm; do
   python3 - "$WORK/shapes-$fmt.log" examples/marker-shapes.qmd "$fmt" <<'PY'
 import re, sys
@@ -3661,6 +3745,7 @@ PY
 # — a Pandoc attribute, and raw HTML double-quoted, unquoted, uppercase `ID=`
 # and single-quoted in a raw INLINE — so the mint has to step over all five.
 # ---------------------------------------------------------------------------
+section 'M08-AC1 — the generated section id is minted, not fixed. Anchor and entry'
 quarto render examples/id-collision.qmd --to html \
   > "$WORK/id-collision-html.log" 2>&1 \
   || { tail -20 "$WORK/id-collision-html.log" >&2; fail "M08-AC1: id-collision.qmd failed to render to HTML"; }
@@ -3740,6 +3825,7 @@ PY
 # mark cross-references a DIFFERENT entry and must be untouched, which is what
 # tells this check from one that drops every target.
 # ---------------------------------------------------------------------------
+section 'M08-AC2 — a cross-reference target naming its own entry. Reported and'
 # Every key the run greps a mark report by, declared in ONE place above every
 # section that uses one. They used to sit in the sections that grep them, which
 # put two of them below the scan that sweeps them — a shell variable read before
@@ -3821,6 +3907,7 @@ pass "M08-AC2/M10-AC4/M11-AC5: six self-referential targets each report once in 
 # passes the scan, which is what makes adding a report to the run without
 # adding its key here a failure rather than a silent gap (M18 review F3).
 # ---------------------------------------------------------------------------
+section 'M10-AC4 — the three messages that speak about these marks must stay'
 run_scan mark-report-keys
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -3968,6 +4055,7 @@ PY
 # of any of these keys puts a `|` exactly where the expected string's closing
 # brace is, so no expected string can match an encapped command.
 # ---------------------------------------------------------------------------
+section 'M10-AC1/AC2 — the five shapes M08'\''s comparison could not see. Each expected'
 python3 - "$CAPTURE_ROOT/self-xref-latex/self-xref.tex" <<'PY'
 import re, sys
 src = open(sys.argv[1], encoding='utf-8').read()
@@ -4021,6 +4109,7 @@ check_no_null_field "$CAPTURE_ROOT/self-xref-latex/self-xref.tex" "M11-AC2 (self
 # below them, which is what says the level went rather than merely printing
 # blank, and to carry the locator themselves.
 # ---------------------------------------------------------------------------
+section 'M10-AC2/AC3 — the same five shapes in HTML, where there is no level ceiling.'
 python3 - "$CAPTURE_ROOT/self-xref-html/self-xref.html" <<'PY'
 import re, sys
 sys.path.insert(0, 'tests')
@@ -4111,6 +4200,7 @@ PY
 # hand renders byte-for-byte identically, in every format. An empty div, an
 # empty group, a stray blank line — anything the marker left behind is a diff.
 # ---------------------------------------------------------------------------
+section 'M04-AC4 — a marker in a document with no index marks. The residue claim is'
 python3 - examples/marker-nomarks.qmd examples/marker-nomarks-twin.qmd \
   "$MARKER_CLASS" <<'PY'
 import sys
@@ -4208,6 +4298,7 @@ PY
 # that is the case the begin-document check is now about, so it is emitted for
 # a document declaring more than one index and for no other.
 # ---------------------------------------------------------------------------
+section 'M04-AC4 / M49 — a document that has already loaded imakeidx keeps its own'
 quarto render examples/marker-preloaded.qmd --to latex \
   > "$WORK/preloaded-latex.log" 2>&1 \
   || { tail -20 "$WORK/preloaded-latex.log" >&2; fail "M04-AC4: marker-preloaded.qmd failed to render to LaTeX"; }
@@ -4268,6 +4359,7 @@ pass "M04-AC4/M49: a preloaded imakeidx costs a single-index document nothing an
 # first: gfm carries spans as inline HTML, so the parser sees any element the
 # marker might have left, and the token grep is the belt to that braces.
 # ---------------------------------------------------------------------------
+section 'M04-AC5 — gfm has no index back-end, so the marker fixture must come out of'
 quarto render examples/marker.qmd --to gfm > "$WORK/marker-gfm.log" 2>&1 \
   || { tail -20 "$WORK/marker-gfm.log" >&2; fail "M04-AC5: marker.qmd failed to render to gfm"; }
 capture examples/marker.qmd gfm "marker-gfm"
@@ -4319,6 +4411,7 @@ pass "M04-AC5: the marker leaves no token in gfm output, and the visible text is
 # and required to come out the other way round. The derivation is checked
 # first, or the two orders below would be two different documents' orders.
 # ---------------------------------------------------------------------------
+section 'M32 — where the index lands beside a bibliography. Quarto appends a'
 m32_read() {
   HTML_SECTION_ID="$HTML_SECTION_ID" python3 tests/m32refs.py "$@"
 }
@@ -4685,6 +4778,7 @@ pass "M32: the copyable recipe block on the Placing-the-index page is held line 
 # a list copied character for character out of the fixture would be blind to
 # exactly the normalization this milestone is about.
 # ---------------------------------------------------------------------------
+section 'M33 — a term outside Latin-1 PRINTS in the typeset index, under the engine'
 
 python3 tests/unicodeprint.py marks examples/unicode.qmd "${M33_TERMS[@]}" \
   || fail "M33-AC2: the term list this suite states for examples/unicode.qmd is not what that fixture marks (its own FAIL line is above)"
@@ -4737,6 +4831,7 @@ pass "M33-AC1/AC2: examples/unicode.qmd renders to PDF under the documented engi
 # leave every reading of the printed index green while that sentence went
 # false (D-020).
 # ---------------------------------------------------------------------------
+section 'M33-AC3 — the three controls the criterion names, plus (d), a fourth this'
 M33C="$WORK/m33-controls"
 rm -rf "$M33C"; mkdir -p "$M33C/_extensions"
 cp -R "$QI_EXT_DIR" "$M33C/_extensions/index"
@@ -4865,6 +4960,7 @@ pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 
 # domain through the claim-container registry and went with it; this check
 # names its own page and its own fixture, and stays.
 # ---------------------------------------------------------------------------
+section 'M33-AC4 — the YAML block a reader COPIES out of the Terms outside Latin-1'
 # The recipe block, held to the stated list in BOTH directions and to the
 # fixture in one. Wrapped in a function so the self-test can point it at a
 # README copy with one line dropped: this check runs once over the real
@@ -4975,6 +5071,7 @@ pass "M33-AC4: the copyable block on the docs site's Terms outside Latin-1 page 
 # every entry once the markup is included, so a containment test would pass on
 # an index that printed nothing at all.
 # ---------------------------------------------------------------------------
+section 'M03-AC5 — every printable ASCII character reaches a generated HTML index as'
 quarto render examples/escaping.qmd --to html > "$WORK/esc-html.log" 2>&1 \
   || { tail -20 "$WORK/esc-html.log" >&2; fail "M03-AC5: escaping.qmd failed to render to HTML"; }
 capture examples/escaping.qmd html "esc-html"
@@ -5018,6 +5115,7 @@ check_letter_sweep "$CAPTURE_ROOT/esc-html/escaping.html" "M07-AC1 (escaping)" \
 # anchors, and a format with no index back-end gets neither, while the
 # format-neutral warnings still reach its author.
 # ---------------------------------------------------------------------------
+section 'M03-AC6 — negatives. A document with no marks gets no section and no'
 quarto render examples/control.qmd --to html > "$WORK/control-html.log" 2>&1 \
   || { tail -20 "$WORK/control-html.log" >&2; fail "M03-AC6: control.qmd failed to render to HTML"; }
 capture examples/control.qmd html "control-html"
@@ -5219,6 +5317,7 @@ PY
 # section used to open with now runs further up, before the M33 renders, which
 # are the first compiles in the run; see its call site there.
 # ---------------------------------------------------------------------------
+section 'AC6 — end-to-end to a compiled PDF with a real index. The tool guard this'
 
 # Regression test for the IP2 failure review found: beamer has no `theindex`
 # environment, so emitting \printindex there aborted the render. Exit 0 alone
@@ -5262,6 +5361,7 @@ pass "M04-AC5: the marker fixture compiles clean in beamer, no index tokens, no 
 # the end would find the fixture's terms in that body text whatever the index
 # contained.
 # ---------------------------------------------------------------------------
+section 'M04-AC2 — end to end: the compiled PDF'\''s index sits at the marker, and it'
 quarto render examples/marker.qmd --to pdf > "$WORK/marker-pdf.log" 2>&1 \
   || { tail -40 "$WORK/marker-pdf.log" >&2; fail "M04-AC2: marker.qmd failed to render to PDF"; }
 capture examples/marker.qmd pdf "marker-pdf"
@@ -5492,6 +5592,7 @@ pass "M30-AC1: escaping probe compiles, all entries accepted, and each of the 94
 # stricter: an unquoted `!` there is rejected outright and Quarto turns the
 # rejection into a failed render, so a mistake here breaks a reader's build.
 # ---------------------------------------------------------------------------
+section 'M02-AC3 — the same three-way test for cross-reference targets, which travel'
 quarto render examples/xref-escaping.qmd --to latex > "$WORK/xref-latex.log" 2>&1 \
   || { tail -20 "$WORK/xref-latex.log" >&2; fail "M02-AC3: xref-escaping.qmd failed to render to LaTeX"; }
 capture examples/xref-escaping.qmd latex "xref-latex"
@@ -5712,6 +5813,7 @@ PY
 # The .tex check proves the argument was built; only this proves a reader can
 # see it (GP6).
 # ---------------------------------------------------------------------------
+section 'M02-AC2 — every cross-reference reaches the compiled index as typeset text.'
 printf '%s\n' "$XREF_PDF_TEXT" > "$WORK/xrefpdf.txt"
 python3 - "$WORK/demo.txt" "$WORK/xrefpdf.txt" <<'PY'
 import re, sys
@@ -5743,6 +5845,7 @@ PY
 # index is built ONCE for the whole site, and whether a link written on the
 # page holding the index reaches an anchor on another chapter's page.
 # ---------------------------------------------------------------------------
+section 'M05 — book projects. A book renders each chapter in its own Pandoc process,'
 BOOK_DIR="examples/book"
 BOOK_OUT="$BOOK_DIR/_book"
 STORE_SUFFIX='.qi.json'
@@ -6031,6 +6134,7 @@ pass "M05-AC4/M14-AC5: all seven of the book's warnings are ones this suite name
 # ---------------------------------------------------------------------------
 # M05-AC6 — a book with marks and no marker chapter.
 # ---------------------------------------------------------------------------
+section 'M05-AC6 — a book with marks and no marker chapter.'
 NOMARKER_DIR="examples/book-nomarker"
 rm -rf "$NOMARKER_DIR/_book" "$NOMARKER_DIR/.quarto"
 ( cd "$NOMARKER_DIR" && quarto render --to html ) \
@@ -6089,6 +6193,7 @@ pass "M05-AC6: the missing-marker report fires exactly once in a full render, na
 # the book nor one per chapter rendered (3) — the two readings a two-chapter
 # fixture cannot tell apart.
 # ---------------------------------------------------------------------------
+section 'M062-AC2/AC3 — a book with NO placement marker anywhere still says when it'
 NOMARKER_STORE="$NOMARKER_DIR/.quarto/$STORE_DIR"
 NOMARKER_RECORD="$NOMARKER_STORE/two.qmd$STORE_SUFFIX"
 [ -s "$NOMARKER_RECORD" ] \
@@ -6223,6 +6328,7 @@ pass "M062-AC3: in the same book, a record naming an index it does not declare i
 # none of the store machinery; this pins that it still aggregates every
 # chapter's marks into one printed index (GP6).
 # ---------------------------------------------------------------------------
+section 'M05-AC5 — the book PDF. One merged document, so the LaTeX back-end needs'
 ( cd "$BOOK_DIR" && quarto render --to pdf ) > "$WORK/book-pdf.log" 2>&1 \
   || { tail -40 "$WORK/book-pdf.log" >&2; fail "M05-AC5: the book fixture failed to render to PDF"; }
 capture --project "$BOOK_DIR" pdf "book-pdf"
@@ -6321,6 +6427,7 @@ PY
 # is named by a criterion; all of them are behaviour this milestone shipped,
 # and a green suite is evidence about what it covers (LESSONS 2026-08-16).
 # ---------------------------------------------------------------------------
+section 'M05 hardening — the dimensions one clean-slate render cannot reach: a second'
 
 # A second full render must produce the same index, not a doubled one: the
 # marker chapter reads a store that already holds its own previous record.
@@ -6480,6 +6587,7 @@ pass "M14: a record predating the per-mark naming string is accepted, keeps its 
 # reach `declared_for` by three different routes and a check written over one
 # form says nothing about the others.
 # ---------------------------------------------------------------------------
+section 'M55-AC3 — a stored record naming an index the reading chapter does not'
 m55_stale_name() {   # <slug> <label> <index value> <what the run must report>
   local slug="$1" label="$2" value="$3" named="$4"
   QI_STALE_INDEX="$value" python3 - "$WORK/one-record.json" "$CORRUPT" <<'STALEPY'
@@ -6579,6 +6687,7 @@ pass "M55-AC3: a record naming a declaration the book has since removed keeps it
 # fixture's question: which chapter takes on an index no marker names, when it
 # is not the chapter the markers are in.
 # ---------------------------------------------------------------------------
+section 'M063 — where an HTML book'\''s index sections land, on every render.'
 PLACE_DIR="examples/book-placement"
 
 # Every generated index section on every page of a rendered book, by page, id
@@ -6877,6 +6986,7 @@ pass "M063-AC2: rendered twice from an empty store, the placement fixture prints
 # section (3), or one report for the book, so the two runs together separate
 # once-per-building-chapter-that-read-it from all three.
 # ---------------------------------------------------------------------------
+section 'M60-AC4 — the report for a record written by a superseded version is drawn'
 PLACE_STORE="$PLACE_DIR/.quarto/$STORE_DIR"
 place_stale() {   # <chapter file> <slug> <render argument or ""> <expected count> <label>
   local chapter="$1" slug="$2" target="$3" want="$4" label="$5"
@@ -6931,6 +7041,7 @@ pass "M60-AC4: the report for a record written by a superseded version is drawn 
 # rewritten by whatever render touched them last, so the store is rebuilt here
 # rather than assumed.
 # ---------------------------------------------------------------------------
+section 'M063 — the store shapes that used to change where an HTML book'\''s index'
 place_render() {   # <slug> <label> [render argument]
   local slug="$1" label="$2" target="${3:-}"
   # shellcheck disable=SC2086
@@ -7086,6 +7197,7 @@ PLANTPY
 #
 # Two extension warnings, and the ordinary manifest.
 # ---------------------------------------------------------------------------
+section 'M063-AC2, continued — a stored record claiming a placement marker its'
 place_plant_marker five.qmd gamma "M063-AC2 (a phantom marker)"
 place_render place-phantom "M063-AC2 (a phantom marker)"
 cp "$WORK/m061-five.qmd-record.json" "$PLACE_STORE/five.qmd$STORE_SUFFIX"
@@ -7152,6 +7264,7 @@ M063_LASTPLACER_MUTATION='s{  if first ~= nil and ctx\.position == #ctx\.chapter
 #
 # Three extension warnings on each of the two renders.
 # ---------------------------------------------------------------------------
+section 'M063-AC1 — KI199'\''s own case: a chapter AFTER the last placing chapter gains a'
 read -r -d '' PLACE_SECTIONS_MARKED <<'MANIFEST' || true
 five.html	-
 four.html	qi-index-gamma	Index of Gamma
@@ -7301,6 +7414,7 @@ fi
 # section the record costs. The stale-record and refiled-record reports are the
 # two on M062's once-per-building-chapter rule, and neither is drawn here.
 # ---------------------------------------------------------------------------
+section 'M063-AC3, M064-AC1 and M064-AC2 — a chapter whose record can never be'
 m061_block_record() {   # <chapter file> <store directory> <label>
   local chapter="$1" store="$2" label="$3"
   rm -f "$store/$chapter$STORE_SUFFIX"
@@ -7500,6 +7614,7 @@ pass "M063-AC3: with the held path freed, two further renders write four.qmd's r
 # SOURCE bytes, and the shipped `four.qmd` is read by the runs above and below
 # this one.
 # ---------------------------------------------------------------------------
+section 'M064 — a chapter whose record cannot be used contributes its terms anyway,'
 
 # The gamma section as it stands where recovery does NOT happen: three of the
 # eleven entries, the eight four.qmd contributes missing because they live only
@@ -7597,6 +7712,7 @@ m064_chapter_render() {   # <slug> <capture slug> <chapter> <label>
 #   which the anchored pattern set reaches the 10 that are not write failures
 #   (KI206).
 # ---------------------------------------------------------------------------
+section 'M064-AC3 — KI214'\''s own observation: the store paths of BOTH chapters that'
 m063_tree m064-heldpair
 for M064_HELD in index.qmd three.qmd; do
   m061_block_record "$M064_HELD" "$M061W/m064-heldpair/.quarto/$STORE_DIR" \
@@ -7633,6 +7749,7 @@ pass "M064-AC3: with the store paths of both marker chapters held by directories
 # complete, every other chapter's terms must still print, and the report must
 # say the source could not be read either rather than claiming a recovery.
 # ---------------------------------------------------------------------------
+section 'M064-AC5 — the same held path as the AC1 arrangement, and four.qmd'\''s source'
 m063_tree m064-lostsource
 m061_block_record four.qmd "$M061W/m064-lostsource/.quarto/$STORE_DIR" \
   "M064-AC5"
@@ -7673,6 +7790,7 @@ pass "M064-AC5: where a chapter's record cannot be read and its own source canno
 # chapters rendered after it never read the plant. five.qmd alone is rendered
 # instead, which is also the chapter that builds the section the plant costs.
 # ---------------------------------------------------------------------------
+section 'M064 T7 — the version-skewed record'\''s own two recovery reports, which no'
 m064_plant_stale() {   # <tree slug> <chapter> <label>
   QI_STALE_VERSION="$SUPERSEDED_VERSION" python3 - \
     "$M061W/$1/.quarto/$STORE_DIR/$2$STORE_SUFFIX" "$3" <<'STALEVERPY'
@@ -7824,6 +7942,7 @@ pass "M064 R2-F2: a record written at the superseded version whose chapter's sou
 # a block that was never there — and a repair that read the `when-` attribute
 # instead of skipping whole would print its term.
 # ---------------------------------------------------------------------------
+section 'M064 review F1, F2 and F3 — three properties of a recovered record that no'
 M064_PDF_TERM='Wainscot'
 M064_HTML_TERM='Xylem'
 M064_HTML_PASSAGE='A passage this HTML render keeps'
@@ -7947,6 +8066,7 @@ pass "M064 F3: where a chapter's record cannot be read and its source parses to 
 # carries two.qmd's page and no fragment, where the record carries the anchor
 # the mark was minted at.
 # ---------------------------------------------------------------------------
+section 'M065-AC5 — the two remaining ways a chapter'\''s record goes unusable, each in'
 m063_tree m065-stalebook
 m064_plant_stale m065-stalebook two.qmd \
   "M065-AC5 (a version-skewed record in a whole-book render)" \
@@ -7996,6 +8116,7 @@ pass "M065-AC5: a whole-book render in which one chapter's record carries a vers
 # failures fall in and out of depending on what Quarto printed just before them
 # (KI206).
 # ---------------------------------------------------------------------------
+section '...and the store DIRECTORY itself replaced by a regular file, so no record'
 m065_break_store() {   # <store directory> <label>
   local store="$1" label="$2"
   local held
@@ -8347,6 +8468,7 @@ fi
 # the anchored-pattern helper's reach depending on what Quarto printed just
 # before it (KI206).
 # ---------------------------------------------------------------------------
+section 'M068 — a record FILE that is there and cannot be opened, behind a store'
 m068_dangle_record() {   # <chapter file> <store directory> <label>
   local chapter="$1" store="$2" label="$3"
   local path="$store/$chapter$STORE_SUFFIX"
@@ -8492,6 +8614,7 @@ pass "M068-AC1/M068-AC2/M068-AC4: where a chapter's record is a file the store d
 # chapters render in book order and four.qmd rewrites its own record before
 # five.qmd reads the store.
 # ---------------------------------------------------------------------------
+section 'M068-AC3, and the control that separates the two sides of the new test. The'
 m063_tree m068-norecord
 M068_NORECORD_STORE="$M061W/m068-norecord/.quarto/$STORE_DIR"
 rm -f "$M068_NORECORD_STORE/four.qmd$STORE_SUFFIX"
@@ -8593,6 +8716,7 @@ pass "M068-AC3/M069-AC1: a store directory that lists and holds no record for fo
 # subdirectory chapter alone, so it is there at all only if that chapter was
 # reached. Both derived by hand from the three sources.
 # ---------------------------------------------------------------------------
+section 'M068 — the same two questions asked of a chapter that sits in a'
 M068BW="$WORK/m068-book"
 rm -rf "$M068BW"
 mkdir -p "$M068BW"
@@ -8944,6 +9068,7 @@ fi
 # chapter minted for it, and a term from a recovered chapter carries that
 # chapter's page and nothing after it (D-041).
 # ---------------------------------------------------------------------------
+section 'M069 — a book whose sidecar store has never been written at all, which is'
 
 # The store gone, and the project tree it would sit in still there: a slug
 # whose whole copy had failed to be made would satisfy a bare "no such
@@ -9188,6 +9313,7 @@ pass "M069-AC1/M069-AC2/M069-AC3/M074-AC2: over a book project holding no sideca
 # there would fire for most of a correct book on every render, which is the
 # question the plan gate settled.
 # ---------------------------------------------------------------------------
+section 'M069-AC5 — the two outcomes a never-written record can have besides coming'
 m069_tree m069-lostsource "M069-AC5 (a source that cannot be read)"
 m064_break_source "$M061W/m069-lostsource/four.qmd" "M069-AC5" \
   || fail "M069-AC5: four.qmd's source could not be made unreadable (its own FAIL line is above)"
@@ -9388,6 +9514,7 @@ fi
 # `Dovetail` that chapter already marked — printed in five.html, the book's
 # last chapter, `Zephyr` first under the sort key four.qmd declares for it.
 # ---------------------------------------------------------------------------
+section 'M063-AC2, continued — a store whose records all stand at the current version'
 read -r -d '' PLACE_TERMS <<'MANIFEST' || true
 five.html	qi-index-gamma	Zephyr
 five.html	qi-index-gamma	Dovetail
@@ -9562,6 +9689,7 @@ place_render place-rewarm-three "M063-AC2 (the render after the planted store)"
 # so the two runs together separate once-per-building-chapter from every one of
 # them.
 # ---------------------------------------------------------------------------
+section 'M062-AC1 — the report for a record naming an index this book does not'
 PLACE_UNDECLARED='ghostplacement'
 place_undeclared() {   # <slug> <render argument or ""> <expected count> <label>
   local slug="$1" target="$2" want="$3" label="$4" named
@@ -9637,6 +9765,7 @@ place_render place-rewarm-undeclared "M062-AC1 (the render after the plants)"
 # M062-AC2/AC3 runs above plant records in it and restore them, and this leg
 # is about an ordinary store.
 # ---------------------------------------------------------------------------
+section 'M063-AC4 — a book whose chapters carry index marks but no placement marker'
 read -r -d '' NOMARKER_SECTIONS <<'MANIFEST' || true
 index.html	-
 one.html	-
@@ -9699,6 +9828,7 @@ fi
 # so a second whole-book render there would be about that state rather than
 # about this criterion.
 # ---------------------------------------------------------------------------
+section 'M063-AC5 — examples/book/, whose two markers both sit in its last chapter and'
 read -r -d '' BOOK_SECTIONS <<'MANIFEST' || true
 index.html	-
 last.html	qi-index-main	Index of Subjects
@@ -9736,6 +9866,7 @@ pass "M063-AC5: examples/book/, whose markers all sit in its last chapter, carri
 # from the filter's constant rather than written down: a plant at any other
 # version is refused for its version and never reaches the field this is about.
 # ---------------------------------------------------------------------------
+section 'M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_record`'
 # The unplanted copy first, so the run below cannot be about a record this
 # filter would have refused whatever its `xrefs` said.
 ( cd "$BOOK_DIR" && quarto render last.qmd --to html ) \
@@ -9866,6 +9997,7 @@ fi
 # can see: `Zulu Beta` files `Beta` under Z, behind `Zeta`; `Alpha Beta` files
 # it under A.
 # ---------------------------------------------------------------------------
+section 'M60-AC6 — the sort-key merge order M55 fixed at its review gate and shipped'
 m60_plant_merge() {   # <destination record path>
   python3 - "$WORK/one-record.json" "$1" <<'MERGEPY'
 import json, sys
@@ -10023,6 +10155,7 @@ fi
 # The ordering fixture: marker in the first chapter, a second marker in the
 # last, and a chapter filename with a space in it.
 # ---------------------------------------------------------------------------
+section 'The ordering fixture: marker in the first chapter, a second marker in the'
 ORDER_DIR="examples/book-order"
 ORDER_OUT="$ORDER_DIR/_book"
 # Derived from the fixture, not written down: the per-chapter reports below
@@ -10229,6 +10362,7 @@ pass "M05 hardening: a store that cannot be written is reported per chapter and 
 #     face each other and which the book therefore names not at all — a merged
 #     pairing map would name it as a second split pair.
 # ---------------------------------------------------------------------------
+section 'M55-AC4 — each of the three judgements an HTML book makes across chapters is'
 SCOPES_DIR="examples/book-scopes"
 rm -rf "$SCOPES_DIR/_book" "$SCOPES_DIR/.quarto"
 ( cd "$SCOPES_DIR" && quarto render --to html ) > "$WORK/book-scopes.log" 2>&1 \
@@ -10284,6 +10418,7 @@ pass "M55-AC4: each of the three cross-chapter judgements is made inside one ind
 # pdftotext's text output: a two-column index interleaves the columns there,
 # so that output's order is not the index's — see that module's header.
 # ---------------------------------------------------------------------------
+section 'M06-AC1 — sort keys, end to end in the PDF.'
 printf '%s\n' "$SORTKEY_KEYS" > "$WORK/sortkeys.txt"
 python3 - examples/sortkey.qmd "$WORK/sortkeys.txt" <<'SORTKEYPY'
 import re, sys
@@ -10405,6 +10540,7 @@ DIFFPY
 # manifests are exhaustive and compared in order, which is what makes a
 # collation failure a failure rather than something set equality swallows.
 # ---------------------------------------------------------------------------
+section 'M06-AC2 — sort keys in the HTML index, at every depth.'
 quarto render examples/sortkey.qmd --to html > "$WORK/sortkey-html.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-html.log" >&2; fail "M06-AC2: sortkey.qmd failed to render to HTML"; }
 capture examples/sortkey.qmd html "sortkey-html"
@@ -10530,6 +10666,7 @@ AGREEPY
 # Both legs are checked, because the two fail differently: LaTeX splits the
 # entry, while HTML keeps one node and silently drops one of the two keys.
 # ---------------------------------------------------------------------------
+section 'M06-AC1/AC2 — a sort key belongs to a LEVEL, under its own parents, not to'
 quarto render examples/sortkey-paths.qmd --to latex \
   > "$WORK/sortkey-paths-latex.log" 2>&1 \
   || { tail -40 "$WORK/sortkey-paths-latex.log" >&2; fail "M06-AC1: sortkey-paths.qmd failed to render to LaTeX"; }
@@ -10639,6 +10776,7 @@ check_html_index_links "$CAPTURE_ROOT/sortkey-paths-html/sortkey-paths.html" "M0
 # that builds no index at all still gets them. The counts are exact, so a
 # report that started firing twice fails here as loudly as one that stopped.
 # ---------------------------------------------------------------------------
+section 'M06-AC4 — the three sort-key reports.'
 for fmt in latex gfm; do
   quarto render examples/sortkey-misuse.qmd --to "$fmt" \
     > "$WORK/sortkey-misuse-$fmt.log" 2>&1 \
@@ -10725,6 +10863,7 @@ CONTROLPY
 # aggregated-index manifest would still pass while proving nothing about
 # carrying a sort key ACROSS chapters, which is the criterion.
 # ---------------------------------------------------------------------------
+section 'M06-AC5 — the book'\''s sort key is written in a chapter other than the one'
 python3 - examples/book <<'BOOKSORTPY'
 import os, re, sys
 root = sys.argv[1]
@@ -10771,6 +10910,7 @@ BOOKSORTPY
 # construction from the same range the entry-key probe uses, so a character the
 # filter handles can never go unprobed.
 # ---------------------------------------------------------------------------
+section 'M06-AC3 — every printable ASCII character as a sort key, in three formats.'
 python3 - examples/sort-escaping.qmd <<'SORTESCPY'
 import re, sys
 qmd = open(sys.argv[1], encoding='utf-8').read()
@@ -11005,6 +11145,7 @@ SORTESCGFMPY
 #   `windmill` (`windmill`)  `!windmill` lost its empty level    -> W
 #   `zebra` (`zebra`)        printed text                        -> Z
 # ---------------------------------------------------------------------------
+section 'Manifest 1q — the generated index in "$CAPTURE_ROOT/letter-groups-html/letter-groups.html"'
 read -r -d '' LETTER_GROUPS_INDEX <<'MANIFEST' || true
 letter	Symbols
 0	Quixote	1
@@ -11073,6 +11214,7 @@ ADJPY
 # writes the same entries with one shared key per pair, which is the same
 # document without the mistake.
 # ---------------------------------------------------------------------------
+section 'M09 — two entries that print in one place and file under two keys.'
 WARN_CLAMP_SPLIT='file under more than one key'
 
 # The two fixtures are asserted against each other BY CONSTRUCTION, because
@@ -11231,6 +11373,7 @@ pass "M09-AC1: each pair of entries contesting one printed level path is reporte
 # level of each of the four paths. Every level above them is a parent no mark
 # indexes on its own, so it carries none.
 # ---------------------------------------------------------------------------
+section 'Manifest 1s — the generated index in "$CAPTURE_ROOT/sortkey-clamp-html/sortkey-clamp.html" (M09-AC2).'
 read -r -d '' SORTKEY_CLAMP_HTML_INDEX <<'MANIFEST' || true
 letter	A
 0	alpha	0
@@ -11266,6 +11409,7 @@ check_html_index_links "$CAPTURE_ROOT/sortkey-clamp-html/sortkey-clamp.html" "M0
 # M09-AC3 — the same entries with one shared key per pair: nothing to report,
 # one index-tool key per pair, and (below, with the PDF) one printed entry.
 # ---------------------------------------------------------------------------
+section 'M09-AC3 — the same entries with one shared key per pair: nothing to report,'
 for fmt in latex html; do
   quarto render examples/sortkey-clamp-twin.qmd --to "$fmt" \
     > "$WORK/sortkey-clamp-twin-$fmt.log" 2>&1 \
@@ -11379,6 +11523,7 @@ pass "M09-AC3: two entries sharing one sort key per pair are reported not at all
 # must still show it — a "no see also anywhere" check would pass just as well
 # on an index that had lost every cross-reference in the document.
 # ---------------------------------------------------------------------------
+section 'M10-AC6 — the fold-induced drop, followed to the compiled artifact (GP6).'
 quarto render examples/self-xref.qmd --to pdf \
   > "$WORK/self-xref-pdf.log" 2>&1 \
   || { tail -40 "$WORK/self-xref-pdf.log" >&2; fail "M10-AC6: self-xref.qmd failed to render to PDF"; }
@@ -11497,6 +11642,7 @@ pass "M10-AC6: the fold-induced self-target is gone from the compiled index, not
 #                                         means for an entry that has none
 #                                         (M11 review F1)
 # ---------------------------------------------------------------------------
+section 'M11 — empty index levels are dropped, so a leading empty level can no longer'
 
 # The emitted LaTeX arguments, one per indexed mark, in document order. `!`
 # here is the index tool's level separator: the author's own `!` is quoted
@@ -11675,6 +11821,7 @@ pass "M11-AC5: each of the six marks carrying an empty level warns exactly once 
 # thing (M08), and a count alone cannot tell a report that names position 1
 # from one that names position 2.
 # ---------------------------------------------------------------------------
+section 'M13 — the two reports about a mark'\''s levels name something the author can'
 
 # AC1. One report per mark, naming the empty positions in the value as the
 # author wrote it and how many of the WRITTEN levels remain — never how many
@@ -11821,6 +11968,7 @@ check_no_null_field "$CAPTURE_ROOT/empty-levels-latex/empty-levels.tex" "M11-AC2
 # ---------------------------------------------------------------------------
 # M11-AC1/AC4 — the emitted LaTeX, argument for argument.
 # ---------------------------------------------------------------------------
+section 'M11-AC1/AC4 — the emitted LaTeX, argument for argument.'
 python3 - "$CAPTURE_ROOT/empty-levels-latex/empty-levels.tex" "$EMPTY_LEVELS_TEX" <<EMPTYTEXPY
 import sys
 $(index_fields)
@@ -11840,6 +11988,7 @@ pass "M11-AC1/AC4: the emitted LaTeX indexes every mark with anything left to in
 # ---------------------------------------------------------------------------
 # M11-AC3/AC4 — the same entries through the HTML back-end.
 # ---------------------------------------------------------------------------
+section 'M11-AC3/AC4 — the same entries through the HTML back-end.'
 quarto render examples/empty-levels.qmd --to html \
   > "$WORK/empty-levels-html.log" 2>&1 \
   || { tail -40 "$WORK/empty-levels-html.log" >&2; fail "M11-AC3: empty-levels.qmd failed to render to HTML"; }
@@ -11898,6 +12047,7 @@ pass "M11-AC3: the two back-ends agree on every printed level path, compared aga
 # whether the index tool ACCEPTED an entry: it rejects a null field, drops the
 # entry, reports "0 warnings" and exits 0, so a clean build proves nothing.
 # ---------------------------------------------------------------------------
+section 'M11-AC1 — followed to the compiled artifact, the only thing that settles'
 quarto render examples/empty-levels.qmd --to pdf \
   > "$WORK/empty-levels-pdf.log" 2>&1 \
   || { tail -40 "$WORK/empty-levels-pdf.log" >&2; fail "M11-AC1: empty-levels.qmd failed to render to PDF"; }
@@ -11952,6 +12102,7 @@ pass "M11-AC1: every entry written with an empty level survives to the compiled 
 # author wrote, so the same document must draw the same reports in a format
 # with a LaTeX index, one with an HTML index, and one with no index at all.
 # ---------------------------------------------------------------------------
+section 'M14 — a cross-reference target that names no index entry is reported.'
 
 for fmt in latex html gfm; do
   quarto render examples/dangling-xref.qmd --to $fmt \
@@ -12278,6 +12429,7 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 # Reconciling xref-escaping's corpus so its targets resolve is its own piece of
 # work and is a ROADMAP candidate; this milestone pins what it reports.
 # ---------------------------------------------------------------------------
+section 'The corpus reconciliation the report forces. Every example that writes a'
 read -r -d '' DANGLING_CORPUS <<'MANIFEST' || true
 examples/book-order/index.qmd	0
 examples/book-order/later chapter.qmd	1
@@ -12402,6 +12554,7 @@ done
 # repair is not to detect a toolchain failure but to stop emitting output the
 # tool cannot process (D-003), so the evidence is the build itself.
 # ---------------------------------------------------------------------------
+section 'M15 — a term marked both plainly and with a cross-reference builds.'
 CONFLICT_FAIL_A='Conflicting entries: multiple encaps for the same page under same key'
 CONFLICT_FAIL_B='error generating index'
 
@@ -12728,6 +12881,7 @@ pass "M15-AC5: no joined filter message claims a failed render, and the report t
 # a path the fold had rewritten drew nothing at all while pointing at a path no
 # printed entry carried.
 # ---------------------------------------------------------------------------
+section 'M18 — a cross-reference target is judged against the path the entry prints.'
 
 # M18-AC1 — every emitted \index command of both fixtures, argument for
 # argument, and the level-by-level agreement between a folded target and the
@@ -12969,6 +13123,7 @@ pass "M18-AC5: every target the fold rewrites draws one report on its own mark, 
 # below is the number the filter reported before this milestone; only what it
 # is CALLED moved, which is what M19-AC5 asks of these marks.
 # ---------------------------------------------------------------------------
+section 'M19 — a reported level count says which levels it counts (D-006).'
 M19_BOTH=', of the 5 written; the back-end stores 3'
 # The semicolon is the discriminator, not the digit: `4 levels deep;` cannot
 # also match `4 levels deep, of the 5 written;`, so the control below fails the
@@ -13259,6 +13414,7 @@ pass "M18 (F5): the both-attributes site reaches a compiled artifact, where both
 # groups themselves and cross-links them against the .aux registrations, since
 # the fixture's pagination is not what these criteria are about.
 # ---------------------------------------------------------------------------
+section 'M20 — a term'\''s principal discussion prints as its principal locator.'
 # Removed before the render, not merely overwritten by it: AC5 is stated over
 # the gfm render of this run, and a stale committed .md left in place would
 # satisfy the check after the filter had regressed (the audit's F6).
@@ -13381,6 +13537,7 @@ pass "M20-AC3/AC4: a mark whose role is reported and ignored emits what the same
 # The fixture renders gfm with `wrap: none`, so no row is broken by the
 # writer's column limit and these are the bytes of the render.
 # ---------------------------------------------------------------------------
+section 'Manifest 9 — every index span examples/principal.qmd writes into gfm, in'
 read -r -d '' PRINCIPAL_GFM_SPANS <<'MANIFEST' || true
 <span class="index">basilisk</span>
 <span class="index" data-mention="principal">basilisk</span>
@@ -13460,6 +13617,7 @@ pass "M20-AC6: nor does any live definition reach the role-free twin, which is t
 # not a workaround but the second thing this section proves, since that
 # redefinition taking effect at all is the author-facing promise README makes.
 # ---------------------------------------------------------------------------
+section 'M20 T9 — the regressions IP2'\''s forever clause earns, in a fixture of their'
 quarto render examples/principal-cases.qmd --to pdf \
   > "$WORK/principal-cases-pdf.log" 2>&1 \
   || { cat "$WORK/principal-cases-pdf.log" >&2; fail "M20 T9: examples/principal-cases.qmd failed to render to PDF — a plain and a principal mark of one key on one page is the shape this milestone died on, and this render is what proves it no longer breaks the document"; }
@@ -13499,6 +13657,7 @@ pass "M20 T9: every locator of the printed index is marked exactly when the regi
 #      `.ilg`'s own warning count, and not the exit status, is the oracle here
 #      (D-007), and a range this filter cannot pair must never be emitted.
 # ---------------------------------------------------------------------------
+section 'M21 — a discussion spanning pages prints as one page range.'
 # Removed before the render, not merely overwritten: AC6 is stated over the gfm
 # render of THIS run, and a stale committed .md would satisfy it after the
 # filter had regressed.
@@ -13778,6 +13937,7 @@ pass "M21-AC5: each chapter of an HTML book reports its own half of a split rang
 # third. That is a fact about the source the author wrote, and it is the one
 # fact this section does not read out of the artifacts under test (M20).
 # ---------------------------------------------------------------------------
+section 'M23 — a range verdict follows its mark'\''s POSITION, not its text.'
 quarto render examples/range-nested.qmd --to html \
   > "$WORK/range-nested-html.log" 2>&1 \
   || { cat "$WORK/range-nested-html.log" >&2; fail "M23-AC1: examples/range-nested.qmd failed to render to html"; }
@@ -13896,6 +14056,7 @@ pass "M23-AC1: a range mark whose own content carries another mark pairs with it
 # closes on the fourth, the plain one opens on the second and closes on the
 # third (M20).
 # ---------------------------------------------------------------------------
+section 'M23-AC2 — a verdict is bound to its mark by POSITION.'
 quarto render examples/range-position.qmd --to html \
   > "$WORK/range-position-html.log" 2>&1 \
   || { cat "$WORK/range-position-html.log" >&2; fail "M23-AC2: examples/range-position.qmd failed to render to html"; }
@@ -13956,6 +14117,7 @@ pass "M23-AC2: a range verdict is bound to its mark by document position — in 
 # "$CAPTURE_ROOT/principal-pdf/principal.aux" only the page command — and the criterion is stated
 # over one surviving `.aux` carrying all three.
 # ---------------------------------------------------------------------------
+section 'M22 — a stale `.aux` outliving its marks still builds.'
 M22W="$WORK/m22"
 mkdir -p "$M22W"
 cp -R _extensions "$M22W/_extensions"
@@ -14161,6 +14323,7 @@ pass "M22-AC2: both no-subsystem variants and the zero-mark control carry exactl
 # live on every installation with shell escape off. With the flag the file is
 # byte-identical after the run, which the check asserts rather than assumes.
 # ---------------------------------------------------------------------------
+section 'M31 — a stale `.ind` outliving its marks still builds.'
 M31W="$WORK/m31"
 mkdir -p "$M31W"
 cp -R _extensions "$M31W/_extensions"
@@ -14367,6 +14530,7 @@ pass "M31-AC4: every quartoindex command name any captured .ind carries is defin
 # ---------------------------------------------------------------------------
 # AC5 — planted-defect self-test.
 # ---------------------------------------------------------------------------
+section 'AC5 — planted-defect self-test.'
 if [ "${1:-}" = "--self-test" ]; then
   printf '\n== self-test (planted defects) ==\n'
   BROKEN="$WORK/broken.tex"
@@ -15504,6 +15668,7 @@ fi
 # land after every line the merge base printed rather than shifting the
 # self-test's own lines down by two (M17-AC2, review finding E).
 # ---------------------------------------------------------------------------
+section 'M17-AC3 — the split extension renders identically installed and from the'
 python3 - <<'REQPY'
 import re, sys
 sys.path.insert(0, 'tests')
@@ -15697,6 +15862,7 @@ pass "M17-AC3: all $PARITY outputs — a standalone fixture and a book project, 
 # leaked "this document used the principal subsystem" flag shows, and the
 # mark-free fixture is the only place a leaked count of marks seen shows.
 # ---------------------------------------------------------------------------
+section 'M26: a document'\''s accumulators start empty, whoever ran before it.'
 state_reuse_pair() {
   local stem="$1" fmt="$2" ext="$3" want="$4" v
   for v in 1 0; do
@@ -15860,6 +16026,7 @@ pass "M15-AC5: the failed-render claim is gone from the filter, and the conteste
 # compared against each report's FULL emitted text, so a clause that landed on
 # some other warning satisfies nothing here.
 # ---------------------------------------------------------------------------
+section 'M28-AC1/M28-AC2 — a reported block position names the sequence it counts.'
 M28_BLOCK_CLAUSE='counted over the document as this filter received it, after Quarto expanded any includes and executable cells, so they can differ from the positions in your source file'
 M28_CHAPTER_CLAUSE="The chapter count is over the files this book renders, in the order the book's render list gives them"
 
@@ -15951,6 +16118,7 @@ check_report_clause "$WORK/book-order.log" "$WARN_MARKER_NOT_LAST" \
 # single-document misuse fixture is the no-book control, where the reports must
 # read exactly as they did before this milestone.
 # ---------------------------------------------------------------------------
+section 'M29-AC1/AC2/AC3/AC5 — a marker report in a book names its chapter.'
 m29_partition() {
   local logfile="$1" mode="$2" label="$3"
   python3 tests/m29book.py "$logfile" "$QI_WARN_PATTERNS" "$mode" \
@@ -16029,6 +16197,7 @@ m29_planted "$M29_PLANT/none.log" book-html 'no warnings from this extension' \
 # the fixture's own manifest and neither is written down here, so the check
 # fails on a manifest that quietly agreed with whatever the render said.
 # ---------------------------------------------------------------------------
+section 'M28-AC1 — the fixture where the two positions diverge. The marker is written'
 quarto render examples/marker-position.qmd --to gfm \
   > "$WORK/marker-position.log" 2>&1 \
   || { tail -20 "$WORK/marker-position.log" >&2; fail "M28-AC1: marker-position.qmd failed to render to gfm"; }
@@ -16043,6 +16212,7 @@ python3 tests/m28pos.py "$WORK/marker-position.log" examples/marker-position.qmd
 # hand-built file — and failing for its own reason rather than for any reason
 # at all.
 # ---------------------------------------------------------------------------
+section 'The three checks above are evidence only if they discriminate, so each is'
 # (a) the naming clause cut out of every report in a real log. The report
 #     itself must survive the cut, or the failure below would be about a
 #     missing report rather than a missing clause.
@@ -16143,6 +16313,7 @@ pass "M28-AC1: the divergence reader fails on a manifest whose two positions are
 # one call site is a reader whose clauses nothing can be shown to discriminate
 # on, which is the shape R5-R7 found (AC7).
 # ---------------------------------------------------------------------------
+section 'The four readers M38'\''s return round adds, each a function so the self-test can'
 
 # Where the one index a folded back-end builds ended up, over a captured `.tex`
 # whose fixture writes one marker per index. Reads which placement site the
@@ -16437,6 +16608,7 @@ check_no_dotted_section_id() {
 #              linked, and the range paired into one locator on `Cantor`. It
 #              draws no warning at all.
 # ---------------------------------------------------------------------------
+section 'M38 — an author sends marks to more than one named index, and the HTML'
 read -r -d '' NAMED_INDEX_SECTIONS <<'MANIFEST' || true
 section	qi-index-main	h1	Index	site-main
 letter	A
@@ -16612,6 +16784,7 @@ pass "M38-AC4: each index sits at its own marker, and the one repeated marker dr
 # `Bravo` names `people`; `Charlie` names the refused entry, which is no
 # declared index, so it is reported and files in `main` too.
 # ---------------------------------------------------------------------------
+section 'M38-R1 — a declared name that cannot be an HTML id fragment. The name reaches'
 read -r -d '' NAMED_INDEX_MISUSE_SECTIONS <<'MANIFEST' || true
 section	qi-index-main	h1	Index	site-first
 letter	A
@@ -16669,6 +16842,7 @@ pass "M38-R1: a declared name that is no section id a selector can name is refus
 # document writes one
 # marker per index and neither is a second marker for anything.
 # ---------------------------------------------------------------------------
+section 'M38-R2 — which marker each index is printed at, when they are written out of'
 quarto render examples/named-indexes-foldsite.qmd --to latex \
   > "$WORK/named-indexes-foldsite-latex.log" 2>&1 \
   || { tail -30 "$WORK/named-indexes-foldsite-latex.log" >&2; fail "M38-R2: named-indexes-foldsite.qmd failed to render to latex"; }
@@ -16696,6 +16870,7 @@ pass "M38-R2: each declared index is printed at the first marker naming it thoug
 # both labels. The second marker draws exactly one duplicate report, naming
 # `authors`, the index it repeats.
 # ---------------------------------------------------------------------------
+section 'M38-R4 — a second marker naming the SAME index, and an index no marker names.'
 quarto render examples/named-indexes-foldsecond.qmd --to latex \
   > "$WORK/named-indexes-foldsecond-latex.log" 2>&1 \
   || { tail -30 "$WORK/named-indexes-foldsecond-latex.log" >&2; fail "M38-R4: named-indexes-foldsecond.qmd failed to render to latex"; }
@@ -16730,6 +16905,7 @@ pass "M38-R4: a second marker naming one index is reported as the second marker 
 # gamma) nor the marker order (gamma alone), which is what makes this manifest
 # evidence about the rules rather than about a coincidence.
 # ---------------------------------------------------------------------------
+section 'M38-R5 — declared order, in the one shape where marker order cannot stand in'
 read -r -d '' NAMED_INDEX_ORDER_SECTIONS <<'MANIFEST' || true
 section	qi-index-gamma	h1	Third Declared	site-gamma
 letter	G
@@ -16822,6 +16998,7 @@ NAMED_PDF="$CAPTURE_ROOT/named-indexes-pdf/named-indexes.pdf"
 #              marker; and the below-marker report. The block positions are the
 #              fixture's own, counted over the document Pandoc is handed.
 # ---------------------------------------------------------------------------
+section 'M49-AC1/AC2/AC4 — a PDF render builds every index the document declares.'
 read -r -d '' M49_PDF_ENTRIES <<'MANIFEST' || true
 index	Index	Below the first index
 0	Aardvark
@@ -17043,6 +17220,7 @@ fi
 # `main` and `people` are printed at their own markers in last.qmd and `places`,
 # which no marker names, after them.
 # ---------------------------------------------------------------------------
+section 'M49-AC3 — the PDF book prints one section per declared index.'
 python3 - "$WORK/book.txt" <<'BOOKINDEXPY'
 import re, sys
 text = open(sys.argv[1], encoding='utf-8').read()
@@ -17123,6 +17301,7 @@ pass "M38-AC5/M55-AC1: an HTML book files its named mark in the index its author
 # Placed AFTER the renders above, because the ledger it reads is written by
 # them.
 # ---------------------------------------------------------------------------
+section 'M38-AC6 — the docs section that documents all of this.'
 read -r -d '' README_INDEXES_CLAIMS <<'MANIFEST' || true
 declaration fields	`name` is what a mark writes to file in that index; `title` is the heading a reader sees
 name shape	A name holds ASCII letters, digits, hyphen and underscore and begins with a letter
@@ -17164,6 +17343,7 @@ MANIFEST
 # the domain by being tracked. The domain's size is reported, and an empty one
 # is a failure -- a sweep over nothing passes for the wrong reason.
 # ---------------------------------------------------------------------------
+section 'M49-AC5 / M55-AC1 — the sentences a retired fold left behind are gone from'
 read -r -d '' M49_RETIRED <<'MANIFEST' || true
 A LaTeX or PDF render builds a single index
 Quarto's PDF loop builds only the main entry file
@@ -17286,6 +17466,7 @@ check_readme_indexes site/named-indexes.qmd "$WORK/readme-indexes.txt" "$WORK/re
 # pinned at zero on the log the other belongs to, so neither check can be
 # satisfied by the other shape.
 # ---------------------------------------------------------------------------
+section 'M39-AC1 / M39-AC3 — which index a sort-key rivalry is inside.'
 # One rival report's full text. `$3` is the scope clause -- empty for the
 # one-namespace shape, ` in index "<name>"` for the per-index one -- and the
 # tail is WARN_SORT_CONFLICT, which both shapes share and which is pinned once
@@ -17351,6 +17532,7 @@ pass "M39-AC3: a LaTeX render of the same fixture keeps the two namespaces its d
 # fixture pages are rendered there. Run before it, the sweeps would print their
 # passing line over a set that did not include them.
 # ---------------------------------------------------------------------------
+section 'The residue sweeps (M03-AC3, M12), LAST in the run and over the CAPTURED set'
 # The suite's two claims about its own source (M24-AC1, M24-AC3): no check
 # reads a rendered artifact out of the working tree, and no render goes
 # uncaptured. Both quantify over `git ls-files tests`, so the suite runs them
@@ -17374,6 +17556,7 @@ python3 tests/suitescan.py pairs \
 # are run against the merge base for the milestone's own evidence, and their
 # discrimination is shown under --self-test below over fixtures built here.
 # ---------------------------------------------------------------------------
+section 'M40 — the documentation website. Three standing checks: the render writes a'
 # M41-AC5 — the site build renders the gallery's fixtures, and it must do it
 # without writing into the fixture directory. A recursive listing of
 # `examples/` with a sha256 per file is taken immediately before and
@@ -17449,6 +17632,7 @@ pass "M41-AC5: rendering the site left all $(wc -l < "$WORK/examples-before.txt"
 # carrying a non-ASCII character, and `?? "site/na\303\257ve.html"` does not
 # match a pattern anchored on `?? site/`.
 # ---------------------------------------------------------------------------
+section 'M42-AC5 — the render leaves nothing untracked under `site/`, and nothing'
 git status --porcelain -z | tr '\0' '\n' > "$WORK/site-status.txt"
 git status --porcelain -z --ignored | tr '\0' '\n' > "$WORK/site-status-ignored.txt"
 git ls-files -- 'site/_site' 'site/.quarto' > "$WORK/site-tracked-output.txt"
@@ -17478,6 +17662,7 @@ python3 tests/sitecheck.py readme README.md site/index.qmd \
 # runs before it uploads, run here against the CAPTURED site (M24) rather than
 # the output directory a later render can replace.
 # ---------------------------------------------------------------------------
+section 'M42 — the Pages workflow. Two standing checks: the Quarto version the'
 python3 tests/pagescheck.py pin .github/workflows/pages.yml _extensions/index/_extension.yml \
   || fail "M42-AC3: the Quarto version the Pages workflow pins does not satisfy the range the extension declares (its own FAIL line is above)"
 
@@ -17960,6 +18145,7 @@ fi
 # read against the corpus `git ls-files` enumerates rather than against a list
 # written down beside it (M41-AC1).
 # ---------------------------------------------------------------------------
+section 'M41 — the example gallery. The site declares which fixtures its gallery'
 GALLERY_YML="site/gallery.yml"
 python3 tests/gallerycheck.py listing "$GALLERY_YML" \
   || fail "M41-AC1: the gallery declaration and the fixture corpus are not the same set (its own FAIL line is above)"
@@ -17979,6 +18165,7 @@ python3 tests/gallerycheck.py listing "$GALLERY_YML" \
 # failure here rather than an empty manifest file downstream — an empty
 # manifest is a check that judges nothing while still printing ok.
 # ---------------------------------------------------------------------------
+section 'The per-fixture index manifests, addressable by fixture name (M41 T3). Not'
 read -r -d '' GALLERY_MANIFEST_ROWS <<'GALLERYREG' || true
 demo	html	index	DEMO_HTML_INDEX
 demo	pdf	terms	PDF_TERMS
@@ -18697,6 +18884,7 @@ fi
 # fail — and to fail naming THAT page, so a sweep that died for some other
 # reason cannot be read as this page having been read.
 # ---------------------------------------------------------------------------
+section 'The sweeps'\'' own discrimination (M24). A sweep over a set passes on a set it'
 if [ "${1:-}" = "--self-test" ]; then
   SWEEPW="$WORK/sweepprobe"
   rm -rf "$SWEEPW"
@@ -19966,6 +20154,7 @@ fi
 # judged against. Each is read from the CAPTURE (M24) and not from the working
 # tree.
 # ---------------------------------------------------------------------------
+section 'M43 — tests/indexdump.py, the extraction the version matrix reduces each'
 M43_VERSIONS_WF=".github/workflows/versions.yml"
 M43_DEMO_HTML="$CAPTURE_ROOT/demo-html/demo.html"
 M43_NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
@@ -20368,6 +20557,7 @@ fi
 # Two legs of identical content is what a green matrix looks like, so the
 # control below is the shape the workflow reports on a healthy run.
 # ---------------------------------------------------------------------------
+section 'M43 T3 — tests/versioncheck.py, the comparison job'\''s own reader. The workflow'
 M43L="$WORK/m43legs"
 rm -rf "$M43L"
 mkdir -p "$M43L/index-pinned" "$M43L/index-floor"
@@ -20421,6 +20611,7 @@ pass "M43-AC1: the matrix a push renders on is the floor and pinned legs alone, 
 # trigger added to the workflow without being taught to the reader would stop
 # the PDF renders silently.
 # ---------------------------------------------------------------------------
+section 'M51-AC2 — whether the PDF job runs is decided here and not by an `if:`'
 M51_PDF_ANSWERS="push|false|a push, whose red must trace to a commit and not to a TeX install
 schedule|true|the weekly scheduled run
 workflow_dispatch|true|a manually dispatched run"
@@ -20586,6 +20777,7 @@ fi
 # out of the workflow that installs it, so the number cannot move there while
 # the two documents go on naming the old one.
 # ---------------------------------------------------------------------------
+section 'M43-AC5 — README and the site'\''s Tests page each name the Quarto version the'
 python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md site/tests.qmd \
   || fail "M43-AC5: README and the site's Tests page do not both name the Quarto version the version matrix's floor leg installs (its own FAIL line is above)"
 
@@ -20701,6 +20893,7 @@ fi
 # a glob: a scratch page an earlier run left in the tree would otherwise join
 # the set and could carry any attribute at all.
 # ---------------------------------------------------------------------------
+section 'M50 — the editor-metadata files. `_schema.yml` and `_snippets.json` tell an'
 M50_SCHEMA="_extensions/index/_schema.yml"
 M50_SNIPPETS="_extensions/index/_snippets.json"
 M50_SYNTAX="site/syntax.qmd"
@@ -21103,6 +21296,7 @@ fi
 # is the one AC4 states for it — one index carrying both declared indexes'
 # entries, which is what a LaTeX render does today.
 # ---------------------------------------------------------------------------
+section 'M50 T4 — the snippets rendered. Held against the docs alone, a snippet can'
 M50FX="$WORK/m50fixture"
 rm -rf "$M50FX"; mkdir -p "$M50FX"
 cp -R _extensions "$M50FX/_extensions"
@@ -21386,6 +21580,7 @@ fi
 # An archive of what git tracks, installed into a project of its own, is what
 # does: a file git does not track is not in the archive and does not arrive.
 # ---------------------------------------------------------------------------
+section 'M50 T5 — the files travel. Both live inside `_extensions/index/`, which is'
 M50INST="$WORK/m50install"
 rm -rf "$M50INST"; mkdir -p "$M50INST/project"
 git archive HEAD _extensions --format=zip -o "$M50INST/ext.zip" \
@@ -21404,6 +21599,7 @@ python3 tests/editormeta.py installed "$M50INST/project" _schema.yml _snippets.j
 # M50 T6 — the documentation says the files ship. Read out of the CAPTURED
 # site (M24) rather than the source, so what is held is the page a reader gets.
 # ---------------------------------------------------------------------------
+section 'M50 T6 — the documentation says the files ship. Read out of the CAPTURED'
 python3 tests/editormeta.py docs "$SITE_OUT/index.html" README.md \
     -- _schema.yml _snippets.json \
   || fail "M50-AC6: the site's entry page or README does not name an editor-metadata file the extension ships (its own FAIL line is above)"
@@ -21516,6 +21712,7 @@ fi
 # stream this render wrote, and a log shared with another render would let a
 # fold sentence drawn elsewhere decide that check.
 # ---------------------------------------------------------------------------
+section 'M52 T2 — the EPUB renders. Three of the four artifacts the M52 checks read'
 quarto render examples/demo.qmd --to epub > "$WORK/demo-epub.log" 2>&1 \
   || { tail -20 "$WORK/demo-epub.log" >&2; fail "M52-AC1: demo.qmd failed to render to EPUB"; }
 capture examples/demo.qmd epub "demo-epub"
@@ -21584,6 +21781,7 @@ pass "M52-AC3: examples/book/ renders to EPUB at exit 0"
 #      `sort="Common Term"` key, so it sits in the C group after
 #      `Chapter Range`.
 # ---------------------------------------------------------------------------
+section 'Manifest 10 — the two index sections the book fixture renders into its EPUB'
 read -r -d '' BOOK_EPUB_INDEX <<'MANIFEST' || true
 section	qi-index-main	h1	Index of Subjects
 letter	A
@@ -21627,6 +21825,7 @@ MANIFEST
 # than written down, so a namespace change reaches this sweep the way it
 # reaches every other identifier check.
 # ---------------------------------------------------------------------------
+section 'M52 T4 — the EPUB back-end'\''s checks. Each reads a capture through'
 case "$HTML_SECTION_ID" in
   *index) M52_QI="${HTML_SECTION_ID%index}" ;;
   *) fail "M52-AC4: the pinned section id <<$HTML_SECTION_ID>> does not end in 'index', so the namespace token this sweep is derived from cannot be taken off it" ;;
@@ -21856,6 +22055,7 @@ fi
 # of every page until this milestone, and a sentence carrying it now tells a
 # reader there are two.
 # ---------------------------------------------------------------------------
+section 'M52 T7 — the documentation clause. Two hand-written lists, both read through'
 M52_DOC_PAGE="site/epub.qmd"
 cat > "$WORK/epub-claims.txt" <<'M52CLAIMS'
 one process	all the chapters go through a single Pandoc process
@@ -22168,6 +22368,7 @@ fi
 #   Symbols group of their own index; the four cross-reference marks carry no
 #   locator, and each target is a term its own index carries, so each is a link.
 # ---------------------------------------------------------------------------
+section 'M56 — the three words the HTML and EPUB back-ends print themselves, set by'
 
 # AC6/T4 — the derivation, before any comparison reads either file: the twin is
 # the labels fixture with its two `index-labels:` blocks deleted, and nothing
@@ -22669,6 +22870,7 @@ fi
 # ledger withholds that one word for German (row W-DE4), so a partly covered
 # language is what this fixture is here to show.
 # ---------------------------------------------------------------------------
+section 'M57 — the same four words, picked from the document'\''s own language.'
 
 # The derivation, before any comparison reads either file. Without it an
 # emptied or shrunken `.tex` diff could be two files that drifted apart
@@ -22900,6 +23102,7 @@ pass "M57-AC1: the same document with its lang: line removed prints the English 
 # would mean the `lang:` line changed nothing in LaTeX, and the criterion would
 # be satisfied by a document that never exercised the language path.
 # ---------------------------------------------------------------------------
+section 'AC7 — no word this table supplies reaches the LaTeX back-end, across every'
 m57_tex_ledger() {
   python3 - "$1" "$2" "$3" <<'M57TEXPY'
 import difflib, re, sys
@@ -23107,6 +23310,7 @@ fi
 #   Dolomite   a see mark and a see-also mark, so two cross-references follow
 #              the term (S4) one after the other (S5)
 # ---------------------------------------------------------------------------
+section 'M58 — the punctuation the HTML and EPUB back-ends print INSIDE an entry, set'
 
 for f in index-separators index-separators-twin; do
   for fmt in html latex; do
@@ -23419,6 +23623,7 @@ fi
 #                    message that its label map sets no word            4 x 2
 #                                                                    total 18
 # ---------------------------------------------------------------------------
+section 'M59 — every unusable `index-labels:` value is reported and falls back'
 
 # AC1 — a value holding no visible character, at both levels. Asserted WHOLE:
 # a prefix would let the half naming the key or the level be reworded away.
@@ -23654,6 +23859,7 @@ fi
 # fragments that render minted for them, and a recovered chapter's term carries
 # that chapter's page and nothing after it (D-041).
 # ---------------------------------------------------------------------------
+section 'M070 — which chapter sources the recovery route reads, and how much of each'
 M070_DIR="examples/book-extensions"
 M070W="$WORK/m070"
 rm -rf "$M070W"
@@ -24545,6 +24751,7 @@ fi
 # while the store shows `index.qmd` placing both indexes — the two sides of the
 # rule the count now follows.
 # ---------------------------------------------------------------------------
+section 'M072 — how often a chapter this route will not read is reported, when the'
 M072_DIR="$M070_DIR"
 M072W="$WORK/m072"
 rm -rf "$M072W"
@@ -24787,6 +24994,7 @@ pass "M072-AC1/M072-AC2/M072-AC3: of the four record states this route tells apa
 # is the plant's chapter for the reason the m064 legs pick it: it is neither a
 # marker chapter nor the book's last, so nothing about placement moves with it.
 # ---------------------------------------------------------------------------
+section 'M073-AC2 — the state the new wording must NOT take over: a record that WAS'
 m063_tree m073-undecodable
 # The plant OVERWRITES a record this tree's own render wrote. Without this
 # guard the `printf` would create the file where the fixture had stopped
@@ -24846,6 +25054,7 @@ pass "M073-AC2: a record that was written, does not decode, and whose chapter's 
 # The value planted for the string form is `STORE_VERSION` spelled as text, so
 # what separates it from a usable record is its TYPE and not its number.
 # ---------------------------------------------------------------------------
+section 'M073-AC3 — the version field'\''s three non-numeric forms. Each is planted into'
 m073_plant_version() {   # <slug> <chapter> <form> <label>
   local slug="$1" chapter="$2" form="$3" label="$4"
   python3 - "$M072W/$slug/.quarto/$STORE_DIR/$chapter$STORE_SUFFIX" \
@@ -24970,6 +25179,7 @@ pass "M073-AC3: a record file that decodes to a table carrying no version field,
 # The plant is on another chapter's record in both, because a chapter reads the
 # store before it writes its own and so never meets its own record.
 # ---------------------------------------------------------------------------
+section 'M073 review F3/F4 — the count the narrowing moved, on the axis M072 built its'
 m073_count_leg() {   # <slug> <plant chapter> <label>
   local slug="$1" chapter="$2" label="$3"
   m072_copy base "$slug"
@@ -25206,6 +25416,7 @@ fi
 # in the m069 and place-first legs above, where the same renders that drew four
 # and six reports now draw one apiece.
 # ---------------------------------------------------------------------------
+section 'M074 — where the reports about a record NO RENDER HAS WRITTEN are drawn, and'
 
 # AC1 — the shape KI229 named and no leg covered: the book's last chapter,
 # carrying no placement marker, in a book both of whose declared indexes are
@@ -25392,6 +25603,206 @@ if [ "${1:-}" = "--self-test" ]; then
   pass "M074 T5 self-test: with the chapter list reduced to its first member and nothing else changed, every count in this suite is unmoved and the one report names one chapter of the four it covers — which the AC2 naming check for the m069-index leg would fail on"
 fi
 
+
+# ---------------------------------------------------------------------------
+# M075 — the run accounts for its own wall clock, and the timing file names
+# the sections this source has.
+#
+# Two things are held here. Every section the source declares has exactly one
+# row and nothing else does: a profile nobody holds to the source drifts the
+# moment a section is added, and the section added without a timing call is
+# the one that ships unmeasured. And the seconds in those rows, plus the row
+# for the setup window, account for the clock the run kept on its own: rows
+# that look individually fine can still have lost a whole leg.
+#
+# The section this block is itself inside is still open, so its elapsed and
+# the run's total are read at one instant and handed in together. The rows
+# telescope from the run's start, so the two sides are exact and the one
+# second allowed is for the rounding at each end.
+# ---------------------------------------------------------------------------
+section 'M075 — the run accounts for its own wall clock, and the timing file names'
+python3 tests/suitescan.py sections > "$WORK/m075-sections.txt" \
+  || fail "M075-AC2: the scan of this suite's own sections failed, so the timing file has nothing to be held against (its own FAIL line is above)"
+M075_NOW=$(date +%s)
+M075_OPEN=$((M075_NOW - SECTION_STARTED))
+M075_TOTAL=$((M075_NOW - RUN_STARTED))
+
+# Held apart from its call site so the plants below can point it at a source
+# with a section added or removed, which is how its green over this run is
+# shown to be about something. Its arguments are the timing file, the section
+# list to hold it to, and the run's own total.
+m075_account() {
+  python3 - "$1" "$2" "$SECTION_HEADING" "$M075_OPEN" "$3" <<'M075PY'
+import sys
+
+timing, sections, open_heading = sys.argv[1], sys.argv[2], sys.argv[3]
+open_elapsed, total = int(sys.argv[4]), int(sys.argv[5])
+UNATTRIBUTED = 'unattributed'
+
+rows = []
+for n, line in enumerate(open(timing, encoding='utf-8').read().split('\n'), 1):
+    if not line:
+        continue
+    parts = line.split('\t')
+    seconds = parts[1] if len(parts) == 2 else ''
+    # `lstrip('-')` accepted `--5` and int() then raised, so the row
+    # traced back instead of failing as the malformed row it is
+    # (M075 review F8). A single leading `-` stays legal: a row can
+    # only go negative if the clock did, and that is worth reporting
+    # as a gap rather than as a parse error.
+    if len(parts) != 2 or not (seconds[1:] if seconds[:1] == '-'
+                               else seconds).isdigit():
+        print('FAIL: M075: %s:%d is not a heading and a whole number of '
+              'seconds: <<%s>>' % (timing, n, line), file=sys.stderr)
+        sys.exit(1)
+    rows.append((parts[0], int(parts[1])))
+
+declared = [h for h in open(sections, encoding='utf-8').read().split('\n') if h]
+if not declared:
+    print('FAIL: M075: the section list is empty, so this check would hold '
+          'the timing file against nothing and any set of rows would pass',
+          file=sys.stderr)
+    sys.exit(1)
+
+# The section this check is inside has not been written yet, so it is added
+# here rather than looked for.
+timed = [h for h, _ in rows if h != UNATTRIBUTED] + [open_heading]
+setup = [s for h, s in rows if h == UNATTRIBUTED]
+repeated = sorted(set(h for h in timed if timed.count(h) > 1))
+missing = [h for h in declared if h not in timed]
+unknown = sorted(set(h for h in timed if h not in declared))
+accounted = sum(s for _, s in rows) + open_elapsed
+
+problems = []
+if len(setup) != 1:
+    problems.append('%d row(s) are labelled <<%s>> rather than exactly one, '
+                    'so the window before the first section is not accounted '
+                    'for once' % (len(setup), UNATTRIBUTED))
+if repeated:
+    problems.append('%d section(s) have more than one row, so their seconds '
+                    'are counted twice:\n  %s'
+                    % (len(repeated), '\n  '.join(repeated)))
+if missing:
+    problems.append('%d section(s) this source declares have no row, so they '
+                    'ran untimed or did not run at all:\n  %s'
+                    % (len(missing), '\n  '.join(missing)))
+if unknown:
+    problems.append('%d row(s) name no section this source declares, so the '
+                    'file describes a suite that is not this one:\n  %s'
+                    % (len(unknown), '\n  '.join(unknown)))
+if abs(accounted - total) > 1:
+    problems.append('the rows account for %ds of the %ds the run measured on '
+                    'its own clock, a gap of %ds'
+                    % (accounted, total, accounted - total))
+
+if problems:
+    print('FAIL: M075: ' + '\n'.join(problems), file=sys.stderr)
+    sys.exit(1)
+print('ok   M075-AC2: each of the %d section(s) `tests/suitescan.py sections` '
+      'declares has exactly one row in the timing file, and no row names '
+      'anything else' % len(declared))
+print('ok   M075-AC3: those rows plus the %ds before the first section '
+      'account for %ds of the %ds this run measured on its own clock'
+      % (setup[0], accounted, total))
+M075PY
+}
+
+m075_account "$TIMING" "$WORK/m075-sections.txt" "$M075_TOTAL" \
+  || fail "M075-AC2/AC3: the run's timing file does not account for the run it was written by (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # T5 — what the accounting above can tell apart. Three defects are planted,
+  # each the shape a real change would take: a section added to the source
+  # with no timing call, a timing row left behind by a section the source no
+  # longer has, and seconds that no longer add up. The first two are planted
+  # through the scan's overlay handle, which supplies the bytes for a tracked
+  # path while git still supplies the file list, so no nested run of this
+  # suite is needed to make either of them.
+  M075_PLANT="$WORK/m075-plant"
+  M075_EXTRA="M075 T5 planted section, which no timing call opens"
+  rm -rf "$M075_PLANT"
+  mkdir -p "$M075_PLANT/tests"
+
+  m075_plant_source() {
+    python3 - tests/run-tests.sh "$M075_PLANT/tests/run-tests.sh" "$1" "$2" <<'M075PLANTPY'
+import sys
+
+src, dst, mode, text = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+lines = open(src, encoding='utf-8').read().split('\n')
+rule = '# ' + '-' * 74
+head = None
+for i, line in enumerate(lines):
+    if line.startswith('run_all' + '_checks() {'):
+        head = i
+        break
+if head is None:
+    raise SystemExit('M075 T5: the plant could not find the wrapper whose '
+                     'body holds the sections, so it plants nothing')
+if mode == 'add':
+    lines[head + 1:head + 1] = [rule, '# ' + text, rule]
+elif mode == 'drop':
+    # Drop the FIRST banner block after the wrapper's head, whichever it is:
+    # the check's report names it, so the plant does not have to.
+    for i in range(head, len(lines)):
+        if lines[i].startswith('# -') and set(lines[i][2:].strip()) == {'-'}:
+            j = i + 1
+            while lines[j].startswith('#') and set(lines[j][2:].strip()) != {'-'}:
+                j += 1
+            del lines[i:j + 1]
+            break
+    else:
+        raise SystemExit('M075 T5: no banner block was found to drop')
+else:
+    raise SystemExit('M075 T5: unknown plant mode ' + mode)
+open(dst, 'w', encoding='utf-8').write('\n'.join(lines))
+M075PLANTPY
+  }
+
+  m075_red() {
+    local what="$1"; shift
+    local out rc
+    set +e
+    out=$( "$@" 2>&1 )
+    rc=$?
+    set -e
+    [ "$rc" -ne 0 ] || { printf '%s\n' "$out" >&2; fail "M075 T5 self-test ($what): the accounting exited 0, so its green over this run says nothing about that defect"; }
+    printf '%s' "$out" | grep -qF -- "$M075_EXPECT" \
+      || { printf '%s\n' "$out" >&2; fail "M075 T5 self-test ($what): the accounting failed, but its report does not name <<$M075_EXPECT>>, so the failure is not the one this plant makes"; }
+  }
+
+  # 1. A section the source declares that no timing call opens.
+  m075_plant_source add "$M075_EXTRA"
+  python3 tests/suitescan.py sections "$M075_PLANT" > "$WORK/m075-sections-add.txt" \
+    || fail "M075 T5 self-test: the scan over the planted source failed, so the plant proves nothing"
+  grep -qxF -- "$M075_EXTRA" "$WORK/m075-sections-add.txt" \
+    || fail "M075 T5 self-test: the scan over the planted source does not report the planted section, so the plant never reached the check"
+  M075_EXPECT="$M075_EXTRA"
+  m075_red "a section with no timing call" \
+    m075_account "$TIMING" "$WORK/m075-sections-add.txt" "$M075_TOTAL"
+
+  # 2. A timing row naming a section the source no longer has.
+  m075_plant_source drop unused
+  python3 tests/suitescan.py sections "$M075_PLANT" > "$WORK/m075-sections-drop.txt" \
+    || fail "M075 T5 self-test: the scan over the reduced source failed, so the plant proves nothing"
+  M075_DROPPED=$(head -1 "$WORK/m075-sections.txt")
+  if grep -qxF -- "$M075_DROPPED" "$WORK/m075-sections-drop.txt"; then
+    fail "M075 T5 self-test: the reduced source still declares <<$M075_DROPPED>>, so the plant removed nothing and the check below would be red for no planted reason"
+  fi
+  M075_EXPECT="$M075_DROPPED"
+  m075_red "a row no section claims" \
+    m075_account "$TIMING" "$WORK/m075-sections-drop.txt" "$M075_TOTAL"
+
+  # 3. Seconds that no longer add up: one row short by five, the set of
+  #    headings untouched, so only the total can see it.
+  awk -F'\t' 'BEGIN{OFS="\t"} NR==2 && $2>=0 {$2=$2-5} {print}' "$TIMING" > "$WORK/m075-timing-short.tsv"
+  M075_EXPECT="a gap of -5s"
+  m075_red "five seconds taken off one row" \
+    m075_account "$WORK/m075-timing-short.tsv" "$WORK/m075-sections.txt" "$M075_TOTAL"
+
+  pass "M075 T5 self-test: the accounting is red on a section the source declares with no timing row, on a timing row no section declares, and on a row whose seconds leave the total five short — and it names the section or the gap in each case, so its green above holds this run's profile to this run's source"
+fi
+section_close
+
 }
 
 # `pipefail` would abort on the function's own exit status before the count is
@@ -25403,4 +25814,22 @@ CHECK_STATUS=${PIPESTATUS[0]}
 set -e
 [ "$CHECK_STATUS" -eq 0 ] || exit "$CHECK_STATUS"
 CHECK_COUNT=$( { grep -cE '^ok ' "$RUN_LOG" || true; } | tr -d ' ')
+
+# Where this run's minutes went (M075). Every row was written by the section
+# it names, and the last check above held the set of them to this source and
+# their seconds to the clock this script kept, so what follows is measured
+# time rather than a claim about it. The whole file is left in place for
+# anyone who wants a row this list does not reach.
+printf '\n== the fifteen slowest of %s section rows (%ss, plus %ss of setup before the first section; %s) ==\n' \
+  "$(awk -F'\t' '$1 != "unattributed"' "$TIMING" | wc -l | tr -d ' ')" \
+  "$(awk -F'\t' '$1 != "unattributed" {t += $2} END {print t + 0}' "$TIMING")" \
+  "$(awk -F'\t' '$1 == "unattributed" {t += $2} END {print t + 0}' "$TIMING")" \
+  "$TIMING"
+# `head` would exit after fifteen lines and, once the rows outgrow the pipe
+# buffer, kill `sort` with SIGPIPE — which `pipefail` turns into a non-zero
+# exit AFTER every check has passed, with no FAIL line printed (M075 review
+# F2). awk reads the whole stream, so no writer here is ever cut off.
+sort -t "$(printf '\t')" -k2,2nr "$TIMING" \
+  | awk -F'\t' 'NR <= 15 {printf "  %5ds  %s\n", $2, $1}'
+
 printf '\nAll checks passed (%s checks).\n' "$CHECK_COUNT"

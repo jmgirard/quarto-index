@@ -9,7 +9,7 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M075 | The suite reports where its own time goes | planned | — | normal | milestones/M075-suite-timing-profile.md |
+| M075 | The suite reports where its own time goes | in-progress | — | normal | milestones/M075-suite-timing-profile.md |
 | M073 | A store report names the record it met as the record it was | done | — | normal | milestones/archive/M073-store-report-wordings.md |
 | M074 | A record no render has written is reported by the chapter that prints the section, once | done | M073 | normal | milestones/archive/M074-never-written-report-site.md |
 | M072 | A refused chapter whose record an older version wrote is reported once per index section | done | — | normal | milestones/archive/M072-refusal-report-count.md |

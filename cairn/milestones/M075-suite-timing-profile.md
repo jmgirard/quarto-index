@@ -1,13 +1,13 @@
 # M075: The suite reports where its own time goes
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — instrumentation of the acceptance suite, which is dev tooling nothing outside the repo consumes
-- **Branch/PR:** —
+- **Branch/PR:** `m075-suite-timing-profile`
 
 ## Goal
 
@@ -92,6 +92,7 @@ own domains. Out: per-render timing → candidate row; moving the literal
 ## Work log
 
 - 2026-09-04: created by /milestone-plan.
+- 2026-09-04: implement started on `m075-suite-timing-profile`; gate chose whole-second timestamps (`date +%s`) over a sub-second clock, because bash 3.2 and BSD `date` offer no sub-second source and 154 sections would each need two `python3` spawns, adding ~10s to the run being measured; and chose measuring the pre-first-section setup window directly over deriving it as the remainder, so a lost or double-written section row leaves the sum short and AC3's check red rather than absorbed.
 - 2026-09-04: criteria audit ran in reduced mode (internal tier) on a fresh [O] reader that authored none of the criteria; six findings, all with one clear repair, all fixed before the gate — count-equality replaced by set equality; a checker-bound promise rewritten to bind the timing file; the row set's enumerator changed from hand-placed calls to a scanner mode; the domain narrowed to sections inside `run_all_checks` (39 banners precede it); a discrimination criterion moved to T5; and that plant's evidence moved off a nested 13-minute run onto the scanner's overlay handle.
 - 2026-09-04: AC4 is the milestone template's standard verify-clean criterion for a code milestone, added after the criteria audit read AC1-AC3 and not put through it.
 - 2026-09-04: plan gate chose measuring the run's cost over going straight at parallelism because the investigation found three whole-run accumulator sweeps, ~90 fixed shared work-directory filenames, and a whole-tree byte-identity assertion, several of them shipped milestones' acceptance criteria, putting any wall-clock gain three or more milestones out; falsified by a measurement showing the run's time concentrated in the 73 render sites already isolated in their own scratch trees.

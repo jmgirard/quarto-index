@@ -374,6 +374,11 @@ and every named/unnamed pair for substring collisions, finding none.
 - **N9 (rejected — style/reuse nitpick).** `check_warning_names_nth` duplicates
   `check_warning_names`; the lens itself calls it quality, not a defect.
 
+### PR conversation
+
+PR #74 carries no reviews, no conversation comments and no unresolved review
+threads — the read returned empty on all three surfaces.
+
 Return count: 1 defect return (round 1's). No amendment return. Nothing in
 round 2 demonstrates an acceptance criterion failing, so the return floor does
 not fire.

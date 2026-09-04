@@ -64,7 +64,7 @@ stands as its known issue.
       still reported as one a different version of this extension wrote, at
       the count it has now. Evidence: the `m072` `version` leg
       (`tests/run-tests.sh:24505`) passes with its counts unchanged.
-- [ ] AC5: The store-reports section of `site/books.qmd` and the unreleased
+- [x] AC5: The store-reports section of `site/books.qmd` and the unreleased
       section of `CHANGELOG.md` state the wording set and the version-field
       partition as the shipped code has them: a grep over those two regions
       returns no sentence saying a record carrying no version is read as one
@@ -326,3 +326,107 @@ returned ten, ranked; F1 below is the review session's own.
 **Outcome: returned to `in-progress`.** AC5's claim-ledger clause fails on
 fresh evidence (F1). F2-F6 and F8-F10 ride the same return; F7 is a criteria
 matter and F11 a follow-up.
+
+---
+
+## Review — round 2 (2026-09-03)
+
+Evidence dated to the tree at `a8825f8`, the repaired tree; round 1's evidence
+above stands as the record of that round and is not re-dated.
+
+**Runs.** `tests/run-tests.sh` exits 0, 680 checks passed.
+`tests/run-tests.sh --self-test` exits 0, 1268 checks passed. Both run fresh in
+this session over `a8825f8` with a clean tree.
+
+**AC1 — verified.** The `m069-lostsource` leg runs green in the fresh run
+(`M069-AC5` block), and `tests/scans/warn-distinct.py` passes at 84 messages,
+mutually distinct as whole messages and under its prefix check
+(`M02-AC5`). The M069 aggregate pass records the never-written wording drawn
+and the could-not-be-read wording never, over the same fixtures.
+
+**AC2 — verified.** The `m073-undecodable` leg passes: a record that was
+written, does not decode, and whose chapter's source cannot be read either
+keeps the wording naming both, the new never-written wording is not drawn
+there, and that chapter's term is absent from the section `five.qmd` builds.
+
+**AC3 — verified.** The three `m073_version_form` legs — `version` deleted,
+the string `"4"`, a boolean — each pass with the three `WARN_STORE_STALE_*`
+keys at zero and `WARN_STORE_UNREADABLE_RECOVERED` at one naming `one.qmd`,
+and each plant reports the record differing from the written one in the
+`version` field alone.
+
+**AC4 — verified.** `git diff origin/main...HEAD -- tests/run-tests.sh` shows
+no change inside the `m072` version leg, and that leg passes in the fresh run
+with its counts unchanged: the refusal drawn once by the chapter that builds a
+section and not at all by the chapter that builds none.
+
+**AC5 — verified, both clauses.** Grep clause: every sentence containing "no
+version" in the books page's store-reports region and in `CHANGELOG.md`'s
+unreleased section states the opposite of the forbidden claim — such a record
+is read as one that could not be used, "rather than as one written by a
+different version of this extension". Ledger clause: six rows were added
+across the branch, one per added or rewritten sentence, including
+`why the written-record wording is not reused`, which pins the sentence round 1
+failed on. The ledger stands at 39 rows, the claim-list self-test's pinned
+count matches, and `sitecheck.py claims` passes over all 39.
+
+**AC6 — verified.** Both runs above. The M073 battery under `--self-test`
+shows red against each pre-fix shape, the fourth plant added this round
+included: with the version test back to inequality alone, a chapter that
+builds no index section says nothing about a record carrying no version,
+neither the report nor the refusal.
+
+**Consistency gate — passed.** `cairn_validate.py` exits 0: all 16 checks
+PASS, 7 advisories, `release window` not fired. The `sizing` advisory WARNs at
+13 tasks — six of them this milestone's return repairs. The `generic`
+profile's `consistency-gate` slot names no toolchain checks. No `DESIGN.md`
+principle changed, so `cairn_impact.py` is skipped.
+
+**Independent review — round 2.** Surface tier user-facing and the diff
+touches executable surface, so the full three-lens fan-out ran again, fresh
+context, distinct evidence bases. [S] blame-history: no findings. [S]
+prior-PR-comments: no findings; the inline-comment probe returned `[]`, so
+that surface was skipped, and the archived review records show every round-1
+repair present at HEAD. [O] diff-bug returned eight, ranked; each was verified
+against the tree before triage, and R2-F8 did not survive verification as
+stated.
+
+- **R2-F1 (a false comment on the branch the milestone moved).**
+  `book.lua:1011-1013` says "The other three states — never written, listed and
+  unopenable, opened and undecodable — are drawn here, by every chapter that
+  reads the store, the counts they have always had." After the narrowing a
+  fourth state is drawn there — decodes to a table, carries no numeric
+  `version` — and its count is the one that moved. Confirmed.
+- **R2-F2 (the same, on the refused branch).** `book.lua:1046-1047` lists the
+  same three states for the inline refusal. A refused chapter whose record
+  decodes without a numeric `version` reaches it and is neither unopenable nor
+  undecodable — the case the new `m073-count-refused` leg exercises. Confirmed.
+- **R2-F3 (an ordinal contradiction introduced by T9).** `book.lua:1086` and
+  `DESIGN.md:1646` both call the M073 wording the sixth; T9's edit to the
+  recovery paragraph inserted it as a fifth and renumbered M070's refusal to
+  sixth, which also breaks the following sentence, whose "That fifth" refers to
+  the refusal. Confirmed.
+- **R2-F4 (a qualifier dropped on the site).** `site/books.qmd:219` says "a
+  `version` this render does not write … and only that", without the "can read
+  as a number" qualifier `CHANGELOG.md` and `DESIGN.md` both carry; a `version`
+  of `"4"` satisfies the clause as written and is not read that way. The colon
+  clause that follows corrects it, so the page is not wholly false and AC5's
+  grep clause still passes. Confirmed.
+- **R2-F5 (a record overcounting a family).** D-050's Consequences say "The six
+  wordings the never-written and could-not-be-read families now hold"; those
+  two families hold five — three `WARN_STORE_UNREADABLE_*` and two
+  `WARN_STORE_NEVER_*`. The sixth store wording is the refusal, in neither
+  family. Confirmed; D-050 is history, so this takes a superseding entry.
+- **R2-F6 (a running count out of order).** The store key-count comments read
+  Seven (`:877`), Nine (`:883`), Eight (`:891`) — the M073 block was inserted
+  between M069's and M070's. Confirmed.
+- **R2-F7 (two added clauses carry no ledger row).** "the report names both
+  files" and R2-F4's clause. Both sit inside sentences that do carry a row, so
+  AC5 as written is met. Confirmed as stated; overlaps R2-F4.
+- **R2-F8 (a missing zero-control) — did not survive verification as stated.**
+  The `m069-AC2` quiet legs omit `WARN_STORE_NEVER_LOST` from their zero-control
+  list, but they also assert `check_extension_warning_count … 0` over the same
+  render, which already catches a spurious draw there. The gap is
+  assert-identity-rather-than-count, not an uncaught regression; the finding's
+  failure scenario overstates it.
+

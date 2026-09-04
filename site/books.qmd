@@ -142,7 +142,9 @@ Five things recovery does not return.
   chapter's terms are missing from the index until it is rendered again. It
   says so in the words of the state the record was in: where a record was
   written and could not be read, the report names both files; where no render
-  has written one, it says that instead, and names the source alone.
+  has written one, it says that instead, and names the source alone — the
+  record it names as never written rather than as unreadable, so the source is
+  the only file it calls unreadable.
 - **A page range, and a principal locator.** Whether two marks are the two ends
   of one range, and which locator a `mention="principal"` emphasizes, are
   settled inside that chapter's own render against the anchors it produced. A

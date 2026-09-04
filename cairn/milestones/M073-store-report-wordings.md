@@ -86,7 +86,7 @@ stands as its known issue.
 - AC2 → T4
 - AC3 → T2, T4
 - AC4 → T2, T4
-- AC5 → T6
+- AC5 → T6, T8
 - AC6 → T5, T7
 
 ## Tasks
@@ -119,6 +119,30 @@ stands as its known issue.
       cannot be read draws the existing wording for that outcome, and
       recording the version-field partition.
 
+Added after the review return of 2026-09-03, one per finding disposed to
+implement:
+
+- [ ] T8: `site/books.qmd` — the clarifying clause on why the never-written
+      report names the source alone (F5), and claim-ledger rows for that clause
+      and for the sentence saying why the wording for a record that WAS written
+      is not reused on this path (F1, AC5's failing clause); the claim-list
+      self-test's pinned row count 37 → 39.
+- [ ] T9: `cairn/DESIGN.md`'s recovery paragraph corrected in place (F2): six
+      wordings rather than five, the one added here named among them, and the
+      version clause narrowed to a `version` this render reads as a number.
+- [ ] T10: The draw site the narrowing moved (F3, F4): two `one.qmd` legs over
+      a record carrying no version — an ordinary chapter's and the refused
+      notebook chapter's — each shown red under the wide-test plant read on the
+      count axis, and the changelog sentence stating the move.
+- [ ] T11: Plant hygiene (F6, F8, F9, F10): the AC2 plant's overwrite guard,
+      the version plant's comparison made one that can fail and its
+      `encoding='utf-8'`, and the boolean nil-test plant's missing zero
+      companion.
+- [ ] T12: D-051 recording the reassignment F3 and F4 found unstated; a
+      candidate row for the suite-wide zero-control sweep (F11).
+- [ ] T13: Full `tests/run-tests.sh` and `--self-test` runs over the repaired
+      tree.
+
 ## Work log
 
 - 2026-09-03: created by /milestone-plan, promoting the held store-reports candidate row (its KI230 and KI236 halves); the other two halves are M074.
@@ -135,6 +159,8 @@ stands as its known issue.
 - 2026-09-03: T7 — D-050 recorded. Suite runs 1-4 each surfaced one defect in this milestone's own additions: the two self-test renders missing their `capture` calls (M24 scan), the claim-list self-test's pinned row count 33 → 37, and the M070 `lostwording` plant asserting the old wording over a cold tree, where the never-written one is now the true report. Run 1 was invalid — the script was edited while it ran; see the LESSONS line.
 - 2026-09-03: `tests/run-tests.sh --self-test` exits 0, all 1260 checks passed (run 5, tree at 79f2855).
 - 2026-09-03: review returned M073 to in-progress — AC5's clause requiring the books-page claim ledger to carry a row for each sentence added fails: `site/books.qmd:178` is added and unpinned. AC1-AC4 and AC6 verified with fresh evidence (suite 675 checks, self-test 1260 checks, both exit 0); consistency gate clean. Nine further findings logged in the Review section, F2 (DESIGN.md still states five wordings and the falsified version clause) and F3 (the versionless record's report count moved, untested and not in the changelog) the substantive ones.
+- 2026-09-03: return gate chose leaving AC1/AC4/AC5's drifted line citations as recorded over amending them, and holding the criteria set while covering the moved report count with a test leg, a changelog sentence and a D-entry, over adding a seventh criterion for it.
+- 2026-09-03: CHECKPOINT, tasks not ticked — T8-T13 added for the review's implement-bound findings and every edit written (books page clause and two ledger rows, DESIGN.md paragraph corrected in place, two one.qmd count legs with their wide-test plants, four plant-hygiene fixes, D-051, the zero-control candidate row), but the full suite and self-test are still running, so no task is checked off yet. cairn_validate: all 16 checks PASS, the sizing advisory now WARNs at 13 tasks — the return's repair tasks, not a milestone that grew a second goal.
 - 2026-09-03: review opened — branch pushed, draft PR #73; consistency gate clean (cairn_validate 16 PASS / 7 advisories OK; generic profile names no toolchain checks; no principle changed, so no impact scan). Criteria evidence pending the full suite and self-test re-run.
 
 ## Decisions

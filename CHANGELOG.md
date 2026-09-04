@@ -19,8 +19,13 @@
   a number and does not itself write evidences a version at all; a truncated or
   hand-emptied record evidences none, and was being reported as carrying one.
   A record whose `version` is a number this render does not write is reported
-  as before, at the count it had. No record's usability changes: every one of
-  these was already refused and read back from its chapter's source.
+  as before, at the count it had. Where a record evidencing no version is
+  reported moves with its wording: it is now drawn where the chapter met it, by
+  every chapter that reads the store, rather than once for every chapter that
+  builds an index section — and where that chapter's source is one this
+  extension will not read, its refusal is drawn there too rather than at the
+  section-building site. No record's usability changes: every one of these was
+  already refused and read back from its chapter's source.
 
 - In an HTML book, a chapter whose source this extension will not read is now
   reported once for every chapter that builds an index section — and once by a

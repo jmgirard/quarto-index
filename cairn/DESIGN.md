@@ -518,20 +518,28 @@ inside a block or span carrying Quarto's `.content-visible` or
 and of the blocks alike — before it reads
 anything (D-042, front matter added M070); a source Pandoc's markdown reader
 cannot read recovers
-nothing, and the reading chapter's own record report says so. Five wordings
-carry the outcome: three for a record that was written and could not be used —
-recovered, parsed and reaching no mark, unreadable — a fourth for one no
-render has written whose source was read back, which never calls such a record
-unreadable, and a fifth for a chapter whose source this route does not read,
-drawn instead of the other four whatever state that chapter's record was in,
-and so worded to assert nothing about the record (added M070). That fifth is
+nothing, and the reading chapter's own record report says so. Six wordings
+carry the outcome (corrected M073): three for a record that was written and
+could not be used — recovered, parsed and reaching no mark, unreadable — a
+fourth for one no render has written whose source was read back, which never
+calls such a record unreadable, a fifth for one no render has written whose
+source could not be read either, which names the record as never written and
+the source as the one file it could not read (added M073, D-050), and a sixth
+for a chapter whose source this route does not read,
+drawn instead of the other five whatever state that chapter's record was in,
+and so worded to assert nothing about the record (added M070). That sixth is
 drawn at the count of the wording it stands in for (D-049, M072): where the
-record came from another version — which is what any record that decodes and
-does not carry this version's number is read as — it is handed to the report
+record came from another version — which is what a record carrying a `version`
+this render can read as a number and does not itself write is read as, and
+only that (corrected M073, D-050) — it is handed to the report
 site with the stale records and drawn there, once per chapter that builds a
 section and once by a chapter that builds none whose records show no chapter
 placing an index; in the other three states it is drawn where the chapter met
-the record, as all four were before. A never-written
+the record, as all four were before. A record decoding to a table whose
+`version` is absent, or holds something other than a number, evidences no
+version and takes the could-not-be-read wordings — so it is drawn where the
+chapter met it, by every chapter that reads the store, and a refused chapter in
+that state draws its refusal there too (M073, D-051). A never-written
 record whose source parses to no mark is the one
 silent outcome: it has lost nothing, and every chapter of a store-less book
 that marks nothing would otherwise report on every render (M069). A REFUSED

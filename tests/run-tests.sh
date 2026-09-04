@@ -21777,7 +21777,11 @@ python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
 # a record was there, that it does so in a wording of its own, that only a
 # `version` this render can read as a number evidences a version at all, and
 # that a record decoding to a table without one is read as a record that could
-# not be used.
+# not be used. M073's review added the last two: the two sentences of that
+# prose the first four rows left unpinned — that the never-written report names
+# the source alone because it names the record as never written rather than as
+# unreadable, and why the wording for a record that WAS written is not reused
+# on this path.
 cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
@@ -21816,6 +21820,8 @@ a never-written record whose source is lost says so	where no render has written 
 the never-written lost report is its own wording	its own wording, saying that no render has written the record and that the chapter's source could not be read either
 only a number evidences a version	evidences no version and is read as a record that could not be used
 a versionless record is one that could not be used	decoding to a table that names no version this render can read as one
+only the source is named unreadable there	the record it names as never written rather than as unreadable, so the source is the only file it calls unreadable
+why the written-record wording is not reused	says a record was there, which on this path would be a file no render ever made
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
   || fail "M52-AC5/M55/M062/M063/M071-AC4: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, no longer says which chapter carries an index no marker names or on what proviso, or no longer says what the book reports for a record it could not use, or no longer states the source-recovery route M064/M065 added — what it returns, what it does not, that a record whose name no listing carries is left alone while one the listing carries and nothing can open is not, a hand-made lookalike among those (its own FAIL line is above)"
@@ -21884,7 +21890,7 @@ SUPERSEDEPY
     "$M061D/books-oldrule.qmd" "M063-AC6 self-test" \
     || fail "M063-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
   m061_planted 'the books page stating the superseded chapter rule' \
-    'does not state 1 of the 37 claim(s)' \
+    'does not state 1 of the 39 claim(s)' \
     python3 tests/sitecheck.py claims "$M061D/books-oldrule.qmd" \
       "$WORK/books-claims.txt"
 
@@ -24626,6 +24632,13 @@ pass "M072-AC1/M072-AC2/M072-AC3: of the four record states this route tells apa
 # marker chapter nor the book's last, so nothing about placement moves with it.
 # ---------------------------------------------------------------------------
 m063_tree m073-undecodable
+# The plant OVERWRITES a record this tree's own render wrote. Without this
+# guard the `printf` would create the file where the fixture had stopped
+# carrying one, and the leg would then be about a record the plant itself made
+# — which is the never-written state, the opposite of what it asserts (M073
+# review F6). Every sibling plant guards the same way.
+[ -f "$M061W/m073-undecodable/.quarto/$STORE_DIR/four.qmd$STORE_SUFFIX" ] \
+  || fail "M073-AC2: the tree's store carries no record for four.qmd, so the plant below would write one rather than replace one and this leg would be about a record no render has written"
 printf 'this is not a record\n' \
   > "$M061W/m073-undecodable/.quarto/$STORE_DIR/four.qmd$STORE_SUFFIX"
 python3 -c 'import json,sys
@@ -24677,19 +24690,34 @@ pass "M073-AC2: a record that was written, does not decode, and whose chapter's 
 # The value planted for the string form is `STORE_VERSION` spelled as text, so
 # what separates it from a usable record is its TYPE and not its number.
 # ---------------------------------------------------------------------------
-m073_plant_version() {   # <slug> <form> <label>
-  local slug="$1" form="$2" label="$3"
-  python3 - "$M072W/$slug/.quarto/$STORE_DIR/one.qmd$STORE_SUFFIX" \
-    "$STORE_VERSION" "$form" "$label" <<'M073VER'
+m073_plant_version() {   # <slug> <chapter> <form> <label>
+  local slug="$1" chapter="$2" form="$3" label="$4"
+  python3 - "$M072W/$slug/.quarto/$STORE_DIR/$chapter$STORE_SUFFIX" \
+    "$STORE_VERSION" "$form" "$label" "$chapter" <<'M073VER'
 import json, sys
-path, current, form, label = sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4]
-record = json.load(open(path))
+path, current, form, label, chapter = (
+    sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4], sys.argv[5])
+# `encoding='utf-8'` on every open, as `place_plant_marker` does: a record
+# carrying a non-ASCII term read under a C locale would otherwise raise, and
+# the fixture's terms being ASCII is what has kept that latent (M073 review
+# F10).
+#
+# The pre-plant parse is read from the FILE rather than copied out of the
+# object the plant mutates. A `dict(record)` taken from that object and then
+# compared with it minus `version` is equal by construction whatever the plant
+# does, so it reads as a guard and distinguishes nothing; read separately and
+# compared against the record re-read after the rewrite, the comparison is over
+# the bytes on disk before and after, and a rewrite that drops or reshapes any
+# other field is red (M073 review F8).
+with open(path, encoding='utf-8') as fh:
+    before = json.load(fh)
+with open(path, encoding='utf-8') as fh:
+    record = json.load(fh)
 if record.get('version') != current:
     sys.exit(f'FAIL: {label}: the record at {path} carries version '
              f'{record.get("version")!r} rather than the {current} this render '
              f'writes, so the plant below would not be the only thing wrong '
              f'with it')
-before = dict(record)
 if form == 'absent':
     del record['version']
     expected = None
@@ -24701,12 +24729,10 @@ elif form == 'boolean':
     expected = True
 else:
     sys.exit(f'FAIL: {label}: {form} is not a version form this plant knows')
-if {k: v for k, v in before.items() if k != 'version'} \
-        != {k: v for k, v in record.items() if k != 'version'}:
-    sys.exit(f'FAIL: {label}: the plant changed a field other than version')
-with open(path, 'w') as fh:
+with open(path, 'w', encoding='utf-8') as fh:
     json.dump(record, fh)
-written = json.load(open(path))
+with open(path, encoding='utf-8') as fh:
+    written = json.load(fh)
 if written.get('version', '\0missing') != (expected if expected is not None else '\0missing'):
     sys.exit(f'FAIL: {label}: the rewrite did not land — the record now carries '
              f'version {written.get("version", "<absent>")!r}')
@@ -24714,7 +24740,11 @@ if not isinstance(written, dict) or 'marks' not in written:
     sys.exit(f'FAIL: {label}: the rewritten file no longer decodes to a record '
              f'table, so it would take the undecodable path rather than the '
              f'version path this leg is about')
-print(f'ok   {label}: one.qmd\'s record carries a version field this render '
+if {k: v for k, v in before.items() if k != 'version'} \
+        != {k: v for k, v in written.items() if k != 'version'}:
+    sys.exit(f'FAIL: {label}: the record on disk differs from the one this '
+             f'render wrote in a field other than version')
+print(f'ok   {label}: {chapter}\'s record carries a version field this render '
       f'cannot read as a number ({written.get("version", "<absent>")!r}), and '
       f'differs from the record that render wrote in nothing else')
 M073VER
@@ -24725,7 +24755,7 @@ m073_version_form() {   # <form> <label>
   m072_copy base "$slug"
   [ -f "$M072W/$slug/.quarto/$STORE_DIR/one.qmd$STORE_SUFFIX" ] \
     || fail "$label: the copied store carries no record for one.qmd, so the plant below would be about a record that was never written"
-  m073_plant_version "$slug" "$form" "$label (the plant)" \
+  m073_plant_version "$slug" one.qmd "$form" "$label (the plant)" \
     || fail "$label: one.qmd's record could not be given the $form version form (its own FAIL line is above)"
   ( cd "$M072W/$slug" && quarto render index.qmd --to html ) \
     > "$WORK/$slug.log" 2>&1 \
@@ -24765,6 +24795,64 @@ m073_version_form string \
 m073_version_form boolean \
   "M073-AC3 (a record whose version is a boolean)"
 pass "M073-AC3: a record file that decodes to a table carrying no version field, or one whose version is a string or a boolean, is reported by the wordings for a record that could not be read and by none of the three naming a different version of this extension — the version test having narrowed to a number this render does not write, which is the only thing that evidences a version at all"
+
+# ---------------------------------------------------------------------------
+# M073 review F3/F4 — the count the narrowing moved, on the axis M072 built its
+# criteria on. A record decoding to a table with no numeric `version` used to
+# be handed to the report site with the stale records and drawn under
+# `builds or first == nil`; it now falls through to the inline branches and is
+# drawn by every chapter that reads the store. The three AC3 legs above cannot
+# see that: they all render `index.qmd`, which builds both sections, so the
+# count is one under the old rule and the new alike and they discriminate on
+# wording only.
+#
+# `one.qmd` is the chapter that separates them — it builds no section, and this
+# book's records show `index.qmd` placing both indexes, so the old gate is shut
+# for it. Two legs, one per state that moved: an ordinary chapter this route
+# reads, and the notebook chapter it refuses, whose refusal moved back with it.
+#
+# The plant is on another chapter's record in both, because a chapter reads the
+# store before it writes its own and so never meets its own record.
+# ---------------------------------------------------------------------------
+m073_count_leg() {   # <slug> <plant chapter> <label>
+  local slug="$1" chapter="$2" label="$3"
+  m072_copy base "$slug"
+  [ -f "$M072W/$slug/.quarto/$STORE_DIR/$chapter$STORE_SUFFIX" ] \
+    || fail "$label: the copied store carries no record for $chapter, so the plant below would be about a record that was never written"
+  m073_plant_version "$slug" "$chapter" absent "$label (the plant)" \
+    || fail "$label: $chapter's record could not be given the deleted-version form (its own FAIL line is above)"
+  m072_render "$slug" one.qmd "-one" "$label"
+}
+
+m073_count_leg m073-count-read two.md \
+  "M073 review F3 (one.qmd over a store whose .md chapter's record carries no version)"
+check_warning_count "$WORK/m072-m073-count-read-one.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
+  "M073 review F3 (a record evidencing no version is drawn where the chapter met it, so the chapter that builds no section reports it — under the wider test it entered the stale set and this chapter said nothing)"
+{ grep -F -- "$WARN_STORE_UNREADABLE_RECOVERED" "$WORK/m072-m073-count-read-one.log" \
+  | grep -qF 'two.md'; } \
+  || { grep -F -- "$WARN_STORE_UNREADABLE_RECOVERED" "$WORK/m072-m073-count-read-one.log" >&2; fail "M073 review F3: the report does not name two.md, the chapter whose record carries no version"; }
+check_warning_count "$WORK/m072-m073-count-read-one.log" "$WARN_STORE_STALE_RECOVERED" 0 \
+  "M073 review F3 (nothing may say another version of this extension wrote it)"
+check_warning_count "$WORK/m072-m073-count-read-one.log" "$WARN_STORE_KIND_REFUSED" 0 \
+  "M073 review F3 (two.md is a source this route reads, so nothing is refused)"
+check_warning_count "$WORK/m072-m073-count-read-one.log" "$WARN_STORE_NEVER_RECOVERED" 0 \
+  "M073 review F3 (the record WAS written, so no never-written wording is drawn)"
+check_extension_warning_count "$WORK/m072-m073-count-read-one.log" 1 \
+  "M073 review F3 (one.qmd emitted a warning this suite cannot name; its one is the report for two.md — it carries no placement marker itself, and every other record is usable)"
+
+m073_count_leg m073-count-refused five.ipynb \
+  "M073 review F4 (one.qmd over a store whose notebook chapter's record carries no version)"
+check_warning_count "$WORK/m072-m073-count-refused-one.log" "$WARN_STORE_KIND_REFUSED" 1 \
+  "M073 review F4 (a refused chapter whose record evidences no version draws its refusal where the chapter met the record, not once per section)"
+m070_refusal_names five.ipynb "$WORK/m072-m073-count-refused-one.log" \
+  "M073 review F4 (a record carrying no version at all)"
+m072_other_wordings_silent "$WORK/m072-m073-count-refused-one.log" \
+  "M073 review F4 (one.qmd, a refused chapter whose record carries no version)"
+m072_only_refusal_names "$WORK/m072-m073-count-refused-one.log" nomarker \
+  "M073 review F4 (one.qmd, a refused chapter whose record carries no version)"
+check_extension_warning_count "$WORK/m072-m073-count-refused-one.log" 1 \
+  "M073 review F4 (one.qmd emitted a warning this suite cannot name; its one is the refusal)"
+pass "M073 review F3/F4: a record decoding to a table that carries no version is reported by the chapter that meets it whether that chapter builds an index section or not, and a refused chapter whose record is in that state draws its refusal there too — the draw site the narrowing moved both of them to"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -24854,21 +24942,26 @@ if [ "${1:-}" = "--self-test" ]; then
     "M073 T5 self-test (the branch made unreachable: the state falls through to the wording claiming a record that could not be read)"
   pass "M073 T5 self-test: with the never-written family's lost branch made unreachable and nothing else changed, a chapter whose record no render wrote and whose source cannot be read is told its record could not be read — which both M073-AC1 counts on the m069-lostsource leg would fail on"
 
-  # One mutant tree carrying the M072 fixture's filled store, one.qmd's record
-  # given the planted version form, index.qmd rendered into it. Copied from
-  # `base` rather than from a planted slug, so the version form and the filter
-  # mutation are the only two things that differ from a working render.
-  m073_mutant_version() {   # <slug> <form> <label> <perl substitution>...
-    local slug="$1" form="$2" label="$3"
-    shift 3
+  # One mutant tree carrying the M072 fixture's filled store, one named
+  # chapter's record given the planted version form, one named chapter
+  # rendered into it. Copied from `base` rather than from a planted slug, so
+  # the version form and the filter mutation are the only two things that
+  # differ from a working render. The rendering chapter is a parameter because
+  # the wording and the COUNT are two different questions: `index.qmd` builds
+  # both sections and is where a version-skewed record is reported, `one.qmd`
+  # builds none and is where the report site's gate is visible (M073 review
+  # F3/F4).
+  m073_mutant_version() {   # <slug> <plant chapter> <render chapter> <form> <label> <perl substitution>...
+    local slug="$1" chapter="$2" render="$3" form="$4" label="$5"
+    shift 5
     [ "$#" -ge 1 ] || fail "$label: m073_mutant_version was given no substitution to apply"
     m072_copy base "$slug"
-    m073_plant_version "$slug" "$form" "$label (the plant)" \
-      || fail "$label: one.qmd's record could not be given the $form version form (its own FAIL line is above)"
+    m073_plant_version "$slug" "$chapter" "$form" "$label (the plant)" \
+      || fail "$label: $chapter's record could not be given the $form version form (its own FAIL line is above)"
     local filter="$M072W/$slug/_extensions/index/modules/book.lua"
     spliced_copy "$label" "the filter" "$filter" "$M072W/$slug-spliced" "$@"
     mv "$M072W/$slug-spliced" "$filter"
-    ( cd "$M072W/$slug" && quarto render index.qmd --to html ) \
+    ( cd "$M072W/$slug" && quarto render "$render" --to html ) \
       > "$WORK/$slug.log" 2>&1 \
       || { tail -30 "$WORK/$slug.log" >&2; fail "$label: the mutated render failed; this case is about which wording is drawn, not about a broken render"; }
     capture --project "$M072W/$slug" html "$slug"
@@ -24879,7 +24972,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # context, so it can only match in `store_read`: `valid_record` holds the
   # same comparison and is deliberately NOT the site this plant is about.
   M073_WIDE_TEST='s{if ok and type\(data\) == "table" and type\(data\.version\) == "number"\n           and data\.version ~= STORE_VERSION then}{if ok and type(data) == "table" and data.version ~= STORE_VERSION then}'
-  m073_mutant_version m073-widetest absent \
+  m073_mutant_version m073-widetest one.qmd index.qmd absent \
     "M073 T5 self-test (the version test back to inequality alone)" \
     "$M073_WIDE_TEST"
   check_warning_count "$WORK/m073-widetest.log" "$WARN_STORE_STALE_RECOVERED" 1 \
@@ -24892,26 +24985,54 @@ if [ "${1:-}" = "--self-test" ]; then
   # leg passes under it, which is the point: only a version of a type this
   # render cannot read as a number tells the two narrowings apart.
   M073_NIL_TEST='s{and type\(data\.version\) == "number"\n           and data\.version ~= STORE_VERSION then}{and data.version ~= nil\n           and data.version ~= STORE_VERSION then}'
-  m073_mutant_version m073-niltest absent \
+  m073_mutant_version m073-niltest one.qmd index.qmd absent \
     "M073 T5 self-test (the version test narrowed to nil, deleted-version form)" \
     "$M073_NIL_TEST"
   check_warning_count "$WORK/m073-niltest.log" "$WARN_STORE_STALE_RECOVERED" 0 \
     "M073 T5 self-test (narrowed to nil: a record with no version field is NOT reported as another version's, so this leg alone cannot tell this mutation from the filter as shipped)"
   check_warning_count "$WORK/m073-niltest.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
     "M073 T5 self-test (narrowed to nil: the deleted-version leg is green under the mutation too)"
-  m073_mutant_version m073-niltest-string string \
+  m073_mutant_version m073-niltest-string one.qmd index.qmd string \
     "M073 T5 self-test (the version test narrowed to nil, string form)" \
     "$M073_NIL_TEST"
   check_warning_count "$WORK/m073-niltest-string.log" "$WARN_STORE_STALE_RECOVERED" 1 \
     "M073 T5 self-test (narrowed to nil: a version written as a string is reported as another version's)"
   check_warning_count "$WORK/m073-niltest-string.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
     "M073 T5 self-test (narrowed to nil: and the wording for a record that could not be read is not drawn)"
-  m073_mutant_version m073-niltest-boolean boolean \
+  m073_mutant_version m073-niltest-boolean one.qmd index.qmd boolean \
     "M073 T5 self-test (the version test narrowed to nil, boolean form)" \
     "$M073_NIL_TEST"
   check_warning_count "$WORK/m073-niltest-boolean.log" "$WARN_STORE_STALE_RECOVERED" 1 \
     "M073 T5 self-test (narrowed to nil: a boolean version is reported as another version's too)"
+  check_warning_count "$WORK/m073-niltest-boolean.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+    "M073 T5 self-test (narrowed to nil: and the wording for a record that could not be read is not drawn — the companion the string form asserts, without which a mutation drawing both wordings would pass here)"
   pass "M073 T5 self-test: with the version test narrowed to nil rather than to a number, the deleted-version leg stays green while a version written as a string and a boolean one are each reported as written by a different version of this extension — which the M073-AC3 counts on those two legs would fail on, and which the deleted-version leg alone could never catch"
+
+  # 4 — the same wide test as plant 2, read on the COUNT axis rather than the
+  # wording one. With the version test back to inequality alone a record
+  # carrying no version enters the stale set again and is drawn under the
+  # report site's gate, which is shut for a chapter that builds no section over
+  # a store showing another chapter placing an index. Both F3/F4 legs above go
+  # to zero under it, refused chapter and read chapter alike, which is what
+  # makes their green a statement about the draw site (M073 review F3/F4).
+  m073_mutant_version m073-widetest-count two.md one.qmd absent \
+    "M073 T5 self-test (the version test back to inequality alone, read by a chapter that builds no section)" \
+    "$M073_WIDE_TEST"
+  check_warning_count "$WORK/m073-widetest-count.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+    "M073 T5 self-test (inequality alone: the record goes back to the stale set, so the chapter that builds no section says nothing about it)"
+  check_warning_count "$WORK/m073-widetest-count.log" "$WARN_STORE_STALE_RECOVERED" 0 \
+    "M073 T5 self-test (inequality alone: nor is the different-version wording drawn there — the report site's gate is shut for this chapter, which is the whole of the count this milestone moved)"
+  check_extension_warning_count "$WORK/m073-widetest-count.log" 0 \
+    "M073 T5 self-test (inequality alone: one.qmd draws nothing at all over this store, as it did before the narrowing)"
+
+  m073_mutant_version m073-widetest-refused five.ipynb one.qmd absent \
+    "M073 T5 self-test (the version test back to inequality alone, a refused chapter read by a chapter that builds no section)" \
+    "$M073_WIDE_TEST"
+  check_warning_count "$WORK/m073-widetest-refused.log" "$WARN_STORE_KIND_REFUSED" 0 \
+    "M073 T5 self-test (inequality alone: the refusal goes back to the report site with the stale records, so the chapter that builds no section does not draw it)"
+  check_extension_warning_count "$WORK/m073-widetest-refused.log" 0 \
+    "M073 T5 self-test (inequality alone: one.qmd draws nothing at all over this store either)"
+  pass "M073 T5 self-test: with the version test back to inequality alone and nothing else changed, a chapter that builds no index section says nothing about a record carrying no version — neither the report nor, where the chapter is one this route refuses, the refusal — which is the count both M073 review F3/F4 legs assert, read backwards"
 fi
 
 }

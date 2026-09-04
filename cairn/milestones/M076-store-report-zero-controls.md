@@ -72,7 +72,7 @@ milestone changes assertions, never reports.
 
 ## Tasks
 
-- [ ] T1: Write `check_store_reports` beside `check_warning_count`
+- [x] T1: Write `check_store_reports` beside `check_warning_count`
       (`tests/run-tests.sh:2053`). Its domain is `"${!WARN_STORE_@}"` — ten
       names today, defined at `:928-973`. Count occurrences inline rather than
       delegating to `check_warning_count`, so the family is reachable from one
@@ -111,6 +111,9 @@ milestone changes assertions, never reports.
 - 2026-09-04: branch `m076-store-report-zero-controls` cut from the default branch; status in-progress.
 - 2026-09-04: implement gate chose spelling each report's full variable name at the call site (`WARN_STORE_STALE_RECOVERED=1`) over a short suffix, because the text at the call site is then the name the domain holds and a typo is caught as an unknown name rather than swept as a zero; falsified by a wording whose full name will not fit a call site's line. Same gate chose one merged label per log over a note beside each expected count, the helper's own failure message naming the offending wording and both counts; falsified by a merged label that no longer says which leg it is about.
 - 2026-09-04: T1 checkpoint, half-done: `check_store_reports` written at `tests/run-tests.sh:2079`, its domain read from `${!WARN_STORE_@}` at call time. Its four behaviors shown in a scratch harness over crafted logs — green with nothing named, red on a wording present that the call did not name, red on a wrong count, red on a name the domain does not hold, red on an emptied domain. The plain-suite verify is still running, so T1 is not ticked.
+
+- 2026-09-04: T1 done — plain suite green, 701 checks, exit 0.
+- 2026-09-04: T2 checkpoint, half-done: the conversion applied by a script that re-reads the call sites out of the suite's own source, groups them one per render (a group breaks where a line between two same-log calls redirects a render into that log, which is what separates the two functions that both write `$WORK/place-$slug.log` and the two that both write `$WORK/m068-nested-$slug.log`), and merges each group's labels — distinct criterion prefixes joined, then the distinct reasons from each label's first parenthesis. Pre-conversion figures, measured on the branch: 220 `check_warning_count` calls named a store wording, over 78 distinct log-path expressions; 16 `check_warning_names` and 2 `check_warning_names_nth` calls also named one and are unchanged, asserting membership rather than a count. After: 80 `check_store_reports` calls, none of the 10 wordings unasserted on any of them, and no `check_warning_count` call naming a store wording remains. `tests/run-tests.sh` 25,884 to 25,629 lines. T3's settling run is still going, so T2 is not ticked.
 
 ## Decisions
 

@@ -6167,14 +6167,8 @@ BOOK_WARNINGS=7
 # meets a full store when its turn comes; the section manifest above is the
 # same one it matched before this route existed. Asserted against the seven
 # named warnings above, which account for the whole log either way.
-check_warning_count "$WORK/book-html.log" "$WARN_STORE_NEVER_RECOVERED" 0 \
-  "M069-AC4 (a first render of the book fixture into a writable tree recovers no chapter for want of a record)"
-check_warning_count "$WORK/book-html.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M069-AC4 (nor for a record it opened and could not use)"
-check_warning_count "$WORK/book-html.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M069-AC4 (nor does any chapter report a source that reached no mark)"
-check_warning_count "$WORK/book-html.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M069-AC4 (nor a source it could not read)"
+check_store_reports "$WORK/book-html.log" \
+  "M069-AC4 (a first render of the book fixture into a writable tree recovers no chapter for want of a record; nor for a record it opened and could not use; nor does any chapter report a source that reached no mark; nor a source it could not read)"
 check_extension_warning_count "$WORK/book-html.log" "$BOOK_WARNINGS" \
   "M05-AC4/M14-AC5 (the book fixture emitted warning(s) this suite cannot name; its $BOOK_WARNINGS are the dangling-target report, the two chapter halves of the split range, the book's own unpaired-range report and M29's three marker-misuse reports — and a resolvable cross-file target, a named mark and a named marker must each draw none)"
 pass "M05-AC4/M14-AC5: all seven of the book's warnings are ones this suite names — the target no chapter indexes, each chapter's half of the split range, the book's report naming the pair, and M29's three marker-misuse reports — and the resolvable cross-file target, the mark naming the second declared index and the marker naming it draw none at all"
@@ -6281,17 +6275,12 @@ record['version'] = int(sys.argv[3])
 json.dump(record, open(sys.argv[2], 'w', encoding='utf-8'))
 NOMARKSTALEPY
 nomarker_render nomarker-stale "M062-AC2"
-check_warning_count "$WORK/nomarker-stale.log" "$WARN_STORE_STALE_RECOVERED" 2 \
-  "M062-AC2 (the two chapters that read the plant while no chapter of the book places an index)"
+check_store_reports "$WORK/nomarker-stale.log" \
+  "M062-AC2 (the two chapters that read the plant while no chapter of the book places an index; refused for its version, not for its shape)" \
+  WARN_STORE_STALE_RECOVERED=2
 nomarker_named nomarker-stale \
   'the recorded index marks for two.qmd were written by a different' 2 \
   "M062-AC2"
-check_warning_count "$WORK/nomarker-stale.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M062-AC2 (refused for its version, not for its shape)"
-check_warning_count "$WORK/nomarker-stale.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M062-AC2 (refused for its version, not for its shape), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/nomarker-stale.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M062-AC2 (refused for its version, not for its shape), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_warning_count "$WORK/nomarker-stale.log" "$WARN_BOOK_NOMARKER" 1 \
   "M062-AC2 (the missing-marker report is still the book's own, once)"
 cp "$WORK/nomarker-two-record.json" "$NOMARKER_RECORD"
@@ -6322,18 +6311,8 @@ check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_INDEX_STALE_NAME" 2 \
 nomarker_named nomarker-undeclared \
   "the recorded index marks for two.qmd name the index \"$NOMARKER_UNDECLARED\"" 2 \
   "M062-AC3"
-check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-  "M062-AC3 (refiled for its name, not refused for its version)"
-check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_STALE_LOST" 0 \
-  "M062-AC3 (refiled for its name, not refused for its version), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-  "M062-AC3 (refiled for its name, not refused for its version), nor the wording for a chapter whose own source carries no mark this route reaches"
-check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M062-AC3 (nor refused for its shape)"
-check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M062-AC3 (nor refused for its shape), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M062-AC3 (nor refused for its shape), nor the wording for a chapter whose own source carries no mark this route reaches"
+check_store_reports "$WORK/nomarker-undeclared.log" \
+  "M062-AC3 (refiled for its name, not refused for its version; nor refused for its shape)"
 # The marks that record carries still print. This book builds no index section
 # at all — nothing places one — so the section of the render they print in is
 # the chapter's own body: the term two.qmd marks is still inside the page's
@@ -6504,18 +6483,8 @@ JSON
   > "$WORK/book-ghost.log" 2>&1 \
   || { tail -30 "$WORK/book-ghost.log" >&2; fail "M05 hardening: the marker chapter failed to re-render"; }
 capture --project "$BOOK_DIR" html "book-ghost"
-check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+check_store_reports "$WORK/book-ghost.log" \
   "M05 hardening (ghost record)"
-check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M05 hardening (ghost record), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M05 hardening (ghost record), nor the wording for a chapter whose own source carries no mark this route reaches"
-check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-  "M05 hardening (ghost record)"
-check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE_LOST" 0 \
-  "M05 hardening (ghost record), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/book-ghost.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-  "M05 hardening (ghost record), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_index_sections "$CAPTURE_ROOT/book-ghost/_book/last.html" \
   "$BOOK_HTML_INDEX" "M05 hardening (stale chapter ignored)" hrefs
 check_letter_sweep "$CAPTURE_ROOT/book-ghost/_book/last.html" "M07-AC4 (stale chapter)" \
@@ -6531,8 +6500,9 @@ printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":[],"marks":[{"
   > "$WORK/book-corrupt.log" 2>&1 \
   || { tail -30 "$WORK/book-corrupt.log" >&2; fail "M05 hardening: a wrongly shaped store record took the render down; IP2 forbids it"; }
 capture --project "$BOOK_DIR" html "book-corrupt"
-check_warning_count "$WORK/book-corrupt.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
-  "M05 hardening"
+check_store_reports "$WORK/book-corrupt.log" \
+  "M05 hardening" \
+  WARN_STORE_UNREADABLE_RECOVERED=1
 cp "$WORK/one-record.json" "$CORRUPT"
 pass "M05 hardening: a wrongly shaped store record is reported and skipped, and the render survives"
 
@@ -6545,14 +6515,9 @@ printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":[],"marks":[{"
   > "$WORK/book-stale.log" 2>&1 \
   || { tail -30 "$WORK/book-stale.log" >&2; fail "M05 hardening: a record from an older version took the render down; IP2 forbids it"; }
 capture --project "$BOOK_DIR" html "book-stale"
-check_warning_count "$WORK/book-stale.log" "$WARN_STORE_STALE_RECOVERED" 1 \
-  "M06 (stale store record)"
-check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M06 (stale store record)"
-check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M06 (stale store record), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/book-stale.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M06 (stale store record), nor the wording for a chapter whose own source carries no mark this route reaches"
+check_store_reports "$WORK/book-stale.log" \
+  "M06 (stale store record)" \
+  WARN_STORE_STALE_RECOVERED=1
 # M55-AC5 — and the report names the chapter whose record was refused, which
 # is the only thing that tells the author which one to render again.
 { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/book-stale.log" | grep -qF 'one.qmd'; } \
@@ -6587,8 +6552,9 @@ printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":[],"marks":[{"
   > "$WORK/book-badxref.log" 2>&1 \
   || { tail -30 "$WORK/book-badxref.log" >&2; fail "M14 (review F9): a record whose cross-reference lost its levels took the render down; IP2 forbids it"; }
 capture --project "$BOOK_DIR" html "book-badxref"
-check_warning_count "$WORK/book-badxref.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
-  "M14 (review F9)"
+check_store_reports "$WORK/book-badxref.log" \
+  "M14 (review F9)" \
+  WARN_STORE_UNREADABLE_RECOVERED=1
 cp "$WORK/one-record.json" "$CORRUPT"
 pass "M14: a stored cross-reference with no levels is reported and skipped rather than taking the render down"
 
@@ -6603,18 +6569,8 @@ printf '{"version":%s,"file":"one.qmd","href":"one.html","marker":[],"marks":[{"
   > "$WORK/book-nocontext.log" 2>&1 \
   || { tail -30 "$WORK/book-nocontext.log" >&2; fail "M14 (review F4): a record with no per-mark naming string took the render down"; }
 capture --project "$BOOK_DIR" html "book-nocontext"
-check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+check_store_reports "$WORK/book-nocontext.log" \
   "M14 (review F4)"
-check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M14 (review F4), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M14 (review F4), nor the wording for a chapter whose own source carries no mark this route reaches"
-check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-  "M14 (review F4)"
-check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_STALE_LOST" 0 \
-  "M14 (review F4), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/book-nocontext.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-  "M14 (review F4), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_warning_count "$WORK/book-nocontext.log" \
   "$(dangling_report_index see 'a mark in one.qmd' 'Nothing Indexed Here' main)" 1 \
   "M14 (review F4)"
@@ -6665,12 +6621,8 @@ STALEPY
   # stale-name one, not the unreadable-record one.
   check_warning_count "$WORK/book-$slug.log" "$WARN_INDEX_STALE_NAME" 1 \
     "M55-AC3 ($label)"
-  check_warning_count "$WORK/book-$slug.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+  check_store_reports "$WORK/book-$slug.log" \
     "M55-AC3 ($label, reported rather than refused)"
-  check_warning_count "$WORK/book-$slug.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-    "M55-AC3 ($label, reported rather than refused), nor the wording for a chapter whose own source could not be read either"
-  check_warning_count "$WORK/book-$slug.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-    "M55-AC3 ($label, reported rather than refused), nor the wording for a chapter whose own source carries no mark this route reaches"
   { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/book-$slug.log" \
     | grep -qF -- "$named"; } \
     || { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/book-$slug.log" >&2; fail "M55-AC3 ($label): the report does not carry <<$named>>, so it names neither the chapter the record came from nor the index name it carries"; }
@@ -6956,8 +6908,9 @@ check_book_terms "$CAPTURE_ROOT/place-first/_book" \
 # marker in index.qmd with four chapters after it, and one in three.qmd with
 # two. A record refused, an index folded or a target dangling would each be a
 # fifth.
-check_warning_count "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 \
-  "M069-AC1/M074-AC2 (index.qmd reports the four sources it reads in one line and three.qmd the two it reads in another; two.qmd and four.qmd read none)"
+check_store_reports "$WORK/place-first.log" \
+  "M069-AC1/M074-AC2/M069-AC3/M069-AC5 (index.qmd reports the four sources it reads in one line and three.qmd the two it reads in another; two.qmd and four.qmd read none; no record here was written and unusable, so the could-not-be-read wording is never drawn; every chapter's source reads, so the lost wording is never drawn)" \
+  WARN_STORE_NEVER_RECOVERED=2
 # ...and WHICH chapters each of the two lines names, in render order. This is
 # the one leg in the suite where two chapters of one render each draw the
 # never-written wording, so it is the only place the aggregation can be shown
@@ -6970,10 +6923,6 @@ check_warning_names_nth "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 
 check_warning_names_nth "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 2 \
   "M074-AC2 (three.qmd renders third, so its line names only the two chapters whose records are still unwritten by then)" \
   "four.qmd five.qmd" "index.qmd two.qmd three.qmd"
-check_warning_count "$WORK/place-first.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M069-AC3 (no record here was written and unusable, so the could-not-be-read wording is never drawn)"
-check_warning_count "$WORK/place-first.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M069-AC5 (every chapter's source reads, so the lost wording is never drawn)"
 check_extension_warning_count "$WORK/place-first.log" 4 \
   "M063-AC2/M069-AC1/M074-AC2 (the placement fixture's first render emitted a warning this suite cannot name; its four are two never-written recovery reports and two marker-position reports)"
 
@@ -7058,16 +7007,11 @@ STALEPY
     > "$WORK/place-$slug.log" 2>&1 \
     || { tail -30 "$WORK/place-$slug.log" >&2; fail "M60-AC4 ($label): the render failed; IP2 forbids a stale record taking one down"; }
   capture --project "$PLACE_DIR" html "place-$slug"
-  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_STALE_RECOVERED" "$want" \
-    "M60-AC4 ($label)"
+  check_store_reports "$WORK/place-$slug.log" \
+    "M60-AC4 ($label; $label, stale rather than unreadable)" \
+    WARN_STORE_STALE_RECOVERED="$want"
   { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/place-$slug.log" | grep -qF "$chapter"; } \
     || { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/place-$slug.log" >&2; fail "M60-AC4 ($label): the report does not name $chapter, the chapter whose record was refused"; }
-  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-    "M60-AC4 ($label, stale rather than unreadable)"
-  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-    "M60-AC4 ($label, stale rather than unreadable), nor the wording for a chapter whose own source could not be read either"
-  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-    "M60-AC4 ($label, stale rather than unreadable), nor the wording for a chapter whose own source carries no mark this route reaches"
   cp "$WORK/place-$slug-record.json" "$PLACE_STORE/$chapter$STORE_SUFFIX"
 }
 
@@ -7541,18 +7485,11 @@ for M061_PASS in one two; do
     "M063-AC3 (render $M061_PASS)" "$PLACE_SECTIONS"
   check_book_terms "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" \
     "M063-AC3 (render $M061_PASS)" "$PLACE_TERMS_BLOCKED"
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_UNREADABLE_RECOVERED" 4 \
-    "M063-AC3/M064-AC1 (render $M061_PASS: index.qmd, two.qmd, three.qmd and five.qmd each read the held path and recover four.qmd from its source; four.qmd never reads its own)"
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_UNWRITABLE" 1 \
-    "M063-AC3 (render $M061_PASS: four.qmd's own write)"
+  check_store_reports "$WORK/place-blocked-$M061_PASS.log" \
+    "M063-AC3/M064-AC1/M063-AC3 (render $M061_PASS: index.qmd, two.qmd, three.qmd and five.qmd each read the held path and recover four.qmd from its source; four.qmd never reads its own; render $M061_PASS: four.qmd's own write; render $M061_PASS: unreadable, never stale)" \
+    WARN_STORE_UNREADABLE_RECOVERED=4 WARN_STORE_UNWRITABLE=1
   check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_MARKER_NOT_LAST" 2 \
     "M063-AC3 (render $M061_PASS: index.qmd and three.qmd each build a section with chapters after them)"
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-    "M063-AC3 (render $M061_PASS: unreadable, never stale)"
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_STALE_LOST" 0 \
-    "M063-AC3 (render $M061_PASS: unreadable, never stale), nor the wording for a chapter whose own source could not be read either"
-  check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-    "M063-AC3 (render $M061_PASS: unreadable, never stale), nor the wording for a chapter whose own source carries no mark this route reaches"
   check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_INDEX_STALE_NAME" 0 \
     "M063-AC3 (render $M061_PASS: no record names an index this book does not declare)"
   check_extension_warning_count "$WORK/place-blocked-$M061_PASS.log" 6 \
@@ -7637,12 +7574,8 @@ place_render place-unblocked "M063-AC3 (the first render after the path is freed
 place_render place-rewarm-two "M063-AC3 (the second render after the path is freed)"
 check_book_sections "$CAPTURE_ROOT/place-rewarm-two/_book" "M063-AC3 (freed)" \
   "$PLACE_SECTIONS"
-check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+check_store_reports "$WORK/place-rewarm-two.log" \
   "M063-AC3 (freed)"
-check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M063-AC3 (freed), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/place-rewarm-two.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M063-AC3 (freed), nor the wording for a chapter whose own source carries no mark this route reaches"
 # The control the M065-AC4 role assertion above rests on: over a record that
 # CAN be read, four.qmd's own render resolved `mention="principal"` and its
 # locator prints emphasized and carrying the principal class. Without this the
@@ -7771,18 +7704,9 @@ for M064_PASS in one two; do
     "M064-AC3 (render $M064_PASS)" "$PLACE_SECTIONS"
   check_book_terms "$CAPTURE_ROOT/m063-m064-heldpair-$M064_PASS/_book" \
     "M064-AC3 (render $M064_PASS)" "$PLACE_TERMS_BLOCKED"
-  check_warning_count "$WORK/m063-m064-heldpair-$M064_PASS.log" \
-    "$WARN_STORE_UNREADABLE_RECOVERED" 8 \
-    "M064-AC3 (render $M064_PASS: each of the five chapters reads the held paths that are not its own)"
-  check_warning_count "$WORK/m063-m064-heldpair-$M064_PASS.log" \
-    "$WARN_STORE_UNREADABLE_LOST" 0 \
-    "M064-AC3 (render $M064_PASS: both sources parse, so nothing is lost)"
-  check_warning_count "$WORK/m063-m064-heldpair-$M064_PASS.log" \
-    "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-    "M064-AC3 (render $M064_PASS: both sources carry marks, so the no-marks wording is never drawn)"
-  check_warning_count "$WORK/m063-m064-heldpair-$M064_PASS.log" \
-    "$WARN_STORE_UNWRITABLE" 2 \
-    "M064-AC3 (render $M064_PASS: index.qmd's and three.qmd's own writes)"
+  check_store_reports "$WORK/m063-m064-heldpair-$M064_PASS.log" \
+    "M064-AC3 (render $M064_PASS: each of the five chapters reads the held paths that are not its own; render $M064_PASS: both sources parse, so nothing is lost; render $M064_PASS: both sources carry marks, so the no-marks wording is never drawn; render $M064_PASS: index.qmd's and three.qmd's own writes)" \
+    WARN_STORE_UNREADABLE_RECOVERED=8 WARN_STORE_UNWRITABLE=2
   check_extension_warning_count "$WORK/m063-m064-heldpair-$M064_PASS.log" 10 \
     "M064-AC3 (render $M064_PASS emitted a warning this suite cannot name; the ten its anchored patterns reach are eight recovery reports and two marker-position reports)"
   M064_LINES=$( { grep -c '(W) ' "$WORK/m063-m064-heldpair-$M064_PASS.log" || true; } | tr -d ' ')
@@ -7808,21 +7732,12 @@ for M064_PASS in one two; do
     "M064-AC5 (render $M064_PASS)" "$PLACE_SECTIONS"
   check_book_terms "$CAPTURE_ROOT/m063-m064-lostsource-$M064_PASS/_book" \
     "M064-AC5 (render $M064_PASS)" "$PLACE_TERMS_NORECOVERY"
-  check_warning_count "$WORK/m063-m064-lostsource-$M064_PASS.log" \
-    "$WARN_STORE_UNREADABLE_LOST" 4 \
-    "M064-AC5 (render $M064_PASS: index.qmd, two.qmd, three.qmd and five.qmd each read the held path and cannot read the source either; four.qmd never reads its own)"
-  check_warning_count "$WORK/m063-m064-lostsource-$M064_PASS.log" \
-    "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-    "M064-AC5 (render $M064_PASS: nothing was recovered, so the recovery wording is never drawn)"
-  check_warning_count "$WORK/m063-m064-lostsource-$M064_PASS.log" \
-    "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-    "M064-AC5 (render $M064_PASS: the source could not be read, so the no-marks wording is never drawn)"
+  check_store_reports "$WORK/m063-m064-lostsource-$M064_PASS.log" \
+    "M064-AC5 (render $M064_PASS: index.qmd, two.qmd, three.qmd and five.qmd each read the held path and cannot read the source either; four.qmd never reads its own; render $M064_PASS: nothing was recovered, so the recovery wording is never drawn; render $M064_PASS: the source could not be read, so the no-marks wording is never drawn; render $M064_PASS: four.qmd's own write)" \
+    WARN_STORE_UNREADABLE_LOST=4 WARN_STORE_UNWRITABLE=1
   { grep -F -- "$WARN_STORE_UNREADABLE_LOST" \
       "$WORK/m063-m064-lostsource-$M064_PASS.log" | grep -qF 'four.qmd'; } \
     || { grep -F -- "$WARN_STORE_UNREADABLE_LOST" "$WORK/m063-m064-lostsource-$M064_PASS.log" >&2; fail "M064-AC5 (render $M064_PASS): the report does not name four.qmd, the chapter whose record and source were both unreadable"; }
-  check_warning_count "$WORK/m063-m064-lostsource-$M064_PASS.log" \
-    "$WARN_STORE_UNWRITABLE" 1 \
-    "M064-AC5 (render $M064_PASS: four.qmd's own write)"
   check_extension_warning_count "$WORK/m063-m064-lostsource-$M064_PASS.log" 6 \
     "M064-AC5 (render $M064_PASS emitted a warning this suite cannot name; the six its anchored patterns reach are four unrecovered-record reports and two marker-position reports)"
   M064_LINES=$( { grep -c '(W) ' "$WORK/m063-m064-lostsource-$M064_PASS.log" || true; } | tr -d ' ')
@@ -7903,12 +7818,9 @@ m064_plant_stale m064-staleok four.qmd "M064 T7 (a version-skewed record)" \
   || fail "M064 T7: the record could not be moved to the superseded version (its own FAIL line is above)"
 m064_chapter_render m064-staleok staleok five.qmd \
   "M064 T7 (a version-skewed record whose chapter's source reads)"
-check_warning_count "$WORK/m064-staleok.log" "$WARN_STORE_STALE_RECOVERED" 1 \
-  "M064 T7 (five.qmd builds the section the refused record would have cost)"
-check_warning_count "$WORK/m064-staleok.log" "$WARN_STORE_STALE_LOST" 0 \
-  "M064 T7 (the chapter's source reads, so nothing is lost)"
-check_warning_count "$WORK/m064-staleok.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-  "M064 T7 (the chapter's source carries marks, so the no-marks wording is never drawn)"
+check_store_reports "$WORK/m064-staleok.log" \
+  "M064 T7 (five.qmd builds the section the refused record would have cost; the chapter's source reads, so nothing is lost; the chapter's source carries marks, so the no-marks wording is never drawn)" \
+  WARN_STORE_STALE_RECOVERED=1
 { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/m064-staleok.log" \
   | grep -qF 'four.qmd'; } \
   || { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/m064-staleok.log" >&2; fail "M064 T7: the stale-record report does not name four.qmd"; }
@@ -7927,12 +7839,9 @@ m064_break_source "$M061W/m064-stalelost/four.qmd" "M064 T7" \
   || fail "M064 T7: the chapter source could not be made unreadable (its own FAIL line is above)"
 m064_chapter_render m064-stalelost stalelost five.qmd \
   "M064 T7 (a version-skewed record whose chapter's source does not read)"
-check_warning_count "$WORK/m064-stalelost.log" "$WARN_STORE_STALE_LOST" 1 \
-  "M064 T7 (five.qmd builds the section, and nothing could be recovered)"
-check_warning_count "$WORK/m064-stalelost.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-  "M064 T7 (nothing was recovered, so the recovery wording is never drawn)"
-check_warning_count "$WORK/m064-stalelost.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-  "M064 T7 (the source could not be read, so the no-marks wording is never drawn)"
+check_store_reports "$WORK/m064-stalelost.log" \
+  "M064 T7 (five.qmd builds the section, and nothing could be recovered; nothing was recovered, so the recovery wording is never drawn; the source could not be read, so the no-marks wording is never drawn)" \
+  WARN_STORE_STALE_LOST=1
 { grep -F -- "$WARN_STORE_STALE_LOST" "$WORK/m064-stalelost.log" \
   | grep -qF 'four.qmd'; } \
   || { grep -F -- "$WARN_STORE_STALE_LOST" "$WORK/m064-stalelost.log" >&2; fail "M064 T7: the stale-record report does not name four.qmd"; }
@@ -7953,12 +7862,9 @@ m064_plant_stale m064-stalenomarks four.qmd \
   || fail "M064 R2-F2: the record could not be moved to the superseded version (its own FAIL line is above)"
 m064_chapter_render m064-stalenomarks stalenomarks five.qmd \
   "M064 R2-F2 (a version-skewed record whose chapter's source reaches no mark)"
-check_warning_count "$WORK/m064-stalenomarks.log" "$WARN_STORE_STALE_NOMARKS" 1 \
-  "M064 R2-F2 (five.qmd builds the section, and the source reached no mark)"
-check_warning_count "$WORK/m064-stalenomarks.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-  "M064 R2-F2 (nothing came back, so the recovery wording is never drawn)"
-check_warning_count "$WORK/m064-stalenomarks.log" "$WARN_STORE_STALE_LOST" 0 \
-  "M064 R2-F2 (the source read and parsed, so it was never lost)"
+check_store_reports "$WORK/m064-stalenomarks.log" \
+  "M064 R2-F2 (five.qmd builds the section, and the source reached no mark; nothing came back, so the recovery wording is never drawn; the source read and parsed, so it was never lost)" \
+  WARN_STORE_STALE_NOMARKS=1
 { grep -F -- "$WARN_STORE_STALE_NOMARKS" "$WORK/m064-stalenomarks.log" \
   | grep -qF 'four.qmd'; } \
   || { grep -F -- "$WARN_STORE_STALE_NOMARKS" "$WORK/m064-stalenomarks.log" >&2; fail "M064 R2-F2: the stale-record report does not name four.qmd"; }
@@ -8053,15 +7959,9 @@ check_entry_locators \
   "$CAPTURE_ROOT/m063-m064-conditional/_book/five.html" \
   "$HTML_SECTION_ID-gamma" Dovetail "four.html" \
   "M064 F2 (a term marked twice in a recovered chapter prints one locator)"
-check_warning_count "$WORK/m063-m064-conditional.log" \
-  "$WARN_STORE_UNREADABLE_RECOVERED" 4 \
-  "M064 F1 (the chapter still recovers the marks outside its conditional blocks)"
-check_warning_count "$WORK/m063-m064-conditional.log" \
-  "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M064 F1 (marks were recovered, so the no-marks wording is never drawn)"
-check_warning_count "$WORK/m063-m064-conditional.log" \
-  "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M064 F1 (the source reads, so the lost wording is never drawn)"
+check_store_reports "$WORK/m063-m064-conditional.log" \
+  "M064 F1 (the chapter still recovers the marks outside its conditional blocks; marks were recovered, so the no-marks wording is never drawn; the source reads, so the lost wording is never drawn)" \
+  WARN_STORE_UNREADABLE_RECOVERED=4
 pass "M064 F1/F2: a recovered chapter's marks inside a conditional block reach no index section — the block Quarto keeps for this format among them — while its ordinary marks still do, and a term it marks twice prints one locator rather than the same link twice"
 
 m063_tree m064-nomarks
@@ -8074,15 +7974,9 @@ m063_tree_render m064-nomarks m064-nomarks \
 check_book_terms "$CAPTURE_ROOT/m063-m064-nomarks/_book" \
   "M064 F3 (nothing was recovered, so the gamma section is short Dovetail)" \
   "$PLACE_TERMS_NORECOVERY"
-check_warning_count "$WORK/m063-m064-nomarks.log" \
-  "$WARN_STORE_UNREADABLE_NOMARKS" 4 \
-  "M064 F3 (each chapter that reads the held path is told the source reached no mark)"
-check_warning_count "$WORK/m063-m064-nomarks.log" \
-  "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M064 F3 (nothing came back, so the recovery wording is never drawn)"
-check_warning_count "$WORK/m063-m064-nomarks.log" \
-  "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M064 F3 (the source read and parsed, so it was never lost)"
+check_store_reports "$WORK/m063-m064-nomarks.log" \
+  "M064 F3 (each chapter that reads the held path is told the source reached no mark; nothing came back, so the recovery wording is never drawn; the source read and parsed, so it was never lost)" \
+  WARN_STORE_UNREADABLE_NOMARKS=4
 pass "M064 F3: where a chapter's record cannot be read and its source parses to no mark this route reaches, the report says that rather than claiming the chapter's terms came back, and the index is short them"
 
 # ---------------------------------------------------------------------------
@@ -8124,21 +8018,12 @@ m063_tree_render m065-stalebook m065-stalebook \
 check_book_terms "$CAPTURE_ROOT/m063-m065-stalebook/_book" \
   "M065-AC5 (a version-skewed record costs the book no term)" \
   "$PLACE_TERMS_COMPLETE"
-check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_STALE_RECOVERED" 1 \
-  "M065-AC5 (index.qmd alone meets the plant, and it builds the section that term belongs to)"
+check_store_reports "$WORK/m063-m065-stalebook.log" \
+  "M065-AC5 (index.qmd alone meets the plant, and it builds the section that term belongs to; the chapter's source reads, so nothing is lost; the source carries marks, so the no-marks wording is never drawn; the record was read and refused, never unreadable; the record was read and refused, never unreadable, so the lost wording is never drawn; the record was read and refused, never unreadable, so the no-marks wording is never drawn)" \
+  WARN_STORE_STALE_RECOVERED=1
 { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/m063-m065-stalebook.log" \
   | grep -qF 'two.qmd'; } \
   || { grep -F -- "$WARN_STORE_STALE_RECOVERED" "$WORK/m063-m065-stalebook.log" >&2; fail "M065-AC5: the stale-record report does not name two.qmd, the chapter whose record was refused"; }
-check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_STALE_LOST" 0 \
-  "M065-AC5 (the chapter's source reads, so nothing is lost)"
-check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-  "M065-AC5 (the source carries marks, so the no-marks wording is never drawn)"
-check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M065-AC5 (the record was read and refused, never unreadable)"
-check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M065-AC5 (the record was read and refused, never unreadable, so the lost wording is never drawn)"
-check_warning_count "$WORK/m063-m065-stalebook.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M065-AC5 (the record was read and refused, never unreadable, so the no-marks wording is never drawn)"
 check_entry_locators "$CAPTURE_ROOT/m063-m065-stalebook/_book/index.html" \
   "$HTML_SECTION_ID-alpha" Bramble "two.html" \
   "M065-AC5 (the refused chapter's term is recovered, so its locator carries that chapter's page and no fragment)"
@@ -8187,20 +8072,9 @@ m063_tree_render m065-lostdir m065-lostdir \
 check_book_terms "$CAPTURE_ROOT/m063-m065-lostdir/_book" \
   "M065-AC5 (every chapter is recovered from its source, so no term is lost)" \
   "$PLACE_TERMS_COMPLETE"
-check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNREADABLE_RECOVERED" 20 \
-  "M065-AC5 (each of the five chapters meets the four record paths that are not its own)"
-check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M065-AC5 (every chapter's source reads, so nothing is lost)"
-check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M065-AC5 (every chapter's source carries marks)"
-check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-  "M065-AC5 (nothing could be opened, so nothing could be found stale)"
-check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_STALE_LOST" 0 \
-  "M065-AC5 (nothing could be opened, so nothing could be found stale and lost)"
-check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-  "M065-AC5 (nothing could be opened, so nothing could be found stale with no marks)"
-check_warning_count "$WORK/m063-m065-lostdir.log" "$WARN_STORE_UNWRITABLE" 5 \
-  "M065-AC5 (every chapter's own write fails on the file standing where the directory belongs)"
+check_store_reports "$WORK/m063-m065-lostdir.log" \
+  "M065-AC5 (each of the five chapters meets the four record paths that are not its own; every chapter's source reads, so nothing is lost; every chapter's source carries marks; nothing could be opened, so nothing could be found stale; nothing could be opened, so nothing could be found stale and lost; nothing could be opened, so nothing could be found stale with no marks; every chapter's own write fails on the file standing where the directory belongs)" \
+  WARN_STORE_UNREADABLE_RECOVERED=20 WARN_STORE_UNWRITABLE=5
 check_entry_locators "$CAPTURE_ROOT/m063-m065-lostdir/_book/five.html" \
   "$HTML_SECTION_ID-gamma" Dovetail "four.html" \
   "M065-AC5 (a recovered locator carries the chapter's page and no fragment)"
@@ -8474,12 +8348,8 @@ MANIFEST
   check_book_terms "$CAPTURE_ROOT/m063-m065-noprobe/_book" \
     "M065-AC5 self-test (no chapter is recovered, so each index holds its own chapter's marks alone)" \
     "$M065_TERMS_OWN_ONLY"
-  check_warning_count "$WORK/m063-m065-noprobe.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-    "M065-AC5 self-test (every record path reads as absent again, so nothing is recovered and nothing is reported)"
-  check_warning_count "$WORK/m063-m065-noprobe.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-    "M065-AC5 self-test (every record path reads as absent again, so the lost wording is never drawn)"
-  check_warning_count "$WORK/m063-m065-noprobe.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-    "M065-AC5 self-test (every record path reads as absent again, so the no-marks wording is never drawn)"
+  check_store_reports "$WORK/m063-m065-noprobe.log" \
+    "M065-AC5 self-test (every record path reads as absent again, so nothing is recovered and nothing is reported; every record path reads as absent again, so the lost wording is never drawn; every record path reads as absent again, so the no-marks wording is never drawn)"
   pass "M065-AC5 self-test: with the store-directory probe disabled and nothing else changed, the same store directory replaced by a file leaves every record path reading as never written — no chapter is recovered, no report is drawn, each index carries the terms of the chapter that builds it alone, and the index no marker names prints nowhere — which is what this book did before the probe, and what the manifests the run above is held to refuse"
 fi
 
@@ -8618,18 +8488,9 @@ for M068_PASS in one two; do
   check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
     "$M068_RECOVERED_FOUR" 4 \
     "M068-AC2 (render $M068_PASS: index.qmd, two.qmd, three.qmd and five.qmd each meet four.qmd's record path)"
-  check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
-    "$WARN_STORE_UNREADABLE_LOST" 0 \
-    "M068-AC2 (render $M068_PASS: four.qmd's own source reads, so nothing is lost)"
-  check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
-    "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-    "M068-AC2 (render $M068_PASS: four.qmd's own source carries marks)"
-  check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
-    "$WARN_STORE_STALE_RECOVERED" 0 \
-    "M068-AC2 (render $M068_PASS: nothing could be opened, so nothing could be found stale)"
-  check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" \
-    "$WARN_STORE_UNWRITABLE" 1 \
-    "M068-AC2 (render $M068_PASS: four.qmd's own write follows the link into a directory that is not there)"
+  check_store_reports "$WORK/m063-m068-dangling-$M068_PASS.log" \
+    "M068-AC2 (render $M068_PASS: four.qmd's own source reads, so nothing is lost; render $M068_PASS: four.qmd's own source carries marks; render $M068_PASS: nothing could be opened, so nothing could be found stale; render $M068_PASS: four.qmd's own write follows the link into a directory that is not there)" \
+    WARN_STORE_UNWRITABLE=1
   check_warning_count "$WORK/m063-m068-dangling-$M068_PASS.log" "$WARN_MARKER_NOT_LAST" 2 \
     "M068-AC2 (render $M068_PASS: index.qmd and three.qmd each build a section with chapters after them, which is the pair of reports this book always draws)"
   M068_LINES=$( { grep -c '(W) ' "$WORK/m063-m068-dangling-$M068_PASS.log" || true; } | tr -d ' ')
@@ -8682,14 +8543,9 @@ m063_tree_render m068-norecord m068-norecord \
 check_book_terms "$CAPTURE_ROOT/m063-m068-norecord/_book" \
   "M068-AC3 (four.qmd rewrites its own record before the chapter that builds the section reads it)" \
   "$PLACE_TERMS_COMPLETE"
-check_warning_count "$WORK/m063-m068-norecord.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M068-AC3/M069-AC3 (a name the listing does not carry is a record that was never written, not one that could not be read)"
-check_warning_count "$WORK/m063-m068-norecord.log" "$WARN_STORE_NEVER_RECOVERED" 2 \
-  "M069-AC1 (index.qmd and three.qmd each carry a marker and meet the missing name before four.qmd runs; two.qmd and four.qmd carry none and five.qmd meets a record)"
-check_warning_count "$WORK/m063-m068-norecord.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M068-AC3 (four.qmd's own source reads, so the lost wording is never drawn)"
-check_warning_count "$WORK/m063-m068-norecord.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M068-AC3 (no record here was opened and refused, so the no-marks wording is never drawn)"
+check_store_reports "$WORK/m063-m068-norecord.log" \
+  "M068-AC3/M069-AC3/M069-AC1/M068-AC3 (a name the listing does not carry is a record that was never written, not one that could not be read; index.qmd and three.qmd each carry a marker and meet the missing name before four.qmd runs; two.qmd and four.qmd carry none and five.qmd meets a record; four.qmd's own source reads, so the lost wording is never drawn; no record here was opened and refused, so the no-marks wording is never drawn)" \
+  WARN_STORE_NEVER_RECOVERED=2
 check_extension_warning_count "$WORK/m063-m068-norecord.log" 4 \
   "M068-AC3/M069-AC1 (the two marker-position reports this book always draws and the two never-written recovery reports, and no fifth)"
 
@@ -8718,10 +8574,9 @@ capture --project "$M061W/m068-norecord" html "m068-norecord-fifth"
 check_index_sections \
   "$CAPTURE_ROOT/m068-norecord-fifth/_book/five.html" \
   "$M065_GAMMA_ROWS" "M068-AC3/M069-AC1 (five.qmd alone, four.qmd's record absent)" hrefs
-check_warning_count "$WORK/m063-m068-norecord-fifth.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M069-AC1 (five.qmd is the book's last chapter, so it reads the source of the one chapter no record was written for)"
-check_warning_count "$WORK/m063-m068-norecord-fifth.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M069-AC3 (the record was never written, so the could-not-be-read wording is never drawn)"
+check_store_reports "$WORK/m063-m068-norecord-fifth.log" \
+  "M069-AC1/M069-AC3 (five.qmd is the book's last chapter, so it reads the source of the one chapter no record was written for; the record was never written, so the could-not-be-read wording is never drawn)" \
+  WARN_STORE_NEVER_RECOVERED=1
 check_extension_warning_count "$WORK/m063-m068-norecord-fifth.log" 1 \
   "M068-AC3/M069-AC1 (five.qmd reads three records it can use and one source, and carries no marker, so the one report is all it has to say)"
 pass "M068-AC3/M069-AC1: a store directory that lists and holds no record for four.qmd is told from one whose record it lists and nothing can open by which report is drawn — never-written in both legs here and could-not-be-read in neither, the whole book healing itself when four.qmd rewrites its own record, and five.qmd rendered alone reading four.qmd's source so that the gamma section carries all eleven terms with four.qmd's eight linking to its page and no fragment"
@@ -8804,12 +8659,9 @@ m068_nested_render() {   # <slug> <label> <recoveries> <shared locators> <warnin
   capture --project "$M068BW/$slug" html "m068-nested-$slug"
   check_warning_count "$WORK/m068-nested-$slug.log" "$M068_RECOVERED_SUBTWO" 1 \
     "$label: the recovery report names the chapter in the subdirectory, whole and once"
-  check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_STORE_UNREADABLE_RECOVERED" "$recoveries" \
-    "$label: the chapters recovered are exactly the ones whose records are out of reach"
-  check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-    "$label: every recovered chapter's own source reads, so the lost wording is never drawn"
-  check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-    "$label: every recovered chapter's own source carries marks, so the no-marks wording is never drawn"
+  check_store_reports "$WORK/m068-nested-$slug.log" \
+    "$label: the chapters recovered are exactly the ones whose records are out of reach/$label: every recovered chapter's own source reads, so the lost wording is never drawn/$label: every recovered chapter's own source carries marks, so the no-marks wording is never drawn" \
+    WARN_STORE_UNREADABLE_RECOVERED="$recoveries"
   check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_MARKER_DUP_NAMED" 1 \
     "$label: the second marker for the index named main, which this book always draws"
   check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_DANGLING_INDEX" 1 \
@@ -8856,8 +8708,9 @@ m068_break_store_at "$M068BW/unlistable/.quarto/$STORE_DIR" 4 \
 m068_nested_render unlistable \
   "M068 (nested: a store directory that cannot be listed, over a chapter in a subdirectory)" \
   3 "index.html one.html sub/two.html" 6
-check_warning_count "$WORK/m068-nested-unlistable.log" "$WARN_STORE_UNWRITABLE" 1 \
-  "M068 (nested: last.qmd's own write meets the same file where the store directory belongs)"
+check_store_reports "$WORK/m068-nested-unlistable.log" \
+  "M068 (nested: last.qmd's own write meets the same file where the store directory belongs)" \
+  WARN_STORE_UNWRITABLE=1
 pass "M068 (nested): a store directory replaced by a file puts the record one level below it out of reach as surely as the ones directly in it — sub/two.qmd is recovered from its own source and reported by name, its terms are in the book's index pointing at its page, and every locator of the entry all three chapters mark has lost its fragment, which is what an unlistable store directory meant before this milestone and has to go on meaning"
 
 # Leg two. The store directory lists perfectly well; the record one level down
@@ -9030,10 +8883,8 @@ if [ "${1:-}" = "--self-test" ]; then
     capture --project "$M068BW/$slug" html "m068-nested-$slug"
     check_warning_count "$WORK/m068-nested-$slug.log" "$M068_RECOVERED_SUBTWO" 0 \
       "$label (the report the leg above draws once is drawn none)"
-    check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-      "$label (nor either of the other wordings a record out of reach can draw)"
-    check_warning_count "$WORK/m068-nested-$slug.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-      "$label (nor the no-marks wording)"
+    check_store_reports "$WORK/m068-nested-$slug.log" \
+      "$label (nor either of the other wordings a record out of reach can draw; nor the no-marks wording)"
     check_entry_locators "$CAPTURE_ROOT/m068-nested-$slug/_book/last.html" \
       "$HTML_SECTION_ID-main" "Shared Term" "$shared" \
       "$label (the shared entry keeps the locators of the chapters that were reached and loses the subdirectory chapter's)"
@@ -9264,17 +9115,12 @@ check_book_sections "$CAPTURE_ROOT/m069-m069-index/_book" \
   "$(printf 'index.html\tqi-index-alpha\tIndex of Alpha')"
 check_index_sections "$CAPTURE_ROOT/m069-m069-index/_book/index.html" \
   "$M069_ALPHA_ROWS" "M069-AC1 (index.qmd alone, no store)" hrefs
-check_warning_count "$WORK/m069-m069-index.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M074-AC2 (ONE report for the four chapters no record has been written for, where before M074 there were four)"
+check_store_reports "$WORK/m069-m069-index.log" \
+  "M074-AC2/M069-AC3/M069-AC5 (ONE report for the four chapters no record has been written for, where before M074 there were four; no record here was written and unusable, so the could-not-be-read wording is never drawn; every source reads, so the lost wording is never drawn; every source carries marks, so the no-marks wording is never drawn)" \
+  WARN_STORE_NEVER_RECOVERED=1
 check_warning_names "$WORK/m069-m069-index.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M074-AC2 (and that one line names each of the four)" \
   "two.qmd three.qmd four.qmd five.qmd" "index.qmd"
-check_warning_count "$WORK/m069-m069-index.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M069-AC3 (no record here was written and unusable, so the could-not-be-read wording is never drawn)"
-check_warning_count "$WORK/m069-m069-index.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M069-AC5 (every source reads, so the lost wording is never drawn)"
-check_warning_count "$WORK/m069-m069-index.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M069-AC5 (every source carries marks, so the no-marks wording is never drawn)"
 check_extension_warning_count "$WORK/m069-m069-index.log" 2 \
   "M069-AC1/M074-AC2 (index.qmd alone emitted a warning this suite cannot name; its two are the one never-written recovery report and the marker-position report four chapters after it draws)"
 
@@ -9286,13 +9132,12 @@ check_book_sections "$CAPTURE_ROOT/m069-m069-five/_book" \
   "$(printf 'five.html\tqi-index-gamma\tIndex of Gamma\nindex.html\t-')"
 check_index_sections "$CAPTURE_ROOT/m069-m069-five/_book/five.html" \
   "$M069_GAMMA_ROWS_COLD" "M069-AC1 (five.qmd alone, no store)" hrefs
-check_warning_count "$WORK/m069-m069-five.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M074-AC2 (one report for the four chapters no record has been written for)"
+check_store_reports "$WORK/m069-m069-five.log" \
+  "M074-AC2/M069-AC3 (one report for the four chapters no record has been written for; no record here was written and unusable, so the could-not-be-read wording is never drawn)" \
+  WARN_STORE_NEVER_RECOVERED=1
 check_warning_names "$WORK/m069-m069-five.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M074-AC2 (and that one line names each of the four)" \
   "index.qmd two.qmd three.qmd four.qmd" "five.qmd"
-check_warning_count "$WORK/m069-m069-five.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M069-AC3 (no record here was written and unusable, so the could-not-be-read wording is never drawn)"
 check_extension_warning_count "$WORK/m069-m069-five.log" 1 \
   "M069-AC1/M074-AC2 (five.qmd alone emitted a warning this suite cannot name; its one is the never-written recovery report, and it carries no marker so it draws no marker-position report)"
 
@@ -9305,8 +9150,9 @@ check_book_sections "$CAPTURE_ROOT/m069-m069-three/_book" \
   "$(printf 'index.html\t-\nthree.html\tqi-index-beta\tIndex of Beta')"
 check_index_sections "$CAPTURE_ROOT/m069-m069-three/_book/three.html" \
   "$M069_BETA_ROWS" "M069-AC1 (three.qmd alone, no store)" hrefs
-check_warning_count "$WORK/m069-m069-three.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M074-AC2 (one report for the four chapters no record has been written for)"
+check_store_reports "$WORK/m069-m069-three.log" \
+  "M074-AC2 (one report for the four chapters no record has been written for)" \
+  WARN_STORE_NEVER_RECOVERED=1
 check_warning_names "$WORK/m069-m069-three.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M074-AC2 (and that one line names each of the four)" \
   "index.qmd two.qmd four.qmd five.qmd" "three.qmd"
@@ -9329,18 +9175,8 @@ for M069_QUIET in two four; do
   check_book_sections "$CAPTURE_ROOT/m069-m069-$M069_QUIET/_book" \
     "M069-AC2 ($M069_QUIET.qmd carries no marker and is not the book's last chapter, so it prints no index section; the book's home page carries none either)" \
     "$M069_QUIET_SECTIONS"
-  check_warning_count "$WORK/m069-m069-$M069_QUIET.log" \
-    "$WARN_STORE_NEVER_RECOVERED" 0 \
-    "M069-AC2 ($M069_QUIET.qmd reads no other chapter's source)"
-  check_warning_count "$WORK/m069-m069-$M069_QUIET.log" \
-    "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-    "M069-AC2 (nor does it report a record it opened and could not use)"
-  check_warning_count "$WORK/m069-m069-$M069_QUIET.log" \
-    "$WARN_STORE_UNREADABLE_LOST" 0 \
-    "M069-AC2 (nor a source it could not read)"
-  check_warning_count "$WORK/m069-m069-$M069_QUIET.log" \
-    "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-    "M069-AC2 (nor a source that reached no mark)"
+  check_store_reports "$WORK/m069-m069-$M069_QUIET.log" \
+    "M069-AC2 ($M069_QUIET.qmd reads no other chapter's source; nor does it report a record it opened and could not use; nor a source it could not read; nor a source that reached no mark)"
   check_extension_warning_count "$WORK/m069-m069-$M069_QUIET.log" 0 \
     "M069-AC2 ($M069_QUIET.qmd has nothing to say about any chapter's record)"
 done
@@ -9372,15 +9208,12 @@ capture --project "$M061W/m069-lostsource" html "m069-lostsource"
 check_index_sections "$CAPTURE_ROOT/m069-lostsource/_book/five.html" \
   "$M069_GAMMA_ROWS_NOFOUR" \
   "M069-AC5 (four.qmd's source cannot be read, so none of its eight terms is in the section)" hrefs
-check_warning_count "$WORK/m069-lostsource.log" "$WARN_STORE_NEVER_LOST" 1 \
-  "M073-AC1 (four.qmd's record was never written and its source cannot be read either, so the never-written family's own lost wording is drawn)"
-check_warning_count "$WORK/m069-lostsource.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M073-AC1 (and the wording claiming a record that could not be read is not, there being no record to have failed)"
+check_store_reports "$WORK/m069-lostsource.log" \
+  "M073-AC1/M069-AC5/M073-AC1/M074-AC2 (four.qmd's record was never written and its source cannot be read either, so the never-written family's own lost wording is drawn; and the wording claiming a record that could not be read is not, there being no record to have failed; the other three chapters' sources read, so all three are recovered and reported in one line — and the lost wording's opening clause is its own, so this count is untouched by it)" \
+  WARN_STORE_NEVER_LOST=1 WARN_STORE_NEVER_RECOVERED=1
 check_warning_names "$WORK/m069-lostsource.log" "$WARN_STORE_NEVER_LOST" \
   "M073-AC1/M074-AC2 (the lost line names four.qmd, whose record was never written and whose source cannot be read, and none of the three that came back)" \
   "four.qmd" "index.qmd two.qmd three.qmd"
-check_warning_count "$WORK/m069-lostsource.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M069-AC5/M073-AC1/M074-AC2 (the other three chapters' sources read, so all three are recovered and reported in one line — and the lost wording's opening clause is its own, so this count is untouched by it)"
 check_warning_names "$WORK/m069-lostsource.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M074-AC2 (the recovery line names the three chapters that came back and neither four.qmd, whose source could not be read, nor five.qmd, whose record this chapter never meets)" \
   "index.qmd two.qmd three.qmd" "four.qmd five.qmd"
@@ -9397,15 +9230,12 @@ capture --project "$M061W/m069-nomarksource" html "m069-nomarksource"
 check_index_sections "$CAPTURE_ROOT/m069-nomarksource/_book/five.html" \
   "$M069_GAMMA_ROWS_NOFOUR" \
   "M069-AC5 (four.qmd's source reaches no mark, so none of its eight terms is in the section)" hrefs
-check_warning_count "$WORK/m069-nomarksource.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M069-AC5/M074-AC2 (the other three chapters are recovered and reported in one line; four.qmd is not)"
+check_store_reports "$WORK/m069-nomarksource.log" \
+  "M069-AC5/M074-AC2/M069-AC5 (the other three chapters are recovered and reported in one line; four.qmd is not; a record that was never written draws no no-marks wording either; four.qmd's source reads perfectly well, so the lost wording is never drawn)" \
+  WARN_STORE_NEVER_RECOVERED=1
 check_warning_names "$WORK/m069-nomarksource.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M069-AC5/M074-AC2 (and that line names the three that came back, four.qmd's silence being what this leg is about)" \
   "index.qmd two.qmd three.qmd" "four.qmd five.qmd"
-check_warning_count "$WORK/m069-nomarksource.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M069-AC5 (a record that was never written draws no no-marks wording either)"
-check_warning_count "$WORK/m069-nomarksource.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M069-AC5 (four.qmd's source reads perfectly well, so the lost wording is never drawn)"
 check_extension_warning_count "$WORK/m069-nomarksource.log" 1 \
   "M069-AC5/M074-AC2 (five.qmd emitted a warning this suite cannot name; its one is the never-written recovery report naming the three chapters that came back, four.qmd drawing nothing at all)"
 pass "M069-AC5: where a chapter's record was never written, a source that cannot be read is reported by the wording naming that outcome and a source that parses and reaches no mark is passed over in silence — the same section printed either way, and the two told apart by what is said about them"
@@ -9448,8 +9278,7 @@ MANIFEST
   check_index_sections "$CAPTURE_ROOT/m069-m069-nomarkerhalf/_book/index.html" \
     "$M069_ALPHA_ROWS_OWNONLY" \
     "M069 T6 self-test (the marker half removed: index.qmd's section carries its own term alone)" hrefs
-  check_warning_count "$WORK/m069-m069-nomarkerhalf.log" \
-    "$WARN_STORE_NEVER_RECOVERED" 0 \
+  check_store_reports "$WORK/m069-m069-nomarkerhalf.log" \
     "M069 T6 self-test (the marker half removed: index.qmd reads no source and says nothing)"
   pass "M069 T6 self-test: with the marker half of the gate removed and nothing else changed, index.qmd rendered into a book with no store prints its section short two.qmd's term and draws no report — which the AC1 manifest and count for that leg would fail on"
 
@@ -9463,8 +9292,7 @@ MANIFEST
   check_book_sections "$CAPTURE_ROOT/m069-m069-nolasthalf/_book" \
     "M069 T6 self-test (the last-chapter half removed: five.qmd prints no section at all)" \
     "$(printf 'five.html\t-\nindex.html\t-')"
-  check_warning_count "$WORK/m069-m069-nolasthalf.log" \
-    "$WARN_STORE_NEVER_RECOVERED" 0 \
+  check_store_reports "$WORK/m069-m069-nolasthalf.log" \
     "M069 T6 self-test (the last-chapter half removed: five.qmd reads no source and says nothing)"
   pass "M069 T6 self-test: with the last-chapter half of the gate removed and nothing else changed, five.qmd rendered into a book with no store reads no marker anywhere, prints no index section and says nothing — which the AC1 manifest and count for that leg would fail on"
 
@@ -9486,12 +9314,9 @@ MANIFEST
   m069_mutant_chapter m069-wrongwording index.qmd \
     "M069 T6 self-test (the never-written wording swapped for the could-not-be-read one)" \
     's{\("no render has written a record of the index marks for %s; each such chapter.s terms were recovered from its own source instead, and are}{("the recorded index marks for %s could not be read, so that chapter\x27s terms were recovered from its own source instead; they are}'
-  check_warning_count "$WORK/m069-m069-wrongwording.log" \
-    "$WARN_STORE_NEVER_RECOVERED" 0 \
-    "M069 T6 self-test (the swapped wording: the never-written report is drawn none)"
-  check_warning_count "$WORK/m069-m069-wrongwording.log" \
-    "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
-    "M069 T6 self-test (the swapped wording: the one report a record no render has written now draws calls it one that could not be read)"
+  check_store_reports "$WORK/m069-m069-wrongwording.log" \
+    "M069 T6 self-test (the swapped wording: the never-written report is drawn none; the swapped wording: the one report a record no render has written now draws calls it one that could not be read)" \
+    WARN_STORE_UNREADABLE_RECOVERED=1
   check_index_sections "$CAPTURE_ROOT/m069-m069-wrongwording/_book/index.html" \
     "$M069_ALPHA_ROWS" \
     "M069 T6 self-test (the swapped wording changes no printed page, which is why the wording itself is asserted)" hrefs
@@ -9618,30 +9443,16 @@ check_book_sections "$CAPTURE_ROOT/place-oldstore/_book" "M063-AC2 (an upgraded 
   "$PLACE_SECTIONS"
 check_book_terms "$CAPTURE_ROOT/place-oldstore/_book" "M063-AC2 (an upgraded store)" \
   "$PLACE_TERMS"
-check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-  "M063-AC2 (the three fields are not a version bump, so no record is refused)"
-check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_STALE_LOST" 0 \
-  "M063-AC2 (the three fields are not a version bump, so no record is refused), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-  "M063-AC2 (the three fields are not a version bump, so no record is refused), nor the wording for a chapter whose own source carries no mark this route reaches"
-check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M063-AC2 (a record carrying the retired fields is still a valid record)"
-check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M063-AC2 (a record carrying the retired fields is still a valid record), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/place-oldstore.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M063-AC2 (a record carrying the retired fields is still a valid record), nor the wording for a chapter whose own source carries no mark this route reaches"
+check_store_reports "$WORK/place-oldstore.log" \
+  "M063-AC2 (the three fields are not a version bump, so no record is refused; a record carrying the retired fields is still a valid record)"
 
 # ...and again, so the chapter that takes on the index no marker names reads
 # records the render before it did not rewrite.
 m063_plant_retired "$PLACE_STORE" "M063-AC2 (before the single-chapter render)" \
   || fail "M063-AC2: the records could not be planted a second time (their own FAIL line is above)"
 place_render place-oldstore-fifth "M063-AC2 (an upgraded store, five.qmd alone)" five.qmd
-check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+check_store_reports "$WORK/place-oldstore-fifth.log" \
   "M063-AC2 (five.qmd reads four planted records and refuses none)"
-check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M063-AC2 (five.qmd reads four planted records and refuses none), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/place-oldstore-fifth.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M063-AC2 (five.qmd reads four planted records and refuses none), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_extension_warning_count "$WORK/place-oldstore-fifth.log" 0 \
   "M063-AC2 (five.qmd has no chapter after it and reads only valid records, so it has nothing to say)"
 # The locator M063 T2's self-test contrasts with: over the unmutated filter no
@@ -9775,18 +9586,8 @@ PLACENAMEPY
   named=$( { grep -oF -- "the recorded index marks for five.qmd name the index \"$PLACE_UNDECLARED\"" "$WORK/place-$slug.log" || true; } | wc -l | tr -d ' ')
   [ "$named" -eq "$want" ] \
     || { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/place-$slug.log" >&2; fail "M062-AC1 ($label): $named of the reports name five.qmd and $PLACE_UNDECLARED, want $want — the count is right only if each report is about the chapter whose record was planted and the name it carries"; }
-  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-    "M062-AC1 ($label, refiled for its name rather than refused for its version)"
-  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_STALE_LOST" 0 \
-    "M062-AC1 ($label, refiled for its name rather than refused for its version), nor the wording for a chapter whose own source could not be read either"
-  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-    "M062-AC1 ($label, refiled for its name rather than refused for its version), nor the wording for a chapter whose own source carries no mark this route reaches"
-  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-    "M062-AC1 ($label, nor refused for its shape)"
-  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-    "M062-AC1 ($label, nor refused for its shape), nor the wording for a chapter whose own source could not be read either"
-  check_warning_count "$WORK/place-$slug.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-    "M062-AC1 ($label, nor refused for its shape), nor the wording for a chapter whose own source carries no mark this route reaches"
+  check_store_reports "$WORK/place-$slug.log" \
+    "M062-AC1 ($label, refiled for its name rather than refused for its version; $label, nor refused for its shape)"
   cp "$WORK/place-$slug-record.json" "$PLACE_STORE/five.qmd$STORE_SUFFIX"
 }
 
@@ -9921,18 +9722,8 @@ section 'M60-AC5 — a stored record whose `xrefs` field is a NUMBER. `valid_rec
   > "$WORK/book-xrefs-plain.log" 2>&1 \
   || { tail -30 "$WORK/book-xrefs-plain.log" >&2; fail "M60-AC5: the marker chapter failed to re-render over the unplanted store"; }
 capture --project "$BOOK_DIR" html "book-xrefs-plain"
-check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
+check_store_reports "$WORK/book-xrefs-plain.log" \
   "M60-AC5 (the unplanted record is accepted)"
-check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M60-AC5 (the unplanted record is accepted), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M60-AC5 (the unplanted record is accepted), nor the wording for a chapter whose own source carries no mark this route reaches"
-check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-  "M60-AC5 (the unplanted record is accepted)"
-check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_STALE_LOST" 0 \
-  "M60-AC5 (the unplanted record is accepted), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/book-xrefs-plain.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-  "M60-AC5 (the unplanted record is accepted), nor the wording for a chapter whose own source carries no mark this route reaches"
 check_section_ids "$CAPTURE_ROOT/book-xrefs-plain/_book/last.html" \
   "M60-AC5 (the unplanted store prints all three declared indexes)" \
   "$HTML_SECTION_ID-main $HTML_SECTION_ID-people $HTML_SECTION_ID-places"
@@ -9961,17 +9752,12 @@ m60_plant_xrefs "$CORRUPT"
   > "$WORK/book-xrefs-number.log" 2>&1 \
   || { tail -30 "$WORK/book-xrefs-number.log" >&2; fail "M60-AC5: a record whose xrefs is a number took the render down; IP2 forbids it"; }
 capture --project "$BOOK_DIR" html "book-xrefs-number"
-check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
-  "M60-AC5"
+check_store_reports "$WORK/book-xrefs-number.log" \
+  "M60-AC5 (refused for its shape, not for its version)" \
+  WARN_STORE_UNREADABLE_RECOVERED=1
 { grep -F -- "$WARN_STORE_UNREADABLE_RECOVERED" "$WORK/book-xrefs-number.log" \
   | grep -qF 'one.qmd'; } \
   || { grep -F -- "$WARN_STORE_UNREADABLE_RECOVERED" "$WORK/book-xrefs-number.log" >&2; fail "M60-AC5: the report does not name one.qmd, the chapter whose record was refused"; }
-check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-  "M60-AC5 (refused for its shape, not for its version)"
-check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_STALE_LOST" 0 \
-  "M60-AC5 (refused for its shape, not for its version), nor the wording for a chapter whose own source could not be read either"
-check_warning_count "$WORK/book-xrefs-number.log" "$WARN_STORE_STALE_NOMARKS" 0 \
-  "M60-AC5 (refused for its shape, not for its version), nor the wording for a chapter whose own source carries no mark this route reaches"
 # All three declared indexes, not the two a refused record used to leave
 # (M064): the record is still refused for its shape, and one.qmd's own source
 # is read back instead, so the `people` section it carries the only mark for is
@@ -10379,8 +10165,9 @@ printf 'not a directory\n' > "$ORDER_DIR/.quarto/$STORE_DIR"
   || { tail -30 "$WORK/book-nostore.log" >&2; fail "M05 hardening: a store that cannot be written took the render down; IP2 forbids it"; }
 capture --project "$ORDER_DIR" html "book-nostore"
 
-check_warning_count "$WORK/book-nostore.log" "$WARN_STORE_UNWRITABLE" \
-  "$ORDER_CHAPTERS" "M05 hardening"
+check_store_reports "$WORK/book-nostore.log" \
+  "M05 hardening" \
+  WARN_STORE_UNWRITABLE="$ORDER_CHAPTERS"
 rm -f "$ORDER_DIR/.quarto/$STORE_DIR"
 pass "M05 hardening: a store that cannot be written is reported per chapter and the book still renders"
 
@@ -24077,21 +23864,14 @@ check_book_sections "$CAPTURE_ROOT/m070-cold/_book" \
 check_index_sections "$CAPTURE_ROOT/m070-cold/_book/index.html" \
   "$M070_SECTIONS_RECOVERED" \
   "M070-AC1/M070-AC2/M070-AC3 (seven chapters recovered from their sources, the notebook chapter refused)" hrefs
-check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_KIND_REFUSED" 1 \
-  "M070-AC1 (five.ipynb is refused once, and it is the only chapter of the book that is)"
+check_store_reports "$WORK/m070-cold.log" \
+  "M070-AC1/M070-AC2/M074-AC2 (five.ipynb is refused once, and it is the only chapter of the book that is; the seven chapters whose extensions this route accepts are recovered and reported in one line; no record here was written and unusable, so the could-not-be-read wording is never drawn; a refused chapter is not reported as a source that could not be read; nor as one that parsed and reached no mark)" \
+  WARN_STORE_KIND_REFUSED=1 WARN_STORE_NEVER_RECOVERED=1
 m070_refusal_names five.ipynb "$WORK/m070-cold.log" "M070-AC1 (a record no render has written)"
-check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M070-AC2/M074-AC2 (the seven chapters whose extensions this route accepts are recovered and reported in one line)"
 check_warning_names "$WORK/m070-cold.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M070-AC2/M074-AC2 (and that line names all seven, and neither index.qmd nor the notebook chapter, which draws the refusal instead)" \
   "one.qmd two.md three.markdown four.Rmd six.qmd seven.qmd eight.Rmd" \
   "index.qmd five.ipynb"
-check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M070-AC1 (no record here was written and unusable, so the could-not-be-read wording is never drawn)"
-check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-  "M070-AC1 (a refused chapter is not reported as a source that could not be read)"
-check_warning_count "$WORK/m070-cold.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M070-AC1 (nor as one that parsed and reached no mark)"
 check_extension_warning_count "$WORK/m070-cold.log" 3 \
   "M070-AC1/M074-AC2 (index.qmd emitted a warning this suite cannot name; its three are the one never-written recovery report, the one refusal, and the marker-position report the eight chapters after it draw)"
 
@@ -24122,13 +23902,10 @@ m068_assert_dangling "$M070_STORE/five.ipynb$STORE_SUFFIX" \
 check_index_sections "$CAPTURE_ROOT/m070-dangling/_book/index.html" \
   "$M070_SECTIONS_RECOVERED" \
   "M070-AC1 (a listed unopenable record: the accepted chapter's terms come back, the refused chapter's do not)" hrefs
-check_warning_count "$WORK/m070-dangling.log" "$WARN_STORE_KIND_REFUSED" 1 \
-  "M070-AC1 (five.ipynb draws the refusal on this entry path too, in the same words)"
+check_store_reports "$WORK/m070-dangling.log" \
+  "M070-AC1/M070-AC1/M074-AC2 (five.ipynb draws the refusal on this entry path too, in the same words; one.qmd's record is listed and cannot be opened, which is the entry path this leg is about, and its extension is one this route reads; the six chapters no record was written for at all, in one line)" \
+  WARN_STORE_KIND_REFUSED=1 WARN_STORE_UNREADABLE_RECOVERED=1 WARN_STORE_NEVER_RECOVERED=1
 m070_refusal_names five.ipynb "$WORK/m070-dangling.log" "M070-AC1 (a record listed and unopenable)"
-check_warning_count "$WORK/m070-dangling.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
-  "M070-AC1 (one.qmd's record is listed and cannot be opened, which is the entry path this leg is about, and its extension is one this route reads)"
-check_warning_count "$WORK/m070-dangling.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M070-AC1/M074-AC2 (the six chapters no record was written for at all, in one line)"
 check_warning_names "$WORK/m070-dangling.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M070-AC1/M074-AC2 (and that line names those six, and neither of the two whose records are listed and unopenable — the entry path this leg is about)" \
   "two.md three.markdown four.Rmd six.qmd seven.qmd eight.Rmd" \
@@ -24161,14 +23938,13 @@ m070_render record index.qmd \
 check_index_sections "$CAPTURE_ROOT/m070-record/_book/index.html" \
   "$M070_SECTIONS_RECORDED" \
   "M070-AC3/M071-AC1 (six.qmd, seven.qmd and eight.Rmd read from their own records: each front-matter mark printed at its chapter's page with no fragment, the rows the recovery legs print, and seven.qmd's body mark alone carrying a fragment)" hrefs
-check_warning_count "$WORK/m070-record.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M070-AC3/M071-AC1/M074-AC2 (six.qmd, seven.qmd and eight.Rmd are read from their own records and draw no recovery report; the four chapters without one are reported in one line)"
+check_store_reports "$WORK/m070-record.log" \
+  "M070-AC3/M071-AC1/M074-AC2/M070-AC3 (six.qmd, seven.qmd and eight.Rmd are read from their own records and draw no recovery report; the four chapters without one are reported in one line; five.ipynb is refused here as well)" \
+  WARN_STORE_NEVER_RECOVERED=1 WARN_STORE_KIND_REFUSED=1
 check_warning_names "$WORK/m070-record.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M070-AC3/M071-AC1/M074-AC2 (and that line names those four alone — not the three read from their own records, and not the notebook chapter, which draws the refusal)" \
   "one.qmd two.md three.markdown four.Rmd" \
   "five.ipynb six.qmd seven.qmd eight.Rmd"
-check_warning_count "$WORK/m070-record.log" "$WARN_STORE_KIND_REFUSED" 1 \
-  "M070-AC3 (five.ipynb is refused here as well)"
 check_extension_warning_count "$WORK/m070-record.log" 3 \
   "M070-AC3/M071-AC1/M074-AC2 (the fourth render emitted a warning this suite cannot name; its three are the one never-written recovery report, the one refusal, and the marker-position report)"
 pass "M070-AC1/M070-AC2/M070-AC3/M071-AC1: over a book whose chapters are written in five source kinds, the four extensions this route accepts are each recovered whole and the notebook chapter is refused and reported on both entry paths — a record no render has written, and a record listed and unopenable — in the same words, each naming that chapter's own file, with none of its terms in either index section; and a mark written in a chapter's YAML front matter reaches the same entry in the same index by the recovery route as by the record route — across the metadata field it is written in, the extension of the chapter carrying it, whether its entry comes from its visible words or its attribute, and which of the book's two indexes it names — with ONE locator by either route, that chapter's page and no fragment, while a mark carrying or inside one of Quarto's conditional classes there reaches no index by the recovery route and a sort key declared there beats one declared in the body"
@@ -24245,7 +24021,7 @@ MANIFEST
   check_index_sections "$CAPTURE_ROOT/m070-notest/_book/index.html" \
     "$M070_SECTIONS_REFILED" \
     "M070 T6 self-test (the test removed: the notebook chapter's term is filed into the index its author did not name)" hrefs
-  check_warning_count "$WORK/m070-notest.log" "$WARN_STORE_KIND_REFUSED" 0 \
+  check_store_reports "$WORK/m070-notest.log" \
     "M070 T6 self-test (the test removed: nothing is refused, so nothing is said)"
   pass "M070 T6 self-test: with the extension test removed and nothing else changed, the notebook chapter is parsed as markdown and its term is filed into the book's first declared index with nothing said — which the AC1 manifest and refusal count for the cold leg would fail on"
 
@@ -24268,14 +24044,13 @@ MANIFEST
   check_index_sections "$CAPTURE_ROOT/m070-inverted/_book/index.html" \
     "$M070_SECTIONS_INVERTED" \
     "M070 T6 self-test (the test inverted: the seven chapters this route reads lose every term, and the one it does not read keeps its)" hrefs
-  check_warning_count "$WORK/m070-inverted.log" "$WARN_STORE_KIND_REFUSED" 1 \
-    "M070 T6 self-test (the test inverted: the refusal is drawn once, as it is unplanted — the count alone cannot tell the two apart since M074, so the chapters the line names are what does)"
+  check_store_reports "$WORK/m070-inverted.log" \
+    "M070 T6 self-test (the test inverted: the refusal is drawn once, as it is unplanted — the count alone cannot tell the two apart since M074, so the chapters the line names are what does; the test inverted: the notebook chapter is the only one recovered)" \
+    WARN_STORE_KIND_REFUSED=1 WARN_STORE_NEVER_RECOVERED=1
   check_warning_names "$WORK/m070-inverted.log" "$WARN_STORE_KIND_REFUSED" \
     "M070 T6 self-test (the test inverted: the seven chapters whose extensions this route accepts are the ones refused, and the notebook chapter is not among them)" \
     "one.qmd two.md three.markdown four.Rmd six.qmd seven.qmd eight.Rmd" \
     "five.ipynb"
-  check_warning_count "$WORK/m070-inverted.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-    "M070 T6 self-test (the test inverted: the notebook chapter is the only one recovered)"
   check_warning_names "$WORK/m070-inverted.log" "$WARN_STORE_NEVER_RECOVERED" \
     "M070 T6 self-test (the test inverted: and the recovery line names the notebook chapter alone)" \
     "five.ipynb" "one.qmd two.md three.markdown four.Rmd six.qmd seven.qmd eight.Rmd"
@@ -24318,8 +24093,9 @@ MANIFEST
   check_index_sections "$CAPTURE_ROOT/m070-nomarkdown/_book/index.html" \
     "$M070_SECTIONS_NOMARKDOWN" \
     "M070 T6 self-test (the .markdown chapter refused: its term is the one row missing)" hrefs
-  check_warning_count "$WORK/m070-nomarkdown.log" "$WARN_STORE_KIND_REFUSED" 1 \
-    "M070 T6 self-test (one refusal line, as unplanted — since M074 the refusals of one render share a line, so the count cannot tell the two apart and the names below are what does)"
+  check_store_reports "$WORK/m070-nomarkdown.log" \
+    "M070 T6 self-test (one refusal line, as unplanted — since M074 the refusals of one render share a line, so the count cannot tell the two apart and the names below are what does)" \
+    WARN_STORE_KIND_REFUSED=1
   check_warning_names "$WORK/m070-nomarkdown.log" "$WARN_STORE_KIND_REFUSED" \
     "M070 T6 self-test (two chapters refused where the fixture has one to refuse: the .markdown chapter joins the notebook chapter on that line)" \
     "three.markdown five.ipynb" \
@@ -24357,8 +24133,9 @@ MANIFEST
   check_index_sections "$CAPTURE_ROOT/m070-nometa/_book/index.html" \
     "$M070_SECTIONS_NOMETA" \
     "M070 T6 self-test (the metadata walk removed: every front-matter mark reaches no index at all)" hrefs
-  check_warning_count "$WORK/m070-nometa.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-    "M070 T6 self-test (one recovery line here as unplanted, so the names below are what tells the two apart)"
+  check_store_reports "$WORK/m070-nometa.log" \
+    "M070 T6 self-test (one recovery line here as unplanted, so the names below are what tells the two apart)" \
+    WARN_STORE_NEVER_RECOVERED=1
   check_warning_names "$WORK/m070-nometa.log" "$WARN_STORE_NEVER_RECOVERED" \
     "M070 T6 self-test (six.qmd and eight.Rmd now parse to no mark, so each is passed over in silence rather than reported as recovered, and the line names the other five)" \
     "one.qmd two.md three.markdown four.Rmd seven.qmd" \
@@ -24378,12 +24155,9 @@ MANIFEST
   check_index_sections "$CAPTURE_ROOT/m070-lostwording/_book/index.html" \
     "$M070_SECTIONS_RECOVERED" \
     "M070 T6 self-test (the swapped wording changes no printed page, which is why the wording itself is asserted)" hrefs
-  check_warning_count "$WORK/m070-lostwording.log" "$WARN_STORE_KIND_REFUSED" 0 \
-    "M070 T6 self-test (the refusal is never drawn)"
-  check_warning_count "$WORK/m070-lostwording.log" "$WARN_STORE_NEVER_LOST" 1 \
-    "M070 T6 self-test (the notebook chapter is reported as one whose source could not be read; M073 gave that outcome its own wording on the never-written path, and this tree is cold, so the report says no render has written the record rather than that a record could not be read)"
-  check_warning_count "$WORK/m070-lostwording.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
-    "M070 T6 self-test (and not the wording for a record that WAS written, there being no store here at all)"
+  check_store_reports "$WORK/m070-lostwording.log" \
+    "M070 T6 self-test (the refusal is never drawn; the notebook chapter is reported as one whose source could not be read; M073 gave that outcome its own wording on the never-written path, and this tree is cold, so the report says no render has written the record rather than that a record could not be read; and not the wording for a record that WAS written, there being no store here at all)" \
+    WARN_STORE_NEVER_LOST=1
   pass "M070 T6 self-test: with the refusal's own signal removed and nothing else changed, the same page is printed and the notebook chapter is reported as one whose source could not be read — which the AC1 counts for the cold leg would fail on"
 
   # 6 — the conditional-content removal taken off the front matter, so the
@@ -24937,7 +24711,7 @@ m072_tree base
 m072_fill base
 m072_render base index.qmd "-before" \
   "M072-AC1 control (index.qmd over the store the whole-book render wrote)"
-check_warning_count "$WORK/m072-base-before.log" "$WARN_STORE_KIND_REFUSED" 0 \
+check_store_reports "$WORK/m072-base-before.log" \
   "M072-AC1 control (every record is usable, so the notebook chapter's source is never asked for and nothing is refused)"
 check_extension_warning_count "$WORK/m072-base-before.log" 1 \
   "M072-AC1 control (index.qmd over an intact store emitted a warning this suite cannot name; its one is the marker-position report the eight chapters after it draw)"
@@ -24948,7 +24722,7 @@ m072_skew version five.ipynb "M072-AC1 (the plant)"
 
 m072_render version one.qmd "-one" \
   "M072-AC1 (one.qmd over a store whose notebook record another version wrote)"
-check_warning_count "$WORK/m072-version-one.log" "$WARN_STORE_KIND_REFUSED" 0 \
+check_store_reports "$WORK/m072-version-one.log" \
   "M072-AC1 (one.qmd builds no section and the store shows index.qmd placing both indexes, so it says nothing about a record it never prints out of)"
 m072_other_wordings_silent "$WORK/m072-version-one.log" \
   "M072-AC1/M072-AC3 (one.qmd, version-skewed record)"
@@ -24957,8 +24731,9 @@ check_extension_warning_count "$WORK/m072-version-one.log" 0 \
 
 m072_render version index.qmd "" \
   "M072-AC1 (index.qmd over a store whose notebook record another version wrote)"
-check_warning_count "$WORK/m072-version.log" "$WARN_STORE_KIND_REFUSED" 1 \
-  "M072-AC1 (index.qmd builds both sections, and the refusal is drawn once there — the count the three different-version wordings follow)"
+check_store_reports "$WORK/m072-version.log" \
+  "M072-AC1 (index.qmd builds both sections, and the refusal is drawn once there — the count the three different-version wordings follow)" \
+  WARN_STORE_KIND_REFUSED=1
 m070_refusal_names five.ipynb "$WORK/m072-version.log" \
   "M072-AC1 (a record written by another version)"
 m072_other_wordings_silent "$WORK/m072-version.log" \
@@ -24980,8 +24755,9 @@ m068_dangle_record five.ipynb "$M072_LISTED_STORE" \
   "M072-AC2 (the notebook chapter's record listed and unopenable)"
 m072_render listed one.qmd "-one" \
   "M072-AC2 (one.qmd over a listed, unopenable notebook record)"
-check_warning_count "$WORK/m072-listed-one.log" "$WARN_STORE_KIND_REFUSED" 1 \
-  "M072-AC2 (a record listed and unopenable: the refusal is drawn by the chapter that met it, section or no section)"
+check_store_reports "$WORK/m072-listed-one.log" \
+  "M072-AC2 (a record listed and unopenable: the refusal is drawn by the chapter that met it, section or no section)" \
+  WARN_STORE_KIND_REFUSED=1
 m070_refusal_names five.ipynb "$WORK/m072-listed-one.log" \
   "M072-AC2 (a record listed and unopenable)"
 m072_other_wordings_silent "$WORK/m072-listed-one.log" \
@@ -25004,8 +24780,9 @@ sys.exit("the planted bytes decode as JSON")' \
   || fail "M072-AC2: the bytes planted at five.ipynb's record decode after all, so the render below would be about a record that was read rather than one that was not"
 m072_render undecodable one.qmd "-one" \
   "M072-AC2 (one.qmd over a notebook record whose bytes do not decode)"
-check_warning_count "$WORK/m072-undecodable-one.log" "$WARN_STORE_KIND_REFUSED" 1 \
-  "M072-AC2 (bytes that do not decode as a record: the refusal is drawn by the chapter that met them)"
+check_store_reports "$WORK/m072-undecodable-one.log" \
+  "M072-AC2 (bytes that do not decode as a record: the refusal is drawn by the chapter that met them)" \
+  WARN_STORE_KIND_REFUSED=1
 m070_refusal_names five.ipynb "$WORK/m072-undecodable-one.log" \
   "M072-AC2 (bytes that do not decode as a record)"
 m072_other_wordings_silent "$WORK/m072-undecodable-one.log" \
@@ -25021,7 +24798,7 @@ rm -rf "$M072W/nostore/.quarto/$STORE_DIR"
   || fail "M072-AC2: the store directory is still there, so the render below would be about records rather than about their absence"
 m072_render nostore one.qmd "-one" \
   "M072-AC2 (one.qmd with no store at all)"
-check_warning_count "$WORK/m072-nostore-one.log" "$WARN_STORE_KIND_REFUSED" 0 \
+check_store_reports "$WORK/m072-nostore-one.log" \
   "M072-AC2 (no store: one.qmd builds no section, so a record no render has written is read as absent and its chapter's source is never asked for)"
 m072_other_wordings_silent "$WORK/m072-nostore-one.log" \
   "M072-AC2/M072-AC3 (one.qmd, no store)"
@@ -25067,16 +24844,9 @@ m064_break_source "$M061W/m073-undecodable/four.qmd" "M073-AC2" \
   > "$WORK/m073-undecodable.log" 2>&1 \
   || { tail -30 "$WORK/m073-undecodable.log" >&2; fail "M073-AC2: the render failed; IP2 forbids an undecodable record and an unreadable source together taking one down"; }
 capture --project "$M061W/m073-undecodable" html "m073-undecodable"
-check_warning_count "$WORK/m073-undecodable.log" "$WARN_STORE_UNREADABLE_LOST" 1 \
-  "M073-AC2 (four.qmd's record was written and does not decode, and its source cannot be read either)"
-check_warning_count "$WORK/m073-undecodable.log" "$WARN_STORE_NEVER_LOST" 0 \
-  "M073-AC2 (a record that WAS written never draws the never-written family's lost wording)"
-check_warning_count "$WORK/m073-undecodable.log" "$WARN_STORE_NEVER_RECOVERED" 0 \
-  "M073-AC2 (nor its recovery wording: every other chapter's record is there and usable)"
-check_warning_count "$WORK/m073-undecodable.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-  "M073-AC2 (nothing was recovered, so the recovery wording is never drawn)"
-check_warning_count "$WORK/m073-undecodable.log" "$WARN_STORE_UNREADABLE_NOMARKS" 0 \
-  "M073-AC2 (the source could not be read, so the no-marks wording is never drawn)"
+check_store_reports "$WORK/m073-undecodable.log" \
+  "M073-AC2 (four.qmd's record was written and does not decode, and its source cannot be read either; a record that WAS written never draws the never-written family's lost wording; nor its recovery wording: every other chapter's record is there and usable; nothing was recovered, so the recovery wording is never drawn; the source could not be read, so the no-marks wording is never drawn)" \
+  WARN_STORE_UNREADABLE_LOST=1
 { grep -F -- "$WARN_STORE_UNREADABLE_LOST" "$WORK/m073-undecodable.log" \
   | grep -qF 'four.qmd'; } \
   || { grep -F -- "$WARN_STORE_UNREADABLE_LOST" "$WORK/m073-undecodable.log" >&2; fail "M073-AC2: the report does not name four.qmd, the chapter whose record does not decode and whose source cannot be read"; }
@@ -25180,14 +24950,9 @@ m073_version_form() {   # <form> <label>
     check_warning_count "$WORK/$slug.log" "$key" 0 \
       "$label (the file names no version this render can read as one, so nothing may say another version of this extension wrote it)"
   done
-  check_warning_count "$WORK/$slug.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
-    "$label (the record could not be used and one.qmd's source carries a mark, so the could-not-be-read family's recovery wording is drawn once)"
-  check_warning_count "$WORK/$slug.log" "$WARN_STORE_NEVER_RECOVERED" 0 \
-    "$label (the record WAS written, so no never-written wording is drawn)"
-  check_warning_count "$WORK/$slug.log" "$WARN_STORE_NEVER_LOST" 0 \
-    "$label (nor the never-written family's lost wording)"
-  check_warning_count "$WORK/$slug.log" "$WARN_STORE_KIND_REFUSED" 0 \
-    "$label (one.qmd is a .qmd, which this route reads, so nothing is refused)"
+  check_store_reports "$WORK/$slug.log" \
+    "$label (the record could not be used and one.qmd's source carries a mark, so the could-not-be-read family's recovery wording is drawn once; the record WAS written, so no never-written wording is drawn; nor the never-written family's lost wording; one.qmd is a .qmd, which this route reads, so nothing is refused)" \
+    WARN_STORE_UNREADABLE_RECOVERED=1
   { grep -F -- "$WARN_STORE_UNREADABLE_RECOVERED" "$WORK/$slug.log" \
     | grep -qF 'one.qmd'; } \
     || { grep -F -- "$WARN_STORE_UNREADABLE_RECOVERED" "$WORK/$slug.log" >&2; fail "$label: the report does not name one.qmd, the chapter whose record carries the planted version"; }
@@ -25240,24 +25005,20 @@ m073_count_leg() {   # <slug> <plant chapter> <label>
 
 m073_count_leg m073-count-read two.md \
   "M073 review F3 (one.qmd over a store whose .md chapter's record carries no version)"
-check_warning_count "$WORK/m072-m073-count-read-one.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
-  "M073 review F3 (a record evidencing no version is drawn where the chapter met it, so the chapter that builds no section reports it — under the wider test it entered the stale set and this chapter said nothing)"
+check_store_reports "$WORK/m072-m073-count-read-one.log" \
+  "M073 review F3 (a record evidencing no version is drawn where the chapter met it, so the chapter that builds no section reports it — under the wider test it entered the stale set and this chapter said nothing; nothing may say another version of this extension wrote it; two.md is a source this route reads, so nothing is refused; the record WAS written, so no never-written wording is drawn)" \
+  WARN_STORE_UNREADABLE_RECOVERED=1
 { grep -F -- "$WARN_STORE_UNREADABLE_RECOVERED" "$WORK/m072-m073-count-read-one.log" \
   | grep -qF 'two.md'; } \
   || { grep -F -- "$WARN_STORE_UNREADABLE_RECOVERED" "$WORK/m072-m073-count-read-one.log" >&2; fail "M073 review F3: the report does not name two.md, the chapter whose record carries no version"; }
-check_warning_count "$WORK/m072-m073-count-read-one.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-  "M073 review F3 (nothing may say another version of this extension wrote it)"
-check_warning_count "$WORK/m072-m073-count-read-one.log" "$WARN_STORE_KIND_REFUSED" 0 \
-  "M073 review F3 (two.md is a source this route reads, so nothing is refused)"
-check_warning_count "$WORK/m072-m073-count-read-one.log" "$WARN_STORE_NEVER_RECOVERED" 0 \
-  "M073 review F3 (the record WAS written, so no never-written wording is drawn)"
 check_extension_warning_count "$WORK/m072-m073-count-read-one.log" 1 \
   "M073 review F3 (one.qmd emitted a warning this suite cannot name; its one is the report for two.md — it carries no placement marker itself, and every other record is usable)"
 
 m073_count_leg m073-count-refused five.ipynb \
   "M073 review F4 (one.qmd over a store whose notebook chapter's record carries no version)"
-check_warning_count "$WORK/m072-m073-count-refused-one.log" "$WARN_STORE_KIND_REFUSED" 1 \
-  "M073 review F4 (a refused chapter whose record evidences no version draws its refusal where the chapter met the record, not once per section)"
+check_store_reports "$WORK/m072-m073-count-refused-one.log" \
+  "M073 review F4 (a refused chapter whose record evidences no version draws its refusal where the chapter met the record, not once per section)" \
+  WARN_STORE_KIND_REFUSED=1
 m070_refusal_names five.ipynb "$WORK/m072-m073-count-refused-one.log" \
   "M073 review F4 (a record carrying no version at all)"
 m072_other_wordings_silent "$WORK/m072-m073-count-refused-one.log" \
@@ -25302,9 +25063,10 @@ if [ "${1:-}" = "--self-test" ]; then
   # read backwards.
   m072_mutant gateflip "M072 T2 self-test (the report site's gate turned round)" \
     's{\n  if builds or first == nil then\n}{\n  if not (builds or first == nil) then\n}'
-  check_warning_count "$WORK/m072-gateflip-one.log" "$WARN_STORE_KIND_REFUSED" 1 \
-    "M072 T2 self-test (the gate turned round: one.qmd draws the refusal it must not draw)"
-  check_warning_count "$WORK/m072-gateflip.log" "$WARN_STORE_KIND_REFUSED" 0 \
+  check_store_reports "$WORK/m072-gateflip-one.log" \
+    "M072 T2 self-test (the gate turned round: one.qmd draws the refusal it must not draw)" \
+    WARN_STORE_KIND_REFUSED=1
+  check_store_reports "$WORK/m072-gateflip.log" \
     "M072 T2 self-test (the gate turned round: index.qmd draws none where it must draw one)"
   pass "M072 T2 self-test: with the report site's gate turned round and nothing else changed, the chapter that builds no section draws the refusal and the chapter that builds both draws none — which both AC1 counts would fail on"
 
@@ -25315,10 +25077,12 @@ if [ "${1:-}" = "--self-test" ]; then
   m072_mutant refusefirst \
     "M072 T2 self-test (the refusal test back ahead of the version test)" \
     's{\n        if ok and type\(data\) == "table" and type\(data\.version\) == "number"\n           and data\.version ~= STORE_VERSION then\n}{\n        if refused then\n          warn_source_refused(file)\n        elseif ok and type(data) == "table" and type(data.version) == "number"\n           and data.version ~= STORE_VERSION then\n}'
-  check_warning_count "$WORK/m072-refusefirst-one.log" "$WARN_STORE_KIND_REFUSED" 1 \
-    "M072 T2 self-test (the refusal ahead of the version test: one.qmd draws it where it met the record, which is the count this milestone moved)"
-  check_warning_count "$WORK/m072-refusefirst.log" "$WARN_STORE_KIND_REFUSED" 1 \
-    "M072 T2 self-test (the refusal ahead of the version test: index.qmd draws it too, so the count alone cannot tell this mutation from the filter as shipped there)"
+  check_store_reports "$WORK/m072-refusefirst-one.log" \
+    "M072 T2 self-test (the refusal ahead of the version test: one.qmd draws it where it met the record, which is the count this milestone moved)" \
+    WARN_STORE_KIND_REFUSED=1
+  check_store_reports "$WORK/m072-refusefirst.log" \
+    "M072 T2 self-test (the refusal ahead of the version test: index.qmd draws it too, so the count alone cannot tell this mutation from the filter as shipped there)" \
+    WARN_STORE_KIND_REFUSED=1
   pass "M072 T2 self-test: with the refusal tested ahead of the version and nothing else changed, a chapter that builds no section is told about a record another version wrote — which the AC1 count for one.qmd would fail on"
 
   # -------------------------------------------------------------------------
@@ -25350,10 +25114,9 @@ if [ "${1:-}" = "--self-test" ]; then
     > "$WORK/m073-collapsed.log" 2>&1 \
     || { tail -30 "$WORK/m073-collapsed.log" >&2; fail "M073 T5 self-test: the mutated render failed; this case is about which wording is drawn, not about a broken render"; }
   capture --project "$M061W/m073-collapsed" html "m073-collapsed"
-  check_warning_count "$WORK/m073-collapsed.log" "$WARN_STORE_NEVER_LOST" 0 \
-    "M073 T5 self-test (the branch made unreachable: the wording this milestone added is never drawn)"
-  check_warning_count "$WORK/m073-collapsed.log" "$WARN_STORE_UNREADABLE_LOST" 1 \
-    "M073 T5 self-test (the branch made unreachable: the state falls through to the wording claiming a record that could not be read)"
+  check_store_reports "$WORK/m073-collapsed.log" \
+    "M073 T5 self-test (the branch made unreachable: the wording this milestone added is never drawn; the branch made unreachable: the state falls through to the wording claiming a record that could not be read)" \
+    WARN_STORE_UNREADABLE_LOST=1
   pass "M073 T5 self-test: with the never-written family's lost branch made unreachable and nothing else changed, a chapter whose record no render wrote and whose source cannot be read is told its record could not be read — which both M073-AC1 counts on the m069-lostsource leg would fail on"
 
   # One mutant tree carrying the M072 fixture's filled store, one named
@@ -25389,10 +25152,9 @@ if [ "${1:-}" = "--self-test" ]; then
   m073_mutant_version m073-widetest one.qmd index.qmd absent \
     "M073 T5 self-test (the version test back to inequality alone)" \
     "$M073_WIDE_TEST"
-  check_warning_count "$WORK/m073-widetest.log" "$WARN_STORE_STALE_RECOVERED" 1 \
-    "M073 T5 self-test (inequality alone: a record with no version field is reported as one another version of this extension wrote)"
-  check_warning_count "$WORK/m073-widetest.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-    "M073 T5 self-test (inequality alone: and the wording for a record that could not be read is not drawn)"
+  check_store_reports "$WORK/m073-widetest.log" \
+    "M073 T5 self-test (inequality alone: a record with no version field is reported as one another version of this extension wrote; inequality alone: and the wording for a record that could not be read is not drawn)" \
+    WARN_STORE_STALE_RECOVERED=1
   pass "M073 T5 self-test: with the version test back to inequality alone and nothing else changed, a record file carrying no version field at all is reported as one written by a different version of this extension — which both M073-AC3 counts on the deleted-version leg would fail on"
 
   # 3 — the test narrowed to `nil` rather than to a number. The deleted-version
@@ -25402,24 +25164,21 @@ if [ "${1:-}" = "--self-test" ]; then
   m073_mutant_version m073-niltest one.qmd index.qmd absent \
     "M073 T5 self-test (the version test narrowed to nil, deleted-version form)" \
     "$M073_NIL_TEST"
-  check_warning_count "$WORK/m073-niltest.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-    "M073 T5 self-test (narrowed to nil: a record with no version field is NOT reported as another version's, so this leg alone cannot tell this mutation from the filter as shipped)"
-  check_warning_count "$WORK/m073-niltest.log" "$WARN_STORE_UNREADABLE_RECOVERED" 1 \
-    "M073 T5 self-test (narrowed to nil: the deleted-version leg is green under the mutation too)"
+  check_store_reports "$WORK/m073-niltest.log" \
+    "M073 T5 self-test (narrowed to nil: a record with no version field is NOT reported as another version's, so this leg alone cannot tell this mutation from the filter as shipped; narrowed to nil: the deleted-version leg is green under the mutation too)" \
+    WARN_STORE_UNREADABLE_RECOVERED=1
   m073_mutant_version m073-niltest-string one.qmd index.qmd string \
     "M073 T5 self-test (the version test narrowed to nil, string form)" \
     "$M073_NIL_TEST"
-  check_warning_count "$WORK/m073-niltest-string.log" "$WARN_STORE_STALE_RECOVERED" 1 \
-    "M073 T5 self-test (narrowed to nil: a version written as a string is reported as another version's)"
-  check_warning_count "$WORK/m073-niltest-string.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-    "M073 T5 self-test (narrowed to nil: and the wording for a record that could not be read is not drawn)"
+  check_store_reports "$WORK/m073-niltest-string.log" \
+    "M073 T5 self-test (narrowed to nil: a version written as a string is reported as another version's; narrowed to nil: and the wording for a record that could not be read is not drawn)" \
+    WARN_STORE_STALE_RECOVERED=1
   m073_mutant_version m073-niltest-boolean one.qmd index.qmd boolean \
     "M073 T5 self-test (the version test narrowed to nil, boolean form)" \
     "$M073_NIL_TEST"
-  check_warning_count "$WORK/m073-niltest-boolean.log" "$WARN_STORE_STALE_RECOVERED" 1 \
-    "M073 T5 self-test (narrowed to nil: a boolean version is reported as another version's too)"
-  check_warning_count "$WORK/m073-niltest-boolean.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-    "M073 T5 self-test (narrowed to nil: and the wording for a record that could not be read is not drawn — the companion the string form asserts, without which a mutation drawing both wordings would pass here)"
+  check_store_reports "$WORK/m073-niltest-boolean.log" \
+    "M073 T5 self-test (narrowed to nil: a boolean version is reported as another version's too; narrowed to nil: and the wording for a record that could not be read is not drawn — the companion the string form asserts, without which a mutation drawing both wordings would pass here)" \
+    WARN_STORE_STALE_RECOVERED=1
   pass "M073 T5 self-test: with the version test narrowed to nil rather than to a number, the deleted-version leg stays green while a version written as a string and a boolean one are each reported as written by a different version of this extension — which the M073-AC3 counts on those two legs would fail on, and which the deleted-version leg alone could never catch"
 
   # 4 — the same wide test as plant 2, read on the COUNT axis rather than the
@@ -25432,17 +25191,15 @@ if [ "${1:-}" = "--self-test" ]; then
   m073_mutant_version m073-widetest-count two.md one.qmd absent \
     "M073 T5 self-test (the version test back to inequality alone, read by a chapter that builds no section)" \
     "$M073_WIDE_TEST"
-  check_warning_count "$WORK/m073-widetest-count.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
-    "M073 T5 self-test (inequality alone: the record goes back to the stale set, so the chapter that builds no section says nothing about it)"
-  check_warning_count "$WORK/m073-widetest-count.log" "$WARN_STORE_STALE_RECOVERED" 0 \
-    "M073 T5 self-test (inequality alone: nor is the different-version wording drawn there — the report site's gate is shut for this chapter, which is the whole of the count this milestone moved)"
+  check_store_reports "$WORK/m073-widetest-count.log" \
+    "M073 T5 self-test (inequality alone: the record goes back to the stale set, so the chapter that builds no section says nothing about it; inequality alone: nor is the different-version wording drawn there — the report site's gate is shut for this chapter, which is the whole of the count this milestone moved)"
   check_extension_warning_count "$WORK/m073-widetest-count.log" 0 \
     "M073 T5 self-test (inequality alone: one.qmd draws nothing at all over this store, as it did before the narrowing)"
 
   m073_mutant_version m073-widetest-refused five.ipynb one.qmd absent \
     "M073 T5 self-test (the version test back to inequality alone, a refused chapter read by a chapter that builds no section)" \
     "$M073_WIDE_TEST"
-  check_warning_count "$WORK/m073-widetest-refused.log" "$WARN_STORE_KIND_REFUSED" 0 \
+  check_store_reports "$WORK/m073-widetest-refused.log" \
     "M073 T5 self-test (inequality alone: the refusal goes back to the report site with the stale records, so the chapter that builds no section does not draw it)"
   check_extension_warning_count "$WORK/m073-widetest-refused.log" 0 \
     "M073 T5 self-test (inequality alone: one.qmd draws nothing at all over this store either)"
@@ -25477,12 +25234,8 @@ section 'M074 — where the reports about a record NO RENDER HAS WRITTEN are dra
 m070_tree m074-quiet
 m070_render m074-quiet eight.Rmd \
   "M074-AC1 (eight.Rmd alone over a store no render has written)" ""
-check_warning_count "$WORK/m070-m074-quiet.log" "$WARN_STORE_NEVER_RECOVERED" 0 \
-  "M074-AC1 (a chapter that reads the store and builds no section draws no never-written recovery report)"
-check_warning_count "$WORK/m070-m074-quiet.log" "$WARN_STORE_NEVER_LOST" 0 \
-  "M074-AC1 (nor the never-written wording for a chapter whose source could not be read)"
-check_warning_count "$WORK/m070-m074-quiet.log" "$WARN_STORE_KIND_REFUSED" 0 \
-  "M074-AC1 (nor the refusal five.ipynb's never-written record draws, which moved with them)"
+check_store_reports "$WORK/m070-m074-quiet.log" \
+  "M074-AC1 (a chapter that reads the store and builds no section draws no never-written recovery report; nor the never-written wording for a chapter whose source could not be read; nor the refusal five.ipynb's never-written record draws, which moved with them)"
 check_extension_warning_count "$WORK/m070-m074-quiet.log" 0 \
   "M074-AC1 (eight.Rmd emitted a warning at all; it carries no placement marker, builds no section, and has nothing to say about a record it never printed out of)"
 # The first half of AC1's own sentence, which the zeros above take on trust:
@@ -25521,14 +25274,13 @@ m070_render m074-unplaced eight.Rmd \
 check_book_sections "$CAPTURE_ROOT/m070-m074-unplaced/_book" \
   "M074-AC1 (no chapter of the control copy places an index, so eight.Rmd prints no section here either — the one thing this control holds fixed)" \
   "$(printf 'eight.html\t-\nindex.html\t-')"
-check_warning_count "$WORK/m070-m074-unplaced.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M074-AC1 (the control: with no chapter placing an index, the same chapter draws the never-written report it was silent about above)"
+check_store_reports "$WORK/m070-m074-unplaced.log" \
+  "M074-AC1 (the control: with no chapter placing an index, the same chapter draws the never-written report it was silent about above; the control: and the refusal that moved with it)" \
+  WARN_STORE_NEVER_RECOVERED=1 WARN_STORE_KIND_REFUSED=1
 check_warning_names "$WORK/m070-m074-unplaced.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M074-AC1 (the control: and that one line names the seven chapters eight.Rmd read back, so the leg above is about a chapter that reached the store and said nothing)" \
   "index.qmd one.qmd two.md three.markdown four.Rmd six.qmd seven.qmd" \
   "five.ipynb eight.Rmd"
-check_warning_count "$WORK/m070-m074-unplaced.log" "$WARN_STORE_KIND_REFUSED" 1 \
-  "M074-AC1 (the control: and the refusal that moved with it)"
 m070_refusal_names five.ipynb "$WORK/m070-m074-unplaced.log" \
   "M074-AC1 (the control: the refusal names the notebook chapter)"
 check_warning_count "$WORK/m070-m074-unplaced.log" "$WARN_BOOK_NOMARKER" 1 \
@@ -25563,17 +25315,14 @@ capture --project "$M074W/nomarker" html "m074-nomarker"
 check_book_sections "$CAPTURE_ROOT/m074-nomarker/_book" \
   "M074-AC3 (no chapter of this book carries a placement marker, so two.qmd prints no index section and neither does the home page Quarto renders beside it — which is what makes the report below one from a chapter that builds nothing)" \
   "$(printf 'index.html\t-\ntwo.html\t-')"
-check_warning_count "$WORK/m074-nomarker.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
-  "M074-AC3 (the book's last chapter builds nothing, and its records show no chapter placing an index, so it draws the never-written report once)"
+check_store_reports "$WORK/m074-nomarker.log" \
+  "M074-AC3 (the book's last chapter builds nothing, and its records show no chapter placing an index, so it draws the never-written report once; both sources read, so the never-written lost wording is never drawn; both are .qmd chapters, so nothing is refused)" \
+  WARN_STORE_NEVER_RECOVERED=1
 check_warning_names "$WORK/m074-nomarker.log" "$WARN_STORE_NEVER_RECOVERED" \
   "M074-AC3 (the one report names both chapters ahead of it)" \
   "index.qmd one.qmd" "two.qmd"
 check_warning_count "$WORK/m074-nomarker.log" "$WARN_BOOK_NOMARKER" 1 \
   "M074-AC3 (alongside this book's standing report that no chapter carries a placement marker)"
-check_warning_count "$WORK/m074-nomarker.log" "$WARN_STORE_NEVER_LOST" 0 \
-  "M074-AC3 (both sources read, so the never-written lost wording is never drawn)"
-check_warning_count "$WORK/m074-nomarker.log" "$WARN_STORE_KIND_REFUSED" 0 \
-  "M074-AC3 (both are .qmd chapters, so nothing is refused)"
 check_extension_warning_count "$WORK/m074-nomarker.log" 2 \
   "M074-AC3 (two.qmd emitted a warning this suite cannot name; its two are the never-written report and the no-marker report)"
 pass "M074-AC3: a book whose records show no chapter placing any index still hears about a record no render has written, from the chapter that reads the store and builds nothing — once, naming both chapters it covers"
@@ -25598,8 +25347,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m069_mutant_chapter m074-gateflip index.qmd \
     "M074 T5 self-test (the report site's gate turned round for the never-written entries)" \
     "$M074_GATE_FLIP"
-  check_warning_count "$WORK/m069-m074-gateflip.log" \
-    "$WARN_STORE_NEVER_RECOVERED" 0 \
+  check_store_reports "$WORK/m069-m074-gateflip.log" \
     "M074 T5 self-test (the gate turned round: index.qmd builds a section over a store no render has written and says nothing about the four chapters it recovered)"
   check_extension_warning_count "$WORK/m069-m074-gateflip.log" 1 \
     "M074 T5 self-test (the gate turned round: index.qmd's one remaining warning is the marker-position report)"
@@ -25612,12 +25360,9 @@ if [ "${1:-}" = "--self-test" ]; then
     "$M070W/m074-gateflip/_extensions/index/modules/book.lua"
   m070_render m074-gateflip eight.Rmd \
     "M074 T5 self-test (eight.Rmd over a store no render has written, the gate turned round)" ""
-  check_warning_count "$WORK/m070-m074-gateflip.log" \
-    "$WARN_STORE_NEVER_RECOVERED" 1 \
-    "M074 T5 self-test (the gate turned round: the book's last chapter builds no section and reports the seven it recovered anyway)"
-  check_warning_count "$WORK/m070-m074-gateflip.log" \
-    "$WARN_STORE_KIND_REFUSED" 1 \
-    "M074 T5 self-test (the gate turned round: and the refusal with them)"
+  check_store_reports "$WORK/m070-m074-gateflip.log" \
+    "M074 T5 self-test (the gate turned round: the book's last chapter builds no section and reports the seven it recovered anyway; the gate turned round: and the refusal with them)" \
+    WARN_STORE_NEVER_RECOVERED=1 WARN_STORE_KIND_REFUSED=1
   pass "M074 T5 self-test: with the report site's gate turned round for the never-written entries alone and nothing else changed, the chapter that builds a section says nothing about the records it recovered and the chapter that builds none says everything — which the AC2 count for the m069-index leg and every zero of the AC1 leg would fail on"
 
   # 2 — the draw put back inside the store read, one report per record, which
@@ -25627,9 +25372,9 @@ if [ "${1:-}" = "--self-test" ]; then
   m069_mutant_chapter m074-inline index.qmd \
     "M074 T5 self-test (the per-chapter draw restored inside the store read)" \
     "$M074_INLINE_DRAW"
-  check_warning_count "$WORK/m069-m074-inline.log" \
-    "$WARN_STORE_NEVER_RECOVERED" 4 \
-    "M074 T5 self-test (the draw restored: one report per record again, four where the milestone draws one)"
+  check_store_reports "$WORK/m069-m074-inline.log" \
+    "M074 T5 self-test (the draw restored: one report per record again, four where the milestone draws one)" \
+    WARN_STORE_NEVER_RECOVERED=4
   check_index_sections "$CAPTURE_ROOT/m069-m069-index/_book/index.html" \
     "$M069_ALPHA_ROWS" \
     "M074 T5 self-test (the unmutated leg's section, restated: this plant moves the count and no printed page, which is why the count itself is asserted)" hrefs
@@ -25642,9 +25387,9 @@ if [ "${1:-}" = "--self-test" ]; then
   m069_mutant_chapter m074-firstonly index.qmd \
     "M074 T5 self-test (the aggregation reduced to one chapter of the set)" \
     's{  if #files <= 2 then\n    return table\.concat\(files, " and "\)\n  end\n  return table\.concat\(files, ", ", 1, #files - 1\) \.\. " and " \.\. files\[#files\]\n}{  return files[1]\n}'
-  check_warning_count "$WORK/m069-m074-firstonly.log" \
-    "$WARN_STORE_NEVER_RECOVERED" 1 \
-    "M074 T5 self-test (the aggregation reduced: still one report, so no count in this suite can see it)"
+  check_store_reports "$WORK/m069-m074-firstonly.log" \
+    "M074 T5 self-test (the aggregation reduced: still one report, so no count in this suite can see it)" \
+    WARN_STORE_NEVER_RECOVERED=1
   check_warning_names "$WORK/m069-m074-firstonly.log" "$WARN_STORE_NEVER_RECOVERED" \
     "M074 T5 self-test (the aggregation reduced: the one line names the first chapter of the set and drops the other three)" \
     "two.qmd" "three.qmd four.qmd five.qmd"

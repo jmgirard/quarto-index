@@ -6951,6 +6951,128 @@ check_warning_names_nth "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 
 check_extension_warning_count "$WORK/place-first.log" 4 \
   "M063-AC2/M069-AC1/M074-AC2 (the placement fixture's first render emitted a warning this suite cannot name; its four are two never-written recovery reports and two marker-position reports)"
 
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M076 T5 — the two helpers this milestone changed, each shown red on the
+  # defect class it claims to catch and green beside it on the same input with
+  # nothing planted.
+  #
+  # Crafted logs, not renders. What is on trial is how a helper reads a log:
+  # a render would settle nothing a written log does not, and would cost a
+  # subprocess for each of the six cases. The one input taken from a render is
+  # the pair of lines below, read out of the placement fixture's own first
+  # render, because the shape being asserted — two lines of one render whose
+  # chapter sets nest — is the fixture's, not this block's.
+  # -------------------------------------------------------------------------
+
+  # --- check_store_reports (M076-AC3) ---------------------------------------
+  # The base log: two occurrences of one wording, and a warning from some other
+  # filter, which no store wording may match.
+  M076_LOG="$WORK/m076-crafted.log"
+  {
+    printf '(W) the recorded index marks for two.qmd %s\n' "$WARN_STORE_STALE_RECOVERED"
+    printf '(W) the recorded index marks for three.qmd %s\n' "$WARN_STORE_STALE_RECOVERED"
+    printf '(W) some other filter reports something this extension never emits\n'
+  } > "$M076_LOG"
+
+  # The control first: unplanted, the call is green. Without it the three
+  # failures below would show only that the helper always fails.
+  check_store_reports "$M076_LOG" \
+    "M076-AC3 control (the crafted log with none of the three defects planted)" \
+    WARN_STORE_STALE_RECOVERED=2
+
+  # 1 — a wording the call does not name is drawn. This is the defect the
+  # milestone exists for: before the sweep, a leg naming one wording said
+  # nothing about the other nine.
+  M076_EXTRA="$WORK/m076-extra.log"
+  cp "$M076_LOG" "$M076_EXTRA"
+  printf '(W) five.ipynb %s\n' "$WARN_STORE_KIND_REFUSED" >> "$M076_EXTRA"
+  if M076_OUT=$( ( check_store_reports "$M076_EXTRA" "M076-AC3 probe" \
+                     WARN_STORE_STALE_RECOVERED=2 ) 2>&1 ); then
+    fail "M076-AC3: the sweep passed on a log carrying a store wording the call does not name, so no zero control it writes is evidence of anything"
+  fi
+  case "$M076_OUT" in
+    *'expected 0 occurrence(s) of the WARN_STORE_KIND_REFUSED report'*'got 1'*) : ;;
+    *) fail "M076-AC3: the sweep failed on the unnamed wording, but not by counting that wording (<<$M076_OUT>>), so its failure is not evidence that it reads the whole family" ;;
+  esac
+
+  # 2 — a named wording's count is wrong. Presence alone would pass here.
+  if M076_OUT=$( ( check_store_reports "$M076_LOG" "M076-AC3 probe" \
+                     WARN_STORE_STALE_RECOVERED=1 ) 2>&1 ); then
+    fail "M076-AC3: the sweep passed on a wording drawn twice where the call asked for once"
+  fi
+  case "$M076_OUT" in
+    *'expected 1 occurrence(s) of the WARN_STORE_STALE_RECOVERED report'*'got 2'*) : ;;
+    *) fail "M076-AC3: the sweep failed on the wrong count, but not by counting that wording (<<$M076_OUT>>)" ;;
+  esac
+
+  # 3 — a name the family does not hold. Swept as a zero it would read as an
+  # asserted count, and the leg would believe it had said something.
+  if M076_OUT=$( ( check_store_reports "$M076_LOG" "M076-AC3 probe" \
+                     WARN_STORE_NO_SUCH_WORDING=1 ) 2>&1 ); then
+    fail "M076-AC3: the sweep passed on a name no store wording answers to, so a renamed wording would go on being asserted by a call that names nothing"
+  fi
+  case "$M076_OUT" in
+    *'was given <<WARN_STORE_NO_SUCH_WORDING>>'*) : ;;
+    *) fail "M076-AC3: the sweep failed on the unknown name, but not by naming it (<<$M076_OUT>>)" ;;
+  esac
+
+  # 4 — the family emptied. The domain is read at the call, so an empty one
+  # would otherwise sweep nothing and pass every call in the suite.
+  if M076_OUT=$( ( unset ${!WARN_STORE_@}
+                   check_store_reports "$M076_LOG" "M076-AC3 probe" ) 2>&1 ); then
+    fail "M076-AC3: the sweep passed with no store wording in scope, so every call in the suite would pass over an empty family"
+  fi
+  case "$M076_OUT" in
+    *'found no WARN_STORE_ wording in scope'*) : ;;
+    *) fail "M076-AC3: the sweep failed with the family emptied, but not by saying so (<<$M076_OUT>>)" ;;
+  esac
+
+  pass "M076-AC3: the store-report sweep is red on a wording the call does not name, on a named wording's wrong count, on a name the family does not hold and on an emptied family, naming the defect in each — and green on the same log with none of them planted"
+
+  # --- check_warning_names_nth (M076-AC2) -----------------------------------
+  # The two lines of the render just above, whose chapter sets nest: the second
+  # names four.qmd and five.qmd, both of which the first names too. That is why
+  # no literal picks the second out, and why the exclusion list is the key.
+  M076_SWAPPED="$WORK/m076-swapped.log"
+  grep -F -- "$WARN_STORE_NEVER_RECOVERED" "$WORK/place-first.log" \
+    | awk '{ line[NR] = $0 } END { for (i = NR; i >= 1; i--) print line[i] }' \
+      > "$M076_SWAPPED"
+  M076_SWAP_LINES=$(wc -l < "$M076_SWAPPED" | tr -d ' ')
+  [ "$M076_SWAP_LINES" = 2 ] \
+    || fail "M076-AC2: the reversed log carries $M076_SWAP_LINES line(s) where the render drew two, so the two calls below would not be about a swap at all"
+  cmp -s "$M076_SWAPPED" \
+         <(grep -F -- "$WARN_STORE_NEVER_RECOVERED" "$WORK/place-first.log") \
+    && fail "M076-AC2: the reversed log is byte-identical to the render's own order, so it is not a swap and a positional check would pass on it too"
+
+  # Both calls pass with the lines in the other order — the whole of what the
+  # ordinal asserted, and the whole of what it should never have asserted.
+  check_warning_names_nth "$M076_SWAPPED" "$WARN_STORE_NEVER_RECOVERED" 2 \
+    "M076-AC2 (the two lines swapped: the line naming the four is found wherever it sits)" \
+    "two.qmd three.qmd four.qmd five.qmd" "index.qmd"
+  check_warning_names_nth "$M076_SWAPPED" "$WARN_STORE_NEVER_RECOVERED" 2 \
+    "M076-AC2 (the two lines swapped: and the line naming the two)" \
+    "four.qmd five.qmd" "index.qmd two.qmd three.qmd"
+
+  # ...and a log whose names are wrong is red. two.qmd is named by the first
+  # line alone, so renaming it there leaves no line answering to that key.
+  M076_WRONG="$WORK/m076-wrongnames.log"
+  sed 's/two\.qmd/six.qmd/' "$M076_SWAPPED" > "$M076_WRONG"
+  cmp -s "$M076_WRONG" "$M076_SWAPPED" \
+    && fail "M076-AC2: the substitution changed nothing, so the case below is about a log the swap already covers"
+  if M076_OUT=$( ( check_warning_names_nth "$M076_WRONG" "$WARN_STORE_NEVER_RECOVERED" 2 \
+                     "M076-AC2 probe" \
+                     "two.qmd three.qmd four.qmd five.qmd" "index.qmd" ) 2>&1 ); then
+    fail "M076-AC2: the membership check passed on a log naming six.qmd where the report must name two.qmd"
+  fi
+  case "$M076_OUT" in
+    *'none of the 2 line(s) carrying'*) : ;;
+    *) fail "M076-AC2: the membership check failed on the renamed chapter, but not by finding no line that answers to the key (<<$M076_OUT>>)" ;;
+  esac
+
+  pass "M076-AC2: the line each call asserts on is picked by the chapters it must and must not name — the same two lines in the other order are read the same way, and a log naming a chapter the report never covers is red"
+fi
+
 ( cd "$PLACE_DIR" && quarto render --to html ) > "$WORK/place-second.log" 2>&1 \
   || { tail -30 "$WORK/place-second.log" >&2; fail "M063-AC2: the placement fixture failed its second render"; }
 capture --project "$PLACE_DIR" html "place-second"
@@ -25435,6 +25557,49 @@ if [ "${1:-}" = "--self-test" ]; then
     "M074 T5 self-test (the aggregation reduced: the one line names the first chapter of the set and drops the other three)" \
     "two.qmd" "three.qmd four.qmd five.qmd"
   pass "M074 T5 self-test: with the chapter list reduced to its first member and nothing else changed, every count in this suite is unmoved and the one report names one chapter of the four it covers — which the AC2 naming check for the m069-index leg would fail on"
+fi
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M076-AC4 — a filter change that draws a store wording on chapters that
+  # should not draw it, shown red on the leg that meets those chapters.
+  #
+  # The mutation takes `.qmd` out of the set of source kinds this route reads,
+  # so index.qmd, reading a store no render has written, refuses the four
+  # chapters behind it instead of recovering them: the refusal wording is drawn
+  # where the never-written recovery wording belongs.
+  #
+  # The m069-index leg is chosen because before this milestone's conversion it
+  # said NOTHING about the refusal wording — it counted the never-written
+  # wording and three could-not-be-read wordings, and nothing else. And because
+  # the totals do not move: one report becomes one other report, so the leg's
+  # `check_extension_warning_count` is green under the mutation, which is
+  # asserted below. A total says how many reports a render drew and never
+  # which, and that is the whole of what this milestone changes.
+  # -------------------------------------------------------------------------
+  m069_mutant_chapter m076-refusedkind index.qmd \
+    "M076-AC4 self-test (.qmd taken out of the set of source kinds this route reads)" \
+    's{  \[".qmd"\] = true,\n}{}'
+
+  # The leg's own warning total, unmoved: this is what a change like this one
+  # was caught by before, and it catches nothing here.
+  check_extension_warning_count "$WORK/m069-m076-refusedkind.log" 2 \
+    "M076-AC4 self-test (the mutated render draws the same NUMBER of reports as the unmutated leg, so the leg's total control is green under it)"
+
+  # The leg's own store-report expectation, run against the mutated render's
+  # log: one never-written recovery report and every other wording of the
+  # family at zero, which is what the m069-index leg asserts. It must be red,
+  # and red on the wording the mutation drew.
+  if M076_OUT=$( ( check_store_reports "$WORK/m069-m076-refusedkind.log" \
+                     "M076-AC4 probe" WARN_STORE_NEVER_RECOVERED=1 ) 2>&1 ); then
+    fail "M076-AC4: the m069-index leg's store-report expectation passed on a render that refuses four chapters where it should recover them, so the conversion bought that leg nothing"
+  fi
+  case "$M076_OUT" in
+    *'expected 0 occurrence(s) of the WARN_STORE_KIND_REFUSED report'*'got 1'*) : ;;
+    *) fail "M076-AC4: the leg's expectation failed under the mutation, but not by counting the refusal wording it drew (<<$M076_OUT>>), so the failure is not the one this case is about" ;;
+  esac
+
+  pass "M076-AC4: with .qmd taken out of the set of source kinds this route reads and nothing else changed, the chapter reading a store no render has written refuses the four chapters behind it and says so — the leg's warning total is unmoved, and the leg's store-report expectation is red and names the refusal wording, which nothing on that leg asserted before this milestone"
 fi
 
 

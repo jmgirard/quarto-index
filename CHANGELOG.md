@@ -9,9 +9,9 @@
   once by a chapter that builds none where the records it read show no chapter
   of the book placing an index — rather than by every chapter that reads a
   chapter's source back, whether it prints a section or not. That is what such
-  a record costs: a section's share of that chapter's terms. The book's last
-  chapter of a book whose every declared index is placed earlier reads those
-  sources and now says nothing about them.
+  a record costs: a section's share of that chapter's terms. The last chapter
+  of a book whose every declared index is placed earlier reads those sources
+  and now says nothing about them.
 
   Each report is drawn once however many such records the chapter met, and
   names every chapter it covers, rather than once for each of them. A chapter
@@ -80,7 +80,8 @@
   chapters before it have written their records: the ordinary first render of
   a book whose marker sits in its last chapter reads no source and reports
   nothing, while one whose marker sits earlier reads the sources of the
-  chapters behind it and reports each, the next render silent.
+  chapters behind it and reports them in one line naming each, the next render
+  silent.
 
   A chapter recovered this way is reported by a wording of its own, naming the
   record as one no render has written rather than one that could not be read.

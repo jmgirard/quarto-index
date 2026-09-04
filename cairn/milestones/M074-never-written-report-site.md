@@ -1,6 +1,6 @@
 # M074: A record no render has written is reported by the chapter that prints the section, once
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M073
 - **Driving RR:** —
@@ -107,7 +107,7 @@ The wordings themselves → M073.
       each hand-derived.
 - [x] T5: The three planted defects of AC6 under `--self-test`, each a single
       substitution shown red before its fix.
-- [ ] T6: `site/books.qmd`, `CHANGELOG.md`, the books claim-ledger rows, and
+- [x] T6: `site/books.qmd`, `CHANGELOG.md`, the books claim-ledger rows, and
       the recovery prose plus KI228 and KI229 in `cairn/DESIGN.md` — KI229
       struck only for its report half, its parse half restated.
 - [x] T7: Full `tests/run-tests.sh` and `--self-test` runs; D-entry
@@ -129,6 +129,12 @@ The wordings themselves → M073.
 - 2026-09-03: the M063-AC6 self-test pins the books claim ledger's row count in a message needle (41 → 44 with this milestone's three rows), so a ledger row cannot be added without moving it. Noted rather than fixed.
 - 2026-09-03: criteria audit ran in full mode over two passes ([O], fresh context); pass 1 rejected the exact-gate approach, pass 2 returned the `eight.Rmd` leg's unreachable silence (the refusal must move with the report), the aggregation's `:format()` constraint, `book-nomarker` reaching the state only when its last chapter renders alone, and two documentation promises over whole files — all disposed into the criteria above.
 - 2026-09-03: review round 1 returned at the consistency gate — AC5 fails: its grep over the two named regions returns two sentences saying one report per record (`site/books.qmd:171`, `CHANGELOG.md:83`), with `cairn/DESIGN.md:498` carrying the same claim outside them. Six further findings taken fix-now (F2 the place-first membership assertion its own comment promises, F3 the AC1 leg's missing positive control, F4 a plant naming a detector that no longer detects, F8's wrap, F9's wording) and two as follow-ups (F5, F6); F7 and F10 rejected, F10 refuted against the file. Suite runs stopped at the gate failure, plain run green through 521 checks.
+- 2026-09-04: round 1's floor return cleared — the three sentences saying one report per record rewritten to the count the code has (`site/books.qmd:171`, `CHANGELOG.md:83`, `cairn/DESIGN.md:498`, each now "reports them in one line naming each"). No claim-ledger row added or removed, so the ledger stays at 44 and the M063-AC6 needle is unmoved.
+- 2026-09-04: F2 — `check_warning_names_nth` added beside `check_warning_names` (one line of several, picked by position among the matches in log order), and `place-first`'s two never-written lines asserted by membership: index.qmd's names two/three/four/five.qmd and not itself, three.qmd's names four.qmd and five.qmd alone. Plant 3 fails there now as well as in the m069 legs.
+- 2026-09-04: F3 — the AC1 leg's four zeros given both halves it lacked: `check_book_sections` over the `m074-quiet` capture (eight.html and index.html, no section between them), and a positive control, `m074-unplaced`, the same fixture and chapter with index.qmd's two placement markers taken out. There `builds` is false and `first` is nil, so the same chapter draws all three reports and names the seven sources it read — the zeros above are the report site's gate, not a chapter that never reached the store. That control is also the first render to exercise `first == nil` for a refused entry, so KI237 is marked covered.
+- 2026-09-04: F4 — the m070-inverted plant's pass line no longer claims the cold leg's refusal COUNT catches it (aggregation made that count 1 either way); it names the chapters that line names, which is what does. The nomarkdown plant's "now drawn twice" comment corrected to one line naming two chapters. F8's two over-wrapped DESIGN lines fixed by reflowing the paragraph; F9's doubled possessive in `CHANGELOG.md:12` fixed.
+- 2026-09-04: F5 and F6 taken as KI239 (the never-written refusal joined into one line while the version-skewed refusal beside it still draws one per chapter — the same sentence at two counts, created by this diff) and KI240 (KI229's second silent shape: a marker naming an index an earlier chapter also places). D-013 puts both in DESIGN.md Known issues rather than a ROADMAP row.
+- 2026-09-04: T6 closed. `tests/run-tests.sh --self-test` green, 1296 checks, exit 0, 26m19s.
 
 ## Decisions
 

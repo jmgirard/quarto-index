@@ -2041,6 +2041,41 @@ check_warning_names() {   # <logfile> <pattern> <label> <named> <not named>
   pass "$label: one line carrying <<$pattern>>, naming $named and none of ${unnamed:-the chapters ruled out}"
 }
 
+# The same assertion where ONE render draws the wording more than once, which
+# `check_warning_names` above refuses by design: it holds the whole log to a
+# single matching line. A book placing indexes in two of its chapters has each
+# of them read a cold store and report, and each line covers its own set — so
+# the line is picked by its position among the matches, in log order, which is
+# the order Quarto renders the chapters in. The total is asserted here as well
+# as at the call site's own `check_warning_count`, so a leg that loses a line
+# fails on the count rather than on an out-of-range index.
+check_warning_names_nth() {   # <logfile> <pattern> <total> <nth> <label> <named> <not named>
+  local logfile="$1" pattern="$2" total="$3" nth="$4" label="$5" named="$6" unnamed="${7:-}"
+  local line lines name
+  [ -n "$named" ] \
+    || fail "$label: check_warning_names_nth was given no chapter the line must name, so it would assert nothing"
+  lines=$( { grep -cF -- "$pattern" "$logfile" || true; } | tr -d ' ')
+  [ "$lines" = "$total" ] \
+    || fail "$label: expected exactly $total line(s) carrying <<$pattern>> in $logfile, got $lines"
+  line=$(grep -F -- "$pattern" "$logfile" | sed -n "${nth}p")
+  [ -n "$line" ] \
+    || fail "$label: there is no line $nth among the $total carrying <<$pattern>>"
+  for name in $named; do
+    case "$line" in
+      *"$name"*) ;;
+      *) printf '%s\n' "$line" >&2
+         fail "$label: line $nth of the $total carrying <<$pattern>> does not name $name" ;;
+    esac
+  done
+  for name in $unnamed; do
+    case "$line" in
+      *"$name"*) printf '%s\n' "$line" >&2
+         fail "$label: line $nth of the $total carrying <<$pattern>> names $name, which it must not" ;;
+    esac
+  done
+  pass "$label: line $nth of the $total carrying <<$pattern>>, naming $named and none of ${unnamed:-the chapters ruled out}"
+}
+
 # This extension's own warnings, as search patterns. Quarto runs several filters
 # over a document and every one of them logs through the same `(W)` prefix, so a
 # check that counts `(W)` lines counts warnings this extension never emitted —
@@ -6749,8 +6784,9 @@ check_book_terms "$CAPTURE_ROOT/place-first/_book" \
 # recovery reports, derived by hand from the render order — index.qmd carries a
 # marker and renders first of all, so it reads the sources of the four chapters
 # behind it and reports them in ONE line (M074); three.qmd carries one and
-# renders third, by which time index.qmd and two.qmd have written records, so it
-# reads two sources and reports them in one line; five.qmd is the book's last
+# renders third, by which time index.qmd and two.qmd have written records, so
+# the two still without one — four.qmd and five.qmd — are the two sources it
+# reads, reported in a second line; five.qmd is the book's last
 # chapter and by its turn every record is on disk, so it reads none. two.qmd and
 # four.qmd carry no marker and are not the last chapter, so they read nothing
 # and say nothing — and it is this count, not the terms above, that separates
@@ -6765,6 +6801,18 @@ check_book_terms "$CAPTURE_ROOT/place-first/_book" \
 # fifth.
 check_warning_count "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 \
   "M069-AC1/M074-AC2 (index.qmd reports the four sources it reads in one line and three.qmd the two it reads in another; two.qmd and four.qmd read none)"
+# ...and WHICH chapters each of the two lines names, in render order. This is
+# the one leg in the suite where two chapters of one render each draw the
+# never-written wording, so it is the only place the aggregation can be shown
+# to be per reading chapter rather than per render; the count of 2 above is
+# satisfied by two lines naming one chapter apiece, which is what plant 3
+# leaves behind.
+check_warning_names_nth "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 1 \
+  "M074-AC2 (index.qmd renders first over a cold store, so its line names the four chapters behind it and not itself)" \
+  "two.qmd three.qmd four.qmd five.qmd" "index.qmd"
+check_warning_names_nth "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 2 \
+  "M074-AC2 (three.qmd renders third, so its line names only the two chapters whose records are still unwritten by then)" \
+  "four.qmd five.qmd" "index.qmd two.qmd three.qmd"
 check_warning_count "$WORK/place-first.log" "$WARN_STORE_UNREADABLE_RECOVERED" 0 \
   "M069-AC3 (no record here was written and unusable, so the could-not-be-read wording is never drawn)"
 check_warning_count "$WORK/place-first.log" "$WARN_STORE_UNREADABLE_LOST" 0 \
@@ -23977,12 +24025,14 @@ MANIFEST
   check_warning_names "$WORK/m070-inverted.log" "$WARN_STORE_NEVER_RECOVERED" \
     "M070 T6 self-test (the test inverted: and the recovery line names the notebook chapter alone)" \
     "five.ipynb" "one.qmd two.md three.markdown four.Rmd six.qmd seven.qmd eight.Rmd"
-  pass "M070 T6 self-test: with the extension test turned round and nothing else changed, the seven chapters this route reads are refused and the notebook is parsed instead — which the AC2 manifest and the refusal count for the cold leg would fail on"
+  pass "M070 T6 self-test: with the extension test turned round and nothing else changed, the seven chapters this route reads are refused and the notebook is parsed instead — which the AC2 manifest and the chapters the cold leg's refusal line names would fail on; since M074 those refusals share one line, so the cold leg's refusal COUNT is 1 either way and detects nothing here"
 
   # 3 — one member taken out of the accepted set. `.markdown` is the spelling
   # nothing else in the fixture shares, so the chapter written that way is the
   # one that goes, and it goes silently as far as the section is concerned: the
-  # only thing that says so is the refusal report, now drawn twice.
+  # only thing that says so is the refusal report, whose one line now names two
+  # chapters where the fixture has one to refuse — since M074 the refusals of a
+  # render share a line, so the count is unmoved and the names carry the plant.
   read -r -d '' M070_SECTIONS_NOMARKDOWN <<'MANIFEST' || true
 section	qi-index-main	h1	Index of Subjects
 letter	A
@@ -25176,7 +25226,57 @@ check_warning_count "$WORK/m070-m074-quiet.log" "$WARN_STORE_KIND_REFUSED" 0 \
   "M074-AC1 (nor the refusal five.ipynb's never-written record draws, which moved with them)"
 check_extension_warning_count "$WORK/m070-m074-quiet.log" 0 \
   "M074-AC1 (eight.Rmd emitted a warning at all; it carries no placement marker, builds no section, and has nothing to say about a record it never printed out of)"
-pass "M074-AC1: the book's last chapter, admitted by the recovery gate and building no section, reads eight sources no record has been written for and says nothing at all about any of them — the refused notebook chapter among them"
+# The first half of AC1's own sentence, which the zeros above take on trust:
+# that this chapter prints NO index section. Both indexes are placed by
+# index.qmd's markers, and index.qmd is not the chapter rendered, so the two
+# pages this render leaves carry no section between them.
+check_book_sections "$CAPTURE_ROOT/m070-m074-quiet/_book" \
+  "M074-AC1 (both declared indexes are placed by index.qmd, so eight.Rmd prints no section and neither does the home page Quarto renders beside it — which is what the silence above is about)" \
+  "$(printf 'eight.html\t-\nindex.html\t-')"
+# ...and the positive control the zeros need: the same fixture, the same
+# chapter, the same cold store, with index.qmd's two placement markers taken
+# out and nothing else touched. eight.Rmd carries no marker either way, so it
+# is admitted by the last-chapter half of the recovery gate alone — and with no
+# chapter of the book placing anything, the report site's `first == nil` arm
+# opens and every report the leg above counts at zero is drawn. Without this,
+# dropping that half of the gate would leave eight.Rmd reading nothing and
+# every zero above passing on a chapter that never reached the store.
+m070_tree m074-unplaced
+python3 - "$M070W/m074-unplaced/index.qmd" <<'M074PLACEPY' \
+  || fail "M074-AC1: the two placement markers could not be taken out of the control copy's index.qmd (its own FAIL line is above), so the control below would be the same book as the leg above"
+import re, sys
+
+path = sys.argv[1]
+source = open(path, encoding='utf-8').read()
+markers = re.findall(r'::: \{\.qi-index-here[^}]*\}\n:::\n', source)
+if len(markers) != 2:
+    print(f'FAIL: M074-AC1: {path} carries {len(markers)} placement marker(s), '
+          f'not the two this control takes out; the fixture has moved and the '
+          f'control would no longer be a book placing nothing', file=sys.stderr)
+    sys.exit(1)
+open(path, 'w', encoding='utf-8').write(
+    re.sub(r'::: \{\.qi-index-here[^}]*\}\n:::\n', '', source))
+M074PLACEPY
+m070_render m074-unplaced eight.Rmd \
+  "M074-AC1 (the same chapter over the same cold store, with no chapter of the book placing an index)" ""
+check_book_sections "$CAPTURE_ROOT/m070-m074-unplaced/_book" \
+  "M074-AC1 (no chapter of the control copy places an index, so eight.Rmd prints no section here either — the one thing this control holds fixed)" \
+  "$(printf 'eight.html\t-\nindex.html\t-')"
+check_warning_count "$WORK/m070-m074-unplaced.log" "$WARN_STORE_NEVER_RECOVERED" 1 \
+  "M074-AC1 (the control: with no chapter placing an index, the same chapter draws the never-written report it was silent about above)"
+check_warning_names "$WORK/m070-m074-unplaced.log" "$WARN_STORE_NEVER_RECOVERED" \
+  "M074-AC1 (the control: and that one line names the seven chapters eight.Rmd read back, so the leg above is about a chapter that reached the store and said nothing)" \
+  "index.qmd one.qmd two.md three.markdown four.Rmd six.qmd seven.qmd" \
+  "five.ipynb eight.Rmd"
+check_warning_count "$WORK/m070-m074-unplaced.log" "$WARN_STORE_KIND_REFUSED" 1 \
+  "M074-AC1 (the control: and the refusal that moved with it)"
+m070_refusal_names five.ipynb "$WORK/m070-m074-unplaced.log" \
+  "M074-AC1 (the control: the refusal names the notebook chapter)"
+check_warning_count "$WORK/m070-m074-unplaced.log" "$WARN_BOOK_NOMARKER" 1 \
+  "M074-AC1 (the control: alongside the report that no chapter of this copy carries a placement marker)"
+check_extension_warning_count "$WORK/m070-m074-unplaced.log" 3 \
+  "M074-AC1 (the control emitted a warning this suite cannot name; its three are the never-written report, the refusal and the no-marker report)"
+pass "M074-AC1: the book's last chapter, admitted by the recovery gate and building no section, reads eight sources no record has been written for and says nothing at all about any of them — the refused notebook chapter among them — while the same chapter of the same book with its two markers taken out draws every one of those reports, so the silence is the report site's gate and not a chapter that never read the store"
 
 # AC3 — the other half of the report site's gate: a book whose records show NO
 # chapter of it placing any index. Its last chapter reads the store, builds

@@ -202,9 +202,13 @@ what it costs is a chapter read back from its source rather than dropped. A
 record whose name the directory does not list is absent exactly as before.
 
 The reports repeat on rules of their own. The one for a record no render has
-written is drawn by every chapter the paragraph above admits — a chapter with a
-placement marker, and the book's last chapter — once for each such record it
-meets. The one for a record that could not be read is drawn by every chapter
+written is drawn once for every chapter that builds an index section, which is
+what such a record costs it; a chapter that builds none draws it too where the
+records it read show no chapter of the book placing an index. It is drawn once
+however many such records that chapter met, and names every chapter it covers:
+a chapter reading a store no render has written meets every other chapter of
+the book at once, and a report for each of them said one thing several times
+over. The one for a record that could not be read is drawn by every chapter
 that opens it — every chapter of the book
 but the one whose record it is, since a chapter reads the store before it
 writes its own. The one for a record left by a different version of this
@@ -225,9 +229,10 @@ evidences no version and is read as a record that could not be used — it is dr
 on the rule just given: once for every chapter that builds
 an index section, and once by a chapter that builds none where the records it
 read show no chapter placing an index. Where no render has written the record, it
-is drawn by every chapter the never-written rule admits — a chapter with a
-placement marker, and the book's last chapter — once for each such record it
-meets. And where the record is there and cannot be used — unopenable, holding
+is drawn on that same rule — once for every chapter that builds an index
+section, and once by a chapter that builds none where the records it read show
+no chapter placing an index — in the one line that names every such chapter.
+And where the record is there and cannot be used — unopenable, holding
 bytes that do not decode at all, or decoding to a table that names no version
 this render can read as one — it is drawn by every chapter that looks for it.
 

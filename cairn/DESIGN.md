@@ -531,15 +531,20 @@ it could not read (added M073, D-050). That fifth is
 drawn at the count of the wording it stands in for (D-049, M072): where the
 record came from another version — which is what a record carrying a `version`
 this render can read as a number and does not itself write is read as, and
-only that (corrected M073, D-050) — it is handed to the report
-site with the stale records and drawn there, once per chapter that builds a
-section and once by a chapter that builds none whose records show no chapter
-placing an index; in the other three states it is drawn where the chapter met
-the record, as all four were before. A record decoding to a table whose
+only that (corrected M073, D-050) — or where no render has written it at all
+(M074), it is handed to the report site and drawn there, once per chapter that
+builds a section and once by a chapter that builds none whose records show no
+chapter placing an index; in the two states about a record that WAS there it is
+drawn where the chapter met the record, as all four were before. A record decoding to a table whose
 `version` is absent, or holds something other than a number, evidences no
 version and takes the could-not-be-read wordings — so it is drawn where the
 chapter met it, by every chapter that reads the store, and a refused chapter in
-that state draws its refusal there too (M073, D-051). A never-written
+that state draws its refusal there too (M073, D-051). Both wordings for a record no render has written are drawn at
+that site too, on that same rule and each once per render, naming every chapter
+it covers rather than once per chapter (M074): the reading is gated on a
+chapter that CAN print a section, which is not the chapter that does, and a
+chapter meeting a cold store meets every other chapter of the book at once.
+A never-written
 record whose source parses to no mark is the one
 silent outcome: it has lost nothing, and every chapter of a store-less book
 that marks nothing would otherwise report on every render (M069). A REFUSED
@@ -1626,20 +1631,24 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   recovers them, and warns "render that chapter again" about chapters that are
   about to render. Nothing is wrong with that render and the second is silent.
   Observed 2026-09-02 in the suite's own `place-first` leg, which moved from 2
-  extension warnings to 8, six of them recovery reports. Recorded in D-045's
-  consequences and accepted at the M069 merge gate. — M069 review F1
-- **KI229.** `recover_absent` answers eligibility, not building, and the
-  recovery report is drawn inside `store_read` with no `builds` guard, so a
-  chapter admitted by the gate that prints no section still parses every other
-  chapter's source and reports each. The reachable shape is a last chapter
-  carrying no marker in a book whose every declared index is placed earlier:
-  `mine` is empty and the fallback loop adds nothing, so `builds` is false.
-  Derived from `book.lua:1269` against `book.lua:1336`, not observed; no suite
-  leg covers it, and T6's inverted-gate plant catches only the mirror case.
-  `site/books.qmd` and this file therefore claim a chapter reads back "only
-  where its terms would otherwise be lost from a section this chapter itself
-  prints", which is stronger than the gate. Same class as KI215. — M069 review
-  F2, F5
+  extension warnings to 8, six of them recovery reports; M074 draws one report
+  per reading chapter naming every chapter it covers, so the same leg now
+  stands at 4, two of them recovery reports, and the render still reports on
+  itself (corrected M074). Recorded in D-045's consequences and accepted at the
+  M069 merge gate. — M069 review F1
+- **KI229.** *Report half resolved M074.* `recover_absent` answers
+  eligibility, not building, so a chapter admitted by the gate that prints no
+  section still parses every other chapter's source. The reachable shape is a
+  last chapter carrying no marker in a book whose every declared index is
+  placed earlier: `mine` is empty and the fallback loop adds nothing, so
+  `builds` is false. `site/books.qmd` and this file therefore claim a chapter
+  reads back "only where its terms would otherwise be lost from a section this
+  chapter itself prints", which is stronger than the gate. The parse is what
+  remains, and its cost is KI227's. M074 moved the reports to the site where
+  `builds or first == nil` decides, so such a chapter no longer reports each
+  source it read; the `m074-quiet` leg renders exactly this shape and holds
+  every never-written wording, the refusal included, at zero. Same class as
+  KI215. — M069 review F2, F5
 - **KI230.** *Resolved M073.* A record no render has written whose chapter's
   source also cannot be read was reported as one that "could not be read",
   asserting a record existed — the falsehood the fourth wording was added to

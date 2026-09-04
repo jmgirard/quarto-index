@@ -880,20 +880,21 @@ WARN_STORE_STALE_LOST="were written by a different version of this extension and
 # never-written record can otherwise draw are the lost wording above, shared
 # with the opened-and-unusable case, and silence.
 WARN_STORE_NEVER_RECOVERED="no render has written a record of the index marks for"
-# Nine with M073, which adds the never-written family's third outcome: no
-# record, and a source that could not be read either. Before it that state drew
-# the lost wording above, which says the record could not be read and so
-# asserts a file no render ever wrote. Its opening clause is deliberately not
-# the never-written recovery key just above — a shared opening would have that
-# key count both reports — and it names the source rather than the record, so
-# it matches neither could-not-be-read wording.
-WARN_STORE_NEVER_LOST="has been written by any render, and that chapter's own source could not be read either"
 # Eight with M070, which adds the wording for a chapter whose SOURCE this route
 # does not read — an .ipynb chapter, or one whose name carries no extension at
 # all. It is drawn whatever state that chapter's record was in, so it is the
 # one wording of the family whose key says nothing about the record, and it
 # stands ahead of every other: a refused chapter draws this and nothing else.
 WARN_STORE_KIND_REFUSED="source is not one this route reads"
+# Nine with M073, which adds the never-written family's third outcome: no
+# record, and a source that could not be read either. Kept last so the running
+# count above stays monotone; the key it is contrasted with is two blocks up. Before it that state drew
+# the lost wording above, which says the record could not be read and so
+# asserts a file no render ever wrote. Its opening clause is deliberately not
+# the never-written recovery key just above — a shared opening would have that
+# key count both reports — and it names the source rather than the record, so
+# it matches neither could-not-be-read wording.
+WARN_STORE_NEVER_LOST="has been written by any render, and that chapter's own source could not be read either"
 # The unplaced-section report (M60/M061) and the doubled-section report (M061)
 # had their keys here. M063 hands an index no marker names to the book's last
 # chapter unconditionally, so no render can leave such a section unplaced or
@@ -21781,7 +21782,10 @@ python3 tests/sitecheck.py claims "$M52_DOC_PAGE" "$WORK/epub-claims.txt" \
 # prose the first four rows left unpinned — that the never-written report names
 # the source alone because it names the record as never written rather than as
 # unreadable, and why the wording for a record that WAS written is not reused
-# on this path.
+# on this path. Round 2 added the last two, the clauses inside those sentences
+# that carried no row of their own: what the written-record wording names, and
+# the qualifier that makes the version rule true of a `version` this render
+# reads as a number rather than of any `version` it does not write.
 cat > "$WORK/books-claims.txt" <<'M52BOOKS'
 scoped to HTML	is about the **HTML book**: it is the one Quarto renders a chapter at a time
 merged formats named	A PDF book and an EPUB book need none of the above.
@@ -21822,6 +21826,8 @@ only a number evidences a version	evidences no version and is read as a record t
 a versionless record is one that could not be used	decoding to a table that names no version this render can read as one
 only the source is named unreadable there	the record it names as never written rather than as unreadable, so the source is the only file it calls unreadable
 why the written-record wording is not reused	says a record was there, which on this path would be a file no render ever made
+the written-record wording names both files	where a record was written and could not be read, the report names both files
+what a version is read as, and only that	which is what a record carrying a `version` this render can read as a number and does not itself write is read as, and only that
 M52BOOKS
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/books-claims.txt" \
   || fail "M52-AC5/M55/M062/M063/M071-AC4: site/books.qmd no longer scopes its per-chapter model to the HTML book, no longer says what a book that declares several indexes does, no longer says which chapter carries an index no marker names or on what proviso, or no longer says what the book reports for a record it could not use, or no longer states the source-recovery route M064/M065 added — what it returns, what it does not, that a record whose name no listing carries is left alone while one the listing carries and nothing can open is not, a hand-made lookalike among those (its own FAIL line is above)"
@@ -21890,7 +21896,7 @@ SUPERSEDEPY
     "$M061D/books-oldrule.qmd" "M063-AC6 self-test" \
     || fail "M063-AC6 self-test: the books page variant could not be written (its own FAIL line is above)"
   m061_planted 'the books page stating the superseded chapter rule' \
-    'does not state 1 of the 39 claim(s)' \
+    'does not state 1 of the 41 claim(s)' \
     python3 tests/sitecheck.py claims "$M061D/books-oldrule.qmd" \
       "$WORK/books-claims.txt"
 

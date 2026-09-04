@@ -1008,9 +1008,12 @@ local function store_read(ctx, own, recover_absent)
         -- A version-skewed record is handed to the caller and drawn there,
         -- whether its chapter was refused or recovered, because what it costs
         -- is a section's share of that chapter's terms and only a chapter that
-        -- builds a section pays it. The other three states — never written,
-        -- listed and unopenable, opened and undecodable — are drawn here, by
-        -- every chapter that reads the store, the counts they have always had.
+        -- builds a section pays it. Every other state is drawn here, by every
+        -- chapter that reads the store: never written, listed and unopenable,
+        -- and opened but undecodable, those three at the counts they have
+        -- always had; and, since the test below narrowed, a record that opens
+        -- and decodes to a table carrying no version this render reads as a
+        -- number, whose count moved to this site with its wording (D-051).
         -- A NUMBER other than the one this render writes, not merely "not
         -- equal to it". `~= STORE_VERSION` alone is satisfied by a record
         -- whose `version` is missing — `pandoc.json.decode` gives such a
@@ -1043,8 +1046,11 @@ local function store_read(ctx, own, recover_absent)
               { file = file, recovered = recovered, parsed = rebuilt ~= nil }
           end
         elseif refused then
-          -- Drawn here, by this chapter, for the other three record states:
-          -- never written, listed and unopenable, and opened but undecodable.
+          -- Drawn here, by this chapter, for every record state but the
+          -- version-skewed one: never written, listed and unopenable, opened
+          -- but undecodable, and — since the test above narrowed — opened and
+          -- decoding to a table that carries no version this render reads as a
+          -- number (D-051).
           -- Those are the states whose own sibling wordings are drawn here
           -- too, once per chapter that reads the store, so the refusal follows
           -- the count of the reports it stands in for. Ahead of every branch

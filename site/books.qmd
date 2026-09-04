@@ -218,7 +218,8 @@ The one for a chapter whose source this route will not read follows whichever
 report it stands in for, so a book carrying such a chapter hears about it as
 often as it would have heard about that chapter's record. Where the record was
 left by a different version — which is what a record carrying a `version` this
-render does not write is read as, and only that: a record file that decodes to a
+render can read as a number and does not itself write is read as, and only
+that: a record file that decodes to a
 table carrying no `version` at all, or one holding something other than a number,
 evidences no version and is read as a record that could not be used — it is drawn
 on the rule just given: once for every chapter that builds

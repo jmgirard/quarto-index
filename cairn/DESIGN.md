@@ -522,12 +522,12 @@ nothing, and the reading chapter's own record report says so. Six wordings
 carry the outcome (corrected M073): three for a record that was written and
 could not be used — recovered, parsed and reaching no mark, unreadable — a
 fourth for one no render has written whose source was read back, which never
-calls such a record unreadable, a fifth for one no render has written whose
-source could not be read either, which names the record as never written and
-the source as the one file it could not read (added M073, D-050), and a sixth
-for a chapter whose source this route does not read,
-drawn instead of the other five whatever state that chapter's record was in,
-and so worded to assert nothing about the record (added M070). That sixth is
+calls such a record unreadable, a fifth for a chapter whose source this route
+does not read, drawn instead of every other whatever state that chapter's
+record was in, and so worded to assert nothing about the record (added M070),
+and a sixth for one no render has written whose source could not be read
+either, which names the record as never written and the source as the one file
+it could not read (added M073, D-050). That fifth is
 drawn at the count of the wording it stands in for (D-049, M072): where the
 record came from another version — which is what a record carrying a `version`
 this render can read as a number and does not itself write is read as, and

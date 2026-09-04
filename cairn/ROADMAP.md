@@ -10,7 +10,7 @@ _Released 0.2.0 2026-09-02._
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M073 | A store report names the record it met as the record it was | done | — | normal | milestones/archive/M073-store-report-wordings.md |
-| M074 | A record no render has written is reported by the chapter that prints the section, once | planned | M073 | normal | milestones/M074-never-written-report-site.md |
+| M074 | A record no render has written is reported by the chapter that prints the section, once | in-progress | M073 | normal | milestones/M074-never-written-report-site.md |
 | M072 | A refused chapter whose record an older version wrote is reported once per index section | done | — | normal | milestones/archive/M072-refusal-report-count.md |
 | M071 | A front-matter mark in an HTML book chapter files one locator, to the chapter's page | done | — | normal | milestones/archive/M071-front-matter-locators.md |
 | M069 | A chapter no render has written a record for reaches the book index where its terms would otherwise be lost | done | — | normal | milestones/archive/M069-absent-record-recovery.md |

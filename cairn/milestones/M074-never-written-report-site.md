@@ -40,7 +40,7 @@ The wordings themselves → M073.
 
 ## Acceptance criteria
 
-- [ ] AC1: In an HTML book, a chapter that reads the store and prints no index
+- [x] AC1: In an HTML book, a chapter that reads the store and prints no index
       section draws no report about a record no render has written, the
       refusal drawn on that path included. Evidence: a new leg rendering
       `eight.Rmd` alone in a store-less copy of `examples/book-extensions` —
@@ -48,23 +48,23 @@ The wordings themselves → M073.
       indexes placed by `index.qmd` — counts `WARN_STORE_NEVER_RECOVERED`,
       M073's never-written-lost-source key and `WARN_STORE_KIND_REFUSED` at
       zero, and this extension's warnings at zero in that render's log.
-- [ ] AC2: A chapter that prints an index section draws each never-written
+- [x] AC2: A chapter that prints an index section draws each never-written
       wording once, naming every chapter that wording covers, rather than once
       per chapter covered. Evidence: the `m069-index` leg's log carries
       `WARN_STORE_NEVER_RECOVERED` once and a check over that single line
       names each of the four chapters the leg counts four separate reports for
       today; a second leg builds a render drawing two never-written wordings
       at once and counts each once, each naming its own chapters.
-- [ ] AC3: A book whose records show no chapter placing any index still hears
+- [x] AC3: A book whose records show no chapter placing any index still hears
       about a record no render has written, from the chapter that reads the
       store and builds nothing. Evidence: a new leg rendering `two.qmd` alone
       in a store-less copy of `examples/book-nomarker` counts
       `WARN_STORE_NEVER_RECOVERED` at one, alongside that book's standing
       no-marker report.
-- [ ] AC4: The index every affected chapter prints is unchanged: the `m069`
+- [x] AC4: The index every affected chapter prints is unchanged: the `m069`
       legs (`tests/run-tests.sh:8977-9105`) and the `place-first` leg
       (`:6680`) assert the same index rows they assert today.
-- [ ] AC5: The store-reports section of `site/books.qmd` and the unreleased
+- [x] AC5: The store-reports section of `site/books.qmd` and the unreleased
       section of `CHANGELOG.md` state where the never-written reports are
       drawn and at what count as the shipped code has them: a grep over those
       two regions returns no sentence saying one report per record or one per
@@ -135,6 +135,7 @@ The wordings themselves → M073.
 - 2026-09-04: F4 — the m070-inverted plant's pass line no longer claims the cold leg's refusal COUNT catches it (aggregation made that count 1 either way); it names the chapters that line names, which is what does. The nomarkdown plant's "now drawn twice" comment corrected to one line naming two chapters. F8's two over-wrapped DESIGN lines fixed by reflowing the paragraph; F9's doubled possessive in `CHANGELOG.md:12` fixed.
 - 2026-09-04: F5 and F6 taken as KI239 (the never-written refusal joined into one line while the version-skewed refusal beside it still draws one per chapter — the same sentence at two counts, created by this diff) and KI240 (KI229's second silent shape: a marker naming an index an earlier chapter also places). D-013 puts both in DESIGN.md Known issues rather than a ROADMAP row.
 - 2026-09-04: T6 closed. `tests/run-tests.sh --self-test` green, 1296 checks, exit 0, 26m19s.
+- 2026-09-04: review round 2 — branch level with `origin/main`, PR #74 already open. Plain `tests/run-tests.sh` green, 699 checks, exit 0; AC1-AC5 verified with fresh evidence and ticked; `cairn_validate` all PASS with no release-window advisory. Three fresh-context lenses ran: prior-review record zero findings, blame-history three, diff-bug nine — none failing a criterion, so no floor return. AC6's `--self-test` half is still running; this is a checkpoint, not the gate.
 
 ## Decisions
 
@@ -238,3 +239,54 @@ exclusive, and `warn-distinct.py`'s expected call count is unchanged.
   refutation as F8's second half.
 
 Return count: 1 defect return (this one). No amendment return.
+
+Round 2 (2026-09-04). Branch synced with `origin/main` (0 behind, 5 ahead);
+PR #74 already open, so no second one was cut.
+
+### Acceptance criteria
+
+- **AC1 — PASSED.** Plain run, `m074-quiet`: eight.Rmd alone over a cold copy
+  of `book-extensions` draws `WARN_STORE_NEVER_RECOVERED`, the never-written
+  lost-source key and `WARN_STORE_KIND_REFUSED` at zero and no warning of this
+  extension at all, with `check_book_sections` confirming eight.html and
+  index.html carry no generated section. The `m074-unplaced` control — the same
+  fixture and chapter with index.qmd's two placement markers removed — draws
+  all three reports there, its one never-written line naming
+  index.qmd/one.qmd/two.md/three.markdown/four.Rmd/six.qmd/seven.qmd and not
+  five.ipynb or eight.Rmd, and its refusal naming five.ipynb. The silence is
+  the report site's gate, not a chapter that never reached the store.
+- **AC2 — PASSED.** `m069-index` carries `WARN_STORE_NEVER_RECOVERED` once,
+  that one line naming two.qmd, three.qmd, four.qmd and five.qmd and not
+  index.qmd; `m069-five` and `m069-three` likewise one line apiece naming their
+  own four. `m069-lostsource` is the two-wordings-at-once leg: the never-written
+  line names index.qmd/two.qmd/three.qmd and neither four.qmd nor five.qmd,
+  while the lost-source line names four.qmd alone — each wording once. The
+  multi-chapter shape is now asserted by membership rather than by count:
+  `place-first` line 1 of 2 names two/three/four/five.qmd and not index.qmd,
+  line 2 of 2 names four/five.qmd alone.
+- **AC3 — PASSED.** `m074-nomarker`: two.qmd alone over a cold copy of
+  `book-nomarker` counts `WARN_STORE_NEVER_RECOVERED` at one, that line naming
+  index.qmd and one.qmd and not two.qmd, with the book's two rendered pages
+  carrying no generated section.
+- **AC4 — PASSED.** The `m069` legs assert the same index rows they assert
+  today — `m069-index` 5 manifest rows, `m069-three` 4, `m069-five` 21, all
+  matched in order — and `place-first` matched its 3-section/5-page manifest on
+  both renders. The diff adds and removes no manifest row.
+- **AC5 — PASSED.** The grep over `site/books.qmd`'s store-reports region
+  (lines 95-238) and `CHANGELOG.md`'s Unreleased section returns no sentence
+  asserting one never-written report per record or one per chapter that reads
+  the store. Three hits are all negations or past tense describing the
+  superseded count (`books.qmd:209` "a report for each of them said one thing
+  several times over"; changelog "rather than once for each of them"), and the
+  two remaining changelog hits belong to M073's version-evidence entries, where
+  per-chapter-that-reads-the-store is the shipped count. The claim ledger holds
+  44 rows, three of them added by this milestone, one per rewritten sentence;
+  the M063-AC6 needle reads 44 to match.
+- **AC6 — see below.**
+
+### Consistency gate
+
+`cairn_validate.py`: 16 checks PASS, 7 advisories OK, no release-window
+advisory. No `IP`/`GP` principle text changed in the diff, so `cairn_impact.py`
+was not run. The `generic` profile's consistency-gate slot names no toolchain
+checks.

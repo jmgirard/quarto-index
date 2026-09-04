@@ -1,6 +1,6 @@
 # M074: A record no render has written is reported by the chapter that prints the section, once
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M073
 - **Driving RR:** —
@@ -88,29 +88,29 @@ The wordings themselves → M073.
 
 ## Tasks
 
-- [ ] T1: Hand the never-written entries — and the refusal drawn on that path —
+- [x] T1: Hand the never-written entries — and the refusal drawn on that path —
       back from `store_read` (`book.lua:1052-1071`) to `html_book` beside the
       stale entries, and draw them at the report site (`book.lua:1538`) under
       the existing `builds or first == nil` gate, ahead of nothing that
       already draws there.
-- [ ] T2: Aggregate: one draw per wording per reading chapter, the chapter
+- [x] T2: Aggregate: one draw per wording per reading chapter, the chapter
       list passed through the message's own `:format()` with a non-newline
       separator, so `warn-distinct.py` still reads the message and
       `check_extension_warning_count` still counts one line.
-- [ ] T3: A suite helper asserting that a single matching log line names each
+- [x] T3: A suite helper asserting that a single matching log line names each
       chapter of an expected set and no other — `check_warning_count` counts
       occurrences of a fixed literal and cannot read a line's contents.
-- [ ] T4: Suite legs: the `eight.Rmd` leg (AC1); the `book-nomarker` leg
+- [x] T4: Suite legs: the `eight.Rmd` leg (AC1); the `book-nomarker` leg
       (AC3); the two-wordings-at-once leg (AC2); and the count updates every
       moved report forces in `m069-index`, `m069-five`, `m069-three`,
       `m069-lostsource`, `m069-nomarksource`, `place-first` and the M073 legs,
       each hand-derived.
-- [ ] T5: The three planted defects of AC6 under `--self-test`, each a single
+- [x] T5: The three planted defects of AC6 under `--self-test`, each a single
       substitution shown red before its fix.
-- [ ] T6: `site/books.qmd`, `CHANGELOG.md`, the books claim-ledger rows, and
+- [x] T6: `site/books.qmd`, `CHANGELOG.md`, the books claim-ledger rows, and
       the recovery prose plus KI228 and KI229 in `cairn/DESIGN.md` — KI229
       struck only for its report half, its parse half restated.
-- [ ] T7: Full `tests/run-tests.sh` and `--self-test` runs; D-entry
+- [x] T7: Full `tests/run-tests.sh` and `--self-test` runs; D-entry
       superseding D-049's clause that the never-written state keeps the inline
       draw and its count, D-046's count clause where it governs the refusal on
       that path, and D-045's consequence that a book whose markers sit earlier
@@ -125,6 +125,8 @@ The wordings themselves → M073.
 - 2026-09-03: T1/T2 code landed — `store_read` hands back a third table of never-written chapters (refused / recovered / lost, book order) and `html_book` draws one line per list under the existing `builds or first == nil` gate, after the stale and refiled loops; `chapter_list` joins the names with commas and a final "and". Suite counts follow in T4, so the boxes stay open.
 - 2026-09-03: T3/T4/T5/T6 landed together (the suite file cannot be edited while a run is in flight, so the edits batched): `check_warning_names` asserts one matching line names an expected chapter set and none of a hand-derived forbidden set; new legs for AC1 (`eight.Rmd` over a cold `book-extensions`) and AC3 (`two.qmd` over a cold `book-nomarker`); counts rederived in `place-first` (6→2, 8→4), `m069-index`/`-five`/`-three` (4→1), `m069-lostsource` (3→1, 4→2), `m069-nomarksource` (3→1), `m070-cold` (7→1, 9→3), `m070-dangling` (6→1, 9→4), `m070-record` (4→1, 6→3), and the M069/M070 plants; three M074 plants; and the site, changelog, ledger and DESIGN prose.
 - 2026-09-03: M069 T6's inverted-gate plant retired rather than left green: it read the inversion off the four reports two.qmd drew for nothing, and two.qmd is now silent either way — the report site's gate is shut for it. Both halves of the recovery gate stay planted (plants 1 and 2), and the report site's own gate is M074's plant 1. M070's inverted and nomarkdown plants kept their renders and moved from a refusal COUNT, which aggregation made equal to the unplanted one, to the chapters that line names.
+- 2026-09-03: T7 — `tests/run-tests.sh --self-test` green, 1290 checks, exit 0; D-053 appended, superseding D-049's inline-draw clause for this state and D-046's count clause on this path, and narrowing D-045's consequences.
+- 2026-09-03: the M063-AC6 self-test pins the books claim ledger's row count in a message needle (41 → 44 with this milestone's three rows), so a ledger row cannot be added without moving it. Noted rather than fixed.
 - 2026-09-03: criteria audit ran in full mode over two passes ([O], fresh context); pass 1 rejected the exact-gate approach, pass 2 returned the `eight.Rmd` leg's unreachable silence (the refusal must move with the report), the aggregation's `:format()` constraint, `book-nomarker` reaching the state only when its last chapter renders alone, and two documentation promises over whole files — all disposed into the criteria above.
 
 ## Decisions

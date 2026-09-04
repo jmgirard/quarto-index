@@ -2103,13 +2103,8 @@ check_store_reports() {   # <logfile> <label> [<WARN_STORE_NAME>=<count> ...]
       if [ "${pair%%=*}" = "$name" ]; then want="${pair#*=}"; fi
     done
     got=$( { grep -oF -- "${!name}" "$logfile" || true; } | wc -l | tr -d ' ')
-    if [ "$got" != "$want" ]; then
-      if [ -n "${QI_STORE_SURVEY:-}" ]; then
-        printf 'MISMATCH\t%s\t%s\twant=%s\tgot=%s\n' "$logfile" "$name" "$want" "$got" >&2
-      else
-        fail "$label: expected $want occurrence(s) of the $name report <<${!name}>> in $logfile, got $got"
-      fi
-    fi
+    [ "$got" = "$want" ] \
+      || fail "$label: expected $want occurrence(s) of the $name report <<${!name}>> in $logfile, got $got"
   done
   pass "$label: the store reports in $logfile are exactly ${*:-none}, with every other wording of the ${#domain[@]} held at zero"
 }
@@ -2159,36 +2154,60 @@ check_warning_names() {   # <logfile> <pattern> <label> <named> <not named>
 # The same assertion where ONE render draws the wording more than once, which
 # `check_warning_names` above refuses by design: it holds the whole log to a
 # single matching line. A book placing indexes in two of its chapters has each
-# of them read a cold store and report, and each line covers its own set — so
-# the line is picked by its position among the matches, in log order, which is
-# the order Quarto renders the chapters in. The total is asserted here as well
-# as at the call site's own `check_warning_count`, so a leg that loses a line
-# fails on the count rather than on an out-of-range index.
-check_warning_names_nth() {   # <logfile> <pattern> <total> <nth> <label> <named> <not named>
-  local logfile="$1" pattern="$2" total="$3" nth="$4" label="$5" named="$6" unnamed="${7:-}"
-  local line lines name
+# of them read a cold store and report, and each line covers its own set.
+#
+# The line is picked by the two chapter lists the caller already passes — the
+# one line of the several that names every chapter in `named` and none in
+# `not named` — never by its position among the matches. Position was what this
+# helper used until M076, and it asserted the log's ORDER as much as its
+# content: the two calls at the one call site would have passed with the two
+# lines swapped and told nobody, since the swap moves no name onto a line that
+# must not carry it. Nothing here can be keyed on a literal instead, because
+# one call site's second line names a strict subset of the first's chapters and
+# no string picks it out; the exclusion list is what separates them, which is
+# why an empty one is refused as firmly as an empty `named`.
+#
+# Exactly one line may qualify. Zero means the report does not say what the
+# call says it says; two or more means the key does not pick a line at all, and
+# a second call could then be asserting the same line over again. The total is
+# asserted here as well as at the call site's own `check_store_reports`, so a
+# leg that loses a line fails on the count rather than on a key that stops
+# matching.
+#
+# The name is the one M074 gave it. What it does is no longer nth-anything, and
+# the call sites read the better for the change.
+check_warning_names_nth() {   # <logfile> <pattern> <total> <label> <named> <not named>
+  local logfile="$1" pattern="$2" total="$3" label="$4" named="$5" unnamed="${6:-}"
+  local line lines name cand ok matched
   [ -n "$named" ] \
     || fail "$label: check_warning_names_nth was given no chapter the line must name, so it would assert nothing"
+  [ -n "$unnamed" ] \
+    || fail "$label: check_warning_names_nth was given no chapter the line must not name, and with several lines carrying the pattern that key cannot pick one of them"
   lines=$( { grep -cF -- "$pattern" "$logfile" || true; } | tr -d ' ')
   [ "$lines" = "$total" ] \
     || fail "$label: expected exactly $total line(s) carrying <<$pattern>> in $logfile, got $lines"
-  line=$(grep -F -- "$pattern" "$logfile" | sed -n "${nth}p")
-  [ -n "$line" ] \
-    || fail "$label: there is no line $nth among the $total carrying <<$pattern>>"
-  for name in $named; do
-    case "$line" in
-      *"$name"*) ;;
-      *) printf '%s\n' "$line" >&2
-         fail "$label: line $nth of the $total carrying <<$pattern>> does not name $name" ;;
-    esac
-  done
-  for name in $unnamed; do
-    case "$line" in
-      *"$name"*) printf '%s\n' "$line" >&2
-         fail "$label: line $nth of the $total carrying <<$pattern>> names $name, which it must not" ;;
-    esac
-  done
-  pass "$label: line $nth of the $total carrying <<$pattern>>, naming $named and none of ${unnamed:-the chapters ruled out}"
+  matched=0
+  line=""
+  while IFS= read -r cand; do
+    ok=yes
+    for name in $named; do
+      case "$cand" in *"$name"*) ;; *) ok="" ;; esac
+    done
+    for name in $unnamed; do
+      case "$cand" in *"$name"*) ok="" ;; esac
+    done
+    if [ -n "$ok" ]; then
+      matched=$(( matched + 1 ))
+      line="$cand"
+    fi
+  done < <(grep -F -- "$pattern" "$logfile")
+  if [ "$matched" != 1 ]; then
+    grep -F -- "$pattern" "$logfile" >&2
+    [ "$matched" = 0 ] \
+      && fail "$label: none of the $total line(s) carrying <<$pattern>> names all of $named and none of $unnamed"
+    fail "$label: $matched of the $total line(s) carrying <<$pattern>> name all of $named and none of $unnamed, so that key picks no one line"
+  fi
+  pass "$label: one line of the $total carrying <<$pattern>> names $named and none of $unnamed"
 }
 
 # This extension's own warnings, as search patterns. Quarto runs several filters
@@ -6916,17 +6935,18 @@ check_book_terms "$CAPTURE_ROOT/place-first/_book" \
 check_store_reports "$WORK/place-first.log" \
   "M069-AC1/M074-AC2/M069-AC3/M069-AC5 (index.qmd reports the four sources it reads in one line and three.qmd the two it reads in another; two.qmd and four.qmd read none; no record here was written and unusable, so the could-not-be-read wording is never drawn; every chapter's source reads, so the lost wording is never drawn)" \
   WARN_STORE_NEVER_RECOVERED=2
-# ...and WHICH chapters each of the two lines names, in render order. This is
+# ...and WHICH chapters each of the two lines names, each line picked out by
+# the chapters it must and must not carry rather than by where it sits. This is
 # the one leg in the suite where two chapters of one render each draw the
 # never-written wording, so it is the only place the aggregation can be shown
 # to be per reading chapter rather than per render; the count of 2 above is
 # satisfied by two lines naming one chapter apiece, which is what plant 3
 # leaves behind.
-check_warning_names_nth "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 1 \
-  "M074-AC2 (index.qmd renders first over a cold store, so its line names the four chapters behind it and not itself)" \
+check_warning_names_nth "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 \
+  "M074-AC2 (index.qmd reads over a cold store, so its line names the four chapters behind it and not itself)" \
   "two.qmd three.qmd four.qmd five.qmd" "index.qmd"
-check_warning_names_nth "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 2 \
-  "M074-AC2 (three.qmd renders third, so its line names only the two chapters whose records are still unwritten by then)" \
+check_warning_names_nth "$WORK/place-first.log" "$WARN_STORE_NEVER_RECOVERED" 2 \
+  "M074-AC2 (three.qmd reads later, so its line names only the two chapters whose records are still unwritten by then)" \
   "four.qmd five.qmd" "index.qmd two.qmd three.qmd"
 check_extension_warning_count "$WORK/place-first.log" 4 \
   "M063-AC2/M069-AC1/M074-AC2 (the placement fixture's first render emitted a warning this suite cannot name; its four are two never-written recovery reports and two marker-position reports)"
@@ -8355,9 +8375,13 @@ MANIFEST
   check_book_terms "$CAPTURE_ROOT/m063-m065-noprobe/_book" \
     "M065-AC5 self-test (no chapter is recovered, so each index holds its own chapter's marks alone)" \
     "$M065_TERMS_OWN_ONLY"
+  # The probe is disabled, so every record path reads as never written and no
+  # chapter is recovered. The store directory is still a file, so each of the
+  # placement fixture's five chapters still fails to write its own record.
   check_store_reports "$WORK/m063-m065-noprobe.log" \
-    "M065-AC5 self-test (every record path reads as absent again, so nothing is recovered and nothing is reported; every record path reads as absent again, so the lost wording is never drawn; every record path reads as absent again, so the no-marks wording is never drawn)"
-  pass "M065-AC5 self-test: with the store-directory probe disabled and nothing else changed, the same store directory replaced by a file leaves every record path reading as never written — no chapter is recovered, no report is drawn, each index carries the terms of the chapter that builds it alone, and the index no marker names prints nowhere — which is what this book did before the probe, and what the manifests the run above is held to refuse"
+    "M065-AC5 self-test (every record path reads as absent again, so no reading wording is drawn; the writes still meet the file where the store directory belongs)" \
+    WARN_STORE_UNWRITABLE=5
+  pass "M065-AC5 self-test: with the store-directory probe disabled and nothing else changed, the same store directory replaced by a file leaves every record path reading as never written — no chapter is recovered, no chapter is reported as recovered, each index carries the terms of the chapter that builds it alone, and the index no marker names prints nowhere — which is what this book did before the probe, and what the manifests the run above is held to refuse"
 fi
 
 # ---------------------------------------------------------------------------
@@ -8883,16 +8907,19 @@ if [ "${1:-}" = "--self-test" ]; then
   # said. Read as identity, not as a count — the shared entry keeps exactly the
   # locators of the chapters that were reached, and the term marked in the
   # subdirectory chapter alone is not in the section at all.
-  m068_nested_silent() {   # <slug> <label> <shared locators>
-    local slug="$1" label="$2" shared="$3"
+  m068_nested_silent() {   # <slug> <label> <recoveries> <unwritable> <shared locators>
+    local slug="$1" label="$2" recoveries="$3" unwritable="$4" shared="$5"
     ( cd "$M068BW/$slug" && quarto render last.qmd --to html ) \
       > "$WORK/m068-nested-$slug.log" 2>&1 \
       || { tail -30 "$WORK/m068-nested-$slug.log" >&2; fail "$label: the mutated render failed; the case below is about which terms an index carries, not about a broken render"; }
     capture --project "$M068BW/$slug" html "m068-nested-$slug"
     check_warning_count "$WORK/m068-nested-$slug.log" "$M068_RECOVERED_SUBTWO" 0 \
       "$label (the report the leg above draws once is drawn none)"
-    check_store_reports "$WORK/m068-nested-$slug.log" \
-      "$label (nor either of the other wordings a record out of reach can draw; nor the no-marks wording)"
+    # The chapter one level down is dropped in silence; the chapters whose
+    # records sit where the mutant still reaches them are recovered as usual,
+    # and last.qmd's own write fails wherever the store itself is out of reach.
+    check_store_reports "$WORK/m068-nested-$slug.log" "$label" \
+      WARN_STORE_UNREADABLE_RECOVERED="$recoveries" WARN_STORE_UNWRITABLE="$unwritable"
     check_entry_locators "$CAPTURE_ROOT/m068-nested-$slug/_book/last.html" \
       "$HTML_SECTION_ID-main" "Shared Term" "$shared" \
       "$label (the shared entry keeps the locators of the chapters that were reached and loses the subdirectory chapter's)"
@@ -8927,7 +8954,7 @@ GONEPY
   m068_break_store_at "$M068BW/lostchain/.quarto/$STORE_DIR" 4 \
     "M068 self-test (a lost directory's answer not handed down)"
   m068_nested_silent lostchain "M068 self-test (a lost directory's answer not handed down)" \
-    "index.html one.html"
+    2 1 "index.html one.html"
   pass "M068 self-test: with a lost directory's answer read only from its parent's listing and never handed down, the same store directory replaced by a file recovers the two chapters whose records sit directly in it and drops the one whose record sits a level below — sub/two.qmd's terms leave the book's index in silence, which is what the nested leg above refuses and what no flat fixture can tell apart"
 
   # 7. The record's name looked for in the STORE'S TOP LEVEL rather than in the
@@ -8942,7 +8969,7 @@ GONEPY
   m068_dangle_record "sub/two.qmd" "$M068BW/toplevel/.quarto/$STORE_DIR" \
     "M068 self-test (the store's top level consulted for a record one level down)"
   m068_nested_silent toplevel "M068 self-test (the store's top level consulted for a record one level down)" \
-    "index.html#qi-mark-1 one.html#qi-mark-2"
+    0 0 "index.html#qi-mark-1 one.html#qi-mark-2"
   pass "M068 self-test: with a record's name looked for in the store's top-level listing rather than in the listing of the directory it belongs in, the dangling record one level down reads as never written and sub/two.qmd's terms leave the index in silence, while the two records that open are read exactly as before — the rejected lookup, shown to be told from the chosen one by the nested leg above and by nothing on a flat book"
 fi
 
@@ -24035,7 +24062,8 @@ MANIFEST
     "$M070_SECTIONS_REFILED" \
     "M070 T6 self-test (the test removed: the notebook chapter's term is filed into the index its author did not name)" hrefs
   check_store_reports "$WORK/m070-notest.log" \
-    "M070 T6 self-test (the test removed: nothing is refused, so nothing is said)"
+    "M070 T6 self-test (the test removed: nothing is refused, so the refusal wording is never drawn; the tree is cold either way, so the never-written recovery line is drawn once as it is unplanted)" \
+    WARN_STORE_NEVER_RECOVERED=1
   pass "M070 T6 self-test: with the extension test removed and nothing else changed, the notebook chapter is parsed as markdown and its term is filed into the book's first declared index with nothing said — which the AC1 manifest and refusal count for the cold leg would fail on"
 
   # 2 — the test turned round, so exactly the chapters this route reads are
@@ -24107,8 +24135,8 @@ MANIFEST
     "$M070_SECTIONS_NOMARKDOWN" \
     "M070 T6 self-test (the .markdown chapter refused: its term is the one row missing)" hrefs
   check_store_reports "$WORK/m070-nomarkdown.log" \
-    "M070 T6 self-test (one refusal line, as unplanted — since M074 the refusals of one render share a line, so the count cannot tell the two apart and the names below are what does)" \
-    WARN_STORE_KIND_REFUSED=1
+    "M070 T6 self-test (one refusal line, as unplanted — since M074 the refusals of one render share a line, so the count cannot tell the two apart and the names below are what does; the tree is cold either way, so the never-written recovery line is drawn once as it is unplanted)" \
+    WARN_STORE_KIND_REFUSED=1 WARN_STORE_NEVER_RECOVERED=1
   check_warning_names "$WORK/m070-nomarkdown.log" "$WARN_STORE_KIND_REFUSED" \
     "M070 T6 self-test (two chapters refused where the fixture has one to refuse: the .markdown chapter joins the notebook chapter on that line)" \
     "three.markdown five.ipynb" \
@@ -24147,8 +24175,8 @@ MANIFEST
     "$M070_SECTIONS_NOMETA" \
     "M070 T6 self-test (the metadata walk removed: every front-matter mark reaches no index at all)" hrefs
   check_store_reports "$WORK/m070-nometa.log" \
-    "M070 T6 self-test (one recovery line here as unplanted, so the names below are what tells the two apart)" \
-    WARN_STORE_NEVER_RECOVERED=1
+    "M070 T6 self-test (one recovery line here as unplanted, so the names below are what tells the two apart; the notebook chapter is refused either way)" \
+    WARN_STORE_NEVER_RECOVERED=1 WARN_STORE_KIND_REFUSED=1
   check_warning_names "$WORK/m070-nometa.log" "$WARN_STORE_NEVER_RECOVERED" \
     "M070 T6 self-test (six.qmd and eight.Rmd now parse to no mark, so each is passed over in silence rather than reported as recovered, and the line names the other five)" \
     "one.qmd two.md three.markdown four.Rmd seven.qmd" \
@@ -24169,8 +24197,8 @@ MANIFEST
     "$M070_SECTIONS_RECOVERED" \
     "M070 T6 self-test (the swapped wording changes no printed page, which is why the wording itself is asserted)" hrefs
   check_store_reports "$WORK/m070-lostwording.log" \
-    "M070 T6 self-test (the refusal is never drawn; the notebook chapter is reported as one whose source could not be read; M073 gave that outcome its own wording on the never-written path, and this tree is cold, so the report says no render has written the record rather than that a record could not be read; and not the wording for a record that WAS written, there being no store here at all)" \
-    WARN_STORE_NEVER_LOST=1
+    "M070 T6 self-test (the refusal is never drawn; the notebook chapter is reported as one whose source could not be read; M073 gave that outcome its own wording on the never-written path, and this tree is cold, so the report says no render has written the record rather than that a record could not be read; and not the wording for a record that WAS written, there being no store here at all; the seven chapters this route does read are recovered on one line as they are unplanted)" \
+    WARN_STORE_NEVER_LOST=1 WARN_STORE_NEVER_RECOVERED=1
   pass "M070 T6 self-test: with the refusal's own signal removed and nothing else changed, the same page is printed and the notebook chapter is reported as one whose source could not be read — which the AC1 counts for the cold leg would fail on"
 
   # 6 — the conditional-content removal taken off the front matter, so the
@@ -25128,8 +25156,8 @@ if [ "${1:-}" = "--self-test" ]; then
     || { tail -30 "$WORK/m073-collapsed.log" >&2; fail "M073 T5 self-test: the mutated render failed; this case is about which wording is drawn, not about a broken render"; }
   capture --project "$M061W/m073-collapsed" html "m073-collapsed"
   check_store_reports "$WORK/m073-collapsed.log" \
-    "M073 T5 self-test (the branch made unreachable: the wording this milestone added is never drawn; the branch made unreachable: the state falls through to the wording claiming a record that could not be read)" \
-    WARN_STORE_UNREADABLE_LOST=1
+    "M073 T5 self-test (the branch made unreachable: the wording this milestone added is never drawn; the branch made unreachable: the state falls through to the wording claiming a record that could not be read; and the three chapters whose sources do read are recovered as they are unplanted)" \
+    WARN_STORE_UNREADABLE_LOST=1 WARN_STORE_UNREADABLE_RECOVERED=3
   pass "M073 T5 self-test: with the never-written family's lost branch made unreachable and nothing else changed, a chapter whose record no render wrote and whose source cannot be read is told its record could not be read — which both M073-AC1 counts on the m069-lostsource leg would fail on"
 
   # One mutant tree carrying the M072 fixture's filled store, one named
@@ -25388,9 +25416,9 @@ if [ "${1:-}" = "--self-test" ]; then
   check_store_reports "$WORK/m069-m074-inline.log" \
     "M074 T5 self-test (the draw restored: one report per record again, four where the milestone draws one)" \
     WARN_STORE_NEVER_RECOVERED=4
-  check_index_sections "$CAPTURE_ROOT/m069-m069-index/_book/index.html" \
+  check_index_sections "$CAPTURE_ROOT/m069-m074-inline/_book/index.html" \
     "$M069_ALPHA_ROWS" \
-    "M074 T5 self-test (the unmutated leg's section, restated: this plant moves the count and no printed page, which is why the count itself is asserted)" hrefs
+    "M074 T5 self-test (the MUTATED render's own section: this plant moves the count and leaves the printed page alone, which is why the page is read back from the render the plant made rather than from the unmutated leg's capture, where it could not have been anything else)" hrefs
   pass "M074 T5 self-test: with the never-written recovery report drawn inside the store read again and nothing else changed, a chapter reading a store no render has written says the same thing once per record — which the AC2 count for the m069-index leg would fail on"
 
   # 3 — the aggregation reduced to the first chapter of the set. Every count in

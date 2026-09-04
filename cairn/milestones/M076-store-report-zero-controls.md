@@ -86,7 +86,7 @@ milestone changes assertions, never reports.
       filter draws that nothing was asserting. Write the second kind up as a
       Known-issues entry rather than silencing it, and say in the work log
       which each was.
-- [ ] T4: Key `check_warning_names_nth` (`:2106`) on a caller-given content key
+- [x] T4: Key `check_warning_names_nth` (`:2106`) on a caller-given content key
       instead of the ordinal, update its call sites, and rewrite the header
       comment that states the log-order assumption.
 - [ ] T5: Plants under `--self-test`. Three crafted-log cases for
@@ -94,7 +94,7 @@ milestone changes assertions, never reports.
       wrong-names cases for `check_warning_names_nth`; and one Lua mutation
       drawing a store wording on a chapter that should not draw it, chosen so
       the leg meeting it asserted nothing about that wording before T2.
-- [ ] T6: Repoint the M074 plant-2 page control (`:25585`) from
+- [x] T6: Repoint the M074 plant-2 page control (`:25585`) from
       `$CAPTURE_ROOT/m069-m069-index` to the capture its own mutated render
       takes, `$CAPTURE_ROOT/m069-m074-inline` (`m069_mutant_chapter`, `:9387`),
       and restate the label that currently says it reads the unmutated leg's.
@@ -116,6 +116,10 @@ milestone changes assertions, never reports.
 - 2026-09-04: T2 checkpoint, half-done: the conversion applied by a script that re-reads the call sites out of the suite's own source, groups them one per render (a group breaks where a line between two same-log calls redirects a render into that log, which is what separates the two functions that both write `$WORK/place-$slug.log` and the two that both write `$WORK/m068-nested-$slug.log`), and merges each group's labels — distinct criterion prefixes joined, then the distinct reasons from each label's first parenthesis. Pre-conversion figures, measured on the branch: 220 `check_warning_count` calls named a store wording, over 78 distinct log-path expressions; 16 `check_warning_names` and 2 `check_warning_names_nth` calls also named one and are unchanged, asserting membership rather than a count. After: 80 `check_store_reports` calls, none of the 10 wordings unasserted on any of them, and no `check_warning_count` call naming a store wording remains. `tests/run-tests.sh` 25,884 to 25,629 lines. T3's settling run is still going, so T2 is not ticked.
 
 - 2026-09-04: T3 checkpoint, half-done. To settle the red legs in one pass rather than one 8-minute run each, `check_store_reports` was temporarily given a survey mode that records a mismatch instead of failing; the plain run then completed (767 checks) and reported seven mismatches over five renders. All seven were the second kind — a report the filter draws that nothing was asserting — and none was a filter defect, so none is written up as a Known issue: in every case the fixture's own setup makes the report follow, and a sibling leg doing the same thing already asserted it. `m063-m064-conditional` and `m063-m064-nomarks` block four.qmd's record path, so four.qmd's own write meets the block and draws the unwritable wording once. `m063-m068-dangling` (both renders) draws the recovery wording four times, asserted until now only inside the whole-message literal `M068_RECOVERED_FOUR`. `book-nostore` replaces the store directory with a file, so all three chapters are recovered by the two others and all three writes fail; both figures now derive from the fixture's chapter count. `m068-nested-unlistable` had two calls reaching one log through two spellings of its path — `$WORK/m068-nested-$slug.log` inside `m068_nested_render` and `$WORK/m068-nested-unlistable.log` beside it — whose sweeps denied each other; the write count is now a parameter of that function and the second call is gone. The `--self-test` survey, which covers the plant-only legs the plain run never reaches, is still running.
+
+- 2026-09-04: T3, second half. The `--self-test` survey completed (1390 checks) and reported eight more mismatches over seven renders, all in plant-only legs the plain run never reaches, and again all the second kind with no filter defect among them: `m063-m065-noprobe` disables the store probe but leaves the store directory a file, so all five writes still fail; `m073-collapsed` recovers the three chapters whose sources read; the four `m070` plants each draw the cold book's own never-written or refusal line, which the unplanted leg draws too; and `m068-nested-lostchain` recovers two chapters and fails one write, so `m068_nested_silent` takes those two counts as parameters the way `m068_nested_render` now does. The `m063-m065-noprobe` pass line said "no report is drawn", which the write failures make false; it now says no chapter is reported as recovered. Survey mode removed.
+- 2026-09-04: T4 done. `check_warning_names_nth` picks its line by the two chapter lists the caller already passes — the one line naming every chapter in `named` and none in `not named` — and refuses an empty exclusion list, zero matching lines, and two or more. The ordinal argument is gone from the signature and from both call sites. A literal content key was not available: the one call site's second line names a strict subset of the first's chapters, so no string picks it out. The name is unchanged, which AC2 refers to it by; the header comment now says so.
+- 2026-09-04: T6 done. The M074 plant-2 page control reads `$CAPTURE_ROOT/m069-m074-inline`, the capture its own mutated render took, rather than `$CAPTURE_ROOT/m069-m069-index`, the unmutated leg's; its label says which render it reads and why the page is read back at all.
 
 ## Decisions
 

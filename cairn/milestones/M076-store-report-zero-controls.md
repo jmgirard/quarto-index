@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M076: A store-report leg asserts every wording, not the ones its author recalled
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -77,11 +77,11 @@ milestone changes assertions, never reports.
       names today, defined at `:928-973`. Count occurrences inline rather than
       delegating to `check_warning_count`, so the family is reachable from one
       place and the wording variables are named nowhere else.
-- [ ] T2: Convert the store-wording assertions to it — 179 of the 630 possible
+- [x] T2: Convert the store-wording assertions to it — 179 of the 630 possible
       (log, wording) pairs are asserted today, across 63 captured logs —
       one `check_store_reports` call per log, each leg's existing expectations
       carried over unchanged. Record the pre-conversion figures in the work log.
-- [ ] T3: Run the plain suite and settle every leg the conversion turns red.
+- [x] T3: Run the plain suite and settle every leg the conversion turns red.
       Each is one of two things: an expectation that was wrong, or a report the
       filter draws that nothing was asserting. Write the second kind up as a
       Known-issues entry rather than silencing it, and say in the work log
@@ -89,7 +89,7 @@ milestone changes assertions, never reports.
 - [x] T4: Key `check_warning_names_nth` (`:2106`) on a caller-given content key
       instead of the ordinal, update its call sites, and rewrite the header
       comment that states the log-order assumption.
-- [ ] T5: Plants under `--self-test`. Three crafted-log cases for
+- [x] T5: Plants under `--self-test`. Three crafted-log cases for
       `check_store_reports` and the unplanted control beside them; the swap and
       wrong-names cases for `check_warning_names_nth`; and one Lua mutation
       drawing a store wording on a chapter that should not draw it, chosen so
@@ -98,7 +98,7 @@ milestone changes assertions, never reports.
       `$CAPTURE_ROOT/m069-m069-index` to the capture its own mutated render
       takes, `$CAPTURE_ROOT/m069-m074-inline` (`m069_mutant_chapter`, `:9387`),
       and restate the label that currently says it reads the unmutated leg's.
-- [ ] T7: Full `tests/run-tests.sh --self-test` green; record the check count
+- [x] T7: Full `tests/run-tests.sh --self-test` green; record the check count
       and the post-conversion pair figure.
 
 ## Work log
@@ -123,6 +123,9 @@ milestone changes assertions, never reports.
 
 - 2026-09-04: T3 done — plain suite green, 766 checks, exit 0.
 - 2026-09-04: T5 written. Six cases for the two helpers over crafted logs, beside the one Lua mutation. `check_store_reports` is shown red on a wording the call does not name, on a named wording's wrong count, on a name the family does not hold and on an emptied family, each checked back by the text of its own failure rather than by a bare non-zero exit, and green on the same log with none of them planted. `check_warning_names_nth` is shown green on the placement fixture's own two lines written in the other order and red on a copy naming a chapter the report never covers. The AC4 mutation takes `.qmd` out of the set of source kinds the recovery route reads, so a chapter reading a store no render has written refuses the four behind it: the leg's warning total is asserted green under the mutation, and the leg's own store-report expectation red and naming the refusal wording — a wording nothing on that leg asserted before the conversion, checked against the pre-conversion file at commit 2e70197. Full `--self-test` run in progress.
+
+- 2026-09-04: T5 done and T7 done — `tests/run-tests.sh --self-test` green, 1397 checks, exit 0; `tests/run-tests.sh` green, 766 checks, exit 0. `cairn_validate` all PASS. The AC4 plant landed as designed: under the mutation the leg's `check_extension_warning_count` of 2 is green — one report became one other report — while the leg's own store-report expectation is red on `WARN_STORE_KIND_REFUSED`.
+- 2026-09-04: figures. Before, at commit 2e70197: 220 `check_warning_count` calls named a store wording, covering 214 distinct (log, wording) pairs of the 780 that 78 log-path expressions and 10 wordings allow. After: 80 `check_store_reports` calls over renders, each asserting all 10 wordings, so all 800 pairs of its 80 logs are asserted — two of the 78 expressions are function-local spellings whose calls the conversion split by render, which is where the extra pair of logs comes from. An 81st call is the AC3 control over a crafted log. `tests/run-tests.sh` 25,884 to 25,834 lines.
 
 ## Decisions
 

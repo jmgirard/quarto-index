@@ -25644,7 +25644,14 @@ for n, line in enumerate(open(timing, encoding='utf-8').read().split('\n'), 1):
     if not line:
         continue
     parts = line.split('\t')
-    if len(parts) != 2 or not parts[1].lstrip('-').isdigit():
+    seconds = parts[1] if len(parts) == 2 else ''
+    # `lstrip('-')` accepted `--5` and int() then raised, so the row
+    # traced back instead of failing as the malformed row it is
+    # (M075 review F8). A single leading `-` stays legal: a row can
+    # only go negative if the clock did, and that is worth reporting
+    # as a gap rather than as a parse error.
+    if len(parts) != 2 or not (seconds[1:] if seconds[:1] == '-'
+                               else seconds).isdigit():
         print('FAIL: M075: %s:%d is not a heading and a whole number of '
               'seconds: <<%s>>' % (timing, n, line), file=sys.stderr)
         sys.exit(1)
@@ -25813,11 +25820,16 @@ CHECK_COUNT=$( { grep -cE '^ok ' "$RUN_LOG" || true; } | tr -d ' ')
 # their seconds to the clock this script kept, so what follows is measured
 # time rather than a claim about it. The whole file is left in place for
 # anyone who wants a row this list does not reach.
-printf '\n== the fifteen slowest of %s timed rows (%ss in all, %s) ==\n' \
-  "$(wc -l < "$TIMING" | tr -d ' ')" \
-  "$(awk -F'\t' '{t += $2} END {print t}' "$TIMING")" \
+printf '\n== the fifteen slowest of %s section rows (%ss, plus %ss of setup before the first section; %s) ==\n' \
+  "$(awk -F'\t' '$1 != "unattributed"' "$TIMING" | wc -l | tr -d ' ')" \
+  "$(awk -F'\t' '$1 != "unattributed" {t += $2} END {print t + 0}' "$TIMING")" \
+  "$(awk -F'\t' '$1 == "unattributed" {t += $2} END {print t + 0}' "$TIMING")" \
   "$TIMING"
-sort -t "$(printf '\t')" -k2,2nr "$TIMING" | head -15 \
-  | awk -F'\t' '{printf "  %5ds  %s\n", $2, $1}'
+# `head` would exit after fifteen lines and, once the rows outgrow the pipe
+# buffer, kill `sort` with SIGPIPE — which `pipefail` turns into a non-zero
+# exit AFTER every check has passed, with no FAIL line printed (M075 review
+# F2). awk reads the whole stream, so no writer here is ever cut off.
+sort -t "$(printf '\t')" -k2,2nr "$TIMING" \
+  | awk -F'\t' 'NR <= 15 {printf "  %5ds  %s\n", $2, $1}'
 
 printf '\nAll checks passed (%s checks).\n' "$CHECK_COUNT"

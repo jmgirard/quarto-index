@@ -199,11 +199,18 @@ def run_all_span(lines):
 
 
 def banner_headings(lines, lo, hi):
-    """(1-based line number, heading) for each banner block in [lo, hi).
+    """(1-based line number, heading) for each banner block in [lo, hi), or a
+    string naming the first block whose heading cannot be read.
 
     A block is a rule, one or more comment lines, and a closing rule; its
-    heading is the first of those comment lines. A rule that closes nothing —
-    a lone divider — matches no block and is stepped over.
+    heading is the first of those comment lines that carries text. A rule that
+    closes nothing — a lone divider, two rules with nothing between them — is
+    no block and is stepped over.
+
+    Every OTHER way a block can fail to yield a heading is reported rather
+    than skipped (M075 review F1). A skipped block is a section the timing
+    file never has to name, so it would run untimed while both checks over
+    that file stayed green — the silent gap the domain exists to close.
     """
     out = []
     i = lo
@@ -213,13 +220,25 @@ def banner_headings(lines, lo, hi):
             heading = None
             while (j < hi and lines[j].startswith('#')
                    and not BANNER_RULE.match(lines[j])):
-                if heading is None:
+                if heading is None and lines[j].lstrip('#').strip():
                     heading = lines[j].lstrip('#').strip()
                 j += 1
-            if j < hi and BANNER_RULE.match(lines[j]) and heading:
-                out.append((i + 1, heading))
-                i = j + 1
+            if j == i + 1:
+                # Nothing between this rule and whatever follows it: a lone
+                # divider, not a block.
+                i += 1
                 continue
+            if j >= hi or not BANNER_RULE.match(lines[j]):
+                return ('%d: this banner block is never closed by a second '
+                        'rule, so it declares no section and the timing file '
+                        'would not have to name one' % (i + 1))
+            if not heading:
+                return ('%d: this banner block carries no comment line with '
+                        'text, so it declares no heading and the timing file '
+                        'would not have to name one' % (i + 1))
+            out.append((i + 1, heading))
+            i = j + 1
+            continue
         i += 1
     return out
 
@@ -242,9 +261,12 @@ def check_sections(files):
                 'than exactly one, so the section domain is not settled'
                 % (len(holders), RUN_ALL))
     path, lines, (lo, hi) = holders[0]
+    blocks = banner_headings(lines, lo, hi)
+    if not isinstance(blocks, list):
+        return '%s:%s' % (path, blocks)
     headings = []
     seen = {}
-    for line_no, heading in banner_headings(lines, lo, hi):
+    for line_no, heading in blocks:
         if '\t' in heading:
             return ('%s:%d: this banner heading contains a tab, which is the '
                     'timing file\'s own column separator' % (path, line_no))
@@ -280,8 +302,13 @@ def main(argv):
     problem = MODES[mode](files)
     if mode == 'sections':
         if isinstance(problem, list):
-            for heading in problem:
-                print(heading)
+            # Written as bytes on a pinned encoding, not through the locale's:
+            # the headings carry em dashes and non-ASCII terms, and under an
+            # ASCII stdout locale `print` raises rather than reporting the
+            # domain (M075 review F6).
+            sys.stdout.buffer.write(
+                ('\n'.join(problem) + '\n').encode('utf-8'))
+            sys.stdout.flush()
             return 0
         print('FAIL: M075: ' + problem, file=sys.stderr)
         return 1

@@ -109,6 +109,7 @@ own domains. Out: per-render timing → candidate row; moving the literal
 - 2026-09-04: plan gate chose timing alone over bundling a subset-selection mode because the three whole-run accumulator sweeps read what earlier sections produced, so a subset run would fail them or pass them vacuously; falsified by those three sweeps being reworked to declare their own domains.
 - 2026-09-04: review opened on PR #75; branch synced with `main` (0 behind), draft PR pushed. Consistency gate green: `cairn_validate` all PASS, no principle changed so no impact report, and the `generic` profile's consistency-gate slot names no toolchain checks. Criterion evidence and the three review lenses in flight.
 - 2026-09-04: review evidence recorded and all four criteria ticked — one fresh `tests/run-tests.sh --self-test` at fb20b8b, exit 0, 1299 checks, 1191s; AC2 and AC3 also held independently of the run's own checks, AC3 against the final timing file and an outer wall clock (gap 0s). Three-lens review fan-out ran; thirteen findings, twelve from the diff-bug lens and one from the prior-review lens duplicating F3, all recorded in the Review section for triage at the gate.
+- 2026-09-04: gate approved fixing the four confirmed review findings, re-verifying, and merging on green. F1, F2, F6, F8 and F11's print header fixed on the branch and each verified standalone; F3 routed to a Known-issues entry, F4/F5/F7/F9/F10 and F11's fragment headings to the suite check-discrimination candidate row, F12 rejected. Full re-run in flight.
 
 ## Decisions
 
@@ -150,6 +151,39 @@ discrimination sweep still carrying more than half the run (644s of 1191s).
 OK (the release-window advisory did not fire). No `DESIGN.md` principle
 changed, so no impact report was owed. The `generic` profile's
 `consistency-gate` slot names no toolchain checks, so that half is a no-op.
+
+**Triage at the gate.** The maintainer chose to fix the four confirmed
+defects, re-verify, and merge on green.
+
+- F1 — fix now. `banner_headings` takes the first comment line that carries
+  text, and every other way a block can fail to yield a heading (a block with
+  no such line; a block no second rule closes) is reported rather than
+  skipped. A lone divider is still stepped over. Verified: the unplanted
+  enumeration is byte-identical at 155 headings in the same order, and the
+  planted empty-first-line block is now reported.
+- F2 — fix now. `awk` truncates to fifteen rows instead of `head`, so no
+  writer in the pipeline is cut off. Verified: 200,000 rows now exit 0 where
+  the old pipeline exited 141.
+- F6 — fix now. The headings are written to `sys.stdout.buffer` on a pinned
+  UTF-8 encoding. Verified: 155 headings under `LC_ALL=C`, exit 0.
+- F8 — fix now. The row guard rejects a second leading `-` rather than
+  passing it to `int()`. A single leading `-` stays legal, so T5's
+  five-seconds-short plant is untouched. Verified: `--5` rejected cleanly,
+  `-5` still accepted.
+- F11, the print header — fix now. It now counts and sums the section rows
+  and names the setup seconds separately, instead of calling all 156 rows
+  section rows. F11's truncated fragment headings — follow-up.
+- F3 — accepted as a limitation, recorded in `DESIGN.md`'s Known issues at
+  the hygiene pass; it is within AC1's letter and the same shape KI30
+  already carries.
+- F4, F5, F7, F9, F10 — follow-up, absorbed into the suite check-discrimination
+  candidate row at the hygiene pass.
+- F12 — rejected. The two implement-gate choices are milestone-local and are
+  in the work log with their falsifiers; the cross-cutting decisions file is
+  for decisions that bind beyond one milestone, and neither does.
+
+**PR conversation.** Read on PR #75 before the gate: no reviews, no
+conversation comments, no unresolved threads.
 
 **Independent review.** Executable surface touched, so the full three-lens
 fan-out ran, each lens fresh-context and none having seen the work.

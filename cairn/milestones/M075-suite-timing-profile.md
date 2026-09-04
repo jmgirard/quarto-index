@@ -7,7 +7,7 @@
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — instrumentation of the acceptance suite, which is dev tooling nothing outside the repo consumes
-- **Branch/PR:** `m075-suite-timing-profile`
+- **Branch/PR:** `m075-suite-timing-profile` / https://github.com/jmgirard/quarto-index/pull/75
 
 ## Goal
 
@@ -107,6 +107,7 @@ own domains. Out: per-render timing → candidate row; moving the literal
 - 2026-09-04: plan gate chose measuring the run's cost over going straight at parallelism because the investigation found three whole-run accumulator sweeps, ~90 fixed shared work-directory filenames, and a whole-tree byte-identity assertion, several of them shipped milestones' acceptance criteria, putting any wall-clock gain three or more milestones out; falsified by a measurement showing the run's time concentrated in the 73 render sites already isolated in their own scratch trees.
 - 2026-09-04: plan gate chose section-granularity timing over per-render timing because moving the literal `quarto render` into a timing helper would empty the render domain `tests/suitescan.py pairs` sweeps while its comment still claimed coverage; falsified by a section profile too coarse to locate the cost.
 - 2026-09-04: plan gate chose timing alone over bundling a subset-selection mode because the three whole-run accumulator sweeps read what earlier sections produced, so a subset run would fail them or pass them vacuously; falsified by those three sweeps being reworked to declare their own domains.
+- 2026-09-04: review opened on PR #75; branch synced with `main` (0 behind), draft PR pushed. Consistency gate green: `cairn_validate` all PASS, no principle changed so no impact report, and the `generic` profile's consistency-gate slot names no toolchain checks. Criterion evidence and the three review lenses in flight.
 
 ## Decisions
 

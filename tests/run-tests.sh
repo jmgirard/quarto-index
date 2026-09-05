@@ -8585,6 +8585,53 @@ MANIFEST
     "$M065_GAMMA_ROWS_NOSORT" "M065-AC2 self-test" hrefs
   pass "M065-AC2 self-test: with the recovered sort keys dropped and nothing else changed, the term whose mark declares one files under its printed text at the tail of the section rather than at its head — the defect the AC2 rows are held against — and the render still exits 0"
 
+  # ORACLE — the same section with the recovered range ends carried and paired.
+  # A pair whose author gave each end an id has two destinations, so the pairing
+  # is visible: each such range folds to the ONE locator at its opening anchor
+  # where the unmutated run prints two. `Ingot`, whose ends carry no id, prints
+  # one locator either way — the two ends share a destination and the entry
+  # tree's same-target rule already folds them — so this manifest holds the
+  # invariance and the loss side by side.
+  read -r -d '' M065_GAMMA_ROWS_PAIRED <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	A
+0	Zephyr	four.html
+letter	D
+0	Dovetail	four.html
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	F
+0	Ferrule		see-link Escutcheon
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+letter	H
+0	Hasp		also-link Escutcheon
+letter	I
+0	Ingot	four.html
+letter	J
+0	Jetty	four.html
+letter	K
+0	Keystone	four.html#keystone-passage
+letter	L
+0	Lintel		see-link Escutcheon
+letter	M
+0	Mullion	four.html#mullion-passage
+letter	N
+0	Newel	four.html#newel-opens
+letter	O
+0	Oriel	four.html#oriel-opens
+letter	P
+0	Purlin	four.html#purlin-passage
+letter	Q
+0	Quoin	four.html
+letter	R
+0	Rafter	four.html
+letter	W
+0	Woodwork	
+1	Joinery	four.html
+MANIFEST
+
   # Two substitutions, each its own argument: one carries the range end into
   # the recovered mark, the other pairs the ends. Named here so the M066-AC2
   # self-test below can slip each with the other left intact.
@@ -8598,8 +8645,8 @@ MANIFEST
   m063_tree_render m065-carryrange m065-carryrange \
     "M065-AC4 self-test" "$PLACE_SECTIONS"
   check_index_sections "$CAPTURE_ROOT/m063-m065-carryrange/_book/five.html" \
-    "$M065_GAMMA_ROWS" "M065-AC4 self-test (the section does not move)" hrefs
-  pass "M065-AC4 self-test: with a recovered mark carrying the range end its author wrote, and the pairing a chapter's own process would reach re-derived from the recovered marks, the gamma section is exactly the section the unmutated run prints — so the one plain locator AC4 promises is what the pair prints whether the field travels or not, and the render still exits 0"
+    "$M065_GAMMA_ROWS_PAIRED" "M065-AC4 self-test (the ranges fold)" hrefs
+  pass "M065-AC4 self-test: with a recovered mark carrying the range end its author wrote, and the pairing a chapter's own process would reach re-derived from the recovered marks, each range whose ends carry ids of their own folds to the one locator at its opening anchor where AC4 has it print both — the defect the AC1 rows are held against — while the range whose ends carry no id prints one locator either way, and the render still exits 0"
 
   # -------------------------------------------------------------------------
   # M078 T5 — the three defect classes the author-id rows above are held
@@ -8781,7 +8828,9 @@ MANIFEST
   # cannot: one of the two carryrange substitutions slipped with the other
   # left intact leaves the filter changed, so the file still differs and the
   # old guard passed a half-applied mutation into a render whose assertion
-  # above is an invariance. Each slip runs in a subshell with its FAIL
+  # above was, when this case was written, an invariance — a shape that lets a
+  # half-applied mutation pass unnoticed, and one the author-id rows have since
+  # taken away from the carryrange plant (M078). Each slip runs in a subshell with its FAIL
   # captured, because m061_mutant exits on it; the spliced file it leaves
   # behind is then held to differ from the original, so the case caught is
   # the half-applied one and not a mutation that applied nowhere.

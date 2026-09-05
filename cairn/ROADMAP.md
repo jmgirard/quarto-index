@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-04 (M076 merged and archived; M071's row pruned to hold the 5-terminal-row cap. Lessons: M076's one durable shape — a self-test plant that re-types the expectation it protects — went into check-design.md as its nineteenth numbered shape, the module being the owner of check craft; its second finding (a sweep swallowing grep's missing-file exit) is now enforced by a plant in the suite and takes the enforcement exit, so it earns no line. check-design.md was 1 byte under its 18,000-byte budget, so eleven of its clauses were compressed in the same commit to make room: 38 lines / 17,907 bytes. Nothing retired, no candidate row touched, no Known-issues entry, no decision entry. ROADMAP 53 lines / 11,757 bytes; LESSONS.md 48 lines / 19,935 bytes. cairn_validate all PASS.)_
+_Last hygiene check: 2026-09-04 (M077 merged and archived; M072's row pruned to hold the 5-terminal-row cap. One durable shape from the review — a probe whose control and red legs differ in two variables pins the behavior to neither — went into check-design.md as its twentieth numbered shape, that module being the owner of check craft; making room took compressing twelve of its clauses in the same commit: 38 lines / 17,994 bytes. One candidate row added (the plant helper's own repairs are unexercised). Nothing retired, no Known-issues entry beyond KI250 which landed on the branch, no decision entry beyond D-054 which did too. ROADMAP 53 lines / 11,845 bytes; LESSONS.md 48 lines / 19,935 bytes. cairn_validate all PASS.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 
@@ -9,12 +9,11 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M077 | The suite's timing accounting checks only what its own window covers | review | — | normal | milestones/M077-timing-accounting-window.md |
+| M077 | The suite's timing accounting checks only what its own window covers | done | — | normal | milestones/archive/M077-timing-accounting-window.md |
 | M076 | A store-report leg asserts every wording, not the ones its author recalled | done | — | normal | milestones/archive/M076-store-report-zero-controls.md |
 | M075 | The suite reports where its own time goes | done | — | normal | milestones/archive/M075-suite-timing-profile.md |
 | M073 | A store report names the record it met as the record it was | done | — | normal | milestones/archive/M073-store-report-wordings.md |
 | M074 | A record no render has written is reported by the chapter that prints the section, once | done | M073 | normal | milestones/archive/M074-never-written-report-site.md |
-| M072 | A refused chapter whose record an older version wrote is reported once per index section | done | — | normal | milestones/archive/M072-refusal-report-count.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

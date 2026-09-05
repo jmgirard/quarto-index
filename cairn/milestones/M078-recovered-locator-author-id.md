@@ -329,3 +329,14 @@ No finding met the return floor: none demonstrated an acceptance criterion
 failing, and the maintainer took finding 1 as fix-now rather than as a
 load-bearing defect. Status stays `review`.
 
+### Re-verification after the actioned fixes
+
+Both modes re-run at 43568b8, each green on its first attempt and no segfault
+in either: `tests/run-tests.sh` "All checks passed (769 checks)" and
+`tests/run-tests.sh --self-test` "All checks passed (1409 checks)", both
+exit 0. This is the run that matters for finding 1 — the reworded warning is
+pinned by `M068_RECOVERED_FOUR`, `M068_RECOVERED_SUBTWO` and the M074
+mutation's own `M074_INLINE_DRAW` literal, and all three report checks pass
+against the new text. `cairn_validate.py` re-run over the completed branch:
+exit 0, 16/16 PASS.
+

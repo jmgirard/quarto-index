@@ -59,7 +59,7 @@ the checked run → KI246, accepted.
       `section_close` marks the run closed rather than clearing the same
       variable that means "before the first section", and `section` fails
       naming its own call when the run is closed.
-- [ ] T2: Remove the seconds clause from `m075_account` (`:25631-25710`) and
+- [x] T2: Remove the seconds clause from `m075_account` (`:25631-25710`) and
       the `M075_OPEN` / `M075_TOTAL` readings that feed it, keeping the
       membership, duplicate-row, setup-row and malformed-row clauses. The
       driver's print (`:25823`) still reports the total, now as a figure
@@ -86,6 +86,8 @@ the checked run → KI246, accepted.
 - 2026-09-04: T1 verified: `tests/run-tests.sh` exits 0 over 766 checks with the third state in place, and the timing accounting is green on the run that wrote it.
 - 2026-09-04: T2 written: the seconds clause, its two readings and the AC3 print are gone; the membership, duplicate-row, setup-row and malformed-row clauses stand. T5's prose half moved here with it — the timer header, the M075 section banner and the comment above the driver's print all said the seconds were held to the run's clock, and leaving them saying so through T2's commit would have shipped a false comment. D-054 and KI250 written in the same commit for the same reason: T2's comments cite them. Minor amendment, no criterion moved. CHECKPOINT — T2's verify-slot run was still in flight at this commit; unchecked.
 - 2026-09-04: T2's first verify run went red, and on the defect the clause is for: rewriting the M075 banner changed the section's heading while its `section '<heading>'` call still passed the old text, so the source declared a section with no row and the file carried a row naming none. Call corrected to the new heading, which is now a whole sentence rather than the wrapped fragment KI248 describes. Re-run in flight at this commit.
+- 2026-09-04: T2 verified: `tests/run-tests.sh` exits 0 over 765 checks, one fewer than before, the removed line being the seconds report.
+- 2026-09-04: T3 written: the five-seconds plant is retired with the clause it probed; the refusal plant runs two subshell legs over their own timing file, differing by the close alone. Shown to discriminate before the suite run — spliced against a1df8ab's timer it goes red naming the rows the pre-fix code left, `M077 probe section, opened by the probe itself 0` and `unattributed 461`, the second row being the whole run. CHECKPOINT — the --self-test run was in flight at this commit.
 - 2026-09-04: plan gate chose keeping the heading-membership clause over deleting the accounting whole, because a section added with no timing call is the defect the profile exists to prevent and only that clause sees it; falsified by that clause going red for a reason that is neither a missing nor an extra section.
 
 ## Decisions

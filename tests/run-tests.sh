@@ -25769,13 +25769,17 @@ m075_account "$TIMING" "$WORK/m075-sections.txt" \
   || fail "M075-AC2: the run's timing file does not name the sections this source declares (its own FAIL line is above)"
 
 if [ "${1:-}" = "--self-test" ]; then
-  # T5 — what the accounting above can tell apart. Three defects are planted,
-  # each the shape a real change would take: a section added to the source
-  # with no timing call, a timing row left behind by a section the source no
-  # longer has, and seconds that no longer add up. The first two are planted
-  # through the scan's overlay handle, which supplies the bytes for a tracked
-  # path while git still supplies the file list, so no nested run of this
-  # suite is needed to make either of them.
+  # T5 — what the accounting above, and the timer that feeds it, can tell
+  # apart. Three defects are planted, each the shape a real change would take:
+  # a section added to the source with no timing call, a timing row left
+  # behind by a section the source no longer has, and a section opened after
+  # the run's timing has been closed. The first two are planted through the
+  # scan's overlay handle, which supplies the bytes for a tracked path while
+  # git still supplies the file list, so no nested run of this suite is needed
+  # to make either of them; the third is planted against the timer directly.
+  #
+  # A fourth plant stood here until M077 — five seconds taken off one row,
+  # which only a total could see. It went with the clause it probed (D-054).
   M075_PLANT="$WORK/m075-plant"
   M075_EXTRA="M075 T5 planted section, which no timing call opens"
   rm -rf "$M075_PLANT"
@@ -25850,14 +25854,65 @@ M075PLANTPY
   m075_red "a row no section claims" \
     m075_account "$TIMING" "$WORK/m075-sections-drop.txt"
 
-  # 3. Seconds that no longer add up: one row short by five, the set of
-  #    headings untouched, so only the total can see it.
-  awk -F'\t' 'BEGIN{OFS="\t"} NR==2 && $2>=0 {$2=$2-5} {print}' "$TIMING" > "$WORK/m075-timing-short.tsv"
-  M075_EXPECT="a gap of -5s"
-  m075_red "five seconds taken off one row" \
-    m075_account "$WORK/m075-timing-short.tsv" "$WORK/m075-sections.txt" "$M075_TOTAL"
+  # 3. A section opened after the run's timing has been closed (M077-AC1).
+  #    Before M077 this wrote a SECOND row labelled `unattributed`, valued at
+  #    everything since the run began, and neither clause above could see it:
+  #    the set of headings was untouched, and the row telescoped from the
+  #    run's start so even the seconds clause M077 removed added up.
+  #
+  #    Each leg runs in a subshell with its own $TIMING, so the probe's rows
+  #    never reach this run's file and the state it sets never outlives it.
+  #    The two legs differ by the close and nothing else.
+  M077_OPEN_HEADING='M077 probe section, opened by the probe itself'
+  M077_REOPEN_HEADING='M077 probe section, opened after the close'
 
-  pass "M075 T5 self-test: the accounting is red on a section the source declares with no timing row, on a timing row no section declares, and on a row whose seconds leave the total five short — and it names the section or the gap in each case, so its green above holds this run's profile to this run's source"
+  m077_probe() {
+    (
+      TIMING="$WORK/m077-probe-$1.tsv"
+      : > "$TIMING"
+      SECTION_HEADING="$M077_OPEN_HEADING"
+      SECTION_STARTED=$(date +%s)
+      SECTION_RUN_CLOSED=""
+      if [ "$1" = "closed" ]; then
+        section_close
+      fi
+      section "$M077_REOPEN_HEADING"
+    )
+  }
+
+  # The control, which must stay silent: with the run still open, this is the
+  # ordinary call every section above makes. It writes the open section's row
+  # on the reading that opens the next — never a second `unattributed` row.
+  m077_probe open \
+    || fail "M077-AC1 self-test: opening a section while the run is still open was refused, so the red leg below would be red for something other than the close"
+  M077_ROWS=$(cat "$WORK/m077-probe-open.tsv")
+  if [ "$(printf '%s\n' "$M077_ROWS" | wc -l | tr -d ' ')" != "1" ] \
+     || ! printf '%s\n' "$M077_ROWS" | grep -qF -- "$M077_OPEN_HEADING"; then
+    fail "M077-AC1 self-test: the control wrote <<$M077_ROWS>> rather than the one row naming <<$M077_OPEN_HEADING>>, so it is not the case the red leg is contrasted with"
+  fi
+  if printf '%s\n' "$M077_ROWS" | grep -q 'unattributed'; then
+    fail "M077-AC1 self-test: the control wrote an <<unattributed>> row while a section was open, which is the defect itself rather than the control for it"
+  fi
+
+  # The refusal, and that it is the refusal and not some other failure.
+  set +e
+  M077_OUT=$( m077_probe closed 2>&1 )
+  M077_RC=$?
+  set -e
+  if [ "$M077_RC" -eq 0 ]; then
+    printf '%s\n' "$M077_OUT" >&2
+    fail "M077-AC1 self-test: a section opened after section_close was accepted, and the rows it left are <<$(tr '\n' '|' < "$WORK/m077-probe-closed.tsv")>>"
+  fi
+  case "$M077_OUT" in
+    *"section '$M077_REOPEN_HEADING' was opened after section_close"*) : ;;
+    *) printf '%s\n' "$M077_OUT" >&2
+       fail "M077-AC1 self-test: the call after the close failed, but not by naming itself as a section opened after the close, so the failure is not the one this plant makes" ;;
+  esac
+  if grep -q 'unattributed' "$WORK/m077-probe-closed.tsv"; then
+    fail "M077-AC1 self-test: the refused call still left an <<unattributed>> row behind, which is exactly the row M077 stops being written"
+  fi
+
+  pass "M075 T5 self-test: the accounting is red on a section the source declares with no timing row and on a timing row no section declares, naming the section in each case; and the timer refuses a section opened after the close, naming that call, while the same call with the run still open goes through and writes one ordinary row"
 fi
 section_close
 

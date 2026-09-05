@@ -55,7 +55,7 @@ the checked run → KI246, accepted.
 
 ## Tasks
 
-- [ ] T1: Give the section timer a third state (`tests/run-tests.sh:87-112`):
+- [x] T1: Give the section timer a third state (`tests/run-tests.sh:87-112`):
       `section_close` marks the run closed rather than clearing the same
       variable that means "before the first section", and `section` fails
       naming its own call when the run is closed.
@@ -83,6 +83,7 @@ the checked run → KI246, accepted.
 - 2026-09-04: implement gate: the decision goes to DECISIONS.md rather than the milestone-local section, and the seconds going unchecked gets one DESIGN.md known-issues line. Both as recommended.
 - 2026-09-04: T5's DESIGN.md clause has no target: DESIGN.md carries no M075 sentence saying the run's seconds are held to its clock — M075 added KI241-KI245 there and its review KI246, none of them making that claim. The prose to correct is the suite's own, at the timer header, the M075 section banner and the comment above the driver's print. Minor amendment: T5's DESIGN.md half becomes the KI250 line the gate chose.
 - 2026-09-04: T1 written (a third timer state, `SECTION_RUN_CLOSED`), pre-fix behaviour confirmed in a scratch harness spliced from HEAD: after `section_close`, a `section` call wrote a second `unattributed` row valued at the whole run. CHECKPOINT — T1's verify-slot run was still in flight when this commit was made; unchecked.
+- 2026-09-04: T1 verified: `tests/run-tests.sh` exits 0 over 766 checks with the third state in place, and the timing accounting is green on the run that wrote it.
 - 2026-09-04: plan gate chose keeping the heading-membership clause over deleting the accounting whole, because a section added with no timing call is the defect the profile exists to prevent and only that clause sees it; falsified by that clause going red for a reason that is neither a missing nor an extra section.
 
 ## Decisions

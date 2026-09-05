@@ -11,7 +11,7 @@
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — a checker over a timing file the acceptance suite writes for itself
-- **Branch/PR:** m077-timing-accounting-window
+- **Branch/PR:** m077-timing-accounting-window — https://github.com/jmgirard/quarto-index/pull/77
 
 ## Goal
 
@@ -94,6 +94,7 @@ the checked run → KI246, accepted.
 - 2026-09-04: T5's wording amended to what the milestone did: `DESIGN.md` carried no sentence to correct, so its half of the task is the KI250 line the implement gate chose. Minor amendment, no criterion moved.
 - 2026-09-04: T5 complete and AC3 met on the final source: `tests/run-tests.sh` exits 0 over 765 checks and `tests/run-tests.sh --self-test` exits 0 over 1396, neither printing a FAIL line; the self-test evidence is the run over `tests/run-tests.sh` as commit a2652f7 carries it, which HEAD leaves untouched. D-054 and KI250 landed with T2, the prose corrections with them. cairn_validate all PASS. Status set to review.
 - 2026-09-04: plan gate chose keeping the heading-membership clause over deleting the accounting whole, because a section added with no timing call is the defect the profile exists to prevent and only that clause sees it; falsified by that clause going red for a reason that is neither a missing nor an extra section.
+- 2026-09-04: /milestone-review opened: main had not moved under the branch, branch pushed, draft PR #77 opened and recorded in the header. Verification of the criteria is in flight.
 
 ## Decisions
 

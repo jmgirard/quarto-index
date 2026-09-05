@@ -144,6 +144,8 @@ clause; the docs and `CHANGELOG.md` follow.
 - 2026-09-05: `tests/run-tests.sh --self-test` exited 0 with the three T5 plants each red against its own mutant and the gamma section's fragment sweep covering 9 locators where it covered 3. Added after it: AC5's own assertion on both M068 nested legs — `Meridian` at `sub/two.html#meridian-passage`, which `Beacon` beside it cannot show, carrying no id — and three pass lines whose prose still said every recovered locator carries no fragment.
 - 2026-09-05: both `tests/run-tests.sh` and `tests/run-tests.sh --self-test` exited 0 at 2e7a085. AC3 then gained the instrument it names: `tests/fragments.py resolve` over five.html on both blocked renders, which sweeps every generated section on the page rather than the one section `check_locator_fragments` beside it names.
 - 2026-09-05: `--self-test` exited 0 at 9ad1b0c, with `fragments.py resolve` reporting on both blocked renders that every fragment among five.html's 17 locators across 1 section names an id the page it links to carries (9 fragments, 4 pages read). The run before it failed on a Quarto segmentation fault in M074-AC3's render, which did not recur.
+- 2026-09-05: review — the plain suite needed four attempts to exit 0, three runs dying on a Quarto/Deno segfault in a different render each time (M38-AC1, M04-AC5, M17-AC3) and one `--self-test` run at M41/M40-AC1; five distinct renders across four runs, none a fixture this milestone touches. Both modes green at 416658f.
+- 2026-09-05: step-7 approval: PR #78 approved for merge, with findings 1, 2 and 4-8 fixed on the branch first.
 - 2026-09-05: every task done. `tests/run-tests.sh` exits 0 (770 ok lines) and `tests/run-tests.sh --self-test` exits 0; status to review.
 
 ## Decisions
@@ -273,4 +275,57 @@ ranked by the lens:
 Findings 1, 2, 4, 5, 6, 7 and 8 were confirmed by hand at review before being
 brought to the gate. Finding 3 was closed at review by reading the record
 route's own render (AC4's evidence line above) rather than by a manifest.
+
+### Triage
+
+Put to the maintainer at the step-7 gate, which chose "fix findings 1, 2 and
+4-8 on the branch, re-run both suite modes, then merge".
+
+- Finding 1 — FIXED NOW. The clause "without the links into its page that a
+  record carries" becomes "with links into its page only where a mark's
+  author wrote an id of their own", in all six copies: `book.lua:1158`,
+  `:1642`, `:1666` and the three that pin them,
+  `tests/run-tests.sh` `M068_RECOVERED_FOUR`, `M068_RECOVERED_SUBTWO` and
+  `M074_INLINE_DRAW` (whose copy takes `\x27` for the apostrophe, the literal
+  being a single-quoted shell string — a `bash -n` caught it).
+- Finding 2 — FIXED NOW. The clause ", the missing fragment among them" is
+  struck from `site/books.qmd`; the paragraph now ends "with the same limits
+  every recovered chapter carries."
+- Finding 3 — CLOSED AT REVIEW, no code change. The gap was in evidence, not
+  behavior; AC4's evidence line above records the record route's own render
+  read directly. The suite still pins the record route's `Quoin` by
+  page/section/term only → candidate row.
+- Findings 4, 5, 6 — FIXED NOW, against the manifest rather than recall.
+  `M065_GAMMA_ROWS` holds 37 rows: one section row, 17 letter rows and 19
+  entry rows, 16 of the entries four.qmd's, and 9 hrefs carrying a fragment —
+  3 minted `#qi-mark-N` out of records and 6 ids four.qmd's author wrote.
+  Corrected: the "eleven entries" at `:6890` and in the M064-AC3 pass line;
+  "four.qmd's eight terms" at `:9010`, `:9092`, `:9322` and in the two
+  `check_index_sections` labels at `:9784` and `:9806`; "the six forms
+  four.qmd writes" and "the three anchored hrefs" in the AC1 manifest header.
+  `:9092`'s "each of the eight linking to four.html with no fragment" was
+  wrong twice over and now states the author-id case too.
+- Also fixed, found while fixing 5 and of the same class: the M064-AC2 header
+  comment said "where the gamma section's four locators point" and "the other
+  three came out of records".
+- Finding 7 — FIXED NOW. `check_entry_locators`'s header comment now says a
+  recovered mark carries an anchor only where its author wrote an id.
+- Finding 8 — FIXED NOW. D-055's Consequences names D-041's Consequences
+  sentence: the store stays the primary route and is no longer the only route
+  carrying an anchor.
+- Finding 9 — REJECTED. The wrappers are clearer than the flag they replace
+  and the comment states a real constraint on the two walk lines; the
+  milestone's plan called the shape and a rationale mentioning the plant is
+  not a defect in it.
+- Finding 10 — REJECTED. Out-of-scope taxonomy: no check crosses the two
+  fixtures, and `Mullion`/`Hasp`/`Ingot`/`Ferrule` naming marks in both
+  `book-placement` and `book-front` predates this diff for three of the four.
+- Finding 11 — FOLLOW-UP. `fragments.py outside` is not used on the recovery
+  leg's heading mark, so a regression in `relocate_heading_anchors` would let
+  `mullion-passage` resolve to a copy inside the heading. The relocation is
+  separately fenced, so this is overlap rather than a hole → candidate row.
+
+No finding met the return floor: none demonstrated an acceptance criterion
+failing, and the maintainer took finding 1 as fix-now rather than as a
+load-bearing defect. Status stays `review`.
 

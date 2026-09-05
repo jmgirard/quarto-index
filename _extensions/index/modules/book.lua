@@ -1155,7 +1155,7 @@ local function store_read(ctx, own, recover_absent)
           -- file that was never there.
           warn_source_refused(file)
         elseif recovered then
-          qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
+          qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index with links into its page only where a mark's author wrote an id of their own, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
         elseif rebuilt ~= nil then
           qi_core.warn(("the recorded index marks for %s could not be read, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(file))
         else
@@ -1639,7 +1639,7 @@ local function html_book(doc, ctx, marker, taken)
         -- chapter says one thing (D-046's precedence clause, D-049).
         warn_source_refused(entry.file)
       elseif entry.recovered then
-        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(entry.file))
+        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, so that chapter's terms were recovered from its own source instead; they are in the index with links into its page only where a mark's author wrote an id of their own, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(entry.file))
       elseif entry.parsed then
         qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(entry.file))
       else
@@ -1663,7 +1663,7 @@ local function html_book(doc, ctx, marker, taken)
     if #absent.recovered > 0 then
       -- "Could not be read" would be false here: there is no file to read,
       -- and an author sent looking for a corrupt record would find nothing.
-      qi_core.warn(("no render has written a record of the index marks for %s; each such chapter's terms were recovered from its own source instead, and are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render each again, or render the whole book, to restore them"):format(chapter_list(absent.recovered)))
+      qi_core.warn(("no render has written a record of the index marks for %s; each such chapter's terms were recovered from its own source instead, and are in the index with links into its page only where a mark's author wrote an id of their own, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render each again, or render the whole book, to restore them"):format(chapter_list(absent.recovered)))
     end
     if #absent.lost > 0 then
       -- The never-written family's third outcome: no record, and no source to

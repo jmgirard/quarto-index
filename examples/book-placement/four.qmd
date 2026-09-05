@@ -1,3 +1,11 @@
+---
+abstract: |
+  An abstract carrying two marks. [Quoin]{#quoin-passage .index index="gamma"}
+  carries an id its author wrote and [Rafter]{.index index="gamma"} carries
+  none, and both file the one locator — this chapter's page and no fragment —
+  whether this chapter is read from its record or recovered from this source.
+---
+
 # Back matter
 
 Not the last chapter of the book, and carrying no placement marker: it grows no
@@ -8,9 +16,12 @@ that can never be written — both a chapter ahead of the one that reports.
 
 A second term for the index no marker names: [Dovetail]{.index index="gamma"}.
 
-The six mark forms below are what makes this chapter's recovery worth fencing:
-a chapter read back from its own source has to reach every shape an author
-writes, not only the bare mark above. Each is on a term no other mark in this
+The mark forms below are what makes this chapter's recovery worth fencing: a
+chapter read back from its own source has to reach every shape an author
+writes, not only the bare mark above. The first group carries no id of its
+own, so each of its locators is this chapter's page and nothing after it; the
+second group carries ids their authors wrote, which recovery carries into the
+locator. Each is on a term no other mark in this
 book indexes, because the sort-key registry is keyed on the printed level path
 and a term marked in two chapters would put two chapters' keys in question (the
 M13 lesson, extended M56).
@@ -37,3 +48,30 @@ attribute were absent.
 
 Which occurrence is the proper one, a role no other process resolved for a
 recovered mark: [Jetty]{.index index="gamma" mention="principal"}.
+
+An author's own id on a body mark, which recovery carries into the locator so
+the index links to the passage rather than to the top of this page:
+[Keystone]{#keystone-passage .index index="gamma"}.
+
+A cross-reference mark carrying an author's id, which contributes no locator
+however the chapter is read: [Lintel]{#lintel-passage .index index="gamma"
+see="Escutcheon"}.
+
+A range with an id on each end, which recovery prints as two locators because
+nothing outside this chapter's own process pairs it: [Newel]{#newel-opens
+.index index="gamma" range="open"} opens here and [Newel]{#newel-closes
+.index index="gamma" range="close"} closes here.
+
+A range with an id on the OPEN end only, so one of its two recovered locators
+carries a fragment and the other does not: [Oriel]{#oriel-opens .index
+index="gamma" range="open"} opens here and [Oriel]{.index index="gamma"
+range="close"} closes here.
+
+An author's id on a mark whose `mention=` role no other process resolved for a
+recovered mark: [Purlin]{#purlin-passage .index index="gamma" mention="principal"}.
+
+## A [Mullion]{#mullion-passage .index index="gamma"} in a heading
+
+An id an author writes in a heading is relocated out of it on the render route,
+so the page carries it below the heading; recovery reads it from the heading
+where the author wrote it, and the two agree.

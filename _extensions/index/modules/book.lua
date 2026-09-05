@@ -600,12 +600,14 @@ end
 -- What comes back is the AUTHOR's own values and nothing else: the levels each
 -- mark indexes, the index it files in, the sort keys it declares, and which
 -- indexes the chapter places.
--- A chapter's own conclusions about itself — the anchor it minted, the role it
+-- A chapter's own conclusions about itself — the anchor it MINTED, the role it
 -- resolved, the verdict it reached about a range, the sort key it RESOLVED by
 -- filling its own fallbacks in — are not here and are not invented (D-009,
--- D-021). So a recovered mark carries no anchor, and its locator is the
--- chapter's page with no fragment; and it indexes as though `range=` and
--- `role=` were absent. A `sort=` the author wrote is one of their own values
+-- D-021). So a recovered mark indexes as though `range=` and `role=` were
+-- absent. An id the AUTHOR wrote on the mark is not one of those conclusions
+-- and does come back, as its anchor, so its locator is the chapter's page
+-- followed by that id; a mark whose author wrote none gets the page alone,
+-- there being no id to mint one against here. A `sort=` the author wrote is one of their own values
 -- and does come back, in the declared-key-per-printed-path shape
 -- `build_record` writes, so a term files where its author asked whether or not
 -- its chapter's record could be read.
@@ -729,7 +731,7 @@ end
 -- read from its record.
 local function recovered_marks(meta, blocks)
   local marks, sorts = {}, {}
-  local function collect(span)
+  local function collect(span, in_blocks)
     if not span.classes:includes(qi_core.INDEX_CLASS) then
       return nil
     end
@@ -779,14 +781,39 @@ local function recovered_marks(meta, blocks)
       -- is settled here rather than left for `fold_undeclared`, exactly as a
       -- mark's own chapter settles it.
       index = index_name,
-      -- This mark has no anchor and never will, so `mark_target` cannot
-      -- build a fragment for it. The flag is what tells a locator-
-      -- contributing recovered mark from a cross-reference mark, which has
-      -- no anchor either and must contribute no locator.
+      -- The id the mark's AUTHOR wrote, which is one of their own values and
+      -- comes back like the rest of them; nothing here mints one, because a
+      -- minted id is settled against the ids of the whole rendered page and
+      -- this route sees one chapter's source. So `mark_target` builds a
+      -- fragment where the author wrote an id and the chapter's bare page
+      -- where they wrote none.
+      --
+      -- Only where this mark contributes a locator: a cross-reference mark
+      -- carries an id as readily as any other span, and giving it an anchor
+      -- would make it contribute a locator through the `mark.anchor or
+      -- mark.page_locator` test in `html.lua`, which is the one thing it must
+      -- not do.
+      anchor = (in_blocks and #surviving == 0 and span.identifier ~= "")
+        and span.identifier or nil,
+      -- Kept beside the anchor rather than replaced by it: it is what says a
+      -- recovered mark's locator is the chapter's PAGE, which is what makes
+      -- `build_book_marks` write an href at all, and it still stands alone for
+      -- a recovered mark whose author wrote no id. Without it a recovered mark
+      -- is indistinguishable from a cross-reference mark, which has no anchor
+      -- either and must contribute no locator.
       page_locator = #surviving == 0 or nil,
     }
     return nil
   end
+
+  -- Which of the two walks below is running, passed by a wrapper of its own
+  -- rather than read off a flag one walk sets for the other, so the two walk
+  -- lines stay adjacent and swappable. It is what carries the author's own id
+  -- out of the blocks and never out of the metadata: a front-matter mark of an
+  -- HTML book chapter files the chapter's page and no fragment on the record
+  -- route too (D-048), and the two routes have to keep printing the one row.
+  local function from_meta(span) return collect(span, false) end
+  local function from_blocks(span) return collect(span, true) end
 
   -- Metadata first and blocks second, which is the order the ordinary render
   -- sees them in — verified 2026-09-02 under pandoc 3.11, a filter table with
@@ -802,8 +829,8 @@ local function recovered_marks(meta, blocks)
   -- caller. An author writes `.content-visible` and `.content-hidden` in
   -- front matter as readily as in the body, and this route cannot tell which
   -- way either went.
-  conditional_free_meta(meta):walk({ Span = collect })
-  blocks:walk({ Span = collect })
+  conditional_free_meta(meta):walk({ Span = from_meta })
+  blocks:walk({ Span = from_blocks })
   return marks, sorts
 end
 
@@ -1128,7 +1155,7 @@ local function store_read(ctx, own, recover_absent)
           -- file that was never there.
           warn_source_refused(file)
         elseif recovered then
-          qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
+          qi_core.warn(("the recorded index marks for %s could not be read, so that chapter's terms were recovered from its own source instead; they are in the index with links into its page only where a mark's author wrote an id of their own, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(file))
         elseif rebuilt ~= nil then
           qi_core.warn(("the recorded index marks for %s could not be read, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(file))
         else
@@ -1334,11 +1361,12 @@ local function book_marks(ctx, records)
                              mark.levels),
         xrefs = xrefs,
         anchor = mark.anchor,
-        -- Set only on a mark recovered from a chapter's source, where nothing
-        -- minted an anchor: it says this mark contributes a locator all the
-        -- same, and that locator is the chapter's page. Without it a recovered
-        -- mark is indistinguishable from a cross-reference mark, which has no
-        -- anchor either and must contribute no locator.
+        -- Set only on a mark recovered from a chapter's source, and on a
+        -- front-matter mark of an HTML book chapter: it says this mark
+        -- contributes a locator whether or not it carries an anchor, and that
+        -- its locator names the chapter's page. Without it a recovered mark
+        -- carrying no author id is indistinguishable from a cross-reference
+        -- mark, which has no anchor either and must contribute no locator.
         page_locator = mark.page_locator,
         -- The chapter's own resolved role, which is all a book needs now that
         -- nothing pairs here: a mark carries whatever role its own chapter
@@ -1611,7 +1639,7 @@ local function html_book(doc, ctx, marker, taken)
         -- chapter says one thing (D-046's precedence clause, D-049).
         warn_source_refused(entry.file)
       elseif entry.recovered then
-        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(entry.file))
+        qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, so that chapter's terms were recovered from its own source instead; they are in the index with links into its page only where a mark's author wrote an id of their own, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"):format(entry.file))
       elseif entry.parsed then
         qi_core.warn(("the recorded index marks for %s were written by a different version of this extension, and that chapter's own source carries no index mark this route can reach, so none of its terms are in the index; a mark that reaches that chapter through an include or an executed cell, or that sits inside a block or span Quarto shows or hides by format, profile or metadata, is not one this route reads — render that chapter again, or render the whole book, to restore them"):format(entry.file))
       else
@@ -1635,7 +1663,7 @@ local function html_book(doc, ctx, marker, taken)
     if #absent.recovered > 0 then
       -- "Could not be read" would be false here: there is no file to read,
       -- and an author sent looking for a corrupt record would find nothing.
-      qi_core.warn(("no render has written a record of the index marks for %s; each such chapter's terms were recovered from its own source instead, and are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render each again, or render the whole book, to restore them"):format(chapter_list(absent.recovered)))
+      qi_core.warn(("no render has written a record of the index marks for %s; each such chapter's terms were recovered from its own source instead, and are in the index with links into its page only where a mark's author wrote an id of their own, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render each again, or render the whole book, to restore them"):format(chapter_list(absent.recovered)))
     end
     if #absent.lost > 0 then
       -- The never-written family's third outcome: no record, and no source to

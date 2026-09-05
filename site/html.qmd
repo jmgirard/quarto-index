@@ -17,7 +17,10 @@ class names below are hooks for styling it yourself.
 Each mark that contributes a locator needs somewhere for its locator to link
 to:
 
-- a mark carrying an id of your own keeps it, and the index links to that id;
+- a mark carrying an id of your own keeps it, and the index links to that id —
+  in a book this holds whether the chapter is read from its record or
+  [recovered from its source](books.qmd), the one exception being a mark in a
+  book chapter's front matter, which links to the chapter's page either way;
 - every other mark gets an anchor on its own span — `qi-mark-1`, `qi-mark-2`
   and so on, numbered in the order the marks are written.
 

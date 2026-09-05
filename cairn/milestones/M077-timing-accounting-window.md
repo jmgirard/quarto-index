@@ -180,6 +180,11 @@ silently dropped.
 
 **[O] diff-bug** — eleven findings, ranked below.
 
+### PR conversation
+
+Read once before the merge gate: PR #77 carries no reviews, no conversation
+comments and no unresolved review threads. Nothing to triage.
+
 - **F1. The AC1 probe's two legs differ in two variables, not one, so it cannot
   pin the refusal to the new flag** (`tests/run-tests.sh:25902-25913`).
   `section_close` both sets `SECTION_RUN_CLOSED` and clears `SECTION_HEADING`,

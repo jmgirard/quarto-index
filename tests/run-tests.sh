@@ -25690,7 +25690,7 @@ fi
 # The section this block is itself inside has not written its row yet, so its
 # heading is handed in separately below.
 # ---------------------------------------------------------------------------
-section 'M075 — the run accounts for its own wall clock, and the timing file names'
+section 'M075 — the timing file names the sections this source has.'
 python3 tests/suitescan.py sections > "$WORK/m075-sections.txt" \
   || fail "M075-AC2: the scan of this suite's own sections failed, so the timing file has nothing to be held against (its own FAIL line is above)"
 # Held apart from its call site so the plants below can point it at a source

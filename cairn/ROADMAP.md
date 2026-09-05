@@ -4,6 +4,7 @@ _The only authority on milestone status. Grouped by status, not ID._
 _Last hygiene check: 2026-09-05 (status audit, no work since the M078 stamp earlier today: nothing in flight, no open issues or PRs, no outside merges, no orphaned issues, tree clean. cairn_validate all PASS, no advisories. ROADMAP 54 lines / 11,995 bytes; LESSONS.md 48 lines / 19,935 bytes against its 20,000-byte cap — 65 bytes of headroom, so the next lesson needs a retirement. Nine unreleased CHANGELOG entries stand behind 0.2.0.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
+_Released 0.3.0 2026-09-05._
 
 ## Milestones
 

@@ -1,8 +1,77 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-09-05)
+
+No record 0.2.0 wrote is refused by this version, so a book keeps its terms
+without being rendered again. Three things an author sees change, all of them
+in an HTML book: an index link into a chapter recovered from its own source
+now lands on the passage its mark sits at rather than at the top of that
+chapter's page; a mark written in a chapter's YAML front matter files one
+locator rather than one per copy of the field Quarto reflects into the page,
+two of which named ids the page did not carry; and a chapter that is a
+notebook is no longer read back as markdown, so the garbled terms it appeared
+to carry reach no index. All three are described below.
 
 ### Output
+
+- In an HTML book, a chapter no render has written a record for is now read
+  back from its own source by the chapters that can print an index section —
+  a chapter carrying a placement marker of its own, and the book's last
+  chapter, which takes on every index no marker names — so a book rendered
+  chapter by chapter, or into a tree whose records never survive, prints an
+  index carrying every chapter's terms rather than one short of them. Every
+  other chapter reads such a record as absent exactly as before. A whole-book
+  render prints the index it always printed, since by the time a chapter reads
+  the store the chapters before it have written their records: the ordinary
+  first render of a book whose marker sits in its last chapter reads no source
+  and reports nothing, while one whose marker sits earlier reads the sources of
+  the chapters behind it and reports them in one line naming each, the next
+  render silent.
+
+  A chapter recovered this way is reported by a wording of its own, naming the
+  record as one no render has written rather than one that could not be read.
+  A chapter with no record whose source parses and reaches no index mark is
+  passed over in silence — it has lost nothing, and a chapter that marks
+  nothing looks exactly the same — while one whose source cannot be read at
+  all still draws the report naming that outcome.
+
+- Reading a chapter's own source back is now confined to the chapter files it
+  is a reader for: one named `.qmd`, `.md`, `.markdown` or `.Rmd`, and no other
+  kind. A book may take a notebook chapter, whose file on disk is JSON; that
+  file was being read as markdown, and the terms it appeared to carry were
+  filed under whatever the JSON's own quoting left of their attributes — often
+  in an index the author had not named, with nothing said. Such a chapter is
+  now refused and reported by a wording of its own naming the file, and none of
+  its terms reach any index. Reading a chapter's source happens only where that
+  chapter's record could not be used or was never written, so a notebook chapter
+  whose record is there and readable is still read from that record, which is
+  what a whole-book render leaves behind.
+
+- A mark written in a chapter's YAML front matter now comes back with the
+  marks in that chapter's body when the chapter is recovered. An ordinary
+  render has always indexed one written there; the recovery route read the
+  chapter's blocks alone, so such a mark was silently missing from every index
+  of the book whenever the chapter was recovered rather than read from its
+  record.
+
+- In an HTML book, a mark written in a chapter's YAML front matter now files
+  one locator, the chapter's page with no fragment, when the chapter is read
+  from its own record — the row the recovery route already filed for it — so
+  the two routes print the same row for such a mark. Before, the chapter's own
+  render filed the mark once for the metadata and once more for each copy of
+  the field Quarto reflects into the chapter's body ahead of every filter,
+  each copy minting an anchor of its own, and it linked every one by a
+  fragment: an `abstract:` mark printed three locators of which two named ids
+  the page did not carry, and a `description:` mark printed one that did,
+  since a book's title block does not print that field. The reflected copies
+  are no longer marks, and the metadata's mark mints no anchor, because which
+  fields the page prints is the title-block template's choice and not
+  something a filter can see. A single document that is not a book chapter is
+  untouched: its front-matter marks keep their anchors and their fragment
+  locators, its page printing every one of the probed fields in its own title
+  block. A mark written in a chapter's `title:` is not covered: Quarto copies the
+  title into every page's sidebar and page navigation, and each copy still
+  files a locator of its own.
 
 - In an HTML book, a mark recovered from a chapter's source now carries the
   Pandoc identifier its author wrote on it, so the index links to the passage
@@ -78,67 +147,6 @@
   always had; a record no render has written is the entry above. A refused
   chapter still says one thing, and never that its record was written by a
   different version.
-
-- In an HTML book, a chapter no render has written a record for is now read
-  back from its own source by the chapters that can print an index section —
-  a chapter carrying a placement marker of its own, and the book's last
-  chapter, which takes on every index no marker names — so a book rendered
-  chapter by chapter, or into a tree whose records never survive, prints an
-  index carrying every chapter's terms rather than one short of them. Every
-  other chapter reads such a record as absent exactly as before, and a
-  recovered chapter contributes no fragment to its locators: each links to
-  that chapter's page and nothing after it. A whole-book render prints the
-  index it always printed, since by the time a chapter reads the store the
-  chapters before it have written their records: the ordinary first render of
-  a book whose marker sits in its last chapter reads no source and reports
-  nothing, while one whose marker sits earlier reads the sources of the
-  chapters behind it and reports them in one line naming each, the next render
-  silent.
-
-  A chapter recovered this way is reported by a wording of its own, naming the
-  record as one no render has written rather than one that could not be read.
-  A chapter with no record whose source parses and reaches no index mark is
-  passed over in silence — it has lost nothing, and a chapter that marks
-  nothing looks exactly the same — while one whose source cannot be read at
-  all still draws the report naming that outcome.
-
-- Reading a chapter's own source back is now confined to the chapter files it
-  is a reader for: one named `.qmd`, `.md`, `.markdown` or `.Rmd`, and no other
-  kind. A book may take a notebook chapter, whose file on disk is JSON; that
-  file was being read as markdown, and the terms it appeared to carry were
-  filed under whatever the JSON's own quoting left of their attributes — often
-  in an index the author had not named, with nothing said. Such a chapter is
-  now refused and reported by a wording of its own naming the file, and none of
-  its terms reach any index. Reading a chapter's source happens only where that
-  chapter's record could not be used or was never written, so a notebook chapter
-  whose record is there and readable is still read from that record, which is
-  what a whole-book render leaves behind.
-
-- A mark written in a chapter's YAML front matter now comes back with the
-  marks in that chapter's body when the chapter is recovered. An ordinary
-  render has always indexed one written there; the recovery route read the
-  chapter's blocks alone, so such a mark was silently missing from every index
-  of the book whenever the chapter was recovered rather than read from its
-  record.
-
-- In an HTML book, a mark written in a chapter's YAML front matter now files
-  one locator, the chapter's page with no fragment, when the chapter is read
-  from its own record — the row the recovery route already filed for it — so
-  the two routes print the same row for such a mark. Before, the chapter's own
-  render filed the mark once for the metadata and once more for each copy of
-  the field Quarto reflects into the chapter's body ahead of every filter,
-  each copy minting an anchor of its own, and it linked every one by a
-  fragment: an `abstract:` mark printed three locators of which two named ids
-  the page did not carry, and a `description:` mark printed one that did,
-  since a book's title block does not print that field. The reflected copies
-  are no longer marks, and the metadata's mark mints no anchor, because which
-  fields the page prints is the title-block template's choice and not
-  something a filter can see. A single document that is not a book chapter is
-  untouched: its front-matter marks keep their anchors and their fragment
-  locators, its page printing every one of the probed fields in its own title
-  block. A mark written in a chapter's `title:` is not covered: Quarto copies the
-  title into every page's sidebar and page navigation, and each copy still
-  files a locator of its own.
 
 ## 0.2.0 (2026-09-02)
 

@@ -25789,9 +25789,24 @@ if [ "${1:-}" = "--self-test" ]; then
     python3 - tests/run-tests.sh "$M075_PLANT/tests/run-tests.sh" "$1" "$2" <<'M075PLANTPY'
 import sys
 
+# The rule a banner is drawn with, imported from the scanner whose reading of
+# this plant's output is the whole point, rather than re-typed here: a plant
+# carrying its own copy of the expectation it protects drifts from it in
+# silence (M076). This one had drifted — it read ANY run of dashes as a rule,
+# so `# ---` inside a comment was a block boundary to the plant and an
+# ordinary comment line to the scan, and the two disagreed about which block
+# the drop mode had removed (M077).
+sys.path.insert(0, 'tests')
+from suitescan import BANNER_RULE
+
 src, dst, mode, text = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 lines = open(src, encoding='utf-8').read().split('\n')
 rule = '# ' + '-' * 74
+if not BANNER_RULE.match(rule):
+    raise SystemExit('M075 T5: the rule this plant draws its own block with '
+                     'is not one the scan reads as a rule, so an added block '
+                     'would declare no section and the plant would prove '
+                     'nothing')
 head = None
 for i, line in enumerate(lines):
     if line.startswith('run_all' + '_checks() {'):
@@ -25804,14 +25819,32 @@ if mode == 'add':
     lines[head + 1:head + 1] = [rule, '# ' + text, rule]
 elif mode == 'drop':
     # Drop the FIRST banner block after the wrapper's head, whichever it is:
-    # the check's report names it, so the plant does not have to.
+    # the check's report names it, so the plant does not have to. A block is a
+    # rule, one or more comment lines, and a closing rule — the shape
+    # `banner_headings` reads. A rule with nothing comment-like between it and
+    # what follows is a lone divider, which that function steps over and so
+    # does this. The scan for the close is bounded by the end of the file. An
+    # unclosed trailing block used to run off the end of it: with a final
+    # newline the delete reached EOF and quietly took everything after the
+    # rule, and without one the read raised IndexError — a traceback that
+    # reads as a broken plant rather than as a source with no block to drop
+    # (M077).
     for i in range(head, len(lines)):
-        if lines[i].startswith('# -') and set(lines[i][2:].strip()) == {'-'}:
-            j = i + 1
-            while lines[j].startswith('#') and set(lines[j][2:].strip()) != {'-'}:
-                j += 1
-            del lines[i:j + 1]
-            break
+        if not BANNER_RULE.match(lines[i]):
+            continue
+        j = i + 1
+        while (j < len(lines) and lines[j].startswith('#')
+               and not BANNER_RULE.match(lines[j])):
+            j += 1
+        if j == i + 1:
+            continue
+        if j >= len(lines) or not BANNER_RULE.match(lines[j]):
+            raise SystemExit('M075 T5: the first banner block after the '
+                             'wrapper head, at line %d, is never closed by a '
+                             'second rule, so it declares no section and '
+                             'there is nothing here to drop' % (i + 1))
+        del lines[i:j + 1]
+        break
     else:
         raise SystemExit('M075 T5: no banner block was found to drop')
 else:

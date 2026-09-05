@@ -64,7 +64,7 @@ the checked run → KI246, accepted.
       membership, duplicate-row, setup-row and malformed-row clauses. The
       driver's print (`:25823`) still reports the total, now as a figure
       nothing checks.
-- [ ] T3: Retire T5's third plant — five seconds off one row (`:25802`) —
+- [x] T3: Retire T5's third plant — five seconds off one row (`:25802`) —
       with the clause it probes, and add the plant for T1's refusal.
 - [ ] T4: Repair `m075_plant_source` (`:25726`): recognize a banner rule by the
       rule `tests/suitescan.py` uses (`BANNER_RULE`, `^# -{10,}\s*$`, `:78`)
@@ -88,6 +88,8 @@ the checked run → KI246, accepted.
 - 2026-09-04: T2's first verify run went red, and on the defect the clause is for: rewriting the M075 banner changed the section's heading while its `section '<heading>'` call still passed the old text, so the source declared a section with no row and the file carried a row naming none. Call corrected to the new heading, which is now a whole sentence rather than the wrapped fragment KI248 describes. Re-run in flight at this commit.
 - 2026-09-04: T2 verified: `tests/run-tests.sh` exits 0 over 765 checks, one fewer than before, the removed line being the seconds report.
 - 2026-09-04: T3 written: the five-seconds plant is retired with the clause it probed; the refusal plant runs two subshell legs over their own timing file, differing by the close alone. Shown to discriminate before the suite run — spliced against a1df8ab's timer it goes red naming the rows the pre-fix code left, `M077 probe section, opened by the probe itself 0` and `unattributed 461`, the second row being the whole run. CHECKPOINT — the --self-test run was in flight at this commit.
+- 2026-09-04: T3 verified: `tests/run-tests.sh --self-test` exits 0 over 1396 checks, the plant's own pass line among them.
+- 2026-09-04: T4 written: the plant now imports `BANNER_RULE` from `tests/suitescan.py` rather than re-typing a dash test, skips a lone divider as `banner_headings` does, and bounds the scan for a block's close. Both defects shown against the pre-M077 helper on crafted sources: with a `# ---` comment ahead of the real banner it dropped those three comment lines and left the banner standing, and on an unclosed trailing block it deleted through EOF with a final newline and raised IndexError without one. The repaired helper drops the real banner in the first case and reports the unclosed block by line number in the second. CHECKPOINT — the --self-test run was in flight at this commit.
 - 2026-09-04: plan gate chose keeping the heading-membership clause over deleting the accounting whole, because a section added with no timing call is the defect the profile exists to prevent and only that clause sees it; falsified by that clause going red for a reason that is neither a missing nor an extra section.
 
 ## Decisions

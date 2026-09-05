@@ -25759,9 +25759,10 @@ if problems:
     print('FAIL: M075: ' + '\n'.join(problems), file=sys.stderr)
     sys.exit(1)
 print('ok   M075-AC2: each of the %d section(s) `tests/suitescan.py sections` '
-      'declares has exactly one row in the timing file, and no row names '
-      'anything else, the %ds row for the window before the first section '
-      'included' % (len(declared), setup[0]))
+      'declares has exactly one row in the timing file, and every other row '
+      'names a section it declares — beside the one row for the window before '
+      'the first section, which is labelled <<%s>> and held to being one row '
+      'and not to that list' % (len(declared), UNATTRIBUTED))
 M075PY
 }
 
@@ -25797,7 +25798,7 @@ import sys
 # ordinary comment line to the scan, and the two disagreed about which block
 # the drop mode had removed (M077).
 sys.path.insert(0, 'tests')
-from suitescan import BANNER_RULE
+from suitescan import BANNER_RULE, run_all_span
 
 src, dst, mode, text = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 lines = open(src, encoding='utf-8').read().split('\n')
@@ -25807,41 +25808,42 @@ if not BANNER_RULE.match(rule):
                      'is not one the scan reads as a rule, so an added block '
                      'would declare no section and the plant would prove '
                      'nothing')
-head = None
-for i, line in enumerate(lines):
-    if line.startswith('run_all' + '_checks() {'):
-        head = i
-        break
-if head is None:
+# The wrapper's body, taken from the scanner's own reader of it rather than
+# from a search for the head alone: `banner_headings` is handed [lo, hi), so a
+# plant that scanned to the end of the file could report a block the scan
+# never looks at — the same drift the imported rule above closes, left half
+# shut until this call replaced it (M077 review F4).
+span = run_all_span(lines)
+if span is None:
     raise SystemExit('M075 T5: the plant could not find the wrapper whose '
                      'body holds the sections, so it plants nothing')
+lo, hi = span
 if mode == 'add':
-    lines[head + 1:head + 1] = [rule, '# ' + text, rule]
+    lines[lo:lo] = [rule, '# ' + text, rule]
 elif mode == 'drop':
-    # Drop the FIRST banner block after the wrapper's head, whichever it is:
-    # the check's report names it, so the plant does not have to. A block is a
+    # Drop the FIRST banner block in the wrapper's body, whichever it is: the
+    # check's report names it, so the plant does not have to. A block is a
     # rule, one or more comment lines, and a closing rule — the shape
     # `banner_headings` reads. A rule with nothing comment-like between it and
     # what follows is a lone divider, which that function steps over and so
-    # does this. The scan for the close is bounded by the end of the file. An
-    # unclosed trailing block used to run off the end of it: with a final
-    # newline the delete reached EOF and quietly took everything after the
-    # rule, and without one the read raised IndexError — a traceback that
-    # reads as a broken plant rather than as a source with no block to drop
-    # (M077).
-    for i in range(head, len(lines)):
+    # does this. The scan for the close is bounded by the body's end. An
+    # unclosed block used to run off the end of the FILE: with a final newline
+    # the delete reached EOF and quietly took everything after the rule, and
+    # without one the read raised IndexError — a traceback that reads as a
+    # broken plant rather than as a source with no block to drop (M077).
+    for i in range(lo, hi):
         if not BANNER_RULE.match(lines[i]):
             continue
         j = i + 1
-        while (j < len(lines) and lines[j].startswith('#')
+        while (j < hi and lines[j].startswith('#')
                and not BANNER_RULE.match(lines[j])):
             j += 1
         if j == i + 1:
             continue
-        if j >= len(lines) or not BANNER_RULE.match(lines[j]):
-            raise SystemExit('M075 T5: the first banner block after the '
-                             'wrapper head, at line %d, is never closed by a '
-                             'second rule, so it declares no section and '
+        if j >= hi or not BANNER_RULE.match(lines[j]):
+            raise SystemExit('M075 T5: the first banner block in the '
+                             "wrapper's body, at line %d, is never closed by "
+                             'a second rule, so it declares no section and '
                              'there is nothing here to drop' % (i + 1))
         del lines[i:j + 1]
         break
@@ -25895,7 +25897,11 @@ M075PLANTPY
   #
   #    Each leg runs in a subshell with its own $TIMING, so the probe's rows
   #    never reach this run's file and the state it sets never outlives it.
-  #    The two legs differ by the close and nothing else.
+  #    Three legs. `open` and `closed` differ by the close and nothing else,
+  #    which is what makes the refusal about the close; `setup` differs from
+  #    `open` by the heading and nothing else, and must be ACCEPTED, which is
+  #    what makes the refusal about the close rather than about the empty
+  #    heading the close leaves behind (M077 review F1).
   M077_OPEN_HEADING='M077 probe section, opened by the probe itself'
   M077_REOPEN_HEADING='M077 probe section, opened after the close'
 
@@ -25903,15 +25909,35 @@ M075PLANTPY
     (
       TIMING="$WORK/m077-probe-$1.tsv"
       : > "$TIMING"
-      SECTION_HEADING="$M077_OPEN_HEADING"
       SECTION_STARTED=$(date +%s)
       SECTION_RUN_CLOSED=""
+      case "$1" in
+        # Nothing open yet, and the run not closed: the state the FIRST
+        # section of a run meets, which must go through and write the setup
+        # row. It is here because the other two legs both leave $SECTION_HEADING
+        # and the flag agreeing, so between them alone a timer that refused
+        # whenever no section was open — the very conflation M077 undoes —
+        # would be indistinguishable from this one (M077 review F1).
+        setup)  SECTION_HEADING="" ;;
+        *)      SECTION_HEADING="$M077_OPEN_HEADING" ;;
+      esac
       if [ "$1" = "closed" ]; then
         section_close
       fi
       section "$M077_REOPEN_HEADING"
     )
   }
+
+  # The setup leg: no section open, run not closed. It must be accepted and
+  # write the one `unattributed` row, which is what pins the refusal below to
+  # the closed flag rather than to the empty heading.
+  m077_probe setup \
+    || fail "M077-AC1 self-test: opening the first section of a run — nothing open yet, the run not closed — was refused, so the timer is refusing on an empty heading rather than on the close, which is the state M077 exists to tell apart"
+  M077_SETUP_ROWS=$(cat "$WORK/m077-probe-setup.tsv")
+  if [ "$(printf '%s\n' "$M077_SETUP_ROWS" | wc -l | tr -d ' ')" != "1" ] \
+     || ! printf '%s\n' "$M077_SETUP_ROWS" | grep -q "^unattributed$(printf '\t')"; then
+    fail "M077-AC1 self-test: the first section of a run wrote <<$M077_SETUP_ROWS>> rather than the one row labelled <<unattributed>> for the window before it"
+  fi
 
   # The control, which must stay silent: with the run still open, this is the
   # ordinary call every section above makes. It writes the open section's row
@@ -25923,7 +25949,7 @@ M075PLANTPY
      || ! printf '%s\n' "$M077_ROWS" | grep -qF -- "$M077_OPEN_HEADING"; then
     fail "M077-AC1 self-test: the control wrote <<$M077_ROWS>> rather than the one row naming <<$M077_OPEN_HEADING>>, so it is not the case the red leg is contrasted with"
   fi
-  if printf '%s\n' "$M077_ROWS" | grep -q 'unattributed'; then
+  if printf '%s\n' "$M077_ROWS" | grep -q "^unattributed$(printf '\t')"; then
     fail "M077-AC1 self-test: the control wrote an <<unattributed>> row while a section was open, which is the defect itself rather than the control for it"
   fi
 
@@ -25941,11 +25967,11 @@ M075PLANTPY
     *) printf '%s\n' "$M077_OUT" >&2
        fail "M077-AC1 self-test: the call after the close failed, but not by naming itself as a section opened after the close, so the failure is not the one this plant makes" ;;
   esac
-  if grep -q 'unattributed' "$WORK/m077-probe-closed.tsv"; then
+  if grep -q "^unattributed$(printf '\t')" "$WORK/m077-probe-closed.tsv"; then
     fail "M077-AC1 self-test: the refused call still left an <<unattributed>> row behind, which is exactly the row M077 stops being written"
   fi
 
-  pass "M075 T5 self-test: the accounting is red on a section the source declares with no timing row and on a timing row no section declares, naming the section in each case; and the timer refuses a section opened after the close, naming that call, while the same call with the run still open goes through and writes one ordinary row"
+  pass "M075 T5 self-test: the accounting is red on a section the source declares with no timing row and on a timing row no section declares, naming the section in each case; and the timer refuses a section opened after the close, naming that call, while the same call goes through with the run still open and writes one ordinary row, and goes through with nothing open at all and writes the one setup row"
 fi
 section_close
 

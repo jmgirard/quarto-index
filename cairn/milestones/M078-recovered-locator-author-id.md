@@ -137,6 +137,7 @@ clause; the docs and `CHANGELOG.md` follow.
 - 2026-09-05: plan gate chose two rows for a recovered range whose ends both carry ids over collapsing them to one or refusing ids on range marks, because a recovered mark already indexes as though `range=` were absent and the record route prints two locators for two marks of one term; falsified by an author reporting a recovered range printing twice is a defect.
 - 2026-09-05: plan gate chose leaving `tests/fragments.py` alone over adding a resolve mode scoped to one chapter's rows, because AC1's manifest pins each recovered row's href byte for byte and a scoped mode widens an in-repo checker; falsified by a wrong fragment passing the manifest.
 - 2026-09-05: plan gate chose the core probe matrix plus the axes whose code path differs — nested href, mixed range, principal — over the core alone and over adding hostile ids, because an id colliding with a minted anchor needs an instrument the repo lacks; falsified by a defect reached through an id form the matrix omits.
+- 2026-09-05: the first `--self-test` run found `m064_hide_all_marks` refusing four.qmd: the helper wraps the body below the chapter's `# ` heading and leaves YAML front matter outside it, so the two `abstract:` marks T1 adds would have stayed reachable and the case they stand in — a source that parses and reaches no mark — would have been about nothing. The helper now removes the front-matter block as well, and reports how many marks went with it.
 
 ## Decisions
 

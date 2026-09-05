@@ -8021,9 +8021,12 @@ STALEVERPY
 # Every index mark the chapter carries, moved inside a block recovery takes out
 # whole, so the chapter's source parses and this route reaches no mark at all.
 # The whole body below the chapter's heading is wrapped, rather than one named
-# paragraph: four.qmd carries eight marks in seven forms (M065 T1), and a
-# helper naming one of them would leave the other seven reachable and the case
-# would be about nothing. Both the unreadable-record case and the
+# paragraph: four.qmd carries sixteen marks in fourteen forms (M065 T1, M078
+# T1), and a helper naming one of them would leave the rest reachable and the
+# case would be about nothing. Its YAML front matter is REMOVED rather than
+# wrapped — this route reads a mark written there as readily as one in the body
+# (D-047), and a conditional div is not YAML — so the marks in it cannot be
+# left outside the block either. Both the unreadable-record case and the
 # version-skewed one below plant it, so neither can drift from the other in
 # what it makes the parse see.
 m064_hide_all_marks() {   # <chapter path> <label>
@@ -8032,6 +8035,17 @@ import sys
 path, label = sys.argv[1:3]
 text = open(path, encoding='utf-8').read()
 lines = text.split('\n')
+front = 0
+if lines and lines[0].strip() == '---':
+    for i in range(1, len(lines)):
+        if lines[i].strip() in ('---', '...'):
+            front = i + 1
+            break
+    else:
+        sys.exit(f'FAIL: {label}: {path} opens a YAML front-matter block that '
+                 f'never closes, so this helper cannot tell it from the body')
+front_marks = '\n'.join(lines[:front]).count('.index')
+lines = lines[front:]
 heads = [i for i, line in enumerate(lines) if line.startswith('# ')]
 if not heads:
     sys.exit(f'FAIL: {label}: {path} carries no top-level heading, so this '
@@ -8057,7 +8071,8 @@ if '.index' in outside:
     sys.exit(f'FAIL: {label}: {path} still carries an index mark outside the '
              f'block this case wraps, so the parse would reach one after all')
 print(f'ok   {label}: all {marks} of the chapter\'s marks now sit inside one '
-      f'conditional block')
+      f'conditional block, and the {front_marks} in its front matter went with '
+      f'the front matter itself')
 NOMARKSPY
 }
 

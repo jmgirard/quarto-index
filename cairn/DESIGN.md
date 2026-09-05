@@ -1081,6 +1081,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI248.** A section's heading is its banner's FIRST comment line, so a
   banner whose sentence wraps names its section by a truncated fragment in the
   timing file and in the profile the run prints. — M075 review F11
+- **KI250.** The seconds in `tests/.work/timing.tsv`, and the run total and
+  fifteen-slowest figures the driver prints from them, are read by no check:
+  M077 removed the clause holding them to the run's own clock (D-054), and
+  what remains reads headings only. A row carrying a wrong figure prints as a
+  wrong figure with nothing to report it. Accepted. — M077
 
 ### The acceptance suite: coverage gaps
 

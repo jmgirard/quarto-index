@@ -61,13 +61,16 @@ RUN_LOG="$WORK/run.log"
 # ---------------------------------------------------------------------------
 # The run's own clock (M075). A full run costs minutes and nobody could say
 # which of its checks spent them, so every section below records its own wall
-# clock here and the run is held to the total at the end.
+# clock here, and the SET of rows is held at the end to the sections this
+# source declares. Their seconds are held to nothing: M075 also added them up
+# against the clock this script keeps, and M077 removed that clause (D-054).
 #
 # One row per section, `heading<TAB>seconds`, plus a row for the window before
 # the first section — this script's own setup, the pre-render clean included —
 # which is measured on its own rather than left as whatever the sections do
-# not account for: a remainder absorbs a lost row, and a lost row is the thing
-# the check at the end of the run exists to catch.
+# not account for, so that it names itself and can be told from a section's
+# row. A section that runs untimed is caught by the check at the end of the
+# run having no row for a heading the source declares.
 #
 # Whole seconds, from `date`. The clock the shell can read without launching a
 # helper has no finer resolution here, and a per-section helper process would
@@ -87,10 +90,23 @@ TIMING="$WORK/timing.tsv"
 SECTION_HEADING=""
 SECTION_STARTED=""
 
+# Set once `section_close` has run. "No section is open" is two states, not
+# one: before the first section, where the next `section` call closes the
+# setup window and writes its row; and after the last, where there is no
+# window left to close. Clearing $SECTION_HEADING at the close spelled both
+# the same way, so a section opened after the close wrote a SECOND setup row
+# valued at everything since the run began (M077). This flag is what tells
+# the two apart.
+SECTION_RUN_CLOSED=""
+
 # Close whatever section is open and open the named one, on a single reading
-# of the clock.
+# of the clock. Refused once the run's timing has been closed off: there is no
+# open window to attribute the elapsed time to, and the setup row the other
+# branch below writes is about the window before the FIRST section.
 section() {
   local now
+  [ -z "$SECTION_RUN_CLOSED" ] \
+    || fail "M077: section '$1' was opened after section_close had closed this run's timing, so it has no window to be measured in; a timed section belongs inside run_all_checks, ahead of that call"
   now=$(date +%s)
   if [ -n "$SECTION_HEADING" ]; then
     printf '%s\t%s\n' "$SECTION_HEADING" "$((now - SECTION_STARTED))" >> "$TIMING"
@@ -102,9 +118,12 @@ section() {
 }
 
 # Close the last section, so the file is whole for the summary the driver
-# prints. A no-op where no section ever opened.
+# prints, and mark this run's timing closed so no later call can open another
+# section. Writes no row where no section ever opened; the flag is set either
+# way, a run that opened none having been closed just the same.
 section_close() {
   local now
+  SECTION_RUN_CLOSED=1
   [ -n "$SECTION_HEADING" ] || return 0
   now=$(date +%s)
   printf '%s\t%s\n' "$SECTION_HEADING" "$((now - SECTION_STARTED))" >> "$TIMING"
@@ -25652,38 +25671,37 @@ if [ "${1:-}" = "--self-test" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# M075 — the run accounts for its own wall clock, and the timing file names
-# the sections this source has.
+# M075 — the timing file names the sections this source has.
 #
-# Two things are held here. Every section the source declares has exactly one
-# row and nothing else does: a profile nobody holds to the source drifts the
+# One thing is held here: every section the source declares has exactly one
+# row and nothing else does. A profile nobody holds to the source drifts the
 # moment a section is added, and the section added without a timing call is
-# the one that ships unmeasured. And the seconds in those rows, plus the row
-# for the setup window, account for the clock the run kept on its own: rows
-# that look individually fine can still have lost a whole leg.
+# the one that ships unmeasured. The set of headings is what this check reads;
+# the seconds in the rows it does not read at all.
 #
-# The section this block is itself inside is still open, so its elapsed and
-# the run's total are read at one instant and handed in together. The rows
-# telescope from the run's start, so the two sides are exact and the one
-# second allowed is for the rounding at each end.
+# M075 also held those seconds, plus the row for the setup window, to the
+# clock the run kept on its own. That clause is gone (M077, D-054). It could
+# only ever be evaluated from HERE, inside the run — every section after this
+# one, and the close that writes the last row, fall outside the window it can
+# see — and the accounting is a checker over a file only this suite writes and
+# reads. The driver still prints the run's total and the fifteen slowest rows;
+# nothing checks those figures (KI250).
+#
+# The section this block is itself inside has not written its row yet, so its
+# heading is handed in separately below.
 # ---------------------------------------------------------------------------
-section 'M075 — the run accounts for its own wall clock, and the timing file names'
+section 'M075 — the timing file names the sections this source has.'
 python3 tests/suitescan.py sections > "$WORK/m075-sections.txt" \
   || fail "M075-AC2: the scan of this suite's own sections failed, so the timing file has nothing to be held against (its own FAIL line is above)"
-M075_NOW=$(date +%s)
-M075_OPEN=$((M075_NOW - SECTION_STARTED))
-M075_TOTAL=$((M075_NOW - RUN_STARTED))
-
 # Held apart from its call site so the plants below can point it at a source
 # with a section added or removed, which is how its green over this run is
-# shown to be about something. Its arguments are the timing file, the section
-# list to hold it to, and the run's own total.
+# shown to be about something. Its arguments are the timing file and the
+# section list to hold it to.
 m075_account() {
-  python3 - "$1" "$2" "$SECTION_HEADING" "$M075_OPEN" "$3" <<'M075PY'
+  python3 - "$1" "$2" "$SECTION_HEADING" <<'M075PY'
 import sys
 
 timing, sections, open_heading = sys.argv[1], sys.argv[2], sys.argv[3]
-open_elapsed, total = int(sys.argv[4]), int(sys.argv[5])
 UNATTRIBUTED = 'unattributed'
 
 rows = []
@@ -25718,7 +25736,6 @@ setup = [s for h, s in rows if h == UNATTRIBUTED]
 repeated = sorted(set(h for h in timed if timed.count(h) > 1))
 missing = [h for h in declared if h not in timed]
 unknown = sorted(set(h for h in timed if h not in declared))
-accounted = sum(s for _, s in rows) + open_elapsed
 
 problems = []
 if len(setup) != 1:
@@ -25737,34 +25754,33 @@ if unknown:
     problems.append('%d row(s) name no section this source declares, so the '
                     'file describes a suite that is not this one:\n  %s'
                     % (len(unknown), '\n  '.join(unknown)))
-if abs(accounted - total) > 1:
-    problems.append('the rows account for %ds of the %ds the run measured on '
-                    'its own clock, a gap of %ds'
-                    % (accounted, total, accounted - total))
 
 if problems:
     print('FAIL: M075: ' + '\n'.join(problems), file=sys.stderr)
     sys.exit(1)
 print('ok   M075-AC2: each of the %d section(s) `tests/suitescan.py sections` '
-      'declares has exactly one row in the timing file, and no row names '
-      'anything else' % len(declared))
-print('ok   M075-AC3: those rows plus the %ds before the first section '
-      'account for %ds of the %ds this run measured on its own clock'
-      % (setup[0], accounted, total))
+      'declares has exactly one row in the timing file, and every other row '
+      'names a section it declares — beside the one row for the window before '
+      'the first section, which is labelled <<%s>> and held to being one row '
+      'and not to that list' % (len(declared), UNATTRIBUTED))
 M075PY
 }
 
-m075_account "$TIMING" "$WORK/m075-sections.txt" "$M075_TOTAL" \
-  || fail "M075-AC2/AC3: the run's timing file does not account for the run it was written by (its own FAIL line is above)"
+m075_account "$TIMING" "$WORK/m075-sections.txt" \
+  || fail "M075-AC2: the run's timing file does not name the sections this source declares (its own FAIL line is above)"
 
 if [ "${1:-}" = "--self-test" ]; then
-  # T5 — what the accounting above can tell apart. Three defects are planted,
-  # each the shape a real change would take: a section added to the source
-  # with no timing call, a timing row left behind by a section the source no
-  # longer has, and seconds that no longer add up. The first two are planted
-  # through the scan's overlay handle, which supplies the bytes for a tracked
-  # path while git still supplies the file list, so no nested run of this
-  # suite is needed to make either of them.
+  # T5 — what the accounting above, and the timer that feeds it, can tell
+  # apart. Three defects are planted, each the shape a real change would take:
+  # a section added to the source with no timing call, a timing row left
+  # behind by a section the source no longer has, and a section opened after
+  # the run's timing has been closed. The first two are planted through the
+  # scan's overlay handle, which supplies the bytes for a tracked path while
+  # git still supplies the file list, so no nested run of this suite is needed
+  # to make either of them; the third is planted against the timer directly.
+  #
+  # A fourth plant stood here until M077 — five seconds taken off one row,
+  # which only a total could see. It went with the clause it probed (D-054).
   M075_PLANT="$WORK/m075-plant"
   M075_EXTRA="M075 T5 planted section, which no timing call opens"
   rm -rf "$M075_PLANT"
@@ -25774,29 +25790,63 @@ if [ "${1:-}" = "--self-test" ]; then
     python3 - tests/run-tests.sh "$M075_PLANT/tests/run-tests.sh" "$1" "$2" <<'M075PLANTPY'
 import sys
 
+# The rule a banner is drawn with, imported from the scanner whose reading of
+# this plant's output is the whole point, rather than re-typed here: a plant
+# carrying its own copy of the expectation it protects drifts from it in
+# silence (M076). This one had drifted — it read ANY run of dashes as a rule,
+# so `# ---` inside a comment was a block boundary to the plant and an
+# ordinary comment line to the scan, and the two disagreed about which block
+# the drop mode had removed (M077).
+sys.path.insert(0, 'tests')
+from suitescan import BANNER_RULE, run_all_span
+
 src, dst, mode, text = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 lines = open(src, encoding='utf-8').read().split('\n')
 rule = '# ' + '-' * 74
-head = None
-for i, line in enumerate(lines):
-    if line.startswith('run_all' + '_checks() {'):
-        head = i
-        break
-if head is None:
+if not BANNER_RULE.match(rule):
+    raise SystemExit('M075 T5: the rule this plant draws its own block with '
+                     'is not one the scan reads as a rule, so an added block '
+                     'would declare no section and the plant would prove '
+                     'nothing')
+# The wrapper's body, taken from the scanner's own reader of it rather than
+# from a search for the head alone: `banner_headings` is handed [lo, hi), so a
+# plant that scanned to the end of the file could report a block the scan
+# never looks at — the same drift the imported rule above closes, left half
+# shut until this call replaced it (M077 review F4).
+span = run_all_span(lines)
+if span is None:
     raise SystemExit('M075 T5: the plant could not find the wrapper whose '
                      'body holds the sections, so it plants nothing')
+lo, hi = span
 if mode == 'add':
-    lines[head + 1:head + 1] = [rule, '# ' + text, rule]
+    lines[lo:lo] = [rule, '# ' + text, rule]
 elif mode == 'drop':
-    # Drop the FIRST banner block after the wrapper's head, whichever it is:
-    # the check's report names it, so the plant does not have to.
-    for i in range(head, len(lines)):
-        if lines[i].startswith('# -') and set(lines[i][2:].strip()) == {'-'}:
-            j = i + 1
-            while lines[j].startswith('#') and set(lines[j][2:].strip()) != {'-'}:
-                j += 1
-            del lines[i:j + 1]
-            break
+    # Drop the FIRST banner block in the wrapper's body, whichever it is: the
+    # check's report names it, so the plant does not have to. A block is a
+    # rule, one or more comment lines, and a closing rule — the shape
+    # `banner_headings` reads. A rule with nothing comment-like between it and
+    # what follows is a lone divider, which that function steps over and so
+    # does this. The scan for the close is bounded by the body's end. An
+    # unclosed block used to run off the end of the FILE: with a final newline
+    # the delete reached EOF and quietly took everything after the rule, and
+    # without one the read raised IndexError — a traceback that reads as a
+    # broken plant rather than as a source with no block to drop (M077).
+    for i in range(lo, hi):
+        if not BANNER_RULE.match(lines[i]):
+            continue
+        j = i + 1
+        while (j < hi and lines[j].startswith('#')
+               and not BANNER_RULE.match(lines[j])):
+            j += 1
+        if j == i + 1:
+            continue
+        if j >= hi or not BANNER_RULE.match(lines[j]):
+            raise SystemExit('M075 T5: the first banner block in the '
+                             "wrapper's body, at line %d, is never closed by "
+                             'a second rule, so it declares no section and '
+                             'there is nothing here to drop' % (i + 1))
+        del lines[i:j + 1]
+        break
     else:
         raise SystemExit('M075 T5: no banner block was found to drop')
 else:
@@ -25825,7 +25875,7 @@ M075PLANTPY
     || fail "M075 T5 self-test: the scan over the planted source does not report the planted section, so the plant never reached the check"
   M075_EXPECT="$M075_EXTRA"
   m075_red "a section with no timing call" \
-    m075_account "$TIMING" "$WORK/m075-sections-add.txt" "$M075_TOTAL"
+    m075_account "$TIMING" "$WORK/m075-sections-add.txt"
 
   # 2. A timing row naming a section the source no longer has.
   m075_plant_source drop unused
@@ -25837,16 +25887,91 @@ M075PLANTPY
   fi
   M075_EXPECT="$M075_DROPPED"
   m075_red "a row no section claims" \
-    m075_account "$TIMING" "$WORK/m075-sections-drop.txt" "$M075_TOTAL"
+    m075_account "$TIMING" "$WORK/m075-sections-drop.txt"
 
-  # 3. Seconds that no longer add up: one row short by five, the set of
-  #    headings untouched, so only the total can see it.
-  awk -F'\t' 'BEGIN{OFS="\t"} NR==2 && $2>=0 {$2=$2-5} {print}' "$TIMING" > "$WORK/m075-timing-short.tsv"
-  M075_EXPECT="a gap of -5s"
-  m075_red "five seconds taken off one row" \
-    m075_account "$WORK/m075-timing-short.tsv" "$WORK/m075-sections.txt" "$M075_TOTAL"
+  # 3. A section opened after the run's timing has been closed (M077-AC1).
+  #    Before M077 this wrote a SECOND row labelled `unattributed`, valued at
+  #    everything since the run began, and neither clause above could see it:
+  #    the set of headings was untouched, and the row telescoped from the
+  #    run's start so even the seconds clause M077 removed added up.
+  #
+  #    Each leg runs in a subshell with its own $TIMING, so the probe's rows
+  #    never reach this run's file and the state it sets never outlives it.
+  #    Three legs. `open` and `closed` differ by the close and nothing else,
+  #    which is what makes the refusal about the close; `setup` differs from
+  #    `open` by the heading and nothing else, and must be ACCEPTED, which is
+  #    what makes the refusal about the close rather than about the empty
+  #    heading the close leaves behind (M077 review F1).
+  M077_OPEN_HEADING='M077 probe section, opened by the probe itself'
+  M077_REOPEN_HEADING='M077 probe section, opened after the close'
 
-  pass "M075 T5 self-test: the accounting is red on a section the source declares with no timing row, on a timing row no section declares, and on a row whose seconds leave the total five short — and it names the section or the gap in each case, so its green above holds this run's profile to this run's source"
+  m077_probe() {
+    (
+      TIMING="$WORK/m077-probe-$1.tsv"
+      : > "$TIMING"
+      SECTION_STARTED=$(date +%s)
+      SECTION_RUN_CLOSED=""
+      case "$1" in
+        # Nothing open yet, and the run not closed: the state the FIRST
+        # section of a run meets, which must go through and write the setup
+        # row. It is here because the other two legs both leave $SECTION_HEADING
+        # and the flag agreeing, so between them alone a timer that refused
+        # whenever no section was open — the very conflation M077 undoes —
+        # would be indistinguishable from this one (M077 review F1).
+        setup)  SECTION_HEADING="" ;;
+        *)      SECTION_HEADING="$M077_OPEN_HEADING" ;;
+      esac
+      if [ "$1" = "closed" ]; then
+        section_close
+      fi
+      section "$M077_REOPEN_HEADING"
+    )
+  }
+
+  # The setup leg: no section open, run not closed. It must be accepted and
+  # write the one `unattributed` row, which is what pins the refusal below to
+  # the closed flag rather than to the empty heading.
+  m077_probe setup \
+    || fail "M077-AC1 self-test: opening the first section of a run — nothing open yet, the run not closed — was refused, so the timer is refusing on an empty heading rather than on the close, which is the state M077 exists to tell apart"
+  M077_SETUP_ROWS=$(cat "$WORK/m077-probe-setup.tsv")
+  if [ "$(printf '%s\n' "$M077_SETUP_ROWS" | wc -l | tr -d ' ')" != "1" ] \
+     || ! printf '%s\n' "$M077_SETUP_ROWS" | grep -q "^unattributed$(printf '\t')"; then
+    fail "M077-AC1 self-test: the first section of a run wrote <<$M077_SETUP_ROWS>> rather than the one row labelled <<unattributed>> for the window before it"
+  fi
+
+  # The control, which must stay silent: with the run still open, this is the
+  # ordinary call every section above makes. It writes the open section's row
+  # on the reading that opens the next — never a second `unattributed` row.
+  m077_probe open \
+    || fail "M077-AC1 self-test: opening a section while the run is still open was refused, so the red leg below would be red for something other than the close"
+  M077_ROWS=$(cat "$WORK/m077-probe-open.tsv")
+  if [ "$(printf '%s\n' "$M077_ROWS" | wc -l | tr -d ' ')" != "1" ] \
+     || ! printf '%s\n' "$M077_ROWS" | grep -qF -- "$M077_OPEN_HEADING"; then
+    fail "M077-AC1 self-test: the control wrote <<$M077_ROWS>> rather than the one row naming <<$M077_OPEN_HEADING>>, so it is not the case the red leg is contrasted with"
+  fi
+  if printf '%s\n' "$M077_ROWS" | grep -q "^unattributed$(printf '\t')"; then
+    fail "M077-AC1 self-test: the control wrote an <<unattributed>> row while a section was open, which is the defect itself rather than the control for it"
+  fi
+
+  # The refusal, and that it is the refusal and not some other failure.
+  set +e
+  M077_OUT=$( m077_probe closed 2>&1 )
+  M077_RC=$?
+  set -e
+  if [ "$M077_RC" -eq 0 ]; then
+    printf '%s\n' "$M077_OUT" >&2
+    fail "M077-AC1 self-test: a section opened after section_close was accepted, and the rows it left are <<$(tr '\n' '|' < "$WORK/m077-probe-closed.tsv")>>"
+  fi
+  case "$M077_OUT" in
+    *"section '$M077_REOPEN_HEADING' was opened after section_close"*) : ;;
+    *) printf '%s\n' "$M077_OUT" >&2
+       fail "M077-AC1 self-test: the call after the close failed, but not by naming itself as a section opened after the close, so the failure is not the one this plant makes" ;;
+  esac
+  if grep -q "^unattributed$(printf '\t')" "$WORK/m077-probe-closed.tsv"; then
+    fail "M077-AC1 self-test: the refused call still left an <<unattributed>> row behind, which is exactly the row M077 stops being written"
+  fi
+
+  pass "M075 T5 self-test: the accounting is red on a section the source declares with no timing row and on a timing row no section declares, naming the section in each case; and the timer refuses a section opened after the close, naming that call, while the same call goes through with the run still open and writes one ordinary row, and goes through with nothing open at all and writes the one setup row"
 fi
 section_close
 
@@ -25863,10 +25988,11 @@ set -e
 CHECK_COUNT=$( { grep -cE '^ok ' "$RUN_LOG" || true; } | tr -d ' ')
 
 # Where this run's minutes went (M075). Every row was written by the section
-# it names, and the last check above held the set of them to this source and
-# their seconds to the clock this script kept, so what follows is measured
-# time rather than a claim about it. The whole file is left in place for
-# anyone who wants a row this list does not reach.
+# it names, on the reading that closed it, and the last check above held the
+# set of headings to this source. The seconds themselves no check reads
+# (M077, D-054): the figures below are measurements this suite reports and
+# does not verify (KI250). The whole file is left in place for anyone who
+# wants a row this list does not reach.
 printf '\n== the fifteen slowest of %s section rows (%ss, plus %ss of setup before the first section; %s) ==\n' \
   "$(awk -F'\t' '$1 != "unattributed"' "$TIMING" | wc -l | tr -d ' ')" \
   "$(awk -F'\t' '$1 != "unattributed" {t += $2} END {print t + 0}' "$TIMING")" \

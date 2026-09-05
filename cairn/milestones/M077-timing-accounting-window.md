@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M077: The suite's timing accounting checks only what its own window covers
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — a checker over a timing file the acceptance suite writes for itself
-- **Branch/PR:** —
+- **Branch/PR:** m077-timing-accounting-window
 
 ## Goal
 
@@ -80,6 +80,9 @@ the checked run → KI246, accepted.
 - 2026-09-04: created by /milestone-plan.
 - 2026-09-04: criteria audit ran in reduced mode (internal tier) on the same fresh [O] reader, which authored none of the criteria; two rounds. Round 1 returned two findings on this milestone's draft, both fixed before the gate: a criterion whose promise was a DESIGN.md recording act, and a criterion binding the T5 plant helper's own properties, which moved to T4. Round 2 over the rewritten set returned nothing.
 - 2026-09-04: plan gate chose dropping the accounting's seconds clause over widening the window it reads, because the accounting is a checker over an artifact only this suite reads and hardening such a checker is the regress shape; falsified by a section running untimed or twice-timed in a way only a seconds total could see.
+- 2026-09-04: implement gate: the decision goes to DECISIONS.md rather than the milestone-local section, and the seconds going unchecked gets one DESIGN.md known-issues line. Both as recommended.
+- 2026-09-04: T5's DESIGN.md clause has no target: DESIGN.md carries no M075 sentence saying the run's seconds are held to its clock — M075 added KI241-KI245 there and its review KI246, none of them making that claim. The prose to correct is the suite's own, at the timer header, the M075 section banner and the comment above the driver's print. Minor amendment: T5's DESIGN.md half becomes the KI250 line the gate chose.
+- 2026-09-04: T1 written (a third timer state, `SECTION_RUN_CLOSED`), pre-fix behaviour confirmed in a scratch harness spliced from HEAD: after `section_close`, a `section` call wrote a second `unattributed` row valued at the whole run. CHECKPOINT — T1's verify-slot run was still in flight when this commit was made; unchecked.
 - 2026-09-04: plan gate chose keeping the heading-membership clause over deleting the accounting whole, because a section added with no timing call is the defect the profile exists to prevent and only that clause sees it; falsified by that clause going red for a reason that is neither a missing nor an extra section.
 
 ## Decisions

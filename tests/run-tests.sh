@@ -87,10 +87,23 @@ TIMING="$WORK/timing.tsv"
 SECTION_HEADING=""
 SECTION_STARTED=""
 
+# Set once `section_close` has run. "No section is open" is two states, not
+# one: before the first section, where the next `section` call closes the
+# setup window and writes its row; and after the last, where there is no
+# window left to close. Clearing $SECTION_HEADING at the close spelled both
+# the same way, so a section opened after the close wrote a SECOND setup row
+# valued at everything since the run began (M077). This flag is what tells
+# the two apart.
+SECTION_RUN_CLOSED=""
+
 # Close whatever section is open and open the named one, on a single reading
-# of the clock.
+# of the clock. Refused once the run's timing has been closed off: there is no
+# open window to attribute the elapsed time to, and the setup row the other
+# branch below writes is about the window before the FIRST section.
 section() {
   local now
+  [ -z "$SECTION_RUN_CLOSED" ] \
+    || fail "M077: section '$1' was opened after section_close had closed this run's timing, so it has no window to be measured in; a timed section belongs inside run_all_checks, ahead of that call"
   now=$(date +%s)
   if [ -n "$SECTION_HEADING" ]; then
     printf '%s\t%s\n' "$SECTION_HEADING" "$((now - SECTION_STARTED))" >> "$TIMING"
@@ -102,9 +115,12 @@ section() {
 }
 
 # Close the last section, so the file is whole for the summary the driver
-# prints. A no-op where no section ever opened.
+# prints, and mark this run's timing closed so no later call can open another
+# section. Writes no row where no section ever opened; the flag is set either
+# way, a run that opened none having been closed just the same.
 section_close() {
   local now
+  SECTION_RUN_CLOSED=1
   [ -n "$SECTION_HEADING" ] || return 0
   now=$(date +%s)
   printf '%s\t%s\n' "$SECTION_HEADING" "$((now - SECTION_STARTED))" >> "$TIMING"

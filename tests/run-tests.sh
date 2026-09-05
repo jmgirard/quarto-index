@@ -7752,6 +7752,17 @@ for M061_PASS in one two; do
   check_locator_fragments "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" \
     five.html "$HTML_SECTION_ID-gamma" \
     "M064-AC2 (render $M061_PASS: every fragment-carrying locator of the gamma section)"
+  # M078-AC3. The same page again, over every generated section on it rather
+  # than the one the manifest above names, and through the reader that owns
+  # this question rather than a second copy of it. The recovered rows now carry
+  # fragments of their own, so an id an author wrote that the rendered page
+  # does not carry — a form the source names and the render drops, a heading id
+  # the relocation lost — is a dead link this sweep is what refuses.
+  HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+  HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+    python3 tests/fragments.py resolve \
+      "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" five.html \
+    || fail "M078-AC3 (render $M061_PASS: every fragment any locator on the index page carries names an id the page it names holds; tests/fragments.py's own FAIL line is above)"
   # M065-AC1 to M065-AC4 — the whole gamma section, row by row, in the form
   # that states WHERE each locator points and what each cross-reference names.
   # Every one of the six forms four.qmd writes is settled by a row here:

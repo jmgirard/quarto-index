@@ -142,6 +142,7 @@ clause; the docs and `CHANGELOG.md` follow.
 - 2026-09-05: the docs-claim registry `site/books.qmd` is held to follows T7's rewording: the count claim goes from five to four, the `no fragment` claim is replaced by two — one that an author's id comes back and one that a term with no id gets the page alone — and the range claim takes its new wording.
 - 2026-09-05: `recovered_marks` takes the walk flag as `collect`'s own argument passed by two thin wrappers, rather than as a flag one walk sets for the other. M070's walk-order plant swaps the two walk lines, and a statement between them broke its substitution; with the wrappers the lines stay adjacent, the plant swaps them and keeps planting only the sort-key precedence defect it is about.
 - 2026-09-05: `tests/run-tests.sh --self-test` exited 0 with the three T5 plants each red against its own mutant and the gamma section's fragment sweep covering 9 locators where it covered 3. Added after it: AC5's own assertion on both M068 nested legs — `Meridian` at `sub/two.html#meridian-passage`, which `Beacon` beside it cannot show, carrying no id — and three pass lines whose prose still said every recovered locator carries no fragment.
+- 2026-09-05: both `tests/run-tests.sh` and `tests/run-tests.sh --self-test` exited 0 at 2e7a085. AC3 then gained the instrument it names: `tests/fragments.py resolve` over five.html on both blocked renders, which sweeps every generated section on the page rather than the one section `check_locator_fragments` beside it names.
 
 ## Decisions
 

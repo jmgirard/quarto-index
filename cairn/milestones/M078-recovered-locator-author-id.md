@@ -44,24 +44,24 @@ clause; the docs and `CHANGELOG.md` follow.
 
 ## Acceptance criteria
 
-- [ ] AC1: In the HTML book render where `four.qmd`'s record is unusable and
+- [x] AC1: In the HTML book render where `four.qmd`'s record is unusable and
       its marks are recovered from its source, the whole recovered `gamma`
       index section is asserted row by row in href form, and every row for a
       locator-contributing `four.qmd` body mark carries
       `four.html#<the Pandoc identifier that mark's author wrote>` where that
       mark carries one, and `four.html` with no fragment where it carries none.
-- [ ] AC2: In that render, a recovered `four.qmd` cross-reference mark
+- [x] AC2: In that render, a recovered `four.qmd` cross-reference mark
       carrying an author-written identifier contributes no locator — its row
       prints its see/see-also line and no page.
-- [ ] AC3: `tests/fragments.py resolve` over that render's index page exits 0
+- [x] AC3: `tests/fragments.py resolve` over that render's index page exits 0
       — every fragment any locator on the page carries, the recovered rows'
       among them, names an id the page it names actually carries.
-- [ ] AC4: In that render, a `four.qmd` front-matter `abstract:` mark carrying
+- [x] AC4: In that render, a `four.qmd` front-matter `abstract:` mark carrying
       an author-written identifier, on a term no other chapter of the fixture
       indexes, prints one locator — `four.html`, no fragment — identical to
       the row that same mark prints when `four.qmd` is read from its record;
       a second front-matter mark carrying no identifier prints the same shape.
-- [ ] AC5: A chapter in a subdirectory recovered from its source, whose body
+- [x] AC5: A chapter in a subdirectory recovered from its source, whose body
       mark carries an author-written identifier, prints a locator whose href
       is that chapter's page under its directory followed by that identifier.
 - [x] AC6: `site/books.qmd`, `cairn/DESIGN.md`, and a new `## Unreleased`
@@ -150,6 +150,38 @@ clause; the docs and `CHANGELOG.md` follow.
 
 ## Review
 
+- AC1 (verified 2026-09-05): the green `--self-test` run's
+  `M065-AC1/AC2/AC3/AC4 (render one)` and `(render two)` each report
+  "1 generated index section(s) and all 37 manifest rows match, in order"
+  over `M065_GAMMA_ROWS`, which pins the whole recovered gamma section in
+  href form: `Keystone four.html#keystone-passage`,
+  `Mullion four.html#mullion-passage`, `Purlin four.html#purlin-passage`,
+  `Newel four.html#newel-opens four.html#newel-closes`,
+  `Oriel four.html#oriel-opens four.html`, and `Dovetail`, `Quoin`,
+  `Rafter` each `four.html` with no fragment.
+- AC2 (verified 2026-09-05): the same 37-row match pins
+  `Lintel		see-link Escutcheon` — a see-line and no page. Read directly out
+  of the render as well: in `place-blocked-one/_book/five.html` and
+  `place-blocked-two/_book/five.html` the `Lintel` item carries the single
+  href `#qi-entry-3` (its see-link into the index) and no locator, identical
+  to the record route's `place-warm`.
+- AC3 (verified 2026-09-05): `tests/fragments.py resolve` over the index page
+  of each blocked render exits 0 — "five.html: every fragment among its 17
+  locator(s) across 1 section(s) names an id the page it links to carries
+  (9 fragment(s), 4 page(s) read)", on render one and render two alike.
+- AC4 (verified 2026-09-05): read out of the captures of the same run rather
+  than from a manifest, the suite pinning the record route's `Quoin` by
+  page/section/term only. In `place-warm/_book/five.html` — four.qmd read
+  from its record — the `Quoin` item is "Quoin, 1" carrying the single href
+  `four.html`; in `place-blocked-one` and `place-blocked-two` it is the
+  identical item, same text and same lone href. `Rafter`, the front-matter
+  mark carrying no identifier, is `four.html` on all three. `Quoin` is marked
+  in no other chapter of the fixture.
+- AC5 (verified 2026-09-05): on both M068 nested legs — the unlistable store
+  directory and the unopenable record one level down — "the term the
+  subdirectory chapter marks with an id of its author's own points at that
+  chapter's page under its directory, followed by that id: the entry
+  'Meridian' links to <<sub/two.html#meridian-passage>>".
 - AC6 (verified 2026-09-05): `git diff main..HEAD` over the three surfaces.
   `CHANGELOG.md` gains an entry under `## Unreleased` → `### Output` stating
   the author-id rule, the no-id fallback and both exceptions; the diff over

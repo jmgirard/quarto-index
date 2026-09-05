@@ -24711,7 +24711,7 @@ letter	F
 0	Ferrule	four.html
 MANIFEST
   m070_mutant nometa "M070 T6 self-test (the metadata walk removed)" \
-    's{  conditional_free_meta\(meta\):walk\(\{ Span = collect \}\)\n}{}'
+    's{  conditional_free_meta\(meta\):walk\(\{ Span = from_meta \}\)\n}{}'
   check_index_sections "$CAPTURE_ROOT/m070-nometa/_book/index.html" \
     "$M070_SECTIONS_NOMETA" \
     "M070 T6 self-test (the metadata walk removed: every front-matter mark reaches no index at all)" hrefs
@@ -24783,7 +24783,7 @@ letter	L
 MANIFEST
   m070_mutant rawmeta \
     "M070 T6 self-test (the front matter read without the conditional-content removal)" \
-    's{  conditional_free_meta\(meta\):walk\(\{ Span = collect \}\)\n}{  pandoc.Pandoc({}, meta):walk({ Span = collect })\n}'
+    's{  conditional_free_meta\(meta\):walk\(\{ Span = from_meta \}\)\n}{  pandoc.Pandoc({}, meta):walk({ Span = from_meta })\n}'
   check_index_sections "$CAPTURE_ROOT/m070-rawmeta/_book/index.html" \
     "$M070_SECTIONS_RAWMETA" \
     "M070 T6 self-test (the removal taken off the front matter: a mark span carrying a conditional class, one carrying the other class, and one inside a conditional block are all indexed)" hrefs

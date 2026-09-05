@@ -1091,6 +1091,16 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   M077 removed the clause holding them to the run's own clock (D-054), and
   what remains reads headings only. A row carrying a wrong figure prints as a
   wrong figure with nothing to report it. Accepted. — M077
+- **KI251.** A whole run of `tests/run-tests.sh` is not reliably reproducible
+  in one attempt on the development machine: Quarto's Deno binary exits 139 on
+  a `Segmentation fault: 11` in a render, in a different render each time and
+  with no pattern in which. M078's review saw five distinct renders die that
+  way across four runs — `M38-AC1`, `M04-AC5`, `M17-AC3`, `M41`/`M40-AC1` —
+  and the same crash is recorded in M078's implementation against a sixth,
+  `M074-AC3`; every one of those renders passed on a later attempt with
+  nothing changed. The suite reports the crash as a render failure, so a red
+  run whose ONLY failure is a segfault is toolchain noise and is re-run rather
+  than investigated. CI has not shown it. Accepted. — M078 review
 
 ### The acceptance suite: coverage gaps
 

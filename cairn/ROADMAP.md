@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-04 (M077 merged and archived; M072's row pruned to hold the 5-terminal-row cap. One durable shape from the review — a probe whose control and red legs differ in two variables pins the behavior to neither — went into check-design.md as its twentieth numbered shape, that module being the owner of check craft; making room took compressing twelve of its clauses in the same commit: 38 lines / 17,994 bytes. One candidate row added (the plant helper's own repairs are unexercised). Nothing retired, no Known-issues entry beyond KI250 which landed on the branch, no decision entry beyond D-054 which did too. ROADMAP 53 lines / 11,845 bytes; LESSONS.md 48 lines / 19,935 bytes. cairn_validate all PASS.)_
+_Last hygiene check: 2026-09-05 (M078 merged and archived; M073's row pruned to hold the 5-terminal-row cap. The review's eight actioned findings were fixed on the branch before the merge — three user-facing recovery warnings that contradicted the behavior they described, a stale docs limit, nine stale counts and three stale comments in the suite, and D-041's Consequences sentence. Nothing retired and no LESSONS line added: the milestone's one durable finding is a fact about the repo's present state, so the nondeterministic Quarto segfault went to DESIGN.md as KI251 rather than to LESSONS, which is at 48 lines / 19,935 bytes against its 50-line / 20,000-byte cap. One candidate row added (two recovered-locator assertions left to overlap). D-055 landed on the branch. ROADMAP 54 lines / 12,476 bytes; LESSONS.md 48 lines / 19,935 bytes. cairn_validate all PASS; tests/run-tests.sh and --self-test both exit 0.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 
@@ -9,11 +9,10 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M078 | A recovered locator lands on the id its author wrote | review | — | normal | milestones/M078-recovered-locator-author-id.md |
+| M078 | A recovered locator lands on the id its author wrote | done | — | normal | milestones/archive/M078-recovered-locator-author-id.md |
 | M077 | The suite's timing accounting checks only what its own window covers | done | — | normal | milestones/archive/M077-timing-accounting-window.md |
 | M076 | A store-report leg asserts every wording, not the ones its author recalled | done | — | normal | milestones/archive/M076-store-report-zero-controls.md |
 | M075 | The suite reports where its own time goes | done | — | normal | milestones/archive/M075-suite-timing-profile.md |
-| M073 | A store report names the record it met as the record it was | done | — | normal | milestones/archive/M073-store-report-wordings.md |
 | M074 | A record no render has written is reported by the chapter that prints the section, once | done | M073 | normal | milestones/archive/M074-never-written-report-site.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
@@ -21,6 +20,7 @@ _Released 0.2.0 2026-09-02._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- Pin the two recovered-locator assertions M078's legs leave to overlap: the record route's own `Quoin` href (held there by page/section/term only, so the two routes could diverge green) and `fragments.py outside` on the recovered heading mark (`mullion-passage` resolving to a copy inside the heading would pass `resolve`). Promote with any other pass over the m061/m065 legs — added 2026-09-05 — M078 review F3/F11
 - Put the M075 plant helper under the suite's own plants: the banner rule it imports and the bound on its scan for a block's close are repairs nothing exercises, so a later edit reinstating either defect leaves both runs green. Promote with any other pass over the suite's self-test plants — added 2026-09-04 — M077 review F2
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248
 - Ignore the book fixtures' in-place render output (`examples/book*/*.html`, `site_libs/`), written beside the project rather than under `_book/` and uncovered by `.gitignore`, so a commit made while the suite runs cannot sweep it in; promote with any other repo source-hygiene pass — added 2026-09-03 — M073 implement (a checkpoint commit swept 23 such files, reset before it stood)

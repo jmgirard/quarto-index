@@ -61,13 +61,16 @@ RUN_LOG="$WORK/run.log"
 # ---------------------------------------------------------------------------
 # The run's own clock (M075). A full run costs minutes and nobody could say
 # which of its checks spent them, so every section below records its own wall
-# clock here and the run is held to the total at the end.
+# clock here, and the SET of rows is held at the end to the sections this
+# source declares. Their seconds are held to nothing: M075 also added them up
+# against the clock this script keeps, and M077 removed that clause (D-054).
 #
 # One row per section, `heading<TAB>seconds`, plus a row for the window before
 # the first section — this script's own setup, the pre-render clean included —
 # which is measured on its own rather than left as whatever the sections do
-# not account for: a remainder absorbs a lost row, and a lost row is the thing
-# the check at the end of the run exists to catch.
+# not account for, so that it names itself and can be told from a section's
+# row. A section that runs untimed is caught by the check at the end of the
+# run having no row for a heading the source declares.
 #
 # Whole seconds, from `date`. The clock the shell can read without launching a
 # helper has no finer resolution here, and a per-section helper process would
@@ -25668,38 +25671,37 @@ if [ "${1:-}" = "--self-test" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# M075 — the run accounts for its own wall clock, and the timing file names
-# the sections this source has.
+# M075 — the timing file names the sections this source has.
 #
-# Two things are held here. Every section the source declares has exactly one
-# row and nothing else does: a profile nobody holds to the source drifts the
+# One thing is held here: every section the source declares has exactly one
+# row and nothing else does. A profile nobody holds to the source drifts the
 # moment a section is added, and the section added without a timing call is
-# the one that ships unmeasured. And the seconds in those rows, plus the row
-# for the setup window, account for the clock the run kept on its own: rows
-# that look individually fine can still have lost a whole leg.
+# the one that ships unmeasured. The set of headings is what this check reads;
+# the seconds in the rows it does not read at all.
 #
-# The section this block is itself inside is still open, so its elapsed and
-# the run's total are read at one instant and handed in together. The rows
-# telescope from the run's start, so the two sides are exact and the one
-# second allowed is for the rounding at each end.
+# M075 also held those seconds, plus the row for the setup window, to the
+# clock the run kept on its own. That clause is gone (M077, D-054). It could
+# only ever be evaluated from HERE, inside the run — every section after this
+# one, and the close that writes the last row, fall outside the window it can
+# see — and the accounting is a checker over a file only this suite writes and
+# reads. The driver still prints the run's total and the fifteen slowest rows;
+# nothing checks those figures (KI250).
+#
+# The section this block is itself inside has not written its row yet, so its
+# heading is handed in separately below.
 # ---------------------------------------------------------------------------
 section 'M075 — the run accounts for its own wall clock, and the timing file names'
 python3 tests/suitescan.py sections > "$WORK/m075-sections.txt" \
   || fail "M075-AC2: the scan of this suite's own sections failed, so the timing file has nothing to be held against (its own FAIL line is above)"
-M075_NOW=$(date +%s)
-M075_OPEN=$((M075_NOW - SECTION_STARTED))
-M075_TOTAL=$((M075_NOW - RUN_STARTED))
-
 # Held apart from its call site so the plants below can point it at a source
 # with a section added or removed, which is how its green over this run is
-# shown to be about something. Its arguments are the timing file, the section
-# list to hold it to, and the run's own total.
+# shown to be about something. Its arguments are the timing file and the
+# section list to hold it to.
 m075_account() {
-  python3 - "$1" "$2" "$SECTION_HEADING" "$M075_OPEN" "$3" <<'M075PY'
+  python3 - "$1" "$2" "$SECTION_HEADING" <<'M075PY'
 import sys
 
 timing, sections, open_heading = sys.argv[1], sys.argv[2], sys.argv[3]
-open_elapsed, total = int(sys.argv[4]), int(sys.argv[5])
 UNATTRIBUTED = 'unattributed'
 
 rows = []
@@ -25734,7 +25736,6 @@ setup = [s for h, s in rows if h == UNATTRIBUTED]
 repeated = sorted(set(h for h in timed if timed.count(h) > 1))
 missing = [h for h in declared if h not in timed]
 unknown = sorted(set(h for h in timed if h not in declared))
-accounted = sum(s for _, s in rows) + open_elapsed
 
 problems = []
 if len(setup) != 1:
@@ -25753,25 +25754,19 @@ if unknown:
     problems.append('%d row(s) name no section this source declares, so the '
                     'file describes a suite that is not this one:\n  %s'
                     % (len(unknown), '\n  '.join(unknown)))
-if abs(accounted - total) > 1:
-    problems.append('the rows account for %ds of the %ds the run measured on '
-                    'its own clock, a gap of %ds'
-                    % (accounted, total, accounted - total))
 
 if problems:
     print('FAIL: M075: ' + '\n'.join(problems), file=sys.stderr)
     sys.exit(1)
 print('ok   M075-AC2: each of the %d section(s) `tests/suitescan.py sections` '
       'declares has exactly one row in the timing file, and no row names '
-      'anything else' % len(declared))
-print('ok   M075-AC3: those rows plus the %ds before the first section '
-      'account for %ds of the %ds this run measured on its own clock'
-      % (setup[0], accounted, total))
+      'anything else, the %ds row for the window before the first section '
+      'included' % (len(declared), setup[0]))
 M075PY
 }
 
-m075_account "$TIMING" "$WORK/m075-sections.txt" "$M075_TOTAL" \
-  || fail "M075-AC2/AC3: the run's timing file does not account for the run it was written by (its own FAIL line is above)"
+m075_account "$TIMING" "$WORK/m075-sections.txt" \
+  || fail "M075-AC2: the run's timing file does not name the sections this source declares (its own FAIL line is above)"
 
 if [ "${1:-}" = "--self-test" ]; then
   # T5 — what the accounting above can tell apart. Three defects are planted,
@@ -25841,7 +25836,7 @@ M075PLANTPY
     || fail "M075 T5 self-test: the scan over the planted source does not report the planted section, so the plant never reached the check"
   M075_EXPECT="$M075_EXTRA"
   m075_red "a section with no timing call" \
-    m075_account "$TIMING" "$WORK/m075-sections-add.txt" "$M075_TOTAL"
+    m075_account "$TIMING" "$WORK/m075-sections-add.txt"
 
   # 2. A timing row naming a section the source no longer has.
   m075_plant_source drop unused
@@ -25853,7 +25848,7 @@ M075PLANTPY
   fi
   M075_EXPECT="$M075_DROPPED"
   m075_red "a row no section claims" \
-    m075_account "$TIMING" "$WORK/m075-sections-drop.txt" "$M075_TOTAL"
+    m075_account "$TIMING" "$WORK/m075-sections-drop.txt"
 
   # 3. Seconds that no longer add up: one row short by five, the set of
   #    headings untouched, so only the total can see it.
@@ -25879,10 +25874,11 @@ set -e
 CHECK_COUNT=$( { grep -cE '^ok ' "$RUN_LOG" || true; } | tr -d ' ')
 
 # Where this run's minutes went (M075). Every row was written by the section
-# it names, and the last check above held the set of them to this source and
-# their seconds to the clock this script kept, so what follows is measured
-# time rather than a claim about it. The whole file is left in place for
-# anyone who wants a row this list does not reach.
+# it names, on the reading that closed it, and the last check above held the
+# set of headings to this source. The seconds themselves no check reads
+# (M077, D-054): the figures below are measurements this suite reports and
+# does not verify (KI250). The whole file is left in place for anyone who
+# wants a row this list does not reach.
 printf '\n== the fifteen slowest of %s section rows (%ss, plus %ss of setup before the first section; %s) ==\n' \
   "$(awk -F'\t' '$1 != "unattributed"' "$TIMING" | wc -l | tr -d ' ')" \
   "$(awk -F'\t' '$1 != "unattributed" {t += $2} END {print t + 0}' "$TIMING")" \

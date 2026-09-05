@@ -96,6 +96,7 @@ the checked run → KI246, accepted.
 - 2026-09-04: plan gate chose keeping the heading-membership clause over deleting the accounting whole, because a section added with no timing call is the defect the profile exists to prevent and only that clause sees it; falsified by that clause going red for a reason that is neither a missing nor an extra section.
 - 2026-09-04: /milestone-review opened: main had not moved under the branch, branch pushed, draft PR #77 opened and recorded in the header. Verification of the criteria is in flight.
 - 2026-09-04: all three criteria verified with fresh evidence and their boxes ticked; consistency gate clean (cairn_validate 16 PASS / 7 OK, generic profile names no toolchain checks, no principle changed). Three fresh-context reviewers: the prior-review and blame-history lenses returned no findings, the [O] diff-bug lens eleven, all about the suite's own self-checks. No criterion failed, so no return floor is reached.
+- 2026-09-04: F6 actioned at review — the merge-base counts the script's own rule calls for were measured at `a1df8ab` in a scratch worktree (since removed): 766 plain and 1397 --self-test, both exit 0, against the branch's 765 and 1396. The scratch worktree used ref-based checkout only; the primary checkout never moved.
 
 ## Decisions
 
@@ -149,9 +150,12 @@ reads — see F1.
 - `tests/run-tests.sh --self-test` — exit 0, `All checks passed (1396
   checks)`, no `FAIL` line in the log.
 
-Merge-base comparison (the count rule at `tests/run-tests.sh:1787`): see the
-work-log line recording the `origin/main` figures measured in a scratch
-worktree.
+Merge-base comparison (the count rule at `tests/run-tests.sh:1787`), measured
+at `origin/main` (`a1df8ab`) in a scratch worktree, both runs exit 0 with no
+`FAIL` line: 766 plain against the branch's 765, and 1397 `--self-test`
+against the branch's 1396. Each mode drops by exactly one, and the one is the
+removed seconds report — the retired plant shared its pass line with the two
+that remain, so retiring it and adding the refusal plant moves no count.
 
 ### Consistency gate
 
@@ -212,8 +216,9 @@ silently dropped.
   D-entry is history that is superseded rather than edited.
 - **F6. The merge-base check counts were never stated.** The wrapper comment at
   `tests/run-tests.sh:1787-1790` makes the merge-base count a review input; the
-  work log records only the post-change figures. Proposed: fix now — measure
-  both `origin/main` figures and record them (done; see the work log).
+  work log records only the post-change figures. Actioned at review: both
+  `origin/main` figures measured and recorded under AC3 above — 766/1397
+  against 765/1396, a drop of exactly one in each mode.
 - **F7. The archived M075 outcome still asserts the removed behavior in the
   present tense** (`cairn/milestones/archive/M075-suite-timing-profile.md:7`).
   Proposed: reject — the archive is history (IP4), never edited; D-054 is the

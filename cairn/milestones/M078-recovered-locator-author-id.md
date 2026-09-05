@@ -71,7 +71,7 @@ clause; the docs and `CHANGELOG.md` follow.
       does not return, its count sentence, and its sentence that both ends of
       a range print the one page are amended to match; no shipped release
       section of `CHANGELOG.md` is edited.
-- [ ] AC7: `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
+- [x] AC7: `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
       exits 0.
 
 ## Coverage
@@ -192,3 +192,85 @@ clause; the docs and `CHANGELOG.md` follow.
   not return" over a list that now holds exactly four items; the range
   sentence reads "both ends of a range print that chapter's page, each at the
   id you wrote on it where you wrote one".
+
+- AC7 (verified 2026-09-05): `tests/run-tests.sh --self-test` exits 0 —
+  "All checks passed (1409 checks)", the three T5 plants each red against its
+  own mutant. `tests/run-tests.sh` exits 0 — "All checks passed (769
+  checks)", 770 `ok` lines. Both greens are on 416658f with only the review's
+  own tracking commits since. Reached on the fourth plain attempt: three
+  earlier runs exited 1 without any assertion failing, each on a Quarto/Deno
+  `Segmentation fault: 11` (exit 139) in a DIFFERENT render — `M38-AC1`
+  (named-indexes-twin to HTML), `M04-AC5` (the marker fixture to beamer) and
+  `M17-AC3` (the inst book to HTML) — and one `--self-test` run died the same
+  way at `M41`/`M40-AC1`. Five distinct renders across four runs, none of
+  them a fixture this milestone touches, and the same crash is recorded
+  mid-implementation against a sixth (`M074-AC3`). Attributed to the
+  toolchain, not the diff.
+
+- Consistency gate (verified 2026-09-05): `cairn_validate.py` exits 0, all 16
+  PASS checks including `coverage complete` and `binding criteria`, and the 7
+  advisories OK — `release window` did not fire. No `IP`/`GP` principle line
+  appears in `git diff main..HEAD -- cairn/DESIGN.md`, so `cairn_impact` is
+  not run. The `generic` profile's `consistency-gate` slot names no toolchain
+  checks, so the universal checks are the whole gate.
+
+### Independent fresh-context review
+
+Surface tier is user-facing, so the full three-lens fan-out ran, each lens on
+its own evidence base and none having seen the implementation.
+
+**[S] blame-history — no regression.** Verified `assign_anchors`
+(`html.lua:579-599`) mints only where `span.identifier == ""`, so D-055's
+premise that an author id is never renamed holds; verified `from_meta` passes
+`in_blocks = false` unconditionally, so D-048 stands whole on both routes;
+verified only D-041's no-fragment clause is superseded and D-042/D-045/D-046
+are untouched. Its one flagged item is the id-collision risk, which D-055's
+own Consequences already records as accepted and unfenced.
+
+**[S] prior-PR-comments — no prior-review evidence contradicted.** The probe
+`gh api repos/jmgirard/quarto-index/pulls/comments?per_page=1` found no real
+inline review threads, so the GitHub walk was skipped as the lens prescribes;
+the archived `## Review` sections were the evidence base. Confirmed KI235 and
+KI216 stay out of scope as their prior triage left them, M064's
+duplicate-locator fix is untouched (only its comment moved), and the
+"Five things" -> "Four things" count moved in the same diff as the bullet it
+counts, which is the M073/M38 stale-enumeration lesson kept.
+
+**[O] diff-bug — the Lua change correct, eleven peripheral findings.** It
+verified the new gate matches the record route's own gate at
+`passes.lua:622` (whose `xrefs` is post-self-target-drop exactly as
+`surviving` is), and that `html.lua`'s diff is comments only. Findings, as
+ranked by the lens:
+
+1. `book.lua:1158`, `:1642`, `:1666` — all three recovery warnings still tell
+   the author the recovered terms "are in the index without the links into
+   its page that a record carries", false for every mark whose author wrote
+   an id. Pinned in `tests/run-tests.sh:9002,9228`.
+2. `site/books.qmd:167` — "with the same limits every recovered chapter
+   carries, the missing fragment among them" survives AC6's rewrite and says
+   the opposite of the page above it. Not held by the docs-claim registry.
+3. AC4's identity half is pinned by no href-form assertion on the record
+   route; every `Quoin four.html` manifest row is a recovery-route one.
+4. `tests/run-tests.sh:7975` — pass line says "all eleven of its entries"
+   where the manifest holds nineteen.
+5. `tests/run-tests.sh:7768`, `:7786` — the AC1 manifest's header comment
+   says "six forms" (now fourteen) and "three anchored hrefs" (now nine).
+6. `tests/run-tests.sh:6890-6891`, `:9010`, `:9092-9094`, `:9322`, `:9784`,
+   `:9806` — six more "eleven"/"eight" counts; `:9784` and `:9806` are
+   `check_index_sections` labels, so the wrong number prints on failure.
+7. `tests/run-tests.sh:1374-1376` — `check_entry_locators`'s header comment
+   still says a recovered mark "has no anchor".
+8. `cairn/DECISIONS.md:302` — D-041's Consequences "The store stays the
+   primary route and the only one carrying anchors" is falsified and unnamed
+   by D-055, which supersedes a clause of the Decision paragraph only.
+9. `book.lua:820-828` — the walk wrappers' comment justifies a production
+   shape by the self-test's `sed` mechanics.
+10. `four.qmd:73` — `Mullion`, `Hasp`, `Ingot`, `Ferrule` now name marks in
+    two fixtures; no check crosses them.
+11. (uncertain) nothing on the recovery leg asserts `mullion-passage` sits
+    outside four.html's heading; `fragments.py outside` was available.
+
+Findings 1, 2, 4, 5, 6, 7 and 8 were confirmed by hand at review before being
+brought to the gate. Finding 3 was closed at review by reading the record
+route's own render (AC4's evidence line above) rather than by a manifest.
+

@@ -9,7 +9,7 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M077 | The suite's timing accounting checks only what its own window covers | in-progress | — | normal | milestones/M077-timing-accounting-window.md |
+| M077 | The suite's timing accounting checks only what its own window covers | review | — | normal | milestones/M077-timing-accounting-window.md |
 | M076 | A store-report leg asserts every wording, not the ones its author recalled | done | — | normal | milestones/archive/M076-store-report-zero-controls.md |
 | M075 | The suite reports where its own time goes | done | — | normal | milestones/archive/M075-suite-timing-profile.md |
 | M073 | A store report names the record it met as the record it was | done | — | normal | milestones/archive/M073-store-report-wordings.md |

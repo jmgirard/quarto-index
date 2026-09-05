@@ -1,6 +1,6 @@
 # M078: A recovered locator lands on the id its author wrote
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -86,7 +86,7 @@ clause; the docs and `CHANGELOG.md` follow.
 
 ## Tasks
 
-- [ ] T1: Author the fixture forms in `examples/book-placement/four.qmd`, each
+- [x] T1: Author the fixture forms in `examples/book-placement/four.qmd`, each
       on a term no other chapter of that fixture indexes: a body mark with an
       author id; a body mark without one (control); a cross-reference mark
       with an id; a heading mark with an id (relocated after the heading on
@@ -95,31 +95,31 @@ clause; the docs and `CHANGELOG.md` follow.
       `mention="principal"` mark with an id; and YAML front matter carrying an
       `abstract:` mark with an id and one without. Mirror the forms
       `examples/placement.qmd:36-48` already exercises on the record route.
-- [ ] T2: Give the subdirectory chapter a body mark carrying an author id, in
+- [x] T2: Give the subdirectory chapter a body mark carrying an author id, in
       the nested-chapter fixture M068's legs recover (`examples/book`'s
       `sub/two.qmd`), so the nested href path is exercised with a fragment.
-- [ ] T3: Carry the identifier in `recovered_marks`'s `collect`
+- [x] T3: Carry the identifier in `recovered_marks`'s `collect`
       (`_extensions/index/modules/book.lua:731-790`): capture `span.identifier`
       where non-empty, gated on `#surviving == 0` so a cross-reference mark
       still contributes no locator through `html.lua:184`, and only from the
       blocks walk (`book.lua:823-824`), never the metadata walk, so D-048's
       front-matter rule stands on both routes. No `STORE_VERSION` bump —
       `anchor` is already a validated record field (`book.lua:415`).
-- [ ] T4: Rebaseline the recovered-section manifests the change moves —
+- [x] T4: Rebaseline the recovered-section manifests the change moves —
       `M065_GAMMA_ROWS` (`tests/run-tests.sh:9281`) and its `_FLAT` and
       `_NOSORT` variants — and add per-term assertions for the
       cross-reference, mixed-range, principal, front-matter and subdirectory
       legs with `check_entry_locators` (`tests/run-tests.sh:1374`). Find every
       other manifest the change moves by running the suite, not by listing
       them here.
-- [ ] T5: Self-test plants, each shown red against its own mutant: one
+- [x] T5: Self-test plants, each shown red against its own mutant: one
       dropping the recovered identifier, one carrying a front-matter
       identifier into its locator, and one removing the `#surviving == 0`
       gate so a cross-reference mark contributes a locator.
-- [ ] T6: Append the D-entry superseding D-041's no-fragment clause and
+- [x] T6: Append the D-entry superseding D-041's no-fragment clause and
       leaving D-048's front-matter rule standing; narrow KI205's remainder and
       update the recovery prose at `cairn/DESIGN.md:481-487`.
-- [ ] T7: Docs: `site/books.qmd`'s "No fragment" item, its count sentence and
+- [x] T7: Docs: `site/books.qmd`'s "No fragment" item, its count sentence and
       its range sentence (`site/books.qmd:126-129`, `:148-153`); the
       unqualified promise at `site/html.qmd:20`; and a new `## Unreleased`
       entry in `CHANGELOG.md`.
@@ -144,6 +144,7 @@ clause; the docs and `CHANGELOG.md` follow.
 - 2026-09-05: `tests/run-tests.sh --self-test` exited 0 with the three T5 plants each red against its own mutant and the gamma section's fragment sweep covering 9 locators where it covered 3. Added after it: AC5's own assertion on both M068 nested legs — `Meridian` at `sub/two.html#meridian-passage`, which `Beacon` beside it cannot show, carrying no id — and three pass lines whose prose still said every recovered locator carries no fragment.
 - 2026-09-05: both `tests/run-tests.sh` and `tests/run-tests.sh --self-test` exited 0 at 2e7a085. AC3 then gained the instrument it names: `tests/fragments.py resolve` over five.html on both blocked renders, which sweeps every generated section on the page rather than the one section `check_locator_fragments` beside it names.
 - 2026-09-05: `--self-test` exited 0 at 9ad1b0c, with `fragments.py resolve` reporting on both blocked renders that every fragment among five.html's 17 locators across 1 section names an id the page it links to carries (9 fragments, 4 pages read). The run before it failed on a Quarto segmentation fault in M074-AC3's render, which did not recur.
+- 2026-09-05: every task done. `tests/run-tests.sh` exits 0 (770 ok lines) and `tests/run-tests.sh --self-test` exits 0; status to review.
 
 ## Decisions
 

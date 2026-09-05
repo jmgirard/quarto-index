@@ -9025,7 +9025,7 @@ for M068_PASS in one two; do
   m068_assert_dangling "$M068_STORE/four.qmd$STORE_SUFFIX" \
     "M068-AC1 (after render $M068_PASS)"
 done
-pass "M068-AC1/M068-AC2/M068-AC4: where a chapter's record is a file the store directory lists and no render can open, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all eleven of its entries, four.qmd's eight linking to that chapter's page with no fragment while every locator from a record that was read carries its fragment, and each draws the recovery report for four.qmd whole four times among seven warnings and exits 0"
+pass "M068-AC1/M068-AC2/M068-AC4: where a chapter's record is a file the store directory lists and no render can open, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all nineteen of its entries, four.qmd's sixteen linking to that chapter's page — after it the id their author wrote, where they wrote one — while every locator from a record that was read carries its fragment, and each draws the recovery report for four.qmd whole four times among seven warnings and exits 0"
 
 # ---------------------------------------------------------------------------
 # M068-AC3, and the control that separates the two sides of the new test. The
@@ -9105,7 +9105,7 @@ check_store_reports "$WORK/m063-m068-norecord-fifth.log" \
   WARN_STORE_NEVER_RECOVERED=1
 check_extension_warning_count "$WORK/m063-m068-norecord-fifth.log" 1 \
   "M068-AC3/M069-AC1 (five.qmd reads three records it can use and one source, and carries no marker, so the one report is all it has to say)"
-pass "M068-AC3/M069-AC1: a store directory that lists and holds no record for four.qmd is told from one whose record it lists and nothing can open by which report is drawn — never-written in both legs here and could-not-be-read in neither, the whole book healing itself when four.qmd rewrites its own record, and five.qmd rendered alone reading four.qmd's source so that the gamma section carries all eleven terms with four.qmd's eight linking to its page and no fragment"
+pass "M068-AC3/M069-AC1: a store directory that lists and holds no record for four.qmd is told from one whose record it lists and nothing can open by which report is drawn — never-written in both legs here and could-not-be-read in neither, the whole book healing itself when four.qmd rewrites its own record, and five.qmd rendered alone reading four.qmd's source so that the gamma section carries all nineteen terms with four.qmd's sixteen linking to its page, each at the id its author wrote where they wrote one"
 
 # ---------------------------------------------------------------------------
 # M068 — the same two questions asked of a chapter that sits in a
@@ -9205,6 +9205,13 @@ m068_nested_render() {   # <slug> <label> <recoveries> <unwritable> <shared loca
   check_entry_locators "$CAPTURE_ROOT/m068-nested-$slug/_book/last.html" \
     "$HTML_SECTION_ID-main" Beacon "sub/two.html" \
     "$label: the term marked in the subdirectory chapter alone is in the index, pointing at that chapter's page with no fragment"
+  # M078-AC5. The href a recovered locator carries for a chapter one level down
+  # is that chapter's page under its directory AND the id its author wrote,
+  # which `Beacon` above cannot show: it carries no id, so its row is the same
+  # whether the path or the fragment is the half that went wrong.
+  check_entry_locators "$CAPTURE_ROOT/m068-nested-$slug/_book/last.html" \
+    "$HTML_SECTION_ID-main" Meridian "sub/two.html#meridian-passage" \
+    "$label: the term the subdirectory chapter marks with an id of its author's own points at that chapter's page under its directory, followed by that id"
 }
 
 M068_RECOVERED_SUBTWO="the recorded index marks for sub/two.qmd could not be read, so that chapter's terms were recovered from its own source instead; they are in the index without the links into its page that a record carries, without anything reaching that chapter through an include or an executed cell, and without anything inside a block or span Quarto shows or hides by format, profile or metadata — render that chapter again, or render the whole book, to restore them"
@@ -9736,7 +9743,7 @@ for M069_QUIET in two four; do
   check_extension_warning_count "$WORK/m069-m069-$M069_QUIET.log" 0 \
     "M069-AC2 ($M069_QUIET.qmd has nothing to say about any chapter's record)"
 done
-pass "M069-AC1/M069-AC2/M069-AC3/M074-AC2: over a book project holding no sidecar store at all, index.qmd and three.qmd — each carrying a placement marker — and five.qmd — the book's last chapter — each read the sources of the four chapters no record has been written for and print their index sections whole, every recovered locator its chapter's page with no fragment, each drawing the never-written wording ONCE in a line naming all four and the could-not-be-read wording never; while two.qmd and four.qmd print no section and say nothing at all"
+pass "M069-AC1/M069-AC2/M069-AC3/M074-AC2: over a book project holding no sidecar store at all, index.qmd and three.qmd — each carrying a placement marker — and five.qmd — the book's last chapter — each read the sources of the four chapters no record has been written for and print their index sections whole, every recovered locator its chapter's page followed by the id its author wrote where they wrote one, each drawing the never-written wording ONCE in a line naming all four and the could-not-be-read wording never; while two.qmd and four.qmd print no section and say nothing at all"
 
 # ---------------------------------------------------------------------------
 # M069-AC5 — the two outcomes a never-written record can have besides coming

@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-05 (M078 merged and archived; M073's row pruned to hold the 5-terminal-row cap. The review's eight actioned findings were fixed on the branch before the merge — three user-facing recovery warnings that contradicted the behavior they described, a stale docs limit, nine stale counts and three stale comments in the suite, and D-041's Consequences sentence. Nothing retired and no LESSONS line added: the milestone's one durable finding is a fact about the repo's present state, so the nondeterministic Quarto segfault went to DESIGN.md as KI251 rather than to LESSONS, which is at 48 lines / 19,935 bytes against its 50-line / 20,000-byte cap. One candidate row added (two recovered-locator assertions left to overlap). D-055 landed on the branch. ROADMAP 54 lines / 12,476 bytes; LESSONS.md 48 lines / 19,935 bytes. cairn_validate all PASS; tests/run-tests.sh and --self-test both exit 0.)_
+_Last hygiene check: 2026-09-05 (status audit, no work since the M078 stamp earlier today: nothing in flight, no open issues or PRs, no outside merges, no orphaned issues, tree clean. cairn_validate all PASS, no advisories. ROADMAP 54 lines / 12,476 bytes; LESSONS.md 48 lines / 19,935 bytes against its 20,000-byte cap — 65 bytes of headroom, so the next lesson needs a retirement. Nine unreleased CHANGELOG entries stand behind 0.2.0.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 

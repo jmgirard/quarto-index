@@ -9,6 +9,7 @@ _Released 0.2.0 2026-09-02._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M078 | A recovered locator lands on the id its author wrote | planned | — | normal | milestones/M078-recovered-locator-author-id.md |
 | M077 | The suite's timing accounting checks only what its own window covers | done | — | normal | milestones/archive/M077-timing-accounting-window.md |
 | M076 | A store-report leg asserts every wording, not the ones its author recalled | done | — | normal | milestones/archive/M076-store-report-zero-controls.md |
 | M075 | The suite reports where its own time goes | done | — | normal | milestones/archive/M075-suite-timing-profile.md |
@@ -29,7 +30,6 @@ _Released 0.2.0 2026-09-02._
 - Time each render rather than each section, once the render domain tests/suitescan.py pairs sweeps can survive it; moving the literal render command into a timing helper empties that domain today. Promote on M075's section profile proving too coarse to locate the cost — added 2026-09-04 — M075 plan gate
 - Declass Quarto's navigation-envelope copies of a chapter's `title:` in an HTML book, so a mark written there files one locator rather than one per sidebar and page-navigation copy on every page; promote on an author reporting a title mark's locator count — added 2026-09-03 — M071 review F1 — KI235
 - Remove `_book` before rendering in `m069_cold_chapter` as its sibling `m069_tree` does, so a change to how `$M061W/base` is built cannot leave `check_book_sections` reading a stale one; promote with any other suite-hygiene pass over the m069 legs — added 2026-09-03 — M069 review F8 — KI231
-- Give a recovered locator a fragment where the author wrote the mark's id themselves, the one value the source alone settles: a minted number counts against ids taken across the whole rendered page, which the source cannot know. Promote on an author reporting a recovered locator lands at a chapter's top — added 2026-08-30, narrowed 2026-09-02 — M064/M065 reviews — KI205
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
 - LaTeX and index-semantics edges nothing fences: M49's three unguarded edges; `\index` in a moving argument and `\quartoindexregister`; the see-also locator semantics and whether repeated `\seename` joins; a `,` entry merging with the index delimiter. Promote each on an author reaching it — added 2026-08-16, clustered 2026-09-03 — M01, M03, M15, M20, M30, M49 — KI2, KI9, KI87, KI105-KI107
 - A way for an author to ask for no word at all in front of a cross-reference target, which M59 removes by refusing an invisible label value; promote on an author reporting they wrote one for that reason, or on a second reference agreeing an index prints a bare target — added 2026-08-29 — M59 plan gate
@@ -51,3 +51,4 @@ _Released 0.2.0 2026-09-02._
 - Restore byte-level evidence that `resolve_markers` is output-neutral; D-004 refused the merge-base oracle and D-012 licenses a same-tree one — added 2026-08-17 — M04 review F12 — KI12, KI52
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Paths and filenames this repo does not handle (clustered): a chapter filename containing `#` or `?`; a checkout on Windows without symlink support — added 2026-08-16, clustered 2026-09-02 — M01 review R18, M05 review F11 — KI14, KI78
+- Settle an author-written mark id that collides with a minted `qi-mark-<n>` on the same page: `assign_anchors` never renames an author id, and `tests/fragments.py` checks a fragment's presence rather than its uniqueness, so two elements share an id and one locator lands on the wrong one. Promote with any other pass over the anchor instrument — added 2026-09-05 — M078 plan gate (audit finding 4)

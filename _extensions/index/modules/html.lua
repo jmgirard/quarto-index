@@ -138,11 +138,14 @@ end
 -- on this same page; in a book it is the mark's anchor on the page of the
 -- chapter that carries it, written relative to the page holding the index.
 -- One function for both, so a locator cannot mean two different things.
--- A mark recovered from another chapter's source has no anchor: nothing minted
--- one for it, and a fragment computed here would name an id that page may not
--- carry, which links to nowhere in silence. Its locator is the chapter's page
--- and nothing after it. A front-matter mark in an HTML book chapter is filed
--- the same way by that chapter's own render (D-048).
+-- A mark recovered from another chapter's source carries an anchor only where
+-- its author wrote an id on it: that id is on the rendered page, because
+-- `assign_anchors` never renames one. Nothing is MINTED for such a mark — a
+-- minted id is settled against the ids of the whole rendered page, which the
+-- source cannot see, and a fragment guessed here would link to nowhere in
+-- silence — so a recovered mark whose author wrote no id gets the chapter's
+-- page and nothing after it. A front-matter mark in an HTML book chapter gets
+-- the page alone on both routes, whatever id it carries (D-048).
 local function mark_target(mark)
   if mark.anchor == nil then
     return mark.href or ""
@@ -178,19 +181,22 @@ local function build_entry_tree(marks)
     -- the mark's own chapter's verdict — the one scope a range pairs in
     -- (D-009), whether this index is a document's or the book's.
     -- `page_locator` is the book's flag for a mark recovered from a chapter's
-    -- source, and for a front-matter mark of an HTML book chapter: it has no
-    -- anchor and still contributes a locator, where a cross-reference mark
-    -- has no anchor and must not.
+    -- source, and for a front-matter mark of an HTML book chapter: it
+    -- contributes a locator naming the chapter's page whether or not it
+    -- carries an anchor, where a cross-reference mark has no anchor and must
+    -- not contribute one at all.
     if (mark.anchor or mark.page_locator) and mark.paired ~= "close" then
       -- Two marks that land on the same destination in the same role are one
       -- locator, not two: a reader following either arrives at the same place,
       -- and printing it twice reports how the author spread the marks rather
       -- than anything a reader wants — the rule the cross-references below
-      -- already keep. With an anchor this can never fire, since each mark
-      -- mints an id of its own; it fires on a chapter recovered from its
-      -- source, whose marks all carry that chapter's page and nothing after
-      -- it, and where a term marked twice would otherwise print the same link
-      -- twice over.
+      -- already keep. With a MINTED anchor this can never fire, since each
+      -- mark mints an id of its own; it fires on a chapter recovered from its
+      -- source, whose marks carry that chapter's page and, where their author
+      -- wrote no id, nothing after it — and where a term marked twice that way
+      -- would otherwise print the same link twice over. Two recovered marks of
+      -- one term whose authors gave them different ids are two destinations
+      -- and stay two locators, exactly as they are on the record route.
       local target = mark_target(mark)
       local already = false
       for _, existing in ipairs(node.locators) do

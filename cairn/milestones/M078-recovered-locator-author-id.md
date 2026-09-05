@@ -1,13 +1,13 @@
 # M078: A recovered locator lands on the id its author wrote
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes where an author's index link lands in a rendered book
-- **Branch/PR:** —
+- **Branch/PR:** `m078-recovered-locator-author-id`
 
 ## Goal
 
@@ -127,6 +127,8 @@ clause; the docs and `CHANGELOG.md` follow.
 ## Work log
 
 - 2026-09-05: created by /milestone-plan.
+- 2026-09-05: implement started on `m078-recovered-locator-author-id`; question gate skipped — the plan gate settled the four open choices (which id form to carry, two rows for a recovered range, leaving `tests/fragments.py` alone, the probe matrix), and nothing else was open.
+- 2026-09-05: checkpoint, T1/T2/T3 written and unverified — the suite run that rebaselines T4's manifests had not finished when the turn ended, so no task is checked off. `four.qmd` gained front matter with two `abstract:` marks and six body forms carrying author ids; `sub/two.qmd` gained one; `recovered_marks` carries `span.identifier` as `anchor` from the blocks walk only, gated on `#surviving == 0`, with `page_locator` kept beside it.
 - 2026-09-05: criteria audit ran in FULL mode (surface tier user-facing) and returned twelve findings. Seven fixed here and reported at the gate: AC1's universal was unsatisfiable over see=/see-also= rows and now covers locator-contributing marks only; its "one mark of each kind" clause was a hand-list and moved to T1; no criterion required superseding D-041, now T6; AC2 as drafted passed identically before and after the change and was rewritten; AC3 was underdetermined on field, term and page and now names abstract: and a term marked nowhere else; AC4 was half-true before any work and pointed at shipped release sections, now a new Unreleased entry; the --self-test half of the suite criterion binds the harness and its plants moved to T5. Three routed to the gate as questions. Two recorded and not acted on: proportionality clean throughout, and IP1/IP3/GP5 untouched since an author-written Pandoc id is already honored on the record route.
 - 2026-09-05: plan gate chose carrying the author's Pandoc `{#id}` over adding an `id=` mark attribute because the identifier is already read and kept on the record route (`html.lua:582`) and a new attribute would be a syntax form expressing nothing the existing mechanism cannot (GP5, IP3); falsified by an author needing an index anchor on a mark whose id is already claimed by another consumer.
 - 2026-09-05: plan gate chose two rows for a recovered range whose ends both carry ids over collapsing them to one or refusing ids on range marks, because a recovered mark already indexes as though `range=` were absent and the record route prints two locators for two marks of one term; falsified by an author reporting a recovered range printing twice is a defect.

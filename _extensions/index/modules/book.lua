@@ -600,12 +600,14 @@ end
 -- What comes back is the AUTHOR's own values and nothing else: the levels each
 -- mark indexes, the index it files in, the sort keys it declares, and which
 -- indexes the chapter places.
--- A chapter's own conclusions about itself — the anchor it minted, the role it
+-- A chapter's own conclusions about itself — the anchor it MINTED, the role it
 -- resolved, the verdict it reached about a range, the sort key it RESOLVED by
 -- filling its own fallbacks in — are not here and are not invented (D-009,
--- D-021). So a recovered mark carries no anchor, and its locator is the
--- chapter's page with no fragment; and it indexes as though `range=` and
--- `role=` were absent. A `sort=` the author wrote is one of their own values
+-- D-021). So a recovered mark indexes as though `range=` and `role=` were
+-- absent. An id the AUTHOR wrote on the mark is not one of those conclusions
+-- and does come back, as its anchor, so its locator is the chapter's page
+-- followed by that id; a mark whose author wrote none gets the page alone,
+-- there being no id to mint one against here. A `sort=` the author wrote is one of their own values
 -- and does come back, in the declared-key-per-printed-path shape
 -- `build_record` writes, so a term files where its author asked whether or not
 -- its chapter's record could be read.
@@ -729,6 +731,11 @@ end
 -- read from its record.
 local function recovered_marks(meta, blocks)
   local marks, sorts = {}, {}
+  -- Which of the two walks below is running. The author's own id is carried
+  -- out of the blocks and never out of the metadata: a front-matter mark of an
+  -- HTML book chapter files the chapter's page and no fragment on the record
+  -- route too (D-048), and the two routes have to keep printing the one row.
+  local in_blocks = false
   local function collect(span)
     if not span.classes:includes(qi_core.INDEX_CLASS) then
       return nil
@@ -779,10 +786,26 @@ local function recovered_marks(meta, blocks)
       -- is settled here rather than left for `fold_undeclared`, exactly as a
       -- mark's own chapter settles it.
       index = index_name,
-      -- This mark has no anchor and never will, so `mark_target` cannot
-      -- build a fragment for it. The flag is what tells a locator-
-      -- contributing recovered mark from a cross-reference mark, which has
-      -- no anchor either and must contribute no locator.
+      -- The id the mark's AUTHOR wrote, which is one of their own values and
+      -- comes back like the rest of them; nothing here mints one, because a
+      -- minted id is settled against the ids of the whole rendered page and
+      -- this route sees one chapter's source. So `mark_target` builds a
+      -- fragment where the author wrote an id and the chapter's bare page
+      -- where they wrote none.
+      --
+      -- Only where this mark contributes a locator: a cross-reference mark
+      -- carries an id as readily as any other span, and giving it an anchor
+      -- would make it contribute a locator through the `mark.anchor or
+      -- mark.page_locator` test in `html.lua`, which is the one thing it must
+      -- not do.
+      anchor = (in_blocks and #surviving == 0 and span.identifier ~= "")
+        and span.identifier or nil,
+      -- Kept beside the anchor rather than replaced by it: it is what says a
+      -- recovered mark's locator is the chapter's PAGE, which is what makes
+      -- `build_book_marks` write an href at all, and it still stands alone for
+      -- a recovered mark whose author wrote no id. Without it a recovered mark
+      -- is indistinguishable from a cross-reference mark, which has no anchor
+      -- either and must contribute no locator.
       page_locator = #surviving == 0 or nil,
     }
     return nil
@@ -803,6 +826,7 @@ local function recovered_marks(meta, blocks)
   -- front matter as readily as in the body, and this route cannot tell which
   -- way either went.
   conditional_free_meta(meta):walk({ Span = collect })
+  in_blocks = true
   blocks:walk({ Span = collect })
   return marks, sorts
 end
@@ -1334,11 +1358,12 @@ local function book_marks(ctx, records)
                              mark.levels),
         xrefs = xrefs,
         anchor = mark.anchor,
-        -- Set only on a mark recovered from a chapter's source, where nothing
-        -- minted an anchor: it says this mark contributes a locator all the
-        -- same, and that locator is the chapter's page. Without it a recovered
-        -- mark is indistinguishable from a cross-reference mark, which has no
-        -- anchor either and must contribute no locator.
+        -- Set only on a mark recovered from a chapter's source, and on a
+        -- front-matter mark of an HTML book chapter: it says this mark
+        -- contributes a locator whether or not it carries an anchor, and that
+        -- its locator names the chapter's page. Without it a recovered mark
+        -- carrying no author id is indistinguishable from a cross-reference
+        -- mark, which has no anchor either and must contribute no locator.
         page_locator = mark.page_locator,
         -- The chapter's own resolved role, which is all a book needs now that
         -- nothing pairs here: a mark carries whatever role its own chapter

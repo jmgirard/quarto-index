@@ -871,6 +871,8 @@ letter	I
 letter	K
 0	Kappa	
 1	Sub Level	one.html#qi-mark-3
+letter	M
+0	Meridian	sub/two.html#meridian-passage
 letter	R
 0	Ranged Term	one.html#qi-mark-4 sub/two.html#qi-mark-3
 letter	Z
@@ -910,6 +912,7 @@ read -r -d '' BOOK_PDF_TERMS <<'MANIFEST' || true
 1	Gamma
 1	Invisible Entry
 0	Kappa
+1	Meridian
 1	Sub Level
 3	Shared Term
 1	Zeta
@@ -5998,7 +6001,7 @@ pass "M21-AC5: a range paired inside one chapter gives one locator; a range span
 # M07-AC4: the book's B group holds Beta, marked in one.qmd, and Beacon,
 # marked in sub/two.qmd — a group gathers what every chapter contributed.
 check_letter_sweep "$CAPTURE_ROOT/book-html/_book/last.html" "M07-AC4" \
-  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ\nT\nL'
+  $'A\nB\nC\nD\nE\nG\nI\nK\nM\nR\nZ\nT\nL'
 
 # The manifest above is the positive half: it says the marker chapter's index
 # is the whole book's. This is the negative half, and the questions only a
@@ -6518,7 +6521,7 @@ capture --project "$BOOK_DIR" html "book-html2"
 check_index_sections "$CAPTURE_ROOT/book-html2/_book/last.html" \
   "$BOOK_HTML_INDEX" "M05 hardening (second render)" hrefs
 check_letter_sweep "$CAPTURE_ROOT/book-html2/_book/last.html" "M07-AC4 (second render)" \
-  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ\nT\nL'
+  $'A\nB\nC\nD\nE\nG\nI\nK\nM\nR\nZ\nT\nL'
 
 # A record for a chapter the book does not list must not reach the index. The
 # planted record is well-formed and names a chapter absent from _quarto.yml,
@@ -6542,7 +6545,7 @@ check_store_reports "$WORK/book-ghost.log" \
 check_index_sections "$CAPTURE_ROOT/book-ghost/_book/last.html" \
   "$BOOK_HTML_INDEX" "M05 hardening (stale chapter ignored)" hrefs
 check_letter_sweep "$CAPTURE_ROOT/book-ghost/_book/last.html" "M07-AC4 (stale chapter)" \
-  $'A\nB\nC\nD\nE\nG\nI\nK\nR\nZ\nT\nL'
+  $'A\nB\nC\nD\nE\nG\nI\nK\nM\nR\nZ\nT\nL'
 rm -f "$GHOST"
 
 # A record this filter cannot read must cost that chapter's entries and say
@@ -6906,6 +6909,14 @@ five.html	qi-index-gamma	Gondola
 five.html	qi-index-gamma	Hasp
 five.html	qi-index-gamma	Ingot
 five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Keystone
+five.html	qi-index-gamma	Lintel
+five.html	qi-index-gamma	Mullion
+five.html	qi-index-gamma	Newel
+five.html	qi-index-gamma	Oriel
+five.html	qi-index-gamma	Purlin
+five.html	qi-index-gamma	Quoin
+five.html	qi-index-gamma	Rafter
 five.html	qi-index-gamma	Woodwork
 five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
@@ -6926,6 +6937,14 @@ five.html	qi-index-gamma	Gondola
 five.html	qi-index-gamma	Hasp
 five.html	qi-index-gamma	Ingot
 five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Keystone
+five.html	qi-index-gamma	Lintel
+five.html	qi-index-gamma	Mullion
+five.html	qi-index-gamma	Newel
+five.html	qi-index-gamma	Oriel
+five.html	qi-index-gamma	Purlin
+five.html	qi-index-gamma	Quoin
+five.html	qi-index-gamma	Rafter
 five.html	qi-index-gamma	Woodwork
 five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
@@ -7592,7 +7611,7 @@ fi
 #              itself; its own write fails on the directory, which is one
 #              report. Builds nothing.
 #   five.qmd   the same recovery report; the book's last chapter, so it takes
-#              `gamma` on and builds its section — all eleven entries. No
+#              `gamma` on and builds its section — all nineteen entries. No
 #              chapter after it, so no marker-position report.
 #
 #   4 recovery + 1 write-failure + 2 marker-position = 7.
@@ -7621,9 +7640,9 @@ m061_block_record() {   # <chapter file> <store directory> <label>
 
 
 # The gamma section as it stands with four.qmd's record unwritable: every one
-# of the eleven entries the fixture files in that index, the eight that live
-# only in the chapter whose record can never be written among them (M064-AC1,
-# M065-AC1 to M065-AC4). Held by term rather than by count, so which terms the
+# of the nineteen entries the fixture files in that index, the sixteen that
+# live only in the chapter whose record can never be written among them
+# (M064-AC1, M065-AC1 to M065-AC4). Held by term rather than by count, so which terms the
 # section carries is what is asserted rather than merely that it is printed —
 # and in RENDERED order, so `Zephyr` filing first under the sort key four.qmd
 # declares for it is asserted here too (M065-AC2). The alpha and beta sections
@@ -7639,6 +7658,14 @@ five.html	qi-index-gamma	Gondola
 five.html	qi-index-gamma	Hasp
 five.html	qi-index-gamma	Ingot
 five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Keystone
+five.html	qi-index-gamma	Lintel
+five.html	qi-index-gamma	Mullion
+five.html	qi-index-gamma	Newel
+five.html	qi-index-gamma	Oriel
+five.html	qi-index-gamma	Purlin
+five.html	qi-index-gamma	Quoin
+five.html	qi-index-gamma	Rafter
 five.html	qi-index-gamma	Woodwork
 five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
@@ -7670,6 +7697,22 @@ letter	I
 0	Ingot	four.html
 letter	J
 0	Jetty	four.html
+letter	K
+0	Keystone	four.html#keystone-passage
+letter	L
+0	Lintel		see-link Escutcheon
+letter	M
+0	Mullion	four.html#mullion-passage
+letter	N
+0	Newel	four.html#newel-opens four.html#newel-closes
+letter	O
+0	Oriel	four.html#oriel-opens four.html
+letter	P
+0	Purlin	four.html#purlin-passage
+letter	Q
+0	Quoin	four.html
+letter	R
+0	Rafter	four.html
 letter	W
 0	Woodwork	
 1	Joinery	four.html
@@ -7742,7 +7785,7 @@ for M061_PASS in one two; do
   [ "$M061_LINES" = "7" ] \
     || { grep '(W) ' "$WORK/place-blocked-$M061_PASS.log" >&2; fail "M063-AC3 (render $M061_PASS): the render wrote $M061_LINES warning line(s), and the three kinds this check counts by name account for 7"; }
 done
-pass "M063-AC3/M064-AC1/M064-AC2: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all eleven of its entries, the eight that live only in the unwritable record linking to that chapter's page with no fragment and every other locator's fragment naming an id its page holds, and each draws the same seven warnings and exits 0"
+pass "M063-AC3/M064-AC1/M064-AC2: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all nineteen of its entries, the sixteen that live only in the unwritable record linking to that chapter's page — after it the id their author wrote, where they wrote one — and every locator's fragment naming an id its page holds, and each draws the same seven warnings and exits 0"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -7802,8 +7845,9 @@ pass "M063-AC3: with the held path freed, two further renders write four.qmd's r
 section 'M064 — a chapter whose record cannot be used contributes its terms anyway,'
 
 # The gamma section as it stands where recovery does NOT happen: three of the
-# eleven entries, the eight four.qmd contributes missing because they live only
-# in the chapter whose record cannot be read and whose source cannot be parsed.
+# nineteen entries, the sixteen four.qmd contributes missing because they live
+# only in the chapter whose record cannot be read and whose source cannot be
+# parsed.
 # This is the manifest
 # the AC1 arrangement matched before this milestone, kept as what the
 # recovery-disabled mutant and the unreadable-source case must print.
@@ -7891,7 +7935,7 @@ m064_chapter_render() {   # <slug> <capture slug> <chapter> <label>
 #   four.qmd   reads both held paths: 2. Builds nothing.
 #   five.qmd   reads both held paths: 2. The book's last chapter, and the two
 #              recovered markers show `alpha` and `beta` placed, so it takes
-#              `gamma` on and builds its section with all eleven entries.
+#              `gamma` on and builds its section with all nineteen entries.
 #
 #   8 recovery + 2 write-failure + 2 marker-position = 12 warning lines, of
 #   which the anchored pattern set reaches the 10 that are not write failures
@@ -8423,6 +8467,22 @@ letter	I
 0	Ingot	four.html
 letter	J
 0	Jetty	four.html
+letter	K
+0	Keystone	four.html#keystone-passage
+letter	L
+0	Lintel		see-link Escutcheon
+letter	M
+0	Mullion	four.html#mullion-passage
+letter	N
+0	Newel	four.html#newel-opens four.html#newel-closes
+letter	O
+0	Oriel	four.html#oriel-opens four.html
+letter	P
+0	Purlin	four.html#purlin-passage
+letter	Q
+0	Quoin	four.html
+letter	R
+0	Rafter	four.html
 letter	W
 0	Woodwork	four.html
 MANIFEST
@@ -8446,6 +8506,22 @@ letter	I
 0	Ingot	four.html
 letter	J
 0	Jetty	four.html
+letter	K
+0	Keystone	four.html#keystone-passage
+letter	L
+0	Lintel		see-link Escutcheon
+letter	M
+0	Mullion	four.html#mullion-passage
+letter	N
+0	Newel	four.html#newel-opens four.html#newel-closes
+letter	O
+0	Oriel	four.html#oriel-opens four.html
+letter	P
+0	Purlin	four.html#purlin-passage
+letter	Q
+0	Quoin	four.html
+letter	R
+0	Rafter	four.html
 letter	W
 0	Woodwork	
 1	Joinery	four.html
@@ -8509,6 +8585,182 @@ MANIFEST
   check_index_sections "$CAPTURE_ROOT/m063-m065-carryrange/_book/five.html" \
     "$M065_GAMMA_ROWS" "M065-AC4 self-test (the section does not move)" hrefs
   pass "M065-AC4 self-test: with a recovered mark carrying the range end its author wrote, and the pairing a chapter's own process would reach re-derived from the recovered marks, the gamma section is exactly the section the unmutated run prints — so the one plain locator AC4 promises is what the pair prints whether the field travels or not, and the render still exits 0"
+
+  # -------------------------------------------------------------------------
+  # M078 T5 — the three defect classes the author-id rows above are held
+  # against, each planted alone in a copy of the tree and each shown red by
+  # the manifest it belongs to. Same arrangement as the M065 plants beside
+  # them: four.qmd's record blocked, the whole book rendered, the gamma
+  # section five.html builds compared row for row.
+  # -------------------------------------------------------------------------
+
+  # ORACLE — the gamma section with the recovered identifier dropped, which is
+  # what this book printed before M078. Every four.qmd row loses its fragment,
+  # and the two ranges lose a locator with it: their ends then share one
+  # destination and the entry-tree's same-target rule folds each pair to one.
+  read -r -d '' M078_GAMMA_ROWS_NOID <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	A
+0	Zephyr	four.html
+letter	D
+0	Dovetail	four.html
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	F
+0	Ferrule		see-link Escutcheon
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+letter	H
+0	Hasp		also-link Escutcheon
+letter	I
+0	Ingot	four.html
+letter	J
+0	Jetty	four.html
+letter	K
+0	Keystone	four.html
+letter	L
+0	Lintel		see-link Escutcheon
+letter	M
+0	Mullion	four.html
+letter	N
+0	Newel	four.html
+letter	O
+0	Oriel	four.html
+letter	P
+0	Purlin	four.html
+letter	Q
+0	Quoin	four.html
+letter	R
+0	Rafter	four.html
+letter	W
+0	Woodwork	
+1	Joinery	four.html
+MANIFEST
+
+  # ORACLE — the same section with the metadata walk allowed to carry an id
+  # too: `Quoin`, marked in four.qmd's `abstract:`, links into a field whose
+  # anchor the title-block template may not print, where D-048 has both routes
+  # file the chapter's page. `Rafter`, marked there with no id, is unmoved.
+  read -r -d '' M078_GAMMA_ROWS_METAID <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	A
+0	Zephyr	four.html
+letter	D
+0	Dovetail	four.html
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	F
+0	Ferrule		see-link Escutcheon
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+letter	H
+0	Hasp		also-link Escutcheon
+letter	I
+0	Ingot	four.html
+letter	J
+0	Jetty	four.html
+letter	K
+0	Keystone	four.html#keystone-passage
+letter	L
+0	Lintel		see-link Escutcheon
+letter	M
+0	Mullion	four.html#mullion-passage
+letter	N
+0	Newel	four.html#newel-opens four.html#newel-closes
+letter	O
+0	Oriel	four.html#oriel-opens four.html
+letter	P
+0	Purlin	four.html#purlin-passage
+letter	Q
+0	Quoin	four.html#quoin-passage
+letter	R
+0	Rafter	four.html
+letter	W
+0	Woodwork	
+1	Joinery	four.html
+MANIFEST
+
+  # ORACLE — the same section with the locator-contribution gate removed from
+  # the identifier: `Lintel`, a cross-reference mark carrying an id its author
+  # wrote, contributes a locator beside its see-line, which no mark bearing a
+  # surviving target may do. `Ferrule` and `Hasp` carry no id, so they are
+  # unmoved and the mutation is not merely "every cross-reference gains a
+  # page".
+  read -r -d '' M078_GAMMA_ROWS_XREFLOC <<'MANIFEST' || true
+section	qi-index-gamma	h1	Index of Gamma
+letter	A
+0	Zephyr	four.html
+letter	D
+0	Dovetail	four.html
+letter	E
+0	Escutcheon	#qi-mark-1
+letter	F
+0	Ferrule		see-link Escutcheon
+letter	G
+0	Gantry	index.html#qi-mark-3
+0	Gondola	two.html#qi-mark-2
+letter	H
+0	Hasp		also-link Escutcheon
+letter	I
+0	Ingot	four.html
+letter	J
+0	Jetty	four.html
+letter	K
+0	Keystone	four.html#keystone-passage
+letter	L
+0	Lintel	four.html#lintel-passage	see-link Escutcheon
+letter	M
+0	Mullion	four.html#mullion-passage
+letter	N
+0	Newel	four.html#newel-opens four.html#newel-closes
+letter	O
+0	Oriel	four.html#oriel-opens four.html
+letter	P
+0	Purlin	four.html#purlin-passage
+letter	Q
+0	Quoin	four.html
+letter	R
+0	Rafter	four.html
+letter	W
+0	Woodwork	
+1	Joinery	four.html
+MANIFEST
+
+  m061_mutant m078-noid \
+    "M078-AC1 self-test (the recovered identifier dropped)" \
+    's{      anchor = \(in_blocks and #surviving == 0 and span\.identifier ~= ""\)\n        and span\.identifier or nil,\n}{      anchor = nil,\n}'
+  m061_block_record four.qmd \
+    "$M061W/m078-noid/.quarto/$STORE_DIR" "M078-AC1 self-test (no id)"
+  m063_tree_render m078-noid m078-noid \
+    "M078-AC1 self-test (no id)" "$PLACE_SECTIONS"
+  check_index_sections "$CAPTURE_ROOT/m063-m078-noid/_book/five.html" \
+    "$M078_GAMMA_ROWS_NOID" "M078-AC1 self-test (no id)" hrefs
+  pass "M078-AC1 self-test: with the recovered identifier dropped and nothing else changed, every locator into the recovered chapter lands at the top of its page and the two id-bearing ranges fold to one locator each — the defect the AC1 rows are held against — and the render still exits 0"
+
+  m061_mutant m078-metaid \
+    "M078-AC4 self-test (a front-matter identifier carried)" \
+    's{anchor = \(in_blocks and #surviving == 0}{anchor = (true and #surviving == 0}'
+  m061_block_record four.qmd \
+    "$M061W/m078-metaid/.quarto/$STORE_DIR" "M078-AC4 self-test"
+  m063_tree_render m078-metaid m078-metaid \
+    "M078-AC4 self-test" "$PLACE_SECTIONS"
+  check_index_sections "$CAPTURE_ROOT/m063-m078-metaid/_book/five.html" \
+    "$M078_GAMMA_ROWS_METAID" "M078-AC4 self-test" hrefs
+  pass "M078-AC4 self-test: with the metadata walk allowed to carry an author id and nothing else changed, the front-matter mark carrying one links into its abstract rather than to the chapter's page — the row the record route cannot print, and the defect the AC4 row is held against — and the render still exits 0"
+
+  m061_mutant m078-xrefloc \
+    "M078-AC2 self-test (the locator-contribution gate removed)" \
+    's{in_blocks and #surviving == 0 and span\.identifier}{in_blocks and span.identifier}'
+  m061_block_record four.qmd \
+    "$M061W/m078-xrefloc/.quarto/$STORE_DIR" "M078-AC2 self-test"
+  m063_tree_render m078-xrefloc m078-xrefloc \
+    "M078-AC2 self-test" "$PLACE_SECTIONS"
+  check_index_sections "$CAPTURE_ROOT/m063-m078-xrefloc/_book/five.html" \
+    "$M078_GAMMA_ROWS_XREFLOC" "M078-AC2 self-test" hrefs
+  pass "M078-AC2 self-test: with the locator-contribution gate removed from the recovered identifier and nothing else changed, the cross-reference mark carrying an author id prints a page beside its see-line while the two carrying none stay page-less — the defect the AC2 row is held against — and the render still exits 0"
+
 
   # M066-AC2 — the per-substitution count catches what a whole-file `cmp`
   # cannot: one of the two carryrange substitutions slipped with the other
@@ -9273,11 +9525,14 @@ MANIFEST
 # ORACLE — five.qmd rendered alone into the same state. It carries no marker
 # of its own, so what brings it here is being the book's LAST chapter: it takes
 # on `gamma`, which no marker names, and reads all four other sources for it.
-# Every one of the eleven entries is present and only `Escutcheon`, its own,
-# carries a fragment. `Zephyr` files first under the sort key four.qmd's source
-# declares, `Woodwork` carries no locator of its own and `Joinery` hangs under
-# it, and the two cross-references print their targets rather than a page —
-# every one of them a value the author wrote, which is what recovery may carry.
+# Every one of the nineteen entries is present. `Escutcheon`, five.qmd's own,
+# carries the fragment its render minted; every other fragment here is an id
+# four.qmd's author wrote, and an entry whose author wrote none carries the
+# chapter's page alone. `Zephyr` files first under the sort key four.qmd's
+# source declares, `Woodwork` carries no locator of its own and `Joinery` hangs
+# under it, and the three cross-references print their targets rather than a
+# page — every one of them a value the author wrote, which is what recovery may
+# carry.
 read -r -d '' M069_GAMMA_ROWS_COLD <<'MANIFEST' || true
 section	qi-index-gamma	h1	Index of Gamma
 letter	A
@@ -9297,6 +9552,22 @@ letter	I
 0	Ingot	four.html
 letter	J
 0	Jetty	four.html
+letter	K
+0	Keystone	four.html#keystone-passage
+letter	L
+0	Lintel		see-link Escutcheon
+letter	M
+0	Mullion	four.html#mullion-passage
+letter	N
+0	Newel	four.html#newel-opens four.html#newel-closes
+letter	O
+0	Oriel	four.html#oriel-opens four.html
+letter	P
+0	Purlin	four.html#purlin-passage
+letter	Q
+0	Quoin	four.html
+letter	R
+0	Rafter	four.html
 letter	W
 0	Woodwork	
 1	Joinery	four.html
@@ -9601,12 +9872,13 @@ fi
 #
 # Every term the five chapters mark, and the section each prints in, is listed
 # by hand below: `alpha` takes index.qmd's Aardvark and two.qmd's Bramble,
-# `beta` index.qmd's Cardamom and three.qmd's Coriander, and `gamma` the eleven
-# entries index.qmd, two.qmd, four.qmd and five.qmd file in it — eight of them
-# four.qmd's, seven from its six mark forms with `Woodwork` and its sub-entry
-# `Joinery` counting as two and `Ingot`'s two range marks as one, plus the bare
-# `Dovetail` that chapter already marked — printed in five.html, the book's
-# last chapter, `Zephyr` first under the sort key four.qmd declares for it.
+# `beta` index.qmd's Cardamom and three.qmd's Coriander, and `gamma` the
+# nineteen entries index.qmd, two.qmd, four.qmd and five.qmd file in it —
+# sixteen of them four.qmd's, from its fourteen mark forms with `Woodwork` and
+# its sub-entry `Joinery` counting as two, `Ingot`'s two range marks as one,
+# and the bare `Dovetail` that chapter already marked — printed in five.html,
+# the book's last chapter, `Zephyr` first under the sort key four.qmd declares
+# for it.
 # ---------------------------------------------------------------------------
 section 'M063-AC2, continued — a store whose records all stand at the current version'
 read -r -d '' PLACE_TERMS <<'MANIFEST' || true
@@ -9619,6 +9891,14 @@ five.html	qi-index-gamma	Gondola
 five.html	qi-index-gamma	Hasp
 five.html	qi-index-gamma	Ingot
 five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Keystone
+five.html	qi-index-gamma	Lintel
+five.html	qi-index-gamma	Mullion
+five.html	qi-index-gamma	Newel
+five.html	qi-index-gamma	Oriel
+five.html	qi-index-gamma	Purlin
+five.html	qi-index-gamma	Quoin
+five.html	qi-index-gamma	Rafter
 five.html	qi-index-gamma	Woodwork
 five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
@@ -9715,6 +9995,14 @@ five.html	qi-index-gamma	Gondola
 five.html	qi-index-gamma	Hasp
 five.html	qi-index-gamma	Ingot
 five.html	qi-index-gamma	Jetty
+five.html	qi-index-gamma	Keystone
+five.html	qi-index-gamma	Lintel
+five.html	qi-index-gamma	Mullion
+five.html	qi-index-gamma	Newel
+five.html	qi-index-gamma	Oriel
+five.html	qi-index-gamma	Purlin
+five.html	qi-index-gamma	Quoin
+five.html	qi-index-gamma	Rafter
 five.html	qi-index-gamma	Woodwork
 five.html	qi-index-gamma	Joinery
 index.html	qi-index-alpha	Aardvark
@@ -21864,6 +22152,8 @@ letter	I
 letter	K
 0	Kappa	0
 1	Sub Level	1
+letter	M
+0	Meridian	1
 letter	R
 0	Ranged Term	1
 letter	Z

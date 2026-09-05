@@ -478,14 +478,19 @@ like a record and unopenable therefore counts as written and is recovered
 alone — the printed levels, the declared sort keys, the cross-reference
 targets that survive the self-target drop and the index each mark files in,
 and which indexes the chapter places. The surviving targets are load-bearing:
-a mark with one contributes no locator. It carries no anchor, so a recovered
-locator links to the chapter's page and no fragment — and so does a
-front-matter mark filed by the chapter's own render, which mints no anchor for
-it either (D-048, M071), so the two routes print one row for such a mark; and no resolved role and
-no pairing verdict, which are conclusions a chapter reaches about itself
-(D-009) — so a recovered range's two ends print the one page and a principal
-locator prints unemphasized (corrected M065, which added the declared sort
-keys). A record that is simply ABSENT — one whose name no listing of the
+a mark with one contributes no locator. An id the mark's AUTHOR wrote is one of
+their own values and comes back as its anchor, so a recovered locator is the
+chapter's page followed by that id; nothing here MINTS one, a minted id being
+settled against every id on the finished page, so a recovered mark whose author
+wrote none gets the page alone (added M078, D-055). The id is taken from the
+blocks walk only: a front-matter mark files the chapter's page with no fragment
+on the record route too, that render minting no anchor for it either (D-048,
+M071), so the two routes print one row for such a mark whatever id it carries.
+No resolved role and no pairing verdict come back, those being conclusions a
+chapter reaches about itself (D-009) — so a recovered range's two ends print
+that chapter's page, each at its own author id where one was written, and a
+principal locator prints unemphasized (corrected M065, which added the declared
+sort keys; corrected M078). A record that is simply ABSENT — one whose name no listing of the
 directory it belongs in carries — is recovered only in a chapter that can PRINT
 an index section: one carrying a placement marker of its own, and the book's
 last chapter, which takes on every index no marker names (added M069, D-045).

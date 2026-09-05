@@ -105,7 +105,13 @@ behind.
 What comes back is what you wrote. An `entry=` naming several levels rebuilds
 its sub-entry and the parent it hangs under; a `sort=` still files the term
 where it asks; and `see=` and `see-also=` still print their lines, neither
-carrying a page number, as neither does on an ordinary render. A mark written
+carrying a page number, as neither does on an ordinary render. An id you wrote
+on the mark yourself comes back too, and the recovered locator links to it, so
+following it lands at the passage you marked. A mark you gave no id is anchored
+at one minted while its chapter renders, and only that chapter's record carries
+it: a minted id is settled against every id on the finished page, which this
+route cannot see from one chapter's source, so a recovered term you gave no id
+links to the chapter's page and nothing after it. A mark written
 in the chapter's YAML front matter comes back with the marks in its body: an
 ordinary render indexes one written there, so this route reads a chapter's
 front matter as well as its body and the two file the same entry in the same
@@ -121,13 +127,8 @@ every page's sidebar and page navigation, and each copy still files a locator
 of its own.) What does not come back is anything the chapter worked out for
 itself while it rendered.
 
-Five things recovery does not return.
+Four things recovery does not return.
 
-- **No fragment.** A recovered term links to the chapter's page and nothing
-  after it, so following it lands at the top of that page rather than at the
-  marked passage. The id a mark is anchored at is minted while that chapter
-  renders, and only its record carries it. A term marked in the chapter's
-  front matter links this way by either route, as said above.
 - **Nothing that reaches the chapter through an include shortcode or an
   executed cell.** Quarto expands both before any filter runs, and what is
   read here is the file on disk.
@@ -149,8 +150,8 @@ Five things recovery does not return.
   of one range, and which locator a `mention="principal"` emphasizes, are
   settled inside that chapter's own render against the anchors it produced. A
   recovered mark indexes as though `range=` and `mention=` were absent: both
-  ends of a range print the one page the chapter is on, and the role prints as
-  an undeclared one does.
+  ends of a range print that chapter's page, each at the id you wrote on it
+  where you wrote one, and the role prints as an undeclared one does.
 
 A record that is simply *absent* — a chapter no render has written one for —
 is read back only where its terms would otherwise be lost from a section this

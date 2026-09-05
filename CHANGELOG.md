@@ -4,6 +4,18 @@
 
 ### Output
 
+- In an HTML book, a mark recovered from a chapter's source now carries the
+  Pandoc identifier its author wrote on it, so the index links to the passage
+  that mark sits at rather than to the top of that chapter's page. A recovered
+  mark whose author wrote no id is unchanged — the chapter's page and nothing
+  after it — because the id such a mark is anchored at is minted against every
+  id on the finished page, which this route cannot see from one chapter's
+  source. A cross-reference mark still contributes no locator whatever id it
+  carries, and a mark in a chapter's front matter still files the chapter's
+  page with no fragment whether that chapter is read from its record or
+  recovered from its source, so the two routes keep printing the one row for
+  it.
+
 - In an HTML book, the reports about a chapter no render has written a record
   for are now drawn once for every chapter that builds an index section — and
   once by a chapter that builds none where the records it read show no chapter

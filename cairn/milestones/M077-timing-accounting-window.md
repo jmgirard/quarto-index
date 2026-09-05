@@ -99,6 +99,8 @@ the checked run → KI246, accepted.
 - 2026-09-04: F6 actioned at review — the merge-base counts the script's own rule calls for were measured at `a1df8ab` in a scratch worktree (since removed): 766 plain and 1397 --self-test, both exit 0, against the branch's 765 and 1396. The scratch worktree used ref-based checkout only; the primary checkout never moved.
 - 2026-09-04: merge gate: the user chose applying the four fix-now findings and then merging, with F2 filed as a candidate row. F1's third probe leg, F3's corrected pass line, F4's span-bounded plant scan and F8's anchored row matches are written. F1 shown to discriminate before the suite run — with the guard rewritten to refuse on an empty heading, the new setup leg goes red naming that conflation while the old two legs stay green. F4 shown on a crafted source whose only banner block sits outside the wrapper body (reported as nothing to drop, where the old scan reported it as unclosed) and on the real source (still 155 to 154 sections, first one gone). CHECKPOINT — both suite runs over the fixed source were in flight at this commit; unchecked.
 
+- 2026-09-04: the four fixes verified on the final source: `tests/run-tests.sh` exits 0 over 765 checks and `--self-test` exits 0 over 1396, neither printing a FAIL line, the same figures as before the fixes. F2 filed as a ROADMAP candidate row; F5, F7, F9, F10 and F11 rejected with reasons recorded in the Review section.
+- 2026-09-04: step-7 approval: PR #77 approved for merge.
 ## Decisions
 
 ## Review
@@ -196,28 +198,40 @@ comments and no unresolved review threads. Nothing to triage.
   able from the correct implementation. The real run catches it only
   incidentally, at the first `section` call. A third leg — flag unset and
   heading empty, which must succeed and write the `unattributed` row — would
-  pin it. Proposed: fix now.
+  pin it. **Fixed at the gate:** the probe grew a `setup` leg — nothing open,
+  the run not closed — which must be accepted and write the one `unattributed`
+  row. Shown to discriminate: with the guard rewritten to refuse on an empty
+  heading, the new leg goes red naming that conflation while the other two
+  stay green.
 - **F2. T4's two repairs and the new guard have no in-suite regression test**
   (`tests/run-tests.sh:25805`, `:25832-25845`). The pre-fix demonstration lives
   in the work log's prose and a scratch harness only; a later edit reinstating
   "any run of dashes" or dropping the `j >= len(lines)` bound leaves both runs
-  green. Proposed: candidate row.
+  green. **Follow-up:** filed as a ROADMAP candidate row; the plant helper is
+  not itself under the suite's plants, and giving it one is more than this
+  branch should carry.
 - **F3. The M075-AC2 pass line claims coverage the check does not have**
   (`tests/run-tests.sh:25761-25764`). "…and no row names anything else, the
   `%d`s row for the window before the first section included" reads as though
   the setup row were held against the declared section list; `timed` filters
   `unattributed` out at `:25733`, so only its multiplicity is checked.
-  Confirmed by reading the check. Proposed: fix now.
+  Confirmed by reading the check. **Fixed at the gate:** the line now says
+  every OTHER row names a declared section, and that the setup row is held to
+  being one row and not to that list.
 - **F4. The drop plant's scan is bounded by EOF, not by the wrapper span the
   scanner uses** (`tests/run-tests.sh:25832`). `banner_headings` works over
   `[lo, hi)` from `run_all_span`; the plant scans `range(head, len(lines))`.
   The reviewer reproduced a source where the plant reports an unclosed block
   the scan never looks at. Same drift class T4 set out to close, left half
-  fixed. Proposed: fix now.
+  fixed. **Fixed at the gate:** the plant imports `run_all_span` beside
+  `BANNER_RULE` and scans `[lo, hi)`. Shown on a crafted source whose only
+  banner block sits outside the wrapper body — reported as nothing to drop,
+  where the old scan reported it as unclosed — and on the real source, which
+  still goes 155 sections to 154 with the first one gone.
 - **F5. D-054's Consequences understate the change's scope**
   (`cairn/DECISIONS.md:404`): "no filter, fixture or other check changes", but
   M077 also adds a hard failure inside `section` that aborts the run.
-  Proposed: reject — the sentence is about the checks over the extension's
+  **Rejected:** the sentence is about the checks over the extension's
   behavior, which is what the surrounding paragraph is enumerating, and a
   D-entry is history that is superseded rather than edited.
 - **F6. The merge-base check counts were never stated.** The wrapper comment at
@@ -227,26 +241,34 @@ comments and no unresolved review threads. Nothing to triage.
   against 765/1396, a drop of exactly one in each mode.
 - **F7. The archived M075 outcome still asserts the removed behavior in the
   present tense** (`cairn/milestones/archive/M075-suite-timing-profile.md:7`).
-  Proposed: reject — the archive is history (IP4), never edited; D-054 is the
+  **Rejected:** the archive is history (IP4), never edited; D-054 is the
   supersession, and it names M075.
 - **F8. `unattributed` is matched as an unanchored substring over whole rows**
   (`tests/run-tests.sh:25926`, `:25944`). A section heading containing the word
-  would fail the control leg against a correct row. Proposed: fix now.
+  would fail the control leg against a correct row. **Fixed at the gate:** both
+  matches are anchored to the label and its tab.
 - **F9. The plant's rule is derived from the module it probes**
   (`tests/run-tests.sh:25802-25803`) — the "expectation derived from the
   artifact under test" shape. Reported as an observation: the mitigation
   (`rule = '# ' + '-' * 74` typed independently at `:25804`, guarded at
-  `:25805` before the mode dispatch) is the right one. Proposed: reject, the
+  `:25805` before the mode dispatch) is the right one. **Rejected:** the
   mitigation is intentional and worth keeping.
 - **F10. The plant's block reader omits `banner_headings`' headless-block error
   path** (`tests/run-tests.sh:25839-25845`); unreachable today, because the
   unmodified scan call at `:25694` would already have killed the run.
-  Proposed: reject as unreachable.
+  **Rejected** as unreachable.
 - **F11. AC1-AC3 checkboxes were unticked while Status was `review`**
-  (`cairn/milestones/M077-timing-accounting-window.md:41-48`). Proposed:
-  reject — AC fencing ticks each box at review against its own evidence line,
+  (`cairn/milestones/M077-timing-accounting-window.md:41-48`). **Rejected:** AC fencing ticks each box at review against its own evidence line,
   which is what happened above.
 
 None of the eleven demonstrates an acceptance criterion failing, and none is a
 defect in what the extension does for an author: every one is about the
 acceptance suite's own self-checks. No return floor is reached.
+
+### After the fix-now work
+
+`tests/run-tests.sh` exits 0 over 765 checks and `tests/run-tests.sh
+--self-test` exits 0 over 1396, neither printing a `FAIL` line — the same
+figures as before the four fixes, which add no check line and remove none.
+The M075-AC2 pass line and the T5 self-test pass line both read as the
+corrected text above.

@@ -22531,10 +22531,11 @@ one answer every render	That chapter is the end of the book's own chapter list, 
 an unusable record repeated	once for every chapter that builds an index section
 the recovery route	Where the record was there to open and could not be used, that chapter's own `.qmd` is read and parsed instead, and the terms it marks — and the placement markers it carries — join the book's index
 the no-marks report	Where the source parses and carries no mark this route can reach — a chapter whose marks all arrive through an include, say — the report says that instead, so nothing tells you terms came back when none did
-five things not returned	Five things recovery does not return.
+four things not returned	Four things recovery does not return.
 what comes back	An `entry=` naming several levels rebuilds its sub-entry and the parent it hangs under; a `sort=` still files the term where it asks; and `see=` and `see-also=` still print their lines, neither carrying a page number
 nothing through an include or a cell	Quarto expands both before any filter runs, and what is read here is the file on disk
-no fragment	A recovered term links to the chapter's page and nothing after it, so following it lands at the top of that page rather than at the marked passage
+an author id comes back	An id you wrote on the mark yourself comes back too, and the recovered locator links to it, so following it lands at the passage you marked
+no minted anchor	so a recovered term you gave no id links to the chapter's page and nothing after it
 conditional content out whole	so recovery takes such a block or span out whole, whatever its `when-` or `unless-` attributes say
 nothing where the source cannot be read	The report then says the source could not be read either, and that chapter's terms are missing from the index until it is rendered again
 which chapter sources this route reads	a chapter named `.qmd`, `.md`, `.markdown` or `.Rmd`, and no other kind
@@ -22543,7 +22544,7 @@ how often a refused chapter is reported	follows whichever report it stands in fo
 when a notebook chapter is refused at all	This route reads a chapter's source only where that chapter's record could not be used or was never written, so a notebook chapter whose record is there and readable is read from that record like any other
 a front-matter mark comes back	A mark written in the chapter's YAML front matter comes back with the marks in its body
 a front-matter mark files one locator	A mark written in the chapter's front matter files one locator, the chapter's page with no fragment, whether the chapter is read from its record or from its source
-no range and no principal	both ends of a range print the one page the chapter is on, and the role prints as an undeclared one does
+no range and no principal	both ends of a range print that chapter's page, each at the id you wrote on it where you wrote one, and the role prints as an undeclared one does
 an absent record is read back where a section would lose it	is read back only where its terms would otherwise be lost from a section this chapter itself prints
 the two chapters that read one	a chapter carrying a placement marker of its own, and the book's last chapter, which takes on every index no marker names
 no other chapter reads one	every other chapter reads such a record as absent and says nothing about it

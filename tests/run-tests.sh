@@ -24825,7 +24825,7 @@ letter	L
 MANIFEST
   m070_mutant bodyfirst \
     "M070 T6 self-test (the body read before the front matter)" \
-    's{  conditional_free_meta\(meta\):walk\(\{ Span = collect \}\)\n  blocks:walk\(\{ Span = collect \}\)\n}{  blocks:walk({ Span = collect })\n  conditional_free_meta(meta):walk({ Span = collect })\n}'
+    's{  conditional_free_meta\(meta\):walk\(\{ Span = from_meta \}\)\n  blocks:walk\(\{ Span = from_blocks \}\)\n}{  blocks:walk({ Span = from_blocks })\n  conditional_free_meta(meta):walk({ Span = from_meta })\n}'
   check_index_sections "$CAPTURE_ROOT/m070-bodyfirst/_book/index.html" \
     "$M070_SECTIONS_BODYFIRST" \
     "M070 T6 self-test (the walks turned round: the body's declared sort key wins and the term files under a letter the ordinary render would not put it under)" hrefs

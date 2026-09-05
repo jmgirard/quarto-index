@@ -731,12 +731,7 @@ end
 -- read from its record.
 local function recovered_marks(meta, blocks)
   local marks, sorts = {}, {}
-  -- Which of the two walks below is running. The author's own id is carried
-  -- out of the blocks and never out of the metadata: a front-matter mark of an
-  -- HTML book chapter files the chapter's page and no fragment on the record
-  -- route too (D-048), and the two routes have to keep printing the one row.
-  local in_blocks = false
-  local function collect(span)
+  local function collect(span, in_blocks)
     if not span.classes:includes(qi_core.INDEX_CLASS) then
       return nil
     end
@@ -811,6 +806,15 @@ local function recovered_marks(meta, blocks)
     return nil
   end
 
+  -- Which of the two walks below is running, passed by a wrapper of its own
+  -- rather than read off a flag one walk sets for the other, so the two walk
+  -- lines stay adjacent and swappable. It is what carries the author's own id
+  -- out of the blocks and never out of the metadata: a front-matter mark of an
+  -- HTML book chapter files the chapter's page and no fragment on the record
+  -- route too (D-048), and the two routes have to keep printing the one row.
+  local function from_meta(span) return collect(span, false) end
+  local function from_blocks(span) return collect(span, true) end
+
   -- Metadata first and blocks second, which is the order the ordinary render
   -- sees them in — verified 2026-09-02 under pandoc 3.11, a filter table with
   -- a `Span` function is handed a span in `abstract:` before one in the body.
@@ -825,9 +829,8 @@ local function recovered_marks(meta, blocks)
   -- caller. An author writes `.content-visible` and `.content-hidden` in
   -- front matter as readily as in the body, and this route cannot tell which
   -- way either went.
-  conditional_free_meta(meta):walk({ Span = collect })
-  in_blocks = true
-  blocks:walk({ Span = collect })
+  conditional_free_meta(meta):walk({ Span = from_meta })
+  blocks:walk({ Span = from_blocks })
   return marks, sorts
 end
 

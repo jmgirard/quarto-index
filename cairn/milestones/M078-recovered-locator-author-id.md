@@ -7,7 +7,7 @@
 - **Principles touched:** GP1
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes where an author's index link lands in a rendered book
-- **Branch/PR:** `m078-recovered-locator-author-id`
+- **Branch/PR:** `m078-recovered-locator-author-id` / https://github.com/jmgirard/quarto-index/pull/78
 
 ## Goal
 
@@ -64,7 +64,7 @@ clause; the docs and `CHANGELOG.md` follow.
 - [ ] AC5: A chapter in a subdirectory recovered from its source, whose body
       mark carries an author-written identifier, prints a locator whose href
       is that chapter's page under its directory followed by that identifier.
-- [ ] AC6: `site/books.qmd`, `cairn/DESIGN.md`, and a new `## Unreleased`
+- [x] AC6: `site/books.qmd`, `cairn/DESIGN.md`, and a new `## Unreleased`
       entry in `CHANGELOG.md` each state that a recovered locator carries the
       identifier the mark's author wrote where they wrote one and the
       chapter's page alone otherwise. `site/books.qmd`'s list of what recovery
@@ -149,3 +149,14 @@ clause; the docs and `CHANGELOG.md` follow.
 ## Decisions
 
 ## Review
+
+- AC6 (verified 2026-09-05): `git diff main..HEAD` over the three surfaces.
+  `CHANGELOG.md` gains an entry under `## Unreleased` → `### Output` stating
+  the author-id rule, the no-id fallback and both exceptions; the diff over
+  that file deletes zero lines, so no shipped release section is edited.
+  `cairn/DESIGN.md:478-496` states the rule and its blocks-walk restriction.
+  `site/books.qmd` states it in the "what comes back" paragraph, drops the
+  "No fragment" item, and its count sentence reads "Four things recovery does
+  not return" over a list that now holds exactly four items; the range
+  sentence reads "both ends of a range print that chapter's page, each at the
+  id you wrote on it where you wrote one".

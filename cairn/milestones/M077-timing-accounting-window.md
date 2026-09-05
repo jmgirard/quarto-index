@@ -66,14 +66,14 @@ the checked run → KI246, accepted.
       nothing checks.
 - [x] T3: Retire T5's third plant — five seconds off one row (`:25802`) —
       with the clause it probes, and add the plant for T1's refusal.
-- [ ] T4: Repair `m075_plant_source` (`:25726`): recognize a banner rule by the
+- [x] T4: Repair `m075_plant_source` (`:25726`): recognize a banner rule by the
       rule `tests/suitescan.py` uses (`BANNER_RULE`, `^# -{10,}\s*$`, `:78`)
       rather than by any run of dashes, and bound the inner scan for a block's
       close so an unclosed trailing block is reported rather than raising.
 - [ ] T5: Write the decision entry recording the narrowing and why widening was
-      declined; correct the M075 sentences in `DESIGN.md` and the suite's own
-      header prose that say the run's seconds are held to its clock; full
-      `tests/run-tests.sh --self-test` green.
+      declined; record in `DESIGN.md` that the printed seconds are now held by
+      nothing, and correct the suite's own prose that says they are held to
+      its clock; full `tests/run-tests.sh --self-test` green.
 
 ## Work log
 
@@ -90,6 +90,8 @@ the checked run → KI246, accepted.
 - 2026-09-04: T3 written: the five-seconds plant is retired with the clause it probed; the refusal plant runs two subshell legs over their own timing file, differing by the close alone. Shown to discriminate before the suite run — spliced against a1df8ab's timer it goes red naming the rows the pre-fix code left, `M077 probe section, opened by the probe itself 0` and `unattributed 461`, the second row being the whole run. CHECKPOINT — the --self-test run was in flight at this commit.
 - 2026-09-04: T3 verified: `tests/run-tests.sh --self-test` exits 0 over 1396 checks, the plant's own pass line among them.
 - 2026-09-04: T4 written: the plant now imports `BANNER_RULE` from `tests/suitescan.py` rather than re-typing a dash test, skips a lone divider as `banner_headings` does, and bounds the scan for a block's close. Both defects shown against the pre-M077 helper on crafted sources: with a `# ---` comment ahead of the real banner it dropped those three comment lines and left the banner standing, and on an unclosed trailing block it deleted through EOF with a final newline and raised IndexError without one. The repaired helper drops the real banner in the first case and reports the unclosed block by line number in the second. CHECKPOINT — the --self-test run was in flight at this commit.
+- 2026-09-04: T4 verified: `tests/run-tests.sh --self-test` exits 0 over 1396 checks with no FAIL line, the two plants that drive the repaired helper among them.
+- 2026-09-04: T5's wording amended to what the milestone did: `DESIGN.md` carried no sentence to correct, so its half of the task is the KI250 line the implement gate chose. Minor amendment, no criterion moved.
 - 2026-09-04: plan gate chose keeping the heading-membership clause over deleting the accounting whole, because a section added with no timing call is the defect the profile exists to prevent and only that clause sees it; falsified by that clause going red for a reason that is neither a missing nor an extra section.
 
 ## Decisions

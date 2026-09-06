@@ -606,9 +606,33 @@ local function Span(span)
     -- entry tree, and it is written only for a mark that CONTRIBUTES a locator
     -- — the same `#xrefs == 0` the anchor below is gated on.
     local page_only = from_meta and html_book_chapter
+    -- Whether this mark contributes a locator that needs an anchor of its
+    -- own; what decides whether the Pandoc pass may write this record's
+    -- `anchor`.
+    local anchoring = #xrefs == 0 and not page_only
+    -- A cross-reference mark carries an id as readily as any other span, and
+    -- one id names one element whatever the element is for, so where that id
+    -- is contested the mark yields it like any other and is reported. It is
+    -- reached by being tagged; `anchorless` below is what keeps the id it
+    -- ends up with from becoming a locator.
+    --
+    -- A front-matter mark of an HTML book chapter is left out of this: D-048
+    -- keeps it anchorless because this filter cannot see which of Quarto's
+    -- title-block fields print, so neither the contest nor a mint for it is
+    -- settleable here. A book chapter render is out of M079's scope for the
+    -- same reason.
+    local contestable_xref = #xrefs > 0 and not page_only
+      and span.identifier ~= ""
     local record = { levels = levels, sort = sort, xrefs = xrefs,
                      context = context, index = index_name,
                      page_locator = (page_only and #xrefs == 0) or nil,
+                     -- Set where an anchor must never become this mark's
+                     -- locator: a cross-reference mark contributes none, and
+                     -- a front-matter mark of an HTML book chapter contributes
+                     -- the chapter's page. Only the first of those reaches the
+                     -- Pandoc pass, and only carrying an id of the author's,
+                     -- so this is what tells that pass not to anchor it.
+                     anchorless = (not anchoring) or nil,
                      -- Likewise resolved rather than raw: a range's role is
                      -- the RANGE's, so an opening whose closing declared it
                      -- carries it here too and the HTML locator is emphasized
@@ -620,12 +644,16 @@ local function Span(span)
                        and span.attributes[qi_core.RANGE_ATTR] or nil,
                      paired = range ~= nil and range.ending or nil }
     qi_marks.html_marks[#qi_marks.html_marks + 1] = record
-    if #xrefs == 0 and not page_only then
+    if anchoring or contestable_xref then
       -- Only a locator-contributing mark needs somewhere to link back to; a
       -- cross-reference mark takes the place of the locator and so has no
       -- anchor of its own. WHICH id anchors it — the author's own, or a
       -- minted one — is settled in the Pandoc pass, which can see every id
       -- in the document and every heading a mark sits in.
+      --
+      -- A cross-reference mark carrying an id of the author's is tagged too:
+      -- untagged, it kept a contested name in silence and left the page with
+      -- that name on two elements (see `contestable_xref` above).
       span.attributes[qi_core.HTML_PENDING_ATTR] = tostring(#qi_marks.html_marks)
     end
     return span

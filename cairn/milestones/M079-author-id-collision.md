@@ -50,7 +50,7 @@ An author-written id on an index mark never leaves two elements of one page carr
 - [ ] T8: Stop an `id=` written inside an HTML comment from counting as a carrier in the id census, so a mark keeps a name no element of the rendered page holds and no refusal is reported for one; add the fixture case and the suite leg, recorded red before the fix.
 - [ ] T9: Settle the cross-reference and page-only mark case, which carries no pending tag and so keeps a contested id unwarned: either bring such marks under the refusal rule or state the exception where an author reads it; add the fixture case either way.
 - [ ] T10: Narrow the claims in `CHANGELOG.md` and `site/html.qmd` to what the code does — the recovery route reads a chapter without its rendered page, the cross-reference exception, and the report naming a mark's `entry=` where it carries one rather than the term it prints.
-- [ ] T11: Add the `84 + 1 = 85` step naming M079 to the warning-count comment in `tests/scans/warn-distinct.py`, which stops at M073's `83 + 1 = 84`.
+- [ ] T11: Add the step naming M079 to the warning-count comment in `tests/scans/warn-distinct.py`, which stops at M073's `83 + 1 = 84`.
 
 ## Work log
 
@@ -79,6 +79,10 @@ An author-written id on an index mark never leaves two elements of one page carr
 - 2026-09-05: review returned the milestone to in-progress at the maintainer's decision. What failed is not a criterion — AC1-AC6 were green with fresh evidence — but a regression the branch introduces: an `id=` inside an HTML comment counts as a carrier in the census, so a mark yields a name no element holds, the author's own link to it goes dead, and the refusal report names a carrier that is not there. With it: a cross-reference mark still leaving two elements on one id unwarned, and four sentences in `CHANGELOG.md` and `site/html.qmd` reaching past the code. T8-T11 written; the criterion ticks were removed, the fix changing the census the evidence was read against. Defect return 1. PR #79 stays open as a draft.
 
 - 2026-09-05: T8 written. An `id=` inside an HTML comment no longer counts as a carrier: the census cuts complete comments and an unterminated `<!--` out of each raw HTML string before reading attributes. On the fixture's two new comment cases the branch previously moved `omicron` to `qi-mark-13` and `pi` to `qi-mark-14`, reporting a refusal for each, with `in-comment` and `in-raw-comment` then on 0 elements of the page and the author's own links to them dead; the AC1 leg names that state red. With the cut the render carries 7 refusal reports rather than 9, no id among the page's 56 twice, and both marks keep the names their author wrote. Task box unticked until the whole-suite run.
+
+- 2026-09-05: T9 written, narrowed. A cross-reference mark carrying an author id is now tagged by the Span pass, so a contested name is refused, minted over and reported for it too; `anchorless` on the record keeps that id from being written back as an anchor, which would turn the cross-reference into a locator. A front-matter mark of an HTML book chapter is deliberately left out — D-048 keeps it anchorless because the filter cannot see which title-block fields Quarto prints, and a book chapter render is out of scope. The fixture gains four cross-reference marks (a `see=` against a div, a `see-also=` against raw HTML, one inside a heading whose anchor relocates, and an uncontested control); without the tag the leg reports `xref-dup`, `xref-raw` and `xref-heading` each on two elements with no report drawn, and with it the render carries 69 ids, none twice, 10 refusals and 4 cross-reference entries filing no locator.
+
+- 2026-09-05: T11 written. The refusal report is two wordings, not one — a cross-reference mark has no locator to move with the anchor — so the pinned count in `tests/scans/warn-distinct.py` is `84 + 2 = 86`, and the task's wording was corrected from `84 + 1 = 85` to match. The scan runs clean at 86.
 
 ## Decisions
 

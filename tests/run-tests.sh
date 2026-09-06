@@ -3960,15 +3960,27 @@ CONTESTED = {'alpha': 'shared-attr', 'beta': 'shared-dq', 'gamma': 'shared-uq',
              'theta': 'qi-mark-3', 'lambda': 'twin'}
 KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9',
         'omicron': 'in-comment', 'pi': 'in-raw-comment'}
+# The same two groups for marks that file no locator at all (M079 T9). They
+# yield a contested name exactly as a locator mark does — one id names one
+# element whatever the element is for — and are reported the same way; what
+# they must NOT have is a locator, before or after. `tau` is written inside a
+# heading, so its anchor is the relocated empty span rather than the span
+# printing the term.
+CONTESTED_XREF = {'rho': 'xref-dup', 'sigma': 'xref-raw', 'tau': 'xref-heading'}
+KEPT_XREF = {'upsilon': 'xref-solo'}
+RELOCATED = {'tau'}
+REFUSED = dict(CONTESTED, **CONTESTED_XREF)
+KEPT_ALL = dict(KEPT, **KEPT_XREF)
+NO_LOCATOR = set(CONTESTED_XREF) | set(KEPT_XREF)
 
 # AC1. Every id on the page, counted; nothing may be carried twice. The domain
 # is stated as well as swept — a reader that found no id at all would report no
 # duplicate exactly as a correct page does.
 ids = H.all_ids(doc)
-if len(ids) < len(CONTESTED) + len(KEPT):
+if len(ids) < len(REFUSED) + len(KEPT_ALL):
     errs.append('the page carries %d id(s) in all, fewer than the %d this '
                 'fixture writes by hand, so this sweep read something other '
-                'than the rendered probe' % (len(ids), len(CONTESTED) + len(KEPT)))
+                'than the rendered probe' % (len(ids), len(REFUSED) + len(KEPT_ALL)))
 dupes = sorted({name for name in ids if ids.count(name) > 1})
 if dupes:
     errs.append('ids carried by more than one element: %s' % ', '.join(dupes))
@@ -3977,7 +3989,7 @@ if dupes:
 # and each uncontested one on its own mark. Counted at one either way: a name
 # gone from the page altogether would be a link to nowhere, and is no more
 # acceptable than a name on two elements.
-for name in sorted(set(CONTESTED.values()) | set(KEPT.values())):
+for name in sorted(set(REFUSED.values()) | set(KEPT_ALL.values())):
     n = H.count_id(doc, name)
     if n != 1:
         errs.append('the author-written id %r is on %d element(s), want 1'
@@ -3994,10 +4006,19 @@ else:
     seen = {}
     for record in H.entry_records(section):
         seen[record['term']] = record['locators']
-    for term in sorted(set(CONTESTED) | set(KEPT)):
+    for term in sorted(set(REFUSED) | set(KEPT_ALL)):
         hrefs = seen.get(term)
         if hrefs is None:
             errs.append('the index has no entry for the term %r' % term)
+            continue
+        # A cross-reference mark takes the locator's place, so it files none —
+        # before the refusal and after it. An anchor written back for one of
+        # these would show up here as a locator that should not exist.
+        if term in NO_LOCATOR:
+            if hrefs:
+                errs.append('the term %r is a cross-reference and files no '
+                            'locator, but the index gives it %r'
+                            % (term, hrefs))
             continue
         if len(hrefs) != 1:
             errs.append('the term %r has %d locator(s), want 1'
@@ -4009,10 +4030,10 @@ else:
                         % (term, got))
             continue
         got = got[1:]
-        if term in KEPT:
-            if got != KEPT[term]:
+        if term in KEPT_ALL:
+            if got != KEPT_ALL[term]:
                 errs.append('the locator for %r names %r; its author wrote '
-                            '%r and nothing contests it' % (term, got, KEPT[term]))
+                            '%r and nothing contests it' % (term, got, KEPT_ALL[term]))
             continue
         if got == CONTESTED[term]:
             errs.append('the locator for %r still names %r, the contested id'
@@ -4028,6 +4049,34 @@ else:
                             % (got, term, landed is None and 'nothing'
                                or H.text(landed).strip()))
 
+# AC3, for the marks that file no locator. With no locator to follow, where the
+# anchor landed is read off the page: the contested name is on something that
+# is not the mark, and the span printing the term carries a minted id instead.
+# `tau` is written inside a heading, whose anchor is relocated onto an empty
+# span, so only the first half is read for it.
+minted = {}
+for name in H.all_ids(doc):
+    if name.startswith(prefix):
+        el = H.find_id(doc, name)
+        if el is not None:
+            minted.setdefault(H.text(el).strip(), name)
+for term, wrote in sorted(CONTESTED_XREF.items()):
+    landed = H.find_id(doc, wrote)
+    if landed is not None and H.text(landed).strip() == term:
+        errs.append('the contested id %r is still on the span printing %r'
+                    % (wrote, term))
+    if term not in RELOCATED and term not in minted:
+        errs.append('no minted anchor is on the span printing %r, which gave '
+                    'up %r' % (term, wrote))
+# And its control: a cross-reference mark whose name nothing contests keeps it,
+# on its own span.
+for term, wrote in sorted(KEPT_XREF.items()):
+    el = H.find_id(doc, wrote)
+    if el is None or H.text(el).strip() != term:
+        errs.append('the uncontested id %r is on %r, not on the span printing '
+                    '%r' % (wrote, 'nothing' if el is None
+                            else H.text(el).strip(), term))
+
 # AC4. One refusal report per yielding mark, naming the id it gave up and the
 # term it prints, and none for a mark that kept its own. The set is compared
 # whole rather than counted: a run reporting seven times about one mark counts
@@ -4036,17 +4085,17 @@ lines = [line for line in open(log, encoding='utf-8').read().splitlines()
          if 'carries the id' in line and 'which another element of this page' in line]
 reported = set()
 for line in lines:
-    for term, wrote in CONTESTED.items():
+    for term, wrote in REFUSED.items():
         if ('term "%s"' % term) in line and ('"%s"' % wrote) in line:
             reported.add(term)
-    for term, wrote in KEPT.items():
+    for term, wrote in KEPT_ALL.items():
         if ('term "%s"' % term) in line:
             errs.append('a refusal report names %r, whose author id nothing '
                         'contests: %s' % (term, line))
-if len(lines) != len(CONTESTED):
+if len(lines) != len(REFUSED):
     errs.append('%d refusal report(s) in the render log, want %d'
-                % (len(lines), len(CONTESTED)))
-missing = sorted(set(CONTESTED) - reported)
+                % (len(lines), len(REFUSED)))
+missing = sorted(set(REFUSED) - reported)
 if missing:
     errs.append('no refusal report names both the term and the id given up '
                 'for: %s' % ', '.join(missing))
@@ -4058,7 +4107,8 @@ print('ok   M079-AC1: no id among the page\'s %d is carried twice; %d '
       'contested author id(s) stayed on the element that kept them with the '
       'yielding mark anchored on a minted id of its own, %d uncontested one(s) '
       'are still their mark\'s anchor, and each yield is reported once by term '
-      'and id' % (len(ids), len(CONTESTED), len(KEPT)))
+      'and id; the %d cross-reference mark(s) among them file no locator'
+      % (len(ids), len(REFUSED), len(KEPT_ALL), len(NO_LOCATOR)))
 PY
 
 # ---------------------------------------------------------------------------

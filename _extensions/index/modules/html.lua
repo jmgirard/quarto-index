@@ -566,13 +566,12 @@ local function relocate_heading_anchors(doc)
               return note, false
             end,
             Span = function(span)
-              -- A cross-reference mark contributes no locator, but an id it
-              -- carries duplicates into the table of contents exactly as a
-              -- locator anchor would, so its id moves out too.
+              -- The pending tag is on every mark with anchor duty here: one
+              -- that contributes a locator, and a cross-reference mark
+              -- carrying an id of the author's, whose id duplicates into the
+              -- table of contents exactly as a locator anchor would.
               local pending = span.attributes[qi_core.HTML_PENDING_ATTR]
-              local marked_id = span.classes:includes(qi_core.INDEX_CLASS)
-                and span.identifier ~= ""
-              if pending == nil and not marked_id then
+              if pending == nil then
                 return nil
               end
               local anchor = pandoc.Span({})
@@ -605,10 +604,11 @@ end
 -- id to fall back on; between two MARKS there is no such asymmetry, so the
 -- first in document order keeps the name and the rest yield.
 --
--- Only a locator-contributing mark is here at all, `pending` being the tag the
--- Span pass writes on those alone. A cross-reference mark's id is the author's
--- and nothing generated links to it, so refusing it would break the author's
--- own link and repair no locator.
+-- Every mark the Span pass tagged is here: those that contribute a locator,
+-- and a cross-reference mark that carries an id of the author's. The second
+-- has no locator to repair, but one id still names one element, and an
+-- untagged cross-reference mark kept a contested name in silence — two
+-- elements of the page under one id, reported nowhere.
 local function keepable_author_ids(doc, taken)
   local marks, first = {}, {}
   doc:walk({
@@ -672,11 +672,26 @@ local function assign_anchors(doc, taken)
       -- The refused name is NOT dropped from the census — the element that
       -- kept it still carries it, so a later minted id still steps over it.
       if refused ~= nil then
-        qi_core.warn(('index mark %s carries the id "%s", which another element of this page carries too; one id names one element, so the mark is anchored on "%s" instead and its index locator links there — write an id nothing else on the page uses to have the locator land on the mark'):format(
-          record and record.context or "with no source entry",
-          refused, span.identifier))
+        -- Two wordings, because the two marks lose different things. A
+        -- locator-contributing mark's index locator moves with the anchor,
+        -- which is what an author most needs told; a cross-reference mark has
+        -- no locator to move, and what it loses is only whatever the author
+        -- pointed at the name themselves.
+        if record and record.anchorless then
+          qi_core.warn(('index mark %s carries the id "%s", which another element of this page carries too; one id names one element, so the mark is given "%s" instead and the other element keeps the name — this mark files a cross-reference rather than a locator, so no index link pointed at it either way; write an id nothing else on the page uses to have a link of your own land on the mark'):format(
+            record.context, refused, span.identifier))
+        else
+          qi_core.warn(('index mark %s carries the id "%s", which another element of this page carries too; one id names one element, so the mark is anchored on "%s" instead and its index locator links there — write an id nothing else on the page uses to have the locator land on the mark'):format(
+            record and record.context or "with no source entry",
+            refused, span.identifier))
+        end
       end
-      if record then
+      -- An anchor is written back only where it may become a locator. A
+      -- cross-reference mark takes the locator's place, and `mark.anchor` is
+      -- one of the two things that makes a mark contribute one, so writing it
+      -- here would turn a cross-reference into a locator (see book.lua's
+      -- recovery route, which gates its own anchor on the same fact).
+      if record and not record.anchorless then
         record.anchor = span.identifier
       end
       return span

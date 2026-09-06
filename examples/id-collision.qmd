@@ -105,3 +105,36 @@ written on its own, and one inside a raw HTML block: [omicron]{#in-comment
 
 The links an author writes to those marks still resolve: [to omicron](#in-comment)
 and [to pi](#in-raw-comment).
+
+# Cross-references and a name something else claims
+
+A mark that only points at another entry files no locator, so nothing the index
+writes links to it. It carries an id all the same, and one id still names one
+element: where something else on the page claims that name, the mark yields it
+and says so. No locator moves, there having been none.
+
+A `see=` mark against a div claiming its name: [rho]{#xref-dup .index see="mu"}.
+
+::: {#xref-dup}
+A div claiming the name the rho mark was written with.
+:::
+
+A `see-also=` mark against raw HTML claiming its name: [sigma]{#xref-raw .index
+see-also="mu"}.
+
+```{=html}
+<p id="xref-raw">Raw HTML claiming the name the sigma mark was written with.</p>
+```
+
+A cross-reference mark whose name nothing else claims keeps it, and nothing is
+reported: [upsilon]{#xref-solo .index see="mu"}.
+
+## A heading carrying [tau]{#xref-heading .index see="mu"}
+
+A cross-reference mark written in a heading, whose id Quarto would otherwise
+copy into the table of contents. The name is claimed below as well, so this
+mark yields it where the relocated anchor lands.
+
+::: {#xref-heading}
+A div claiming the name the tau mark was written with.
+:::

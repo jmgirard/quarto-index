@@ -1,6 +1,6 @@
 # M080: The id census reads a page's raw HTML the way a browser does
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -104,45 +104,40 @@ sweep can go red → the suite's self-test-plants candidate row.
 
 ## Tasks
 
-- [x] T1: Reproduce all four wrong shapes against today's `note_raw`
-      (`_extensions/index/modules/html.lua:520-608`) with scratch raw-HTML
-      strings; record in the work log the exact string and the wrong answer each
-      produces, and which of the four the M079-AC1 leg can already see.
-- [x] T2: Teach `tests/htmlindex.py`'s `_Builder` the same seven-element text-
-      content set — `html.parser` treats only `script` and `style` as character
-      data (`tests/htmlindex.py:37`), so a planted `<p id=…>` inside a
-      `textarea` becomes a real node and the AC2 cases are unreadable without
-      this. Plant a page showing the reader reporting that phantom id before the
-      change and not after.
-- [x] T3: `note_raw`: distinguish an opening tag from a closing one, so the
-      character-data skip fires only on an opening tag (today's re-read of
-      `</script` as an opener, `html.lua:592-601`) and a closing tag's
-      attributes claim nothing (`html.lua:544-585`).
-- [x] T4: `note_raw`: replace the two-name `script`/`style` test with the
-      declared seven-element skip list, and match its end tag as `</` + name
-      followed by whitespace, `/` or `>` rather than by prefix
-      (`html.lua:596`).
-- [x] T5: Extend `examples/id-collision.qmd` with AC1's seven cases, each
-      element and its following `id=` in the SAME raw block — M079's lesson is
-      that a fixture writing one case per block cannot see a defect about cases
-      interacting within one — and one of the seven marked inside a heading.
-- [x] T6: Extend the fixture with AC2's seven content cases and AC3's four
-      end-tag-match cases, two of the eleven written as raw inlines, and the
-      four `id=` spellings the census reads distributed across the new cases.
-- [x] T7: Extend the fixture with AC4's two closing-tag cases, written where no
-      `p` and no `em` element is open.
-- [x] T8: Extend the M079-AC1 leg's hand-derived tables
-      (`tests/run-tests.sh:3971-4006`) with the new terms — refused for AC1's
-      seven and AC3's two real end tags, kept for AC2's seven, AC3's two
-      non-end-tags and AC4's two — and its whole-log refusal count
-      (`tests/run-tests.sh:4172`), in the same commit as the fixture rows.
-- [x] T9: Revert each of T3's two repairs and each of T4's two in turn against
-      the extended suite, and record in the work log the check each one reddens.
-- [x] T10: `site/html.qmd` prose and its claim rows (`site/html.qmd:53-61`, row
-      at `tests/run-tests.sh:4245`) and `CHANGELOG.md`; strike KI254 from
-      `cairn/DESIGN.md`, writing the `title`/`noscript`/`plaintext` residue as
-      its replacement; correct the architecture sentence naming three wrong
-      shapes; rewrite the census candidate row to what remains.
+Detail for the ten finished tasks is in the work log; these lines name the work,
+not its findings.
+
+- [x] T1: Reproduce all four wrong shapes against today's `note_raw` in a scratch harness.
+- [x] T2: Teach `tests/htmlindex.py` the same seven text-content elements, planted first.
+- [x] T3: `note_raw`: tell an opening tag from a closing one, so the skip fires only on an opener and a closing tag's attributes claim nothing.
+- [x] T4: `note_raw`: the two-name test becomes the seven-element skip list, its end tag matched by name rather than by prefix.
+- [x] T5: AC1's seven cases in `examples/id-collision.qmd`, each element and its carrier in ONE raw block, one of them inside a heading.
+- [x] T6: AC2's seven content cases and AC3's four end-tag cases, some as raw inlines, the four `id=` spellings distributed.
+- [x] T7: AC4's two closing-tag cases, written where no `p` and no `em` is open.
+- [x] T8: The M079-AC1 leg's hand-derived tables and its whole-log refusal count, in the fixture's commit.
+- [x] T9: Revert each of T3's and T4's four repairs singly, recording the check each reddens.
+- [x] T10: `site/html.qmd`, its claim rows and `CHANGELOG.md`; narrow KI254 in `cairn/DESIGN.md`; correct the architecture sentence.
+- [ ] T11: Amend AC6 through the gated criterion-amendment protocol so its
+      enumeration names `title`, `noscript` and `plaintext` rather than `title`
+      alone. Added by the review return 2026-09-06.
+- [ ] T12: Correct the false sentence where it stands: `site/html.qmd`,
+      `CHANGELOG.md`, and `cairn/DESIGN.md`'s KI254, which calls `title` "the
+      one" and four lines later names `noscript` and `plaintext` "the same
+      shape". The M079-AC5 claim row `census misses a name in a title element`
+      pins the false wording and moves with them.
+- [ ] T13: The four wording repairs and two wrap slips the review found: the
+      `note_raw` comments claiming browser parity a per-raw-string walk cannot
+      have; `tests/htmlindex.py`'s claim that reader and code disagree about no
+      page, which `</textarea/>` and `<iframe/>` falsify; the reader plant's
+      header comment presenting three assertions that can never fail as defects
+      it catches; the pre-M080 rule still at `examples/id-collision.qmd:166`;
+      and the two lines over ~80 columns in `site/html.qmd` and `DESIGN.md`.
+- [ ] T14: File the four out-of-scope gaps as candidate rows, search-first
+      against the existing census and instrument-hardening rows: a `template`
+      element's content counted; a bogus comment (`<!…>`, `<?…>`,
+      `<![CDATA[…]]>`) read as markup; the script double-escape state
+      unmodelled; and no fixture case writing an `id=` on a raw-text element's
+      own opening tag.
 
 ## Work log
 
@@ -167,6 +162,9 @@ sweep can go red → the suite's self-test-plants candidate row.
 - 2026-09-06: plan chose keeping every new case in `examples/id-collision.qmd` over a sibling fixture, because that page's whole-page duplicate-id sweep is the procedure AC1's and AC2's universals name and a second page would sit outside it; falsified by that render becoming a named cost in the suite's timing profile.
 - 2026-09-06: review opened. Branch synced with `main` (unmoved since the cut, no merge needed) and pushed; draft PR #80 opened and recorded in the header. Consistency gate's universal checks run: `cairn_validate.py` exit 0, all sixteen PASS, every advisory OK. No IP/GP principle text changed, so `cairn_impact` is skipped. Suite runs for AC7 in flight; three review lenses spawned.
 - 2026-09-06: review step 3 evidence recorded for AC1-AC5 and AC7 against the suite's own capture and render log, and those six ticked; AC6 left unticked. Suite green alone: plain exit 0, 773 checks; --self-test exit 0, 1413 checks. An earlier plain run exited 1 on a quarto Deno segfault in the M14 review-F9 book render while three review subagents shared the machine; re-run clean.
+- 2026-09-06: amendment return: AC6 — "each names `title` as the one such element the rule does not cover". The clause enumerates the text-content elements the skip list does not cover and names no procedure that decides that membership; `noscript` and `plaintext` are the same shape and are also uncovered, so the criterion mandates a false sentence in two shipped pages. The only repair widens the enumeration, so this counts on the amendment-return track and not toward defect returns. Status to in-progress for that amendment; review stops.
+- 2026-09-06: review gate chose sending M080 back with the full fix pass over wording only, merging as it stands, or stopping: the criterion amendment, the three corrected surfaces, the four wording repairs and the four follow-up rows are convened as T11-T14. PR #80 stays open as a draft, unmerged.
+- 2026-09-06: the Tasks section was compressed in one rewrite to hold the plan-owned body under its cap once T11-T14 were added; the ten finished tasks keep their ids and the work log keeps their detail.
 
 ## Decisions
 

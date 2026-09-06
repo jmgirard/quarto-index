@@ -1,13 +1,13 @@
 # M079: An author-written mark id never leaves two elements sharing it
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
 - **Resolves:** —
 - **Surface tier:** user-facing — the deliverable is an author's rendered page and where its index links land
-- **Branch/PR:** —
+- **Branch/PR:** m079-author-id-collision
 
 ## Goal
 
@@ -55,6 +55,7 @@ An author-written id on an index mark never leaves two elements of one page carr
 - 2026-09-05: plan gate chose refusing the mark's id with the first carrier in document order keeping it over every colliding mark yielding, because an id the author wrote stays on the page and their own link to it still resolves; falsified by a report that the order-dependence surprised an author, or a case where the first carrier is the wrong element to keep.
 - 2026-09-05: plan gate chose warn-and-mint over reporting the collision and changing nothing, because two elements on one id is output the contract calls incorrect and the locator still lands wrong; falsified by evidence an author relies on a mark keeping its id when contested.
 - 2026-09-05: plan gate chose sweeping every id on the page over sweeping only extension-written ids, because the case that started this is a mark colliding with an element the author wrote; falsified by a Quarto release repeating an id in its own scaffold.
+- 2026-09-05: implement opened on branch `m079-author-id-collision`; the merge-base capture carries no page-wide duplicate id outside the fixture's own, so AC1's whole-page sweep has a clean floor.
 - 2026-09-05: plan gate chose HTML plus EPUB coverage over adding a book chapter leg, because the shared code path is proven on the two format routes and the book route's author-id handling is covered elsewhere; falsified by a book chapter render showing a duplicate the two legs miss.
 
 ## Decisions

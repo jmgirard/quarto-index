@@ -5,11 +5,14 @@
       relative to <root>, the capture directory — is read. Each href carrying
       a fragment is resolved against the page it names, a relative path from
       <page> or <page> itself for a fragment-only href, and that page, read
-      from <root>, must carry an element with that id. A page the capture
-      lacks is a failure naming it; so is a fragment the named page does not
-      carry. A locator with no fragment is counted and not judged: it names a
-      page and nothing after it, and whether the page is there is what the
-      page-lacking clause says about the ones that do. The mode fails on an
+      from <root>, must carry EXACTLY ONE element with that id: an id on two
+      elements is invalid HTML and sends the locator to whichever one the
+      browser picks, so resolving is not on its own a locator that lands where
+      its mark is (M079). A page the capture lacks is a failure naming it; so
+      is a fragment the named page does not carry, and so is one it carries
+      more than once. A locator with no fragment is counted and not judged: it
+      names a page and nothing after it, and whether the page is there is what
+      the page-lacking clause says about the ones that do. The mode fails on an
       empty domain — <page> must carry at least one generated section, and at
       least one locator across them must carry a fragment — so a page with no
       index, or an index whose locators are all page-only, cannot pass as
@@ -29,6 +32,7 @@ set of sections the manifests are checked against. This module reads the
 ARTIFACT and produces no expected value.
 """
 
+import collections
 import os
 import sys
 
@@ -77,12 +81,21 @@ def resolve(root, page):
                                     'is no page of the capture'
                                     % (page, record['term'], found['ident'],
                                        href, target))
-                    ids[target] = set(H.all_ids(H.parse(path)))
-                if fragment not in ids[target]:
+                    ids[target] = collections.Counter(
+                        H.all_ids(H.parse(path)))
+                carried = ids[target][fragment]
+                if carried == 0:
                     return fail('%s: %r in section %s links to %r, and %s '
                                 'carries no id %r'
                                 % (page, record['term'], found['ident'], href,
                                    target, fragment))
+                if carried > 1:
+                    return fail('%s: %r in section %s links to %r, and %s '
+                                'carries the id %r on %d elements, so this '
+                                'locator lands on whichever one the browser '
+                                'picks'
+                                % (page, record['term'], found['ident'], href,
+                                   target, fragment, carried))
     if fragments == 0:
         return fail('%s: none of the %d locator(s) across %d section(s) '
                     'carries a fragment, so this mode resolved nothing'

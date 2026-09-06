@@ -255,7 +255,7 @@ if blank:
 # adds the never-written family's third outcome — no record written, and a
 # source that could not be read either, which drew the shared could-not-be-read
 # wording before: 83 + 1 = 84.
-EXPECTED = 84
+EXPECTED = 85
 if len(lits) != EXPECTED:
     print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
           f'{EXPECTED}. Either a warning was added or removed without updating '

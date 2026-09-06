@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Output
+
+- An id you write on an index mark no longer leaves two elements of a rendered
+  page carrying it. Where the name is also on something else — an element of
+  your own, in Pandoc attributes or in raw HTML, or another mark — the mark
+  gives it up: the element you wrote the name on keeps it, and the mark is
+  anchored on a minted `qi-mark-` id, which is where its index locator points.
+  Two marks written with one name are settled by document order, the first
+  keeping it. Every such yield is reported once as the render runs, naming the
+  id given up and the term the mark prints. An id nothing else on the page
+  carries is untouched, whatever it is spelled, and no element of yours is ever
+  renamed. HTML and EPUB alike, both back-ends being the one code path.
+
 ## 0.3.0 (2026-09-05)
 
 No record 0.2.0 wrote is refused by this version, so a book keeps its terms

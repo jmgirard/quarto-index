@@ -24,10 +24,14 @@ Subcommands, each printing its own `ok`/`FAIL` line and exiting 0/1:
       manifest that pins them.
   links <epub> <prefix>
       Every link inside a generated index section resolves in the publication.
+  unique <epub>
+      No manifest-listed document carries an id twice, and every index link
+      fragment names an id its own document carries exactly once.
   absent <file> <token> [<allowed>...]
       A rendered file carries no run of <token> beyond the allowed strings.
 """
 
+import posixpath
 import sys
 
 import epubindex
@@ -228,8 +232,94 @@ def cmd_absent(argv):
     return 0
 
 
+def cmd_unique(argv):
+    """No document repeats an id, and every index link lands on a unique one.
+
+    Two clauses, because either alone passes a publication the other one
+    catches. An id on two elements of one document is invalid XHTML and sends
+    a reader to whichever the reading system picks; a locator whose target id
+    is on its document twice resolves — `links` above says so — and still does
+    not say WHERE it lands.
+
+    The sections are found by their heading rather than by the id this
+    extension mints, the way `htmlindex.index_section` finds one and for its
+    reason: the probe this check reads is a document that claims the minted
+    name itself, so a reader keyed on that name reads the author's element as
+    a section of ours. The publication, its manifest and its documents are
+    `epubindex`'s to read, here as everywhere.
+
+    The domain is stated with the verdict — documents swept, sections found,
+    fragment-carrying links resolved, each required non-zero — so a
+    publication whose index lost its links cannot pass here as one whose
+    links are all unique.
+    """
+    if len(argv) != 1:
+        print('usage: epubcheck.py unique <epub>', file=sys.stderr)
+        return 2
+    path, = argv
+    book = epubindex.read(path)
+    bad = []
+    for name, root in book.documents:
+        for identifier in htmlindex.duplicate_ids(root):
+            bad.append(f'{name} carries the id {identifier!r} more than once')
+    sections = fragments = 0
+    for name, root in book.documents:
+        section = htmlindex.index_section(root)
+        if section is None:
+            continue
+        sections += 1
+        for node in htmlindex.walk(section):
+            if node.tag != 'a':
+                continue
+            href = node.attrs.get('href')
+            if href is None:
+                continue
+            target, _, fragment = href.partition('#')
+            if not fragment:
+                continue
+            fragments += 1
+            member = name
+            if target:
+                member = posixpath.normpath(
+                    posixpath.join(posixpath.dirname(name), target))
+            if member not in book.manifest:
+                bad.append(f'{name}: {href} names {member}, which no manifest '
+                           f'item lists')
+                continue
+            landing = book.document(member)
+            if landing is None:
+                bad.append(f'{name}: {href} names {member}, which is no XHTML '
+                           f'document of this publication')
+                continue
+            count = htmlindex.count_id(landing, fragment)
+            if count != 1:
+                bad.append(f'{name}: {href} names an id {member} carries '
+                           f'{count} time(s)')
+    if not sections:
+        print(f'FAIL: {path}: no document of this publication carries a '
+              f'generated index section, so this check read nothing',
+              file=sys.stderr)
+        return 1
+    if not fragments:
+        print(f'FAIL: {path}: no link inside a generated index section '
+              f'carries a fragment, so this check resolved nothing',
+              file=sys.stderr)
+        return 1
+    if bad:
+        print(f'FAIL: {path}: {len(bad)} id(s) or link(s) name other than one '
+              f'element', file=sys.stderr)
+        for line in bad:
+            print(f'  {line}', file=sys.stderr)
+        return 1
+    print(f'ok   {path}: none of the {len(book.documents)} manifest-listed '
+          f'document(s) carries an id twice, and each of the {fragments} '
+          f'fragment(s) linked from the {sections} generated index section(s) '
+          f'names an id its document carries exactly once')
+    return 0
+
+
 COMMANDS = {'sections': cmd_sections, 'same': cmd_same, 'links': cmd_links,
-            'absent': cmd_absent}
+            'absent': cmd_absent, 'unique': cmd_unique}
 
 
 def main(argv):

@@ -3920,6 +3920,189 @@ print(f'ok   M08-AC1: all {len(local)} link(s) inside the minted index section '
 PY
 
 # ---------------------------------------------------------------------------
+# M079-AC1 — an author-written id never leaves two elements of one page
+# carrying it. A mark whose id something else on the page carries yields it:
+# the other element keeps the name its author wrote, the mark is anchored on a
+# minted id, its locator follows, and the run says so. The sweep is over EVERY
+# `id=` on the page and not over this extension's own namespace, because the
+# case that started this is a mark colliding with an element the author wrote.
+#
+# The fixture carries seven contested names — one per spelling the id census
+# reads, one spelled as a name the numbering would otherwise mint, and one
+# written on two marks — and four uncontested author ids, which are what tells
+# this apart from a fix that simply mints over every author id. All eleven are
+# hand-derived here from examples/id-collision.qmd, never read back out of the
+# render: an expectation taken from the artifact is blind in the dimension it
+# is taken from.
+#
+# Rendered and captured by the M08-AC1 section above, whose log carries the
+# refusal reports read at the end of this one.
+# ---------------------------------------------------------------------------
+section 'M079-AC1 — an author-written id never leaves two elements of one page'
+python3 - "$CAPTURE_ROOT/id-collision-html/id-collision.html" \
+         "$HTML_ANCHOR_PREFIX" "$WORK/id-collision-html.log" <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+
+page, prefix, log = sys.argv[1], sys.argv[2], sys.argv[3]
+doc = H.parse(page)
+errs = []
+
+# Hand-derived from examples/id-collision.qmd: the term each mark prints, the
+# id its author wrote on it, and whether anything else on the page claims that
+# name. A contested one must move to a minted anchor; an uncontested one must
+# not, whatever it is spelled.
+CONTESTED = {'alpha': 'shared-attr', 'beta': 'shared-dq', 'gamma': 'shared-uq',
+             'delta': 'shared-up', 'epsilon': 'shared-sq',
+             'theta': 'qi-mark-3', 'lambda': 'twin'}
+KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9'}
+
+# AC1. Every id on the page, counted; nothing may be carried twice. The domain
+# is stated as well as swept — a reader that found no id at all would report no
+# duplicate exactly as a correct page does.
+ids = H.all_ids(doc)
+if len(ids) < len(CONTESTED) + len(KEPT):
+    errs.append('the page carries %d id(s) in all, fewer than the %d this '
+                'fixture writes by hand, so this sweep read something other '
+                'than the rendered probe' % (len(ids), len(CONTESTED) + len(KEPT)))
+dupes = sorted({name for name in ids if ids.count(name) > 1})
+if dupes:
+    errs.append('ids carried by more than one element: %s' % ', '.join(dupes))
+
+# Each contested name survives on the element that was NOT the yielding mark,
+# and each uncontested one on its own mark. Counted at one either way: a name
+# gone from the page altogether would be a link to nowhere, and is no more
+# acceptable than a name on two elements.
+for name in sorted(set(CONTESTED.values()) | set(KEPT.values())):
+    n = H.count_id(doc, name)
+    if n != 1:
+        errs.append('the author-written id %r is on %d element(s), want 1'
+                    % (name, n))
+
+# AC3. Where each term's locator lands. A refused mark's locator names the
+# minted anchor on the mark's own span — the span carrying that term's text,
+# so this is the mark and not merely some element bearing a minted name — and
+# a kept mark's locator names the author's id.
+section = H.index_section(doc)
+if section is None:
+    errs.append('no index section was found by its heading')
+else:
+    seen = {}
+    for record in H.entry_records(section):
+        seen[record['term']] = record['locators']
+    for term in sorted(set(CONTESTED) | set(KEPT)):
+        hrefs = seen.get(term)
+        if hrefs is None:
+            errs.append('the index has no entry for the term %r' % term)
+            continue
+        if len(hrefs) != 1:
+            errs.append('the term %r has %d locator(s), want 1'
+                        % (term, len(hrefs)))
+            continue
+        got = hrefs[0]
+        if not got.startswith('#'):
+            errs.append('the locator for %r is %r, which leaves this page'
+                        % (term, got))
+            continue
+        got = got[1:]
+        if term in KEPT:
+            if got != KEPT[term]:
+                errs.append('the locator for %r names %r; its author wrote '
+                            '%r and nothing contests it' % (term, got, KEPT[term]))
+            continue
+        if got == CONTESTED[term]:
+            errs.append('the locator for %r still names %r, the contested id'
+                        % (term, got))
+        elif not got.startswith(prefix):
+            errs.append('the locator for %r names %r, which is neither the '
+                        'contested id nor a minted anchor' % (term, got))
+        else:
+            landed = H.find_id(doc, got)
+            if landed is None or H.text(landed).strip() != term:
+                errs.append('the minted anchor %r the locator for %r names is '
+                            'on %r, not on that mark'
+                            % (got, term, landed is None and 'nothing'
+                               or H.text(landed).strip()))
+
+# AC4. One refusal report per yielding mark, naming the id it gave up and the
+# term it prints, and none for a mark that kept its own. The set is compared
+# whole rather than counted: a run reporting seven times about one mark counts
+# the same as one reporting about each.
+lines = [line for line in open(log, encoding='utf-8').read().splitlines()
+         if 'carries the id' in line and 'which another element of this page' in line]
+reported = set()
+for line in lines:
+    for term, wrote in CONTESTED.items():
+        if ('term "%s"' % term) in line and ('"%s"' % wrote) in line:
+            reported.add(term)
+    for term, wrote in KEPT.items():
+        if ('term "%s"' % term) in line:
+            errs.append('a refusal report names %r, whose author id nothing '
+                        'contests: %s' % (term, line))
+if len(lines) != len(CONTESTED):
+    errs.append('%d refusal report(s) in the render log, want %d'
+                % (len(lines), len(CONTESTED)))
+missing = sorted(set(CONTESTED) - reported)
+if missing:
+    errs.append('no refusal report names both the term and the id given up '
+                'for: %s' % ', '.join(missing))
+
+if errs:
+    print('FAIL: M079-AC1: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M079-AC1: no id among the page\'s %d is carried twice; %d '
+      'contested author id(s) stayed on the element that kept them with the '
+      'yielding mark anchored on a minted id of its own, %d uncontested one(s) '
+      'are still their mark\'s anchor, and each yield is reported once by term '
+      'and id' % (len(ids), len(CONTESTED), len(KEPT)))
+PY
+
+# ---------------------------------------------------------------------------
+# M079-AC2 — the same fixture as a publication: no XHTML document the package
+# manifest lists carries an id twice, and every fragment linked from an index
+# section names an id its document carries exactly once. The EPUB back-end is
+# the HTML one, so this is the same fix on a second route rather than a second
+# fix — and it is the route where a locator crosses files, so a target id on
+# two elements is a link into another document that lands on either.
+#
+# Read through tests/epubcheck.py, whose `unique` mode finds the sections by
+# their heading: this fixture claims the minted section name itself, so a
+# reader keyed on that name would read the author's own element as a section
+# of ours.
+# ---------------------------------------------------------------------------
+section 'M079-AC2 — the same fixture as a publication: no XHTML document the package'
+quarto render examples/id-collision.qmd --to epub \
+  > "$WORK/id-collision-epub.log" 2>&1 \
+  || { tail -20 "$WORK/id-collision-epub.log" >&2; fail "M079-AC2: id-collision.qmd failed to render to EPUB"; }
+capture examples/id-collision.qmd epub "id-collision-epub"
+python3 tests/epubcheck.py unique "$CAPTURE_ROOT/id-collision-epub/id-collision.epub" \
+  || fail "M079-AC2: the publication carries an id twice, or an index link names one"
+
+# ---------------------------------------------------------------------------
+# M079-AC5 — the HTML page states the rule an author now meets: which element
+# keeps a contested id, what the mark that gives it up is anchored on instead,
+# how two marks written with one name are settled, and that each yield is
+# reported. Held by claim rows rather than by a word count, so a rewrite that
+# keeps the prose and drops the rule fails here.
+#
+# The first row is the page's own promise about an author id, which through
+# M078 stood unqualified and is what this milestone qualifies: a page still
+# telling a reader their id is kept whatever else carries it is the failure
+# this row exists to catch.
+# ---------------------------------------------------------------------------
+section 'M079-AC5 — the HTML page states the rule an author now meets: which element'
+cat > "$WORK/html-id-claims.txt" <<'M079CLAIMS'
+qualified	a mark carrying an id of your own keeps it, as long as nothing else on the page carries that same name
+who keeps it	The element you wrote the name on keeps it
+what the mark gets	the mark is anchored on a minted id instead, which is where its index locator then points
+two marks	the first of them in the document keeps it and the rest yield
+reported	Each yield is reported as the render runs, naming the id given up and the term the mark prints
+M079CLAIMS
+python3 tests/sitecheck.py claims site/html.qmd "$WORK/html-id-claims.txt" \
+  || fail "M079-AC5: site/html.qmd no longer states who keeps a contested id, what the yielding mark is anchored on, how two marks written with one name are settled, or that each yield is reported (its own FAIL line is above)"
+
+# ---------------------------------------------------------------------------
 # M08-AC2 — a cross-reference target naming its own entry. Reported and
 # dropped, and then the term indexes as usual: the positive residue is asserted
 # too, because an implementation that simply dropped the whole mark would
@@ -25125,6 +25308,37 @@ if [ "${1:-}" = "--self-test" ]; then
     's{href="seven\.html#qi-mark-1"}{href="nine.html#qi-mark-1"}' \
     "nine.html is no page of the capture" \
     "one href rewritten to a page the capture lacks"
+  # The same reader, against a capture whose target id is on TWO elements
+  # (M079). A fragment that resolves says nothing about where the locator
+  # lands once the name is shared, so the reader now holds the target to
+  # exactly one element — and is shown to, in both shapes the collision takes
+  # and at both kinds of capture site: a plain element claiming a mark's name
+  # on the page a cross-page locator names, and a second MARK carrying it on
+  # the index page its own fragment-only locator points into.
+  m079_frag_plant() {   # <slug> <page> <substitution> <expected fragment of the FAIL line> <what was planted>
+    local slug="$1" file="$2" sub="$3" expect="$4" what="$5"
+    local dir="$M071_FRAG/$slug"
+    rm -rf "$dir"
+    cp -R "$CAPTURE_ROOT/m070-record/_book" "$dir"
+    spliced_copy "M079 T5 self-test ($what)" "the captured $file" \
+      "$CAPTURE_ROOT/m070-record/_book/$file" "$dir/$file" "$sub"
+    local out rc
+    out=$(HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+      HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+      python3 tests/fragments.py resolve "$dir" index.html 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M079 T5 self-test: the fragment reader passed over a capture with $what"; }
+    printf '%s' "$out" | grep -qF -- "$expect" \
+      || { printf '%s\n' "$out" >&2; fail "M079 T5 self-test: the fragment reader failed over a capture with $what, but not with <<$expect>>"; }
+  }
+  m079_frag_plant dupplain seven.html \
+    's{<span id="qi-mark-1"}{<span id="qi-mark-1">planted</span><span id="qi-mark-1"}' \
+    "seven.html carries the id 'qi-mark-1' on 2 elements" \
+    "a plain element claiming the id a cross-page locator names"
+  m079_frag_plant dupmark index.html \
+    's{<span id="qi-mark-1" class="index">Aardvark</span>}{<span id="qi-mark-1" class="index">Aardvark</span> <span id="qi-mark-1" class="index">Aardvark</span>}' \
+    "index.html carries the id 'qi-mark-1' on 2 elements" \
+    "a second mark carrying the id a same-page locator names"
   # An index whose locators carry no fragment at all is an empty domain, not a
   # pass: six.html prints no index section, and the reader says so.
   M071_EMPTY_OUT=$(HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
@@ -25143,7 +25357,7 @@ if [ "${1:-}" = "--self-test" ]; then
     [ "$M071_RC" -ne 0 ] && printf '%s' "$M071_WRONG_OUT" | grep -qF -- "$m071_id' $m071_verb $m071_where the element" \
       || { printf '%s\n' "$M071_WRONG_OUT" >&2; fail "M071 T3 self-test: the containment reader did not refuse $m071_id as $m071_mode the title block"; }
   done
-  pass "M071 T4 self-test: the fragment reader fails, naming the target, on a capture with one href rewritten to a fragment its page does not carry and on one rewritten to a page the capture lacks, refuses a page with no index section as an empty domain, and the containment reader refuses each of the front-matter page's anchors asked the wrong way round"
+  pass "M071 T4 self-test: the fragment reader fails, naming the target, on a capture with one href rewritten to a fragment its page does not carry and on one rewritten to a page the capture lacks, refuses a page with no index section as an empty domain, fails on a target id carried by two elements in both shapes and at both capture sites, and the containment reader refuses each of the front-matter page's anchors asked the wrong way round"
 fi
 
 # ---------------------------------------------------------------------------

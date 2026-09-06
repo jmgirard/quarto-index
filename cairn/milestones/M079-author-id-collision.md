@@ -57,6 +57,13 @@ An author-written id on an index mark never leaves two elements of one page carr
 - 2026-09-05: plan gate chose sweeping every id on the page over sweeping only extension-written ids, because the case that started this is a mark colliding with an element the author wrote; falsified by a Quarto release repeating an id in its own scaffold.
 - 2026-09-05: implement opened on branch `m079-author-id-collision`; the merge-base capture carries no page-wide duplicate id outside the fixture's own, so AC1's whole-page sweep has a clean floor.
 - 2026-09-05: plan gate chose HTML plus EPUB coverage over adding a book chapter leg, because the shared code path is proven on the two format routes and the book route's author-id handling is covered elsewhere; falsified by a book chapter render showing a duplicate the two legs miss.
+- 2026-09-05: implement gate chose the mark yielding to any element that is not a mark, with document order deciding only between two marks, because the plan gate's "first carrier wins" leaves the page carrying a repeated id whenever the mark is written first and the extension renames no element of the author's that is not a mark; falsified by a case where the element that is not a mark is the wrong one to keep.
+- 2026-09-05: implement gate chose leaving a cross-reference mark's author-written id untouched, because no generated link points at such a mark, so refusing its id would break an author's own link and repair no locator; falsified by an author reporting a duplicate id that came from a cross-reference mark.
+
+- 2026-09-05: T1-T7 written. At the merge-base the extended fixture's HTML render repeats seven ids — the five id spellings, the mint-shaped name and the two-mark case — and the EPUB render fails the new uniqueness check on 15 clauses across three documents; with the fix both are clean and seven refusal reports name their id and term. `tests/fragments.py resolve` now holds a target id to exactly one element, proven red by a plain element claiming a cross-page locator's id and by a second mark claiming a same-page one, green on the unplanted capture.
+- 2026-09-05: the pinned filter warning count moves 84 -> 85 for the refusal report (`tests/scans/warn-distinct.py`), which a first whole-suite run caught.
+- 2026-09-05: KI252 records a pre-existing shell-quoting defect in one `tests/run-tests.sh` message, found in that run's output; a candidate row states the work.
+- 2026-09-05: checkpoint with tasks unticked: the whole-suite `--self-test` run that verifies them is still in flight. Its three M079 legs have already passed in it.
 
 ## Decisions
 

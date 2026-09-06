@@ -363,9 +363,17 @@ Three back-ends ship:
 
   Ids are assigned in the **Pandoc** pass, not at the mark: an id must not
   collide with one the author wrote — ids written in raw HTML included — and
-  that is only knowable once the whole document has been seen. A mark keeps an
-  id of the author's own and is otherwise tagged by the Span pass and given a
-  minted id later. The index section's own id is minted the same way (corrected
+  that is only knowable once the whole document has been seen. The census
+  counts the elements carrying each name rather than noting that a name is
+  taken (added M079), which is what lets the same pass see a name on two of
+  them. A mark keeps an id of the author's own where it is the only element
+  carrying that name, and is otherwise tagged by the Span pass and given a
+  minted id later. Where something else on the page carries the name, the mark
+  yields it and is reported: the other element is the author's and this
+  extension renames only its own mark spans, so the mark is the side with a
+  minted id to fall back on; between two marks the first in document order
+  keeps the name (added M079). A cross-reference mark's id is untouched — no
+  generated link points at it. The index section's own id is minted the same way (corrected
   M08): the bare `qi-index` where that name is free, and a numbered one past it
   where the document has taken it. No anchor id stays inside a heading, because
   Quarto copies a heading's inlines into the table of contents and the id would
@@ -1101,6 +1109,14 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   nothing changed. The suite reports the crash as a render failure, so a red
   run whose ONLY failure is a segfault is toolchain noise and is re-run rather
   than investigated. CI has not shown it. Accepted. — M078 review
+- **KI252.** One `pass` line in `tests/run-tests.sh` (the M08-AC2/M10-AC4/
+  M11-AC5 line) carries an unescaped backtick pair inside its double-quoted
+  message, which the shell reads as an unterminated command substitution: every
+  run prints two `command substitution: ... syntax error` lines beside it and
+  then the `pass` line with the backticked word gone. The check has already
+  decided by then, so nothing is asserted wrongly; what is lost is a word of
+  the message and a clean log. The repo's other backticked message escapes
+  them, which is the fix. — M079 implement
 
 ### The acceptance suite: coverage gaps
 

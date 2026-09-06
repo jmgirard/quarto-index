@@ -33,3 +33,57 @@ A raw inline claims the fifth: `<span id='qi-index-4'>single-quoted</span>`{=htm
 
 ::: {.qi-index-here}
 :::
+
+# Names a mark and another element both claim
+
+An id the author wrote on a mark is the mark's link target, and an id written
+anywhere else on the page belongs to whatever the author wrote it on. Where the
+two are the same name, the mark is the one that yields: the extension writes
+only its own spans, so it anchors the mark on a minted id, reports the refusal,
+and the other element keeps the name it was given. One mark per spelling the id
+census reads, so a claim written in raw HTML weighs exactly as a Pandoc
+attribute does.
+
+A Pandoc attribute claims one: [alpha]{#shared-attr .index}.
+
+::: {#shared-attr}
+A div claiming the name the alpha mark was written with.
+:::
+
+Raw HTML claims three more: [beta]{#shared-dq .index}, [gamma]{#shared-uq
+.index} and [delta]{#shared-up .index}.
+
+```{=html}
+<p id="shared-dq">Raw HTML, double-quoted.</p>
+<p id=shared-uq>Raw HTML, unquoted.</p>
+<p ID="shared-up">Raw HTML, uppercase attribute name.</p>
+```
+
+A raw inline claims the fifth: [epsilon]{#shared-sq .index} against
+`<span id='shared-sq'>single-quoted</span>`{=html}.
+
+A sixth is a name the numbering would otherwise mint, so a claim on one of
+those is refused exactly as any other claim is rather than being handed over by
+the mint: [theta]{#qi-mark-3 .index}.
+
+```{=html}
+<p id="qi-mark-3">Raw HTML claiming a name the numbering mints.</p>
+```
+
+# Two marks written with one name
+
+Neither mark is anything but a mark, so document order settles which keeps the
+name: [kappa]{#twin .index} comes first and keeps it, and [lambda]{#twin
+.index} yields.
+
+# Names nothing contests
+
+A mark whose id no other element carries keeps it, whatever the name is. Three
+here: one nobody else wrote, [mu]{#solo .index}; one in the heading below,
+which is where an anchor cannot sit, so the id moves to an empty span just
+after it; and one spelled as a name the numbering would otherwise mint,
+[xi]{#qi-mark-9 .index}, which the numbering steps over as it always has.
+
+## A heading carrying [nu]{#in-heading .index}
+
+Text under that heading, so the section is not empty.

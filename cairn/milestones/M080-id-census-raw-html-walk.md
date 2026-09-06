@@ -104,7 +104,7 @@ sweep can go red → the suite's self-test-plants candidate row.
 
 ## Tasks
 
-- [ ] T1: Reproduce all four wrong shapes against today's `note_raw`
+- [x] T1: Reproduce all four wrong shapes against today's `note_raw`
       (`_extensions/index/modules/html.lua:520-608`) with scratch raw-HTML
       strings; record in the work log the exact string and the wrong answer each
       produces, and which of the four the M079-AC1 leg can already see.
@@ -152,6 +152,9 @@ sweep can go red → the suite's self-test-plants candidate row.
 - 2026-09-06: plan gate chose taking the end-tag match rule in scope over recording it as a fresh known issue, because the skip list gaining five members makes the early-close shape live for five more elements at no extra code cost; falsified by the stricter match rejecting an end tag a browser accepts.
 - 2026-09-06: plan gate chose distributing the four `id=` spellings, two raw-inline cases and one heading case across the new marks over one shape and one spelling throughout, because a single exemplar standing for a family is the probe blindness M079's own review left behind; falsified by a defect the distributed cases miss that a full cross-product would have caught.
 - 2026-09-06: plan chose repairing `tests/htmlindex.py`'s parser over writing the AC2 cases in shapes both readers already agree on, because the suite's reader is meant to model a browser and today reads `textarea` content as markup; falsified by the repair changing an existing leg's reading of any captured page.
+- 2026-09-06: T1 reproduced all four wrong shapes against today's `note_raw` in a scratch harness (`pandoc lua`, the function lifted verbatim with a stub `claim`). `<script>var a = 1;</script><p id="after-script">y</p>` claims nothing, want `after-script` (same for `style`); `<textarea><p id="ghost-textarea">x</p></textarea>` claims `ghost-textarea`, want nothing (same for `iframe`, `xmp`, `noembed`, `noframes`); `</p id="on-closing-p">` claims `on-closing-p`, want nothing; `<script>a</scriptx> <p id="early">z</p></script><p id="after-false">w</p>` claims `early`, want `after-false`. A fifth shape falls out of the first: `</script >` with a space is matched by prefix, re-read as an opener, and everything after it goes uncounted. The M079-AC1 leg can see none of the four — the fixture's only skip-list element is the one `<script>` at line 178, whose raw block ends with it, and it writes no closing tag carrying attributes and no end-tag lookalike.
+- 2026-09-06: baseline before any change on this branch — `tests/run-tests.sh` exit 0, 773 checks, 21m18s.
+- 2026-09-06: question gate chose descriptive names for the twenty new marks (`after-script`, `inside-textarea`) over a second alphabet, one new fixture section per rule over one combined section, and overriding Python's parser list of text-content elements over hand-written skipping in `tests/htmlindex.py`.
 - 2026-09-06: plan chose keeping every new case in `examples/id-collision.qmd` over a sibling fixture, because that page's whole-page duplicate-id sweep is the procedure AC1's and AC2's universals name and a second page would sit outside it; falsified by that render becoming a named cost in the suite's timing profile.
 
 ## Decisions

@@ -13127,6 +13127,7 @@ examples/fold-xref-empty.qmd	0
 examples/fold-xref-self.qmd	1
 examples/fold-xref.qmd	1
 examples/html-index.qmd	1
+examples/id-collision.qmd	0
 examples/index-labels-misuse.qmd	0
 examples/index-labels-twin.qmd	0
 examples/index-labels.qmd	0

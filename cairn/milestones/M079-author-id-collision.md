@@ -100,6 +100,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: the checkpoint commit `fe68d72` swept three beamer render artifacts (`examples/marker.nav`, `.snm`, `.toc`) into the branch — written by the suite run then in flight and uncovered by `.gitignore`. Untracked here and added to the ignore list, which is the recurrence the candidate row added 2026-09-03 names for a different file family.
 
+- 2026-09-05: the first whole-suite run after T9 stopped at M14 — `examples/id-collision.qmd` now writes `see=`/`see-also=` targets, so the roster read out of the corpus lists it and the pinned count manifest did not. Its row is 0: all five targets name `mu`, which the fixture indexes, and a gfm render draws no dangling-target report.
+
 ## Decisions
 
 ## Review

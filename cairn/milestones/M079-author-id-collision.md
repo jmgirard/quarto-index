@@ -96,6 +96,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: T10 written against the observed render. `site/html.qmd` and `CHANGELOG.md` no longer promise the id-keeping rule holds for a chapter recovered from its source (that route sees no rendered page), no longer say a yielding mark's locator always follows the mint (a cross-reference mark has none), no longer settle two marks by document order alone, and name what the report actually names — the term the mark prints or the entry written for it. Both add the comment case. The pinned claim rows go from five to seven and all seven hold.
 
+- 2026-09-05: noted rather than amended. Scope In's sentence enumerates the fixture as carrying "both collision shapes"; it now carries a third, a cross-reference mark against a contested name, in five cases. The files and the surface Scope In names are unchanged, and the amendment gate chose to hold the criteria set rather than widen it, so the sentence stands and this line is the handle for review.
+
 ## Decisions
 
 ## Review

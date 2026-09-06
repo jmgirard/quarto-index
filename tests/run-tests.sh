@@ -3925,11 +3925,19 @@ PY
 # a reader that did not would build a real node for a tag planted inside one,
 # and the fixture cases below would read as agreeing with a census that had
 # claimed a name the page never carries. So the reader is planted first, with
-# the defect it must catch written out here rather than left to the fixture:
-# an id inside each of the seven, an id on each of two closing tags, and the
-# controls that keep this from passing by reading nothing — an ordinary id, an
-# id on an element standing AFTER each of the seven, and an id past an end tag
-# the element only looks like.
+# the defect it must catch written out here rather than left to the fixture.
+# The defect is the five elements Python's own parser did not treat as
+# character data: put `CDATA_CONTENT_ELEMENTS` back to `script`/`style` and
+# `buried-xmp`, `buried-iframe`, `buried-noembed`, `buried-noframes` and
+# `buried-textarea` come back as nodes carrying real ids, which is what turns
+# this section red. The other negative names below cannot fail here —
+# `buried-script` and `buried-style` are the two the parser already knew, and
+# `closing-p`, `closing-em` and `veiled` are refused by the parser itself
+# whatever this list says. They are asserted anyway, so the reading this
+# suite relies on is written out in one place rather than inferred. The
+# positive names are the controls that keep the section from passing by
+# reading nothing: an ordinary id, an id on an element standing AFTER each of
+# the seven, and an id past a real end tag spelled with a space.
 # ---------------------------------------------------------------------------
 section 'M080-AC2 (reader) — the suite'\''s own HTML reader treats the same seven'
 python3 - <<'PY'
@@ -4341,12 +4349,18 @@ python3 tests/epubcheck.py unique "$CAPTURE_ROOT/id-collision-epub/id-collision.
 #
 # The middle rows hold the page to the reading M080 gave the census: seven
 # elements whose text content is text and not markup, the markup after one of
-# them still read, and a closing tag's attributes on nothing. The last two hold
-# it to the two names the census still does not see, and so to the two ways a
-# mark can keep a contested id in silence: one written in a `title` element's
-# own text, and one Quarto's writer generates after this filter has run (the
-# narrowed KI254, and KI255). A page that drops either sentence is promising
-# more than the code does.
+# them still read, and a closing tag's attributes on nothing.
+#
+# The rows after those hold it to what the census still gets wrong, which is
+# where an author loses a name in silence. The residue is pinned as a RULE and
+# not a list — an element read as text that the skip list does not name, with
+# `title` given as one and no count claimed — because a list written from
+# recall is what M080's review returned (the corrected KI254). Two more pin the
+# shapes the walk itself misreads, a bogus comment and the script double-escape
+# (KI257, KI258), and the last pins the name Quarto's writer makes up after
+# this filter has run (KI255). A page that drops one of these sentences is
+# promising more than the code does; a page that reinstates a count of the
+# residue is promising what no procedure here decides.
 # ---------------------------------------------------------------------------
 section 'M079-AC5 — the HTML page states the rule an author now meets: which element'
 cat > "$WORK/html-id-claims.txt" <<'M079CLAIMS'
@@ -4361,9 +4375,13 @@ unrendered names	An id counts where it is an attribute of an opening tag, and no
 skipped elements	a browser reads those seven elements' content as text rather than as markup, and so does this reading, which steps over that text and goes on with the markup after it
 name after a skipped element	A name on a real element standing after one of the seven, in that same raw HTML block, is counted like any other
 name on a closing tag	So is one written on a closing tag, whose attributes a browser reads and drops
-census misses a name in a title element	`title` is the one element of that kind this rule does not cover
+census misses a name outside the skip list	An element whose content a browser reads as text rather than as markup, but which this reading does not step over, is not covered by that
+the residue is a rule and not a list	`title` is one such element
+no count of the residue	how many others there are is not stated here
+bogus comment read as markup	A comment not spelled `<!--` — `<!ok>`, `<?ok>`, `<![CDATA[ok]]>` — is a comment to a browser and markup to this reading, so a name inside one is counted
+script double-escape unmodelled	inside a `script` element, a `<!--` followed by a nested `<script>` keeps a browser inside the outer element past the first `</script>`, where this reading resumes
 numbering steps over rendered names	Both kinds of generated id skip any name an element of the rendered page carries
-numbering may mint an unrendered one	a name written where the page renders no element — inside an HTML comment, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
+numbering may mint an unrendered one	a name written where the page renders no element — inside a comment spelled `<!--`, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
 front-matter exception	it keeps whatever id you wrote on it, contested or not, with nothing reported
 unindexable exception	Such a mark keeps a contested name, so the name stays on two elements and nothing further is said about it
 census misses a writer-generated name	a name Quarto's own writer makes up after this extension has run

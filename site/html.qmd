@@ -51,19 +51,31 @@ term it prints, or the entry you wrote for it — so nothing moves out from unde
 a link of your own in silence.
 
 An id counts where it is an attribute of an opening tag, and nowhere else. One
-written inside an HTML comment is on nothing the rendered page carries, so it
-contests nothing: a mark written with that name keeps it. So is one written on
-a closing tag, whose attributes a browser reads and drops — `</p id="mine">`
-puts `mine` on nothing at all. And so is one written in the text content of
-`script`, `style`, `xmp`, `iframe`, `noembed`, `noframes` or `textarea`: a
-browser reads those seven elements' content as text rather than as markup, and
-so does this reading, which steps over that text and goes on with the markup
-after it. A name on a real element standing after one of the seven, in that
-same raw HTML block, is counted like any other.
+written inside a comment spelled `<!--` is on nothing the rendered page
+carries, so it contests nothing: a mark written with that name keeps it. So is
+one written on a closing tag, whose attributes a browser reads and drops —
+`</p id="mine">` puts `mine` on nothing at all. And so is one written in the
+text content of `script`, `style`, `xmp`, `iframe`, `noembed`, `noframes` or
+`textarea`: a browser reads those seven elements' content as text rather than
+as markup, and so does this reading, which steps over that text and goes on
+with the markup after it. A name on a real element standing after one of the
+seven, in that same raw HTML block, is counted like any other.
 
-`title` is the one element of that kind this rule does not cover: an `id=`
-written in a document title's own text is read as markup and counted, so a mark
-written with that name yields it to a carrier the page does not have.
+An element whose content a browser reads as text rather than as markup, but
+which this reading does not step over, is not covered by that: an `id=` written
+inside one is read as markup and counted against a mark, which then yields the
+name to a carrier the page does not have. `title` is one such element — a name
+written in a document title's own text costs a mark that name and leaves the
+author's link to it pointing at nothing. The seven above are the ones this
+reading steps over; how many others there are is not stated here.
+
+Two shapes this reading gets wrong today, both of them counting a name no
+element of the page carries. A comment not spelled `<!--` — `<!ok>`, `<?ok>`,
+`<![CDATA[ok]]>` — is a comment to a browser and markup to this reading, so a
+name inside one is counted. And inside a `script` element, a `<!--` followed by
+a nested `<script>` keeps a browser inside the outer element past the first
+`</script>`, where this reading resumes, so a name written after that point is
+counted too.
 
 One kind of name is missed by that reading, and a mark written with it keeps it
 whatever else carries it, with nothing reported: a name Quarto's own writer
@@ -89,10 +101,10 @@ anything. The section id is minted the same way: `qi-index` where the name is
 free, and `qi-index-1`, `qi-index-2` and so on where the document has taken it.
 Two kinds of name sit outside that promise. An id injected around the document
 at render time is never seen by the filter (`include-in-header` and its
-relatives). And a name written where the page renders no element — inside an
-HTML comment, on a closing tag, or in the text content of one of the seven
-elements above — is a name the numbering may mint: nothing of yours is displaced by that, there being no
-element of yours to displace.
+relatives). And a name written where the page renders no element — inside a
+comment spelled `<!--`, on a closing tag, or in the text content of one of the
+seven elements above — is a name the numbering may mint: nothing of yours is
+displaced by that, there being no element of yours to displace.
 
 An entry's locators are numbered links to those anchors: `1`, `2`, `3` for the
 first, second and third time the term is marked, restarting at `1` for each

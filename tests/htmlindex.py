@@ -25,8 +25,14 @@ VOID_ELEMENTS = {
 # of them; the other five are as much character data as `script` is, and a
 # planted `<p id=...>` inside a `textarea` would otherwise come back as a real
 # node carrying a real id. The same seven the extension's id census steps over
-# (`_extensions/index/modules/html.lua`), so the reader and the code under test
-# disagree about no page. `title`, `noscript` and `plaintext` are text content
+# (`_extensions/index/modules/html.lua`), so on the pages the fixtures write
+# the reader and the code under test read the same elements. They are not the
+# same parser, and two shapes part them, the census reading each the way a
+# browser does and this reader not: `</textarea/>` ends the element for the
+# census and not here, so the rest of the string is swallowed as text; and
+# `<iframe/>` opens a raw-text element for the census and is self-closing
+# here, so the census stops at it and this reader reads on. Neither shape is
+# written in any fixture. `title`, `noscript` and `plaintext` are text content
 # too and are deliberately absent from both: no case renders them here.
 RAW_TEXT_ELEMENTS = (
     'script', 'style', 'xmp', 'iframe', 'noembed', 'noframes', 'textarea',

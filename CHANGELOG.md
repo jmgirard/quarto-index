@@ -19,18 +19,26 @@
   spelled, and no element of yours is ever renamed. A name counts as carried
   where it is an attribute of an opening tag, and one written where the page
   renders no element contests nothing: the mark written with it keeps it. That
-  covers a name inside an HTML comment; one on a closing tag, whose attributes
-  a browser reads and drops; and one in the text content of `script`, `style`,
-  `xmp`, `iframe`, `noembed`, `noframes` or `textarea`, seven elements whose
-  content a browser reads as text rather than as markup — the reading steps
-  over that text and goes on with the markup after it, so a name on a real
-  element standing after one of the seven in that same raw HTML block is
-  counted like any other. Two names are still missed by that reading and stay
-  on two elements unreported: one written in a `title` element's own text,
-  `title` being the one element of that kind this rule does not cover, and one
+  covers a name inside a comment spelled `<!--`; one on a closing tag, whose
+  attributes a browser reads and drops; and one in the text content of
+  `script`, `style`, `xmp`, `iframe`, `noembed`, `noframes` or `textarea`,
+  seven elements whose content a browser reads as text rather than as markup —
+  the reading steps over that text and goes on with the markup after it, so a
+  name on a real element standing after one of the seven in that same raw HTML
+  block is counted like any other. An element whose content a browser reads as
+  text but which this reading does not step over is not covered: a name
+  written inside one is counted against a mark, which then yields it to a
+  carrier the page does not have. `title` is one such element; how many others
+  there are is not stated here. Two shapes the reading still gets wrong, each
+  counting a name no element of the page carries: a comment not spelled `<!--`
+  (`<!ok>`, `<?ok>`, `<![CDATA[ok]]>`), which a browser makes a comment and
+  this reading walks as markup; and, inside a `script` element, a `<!--`
+  followed by a nested `<script>`, which keeps a browser inside the outer
+  element past the first `</script>` where this reading resumes. A name
   Quarto's own writer makes up after this extension has run — a footnote's
-  `fn1`, a code block's `cb1`, `title-block-header`. HTML and EPUB alike, both
-  back-ends being the one code path.
+  `fn1`, a code block's `cb1`, `title-block-header` — is missed too, and a
+  mark written with one keeps it on two elements unreported. HTML and EPUB
+  alike, both back-ends being the one code path.
 
 - Two marks stay outside the rule above, and one route reads its result from
   outside. A mark this filter cannot index at all — no visible text and no

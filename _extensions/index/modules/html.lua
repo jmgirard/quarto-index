@@ -485,10 +485,10 @@ end
 -- Elements whose TEXT CONTENT a browser reads as text rather than as markup.
 -- A tag written inside one of these renders no element, so an `id=` in there
 -- is on nothing a link can reach and contests nothing. The census steps over
--- that text exactly as a browser does, and goes on reading the markup after
--- it. `title`, `noscript` and `plaintext` are text content too and are
--- deliberately absent: no case this repo renders puts one in a raw HTML
--- block, so an `id=` written in one stays counted (KI254).
+-- that text and goes on reading the markup after it. `title`, `noscript` and
+-- `plaintext` are text content too and are deliberately absent: no case this
+-- repo renders puts one in a raw HTML block, so an `id=` written in one stays
+-- counted (KI254).
 local RAW_TEXT_ELEMENTS = {
   script = true, style = true, xmp = true, iframe = true,
   noembed = true, noframes = true, textarea = true,
@@ -517,17 +517,24 @@ local function taken_identifiers(doc)
     end
     return nil
   end
-  -- An id can also be written in raw HTML, where it is no Attr at all, so this
-  -- string has to be read the way a browser reads it.
+  -- An id can also be written in raw HTML, where it is no Attr at all, so
+  -- each such string is walked as markup rather than searched. The walk models
+  -- a browser's reading shape by shape, not as a whole: it starts each raw
+  -- string in the same state, while a browser carries state across the whole
+  -- document, so a block that ends mid-`<script>` leaves a browser reading the
+  -- Pandoc-generated markup after it as script text and leaves this walk
+  -- reading it as markup. Nothing in this filter can close that gap, the
+  -- markup between two raw blocks not being this function's to see.
   --
   -- Erring either way costs something. Over-collecting moves a mark off a name
   -- NO element of the rendered page carries, leaving the author's own link to
   -- that name pointing at nothing; under-collecting leaves a real element's
   -- name uncounted, and the mark written with it then keeps a contested id in
   -- silence. So the census walks the markup rather than pattern-matching the
-  -- whole string: an `id=` counts when it is an attribute of a tag, and only
-  -- then. A comment is stepped over — it is not part of the rendered page, so
-  -- an id inside one is on nothing a link can reach. So is the text content of
+  -- whole string: an `id=` counts when it is an attribute of an opening tag,
+  -- and only then. A comment is stepped over — it is not part of the rendered
+  -- page, so an id inside one is on nothing a link can reach. So is the text
+  -- content of
   -- each RAW_TEXT_ELEMENTS element, which is character data and not markup;
   -- the walk resumes at that element's own end tag and reads the markup after
   -- it, a name written there being on a real element like any other. Only an
@@ -547,8 +554,8 @@ local function taken_identifiers(doc)
         break
       end
       if text:sub(lt, lt + 3) == "<!--" then
-        -- An unterminated `<!--` runs to the end of this raw string, exactly
-        -- as a browser reads it, so there is nothing after it to read.
+        -- An unterminated `<!--` runs to the end of this raw string, as it
+        -- does for a browser, so there is nothing after it to read.
         local close = text:find("-->", lt + 4, true)
         if close == nil then
           break
@@ -612,8 +619,8 @@ local function taken_identifiers(doc)
           -- Step to this element's own end tag: everything between is
           -- character data, where a `<` starts no tag at all. The end tag is
           -- the element's name followed by whitespace, `/` or `>` and nothing
-          -- else, so `</scriptx>` is text inside a `script` exactly as a
-          -- browser reads it, while `</script >` ends one.
+          -- else, so `</scriptx>` is text inside a `script` as it is for a
+          -- browser, while `</script >` ends one.
           local lower_text, needle = text:lower(), "</" .. lowered
           local from, closing = pos, nil
           while true do

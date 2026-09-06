@@ -378,15 +378,17 @@ Three back-ends ship:
   files no locator that could follow the anchor (corrected M079). The census
   walks the raw HTML rather than pattern-matching it, so an `id=` counts where
   it is an attribute of an OPENING tag and nowhere else: one written inside a
-  comment, on a closing tag, or in the text content of `script`, `style`,
-  `xmp`, `iframe`, `noembed`, `noframes` or `textarea` carries nothing on the
-  rendered page and contests nothing, the walk resuming at such an element's
-  own end tag and reading the markup after it (added M079, corrected M080). A
-  `title` element's text is the one content of that kind the walk still reads
-  as markup, and a name the HTML writer generates after the filter runs is
-  outside the census altogether (KI254, KI255). Two marks of one rendered page are outside all
-  of this; a third case, a chapter recovered from its own source, is a second
-  page's reading of this one and is stated with them in the shipped pages. A
+  comment spelled `<!--`, on a closing tag, or in the text content of
+  `script`, `style`, `xmp`, `iframe`, `noembed`, `noframes` or `textarea`
+  carries nothing on the rendered page and contests nothing, the walk resuming
+  at such an element's own end tag and reading the markup after it (added
+  M079, corrected M080). A text-content element the skip list does not name
+  still has its text read as markup, and a name the HTML writer generates
+  after the filter runs is outside the census altogether (KI254, KI255); three
+  shapes the walk itself reads wrongly are KI256, KI257 and KI258. Two marks
+  of one rendered page are outside all of this; a third case, a chapter
+  recovered from its own source, is a second page's reading of this one and is
+  stated with them in the shipped pages. A
   front-matter mark of an HTML book chapter stays anchorless per D-048, this
   filter not being able to see which title-block fields Quarto prints; and
   a mark the Span pass never tags — one that indexes nothing — is returned
@@ -891,17 +893,18 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   refusal rule reaches only tagged marks. `CHANGELOG.md` and `site/html.qmd`
   both state the exception. — M079 implement gate
 
-- **KI254** (corrected M080). The id census reads a `title` element's text
-  content as markup. `title` is the one HTML text-content element outside the
-  seven the census steps over — `script`, `style`, `xmp`, `iframe`, `noembed`,
-  `noframes`, `textarea` — so an `id=` written in a document title's own text
-  is counted though the page carries no element with that name, and a mark
-  written with it yields to a carrier that is not there. `noscript` and
-  `plaintext` are the same shape and are outside the seven for the same
-  reason: no case this repo renders puts one in a raw HTML block, so nothing
-  can exercise them. Needs hand-written raw HTML in the source.
-  `CHANGELOG.md` and `site/html.qmd` state the `title` residue.
-  — M079 review round 3, X1/X4/X5; narrowed M080
+- **KI254** (corrected M080). The id census reads as markup the text content
+  of any HTML text-content element outside the seven it steps over —
+  `script`, `style`, `xmp`, `iframe`, `noembed`, `noframes`, `textarea`.
+  `title`, `noscript` and `plaintext` are three such elements, and nothing
+  here decides how many there are. So an `id=` written inside one is counted
+  though the page carries no element with that name, and a mark written with
+  it yields to a carrier that is not there. Needs hand-written raw HTML in
+  the source; no case this repo renders puts one of the three in a raw HTML
+  block, so nothing here can exercise them. `CHANGELOG.md` and
+  `site/html.qmd` state the residue as a rule over that class rather than as
+  a list. — M079 review round 3, X1/X4/X5; narrowed M080; corrected M080
+  review F1
 
 - **KI255.** An id the HTML writer generates after the filter runs — a
   footnote's `fn1`, a code block's `cb1`, `title-block-header` — is not in the
@@ -911,6 +914,33 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   needs a pass over the written page rather than over the AST.
   `CHANGELOG.md` and `site/html.qmd` state the exception.
   — M079 review round 3, X2
+
+- **KI256.** The id census counts an `id=` written inside a `template`
+  element's content. A `template`'s contents are parsed into a separate
+  document fragment, so no element of the rendered page carries the name,
+  and a mark written with it yields to a carrier that is not there.
+  `template` is outside the census's skip list, whose members are the
+  elements whose content is character data; a `template`'s content is markup
+  that lands elsewhere. — M080 review F2
+
+- **KI257.** The id census reads a bogus comment as markup. Only a literal
+  `<!--` opens a comment for the walk, so `<!ok>`, `<?ok>` and
+  `<![CDATA[ok]]>` — each a comment node to a browser — are walked as markup
+  and an `id=` inside one is counted, though the page carries no element
+  with that name. The same over-collection class as the closing-tag shape
+  M080 repaired. — M080 review F3
+
+- **KI258.** The id census does not model the script double-escape state, in
+  which a `<!--` inside a `script` element's content lets a nested
+  `<script>` pass without the first `</script>` ending the outer element. So
+  `<script><!--<script></script><p id="ghost">` resumes the walk at that
+  first end tag and counts `ghost`, though a browser is still inside the
+  script and the page carries no element with that name. — M080 review F4
+
+- **KI259.** No fixture case writes an `id=` on a raw-text element's own
+  opening tag (`<style id="x">`), which the census must still claim. So
+  moving the census's `claim` call inside its skip guard reddens no check. —
+  M080 review F8
 
 ### Reports and messages
 

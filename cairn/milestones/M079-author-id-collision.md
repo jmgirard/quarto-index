@@ -21,12 +21,12 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 ## Acceptance criteria
 
-- [ ] AC1: Rendering `examples/id-collision.qmd` to HTML produces a captured page carrying no id more than once, counted by a sweep over every `id=` attribute of that page. The fixture carries both collision shapes: a mark whose author-written id names a non-mark element, written across the five id spellings the census reads (a Pandoc attribute; raw HTML double-quoted, unquoted and uppercase `ID=`; a raw inline, single-quoted) and once as a name the extension would otherwise mint; and two marks sharing one author-written id. No colliding id is written on a heading, whose id Quarto derives further copies from. The same sweep over that fixture rendered at the branch's merge-base reports a repeat for every colliding id the fixture carries.
-- [ ] AC2: Rendering the same fixture to EPUB produces a publication in which no XHTML document the package manifest lists carries an id more than once, and every link inside a generated index section resolves to an id its target document carries exactly once — both read through `tests/epubindex.py`, over at least one document carrying a generated index section. The same reading at the merge-base reports a repeat.
-- [ ] AC3: On AC1's captured render, every mark whose author-written id the extension refused carries a minted `qi-mark-<n>` instead — on the mark's own span, or, where the mark is written inside a heading, on the empty span the extension emits after that heading, no anchor of any kind being left where the table of contents copies it. Where such a mark files a locator, that locator's fragment names its own minted id; where it is a cross-reference mark it files no locator at all. Where two marks that both file locators are written with one author-written id, the one written first in the document keeps it.
-- [ ] AC4: On AC1's render the run writes one warning per mark whose author-written id it refused, naming that id and that mark's printed term, and writes no such warning for any other mark. The same fixture's marks whose author-written ids collide with nothing — one nothing else carries, one inside a heading, and one spelled as a name the extension would otherwise mint — each still carry the author's id, with the mark's locator fragment naming it.
-- [ ] AC5: `site/html.qmd` states which element keeps a contested id, what a refused mark gets instead, and that a refusal is reported; its present sentence promising a mark keeps an id of the author's own (line 20) no longer stands unqualified. `CHANGELOG.md` carries an entry whose statement of the behavior is true of AC1's captured render.
-- [ ] AC6: `tests/run-tests.sh` runs clean.
+- [x] AC1: Rendering `examples/id-collision.qmd` to HTML produces a captured page carrying no id more than once, counted by a sweep over every `id=` attribute of that page. The fixture carries both collision shapes: a mark whose author-written id names a non-mark element, written across the five id spellings the census reads (a Pandoc attribute; raw HTML double-quoted, unquoted and uppercase `ID=`; a raw inline, single-quoted) and once as a name the extension would otherwise mint; and two marks sharing one author-written id. No colliding id is written on a heading, whose id Quarto derives further copies from. The same sweep over that fixture rendered at the branch's merge-base reports a repeat for every colliding id the fixture carries.
+- [x] AC2: Rendering the same fixture to EPUB produces a publication in which no XHTML document the package manifest lists carries an id more than once, and every link inside a generated index section resolves to an id its target document carries exactly once — both read through `tests/epubindex.py`, over at least one document carrying a generated index section. The same reading at the merge-base reports a repeat.
+- [x] AC3: On AC1's captured render, every mark whose author-written id the extension refused carries a minted `qi-mark-<n>` instead — on the mark's own span, or, where the mark is written inside a heading, on the empty span the extension emits after that heading, no anchor of any kind being left where the table of contents copies it. Where such a mark files a locator, that locator's fragment names its own minted id; where it is a cross-reference mark it files no locator at all. Where two marks that both file locators are written with one author-written id, the one written first in the document keeps it.
+- [x] AC4: On AC1's render the run writes one warning per mark whose author-written id it refused, naming that id and that mark's printed term, and writes no such warning for any other mark. The same fixture's marks whose author-written ids collide with nothing — one nothing else carries, one inside a heading, and one spelled as a name the extension would otherwise mint — each still carry the author's id, with the mark's locator fragment naming it.
+- [x] AC5: `site/html.qmd` states which element keeps a contested id, what a refused mark gets instead, and that a refusal is reported; its present sentence promising a mark keeps an id of the author's own (line 20) no longer stands unqualified. `CHANGELOG.md` carries an entry whose statement of the behavior is true of AC1's captured render.
+- [x] AC6: `tests/run-tests.sh` runs clean.
 
 ## Coverage
 
@@ -344,3 +344,148 @@ case correctly is false (it leaves the same page duplicated).
   `## Review` sections on the touched files record nothing this diff regresses,
   and the GitHub inline-comment probe returned empty, so no PR-thread walk was
   made. Zero findings.
+
+### Round 3 — acceptance criteria, fresh evidence (2026-09-05, HEAD ab8d685)
+
+Rounds 1 and 2 were read at 600d1e7 and 4030fdf; T12 and T13 changed the census
+and the fixture, so every reading below is fresh on this tree. Merge-base
+floors re-rendered this review in a scratch tree holding `origin/main`'s
+`_extensions` and this branch's fixture, both readings taken with a real HTML
+parser rather than a pattern match.
+
+- AC1: green. The `M079-AC1` leg over the captured render reports no id among
+  the page's 99 carried twice; read independently with `html.parser`, the page
+  carries 99 id attributes and 99 distinct names. The 12 contested author ids
+  each stayed on the element that kept them with the yielding mark on a minted
+  id, the 9 uncontested ones are still their marks' anchors, and the 5
+  cross-reference marks among them file no locator. Merge-base floor: 99 id
+  attributes, 87 distinct, 12 repeated — `shared-attr`, `shared-dq`,
+  `shared-uq`, `shared-up`, `shared-sq`, `qi-mark-3`, `twin`, `twin-xref`,
+  `xref-dup`, `xref-raw`, `xref-heading`, `hidden-carrier` — one per colliding
+  id the fixture carries, and one per refusal the branch draws.
+- AC2: green. `tests/epubcheck.py unique` over the captured publication: none
+  of the 12 manifest-listed documents carries an id twice, and each of the 24
+  fragments linked from the 1 generated index section names an id its document
+  carries exactly once. The same reading of the merge-base publication, taken
+  with this branch's instrument, fails with 22 clauses across 6 documents — 12
+  repeated-id, 10 link-target.
+- AC3: green, the clause T14 amended now holding. Read off the captured render:
+  alpha->`#qi-mark-5`, beta->`#qi-mark-6`, gamma->`#qi-mark-7`,
+  delta->`#qi-mark-8`, epsilon->`#qi-mark-10`, theta->`#qi-mark-11`,
+  lambda->`#qi-mark-12`, rho->`#qi-mark-13`, sigma->`#qi-mark-14`,
+  phi->`#qi-mark-16`, psi->`#qi-mark-17`, each on the mark's own span. tau, the
+  twelfth, is written inside a heading: its own span carries no id and its
+  minted `qi-mark-15` sits on the empty span the extension emits after that
+  heading — the shape the amendment added. Swept over every `<h1>`-`<h6>` of
+  the page, no id of any kind is left inside a heading; `in-heading` (nu) and
+  `untagged-in-heading` relocate the same way. The 5 cross-reference marks file
+  no locator; kappa, written before lambda, keeps `twin`.
+- AC4: green. 12 refusal reports in the render log, one per yielding mark, each
+  naming the term and the id given up — alpha/`shared-attr`, beta/`shared-dq`,
+  gamma/`shared-uq`, delta/`shared-up`, epsilon/`shared-sq`, theta/`qi-mark-3`,
+  lambda/`twin`, rho/`xref-dup`, sigma/`xref-raw`, tau/`xref-heading`,
+  phi/`twin-xref`, psi/`hidden-carrier` — and no such report names any other
+  mark. The three controls the criterion names hold: mu keeps `solo`, xi keeps
+  `qi-mark-9`, and nu, the one inside a heading, keeps `in-heading` on its
+  relocated anchor, each its locator's fragment. Recorded rather than glossed:
+  nu's own span carries no id, the anchor having relocated, so "still carry the
+  author's id" is read here as the mark's anchor carrying it. AC4 states no
+  "on the mark's own span" clause — that clause is what made AC3 false of tau
+  and forced T14's amendment — so this reading adds nothing to the criterion;
+  it is named at the gate rather than settled silently.
+- AC5: green. `tests/sitecheck.py claims` holds `site/html.qmd` to all 12 claim
+  rows, the first of them the qualified form of the sentence that stood
+  unqualified through M078; `CHANGELOG.md` carries an Unreleased/Output entry.
+  Every statement in that entry about AC1's captured render is true of it.
+  Findings X1, X2, X3 and X6 below are about claims in these two files that
+  reach past that render — a `script`-bearing raw block, a writer-generated id,
+  and a book chapter — which is outside what this criterion binds.
+- AC6: green. `tests/run-tests.sh --self-test`: 1412 checks across 158
+  sections, 1340s plus 2s of setup, exit 0, no failure.
+
+### Round 3 — consistency gate
+
+`cairn_validate.py` exit 0, all 16 checks PASS. One advisory, not a gate
+failure: `sizing (split tripwires)` on 19 tasks. No `DESIGN.md` IP/GP principle
+line is touched by the diff, so `cairn_impact.py` did not apply. The `generic`
+profile's consistency-gate slot names no toolchain checks.
+
+### Round 3 — independent review, three fresh-context lenses
+
+Ranked, most severe first. X1, X4 and X5 were reproduced against the
+implementation this review by driving the census walker itself under
+`pandoc lua`, not taken on the reviewer's account.
+
+- X1 [O] `html.lua:594-601`: a `script` or `style` element in a raw HTML block
+  discards every `id=` after it in that block, so a real collision goes
+  unrefused and the page carries the name twice, silently. After the opening
+  tag the walk jumps `pos` to the `</script`, then re-parses that CLOSING tag
+  as an opening one — `tag_name` reads `script` again — and the skip branch
+  fires a second time, finds no further `</script`, and breaks the whole walk.
+  Driving the extracted walker: `<script>var x = 1;</script>` followed by
+  `<p id="dup">` claims nothing at all, where `<p id="plain">` alone claims
+  `plain=1`; `<style>` is identical. A mark written `[alpha]{#dup .index}`
+  therefore keeps a contested id with no report. This is the class the Goal
+  exists to forbid, it is introduced by T13's rewrite, and it is invisible to
+  the suite because the fixture states outright that its script case and its
+  carrier case are written in raw blocks of their own. — disposition:
+  maintainer, gate
+- X2 [O] `html.lua:487`: the census comment asserts Quarto's later ids are
+  "derived from these", which is false of names the HTML writer generates —
+  `fn1`, `cb1`, `title-block-header`. A mark written with one keeps it and the
+  page carries it twice. Not a regression, the merge-base doing the same, and
+  the census cannot see a name that does not exist when the filter runs; what
+  is new is that `CHANGELOG.md:7` now promises the duplicate is gone without
+  naming this class, where `site/html.qmd:74-77` carves render-time-injected
+  ids out of the numbering promise only. — disposition: maintainer, gate (the
+  claim; the code half is out of scope for this milestone)
+- X3 [O] `CHANGELOG.md:26-29`: "a mark there keeps the name you wrote whatever
+  else carries it" is false of the recovery route. That chapter is rendered by
+  this filter like any other page, so its mark does yield a contested id; what
+  survives is the recovered locator, which names the author's id and lands on
+  whichever element kept it. `site/html.qmd:25-27` states this correctly ("it
+  links to the id you wrote"), so the two shipped pages contradict each other.
+  This is round 1's F3 fixed in one file and reintroduced in the other by T18.
+  — disposition: maintainer, gate
+- X4 [O] `html.lua:533-539, 541-601`: two over-collection shapes, both
+  reproduced. RAWTEXT elements are parsed as markup — `<textarea><p id="ta">`
+  claims `ta=1`, though a browser reads that content as text — so a mark
+  written `#ta` yields to a carrier no element of the page holds and the report
+  is false; `<title>` and `<xmp>` are the same class. And an unterminated
+  `<!--` ends the walk of its own raw string only, where in the rendered
+  document it comments out everything to the next `-->` in a later block. Both
+  need hand-written raw HTML, and the second leaves the page broken anyway.
+  — disposition: maintainer, gate
+- X5 [O] `html.lua:541-543`: `^</?%a` admits a closing tag, whose attributes
+  are then read. Reproduced: `</p id="weird">` claims `weird=1`. Browsers
+  discard attributes on end tags, so this over-collects, but only from invalid
+  HTML and the reviewer could construct no case an author would write.
+  — disposition: follow-up candidate row
+- X6 [O] `cairn/DESIGN.md:382` says "Two marks are outside all of this" while
+  `CHANGELOG.md:23` says "Three marks stay outside" and `site/html.qmd:19-40`
+  names three. The counts reconcile — DESIGN is scoped to one page render, so
+  the recovery route is not among its cases — but neither side says so, and
+  making the exception set match across the shipped pages was T18's whole
+  point. — disposition: maintainer, gate
+- X7 [O] `tests/run-tests.sh:3937-4058`: the census's discriminating cases are
+  each isolated in a raw block of their own, so no leg exercises an `id=`
+  standing after a comment, a script, a style, or a quoted-value `<!--` within
+  one raw string. X1 is invisible to the suite for exactly this reason. Narrower
+  than the standing candidate row on this milestone's id-uniqueness
+  instruments, which covers red-proofs rather than domain. — disposition:
+  follow-up candidate row
+- [S-blame] zero findings. The two regressions round 2 caught are fixed
+  history-consistently: T12 restores the `marked_id` branch in
+  `relocate_heading_anchors` that M08 established, and T13's walker is a
+  superset of the regex census M17 introduced rather than a narrowing. D-056
+  supersedes exactly the two D-055 sentences this branch falsified and leaves
+  the rest standing; D-048's front-matter carve-out is preserved.
+- [S-prior] no prior-review evidence bearing on this diff. The archived
+  `## Review` sections on the touched files record nothing the diff regresses,
+  and the GitHub inline-comment probe
+  (`gh api repos/jmgirard/quarto-index/pulls/comments?per_page=1`) returned
+  `[]`, so no PR-thread walk was made. Zero findings.
+- Prior findings still true and not re-reported: F7-F10 and R9 each already
+  carry the standing candidate row on this milestone's id-uniqueness
+  instruments; F11/R13's unreachable `record.context` fallback persists at
+  `html.lua:775` and is rejected a third time on the same grounds.

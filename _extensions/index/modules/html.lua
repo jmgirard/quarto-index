@@ -482,6 +482,18 @@ local function grouped_blocks(root, name)
   return blocks
 end
 
+-- Elements whose TEXT CONTENT a browser reads as text rather than as markup.
+-- A tag written inside one of these renders no element, so an `id=` in there
+-- is on nothing a link can reach and contests nothing. The census steps over
+-- that text and goes on reading the markup after it. `title`, `noscript` and
+-- `plaintext` are text content too and are deliberately absent: no case this
+-- repo renders puts one in a raw HTML block, so an `id=` written in one stays
+-- counted (KI254).
+local RAW_TEXT_ELEMENTS = {
+  script = true, style = true, xmp = true, iframe = true,
+  noembed = true, noframes = true, textarea = true,
+}
+
 -- Every id already in the document, and HOW MANY elements carry each.
 -- Collected before any id is minted, so a minted one can be checked against
 -- the author's rather than assumed unique. Quarto adds further ids of its own
@@ -505,21 +517,31 @@ local function taken_identifiers(doc)
     end
     return nil
   end
-  -- An id can also be written in raw HTML, where it is no Attr at all, so this
-  -- string has to be read the way a browser reads it.
+  -- An id can also be written in raw HTML, where it is no Attr at all, so
+  -- each such string is walked as markup rather than searched. The walk models
+  -- a browser's reading shape by shape, not as a whole: it starts each raw
+  -- string in the same state, while a browser carries state across the whole
+  -- document, so a block that ends mid-`<script>` leaves a browser reading the
+  -- Pandoc-generated markup after it as script text and leaves this walk
+  -- reading it as markup. Nothing in this filter can close that gap, the
+  -- markup between two raw blocks not being this function's to see.
   --
   -- Erring either way costs something. Over-collecting moves a mark off a name
   -- NO element of the rendered page carries, leaving the author's own link to
   -- that name pointing at nothing; under-collecting leaves a real element's
   -- name uncounted, and the mark written with it then keeps a contested id in
   -- silence. So the census walks the markup rather than pattern-matching the
-  -- whole string: an `id=` counts when it is an attribute of a tag, and only
-  -- then. A comment is stepped over — it is not part of the rendered page, so
-  -- an id inside one is on nothing a link can reach. So is the raw text of a
-  -- `script` or `style` element, which is character data and not markup. And a
-  -- quoted attribute value is read as a value, so neither a `>` nor a `<!--`
-  -- inside one ends the tag or opens a comment, and an `id=` inside one is
-  -- text rather than a second attribute.
+  -- whole string: an `id=` counts when it is an attribute of an opening tag,
+  -- and only then. A comment spelled `<!--` is stepped over — it is not part
+  -- of the rendered page, so an id inside one is on nothing a link can reach.
+  -- So is the text content of each RAW_TEXT_ELEMENTS element, which is
+  -- character data and not markup; the walk resumes at that element's own end
+  -- tag and reads the markup after it, a name written there being on a real
+  -- element like any other. Only an OPENING tag carries attributes: an `id=`
+  -- written on a closing tag is read and dropped by a browser, so it names
+  -- nothing on the page. And a quoted attribute value is read as a value, so
+  -- neither a `>` nor a `<!--` inside one ends the tag or opens a comment, and
+  -- an `id=` inside one is text rather than a second attribute.
   local function note_raw(raw)
     if not raw.format:match("^html") then
       return nil
@@ -531,8 +553,11 @@ local function taken_identifiers(doc)
         break
       end
       if text:sub(lt, lt + 3) == "<!--" then
-        -- An unterminated `<!--` runs to the end of this raw string, exactly
-        -- as a browser reads it, so there is nothing after it to read.
+        -- Where no `-->` closes it, the walk gives up the rest of this
+        -- raw string. A browser ends a comment in places this does not —
+        -- `<!-->`, `<!--->` and a `--!>` close all end one for a browser
+        -- and none of them here — so those three shapes cost the markup
+        -- written after them (KI260).
         local close = text:find("-->", lt + 4, true)
         if close == nil then
           break
@@ -540,7 +565,8 @@ local function taken_identifiers(doc)
         pos = close + 3
       elseif text:find("^</?%a", lt) then
         local at = lt + 1
-        if text:sub(at, at) == "/" then
+        local is_end = text:sub(at, at) == "/"
+        if is_end then
           at = at + 1
         end
         local _, name_end, tag_name = text:find("^(%a[^%s/>]*)", at)
@@ -586,16 +612,34 @@ local function taken_identifiers(doc)
           -- No `>` closes this tag, so no element of the page comes of it.
           break
         end
-        if identifier ~= nil then
+        if identifier ~= nil and not is_end then
           claim(identifier)
         end
         pos = at + 1
         local lowered = tag_name ~= nil and tag_name:lower() or nil
-        if lowered == "script" or lowered == "style" then
-          -- Step to this element's closing tag: everything between is
-          -- character data, where a `<` starts no tag at all.
-          local closing = text:lower():find("</" .. lowered, pos, true)
+        if not is_end and lowered ~= nil and RAW_TEXT_ELEMENTS[lowered] then
+          -- Step to this element's own end tag: everything between is
+          -- character data, where a `<` starts no tag at all. The end tag is
+          -- the element's name followed by whitespace, `/` or `>` and nothing
+          -- else, so `</scriptx>` is text inside a `script` as it is for a
+          -- browser, while `</script >` ends one.
+          local lower_text, needle = text:lower(), "</" .. lowered
+          local from, closing = pos, nil
+          while true do
+            local found = lower_text:find(needle, from, true)
+            if found == nil then
+              break
+            end
+            local after = lower_text:sub(found + #needle, found + #needle)
+            if after:match("[%s/>]") then
+              closing = found
+              break
+            end
+            from = found + 1
+          end
           if closing == nil then
+            -- No end tag closes this element, so its text runs to the end of
+            -- this raw string and there is nothing after it to read.
             break
           end
           pos = closing

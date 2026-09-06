@@ -3927,15 +3927,26 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# The fixture carries seven contested names — one per spelling the id census
-# reads, one spelled as a name the numbering would otherwise mint, and one
-# written on two marks — and six uncontested author ids, which are what tells
-# this apart from a fix that simply mints over every author id. Two of those
-# six are names an HTML comment carries and nothing else does: a comment is not
-# on the rendered page, so it contests nothing (M079 T8). All thirteen are
-# hand-derived here from examples/id-collision.qmd, never read back out of the
-# render: an expectation taken from the artifact is blind in the dimension it
-# is taken from.
+# Twenty-two marks are hand-derived here from examples/id-collision.qmd, never
+# read back out of the render: an expectation taken from the artifact is blind
+# in the dimension it is taken from.
+#
+# Twelve of them yield a name something else on the page carries — one per
+# spelling the id census reads, one written as a name the numbering would
+# otherwise mint, one of a pair of marks sharing a name, three cross-reference
+# marks against an element of the author's, the cross-reference mark of a pair
+# whose other mark files a locator, and one whose carrier stands after a `<!--`
+# written inside a quoted attribute value, where it opens no comment (T13).
+#
+# Nine keep the name their author wrote, which is what tells this apart from a
+# fix that simply mints over every author id: three nothing else claims, one on
+# a cross-reference mark, the two that win their shared-name pairs, two whose
+# name only an HTML comment carries, and one whose name only a `script`
+# element's own text carries — neither renders an element, so neither contests
+# anything (T8, T13).
+#
+# The twenty-second is a mark this filter never tags, which gives up nothing
+# but whose id must still leave the heading it is written in (T12).
 #
 # Rendered and captured by the M08-AC1 section above, whose log carries the
 # refusal reports read at the end of this one.

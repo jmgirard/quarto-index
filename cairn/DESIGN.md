@@ -375,16 +375,22 @@ Three back-ends ship:
   outranks a cross-reference mark, and between two of a kind the first in
   document order keeps the name (added M079). A cross-reference mark carries an
   id like any other span and yields a contested one the same way, though it
-  files no locator that could follow the anchor (corrected M079). An `id=`
-  written inside an HTML comment carries nothing on the rendered page and so
-  contests nothing (added M079). A front-matter mark of an HTML book chapter is
-  outside all of this: it stays anchorless per D-048, this filter not being
-  able to see which title-block fields Quarto prints. The index section's own id is minted the same way (corrected
-  M08): the bare `qi-index` where that name is free, and a numbered one past it
-  where the document has taken it. No anchor id stays inside a heading, because
-  Quarto copies a heading's inlines into the table of contents and the id would
-  then appear twice; a heading mark's anchor — author id or minted — sits on an
-  empty span emitted just after the heading.
+  files no locator that could follow the anchor (corrected M079). The census
+  walks the raw HTML rather than pattern-matching it, so an `id=` counts where
+  it is an attribute of a tag and nowhere else: one written inside a comment,
+  or in a `script` or `style` element's own text, carries nothing on the
+  rendered page and contests nothing (added M079). Two marks are outside all of
+  this. A front-matter mark of an HTML book chapter stays anchorless per D-048,
+  this filter not being able to see which title-block fields Quarto prints; and
+  a mark the Span pass never tags — one that indexes nothing — is returned
+  untouched, so it keeps a contested name unreported (KI253). The index
+  section's own id is minted the same way (corrected M08): the bare `qi-index`
+  where that name is free, and a numbered one past it where the document has
+  taken it. No anchor id stays inside a heading, because Quarto copies a
+  heading's inlines into the table of contents and the id would then appear
+  twice; a heading mark's anchor — author id or minted — sits on an empty span
+  emitted just after the heading, and an untagged mark's author id moves there
+  too, having the same duplicate to avoid (restored M079).
 - **EPUB** (`FORMAT` containing `epub`, which covers `epub2` and `epub3`): the
   HTML back-end's index, unchanged (added M52). `builds_ast_index` routes the
   two sites gated on the AST back-ends — the per-mark record in `passes.lua`

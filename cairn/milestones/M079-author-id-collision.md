@@ -133,6 +133,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: T18 written, and widened by what the T12 gate settled. `CHANGELOG.md` and `site/html.qmd` now name three marks outside the id-yielding rule rather than one: a chapter recovered from its own source, a book chapter's front-matter mark, and a mark this filter cannot index at all — no visible text and no `entry=` — which keeps a contested name unreported. The third was verified on a probe: a mark `[![](dot.png)]{#ghost .index}` beside `::: {#ghost}` renders `ghost` on two elements with no refusal drawn. It is recorded as KI253 and its id is still relocated out of a heading, which is the part T12 restored. The pinned claim rows go from 10 to 12 and all 12 hold.
 
+- 2026-09-05: T19 written. The AC1 leg's derivation banner is rewritten against the dicts below it — 22 hand-derived marks in three groups, 12 that yield a contested name, 9 that keep the name their author wrote, and the one this filter never tags — where it had said seven, six and "all thirteen". `cairn/DESIGN.md`'s id account is corrected with it: the census walks the raw HTML rather than pattern-matching it, two marks rather than one stand outside the yielding rule, and an untagged mark's author id relocates out of a heading like any other anchor. The 114-character line the T9 insertion left is re-wrapped; the file's three other over-long lines predate this branch.
+
 ## Decisions
 
 - 2026-09-05: **a cross-reference mark yields a contested id, and is reported

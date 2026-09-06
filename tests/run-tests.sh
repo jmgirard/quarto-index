@@ -3987,6 +3987,11 @@ KEPT_XREF = {'upsilon': 'xref-solo'}
 # all the same: Quarto copies a heading's inlines into the table of contents,
 # so an id left inside one is on two elements of the rendered page (M079 T12).
 UNTAGGED = {'untagged-in-heading'}
+# Marks written INSIDE a heading. The table of contents copies a heading's
+# inlines, so no anchor may stay in one: the extension emits an empty span
+# after the heading and the anchor goes there. Their minted id is read off that
+# span rather than off the mark's own, which is what the criterion promises for
+# this shape — checked below rather than exempted (M079 T14).
 RELOCATED = {'tau'}
 REFUSED = dict(CONTESTED, **CONTESTED_XREF)
 KEPT_ALL = dict(KEPT, **KEPT_XREF)
@@ -4101,6 +4106,34 @@ for term, wrote in sorted(CONTESTED_XREF.items()):
     if term not in RELOCATED and term not in minted:
         errs.append('no minted anchor is on the span printing %r, which gave '
                     'up %r' % (term, wrote))
+# And where a refused mark is written inside a heading, the minted anchor is on
+# the empty span the extension emits after that heading, with nothing left on
+# the mark's own span for the table of contents to copy.
+order = H.document_order(doc)
+HEADINGS = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6')
+for term in sorted(RELOCATED):
+    head = next((el for el in order if el.tag in HEADINGS
+                 and any(H.text(kid).strip() == term for kid in H.walk(el))),
+                None)
+    if head is None:
+        errs.append('no heading on the page carries a mark printing %r' % term)
+        continue
+    for kid in H.walk(head):
+        if H.text(kid).strip() == term and kid.attrs.get('id'):
+            errs.append('the span printing %r is inside a heading and still '
+                        'carries the id %r' % (term, kid.attrs['id']))
+    inside = {id(kid) for kid in H.walk(head)}
+    inside.add(id(head))
+    after = [el for el in order[H.position(doc, head):] if id(el) not in inside]
+    anchor = next((el for el in after
+                   if el.attrs.get('id', '').startswith(prefix)), None)
+    if anchor is None:
+        errs.append('nothing after the heading printing %r carries a minted '
+                    'anchor for it' % term)
+    elif H.text(anchor).strip():
+        errs.append('the first minted anchor after the heading printing %r is '
+                    'on %r rather than on an empty span'
+                    % (term, H.text(anchor).strip()))
 # And its control: a cross-reference mark whose name nothing contests keeps it,
 # on its own span.
 for term, wrote in sorted(KEPT_XREF.items()):

@@ -87,3 +87,21 @@ after it; and one spelled as a name the numbering would otherwise mint,
 ## A heading carrying [nu]{#in-heading .index}
 
 Text under that heading, so the section is not empty.
+
+# Names only a comment carries
+
+An HTML comment is not part of the rendered page: an id written inside one is
+on nothing a link can reach, so it contests nothing and a mark keeps the name
+it was written with. Two here, one per shape a comment arrives in — a comment
+written on its own, and one inside a raw HTML block: [omicron]{#in-comment
+.index}, and [pi]{#in-raw-comment .index}.
+
+<!-- An earlier draft of this paragraph: <p id="in-comment">gone</p>. -->
+
+```{=html}
+<p id="kept-alive">Raw HTML beside a comment.</p>
+<!-- <p id="in-raw-comment">also gone</p> -->
+```
+
+The links an author writes to those marks still resolve: [to omicron](#in-comment)
+and [to pi](#in-raw-comment).

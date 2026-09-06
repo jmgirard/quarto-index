@@ -78,6 +78,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: review returned the milestone to in-progress at the maintainer's decision. What failed is not a criterion — AC1-AC6 were green with fresh evidence — but a regression the branch introduces: an `id=` inside an HTML comment counts as a carrier in the census, so a mark yields a name no element holds, the author's own link to it goes dead, and the refusal report names a carrier that is not there. With it: a cross-reference mark still leaving two elements on one id unwarned, and four sentences in `CHANGELOG.md` and `site/html.qmd` reaching past the code. T8-T11 written; the criterion ticks were removed, the fix changing the census the evidence was read against. Defect return 1. PR #79 stays open as a draft.
 
+- 2026-09-05: T8 written. An `id=` inside an HTML comment no longer counts as a carrier: the census cuts complete comments and an unterminated `<!--` out of each raw HTML string before reading attributes. On the fixture's two new comment cases the branch previously moved `omicron` to `qi-mark-13` and `pi` to `qi-mark-14`, reporting a refusal for each, with `in-comment` and `in-raw-comment` then on 0 elements of the page and the author's own links to them dead; the AC1 leg names that state red. With the cut the render carries 7 refusal reports rather than 9, no id among the page's 56 twice, and both marks keep the names their author wrote. Task box unticked until the whole-suite run.
+
 ## Decisions
 
 ## Review

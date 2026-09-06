@@ -506,18 +506,29 @@ local function taken_identifiers(doc)
     return nil
   end
   -- An id can also be written in raw HTML, where it is no Attr at all. Read
-  -- the three spellings an id attribute has in HTML; over-collecting from text
-  -- that merely looks like one costs a skipped number, and now also a mark
-  -- refused an id nothing really contests — both of which leave the author's
-  -- own id on the author's own element, which is the side to err on.
+  -- the three spellings an id attribute has in HTML. Over-collecting from text
+  -- that merely looks like an attribute is not the free side to err on: it
+  -- costs a skipped number, and it moves a mark off a name NO element of the
+  -- rendered page carries, leaving the author's own link to that name pointing
+  -- at nothing. So what the page does not render is cut before the patterns
+  -- read it.
   local function note_raw(raw)
     if raw.format:match("^html") then
+      -- A comment is not part of the rendered page: an id written inside one
+      -- is on nothing a link can reach, so it contests nothing and a mark
+      -- written with that name keeps it. Counting one as a carrier moved the
+      -- mark off a name NO element held and left the author's own link to it
+      -- pointing at nothing, which is the opposite of what refusing an id is
+      -- for. Cut before the attribute patterns read the text, complete
+      -- comments first and then an unterminated `<!--`, which runs to the end
+      -- of this raw string exactly as a browser reads it.
+      local text = raw.text:gsub("<!%-%-.-%-%->", " "):gsub("<!%-%-.*$", " ")
       -- HTML attribute names are case-insensitive, so `ID=` claims a name
       -- exactly as `id=` does.
       for _, pattern in ipairs({ '%s[iI][dD]%s*=%s*"([^"]*)"',
                                  "%s[iI][dD]%s*=%s*'([^']*)'",
                                  "%s[iI][dD]%s*=%s*([^%s\"'<>=`]+)" }) do
-        for id in raw.text:gmatch(pattern) do
+        for id in text:gmatch(pattern) do
           claim(id)
         end
       end

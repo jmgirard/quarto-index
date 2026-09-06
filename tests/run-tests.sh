@@ -3929,8 +3929,10 @@ PY
 #
 # The fixture carries seven contested names — one per spelling the id census
 # reads, one spelled as a name the numbering would otherwise mint, and one
-# written on two marks — and four uncontested author ids, which are what tells
-# this apart from a fix that simply mints over every author id. All eleven are
+# written on two marks — and six uncontested author ids, which are what tells
+# this apart from a fix that simply mints over every author id. Two of those
+# six are names an HTML comment carries and nothing else does: a comment is not
+# on the rendered page, so it contests nothing (M079 T8). All thirteen are
 # hand-derived here from examples/id-collision.qmd, never read back out of the
 # render: an expectation taken from the artifact is blind in the dimension it
 # is taken from.
@@ -3956,7 +3958,8 @@ errs = []
 CONTESTED = {'alpha': 'shared-attr', 'beta': 'shared-dq', 'gamma': 'shared-uq',
              'delta': 'shared-up', 'epsilon': 'shared-sq',
              'theta': 'qi-mark-3', 'lambda': 'twin'}
-KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9'}
+KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9',
+        'omicron': 'in-comment', 'pi': 'in-raw-comment'}
 
 # AC1. Every id on the page, counted; nothing may be carried twice. The domain
 # is stated as well as swept — a reader that found no id at all would report no

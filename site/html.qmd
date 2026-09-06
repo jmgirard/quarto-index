@@ -50,19 +50,40 @@ the render runs, naming the id given up and what the mark files under — the
 term it prints, or the entry you wrote for it — so nothing moves out from under
 a link of your own in silence.
 
-An id counts where it is an attribute of a tag, and nowhere else. One written
-inside an HTML comment, or in the text of a `script` or `style` element, is on
-nothing the rendered page carries, so it contests nothing: a mark written with
-that name keeps it.
+An id counts where it is an attribute of an opening tag, and nowhere else. One
+written inside a comment spelled `<!--` is on nothing the rendered page
+carries, so it contests nothing: a mark written with that name keeps it. So is
+one written on a closing tag, whose attributes a browser reads and drops —
+`</p id="mine">` puts `mine` on nothing at all. And so is one written in the
+text content of `script`, `style`, `xmp`, `iframe`, `noembed`, `noframes` or
+`textarea`: a browser reads those seven elements' content as text rather than
+as markup, and so does this reading, which steps over that text and goes on
+with the markup after it. A name on a real element standing after one of the
+seven, in that same raw HTML block, is counted like any other.
 
-Two kinds of name are missed by that reading, and a mark written with one of
-them keeps it whatever else carries it, with nothing reported. A name written
-in a raw HTML block after a `script` or `style` element in that same block is
-not seen — put the two in blocks of their own if you need the name counted.
-And a name Quarto's own writer makes up after this extension has run — a
-footnote's `fn1`, a code block's `cb1`, `title-block-header` — does not exist
-yet when the reading is taken, so writing one of those on a mark still leaves
-it on two elements.
+An element whose content a browser reads as text rather than as markup, but
+which this reading does not step over, is not covered by that: an `id=` written
+inside one is read as markup and counted against a mark, which then yields the
+name to a carrier the page does not have. `title` is one such element — a name
+written in a document title's own text costs a mark that name and leaves the
+author's link to it pointing at nothing. The seven above are the ones this
+reading steps over; how many others there are is not stated here.
+
+Some shapes this reading gets wrong today, each of them counting a name no
+element of the page carries. A comment not spelled `<!--` — `<!ok>`, `<?ok>`,
+`<![CDATA[ok]]>`, `</ ok>` — is a comment to a browser and markup to this
+reading, so a name inside one is counted. Inside a `script` element, a `<!--`
+followed by a nested `<script>` keeps a browser inside the outer element past
+the first `</script>`, where this reading resumes, so a name written after that
+point is counted too. And a `template` element's content is counted, though a
+browser parses it into a fragment of its own that the page carries no element
+of. How many such shapes there are is not stated here either.
+
+One kind of name is missed by that reading, and a mark written with it keeps it
+whatever else carries it, with nothing reported: a name Quarto's own writer
+makes up after this extension has run — a footnote's `fn1`, a code block's
+`cb1`, `title-block-header` — does not exist yet when the reading is taken, so
+writing one of those on a mark still leaves it on two elements.
 
 A heading is the one place an anchor cannot sit, because Quarto copies a
 heading's contents into the sidebar table of contents, and an id in there
@@ -82,10 +103,10 @@ anything. The section id is minted the same way: `qi-index` where the name is
 free, and `qi-index-1`, `qi-index-2` and so on where the document has taken it.
 Two kinds of name sit outside that promise. An id injected around the document
 at render time is never seen by the filter (`include-in-header` and its
-relatives). And a name written where the page renders no element — inside an
-HTML comment, or in a script's or stylesheet's own text — is a name the
-numbering may mint: nothing of yours is displaced by that, there being no
-element of yours to displace.
+relatives). And a name written where the page renders no element — inside a
+comment spelled `<!--`, on a closing tag, or in the text content of one of the
+seven elements above — is a name the numbering may mint: nothing of yours is
+displaced by that, there being no element of yours to displace.
 
 An entry's locators are numbered links to those anchors: `1`, `2`, `3` for the
 first, second and third time the term is marked, restarting at `1` for each

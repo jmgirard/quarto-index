@@ -3920,6 +3920,71 @@ print(f'ok   M08-AC1: all {len(local)} link(s) inside the minted index section '
 PY
 
 # ---------------------------------------------------------------------------
+# M080-AC2 (reader) — the suite's own HTML reader treats the same seven
+# elements' text content as text. The census under test steps over that text;
+# a reader that did not would build a real node for a tag planted inside one,
+# and the fixture cases below would read as agreeing with a census that had
+# claimed a name the page never carries. So the reader is planted first, with
+# the defect it must catch written out here rather than left to the fixture.
+# The defect is the five elements Python's own parser did not treat as
+# character data: put `CDATA_CONTENT_ELEMENTS` back to `script`/`style` and
+# `buried-xmp`, `buried-iframe`, `buried-noembed`, `buried-noframes` and
+# `buried-textarea` come back as nodes carrying real ids, which is what turns
+# this section red. The other negative names below cannot fail here —
+# `buried-script` and `buried-style` are the two the parser already knew, and
+# `closing-p`, `closing-em` and `veiled` are refused by the parser itself
+# whatever this list says. They are asserted anyway, so the reading this
+# suite relies on is written out in one place rather than inferred. The
+# positive names are the controls that keep the section from passing by
+# reading nothing: an ordinary id, an id on an element standing AFTER each of
+# the seven, and an id past a real end tag spelled with a space.
+# ---------------------------------------------------------------------------
+section 'M080-AC2 (reader) — the suite'\''s own HTML reader treats the same seven'
+python3 - <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+
+SEVEN = H.RAW_TEXT_ELEMENTS
+errs = []
+if len(SEVEN) != 7:
+    errs.append('the reader names %d text-content element(s), want 7'
+                % len(SEVEN))
+
+# Written out here rather than read off a render: this is the READER being
+# checked, so its input is stated in markup by hand.
+buried = ''.join('<%s><p id="buried-%s">gone</p></%s>' % (tag, tag, tag)
+                 for tag in SEVEN)
+beyond = ''.join('<%s>text</%s><p id="beyond-%s">real</p>' % (tag, tag, tag)
+                 for tag in SEVEN)
+closing = '</p id="closing-p"></em id=closing-em>'
+lookalike = '<script>a</scriptx> <p id="veiled">gone</p></script>'
+spaced = '<textarea>a</textarea > <p id="past-spaced">real</p>'
+doc = H.parse_text('<body>' + buried + beyond + closing + lookalike
+                   + spaced + '<p id="plain">real</p></body>')
+ids = H.all_ids(doc)
+
+want = ['beyond-%s' % tag for tag in SEVEN] + ['past-spaced', 'plain']
+for name in want:
+    if ids.count(name) != 1:
+        errs.append('%r is on %d element(s) of the reader tree, want 1'
+                    % (name, ids.count(name)))
+for name in (['buried-%s' % tag for tag in SEVEN]
+             + ['closing-p', 'closing-em', 'veiled']):
+    if name in ids:
+        errs.append('%r is on an element of the reader tree, but a browser '
+                    'renders no element carrying it' % name)
+
+if errs:
+    print('FAIL: M080-AC2 (reader): ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M080-AC2 (reader): the reader reads the text content of all %d '
+      'element(s) as text and an attribute on a closing tag as nothing, while '
+      'still seeing the %d id(s) an element really carries'
+      % (len(SEVEN), len(want)))
+PY
+
+# ---------------------------------------------------------------------------
 # M079-AC1 — an author-written id never leaves two elements of one page
 # carrying it. A mark whose id something else on the page carries yields it:
 # the other element keeps the name its author wrote, the mark is anchored on a
@@ -3927,9 +3992,9 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# Twenty-two marks are hand-derived here from examples/id-collision.qmd, never
+# Forty-two marks are hand-derived here from examples/id-collision.qmd, never
 # read back out of the render: an expectation taken from the artifact is blind
-# in the dimension it is taken from.
+# in the dimension it is taken from. Twenty-two are M079's and twenty M080's.
 #
 # Twelve of them yield a name something else on the page carries — one per
 # spelling the id census reads, one written as a name the numbering would
@@ -3947,6 +4012,15 @@ PY
 #
 # The twenty-second is a mark this filter never tags, which gives up nothing
 # but whose id must still leave the heading it is written in (T12).
+#
+# M080 adds twenty over the four shapes the census used to read wrongly. Nine
+# yield: seven whose name is on a real element standing after one of the seven
+# text-content elements in that same raw block — one of them written inside a
+# heading, so its anchor is the relocated empty span — and two past a real end
+# tag spelled with a space. Eleven keep, none of their names being on any
+# element the page renders: seven written inside one of those elements, two
+# past an end tag the element only looks like, and two written on a closing
+# tag, where a browser reads the name and drops it.
 #
 # Rendered and captured by the M08-AC1 section above, whose log carries the
 # refusal reports read at the end of this one.
@@ -3991,6 +4065,35 @@ KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9',
 CONTESTED_XREF = {'rho': 'xref-dup', 'sigma': 'xref-raw', 'tau': 'xref-heading',
                   'phi': 'twin-xref'}
 KEPT_XREF = {'upsilon': 'xref-solo'}
+# The four shapes the census used to read a raw HTML string wrongly (M080).
+# Seven elements' text content is text and not markup — `script`, `style`,
+# `xmp`, `iframe`, `noembed`, `noframes`, `textarea` — so the census steps over
+# it and reads the markup after it. A name on a real element standing AFTER one
+# of the seven in that same raw block is contested like any other, and so is
+# one past a real end tag spelled with a space; a name written INSIDE one of
+# them, past an end tag the element only looks like, or on a closing tag, is on
+# nothing the page renders and its mark keeps it. `after-textarea` is written
+# inside a heading, so its anchor is the relocated empty span.
+CONTESTED_RAW = {'after-script': 'beyond-script',
+                 'after-style': 'beyond-style',
+                 'after-xmp': 'beyond-xmp',
+                 'after-iframe': 'beyond-iframe',
+                 'after-noembed': 'beyond-noembed',
+                 'after-noframes': 'beyond-noframes',
+                 'after-textarea': 'beyond-textarea',
+                 'spaced-end-script': 'past-spaced-script',
+                 'spaced-end-textarea': 'past-spaced-textarea'}
+KEPT_RAW = {'inside-script': 'buried-script',
+            'inside-style': 'buried-style',
+            'inside-xmp': 'buried-xmp',
+            'inside-iframe': 'buried-iframe',
+            'inside-noembed': 'buried-noembed',
+            'inside-noframes': 'buried-noframes',
+            'inside-textarea': 'buried-textarea',
+            'false-end-script': 'veiled-script',
+            'false-end-textarea': 'veiled-textarea',
+            'on-closing-p': 'closing-p',
+            'on-closing-em': 'closing-em'}
 # A mark the Span pass never tags: its content yields no text and it carries no
 # entry=, so the mark indexes nothing and the filter returns it untouched —
 # `.index` class and the author's id still on the span it was written on. It
@@ -4003,9 +4106,9 @@ UNTAGGED = {'untagged-in-heading'}
 # after the heading and the anchor goes there. Their minted id is read off that
 # span rather than off the mark's own, which is what the criterion promises for
 # this shape — checked below rather than exempted (M079 T14).
-RELOCATED = {'tau'}
-REFUSED = dict(CONTESTED, **CONTESTED_XREF)
-KEPT_ALL = dict(KEPT, **KEPT_XREF)
+RELOCATED = {'tau', 'after-textarea'}
+REFUSED = dict(CONTESTED, **CONTESTED_XREF, **CONTESTED_RAW)
+KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW)
 NO_LOCATOR = set(CONTESTED_XREF) | set(KEPT_XREF)
 
 # AC1. Every id on the page, counted; nothing may be carried twice. The domain
@@ -4048,6 +4151,9 @@ if inside:
 # minted anchor on the mark's own span — the span carrying that term's text,
 # so this is the mark and not merely some element bearing a minted name — and
 # a kept mark's locator names the author's id.
+# Where a refused mark written inside a heading has its anchor, filled in by
+# the locator sweep below and read by the heading sweep after it.
+relocated_locator = {}
 section = H.index_section(doc)
 if section is None:
     errs.append('no index section was found by its heading')
@@ -4084,12 +4190,27 @@ else:
                 errs.append('the locator for %r names %r; its author wrote '
                             '%r and nothing contests it' % (term, got, KEPT_ALL[term]))
             continue
-        if got == CONTESTED[term]:
+        if got == REFUSED[term]:
             errs.append('the locator for %r still names %r, the contested id'
                         % (term, got))
         elif not got.startswith(prefix):
             errs.append('the locator for %r names %r, which is neither the '
                         'contested id nor a minted anchor' % (term, got))
+        elif term in RELOCATED:
+            # Written inside a heading, so the anchor is the empty span the
+            # extension emits after it and there is no text on it to read the
+            # term off. That it is the RIGHT span — the first minted anchor
+            # after that heading — is checked by position below.
+            landed = H.find_id(doc, got)
+            if landed is None:
+                errs.append('the minted anchor %r the locator for %r names is '
+                            'on nothing' % (got, term))
+            elif H.text(landed).strip():
+                errs.append('the minted anchor %r the locator for %r names is '
+                            'on %r, not on the empty span after its heading'
+                            % (got, term, H.text(landed).strip()))
+            else:
+                relocated_locator[term] = got
         else:
             landed = H.find_id(doc, got)
             if landed is None or H.text(landed).strip() != term:
@@ -4145,6 +4266,11 @@ for term in sorted(RELOCATED):
         errs.append('the first minted anchor after the heading printing %r is '
                     'on %r rather than on an empty span'
                     % (term, H.text(anchor).strip()))
+    elif (term in relocated_locator
+          and anchor.attrs.get('id') != relocated_locator[term]):
+        errs.append('the locator for %r names %r, but the empty span after its '
+                    'heading carries %r'
+                    % (term, relocated_locator[term], anchor.attrs.get('id')))
 # And its control: a cross-reference mark whose name nothing contests keeps it,
 # on its own span.
 for term, wrote in sorted(KEPT_XREF.items()):
@@ -4221,12 +4347,20 @@ python3 tests/epubcheck.py unique "$CAPTURE_ROOT/id-collision-epub/id-collision.
 # telling a reader their id is kept whatever else carries it is the failure
 # this row exists to catch.
 #
-# The last two rows hold the page to the two names the census does not see, and
-# so to the two ways a mark still keeps a contested id in silence: one written
-# in a raw HTML block after a `script` or `style` element in that same block,
-# and one Quarto's writer generates after this filter has run (KI254, KI255,
-# added at M079's review round 3). A page that drops either sentence is
-# promising more than the code does.
+# The middle rows hold the page to the reading M080 gave the census: seven
+# elements whose text content is text and not markup, the markup after one of
+# them still read, and a closing tag's attributes on nothing.
+#
+# The rows after those hold it to what the census still gets wrong, which is
+# where an author loses a name in silence. The residue is pinned as a RULE and
+# not a list — an element read as text that the skip list does not name, with
+# `title` given as one and no count claimed — because a list written from
+# recall is what M080's review returned (the corrected KI254). Two more pin the
+# shapes the walk itself misreads, a bogus comment and the script double-escape
+# (KI257, KI258), and the last pins the name Quarto's writer makes up after
+# this filter has run (KI255). A page that drops one of these sentences is
+# promising more than the code does; a page that reinstates a count of the
+# residue is promising what no procedure here decides.
 # ---------------------------------------------------------------------------
 section 'M079-AC5 — the HTML page states the rule an author now meets: which element'
 cat > "$WORK/html-id-claims.txt" <<'M079CLAIMS'
@@ -4237,12 +4371,21 @@ two marks	the one whose locator links to the name keeps it, whichever you wrote 
 two of a kind	between two of a kind the first in the document keeps it and the rest yield
 cross-reference	A mark that only points at another entry has no locator to move, but it carries an id like any other span and gives a contested one up the same way
 reported	Each yield is reported as the render runs, naming the id given up and what the mark files under
-unrendered names	An id counts where it is an attribute of a tag, and nowhere else
+unrendered names	An id counts where it is an attribute of an opening tag, and nowhere else
+skipped elements	a browser reads those seven elements' content as text rather than as markup, and so does this reading, which steps over that text and goes on with the markup after it
+name after a skipped element	A name on a real element standing after one of the seven, in that same raw HTML block, is counted like any other
+name on a closing tag	So is one written on a closing tag, whose attributes a browser reads and drops
+census misses a name outside the skip list	An element whose content a browser reads as text rather than as markup, but which this reading does not step over, is not covered by that
+the residue is a rule and not a list	`title` is one such element
+no count of the residue	how many others there are is not stated here
+bogus comment read as markup	A comment not spelled `<!--` — `<!ok>`, `<?ok>`, `<![CDATA[ok]]>`, `</ ok>` — is a comment to a browser and markup to this reading, so a name inside one is counted
+script double-escape unmodelled	Inside a `script` element, a `<!--` followed by a nested `<script>` keeps a browser inside the outer element past the first `</script>`, where this reading resumes
+template content counted	a `template` element's content is counted, though a browser parses it into a fragment of its own that the page carries no element of
+no count of the misread shapes	How many such shapes there are is not stated here either
 numbering steps over rendered names	Both kinds of generated id skip any name an element of the rendered page carries
-numbering may mint an unrendered one	a name written where the page renders no element — inside an HTML comment, or in a script's or stylesheet's own text — is a name the numbering may mint
+numbering may mint an unrendered one	a name written where the page renders no element — inside a comment spelled `<!--`, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
 front-matter exception	it keeps whatever id you wrote on it, contested or not, with nothing reported
 unindexable exception	Such a mark keeps a contested name, so the name stays on two elements and nothing further is said about it
-census misses a name after a script block	A name written in a raw HTML block after a `script` or `style` element in that same block is not seen
 census misses a writer-generated name	a name Quarto's own writer makes up after this extension has run
 M079CLAIMS
 python3 tests/sitecheck.py claims site/html.qmd "$WORK/html-id-claims.txt" \

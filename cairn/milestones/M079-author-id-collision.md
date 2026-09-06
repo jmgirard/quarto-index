@@ -21,12 +21,12 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 ## Acceptance criteria
 
-- [ ] AC1: Rendering `examples/id-collision.qmd` to HTML produces a captured page carrying no id more than once, counted by a sweep over every `id=` attribute of that page. The fixture carries both collision shapes: a mark whose author-written id names a non-mark element, written across the five id spellings the census reads (a Pandoc attribute; raw HTML double-quoted, unquoted and uppercase `ID=`; a raw inline, single-quoted) and once as a name the extension would otherwise mint; and two marks sharing one author-written id. No colliding id is written on a heading, whose id Quarto derives further copies from. The same sweep over that fixture rendered at the branch's merge-base reports a repeat for every colliding id the fixture carries.
-- [ ] AC2: Rendering the same fixture to EPUB produces a publication in which no XHTML document the package manifest lists carries an id more than once, and every link inside a generated index section resolves to an id its target document carries exactly once — both read through `tests/epubindex.py`, over at least one document carrying a generated index section. The same reading at the merge-base reports a repeat.
+- [x] AC1: Rendering `examples/id-collision.qmd` to HTML produces a captured page carrying no id more than once, counted by a sweep over every `id=` attribute of that page. The fixture carries both collision shapes: a mark whose author-written id names a non-mark element, written across the five id spellings the census reads (a Pandoc attribute; raw HTML double-quoted, unquoted and uppercase `ID=`; a raw inline, single-quoted) and once as a name the extension would otherwise mint; and two marks sharing one author-written id. No colliding id is written on a heading, whose id Quarto derives further copies from. The same sweep over that fixture rendered at the branch's merge-base reports a repeat for every colliding id the fixture carries.
+- [x] AC2: Rendering the same fixture to EPUB produces a publication in which no XHTML document the package manifest lists carries an id more than once, and every link inside a generated index section resolves to an id its target document carries exactly once — both read through `tests/epubindex.py`, over at least one document carrying a generated index section. The same reading at the merge-base reports a repeat.
 - [ ] AC3: On AC1's captured render, every mark whose author-written id the extension refused carries a minted `qi-mark-<n>` instead; where such a mark files a locator, that locator's fragment names its own minted id, and where it is a cross-reference mark it files no locator at all. Where two marks that both file locators are written with one author-written id, the one written first in the document keeps it.
-- [ ] AC4: On AC1's render the run writes one warning per mark whose author-written id it refused, naming that id and that mark's printed term, and writes no such warning for any other mark. The same fixture's marks whose author-written ids collide with nothing — one nothing else carries, one inside a heading, and one spelled as a name the extension would otherwise mint — each still carry the author's id, with the mark's locator fragment naming it.
-- [ ] AC5: `site/html.qmd` states which element keeps a contested id, what a refused mark gets instead, and that a refusal is reported; its present sentence promising a mark keeps an id of the author's own (line 20) no longer stands unqualified. `CHANGELOG.md` carries an entry whose statement of the behavior is true of AC1's captured render.
-- [ ] AC6: `tests/run-tests.sh` runs clean.
+- [x] AC4: On AC1's render the run writes one warning per mark whose author-written id it refused, naming that id and that mark's printed term, and writes no such warning for any other mark. The same fixture's marks whose author-written ids collide with nothing — one nothing else carries, one inside a heading, and one spelled as a name the extension would otherwise mint — each still carry the author's id, with the mark's locator fragment naming it.
+- [x] AC5: `site/html.qmd` states which element keeps a contested id, what a refused mark gets instead, and that a refusal is reported; its present sentence promising a mark keeps an id of the author's own (line 20) no longer stands unqualified. `CHANGELOG.md` carries an entry whose statement of the behavior is true of AC1's captured render.
+- [x] AC6: `tests/run-tests.sh` runs clean.
 
 ## Coverage
 
@@ -104,6 +104,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: whole suite green with `--self-test` on this tree: 1412 checks across 158 sections, 1284s, exit 0, no failure. T8-T11 ticked; status to review. Two runs before it did not finish — the first stopped at the M14 manifest gap (fixed, above), the second at a `Segmentation fault: 11` in Quarto's Deno binary during M065-AC5, a render process dying rather than a check failing; that leg had passed in the first run and the crash did not recur in the third. The acceptance-criterion boxes stay unticked for review to fill against fresh evidence.
 
+- 2026-09-05: review round 2. AC1, AC2, AC4, AC5 and AC6 green with fresh evidence on this tree (whole suite 1412 checks, exit 0; merge-base floors re-rendered), boxes ticked; AC3 not ticked — its minted-id clause is false of `tau`, whose anchor relocates out of a heading, which is the criterion being wrong rather than the work. cairn_validate clean. Three lenses returned 13 findings; R1, R2 and R4 reproduced against the implementation. R1 is a regression this branch introduces: an `.index` span carrying an author id that the Span pass never tagged no longer relocates out of a heading, so the id lands on the page twice, unwarned. Disposition put to the maintainer at the gate.
+
 ## Decisions
 
 ## Review
@@ -139,3 +141,147 @@ Findings ranked, most severe first. F1, F2 and F13 were reproduced against the i
 - F12 [O] `keepable_author_ids`: "document order" is AST order, so a mark inside a footnote in a heading could keep a name against the one a reader sees first. Speculative, no case shown. — rejected: the implement gate's own falsifier covers it
 - F13 [O] `html.lua:143-148`: where a mark yields its id, a locator recovered from that chapter's source now lands on the element that kept the name, where before it landed on the mark. Fenced by Scope Out, D-055 and the candidate row added 2026-09-05. — noted, no action; F3 is the part that is not fenced
 - F14 [S-blame], F15 [S-prior]: no case found of the branch undoing a past milestone's deliberate behavior, resurrecting a fixed bug, or contradicting a recorded decision; the archived `## Review` sections on the touched files turned up nothing the diff regresses beyond F3. The GitHub inline-comment probe returned empty, so no PR-thread walk was made. — no findings
+
+### Round 2 — acceptance criteria, fresh evidence (2026-09-05, HEAD 4030fdf)
+
+The round-1 evidence above was read at 600d1e7, before T8-T11; everything here
+is re-measured on this tree. Merge-base floors re-rendered this review in a
+scratch tree holding `origin/main`'s `_extensions` and this branch's fixture.
+
+- AC1: green. The `M079-AC1` leg over the captured render reports no id among
+  the page's 74 carried twice, the 11 contested author ids each on exactly one
+  element with the yielding mark on a minted anchor, and the 8 uncontested ones
+  still their marks' anchors. Merge-base floor: 74 ids, 11 repeated —
+  `shared-attr`, `shared-dq`, `shared-uq`, `shared-up`, `shared-sq`,
+  `qi-mark-3`, `twin`, `twin-xref`, `xref-dup`, `xref-raw`, `xref-heading` —
+  one per colliding id the fixture carries.
+- AC2: green. `tests/epubcheck.py unique` over the captured publication: none
+  of the 10 manifest-listed documents carries an id twice, and each of the 22
+  fragments linked from the 1 generated index section names an id its document
+  carries exactly once. The same reading at the merge-base fails with 20
+  clauses across 5 documents (11 repeated-id, 9 link-target).
+- AC3: NOT MET as written, and not ticked. The clause "every mark whose
+  author-written id the extension refused carries a minted `qi-mark-<n>`
+  instead" is false of `tau`: on the captured render the span printing `tau` is
+  `<span class="index" data-see="mu">tau</span>`, carrying no id at all, and
+  the minted `qi-mark-15` sits on the relocated empty span after the heading.
+  The leg exempts `tau` from that clause by name (`RELOCATED = {'tau'}`), so it
+  proves something weaker than the criterion. The behavior is the deliberate
+  heading-anchor relocation `DESIGN.md` and `site/html.qmd` both state and
+  predates this milestone, so this is the criterion being wrong rather than the
+  work — the never-reinterpret rule's case. Every other clause of AC3 is green:
+  alpha->`#qi-mark-5`, beta->`#qi-mark-6`, gamma->`#qi-mark-7`,
+  delta->`#qi-mark-8`, epsilon->`#qi-mark-10`, theta->`#qi-mark-11`,
+  lambda->`#qi-mark-12`, kappa keeps `#twin`, and the 5 cross-reference marks
+  file no locator.
+- AC4: green. 11 refusal reports in the render log, one per yielding mark, each
+  naming the term and the id given up; none names a mark whose author id
+  nothing contests. The three controls hold: `mu` keeps `solo`, `nu` keeps
+  `in-heading` inside a heading, `xi` keeps `qi-mark-9`, each its locator's
+  fragment.
+- AC5: green. `tests/sitecheck.py claims` holds `site/html.qmd` to all 7 claim
+  rows, the first the qualified form of the sentence that stood unqualified
+  through M078; `CHANGELOG.md` carries an Unreleased/Output entry true of AC1's
+  captured render. R4 and R7 below are about claims in these files that reach
+  past OTHER renders, which is outside what this criterion binds.
+- AC6: green. `tests/run-tests.sh --self-test`: 1412 checks across 158
+  sections, 1343s, exit 0, no failure.
+
+### Round 2 — consistency gate
+
+`cairn_validate.py` exit 0, all 16 checks PASS. One advisory, not a gate
+failure: `sizing (split tripwires)` on 11 tasks. No `DESIGN.md` principle
+changed, so `cairn_impact.py` did not apply. The `generic` profile's
+consistency-gate slot names no toolchain checks.
+
+### Round 2 — independent review, three fresh-context lenses
+
+Ranked, most severe first. R1, R2 and R4 were reproduced against the
+implementation this review, not taken on a reviewer's account; R2's severity
+is lower than the reviewer stated, whose claim that the merge-base handles the
+case correctly is false (it leaves the same page duplicated).
+
+- R1 [O] `html.lua:574`: an `.index` span carrying an author-written id that
+  the Span pass never tagged is no longer relocated out of a heading, so its id
+  lands on the page twice. T9 replaced `if pending == nil and not marked_id`
+  with `if pending == nil`, dropping the branch that covered such spans; they
+  are reachable through `passes.lua:463`, which returns the span unchanged when
+  `derive_levels` yields `"keep"`. Reproduced: `## A heading with
+  [![](pic.png)]{#ghost .index} in it` renders `id="ghost"` twice on this
+  branch — once in the `<h2>`, once in Quarto's sidebar copy — with no warning;
+  the same source at the merge-base renders it once. A regression this branch
+  introduces, in the class the Goal and `DESIGN.md`'s no-anchor-in-a-heading
+  rule exist to prevent. Nothing in the fixture or the suite covers a `"keep"`
+  mark. — disposition: maintainer, gate
+- R2 [O] `html.lua:525`: the T8 comment cut is `gsub("<!%-%-.*$", " ")`, which
+  discards the rest of the raw string after any `<!--`, including one inside a
+  quoted attribute value or script text. Every `id=` past it leaves the census,
+  so a mark written with that name keeps a contested id, unreported.
+  Reproduced: a mark `[alpha]{#dup .index}` beside raw HTML
+  `<p title="looks like <!-- a comment">first</p>` and `<p id="dup">` renders
+  `dup` on two elements with zero refusal reports. Not a regression — the
+  merge-base leaves the same page duplicated, never having refused anything —
+  but the fix silently fails to fire, and the shipped claim is unqualified.
+  — disposition: maintainer, gate
+- R3 [O] AC3's minted-id clause against `tau`: recorded under AC3 above. The
+  criterion is wrong rather than the work, so this routes to a gated criterion
+  amendment, not a code fix. — disposition: maintainer, gate
+- R4 [O] `site/html.qmd:56-60`: "Both kinds of generated id skip any name
+  written in the document itself — on its elements, or inside raw HTML in its
+  source — so writing `qi-mark-1` yourself is safe" is false after T8 for a
+  name only an HTML comment holds. Reproduced: a document whose only
+  `qi-mark-1`/`qi-entry-1` are inside a comment mints both on this branch and
+  steps over them at the merge-base. Harmless in effect, since the comment
+  renders nothing, but the sentence contradicts the paragraph T8 added twelve
+  lines above it. — disposition: maintainer, gate
+- R5 [S-blame] `cairn/DECISIONS.md:414`: D-055's Consequences state that
+  "`tests/fragments.py` checks that a fragment resolves and not that it
+  resolves uniquely, so this rule can put a second locator on a colliding id",
+  which T5 made false — `fragments.py:92` now fails a target id carried on more
+  than one element, including on the recovery-route captures D-055 is about.
+  Its Context sentence "`assign_anchors` never renames an author's id" is false
+  for the same reason. The branch corrected that sentence where it sits in
+  `html.lua:140-148` and left the decision resting on it untouched; the diff
+  adds no D-entry. — disposition: maintainer, gate
+- R6 [O] the milestone's `## Decisions` section is empty while the branch ships
+  two new user-visible rules recorded only in work-log lines — a cross-reference
+  mark yielding a contested id (superseding the implement-gate choice logged
+  above it), and a locator-contributing mark outranking a cross-reference mark
+  for a shared name. — disposition: maintainer, gate
+- R7 [O] the front-matter mark of an HTML book chapter is stated as an
+  exception in `DESIGN.md:380-382` and `passes.lua:618-623` and in neither
+  shipped page; `CHANGELOG.md`'s opening sentence is unqualified across it.
+  — disposition: maintainer, gate
+- R8 [O] `tests/run-tests.sh:3930-3941`: the AC1 leg's derivation banner still
+  says seven contested names, six uncontested and "all thirteen", where the
+  dicts below it hold 11 and 8. T9 grew the fixture without the banner. The
+  pass line computes from the dicts, so only the hand-derivation prose — the
+  thing the ORACLE RULE makes load-bearing — is wrong. — disposition:
+  maintainer, gate
+- R9 [O] `tests/run-tests.sh:4098-4105` keys minted anchors by element text
+  (`minted.setdefault(H.text(el).strip(), name)`), which collides for two
+  minted anchors on spans rendering the same text, every relocated anchor being
+  empty. Latent; the fixture's terms are distinct. — disposition: follow-up
+  candidate row
+- R10 [O] `cairn/DESIGN.md:382` is a 114-character line in a paragraph wrapped
+  at ~78; the T9 insertion did not re-wrap the sentence it split. —
+  disposition: maintainer, gate
+- R11 [O] AC1's sentence "No colliding id is written on a heading" read
+  literally against `xref-heading`, which the fixture writes on a mark inside a
+  heading. — rejected: the amendment gate read that sentence as being about a
+  heading's own id, which is the reason the sentence itself gives, and settled
+  it this milestone.
+- R12 [O] F7-F10 of round 1 are still true of this tree. — noted, no action:
+  each already has a candidate row.
+- R13 [O] F11's unreachable `record and record.context or "with no source
+  entry"` fallback at `html.lua:697` persists. — rejected again: unreachable
+  branch, no behavior to fix.
+- [S-blame] found no other case of the branch undoing a past milestone's
+  deliberate behavior; it cleared the boolean-to-count census conversion at
+  every reader, the removed `marked_id` branch as superseded (which R1 shows it
+  is not, wholly), D-048's front-matter exclusion, and `record.anchorless` not
+  reaching the book store.
+- [S-prior] no prior-review evidence bearing on this diff: the archived
+  `## Review` sections on the touched files record nothing this diff regresses,
+  and the GitHub inline-comment probe returned empty, so no PR-thread walk was
+  made. Zero findings.

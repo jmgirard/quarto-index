@@ -869,6 +869,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   apart, so an author-written id is what would separate them and none exists.
   — M20/M21 Scope Out, RR01
 
+- **KI253.** A mark the Span pass leaves untagged — one with no visible text
+  and no `entry=`, which indexes nothing — keeps an author-written id another
+  element of the page carries, so that name is still on two elements and no
+  refusal is reported. Its id is relocated out of a heading, so it is not
+  duplicated by the table of contents; what it is not is refused. The mark
+  contributes no locator and has no record to mint against, and M079's
+  refusal rule reaches only tagged marks. `CHANGELOG.md` and `site/html.qmd`
+  both state the exception. — M079 implement gate
+
 ### Reports and messages
 
 - **KI21.** No fixture exercises a reported block position where Quarto injects

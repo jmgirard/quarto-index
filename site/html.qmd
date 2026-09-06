@@ -26,7 +26,15 @@ In a book, a chapter read back from [its own source](books.qmd) rather than
 from a record is the one place the first rule is not settled against a rendered
 page: that route never sees one, so it links to the id you wrote whether or not
 something else on the page carries that name. A mark in a book chapter's front
-matter is the other exception — it links to the chapter's page either way.
+matter is a second exception — it links to the chapter's page either way, and
+it keeps whatever id you wrote on it, contested or not, with nothing reported:
+the filter cannot see which of the title-block fields Quarto prints, so it
+cannot tell whether that name reaches the page at all. A mark this filter
+cannot index at all is the third — one with no visible text and no `entry=`,
+which it reports as unindexable and then leaves exactly as you wrote it, id and
+all. Such a mark keeps a contested name, so the name stays on two elements and
+nothing further is said about it; its id is still moved out of a heading, which
+is the one thing that would put it on the page twice on its own.
 
 Where something else on the page does carry that name, the mark gives it up:
 one id names one element, and a name on two of them sends every link to

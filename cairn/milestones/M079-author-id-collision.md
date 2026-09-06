@@ -131,6 +131,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: T17 written. The two user-visible rules the branch had recorded only in work-log lines are now entries in this file's Decisions section: a cross-reference mark yielding a contested id and being reported in a wording of its own, and a locator-contributing mark outranking a cross-reference mark for a shared name whichever is written first.
 
+- 2026-09-05: T18 written, and widened by what the T12 gate settled. `CHANGELOG.md` and `site/html.qmd` now name three marks outside the id-yielding rule rather than one: a chapter recovered from its own source, a book chapter's front-matter mark, and a mark this filter cannot index at all — no visible text and no `entry=` — which keeps a contested name unreported. The third was verified on a probe: a mark `[![](dot.png)]{#ghost .index}` beside `::: {#ghost}` renders `ghost` on two elements with no refusal drawn. It is recorded as KI253 and its id is still relocated out of a heading, which is the part T12 restored. The pinned claim rows go from 10 to 12 and all 12 hold.
+
 ## Decisions
 
 - 2026-09-05: **a cross-reference mark yields a contested id, and is reported

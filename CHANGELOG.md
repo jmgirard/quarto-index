@@ -16,10 +16,19 @@
   Every yield is reported once as the render runs, naming the id given up and
   what the mark files under — the term it prints, or the entry you wrote for
   it. An id nothing else on the page carries is untouched, whatever it is
-  spelled and including one only an HTML comment holds, and no element of yours
-  is ever renamed. HTML and EPUB alike, both back-ends being the one code path.
-  In a book, a chapter read back from its own source rather than from a record
-  is settled against no rendered page, so this does not reach it.
+  spelled, and no element of yours is ever renamed. A name counts as carried
+  where it is an attribute of a tag: one written where the page renders
+  nothing — inside an HTML comment, or in a script's or stylesheet's own
+  text — contests nothing, and the mark written with it keeps it. HTML and
+  EPUB alike, both back-ends being the one code path. Three marks stay outside
+  all of this. A mark this filter cannot index at all — no visible text and no
+  `entry=` — is left exactly as you wrote it, id and all, so a name it shares
+  with something else is still on two elements and nothing is reported. In a
+  book, a chapter read back from its own source rather than
+  from a record is settled against no rendered page, so a mark there keeps the
+  name you wrote whatever else carries it; and so does a mark written in a
+  book chapter's front matter, whose id the filter leaves alone because it
+  cannot see which of the title-block fields Quarto prints.
 
 ## 0.3.0 (2026-09-05)
 

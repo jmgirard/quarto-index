@@ -1,6 +1,6 @@
 # M080: The id census reads a page's raw HTML the way a browser does
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -138,7 +138,7 @@ sweep can go red → the suite's self-test-plants candidate row.
       (`tests/run-tests.sh:4172`), in the same commit as the fixture rows.
 - [x] T9: Revert each of T3's two repairs and each of T4's two in turn against
       the extended suite, and record in the work log the check each one reddens.
-- [ ] T10: `site/html.qmd` prose and its claim rows (`site/html.qmd:53-61`, row
+- [x] T10: `site/html.qmd` prose and its claim rows (`site/html.qmd:53-61`, row
       at `tests/run-tests.sh:4245`) and `CHANGELOG.md`; strike KI254 from
       `cairn/DESIGN.md`, writing the `title`/`noscript`/`plaintext` residue as
       its replacement; correct the architecture sentence naming three wrong
@@ -163,6 +163,7 @@ sweep can go red → the suite's self-test-plants candidate row.
 - 2026-09-06: T9 reverted each of the four repairs singly against the extended fixture, rendering and running the leg in a scratch loop rather than the whole suite (the profile's own guidance for needing one check's behavior). Claiming from a closing tag again: `closing-p` and `closing-em` on 0 elements, their locators minted, two spurious refusal reports. The skip firing on a closing tag again: nine ids on 2 elements each (`beyond-script`, `beyond-style`, `beyond-xmp`, `beyond-iframe`, `beyond-noembed`, `beyond-noframes`, `beyond-textarea`, `past-spaced-script`, `past-spaced-textarea`) with their locators still naming the contested id. The skip list back to `script`/`style`: `buried-xmp`, `buried-iframe`, `buried-noembed`, `buried-noframes`, `buried-textarea` and `veiled-textarea` on 0 elements. The end tag matched by prefix again: `veiled-script` and `veiled-textarea` on 0 elements with spurious refusals. Each revert reddens M079-AC1 on its own set of names.
 - 2026-09-06: T5-T9 verified by one suite run, the fixture rows and the leg tables having to move together; `tests/run-tests.sh` exit 0, 773 checks, M079-AC1 reading 158 ids on the page with 21 refused and 20 kept.
 - 2026-09-06: T10 checkpoint, verify still running. `site/html.qmd` now states the rule over an opening tag, the seven text-content elements, the markup after one of them, and the closing tag, drops its sentence about a name after a `script` block going unseen, and names `title` as the residue; the numbering paragraph follows. Five claim rows replace the retired one in the M079-AC5 list, and `tests/sitecheck.py claims` reads all 17 against the page. `CHANGELOG.md`'s unreleased entry restates the same rule and the two names still missed. `cairn/DESIGN.md`'s architecture sentence is corrected and KI254 is narrowed in place to the `title` residue, with `noscript` and `plaintext` named as the same shape. The census candidate row already reads as what remains, so it is left as the plan narrowed it.
+- 2026-09-06: T10 verified. `tests/run-tests.sh` exit 0, 773 checks; `tests/run-tests.sh --self-test` exit 0, 1413 checks (1412 before this branch). All ten tasks done, status to review.
 - 2026-09-06: plan chose keeping every new case in `examples/id-collision.qmd` over a sibling fixture, because that page's whole-page duplicate-id sweep is the procedure AC1's and AC2's universals name and a second page would sit outside it; falsified by that render becoming a named cost in the suite's timing profile.
 
 ## Decisions

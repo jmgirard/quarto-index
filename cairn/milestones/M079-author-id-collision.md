@@ -98,6 +98,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: noted rather than amended. Scope In's sentence enumerates the fixture as carrying "both collision shapes"; it now carries a third, a cross-reference mark against a contested name, in five cases. The files and the surface Scope In names are unchanged, and the amendment gate chose to hold the criteria set rather than widen it, so the sentence stands and this line is the handle for review.
 
+- 2026-09-05: the checkpoint commit `fe68d72` swept three beamer render artifacts (`examples/marker.nav`, `.snm`, `.toc`) into the branch — written by the suite run then in flight and uncovered by `.gitignore`. Untracked here and added to the ignore list, which is the recurrence the candidate row added 2026-09-03 names for a different file family.
+
 ## Decisions
 
 ## Review

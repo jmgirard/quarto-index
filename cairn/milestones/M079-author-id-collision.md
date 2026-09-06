@@ -127,6 +127,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: T15 written. `site/html.qmd` no longer promises the generated numbering steps over any name written in the source: it steps over a name an element of the rendered page carries, and may mint one that only an HTML comment or a script's or stylesheet's own text holds — which displaces nothing, there being no element to displace. Read against a probe: with `qi-mark-1`, `qi-entry-1` and `qi-index` written only inside a comment, the render carries all three as minted names. The neighbouring paragraph now says an id counts where it is an attribute of a tag and names script and style text alongside comments. The pinned claim rows go from 7 to 10 and all 10 hold.
 
+- 2026-09-05: T16 written. D-056 supersedes the two sentences of D-055 this branch made false — that `assign_anchors` never renames an author's id, and that a colliding author id is unfenced because `tests/fragments.py` does not check a fragment resolves uniquely. What D-055 decided stands; its reason changes, and the recovery-route gap it now leaves open is named and pointed at the standing candidate row.
+
 ## Decisions
 
 ## Review

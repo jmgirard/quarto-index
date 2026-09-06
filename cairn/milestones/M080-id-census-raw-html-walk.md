@@ -7,7 +7,7 @@
 - **Principles touched:** GP2, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — the deliverable is which id an author's mark keeps on their rendered page, and whether a link they wrote to it still lands
-- **Branch/PR:** `m080-id-census-raw-html-walk`
+- **Branch/PR:** `m080-id-census-raw-html-walk` / https://github.com/jmgirard/quarto-index/pull/80
 
 ## Goal
 
@@ -165,6 +165,7 @@ sweep can go red → the suite's self-test-plants candidate row.
 - 2026-09-06: T10 checkpoint, verify still running. `site/html.qmd` now states the rule over an opening tag, the seven text-content elements, the markup after one of them, and the closing tag, drops its sentence about a name after a `script` block going unseen, and names `title` as the residue; the numbering paragraph follows. Five claim rows replace the retired one in the M079-AC5 list, and `tests/sitecheck.py claims` reads all 17 against the page. `CHANGELOG.md`'s unreleased entry restates the same rule and the two names still missed. `cairn/DESIGN.md`'s architecture sentence is corrected and KI254 is narrowed in place to the `title` residue, with `noscript` and `plaintext` named as the same shape. The census candidate row already reads as what remains, so it is left as the plan narrowed it.
 - 2026-09-06: T10 verified. `tests/run-tests.sh` exit 0, 773 checks; `tests/run-tests.sh --self-test` exit 0, 1413 checks (1412 before this branch). All ten tasks done, status to review.
 - 2026-09-06: plan chose keeping every new case in `examples/id-collision.qmd` over a sibling fixture, because that page's whole-page duplicate-id sweep is the procedure AC1's and AC2's universals name and a second page would sit outside it; falsified by that render becoming a named cost in the suite's timing profile.
+- 2026-09-06: review opened. Branch synced with `main` (unmoved since the cut, no merge needed) and pushed; draft PR #80 opened and recorded in the header. Consistency gate's universal checks run: `cairn_validate.py` exit 0, all sixteen PASS, every advisory OK. No IP/GP principle text changed, so `cairn_impact` is skipped. Suite runs for AC7 in flight; three review lenses spawned.
 
 ## Decisions
 

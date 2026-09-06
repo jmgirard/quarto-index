@@ -20,6 +20,18 @@ VOID_ELEMENTS = {
     'meta', 'param', 'source', 'track', 'wbr',
 }
 
+# Elements whose TEXT CONTENT a browser reads as text and not as markup, so a
+# tag written inside one is no element of the page. Python's parser knows two
+# of them; the other five are as much character data as `script` is, and a
+# planted `<p id=...>` inside a `textarea` would otherwise come back as a real
+# node carrying a real id. The same seven the extension's id census steps over
+# (`_extensions/index/modules/html.lua`), so the reader and the code under test
+# disagree about no page. `title`, `noscript` and `plaintext` are text content
+# too and are deliberately absent from both: no case renders them here.
+RAW_TEXT_ELEMENTS = (
+    'script', 'style', 'xmp', 'iframe', 'noembed', 'noframes', 'textarea',
+)
+
 LIST_TAGS = ('ul', 'ol')
 
 
@@ -38,6 +50,12 @@ class Node:
 
 
 class _Builder(HTMLParser):
+    # Read as text, never as markup. HTMLParser consults this list by name on
+    # the instance, so naming it here is what puts the other five under the
+    # same rule its own two already had; its end-tag match is the browser's,
+    # `</textarea >` ending the element and `</textareax>` not.
+    CDATA_CONTENT_ELEMENTS = RAW_TEXT_ELEMENTS
+
     def __init__(self, decode=True):
         # Two layers, two manifests. The index-entry manifests are stated in
         # what a READER sees, so `&amp;` must come back as `&` (M03-AC5 asks

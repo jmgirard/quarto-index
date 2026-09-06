@@ -3920,6 +3920,63 @@ print(f'ok   M08-AC1: all {len(local)} link(s) inside the minted index section '
 PY
 
 # ---------------------------------------------------------------------------
+# M080-AC2 (reader) — the suite's own HTML reader treats the same seven
+# elements' text content as text. The census under test steps over that text;
+# a reader that did not would build a real node for a tag planted inside one,
+# and the fixture cases below would read as agreeing with a census that had
+# claimed a name the page never carries. So the reader is planted first, with
+# the defect it must catch written out here rather than left to the fixture:
+# an id inside each of the seven, an id on each of two closing tags, and the
+# controls that keep this from passing by reading nothing — an ordinary id, an
+# id on an element standing AFTER each of the seven, and an id past an end tag
+# the element only looks like.
+# ---------------------------------------------------------------------------
+section 'M080-AC2 (reader) — the suite'\''s own HTML reader treats the same seven'
+python3 - <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+
+SEVEN = H.RAW_TEXT_ELEMENTS
+errs = []
+if len(SEVEN) != 7:
+    errs.append('the reader names %d text-content element(s), want 7'
+                % len(SEVEN))
+
+# Written out here rather than read off a render: this is the READER being
+# checked, so its input is stated in markup by hand.
+buried = ''.join('<%s><p id="buried-%s">gone</p></%s>' % (tag, tag, tag)
+                 for tag in SEVEN)
+beyond = ''.join('<%s>text</%s><p id="beyond-%s">real</p>' % (tag, tag, tag)
+                 for tag in SEVEN)
+closing = '</p id="closing-p"></em id=closing-em>'
+lookalike = '<script>a</scriptx> <p id="veiled">gone</p></script>'
+spaced = '<textarea>a</textarea > <p id="past-spaced">real</p>'
+doc = H.parse_text('<body>' + buried + beyond + closing + lookalike
+                   + spaced + '<p id="plain">real</p></body>')
+ids = H.all_ids(doc)
+
+want = ['beyond-%s' % tag for tag in SEVEN] + ['past-spaced', 'plain']
+for name in want:
+    if ids.count(name) != 1:
+        errs.append('%r is on %d element(s) of the reader tree, want 1'
+                    % (name, ids.count(name)))
+for name in (['buried-%s' % tag for tag in SEVEN]
+             + ['closing-p', 'closing-em', 'veiled']):
+    if name in ids:
+        errs.append('%r is on an element of the reader tree, but a browser '
+                    'renders no element carrying it' % name)
+
+if errs:
+    print('FAIL: M080-AC2 (reader): ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M080-AC2 (reader): the reader reads the text content of all %d '
+      'element(s) as text and an attribute on a closing tag as nothing, while '
+      'still seeing the %d id(s) an element really carries'
+      % (len(SEVEN), len(want)))
+PY
+
+# ---------------------------------------------------------------------------
 # M079-AC1 — an author-written id never leaves two elements of one page
 # carrying it. A mark whose id something else on the page carries yields it:
 # the other element keeps the name its author wrote, the mark is anchored on a

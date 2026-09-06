@@ -108,7 +108,7 @@ sweep can go red → the suite's self-test-plants candidate row.
       (`_extensions/index/modules/html.lua:520-608`) with scratch raw-HTML
       strings; record in the work log the exact string and the wrong answer each
       produces, and which of the four the M079-AC1 leg can already see.
-- [ ] T2: Teach `tests/htmlindex.py`'s `_Builder` the same seven-element text-
+- [x] T2: Teach `tests/htmlindex.py`'s `_Builder` the same seven-element text-
       content set — `html.parser` treats only `script` and `style` as character
       data (`tests/htmlindex.py:37`), so a planted `<p id=…>` inside a
       `textarea` becomes a real node and the AC2 cases are unreadable without
@@ -155,6 +155,7 @@ sweep can go red → the suite's self-test-plants candidate row.
 - 2026-09-06: T1 reproduced all four wrong shapes against today's `note_raw` in a scratch harness (`pandoc lua`, the function lifted verbatim with a stub `claim`). `<script>var a = 1;</script><p id="after-script">y</p>` claims nothing, want `after-script` (same for `style`); `<textarea><p id="ghost-textarea">x</p></textarea>` claims `ghost-textarea`, want nothing (same for `iframe`, `xmp`, `noembed`, `noframes`); `</p id="on-closing-p">` claims `on-closing-p`, want nothing; `<script>a</scriptx> <p id="early">z</p></script><p id="after-false">w</p>` claims `early`, want `after-false`. A fifth shape falls out of the first: `</script >` with a space is matched by prefix, re-read as an opener, and everything after it goes uncounted. The M079-AC1 leg can see none of the four — the fixture's only skip-list element is the one `<script>` at line 178, whose raw block ends with it, and it writes no closing tag carrying attributes and no end-tag lookalike.
 - 2026-09-06: baseline before any change on this branch — `tests/run-tests.sh` exit 0, 773 checks, 21m18s.
 - 2026-09-06: question gate chose descriptive names for the twenty new marks (`after-script`, `inside-textarea`) over a second alphabet, one new fixture section per rule over one combined section, and overriding Python's parser list of text-content elements over hand-written skipping in `tests/htmlindex.py`.
+- 2026-09-06: T2 gave `tests/htmlindex.py` a `RAW_TEXT_ELEMENTS` list of the same seven and named it as `_Builder.CDATA_CONTENT_ELEMENTS`; Python's parser reads that list off the instance, so the five it did not know now get its own `script` rule, end-tag match included. A new suite section before M079-AC1 plants the defect: with the reader holding only `script`/`style` it reports `buried-xmp`, `buried-iframe`, `buried-noembed`, `buried-noframes` and `buried-textarea` as elements of its tree, and reports none of them after, while still reading the nine ids an element really carries.
 - 2026-09-06: plan chose keeping every new case in `examples/id-collision.qmd` over a sibling fixture, because that page's whole-page duplicate-id sweep is the procedure AC1's and AC2's universals name and a second page would sit outside it; falsified by that render becoming a named cost in the suite's timing profile.
 
 ## Decisions

@@ -3973,6 +3973,13 @@ KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9',
 CONTESTED_XREF = {'rho': 'xref-dup', 'sigma': 'xref-raw', 'tau': 'xref-heading',
                   'phi': 'twin-xref'}
 KEPT_XREF = {'upsilon': 'xref-solo'}
+# A mark the Span pass never tags: its content yields no text and it carries no
+# entry=, so the mark indexes nothing and the filter returns it untouched —
+# `.index` class and the author's id still on the span it was written on. It
+# files no locator and gives up no name, but its id has to leave the heading
+# all the same: Quarto copies a heading's inlines into the table of contents,
+# so an id left inside one is on two elements of the rendered page (M079 T12).
+UNTAGGED = {'untagged-in-heading'}
 RELOCATED = {'tau'}
 REFUSED = dict(CONTESTED, **CONTESTED_XREF)
 KEPT_ALL = dict(KEPT, **KEPT_XREF)
@@ -3994,11 +4001,25 @@ if dupes:
 # and each uncontested one on its own mark. Counted at one either way: a name
 # gone from the page altogether would be a link to nowhere, and is no more
 # acceptable than a name on two elements.
-for name in sorted(set(REFUSED.values()) | set(KEPT_ALL.values())):
+for name in sorted(set(REFUSED.values()) | set(KEPT_ALL.values()) | UNTAGGED):
     n = H.count_id(doc, name)
     if n != 1:
         errs.append('the author-written id %r is on %d element(s), want 1'
                     % (name, n))
+
+# And no id of any kind is left inside a heading, which is where the duplicate
+# above comes from: the table-of-contents copy carries whatever the heading's
+# inlines carry. Read over every heading on the page rather than over the
+# fixture's list, so a mark this filter stops tagging cannot slip out of the
+# domain the way the untagged one did.
+inside = sorted({el.attrs['id']
+                 for level in range(1, 7)
+                 for head in H.find_all(doc, 'h%d' % level)
+                 for el in H.walk(head)
+                 if el is not head and 'id' in el.attrs})
+if inside:
+    errs.append('id(s) left inside a heading, which the table of contents '
+                'copies: %s' % ', '.join(inside))
 
 # AC3. Where each term's locator lands. A refused mark's locator names the
 # minted anchor on the mark's own span — the span carrying that term's text,

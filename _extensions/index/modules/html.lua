@@ -566,12 +566,20 @@ local function relocate_heading_anchors(doc)
               return note, false
             end,
             Span = function(span)
-              -- The pending tag is on every mark with anchor duty here: one
-              -- that contributes a locator, and a cross-reference mark
-              -- carrying an id of the author's, whose id duplicates into the
-              -- table of contents exactly as a locator anchor would.
+              -- Two things are moved out. The pending tag marks a mark this
+              -- filter still has anchor duty for: one that contributes a
+              -- locator, and a cross-reference mark carrying an id of the
+              -- author's, whose id duplicates into the table of contents
+              -- exactly as a locator anchor would. But an id of the author's
+              -- on a mark this filter left ALONE duplicates there too, and
+              -- such a mark carries no tag: a mark whose entry cannot be
+              -- derived is returned unchanged by the Span pass, `.index` class
+              -- and author id intact. Both are read here; only the first has a
+              -- tag to carry across.
               local pending = span.attributes[qi_core.HTML_PENDING_ATTR]
-              if pending == nil then
+              local marked_id = span.classes:includes(qi_core.INDEX_CLASS)
+                and span.identifier ~= ""
+              if pending == nil and not marked_id then
                 return nil
               end
               local anchor = pandoc.Span({})

@@ -1,5 +1,6 @@
 ---
 title: "quarto-index id-collision probe"
+toc: true
 from: markdown-smart
 filters:
   - index
@@ -146,3 +147,16 @@ keeps it whichever is written first: a reader follows the locator, and nothing
 the index writes points at a cross-reference. The cross-reference comes first
 here and yields anyway: [phi]{#twin-xref .index see="mu"}, then
 [chi]{#twin-xref .index}.
+
+# A mark this filter leaves alone, inside a heading
+
+A mark whose content yields no text and that carries no `entry=` indexes
+nothing, so the filter returns it untouched: the `.index` class and the id its
+author wrote are both still on the span. It gives up no name and files no
+locator. Its id has to leave the heading all the same — the table of contents
+copies a heading's inlines, so an id left inside one is on two elements of the
+page. That is why this document sets `toc: true`.
+
+## A heading carrying [![](dot.png)]{#untagged-in-heading .index}
+
+Text under that heading, so the section is not empty.

@@ -138,3 +138,11 @@ mark yields it where the relocated anchor lands.
 ::: {#xref-heading}
 A div claiming the name the tau mark was written with.
 :::
+
+# A cross-reference and a locator mark written with one name
+
+Where two marks share a name and one of them files a locator, the locator mark
+keeps it whichever is written first: a reader follows the locator, and nothing
+the index writes points at a cross-reference. The cross-reference comes first
+here and yields anyway: [phi]{#twin-xref .index see="mu"}, then
+[chi]{#twin-xref .index}.

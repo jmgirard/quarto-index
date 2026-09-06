@@ -84,6 +84,10 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: T11 written. The refusal report is two wordings, not one — a cross-reference mark has no locator to move with the anchor — so the pinned count in `tests/scans/warn-distinct.py` is `84 + 2 = 86`, and the task's wording was corrected from `84 + 1 = 85` to match. The scan runs clean at 86.
 
+- 2026-09-05: supersedes the implement-gate decision of 2026-09-05 that left a cross-reference mark's author-written id untouched. Its own falsifier fired: the review's F2 showed `[cat]{#dup .index see="dog"}` beside `::: {#dup}` rendering `id="dup"` on two elements in silence. Such a mark now yields a contested id and is reported, with a wording of its own because it has no locator to move; `DESIGN.md`'s sentence that its id is untouched is corrected in place.
+
+- 2026-09-05: T9 addendum, from the amended criterion's re-audit. A cross-reference mark sharing a name with a locator mark would have kept it on document order, moving a locator off the author's name in favour of a mark nothing links to; a locator-contributing mark now outranks a cross-reference mark whichever is written first, order deciding only between two of a kind. Fixture case `phi`/`chi` added, red without the ranking (`chi`'s locator moved to `qi-mark-16` and `phi` kept `twin-xref`), green with it.
+
 ## Decisions
 
 ## Review

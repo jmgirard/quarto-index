@@ -3959,14 +3959,19 @@ CONTESTED = {'alpha': 'shared-attr', 'beta': 'shared-dq', 'gamma': 'shared-uq',
              'delta': 'shared-up', 'epsilon': 'shared-sq',
              'theta': 'qi-mark-3', 'lambda': 'twin'}
 KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9',
-        'omicron': 'in-comment', 'pi': 'in-raw-comment'}
+        'omicron': 'in-comment', 'pi': 'in-raw-comment', 'chi': 'twin-xref'}
 # The same two groups for marks that file no locator at all (M079 T9). They
 # yield a contested name exactly as a locator mark does — one id names one
 # element whatever the element is for — and are reported the same way; what
 # they must NOT have is a locator, before or after. `tau` is written inside a
 # heading, so its anchor is the relocated empty span rather than the span
 # printing the term.
-CONTESTED_XREF = {'rho': 'xref-dup', 'sigma': 'xref-raw', 'tau': 'xref-heading'}
+# `phi` is the mark-against-mark case for this group: a cross-reference mark
+# and a locator mark written with one name. The locator mark keeps it whichever
+# is written first — here the cross-reference is first and yields anyway — so
+# `chi` is in KEPT below and the order is not what settles this pair.
+CONTESTED_XREF = {'rho': 'xref-dup', 'sigma': 'xref-raw', 'tau': 'xref-heading',
+                  'phi': 'twin-xref'}
 KEPT_XREF = {'upsilon': 'xref-solo'}
 RELOCATED = {'tau'}
 REFUSED = dict(CONTESTED, **CONTESTED_XREF)

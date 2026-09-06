@@ -371,9 +371,15 @@ Three back-ends ship:
   minted id later. Where something else on the page carries the name, the mark
   yields it and is reported: the other element is the author's and this
   extension renames only its own mark spans, so the mark is the side with a
-  minted id to fall back on; between two marks the first in document order
-  keeps the name (added M079). A cross-reference mark's id is untouched — no
-  generated link points at it. The index section's own id is minted the same way (corrected
+  minted id to fall back on; between two marks a locator-contributing one
+  outranks a cross-reference mark, and between two of a kind the first in
+  document order keeps the name (added M079). A cross-reference mark carries an
+  id like any other span and yields a contested one the same way, though it
+  files no locator that could follow the anchor (corrected M079). An `id=`
+  written inside an HTML comment carries nothing on the rendered page and so
+  contests nothing (added M079). A front-matter mark of an HTML book chapter is
+  outside all of this: it stays anchorless per D-048, this filter not being
+  able to see which title-block fields Quarto prints. The index section's own id is minted the same way (corrected
   M08): the bare `qi-index` where that name is free, and a numbered one past it
   where the document has taken it. No anchor id stays inside a heading, because
   Quarto copies a heading's inlines into the table of contents and the id would

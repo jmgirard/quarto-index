@@ -610,26 +610,38 @@ end
 -- untagged cross-reference mark kept a contested name in silence — two
 -- elements of the page under one id, reported nowhere.
 local function keepable_author_ids(doc, taken)
-  local marks, first = {}, {}
+  local marks, held = {}, {}
   doc:walk({
     Span = function(span)
       local pending = span.attributes[qi_core.HTML_PENDING_ATTR]
       if pending == nil or span.identifier == "" then
         return nil
       end
-      marks[span.identifier] = (marks[span.identifier] or 0) + 1
-      if first[span.identifier] == nil then
-        first[span.identifier] = pending
+      local id = span.identifier
+      marks[id] = (marks[id] or 0) + 1
+      local record = qi_marks.html_marks[tonumber(pending)]
+      local anchoring = not (record and record.anchorless)
+      -- Which of the marks sharing a name keeps it. A mark whose index
+      -- locator links to that name outranks one nothing generated links to,
+      -- whatever the order they are written in: the locator is the link a
+      -- reader follows, and moving it off the author's name to leave the name
+      -- on a cross-reference is the worse of the two outcomes. Between two of
+      -- a kind there is no such difference, so the first in document order
+      -- keeps it.
+      local standing = held[id]
+      if standing == nil or (anchoring and not standing.anchoring) then
+        held[id] = { pending = pending, anchoring = anchoring }
       end
       return nil
     end,
   })
   local keeper = {}
   for id, count in pairs(marks) do
-    -- Every carrier of this name is one of these marks, so the first of them
-    -- keeps it and the page is left with the name on exactly one element.
+    -- Every carrier of this name is one of these marks, so the one that ranks
+    -- above them keeps it and the page is left with the name on exactly one
+    -- element.
     if (taken[id] or 0) == count then
-      keeper[id] = first[id]
+      keeper[id] = held[id].pending
     end
   end
   return keeper

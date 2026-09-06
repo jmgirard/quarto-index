@@ -489,3 +489,9 @@ implementation this review by driving the census walker itself under
   carry the standing candidate row on this milestone's id-uniqueness
   instruments; F11/R13's unreachable `record.context` fallback persists at
   `html.lua:775` and is rejected a third time on the same grounds.
+
+### Round 3 — PR conversation
+
+PR #79 carries no reviews, no conversation comments and no review threads
+(`pulls/79/reviews`, `issues/79/comments` and a `reviewThreads` GraphQL query
+all empty). Nothing to triage; the blocking rule does not fire.

@@ -10,6 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M079 | An author-written mark id never leaves two elements sharing it | planned | — | normal | milestones/M079-author-id-collision.md |
 | M078 | A recovered locator lands on the id its author wrote | done | — | normal | milestones/archive/M078-recovered-locator-author-id.md |
 | M077 | The suite's timing accounting checks only what its own window covers | done | — | normal | milestones/archive/M077-timing-accounting-window.md |
 | M076 | A store-report leg asserts every wording, not the ones its author recalled | done | — | normal | milestones/archive/M076-store-report-zero-controls.md |
@@ -52,4 +53,3 @@ _Released 0.3.0 2026-09-05._
 - Restore byte-level evidence that `resolve_markers` is output-neutral; D-004 refused the merge-base oracle and D-012 licenses a same-tree one — added 2026-08-17 — M04 review F12 — KI12, KI52
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Paths and filenames this repo does not handle (clustered): a chapter filename containing `#` or `?`; a checkout on Windows without symlink support — added 2026-08-16, clustered 2026-09-02 — M01 review R18, M05 review F11 — KI14, KI78
-- Settle an author-written mark id that collides with a minted `qi-mark-<n>` on the same page: `assign_anchors` never renames an author id, and `tests/fragments.py` checks a fragment's presence rather than its uniqueness, so two elements share an id and one locator lands on the wrong one. Promote with any other pass over the anchor instrument — added 2026-09-05 — M078 plan gate (audit finding 4)

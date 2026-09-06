@@ -10,18 +10,18 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M080 | The id census reads a page's raw HTML the way a browser does | planned | — | normal | milestones/M080-id-census-raw-html-walk.md |
 | M079 | An author-written mark id never leaves two elements sharing it | done | — | normal | milestones/archive/M079-author-id-collision.md |
 | M078 | A recovered locator lands on the id its author wrote | done | — | normal | milestones/archive/M078-recovered-locator-author-id.md |
 | M077 | The suite's timing accounting checks only what its own window covers | done | — | normal | milestones/archive/M077-timing-accounting-window.md |
 | M076 | A store-report leg asserts every wording, not the ones its author recalled | done | — | normal | milestones/archive/M076-store-report-zero-controls.md |
-| M075 | The suite reports where its own time goes | done | — | normal | milestones/archive/M075-suite-timing-profile.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- Repair the id census's raw-HTML walk, and the domain its leg covers: a `script` or `style` element aborts the walk, so a later `id=` in that block goes uncounted and a mark keeps a contested id in silence; a RAWTEXT element's content is read as markup; a closing tag's attributes are read. Promote with any other census pass — added 2026-09-06 — M079 review X1/X4/X5, X7 — KI254
+- Reach the id-census shapes M080 leaves: an `id=` written in the text content of a `title`, `noscript` or `plaintext` element, none of which a case can exercise on a rendered page. Promote on an author reporting one, or with the reading of the written page KI255 needs — added 2026-09-06, narrowed 2026-09-06 when M080 took the rest — M079 review X1/X4/X5, X7 — KI254
 - See an id Quarto's writer generates after the filter runs (`fn1`, `cb1`, `title-block-header`), which the census cannot: a mark written with one keeps it and the page carries it twice, unreported. Needs a reading of the written page rather than of the AST. Promote on an author reporting one — added 2026-09-06 — M079 review X2 — KI255
 - Pin the two recovered-locator assertions M078's legs leave to overlap: the record route's own `Quoin` href (held there by page/section/term only, so the two routes could diverge green) and `fragments.py outside` on the recovered heading mark (`mullion-passage` resolving to a copy inside the heading would pass `resolve`). Promote with any other pass over the m061/m065 legs — added 2026-09-05 — M078 review F3/F11
 - Bind M079's cross-reference id shapes to criteria: the fixture's four collision cases, its uncontested control, and the rule that a locator mark outranks a cross-reference for a shared name are held by tasks and one suite leg alone, so deleting them leaves every criterion green. Promote with any other pass over the id-collision fixture — added 2026-09-05 — M079 amendment gate

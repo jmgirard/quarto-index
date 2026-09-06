@@ -184,3 +184,123 @@ neither name's fate depends on the other's block being read.
 ```
 
 The link an author writes to the second still resolves: [to omega](#in-script).
+
+# Names an element standing after a skipped one carries
+
+A browser reads the text content of seven elements as text rather than as
+markup — `script`, `style`, `xmp`, `iframe`, `noembed`, `noframes` and
+`textarea` — steps over it, and goes on reading the markup that follows. So
+does the census. A name written on a real element standing AFTER one of those
+seven, in that same raw HTML block, is on an element of the rendered page like
+any other, so a mark written with it yields it.
+
+Six here, one per element bar the last: [after-script]{#beyond-script .index},
+[after-style]{#beyond-style .index}, [after-xmp]{#beyond-xmp .index},
+[after-iframe]{#beyond-iframe .index}, [after-noembed]{#beyond-noembed .index}
+and [after-noframes]{#beyond-noframes .index}. Each element and the claim after
+it are written in one block, which is what a walk that abandons the rest of a
+block after the first of them fails to read.
+
+```{=html}
+<script>var draft = "not markup";</script>
+<p id="beyond-script">Raw HTML after a script element, in that same block.</p>
+```
+
+```{=html}
+<style>.qi-not-markup { color: red }</style>
+<p id=beyond-style>Raw HTML after a style element, in that same block.</p>
+```
+
+```{=html}
+<xmp>not markup</xmp>
+<p ID="beyond-xmp">Raw HTML after an xmp element, in that same block.</p>
+```
+
+```{=html}
+<iframe>not markup</iframe>
+<p id='beyond-iframe'>Raw HTML after an iframe element, in that same block.</p>
+```
+
+```{=html}
+<noembed>not markup</noembed>
+<p id="beyond-noembed">Raw HTML after a noembed element, in that same block.</p>
+```
+
+```{=html}
+<noframes>not markup</noframes>
+<p id=beyond-noframes>Raw HTML after a noframes element, in that same block.</p>
+```
+
+## A heading carrying [after-textarea]{#beyond-textarea .index}
+
+The seventh, written in a heading: the name is claimed below it, so the mark
+yields, and the minted id it is given lands on the empty span after the heading
+rather than on the mark's own.
+
+```{=html}
+<textarea>not markup</textarea>
+<p id="beyond-textarea">Raw HTML after a textarea element, in that same block.</p>
+```
+
+# Names written in a skipped element's own text
+
+Inside those same seven elements an `id=` is text and not an attribute: the
+page renders no element carrying it, so it contests nothing and a mark written
+with it keeps it. Seven here, one per element, two of them claimed by a raw
+INLINE rather than by a raw block, the census reading both:
+[inside-script]{#buried-script .index}, [inside-style]{#buried-style .index},
+[inside-xmp]{#buried-xmp .index}, [inside-iframe]{#buried-iframe .index},
+[inside-noembed]{#buried-noembed .index}, [inside-noframes]{#buried-noframes
+.index} and [inside-textarea]{#buried-textarea .index}.
+
+```{=html}
+<script>var draft = "<p id='buried-script'>gone</p>";</script>
+<style>/* <p id=buried-style>gone</p> */</style>
+<xmp><p ID="buried-xmp">gone</p></xmp>
+<iframe><p id="buried-iframe">gone</p></iframe>
+<noembed><p id="buried-noembed">gone</p></noembed>
+```
+
+Two claimed by raw inlines: `<noframes><p id='buried-noframes'>gone</p></noframes>`{=html}
+and `<textarea><p id="buried-textarea">gone</p></textarea>`{=html}.
+
+The links an author writes to two of those marks still resolve:
+[to inside-script](#buried-script) and [to inside-textarea](#buried-textarea).
+
+# An end tag one of those elements only looks like
+
+Such an element ends at its own end tag and at nothing else. `</scriptx>` is
+not the end of a `script`: the text runs on past it, and a name written after
+it is still inside the element. A real end tag may carry whitespace before its
+`>` all the same, and the text ends there.
+
+Written past a lookalike, so the name is still in the element's text and its
+mark keeps it: [false-end-script]{#veiled-script .index} and
+[false-end-textarea]{#veiled-textarea .index}.
+
+Written past a real end tag spelled with a space, so the name is on an element
+of the page and its mark yields it: [spaced-end-script]{#past-spaced-script
+.index} and [spaced-end-textarea]{#past-spaced-textarea .index}.
+
+```{=html}
+<script>var draft = '</scriptx> <p id="veiled-script">gone</p>';</script>
+<script>var kept = 1;</script > <p ID="past-spaced-script">Raw HTML after a real end tag spelled with a space.</p>
+<textarea>not markup</textarea > <p id=past-spaced-textarea>Raw HTML after a real end tag spelled with a space.</p>
+```
+
+The fourth is claimed by a raw inline: `<textarea>x</textareax> <p id='veiled-textarea'>gone</p></textarea>`{=html}.
+
+# Names written on a closing tag
+
+An attribute on a closing tag is on nothing: the tag's name is read and the
+rest dropped, so the element it closes never carries the name and no element of
+the rendered page does. Two here, one per spelling:
+[on-closing-p]{#closing-p .index} and [on-closing-em]{#closing-em .index}.
+
+The block below closes a `p` and an `em`, neither of which is open where it
+stands, so neither tag closes anything at all.
+
+```{=html}
+</p id="closing-p">
+</em id=closing-em>
+```

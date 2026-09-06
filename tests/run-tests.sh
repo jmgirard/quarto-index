@@ -3984,9 +3984,9 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# Twenty-two marks are hand-derived here from examples/id-collision.qmd, never
+# Forty-two marks are hand-derived here from examples/id-collision.qmd, never
 # read back out of the render: an expectation taken from the artifact is blind
-# in the dimension it is taken from.
+# in the dimension it is taken from. Twenty-two are M079's and twenty M080's.
 #
 # Twelve of them yield a name something else on the page carries — one per
 # spelling the id census reads, one written as a name the numbering would
@@ -4004,6 +4004,15 @@ PY
 #
 # The twenty-second is a mark this filter never tags, which gives up nothing
 # but whose id must still leave the heading it is written in (T12).
+#
+# M080 adds twenty over the four shapes the census used to read wrongly. Nine
+# yield: seven whose name is on a real element standing after one of the seven
+# text-content elements in that same raw block — one of them written inside a
+# heading, so its anchor is the relocated empty span — and two past a real end
+# tag spelled with a space. Eleven keep, none of their names being on any
+# element the page renders: seven written inside one of those elements, two
+# past an end tag the element only looks like, and two written on a closing
+# tag, where a browser reads the name and drops it.
 #
 # Rendered and captured by the M08-AC1 section above, whose log carries the
 # refusal reports read at the end of this one.
@@ -4048,6 +4057,35 @@ KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9',
 CONTESTED_XREF = {'rho': 'xref-dup', 'sigma': 'xref-raw', 'tau': 'xref-heading',
                   'phi': 'twin-xref'}
 KEPT_XREF = {'upsilon': 'xref-solo'}
+# The four shapes the census used to read a raw HTML string wrongly (M080).
+# Seven elements' text content is text and not markup — `script`, `style`,
+# `xmp`, `iframe`, `noembed`, `noframes`, `textarea` — so the census steps over
+# it and reads the markup after it. A name on a real element standing AFTER one
+# of the seven in that same raw block is contested like any other, and so is
+# one past a real end tag spelled with a space; a name written INSIDE one of
+# them, past an end tag the element only looks like, or on a closing tag, is on
+# nothing the page renders and its mark keeps it. `after-textarea` is written
+# inside a heading, so its anchor is the relocated empty span.
+CONTESTED_RAW = {'after-script': 'beyond-script',
+                 'after-style': 'beyond-style',
+                 'after-xmp': 'beyond-xmp',
+                 'after-iframe': 'beyond-iframe',
+                 'after-noembed': 'beyond-noembed',
+                 'after-noframes': 'beyond-noframes',
+                 'after-textarea': 'beyond-textarea',
+                 'spaced-end-script': 'past-spaced-script',
+                 'spaced-end-textarea': 'past-spaced-textarea'}
+KEPT_RAW = {'inside-script': 'buried-script',
+            'inside-style': 'buried-style',
+            'inside-xmp': 'buried-xmp',
+            'inside-iframe': 'buried-iframe',
+            'inside-noembed': 'buried-noembed',
+            'inside-noframes': 'buried-noframes',
+            'inside-textarea': 'buried-textarea',
+            'false-end-script': 'veiled-script',
+            'false-end-textarea': 'veiled-textarea',
+            'on-closing-p': 'closing-p',
+            'on-closing-em': 'closing-em'}
 # A mark the Span pass never tags: its content yields no text and it carries no
 # entry=, so the mark indexes nothing and the filter returns it untouched —
 # `.index` class and the author's id still on the span it was written on. It
@@ -4060,9 +4098,9 @@ UNTAGGED = {'untagged-in-heading'}
 # after the heading and the anchor goes there. Their minted id is read off that
 # span rather than off the mark's own, which is what the criterion promises for
 # this shape — checked below rather than exempted (M079 T14).
-RELOCATED = {'tau'}
-REFUSED = dict(CONTESTED, **CONTESTED_XREF)
-KEPT_ALL = dict(KEPT, **KEPT_XREF)
+RELOCATED = {'tau', 'after-textarea'}
+REFUSED = dict(CONTESTED, **CONTESTED_XREF, **CONTESTED_RAW)
+KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW)
 NO_LOCATOR = set(CONTESTED_XREF) | set(KEPT_XREF)
 
 # AC1. Every id on the page, counted; nothing may be carried twice. The domain
@@ -4105,6 +4143,9 @@ if inside:
 # minted anchor on the mark's own span — the span carrying that term's text,
 # so this is the mark and not merely some element bearing a minted name — and
 # a kept mark's locator names the author's id.
+# Where a refused mark written inside a heading has its anchor, filled in by
+# the locator sweep below and read by the heading sweep after it.
+relocated_locator = {}
 section = H.index_section(doc)
 if section is None:
     errs.append('no index section was found by its heading')
@@ -4141,12 +4182,27 @@ else:
                 errs.append('the locator for %r names %r; its author wrote '
                             '%r and nothing contests it' % (term, got, KEPT_ALL[term]))
             continue
-        if got == CONTESTED[term]:
+        if got == REFUSED[term]:
             errs.append('the locator for %r still names %r, the contested id'
                         % (term, got))
         elif not got.startswith(prefix):
             errs.append('the locator for %r names %r, which is neither the '
                         'contested id nor a minted anchor' % (term, got))
+        elif term in RELOCATED:
+            # Written inside a heading, so the anchor is the empty span the
+            # extension emits after it and there is no text on it to read the
+            # term off. That it is the RIGHT span — the first minted anchor
+            # after that heading — is checked by position below.
+            landed = H.find_id(doc, got)
+            if landed is None:
+                errs.append('the minted anchor %r the locator for %r names is '
+                            'on nothing' % (got, term))
+            elif H.text(landed).strip():
+                errs.append('the minted anchor %r the locator for %r names is '
+                            'on %r, not on the empty span after its heading'
+                            % (got, term, H.text(landed).strip()))
+            else:
+                relocated_locator[term] = got
         else:
             landed = H.find_id(doc, got)
             if landed is None or H.text(landed).strip() != term:
@@ -4202,6 +4258,11 @@ for term in sorted(RELOCATED):
         errs.append('the first minted anchor after the heading printing %r is '
                     'on %r rather than on an empty span'
                     % (term, H.text(anchor).strip()))
+    elif (term in relocated_locator
+          and anchor.attrs.get('id') != relocated_locator[term]):
+        errs.append('the locator for %r names %r, but the empty span after its '
+                    'heading carries %r'
+                    % (term, relocated_locator[term], anchor.attrs.get('id')))
 # And its control: a cross-reference mark whose name nothing contests keeps it,
 # on its own span.
 for term, wrote in sorted(KEPT_XREF.items()):

@@ -122,21 +122,21 @@ sweep can go red → the suite's self-test-plants candidate row.
       declared seven-element skip list, and match its end tag as `</` + name
       followed by whitespace, `/` or `>` rather than by prefix
       (`html.lua:596`).
-- [ ] T5: Extend `examples/id-collision.qmd` with AC1's seven cases, each
+- [x] T5: Extend `examples/id-collision.qmd` with AC1's seven cases, each
       element and its following `id=` in the SAME raw block — M079's lesson is
       that a fixture writing one case per block cannot see a defect about cases
       interacting within one — and one of the seven marked inside a heading.
-- [ ] T6: Extend the fixture with AC2's seven content cases and AC3's four
+- [x] T6: Extend the fixture with AC2's seven content cases and AC3's four
       end-tag-match cases, two of the eleven written as raw inlines, and the
       four `id=` spellings the census reads distributed across the new cases.
-- [ ] T7: Extend the fixture with AC4's two closing-tag cases, written where no
+- [x] T7: Extend the fixture with AC4's two closing-tag cases, written where no
       `p` and no `em` element is open.
-- [ ] T8: Extend the M079-AC1 leg's hand-derived tables
+- [x] T8: Extend the M079-AC1 leg's hand-derived tables
       (`tests/run-tests.sh:3971-4006`) with the new terms — refused for AC1's
       seven and AC3's two real end tags, kept for AC2's seven, AC3's two
       non-end-tags and AC4's two — and its whole-log refusal count
       (`tests/run-tests.sh:4172`), in the same commit as the fixture rows.
-- [ ] T9: Revert each of T3's two repairs and each of T4's two in turn against
+- [x] T9: Revert each of T3's two repairs and each of T4's two in turn against
       the extended suite, and record in the work log the check each one reddens.
 - [ ] T10: `site/html.qmd` prose and its claim rows (`site/html.qmd:53-61`, row
       at `tests/run-tests.sh:4245`) and `CHANGELOG.md`; strike KI254 from
@@ -158,6 +158,10 @@ sweep can go red → the suite's self-test-plants candidate row.
 - 2026-09-06: T2 gave `tests/htmlindex.py` a `RAW_TEXT_ELEMENTS` list of the same seven and named it as `_Builder.CDATA_CONTENT_ELEMENTS`; Python's parser reads that list off the instance, so the five it did not know now get its own `script` rule, end-tag match included. A new suite section before M079-AC1 plants the defect: with the reader holding only `script`/`style` it reports `buried-xmp`, `buried-iframe`, `buried-noembed`, `buried-noframes` and `buried-textarea` as elements of its tree, and reports none of them after, while still reading the nine ids an element really carries.
 - 2026-09-06: T3 and T4 rewrote `note_raw`. A tag now records whether it is a closing one, so attributes are read to find the `>` but claim nothing on a closing tag, and the character-data skip fires on opening tags only; the two-name `script`/`style` test became a declared `RAW_TEXT_ELEMENTS` table of the seven, and the end tag is matched as `</` + name followed by whitespace, `/` or `>` rather than by prefix. Against T1's matrix the function now returns the browser's answer on all sixteen cases, the comment, quoted-attribute-value and unterminated-script controls unchanged.
 - 2026-09-06: T2, T3 and T4 were verified by one suite run rather than three, the run costing 21 minutes and the two `note_raw` repairs being halves of one rewrite; T9 reverts each of the four singly. `tests/run-tests.sh` exit 0, 773 checks (772 before this branch, the reader plant being the one added).
+- 2026-09-06: T5, T6 and T7 appended four sections to `examples/id-collision.qmd`, one per rule, with twenty new marks named for the shape each tests (`after-script`, `inside-textarea`, `false-end-script`, `on-closing-p`). Seven AC1 cases each write their element and its carrier in one raw block, the `textarea` one marked inside a heading; seven AC2 cases write an `id=` inside the element's content, two of them as raw inlines; AC3's four cover the end-tag lookalike and the space-spelled real end tag for `script` and `textarea`, one a raw inline; AC4's two write a `</p>` and an `</em>` carrying attributes where neither element is open. The four `id=` spellings are spread across the new cases.
+- 2026-09-06: T8 grew the M079-AC1 leg's hand-derived tables with `CONTESTED_RAW` (nine) and `KEPT_RAW` (eleven), added `after-textarea` to `RELOCATED`, and gave the locator sweep a relocated branch: a refused locator mark written inside a heading has its anchor on the empty span after it, so the sweep reads the anchor's emptiness and the heading sweep then holds that span's id to the one the locator names. The whole-log refusal count follows the tables and is now 21.
+- 2026-09-06: T9 reverted each of the four repairs singly against the extended fixture, rendering and running the leg in a scratch loop rather than the whole suite (the profile's own guidance for needing one check's behavior). Claiming from a closing tag again: `closing-p` and `closing-em` on 0 elements, their locators minted, two spurious refusal reports. The skip firing on a closing tag again: nine ids on 2 elements each (`beyond-script`, `beyond-style`, `beyond-xmp`, `beyond-iframe`, `beyond-noembed`, `beyond-noframes`, `beyond-textarea`, `past-spaced-script`, `past-spaced-textarea`) with their locators still naming the contested id. The skip list back to `script`/`style`: `buried-xmp`, `buried-iframe`, `buried-noembed`, `buried-noframes`, `buried-textarea` and `veiled-textarea` on 0 elements. The end tag matched by prefix again: `veiled-script` and `veiled-textarea` on 0 elements with spurious refusals. Each revert reddens M079-AC1 on its own set of names.
+- 2026-09-06: T5-T9 verified by one suite run, the fixture rows and the leg tables having to move together; `tests/run-tests.sh` exit 0, 773 checks, M079-AC1 reading 158 ids on the page with 21 refused and 20 kept.
 - 2026-09-06: plan chose keeping every new case in `examples/id-collision.qmd` over a sibling fixture, because that page's whole-page duplicate-id sweep is the procedure AC1's and AC2's universals name and a second page would sit outside it; falsified by that render becoming a named cost in the suite's timing profile.
 
 ## Decisions

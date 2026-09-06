@@ -7,7 +7,7 @@
 - **Principles touched:** IP2
 - **Resolves:** —
 - **Surface tier:** user-facing — the deliverable is an author's rendered page and where its index links land
-- **Branch/PR:** m079-author-id-collision
+- **Branch/PR:** m079-author-id-collision / https://github.com/jmgirard/quarto-index/pull/79
 
 ## Goal
 
@@ -66,6 +66,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 - 2026-09-05: checkpoint with tasks unticked: the whole-suite `--self-test` run that verifies them is still in flight. Its three M079 legs have already passed in it.
 
 - 2026-09-05: whole suite green with `--self-test` on this tree: 1412 checks, 1766s across 158 sections, exit 0, no failure. Tasks T1-T7 ticked; status to review.
+
+- 2026-09-05: review opened; draft PR #79. Merge-base floor re-rendered fresh from this branch's fixture: HTML repeats the seven contested ids, the EPUB reading reports 15 clauses across three documents. Whole-suite run and the three fresh-context reviewers still in flight.
 
 ## Decisions
 

@@ -10,6 +10,8 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M081 | The id census reads a comment where a browser reads one | planned | — | normal | milestones/M081-census-comment-reading.md |
+| M082 | The id census stays out of content the page does not render as markup | planned | M081 | normal | milestones/M082-census-unrendered-content.md |
 | M080 | The id census reads a page's raw HTML the way a browser does | done | — | normal | milestones/archive/M080-id-census-raw-html-walk.md |
 | M079 | An author-written mark id never leaves two elements sharing it | done | — | normal | milestones/archive/M079-author-id-collision.md |
 | M078 | A recovered locator lands on the id its author wrote | done | — | normal | milestones/archive/M078-recovered-locator-author-id.md |
@@ -19,8 +21,7 @@ _Released 0.3.0 2026-09-05._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- Close the id-census shapes M080 leaves in `note_raw`, which either count an `id=` no element of the rendered page carries or abandon the markup written after one. Promote on an author reporting one, or with any other pass over `note_raw` — added 2026-09-06, extended 2026-09-06 — M080 review F2/F3/F4, round 2 F2/F5 — KI256, KI257, KI258, KI260, KI261
-- Harden the id-census instruments M080 leaves unpinned: a fixture case for an `id=` on a raw-text element's own opening tag, a guard on the retired sentence's absence from `site/html.qmd`, and a claim row naming the seven skip-list elements. Promote with any other pass over the id-collision fixture or the site claim rows — added 2026-09-06 — M080 review F8, round 2 F7 — KI259, KI262
+- Close the last id-census shape M081 and M082 leave in `note_raw`: a `style` or `script` inside `svg` or `math`, where a breakout tag is reported to make a real element the walk steps over. Promote on evidence checked against a browser, which this repo does not run, or on an author reporting one — added 2026-09-06, narrowed 2026-09-06 — M080 review round 2 F5 — KI261
 - Reach the id-census shapes M080 leaves: an `id=` written in the text content of a `title`, `noscript` or `plaintext` element, none of which a case can exercise on a rendered page. Promote on an author reporting one, or with the reading of the written page KI255 needs — added 2026-09-06, narrowed 2026-09-06 when M080 took the rest — M079 review X1/X4/X5, X7 — KI254
 - See an id Quarto's writer generates after the filter runs (`fn1`, `cb1`, `title-block-header`), which the census cannot: a mark written with one keeps it and the page carries it twice, unreported. Needs a reading of the written page rather than of the AST. Promote on an author reporting one — added 2026-09-06 — M079 review X2 — KI255
 - Pin the two recovered-locator assertions M078's legs leave to overlap: the record route's own `Quoin` href (held there by page/section/term only, so the two routes could diverge green) and `fragments.py outside` on the recovered heading mark (`mullion-passage` resolving to a copy inside the heading would pass `resolve`). Promote with any other pass over the m061/m065 legs — added 2026-09-05 — M078 review F3/F11

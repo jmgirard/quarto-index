@@ -41,7 +41,7 @@ sweep can go red → the suite's self-test-plants candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1: For each of the seven elements of the skip list,
+- [x] AC1: For each of the seven elements of the skip list,
       `examples/id-collision.qmd` writes that element closed and, after it in
       the same raw HTML block, an `id=` attribute of an ordinary tag, plus a
       mark carrying that name. On the rendered page each of the seven names is
@@ -50,13 +50,13 @@ sweep can go red → the suite's self-test-plants candidate row.
       written inside a heading, on the empty span emitted after that heading —
       and the render log carries one refusal report naming that mark's term and
       the id it gave up.
-- [ ] AC2: For each of the seven elements of the skip list,
+- [x] AC2: For each of the seven elements of the skip list,
       `examples/id-collision.qmd` writes an `id=` attribute of a tag inside that
       element's content, and a mark carrying that name. On the rendered page
       each of the seven names is the id of the span printing its mark's term and
       is on no other element, and no refusal report in the render log names any
       of those seven terms.
-- [ ] AC3: For `script` and for `textarea`, `examples/id-collision.qmd` writes
+- [x] AC3: For `script` and for `textarea`, `examples/id-collision.qmd` writes
       inside that element's content the string `</` + the element's name + a
       further letter + `>`, which is not that element's end tag, followed by an
       `id=` attribute of a tag and a mark carrying that name; and separately
@@ -66,13 +66,13 @@ sweep can go red → the suite's self-test-plants candidate row.
       the span printing its mark's term with no refusal report naming that term,
       and each of the second two is carried by exactly one element — the
       author's — its mark anchored on a minted id and reported once.
-- [ ] AC4: At a point in `examples/id-collision.qmd` where no `p` and no `em`
+- [x] AC4: At a point in `examples/id-collision.qmd` where no `p` and no `em`
       element is open, a raw HTML block writes a `</p>` closing tag carrying a
       double-quoted `id=` attribute and an `</em>` closing tag carrying an
       unquoted one, plus a mark carrying each of those two names. On the
       rendered page each of the two names is the id of the span printing its
       mark's term, and no refusal report names either term.
-- [ ] AC5: The twenty-two marks `examples/id-collision.qmd` carried before this
+- [x] AC5: The twenty-two marks `examples/id-collision.qmd` carried before this
       milestone keep their outcome, on the rendered page and in the EPUB the
       same fixture renders to. The twelve printing `alpha`, `beta`, `gamma`,
       `delta`, `epsilon`, `theta`, `lambda`, `psi`, `rho`, `sigma`, `tau` and
@@ -89,7 +89,7 @@ sweep can go red → the suite's self-test-plants candidate row.
       cover; and `site/html.qmd` no longer carries its sentence that a name
       written in a raw HTML block after a `script` or `style` element in that
       same block is not seen.
-- [ ] AC7: `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
+- [x] AC7: `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
       exits 0.
 
 ## Coverage
@@ -166,7 +166,141 @@ sweep can go red → the suite's self-test-plants candidate row.
 - 2026-09-06: T10 verified. `tests/run-tests.sh` exit 0, 773 checks; `tests/run-tests.sh --self-test` exit 0, 1413 checks (1412 before this branch). All ten tasks done, status to review.
 - 2026-09-06: plan chose keeping every new case in `examples/id-collision.qmd` over a sibling fixture, because that page's whole-page duplicate-id sweep is the procedure AC1's and AC2's universals name and a second page would sit outside it; falsified by that render becoming a named cost in the suite's timing profile.
 - 2026-09-06: review opened. Branch synced with `main` (unmoved since the cut, no merge needed) and pushed; draft PR #80 opened and recorded in the header. Consistency gate's universal checks run: `cairn_validate.py` exit 0, all sixteen PASS, every advisory OK. No IP/GP principle text changed, so `cairn_impact` is skipped. Suite runs for AC7 in flight; three review lenses spawned.
+- 2026-09-06: review step 3 evidence recorded for AC1-AC5 and AC7 against the suite's own capture and render log, and those six ticked; AC6 left unticked. Suite green alone: plain exit 0, 773 checks; --self-test exit 0, 1413 checks. An earlier plain run exited 1 on a quarto Deno segfault in the M14 review-F9 book render while three review subagents shared the machine; re-run clean.
 
 ## Decisions
 
 ## Review
+
+Evidence gathered 2026-09-06 against branch head on PR #80. The page facts
+below are read from the suite's own capture of `examples/id-collision.qmd`
+(`tests/.work/cap/id-collision-html/id-collision.html`) and its render log,
+with `tests/htmlindex.py` as the reader — the reader the M080-AC2 (reader)
+section plants a defect against and proves able to report it.
+
+- AC1 — met. Each of the seven names `beyond-script`, `beyond-style`,
+  `beyond-xmp`, `beyond-iframe`, `beyond-noembed`, `beyond-noframes` and
+  `beyond-textarea` is carried by exactly one element of the rendered page, the
+  author's. Each of the seven marks draws exactly one refusal report naming its
+  term and the id it gave up, and is anchored on a minted id — `qi-mark-18`
+  through `qi-mark-24`. The heading case, `after-textarea`, has its `qi-mark-24`
+  on an empty span, read back as carrying no text.
+- AC2 — met. Each of `buried-script`, `buried-style`, `buried-xmp`,
+  `buried-iframe`, `buried-noembed`, `buried-noframes` and `buried-textarea` is
+  on exactly one element, and that element's text is its mark's term
+  (`inside-script` and so on), so it is the span printing the mark. No refusal
+  report in the render log names any of the seven terms.
+- AC3 — met. Past the two end-tag lookalikes, `veiled-script` and
+  `veiled-textarea` are each the id of the span printing `false-end-script` and
+  `false-end-textarea`, with no report naming either term. Past the two real end
+  tags spelled with a space, `past-spaced-script` and `past-spaced-textarea` are
+  each carried by exactly one element, the author's `p`, and their marks
+  `spaced-end-script` and `spaced-end-textarea` are anchored on `qi-mark-25` and
+  `qi-mark-26` and reported once each.
+- AC4 — met. `closing-p` and `closing-em` are each the id of the span printing
+  `on-closing-p` and `on-closing-em`, and no report names either term.
+- AC5 — met. All twelve yielding terms (`alpha`, `beta`, `gamma`, `delta`,
+  `epsilon`, `theta`, `lambda`, `psi`, `rho`, `sigma`, `tau`, `phi`) are
+  reported exactly once each; all nine keeping terms (`kappa`, `mu`, `nu`, `xi`,
+  `omicron`, `pi`, `chi`, `omega`, `upsilon`) still carry the id each was
+  written with, on exactly one element, with no report. `nu`'s `in-heading` is
+  on an empty span, and `untagged-in-heading` is likewise on an element carrying
+  no text, so both sit outside their headings. No id on the page is carried
+  twice, across all 158. In the EPUB the same fixture renders to, the `unique`
+  sweep reads 16 documents with no id carried twice and 44 index fragments each
+  naming an id its document carries once.
+- AC6 — NOT ticked. Both pages carry the wording the criterion mandates:
+  `site/html.qmd` and `CHANGELOG.md` each state that an `id=` in the text
+  content of one of the seven, or on a closing tag, is on nothing the page
+  carries, and each names `title` as the one such element the rule does not
+  cover; and `site/html.qmd` no longer carries its sentence about a name after a
+  `script` or `style` element going unseen. The mandated sentence is false —
+  see F1 below — so the criterion is met as written while promising the reader
+  something untrue. This is the amendment return recorded below.
+- AC7 — met. `tests/run-tests.sh` exit 0, 773 checks; `tests/run-tests.sh
+  --self-test` exit 0, 1413 checks. An earlier plain run exited 1 on a quarto
+  Deno segmentation fault in the M14 review-F9 book render, taken while three
+  review subagents shared the machine; the clean re-run alone is the one
+  recorded here, and no check disagreed in either run.
+
+Consistency gate: `cairn_validate.py` exit 0, all sixteen checks PASS and every
+advisory OK, including `coverage complete` and `release window`. No IP or GP
+principle text changed, so `cairn_impact.py` was not run. The active profile is
+`generic`, whose consistency-gate slot names no toolchain checks.
+
+### Findings
+
+Three fresh-context reviewers, distinct evidence bases. The prior-review lens
+reported no prior-review evidence contradicted: the GitHub inline-comment probe
+came back empty, and against the archived `## Review` records it found the
+branch repairs exactly what M079 deferred and touches none of M079's fixed
+expectations. The blame-history lens found no erosion of prior intent and one
+cosmetic issue (F11 below). The diff-bug lens lifted `note_raw` into a
+`pandoc lua` harness and confirmed the four repairs correct over the whole
+fixture and against the HTML5 tokenizer states, and returned eleven findings.
+
+- F1 (diff-bug, ranked first) — the shipped claim that `title` is the ONE
+  text-content element the rule does not cover is false. `noscript` content is
+  raw text with scripting enabled and `plaintext` runs to end of file, so
+  neither renders an element for an `id=` written inside it, and neither is in
+  the census's skip list. `cairn/DESIGN.md`'s narrowed KI254 contradicts itself
+  in one entry, calling `title` "the one" and then naming `noscript` and
+  `plaintext` "the same shape". Verified by reading: neither name is in
+  `RAW_TEXT_ELEMENTS`, so an `id=` inside either is claimed. An author writing
+  `<noscript><p id="mine">` and a mark on `mine` is told a refusal that the
+  page's own rule says cannot happen, and their `#mine` link breaks.
+  Disposition: amendment return on AC6 — the criterion's own wording mandates
+  the false sentence, so it cannot be repaired review-side.
+- F2 (diff-bug) — a `<template>` element's content is counted, though its
+  contents live in a separate document fragment and no element of the page
+  carries the id. Inside the Goal's second half, named nowhere in Scope, KI254
+  or the candidate rows. Disposition: follow-up — a DESIGN.md Known issues
+  entry and a candidate row.
+- F3 (diff-bug) — a bogus comment (`<!…>`, `<?…>`, `<![CDATA[…]]>`) is read as
+  markup, so ids inside one are counted; only the literal `<!--` is treated as
+  a comment. Pre-existing, same over-collection class as the closing-tag shape
+  this milestone repaired. Disposition: follow-up — Known issues entry and
+  candidate row.
+- F4 (diff-bug) — the script double-escape state is not modelled, so
+  `<script><!--<script></script><p id="ghost">` counts a phantom id. Obscure but
+  reachable. Disposition: follow-up — Known issues entry and candidate row.
+- F5 (diff-bug) — the new comments at `html.lua:549-551` and `:631-633` claim
+  the walk reads "exactly as a browser reads it", which a per-raw-string walk
+  cannot promise: a raw block ending mid-`<script>` leaves a browser in script
+  state across the Pandoc-generated markup after it. Disposition: fix now,
+  comment wording only.
+- F6 (diff-bug) — `tests/htmlindex.py`'s "the reader and the code under test
+  disagree about no page" is stronger than what holds: `</textarea/>` and
+  `<iframe/>` are two real divergences, neither in the fixture. Disposition:
+  fix now, comment wording only.
+- F7 (diff-bug) — three of the reader plant's negative assertions
+  (`closing-p`, `closing-em`, `veiled`) can never fail, so the section's
+  discriminating power is the five `buried-*` names; its header comment presents
+  all of them as the defect it must catch. Disposition: fix now, comment
+  wording only.
+- F8 (diff-bug) — no fixture case writes an `id=` on a raw-text element's own
+  opening tag (`<style id="x">`), which must still be claimed, so moving the
+  `claim` inside the skip guard would redden nothing. Disposition: follow-up —
+  candidate row.
+- F9 (diff-bug) — `examples/id-collision.qmd:166` still states the pre-M080
+  rule, "an `id=` counts where it is an attribute of a tag, and nowhere else",
+  two sections above the new section stating the closing-tag rule; the fixture's
+  prose renders into the gallery. Verified by reading. Disposition: fix now.
+- F10 (diff-bug) — task T6's text says two of the eleven are raw inlines; the
+  fixture writes three (`buried-noframes`, `buried-textarea`,
+  `veiled-textarea`). More coverage than promised. Disposition: noted here, no
+  change; the tasks are done and the record stands.
+- F11 (diff-bug, and the blame-history lens's only finding) — `site/html.qmd:94`
+  (106 chars) and `cairn/DESIGN.md:385` (95 chars) were left unwrapped against
+  both files' own ~80-column habit. Disposition: fix now.
+
+### Amendment return
+
+AC6 names no procedure that decides which text-content elements the rule does
+not cover; its enumeration is fixed by author recall, and F1 shows it false.
+The only repair widens that enumeration, so this is an amendment return rather
+than a defect return, and it does not count toward the thrash rule's defect
+returns. The plan gate's own record already knew the residue was three
+elements — it names `title`, `noscript` and `plaintext` together — so the
+defect is in AC6's wording and the two pages written to it, not in the scoping
+choice.

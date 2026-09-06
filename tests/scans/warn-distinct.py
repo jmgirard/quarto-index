@@ -254,8 +254,11 @@ if blank:
 # not read at all, drawn whatever state its record was in: 82 + 1 = 83. M073
 # adds the never-written family's third outcome — no record written, and a
 # source that could not be read either, which drew the shared could-not-be-read
-# wording before: 83 + 1 = 84.
-EXPECTED = 84
+# wording before: 83 + 1 = 84. M079 adds two refusal reports for a mark whose
+# author-written id another element of the page carries — one where the mark
+# files a locator, which moves with the anchor, and one where the mark is a
+# cross-reference and has none to move: 84 + 2 = 86.
+EXPECTED = 86
 if len(lits) != EXPECTED:
     print(f'FAIL: M02-AC5: found {len(lits)} warn() messages, expected '
           f'{EXPECTED}. Either a warning was added or removed without updating '

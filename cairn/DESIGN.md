@@ -363,14 +363,38 @@ Three back-ends ship:
 
   Ids are assigned in the **Pandoc** pass, not at the mark: an id must not
   collide with one the author wrote — ids written in raw HTML included — and
-  that is only knowable once the whole document has been seen. A mark keeps an
-  id of the author's own and is otherwise tagged by the Span pass and given a
-  minted id later. The index section's own id is minted the same way (corrected
-  M08): the bare `qi-index` where that name is free, and a numbered one past it
-  where the document has taken it. No anchor id stays inside a heading, because
-  Quarto copies a heading's inlines into the table of contents and the id would
-  then appear twice; a heading mark's anchor — author id or minted — sits on an
-  empty span emitted just after the heading.
+  that is only knowable once the whole document has been seen. The census
+  counts the elements carrying each name rather than noting that a name is
+  taken (added M079), which is what lets the same pass see a name on two of
+  them. A mark keeps an id of the author's own where it is the only element
+  carrying that name, and is otherwise tagged by the Span pass and given a
+  minted id later. Where something else on the page carries the name, the mark
+  yields it and is reported: the other element is the author's and this
+  extension renames only its own mark spans, so the mark is the side with a
+  minted id to fall back on; between two marks a locator-contributing one
+  outranks a cross-reference mark, and between two of a kind the first in
+  document order keeps the name (added M079). A cross-reference mark carries an
+  id like any other span and yields a contested one the same way, though it
+  files no locator that could follow the anchor (corrected M079). The census
+  walks the raw HTML rather than pattern-matching it, so an `id=` counts where
+  it is an attribute of a tag and nowhere else: one written inside a comment,
+  or in a `script` or `style` element's own text, carries nothing on the
+  rendered page and contests nothing (added M079). That walk is wrong in three
+  shapes, and a name the HTML writer generates after the filter runs is outside
+  it altogether (KI254, KI255). Two marks of one rendered page are outside all
+  of this; a third case, a chapter recovered from its own source, is a second
+  page's reading of this one and is stated with them in the shipped pages. A
+  front-matter mark of an HTML book chapter stays anchorless per D-048, this
+  filter not being able to see which title-block fields Quarto prints; and
+  a mark the Span pass never tags — one that indexes nothing — is returned
+  untouched, so it keeps a contested name unreported (KI253). The index
+  section's own id is minted the same way (corrected M08): the bare `qi-index`
+  where that name is free, and a numbered one past it where the document has
+  taken it. No anchor id stays inside a heading, because Quarto copies a
+  heading's inlines into the table of contents and the id would then appear
+  twice; a heading mark's anchor — author id or minted — sits on an empty span
+  emitted just after the heading, and an untagged mark's author id moves there
+  too, having the same duplicate to avoid (restored M079).
 - **EPUB** (`FORMAT` containing `epub`, which covers `epub2` and `epub3`): the
   HTML back-end's index, unchanged (added M52). `builds_ast_index` routes the
   two sites gated on the AST back-ends — the per-mark record in `passes.lua`
@@ -855,6 +879,38 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   apart, so an author-written id is what would separate them and none exists.
   — M20/M21 Scope Out, RR01
 
+- **KI253.** A mark the Span pass leaves untagged — one with no visible text
+  and no `entry=`, which indexes nothing — keeps an author-written id another
+  element of the page carries, so that name is still on two elements and no
+  refusal is reported. Its id is relocated out of a heading, so it is not
+  duplicated by the table of contents; what it is not is refused. The mark
+  contributes no locator and has no record to mint against, and M079's
+  refusal rule reaches only tagged marks. `CHANGELOG.md` and `site/html.qmd`
+  both state the exception. — M079 implement gate
+
+- **KI254.** The id census walks a raw HTML string as markup, and three shapes
+  of that walk are wrong. A `script` or `style` element ends it: the closing
+  tag is re-read as an opening one, so the skip for that element's character
+  data fires a second time, finds no further closing tag, and abandons the
+  string — every `id=` after it goes uncounted, and a mark written with one of
+  those names keeps a contested id with no refusal reported. The content of a
+  RAWTEXT element (`textarea`, `title`, `xmp`) is read as markup rather than
+  as text, so an `id=` written inside one is counted though the page carries
+  no such element, and a mark written with that name yields to a carrier that
+  is not there. And a closing tag's attributes are read, so `</p id="x">`
+  counts `x`, where a browser discards them. All three need hand-written raw
+  HTML in the source. `CHANGELOG.md` and `site/html.qmd` state the first.
+  — M079 review round 3, X1/X4/X5
+
+- **KI255.** An id the HTML writer generates after the filter runs — a
+  footnote's `fn1`, a code block's `cb1`, `title-block-header` — is not in the
+  census, which reads the document as the filter sees it. A mark written with
+  one of those names keeps it and the page carries it twice, unreported. The
+  census cannot see a name that does not exist when it runs; closing this
+  needs a pass over the written page rather than over the AST.
+  `CHANGELOG.md` and `site/html.qmd` state the exception.
+  — M079 review round 3, X2
+
 ### Reports and messages
 
 - **KI21.** No fixture exercises a reported block position where Quarto injects
@@ -1101,6 +1157,14 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   nothing changed. The suite reports the crash as a render failure, so a red
   run whose ONLY failure is a segfault is toolchain noise and is re-run rather
   than investigated. CI has not shown it. Accepted. — M078 review
+- **KI252.** One `pass` line in `tests/run-tests.sh` (the M08-AC2/M10-AC4/
+  M11-AC5 line) carries an unescaped backtick pair inside its double-quoted
+  message, which the shell reads as an unterminated command substitution: every
+  run prints two `command substitution: ... syntax error` lines beside it and
+  then the `pass` line with the backticked word gone. The check has already
+  decided by then, so nothing is asserted wrongly; what is lost is a word of
+  the message and a clean log. The repo's other backticked message escapes
+  them, which is the fix. — M079 implement
 
 ### The acceptance suite: coverage gaps
 

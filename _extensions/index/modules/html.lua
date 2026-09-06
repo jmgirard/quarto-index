@@ -140,7 +140,11 @@ end
 -- One function for both, so a locator cannot mean two different things.
 -- A mark recovered from another chapter's source carries an anchor only where
 -- its author wrote an id on it: that id is on the rendered page, because
--- `assign_anchors` never renames one. Nothing is MINTED for such a mark — a
+-- `assign_anchors` moves a mark off its author's id only where another element
+-- of that page carries the same name — and that element still carries it, so
+-- the name is on the page either way. Which element the recovered locator then
+-- lands on is what the record route settles and this one cannot see (D-055's
+-- unfenced case). Nothing is MINTED for such a mark — a
 -- minted id is settled against the ids of the whole rendered page, which the
 -- source cannot see, and a fragment guessed here would link to nowhere in
 -- silence — so a recovered mark whose author wrote no id gets the chapter's
@@ -274,7 +278,7 @@ local function number_entries(node, counter, taken)
       counter = counter + 1
     until not taken[qi_core.HTML_ENTRY_PREFIX .. counter]
     child.id = qi_core.HTML_ENTRY_PREFIX .. counter
-    taken[child.id] = true
+    taken[child.id] = (taken[child.id] or 0) + 1
     counter = number_entries(child, counter, taken)
   end
   return counter
@@ -478,32 +482,127 @@ local function grouped_blocks(root, name)
   return blocks
 end
 
--- Every id already in the document. Collected before any id is minted, so a
--- minted one can be checked against the author's rather than assumed unique.
--- Quarto adds further ids of its own after the filter runs, but it derives
--- them from these, so what an author actually wrote is what matters here.
+-- Every id already in the document, and HOW MANY elements carry each.
+-- Collected before any id is minted, so a minted one can be checked against
+-- the author's rather than assumed unique. Quarto adds further ids of its own
+-- after the filter runs, but it derives them from these, so what an author
+-- actually wrote is what matters here.
+--
+-- Counted rather than merely noted because a name on two elements is what
+-- `assign_anchors` has to see: a mark's own id is in this census like any
+-- other, so "someone else carries this too" is a count above one and cannot
+-- be read off the presence of the name. Every reader that only asks whether a
+-- name is free still reads it as one, a count never being zero.
 local function taken_identifiers(doc)
   local taken = {}
+  local function claim(id)
+    taken[id] = (taken[id] or 0) + 1
+  end
   local function note(element)
     local attr = element.attr
     if attr ~= nil and attr.identifier ~= nil and attr.identifier ~= "" then
-      taken[attr.identifier] = true
+      claim(attr.identifier)
     end
     return nil
   end
-  -- An id can also be written in raw HTML, where it is no Attr at all. Read
-  -- the three spellings an id attribute has in HTML; over-collecting from
-  -- text that merely looks like one costs a skipped number, nothing more.
+  -- An id can also be written in raw HTML, where it is no Attr at all, so this
+  -- string has to be read the way a browser reads it.
+  --
+  -- Erring either way costs something. Over-collecting moves a mark off a name
+  -- NO element of the rendered page carries, leaving the author's own link to
+  -- that name pointing at nothing; under-collecting leaves a real element's
+  -- name uncounted, and the mark written with it then keeps a contested id in
+  -- silence. So the census walks the markup rather than pattern-matching the
+  -- whole string: an `id=` counts when it is an attribute of a tag, and only
+  -- then. A comment is stepped over — it is not part of the rendered page, so
+  -- an id inside one is on nothing a link can reach. So is the raw text of a
+  -- `script` or `style` element, which is character data and not markup. And a
+  -- quoted attribute value is read as a value, so neither a `>` nor a `<!--`
+  -- inside one ends the tag or opens a comment, and an `id=` inside one is
+  -- text rather than a second attribute.
   local function note_raw(raw)
-    if raw.format:match("^html") then
-      -- HTML attribute names are case-insensitive, so `ID=` claims a name
-      -- exactly as `id=` does.
-      for _, pattern in ipairs({ '%s[iI][dD]%s*=%s*"([^"]*)"',
-                                 "%s[iI][dD]%s*=%s*'([^']*)'",
-                                 "%s[iI][dD]%s*=%s*([^%s\"'<>=`]+)" }) do
-        for id in raw.text:gmatch(pattern) do
-          taken[id] = true
+    if not raw.format:match("^html") then
+      return nil
+    end
+    local text, pos = raw.text, 1
+    while true do
+      local lt = text:find("<", pos, true)
+      if lt == nil then
+        break
+      end
+      if text:sub(lt, lt + 3) == "<!--" then
+        -- An unterminated `<!--` runs to the end of this raw string, exactly
+        -- as a browser reads it, so there is nothing after it to read.
+        local close = text:find("-->", lt + 4, true)
+        if close == nil then
+          break
         end
+        pos = close + 3
+      elseif text:find("^</?%a", lt) then
+        local at = lt + 1
+        if text:sub(at, at) == "/" then
+          at = at + 1
+        end
+        local _, name_end, tag_name = text:find("^(%a[^%s/>]*)", at)
+        at = (name_end or at - 1) + 1
+        -- The tag's attributes, read in order. HTML attribute names are
+        -- case-insensitive, so `ID=` names the same attribute as `id=`, and a
+        -- tag written with two of them carries the first.
+        local identifier = nil
+        while at <= #text do
+          local char = text:sub(at, at)
+          if char == ">" then
+            break
+          elseif char:match("[%s/]") then
+            at = at + 1
+          else
+            local _, name_stop, attr = text:find("^([^%s=/>]+)", at)
+            if attr == nil then
+              at = at + 1
+            else
+              at = name_stop + 1
+              local value = nil
+              local _, equals = text:find("^%s*=%s*", at)
+              if equals ~= nil then
+                at = equals + 1
+                local quote = text:sub(at, at)
+                if quote == '"' or quote == "\'" then
+                  local close = text:find(quote, at + 1, true)
+                  value = text:sub(at + 1, (close or #text + 1) - 1)
+                  at = (close or #text) + 1
+                else
+                  local _, value_stop, unquoted = text:find("^([^%s>]*)", at)
+                  value, at = unquoted, value_stop + 1
+                end
+              end
+              if identifier == nil and attr:lower() == "id"
+                and value ~= nil and value ~= "" then
+                identifier = value
+              end
+            end
+          end
+        end
+        if at > #text then
+          -- No `>` closes this tag, so no element of the page comes of it.
+          break
+        end
+        if identifier ~= nil then
+          claim(identifier)
+        end
+        pos = at + 1
+        local lowered = tag_name ~= nil and tag_name:lower() or nil
+        if lowered == "script" or lowered == "style" then
+          -- Step to this element's closing tag: everything between is
+          -- character data, where a `<` starts no tag at all.
+          local closing = text:lower():find("</" .. lowered, pos, true)
+          if closing == nil then
+            break
+          end
+          pos = closing
+        end
+      else
+        -- A `<` that starts no tag is ordinary text.
+        pos = lt + 1
       end
     end
     return nil
@@ -539,9 +638,16 @@ local function relocate_heading_anchors(doc)
               return note, false
             end,
             Span = function(span)
-              -- A cross-reference mark contributes no locator, but an id it
-              -- carries duplicates into the table of contents exactly as a
-              -- locator anchor would, so its id moves out too.
+              -- Two things are moved out. The pending tag marks a mark this
+              -- filter still has anchor duty for: one that contributes a
+              -- locator, and a cross-reference mark carrying an id of the
+              -- author's, whose id duplicates into the table of contents
+              -- exactly as a locator anchor would. But an id of the author's
+              -- on a mark this filter left ALONE duplicates there too, and
+              -- such a mark carries no tag: a mark whose entry cannot be
+              -- derived is returned unchanged by the Span pass, `.index` class
+              -- and author id intact. Both are read here; only the first has a
+              -- tag to carry across.
               local pending = span.attributes[qi_core.HTML_PENDING_ATTR]
               local marked_id = span.classes:includes(qi_core.INDEX_CLASS)
                 and span.identifier ~= ""
@@ -570,14 +676,68 @@ local function relocate_heading_anchors(doc)
   })
 end
 
--- Resolve every still-pending mark. A mark carrying an id of the author's
--- own keeps it as the link target — taking it over would break whatever
--- already points at it — and every other mark is given an id that nothing
--- else in the document uses, numbered in the order the marks are written.
--- Skipping a taken number leaves a gap in the sequence, which is the right
--- trade: the numbers are link targets, not a count of anything.
+-- Which marks may keep the id their author wrote. One id names one element:
+-- a name on two of them is invalid HTML and sends a link to whichever the
+-- browser picks, so where a mark's id is also carried elsewhere on the page
+-- something has to give. It is the mark. The other carrier is an element the
+-- author wrote and this extension does not own, and only a mark has a minted
+-- id to fall back on; between two MARKS there is no such asymmetry, so the
+-- first in document order keeps the name and the rest yield.
+--
+-- Every mark the Span pass tagged is here: those that contribute a locator,
+-- and a cross-reference mark that carries an id of the author's. The second
+-- has no locator to repair, but one id still names one element, and an
+-- untagged cross-reference mark kept a contested name in silence — two
+-- elements of the page under one id, reported nowhere.
+local function keepable_author_ids(doc, taken)
+  local marks, held = {}, {}
+  doc:walk({
+    Span = function(span)
+      local pending = span.attributes[qi_core.HTML_PENDING_ATTR]
+      if pending == nil or span.identifier == "" then
+        return nil
+      end
+      local id = span.identifier
+      marks[id] = (marks[id] or 0) + 1
+      local record = qi_marks.html_marks[tonumber(pending)]
+      local anchoring = not (record and record.anchorless)
+      -- Which of the marks sharing a name keeps it. A mark whose index
+      -- locator links to that name outranks one nothing generated links to,
+      -- whatever the order they are written in: the locator is the link a
+      -- reader follows, and moving it off the author's name to leave the name
+      -- on a cross-reference is the worse of the two outcomes. Between two of
+      -- a kind there is no such difference, so the first in document order
+      -- keeps it.
+      local standing = held[id]
+      if standing == nil or (anchoring and not standing.anchoring) then
+        held[id] = { pending = pending, anchoring = anchoring }
+      end
+      return nil
+    end,
+  })
+  local keeper = {}
+  for id, count in pairs(marks) do
+    -- Every carrier of this name is one of these marks, so the one that ranks
+    -- above them keeps it and the page is left with the name on exactly one
+    -- element.
+    if (taken[id] or 0) == count then
+      keeper[id] = held[id].pending
+    end
+  end
+  return keeper
+end
+
+-- Resolve every still-pending mark. A mark carrying an id of the author's own
+-- keeps it as the link target — taking it over would break whatever already
+-- points at it — unless another element of the page carries that name too, in
+-- which case the mark yields it (see above) and is reported. Every other mark
+-- is given an id that nothing else in the document uses, numbered in the order
+-- the marks are written. Skipping a taken number leaves a gap in the sequence,
+-- which is the right trade: the numbers are link targets, not a count of
+-- anything.
 local function assign_anchors(doc, taken)
   local number = 0
+  local keeper = keepable_author_ids(doc, taken)
   return doc:walk({
     Span = function(span)
       local pending = span.attributes[qi_core.HTML_PENDING_ATTR]
@@ -585,15 +745,45 @@ local function assign_anchors(doc, taken)
         return nil
       end
       span.attributes[qi_core.HTML_PENDING_ATTR] = nil
+      local record = qi_marks.html_marks[tonumber(pending)]
+      local refused = nil
+      if span.identifier ~= "" and keeper[span.identifier] ~= pending then
+        refused = span.identifier
+        span.identifier = ""
+      end
       if span.identifier == "" then
         repeat
           number = number + 1
         until not taken[qi_core.HTML_ANCHOR_PREFIX .. number]
         span.identifier = qi_core.HTML_ANCHOR_PREFIX .. number
-        taken[span.identifier] = true
+        taken[span.identifier] = (taken[span.identifier] or 0) + 1
       end
-      local record = qi_marks.html_marks[tonumber(pending)]
-      if record then
+      -- Reported here rather than where the census is taken: only this site
+      -- knows what the mark was anchored on instead, and a refusal an author
+      -- cannot see is the id silently moving out from under their own link.
+      -- The refused name is NOT dropped from the census — the element that
+      -- kept it still carries it, so a later minted id still steps over it.
+      if refused ~= nil then
+        -- Two wordings, because the two marks lose different things. A
+        -- locator-contributing mark's index locator moves with the anchor,
+        -- which is what an author most needs told; a cross-reference mark has
+        -- no locator to move, and what it loses is only whatever the author
+        -- pointed at the name themselves.
+        if record and record.anchorless then
+          qi_core.warn(('index mark %s carries the id "%s", which another element of this page carries too; one id names one element, so the mark is given "%s" instead and the other element keeps the name — this mark files a cross-reference rather than a locator, so no index link pointed at it either way; write an id nothing else on the page uses to have a link of your own land on the mark'):format(
+            record.context, refused, span.identifier))
+        else
+          qi_core.warn(('index mark %s carries the id "%s", which another element of this page carries too; one id names one element, so the mark is anchored on "%s" instead and its index locator links there — write an id nothing else on the page uses to have the locator land on the mark'):format(
+            record and record.context or "with no source entry",
+            refused, span.identifier))
+        end
+      end
+      -- An anchor is written back only where it may become a locator. A
+      -- cross-reference mark takes the locator's place, and `mark.anchor` is
+      -- one of the two things that makes a mark contribute one, so writing it
+      -- here would turn a cross-reference into a locator (see book.lua's
+      -- recovery route, which gates its own anchor on the same fact).
+      if record and not record.anchorless then
         record.anchor = span.identifier
       end
       return span
@@ -619,7 +809,7 @@ end
 local function mint_section_id(taken, wanted)
   wanted = wanted or qi_core.HTML_SECTION_ID
   if not taken[wanted] then
-    taken[wanted] = true
+    taken[wanted] = (taken[wanted] or 0) + 1
     return wanted
   end
   local n = 0
@@ -628,7 +818,7 @@ local function mint_section_id(taken, wanted)
     n = n + 1
     candidate = wanted .. "-" .. n
   until not taken[candidate]
-  taken[candidate] = true
+  taken[candidate] = (taken[candidate] or 0) + 1
   return candidate
 end
 

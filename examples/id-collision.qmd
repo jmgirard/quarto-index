@@ -1,5 +1,6 @@
 ---
 title: "quarto-index id-collision probe"
+toc: true
 from: markdown-smart
 filters:
   - index
@@ -33,3 +34,153 @@ A raw inline claims the fifth: `<span id='qi-index-4'>single-quoted</span>`{=htm
 
 ::: {.qi-index-here}
 :::
+
+# Names a mark and another element both claim
+
+An id the author wrote on a mark is the mark's link target, and an id written
+anywhere else on the page belongs to whatever the author wrote it on. Where the
+two are the same name, the mark is the one that yields: the extension writes
+only its own spans, so it anchors the mark on a minted id, reports the refusal,
+and the other element keeps the name it was given. One mark per spelling the id
+census reads, so a claim written in raw HTML weighs exactly as a Pandoc
+attribute does.
+
+A Pandoc attribute claims one: [alpha]{#shared-attr .index}.
+
+::: {#shared-attr}
+A div claiming the name the alpha mark was written with.
+:::
+
+Raw HTML claims three more: [beta]{#shared-dq .index}, [gamma]{#shared-uq
+.index} and [delta]{#shared-up .index}.
+
+```{=html}
+<p id="shared-dq">Raw HTML, double-quoted.</p>
+<p id=shared-uq>Raw HTML, unquoted.</p>
+<p ID="shared-up">Raw HTML, uppercase attribute name.</p>
+```
+
+A raw inline claims the fifth: [epsilon]{#shared-sq .index} against
+`<span id='shared-sq'>single-quoted</span>`{=html}.
+
+A sixth is a name the numbering would otherwise mint, so a claim on one of
+those is refused exactly as any other claim is rather than being handed over by
+the mint: [theta]{#qi-mark-3 .index}.
+
+```{=html}
+<p id="qi-mark-3">Raw HTML claiming a name the numbering mints.</p>
+```
+
+# Two marks written with one name
+
+Neither mark is anything but a mark, so document order settles which keeps the
+name: [kappa]{#twin .index} comes first and keeps it, and [lambda]{#twin
+.index} yields.
+
+# Names nothing contests
+
+A mark whose id no other element carries keeps it, whatever the name is. Three
+here: one nobody else wrote, [mu]{#solo .index}; one in the heading below,
+which is where an anchor cannot sit, so the id moves to an empty span just
+after it; and one spelled as a name the numbering would otherwise mint,
+[xi]{#qi-mark-9 .index}, which the numbering steps over as it always has.
+
+## A heading carrying [nu]{#in-heading .index}
+
+Text under that heading, so the section is not empty.
+
+# Names only a comment carries
+
+An HTML comment is not part of the rendered page: an id written inside one is
+on nothing a link can reach, so it contests nothing and a mark keeps the name
+it was written with. Two here, one per shape a comment arrives in — a comment
+written on its own, and one inside a raw HTML block: [omicron]{#in-comment
+.index}, and [pi]{#in-raw-comment .index}.
+
+<!-- An earlier draft of this paragraph: <p id="in-comment">gone</p>. -->
+
+```{=html}
+<p id="kept-alive">Raw HTML beside a comment.</p>
+<!-- <p id="in-raw-comment">also gone</p> -->
+```
+
+The links an author writes to those marks still resolve: [to omicron](#in-comment)
+and [to pi](#in-raw-comment).
+
+# Cross-references and a name something else claims
+
+A mark that only points at another entry files no locator, so nothing the index
+writes links to it. It carries an id all the same, and one id still names one
+element: where something else on the page claims that name, the mark yields it
+and says so. No locator moves, there having been none.
+
+A `see=` mark against a div claiming its name: [rho]{#xref-dup .index see="mu"}.
+
+::: {#xref-dup}
+A div claiming the name the rho mark was written with.
+:::
+
+A `see-also=` mark against raw HTML claiming its name: [sigma]{#xref-raw .index
+see-also="mu"}.
+
+```{=html}
+<p id="xref-raw">Raw HTML claiming the name the sigma mark was written with.</p>
+```
+
+A cross-reference mark whose name nothing else claims keeps it, and nothing is
+reported: [upsilon]{#xref-solo .index see="mu"}.
+
+## A heading carrying [tau]{#xref-heading .index see="mu"}
+
+A cross-reference mark written in a heading, whose id Quarto would otherwise
+copy into the table of contents. The name is claimed below as well, so this
+mark yields it where the relocated anchor lands.
+
+::: {#xref-heading}
+A div claiming the name the tau mark was written with.
+:::
+
+# A cross-reference and a locator mark written with one name
+
+Where two marks share a name and one of them files a locator, the locator mark
+keeps it whichever is written first: a reader follows the locator, and nothing
+the index writes points at a cross-reference. The cross-reference comes first
+here and yields anyway: [phi]{#twin-xref .index see="mu"}, then
+[chi]{#twin-xref .index}.
+
+# A mark this filter leaves alone, inside a heading
+
+A mark whose content yields no text and that carries no `entry=` indexes
+nothing, so the filter returns it untouched: the `.index` class and the id its
+author wrote are both still on the span. It gives up no name and files no
+locator. Its id has to leave the heading all the same — the table of contents
+copies a heading's inlines, so an id left inside one is on two elements of the
+page. That is why this document sets `toc: true`.
+
+## A heading carrying [![](dot.png)]{#untagged-in-heading .index}
+
+Text under that heading, so the section is not empty.
+
+# Names a reader that does not read markup would miss
+
+The census reads raw HTML the way a browser does: an `id=` counts where it is
+an attribute of a tag, and nowhere else. Two names turn on that. One is claimed
+by a real element standing after a neighbour whose attribute VALUE contains
+what looks like the opening of a comment, so a reader that cut the text at the
+first `<!--` would never reach the claim and would leave the mark carrying a
+contested name in silence: [psi]{#hidden-carrier .index}. The other is written
+in the text of a `script` element, which is character data rather than markup
+and renders no element at all, so it contests nothing and the mark keeps it:
+[omega]{#in-script .index}. The two are written in raw blocks of their own, so
+neither name's fate depends on the other's block being read.
+
+```{=html}
+<script>var draft = "<p id='in-script'>";</script>
+```
+
+```{=html}
+<p title="looks like <!-- a comment">Raw HTML whose attribute value opens what is not a comment.</p>
+<p id="hidden-carrier">Raw HTML claiming the name the psi mark was written with.</p>
+```
+
+The link an author writes to the second still resolves: [to omega](#in-script).

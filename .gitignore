@@ -18,6 +18,12 @@ examples/*.aux
 examples/*.idx
 examples/*.ilg
 examples/*.ind
+# The beamer navigation family, written beside a fixture whose PDF render goes
+# through beamer. Uncovered until M079, when a checkpoint commit swept three of
+# them in while a suite run had just written them.
+examples/*.nav
+examples/*.snm
+examples/*.toc
 examples/*.log
 examples/.quarto/
 # The book fixtures render into their own project output directory, and their

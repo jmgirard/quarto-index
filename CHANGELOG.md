@@ -1,5 +1,42 @@
 # Changelog
 
+## Unreleased
+
+### Output
+
+- An id you write on an index mark no longer leaves two elements of a rendered
+  page carrying it. Where the name is also on something else — an element of
+  your own, in Pandoc attributes or in raw HTML, or another mark — the mark
+  gives it up: the element you wrote the name on keeps it, and the mark is
+  given a minted `qi-mark-` id, which for a mark that files a locator is where
+  that locator points. Between two marks written with one name, the one whose
+  locator links to the name keeps it whichever you wrote first; between two of
+  a kind the first in the document keeps it. A mark that only points at another
+  entry gives a contested name up the same way, having no locator to move.
+  Every yield is reported once as the render runs, naming the id given up and
+  what the mark files under — the term it prints, or the entry you wrote for
+  it. An id nothing else on the page carries is untouched, whatever it is
+  spelled, and no element of yours is ever renamed. A name counts as carried
+  where it is an attribute of a tag: one written where the page renders
+  nothing — inside an HTML comment, or in a script's or stylesheet's own
+  text — contests nothing, and the mark written with it keeps it. Two names are
+  missed by that reading and stay on two elements unreported: one written in a
+  raw HTML block after a `script` or `style` element in that same block, and
+  one Quarto's own writer makes up after this extension has run — a footnote's
+  `fn1`, a code block's `cb1`, `title-block-header`. HTML and EPUB alike, both
+  back-ends being the one code path.
+
+- Two marks stay outside the rule above, and one route reads its result from
+  outside. A mark this filter cannot index at all — no visible text and no
+  `entry=` — is left exactly as you wrote it, id and all, so a name it shares
+  with something else is still on two elements and nothing is reported; so is
+  a mark written in a book chapter's front matter, whose id the filter leaves
+  alone because it cannot see which of the title-block fields Quarto prints.
+  And in a book, a chapter read back from its own source rather than from a
+  record is settled against no rendered page: a mark there is treated like any
+  other when that chapter itself renders, but the index link built for it names
+  the id you wrote, which by then may be on the element that kept it.
+
 ## 0.3.0 (2026-09-05)
 
 No record 0.2.0 wrote is refused by this version, so a book keeps its terms

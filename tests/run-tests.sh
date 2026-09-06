@@ -3992,9 +3992,10 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# Forty-two marks are hand-derived here from examples/id-collision.qmd, never
+# Fifty-four marks are hand-derived here from examples/id-collision.qmd, never
 # read back out of the render: an expectation taken from the artifact is blind
-# in the dimension it is taken from. Twenty-two are M079's and twenty M080's.
+# in the dimension it is taken from. Twenty-two are M079's, twenty M080's and
+# twelve M081's.
 #
 # Twelve of them yield a name something else on the page carries — one per
 # spelling the id census reads, one written as a name the numbering would
@@ -4022,12 +4023,24 @@ PY
 # past an end tag the element only looks like, and two written on a closing
 # tag, where a browser reads the name and drops it.
 #
+# M081 adds twelve over the two comment shapes the census used to read wrongly.
+# Seven yield: four whose name is on a real element standing after the first
+# `>` of a construct a browser makes a comment — `<!ok>`, `<?ok>`,
+# `<![CDATA[ok]]>`, `</ ok>` — and three whose name is on one standing after a
+# comment ended by an immediate `>`, by an immediate `->`, or by a `--!>`, each
+# in that same raw block. Five keep, none of their names being on any element
+# the page renders: four written inside one of those four constructs and one
+# written inside the `--!>`-closed comment.
+#
 # Rendered and captured by the M08-AC1 section above, whose log carries the
 # refusal reports read at the end of this one.
 # ---------------------------------------------------------------------------
 section 'M079-AC1 — an author-written id never leaves two elements of one page'
-python3 - "$CAPTURE_ROOT/id-collision-html/id-collision.html" \
-         "$HTML_ANCHOR_PREFIX" "$WORK/id-collision-html.log" <<'PY'
+# Written to a file rather than fed on stdin because the self-test below runs
+# THIS check a second time, over a render made with a mutated filter: a plant
+# that reddened a smaller stand-in would say nothing about the check that
+# guards this behavior on every run.
+cat > "$WORK/id-collision-ids.py" <<'PY'
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -4094,6 +4107,26 @@ KEPT_RAW = {'inside-script': 'buried-script',
             'false-end-textarea': 'veiled-textarea',
             'on-closing-p': 'closing-p',
             'on-closing-em': 'closing-em'}
+# The two comment shapes the census used to read wrongly (M081). A browser
+# makes a comment of a `<!` opening anything but `<!--`, of a `<?`, and of a
+# `</` before anything but a letter, each running to the next `>`; and it ends
+# a `<!--` comment at an immediate `>`, at an immediate `->` and at a `--!>` as
+# well as at a `-->`. A name on a real element standing after such a
+# construct's close, in that same raw block, is contested like any other; one
+# written inside the construct is on nothing the page renders and its mark
+# keeps it.
+CONTESTED_COMMENT = {'past-bang': 'beyond-bang',
+                     'past-question': 'beyond-question',
+                     'past-cdata': 'beyond-cdata',
+                     'past-slash': 'beyond-slash',
+                     'past-empty-comment': 'beyond-empty-comment',
+                     'past-dash-comment': 'beyond-dash-comment',
+                     'past-bang-close': 'beyond-bang-close'}
+KEPT_COMMENT = {'in-bang': 'bogus-bang',
+                'in-question': 'bogus-question',
+                'in-cdata': 'bogus-cdata',
+                'in-slash': 'bogus-slash',
+                'in-bang-close': 'hidden-bang-close'}
 # A mark the Span pass never tags: its content yields no text and it carries no
 # entry=, so the mark indexes nothing and the filter returns it untouched —
 # `.index` class and the author's id still on the span it was written on. It
@@ -4107,8 +4140,9 @@ UNTAGGED = {'untagged-in-heading'}
 # span rather than off the mark's own, which is what the criterion promises for
 # this shape — checked below rather than exempted (M079 T14).
 RELOCATED = {'tau', 'after-textarea'}
-REFUSED = dict(CONTESTED, **CONTESTED_XREF, **CONTESTED_RAW)
-KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW)
+REFUSED = dict(CONTESTED, **CONTESTED_XREF, **CONTESTED_RAW,
+               **CONTESTED_COMMENT)
+KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW, **KEPT_COMMENT)
 NO_LOCATOR = set(CONTESTED_XREF) | set(KEPT_XREF)
 
 # AC1. Every id on the page, counted; nothing may be carried twice. The domain
@@ -4313,6 +4347,9 @@ print('ok   M079-AC1: no id among the page\'s %d is carried twice; %d '
       'and id; the %d cross-reference mark(s) among them file no locator'
       % (len(ids), len(REFUSED), len(KEPT_ALL), len(NO_LOCATOR)))
 PY
+python3 "$WORK/id-collision-ids.py" \
+  "$CAPTURE_ROOT/id-collision-html/id-collision.html" \
+  "$HTML_ANCHOR_PREFIX" "$WORK/id-collision-html.log"
 
 # ---------------------------------------------------------------------------
 # M079-AC2 — the same fixture as a publication: no XHTML document the package

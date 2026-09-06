@@ -304,3 +304,62 @@ stands, so neither tag closes anything at all.
 </p id="closing-p">
 </em id=closing-em>
 ```
+
+# Names only a construct a browser makes a comment carries
+
+A browser makes a comment of more than `<!--`. A `<!` opening anything else, a
+`<?`, and a `</` before anything but a letter each start one that runs to the
+next `>`, so `<!ok>`, `<?ok>`, `<![CDATA[ok]]>` and `</ ok>` are all comments
+and an `id=` written inside one is on nothing the page renders. The census
+reads them the same way, and goes on reading the markup after that `>`.
+
+Eight names turn on that, two per spelling. One is written inside the
+construct, so it is on no element and its mark keeps it: [in-bang]{#bogus-bang
+.index}, [in-question]{#bogus-question .index}, [in-cdata]{#bogus-cdata .index}
+and [in-slash]{#bogus-slash .index}. The other is on a real element standing
+after the construct's first `>`, in that same raw block, so its mark yields:
+[past-bang]{#beyond-bang .index}, [past-question]{#beyond-question .index},
+[past-cdata]{#beyond-cdata .index} and [past-slash]{#beyond-slash .index}.
+
+```{=html}
+<!ok <p id="bogus-bang">gone</p> <p id="beyond-bang">Raw HTML after a construct a browser makes a comment.</p>
+```
+
+```{=html}
+<?ok <p id="bogus-question">gone</p> <p id="beyond-question">Raw HTML after a construct a browser makes a comment.</p>
+```
+
+```{=html}
+<![CDATA[<p id="bogus-cdata">gone</p>]]> <p id="beyond-cdata">Raw HTML after a construct a browser makes a comment.</p>
+```
+
+```{=html}
+</ ok <p id="bogus-slash">gone</p> <p id="beyond-slash">Raw HTML after a construct a browser makes a comment.</p>
+```
+
+# Names past the three other ways a comment ends
+
+A comment spelled `<!--` ends at a `-->` and at three more spellings a reader
+of `-->` alone would run past: an immediate `>`, an immediate `->`, and a
+`--!>`. Each of those closes the comment, so the markup after it is markup, and
+a name written on a real element there is on an element of the page like any
+other. Three marks yield one: [past-empty-comment]{#beyond-empty-comment
+.index}, [past-dash-comment]{#beyond-dash-comment .index} and
+[past-bang-close]{#beyond-bang-close .index}. A fourth is written INSIDE the
+`--!>`-closed comment, where the page renders no element for it, so its mark
+keeps it: [in-bang-close]{#hidden-bang-close .index}.
+
+```{=html}
+<!--> <p id="beyond-empty-comment">Raw HTML after a comment ended by its own first close bracket.</p>
+```
+
+```{=html}
+<!---> <p id="beyond-dash-comment">Raw HTML after a comment ended by an immediate arrow.</p>
+```
+
+```{=html}
+<!-- <p id="hidden-bang-close">gone</p> --!> <p id="beyond-bang-close">Raw HTML after a comment closed with a bang.</p>
+```
+
+The links an author writes to the marks that keep their names still resolve:
+[to in-cdata](#bogus-cdata) and [to in-bang-close](#hidden-bang-close).

@@ -1,13 +1,13 @@
 # M081: The id census reads a comment where a browser reads one
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** user-facing — the census decides which id an author's mark keeps on the rendered page, and two author-facing pages state the rule.
-- **Branch/PR:** —
+- **Branch/PR:** m081-census-comment-reading
 
 ## Goal
 
@@ -104,6 +104,8 @@ after the filter runs (KI255) → their existing candidate rows.
 - 2026-09-06: plan gate chose repairing the walk's own comment reading over widening the skip list or pattern-matching the raw string, because the walk already models a browser shape by shape and the alternatives reintroduce the over-collection M080 removed; falsified by a comment shape whose correct reading needs document-wide state the walk cannot carry across raw strings.
 - 2026-09-06: plan gate chose two milestones over one covering all four shapes, because the four repairs are independently shippable and one file risked the 150-line cap; falsified by the two branches proving to need the same `note_raw` rewrite.
 - 2026-09-06: criteria audit ran in full mode, twice. First pass: six findings — the goal claimed four shapes where six stand and opened with an unreachable universal; three criteria tested only that a hidden name stops being counted, so an implementation abandoning the rest of the raw string passed all three. All fixed pre-gate. Second pass over the split wording: the goal needed bounding to non-foreign content, AC3 needed the inside-a-`--!>`-comment mark, and AC4's negative half named a domain no procedure enumerates and reached `CHANGELOG.md`, which `phrase-absent` does not sweep. All fixed.
+- 2026-09-06: T1 — twelve fixture marks written into `examples/id-collision.qmd` (four `bogus-*` inside a bogus-comment construct, four `beyond-*` after one, three `beyond-*-comment` after a comment-end spelling, one `hidden-bang-close` inside a `--!>`-closed comment) and their rows added to the M079-AC1 dicts as `CONTESTED_COMMENT`/`KEPT_COMMENT`; the derivation comment's arithmetic rewritten whole to fifty-four. Leg run before any repair: red on the four `bogus-*` names counted and their marks yielded, and on the three `beyond-*-comment` names uncounted and left on two elements; the four `beyond-*` bogus-comment names and `hidden-bang-close` already passed.
+- 2026-09-06: T1 — the M079-AC1 check moved from a stdin heredoc into `$WORK/id-collision-ids.py`, run from there, so T4's plants can redden that same check rather than a stand-in (question gate).
 
 ## Decisions
 

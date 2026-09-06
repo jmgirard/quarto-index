@@ -4339,12 +4339,14 @@ python3 tests/epubcheck.py unique "$CAPTURE_ROOT/id-collision-epub/id-collision.
 # telling a reader their id is kept whatever else carries it is the failure
 # this row exists to catch.
 #
-# The last two rows hold the page to the two names the census does not see, and
-# so to the two ways a mark still keeps a contested id in silence: one written
-# in a raw HTML block after a `script` or `style` element in that same block,
-# and one Quarto's writer generates after this filter has run (KI254, KI255,
-# added at M079's review round 3). A page that drops either sentence is
-# promising more than the code does.
+# The middle rows hold the page to the reading M080 gave the census: seven
+# elements whose text content is text and not markup, the markup after one of
+# them still read, and a closing tag's attributes on nothing. The last two hold
+# it to the two names the census still does not see, and so to the two ways a
+# mark can keep a contested id in silence: one written in a `title` element's
+# own text, and one Quarto's writer generates after this filter has run (the
+# narrowed KI254, and KI255). A page that drops either sentence is promising
+# more than the code does.
 # ---------------------------------------------------------------------------
 section 'M079-AC5 — the HTML page states the rule an author now meets: which element'
 cat > "$WORK/html-id-claims.txt" <<'M079CLAIMS'
@@ -4355,12 +4357,15 @@ two marks	the one whose locator links to the name keeps it, whichever you wrote 
 two of a kind	between two of a kind the first in the document keeps it and the rest yield
 cross-reference	A mark that only points at another entry has no locator to move, but it carries an id like any other span and gives a contested one up the same way
 reported	Each yield is reported as the render runs, naming the id given up and what the mark files under
-unrendered names	An id counts where it is an attribute of a tag, and nowhere else
+unrendered names	An id counts where it is an attribute of an opening tag, and nowhere else
+skipped elements	a browser reads those seven elements' content as text rather than as markup, and so does this reading, which steps over that text and goes on with the markup after it
+name after a skipped element	A name on a real element standing after one of the seven, in that same raw HTML block, is counted like any other
+name on a closing tag	So is one written on a closing tag, whose attributes a browser reads and drops
+census misses a name in a title element	`title` is the one element of that kind this rule does not cover
 numbering steps over rendered names	Both kinds of generated id skip any name an element of the rendered page carries
-numbering may mint an unrendered one	a name written where the page renders no element — inside an HTML comment, or in a script's or stylesheet's own text — is a name the numbering may mint
+numbering may mint an unrendered one	a name written where the page renders no element — inside an HTML comment, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
 front-matter exception	it keeps whatever id you wrote on it, contested or not, with nothing reported
 unindexable exception	Such a mark keeps a contested name, so the name stays on two elements and nothing further is said about it
-census misses a name after a script block	A name written in a raw HTML block after a `script` or `style` element in that same block is not seen
 census misses a writer-generated name	a name Quarto's own writer makes up after this extension has run
 M079CLAIMS
 python3 tests/sitecheck.py claims site/html.qmd "$WORK/html-id-claims.txt" \

@@ -17,12 +17,18 @@
   what the mark files under — the term it prints, or the entry you wrote for
   it. An id nothing else on the page carries is untouched, whatever it is
   spelled, and no element of yours is ever renamed. A name counts as carried
-  where it is an attribute of a tag: one written where the page renders
-  nothing — inside an HTML comment, or in a script's or stylesheet's own
-  text — contests nothing, and the mark written with it keeps it. Two names are
-  missed by that reading and stay on two elements unreported: one written in a
-  raw HTML block after a `script` or `style` element in that same block, and
-  one Quarto's own writer makes up after this extension has run — a footnote's
+  where it is an attribute of an opening tag, and one written where the page
+  renders no element contests nothing: the mark written with it keeps it. That
+  covers a name inside an HTML comment; one on a closing tag, whose attributes
+  a browser reads and drops; and one in the text content of `script`, `style`,
+  `xmp`, `iframe`, `noembed`, `noframes` or `textarea`, seven elements whose
+  content a browser reads as text rather than as markup — the reading steps
+  over that text and goes on with the markup after it, so a name on a real
+  element standing after one of the seven in that same raw HTML block is
+  counted like any other. Two names are still missed by that reading and stay
+  on two elements unreported: one written in a `title` element's own text,
+  `title` being the one element of that kind this rule does not cover, and one
+  Quarto's own writer makes up after this extension has run — a footnote's
   `fn1`, a code block's `cb1`, `title-block-header`. HTML and EPUB alike, both
   back-ends being the one code path.
 

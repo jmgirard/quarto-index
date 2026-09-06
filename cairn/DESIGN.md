@@ -377,11 +377,14 @@ Three back-ends ship:
   id like any other span and yields a contested one the same way, though it
   files no locator that could follow the anchor (corrected M079). The census
   walks the raw HTML rather than pattern-matching it, so an `id=` counts where
-  it is an attribute of a tag and nowhere else: one written inside a comment,
-  or in a `script` or `style` element's own text, carries nothing on the
-  rendered page and contests nothing (added M079). That walk is wrong in three
-  shapes, and a name the HTML writer generates after the filter runs is outside
-  it altogether (KI254, KI255). Two marks of one rendered page are outside all
+  it is an attribute of an OPENING tag and nowhere else: one written inside a
+  comment, on a closing tag, or in the text content of `script`, `style`,
+  `xmp`, `iframe`, `noembed`, `noframes` or `textarea` carries nothing on the
+  rendered page and contests nothing, the walk resuming at such an element's
+  own end tag and reading the markup after it (added M079, corrected M080). A
+  `title` element's text is the one content of that kind the walk still reads
+  as markup, and a name the HTML writer generates after the filter runs is
+  outside the census altogether (KI254, KI255). Two marks of one rendered page are outside all
   of this; a third case, a chapter recovered from its own source, is a second
   page's reading of this one and is stated with them in the shipped pages. A
   front-matter mark of an HTML book chapter stays anchorless per D-048, this
@@ -888,19 +891,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   refusal rule reaches only tagged marks. `CHANGELOG.md` and `site/html.qmd`
   both state the exception. — M079 implement gate
 
-- **KI254.** The id census walks a raw HTML string as markup, and three shapes
-  of that walk are wrong. A `script` or `style` element ends it: the closing
-  tag is re-read as an opening one, so the skip for that element's character
-  data fires a second time, finds no further closing tag, and abandons the
-  string — every `id=` after it goes uncounted, and a mark written with one of
-  those names keeps a contested id with no refusal reported. The content of a
-  RAWTEXT element (`textarea`, `title`, `xmp`) is read as markup rather than
-  as text, so an `id=` written inside one is counted though the page carries
-  no such element, and a mark written with that name yields to a carrier that
-  is not there. And a closing tag's attributes are read, so `</p id="x">`
-  counts `x`, where a browser discards them. All three need hand-written raw
-  HTML in the source. `CHANGELOG.md` and `site/html.qmd` state the first.
-  — M079 review round 3, X1/X4/X5
+- **KI254** (corrected M080). The id census reads a `title` element's text
+  content as markup. `title` is the one HTML text-content element outside the
+  seven the census steps over — `script`, `style`, `xmp`, `iframe`, `noembed`,
+  `noframes`, `textarea` — so an `id=` written in a document title's own text
+  is counted though the page carries no element with that name, and a mark
+  written with it yields to a carrier that is not there. `noscript` and
+  `plaintext` are the same shape and are outside the seven for the same
+  reason: no case this repo renders puts one in a raw HTML block, so nothing
+  can exercise them. Needs hand-written raw HTML in the source.
+  `CHANGELOG.md` and `site/html.qmd` state the `title` residue.
+  — M079 review round 3, X1/X4/X5; narrowed M080
 
 - **KI255.** An id the HTML writer generates after the filter runs — a
   footnote's `fn1`, a code block's `cb1`, `title-block-header` — is not in the

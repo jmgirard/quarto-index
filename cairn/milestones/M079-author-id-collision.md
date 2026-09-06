@@ -528,3 +528,11 @@ returns stay at 2.
 - F7-F10, R9, R12 — already carried by the standing candidate row; unchanged.
 - F11, R13 — rejected a third time: an unreachable branch with no behavior to
   fix.
+
+Re-verified after the fix-now work (`36392cb`): `tests/run-tests.sh
+--self-test` is 1412 checks across 158 sections, 1211s plus setup, exit 0. The
+`M079-AC1` leg is unmoved — 99 ids, none twice, 12 contested, 9 uncontested —
+and the claims leg now holds `site/html.qmd` to 14 rows rather than 12, the two
+new ones being the names the census does not see. `cairn_validate.py` exit 0,
+all 16 checks PASS, the `sizing` advisory alone. AC5 and AC6 are green on this
+reading as they were on the first.

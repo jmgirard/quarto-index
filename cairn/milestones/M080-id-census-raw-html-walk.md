@@ -83,10 +83,14 @@ sweep can go red → the suite's self-test-plants candidate row.
       untagged mark's `untagged-in-heading` is still on an element outside its
       heading.
 - [ ] AC6: `site/html.qmd` and `CHANGELOG.md` each state that an `id=` written
-      in the text content of one of the seven skip-list elements, or on a
-      closing tag, is on nothing the rendered page carries and so contests
-      nothing, and each names `title` as the one such element the rule does not
-      cover; and `site/html.qmd` no longer carries its sentence that a name
+      in the text content of one of the elements the census's skip list names,
+      or on a closing tag, is on nothing the rendered page carries and so
+      contests nothing; each states that an `id=` written inside an element
+      whose content a browser reads as text rather than as markup but which
+      the skip list does not name is counted against a mark, which then yields
+      the name to a carrier the page does not have, names `title` as one such
+      element, and states no count of them nor of the names the reading
+      misses; and `site/html.qmd` no longer carries its sentence that a name
       written in a raw HTML block after a `script` or `style` element in that
       same block is not seen.
 - [x] AC7: `tests/run-tests.sh` exits 0, and `tests/run-tests.sh --self-test`
@@ -99,7 +103,7 @@ sweep can go red → the suite's self-test-plants candidate row.
 - AC3 → T1, T4, T6, T8
 - AC4 → T1, T3, T7, T8
 - AC5 → T5, T6, T7, T8
-- AC6 → T10
+- AC6 → T12
 - AC7 → T2, T8, T9, T10
 
 ## Tasks
@@ -117,14 +121,18 @@ not its findings.
 - [x] T8: The M079-AC1 leg's hand-derived tables and its whole-log refusal count, in the fixture's commit.
 - [x] T9: Revert each of T3's and T4's four repairs singly, recording the check each reddens.
 - [x] T10: `site/html.qmd`, its claim rows and `CHANGELOG.md`; narrow KI254 in `cairn/DESIGN.md`; correct the architecture sentence.
-- [ ] T11: Amend AC6 through the gated criterion-amendment protocol so its
-      enumeration names `title`, `noscript` and `plaintext` rather than `title`
-      alone. Added by the review return 2026-09-06.
+- [x] T11: Amend AC6 through the gated criterion-amendment protocol so the
+      residue is stated as the text-content elements the census's skip list
+      does not name, `title` given as one such element and no count claimed.
+      Added by the review return 2026-09-06.
 - [ ] T12: Correct the false sentence where it stands: `site/html.qmd`,
       `CHANGELOG.md`, and `cairn/DESIGN.md`'s KI254, which calls `title` "the
       one" and four lines later names `noscript` and `plaintext` "the same
       shape". The M079-AC5 claim row `census misses a name in a title element`
-      pins the false wording and moves with them.
+      pins the false wording and moves with them. Per the amendment gate the
+      two pages also name the two states the reading still gets wrong — a
+      bogus comment and the script double-escape — so neither page ships a
+      sentence false in a state this milestone knows about.
 - [ ] T13: The four wording repairs and two wrap slips the review found: the
       `note_raw` comments claiming browser parity a per-raw-string walk cannot
       have; `tests/htmlindex.py`'s claim that reader and code disagree about no
@@ -165,7 +173,10 @@ not its findings.
 - 2026-09-06: amendment return: AC6 — "each names `title` as the one such element the rule does not cover". The clause enumerates the text-content elements the skip list does not cover and names no procedure that decides that membership; `noscript` and `plaintext` are the same shape and are also uncovered, so the criterion mandates a false sentence in two shipped pages. The only repair widens the enumeration, so this counts on the amendment-return track and not toward defect returns. Status to in-progress for that amendment; review stops.
 - 2026-09-06: review gate chose sending M080 back with the full fix pass over wording only, merging as it stands, or stopping: the criterion amendment, the three corrected surfaces, the four wording repairs and the four follow-up rows are convened as T11-T14. PR #80 stays open as a draft, unmerged.
 - 2026-09-06: the Tasks section was compressed in one rewrite to hold the plan-owned body under its cap once T11-T14 were added; the ten finished tasks keep their ids and the work log keeps their detail.
-
+- 2026-09-06: re-audit: AC6 (full) — seven findings on the first amended draft: the residue clause's universal false for a closing tag and for a comment inside a non-skip element, T11 and T12 still mandating the rejected widening, the promise stopping at "counted" without the consequence to the author's mark, "no bound" naming two different page states, the M079-AC5 claim row pinning the retired sentence unnamed, Coverage still reading AC6 → T10, and the skip-list clause unqualified against the script double-escape state. Four repaired into a second draft; the rest went to the gate.
+- 2026-09-06: re-audit: AC6 (full) — six findings on the second draft, its own fresh reader: the residue domain read as the complement over ALL elements, so the mandated sentence is false for an ordinary `div`; `CHANGELOG.md`'s "two names are still missed" surviving the no-count clause; Coverage crediting T11, which writes no page state; the absence clause decided by paraphrase; the count "seven" fixed against a list the same clause names intensionally; and the shipped comment sentence false for a bogus comment. Findings 1, 2, 3 and 5 repaired into the wording below; 4 and 6 went to the gate. This is the criterion's second re-audit line and its stop.
+- 2026-09-06: amendment return: AC6 — "each states that an `id=` written inside an element whose content a browser reads as text rather than as markup but which the skip list does not name is counted against a mark, which then yields the name to a carrier the page does not have, names `title` as one such element, and states no count of them nor of the names the reading misses". The return was classified under the widening test, so the repair narrows the promise to what a stated procedure settles — the skip list the code declares — rather than naming three elements instead of one. Coverage moves to AC6 → T12; T11 and T12 are reworded to match.
+- 2026-09-06: amendment gate chose stating the residue as a rule over the text-content elements the skip list does not name, over dropping the residue sentence, and chose naming on both pages the two states the reading still gets wrong — a bogus comment and the script double-escape — over shipping those two rules unqualified with the gaps recorded alone.
 ## Decisions
 
 ## Review

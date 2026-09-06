@@ -3957,9 +3957,16 @@ errs = []
 # not, whatever it is spelled.
 CONTESTED = {'alpha': 'shared-attr', 'beta': 'shared-dq', 'gamma': 'shared-uq',
              'delta': 'shared-up', 'epsilon': 'shared-sq',
-             'theta': 'qi-mark-3', 'lambda': 'twin'}
+             'theta': 'qi-mark-3', 'lambda': 'twin',
+             # A carrier a reader that cut the raw text at the first `<!--`
+             # would never reach: the `<!--` before it is inside a quoted
+             # attribute value, where it opens no comment (M079 T13).
+             'psi': 'hidden-carrier'}
 KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9',
-        'omicron': 'in-comment', 'pi': 'in-raw-comment', 'chi': 'twin-xref'}
+        'omicron': 'in-comment', 'pi': 'in-raw-comment', 'chi': 'twin-xref',
+        # Written in the text of a `script` element, which is character data
+        # and renders no element, so it contests nothing (M079 T13).
+        'omega': 'in-script'}
 # The same two groups for marks that file no locator at all (M079 T9). They
 # yield a contested name exactly as a locator mark does — one id names one
 # element whatever the element is for — and are reported the same way; what

@@ -505,32 +505,104 @@ local function taken_identifiers(doc)
     end
     return nil
   end
-  -- An id can also be written in raw HTML, where it is no Attr at all. Read
-  -- the three spellings an id attribute has in HTML. Over-collecting from text
-  -- that merely looks like an attribute is not the free side to err on: it
-  -- costs a skipped number, and it moves a mark off a name NO element of the
-  -- rendered page carries, leaving the author's own link to that name pointing
-  -- at nothing. So what the page does not render is cut before the patterns
-  -- read it.
+  -- An id can also be written in raw HTML, where it is no Attr at all, so this
+  -- string has to be read the way a browser reads it.
+  --
+  -- Erring either way costs something. Over-collecting moves a mark off a name
+  -- NO element of the rendered page carries, leaving the author's own link to
+  -- that name pointing at nothing; under-collecting leaves a real element's
+  -- name uncounted, and the mark written with it then keeps a contested id in
+  -- silence. So the census walks the markup rather than pattern-matching the
+  -- whole string: an `id=` counts when it is an attribute of a tag, and only
+  -- then. A comment is stepped over — it is not part of the rendered page, so
+  -- an id inside one is on nothing a link can reach. So is the raw text of a
+  -- `script` or `style` element, which is character data and not markup. And a
+  -- quoted attribute value is read as a value, so neither a `>` nor a `<!--`
+  -- inside one ends the tag or opens a comment, and an `id=` inside one is
+  -- text rather than a second attribute.
   local function note_raw(raw)
-    if raw.format:match("^html") then
-      -- A comment is not part of the rendered page: an id written inside one
-      -- is on nothing a link can reach, so it contests nothing and a mark
-      -- written with that name keeps it. Counting one as a carrier moved the
-      -- mark off a name NO element held and left the author's own link to it
-      -- pointing at nothing, which is the opposite of what refusing an id is
-      -- for. Cut before the attribute patterns read the text, complete
-      -- comments first and then an unterminated `<!--`, which runs to the end
-      -- of this raw string exactly as a browser reads it.
-      local text = raw.text:gsub("<!%-%-.-%-%->", " "):gsub("<!%-%-.*$", " ")
-      -- HTML attribute names are case-insensitive, so `ID=` claims a name
-      -- exactly as `id=` does.
-      for _, pattern in ipairs({ '%s[iI][dD]%s*=%s*"([^"]*)"',
-                                 "%s[iI][dD]%s*=%s*'([^']*)'",
-                                 "%s[iI][dD]%s*=%s*([^%s\"'<>=`]+)" }) do
-        for id in text:gmatch(pattern) do
-          claim(id)
+    if not raw.format:match("^html") then
+      return nil
+    end
+    local text, pos = raw.text, 1
+    while true do
+      local lt = text:find("<", pos, true)
+      if lt == nil then
+        break
+      end
+      if text:sub(lt, lt + 3) == "<!--" then
+        -- An unterminated `<!--` runs to the end of this raw string, exactly
+        -- as a browser reads it, so there is nothing after it to read.
+        local close = text:find("-->", lt + 4, true)
+        if close == nil then
+          break
         end
+        pos = close + 3
+      elseif text:find("^</?%a", lt) then
+        local at = lt + 1
+        if text:sub(at, at) == "/" then
+          at = at + 1
+        end
+        local _, name_end, tag_name = text:find("^(%a[^%s/>]*)", at)
+        at = (name_end or at - 1) + 1
+        -- The tag's attributes, read in order. HTML attribute names are
+        -- case-insensitive, so `ID=` names the same attribute as `id=`, and a
+        -- tag written with two of them carries the first.
+        local identifier = nil
+        while at <= #text do
+          local char = text:sub(at, at)
+          if char == ">" then
+            break
+          elseif char:match("[%s/]") then
+            at = at + 1
+          else
+            local _, name_stop, attr = text:find("^([^%s=/>]+)", at)
+            if attr == nil then
+              at = at + 1
+            else
+              at = name_stop + 1
+              local value = nil
+              local _, equals = text:find("^%s*=%s*", at)
+              if equals ~= nil then
+                at = equals + 1
+                local quote = text:sub(at, at)
+                if quote == '"' or quote == "\'" then
+                  local close = text:find(quote, at + 1, true)
+                  value = text:sub(at + 1, (close or #text + 1) - 1)
+                  at = (close or #text) + 1
+                else
+                  local _, value_stop, unquoted = text:find("^([^%s>]*)", at)
+                  value, at = unquoted, value_stop + 1
+                end
+              end
+              if identifier == nil and attr:lower() == "id"
+                and value ~= nil and value ~= "" then
+                identifier = value
+              end
+            end
+          end
+        end
+        if at > #text then
+          -- No `>` closes this tag, so no element of the page comes of it.
+          break
+        end
+        if identifier ~= nil then
+          claim(identifier)
+        end
+        pos = at + 1
+        local lowered = tag_name ~= nil and tag_name:lower() or nil
+        if lowered == "script" or lowered == "style" then
+          -- Step to this element's closing tag: everything between is
+          -- character data, where a `<` starts no tag at all.
+          local closing = text:lower():find("</" .. lowered, pos, true)
+          if closing == nil then
+            break
+          end
+          pos = closing
+        end
+      else
+        -- A `<` that starts no tag is ordinary text.
+        pos = lt + 1
       end
     end
     return nil

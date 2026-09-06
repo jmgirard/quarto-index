@@ -160,3 +160,27 @@ page. That is why this document sets `toc: true`.
 ## A heading carrying [![](dot.png)]{#untagged-in-heading .index}
 
 Text under that heading, so the section is not empty.
+
+# Names a reader that does not read markup would miss
+
+The census reads raw HTML the way a browser does: an `id=` counts where it is
+an attribute of a tag, and nowhere else. Two names turn on that. One is claimed
+by a real element standing after a neighbour whose attribute VALUE contains
+what looks like the opening of a comment, so a reader that cut the text at the
+first `<!--` would never reach the claim and would leave the mark carrying a
+contested name in silence: [psi]{#hidden-carrier .index}. The other is written
+in the text of a `script` element, which is character data rather than markup
+and renders no element at all, so it contests nothing and the mark keeps it:
+[omega]{#in-script .index}. The two are written in raw blocks of their own, so
+neither name's fate depends on the other's block being read.
+
+```{=html}
+<script>var draft = "<p id='in-script'>";</script>
+```
+
+```{=html}
+<p title="looks like <!-- a comment">Raw HTML whose attribute value opens what is not a comment.</p>
+<p id="hidden-carrier">Raw HTML claiming the name the psi mark was written with.</p>
+```
+
+The link an author writes to the second still resolves: [to omega](#in-script).

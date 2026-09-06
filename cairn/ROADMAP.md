@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-06 (M079 merged as PR #79 and archived; ROADMAP row done, M074 row aged out. Two candidate rows added for the census defects the review recorded as KI254/KI255, and KI254/KI255 written to DESIGN.md Known issues. M03's anchor-in-heading lesson retired — the M079-AC1 leg now sweeps every heading on the page and fails on the mistake it warned about — and M079's fixture-isolation lesson added in its place. cairn_validate all PASS, sizing advisory only. Suite green: 1412 checks, exit 0. ROADMAP 59 lines / 13,660 bytes; LESSONS.md 48 lines / 19,993 bytes, 7 bytes under its cap, so the next lesson needs a retirement. Two unreleased CHANGELOG entries, both M079's, stand behind 0.3.0.)_
+_Last hygiene check: 2026-09-06 (M080 merged as PR #80 and archived; ROADMAP row done; M077 and M076 rows aged out under the retention the validator enforces, which is 3 where this file's own comment and the rulebook both said 5 — comment corrected. Review round 2 recorded ten findings: seven fixed on the branch, one rejected, KI260-KI262 added to DESIGN.md Known issues for the comment-end and foreign-content gaps and the unpinned documentation facts. The two M080 candidate rows absorbed them rather than adding rows, and the three M075 suite-run-shape rows were clustered into one to hold the line cap. M079's fixture-isolation lesson trimmed to its transferable half and M080's count-sweep lesson added. cairn_validate all sixteen PASS, no advisory. Suite green: 773 checks plain, 1413 with --self-test, both exit 0. ROADMAP 57 lines / 13,865 bytes; LESSONS.md 49 lines / 19,922 bytes, 78 bytes of headroom; check-design.md 38 lines / 17,994 bytes, 6 bytes under its own budget, so the next line there needs a compression. Three unreleased CHANGELOG entries, M079's two and M080's, stand behind 0.3.0.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,12 +10,10 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M080 | The id census reads a page's raw HTML the way a browser does | review | — | normal | milestones/M080-id-census-raw-html-walk.md |
+| M080 | The id census reads a page's raw HTML the way a browser does | done | — | normal | milestones/archive/M080-id-census-raw-html-walk.md |
 | M079 | An author-written mark id never leaves two elements sharing it | done | — | normal | milestones/archive/M079-author-id-collision.md |
 | M078 | A recovered locator lands on the id its author wrote | done | — | normal | milestones/archive/M078-recovered-locator-author-id.md |
-| M077 | The suite's timing accounting checks only what its own window covers | done | — | normal | milestones/archive/M077-timing-accounting-window.md |
-| M076 | A store-report leg asserts every wording, not the ones its author recalled | done | — | normal | milestones/archive/M076-store-report-zero-controls.md |
-<!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
+<!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates

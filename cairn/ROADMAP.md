@@ -10,7 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M079 | An author-written mark id never leaves two elements sharing it | review | — | normal | milestones/M079-author-id-collision.md |
+| M079 | An author-written mark id never leaves two elements sharing it | in-progress | — | normal | milestones/M079-author-id-collision.md |
 | M078 | A recovered locator lands on the id its author wrote | done | — | normal | milestones/archive/M078-recovered-locator-author-id.md |
 | M077 | The suite's timing accounting checks only what its own window covers | done | — | normal | milestones/archive/M077-timing-accounting-window.md |
 | M076 | A store-report leg asserts every wording, not the ones its author recalled | done | — | normal | milestones/archive/M076-store-report-zero-controls.md |
@@ -24,7 +24,7 @@ _Released 0.3.0 2026-09-05._
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
 - Pin the two recovered-locator assertions M078's legs leave to overlap: the record route's own `Quoin` href (held there by page/section/term only, so the two routes could diverge green) and `fragments.py outside` on the recovered heading mark (`mullion-passage` resolving to a copy inside the heading would pass `resolve`). Promote with any other pass over the m061/m065 legs — added 2026-09-05 — M078 review F3/F11
 - Bind M079's cross-reference id shapes to criteria: the fixture's four collision cases, its uncontested control, and the rule that a locator mark outranks a cross-reference for a shared name are held by tasks and one suite leg alone, so deleting them leaves every criterion green. Promote with any other pass over the id-collision fixture — added 2026-09-05 — M079 amendment gate
-- Harden M079's new id-uniqueness instruments: neither the EPUB `unique` repeated-id sweep nor the AC1 page sweep has a planted-defect leg proving it can go red; `unique` reads only a document's first index section; an external href carrying a fragment reports a spurious manifest miss. Promote with any other pass over the suite's self-test plants — added 2026-09-05 — M079 review F7-F10
+- Harden M079's id-uniqueness instruments: neither the EPUB `unique` sweep nor the AC1 page sweep is proven able to go red; `unique` reads only a document's first index section; an external href with a fragment reports a spurious miss; the AC1 leg keys minted anchors by element text. Promote with any other pass over the suite's self-test plants — added 2026-09-05 — M079 review F7-F10, R9
 - Escape the backtick pair in the one `tests/run-tests.sh` message that leaves it bare, so a green run stops printing a shell syntax error beside a passing check; promote with any other suite-hygiene pass over the run's own output — added 2026-09-05 — M079 implement — KI252
 - Put the M075 plant helper under the suite's own plants: the banner rule it imports and the bound on its scan for a block's close are repairs nothing exercises, so a later edit reinstating either defect leaves both runs green. Promote with any other pass over the suite's self-test plants — added 2026-09-04 — M077 review F2
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248

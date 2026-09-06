@@ -1,6 +1,6 @@
 # M079: An author-written mark id never leaves two elements sharing it
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -51,6 +51,15 @@ An author-written id on an index mark never leaves two elements of one page carr
 - [x] T9: Settle the cross-reference and page-only mark case, which carries no pending tag and so keeps a contested id unwarned: either bring such marks under the refusal rule or state the exception where an author reads it; add the fixture case either way.
 - [x] T10: Narrow the claims in `CHANGELOG.md` and `site/html.qmd` to what the code does — the recovery route reads a chapter without its rendered page, the cross-reference exception, and the report naming a mark's `entry=` where it carries one rather than the term it prints.
 - [x] T11: Add the step naming M079 to the warning-count comment in `tests/scans/warn-distinct.py`, which stops at M073's `83 + 1 = 84`.
+
+- [ ] T12: Restore relocation for an `.index` span carrying an author-written id that the Span pass never tagged (the `"keep"` disposition at `passes.lua:463`), which T9 dropped from `html.lua:574` and which leaves such an id in a heading and in Quarto's copy of it. Add the fixture case and the suite leg, recorded red before the fix.
+- [ ] T13: Make the census's comment cut (`html.lua:525`) track HTML's comment grammar, so a `<!--` inside a quoted attribute value or script text no longer discards every `id=` after it in that raw string. Add the fixture case and the suite leg, recorded red before the fix.
+- [ ] T14: Take AC3's minted-id clause through the gated criterion-amendment protocol so it holds for a mark inside a heading, whose anchor relocates onto an empty span the mark itself does not carry; then drop the AC1 leg's `RELOCATED` exemption or state on the criterion what the exemption leaves unproven.
+- [ ] T15: Narrow `site/html.qmd:56-60`'s promise that the generated numbering steps over any name written in the source, false after T8 for a name only an HTML comment holds, and add a claim row holding the narrowed form.
+- [ ] T16: Supersede D-055's two sentences this branch made false — that `assign_anchors` never renames an author's id, and that `tests/fragments.py` does not check a fragment resolves uniquely — with one D-entry.
+- [ ] T17: Write the milestone's `## Decisions` entries for the two user-visible rules the branch ships with only work-log lines behind them: a cross-reference mark yielding a contested id, and a locator-contributing mark outranking a cross-reference mark for a shared name.
+- [ ] T18: State the front-matter mark of an HTML book chapter, which keeps a contested id unreported, in `CHANGELOG.md` and `site/html.qmd`; the exception stands in `DESIGN.md` and `passes.lua` and in neither shipped page.
+- [ ] T19: Correct the AC1 leg's derivation banner (`tests/run-tests.sh:3930-3941`), which still says seven contested names, six uncontested and "all thirteen" where its dicts hold 11 and 8, and re-wrap `cairn/DESIGN.md:382`.
 
 ## Work log
 
@@ -105,6 +114,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 - 2026-09-05: whole suite green with `--self-test` on this tree: 1412 checks across 158 sections, 1284s, exit 0, no failure. T8-T11 ticked; status to review. Two runs before it did not finish — the first stopped at the M14 manifest gap (fixed, above), the second at a `Segmentation fault: 11` in Quarto's Deno binary during M065-AC5, a render process dying rather than a check failing; that leg had passed in the first run and the crash did not recur in the third. The acceptance-criterion boxes stay unticked for review to fill against fresh evidence.
 
 - 2026-09-05: review round 2. AC1, AC2, AC4, AC5 and AC6 green with fresh evidence on this tree (whole suite 1412 checks, exit 0; merge-base floors re-rendered), boxes ticked; AC3 not ticked — its minted-id clause is false of `tau`, whose anchor relocates out of a heading, which is the criterion being wrong rather than the work. cairn_validate clean. Three lenses returned 13 findings; R1, R2 and R4 reproduced against the implementation. R1 is a regression this branch introduces: an `.index` span carrying an author id that the Span pass never tagged no longer relocates out of a heading, so the id lands on the page twice, unwarned. Disposition put to the maintainer at the gate.
+
+- 2026-09-05: review round 2 returned the milestone to in-progress at the maintainer's decision, with every requested change taken. What failed is not a criterion — AC1, AC2, AC4, AC5 and AC6 were green with fresh evidence — but R1, a regression this branch introduces: an `.index` span carrying an author id that the Span pass never tagged no longer relocates out of a heading, so `#ghost` on a mark with no derivable entry renders twice where the merge-base renders it once, unwarned. With it R2, the comment cut discarding a raw string's tail after any `<!--` so a real collision goes unrefused; R3, AC3's minted-id clause being false of a mark whose heading anchor relocates, which routes to a gated criterion amendment; and R4-R8 and R10 in the shipped pages and the records. T12-T19 written; the criterion ticks stay, R1 and R2 changing neither the fixture render nor the readings they were taken against. R9 absorbed into the standing candidate row on this milestone's id-uniqueness instruments. Defect return 2. PR #79 stays open as a draft.
 
 ## Decisions
 

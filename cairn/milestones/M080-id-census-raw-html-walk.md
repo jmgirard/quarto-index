@@ -294,6 +294,9 @@ fixture and against the HTML5 tokenizer states, and returned eleven findings.
   (106 chars) and `cairn/DESIGN.md:385` (95 chars) were left unwrapped against
   both files' own ~80-column habit. Disposition: fix now.
 
+conversation: PR #80 carries no reviews, no comments and no unresolved
+threads — the read came back empty.
+
 ### Amendment return
 
 AC6 names no procedure that decides which text-content elements the rule does

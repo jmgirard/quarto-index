@@ -19,20 +19,25 @@
   spelled, and no element of yours is ever renamed. A name counts as carried
   where it is an attribute of an opening tag, and one written where the page
   renders no element contests nothing: the mark written with it keeps it. That
-  covers a name inside a comment spelled `<!--`; one on a closing tag, whose
-  attributes a browser reads and drops; and one in the text content of
-  `script`, `style`, `xmp`, `iframe`, `noembed`, `noframes` or `textarea`,
-  seven elements whose content a browser reads as text rather than as markup —
-  the reading steps over that text and goes on with the markup after it, so a
-  name on a real element standing after one of the seven in that same raw HTML
-  block is counted like any other. An element whose content a browser reads as
-  text but which this reading does not step over is not covered: a name
-  written inside one is counted against a mark, which then yields it to a
-  carrier the page does not have. `title` is one such element; how many others
-  there are is not stated here. Some shapes the reading still gets wrong, each
-  counting a name no element of the page carries: a comment not spelled `<!--`
-  (`<!ok>`, `<?ok>`, `<![CDATA[ok]]>`, `</ ok>`), which a browser makes a
-  comment and this reading walks as markup; inside a `script` element, a
+  covers a name inside a comment; one on a closing tag, whose attributes a
+  browser reads and drops; and one in the text content of `script`, `style`,
+  `xmp`, `iframe`, `noembed`, `noframes` or `textarea`, seven elements whose
+  content a browser reads as text rather than as markup — the reading steps
+  over that text and goes on with the markup after it, so a name on a real
+  element standing after one of the seven in that same raw HTML block is
+  counted like any other. A comment is more than a `<!--`, and the same
+  constructs are comments here that are comments to a browser: a `<!` opening
+  anything else, a `<?`, and a `</` before anything but a letter each begin one
+  that runs to the next `>`, so `<!ok>`, `<?ok>`, `<![CDATA[ok]]>` and
+  `</ ok>` hide a name inside them; and a `<!--` ends at a `-->`, at an
+  immediate `>`, at an immediate `->` and at a `--!>`, past any of which a name
+  on a real element in that same raw HTML block is counted again. An element
+  whose content a browser reads as text but which this reading does not step
+  over is not covered: a name written inside one is counted against a mark,
+  which then yields it to a carrier the page does not have. `title` is one such
+  element; how many others there are is not stated here. Some shapes the
+  reading still gets wrong, each counting a name no element of the page
+  carries: inside a `script` element, a
   `<!--` followed by a nested `<script>`, which keeps a browser inside the
   outer element past the first `</script>` where this reading resumes; and a
   `template` element's content, which a browser parses into a fragment of its

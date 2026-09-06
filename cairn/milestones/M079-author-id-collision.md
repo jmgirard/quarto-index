@@ -1,6 +1,6 @@
 # M079: An author-written mark id never leaves two elements sharing it
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -39,13 +39,13 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 ## Tasks
 
-- [ ] T1: Extend `examples/id-collision.qmd` with both collision shapes across the axes AC1 names, plus the three non-colliding author-id marks AC4's control needs; add the suite leg sweeping the captured HTML page for a repeated id, and record it red at the merge-base before the fix lands.
-- [ ] T2: Count occurrences in the id census (`taken_identifiers`, `html.lua:485`) and make `assign_anchors` (`html.lua:579`) refuse a mark's author-written id that another element carries, minting one instead; among marks sharing an id the first in document order keeps it. (RB tripwire: ip-touching)
-- [ ] T3: Add the refusal report naming the refused id and the mark's printed term; add the leg asserting the whole warning set on AC1's render and the intact author ids and locators of the three non-colliding marks.
-- [ ] T4: Add the EPUB leg reading the publication through `tests/epubindex.py` for a repeated id and for an index-section link whose target id is not unique, with the member count asserted non-zero.
-- [ ] T5: Make `tests/fragments.py resolve` (`fragments.py:80`) assert a fragment's target id is on its page exactly once; prove it red by planting a duplicate in both collision shapes and at more than one capture site.
-- [ ] T6: Correct `site/html.qmd`'s id paragraph and write the `CHANGELOG.md` entry, both against AC1's observed render.
-- [ ] T7: Update `DESIGN.md`'s account of id assignment (line 364), which today states only that a minted id steps over an author's.
+- [x] T1: Extend `examples/id-collision.qmd` with both collision shapes across the axes AC1 names, plus the three non-colliding author-id marks AC4's control needs; add the suite leg sweeping the captured HTML page for a repeated id, and record it red at the merge-base before the fix lands.
+- [x] T2: Count occurrences in the id census (`taken_identifiers`, `html.lua:485`) and make `assign_anchors` (`html.lua:579`) refuse a mark's author-written id that another element carries, minting one instead; among marks sharing an id the first in document order keeps it. (RB tripwire: ip-touching)
+- [x] T3: Add the refusal report naming the refused id and the mark's printed term; add the leg asserting the whole warning set on AC1's render and the intact author ids and locators of the three non-colliding marks.
+- [x] T4: Add the EPUB leg reading the publication through `tests/epubindex.py` for a repeated id and for an index-section link whose target id is not unique, with the member count asserted non-zero.
+- [x] T5: Make `tests/fragments.py resolve` (`fragments.py:80`) assert a fragment's target id is on its page exactly once; prove it red by planting a duplicate in both collision shapes and at more than one capture site.
+- [x] T6: Correct `site/html.qmd`'s id paragraph and write the `CHANGELOG.md` entry, both against AC1's observed render.
+- [x] T7: Update `DESIGN.md`'s account of id assignment (line 364), which today states only that a minted id steps over an author's.
 
 ## Work log
 
@@ -64,6 +64,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 - 2026-09-05: the pinned filter warning count moves 84 -> 85 for the refusal report (`tests/scans/warn-distinct.py`), which a first whole-suite run caught.
 - 2026-09-05: KI252 records a pre-existing shell-quoting defect in one `tests/run-tests.sh` message, found in that run's output; a candidate row states the work.
 - 2026-09-05: checkpoint with tasks unticked: the whole-suite `--self-test` run that verifies them is still in flight. Its three M079 legs have already passed in it.
+
+- 2026-09-05: whole suite green with `--self-test` on this tree: 1412 checks, 1766s across 158 sections, exit 0, no failure. Tasks T1-T7 ticked; status to review.
 
 ## Decisions
 

@@ -532,17 +532,16 @@ local function taken_identifiers(doc)
   -- name uncounted, and the mark written with it then keeps a contested id in
   -- silence. So the census walks the markup rather than pattern-matching the
   -- whole string: an `id=` counts when it is an attribute of an opening tag,
-  -- and only then. A comment is stepped over — it is not part of the rendered
-  -- page, so an id inside one is on nothing a link can reach. So is the text
-  -- content of
-  -- each RAW_TEXT_ELEMENTS element, which is character data and not markup;
-  -- the walk resumes at that element's own end tag and reads the markup after
-  -- it, a name written there being on a real element like any other. Only an
-  -- OPENING tag carries attributes: an `id=` written on a closing tag is read
-  -- and dropped by a browser, so it names nothing on the page. And a quoted
-  -- attribute value is read as a value, so neither a `>` nor a `<!--`
-  -- inside one ends the tag or opens a comment, and an `id=` inside one is
-  -- text rather than a second attribute.
+  -- and only then. A comment spelled `<!--` is stepped over — it is not part
+  -- of the rendered page, so an id inside one is on nothing a link can reach.
+  -- So is the text content of each RAW_TEXT_ELEMENTS element, which is
+  -- character data and not markup; the walk resumes at that element's own end
+  -- tag and reads the markup after it, a name written there being on a real
+  -- element like any other. Only an OPENING tag carries attributes: an `id=`
+  -- written on a closing tag is read and dropped by a browser, so it names
+  -- nothing on the page. And a quoted attribute value is read as a value, so
+  -- neither a `>` nor a `<!--` inside one ends the tag or opens a comment, and
+  -- an `id=` inside one is text rather than a second attribute.
   local function note_raw(raw)
     if not raw.format:match("^html") then
       return nil
@@ -554,8 +553,11 @@ local function taken_identifiers(doc)
         break
       end
       if text:sub(lt, lt + 3) == "<!--" then
-        -- An unterminated `<!--` runs to the end of this raw string, as it
-        -- does for a browser, so there is nothing after it to read.
+        -- Where no `-->` closes it, the walk gives up the rest of this
+        -- raw string. A browser ends a comment in places this does not —
+        -- `<!-->`, `<!--->` and a `--!>` close all end one for a browser
+        -- and none of them here — so those three shapes cost the markup
+        -- written after them (KI260).
         local close = text:find("-->", lt + 4, true)
         if close == nil then
           break

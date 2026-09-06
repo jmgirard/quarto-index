@@ -176,11 +176,14 @@ not its findings.
 - 2026-09-06: re-audit: AC6 (full) — seven findings on the first amended draft: the residue clause's universal false for a closing tag and for a comment inside a non-skip element, T11 and T12 still mandating the rejected widening, the promise stopping at "counted" without the consequence to the author's mark, "no bound" naming two different page states, the M079-AC5 claim row pinning the retired sentence unnamed, Coverage still reading AC6 → T10, and the skip-list clause unqualified against the script double-escape state. Four repaired into a second draft; the rest went to the gate.
 - 2026-09-06: re-audit: AC6 (full) — six findings on the second draft, its own fresh reader: the residue domain read as the complement over ALL elements, so the mandated sentence is false for an ordinary `div`; `CHANGELOG.md`'s "two names are still missed" surviving the no-count clause; Coverage crediting T11, which writes no page state; the absence clause decided by paraphrase; the count "seven" fixed against a list the same clause names intensionally; and the shipped comment sentence false for a bogus comment. Findings 1, 2, 3 and 5 repaired into the wording below; 4 and 6 went to the gate. This is the criterion's second re-audit line and its stop.
 - 2026-09-06: amendment return: AC6 — "each states that an `id=` written inside an element whose content a browser reads as text rather than as markup but which the skip list does not name is counted against a mark, which then yields the name to a carrier the page does not have, names `title` as one such element, and states no count of them nor of the names the reading misses". The return was classified under the widening test, so the repair narrows the promise to what a stated procedure settles — the skip list the code declares — rather than naming three elements instead of one. Coverage moves to AC6 → T12; T11 and T12 are reworded to match.
-- 2026-09-06: amendment gate chose stating the residue as a rule over the text-content elements the skip list does not name, over dropping the residue sentence, and chose naming on both pages the two states the reading still gets wrong — a bogus comment and the script double-escape — over shipping those two rules unqualified with the gaps recorded alone.- 2026-09-06: T12 corrected the false sentence where it stands. `site/html.qmd` and `CHANGELOG.md` now state the residue as a rule over the text-content elements the skip list does not name, with `title` as one such element and no count of them or of the names the reading misses; both also name the two shapes the walk still misreads, a bogus comment and the script double-escape, verified against `note_raw` in a `pandoc lua` harness (`<!ok …>`, `<?…?>`, `<![CDATA[…]]>` and `<script><!--<script></script><p id="ghost">` each claim a name the page carries no element for; a plain `<!-- … -->` and an ordinary tag are the controls). `cairn/DESIGN.md`'s architecture sentence and KI254 are corrected in place, KI256-KI259 added for the review's F2, F3, F4 and F8, and the M079-AC5 claim rows moved with the prose: the `title` row is replaced by three pinning the rule, the instance and the absent count, two more pin the misread shapes, and the numbering row's comment clause is qualified. `sitecheck.py claims` reads all 21 rows against the page, and reddens on the retired sentence when it is planted back.
+- 2026-09-06: amendment gate chose stating the residue as a rule over the text-content elements the skip list does not name, over dropping the residue sentence, and chose naming on both pages the two states the reading still gets wrong — a bogus comment and the script double-escape — over shipping those two rules unqualified with the gaps recorded alone.
+- 2026-09-06: T12 corrected the false sentence where it stands. `site/html.qmd` and `CHANGELOG.md` now state the residue as a rule over the text-content elements the skip list does not name, with `title` as one such element and no count of them or of the names the reading misses; both also name the two shapes the walk still misreads, a bogus comment and the script double-escape, verified against `note_raw` in a `pandoc lua` harness (`<!ok …>`, `<?…?>`, `<![CDATA[…]]>` and `<script><!--<script></script><p id="ghost">` each claim a name the page carries no element for; a plain `<!-- … -->` and an ordinary tag are the controls). `cairn/DESIGN.md`'s architecture sentence and KI254 are corrected in place, KI256-KI259 added for the review's F2, F3, F4 and F8, and the M079-AC5 claim rows moved with the prose: the `title` row is replaced by three pinning the rule, the instance and the absent count, two more pin the misread shapes, and the numbering row's comment clause is qualified. `sitecheck.py claims` reads all 21 rows against the page, and reddens on the retired sentence when it is planted back.
 - 2026-09-06: T13 made the four wording repairs and the two wrap slips. `note_raw`'s comments no longer claim the walk reads a string exactly as a browser does; they state the shape the walk does model and name the limit — each raw string starts in the same state, so a block ending mid-`<script>` leaves a browser reading the Pandoc-generated markup after it as script text and this walk reading it as markup — and the stale "attribute of a tag" line becomes "of an opening tag". `tests/htmlindex.py`'s agreement claim is narrowed to the pages the fixtures write, with the two shapes that part reader from census named and each direction stated: `</textarea/>` ends the element for the census and not for Python (verified by running the reader), `<iframe/>` opens a raw-text element for the census and is self-closing for Python. The reader plant's header comment now names the five `buried-*` names as its discriminating power — measured by putting `CDATA_CONTENT_ELEMENTS` back to two, which returns exactly those five — and says the other negative names cannot fail there. `examples/id-collision.qmd:166` takes the opening-tag rule. `site/html.qmd`'s 106-column line and `cairn/DESIGN.md`'s 95-column one are rewrapped.
 - 2026-09-06: T14 filed the follow-ups, search-first against the census and instrument-hardening rows. Two candidate rows added — the three over-collection shapes in `note_raw`, and the missing fixture case for an `id=` on a raw-text element's own opening tag — with KI256-KI259 carrying the findings themselves per D-013. To hold ROADMAP under its line cap the three M075 suite-run-shape rows (parallel legs, named-subset run, per-render timing) were clustered into one; the file is 59 lines / 13,565 bytes.
-- 2026-09-06: T12's commit swept T13's and T14's working-tree changes in with it, so their code landed one commit before their checkboxes and these lines. Nothing outside this milestone was in the tree.- 2026-09-06: T11-T14 verified. `tests/run-tests.sh` green, 773 checks; `tests/run-tests.sh --self-test` exit 0, 1413 checks. The plain run finished clean (773 checks, no FAIL line) but lost its exit code when the desktop app closed mid-run, and the self-test was cut off and re-run whole. All fourteen tasks done, status back to review; AC6 stays unticked for review to verify against the amended wording.
+- 2026-09-06: T12's commit swept T13's and T14's working-tree changes in with it, so their code landed one commit before their checkboxes and these lines. Nothing outside this milestone was in the tree.
+- 2026-09-06: T11-T14 verified. `tests/run-tests.sh` green, 773 checks; `tests/run-tests.sh --self-test` exit 0, 1413 checks. The plain run finished clean (773 checks, no FAIL line) but lost its exit code when the desktop app closed mid-run, and the self-test was cut off and re-run whole. All fourteen tasks done, status back to review; AC6 stays unticked for review to verify against the amended wording.
 - 2026-09-06: review round 2 opened after the amendment return. Branch synced with `main` (unmoved since the cut) and pushed; PR #80 already open as a draft. Fresh suite runs taken this session: plain exit 0, 773 checks; `--self-test` exit 0, 1413 checks. Consistency gate run — `cairn_validate.py` exit 0, all sixteen PASS, only the sizing advisory (14 tasks). No principle text in the diff, so `cairn_impact` skipped. Round-2 evidence recorded for AC1-AC7 and AC6 ticked against the amended wording. Three review lenses spawned; blame-history and prior-review reported back, diff-bug still running.
+- 2026-09-06: round-2 fix-now work committed. R1, R2, R4, R6, R8, R9 and R10 repaired on the branch — the false count of misread shapes dropped from both pages and this repo's architecture sentence, the three comment claims corrected in `html.lua` and `tests/htmlindex.py`, the fourth bogus-comment shape added, two wrap slips and two run-together work-log lines fixed. R5 and R2's behaviour recorded as KI260 and KI261, R7 as KI262 absorbed into the instrument candidate row, and the census candidate row extended to the new shapes. R3 rejected: this round's own plain run exits 0. Verification of the repaired tree in flight.
 
 ## Decisions
 
@@ -373,6 +376,76 @@ fixture and against the HTML5 tokenizer states, and returned eleven findings.
   (106 chars) and `cairn/DESIGN.md:385` (95 chars) were left unwrapped against
   both files' own ~80-column habit. Disposition: fix now.
 
+
+### Findings — round 2
+
+Three fresh-context reviewers, distinct evidence bases. The blame-history lens
+found no erosion of prior intent: every deletion it traced to M079's commit is
+a widening of the same rule rather than a rollback, the retired `site/html.qmd`
+sentence is superseded rather than dropped, and D-011 does not reach this file
+(it governs source-shape scans, not the extension's own logic). The
+prior-review lens reported the GitHub inline-comment probe empty and, against
+the round-1 record, confirmed each recorded disposition was carried out — F1,
+F5, F6, F7, F9 and F11 fixed, F2, F3, F4 and F8 filed as KI256-KI259 and the
+candidate rows, F10 left alone as recorded. The diff-bug lens lifted `note_raw`
+into a `pandoc lua` harness, ran about forty shapes past it, and reports the
+four repairs correct on all of them, the loop always advancing; it confirmed
+the reader plant goes red on exactly the five `buried-*` names its comment
+claims, and returned ten findings.
+
+- R1 (diff-bug, ranked first; found independently in the AC6 read) — both
+  shipped pages said "Two shapes this reading gets wrong today", then named the
+  bogus comment and the script double-escape. `template` content is a third of
+  exactly that kind, recorded on this same branch as KI256, and this file's own
+  architecture sentence said three. A fixed count written from recall is the
+  failure that produced the AC6 amendment return, one paragraph after the
+  sentence that refuses to count the residue. AC6 mandates no count of misread
+  shapes, so this is not a criterion failure. Disposition: fixed now — both
+  pages drop the count, name `template` as a further shape, and say how many
+  there are is not stated; two claim rows follow the prose and two are added.
+- R2 (diff-bug) — the rewritten comment at `html.lua:557` claimed an
+  unterminated `<!--` runs to the end of the raw string "as it does for a
+  browser". A browser also ends a comment at `<!-->`, at `<!--->` and at a
+  `--!>` close, none of which this walk ends, so each abandons the rest of the
+  string and every later `id=` goes uncounted. Verified in the harness: all
+  three claim nothing where `<!-- c -->` claims the name after it. The
+  behaviour is pre-existing; the false sentence is new in this diff.
+  Disposition: fixed now — the comment states the divergence — plus KI260.
+- R3 (diff-bug) — AC7's plain-run clause had no observed exit code, the
+  implement-side run having lost it when the desktop app closed. Disposition:
+  rejected as already answered — this round took a fresh plain run at exit 0,
+  773 checks, recorded in the AC7 evidence line above.
+- R4 (diff-bug) — `html.lua:535` said "A comment is stepped over" unqualified,
+  which KI257 and the shipped pages both contradict. Disposition: fixed now,
+  "A comment spelled `<!--` is stepped over".
+- R5 (diff-bug, the reviewer rating it low and uncertain) — inside `svg` or
+  `math` a browser is reported not to enter raw-text mode for `style`, so an
+  HTML breakout tag written there produces a real element the walk steps over.
+  Verified on this side only: the census claims nothing there. Disposition:
+  KI261, which records the census behaviour as verified and the browser half as
+  the review's unconfirmed reading.
+- R6 (diff-bug) — `tests/htmlindex.py` described the `<iframe/>` divergence
+  backwards: the census does not stop at it where an `</iframe>` follows in the
+  same string, it steps over the content and resumes. Verified in the harness.
+  Disposition: fixed now, the comment states what each side does.
+- R7 (diff-bug) — nothing pins two facts the documentation rests on: AC6's
+  absence clause has no guard, though `sitecheck.py phrase-absent` exists, and
+  the claim rows quote "those seven elements' content" without the seven names,
+  so the page's enumeration can drift from `RAW_TEXT_ELEMENTS` unnoticed.
+  Disposition: follow-up — KI262, absorbed into the id-census instrument
+  candidate row rather than a new row, the ROADMAP being at its line cap.
+- R8 (diff-bug) — KI257 and its row under-named the bogus-comment family: `</`
+  followed by a non-letter is a fourth shape, verified claiming in the harness.
+  Disposition: fixed now, added to KI257's examples and to both pages.
+- R9 (diff-bug) — two wrap slips of the class T13 repaired: an orphan line
+  inside `html.lua`'s comment paragraph and a ragged line in this repo's
+  `DESIGN.md`. Disposition: fixed now.
+- R10 (diff-bug) — two work-log lines each held two entries run together, the
+  newline lost by the script that appended them. Verified by counting entry
+  openings per line. Disposition: fixed now; the text of each entry is
+  unchanged.
+
+conversation:
 conversation: PR #80 carries no reviews, no comments and no unresolved
 threads — the read came back empty.
 

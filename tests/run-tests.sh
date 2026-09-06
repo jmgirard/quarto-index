@@ -4378,8 +4378,10 @@ name on a closing tag	So is one written on a closing tag, whose attributes a bro
 census misses a name outside the skip list	An element whose content a browser reads as text rather than as markup, but which this reading does not step over, is not covered by that
 the residue is a rule and not a list	`title` is one such element
 no count of the residue	how many others there are is not stated here
-bogus comment read as markup	A comment not spelled `<!--` — `<!ok>`, `<?ok>`, `<![CDATA[ok]]>` — is a comment to a browser and markup to this reading, so a name inside one is counted
-script double-escape unmodelled	inside a `script` element, a `<!--` followed by a nested `<script>` keeps a browser inside the outer element past the first `</script>`, where this reading resumes
+bogus comment read as markup	A comment not spelled `<!--` — `<!ok>`, `<?ok>`, `<![CDATA[ok]]>`, `</ ok>` — is a comment to a browser and markup to this reading, so a name inside one is counted
+script double-escape unmodelled	Inside a `script` element, a `<!--` followed by a nested `<script>` keeps a browser inside the outer element past the first `</script>`, where this reading resumes
+template content counted	a `template` element's content is counted, though a browser parses it into a fragment of its own that the page carries no element of
+no count of the misread shapes	How many such shapes there are is not stated here either
 numbering steps over rendered names	Both kinds of generated id skip any name an element of the rendered page carries
 numbering may mint an unrendered one	a name written where the page renders no element — inside a comment spelled `<!--`, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
 front-matter exception	it keeps whatever id you wrote on it, contested or not, with nothing reported

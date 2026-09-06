@@ -69,13 +69,15 @@ written in a document title's own text costs a mark that name and leaves the
 author's link to it pointing at nothing. The seven above are the ones this
 reading steps over; how many others there are is not stated here.
 
-Two shapes this reading gets wrong today, both of them counting a name no
+Some shapes this reading gets wrong today, each of them counting a name no
 element of the page carries. A comment not spelled `<!--` — `<!ok>`, `<?ok>`,
-`<![CDATA[ok]]>` — is a comment to a browser and markup to this reading, so a
-name inside one is counted. And inside a `script` element, a `<!--` followed by
-a nested `<script>` keeps a browser inside the outer element past the first
-`</script>`, where this reading resumes, so a name written after that point is
-counted too.
+`<![CDATA[ok]]>`, `</ ok>` — is a comment to a browser and markup to this
+reading, so a name inside one is counted. Inside a `script` element, a `<!--`
+followed by a nested `<script>` keeps a browser inside the outer element past
+the first `</script>`, where this reading resumes, so a name written after that
+point is counted too. And a `template` element's content is counted, though a
+browser parses it into a fragment of its own that the page carries no element
+of. How many such shapes there are is not stated here either.
 
 One kind of name is missed by that reading, and a mark written with it keeps it
 whatever else carries it, with nothing reported: a name Quarto's own writer

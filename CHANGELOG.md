@@ -29,12 +29,14 @@
   text but which this reading does not step over is not covered: a name
   written inside one is counted against a mark, which then yields it to a
   carrier the page does not have. `title` is one such element; how many others
-  there are is not stated here. Two shapes the reading still gets wrong, each
+  there are is not stated here. Some shapes the reading still gets wrong, each
   counting a name no element of the page carries: a comment not spelled `<!--`
-  (`<!ok>`, `<?ok>`, `<![CDATA[ok]]>`), which a browser makes a comment and
-  this reading walks as markup; and, inside a `script` element, a `<!--`
-  followed by a nested `<script>`, which keeps a browser inside the outer
-  element past the first `</script>` where this reading resumes. A name
+  (`<!ok>`, `<?ok>`, `<![CDATA[ok]]>`, `</ ok>`), which a browser makes a
+  comment and this reading walks as markup; inside a `script` element, a
+  `<!--` followed by a nested `<script>`, which keeps a browser inside the
+  outer element past the first `</script>` where this reading resumes; and a
+  `template` element's content, which a browser parses into a fragment of its
+  own. How many such shapes there are is not stated here either. A name
   Quarto's own writer makes up after this extension has run — a footnote's
   `fn1`, a code block's `cb1`, `title-block-header` — is missed too, and a
   mark written with one keeps it on two elements unreported. HTML and EPUB

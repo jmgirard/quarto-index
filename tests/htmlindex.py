@@ -31,8 +31,8 @@ VOID_ELEMENTS = {
 # browser does and this reader not: `</textarea/>` ends the element for the
 # census and not here, so the rest of the string is swallowed as text; and
 # `<iframe/>` opens a raw-text element for the census and is self-closing
-# here, so the census stops at it and this reader reads on. Neither shape is
-# written in any fixture. `title`, `noscript` and `plaintext` are text content
+# here, so the census reads its content as text where this reader reads it as
+# markup. Neither shape is written in any fixture. `title`, `noscript` and `plaintext` are text content
 # too and are deliberately absent from both: no case renders them here.
 RAW_TEXT_ELEMENTS = (
     'script', 'style', 'xmp', 'iframe', 'noembed', 'noframes', 'textarea',

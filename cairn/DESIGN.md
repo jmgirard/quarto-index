@@ -384,13 +384,13 @@ Three back-ends ship:
   at such an element's own end tag and reading the markup after it (added
   M079, corrected M080). A text-content element the skip list does not name
   still has its text read as markup, and a name the HTML writer generates
-  after the filter runs is outside the census altogether (KI254, KI255); three
-  shapes the walk itself reads wrongly are KI256, KI257 and KI258. Two marks
-  of one rendered page are outside all of this; a third case, a chapter
-  recovered from its own source, is a second page's reading of this one and is
-  stated with them in the shipped pages. A
-  front-matter mark of an HTML book chapter stays anchorless per D-048, this
-  filter not being able to see which title-block fields Quarto prints; and
+  after the filter runs is outside the census altogether (KI254, KI255); the
+  shapes the walk itself reads wrongly are KI256 through KI258, KI260 and
+  KI261. Two marks of one rendered page are outside all of this; a third case,
+  a chapter recovered from its own source, is a second page's reading of this
+  one and is stated with them in the shipped pages. A front-matter mark of an
+  HTML book chapter stays anchorless per D-048, this filter not being able to
+  see which title-block fields Quarto prints; and
   a mark the Span pass never tags — one that indexes nothing — is returned
   untouched, so it keeps a contested name unreported (KI253). The index
   section's own id is minted the same way (corrected M08): the bare `qi-index`
@@ -924,8 +924,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   that lands elsewhere. — M080 review F2
 
 - **KI257.** The id census reads a bogus comment as markup. Only a literal
-  `<!--` opens a comment for the walk, so `<!ok>`, `<?ok>` and
-  `<![CDATA[ok]]>` — each a comment node to a browser — are walked as markup
+  `<!--` opens a comment for the walk, so `<!ok>`, `<?ok>`, `<![CDATA[ok]]>`
+  and `</ ok>` — each a comment node to a browser — are walked as markup
   and an `id=` inside one is counted, though the page carries no element
   with that name. The same over-collection class as the closing-tag shape
   M080 repaired. — M080 review F3
@@ -941,6 +941,34 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   opening tag (`<style id="x">`), which the census must still claim. So
   moving the census's `claim` call inside its skip guard reddens no check. —
   M080 review F8
+
+- **KI260.** The id census ends a comment only at `-->`, where a browser
+  also ends one at `<!-->`, at `<!--->` and at a `--!>` close. Each of those
+  three leaves the walk searching for a `-->` it never finds, so it abandons
+  the rest of that raw string and every `id=` written after the comment goes
+  uncounted — the under-collection direction, in which a mark keeps a
+  contested id with nothing reported and the page carries the name twice.
+  Verified against `note_raw` in a `pandoc lua` harness: each of the three
+  claims nothing where `<!-- c -->` claims the name after it. — M080 review
+  round 2, F2
+
+- **KI261.** The id census steps over a `style` or `script` element's
+  content wherever it is written, including inside `svg` or `math`, where an
+  HTML breakout tag is reported to produce a real element of the page.
+  Verified here only on this side: `<svg><style><p id="x"></style></svg>`
+  claims nothing. That a browser renders an element for it is the review's
+  reading of the tokenizer's foreign-content rules and is not checked
+  against a browser here, so the size of this gap is unconfirmed. — M080
+  review round 2, F5
+
+- **KI262.** Two facts the id-census documentation rests on are pinned by
+  nothing. `site/html.qmd` no longer says that a name written after a
+  `script` or `style` element in one raw block goes unseen, and no check
+  forbids that sentence coming back — `tests/sitecheck.py phrase-absent`
+  exists and is used only for the back-end-count phrase. And the M079-AC5
+  claim rows quote "those seven elements' content" without quoting the seven
+  names, so the page's enumeration can drift from `RAW_TEXT_ELEMENTS` with
+  every row still green. — M080 review round 2, F7
 
 ### Reports and messages
 

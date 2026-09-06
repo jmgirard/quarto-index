@@ -1,6 +1,6 @@
 # M079: An author-written mark id never leaves two elements sharing it
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -21,12 +21,12 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 ## Acceptance criteria
 
-- [x] AC1: Rendering `examples/id-collision.qmd` to HTML produces a captured page carrying no id more than once, counted by a sweep over every `id=` attribute of that page. The fixture carries both collision shapes: a mark whose author-written id names a non-mark element, written across the five id spellings the census reads (a Pandoc attribute; raw HTML double-quoted, unquoted and uppercase `ID=`; a raw inline, single-quoted) and once as a name the extension would otherwise mint; and two marks sharing one author-written id. No colliding id is written on a heading, whose id Quarto derives further copies from. The same sweep over that fixture rendered at the branch's merge-base reports a repeat for every colliding id the fixture carries.
-- [x] AC2: Rendering the same fixture to EPUB produces a publication in which no XHTML document the package manifest lists carries an id more than once, and every link inside a generated index section resolves to an id its target document carries exactly once — both read through `tests/epubindex.py`, over at least one document carrying a generated index section. The same reading at the merge-base reports a repeat.
-- [x] AC3: On AC1's captured render, every mark whose author-written id the extension refused carries a minted `qi-mark-<n>` instead, and that mark's index locator's fragment names that minted id; of the two marks sharing one author-written id, the one written first in the document is the one that keeps it.
-- [x] AC4: On AC1's render the run writes one warning per mark whose author-written id it refused, naming that id and that mark's printed term, and writes no such warning for any other mark. The same fixture's marks whose author-written ids collide with nothing — one nothing else carries, one inside a heading, and one spelled as a name the extension would otherwise mint — each still carry the author's id, with the mark's locator fragment naming it.
-- [x] AC5: `site/html.qmd` states which element keeps a contested id, what a refused mark gets instead, and that a refusal is reported; its present sentence promising a mark keeps an id of the author's own (line 20) no longer stands unqualified. `CHANGELOG.md` carries an entry whose statement of the behavior is true of AC1's captured render.
-- [x] AC6: `tests/run-tests.sh` runs clean.
+- [ ] AC1: Rendering `examples/id-collision.qmd` to HTML produces a captured page carrying no id more than once, counted by a sweep over every `id=` attribute of that page. The fixture carries both collision shapes: a mark whose author-written id names a non-mark element, written across the five id spellings the census reads (a Pandoc attribute; raw HTML double-quoted, unquoted and uppercase `ID=`; a raw inline, single-quoted) and once as a name the extension would otherwise mint; and two marks sharing one author-written id. No colliding id is written on a heading, whose id Quarto derives further copies from. The same sweep over that fixture rendered at the branch's merge-base reports a repeat for every colliding id the fixture carries.
+- [ ] AC2: Rendering the same fixture to EPUB produces a publication in which no XHTML document the package manifest lists carries an id more than once, and every link inside a generated index section resolves to an id its target document carries exactly once — both read through `tests/epubindex.py`, over at least one document carrying a generated index section. The same reading at the merge-base reports a repeat.
+- [ ] AC3: On AC1's captured render, every mark whose author-written id the extension refused carries a minted `qi-mark-<n>` instead, and that mark's index locator's fragment names that minted id; of the two marks sharing one author-written id, the one written first in the document is the one that keeps it.
+- [ ] AC4: On AC1's render the run writes one warning per mark whose author-written id it refused, naming that id and that mark's printed term, and writes no such warning for any other mark. The same fixture's marks whose author-written ids collide with nothing — one nothing else carries, one inside a heading, and one spelled as a name the extension would otherwise mint — each still carry the author's id, with the mark's locator fragment naming it.
+- [ ] AC5: `site/html.qmd` states which element keeps a contested id, what a refused mark gets instead, and that a refusal is reported; its present sentence promising a mark keeps an id of the author's own (line 20) no longer stands unqualified. `CHANGELOG.md` carries an entry whose statement of the behavior is true of AC1's captured render.
+- [ ] AC6: `tests/run-tests.sh` runs clean.
 
 ## Coverage
 
@@ -46,6 +46,11 @@ An author-written id on an index mark never leaves two elements of one page carr
 - [x] T5: Make `tests/fragments.py resolve` (`fragments.py:80`) assert a fragment's target id is on its page exactly once; prove it red by planting a duplicate in both collision shapes and at more than one capture site.
 - [x] T6: Correct `site/html.qmd`'s id paragraph and write the `CHANGELOG.md` entry, both against AC1's observed render.
 - [x] T7: Update `DESIGN.md`'s account of id assignment (line 364), which today states only that a minted id steps over an author's.
+
+- [ ] T8: Stop an `id=` written inside an HTML comment from counting as a carrier in the id census, so a mark keeps a name no element of the rendered page holds and no refusal is reported for one; add the fixture case and the suite leg, recorded red before the fix.
+- [ ] T9: Settle the cross-reference and page-only mark case, which carries no pending tag and so keeps a contested id unwarned: either bring such marks under the refusal rule or state the exception where an author reads it; add the fixture case either way.
+- [ ] T10: Narrow the claims in `CHANGELOG.md` and `site/html.qmd` to what the code does — the recovery route reads a chapter without its rendered page, the cross-reference exception, and the report naming a mark's `entry=` where it carries one rather than the term it prints.
+- [ ] T11: Add the `84 + 1 = 85` step naming M079 to the warning-count comment in `tests/scans/warn-distinct.py`, which stops at M073's `83 + 1 = 84`.
 
 ## Work log
 
@@ -70,6 +75,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 - 2026-09-05: review opened; draft PR #79. Merge-base floor re-rendered fresh from this branch's fixture: HTML repeats the seven contested ids, the EPUB reading reports 15 clauses across three documents. Whole-suite run and the three fresh-context reviewers still in flight.
 
 - 2026-09-05: review evidence gathered; AC1-AC6 all green (whole suite 1412 checks, exit 0) and cairn_validate clean. Three fresh-context lenses returned 13 findings; two verified by reproduction against the implementation — an id inside an HTML comment counted as a carrier, which kills an author's own link, and a cross-reference mark still leaving two elements on one id unwarned. Disposition put to the maintainer at the gate.
+
+- 2026-09-05: review returned the milestone to in-progress at the maintainer's decision. What failed is not a criterion — AC1-AC6 were green with fresh evidence — but a regression the branch introduces: an `id=` inside an HTML comment counts as a carrier in the census, so a mark yields a name no element holds, the author's own link to it goes dead, and the refusal report names a carrier that is not there. With it: a cross-reference mark still leaving two elements on one id unwarned, and four sentences in `CHANGELOG.md` and `site/html.qmd` reaching past the code. T8-T11 written; the criterion ticks were removed, the fix changing the census the evidence was read against. Defect return 1. PR #79 stays open as a draft.
 
 ## Decisions
 

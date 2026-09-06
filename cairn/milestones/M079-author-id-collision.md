@@ -94,6 +94,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: amendment gate. AC3 amended: the locator-fragment promise binds only a refused mark that files a locator, a refused cross-reference mark promises it files none, and the document-order clause is scoped to two marks that both file locators. A narrowing on the clause that stood, forced — under the old wording every refused cross-reference mark makes AC3 unsatisfiable. The gate also chose holding the criteria set rather than widening AC1 and AC4 to name the new shapes (candidate row added), and read AC1's heading sentence as being about a heading's own id, which is the reason that sentence gives.
 
+- 2026-09-05: T10 written against the observed render. `site/html.qmd` and `CHANGELOG.md` no longer promise the id-keeping rule holds for a chapter recovered from its source (that route sees no rendered page), no longer say a yielding mark's locator always follows the mint (a cross-reference mark has none), no longer settle two marks by document order alone, and name what the report actually names — the term the mark prints or the entry written for it. Both add the comment case. The pinned claim rows go from five to seven and all seven hold.
+
 ## Decisions
 
 ## Review

@@ -4153,12 +4153,14 @@ section 'M079-AC5 — the HTML page states the rule an author now meets: which e
 cat > "$WORK/html-id-claims.txt" <<'M079CLAIMS'
 qualified	a mark carrying an id of your own keeps it, as long as nothing else on the page carries that same name
 who keeps it	The element you wrote the name on keeps it
-what the mark gets	the mark is anchored on a minted id instead, which is where its index locator then points
-two marks	the first of them in the document keeps it and the rest yield
-reported	Each yield is reported as the render runs, naming the id given up and the term the mark prints
+what the mark gets	the mark is given a minted id instead, which for a mark that files a locator is where that locator then points
+two marks	the one whose locator links to the name keeps it, whichever you wrote first
+two of a kind	between two of a kind the first in the document keeps it and the rest yield
+cross-reference	A mark that only points at another entry has no locator to move, but it carries an id like any other span and gives a contested one up the same way
+reported	Each yield is reported as the render runs, naming the id given up and what the mark files under
 M079CLAIMS
 python3 tests/sitecheck.py claims site/html.qmd "$WORK/html-id-claims.txt" \
-  || fail "M079-AC5: site/html.qmd no longer states who keeps a contested id, what the yielding mark is anchored on, how two marks written with one name are settled, or that each yield is reported (its own FAIL line is above)"
+  || fail "M079-AC5: site/html.qmd no longer states who keeps a contested id, what the yielding mark is given instead, how two marks written with one name are settled, that a cross-reference mark yields the same way, or that each yield is reported (its own FAIL line is above)"
 
 # ---------------------------------------------------------------------------
 # M08-AC2 — a cross-reference target naming its own entry. Reported and

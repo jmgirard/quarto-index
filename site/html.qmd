@@ -18,22 +18,32 @@ Each mark that contributes a locator needs somewhere for its locator to link
 to:
 
 - a mark carrying an id of your own keeps it, as long as nothing else on the
-  page carries that same name, and the index links to that id —
-  in a book this holds whether the chapter is read from its record or
-  [recovered from its source](books.qmd), the one exception being a mark in a
-  book chapter's front matter, which links to the chapter's page either way;
+  page carries that same name, and the index links to that id;
 - every other mark gets an anchor on its own span — `qi-mark-1`, `qi-mark-2`
   and so on, numbered in the order the marks are written.
+
+In a book, a chapter read back from [its own source](books.qmd) rather than
+from a record is the one place the first rule is not settled against a rendered
+page: that route never sees one, so it links to the id you wrote whether or not
+something else on the page carries that name. A mark in a book chapter's front
+matter is the other exception — it links to the chapter's page either way.
 
 Where something else on the page does carry that name, the mark gives it up:
 one id names one element, and a name on two of them sends every link to
 whichever one the browser picks. The element you wrote the name on keeps it —
 the extension renames nothing of yours but its own mark spans — and the mark is
-anchored on a minted id instead, which is where its index locator then points.
-Between two marks written with one name there is no such difference, so the
-first of them in the document keeps it and the rest yield. Each yield is
-reported as the render runs, naming the id given up and the term the mark
-prints, so nothing moves out from under a link of your own in silence.
+given a minted id instead, which for a mark that files a locator is where that
+locator then points. Between two marks written with one name, the one whose
+locator links to the name keeps it, whichever you wrote first; between two of a
+kind the first in the document keeps it and the rest yield. A mark that only
+points at another entry has no locator to move, but it carries an id like any
+other span and gives a contested one up the same way. Each yield is reported as
+the render runs, naming the id given up and what the mark files under — the
+term it prints, or the entry you wrote for it — so nothing moves out from under
+a link of your own in silence.
+
+An id written inside an HTML comment is on nothing the rendered page carries,
+so it contests nothing: a mark written with that name keeps it.
 
 A heading is the one place an anchor cannot sit, because Quarto copies a
 heading's contents into the sidebar table of contents, and an id in there

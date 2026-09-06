@@ -8,12 +8,18 @@
   page carrying it. Where the name is also on something else — an element of
   your own, in Pandoc attributes or in raw HTML, or another mark — the mark
   gives it up: the element you wrote the name on keeps it, and the mark is
-  anchored on a minted `qi-mark-` id, which is where its index locator points.
-  Two marks written with one name are settled by document order, the first
-  keeping it. Every such yield is reported once as the render runs, naming the
-  id given up and the term the mark prints. An id nothing else on the page
-  carries is untouched, whatever it is spelled, and no element of yours is ever
-  renamed. HTML and EPUB alike, both back-ends being the one code path.
+  given a minted `qi-mark-` id, which for a mark that files a locator is where
+  that locator points. Between two marks written with one name, the one whose
+  locator links to the name keeps it whichever you wrote first; between two of
+  a kind the first in the document keeps it. A mark that only points at another
+  entry gives a contested name up the same way, having no locator to move.
+  Every yield is reported once as the render runs, naming the id given up and
+  what the mark files under — the term it prints, or the entry you wrote for
+  it. An id nothing else on the page carries is untouched, whatever it is
+  spelled and including one only an HTML comment holds, and no element of yours
+  is ever renamed. HTML and EPUB alike, both back-ends being the one code path.
+  In a book, a chapter read back from its own source rather than from a record
+  is settled against no rendered page, so this does not reach it.
 
 ## 0.3.0 (2026-09-05)
 
